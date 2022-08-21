@@ -999,11 +999,9 @@ testEntity =
                       "let x = 17; f = let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 () in testeq {Just 17} {f}"
                     , testExpectSuccess $
                       "let rec f = let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 (); x = 17 end in testeq {Just 17} {f}"
-                    , tModify (failTestBecause "crashes") $
-                      testExpectSuccess $
+                    , testExpectSuccess $
                       "let f = \\x => let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 () in testeq {Just 17} {f 17}"
-                    , tModify (failTestBecause "crashes") $
-                      testExpectSuccess $
+                    , testExpectSuccess $
                       "let f = \\x => let y = x; subtype Unit <: T Integer = \\() => T1 (Just y) in unT1 () in testeq {Just 17} {f 17}"
                     ]
               ]

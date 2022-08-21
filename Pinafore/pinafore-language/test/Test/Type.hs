@@ -312,6 +312,24 @@ testType =
                           "\\x => case x of (1,False,3,True) => () end"
                           "{} -> Literal *: Literal *: Literal *: Literal -> Unit"
                     ]
+              , testTree
+                    "let-binding"
+                    [ textTypeTest "\\x => let in ()" "{} -> Any -> Unit"
+                    , textTypeTest "\\x => let y = x in ()" "{} -> Any -> Unit"
+                    , textTypeTest "\\x => let y = x in y" "{} -> a -> a"
+                    , textTypeTest "\\x => let y = x + x in y" "{} -> Integer -> Integer"
+                    , textTypeTest "\\x => let y = x + x in ()" "{} -> Any -> Unit"
+                    , textTypeTest
+                          "\\x => let subtype Unit <: Action Integer = \\() => return x in ()"
+                          "{} -> Any -> Unit"
+                    , textTypeTest
+                          "\\x => let subtype Unit <: Action Integer = \\() => return x in ((): Action Integer)"
+                          "{} -> Integer -> Action Integer"
+                    , testMark $
+                      textTypeTest
+                          "let subtype Unit <: Action Integer = \\() => return x in ((): Action Integer)"
+                          "{x : Integer} -> Action Integer"
+                    ]
               ]
         , testTree
               "simplify"

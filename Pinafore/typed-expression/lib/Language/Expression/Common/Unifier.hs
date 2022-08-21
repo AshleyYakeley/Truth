@@ -82,16 +82,14 @@ unifyUUPosNegShimWit ta tb =
             uab <- unifyPosNegWitnesses @ts wa wb
             return $ convb . uab . conva
 
-solveUnifyPosNegShimWit ::
+unifyPosNegShimWit ::
        forall ts a b. UnifyTypeSystem ts
     => TSPosShimWit ts a
     -> TSNegShimWit ts b
-    -> TSOuter ts (TSOpenExpression ts (TSShim ts a b))
-solveUnifyPosNegShimWit wa wb = do
-    MkComposeShim (MkSolverExpression uab expr) <-
-        unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts wa) (uuLiftNegShimWit @ts wb)
-    (texpr, _) <- solveUnifier @ts uab
-    return $ expr <*> texpr
+    -> TSOuter ts (TSOpenExpression ts (TSShim ts a b), UnifierSubstitutions ts)
+unifyPosNegShimWit wa wb = do
+    MkComposeShim uexpr <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts wa) (uuLiftNegShimWit @ts wb)
+    solveUnifierExpression @ts uexpr
 
 solveUnifierExpression ::
        forall ts a. UnifyTypeSystem ts

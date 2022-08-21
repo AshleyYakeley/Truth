@@ -176,7 +176,6 @@ testSemiScript1 =
 
 testSemiScript2 :: TestTree
 testSemiScript2 =
-    failTestBecause "crashes" $
     testTree "semiscript-2" $ do
         MkT1 i <-
             runPinafore $
@@ -184,11 +183,10 @@ testSemiScript2 =
                 parseValueUnify
                     @(T1 Integer)
                     "let f = \\x => let subtype Unit <: T1 Integer = \\() => x in ((): T1 Integer) in f (MkT1 17)"
-        assertEqual "" 91 i
+        assertEqual "" 17 i
 
 testSemiScript3 :: TestTree
 testSemiScript3 =
-    failTestBecause "crashes" $
     testTree "semiscript-3" $ do
         MkT1 i <-
             runPinafore $
@@ -196,11 +194,10 @@ testSemiScript3 =
                 parseValueUnify
                     @(T1 Integer)
                     "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in ((): T1 Integer) in f 17"
-        assertEqual "" 91 i
+        assertEqual "" 17 i
 
 testSemiScript4 :: TestTree
 testSemiScript4 =
-    failTestBecause "crashes" $
     testTree "semiscript-4" $ do
         i <-
             runPinafore $
@@ -208,7 +205,7 @@ testSemiScript4 =
                 parseValueUnify
                     @Integer
                     "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in (\\(MkT1 y) => y) () in f 17"
-        assertEqual "" 91 i
+        assertEqual "" 17 i
 
 testScript :: TestTree
 testScript =
@@ -218,8 +215,7 @@ testScript =
         [ tDecls ["datatype T of MkT Integer end", "unT = \\(MkT x) => x"] $
           testExpectSuccess $
           "let f = \\x => let subtype Unit <: T = \\() => MkT x in unT () in if f 17 == 17 then return () else fail \"FAILED\""
-        , tModify (failTestBecause "crashes") $
-          tDecls ["datatype T1 +a of MkT1 a end", "unT1 = \\(MkT1 x) => x"] $
+        , tDecls ["datatype T1 +a of MkT1 a end", "unT1 = \\(MkT1 x) => x"] $
           testExpectSuccess $
           "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in unT1 () in if f 17 == 17 then return () else fail \"FAILED\""
         ]
