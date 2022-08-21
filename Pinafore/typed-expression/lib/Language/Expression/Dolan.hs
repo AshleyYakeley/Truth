@@ -78,6 +78,7 @@ module Language.Expression.Dolan
     , IsDolanFunctionGroundType(..)
     , IsDolanSubtypeGroundType(..)
     , IsDolanSubtypeEntriesGroundType(..)
+    , entries_subtypeGroundTypes
     , SubtypeArguments(..)
     , SubtypeConversion(..)
     , subtypeConversion
@@ -108,6 +109,7 @@ import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeEntry
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier (invertType)

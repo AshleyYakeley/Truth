@@ -16,6 +16,7 @@ import Pinafore.Language.Type.Types
 import Shapes
 
 instance IsDolanSubtypeGroundType PinaforeGroundType where
+    subtypeGroundTypes = entries_subtypeGroundTypes
     tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
         spos <- paramAsk sourcePosParam
         rethrowCause
