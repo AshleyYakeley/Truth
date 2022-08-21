@@ -57,4 +57,4 @@ pureScopeBuilder :: PinaforeScope -> ScopeBuilder ()
 pureScopeBuilder scope = interpScopeBuilder (registerScope scope)
 
 allocateVarScopeBuilder :: Name -> ScopeBuilder VarID
-allocateVarScopeBuilder n = liftTransformT $ liftTransformT $ MkTransformT $ allocateVar n
+allocateVarScopeBuilder n = interpScopeBuilder $ allocateVar n

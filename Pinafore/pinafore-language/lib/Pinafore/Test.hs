@@ -24,6 +24,7 @@ module Pinafore.Test
     , PinaforeScopeInterpreter
     , registerType
     , registerLetBindings
+    , registerLetBinding
     , registerPatternConstructor
     , registerSubtypeConversion
     , module Pinafore.Language.Expression

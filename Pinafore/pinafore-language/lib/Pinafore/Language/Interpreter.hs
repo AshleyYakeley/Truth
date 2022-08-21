@@ -20,6 +20,7 @@ module Pinafore.Language.Interpreter
     , getSpecialVals
     , lookupLetBinding
     , registerLetBindings
+    , registerLetBinding
     , unregisterBindings
     , bindingsScope
     , getSubtypeScope
@@ -195,13 +196,14 @@ runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
     icModulePath = []
     in evalStateT (runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
-allocateVar :: Name -> (VarID -> Interpreter ts a) -> Interpreter ts a
-allocateVar n f = do
-    vs <- paramAsk varIDStateParam
-    let
-        vid = mkVarID vs n
-        newscope = MkScope (singletonMap n (plainMarkdown "variable", LambdaBinding vid)) mempty
-    paramWith varIDStateParam (nextVarIDState vs) $ paramLocal scopeParam (\scope -> newscope <> scope) $ f vid
+allocateVar :: Name -> ScopeInterpreter ts VarID
+allocateVar n =
+    MkTransformT $ \f -> do
+        vs <- paramAsk varIDStateParam
+        let
+            vid = mkVarID vs n
+            newscope = MkScope (singletonMap n (plainMarkdown "variable", LambdaBinding vid)) mempty
+        paramWith varIDStateParam (nextVarIDState vs) $ paramLocal scopeParam (\scope -> newscope <> scope) $ f vid
 
 purifyExpression ::
        forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
@@ -332,6 +334,9 @@ lookupLetBinding name = do
 
 registerLetBindings :: Map Name (Markdown, TSSealedExpression ts) -> ScopeInterpreter ts ()
 registerLetBindings bb = registerBindings $ fmap (\(doc, exp) -> (doc, ValueBinding exp Nothing)) bb
+
+registerLetBinding :: Name -> Markdown -> TSSealedExpression ts -> ScopeInterpreter ts ()
+registerLetBinding name doc expr = registerLetBindings $ singletonMap name (doc, expr)
 
 lookupSpecialForm :: ReferenceName -> Interpreter ts (SpecialForm ts (Interpreter ts))
 lookupSpecialForm name = do

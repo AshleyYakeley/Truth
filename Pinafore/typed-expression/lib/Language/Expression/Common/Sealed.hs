@@ -31,6 +31,9 @@ sealedExpressionFreeWitnesses f (MkSealedExpression _ expr) =
 sealedExpressionFreeNames :: SealedExpression name vw tw -> [name]
 sealedExpressionFreeNames = sealedExpressionFreeWitnesses $ \n _ -> n
 
+sealedExpressionType :: SealedExpression name vw tw -> Some tw
+sealedExpressionType (MkSealedExpression t _) = MkSome t
+
 type instance Element (SealedExpression name vw ((:~:) val)) = val
 
 instance MonoFunctor (SealedExpression name vw ((:~:) val)) where
