@@ -82,8 +82,8 @@ module Language.Expression.Dolan
     , SubtypeArguments(..)
     , SubtypeConversion(..)
     , subtypeConversion
-    , simpleSubtypeConversion
     , nilSubtypeConversion
+    , neutralSubtypeConversion
     , idSubtypeConversion
     , composeSubtypeConversion
     , SubtypeConversionEntry(..)

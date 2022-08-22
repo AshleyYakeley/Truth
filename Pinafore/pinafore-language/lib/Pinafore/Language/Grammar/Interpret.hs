@@ -431,7 +431,7 @@ interpretOpenEntitySubtypeRelation sta stb =
         case ata of
             MkSome ta ->
                 case ta of
-                    MkMonoType tea NilArguments ->
+                    MkMonoType tea@(MkEntityGroundType tfa _) NilArguments ->
                         case atb of
                             MkSome tb ->
                                 case tb of
@@ -441,10 +441,13 @@ interpretOpenEntitySubtypeRelation sta stb =
                                             simpleSubtypeConversionEntry
                                                 (entityToPinaforeGroundType NilListType tea)
                                                 (entityToPinaforeGroundType NilListType teb) $
-                                            nilSubtypeConversion $
-                                            coerceShim "open entity" .
-                                            (functionToShim "entityConvert" $
-                                             entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
+                                            case matchFamilyType openEntityFamilyWitness tfa of
+                                                Just (MkLiftedFamily _) -> neutralSubtypeConversion
+                                                Nothing ->
+                                                    nilSubtypeConversion $
+                                                    coerceShim "open entity" .
+                                                    (functionToShim "entityConvert" $
+                                                     entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
                                     _ -> lift $ throw $ InterpretTypeNotOpenEntityError $ exprShow tb
                     _ -> lift $ throw $ InterpretTypeNotSimpleEntityError $ exprShow ta
 

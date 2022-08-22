@@ -1,6 +1,6 @@
 module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     ( ConstructorCodec
-    , Stages(..)
+    , TypeConstruction(..)
     , GroundTypeFromTypeID(..)
     , GroundTypeMaker
     , makeDeclTypeBox
@@ -148,22 +148,22 @@ getDolanVarianceMap tname (ConsCCRArguments p pp) vm = do
     args <- getDolanVarianceMap tname pp vm
     return $ ConsDolanVarianceMap (MkCCRVariation Nothing $ paramsCCRVMap p ff pp) $ assignDolanArgVars p args
 
-data Stages a b =
-    forall x. MkStages (a -> PinaforeInterpreter x)
-                       (x -> PinaforeInterpreter b)
+data TypeConstruction dv gt extra =
+    forall x y. MkTypeConstruction (DolanVarianceMap dv gt -> extra -> PinaforeInterpreter x)
+                                   (x -> PinaforeInterpreter (GroundTypeFromTypeID dv gt y))
+                                   (PinaforeGroundType dv gt -> y -> PinaforeScopeInterpreter ())
 
-type GroundTypeFromTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
-newtype GroundTypeFromTypeID dv gt = MkGroundTypeFromTypeID
+type GroundTypeFromTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
+newtype GroundTypeFromTypeID dv gt y = MkGroundTypeFromTypeID
     { unGroundTypeFromTypeID :: forall (tid :: Nat).
                                     (IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid) =>
-                                            Name -> TypeIDType tid -> PinaforeGroundType dv gt
+                                            Name -> TypeIDType tid -> (PinaforeGroundType dv gt, y)
     }
 
 type GroundTypeMaker extra
      = forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type).
            Is DolanVarianceType dv =>
-                   Name -> CCRTypeParams dv gt decltype -> Stages ( DolanVarianceMap dv gt
-                                                                  , [(ConstructorCodec decltype, extra)]) (GroundTypeFromTypeID dv gt)
+                   Name -> CCRTypeParams dv gt decltype -> TypeConstruction dv gt [(ConstructorCodec decltype, extra)]
 
 type MatchingTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 data MatchingTypeID dv t where
@@ -284,11 +284,13 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                     MkSome (tparams :: CCRTypeParams dv maintype decltype) ->
                         withRepresentative (ccrArgumentsType tparams) $
                         case gmaker mainTypeName tparams of
-                            MkStages mkx (mkgt :: x -> _) -> let
+                            MkTypeConstruction mkx (mkgt :: x -> _ (_ y)) postregister -> let
                                 mainRegister :: x -> PinaforeScopeInterpreter ()
                                 mainRegister x = do
                                     MkGroundTypeFromTypeID gttid <- lift $ mkgt x
-                                    registerType mainTypeName mainTypeDoc $ gttid mainTypeName mainTypeID
+                                    let (gt, y) = gttid mainTypeName mainTypeID
+                                    registerType mainTypeName mainTypeDoc gt
+                                    postregister gt y
                                 mainConstruct ::
                                        ()
                                     -> PinaforeScopeInterpreter ( x
@@ -325,7 +327,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                             lift $ getDolanVarianceMap @dv mainTypeName tparams vmap
                                         x <-
                                             lift $
-                                            mkx (dvm, toList $ liftA2 (,) codecs $ fmap ctExtra constructorFixedList)
+                                            mkx dvm $ toList $ liftA2 (,) codecs $ fmap ctExtra constructorFixedList
                                         return $ (x, (x, dvm, codecs, \t -> ctOuterType $ pickn t constructorFixedList))
                                 mainBox ::
                                        PinaforeFixBox () ( x
@@ -337,18 +339,18 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                 mainTypeBox =
                                     mkConstructFixBox $ \x -> do
                                         gtft <- lift $ mkgt x
-                                        return $ unGroundTypeFromTypeID gtft mainTypeName mainTypeID
+                                        return $ fst $ unGroundTypeFromTypeID gtft mainTypeName mainTypeID
                                 getGroundType ::
                                        PinaforeGroundType dv maintype
                                     -> (decltype -> TypeData dv maintype)
-                                    -> GroundTypeFromTypeID dv maintype
+                                    -> GroundTypeFromTypeID dv maintype y
                                     -> TypeData dv maintype
                                     -> PinaforeGroundType dv maintype
                                 getGroundType mainGroundType picktype (MkGroundTypeFromTypeID gttid) tdata =
                                     case tdID tdata of
                                         MkMatchingTypeID (typeID :: _ subtid) -> let
                                             baseGroundType :: PinaforeGroundType dv maintype
-                                            baseGroundType = gttid (tdName tdata) typeID
+                                            (baseGroundType, _) = gttid (tdName tdata) typeID
                                             gds :: PinaforePolyGreatestDynamicSupertype dv maintype
                                             gds =
                                                 GeneralPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
@@ -473,24 +475,26 @@ makeDataGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
     => Name
     -> CCRTypeParams dv gt decltype
-    -> Stages (DolanVarianceMap dv gt, [(ConstructorCodec decltype, ())]) (GroundTypeFromTypeID dv gt)
+    -> TypeConstruction dv gt [(ConstructorCodec decltype, ())]
 makeDataGroundType _ tparams = let
     dvt :: DolanVarianceType dv
     dvt = ccrArgumentsType tparams
-    mkx :: (DolanVarianceMap dv gt, [(ConstructorCodec decltype, ())]) -> PinaforeInterpreter (DolanVarianceMap dv gt)
-    mkx (dvm, _) = return dvm
-    mkgt :: DolanVarianceMap dv gt -> PinaforeInterpreter (GroundTypeFromTypeID dv gt)
+    mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> PinaforeInterpreter (DolanVarianceMap dv gt)
+    mkx dvm _ = return dvm
+    mkgt :: DolanVarianceMap dv gt -> PinaforeInterpreter (GroundTypeFromTypeID dv gt ())
     mkgt dvm =
         return $
-        MkGroundTypeFromTypeID $ \name mainTypeID ->
-            MkPinaforeGroundType
-                { pgtVarianceType = dvt
-                , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
-                , pgtShowType = standardListTypeExprShow @dv $ exprShow name
-                , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
-                , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
-                }
-    in MkStages mkx mkgt
+        MkGroundTypeFromTypeID $ \name mainTypeID -> let
+            gt =
+                MkPinaforeGroundType
+                    { pgtVarianceType = dvt
+                    , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
+                    , pgtShowType = standardListTypeExprShow @dv $ exprShow name
+                    , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
+                    , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+                    }
+            in (gt, ())
+    in MkTypeConstruction mkx mkgt $ \_ _ -> return ()
 
 makeDataTypeBox ::
        Name

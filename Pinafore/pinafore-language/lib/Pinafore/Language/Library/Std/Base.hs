@@ -489,29 +489,13 @@ baseLibEntries =
                   ]
                 ]
           , docTreeEntry
-                "Closed Entity Types"
-                ""
-                [ mkSubtypeRelationEntry "(any closed entity type)" (fst $ pgtShowType entityGroundType) "" $
-                  MkSubtypeConversionEntry entityGroundType $ \gta@MkPinaforeGroundType {..} -> do
-                      MkClosedEntityFamily _ (MkSealedEntityProperties eprops) <-
-                          matchFamilyType closedEntityFamilyWitness pgtFamilyType
-                      Refl <- testEquality (covaryToDolanVarianceType $ epKind eprops) pgtVarianceType
-                      return $
-                          entityPropertiesSaturatedAdapter
-                              (groundedDolanShimWit entityGroundType nilDolanArgumentsShimWit)
-                              plainEntityAdapter
-                              eprops $ \args eat ->
-                              subtypeConversion gta args entityGroundType nilDolanArgumentsShimWit $
-                              pure $ functionToShim "ClosedEntity" $ entityAdapterConvert eat
-                ]
-          , docTreeEntry
                 "Open Entity Types"
                 ""
                 [ mkSubtypeRelationEntry "(any open entity type)" (fst $ pgtShowType entityGroundType) "" $
                   MkSubtypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkLiftedFamily _ <- matchFamilyType openEntityFamilyWitness pgtFamilyType
-                      return $ nilSubtypeConversion $ coerceShim "OpenEntity"
+                      return neutralSubtypeConversion
                 , mkSpecialFormEntry
                       "openEntity"
                       "An open entity for this anchor. `A` is an open entity type."
@@ -549,7 +533,7 @@ baseLibEntries =
                   MkSubtypeConversionEntry dynamicEntityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness pgtFamilyType
-                      return $ nilSubtypeConversion id
+                      return neutralSubtypeConversion
                 , hasSubtypeRelationEntry @DynamicEntity @Entity "" $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry

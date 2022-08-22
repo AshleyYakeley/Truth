@@ -10,8 +10,8 @@ module Language.Expression.Dolan.Subtype
     , SubtypeArguments(..)
     , SubtypeConversion(..)
     , subtypeConversion
-    , simpleSubtypeConversion
     , nilSubtypeConversion
+    , neutralSubtypeConversion
     , idSubtypeConversion
     , composeSubtypeConversion
     ) where
@@ -144,12 +144,6 @@ newtype SubtypeConversion ground dva gta dvb gtb =
                              (WrappedApplicative solver, WAInnerM solver ~ DolanTypeCheckM ground, Is PolarityType pola) =>
                                      DolanSubtypeContext ground solver -> DolanArguments dva (DolanType ground) gta pola a -> DolanTypeCheckM ground (SubtypeArguments ground solver dvb gtb a))
 
-simpleSubtypeConversion ::
-       forall (ground :: GroundTypeKind) a b. DolanShim ground a b -> SubtypeConversion ground '[] a '[] b
-simpleSubtypeConversion conv =
-    MkSubtypeConversion $ \_ (NilCCRArguments :: DolanArguments _ _ _ polarity _) ->
-        return $ MkSubtypeArguments (NilCCRArguments :: DolanArguments _ _ _ polarity _) $ pure conv
-
 subtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta a dvb gtb b. IsDolanSubtypeGroundType ground
     => ground dva gta
@@ -173,10 +167,15 @@ subtypeConversion gta (MkShimWit rawargsa (MkPolarMap conva)) gtb (MkShimWit raw
                 (subtypeDolanArguments sc gta argsa sargsa)
 
 nilSubtypeConversion ::
-       forall (ground :: GroundTypeKind) (a :: Type) (b :: Type).
-       DolanShim ground a b
-    -> SubtypeConversion ground '[] a '[] b
-nilSubtypeConversion = simpleSubtypeConversion
+       forall (ground :: GroundTypeKind) a b. DolanShim ground a b -> SubtypeConversion ground '[] a '[] b
+nilSubtypeConversion conv =
+    MkSubtypeConversion $ \_ (NilCCRArguments :: DolanArguments _ _ _ polarity _) ->
+        return $ MkSubtypeArguments (NilCCRArguments :: DolanArguments _ _ _ polarity _) $ pure conv
+
+neutralSubtypeConversion ::
+       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, Coercible a b)
+    => SubtypeConversion ground '[] a '[] b
+neutralSubtypeConversion = nilSubtypeConversion $ coerceShim "neutral"
 
 idSubtypeConversion ::
        forall (ground :: GroundTypeKind) dv gt. IsDolanSubtypeGroundType ground
