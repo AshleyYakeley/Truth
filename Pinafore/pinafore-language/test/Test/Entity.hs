@@ -1092,6 +1092,26 @@ testEntity =
               , testExpectReject
                     "let t = let opentype T1 in openEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action Unit; f _ = pass in f; in f t"
               ]
+        , tGroup
+              "general-subtype"
+              [ testExpectReject "let subtype Unit <: Unit = \\_ => () in pass"
+              , testExpectReject "let subtype Integer <: Unit = \\_ => () in pass"
+              , tDecls ["opentype P", "opentype Q"] $
+                tGroup
+                    "opentype"
+                    [ testExpectSuccess "let subtype P <: P in pass"
+                    , testExpectSuccess "let subtype P <: Q in pass"
+                    , testExpectReject "let subtype P <: P = \\x => x in pass"
+                    , testExpectReject "let subtype P <: Q = \\_ => error \"\" in pass"
+                    ]
+              , tDecls ["datatype P of MkP Number end"] $
+                tGroup
+                    "datatype"
+                    [ testExpectSuccess "let subtype Number <: P = MkP in pass"
+                    , testExpectReject "let subtype Number <: P = MkP; subtype Number <: P = MkP in pass"
+                    , testExpectReject "let subtype Number <: P = MkP; subtype Integer <: P = MkP in pass"
+                    ]
+              ]
         , tDecls ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = openEntity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
           tGroup
               "undo"
