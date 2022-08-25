@@ -11,26 +11,25 @@ class Is PolarityType polarity => HasPinaforeType polarity t where
     pinaforeType :: PinaforeShimWit polarity t
 
 groundPinaforeType :: (Is PolarityType polarity, HasPinaforeGroundType '[] t) => PinaforeShimWit polarity t
-groundPinaforeType = singleDolanShimWit $ mkShimWit $ GroundedDolanSingularType pinaforeGroundType NilCCRArguments
+groundPinaforeType = shimWitToDolan $ mkShimWit $ MkDolanGroundedType pinaforeGroundType NilCCRArguments
 
 instance {-# OVERLAPPABLE #-} forall polarity (t :: Type). ( Is PolarityType polarity
                               , HasHetPinaforeGroundedType polarity t
                               ) => HasPinaforeType polarity t where
-    pinaforeType =
-        singleDolanShimWit $ runHetPainforeGroundedType (hetPinaforeGroundedType @polarity @_ @t) NilCCRArguments
+    pinaforeType = shimWitToDolan $ runHetPainforeGroundedType (hetPinaforeGroundedType @polarity @_ @t) NilCCRArguments
 
 type HetPainforeGroundedType :: Polarity -> DolanVariance -> forall k. k -> Type
 data HetPainforeGroundedType polarity dv f where
     MkHetPainforeGroundedType
         :: forall polarity dv (f :: DolanVarianceKind dv). HasDolanVariance dv f
-        => (forall a. DolanArguments dv PinaforeType f polarity a -> PinaforeSingularShimWit polarity a)
+        => (forall a. DolanArguments dv PinaforeType f polarity a -> PinaforeGroundedShimWit polarity a)
         -> HetPainforeGroundedType polarity dv f
 
 runHetPainforeGroundedType ::
        forall polarity dv (f :: DolanVarianceKind dv) a.
        HetPainforeGroundedType polarity dv f
     -> DolanArguments dv PinaforeType f polarity a
-    -> PinaforeSingularShimWit polarity a
+    -> PinaforeGroundedShimWit polarity a
 runHetPainforeGroundedType (MkHetPainforeGroundedType f) = f
 
 type HetDolanVarianceOf :: forall k. k -> DolanVariance
@@ -49,7 +48,7 @@ instance {-# OVERLAPPABLE #-} forall polarity k (f :: k). ( Is PolarityType pola
     hetPinaforeGroundedType =
         case hetConstraint @_ @(HasPinaforeGroundType (HetDolanVarianceOf f)) @_ @f of
             MkHetConstraintWitness ->
-                MkHetPainforeGroundedType $ \args -> mkShimWit $ GroundedDolanSingularType pinaforeGroundType args
+                MkHetPainforeGroundedType $ \args -> mkShimWit $ MkDolanGroundedType pinaforeGroundType args
 
 type HasPinaforeGroundType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Constraint
 class (CoercibleKind (DolanVarianceKind dv), dv ~ HetDolanVarianceOf f, HasDolanVariance dv f) =>
@@ -107,7 +106,7 @@ instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
                         hetPinaforeGroundedType' ::
                                forall t.
                                DolanArguments dv PinaforeType (f a) polarity t
-                            -> PinaforeSingularShimWit polarity t
+                            -> PinaforeGroundedShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('SimpleCCRVariance (VarianceOf f) ': dv) @f of
                                 ConsDolanVarianceMap ccrv dvm ->
@@ -145,7 +144,7 @@ instance forall dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)). ( Ha
                         hetPinaforeGroundedType' ::
                                forall t.
                                DolanArguments dv PinaforeType (f a) polarity t
-                            -> PinaforeSingularShimWit polarity t
+                            -> PinaforeGroundedShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('RangeCCRVariance ': dv) @f of
                                 ConsDolanVarianceMap ccrv dvm ->

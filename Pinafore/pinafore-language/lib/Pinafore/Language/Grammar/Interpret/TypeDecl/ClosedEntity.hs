@@ -151,7 +151,7 @@ makeClosedEntityGroundType mainTypeName tparams = let
         registerSubtypeConversion $
         simpleSubtypeConversionEntry gt entityGroundType $
         entityPropertiesSaturatedAdapter
-            (groundedDolanShimWit entityGroundType nilDolanArgumentsShimWit)
+            (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
             plainEntityAdapter
             eprops $ \args eat ->
             subtypeConversion gt args entityGroundType nilDolanArgumentsShimWit $

@@ -67,10 +67,18 @@ showGroundType t =
         fst $ saturatedGroundTypeShowPrec @ground (MkSome $ singleDolanType @ground $ VarDolanSingularType var) t
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
+             ExprShow (DolanGroundedType ground polarity t) where
+    exprShowPrec (MkDolanGroundedType gt args) = groundTypeShowPrec gt args
+
+instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanSingularType ground polarity t) where
     exprShowPrec (VarDolanSingularType namewit) = exprShowPrec namewit
-    exprShowPrec (GroundedDolanSingularType gt args) = groundTypeShowPrec gt args
+    exprShowPrec (GroundedDolanSingularType t) = exprShowPrec t
     exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
+
+instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (GroundExprShow ground, Is PolarityType polarity) =>
+             AllConstraint ExprShow (DolanGroundedType ground polarity) where
+    allConstraint = Dict
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanType ground polarity t) where

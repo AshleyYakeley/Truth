@@ -52,7 +52,7 @@ openEntityFamily =
 
 getOpenEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
-    case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
-        Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
+    case dolanToMaybeType @PinaforeGroundType @_ @_ @(PinaforePolyShim Type) tm of
+        Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkSome t
         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm

@@ -29,11 +29,10 @@ subtypeEntry ::
        forall a b. (HasPinaforeType 'Negative a, HasPinaforeType 'Positive b)
     => PinaforeOpenExpression (PinaforePolyShim Type a b)
     -> SubtypeConversionEntry PinaforeGroundType
-subtypeEntry convexpr =
-    fromJust $
-    toGroundedDolanShimWit (pinaforeType :: _ a) $ \gta argsa ->
-        fromJust $
-        toGroundedDolanShimWit (pinaforeType :: _ b) $ \gtb argsb -> subtypeConversionEntry gta argsa gtb argsb convexpr
+subtypeEntry convexpr = let
+    ta = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ a)
+    tb = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ b)
+    in subtypeConversionEntry ta tb convexpr
 
 simpleConversionExpression :: PinaforeOpenExpression (PinaforePolyShim Type () T)
 simpleConversionExpression = pure $ functionToShim "conv" $ \() -> MkT 12

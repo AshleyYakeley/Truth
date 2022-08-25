@@ -19,7 +19,7 @@ elimUnusuedInShimWit ::
     -> DolanShimWit ground polarity (UVarT name)
 elimUnusuedInShimWit var tw@(MkShimWit t _) =
     if occursInType var t
-        then singleDolanShimWit $ recursiveDolanShimWit var tw
+        then shimWitToDolan $ recursiveDolanShimWit var tw
         else tw
 
 elimInSingularType ::
@@ -27,7 +27,7 @@ elimInSingularType ::
     => DolanSingularType ground polarity t
     -> DolanShimWit ground polarity t
 elimInSingularType (RecursiveDolanSingularType var pt) = elimUnusuedInShimWit var $ elimInType (Just var) pt
-elimInSingularType t = singleDolanShimWit $ mapDolanSingularType (elimInType Nothing) t
+elimInSingularType t = shimWitToDolan $ mapDolanSingularType (elimInType Nothing) t
 
 elimInType ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)

@@ -109,8 +109,8 @@ aDynamicEntityEntityFamily =
 
 getConcreteDynamicEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Name, DynamicType)
 getConcreteDynamicEntityType (MkSome tm) =
-    case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
-        Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
+    case dolanToMaybeType @PinaforeGroundType @_ @_ @(PinaforePolyShim Type) tm of
+        Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkADynamicEntityFamily n (toList -> [dt])) <-
                  matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType gt -> return (n, dt)
         _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm

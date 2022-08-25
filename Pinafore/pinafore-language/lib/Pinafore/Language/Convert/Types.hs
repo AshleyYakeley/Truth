@@ -28,7 +28,7 @@ instance (HasPinaforeType 'Negative a, HasPinaforeType 'Negative b) => HasPinafo
 -- Var Type
 instance (Is PolarityType polarity, KnownSymbol name) => HasPinaforeType polarity (Var name) where
     pinaforeType =
-        singleDolanShimWit $
+        shimWitToDolan $
         MkShimWit (VarDolanSingularType $ MkSymbolType @name) $
         case polarityType @polarity of
             PositiveType -> MkPolarMap $ coerceShim "var"
@@ -97,7 +97,7 @@ textGroundType =
 textShimWit ::
        forall polarity. Is PolarityType polarity
     => PinaforeShimWit polarity Text
-textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType textGroundType NilCCRArguments
+textShimWit = typeToDolan $ MkDolanGroundedType textGroundType NilCCRArguments
 
 instance HasPinaforeGroundType '[] Text where
     pinaforeGroundType = textGroundType

@@ -17,6 +17,9 @@ type PinaforeSingularType = DolanSingularType PinaforeGroundType
 type PinaforeSingularShimWit :: Polarity -> Type -> Type
 type PinaforeSingularShimWit polarity = DolanSingularShimWit PinaforeGroundType polarity
 
+type PinaforeGroundedShimWit :: Polarity -> Type -> Type
+type PinaforeGroundedShimWit polarity = DolanGroundedShimWit PinaforeGroundType polarity
+
 type PinaforeType :: Polarity -> Type -> Type
 type PinaforeType = DolanType PinaforeGroundType
 

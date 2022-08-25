@@ -24,7 +24,7 @@ unrollRecursiveType var pt =
     invertPolarity @polarity $ let
         rt = RecursiveDolanSingularType var pt
         bisub :: Bisubstitution ground (DolanPolyIsoShim ground Type) Identity
-        bisub = mkSingleBisubstitution True var $ return $ singleDolanShimWit $ mkPolarShimWit rt
+        bisub = mkSingleBisubstitution True var $ return $ shimWitToDolan $ mkPolarShimWit rt
         in runIdentity $ bisubstituteType bisub pt
 
 unrollSingularType ::
@@ -32,7 +32,7 @@ unrollSingularType ::
     => DolanSingularType ground polarity t
     -> DolanIsoShimWit ground polarity t
 unrollSingularType (RecursiveDolanSingularType var t) = unrollRecursiveType var t
-unrollSingularType t = singleDolanShimWit $ mkPolarShimWit t
+unrollSingularType t = shimWitToDolan $ mkPolarShimWit t
 
 unrollType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -75,5 +75,4 @@ singularRecursiveOrPlainType ::
     => DolanSingularType ground polarity t
     -> PShimWit shim (RecursiveOrPlainType ground) polarity t
 singularRecursiveOrPlainType (RecursiveDolanSingularType var t) = mkPolarShimWit $ RecursiveType var t
-singularRecursiveOrPlainType st =
-    chainPolarShimWit (mkPolarShimWit . PlainType) $ singleDolanShimWit $ mkPolarShimWit st
+singularRecursiveOrPlainType st = chainPolarShimWit (mkPolarShimWit . PlainType) $ shimWitToDolan $ mkPolarShimWit st

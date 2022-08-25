@@ -87,6 +87,41 @@ data DolanType ground polarity t where
         -> DolanType ground polarity tr
         -> DolanType ground polarity (JoinMeetType polarity t1 tr)
 
+type DolanTypeSub :: GroundTypeKind -> Polarity -> (Type -> Type) -> Constraint
+class Is PolarityType polarity => DolanTypeSub ground polarity w | w -> ground polarity where
+    typeToDolan ::
+           forall (shim :: ShimKind Type) t. JoinMeetIsoCategory shim
+        => w t
+        -> PShimWit shim (DolanType ground) polarity t
+    dolanToMaybeType ::
+           forall (shim :: ShimKind Type) t. JoinMeetIsoCategory shim
+        => DolanType ground polarity t
+        -> Maybe (PolarShimWit shim w polarity t)
+
+typeToSomeDolan ::
+       forall (ground :: GroundTypeKind) polarity w t. JoinMeetIsoCategory (DolanShim ground)
+    => DolanTypeSub ground polarity w => w t -> Some (DolanType ground polarity)
+typeToSomeDolan t = shimWitToSome $ typeToDolan @ground @polarity @w @(DolanShim ground) t
+
+shimWitToDolan ::
+       forall (ground :: GroundTypeKind) polarity w (shim :: ShimKind Type) t.
+       (DolanTypeSub ground polarity w, JoinMeetIsoCategory shim)
+    => PolarShimWit shim w polarity t
+    -> PShimWit shim (DolanType ground) polarity t
+shimWitToDolan (MkShimWit wt conv) = mapShimWit conv $ typeToDolan wt
+
+dolanToMaybeShimWit ::
+       forall (ground :: GroundTypeKind) polarity w (shim :: ShimKind Type) t.
+       (DolanTypeSub ground polarity w, JoinMeetIsoCategory shim)
+    => PShimWit shim (DolanType ground) polarity t
+    -> Maybe (PolarShimWit shim w polarity t)
+dolanToMaybeShimWit (MkShimWit wt conv) = fmap (mapShimWit conv) $ dolanToMaybeType wt
+
+instance forall (ground :: GroundTypeKind) polarity. Is PolarityType polarity =>
+             DolanTypeSub ground polarity (DolanType ground polarity) where
+    typeToDolan = mkShimWit
+    dolanToMaybeType = Just . mkShimWit
+
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              TestEquality (DolanType ground polarity) where
     testEquality NilDolanType NilDolanType = return Refl
@@ -96,13 +131,32 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
         return Refl
     testEquality _ _ = Nothing
 
+type DolanGroundedType :: GroundTypeKind -> Polarity -> Type -> Type
+data DolanGroundedType ground polarity t where
+    MkDolanGroundedType
+        :: forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: DolanVariance) gt t.
+           ground dv gt
+        -> DolanArguments dv (DolanType ground) gt polarity t
+        -> DolanGroundedType ground polarity t
+
+type DolanGroundedShimWit :: GroundTypeKind -> Polarity -> Type -> Type
+type DolanGroundedShimWit ground polarity = PShimWit (DolanShim ground) (DolanGroundedType ground) polarity
+
+instance forall (ground :: GroundTypeKind) polarity. Is PolarityType polarity =>
+             DolanTypeSub ground polarity (DolanGroundedType ground polarity) where
+    typeToDolan t = typeToDolan $ GroundedDolanSingularType t
+    dolanToMaybeType t = do
+        MkShimWit st conv <- dolanToMaybeType t
+        case st of
+            GroundedDolanSingularType gt -> return $ MkShimWit gt conv
+            _ -> Nothing
+
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVarT') for type variables.
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanSingularType ground polarity t where
     GroundedDolanSingularType
-        :: forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: DolanVariance) gt t.
-           ground dv gt
-        -> DolanArguments dv (DolanType ground) gt polarity t
+        :: forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
+           DolanGroundedType ground polarity t
         -> DolanSingularType ground polarity t
     VarDolanSingularType
         :: forall (ground :: GroundTypeKind) polarity name.
@@ -116,11 +170,23 @@ data DolanSingularType ground polarity t where
         -> DolanType ground polarity (UVarT name)
         -> DolanSingularType ground polarity (UVarT name)
 
+instance forall (ground :: GroundTypeKind) polarity. Is PolarityType polarity =>
+             DolanTypeSub ground polarity (DolanSingularType ground polarity) where
+    typeToDolan t = MkShimWit (singleDolanType t) iPolarR1
+    dolanToMaybeType (ConsDolanType t NilDolanType) = Just $ MkShimWit t iPolarL1
+    dolanToMaybeType _ = Nothing
+
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             TestEquality (DolanSingularType ground polarity) where
-    testEquality (GroundedDolanSingularType gta argsa) (GroundedDolanSingularType gtb argsb) = do
+             TestEquality (DolanGroundedType ground polarity) where
+    testEquality (MkDolanGroundedType gta argsa) (MkDolanGroundedType gtb argsb) = do
         (Refl, HRefl) <- groundTypeTestEquality gta gtb
         Refl <- testEquality argsa argsb
+        return Refl
+
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
+             TestEquality (DolanSingularType ground polarity) where
+    testEquality (GroundedDolanSingularType ta) (GroundedDolanSingularType tb) = do
+        Refl <- testEquality ta tb
         return Refl
     testEquality (VarDolanSingularType na) (VarDolanSingularType nb) = do
         Refl <- testEquality na nb
@@ -155,27 +221,7 @@ varDolanShimWit ::
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
     => SymbolType name
     -> PShimWit shim (DolanType ground) polarity (UVarT name)
-varDolanShimWit var = singleDolanShimWit $ mkPolarShimWit $ VarDolanSingularType var
-
-groundedDolanShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) dv gt t.
-       (IsDolanGroundType ground, JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
-    => ground dv gt
-    -> DolanArgumentsShimWit pshim dv (DolanType ground) gt polarity t
-    -> PShimWit (pshim Type) (DolanType ground) polarity t
-groundedDolanShimWit gt (MkShimWit args conv) = singleDolanShimWit $ MkShimWit (GroundedDolanSingularType gt args) conv
-
-toGroundedDolanShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) t r.
-       (IsDolanGroundType ground, JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
-    => PShimWit (pshim Type) (DolanType ground) polarity t
-    -> (forall dv gt. ground dv gt -> DolanArgumentsShimWit pshim dv (DolanType ground) gt polarity t -> r)
-    -> Maybe r
-toGroundedDolanShimWit (MkShimWit t conv) call =
-    case t of
-        ConsDolanType (GroundedDolanSingularType gt args) NilDolanType ->
-            Just $ call gt (MkShimWit args $ iPolarL1 . conv)
-        _ -> Nothing
+varDolanShimWit var = typeToDolan $ VarDolanSingularType var
 
 nilDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity).
@@ -203,21 +249,6 @@ singleDolanType ::
        DolanSingularType ground polarity t
     -> DolanType ground polarity (JoinMeetType polarity t (LimitType polarity))
 singleDolanType st = ConsDolanType st NilDolanType
-
-dolanTypeToSingular ::
-       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) (t :: Type).
-       (JoinMeetIsoCategory shim, Is PolarityType polarity)
-    => DolanType ground polarity t
-    -> Maybe (PShimWit shim (DolanSingularType ground) polarity t)
-dolanTypeToSingular (ConsDolanType st NilDolanType) = Just $ MkShimWit st iPolarL1
-dolanTypeToSingular _ = Nothing
-
-singleDolanShimWit ::
-       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) (t :: Type).
-       (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
-    => PShimWit shim (DolanSingularType ground) polarity t
-    -> PShimWit shim (DolanType ground) polarity t
-singleDolanShimWit (MkShimWit st conv) = ccontramap conv $ MkShimWit (singleDolanType st) iPolarR1
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityType polarity =>
              Semigroup (Some (DolanType ground polarity)) where

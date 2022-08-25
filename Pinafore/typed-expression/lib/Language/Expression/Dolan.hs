@@ -1,8 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan
-    ( module Control.Applicative.Wrapped
-    , PShimWit
+    ( module I
     , MPolarityType(..)
     , MPolarW(..)
     , MPolarRangeType(..)
@@ -32,45 +31,15 @@ module Language.Expression.Dolan
     , dolanVarianceToCovaryType
     , covaryToDolanVarianceMap
     , dolanVarianceMapToCovary
+    , DolanGroundedType(..)
     , DolanSingularType(..)
     , DolanType(..)
-    , singleDolanType
-    , dolanTypeToSingular
-    , DolanShimWit
-    , DolanSingularShimWit
-    , singleDolanShimWit
-    , nilDolanShimWit
     , joinMeetShimWit
-    , varDolanShimWit
-    , groundedDolanShimWit
-    , toGroundedDolanShimWit
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
     , biRangeSomeFor
-    , CCRArgumentKind
-    , IsCCRArg(..)
-    , CCRPolarArgument(..)
-    , CCRArguments(..)
-    , ccrArgumentsEndo
-    , ccrArgumentsType
-    , mapCCRArguments
-    , nilAnyCCRArguments
-    , consAnyCCRArguments
-    , DolanArguments
-    , ccrArgumentsToShimArgumentsM
-    , ccrArgumentsToArgumentsM
-    , DolanArgumentsShimWit
-    , nilDolanArgumentsShimWit
-    , consDolanArgumentsShimWit
-    , CCRPolarArgumentShimWit
-    , coCCRArgument
-    , contraCCRArgument
-    , rangeCCRArgument
-    , mapDolanArgumentsFM
-    , dolanArgumentsToArguments
     , SubtypeContext(..)
-    , subtypeDolanArguments
     , invertTypeMaybe
     , invertType
     , DolanTypeSystem
@@ -78,39 +47,26 @@ module Language.Expression.Dolan
     , IsDolanFunctionGroundType(..)
     , IsDolanSubtypeGroundType(..)
     , IsDolanSubtypeEntriesGroundType(..)
-    , entries_subtypeGroundTypes
-    , SubtypeArguments(..)
-    , SubtypeConversion(..)
-    , subtypeConversion
-    , nilSubtypeConversion
-    , neutralSubtypeConversion
-    , idSubtypeConversion
-    , composeSubtypeConversion
-    , SubtypeConversionEntry(..)
-    , subtypeConversionEntry
-    , simpleSubtypeConversionEntry
-    , module Language.Expression.Dolan.Nonpolar
-    , module Language.Expression.Dolan.Mono
     ) where
 
-import Control.Applicative.Wrapped
+import Control.Applicative.Wrapped as I
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Argument
-import Language.Expression.Dolan.Arguments
+import Language.Expression.Dolan.Argument as I
+import Language.Expression.Dolan.Arguments as I
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.MPolarity
-import Language.Expression.Dolan.Mono
-import Language.Expression.Dolan.Nonpolar
-import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Mono as I
+import Language.Expression.Dolan.Nonpolar as I
+import Language.Expression.Dolan.PShimWit as I
 import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
-import Language.Expression.Dolan.Subtype
-import Language.Expression.Dolan.SubtypeEntry
-import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.Subtype as I
+import Language.Expression.Dolan.SubtypeEntry as I
+import Language.Expression.Dolan.Type as I
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier (invertType)
 import Language.Expression.Dolan.Unroll
@@ -127,12 +83,12 @@ class (Eq (DolanVarID ground), IsDolanSubtypeGroundType ground) => IsDolanFuncti
 instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
              CompleteTypeSystem (DolanTypeSystem ground) where
     tsFunctionPosWitness ta tb =
-        singleDolanShimWit $
+        shimWitToDolan $
         mkPolarShimWit $
-        GroundedDolanSingularType functionGroundType $
+        MkDolanGroundedType functionGroundType $
         ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
     tsFunctionNegWitness ta tb =
-        singleDolanShimWit $
+        shimWitToDolan $
         mkPolarShimWit $
-        GroundedDolanSingularType functionGroundType $
+        MkDolanGroundedType functionGroundType $
         ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments

@@ -39,8 +39,8 @@ list1GroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
         { pgtGreatestDynamicSupertype =
               GeneralPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
-                  tt = mkShimWit $ GroundedDolanSingularType listGroundType $ ConsCCRArguments ta NilCCRArguments
-                  in Just $ mapPolarShimWit (MkPolarMap $ functionToShim "nonEmpty" nonEmpty) tt
+                  tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
+                  in Just $ MkShimWit tt (MkPolarMap $ functionToShim "nonEmpty" nonEmpty)
         }
 
 eitherGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either

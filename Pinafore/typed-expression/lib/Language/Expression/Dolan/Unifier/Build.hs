@@ -9,7 +9,6 @@ module Language.Expression.Dolan.Unifier.Build
 import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
@@ -30,15 +29,13 @@ unifySubtypeContext ::
     => DolanSubtypeContext ground (UnifierSolver ground)
 unifySubtypeContext = MkSubtypeContext unifyTypes solverLiftValueExpression
 
-unifyGroundTypes ::
-       forall (ground :: GroundTypeKind) pola polb dva gta ta dvb gtb tb.
+unifyGroundedTypes ::
+       forall (ground :: GroundTypeKind) pola polb ta tb.
        (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
-    => ground dva gta
-    -> DolanArguments dva (DolanType ground) gta pola ta
-    -> ground dvb gtb
-    -> DolanArguments dvb (DolanType ground) gtb polb tb
+    => DolanGroundedType ground pola ta
+    -> DolanGroundedType ground polb tb
     -> UnificationSolver ground ta tb
-unifyGroundTypes gta argsa gtb argsb = subtypeGroundTypes unifySubtypeContext gta argsa gtb argsb
+unifyGroundedTypes gta gtb = subtypeGroundedTypes unifySubtypeContext gta gtb
 
 fromJoinMeetLimit ::
        forall (shim :: ShimKind Type) polarity t. (Is PolarityType polarity, JoinMeetIsoCategory shim)
@@ -82,8 +79,7 @@ unifyTypesSS ta (VarDolanSingularType nb)
     | isFreeVar nb =
         fmap (\conv -> conv . toJoinMeetLimit @_ @pola) $
         solverLiftTypeExpression $ varExpression $ geSingleUnifierConstraint nb ta
-unifyTypesSS (GroundedDolanSingularType gta argsa) (GroundedDolanSingularType gtb argsb) =
-    unifyGroundTypes gta argsa gtb argsb
+unifyTypesSS (GroundedDolanSingularType gta) (GroundedDolanSingularType gtb) = unifyGroundedTypes gta gtb
 unifyTypesSS sta@(RecursiveDolanSingularType _ _) stb = solveRecursiveSingularTypes unifyTypesTT sta stb
 unifyTypesSS sta stb@(RecursiveDolanSingularType _ _) = solveRecursiveSingularTypes unifyTypesTT sta stb
 unifyTypesSS _ _ = empty

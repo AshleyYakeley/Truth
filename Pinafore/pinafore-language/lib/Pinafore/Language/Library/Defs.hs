@@ -122,28 +122,24 @@ mkSubtypeRelationEntry diSubtype diSupertype docDescription scentry = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 subtypeRelationEntry ::
-       forall dva gta a dvb gtb b.
+       forall a b.
        Markdown
-    -> PinaforeGroundType dva gta
-    -> DolanArgumentsShimWit PinaforePolyShim dva PinaforeType gta 'Negative a
-    -> PinaforeGroundType dvb gtb
-    -> DolanArgumentsShimWit PinaforePolyShim dvb PinaforeType gtb 'Positive b
+    -> PinaforeGroundedShimWit 'Negative a
+    -> PinaforeGroundedShimWit 'Positive b
     -> PinaforePolyShim Type a b
     -> DocTreeEntry BindDoc
-subtypeRelationEntry desc gta argsa gtb argsb conv = let
-    ta = groundedDolanShimWit gta argsa
-    tb = groundedDolanShimWit gtb argsb
-    in mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry gta argsa gtb argsb $ pure conv
+subtypeRelationEntry desc ta tb conv =
+    mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry ta tb $ pure conv
 
 hasSubtypeRelationEntry ::
        forall a b. (HasPinaforeType 'Negative a, HasPinaforeType 'Positive b)
     => Markdown
     -> PinaforePolyShim Type a b
     -> DocTreeEntry BindDoc
-hasSubtypeRelationEntry doc conv =
-    fromJust $
-    toGroundedDolanShimWit pinaforeType $ \gta argsa ->
-        fromJust $ toGroundedDolanShimWit pinaforeType $ \gtb argsb -> subtypeRelationEntry doc gta argsa gtb argsb conv
+hasSubtypeRelationEntry doc conv = let
+    ta = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ a)
+    tb = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ b)
+    in subtypeRelationEntry doc ta tb conv
 
 -- | The 'Monoid' trick of representing @Monoid T@ as @List T <: T@.
 monoidSubtypeRelationEntry ::

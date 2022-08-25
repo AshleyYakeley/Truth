@@ -402,24 +402,21 @@ interpretGeneralSubtypeRelation sta stb sbody = do
         ata <- lift $ interpretNonpolarType sta
         atb <- lift $ interpretNonpolarType stb
         case ata of
-            MkSome (GroundedNonpolarType gta (npargsa :: _ a)) ->
+            MkSome (GroundedNonpolarType gta argsa) ->
                 case atb of
-                    MkSome (GroundedNonpolarType gtb (npargsb :: _ b)) -> do
+                    MkSome (GroundedNonpolarType gtb argsb) -> do
                         let
-                            argsa ::
-                                   forall polarity. Is PolarityType polarity
-                                => PinaforeArgumentsShimWit _ _ polarity a
-                            argsa = nonpolarToDolanArguments (groundTypeVarianceMap gta) npargsa
-                            argsb ::
-                                   forall polarity. Is PolarityType polarity
-                                => PinaforeArgumentsShimWit _ _ polarity b
-                            argsb = nonpolarToDolanArguments (groundTypeVarianceMap gtb) npargsb
-                            funcWit :: PinaforeShimWit 'Negative (a -> b)
-                            funcWit = funcShimWit (groundedDolanShimWit gta argsa) (groundedDolanShimWit gtb argsb)
+                            ta :: forall polarity. Is PolarityType polarity
+                               => PinaforeGroundedShimWit polarity _
+                            ta = groundedNonpolarToDolanType gta argsa
+                            tb :: forall polarity. Is PolarityType polarity
+                               => PinaforeGroundedShimWit polarity _
+                            tb = groundedNonpolarToDolanType gtb argsb
+                            funcWit = funcShimWit (shimWitToDolan ta) (shimWitToDolan tb)
                         body <- lift $ interpretTopExpression sbody
                         convexpr <- lift $ typedExpressionToOpen funcWit body
                         registerSubtypeConversion $
-                            subtypeConversionEntry gta argsa gtb argsb $ fmap (functionToShim "user-subtype") convexpr
+                            subtypeConversionEntry ta tb $ fmap (functionToShim "user-subtype") convexpr
                     MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
             MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 

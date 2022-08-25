@@ -99,7 +99,7 @@ interpretTypeM' (SingleSyntaxType sgt sargs) = do
             toMPolarWM $ do
                 aargs <- interpretArgs sgt (groundTypeVarianceType gt) sargs
                 case aargs of
-                    MkSome args -> return $ MkSome $ singleDolanType $ GroundedDolanSingularType gt args
+                    MkSome args -> return $ typeToSomeDolan $ MkDolanGroundedType gt args
 interpretTypeM' (VarSyntaxType name) =
     nameToSymbolType name $ \t -> return $ toMPolar $ MkSome $ singleDolanType $ VarDolanSingularType t
 interpretTypeM' (RecursiveSyntaxType name st) = do

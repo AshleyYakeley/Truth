@@ -146,7 +146,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
                     MkShimWit t conv <- mneg
                     return $ MkShimWit t $ mkPolarPolyFuncShim $ \(_, convneg) -> conv . convneg
     deferBisubstituteType (MkDeferredBisubstitution _ nb _ _) t@(RecursiveDolanSingularType nt _)
-        | Just Refl <- testEquality nb nt = return $ singleDolanShimWit $ mkPolarShimWit t
+        | Just Refl <- testEquality nb nt = return $ shimWitToDolan $ mkPolarShimWit t
     deferBisubstituteType sub@(MkDeferredBisubstitution isRecursive _ _ _) t@(RecursiveDolanSingularType oldvar pt) = do
         newvar <-
             if isRecursive
@@ -159,10 +159,10 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
                              _ <- dolanNamespaceRename @ground sub
                              varNamespaceTRename $ uVarName oldvar
         pts <- deferBisubstituteType sub pt
-        return $ singleDolanShimWit $ recursiveRenameDolanShimWit oldvar newvar pts
+        return $ shimWitToDolan $ recursiveRenameDolanShimWit oldvar newvar pts
     deferBisubstituteType sub t = do
         t' <- mapDolanSingularTypeM (deferBisubstituteType sub) t
-        return $ singleDolanShimWit t'
+        return $ shimWitToDolan t'
 
 instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( IsDolanGroundType ground
          , BisubstitutablePolyShim pshim
@@ -296,19 +296,6 @@ recursiveDolanShimWit ::
     -> PShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name)
 recursiveDolanShimWit oldvar = recursiveRenameDolanShimWit oldvar (uVarName oldvar)
 
-mapDolanGroundArguments ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity dv gt t.
-       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
-    => (forall polarity' t'.
-            Is PolarityType polarity' =>
-                    DolanType ground polarity' t' -> PShimWit (pshim Type) (DolanType ground) polarity' t')
-    -> ground dv gt
-    -> DolanArguments dv (DolanType ground) gt polarity t
-    -> PShimWit (pshim Type) (DolanSingularType ground) polarity t
-mapDolanGroundArguments ff g args =
-    case mapDolanArguments ff (groundTypeVarianceMap g) args of
-        MkShimWit args' conv -> MkShimWit (GroundedDolanSingularType g args') conv
-
 mapDolanSingularType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
@@ -317,22 +304,19 @@ mapDolanSingularType ::
                     DolanType ground polarity' t' -> PShimWit (pshim Type) (DolanType ground) polarity' t')
     -> DolanSingularType ground polarity t
     -> PShimWit (pshim Type) (DolanSingularType ground) polarity t
-mapDolanSingularType ff (GroundedDolanSingularType gt args) = mapDolanGroundArguments ff gt args
-mapDolanSingularType _ t@(VarDolanSingularType _) = mkPolarShimWit t
-mapDolanSingularType ff (RecursiveDolanSingularType var t) = recursiveDolanShimWit var $ ff t
+mapDolanSingularType ff t = runIdentity $ mapDolanSingularTypeM (\t' -> Identity $ ff t') t
 
-mapDolanGroundArgumentsM ::
-       forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity dv gt t.
+mapDolanGroundedTypeM ::
+       forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
        (Monad m, IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
     => (forall polarity' t'.
             Is PolarityType polarity' =>
                     DolanType ground polarity' t' -> m (PShimWit (pshim Type) (DolanType ground) polarity' t'))
-    -> ground dv gt
-    -> DolanArguments dv (DolanType ground) gt polarity t
-    -> m (PShimWit (pshim Type) (DolanSingularType ground) polarity t)
-mapDolanGroundArgumentsM ff g args = do
+    -> DolanGroundedType ground polarity t
+    -> m (PShimWit (pshim Type) (DolanGroundedType ground) polarity t)
+mapDolanGroundedTypeM ff (MkDolanGroundedType g args) = do
     MkShimWit args' conv <- mapDolanArgumentsM ff (groundTypeVarianceMap g) args
-    return $ MkShimWit (GroundedDolanSingularType g args') conv
+    return $ MkShimWit (MkDolanGroundedType g args') conv
 
 mapDolanSingularTypeM ::
        forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
@@ -342,7 +326,8 @@ mapDolanSingularTypeM ::
                     DolanType ground polarity' t' -> m (PShimWit (pshim Type) (DolanType ground) polarity' t'))
     -> DolanSingularType ground polarity t
     -> m (PShimWit (pshim Type) (DolanSingularType ground) polarity t)
-mapDolanSingularTypeM ff (GroundedDolanSingularType gt args) = mapDolanGroundArgumentsM ff gt args
+mapDolanSingularTypeM ff (GroundedDolanSingularType t) =
+    fmap (chainShimWit $ \gt -> mkShimWit $ GroundedDolanSingularType gt) $ mapDolanGroundedTypeM ff t
 mapDolanSingularTypeM _ t@(VarDolanSingularType _) = return $ mkPolarShimWit t
 mapDolanSingularTypeM ff (RecursiveDolanSingularType var t) = do
     t' <- ff t

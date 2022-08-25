@@ -378,9 +378,8 @@ refLibEntries =
                             in case (bta, btb) of
                                    (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
                                        typef =
-                                           singleDolanShimWit $
-                                           mkPolarShimWit $
-                                           GroundedDolanSingularType morphismGroundType $
+                                           typeToDolan $
+                                           MkDolanGroundedType morphismGroundType $
                                            ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
                                            ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
                                        morphism =

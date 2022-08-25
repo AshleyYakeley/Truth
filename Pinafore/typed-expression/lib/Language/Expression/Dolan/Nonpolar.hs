@@ -3,6 +3,7 @@ module Language.Expression.Dolan.Nonpolar
     , NonpolarArgument(..)
     , NonpolarArguments
     , NonpolarShimWit
+    , groundedNonpolarToDolanType
     , nonpolarToDolanType
     , nonpolarToDolanArguments
     , dolanTypeToNonpolar
@@ -117,14 +118,22 @@ nonpolarToDolanArguments ::
     -> DolanArgumentsShimWit (DolanPolyShim ground) dv (DolanType ground) gt polarity t
 nonpolarToDolanArguments = mapCCRArguments nonpolarToDolanArg
 
+groundedNonpolarToDolanType ::
+       forall (ground :: GroundTypeKind) polarity dv (gt :: DolanVarianceKind dv) t.
+       (IsDolanGroundType ground, Is PolarityType polarity)
+    => ground dv gt
+    -> NonpolarArguments ground dv gt t
+    -> DolanGroundedShimWit ground polarity t
+groundedNonpolarToDolanType gt args =
+    case nonpolarToDolanArguments (groundTypeVarianceMap gt) args of
+        MkShimWit dargs conv -> MkShimWit (MkDolanGroundedType gt dargs) conv
+
 nonpolarToDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => NonpolarDolanType ground t
     -> DolanShimWit ground polarity t
-nonpolarToDolanType (VarNonpolarType n) = singleDolanShimWit $ mkShimWit $ VarDolanSingularType n
-nonpolarToDolanType (GroundedNonpolarType gt args) =
-    case nonpolarToDolanArguments (groundTypeVarianceMap gt) args of
-        MkShimWit dargs conv -> singleDolanShimWit $ MkShimWit (GroundedDolanSingularType gt dargs) conv
+nonpolarToDolanType (VarNonpolarType n) = shimWitToDolan $ mkShimWit $ VarDolanSingularType n
+nonpolarToDolanType (GroundedNonpolarType gt args) = shimWitToDolan $ groundedNonpolarToDolanType gt args
 
 dolanArgToNonpolar ::
        forall (ground :: GroundTypeKind) polarity sv t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -143,14 +152,20 @@ dolanArgToNonpolar (RangeCCRPolarArgument p q) =
         MkShimWit argq convq <- dolanTypeToNonpolar q
         return $ MkShimWit (RangeNonpolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq
 
+dolanGroundedTypeToNonpolar ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanGroundedType ground polarity t
+    -> Maybe (NonpolarShimWit ground polarity t)
+dolanGroundedTypeToNonpolar (MkDolanGroundedType ground args) = do
+    MkShimWit npargs conv <- mapCCRArgumentsM dolanArgToNonpolar (groundTypeVarianceMap ground) args
+    return $ MkShimWit (GroundedNonpolarType ground npargs) conv
+
 dolanSingularTypeToNonpolar ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t
     -> Maybe (NonpolarShimWit ground polarity t)
 dolanSingularTypeToNonpolar (VarDolanSingularType n) = return $ mkShimWit $ VarNonpolarType n
-dolanSingularTypeToNonpolar (GroundedDolanSingularType ground args) = do
-    MkShimWit npargs conv <- mapCCRArgumentsM dolanArgToNonpolar (groundTypeVarianceMap ground) args
-    return $ MkShimWit (GroundedNonpolarType ground npargs) conv
+dolanSingularTypeToNonpolar (GroundedDolanSingularType t) = dolanGroundedTypeToNonpolar t
 dolanSingularTypeToNonpolar (RecursiveDolanSingularType _ _) = empty
 
 dolanTypeToNonpolar ::
@@ -158,6 +173,6 @@ dolanTypeToNonpolar ::
     => DolanType ground polarity t
     -> Maybe (NonpolarShimWit ground polarity t)
 dolanTypeToNonpolar t = do
-    MkShimWit st conv <- dolanTypeToSingular t
+    MkShimWit st conv <- dolanToMaybeType t
     st' <- dolanSingularTypeToNonpolar st
     return $ mapPolarShimWit conv st'

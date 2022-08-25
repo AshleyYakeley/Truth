@@ -108,18 +108,16 @@ type DolanSubtypeContext ground = SubtypeContext (DolanVarID ground) (DolanType 
 
 type IsDolanSubtypeGroundType :: GroundTypeKind -> Constraint
 class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
-    subtypeGroundTypes ::
-           forall solver pola polb dva gta a dvb gtb b.
+    subtypeGroundedTypes ::
+           forall solver pola polb a b.
            ( WrappedApplicative solver
            , WAInnerM solver ~ DolanTypeCheckM ground
            , Is PolarityType pola
            , Is PolarityType polb
            )
         => DolanSubtypeContext ground solver
-        -> ground dva gta
-        -> DolanArguments dva (DolanType ground) gta pola a
-        -> ground dvb gtb
-        -> DolanArguments dvb (DolanType ground) gtb polb b
+        -> DolanGroundedType ground pola a
+        -> DolanGroundedType ground polb b
         -> solver (DolanShim ground a b)
     tackOnTypeConvertError ::
            (Is PolarityType pola, Is PolarityType polb)

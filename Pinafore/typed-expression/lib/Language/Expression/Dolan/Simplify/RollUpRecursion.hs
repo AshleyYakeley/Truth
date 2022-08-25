@@ -31,8 +31,7 @@ mkRollUp var rolled =
     case unrollRecursiveType var rolled of
         MkShimWit unrolled conv ->
             MkRollUp unrolled $
-            mapPolarShimWitT (invert conv) $
-            singleDolanShimWit $ mkPolarShimWitT $ RecursiveDolanSingularType var rolled
+            mapPolarShimWitT (invert conv) $ shimWitToDolan $ mkPolarShimWitT $ RecursiveDolanSingularType var rolled
 
 rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -59,7 +58,7 @@ rollUpChildrenType _rr NilDolanType = return $ nilDolanShimWit
 rollUpChildrenType rr (ConsDolanType t1 tr) = do
     t1' <- mapDolanSingularTypeM (rollUpAllType rr) t1
     tr' <- rollUpChildrenType rr tr
-    return $ joinMeetShimWit (singleDolanShimWit t1') tr'
+    return $ joinMeetShimWit (shimWitToDolan t1') tr'
 
 rollUpAllType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -87,7 +86,8 @@ getRollUpsInSingularType ::
     => DolanSingularType ground polarity t
     -> [RollUp ground]
 getRollUpsInSingularType (VarDolanSingularType _) = []
-getRollUpsInSingularType (GroundedDolanSingularType _ args) = forDolanArguments getRollUpsInType args
+getRollUpsInSingularType (GroundedDolanSingularType (MkDolanGroundedType _ args)) =
+    forDolanArguments getRollUpsInType args
 getRollUpsInSingularType (RecursiveDolanSingularType var t) = mkRollUp var t : getRollUpsInType t
 
 getRollUpsInType ::

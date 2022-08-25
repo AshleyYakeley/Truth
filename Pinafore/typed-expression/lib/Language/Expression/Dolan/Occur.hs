@@ -34,7 +34,7 @@ occursInSingularType ::
 occursInSingularType n (VarDolanSingularType nt)
     | Just Refl <- testEquality n nt = True
 occursInSingularType _ (VarDolanSingularType _) = False
-occursInSingularType n (GroundedDolanSingularType _ args) = occursInArgs n args
+occursInSingularType n (GroundedDolanSingularType (MkDolanGroundedType _ args)) = occursInArgs n args
 occursInSingularType n (RecursiveDolanSingularType n' _)
     | Just Refl <- testEquality n n' = False
 occursInSingularType n (RecursiveDolanSingularType _ pt) = occursInType n pt

@@ -66,16 +66,16 @@ tParamToPolarArgument ::
     => CCRTypeParam sv t
     -> CCRPolarArgumentShimWit (PinaforePolyShim Type) PinaforeType polarity sv t
 tParamToPolarArgument (CoCCRTypeParam var) =
-    case singleDolanShimWit $ mkShimWit $ VarDolanSingularType var of
+    case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv
 tParamToPolarArgument (ContraCCRTypeParam var) =
     invertPolarity @polarity $
-    case singleDolanShimWit $ mkShimWit $ VarDolanSingularType var of
+    case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (ContraCCRPolarArgument arg) $ MkCatDual $ uninvertPolarMap conv
 tParamToPolarArgument (RangeCCRTypeParam varp varq) =
     invertPolarity @polarity $
-    case ( singleDolanShimWit $ mkShimWit $ VarDolanSingularType varp
-         , singleDolanShimWit $ mkShimWit $ VarDolanSingularType varq) of
+    case ( shimWitToDolan $ mkShimWit $ VarDolanSingularType varp
+         , shimWitToDolan $ mkShimWit $ VarDolanSingularType varq) of
         (MkShimWit argp convp, MkShimWit argq convq) ->
             MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq
 
@@ -357,7 +357,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                     case unsafeRefl @Type @decltype @argstype of
                                                         Refl ->
                                                             Just $
-                                                            MkShimWit (GroundedDolanSingularType mainGroundType args) $
+                                                            MkShimWit (MkDolanGroundedType mainGroundType args) $
                                                             MkPolarMap $
                                                             functionToShim "supertype" $ \t ->
                                                                 if elem (tdID $ picktype t) $ tdSubtypes tdata
@@ -403,13 +403,11 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 ctfpos :: PinaforeShimWit 'Positive decltype
                                                 ctfpos =
                                                     mapShimWit posconv $
-                                                    singleDolanShimWit $
-                                                    mkPolarShimWit $ GroundedDolanSingularType groundType posargs
+                                                    typeToDolan $ MkDolanGroundedType groundType posargs
                                                 ctfneg :: PinaforeShimWit 'Negative decltype
                                                 ctfneg =
                                                     mapShimWit negconv $
-                                                    singleDolanShimWit $
-                                                    mkPolarShimWit $ GroundedDolanSingularType groundType negargs
+                                                    typeToDolan $ MkDolanGroundedType groundType negargs
                                             ltp <- return $ mapListType nonpolarToDolanType lt
                                             ltn <- return $ mapListType nonpolarToDolanType lt
                                             let

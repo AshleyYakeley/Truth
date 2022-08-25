@@ -5,13 +5,12 @@ module Language.Expression.Dolan.SubtypeEntry
     , subtypeConversionEntry
     , simpleSubtypeConversionEntry
     , IsDolanSubtypeEntriesGroundType(..)
-    , entries_subtypeGroundTypes
+    , entries_subtypeGroundedTypes
     ) where
 
 import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -25,15 +24,14 @@ data SubtypeConversionEntry ground =
                                                       ground dva gta -> Maybe (SubtypeConversion ground dva gta dvb gtb))
 
 subtypeConversionEntry ::
-       forall (ground :: GroundTypeKind) dva gta a dvb gtb b. IsDolanSubtypeGroundType ground
-    => ground dva gta
-    -> DolanArgumentsShimWit (DolanPolyShim ground) dva (DolanType ground) gta 'Negative a
-    -> ground dvb gtb
-    -> DolanArgumentsShimWit (DolanPolyShim ground) dvb (DolanType ground) gtb 'Positive b
+       forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
+    => DolanGroundedShimWit ground 'Negative a
+    -> DolanGroundedShimWit ground 'Positive b
     -> TSOpenExpression (DolanTypeSystem ground) (DolanShim ground a b)
     -> SubtypeConversionEntry ground
-subtypeConversionEntry gta argsa gtb argsb conv =
-    simpleSubtypeConversionEntry gta gtb $ subtypeConversion gta argsa gtb argsb conv
+subtypeConversionEntry (MkShimWit (MkDolanGroundedType gta argsa) conva) (MkShimWit (MkDolanGroundedType gtb argsb) convb) conv =
+    simpleSubtypeConversionEntry gta gtb $
+    subtypeConversion gta (MkShimWit argsa conva) gtb (MkShimWit argsb convb) conv
 
 simpleSubtypeConversionEntry ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanGroundType ground
@@ -124,8 +122,8 @@ class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground 
         return idSubtypeConversion
     throwGroundTypeConvertError :: ground dva gta -> ground dvb gtb -> DolanM ground a
 
-entries_subtypeGroundTypes ::
-       forall (ground :: GroundTypeKind) solver pola polb dva gta a dvb gtb b.
+entries_subtypeGroundedTypes ::
+       forall (ground :: GroundTypeKind) solver pola polb a b.
        ( IsDolanSubtypeEntriesGroundType ground
        , WrappedApplicative solver
        , WAInnerM solver ~ DolanTypeCheckM ground
@@ -133,12 +131,10 @@ entries_subtypeGroundTypes ::
        , Is PolarityType polb
        )
     => DolanSubtypeContext ground solver
-    -> ground dva gta
-    -> DolanArguments dva (DolanType ground) gta pola a
-    -> ground dvb gtb
-    -> DolanArguments dvb (DolanType ground) gtb polb b
+    -> DolanGroundedType ground pola a
+    -> DolanGroundedType ground polb b
     -> solver (DolanShim ground a b)
-entries_subtypeGroundTypes sc ta argsa tb argsb = let
+entries_subtypeGroundedTypes sc (MkDolanGroundedType (ta :: ground dva gta) argsa) (MkDolanGroundedType (tb :: ground dvb gtb) argsb) = let
     margswit :: DolanTypeCheckM ground (SubtypeArguments ground solver dvb gtb a)
     margswit = do
         entries <- lift subtypeConversionEntries
