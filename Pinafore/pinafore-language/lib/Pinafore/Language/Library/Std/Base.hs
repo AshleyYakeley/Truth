@@ -495,7 +495,7 @@ baseLibEntries =
                   MkSubtypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkLiftedFamily _ <- matchFamilyType openEntityFamilyWitness pgtFamilyType
-                      return neutralSubtypeConversion
+                      return neutralCoerceSubtypeConversion
                 , mkSpecialFormEntry
                       "openEntity"
                       "An open entity for this anchor. `A` is an open entity type."
@@ -533,7 +533,7 @@ baseLibEntries =
                   MkSubtypeConversionEntry dynamicEntityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness pgtFamilyType
-                      return neutralSubtypeConversion
+                      return neutralIdentitySubtypeConversion
                 , hasSubtypeRelationEntry @DynamicEntity @Entity "" $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry

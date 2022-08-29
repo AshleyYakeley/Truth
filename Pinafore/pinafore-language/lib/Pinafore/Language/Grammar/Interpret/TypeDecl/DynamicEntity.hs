@@ -38,6 +38,6 @@ makeDynamicEntityTypeBox name doc stcons =
                 MkSubtypeConversionEntry tp $ \t -> do
                     Refl <- testEquality (pgtVarianceType t) NilListType
                     MkADynamicEntityFamily _ det' <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType t
-                    ifpure (isSubsetOf det' det) neutralSubtypeConversion
+                    ifpure (isSubsetOf det' det) neutralIdentitySubtypeConversion
             return (det, ())
         in mkFixBox register construct

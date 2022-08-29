@@ -439,7 +439,7 @@ interpretOpenEntitySubtypeRelation sta stb =
                                                 (entityToPinaforeGroundType NilListType tea)
                                                 (entityToPinaforeGroundType NilListType teb) $
                                             case matchFamilyType openEntityFamilyWitness tfa of
-                                                Just (MkLiftedFamily _) -> neutralSubtypeConversion
+                                                Just (MkLiftedFamily _) -> neutralCoerceSubtypeConversion
                                                 Nothing ->
                                                     nilSubtypeConversion $
                                                     coerceShim "open entity" .

@@ -139,7 +139,7 @@ entries_subtypeGroundedTypes sc (MkDolanGroundedType (ta :: ground dva gta) args
     margswit = do
         entries <- lift subtypeConversionEntries
         case getSubtypeShim entries ta tb of
-            Just (MkSubtypeConversion sconv) -> sconv sc argsa
+            Just sconv -> getSubtypeConversion sconv sc argsa
             Nothing -> lift $ throwGroundTypeConvertError ta tb
     in wbind margswit $ \(MkSubtypeArguments argsb' sargsconv) ->
            (\p q -> p . q) <$> subtypeDolanArguments sc tb argsb' argsb <*> sargsconv

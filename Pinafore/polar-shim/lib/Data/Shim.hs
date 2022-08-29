@@ -9,6 +9,7 @@ import Data.Shim.JMShim as I
 import Data.Shim.JMShimWit as I
 import Data.Shim.JoinMeet as I
 import Data.Shim.MaybeRepresentational as I
+import Data.Shim.NeutralShim as I
 import Data.Shim.PolarJoinMeet as I
 import Data.Shim.PolarMap as I
 import Data.Shim.PolarShimWit as I

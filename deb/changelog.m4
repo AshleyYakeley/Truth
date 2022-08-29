@@ -11,6 +11,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - datatype and closedtype declarations
       . can now have parameters
       . can now have subtypes
+    - can declare arbitrary subtype relations
     - import lists
     - syntax
       . type names (+:), (*:), List, Unit
