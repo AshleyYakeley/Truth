@@ -31,9 +31,10 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
 
 instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
     subtypeConversionEntries = getSubtypeConversions
-    subtypeConversionMatchType gta gtb = do
-        (Refl, HRefl) <- groundTypeTestEquality gta gtb
-        return idSubtypeConversion
+    getSubtypeGroup t =
+        case pgtSubtypeGroup t of
+            Just sg -> sg
+            Nothing -> singletonSubtypeGroup t
     throwGroundTypeConvertError ta tb = throw $ GroundTypeConvertError (showGroundType ta) (showGroundType tb)
 
 instance IsDolanFunctionGroundType PinaforeGroundType where

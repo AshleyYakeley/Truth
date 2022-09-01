@@ -31,13 +31,6 @@ makeDynamicEntityTypeBox name doc stcons =
         construct :: () -> PinaforeScopeInterpreter (DynamicEntityType, ())
         construct _ = do
             dts <- lift $ for stcons interpretSyntaxDynamicEntityConstructor
-            let
-                det = mconcat $ toList dts
-                tp = aDynamicEntityGroundType name det
-            registerSubtypeConversion $
-                MkSubtypeConversionEntry tp $ \t -> do
-                    Refl <- testEquality (pgtVarianceType t) NilListType
-                    MkADynamicEntityFamily _ det' <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType t
-                    ifpure (isSubsetOf det' det) neutralIdentitySubtypeConversion
+            let det = mconcat $ toList dts
             return (det, ())
         in mkFixBox register construct

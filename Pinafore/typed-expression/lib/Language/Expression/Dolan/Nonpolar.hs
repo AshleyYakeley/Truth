@@ -1,12 +1,11 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Language.Expression.Dolan.Nonpolar
     ( NonpolarDolanType(..)
     , NonpolarArgument(..)
     , NonpolarArguments
     , NonpolarShimWit
     , groundedNonpolarToDolanType
-    , nonpolarToDolanType
-    , nonpolarToDolanArguments
-    , dolanTypeToNonpolar
     , nonpolarTypeFreeVariables
     ) where
 
@@ -176,3 +175,10 @@ dolanTypeToNonpolar t = do
     MkShimWit st conv <- dolanToMaybeType t
     st' <- dolanSingularTypeToNonpolar st
     return $ mapPolarShimWit conv st'
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => NonpolarTypeSystem (DolanTypeSystem ground) where
+    type TSNonpolarWitness (DolanTypeSystem ground) = NonpolarDolanType ground
+    nonpolarToPositive = nonpolarToDolanType
+    nonpolarToNegative = nonpolarToDolanType
+    positiveToNonpolar = dolanTypeToNonpolar
+    negativeToNonpolar = dolanTypeToNonpolar

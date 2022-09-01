@@ -149,7 +149,7 @@ makeClosedEntityGroundType mainTypeName tparams = let
     postregister :: PinaforeGroundType dv gt -> EntityProperties dv gt -> PinaforeScopeInterpreter ()
     postregister gt eprops =
         registerSubtypeConversion $
-        simpleSubtypeConversionEntry gt entityGroundType $
+        MkSubtypeConversionEntry gt entityGroundType $
         entityPropertiesSaturatedAdapter
             (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
             plainEntityAdapter

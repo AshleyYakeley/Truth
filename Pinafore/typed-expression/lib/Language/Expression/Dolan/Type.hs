@@ -64,11 +64,13 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
 type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
 class ( IsDolanGroundType ground
       , MonadIO (DolanM ground)
+      , forall dv (gt :: DolanVarianceKind dv). Show (ground dv gt)
       , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
       ) => DebugIsDolanGroundType ground
 
 instance forall (ground :: GroundTypeKind). ( IsDolanGroundType ground
          , MonadIO (DolanM ground)
+         , forall dv (gt :: DolanVarianceKind dv). Show (ground dv gt)
          , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
          ) => DebugIsDolanGroundType ground
 

@@ -408,8 +408,8 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 ctfneg =
                                                     mapShimWit negconv $
                                                     typeToDolan $ MkDolanGroundedType groundType negargs
-                                            ltp <- return $ mapListType nonpolarToDolanType lt
-                                            ltn <- return $ mapListType nonpolarToDolanType lt
+                                            ltp <- return $ mapListType (nonpolarToPositive @PinaforeTypeSystem) lt
+                                            ltn <- return $ mapListType (nonpolarToNegative @PinaforeTypeSystem) lt
                                             let
                                                 expr =
                                                     qConstExprAny $
@@ -439,10 +439,10 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                         superGroundType :: PinaforeGroundType dv maintype
                                         superGroundType = getGroundType mainGroundType picktype gttid supertdata
                                         in registerSubtypeConversion $
-                                           simpleSubtypeConversionEntry
+                                           MkSubtypeConversionEntry
                                                subGroundType
                                                superGroundType
-                                               idSubtypeConversion
+                                               IdentitySubtypeConversion
                                 subtypeBox ::
                                        TypeData dv maintype
                                     -> PinaforeFixBox ( PinaforeGroundType dv maintype
@@ -489,6 +489,7 @@ makeDataGroundType _ tparams = let
                     , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
                     , pgtShowType = standardListTypeExprShow @dv $ exprShow name
                     , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
+                    , pgtSubtypeGroup = Nothing
                     , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
                     }
             in (gt, ())

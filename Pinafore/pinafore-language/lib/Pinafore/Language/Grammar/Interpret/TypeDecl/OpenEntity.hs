@@ -12,7 +12,8 @@ makeOpenEntityTypeBox :: Name -> Markdown -> PinaforeInterpreter (PinaforeFixBox
 makeOpenEntityTypeBox name doc =
     withNewTypeID $ \tidsym -> let
         register :: () -> PinaforeScopeInterpreter ()
-        register _ = registerType name doc $ openEntityGroundType $ MkOpenEntityType name tidsym
-        construct :: () -> PinaforeScopeInterpreter ((), ())
-        construct () = return ((), ())
-        in return $ mkFixBox register construct
+        register _ = do
+            let t = openEntityGroundType $ MkOpenEntityType name tidsym
+            registerType name doc t
+            registerSubtypeConversion $ MkSubtypeConversionEntry t entityGroundType CoerceSubtypeConversion
+        in return $ mkRegisterFixBox register

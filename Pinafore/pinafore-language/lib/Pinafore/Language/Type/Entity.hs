@@ -2,7 +2,6 @@
 
 module Pinafore.Language.Type.Entity
     ( entityGroundType
-    , monoEntityToNegativePinaforeType
     , getMonoEntityType
     , maybeEntityConvert
     , listEntityConvert
@@ -23,7 +22,6 @@ import Pinafore.Language.Type.Entity.Open
 import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Type
 import Pinafore.Language.Type.Types
 import Shapes
 
@@ -192,24 +190,9 @@ instance CovarySubtype PinaforeGroundType EntityGroundType where
                     return
                         (NilListType, literalEntityGroundType (MkCodec (shimToFunction from) (shimToFunction to)) agt)
                 _ -> Nothing
-    monoToDolanGroundType ::
-           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-           CovaryType dv
-        -> EntityGroundType t
-        -> PinaforeGroundType dv t
-    monoToDolanGroundType = entityToPinaforeGroundType
 
-monoEntityToNegativePinaforeType ::
-       forall m t. MonadThrow ErrorType m
-    => MonoEntityType t
-    -> m (PinaforeShimWit 'Negative t)
-monoEntityToNegativePinaforeType et =
-    case monoToMaybeNegativeDolanType et of
-        Just wit -> return wit
-        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
-
-getMonoEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Some MonoEntityType)
-getMonoEntityType (MkSome tm) =
-    case dolanToMonoType tm of
-        Just (MkShimWit t _) -> return $ MkSome t
+getMonoEntityType :: MonadThrow ErrorType m => PinaforeNonpolarType t -> m (MonoEntityType t)
+getMonoEntityType tm =
+    case nonpolarToMonoType tm of
+        Just t -> return t
         Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm

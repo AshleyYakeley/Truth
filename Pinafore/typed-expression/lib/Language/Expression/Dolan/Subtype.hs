@@ -13,9 +13,6 @@ module Language.Expression.Dolan.Subtype
     , getSubtypeConversion
     , subtypeConversion
     , nilSubtypeConversion
-    , neutralIdentitySubtypeConversion
-    , neutralCoerceSubtypeConversion
-    , idSubtypeConversion
     , composeSubtypeConversion
     ) where
 
@@ -153,21 +150,25 @@ data SubtypeConversion ground dva gta dvb gtb where
         :: forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
            ConvertSubtype ground dva gta dvb gtb
         -> SubtypeConversion ground dva gta dvb gtb
-    --NeutralSubtypeConversion :: forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) .
-    --    NeutralShim (DolanVarianceKind dv) gta gtb -> SubtypeConversion ground dv gta dv gtb
-    NeutralSubtypeConversion
-        :: forall (ground :: GroundTypeKind) (gta :: Type) (gtb :: Type).
-           NeutralShim Type gta gtb
-        -> SubtypeConversion ground '[] gta '[] gtb
+    IdentitySubtypeConversion
+        :: forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+           SubtypeConversion ground dv gt dv gt
+    CoerceSubtypeConversion
+        :: forall (ground :: GroundTypeKind) (gta :: Type) (gtb :: Type). Coercible gta gtb
+        => SubtypeConversion ground '[] gta '[] gtb
 
 getSubtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeGroundType ground
     => SubtypeConversion ground dva gta dvb gtb
     -> ConvertSubtype ground dva gta dvb gtb
 getSubtypeConversion (GeneralSubtypeConversion sc) = sc
-getSubtypeConversion (NeutralSubtypeConversion nshim) =
+getSubtypeConversion IdentitySubtypeConversion =
+    \_ (args :: DolanArguments _ _ _ polarity _) ->
+        return $ MkSubtypeArguments @ground @_ @_ @_ @_ @polarity args $ pure id
+getSubtypeConversion CoerceSubtypeConversion =
     \_ (NilCCRArguments :: DolanArguments _ _ _ polarity _) ->
-        return $ MkSubtypeArguments @ground @_ @_ @_ @_ @polarity NilCCRArguments $ pure $ neutralShimToShim nshim
+        return $
+        MkSubtypeArguments @ground @_ @_ @_ @_ @polarity NilCCRArguments $ pure $ coercionToShim "subtype" MkCoercion
 
 subtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta a dvb gtb b. IsDolanSubtypeGroundType ground
@@ -197,28 +198,14 @@ nilSubtypeConversion conv =
     GeneralSubtypeConversion $ \_ (NilCCRArguments :: DolanArguments _ _ _ polarity _) ->
         return $ MkSubtypeArguments (NilCCRArguments :: DolanArguments _ _ _ polarity _) $ pure conv
 
-neutralIdentitySubtypeConversion ::
-       forall (ground :: GroundTypeKind) (a :: Type). IsDolanSubtypeGroundType ground
-    => SubtypeConversion ground '[] a '[] a
-neutralIdentitySubtypeConversion = NeutralSubtypeConversion IdentityNeutralShim
-
-neutralCoerceSubtypeConversion ::
-       forall (ground :: GroundTypeKind) (a :: Type) (b :: Type). (IsDolanSubtypeGroundType ground, Coercible a b)
-    => SubtypeConversion ground '[] a '[] b
-neutralCoerceSubtypeConversion = NeutralSubtypeConversion CoerceNeutralShim
-
-idSubtypeConversion ::
-       forall (ground :: GroundTypeKind) dv gt. IsDolanSubtypeGroundType ground
-    => SubtypeConversion ground dv gt dv gt
-idSubtypeConversion = GeneralSubtypeConversion $ \_ args -> return $ MkSubtypeArguments args $ pure id
-
 composeSubtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb dvc gtc. IsDolanSubtypeGroundType ground
     => SubtypeConversion ground dvb gtb dvc gtc
     -> SubtypeConversion ground dva gta dvb gtb
     -> SubtypeConversion ground dva gta dvc gtc
-composeSubtypeConversion (NeutralSubtypeConversion bc) (NeutralSubtypeConversion ab) =
-    NeutralSubtypeConversion $ bc . ab
+composeSubtypeConversion IdentitySubtypeConversion ab = ab
+composeSubtypeConversion bc IdentitySubtypeConversion = bc
+composeSubtypeConversion CoerceSubtypeConversion CoerceSubtypeConversion = CoerceSubtypeConversion
 composeSubtypeConversion bc ab =
     GeneralSubtypeConversion $ \sc argsa -> do
         MkSubtypeArguments argsb sconvab <- getSubtypeConversion ab sc argsa

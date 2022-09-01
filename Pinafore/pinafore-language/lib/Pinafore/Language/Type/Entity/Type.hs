@@ -5,7 +5,6 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Type
@@ -66,20 +65,6 @@ sameDV NilListType NilListType = Refl
 sameDV (ConsListType Refl cva) (ConsListType Refl cvb) =
     case sameDV cva cvb of
         Refl -> Refl
-
-entityToPinaforeGroundType ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-       CovaryType dv
-    -> EntityGroundType t
-    -> PinaforeGroundType dv t
-entityToPinaforeGroundType cv (MkEntityGroundType pgtFamilyType (MkSealedEntityProperties MkEntityProperties {..})) =
-    case sameDV cv epKind of
-        Refl -> let
-            pgtVarianceType = covaryToDolanVarianceType epKind
-            pgtVarianceMap = covaryToDolanVarianceMap epKind epCovaryMap
-            pgtShowType = epShowType
-            pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
-            in MkPinaforeGroundType {..}
 
 instance TestHetEquality EntityGroundType where
     testHetEquality (MkEntityGroundType fam1 _) (MkEntityGroundType fam2 _) = testHetEquality fam1 fam2

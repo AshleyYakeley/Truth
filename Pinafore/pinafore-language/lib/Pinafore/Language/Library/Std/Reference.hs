@@ -365,37 +365,34 @@ refLibEntries =
                 ["@A", "@B", "<anchor>"]
                 "A ~> B" $
             MkSpecialForm
-                (ConsListType AnnotPositiveType $ ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(ta, (tb, (anchor, ()))) -> do
-                aeta <- getMonoEntityType ta
-                aetb <- getMonoEntityType tb
-                case (aeta, aetb) of
-                    (MkSome eta, MkSome etb) -> do
-                        etan <- monoEntityToNegativePinaforeType eta
-                        etbn <- monoEntityToNegativePinaforeType etb
-                        let
-                            bta = biRangeSomeFor (etan, monoToPositiveDolanType eta)
-                            btb = biRangeSomeFor (etbn, monoToPositiveDolanType etb)
-                            in case (bta, btb) of
-                                   (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
-                                       typef =
-                                           typeToDolan $
-                                           MkDolanGroundedType morphismGroundType $
-                                           ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
-                                           ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
-                                       morphism =
-                                           propertyMorphism
-                                               (monoEntityAdapter eta)
-                                               (monoEntityAdapter etb)
-                                               (MkPredicate anchor)
-                                       pinamorphism =
-                                           MkLangMorphism $
-                                           storageModelBased pinaforeStorageModel $
-                                           cfmap4 (MkCatDual $ shimToFunction praContra) $
-                                           cfmap3 (shimToFunction praCo) $
-                                           cfmap2 (MkCatDual $ shimToFunction prbContra) $
-                                           cfmap1 (shimToFunction prbCo) morphism
-                                       anyval = MkSomeOf typef pinamorphism
-                                       in return anyval
+                (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
+                eta <- getMonoEntityType ta
+                etb <- getMonoEntityType tb
+                let
+                    bta =
+                        biRangeSomeFor
+                            (nonpolarToNegative @PinaforeTypeSystem ta, nonpolarToPositive @PinaforeTypeSystem ta)
+                    btb =
+                        biRangeSomeFor
+                            (nonpolarToNegative @PinaforeTypeSystem tb, nonpolarToPositive @PinaforeTypeSystem tb)
+                    in case (bta, btb) of
+                           (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
+                               typef =
+                                   typeToDolan $
+                                   MkDolanGroundedType morphismGroundType $
+                                   ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
+                                   ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
+                               morphism =
+                                   propertyMorphism (monoEntityAdapter eta) (monoEntityAdapter etb) (MkPredicate anchor)
+                               pinamorphism =
+                                   MkLangMorphism $
+                                   storageModelBased pinaforeStorageModel $
+                                   cfmap4 (MkCatDual $ shimToFunction praContra) $
+                                   cfmap3 (shimToFunction praCo) $
+                                   cfmap2 (MkCatDual $ shimToFunction prbContra) $
+                                   cfmap1 (shimToFunction prbCo) morphism
+                               anyval = MkSomeOf typef pinamorphism
+                               in return anyval
           ]
     , docTreeEntry
           "RefOrders"

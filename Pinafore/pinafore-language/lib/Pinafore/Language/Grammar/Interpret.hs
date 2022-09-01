@@ -268,6 +268,7 @@ interpretConstructor SLUnit = return $ qConstExprAny $ jmToValue ()
 
 specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe PinaforeInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
+specialFormArg AnnotNonpolarType (SAType st) = lift $ interpretNonpolarType st
 specialFormArg AnnotPositiveType (SAType st) = lift $ interpretType @'Positive st
 specialFormArg AnnotNegativeType (SAType st) = lift $ interpretType @'Negative st
 specialFormArg _ _ = liftInner Nothing
@@ -287,6 +288,7 @@ showSA (SAAnchor _) = "anchor"
 
 showAnnotation :: PinaforeAnnotation a -> Text
 showAnnotation AnnotAnchor = "anchor"
+showAnnotation AnnotNonpolarType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
@@ -420,33 +422,32 @@ interpretGeneralSubtypeRelation sta stb sbody = do
                     MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
             MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 
+nonpolarSimpleEntityType :: PinaforeNonpolarType t -> PinaforeInterpreter (PinaforeGroundType '[] t, EntityGroundType t)
+nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
+    | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
+nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
+
 interpretOpenEntitySubtypeRelation :: SyntaxType -> SyntaxType -> ScopeBuilder ()
 interpretOpenEntitySubtypeRelation sta stb =
     interpScopeBuilder $ do
-        ata <- lift $ interpretMonoEntityType sta
-        atb <- lift $ interpretMonoEntityType stb
-        case ata of
-            MkSome ta ->
-                case ta of
-                    MkMonoType tea@(MkEntityGroundType tfa _) NilArguments ->
-                        case atb of
-                            MkSome tb ->
-                                case tb of
-                                    MkMonoType teb@(MkEntityGroundType tfb _) NilArguments
-                                        | Just (MkLiftedFamily _) <- matchFamilyType openEntityFamilyWitness tfb ->
-                                            registerSubtypeConversion $
-                                            simpleSubtypeConversionEntry
-                                                (entityToPinaforeGroundType NilListType tea)
-                                                (entityToPinaforeGroundType NilListType teb) $
-                                            case matchFamilyType openEntityFamilyWitness tfa of
-                                                Just (MkLiftedFamily _) -> neutralCoerceSubtypeConversion
-                                                Nothing ->
-                                                    nilSubtypeConversion $
-                                                    coerceShim "open entity" .
-                                                    (functionToShim "entityConvert" $
-                                                     entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
-                                    _ -> lift $ throw $ InterpretTypeNotOpenEntityError $ exprShow tb
-                    _ -> lift $ throw $ InterpretTypeNotSimpleEntityError $ exprShow ta
+        ata <- lift $ interpretNonpolarType sta
+        atb <- lift $ interpretNonpolarType stb
+        case (ata, atb) of
+            (MkSome ta, MkSome tb) -> do
+                (gta, tea@(MkEntityGroundType tfa _)) <- lift $ nonpolarSimpleEntityType ta
+                (gtb, MkEntityGroundType tfb _) <- lift $ nonpolarSimpleEntityType tb
+                case matchFamilyType openEntityFamilyWitness tfb of
+                    Just (MkLiftedFamily _) ->
+                        registerSubtypeConversion $
+                        MkSubtypeConversionEntry gta gtb $
+                        case matchFamilyType openEntityFamilyWitness tfa of
+                            Just (MkLiftedFamily _) -> CoerceSubtypeConversion
+                            Nothing ->
+                                nilSubtypeConversion $
+                                coerceShim "open entity" .
+                                (functionToShim "entityConvert" $
+                                 entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
+                    Nothing -> lift $ throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
 interpretSubtypeRelation :: Markdown -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder Docs
 interpretSubtypeRelation docDescription sta stb mbody = do

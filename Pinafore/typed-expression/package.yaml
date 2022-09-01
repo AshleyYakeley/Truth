@@ -34,6 +34,7 @@ library:
       - Language.Expression.Common.Named
       - Language.Expression.Common.Sealed
       - Language.Expression.Common.TypeSystem
+      - Language.Expression.Common.NonpolarTypeSystem
       - Language.Expression.Common.TypeFunction
       - Language.Expression.Common.TypeVariable
       - Language.Expression.Common.Rename.RenameTypeSystem

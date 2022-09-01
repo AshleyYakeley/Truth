@@ -124,7 +124,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
 instance forall (ground :: GroundTypeKind) t. (IsDolanGroundType ground, GroundExprShow ground) =>
              ExprShow (NonpolarDolanType ground t) where
     exprShowPrec npt =
-        case nonpolarToDolanType @ground @'Positive npt of
+        case nonpolarToPositive @(DolanTypeSystem ground) npt of
             MkShimWit pt _ -> exprShowPrec pt
 
 instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, GroundExprShow ground) =>

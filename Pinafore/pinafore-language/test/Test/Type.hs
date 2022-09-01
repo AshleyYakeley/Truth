@@ -325,8 +325,7 @@ testType =
                     , textTypeTest
                           "\\x => let subtype Unit <: Action Integer = \\() => return x in ((): Action Integer)"
                           "{} -> Integer -> Action Integer"
-                    , testMark $
-                      textTypeTest
+                    , textTypeTest
                           "let subtype Unit <: Action Integer = \\() => return x in ((): Action Integer)"
                           "{x : Integer} -> Action Integer"
                     ]

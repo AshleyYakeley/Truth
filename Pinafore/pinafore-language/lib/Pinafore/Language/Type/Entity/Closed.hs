@@ -35,6 +35,7 @@ closedEntityGroundType tidsym props@MkEntityProperties {..} =
         , pgtShowType = epShowType
         , pgtFamilyType =
               MkFamilialType closedEntityFamilyWitness $ MkClosedEntityFamily tidsym $ MkSealedEntityProperties props
+        , pgtSubtypeGroup = Nothing
         , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 

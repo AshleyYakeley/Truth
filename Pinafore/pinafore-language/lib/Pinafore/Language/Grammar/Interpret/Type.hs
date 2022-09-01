@@ -1,7 +1,6 @@
 module Pinafore.Language.Grammar.Interpret.Type
     ( interpretType
     , interpretOpenEntityType
-    , interpretMonoEntityType
     , interpretConcreteDynamicEntityType
     , interpretNonpolarType
     ) where
@@ -39,12 +38,6 @@ interpretConcreteDynamicEntityType st = do
     case mpol of
         BothMPolarW atm -> getConcreteDynamicEntityType $ atm @'Positive
 
-interpretMonoEntityType :: SyntaxType -> PinaforeInterpreter (Some MonoEntityType)
-interpretMonoEntityType st = do
-    mpol <- interpretTypeM @'Nothing st
-    case mpol of
-        BothMPolarW atm -> getMonoEntityType $ atm @'Positive
-
 interpretNonpolarType :: SyntaxType -> PinaforeInterpreter (Some PinaforeNonpolarType)
 interpretNonpolarType st = do
     mpol <- interpretTypeM @'Nothing st
@@ -52,7 +45,7 @@ interpretNonpolarType st = do
         BothMPolarW atm ->
             case atm @'Positive of
                 MkSome tm ->
-                    case dolanTypeToNonpolar tm of
+                    case positiveToNonpolar @PinaforeTypeSystem tm of
                         Just t -> return $ shimWitToSome t
                         Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 

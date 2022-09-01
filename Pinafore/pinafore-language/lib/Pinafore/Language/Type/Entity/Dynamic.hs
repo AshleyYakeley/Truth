@@ -68,7 +68,33 @@ dynamicEntityAdapter mdt =
 
 dynamicEntityGroundType :: PinaforeGroundType '[] DynamicEntity
 dynamicEntityGroundType =
-    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily DynamicEntity)|]) "DynamicEntity"
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily DynamicEntity)|]) "DynamicEntity")
+        {pgtSubtypeGroup = Just dynamicEntitySubtypeGroup}
+
+-- P <: DynamicEntity
+dynamicTest :: SubtypeGroupTest PinaforeGroundType
+dynamicTest =
+    MkSubtypeGroupTest $ \ta tb -> do
+        (Refl, HRefl) <- groundTypeTestEquality dynamicEntityGroundType tb
+        Refl <- testEquality (pgtVarianceType ta) NilListType
+        MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType ta
+    --Refl <- testEquality (pgtVarianceType tb) NilListType
+    --MkADynamicEntityFamily _ detb <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType tb
+        return IdentitySubtypeConversion
+
+-- P <: Q
+aDynamicTest :: SubtypeGroupTest PinaforeGroundType
+aDynamicTest =
+    MkSubtypeGroupTest $ \ta tb -> do
+        Refl <- testEquality (pgtVarianceType ta) NilListType
+        MkADynamicEntityFamily _ deta <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType ta
+        Refl <- testEquality (pgtVarianceType tb) NilListType
+        MkADynamicEntityFamily _ detb <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType tb
+        ifpure (isSubsetOf deta detb) IdentitySubtypeConversion
+
+dynamicEntitySubtypeGroup :: SubtypeGroup PinaforeGroundType
+dynamicEntitySubtypeGroup =
+    MkSubtypeGroup dynamicEntityGroundType $ testEqualitySubtypeGroupTest <> dynamicTest <> aDynamicTest
 
 dynamicEntityFamily :: EntityFamily
 dynamicEntityFamily = simplePinaforeEntityFamily dynamicEntityGroundType $ dynamicEntityAdapter Nothing
@@ -94,6 +120,7 @@ aDynamicEntityGroundType name dts =
                   dynamicEntityGroundType
                   (functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de)
                   id
+        , pgtSubtypeGroup = Just dynamicEntitySubtypeGroup
         }
 
 aDynamicEntityEntityFamily :: EntityFamily

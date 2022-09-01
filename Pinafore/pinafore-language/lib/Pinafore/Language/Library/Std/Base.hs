@@ -491,12 +491,7 @@ baseLibEntries =
           , docTreeEntry
                 "Open Entity Types"
                 ""
-                [ mkSubtypeRelationEntry "(any open entity type)" (fst $ pgtShowType entityGroundType) "" $
-                  MkSubtypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
-                      Refl <- testEquality pgtVarianceType NilListType
-                      MkLiftedFamily _ <- matchFamilyType openEntityFamilyWitness pgtFamilyType
-                      return neutralCoerceSubtypeConversion
-                , mkSpecialFormEntry
+                [ mkSpecialFormEntry
                       "openEntity"
                       "An open entity for this anchor. `A` is an open entity type."
                       ["@A", "<anchor>"]
@@ -529,11 +524,13 @@ baseLibEntries =
                 "Dynamic Entity Types"
                 ""
                 [ mkTypeEntry "DynamicEntity" "" $ MkBoundType dynamicEntityGroundType
+                {-
                 , mkSubtypeRelationEntry "(any dynamic entity type)" (fst $ pgtShowType dynamicEntityGroundType) "" $
                   MkSubtypeConversionEntry dynamicEntityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness pgtFamilyType
-                      return neutralIdentitySubtypeConversion
+                      return IdentitySubtypeConversion
+                -}
                 , hasSubtypeRelationEntry @DynamicEntity @Entity "" $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry

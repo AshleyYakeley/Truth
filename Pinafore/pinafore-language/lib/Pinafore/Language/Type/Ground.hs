@@ -13,22 +13,18 @@ import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
-{-
-data SubtypeGroup = MkSubtypeGroup
-    {
-        sgIdentifer :: Unique,
-        sgSubtype ::
-            FamilialType gta -> FamilialType gtb -> Maybe (FamilialType gtb)
-    }
--}
 type PinaforeGroundType :: GroundTypeKind
 data PinaforeGroundType dv gt = MkPinaforeGroundType
     { pgtVarianceType :: DolanVarianceType dv
     , pgtVarianceMap :: DolanVarianceMap dv gt
     , pgtShowType :: ListTypeExprShow dv
     , pgtFamilyType :: FamilialType gt
+    , pgtSubtypeGroup :: Maybe (SubtypeGroup PinaforeGroundType)
     , pgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
+
+instance Show (PinaforeGroundType dv gt) where
+    show t = unpack $ showGroundType t
 
 type PinaforePolyGreatestDynamicSupertype :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype PinaforeGroundType dv gt
@@ -47,6 +43,7 @@ singleGroundType' ft showexp =
         , pgtVarianceMap = dolanVarianceMap
         , pgtShowType = showexp
         , pgtFamilyType = ft
+        , pgtSubtypeGroup = Nothing
         , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 

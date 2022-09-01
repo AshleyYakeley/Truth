@@ -713,7 +713,7 @@ testEntity =
                                [ tGroup "QC <: QB" $ strictSubtypeTests "QC" "QB"
                                , tGroup "QA = QB" $ subtypeTests False SRSingle "QA" "QB"
                                , tGroup "QA = QB" $ subtypeTests False SRSingle "QB" "QA"
-                               , tGroup "QA <: T" $ strictSubtypeTests "QA" "T"
+                               , tModify testMark $ tGroup "QA <: T" $ strictSubtypeTests "QA" "T"
                                , tGroup "QB <: T" $ strictSubtypeTests "QB" "T"
                                , tGroup "QC <: T" $ strictSubtypeTests "QC" "T"
                                , tGroup "P1 <: T" $ strictSubtypeTests "P1" "T"

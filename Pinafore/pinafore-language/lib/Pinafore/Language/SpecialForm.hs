@@ -7,6 +7,7 @@ import Shapes
 type Annotation :: Type -> Type -> Type
 data Annotation ts t where
     AnnotAnchor :: Annotation ts Anchor
+    AnnotNonpolarType :: Annotation ts (Some (TSNonpolarWitness ts))
     AnnotPositiveType :: Annotation ts (Some (TSPosWitness ts))
     AnnotNegativeType :: Annotation ts (Some (TSNegWitness ts))
 
