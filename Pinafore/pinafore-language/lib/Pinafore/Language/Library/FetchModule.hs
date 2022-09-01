@@ -21,50 +21,49 @@ import System.Directory (doesFileExist)
 import System.FilePath
 
 newtype FetchModule = MkFetchModule
-    { runFetchModule :: (?pinafore :: PinaforeContext) =>
-                                PinaforeScope -> ModuleName -> PinaforeInterpreter (Maybe PinaforeModule)
+    { runFetchModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeInterpreter (Maybe PinaforeModule)
     }
 
 instance Semigroup FetchModule where
     MkFetchModule fma <> MkFetchModule fmb =
-        MkFetchModule $ \implictScope mname -> do
-            mrr <- fma implictScope mname
+        MkFetchModule $ \mname -> do
+            mrr <- fma mname
             case mrr of
                 Just rr -> return $ Just rr
-                Nothing -> fmb implictScope mname
+                Nothing -> fmb mname
 
 instance Monoid FetchModule where
-    mempty = MkFetchModule $ \_ _ -> return Nothing
+    mempty = MkFetchModule $ \_ -> return Nothing
 
-loadModuleFromText :: PinaforeScope -> ModuleName -> Text -> PinaforeInterpreter PinaforeModule
-loadModuleFromText implictScope modname text = unmapTransformT (registerScope implictScope) $ parseModule modname text
+loadModuleFromText :: ModuleName -> Text -> PinaforeInterpreter PinaforeModule
+loadModuleFromText modname text =
+    unmapTransformT (void $ interpretImportDeclaration stdModuleName) $ parseModule modname text
 
-loadModuleFromByteString :: PinaforeScope -> ModuleName -> LazyByteString -> PinaforeInterpreter PinaforeModule
-loadModuleFromByteString implictScope modname bs =
+loadModuleFromByteString :: ModuleName -> LazyByteString -> PinaforeInterpreter PinaforeModule
+loadModuleFromByteString modname bs =
     case eitherToResult $ decodeUtf8' $ toStrict bs of
-        SuccessResult text -> loadModuleFromText implictScope modname text
+        SuccessResult text -> loadModuleFromText modname text
         FailureResult err -> throw $ UnicodeDecodeError $ pack $ show err
 
 textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule
 textFetchModule getText =
-    MkFetchModule $ \implictScope modname -> do
+    MkFetchModule $ \modname -> do
         mtext <- liftIO $ getText modname
-        for mtext $ \text ->
-            paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText implictScope modname text
+        for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText modname text
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
 
 directoryFetchModule :: FilePath -> FetchModule
 directoryFetchModule dirpath =
-    MkFetchModule $ \implictScope modname -> do
+    MkFetchModule $ \modname -> do
         let fpath = dirpath </> moduleRelativePath modname
         found <- liftIO $ doesFileExist fpath
         case found of
             False -> return Nothing
             True -> do
                 bs <- liftIO $ readFile fpath
-                mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString implictScope modname bs
+                mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString modname bs
                 return $ Just mm
 
 getLibraryModuleModule :: (?pinafore :: PinaforeContext) => LibraryModule -> PinaforeInterpreter PinaforeModule
@@ -96,4 +95,4 @@ libraryFetchModule :: [LibraryModule] -> FetchModule
 libraryFetchModule lmods = let
     m :: Map Text LibraryModule
     m = mapFromList $ fmap (\lmod -> (docTreeName lmod, lmod)) lmods
-    in MkFetchModule $ \_ mname -> for (lookup (toText mname) m) getLibraryModuleModule
+    in MkFetchModule $ \mname -> for (lookup (toText mname) m) getLibraryModuleModule

@@ -18,7 +18,6 @@ import Pinafore.Context
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.FetchModule
@@ -47,4 +46,4 @@ data LibraryContext = MkLibraryContext
     }
 
 mkLibraryContext :: (?pinafore :: PinaforeContext) => FetchModule -> LibraryContext
-mkLibraryContext fetchModule = MkLibraryContext $ runFetchModule (libraryFetchModule library <> fetchModule) emptyScope
+mkLibraryContext fetchModule = MkLibraryContext $ runFetchModule $ libraryFetchModule library <> fetchModule
