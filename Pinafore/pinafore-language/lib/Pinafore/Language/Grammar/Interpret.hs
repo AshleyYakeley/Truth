@@ -3,6 +3,7 @@ module Pinafore.Language.Grammar.Interpret
     , interpretModule
     , interpretTopDeclarations
     , interpretType
+    , interpretImportDeclaration
     ) where
 
 import Data.Graph
@@ -187,10 +188,10 @@ interpretExposeDeclaration sexp = do
     pureScopeBuilder scope
     return $ docs []
 
-interpretImportDeclaration :: ModuleName -> ScopeBuilder Docs
+interpretImportDeclaration :: ModuleName -> PinaforeScopeInterpreter Docs
 interpretImportDeclaration modname = do
-    newmod <- lift $ liftRefNotation $ getModule modname
-    pureScopeBuilder (moduleScope newmod)
+    newmod <- lift $ getModule modname
+    registerScope $ moduleScope newmod
     return [TreeDocTreeEntry $ moduleDoc newmod]
 
 interpretDocDeclaration :: SyntaxWithDoc SyntaxDeclaration -> ScopeBuilder Docs
@@ -199,18 +200,18 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
         ExposeSyntaxDeclaration _ sexp -> interpretExposeDeclaration sexp
         ImportSyntaxDeclaration spos modname Nothing -> do
             sourcePosScopeBuilder spos
-            interpretImportDeclaration modname
+            interpScopeBuilder $ interpretImportDeclaration modname
         ImportSyntaxDeclaration spos modname (Just names) -> do
             sourcePosScopeBuilder spos
             refScopeBuilder $
-                runScopeBuilder (interpretImportDeclaration modname) $ \docentries -> do
+                runScopeBuilder (interpScopeBuilder $ interpretImportDeclaration modname) $ \docentries -> do
                     scope <- liftRefNotation $ exportScope names
                     return $ do
                         pureScopeBuilder scope
                         return (exposeDocs names docentries)
         DirectSyntaxDeclaration (TypeSyntaxDeclaration spos name defn) -> do
             sourcePosScopeBuilder spos
-            interpScopeBuilder (interpretSequentialTypeDeclaration name doc defn)
+            interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
             let
                 diName = name
                 diParams =

@@ -61,6 +61,16 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
         -> ground dvb tb
         -> Maybe (dva :~: dvb, ta :~~: tb)
 
+type SomeGroundType :: GroundTypeKind -> Type
+data SomeGroundType ground =
+    forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). MkSomeGroundType (ground dv t)
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Eq (SomeGroundType ground) where
+    MkSomeGroundType ta == MkSomeGroundType tb = isJust $ groundTypeTestEquality ta tb
+
+instance forall (ground :: GroundTypeKind). DebugIsDolanGroundType ground => Show (SomeGroundType ground) where
+    show (MkSomeGroundType t) = show t
+
 type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
 class ( IsDolanGroundType ground
       , MonadIO (DolanM ground)

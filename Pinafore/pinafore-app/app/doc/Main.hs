@@ -63,20 +63,14 @@ showDefDesc h _ desc = do
     hPutMarkdownLn h ""
 
 printModuleDoc :: ModuleOptions -> Text -> IO ()
-printModuleDoc modopts tmodname = let
-    ?pinafore = nullPinaforeContext
-    in do
-           let fmodule = standardFetchModule modopts
-           lc <- mkLibraryContext fmodule
-           let
-               ?library = lc
-               in do
-                      modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname
-                      mmod <-
-                          throwInterpretResult $
-                          runPinaforeScoped (initialPos $ unpack tmodname) $ lcLoadModule lc modname
-                      pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
-                      runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout) 1 $ moduleDoc pmodule
+printModuleDoc modopts tmodname = do
+    let ?pinafore = nullPinaforeContext
+    let fmodule = standardFetchModule modopts
+    let ?library = mkLibraryContext fmodule
+    modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname
+    mmod <- throwInterpretResult $ runPinaforeScoped (initialPos $ unpack tmodname) $ lcLoadModule ?library modname
+    pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
+    runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout) 1 $ moduleDoc pmodule
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do

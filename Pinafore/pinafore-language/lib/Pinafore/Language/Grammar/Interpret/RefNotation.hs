@@ -53,9 +53,6 @@ refNotationUnquote rexpr = do
     tell $ pure (v, expr)
     return $ qVarExpr v
 
-stdModuleName :: ModuleName
-stdModuleName = MkModuleName $ pure "Std"
-
 aplist :: PinaforeExpression -> [PinaforeExpression] -> PinaforeInterpreter PinaforeExpression
 aplist expr [] = return expr
 aplist expr (arg:args) = do

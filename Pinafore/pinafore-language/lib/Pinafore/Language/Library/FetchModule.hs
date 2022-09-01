@@ -67,7 +67,7 @@ directoryFetchModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString implictScope modname bs
                 return $ Just mm
 
-getLibraryModuleModule :: (?pinafore :: PinaforeContext) => LibraryModule -> IO PinaforeModule
+getLibraryModuleModule :: (?pinafore :: PinaforeContext) => LibraryModule -> PinaforeInterpreter PinaforeModule
 getLibraryModuleModule libmod = do
     let
         bindDocs :: [BindDoc]
@@ -86,15 +86,14 @@ getLibraryModuleModule libmod = do
     dscopes <-
         for bindDocs $ \bd ->
             case bdScopeEntry bd of
-                BindScopeEntry _ _ -> return mempty
+                BindScopeEntry _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
-    let
-        moduleDoc = fmap bdDoc libmod
-        moduleScope = bscope <> mconcat dscopes
+    let moduleDoc = fmap bdDoc libmod
+    moduleScope <- joinAllScopes dscopes bscope
     return $ MkModule {..}
 
 libraryFetchModule :: [LibraryModule] -> FetchModule
 libraryFetchModule lmods = let
     m :: Map Text LibraryModule
     m = mapFromList $ fmap (\lmod -> (docTreeName lmod, lmod)) lmods
-    in MkFetchModule $ \_ mname -> liftIO $ for (lookup (toText mname) m) getLibraryModuleModule
+    in MkFetchModule $ \_ mname -> for (lookup (toText mname) m) getLibraryModuleModule

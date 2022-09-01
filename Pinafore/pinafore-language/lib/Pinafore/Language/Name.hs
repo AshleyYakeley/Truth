@@ -52,3 +52,6 @@ instance ToText ReferenceName where
 
 instance Show ReferenceName where
     show = unpack . toText
+
+stdModuleName :: ModuleName
+stdModuleName = MkModuleName $ opoint "Std"

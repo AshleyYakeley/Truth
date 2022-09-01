@@ -94,7 +94,8 @@ aDynamicTest =
 
 dynamicEntitySubtypeGroup :: SubtypeGroup PinaforeGroundType
 dynamicEntitySubtypeGroup =
-    MkSubtypeGroup dynamicEntityGroundType $ testEqualitySubtypeGroupTest <> dynamicTest <> aDynamicTest
+    MkSubtypeGroup (MkSomeGroundType dynamicEntityGroundType) $
+    testEqualitySubtypeGroupTest <> dynamicTest <> aDynamicTest
 
 dynamicEntityFamily :: EntityFamily
 dynamicEntityFamily = simplePinaforeEntityFamily dynamicEntityGroundType $ dynamicEntityAdapter Nothing

@@ -9,6 +9,7 @@ module Language.Expression.Dolan.SubtypeEntry
     , testEqualitySubtypeGroupTest
     , SubtypeGroup(..)
     , singletonSubtypeGroup
+    , checkSubtypeConsistency
     ) where
 
 import Control.Applicative.Wrapped
@@ -59,13 +60,13 @@ testEqualitySubtypeGroupTest =
         return IdentitySubtypeConversion
 
 type SubtypeGroup :: GroundTypeKind -> Type
-data SubtypeGroup ground = forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). MkSubtypeGroup
-    { sgWitness :: ground dv gt
+data SubtypeGroup ground = MkSubtypeGroup
+    { sgWitness :: SomeGroundType ground
     , sgIsSubtype :: SubtypeGroupTest ground
     }
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Eq (SubtypeGroup ground) where
-    MkSubtypeGroup ta _ == MkSubtypeGroup tb _ = isJust $ groundTypeTestEquality ta tb
+    MkSubtypeGroup ta _ == MkSubtypeGroup tb _ = ta == tb
 
 instance forall (ground :: GroundTypeKind). DebugIsDolanGroundType ground => Show (SubtypeGroup ground) where
     show (MkSubtypeGroup t _) = show t
@@ -74,7 +75,7 @@ singletonSubtypeGroup ::
        forall (ground :: GroundTypeKind) dv gt. IsDolanGroundType ground
     => ground dv gt
     -> SubtypeGroup ground
-singletonSubtypeGroup gt = MkSubtypeGroup gt testEqualitySubtypeGroupTest
+singletonSubtypeGroup gt = MkSubtypeGroup (MkSomeGroundType gt) testEqualitySubtypeGroupTest
 
 matchBySubtypeGroup ::
        forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
@@ -194,3 +195,11 @@ entries_subtypeGroundedTypes sc (MkDolanGroundedType (ta :: ground dva gta) args
             Nothing -> lift $ throwGroundTypeConvertError ta tb
     in wbind margswit $ \(MkSubtypeArguments argsb' sargsconv) ->
            (\p q -> p . q) <$> subtypeDolanArguments sc tb argsb' argsb <*> sargsconv
+
+checkSubtypeConsistency ::
+       forall (ground :: GroundTypeKind).
+       [SubtypeConversionEntry ground]
+    -> SomeGroundType ground
+    -> SomeGroundType ground
+    -> Maybe (SubtypeConversionEntry ground)
+checkSubtypeConsistency _entries _ta _tb = Nothing

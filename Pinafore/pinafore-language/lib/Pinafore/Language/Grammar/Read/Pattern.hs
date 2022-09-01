@@ -11,9 +11,6 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes hiding (try)
 
-stdModule :: ModuleName
-stdModule = MkModuleName $ opoint "Std"
-
 readSourcePosPattern :: Parser SyntaxPattern' -> Parser SyntaxPattern
 readSourcePosPattern p = do
     spos <- getPosition
@@ -25,12 +22,12 @@ readPatterns = many readPattern4
 
 nilPattern :: SourcePos -> SyntaxPattern
 nilPattern spos =
-    MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModule "[]") []
+    MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModuleName "[]") []
 
 consPattern :: SourcePos -> SyntaxPattern -> SyntaxPattern -> SyntaxPattern
 consPattern spos pat1 pat2 =
     MkWithSourcePos spos $
-    ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModule "::") [pat1, pat2]
+    ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModuleName "::") [pat1, pat2]
 
 readPattern1 :: Parser SyntaxPattern
 readPattern1 = do

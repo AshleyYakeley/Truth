@@ -9,6 +9,7 @@ module Language.Expression.Dolan.Subtype
     , DolanShim
     , SubtypeArguments(..)
     , SubtypeConversion(..)
+    , isNeutralSubtypeConversion
     , ConvertSubtype
     , getSubtypeConversion
     , subtypeConversion
@@ -156,6 +157,14 @@ data SubtypeConversion ground dva gta dvb gtb where
     CoerceSubtypeConversion
         :: forall (ground :: GroundTypeKind) (gta :: Type) (gtb :: Type). Coercible gta gtb
         => SubtypeConversion ground '[] gta '[] gtb
+
+isNeutralSubtypeConversion ::
+       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       SubtypeConversion ground dva gta dvb gtb
+    -> Bool
+isNeutralSubtypeConversion IdentitySubtypeConversion = True
+isNeutralSubtypeConversion CoerceSubtypeConversion = True
+isNeutralSubtypeConversion (GeneralSubtypeConversion _) = False
 
 getSubtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeGroundType ground

@@ -7,6 +7,9 @@ module Pinafore.Language.Interpreter
     , EntryDoc
     , Module(..)
     , Scope
+    , emptyScope
+    , joinScopes
+    , joinAllScopes
     , registerScope
     , exportNames
     , exportScope
@@ -45,6 +48,7 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Error
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Identified
@@ -84,11 +88,63 @@ data Scope (ts :: Type) = MkScope
     , scopeSubtypes :: HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
     }
 
-instance Semigroup (Scope ts) where
-    MkScope b1 s1 <> MkScope b2 s2 = MkScope (b1 <> b2) (s1 <> s2)
+emptyScope :: Scope ts
+emptyScope = MkScope mempty mempty
 
-instance Monoid (Scope ts) where
-    mempty = MkScope mempty mempty
+checkEntryConsistency ::
+       forall ts. ExprShow (BoundType ts)
+    => SubtypeConversionEntry (InterpreterGroundType ts)
+    -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
+    -> Interpreter ts ()
+checkEntryConsistency (MkSubtypeConversionEntry ta tb sconv) entries =
+    case checkSubtypeConsistency (toList entries) (MkSomeGroundType ta) (MkSomeGroundType tb) of
+        Nothing -> return ()
+        Just (MkSubtypeConversionEntry eta etb esconv) ->
+            if isNeutralSubtypeConversion sconv && isNeutralSubtypeConversion esconv
+                then return ()
+                else throw $
+                     InterpretSubtypeInconsistent (exprShow $ MkBoundType @ts eta) (exprShow $ MkBoundType @ts etb)
+
+addSCEntry ::
+       forall ts. ExprShow (BoundType ts)
+    => (Unique, SubtypeConversionEntry (InterpreterGroundType ts))
+    -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
+    -> Interpreter ts (HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts)))
+addSCEntry (key, entry) entries = do
+    checkEntryConsistency entry entries
+    return $ insertMap key entry entries
+
+addSCEntries ::
+       forall ts. ExprShow (BoundType ts)
+    => [(Unique, SubtypeConversionEntry (InterpreterGroundType ts))]
+    -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
+    -> Interpreter ts (HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts)))
+addSCEntries [] entries = return entries
+addSCEntries (a:aa) entries = do
+    entries' <- addSCEntry a entries
+    addSCEntries aa entries'
+
+joinScopes ::
+       forall ts. ExprShow (BoundType ts)
+    => Scope ts
+    -> Scope ts
+    -> Interpreter ts (Scope ts)
+joinScopes a b = do
+    let
+        bb = scopeBindings a <> scopeBindings b
+        alist = mapToList $ scopeSubtypes a
+    st <- addSCEntries alist $ scopeSubtypes b
+    return MkScope {scopeBindings = bb, scopeSubtypes = st}
+
+joinAllScopes ::
+       forall ts. ExprShow (BoundType ts)
+    => [Scope ts]
+    -> Scope ts
+    -> Interpreter ts (Scope ts)
+joinAllScopes [] s = return s
+joinAllScopes (a:aa) s = do
+    s' <- joinScopes a s
+    joinAllScopes aa s'
 
 type family EntryDoc (ts :: Type) :: Type
 
@@ -192,18 +248,24 @@ runInterpreter ::
     -> InterpretResult a
 runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
     icVarIDState = firstVarIDState
-    icScope = mempty
+    icScope = emptyScope
     icModulePath = []
     in evalStateT (runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
-allocateVar :: Name -> ScopeInterpreter ts VarID
+allocateVar ::
+       forall ts. ExprShow (BoundType ts)
+    => Name
+    -> ScopeInterpreter ts VarID
 allocateVar n =
     MkTransformT $ \f -> do
         vs <- paramAsk varIDStateParam
         let
             vid = mkVarID vs n
-            newscope = MkScope (singletonMap n (plainMarkdown "variable", LambdaBinding vid)) mempty
-        paramWith varIDStateParam (nextVarIDState vs) $ paramLocal scopeParam (\scope -> newscope <> scope) $ f vid
+            insertScope = MkScope (singletonMap n (plainMarkdown "variable", LambdaBinding vid)) mempty
+        paramWith varIDStateParam (nextVarIDState vs) $ do
+            oldScope <- paramAsk scopeParam
+            newScope <- joinScopes insertScope oldScope
+            paramWith scopeParam newScope $ f vid
 
 purifyExpression ::
        forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
@@ -259,8 +321,11 @@ type ScopeInterpreter ts = TransformT (Interpreter ts)
 scopeRef :: Ref (ScopeInterpreter ts) (Scope ts)
 scopeRef = transformParamRef scopeParam
 
-registerScope :: Scope ts -> ScopeInterpreter ts ()
-registerScope newscope = refModify scopeRef $ \oldscope -> newscope <> oldscope
+registerScope ::
+       forall ts. ExprShow (BoundType ts)
+    => Scope ts
+    -> ScopeInterpreter ts ()
+registerScope insertScope = refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
 
 getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
 getCycle _ [] = Nothing
@@ -271,7 +336,7 @@ getCycle mn (_:nn) = getCycle mn nn
 loadModuleInScope :: forall ts. ModuleName -> Interpreter ts (Maybe (Module ts))
 loadModuleInScope mname =
     paramWith sourcePosParam (initialPos "<unknown>") $
-    paramWith scopeParam mempty $
+    paramWith scopeParam emptyScope $
     paramLocal modulePathParam (\path -> path <> [mname]) $ do
         loadModule <- paramAsk loadModuleParam
         loadModule mname
@@ -297,14 +362,17 @@ registerBinding :: Name -> DocInterpreterBinding ts -> ScopeInterpreter ts ()
 registerBinding name db = refModify scopeRef $ \tc -> tc {scopeBindings = insertMapLazy name db $ scopeBindings tc}
 
 bindingsScope :: Map Name (DocInterpreterBinding ts) -> Scope ts
-bindingsScope bb = mempty {scopeBindings = bb}
+bindingsScope bb = emptyScope {scopeBindings = bb}
 
-getSubtypeScope :: SubtypeConversionEntry (InterpreterGroundType ts) -> IO (Scope ts)
+getSubtypeScope :: SubtypeConversionEntry (InterpreterGroundType ts) -> Interpreter ts (Scope ts)
 getSubtypeScope sce = do
-    key <- newUnique
-    return $ mempty {scopeSubtypes = singletonMap key sce}
+    key <- liftIO newUnique
+    return $ emptyScope {scopeSubtypes = singletonMap key sce}
 
-registerBindings :: Map Name (DocInterpreterBinding ts) -> ScopeInterpreter ts ()
+registerBindings ::
+       forall ts. ExprShow (BoundType ts)
+    => Map Name (DocInterpreterBinding ts)
+    -> ScopeInterpreter ts ()
 registerBindings bb = registerScope $ bindingsScope bb
 
 unregisterBindings :: [Name] -> ScopeInterpreter ts ()
@@ -332,10 +400,18 @@ lookupLetBinding name = do
         Just (LambdaBinding v) -> return $ Just $ Left v
         _ -> return Nothing
 
-registerLetBindings :: Map Name (Markdown, TSSealedExpression ts) -> ScopeInterpreter ts ()
+registerLetBindings ::
+       forall ts. ExprShow (BoundType ts)
+    => Map Name (Markdown, TSSealedExpression ts)
+    -> ScopeInterpreter ts ()
 registerLetBindings bb = registerBindings $ fmap (\(doc, exp) -> (doc, ValueBinding exp Nothing)) bb
 
-registerLetBinding :: Name -> Markdown -> TSSealedExpression ts -> ScopeInterpreter ts ()
+registerLetBinding ::
+       forall ts. ExprShow (BoundType ts)
+    => Name
+    -> Markdown
+    -> TSSealedExpression ts
+    -> ScopeInterpreter ts ()
 registerLetBinding name doc expr = registerLetBindings $ singletonMap name (doc, expr)
 
 lookupSpecialForm :: ReferenceName -> Interpreter ts (SpecialForm ts (Interpreter ts))
@@ -407,9 +483,12 @@ registerPatternConstructor name doc exp pc = do
         Just _ -> lift $ throw $ DeclareConstructorDuplicateError name
         Nothing -> registerBinding name $ (doc, ValueBinding exp $ Just pc)
 
-registerSubtypeConversion :: SubtypeConversionEntry (InterpreterGroundType ts) -> ScopeInterpreter ts ()
+registerSubtypeConversion ::
+       forall ts. ExprShow (BoundType ts)
+    => SubtypeConversionEntry (InterpreterGroundType ts)
+    -> ScopeInterpreter ts ()
 registerSubtypeConversion sce = do
-    newscope <- liftIO $ getSubtypeScope sce
+    newscope <- lift $ getSubtypeScope sce
     registerScope newscope
 
 getSubtypeConversions :: Interpreter ts [SubtypeConversionEntry (InterpreterGroundType ts)]

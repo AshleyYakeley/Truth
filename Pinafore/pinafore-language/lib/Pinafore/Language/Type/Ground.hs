@@ -23,6 +23,9 @@ data PinaforeGroundType dv gt = MkPinaforeGroundType
     , pgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
 
+instance ExprShow (PinaforeGroundType dv gt) where
+    exprShowPrec = exprShowPrecGroundType
+
 instance Show (PinaforeGroundType dv gt) where
     show t = unpack $ showGroundType t
 
@@ -80,6 +83,9 @@ instance IsDolanGroundType PinaforeGroundType where
         Refl <- testEquality (pgtVarianceType ta) (pgtVarianceType tb)
         HRefl <- testHetEquality (pgtFamilyType ta) (pgtFamilyType tb)
         Just (Refl, HRefl)
+
+instance ExprShow (BoundType PinaforeTypeSystem) where
+    exprShowPrec (MkBoundType t) = exprShowPrec t
 
 showPrecVariance ::
        forall w polarity sv t.

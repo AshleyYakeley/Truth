@@ -42,16 +42,9 @@ allOperatorNames test = let
     getDocName _ = Nothing
     in mapMaybe getDocName $ mconcat $ fmap toList library
 
-getImplictScope :: (?pinafore :: PinaforeContext) => IO PinaforeScope
-getImplictScope = fmap moduleScope $ getLibraryModuleModule stdLibraryModule
-
 data LibraryContext = MkLibraryContext
-    { lcImplictScope :: PinaforeScope
-    , lcLoadModule :: ModuleName -> PinaforeInterpreter (Maybe PinaforeModule)
+    { lcLoadModule :: ModuleName -> PinaforeInterpreter (Maybe PinaforeModule)
     }
 
-mkLibraryContext :: (?pinafore :: PinaforeContext) => FetchModule -> IO LibraryContext
-mkLibraryContext fetchModule = do
-    lcImplictScope <- getImplictScope
-    let lcLoadModule = runFetchModule (libraryFetchModule library <> fetchModule) lcImplictScope
-    return MkLibraryContext {..}
+mkLibraryContext :: (?pinafore :: PinaforeContext) => FetchModule -> LibraryContext
+mkLibraryContext fetchModule = MkLibraryContext $ runFetchModule (libraryFetchModule library <> fetchModule) emptyScope

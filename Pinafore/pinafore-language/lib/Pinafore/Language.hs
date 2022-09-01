@@ -62,7 +62,8 @@ runPinaforeScoped ::
     -> PinaforeInterpreter a
     -> InterpretResult a
 runPinaforeScoped spos scp =
-    runInterpreter spos (lcLoadModule ?library) spvals $ unmapTransformT (registerScope (lcImplictScope ?library)) scp
+    runInterpreter spos (lcLoadModule ?library) spvals $
+    unmapTransformT (void $ interpretImportDeclaration stdModuleName) scp
 
 spvals :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => PinaforeSpecialVals
 spvals = let

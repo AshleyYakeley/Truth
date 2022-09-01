@@ -8,16 +8,11 @@ import Pinafore.Context as I
 import Pinafore.Language as I
 import Pinafore.Main as I
 import Pinafore.Storage as I
-import Shapes
 
 runWithContext ::
-       MonadIO m
-    => PinaforeContext
-    -> FetchModule
-    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => m a)
-    -> m a
-runWithContext context fetchModule call = do
-    let ?pinafore = context
-    lc <- liftIO $ mkLibraryContext fetchModule
-    let ?library = lc
-    call
+       PinaforeContext -> FetchModule -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => a) -> a
+runWithContext context fetchModule call = let
+    ?pinafore = context
+    in let
+           ?library = mkLibraryContext fetchModule
+           in call

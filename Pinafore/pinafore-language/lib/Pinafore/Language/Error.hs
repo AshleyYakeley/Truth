@@ -54,6 +54,8 @@ data ErrorType
     | InterpretTypeDeclTypeVariableWrongPolarityError Name
                                                       Name
     | InterpretTypeDeclTypeVariableNotCovariantError Name
+    | InterpretSubtypeInconsistent Text
+                                   Text
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
@@ -142,6 +144,8 @@ instance Show ErrorType where
         "wrong polarity of type variable " <> show v <> " in declaration of " <> show n
     show (InterpretTypeDeclTypeVariableNotCovariantError n) =
         "type variable is not covariant in declaration of " <> show n
+    show (InterpretSubtypeInconsistent ta tb) =
+        "subtype relation is inconsistent with existing subtype relation " <> show ta <> " <: " <> show tb
     show (ModuleNotFoundError mname) = "can't find module " <> show mname
     show (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap show $ toList nn)
 
