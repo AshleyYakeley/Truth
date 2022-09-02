@@ -13,6 +13,7 @@ module Language.Expression.Dolan.SubtypeEntry
     ) where
 
 import Control.Applicative.Wrapped
+import qualified Data.List as List
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Subtype
@@ -126,15 +127,6 @@ getImmediateSupertypes ::
     -> [SubtypeConversionWit ground dva gta]
 getImmediateSupertypes entries t = mapMaybe (\entry -> matchSupertype entry t) entries
 
-expandSupertypes ::
-       forall (ground :: GroundTypeKind) dva gta. IsDolanSubtypeEntriesGroundType ground
-    => [SubtypeConversionEntry ground]
-    -> [SubtypeConversionWit ground dva gta]
-    -> [SubtypeConversionWit ground dva gta]
-expandSupertypes entries tt = let
-    ttt = fmap (getImmediateSupertypes entries) tt
-    in nub $ mconcat $ tt : ttt
-
 contains ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
     => [SubtypeConversionWit ground dva gta]
@@ -145,19 +137,20 @@ contains (MkSubtypeConversionWit ta conv:_) tb
     | Just convm <- matchBySubtypeGroup ta tb = Just $ composeSubtypeConversion convm conv
 contains (_:aa) tb = contains aa tb
 
-isSupertype ::
+findSupertype ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
     => [SubtypeConversionEntry ground]
     -> [SubtypeConversionWit ground dva gta]
+    -> [SubtypeConversionWit ground dva gta]
     -> ground dvb gtb
     -> Maybe (SubtypeConversion ground dva gta dvb gtb)
-isSupertype _entries aa a
-    | Just mconv <- contains aa a = Just mconv
-isSupertype entries aa a = let
-    aa' = expandSupertypes entries aa
-    in if length aa' > length aa
-           then isSupertype entries aa' a
-           else Nothing
+findSupertype _entries _old [] _target = Nothing
+findSupertype _entries _old current target
+    | Just conv <- contains current target = Just conv
+findSupertype entries old current target = let
+    allnew = mconcat $ fmap (getImmediateSupertypes entries) current
+    new = allnew List.\\ old
+    in findSupertype entries (old <> current) new target
 
 getSubtypeShim ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
@@ -165,7 +158,7 @@ getSubtypeShim ::
     -> ground dva gta
     -> ground dvb gtb
     -> Maybe (SubtypeConversion ground dva gta dvb gtb)
-getSubtypeShim entries gta gtb = isSupertype entries [MkSubtypeConversionWit gta IdentitySubtypeConversion] gtb
+getSubtypeShim entries gta gtb = findSupertype entries [] [MkSubtypeConversionWit gta IdentitySubtypeConversion] gtb
 
 type IsDolanSubtypeEntriesGroundType :: GroundTypeKind -> Constraint
 class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground where
