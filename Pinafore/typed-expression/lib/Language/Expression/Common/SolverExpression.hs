@@ -17,7 +17,7 @@ instance (Applicative typeexpr, Applicative valexpr) => Applicative (SolverExpre
 instance Functor valexpr => Invariant (SolverExpression poswit negwit typeexpr valexpr) where
     invmap ab _ = fmap ab
 
-instance (Applicative typeexpr, Applicative valexpr) => Productish (SolverExpression poswit negwit typeexpr valexpr)
+instance (Applicative typeexpr, Applicative valexpr) => Productable (SolverExpression poswit negwit typeexpr valexpr)
 
 solverExpressionLiftValue ::
        (Applicative typeexpr, Functor valexpr) => valexpr a -> SolverExpression poswit negwit typeexpr valexpr a

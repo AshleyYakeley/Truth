@@ -2,7 +2,7 @@ module Data.Serializer where
 
 import Data.Codec
 import qualified Data.Serialize as Serialize
-import Data.Streamish
+import Data.Streamable
 import Shapes.Import
 
 data Serializer a = MkSerializer
@@ -13,7 +13,7 @@ data Serializer a = MkSerializer
 instance Invariant Serializer where
     invmap ab ba (MkSerializer s d) = MkSerializer (s . ba) (fmap ab d)
 
-instance Productish Serializer where
+instance Productable Serializer where
     pUnit :: Serializer ()
     pUnit = let
         serialize () = return ()
@@ -25,7 +25,7 @@ instance Productish Serializer where
         dab = liftA2 (,) da db
         in MkSerializer sab dab
 
-instance Summish Serializer where
+instance Summable Serializer where
     pNone :: Serializer Void
     pNone = let
         serialize n = never n
@@ -37,7 +37,7 @@ instance Summish Serializer where
         dab = fmap Left da <|> fmap Right db
         in MkSerializer sab dab
 
-instance Riggish Serializer where
+instance Riggable Serializer where
     pOptional (MkSerializer s d) = let
         s' Nothing = mempty
         s' (Just x) = s x
@@ -56,8 +56,8 @@ instance Riggish Serializer where
         d'' = liftA2 (:|) d d'
         in MkSerializer s'' d''
 
-instance Streamish Serializer where
-    type StreamishBasis Serializer = StrictByteString
+instance Streamable Serializer where
+    type StreamableBasis Serializer = StrictByteString
     pItem = MkSerializer Serialize.putWord8 Serialize.getWord8
     pWhole = let
         serialize = Serialize.putByteString

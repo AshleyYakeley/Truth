@@ -17,7 +17,7 @@ import Shapes
 type Mapping :: Symbol -> Type -> Type
 newtype Mapping n t =
     MkMapping (Kleisli Endo (UVarT n -> UVarT n) t)
-    deriving (Semigroup, Monoid, Invariant, Summish, Productish)
+    deriving (Semigroup, Monoid, Invariant, Summable, Productable)
 
 varMapping :: forall (n :: Symbol). Mapping n (UVarT n)
 varMapping = MkMapping $ Kleisli $ \ab -> Endo ab
@@ -80,11 +80,11 @@ instance Monoid (VarMapping t) where
 instance Invariant VarMapping where
     invmap ab ba = liftVarMapping1 (invmap ab ba)
 
-instance Summish VarMapping where
+instance Summable VarMapping where
     pNone = liftVarMapping0 pNone
     (<+++>) = liftVarMapping2 (<+++>)
 
-instance Productish VarMapping where
+instance Productable VarMapping where
     pUnit = liftVarMapping0 pUnit
     (<***>) = liftVarMapping2 (<***>)
 

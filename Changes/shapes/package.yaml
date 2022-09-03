@@ -56,7 +56,7 @@ library:
       - Data.Coercion
       - Data.SameItem
       - Data.HasNewValue
-      - Data.Streamish
+      - Data.Streamable
       - Data.Injection
       - Data.Isomorphism
       - Data.Lens

@@ -46,7 +46,7 @@ instance Functor m => Invariant (Codec' m p) where
 instance IsBiMap Codec' where
     mapBiMapM ff codec = MkCodec {decode = ff . (decode codec), encode = encode codec}
 
-instance Alternative m => Summish (Codec' m p) where
+instance Alternative m => Summable (Codec' m p) where
     pNone = MkCodec (\_ -> empty) absurd
     MkCodec d1 e1 <+++> MkCodec d2 e2 = let
         d12 p = (fmap Left $ d1 p) <|> (fmap Right $ d2 p)
@@ -64,7 +64,7 @@ bijectionCodec (MkIsomorphism p q) = MkCodec (pure . p) q
 codecBijection :: Monad m => Codec' m a b -> Bijection (m a) (m b)
 codecBijection (MkCodec amb ba) = MkIsomorphism (\ma -> ma >>= amb) (fmap ba)
 
-codecSum :: Summish f => Codec a b -> f b -> f a -> f a
+codecSum :: Summable f => Codec a b -> f b -> f a -> f a
 codecSum MkCodec {..} fb fa =
     invmap
         (either encode id)

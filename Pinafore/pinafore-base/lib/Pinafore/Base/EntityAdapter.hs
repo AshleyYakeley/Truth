@@ -34,7 +34,7 @@ instance Invariant EntityAdapter where
     invmap ab ba (MkEntityAdapter defs todef) =
         MkEntityAdapter {entityAdapterDefinitions = fmap ab defs, entityAdapterToDefinition = \b -> todef $ ba b}
 
-instance Summish EntityAdapter where
+instance Summable EntityAdapter where
     pNone = MkEntityAdapter {entityAdapterDefinitions = pNone, entityAdapterToDefinition = never}
     (<+++>) :: forall a b. EntityAdapter a -> EntityAdapter b -> EntityAdapter (Either a b)
     MkEntityAdapter defsa todefa <+++> MkEntityAdapter defsb todefb = let

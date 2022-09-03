@@ -109,6 +109,6 @@ instance Monoid (EntityStorer 'MultipleMode t) where
 instance Invariant (EntityStorer 'MultipleMode) where
     invmap ab _ = fmap ab
 
-instance Summish (EntityStorer 'MultipleMode) where
+instance Summable (EntityStorer 'MultipleMode) where
     pNone = mempty
     esa <+++> esb = fmap Left esa <> fmap Right esb

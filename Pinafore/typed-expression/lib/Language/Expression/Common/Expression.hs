@@ -20,7 +20,7 @@ instance Applicative (Expression w) where
     (ClosedExpression ab) <*> expr = fmap ab expr
     (OpenExpression name exprab) <*> expr = OpenExpression name $ (\vab a v -> vab v a) <$> exprab <*> expr
 
-instance Productish (Expression w)
+instance Productable (Expression w)
 
 instance AllConstraint Show w => Show (Expression w a) where
     show expr = "{" <> intercalate "," (expressionFreeWitnesses allShow expr) <> "}"

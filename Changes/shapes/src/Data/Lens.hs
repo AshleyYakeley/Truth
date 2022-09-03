@@ -18,7 +18,7 @@ type PureLens = Lens' Identity
 instance Invariant (Lens' m a) where
     invmap pq qp (MkLens ap pama) = MkLens (pq . ap) (pama . qp)
 
-instance Monad m => Productish (Lens' m a) where
+instance Monad m => Productable (Lens' m a) where
     pUnit = MkLens (\_ -> ()) (\() -> pure)
     MkLens ap pama <***> MkLens aq qama =
         MkLens (\a -> (ap a, aq a)) $ \(p, q) a -> do

@@ -7,7 +7,7 @@ module Data.ReadShow
     ) where
 
 import Data.Codec
-import Data.Streamish
+import Data.Streamable
 import Shapes.Import
 
 data ReadShow a = MkReadShow
@@ -18,7 +18,7 @@ data ReadShow a = MkReadShow
 instance Invariant ReadShow where
     invmap ab ba (MkReadShow s r) = MkReadShow (s . ba) (fmap ab r)
 
-instance Productish ReadShow where
+instance Productable ReadShow where
     pUnit :: ReadShow ()
     pUnit = let
         rsShow () = mempty
@@ -30,7 +30,7 @@ instance Productish ReadShow where
         rab = ra <***> rb
         in MkReadShow sab rab
 
-instance Summish ReadShow where
+instance Summable ReadShow where
     pNone :: ReadShow Void
     pNone = let
         rsShow n = never n
@@ -51,7 +51,7 @@ instance CodecMap ReadShow where
             a <- r
             mpure $ decode a
 
-instance Riggish ReadShow where
+instance Riggable ReadShow where
     pOptional (MkReadShow s r) = let
         s' Nothing = mempty
         s' (Just x) = s x
@@ -69,8 +69,8 @@ instance Riggish ReadShow where
         r' = pList1 r
         in MkReadShow s'' r'
 
-instance Streamish ReadShow where
-    type StreamishBasis ReadShow = String
+instance Streamable ReadShow where
+    type StreamableBasis ReadShow = String
     pItem = MkReadShow pure pItem
     pWhole = MkReadShow id pWhole
     pLiterals s = let

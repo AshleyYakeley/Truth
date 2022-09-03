@@ -1,27 +1,27 @@
-module Data.Streamish where
+module Data.Streamable where
 
 import Data.Filterable
 import Shapes.Import
 import qualified Text.ParserCombinators.ReadP as ReadP
 import qualified Text.ParserCombinators.ReadPrec as ReadPrec
 
-class (Riggish f, Monoid (StreamishBasis f)) => Streamish f where
-    type StreamishBasis f :: Type
-    pItem :: f (Element (StreamishBasis f))
-    pWhole :: f (StreamishBasis f)
-    pLiterals :: StreamishBasis f -> f ()
-    pLiteral :: Element (StreamishBasis f) -> f ()
+class (Riggable f, Monoid (StreamableBasis f)) => Streamable f where
+    type StreamableBasis f :: Type
+    pItem :: f (Element (StreamableBasis f))
+    pWhole :: f (StreamableBasis f)
+    pLiterals :: StreamableBasis f -> f ()
+    pLiteral :: Element (StreamableBasis f) -> f ()
     pExact ::
            forall a. Eq a
         => a
         -> f a
         -> f ()
 
-class (MonadPlus m, Streamish m) => Readish m where
+class (MonadPlus m, Streamable m) => Readish m where
     (<++) :: forall a. m a -> m a -> m a
     --(<++>) :: forall a. m a -> m a -> m a
 
-pSatisfy :: Readish m => (Element (StreamishBasis m) -> Bool) -> m (Element (StreamishBasis m))
+pSatisfy :: Readish m => (Element (StreamableBasis m) -> Bool) -> m (Element (StreamableBasis m))
 pSatisfy f = do
     a <- pItem
     if f a
@@ -31,8 +31,8 @@ pSatisfy f = do
 pSkipSpaces :: ReadPrec ()
 pSkipSpaces = ReadPrec.lift ReadP.skipSpaces
 
-instance Streamish ReadPrec where
-    type StreamishBasis ReadPrec = String
+instance Streamable ReadPrec where
+    type StreamableBasis ReadPrec = String
     pItem = ReadPrec.get
     pWhole = ReadPrec.lift $ ReadP.munch $ \_ -> True
     pLiterals s = void $ ReadPrec.lift $ ReadP.string s
