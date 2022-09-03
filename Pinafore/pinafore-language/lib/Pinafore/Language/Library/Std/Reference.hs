@@ -236,7 +236,7 @@ refLibEntries =
                 "Finite Set References"
                 ""
                 [ mkTypeEntry "FiniteSetRef" "" $ MkBoundType finiteSetRefGroundType
-                , hasSubtypeRelationEntry "" $
+                , hasSubtypeRelationEntry Verify "" $
                   functionToShim "FiniteSetRef to SetRef" $ langFiniteSetRefToSetRef @A @TopType
                 , mkValEntry
                       "coMapFiniteSet"
@@ -296,7 +296,7 @@ refLibEntries =
                 "List References"
                 ""
                 [ mkTypeEntry "ListRef" "" $ MkBoundType listRefGroundType
-                , hasSubtypeRelationEntry @(LangWholeRef '( Vector A, Vector A)) @(LangListRef '( A, A)) "" $
+                , hasSubtypeRelationEntry @(LangWholeRef '( Vector A, Vector A)) @(LangListRef '( A, A)) Verify "" $
                   functionToShim "langWholeRefToListRef" langWholeRefToListRef
                 , mkValEntry "listWhole" "Represent a list reference as a whole reference." $ langListRefToWholeRef @A
                 , mkValEntry "listGetCount" "Get Count of elements in a list reference." langListRefGetCount
@@ -316,7 +316,7 @@ refLibEntries =
                 "Text References"
                 ""
                 [ mkTypeEntry "TextRef" "" $ MkBoundType textRefGroundType
-                , hasSubtypeRelationEntry @LangTextRef @(LangWholeRef '( Text, Text)) "" $
+                , hasSubtypeRelationEntry @LangTextRef @(LangWholeRef '( Text, Text)) Verify "" $
                   functionToShim "langTextRefToWholeRef" langTextRefToWholeRef
                 , mkValEntry "wholeRefText" "Represent a whole reference as a text reference." langWholeRefToTextRef
                 , mkValEntry "textRefGetLength" "Get the length of text." langTextRefGetLength
@@ -398,7 +398,7 @@ refLibEntries =
           "RefOrders"
           ""
           [ mkTypeEntry "RefOrder" "" $ MkBoundType refOrderGroundType
-          , hasSubtypeRelationEntry "" $ functionToShim "Order to RefOrder" $ pureLangRefOrder @A
+          , hasSubtypeRelationEntry Verify "" $ functionToShim "Order to RefOrder" $ pureLangRefOrder @A
           , mkValEntry "orders" "Join `RefOrder`s by priority." $ refOrders @A
           , mkValEntry
                 "mapOrder"

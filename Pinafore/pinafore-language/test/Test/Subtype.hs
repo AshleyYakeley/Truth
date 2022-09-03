@@ -32,7 +32,7 @@ subtypeEntry ::
 subtypeEntry convexpr = let
     ta = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ b)
-    in subtypeConversionEntry ta tb convexpr
+    in subtypeConversionEntry Verify ta tb convexpr
 
 simpleConversionExpression :: PinaforeOpenExpression (PinaforePolyShim Type () T)
 simpleConversionExpression = pure $ functionToShim "conv" $ \() -> MkT 12

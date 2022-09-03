@@ -279,7 +279,7 @@ elementStuff =
         ""
         [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
           MkBoundType elementGroundType
-        , hasSubtypeRelationEntry @LangElement @LangLayoutElement "" $
+        , hasSubtypeRelationEntry @LangElement @LangLayoutElement Verify "" $
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "exec" "Element that runs an Action first." uiExec
         , mkValEntry "withContext" "Element that requires a Context." uiWithContext

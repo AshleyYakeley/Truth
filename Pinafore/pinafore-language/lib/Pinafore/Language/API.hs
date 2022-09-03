@@ -33,6 +33,7 @@ module Pinafore.Language.API
     , coCCRArgument
     , contraCCRArgument
     , rangeCCRArgument
+    , TrustOrVerify(..)
     , module Pinafore.Language.Value
     ) where
 

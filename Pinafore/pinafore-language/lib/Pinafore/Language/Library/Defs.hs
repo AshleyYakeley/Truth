@@ -123,29 +123,32 @@ mkSubtypeRelationEntry diSubtype diSupertype docDescription scentry = let
 
 subtypeRelationEntry ::
        forall a b.
-       Markdown
+       TrustOrVerify
+    -> Markdown
     -> PinaforeGroundedShimWit 'Negative a
     -> PinaforeGroundedShimWit 'Positive b
     -> PinaforePolyShim Type a b
     -> DocTreeEntry BindDoc
-subtypeRelationEntry desc ta tb conv =
-    mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry ta tb $ pure conv
+subtypeRelationEntry trustme desc ta tb conv =
+    mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry trustme ta tb $ pure conv
 
 hasSubtypeRelationEntry ::
        forall a b. (HasPinaforeType 'Negative a, HasPinaforeType 'Positive b)
-    => Markdown
+    => TrustOrVerify
+    -> Markdown
     -> PinaforePolyShim Type a b
     -> DocTreeEntry BindDoc
-hasSubtypeRelationEntry doc conv = let
+hasSubtypeRelationEntry trustme doc conv = let
     ta = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ b)
-    in subtypeRelationEntry doc ta tb conv
+    in subtypeRelationEntry trustme doc ta tb conv
 
 -- | The 'Monoid' trick of representing @Monoid T@ as @List T <: T@.
 monoidSubtypeRelationEntry ::
        forall t. (HasPinaforeType 'Negative t, HasPinaforeType 'Positive t, Monoid t)
     => DocTreeEntry BindDoc
-monoidSubtypeRelationEntry = hasSubtypeRelationEntry @[t] @t "Monoidal relationship" $ functionToShim "mconcat" mconcat
+monoidSubtypeRelationEntry =
+    hasSubtypeRelationEntry @[t] @t Verify "Monoidal relationship" $ functionToShim "mconcat" mconcat
 
 mkValPatEntry ::
        forall t v lt.

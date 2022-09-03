@@ -57,9 +57,9 @@ pngStuff =
         "PNG"
         ""
         [ mkTypeEntry "PNGImage" "An image in PNG format." $ MkBoundType pngImageGroundType
-        , hasSubtypeRelationEntry @LangPNGImage @LangImage "" $
+        , hasSubtypeRelationEntry @LangPNGImage @LangImage Verify "" $
           functionToShim "pngImage" $ MkLangImage . mapSome toPixelType . snd . idlData
-        , hasSubtypeRelationEntry @LangPNGImage @Literal "" $ functionToShim "pngLiteral" idlLiteral
-        , hasSubtypeRelationEntry @LangPNGImage @LangHasMetadata "" $ functionToShim "pngMetadata" pngMetadata
+        , hasSubtypeRelationEntry @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
+        , hasSubtypeRelationEntry @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
         , mkValEntry "pngEncode" "Encode an image as PNG, with given metadata." pngEncode
         ]

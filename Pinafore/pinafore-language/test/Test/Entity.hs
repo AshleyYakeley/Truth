@@ -1111,6 +1111,21 @@ testEntity =
                     , testExpectReject "let subtype Number <: P = MkP; subtype Number <: P = MkP in pass"
                     , testExpectReject "let subtype Number <: P = MkP; subtype Integer <: P = MkP in pass"
                     ]
+              , tDecls
+                    [ "datatype A of MkA Number end"
+                    , "datatype B of MkB Number end"
+                    , "datatype C of MkC Number end"
+                    , "datatype D of MkD Number end"
+                    , "subtype A <: B = \\(MkA x) => MkB x"
+                    , "subtype C <: D = \\(MkC x) => MkD x"
+                    , "subtype A <: D = \\(MkA x) => MkD x"
+                    ] $
+                tGroup
+                    "verify"
+                    [ testExpectSuccess "pass"
+                    , testExpectReject "let subtype B <: B = \\(MkB x) => MkB x in pass"
+                    , testExpectReject "let subtype B <: C = \\(MkB x) => MkC x in pass"
+                    ]
               ]
         , tDecls ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = openEntity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
           tGroup

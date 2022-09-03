@@ -65,7 +65,8 @@ drawingStuff =
         "Drawing"
         ""
         [ mkTypeEntry "Handler" "Response to button-clicked events" $ MkBoundType handlerGroundType
-        , hasSubtypeRelationEntry @[LangHandler] @LangHandler "Monoidal relationship" $ functionToShim "mconcat" mconcat
+        , hasSubtypeRelationEntry @[LangHandler] @LangHandler Verify "Monoidal relationship" $
+          functionToShim "mconcat" mconcat
         , mkValEntry "onClick" "Action to perform on click" langOnClick
         , mkValEntry "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
         , mkValEntry "draw" "Drawable element" uiDraw

@@ -91,31 +91,36 @@ data Scope (ts :: Type) = MkScope
 emptyScope :: Scope ts
 emptyScope = MkScope mempty mempty
 
+type HasInterpreter ts = (IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts), ExprShow (BoundType ts))
+
 checkEntryConsistency ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => SubtypeConversionEntry (InterpreterGroundType ts)
     -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
     -> Interpreter ts ()
-checkEntryConsistency (MkSubtypeConversionEntry ta tb sconv) entries =
+checkEntryConsistency (MkSubtypeConversionEntry TrustMe _ _ _) _ = return ()
+checkEntryConsistency (MkSubtypeConversionEntry Verify ta tb sconv) entries =
     case checkSubtypeConsistency (toList entries) (MkSomeGroundType ta) (MkSomeGroundType tb) of
         Nothing -> return ()
-        Just (MkSubtypeConversionEntry eta etb esconv) ->
+        Just (MkSubtypeConversionEntry _ eta etb esconv) ->
             if isNeutralSubtypeConversion sconv && isNeutralSubtypeConversion esconv
                 then return ()
                 else throw $
                      InterpretSubtypeInconsistent (exprShow $ MkBoundType @ts eta) (exprShow $ MkBoundType @ts etb)
 
 addSCEntry ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => (Unique, SubtypeConversionEntry (InterpreterGroundType ts))
     -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
     -> Interpreter ts (HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts)))
+addSCEntry (key, _) entries
+    | member key entries = return entries
 addSCEntry (key, entry) entries = do
     checkEntryConsistency entry entries
     return $ insertMap key entry entries
 
 addSCEntries ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => [(Unique, SubtypeConversionEntry (InterpreterGroundType ts))]
     -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
     -> Interpreter ts (HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts)))
@@ -125,7 +130,7 @@ addSCEntries (a:aa) entries = do
     addSCEntries aa entries'
 
 joinScopes ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => Scope ts
     -> Scope ts
     -> Interpreter ts (Scope ts)
@@ -137,7 +142,7 @@ joinScopes a b = do
     return MkScope {scopeBindings = bb, scopeSubtypes = st}
 
 joinAllScopes ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => [Scope ts]
     -> Scope ts
     -> Interpreter ts (Scope ts)
@@ -253,7 +258,7 @@ runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
     in evalStateT (runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
 allocateVar ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => Name
     -> ScopeInterpreter ts VarID
 allocateVar n =
@@ -322,7 +327,7 @@ scopeRef :: Ref (ScopeInterpreter ts) (Scope ts)
 scopeRef = transformParamRef scopeParam
 
 registerScope ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => Scope ts
     -> ScopeInterpreter ts ()
 registerScope insertScope = refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
@@ -370,7 +375,7 @@ getSubtypeScope sce = do
     return $ emptyScope {scopeSubtypes = singletonMap key sce}
 
 registerBindings ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => Map Name (DocInterpreterBinding ts)
     -> ScopeInterpreter ts ()
 registerBindings bb = registerScope $ bindingsScope bb
@@ -401,13 +406,13 @@ lookupLetBinding name = do
         _ -> return Nothing
 
 registerLetBindings ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => Map Name (Markdown, TSSealedExpression ts)
     -> ScopeInterpreter ts ()
 registerLetBindings bb = registerBindings $ fmap (\(doc, exp) -> (doc, ValueBinding exp Nothing)) bb
 
 registerLetBinding ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => Name
     -> Markdown
     -> TSSealedExpression ts
@@ -484,7 +489,7 @@ registerPatternConstructor name doc exp pc = do
         Nothing -> registerBinding name $ (doc, ValueBinding exp $ Just pc)
 
 registerSubtypeConversion ::
-       forall ts. ExprShow (BoundType ts)
+       forall ts. HasInterpreter ts
     => SubtypeConversionEntry (InterpreterGroundType ts)
     -> ScopeInterpreter ts ()
 registerSubtypeConversion sce = do

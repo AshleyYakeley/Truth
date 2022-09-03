@@ -129,7 +129,7 @@ cairoLibraryModule =
         "Cairo"
         ""
         [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkBoundType drawingGroundType
-        , hasSubtypeRelationEntry @[LangDrawing A] @(LangDrawing [A]) "Monoidal relationship" $
+        , hasSubtypeRelationEntry @[LangDrawing A] @(LangDrawing [A]) Verify "Monoidal relationship" $
           functionToShim "mconcat" $ \dd -> mconcat $ fmap (fmap pure) dd
         , mkValEntry "pureDrawing" "" $ pure @LangDrawing @A
         , mkValEntry "mapDrawing" "" $ fmap @LangDrawing @A @B

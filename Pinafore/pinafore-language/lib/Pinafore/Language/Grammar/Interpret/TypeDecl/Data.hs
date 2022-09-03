@@ -440,6 +440,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                         superGroundType = getGroundType mainGroundType picktype gttid supertdata
                                         in registerSubtypeConversion $
                                            MkSubtypeConversionEntry
+                                               Verify
                                                subGroundType
                                                superGroundType
                                                IdentitySubtypeConversion

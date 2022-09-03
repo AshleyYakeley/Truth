@@ -419,7 +419,7 @@ interpretGeneralSubtypeRelation sta stb sbody = do
                         body <- lift $ interpretTopExpression sbody
                         convexpr <- lift $ typedExpressionToOpen funcWit body
                         registerSubtypeConversion $
-                            subtypeConversionEntry ta tb $ fmap (functionToShim "user-subtype") convexpr
+                            subtypeConversionEntry Verify ta tb $ fmap (functionToShim "user-subtype") convexpr
                     MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
             MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 
@@ -440,10 +440,10 @@ interpretOpenEntitySubtypeRelation sta stb =
                 case matchFamilyType openEntityFamilyWitness tfb of
                     Just (MkLiftedFamily _) ->
                         registerSubtypeConversion $
-                        MkSubtypeConversionEntry gta gtb $
                         case matchFamilyType openEntityFamilyWitness tfa of
-                            Just (MkLiftedFamily _) -> CoerceSubtypeConversion
+                            Just (MkLiftedFamily _) -> MkSubtypeConversionEntry Verify gta gtb CoerceSubtypeConversion
                             Nothing ->
+                                MkSubtypeConversionEntry TrustMe gta gtb $
                                 nilSubtypeConversion $
                                 coerceShim "open entity" .
                                 (functionToShim "entityConvert" $

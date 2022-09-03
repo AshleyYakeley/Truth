@@ -39,12 +39,13 @@ instance HasPinaforeGroundType '[] Showable where
 showableSubtypeRelationEntry ::
        forall a. (HasPinaforeType 'Negative a, TextShow a)
     => DocTreeEntry BindDoc
-showableSubtypeRelationEntry = hasSubtypeRelationEntry @a @Showable "" $ functionToShim "textShowable" textShowable
+showableSubtypeRelationEntry =
+    hasSubtypeRelationEntry @a @Showable Verify "" $ functionToShim "textShowable" textShowable
 
 literalSubtypeRelationEntry ::
        forall a. (HasPinaforeType 'Negative a, AsLiteral a)
     => DocTreeEntry BindDoc
-literalSubtypeRelationEntry = hasSubtypeRelationEntry @a @Literal "" $ functionToShim "toLiteral" toLiteral
+literalSubtypeRelationEntry = hasSubtypeRelationEntry @a @Literal Verify "" $ functionToShim "toLiteral" toLiteral
 
 entityAnchor :: Entity -> Text
 entityAnchor p = pack $ show p
@@ -170,7 +171,7 @@ baseLibEntries =
           , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
           , mkValEntry "entityAnchor" "The anchor of an entity, as text." entityAnchor
           , mkTypeEntry "Literal" "" $ MkBoundType literalGroundType
-          , hasSubtypeRelationEntry @Literal @Entity "" $ functionToShim "literalToEntity" literalToEntity
+          , hasSubtypeRelationEntry @Literal @Entity Verify "" $ functionToShim "literalToEntity" literalToEntity
           , docTreeEntry
                 "Showable"
                 ""
@@ -284,7 +285,7 @@ baseLibEntries =
                        , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
                        , docTreeEntry "Integer" "" $
                          [ mkTypeEntry "Integer" "" $ MkBoundType integerGroundType
-                         , hasSubtypeRelationEntry @Integer @SafeRational "" $
+                         , hasSubtypeRelationEntry @Integer @SafeRational Verify "" $
                            functionToShim "integerSafeRational" $ encode integerSafeRational
                          ] <>
                          plainFormattingDefs @Integer "Integer" "an integer" <>
@@ -316,7 +317,7 @@ baseLibEntries =
                          ]
                        , docTreeEntry "Rational" "" $
                          [ mkTypeEntry "Rational" "" $ MkBoundType rationalGroundType
-                         , hasSubtypeRelationEntry @SafeRational @Number "" $
+                         , hasSubtypeRelationEntry @SafeRational @Number Verify "" $
                            functionToShim "safeRationalNumber" $ encode safeRationalNumber
                          ] <>
                          plainFormattingDefs @SafeRational "Rational" "a rational" <>
@@ -531,7 +532,7 @@ baseLibEntries =
                       MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness pgtFamilyType
                       return IdentitySubtypeConversion
                 -}
-                , hasSubtypeRelationEntry @DynamicEntity @Entity "" $
+                , hasSubtypeRelationEntry @DynamicEntity @Entity Verify "" $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry
                       "dynamicEntity"
@@ -574,15 +575,17 @@ baseLibEntries =
                 case v of
                     Nothing -> Just ()
                     _ -> Nothing
-          , hasSubtypeRelationEntry @(Maybe Entity) @Entity "" $ functionToShim "maybeEntityConvert" maybeEntityConvert
-          , hasSubtypeRelationEntry @(Maybe Showable) @Showable "" $ functionToShim "show" textShowable
+          , hasSubtypeRelationEntry @(Maybe Entity) @Entity Verify "" $
+            functionToShim "maybeEntityConvert" maybeEntityConvert
+          , hasSubtypeRelationEntry @(Maybe Showable) @Showable Verify "" $ functionToShim "show" textShowable
           ]
     , docTreeEntry
           "*:"
           ""
           [ mkTypeEntry "*:" "" $ MkBoundType pairGroundType
-          , hasSubtypeRelationEntry @(Entity, Entity) @Entity "" $ functionToShim "pairEntityConvert" pairEntityConvert
-          , hasSubtypeRelationEntry @(Showable, Showable) @Showable "" $ functionToShim "show" textShowable
+          , hasSubtypeRelationEntry @(Entity, Entity) @Entity Verify "" $
+            functionToShim "pairEntityConvert" pairEntityConvert
+          , hasSubtypeRelationEntry @(Showable, Showable) @Showable Verify "" $ functionToShim "show" textShowable
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -600,9 +603,9 @@ baseLibEntries =
                 case v of
                     Right a -> Just (a, ())
                     _ -> Nothing
-          , hasSubtypeRelationEntry @(Either Entity Entity) @Entity "" $
+          , hasSubtypeRelationEntry @(Either Entity Entity) @Entity Verify "" $
             functionToShim "eitherEntityConvert" eitherEntityConvert
-          , hasSubtypeRelationEntry @(Either Showable Showable) @Showable "" $ functionToShim "show" textShowable
+          , hasSubtypeRelationEntry @(Either Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
           , mkValEntry "fromEither" "Eliminate a sum" $ either @A @C @B
           , mkValEntry "either" "Eliminate a sum" $ \(v :: Either A A) ->
                 case v of
@@ -614,7 +617,7 @@ baseLibEntries =
           ""
           [ mkTypeEntry "List" "A list." $ MkBoundType listGroundType
           , mkTypeEntry "List1" "A list with at least one element." $ MkBoundType list1GroundType
-          , hasSubtypeRelationEntry @(NonEmpty A) @[A] "" $ functionToShim "NonEmpty.toList" toList
+          , hasSubtypeRelationEntry @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
           , mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
                 case v of
                     [] -> Just ()
@@ -623,8 +626,8 @@ baseLibEntries =
                 case v of
                     a:b -> Just (a, (b, ()))
                     _ -> Nothing
-          , hasSubtypeRelationEntry @[Entity] @Entity "" $ functionToShim "listEntityConvert" listEntityConvert
-          , hasSubtypeRelationEntry @[Showable] @Showable "" $ functionToShim "show" textShowable
+          , hasSubtypeRelationEntry @[Entity] @Entity Verify "" $ functionToShim "listEntityConvert" listEntityConvert
+          , hasSubtypeRelationEntry @[Showable] @Showable Verify "" $ functionToShim "show" textShowable
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil

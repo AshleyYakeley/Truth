@@ -57,9 +57,9 @@ jpegStuff =
         "JPEG"
         ""
         [ mkTypeEntry "JPEGImage" "An image in JPEG format." $ MkBoundType jpegImageGroundType
-        , hasSubtypeRelationEntry @LangJPEGImage @LangImage "" $
+        , hasSubtypeRelationEntry @LangJPEGImage @LangImage Verify "" $
           functionToShim "jpegImage" $ MkLangImage . mapSome toPixelType . snd . idlData
-        , hasSubtypeRelationEntry @LangJPEGImage @Literal "" $ functionToShim "jpegLiteral" idlLiteral
-        , hasSubtypeRelationEntry @LangJPEGImage @LangHasMetadata "" $ functionToShim "jpegMetadata" jpegMetadata
+        , hasSubtypeRelationEntry @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral
+        , hasSubtypeRelationEntry @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
         , mkValEntry "jpegEncode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
         ]

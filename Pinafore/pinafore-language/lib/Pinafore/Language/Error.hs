@@ -145,7 +145,7 @@ instance Show ErrorType where
     show (InterpretTypeDeclTypeVariableNotCovariantError n) =
         "type variable is not covariant in declaration of " <> show n
     show (InterpretSubtypeInconsistent ta tb) =
-        "subtype relation is inconsistent with existing subtype relation " <> show ta <> " <: " <> show tb
+        "subtype relation is inconsistent with existing subtype relation " <> unpack ta <> " <: " <> unpack tb
     show (ModuleNotFoundError mname) = "can't find module " <> show mname
     show (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap show $ toList nn)
 

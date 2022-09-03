@@ -181,7 +181,7 @@ colourLibraryModule =
               MkLinearRGBFraction $ \(MkLinearRGBFraction r g b) -> Just (r, (g, (b, ())))
         , mkTypeEntry "AlphaColour" "A human-perceivable colour, with opacity." $ MkBoundType alphaColourGroundType
         , literalSubtypeRelationEntry @LangAlphaColour
-        , hasSubtypeRelationEntry @LangColour @LangAlphaColour "A Colour is an opaque AlphaColour" $
+        , hasSubtypeRelationEntry @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $
           functionToShim "opaque" opaque
         , mkValPatEntry
               "MkAlphaColour16"

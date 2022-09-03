@@ -15,5 +15,5 @@ makeOpenEntityTypeBox name doc =
         register _ = do
             let t = openEntityGroundType $ MkOpenEntityType name tidsym
             registerType name doc t
-            registerSubtypeConversion $ MkSubtypeConversionEntry t entityGroundType CoerceSubtypeConversion
+            registerSubtypeConversion $ MkSubtypeConversionEntry Verify t entityGroundType CoerceSubtypeConversion
         in return $ mkRegisterFixBox register
