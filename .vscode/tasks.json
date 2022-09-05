@@ -75,7 +75,7 @@
       },
       "label": "Quick Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make nodocker=1 single=1 exe ; bin/reportstatus $?",
+      "command": "cd ${workspaceRoot} && make single=1 exe ; bin/reportstatus $?",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -100,7 +100,7 @@
       "group": "test",
       "label": "Format & Quick Test",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make nodocker=1 test=1 format exe ; bin/reportstatus $?",
+      "command": "cd ${workspaceRoot} && make test=1 format exe ; bin/reportstatus $?",
       "problemMatcher": [
         {
           "owner": "stack",
