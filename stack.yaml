@@ -25,7 +25,7 @@ packages:
 - Pinafore/pinafore-gnome
 - Pinafore/pinafore-app
 
-resolver: lts-19.14
+resolver: lts-19.22
 
 allow-newer: true
 
