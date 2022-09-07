@@ -41,14 +41,14 @@
           "fileLocation": "absolute",
           "pattern": [
             {
-              "regexp": "> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+              "regexp": "(.*):(\\d+):(\\d+):\\s+(warning|error):",
               "file": 1,
               "line": 2,
               "column": 3,
               "severity": 4
             },
             {
-              "regexp": "> \\s+(.*)$",
+              "regexp": "\\s+(.*)$",
               "message": 1
             }
           ]
@@ -82,14 +82,14 @@
           "fileLocation": "absolute",
           "pattern": [
             {
-              "regexp": "> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+              "regexp": "(.*):(\\d+):(\\d+):\\s+(warning|error):",
               "file": 1,
               "line": 2,
               "column": 3,
               "severity": 4
             },
             {
-              "regexp": "> \\s+(.*)$",
+              "regexp": "\\s+(.*)$",
               "message": 1
             }
           ]
@@ -107,14 +107,14 @@
           "fileLocation": "absolute",
           "pattern": [
             {
-              "regexp": "> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+              "regexp": "(.*):(\\d+):(\\d+):\\s+(warning|error):",
               "file": 1,
               "line": 2,
               "column": 3,
               "severity": 4
             },
             {
-              "regexp": "> \\s+(.*)$",
+              "regexp": "\\s+(.*)$",
               "message": 1
             }
           ]
