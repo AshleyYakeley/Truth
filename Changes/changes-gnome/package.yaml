@@ -42,7 +42,7 @@ library:
       - Changes.World.GNOME.GI.ViewLock
       - Changes.World.GNOME.GI.LockState
       - Changes.World.GNOME.GI.GView
-      - Changes.World.GNOME.GI.LifeCycle
+      - Changes.World.GNOME.GI.Lifecycle
       - Changes.World.GNOME.GI.Signal
       - Changes.World.GNOME.GI.Widget
       - Changes.World.GNOME.GI

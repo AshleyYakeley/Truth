@@ -107,7 +107,7 @@ composePinaforeLensMorphism ::
     -> PinaforeLensMorphism ap aq cp cq baseupdate
 composePinaforeLensMorphism (MkPinaforeLensMorphism getBC buBC putBC invBC invbuBC) ab@(MkPinaforeLensMorphism getAB buAB putAB invAB invbuAB) = let
     pmGet a =
-        getComposeInner $ do
+        unComposeInner $ do
             b <- MkComposeInner $ getAB a
             MkComposeInner $ getBC b
     pmBaseUpdate ::
@@ -138,7 +138,7 @@ composePinaforeLensMorphism (MkPinaforeLensMorphism getBC buBC putBC invBC invbu
                                 kkc <- for kb getBC
                                 return $ Just $ exec kkc
     pmPut koldA kC =
-        getComposeInner $ do
+        unComposeInner $ do
             koldB <- lift $ pmKGet ab koldA
             (edits1, mknewB) <- MkComposeInner $ putBC koldB kC
             case mknewB of
@@ -192,7 +192,7 @@ pairPinaforeLensMorphism ::
     -> PinaforeLensMorphism ap aq (bp, cp) (bq, cq) baseupdate
 pairPinaforeLensMorphism (MkPinaforeLensMorphism getB buB putB invB invbuB) (MkPinaforeLensMorphism getC buC putC invC invbuC) = let
     pmGet a =
-        getComposeInner $ do
+        unComposeInner $ do
             b <- MkComposeInner $ getB a
             c <- MkComposeInner $ getC a
             return (b, c)
@@ -233,7 +233,7 @@ pairPinaforeLensMorphism (MkPinaforeLensMorphism getB buB putB invB invbuB) (MkP
                                         return (b, c)
     pmPut _ Unknown = return Nothing -- can't delete
     pmPut ka (Known (b, c)) =
-        getComposeInner $ do
+        unComposeInner $ do
             (updb, bmka) <- MkComposeInner $ putB ka $ Known b
             (updc, cmka) <- MkComposeInner $ putC ka $ Known c
             return (updb <> updc, bmka <|> cmka)
@@ -308,11 +308,11 @@ eitherPinaforeLensMorphism (MkPinaforeLensMorphism getA buA putA invA invbuA) (M
                                 Nothing -> return Nothing
                                 Just brmkc -> brmkc b
     pmPut (Known (Left a)) kc =
-        getComposeInner $ do
+        unComposeInner $ do
             (bu, mka) <- MkComposeInner $ putA (Known a) kc
             return $ (bu, fmap (fmap Left) mka)
     pmPut (Known (Right b)) kc =
-        getComposeInner $ do
+        unComposeInner $ do
             (bu, mkb) <- MkComposeInner $ putB (Known b) kc
             return $ (bu, fmap (fmap Right) mkb)
     pmPut Unknown _ = return Nothing
@@ -535,7 +535,7 @@ pinaforeLensMorphismInverseChangeLens plm@MkPinaforeLensMorphism {..} = let
         -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq)))
         -> m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know bp) (Know bq))])
     clPutEdits fsedits mr =
-        getComposeInner $ do
+        unComposeInner $ do
             baseedits <- for fsedits $ \fsedit -> MkComposeInner $ putEdit fsedit mr
             return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat baseedits
     in MkChangeLens {..}
@@ -608,7 +608,7 @@ pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
                 Known b -> Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b]
     clPutEdit' KeyEditClear mr = do
         bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
-        getComposeInner $ do
+        unComposeInner $ do
             lpedits <-
                 for (toList bs) $ \b -> do
                     aa <- lift $ runContextReadM mr $ pmInvGet b
@@ -622,9 +622,9 @@ pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
         => [FiniteSetEdit a]
         -> Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
         -> m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
-    clPutEdits' [] _ = getComposeInner $ return []
+    clPutEdits' [] _ = unComposeInner $ return []
     clPutEdits' (e:ee) mr =
-        getComposeInner $ do
+        unComposeInner $ do
             ea <- MkComposeInner $ clPutEdit' @m e mr
             eea <- MkComposeInner $ clPutEdits' ee $ applyEdits' ea mr
             return $ ea ++ eea

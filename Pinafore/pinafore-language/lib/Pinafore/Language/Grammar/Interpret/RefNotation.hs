@@ -32,8 +32,8 @@ runRefWriterT wma = do
 liftRefNotation :: PinaforeInterpreter --> RefNotation
 liftRefNotation = lift . lift
 
-hoistRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> RefNotation --> RefNotation
-hoistRefNotation (MkWMFunction mm) = hoist $ hoist mm
+hoistRefNotation :: WRaised PinaforeInterpreter PinaforeInterpreter -> RefNotation --> RefNotation
+hoistRefNotation (MkWRaised mm) = hoist $ hoist mm
 
 runRefNotation :: RefNotation --> PinaforeInterpreter
 runRefNotation rexpr = evalStateT (runRefWriterT rexpr) firstVarIDState

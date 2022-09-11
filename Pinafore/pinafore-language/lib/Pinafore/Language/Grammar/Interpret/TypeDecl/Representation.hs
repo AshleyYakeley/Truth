@@ -74,7 +74,7 @@ witnessTypeRepresentation ::
        forall w lt (ow :: Type -> Type) m. (HasVarMapping w, TestOrder ow, Monad m)
     => (forall a. w a -> m (ow a))
     -> ListType w lt
-    -> m (TypeRepresentation lt (SomeOf ow), WMFunction ow (ListElementType lt))
+    -> m (TypeRepresentation lt (SomeOf ow), WRaised ow (ListElementType lt))
 witnessTypeRepresentation newWit ltw = do
     let
         getCodec ::
@@ -91,7 +91,7 @@ witnessTypeRepresentation newWit ltw = do
         tr = MkTypeRepresentation codecs $ dependentVarMapping vmaps
         tw :: ow --> ListElementType lt
         tw owa = fromMaybe (error "bad value") $ orderedWitnessMapForLookup owa tmap
-    return (tr, MkWMFunction tw)
+    return (tr, MkWRaised tw)
 
 naturalWitnessTypeRepresentation ::
        forall w lt. HasVarMapping w
@@ -114,7 +114,7 @@ getOpenWitnessTypeRepresentation ::
     -> r
 getOpenWitnessTypeRepresentation lt call =
     runOW $ do
-        (tr, MkWMFunction tf) <- witnessTypeRepresentation (\_ -> newOpenWitnessOW) lt
+        (tr, MkWRaised tf) <- witnessTypeRepresentation (\_ -> newOpenWitnessOW) lt
         return $ call tr $ mapSome tf
 
 getOpenWitnessTypeRepresentationEq ::
@@ -124,7 +124,7 @@ getOpenWitnessTypeRepresentationEq ::
     -> r
 getOpenWitnessTypeRepresentationEq lt call =
     runOW $ do
-        (tr, MkWMFunction tf) <-
+        (tr, MkWRaised tf) <-
             witnessTypeRepresentation
                 (\wt -> do
                      ow <- newOpenWitnessOW

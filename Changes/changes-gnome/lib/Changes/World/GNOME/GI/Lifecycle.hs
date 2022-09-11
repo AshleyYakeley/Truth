@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GI.LifeCycle where
+module Changes.World.GNOME.GI.Lifecycle where
 
 import Changes.World.GNOME.GI.GView
 import Changes.World.GNOME.GI.LockState

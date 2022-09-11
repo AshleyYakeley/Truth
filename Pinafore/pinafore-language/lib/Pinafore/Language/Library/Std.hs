@@ -9,7 +9,7 @@ import Pinafore.Language.Library.Std.Base
 import Pinafore.Language.Library.Std.File
 import Pinafore.Language.Library.Std.Interpreter
 import Pinafore.Language.Library.Std.Invocation
-import Pinafore.Language.Library.Std.LifeCycle
+import Pinafore.Language.Library.Std.Lifecycle
 import Pinafore.Language.Library.Std.Reference
 import Pinafore.Language.Library.Std.Tasks
 import Pinafore.Language.Library.Std.Undo
@@ -23,7 +23,7 @@ stdLibraryModule =
     mconcat
         [ baseLibEntries
         , actionsLibEntries
-        , lifeCycleLibEntries
+        , lifecycleLibEntries
         , tasksLibEntries
         , interpreterLibEntries
         , invocationLibEntries

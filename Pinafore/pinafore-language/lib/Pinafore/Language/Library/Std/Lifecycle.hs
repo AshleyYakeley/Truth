@@ -1,5 +1,5 @@
-module Pinafore.Language.Library.Std.LifeCycle
-    ( lifeCycleLibEntries
+module Pinafore.Language.Library.Std.Lifecycle
+    ( lifecycleLibEntries
     ) where
 
 import Changes.Core
@@ -10,17 +10,17 @@ import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Var
 import Shapes
 
-lifeCycleLibEntries :: [DocTreeEntry BindDoc]
-lifeCycleLibEntries =
+lifecycleLibEntries :: [DocTreeEntry BindDoc]
+lifecycleLibEntries =
     [ docTreeEntry
-          "Life Cycle"
+          "Lifecycles"
           "Ways of managing the closing of things that get opened, most notably UI windows."
           [ mkValEntry
                 "lifecycle"
                 "Close everything that gets opened in the given action.\n\n\
                 \Example: `lifecycle $ do openResource; sleep 1000 end`  \n\
                 \This opens some resource, sleeps for one second, and then closes it again." $
-            (actionHoistView viewSubLifeCycle) @A
+            (actionHoistView viewSubLifecycle) @A
           , mkValEntry
                 "onClose"
                 "Add this action as to be done when closing.\n\n\

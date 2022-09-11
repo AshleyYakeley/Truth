@@ -14,7 +14,7 @@ optParser = (,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2')
 main :: IO ()
 main = do
     (dirpaths, double) <- O.execParser (O.info optParser mempty)
-    runLifeCycleT $
+    runLifecycle $
         runGTK $ \gtkContext ->
             runNewView $
             runGView gtkContext $ do

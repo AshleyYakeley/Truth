@@ -47,7 +47,7 @@ debugFloatingLens ::
 debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
 doModelTest :: TestName -> ((?handle :: Handle) => View ()) -> TestTree
-doModelTest name call = goldenTest "." name $ runLifeCycleT $ runView call
+doModelTest name call = goldenTest "." name $ runLifecycle $ runView call
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
@@ -99,7 +99,7 @@ testUpdateReference =
                 action
         rc <- viewGetResourceContext
         omr' <-
-            viewLiftLifeCycle $ do
+            viewLiftLifecycle $ do
                 om' <- sharePremodel om
                 omr' <- om' rc mempty $ recv "recv1" wait
                 _ <- mapPremodel rc lens (om' rc) mempty $ recv "recv2" (return ())
@@ -200,7 +200,7 @@ testSubscription initial = do
         varObj = mvarReference iow var $ \_ -> True
         editObj :: Reference (UpdateEdit update)
         editObj = convertReference varObj
-    model <- viewLiftLifeCycle $ makeReflectingModel editObj
+    model <- viewLiftLifecycle $ makeReflectingModel editObj
     let
         showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
         showExpected =

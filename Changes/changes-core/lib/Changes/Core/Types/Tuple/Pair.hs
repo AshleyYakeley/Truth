@@ -119,7 +119,7 @@ fstLiftChangeLens (MkChangeLens g u pe) = let
     clPutEdits edits mr =
         case partitionPairEdits edits of
             (ebs, exs) ->
-                getComposeInner $ do
+                unComposeInner $ do
                     eas <- MkComposeInner $ pe ebs $ firstReadFunction mr
                     return $ (fmap (MkTupleUpdateEdit SelectFirst) eas) ++ (fmap (MkTupleUpdateEdit SelectSecond) exs)
     in MkChangeLens {..}
@@ -149,7 +149,7 @@ sndLiftChangeLens (MkChangeLens g u pe) = let
     clPutEdits edits mr =
         case partitionPairEdits edits of
             (exs, ebs) ->
-                getComposeInner $ do
+                unComposeInner $ do
                     eas <- MkComposeInner $ pe ebs $ secondReadFunction mr
                     return $ (fmap (MkTupleUpdateEdit SelectFirst) exs) ++ (fmap (MkTupleUpdateEdit SelectSecond) eas)
     in MkChangeLens {..}
@@ -179,7 +179,7 @@ pairCombineChangeLenses (MkChangeLens g1 u1 pe1) (MkChangeLens g2 u2 pe2) = let
     pe12 edits mr =
         case partitionPairEdits edits of
             (eb1, eb2) ->
-                getComposeInner $ do
+                unComposeInner $ do
                     ea1 <- MkComposeInner $ pe1 eb1 mr
                     ea2 <- MkComposeInner $ pe2 eb2 mr
                     return $ ea1 ++ ea2

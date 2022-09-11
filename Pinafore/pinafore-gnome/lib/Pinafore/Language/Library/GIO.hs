@@ -48,7 +48,7 @@ fileMakeRef :: File -> PinaforeAction (LangWholeRef '( Literal, Literal))
 fileMakeRef f = do
     fref <- liftIO $ giFileReference f
     (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-
-        actionLiftLifeCycle $ makeSharedModel $ reflectingPremodel fref
+        actionLiftLifecycle $ makeSharedModel $ reflectingPremodel fref
     return $ pinaforeRefToWholeRef $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
 
 gioLibraryModule :: LibraryModule

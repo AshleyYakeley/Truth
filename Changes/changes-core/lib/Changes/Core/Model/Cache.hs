@@ -12,7 +12,7 @@ cacheReference ::
     => ResourceContext
     -> Int
     -> Reference edit
-    -> LifeCycle (ResourceContext -> Reference edit)
+    -> Lifecycle (ResourceContext -> Reference edit)
 cacheReference rc mus obj = do
     (runAction, asyncTask) <-
         asyncWaitRunner mus $ \editsnl ->

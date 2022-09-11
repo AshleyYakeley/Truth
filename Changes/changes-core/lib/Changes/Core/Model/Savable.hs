@@ -56,20 +56,20 @@ saveBufferReference rc objP pmrUpdatesTask update = do
         saveAction :: ResourceContext -> EditSource -> IO Bool
         saveAction urc esrc =
             runResource urc objP $ \anobj -> do
-                MkSaveBuffer buf _ <- mVarRun sbVar get
+                MkSaveBuffer buf _ <- mVarRunStateT sbVar get
                 maction <- refEdit anobj $ pure $ MkWholeReaderEdit buf
                 case maction of
                     Nothing -> return False
                     Just action -> do
                         action esrc
-                        mVarRun sbVar $ put $ MkSaveBuffer buf False
+                        mVarRunStateT sbVar $ put $ MkSaveBuffer buf False
                         return True
         revertAction :: ResourceContext -> EditSource -> IO Bool
         revertAction urc esrc = do
             edits <-
                 runResource urc objP $ \anobj -> do
                     buf <- refRead anobj ReadWhole
-                    mVarRun sbVar $ put $ MkSaveBuffer buf False
+                    mVarRunStateT sbVar $ put $ MkSaveBuffer buf False
                     getReplaceEditsFromSubject buf
             case nonEmpty edits of
                 Nothing -> return ()
@@ -78,7 +78,7 @@ saveBufferReference rc objP pmrUpdatesTask update = do
         pmrValue :: SaveActions
         pmrValue =
             MkSaveActions $ do
-                MkSaveBuffer _ changed <- mVarRun sbVar get
+                MkSaveBuffer _ changed <- mVarRunStateT sbVar get
                 return $
                     if changed
                         then Just (saveAction, revertAction)

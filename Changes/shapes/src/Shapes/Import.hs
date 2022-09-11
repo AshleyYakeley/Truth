@@ -260,3 +260,35 @@ endsWith :: Eq a => [a] -> [a] -> Maybe [a]
 endsWith e s = do
     a <- startsWith (reverse e) (reverse s)
     return $ reverse a
+
+lifecycleOnAllDone ::
+       forall m. MonadAskUnliftIO m
+    => m ()
+    -> m (LifecycleT m (), m ())
+lifecycleOnAllDone onzero = do
+    var <- liftIO $ newMVar (0 :: Int)
+    let
+        ondone = do
+            liftIO $
+                mVarRunStateT var $ do
+                    olda <- get
+                    put $ succ olda
+            lifecycleOnClose $ do
+                iszero <-
+                    mVarRunStateT var $ do
+                        olda <- get
+                        let newa = pred olda
+                        put newa
+                        return $ newa == 0
+                if iszero
+                    then onzero
+                    else return ()
+        checkdone = do
+            iszero <-
+                mVarRunStateT var $ do
+                    a <- get
+                    return $ a == 0
+            if iszero
+                then onzero
+                else return ()
+    return (ondone, checkdone)

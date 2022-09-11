@@ -424,7 +424,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                             refRead (PinaforeStorageReadLookup prd val) =
                                 tableRead $ PinaforeTableReadPropertyLookup prd val
                             refRead (PinaforeStorageReadEntity ea entity) =
-                                getComposeInner $ readEntity (entityAdapterDefinitions ea) entity
+                                unComposeInner $ readEntity (entityAdapterDefinitions ea) entity
                             refEdit ::
                                    NonEmpty PinaforeStorageEdit
                                 -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))

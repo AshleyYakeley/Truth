@@ -194,7 +194,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
         objRun :: ResourceRunner '[ ReaderT Connection]
         objRun =
             mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call ->
-                mVarUnitRun var $ do
+                mVarRunLocked var $ do
                     exists <- liftIO $ doesFileExist path
                     liftIOWithUnlift $ \unlift ->
                         withConnection path $ \conn -> do

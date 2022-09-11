@@ -38,4 +38,4 @@ getClipboard = do
         refCommitTask = mempty
         ref :: Reference (WholeEdit (Maybe Clip))
         ref = MkResource nilResourceRunner $ MkAReference {..}
-    gvLiftLifeCycleNoUI $ makeReflectingModel ref
+    gvLiftLifecycleNoUI $ makeReflectingModel ref

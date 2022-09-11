@@ -26,7 +26,7 @@ newtype AppUI =
 main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
-    runLifeCycleT $
+    runLifecycle $
         runGTK $ \gtkContext ->
             runNewView $
             runGView gtkContext $
@@ -42,7 +42,7 @@ main = do
                            -> (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
                            -> GView 'Locked Widget
                         ui sub1 msub2 extraui = do
-                            (selModel, setsel) <- gvLiftLifeCycleNoUI $ makeSharedModel makePremodelSelectNotify
+                            (selModel, setsel) <- gvLiftLifecycleNoUI $ makeSharedModel makePremodelSelectNotify
                             let
                                 openSelection ::
                                        Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> GView 'Locked ()
@@ -166,12 +166,12 @@ main = do
                             if saveOpt
                                 then do
                                     (bufferSub, saveActions) <-
-                                        gvLiftLifeCycleNoUI $
+                                        gvLiftLifecycleNoUI $
                                         makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
                                     uh <- liftIO newUndoHandler
                                     return (undoHandlerModel uh bufferSub, MkAppUI $ extraUI saveActions uh)
                                 else do
-                                    textSub <- gvLiftLifeCycleNoUI $ makeReflectingModel $ convertReference wholeTextObj
+                                    textSub <- gvLiftLifecycleNoUI $ makeReflectingModel $ convertReference wholeTextObj
                                     return (textSub, MkAppUI simpleUI)
                         mTextSub2 <-
                             case selTest of
@@ -179,7 +179,7 @@ main = do
                                 True -> do
                                     bsObj2 <- liftIO $ makeMemoryReference mempty $ \_ -> True
                                     textSub2 <-
-                                        gvLiftLifeCycleNoUI $
+                                        gvLiftLifecycleNoUI $
                                         makeReflectingModel $
                                         convertReference $ mapReference textLens $ convertReference bsObj2
                                     return $ Just textSub2

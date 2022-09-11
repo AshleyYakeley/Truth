@@ -320,7 +320,7 @@ finiteSetCartesianProductUpdateFunction = let
         bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
         return $ liftA2 (,) aa bb
     clRead mr (KeyReadItem (a, b) ReadWhole) =
-        getComposeInner $ do
+        unComposeInner $ do
             a' <- MkComposeInner $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
             b' <- MkComposeInner $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem b ReadWhole
             return (a', b')

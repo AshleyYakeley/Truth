@@ -69,5 +69,5 @@ runDeferActionT (MkDeferActionT (WriterT wma)) = do
 
 deferActionResourceRunner ::
        forall m. MonadIO m
-    => LifeCycleT m (ResourceRunner '[ DeferActionT])
+    => LifecycleT m (ResourceRunner '[ DeferActionT])
 deferActionResourceRunner = liftIO $ newResourceRunner runDeferActionT

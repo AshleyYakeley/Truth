@@ -38,7 +38,7 @@ undoVarUnlift var wma = do
     case nonEmpty lrefedits of
         Nothing -> return ()
         Just nrefedits ->
-            mVarRun var $ do
+            mVarRunStateT var $ do
                 MkUndoQueue uq _ <- get
                 put $ MkUndoQueue (nrefedits : uq) []
     return a
@@ -51,7 +51,7 @@ newUndoHandler = do
 
 undoHandlerUndo :: UndoHandler -> ResourceContext -> EditSource -> IO Bool
 undoHandlerUndo MkUndoHandler {..} rc esrc =
-    mVarRun uhVar $ do
+    mVarRunStateT uhVar $ do
         MkUndoQueue ues res <- get
         case ues of
             [] -> return False -- nothing to undo
@@ -74,7 +74,7 @@ undoHandlerUndo MkUndoHandler {..} rc esrc =
 
 undoHandlerRedo :: UndoHandler -> ResourceContext -> EditSource -> IO Bool
 undoHandlerRedo MkUndoHandler {..} rc esrc =
-    mVarRun uhVar $ do
+    mVarRunStateT uhVar $ do
         MkUndoQueue ues res <- get
         case res of
             [] -> return False -- nothing to redo

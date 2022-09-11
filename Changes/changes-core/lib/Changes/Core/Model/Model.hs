@@ -30,7 +30,7 @@ import Changes.Core.Types
 
 data AModel update tt = MkAModel
     { aModelAReference :: AReference (UpdateEdit update) tt
-    , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycle ()
+    , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
     , aModelUpdatesTask :: Task ()
     }
 
@@ -53,7 +53,7 @@ instance MapResource (AModel update) where
                 case transStackDict @Monad @tt2 @IO of
                     Dict -> let
                         obj2 = mapResource tlf obj1
-                        sub2 recv task = tlfFunction tlf (Proxy @LifeCycle) $ sub1 recv task
+                        sub2 recv task = tlfFunction tlf (Proxy @Lifecycle) $ sub1 recv task
                         in MkAModel obj2 sub2 utask
 
 type Model update = Resource (AModel update)
@@ -92,7 +92,7 @@ singleUpdateQueue updates ec = MkUpdateQueue $ pure (ec, updates)
 
 getRunner ::
        (ResourceContext -> NonEmpty update -> EditContext -> IO ())
-    -> LifeCycle (Task (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
+    -> Lifecycle (Task (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
 getRunner recv = do
     (runAsync, utask) <-
         asyncRunner $ \(MkUpdateQueue sourcedupdates) ->
@@ -105,19 +105,19 @@ modelPremodel rc (MkResource rr MkAModel {..}) val update utask = do
     runResourceRunner rc rr $ aModelSubscribe update utask
     return $ MkPremodelResult (MkResource rr aModelAReference) aModelUpdatesTask val
 
-makeSharedModel :: forall update a. Premodel update a -> LifeCycle (Model update, a)
+makeSharedModel :: forall update a. Premodel update a -> Lifecycle (Model update, a)
 makeSharedModel om = do
     var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
         updateP :: ResourceContext -> NonEmpty update -> EditContext -> IO ()
         updateP rc updates ectxt = do
-            store <- mVarRun var get
+            store <- mVarRunStateT var get
             for_ store $ \(_, entry) -> entry rc updates ectxt
     (utaskRunner, updatePAsync) <- getRunner updateP
     let
         getTasks :: IO ([Task ()])
         getTasks = do
-            store <- mVarRun var get
+            store <- mVarRunStateT var get
             return $ fmap fst $ toList store
         utaskP :: Task ()
         utaskP = utaskRunner <> ioTask (fmap mconcat getTasks)
@@ -127,17 +127,17 @@ makeSharedModel om = do
     Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
     let
         aModelSubscribe ::
-               Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycle ()
+               Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
         aModelSubscribe taskC updateC =
-            stackLift @tt @LifeCycle $ do
-                key <- liftIO $ mVarRun var $ addStoreStateT (taskC, updateC)
-                lifeCycleOnClose $ mVarRun var $ deleteStoreStateT key
+            stackLift @tt @Lifecycle $ do
+                key <- liftIO $ mVarRunStateT var $ addStoreStateT (taskC, updateC)
+                lifecycleOnClose $ mVarRunStateT var $ deleteStoreStateT key
         aModelUpdatesTask = pmrUpdatesTask
         child :: Model update
         child = MkResource trunC $ MkAModel {..}
     return (child, pmrValue)
 
-sharePremodel :: forall update a. Premodel update a -> LifeCycle (ResourceContext -> Premodel update a)
+sharePremodel :: forall update a. Premodel update a -> Lifecycle (ResourceContext -> Premodel update a)
 sharePremodel uobj = do
     (sub, a) <- makeSharedModel uobj
     return $ \rc -> modelPremodel rc sub a
@@ -145,7 +145,7 @@ sharePremodel uobj = do
 makeReflectingModel ::
        forall update. IsUpdate update
     => Reference (UpdateEdit update)
-    -> LifeCycle (Model update)
+    -> Lifecycle (Model update)
 makeReflectingModel reference = do
     (sub, ()) <- makeSharedModel $ reflectingPremodel reference
     return sub
@@ -155,7 +155,7 @@ floatMapModel ::
        ResourceContext
     -> FloatingChangeLens updateA updateB
     -> Model updateA
-    -> LifeCycle (Model updateB)
+    -> Lifecycle (Model updateB)
 floatMapModel rc lens subA = do
     (subB, ()) <- makeSharedModel $ mapPremodel rc lens $ modelPremodel rc subA ()
     return subB
@@ -190,7 +190,7 @@ constantModel subj = aReferenceModel $ immutableAReference $ subjectToReadable s
 modelToReadOnly :: Model update -> Model (ReadOnlyUpdate update)
 modelToReadOnly = mapModel toReadOnlyChangeLens
 
-makeMemoryModel :: forall a. a -> LifeCycle (Model (WholeUpdate a))
+makeMemoryModel :: forall a. a -> Lifecycle (Model (WholeUpdate a))
 makeMemoryModel initial = do
     obj <- liftIO $ makeMemoryReference initial $ \_ -> True
     makeReflectingModel obj

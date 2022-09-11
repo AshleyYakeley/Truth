@@ -214,10 +214,10 @@ instance MonadThrow ErrorMessage InterpretResult where
 runInterpretResult :: MonadIO m => InterpretResult a -> m (Result PinaforeError a)
 runInterpretResult (MkInterpretResult ir) = liftIO $ runResultT ir
 
-throwInterpretResult ::
+fromInterpretResult ::
        forall m a. (MonadThrow PinaforeError m, MonadIO m)
     => InterpretResult a
     -> m a
-throwInterpretResult ir = do
+fromInterpretResult ir = do
     result <- runInterpretResult ir
-    throwResult result
+    fromResult result

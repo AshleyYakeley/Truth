@@ -10,7 +10,7 @@ import Pinafore.Test
 import Shapes
 
 nullViewIO :: View --> IO
-nullViewIO va = runLifeCycleT $ runView va
+nullViewIO va = runLifecycle $ runView va
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -35,10 +35,10 @@ benchScript text =
                [ bench "check" $
                  nfIO $
                  runWithContext pc (libraryFetchModule extraLibrary) $
-                 throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
+                 fromInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
                , env (fmap const $
                       runWithContext pc (libraryFetchModule extraLibrary) $
-                      throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
+                      fromInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
                      bench "run" $ nfIO (nullViewIO $ action ())
                ]
 
@@ -95,7 +95,7 @@ benchScripts =
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
     withTestPinaforeContext mempty stdout $ \_getTableState -> do
-        action <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" text
+        action <- fromInterpretResult $ pinaforeInterpretTextAtType "<test>" text
         (sendUpdate, ref) <- runNewView $ unliftPinaforeActionOrFail action
         runNewView $
             runEditor (unWModel $ immutableRefToRejectingRef ref) $

@@ -5,10 +5,10 @@ module Changes.Core.UI.View.View
     , viewOnClose
     , viewOnCloseIO
     , viewGetCloser
-    , viewLiftLifeCycle
-    , viewLiftLifeCycleWithUnlift
-    , viewHoistLifeCycle
-    , viewSubLifeCycle
+    , viewLiftLifecycle
+    , viewLiftLifecycleWithUnlift
+    , viewHoistLifecycle
+    , viewSubLifecycle
     , viewGetViewState
     , viewAddViewState
     , viewWithUnliftAsync
@@ -37,7 +37,7 @@ import Changes.Core.UI.View.Context
 type ViewState = LifeState
 
 newtype View a = MkView
-    { unView :: ReaderT ViewContext LifeCycle a
+    { unView :: ReaderT ViewContext Lifecycle a
     } deriving ( Functor
                , Applicative
                , Monad
@@ -54,36 +54,36 @@ newtype View a = MkView
                )
 
 viewOnCloseIO :: IO () -> View ()
-viewOnCloseIO closer = viewLiftLifeCycle $ lifeCycleOnClose closer
+viewOnCloseIO closer = viewLiftLifecycle $ lifecycleOnClose closer
 
 viewOnClose :: View () -> View ()
 viewOnClose closer = do
     vc <- MkView ask
-    viewOnCloseIO $ runLifeCycleT $ runViewFromContext vc closer
+    viewOnCloseIO $ runLifecycle $ runViewFromContext vc closer
 
 viewGetCloser :: forall a. View a -> View (a, IO ())
 viewGetCloser (MkView ma) =
     MkView $ do
         MkWUnlift unlift <- askUnlift
-        lift $ lifeCycleGetCloser $ unlift ma
+        lift $ lifecycleGetCloser $ unlift ma
 
 viewGetViewState :: View a -> View (a, ViewState)
 viewGetViewState (MkView ma) = MkView $ liftWithUnlift $ \unlift -> lift $ getLifeState $ unlift ma
 
 viewAddViewState :: ViewState -> View ()
-viewAddViewState vs = viewLiftLifeCycle $ addLifeState vs
+viewAddViewState vs = viewLiftLifecycle $ addLifeState vs
 
-viewLiftLifeCycle :: LifeCycle --> View
-viewLiftLifeCycle la = MkView $ lift la
+viewLiftLifecycle :: Lifecycle --> View
+viewLiftLifecycle la = MkView $ lift la
 
-viewLiftLifeCycleWithUnlift :: ((View --> LifeCycle) -> LifeCycle a) -> View a
-viewLiftLifeCycleWithUnlift call = MkView $ liftWithUnlift $ \unlift -> call $ unlift . unView
+viewLiftLifecycleWithUnlift :: ((View --> Lifecycle) -> Lifecycle a) -> View a
+viewLiftLifecycleWithUnlift call = MkView $ liftWithUnlift $ \unlift -> call $ unlift . unView
 
-viewHoistLifeCycle :: (LifeCycle --> LifeCycle) -> View --> View
-viewHoistLifeCycle f (MkView la) = MkView $ hoist f la
+viewHoistLifecycle :: (Lifecycle --> Lifecycle) -> View --> View
+viewHoistLifecycle f (MkView la) = MkView $ hoist f la
 
-viewSubLifeCycle :: View --> View
-viewSubLifeCycle = viewHoistLifeCycle $ lift . runLifeCycleT
+viewSubLifecycle :: View --> View
+viewSubLifecycle = viewHoistLifecycle $ lift . runLifecycle
 
 viewWithUnliftAsync :: forall a. ((View --> IO) -> View a) -> View a
 viewWithUnliftAsync call =
@@ -121,15 +121,15 @@ viewLocalResourceContext rc = viewWithContext (\vc -> vc {vcResourceContext = rc
 viewWaitUpdates :: Model update -> View ()
 viewWaitUpdates model = liftIO $ taskWait $ modelUpdatesTask model
 
-runViewFromContext :: ViewContext -> View --> LifeCycle
+runViewFromContext :: ViewContext -> View --> Lifecycle
 runViewFromContext vc (MkView (ReaderT view)) = liftIOWithUnlift $ \unlift -> unlift $ view vc
 
-runView :: View --> LifeCycle
+runView :: View --> Lifecycle
 runView = let
     vcResourceContext = emptyResourceContext
     in runViewFromContext MkViewContext {..}
 
-runNewView :: View --> LifeCycle
+runNewView :: View --> Lifecycle
 runNewView = runView
 
 viewBindModelUpdates ::
@@ -142,12 +142,12 @@ viewBindModelUpdates ::
     -> View a
 viewBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
-    monitor <- viewLiftLifeCycle lifeCycleMonitor
+    monitor <- viewLiftLifecycle lifecycleMonitor
     liftIOWithUnlift $ \unlift ->
         unlift $
         viewRunResourceContext model $ \stunlift amodel -> do
             a <- initv
-            viewLiftLifeCycle $
+            viewLiftLifecycle $
                 stunlift $
                 aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
                     if testesrc editContextSource
@@ -177,12 +177,12 @@ viewFloatMap ::
     -> View (f updateB)
 viewFloatMap flens fa = do
     rc <- viewGetResourceContext
-    viewLiftLifeCycle $ eaFloatMap rc flens fa
+    viewLiftLifecycle $ eaFloatMap rc flens fa
 
 viewFloatMapModel :: forall updateA updateB. FloatingChangeLens updateA updateB -> Model updateA -> View (Model updateB)
 viewFloatMapModel flens model = do
     rc <- viewGetResourceContext
-    viewLiftLifeCycle $ floatMapModel rc flens model
+    viewLiftLifecycle $ floatMapModel rc flens model
 
 viewBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (Bool -> t -> View ()) -> View ()
 viewBindWholeModel model mesrc setf = let

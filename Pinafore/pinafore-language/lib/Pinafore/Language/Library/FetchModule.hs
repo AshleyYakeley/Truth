@@ -37,7 +37,7 @@ instance Monoid FetchModule where
 
 loadModuleFromText :: ModuleName -> Text -> PinaforeInterpreter PinaforeModule
 loadModuleFromText modname text =
-    unmapTransformT (void $ interpretImportDeclaration stdModuleName) $ parseModule modname text
+    transformTMap (void $ interpretImportDeclaration stdModuleName) $ parseModule modname text
 
 loadModuleFromByteString :: ModuleName -> LazyByteString -> PinaforeInterpreter PinaforeModule
 loadModuleFromByteString modname bs =

@@ -43,7 +43,7 @@ import Pinafore.Language.Var
 import Pinafore.Language.VarID
 import Shapes
 
-makeTestStorageModel :: LifeCycle (Model PinaforeStorageUpdate, IO PinaforeTableSubject)
+makeTestStorageModel :: Lifecycle (Model PinaforeStorageUpdate, IO PinaforeTableSubject)
 makeTestStorageModel = do
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
         liftIO $ makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
@@ -55,7 +55,7 @@ makeTestStorageModel = do
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
     return (model, getTableState)
 
-makeTestPinaforeContext :: Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext :: Handle -> Lifecycle (PinaforeContext, IO PinaforeTableSubject)
 makeTestPinaforeContext hout = do
     (model, getTableState) <- makeTestStorageModel
     pc <- makePinaforeContext nullInvocationInfo hout model
@@ -64,10 +64,10 @@ makeTestPinaforeContext hout = do
 withTestPinaforeContext ::
        FetchModule
     -> Handle
-    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO PinaforeTableSubject -> LifeCycle r)
+    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO PinaforeTableSubject -> Lifecycle r)
     -> IO r
 withTestPinaforeContext fetchModule hout call =
-    runLifeCycleT $ do
+    runLifecycle $ do
         (pc, getTableState) <- makeTestPinaforeContext hout
         runWithContext pc fetchModule $ call getTableState
 

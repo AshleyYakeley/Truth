@@ -49,19 +49,19 @@ makeStateExpLens MkStateChangeLens {..} = let
     rlens :: StateLensVar s -> GenChangeLens lin updateA updateB
     rlens var = let
         clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
-        clRead mr rt = dangerousMVarRun var $ lensStateT tempLens $ sclRead mr rt
+        clRead mr rt = dangerousMVarRunStateT var $ lensStateT tempLens $ sclRead mr rt
         clUpdate ::
                forall m. MonadIO m
             => updateA
             -> Readable m (UpdateReader updateA)
             -> m [updateB]
-        clUpdate update mr = dangerousMVarRun var $ lensStateT permLens $ sclUpdate update mr
+        clUpdate update mr = dangerousMVarRunStateT var $ lensStateT permLens $ sclUpdate update mr
         clPutEdits ::
                forall m. MonadIO m
             => [UpdateEdit updateB]
             -> Readable m (NL lin (UpdateReader updateA))
             -> m (Maybe [UpdateEdit updateA])
-        clPutEdits edits mr = dangerousMVarRun var $ lensStateT tempLens $ sclPutEdits edits mr
+        clPutEdits edits mr = dangerousMVarRunStateT var $ lensStateT tempLens $ sclPutEdits edits mr
         in MkChangeLens {..}
     in MkExpFloatingChangeLens init rlens
 

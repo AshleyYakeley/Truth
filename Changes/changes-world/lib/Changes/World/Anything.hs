@@ -43,7 +43,7 @@ instance ApplicableEdit AnyEdit where
     applyEdit (MkAnyEdit ie edit) mr areader@(ReadAnyReader ir rt) = do
         MkAnyTypes oie <- mr ReadAnyTypes
         case (testEquality oie ie, testEquality oie ir) of
-            (Just Refl, Just Refl) -> getComposeInner $ applyEdit edit (MkComposeInner . mr . ReadAnyReader ir) rt
+            (Just Refl, Just Refl) -> unComposeInner $ applyEdit edit (MkComposeInner . mr . ReadAnyReader ir) rt
             _ -> mr areader
     applyEdit (MkAnyEdit _ _) mr ReadAnyTypes = mr ReadAnyTypes -- edit cannot change types
 
@@ -52,7 +52,7 @@ instance InvertibleEdit AnyEdit where
         MkAnyTypes oie <- mr ReadAnyTypes
         case testEquality oie ie of
             Just Refl -> do
-                minvedits <- getComposeInner $ invertEdit edit (MkComposeInner . mr . ReadAnyReader oie)
+                minvedits <- unComposeInner $ invertEdit edit (MkComposeInner . mr . ReadAnyReader oie)
                 case minvedits of
                     Nothing -> return []
                     Just invedits -> return $ fmap (MkAnyEdit ie) invedits

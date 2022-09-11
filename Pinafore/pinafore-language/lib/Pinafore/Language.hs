@@ -15,7 +15,7 @@ module Pinafore.Language
     , SpecialVals(..)
     , PinaforeError
     , InterpretResult
-    , throwInterpretResult
+    , fromInterpretResult
     , runInterpretResult
     , PinaforeAction
     , HasPinaforeType
@@ -63,7 +63,7 @@ runPinaforeScoped ::
     -> InterpretResult a
 runPinaforeScoped spos scp =
     runInterpreter spos (lcLoadModule ?library) spvals $
-    unmapTransformT (void $ interpretImportDeclaration stdModuleName) scp
+    transformTMap (void $ interpretImportDeclaration stdModuleName) scp
 
 spvals :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => PinaforeSpecialVals
 spvals = let
@@ -107,7 +107,7 @@ type Interact = StateT SourcePos (ReaderStateT PinaforeInterpreter View)
 interactRunSourceScoped :: PinaforeInterpreter a -> Interact a
 interactRunSourceScoped sa = do
     spos <- get
-    lift $ liftRS $ paramWith sourcePosParam spos $ sa
+    lift $ readerStateLift $ paramWith sourcePosParam spos $ sa
 
 interactEvalExpression :: PinaforeInterpreter PinaforeExpression -> Interact PinaforeValue
 interactEvalExpression texpr =
@@ -125,7 +125,7 @@ runValue outh val =
          return $ liftIO $ hPutStrLn outh s)
 
 interactParse :: Text -> Interact InteractiveCommand
-interactParse t = hoist throwInterpretResult $ parseInteractiveCommand t
+interactParse t = hoist fromInterpretResult $ parseInteractiveCommand t
 
 interactLoop :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
@@ -146,7 +146,7 @@ interactLoop inh outh echo = do
                          case p of
                              LetInteractiveCommand bind -> do
                                  interactRunSourceScoped $ bind $ return () -- check errors
-                                 lift $ updateRS bind
+                                 lift $ readerStateUpdate bind
                              ExpressionInteractiveCommand texpr -> do
                                  val <- interactEvalExpression texpr
                                  action <- runValue outh val
@@ -194,4 +194,4 @@ interact :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => Handle
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
-        throwInterpretResult . runPinaforeScoped (initialPos "<UNKNOWN>")
+        fromInterpretResult . runPinaforeScoped (initialPos "<UNKNOWN>")

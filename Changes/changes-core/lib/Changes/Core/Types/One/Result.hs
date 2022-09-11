@@ -22,7 +22,7 @@ liftResultOneFloatingChangeLens ::
     -> FloatingChangeLens (ResultOneUpdate f updateA) (ResultOneUpdate f updateB)
 liftResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rlens) = let
     sclInit :: StateLensInit (OneReader f (UpdateReader updateA)) (f r)
-    sclInit mr = getComposeInner $ runFloatInit init $ oneReadFunctionF mr
+    sclInit mr = unComposeInner $ runFloatInit init $ oneReadFunctionF mr
     sclRead :: ReadFunctionT (StateT (f r)) (OneReader f (UpdateReader updateA)) (OneReader f (UpdateReader updateB))
     sclRead mr rt = do
         fr <- get
@@ -44,7 +44,7 @@ liftResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rl
             SuccessResult r ->
                 lift $
                 fmap (fmap SuccessResultOneUpdate . fromMaybe [] . mToMaybe) $
-                getComposeInner $ clUpdate (rlens r) upda $ oneReadFunctionF mr
+                unComposeInner $ clUpdate (rlens r) upda $ oneReadFunctionF mr
             FailureResult _ -> return []
     sclUpdate (NewResultOneUpdate fu) mr = do
         case retrieveInner fu of
@@ -72,6 +72,6 @@ liftResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rl
             SuccessResult r ->
                 lift $
                 fmap (fmap (fmap MkOneEdit . fromMaybe []) . mToMaybe) $
-                getComposeInner $ clPutEdits (rlens r) (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
+                unComposeInner $ clPutEdits (rlens r) (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
             FailureResult _ -> return $ Just []
     in makeStateLens @'NonLinear MkStateChangeLens {..}

@@ -31,7 +31,7 @@ type instance EditReader (ListEdit edit) = ListReader (EditReader edit)
 
 instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (ListEdit edit) where
     applyEdit (ListEditItem p edit) mr (ListReadItem i rd)
-        | p == i = getComposeInner $ applyEdit edit (itemReadFunction i mr) rd -- already checks bounds
+        | p == i = unComposeInner $ applyEdit edit (itemReadFunction i mr) rd -- already checks bounds
     applyEdit (ListEditItem _ _) mr rd = mr rd
     applyEdit (ListEditDelete p) mr ListReadLength = do
         len <- mr ListReadLength
@@ -63,7 +63,7 @@ instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => Applicabl
 instance (FullSubjectReader (EditReader edit), SubjectMapEdit edit, ApplicableEdit edit, InvertibleEdit edit) =>
              InvertibleEdit (ListEdit edit) where
     invertEdit (ListEditItem p edit) mr = do
-        minvedits <- getComposeInner $ invertEdit edit $ itemReadFunction p mr
+        minvedits <- unComposeInner $ invertEdit edit $ itemReadFunction p mr
         case minvedits of
             Just invedits -> return $ fmap (ListEditItem p) invedits
             Nothing -> return []
@@ -74,7 +74,7 @@ instance (FullSubjectReader (EditReader edit), SubjectMapEdit edit, ApplicableEd
                 then [ListEditDelete p]
                 else []
     invertEdit (ListEditDelete p) mr = do
-        ma <- getComposeInner $ readableToSubject $ itemReadFunction p mr
+        ma <- unComposeInner $ readableToSubject $ itemReadFunction p mr
         case ma of
             Just a -> return [ListEditInsert p a]
             Nothing -> return []

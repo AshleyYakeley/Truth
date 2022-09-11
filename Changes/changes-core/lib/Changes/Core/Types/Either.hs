@@ -29,8 +29,8 @@ instance (SubjectReader ra, SubjectReader rb) => SubjectReader (EitherReader ra 
 
 instance (FullSubjectReader ra, FullSubjectReader rb) => FullSubjectReader (EitherReader ra rb) where
     readableToSubject mr = do
-        mleft <- getComposeInner $ readableToSubject $ mapEitherReadLeft mr
-        mright <- getComposeInner $ readableToSubject $ mapEitherReadRight mr
+        mleft <- unComposeInner $ readableToSubject $ mapEitherReadLeft mr
+        mright <- unComposeInner $ readableToSubject $ mapEitherReadRight mr
         case (mleft, mright) of
             (Just a, Nothing) -> return $ Left a
             (Nothing, Just a) -> return $ Right a
@@ -56,14 +56,14 @@ instance (Floating ea ea, Floating eb eb) => Floating (EitherEdit ea eb) (Either
 type instance EditReader (EitherEdit ea eb) = EitherReader (EditReader ea) (EditReader eb)
 
 instance (ApplicableEdit ea, ApplicableEdit eb) => ApplicableEdit (EitherEdit ea eb) where
-    applyEdit (EitherEditLeft edit) mr (EitherReadLeft rd) = getComposeInner $ applyEdit edit (mapEitherReadLeft mr) rd
+    applyEdit (EitherEditLeft edit) mr (EitherReadLeft rd) = unComposeInner $ applyEdit edit (mapEitherReadLeft mr) rd
     applyEdit (EitherEditRight edit) mr (EitherReadRight rd) =
-        getComposeInner $ applyEdit edit (mapEitherReadRight mr) rd
+        unComposeInner $ applyEdit edit (mapEitherReadRight mr) rd
     applyEdit _ mr rd = mr rd
 
 instance (InvertibleEdit ea, InvertibleEdit eb) => InvertibleEdit (EitherEdit ea eb) where
     invertEdits edits mr = do
         let (eas, ebs) = partitionEitherEdits edits
-        meditas <- getComposeInner $ invertEdits eas $ mapEitherReadLeft mr
-        meditbs <- getComposeInner $ invertEdits ebs $ mapEitherReadRight mr
+        meditas <- unComposeInner $ invertEdits eas $ mapEitherReadLeft mr
+        meditbs <- unComposeInner $ invertEdits ebs $ mapEitherReadRight mr
         return $ (fmap EitherEditLeft $ fromMaybe [] meditas) ++ (fmap EitherEditRight $ fromMaybe [] meditbs)

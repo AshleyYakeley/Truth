@@ -47,7 +47,7 @@ knownKeyItemReadFunction ::
     => ContainerKey cont
     -> ReadFunction (KeyReader cont reader) reader
 knownKeyItemReadFunction key mr rt = do
-    mt <- getComposeInner $ keyItemReadFunction key mr rt
+    mt <- unComposeInner $ keyItemReadFunction key mr rt
     case mt of
         Just t -> return t
         Nothing -> error $ "missing item in list"
@@ -94,10 +94,10 @@ instance ( FullSubjectReader (EditReader edit)
          , Item cont ~ EditSubject edit
          ) => ApplicableEdit (KeyEdit cont edit) where
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
-        mnewkey <- getComposeInner $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
+        mnewkey <- unComposeInner $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of
             Just newkey
-                | key == newkey -> getComposeInner $ (applyEdit edit $ keyItemReadFunction key mr) rt
+                | key == newkey -> unComposeInner $ (applyEdit edit $ keyItemReadFunction key mr) rt
             _ ->
                 if key == oldkey
                     then return Nothing
@@ -105,7 +105,7 @@ instance ( FullSubjectReader (EditReader edit)
     applyEdit (KeyEditItem oldkey edit) mr KeyReadKeys = do
         oldkeys <- mr KeyReadKeys
         mnewkey <-
-            getComposeInner $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
+            unComposeInner $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         return $
             case mnewkey of
                 Just newkey -> replace oldkey newkey oldkeys
@@ -135,18 +135,18 @@ instance ( FullSubjectReader (EditReader edit)
          , Item cont ~ EditSubject edit
          ) => InvertibleEdit (KeyEdit cont edit) where
     invertEdit (KeyEditItem key edit) mr = do
-        minvedits <- getComposeInner $ invertEdit edit $ keyItemReadFunction key mr
+        minvedits <- unComposeInner $ invertEdit edit $ keyItemReadFunction key mr
         case minvedits of
             Just invedits -> return $ fmap (KeyEditItem key) invedits
             Nothing -> return []
     invertEdit (KeyEditInsertReplace item) mr = do
         let newkey = itemKey @cont item
-        molditem <- getComposeInner $ readableToSubject $ keyItemReadFunction newkey mr
+        molditem <- unComposeInner $ readableToSubject $ keyItemReadFunction newkey mr
         case molditem of
             Just olditem -> return [KeyEditInsertReplace olditem]
             Nothing -> return [KeyEditDelete newkey]
     invertEdit (KeyEditDelete key) mr = do
-        ma <- getComposeInner $ readableToSubject $ keyItemReadFunction key mr
+        ma <- unComposeInner $ readableToSubject $ keyItemReadFunction key mr
         case ma of
             Just a -> return [KeyEditInsertReplace a]
             Nothing -> return []
@@ -276,7 +276,7 @@ keyElementChangeLens initKey = let
         return $ Just [KeyEditDelete key]
     sPutEdit (SuccessFullResultOneEdit edit) mr = do
         oldkey <- get
-        mnewkey <- lift $ getComposeInner $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
+        mnewkey <- lift $ unComposeInner $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
         case mnewkey of
             Just newkey -> do
                 put newkey
@@ -320,7 +320,7 @@ liftKeyElementChangeLens ::
 liftKeyElementChangeLens bma (MkChangeLens g u pe) = let
     clRead :: ReadFunction (KeyReader conta (UpdateReader updateA)) (KeyReader contb (UpdateReader updateB))
     clRead mr KeyReadKeys = mr KeyReadKeys
-    clRead (mr :: Readable m _) (KeyReadItem key rt) = getComposeInner $ g (keyItemReadFunction key mr) rt
+    clRead (mr :: Readable m _) (KeyReadItem key rt) = unComposeInner $ g (keyItemReadFunction key mr) rt
     clUpdate ::
            forall m. MonadIO m
         => KeyUpdate conta updateA
@@ -332,7 +332,7 @@ liftKeyElementChangeLens bma (MkChangeLens g u pe) = let
         return [KeyUpdateInsertReplace itemb]
     clUpdate (KeyUpdateDelete key) _ = return [KeyUpdateDelete key]
     clUpdate (KeyUpdateItem key ea) mr = do
-        mresult <- getComposeInner $ u ea (keyItemReadFunction @conta key mr)
+        mresult <- unComposeInner $ u ea (keyItemReadFunction @conta key mr)
         case mresult of
             Just ebs -> return $ fmap (KeyUpdateItem key) ebs
             Nothing -> return []
@@ -347,7 +347,7 @@ liftKeyElementChangeLens bma (MkChangeLens g u pe) = let
         return $ fmap (\itema -> [KeyEditInsertReplace itema]) fitema
     clPutEdit (KeyEditDelete key) _ = return $ Just [KeyEditDelete key]
     clPutEdit (KeyEditItem key eb) mr = do
-        mfresult <- getComposeInner $ pe [eb] (keyItemReadFunction @conta key mr)
+        mfresult <- unComposeInner $ pe [eb] (keyItemReadFunction @conta key mr)
         return $
             case mfresult of
                 Just fsea -> fmap (fmap $ KeyEditItem key) fsea
@@ -389,7 +389,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
         case lookup key rmap of
             Just r -> return $ Just r
             Nothing -> do
-                mnewr <- lift $ getComposeInner $ init $ \rt -> MkComposeInner $ mr $ KeyReadItem key rt
+                mnewr <- lift $ unComposeInner $ init $ \rt -> MkComposeInner $ mr $ KeyReadItem key rt
                 case mnewr of
                     Just newr -> put $ insertMap key newr rmap
                     Nothing -> return ()
@@ -400,7 +400,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
     sclRead (mr :: Readable m _) (KeyReadItem key rt) = do
         mrc <- getR mr key
         lift $
-            getComposeInner $ do
+            unComposeInner $ do
                 r <- MkComposeInner $ return mrc
                 clRead (rlens r) (keyItemReadFunction key mr) rt
     sclUpdate ::
@@ -424,7 +424,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
         mrc <- getR mr key
         mresult <-
             lift $
-            getComposeInner $ do
+            unComposeInner $ do
                 r <- MkComposeInner $ return mrc
                 clUpdate (rlens r) ea (keyItemReadFunction @conta key mr)
         case mresult of
@@ -444,7 +444,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
         mrc <- getR mr key
         mfresult <-
             lift $
-            getComposeInner $ do
+            unComposeInner $ do
                 r <- MkComposeInner $ return mrc
                 clPutEdits (rlens r) [eb] (keyItemReadFunction @conta key mr)
         return $

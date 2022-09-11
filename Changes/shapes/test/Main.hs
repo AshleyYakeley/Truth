@@ -14,7 +14,7 @@ testFastClock :: TestTree
 testFastClock =
     testTree "fast" $ do
         ref <- newIORef False
-        runLifeCycleT $ do
+        runLifecycle $ do
             _ <-
                 clock baseTime 0.1 $ \_ -> do
                     writeIORef ref True
@@ -29,7 +29,7 @@ testFastClock =
 testSlowClock :: TestTree
 testSlowClock =
     testTree "slow" $
-    runLifeCycleT $ do
+    runLifecycle $ do
         _ <- clock baseTime (5000 * nominalDay) $ \_ -> return ()
         return ()
 
@@ -91,13 +91,13 @@ runBoxes = do
 
 testFix :: TestTree
 testFix =
-    testTree "fix" [testTree "IO" (runFix :: IO ()), testTree "TransformT IO" (runTransformT runFix return :: IO ())]
+    testTree "fix" [testTree "IO" (runFix :: IO ()), testTree "TransformT IO" (unTransformT runFix return :: IO ())]
 
 testFixBox :: TestTree
 testFixBox =
     testTree
         "fixbox"
-        [testTree "IO" (runBoxes :: IO ()), testTree "TransformT IO" (runTransformT runBoxes return :: IO ())]
+        [testTree "IO" (runBoxes :: IO ()), testTree "TransformT IO" (unTransformT runBoxes return :: IO ())]
 
 main :: IO ()
 main = testMain $ testTree "shapes" [testClock, testFix, testFixBox]

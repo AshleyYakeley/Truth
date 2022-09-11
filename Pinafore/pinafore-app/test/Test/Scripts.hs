@@ -26,7 +26,7 @@ testCheckModule name =
     testTree name $
     withTestPinaforeContext (libraryFetchModule extraLibrary <> directoryFetchModule libDir) stdout $ \_ -> do
         modname <- maybeToM "bad module name" $ toModuleName $ pack name
-        _ <- throwInterpretResult $ runPinaforeScoped (initialPos name) $ lcLoadModule ?library modname
+        _ <- fromInterpretResult $ runPinaforeScoped (initialPos name) $ lcLoadModule ?library modname
         return ()
 
 testRelPath :: FilePath -> Maybe TestTree

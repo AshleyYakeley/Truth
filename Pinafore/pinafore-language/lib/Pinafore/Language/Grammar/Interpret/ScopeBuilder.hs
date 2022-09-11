@@ -42,7 +42,7 @@ exposeDocs names = fmap EntryDocTreeEntry . exposeDeclids names . mconcat . fmap
 type ScopeBuilder = TransformT RefNotation
 
 runScopeBuilder :: ScopeBuilder a -> (a -> RefNotation b) -> RefNotation b
-runScopeBuilder sb = runTransformT sb
+runScopeBuilder sb = unTransformT sb
 
 sourcePosScopeBuilder :: SourcePos -> ScopeBuilder ()
 sourcePosScopeBuilder spos = interpScopeBuilder $ refPut (transformParamRef sourcePosParam) spos

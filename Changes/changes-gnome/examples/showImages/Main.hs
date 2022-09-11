@@ -19,7 +19,7 @@ main :: IO ()
 main = do
     filenames <- listDirectory imagedir
     --(paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
-    runLifeCycleT $
+    runLifecycle $
         runGTK $ \gtkContext ->
             runNewView $
             runGView gtkContext $ do
@@ -28,7 +28,7 @@ main = do
                     gvLiftIONoUI $
                     makeMemoryReference (Just $ MkSomeFor NoAlphaTrue8PixelType $ blankImage (100, 100) black) $ \_ ->
                         True
-                model <- gvLiftLifeCycleNoUI $ makeReflectingModel imageRef
+                model <- gvLiftLifecycleNoUI $ makeReflectingModel imageRef
                 rec
                     (_, closer) <-
                         gvRunLocked $

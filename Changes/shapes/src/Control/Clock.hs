@@ -12,7 +12,7 @@ data Cancelled =
 
 instance Exception Cancelled
 
-clock :: UTCTime -> NominalDiffTime -> (UTCTime -> IO ()) -> LifeCycle UTCTime
+clock :: UTCTime -> NominalDiffTime -> (UTCTime -> IO ()) -> Lifecycle UTCTime
 clock utcBase ndtInterval call = do
     let
         getDiffTimes :: IO (NominalDiffTime, NominalDiffTime)
@@ -37,7 +37,7 @@ clock utcBase ndtInterval call = do
             takeMVar var
             call $ addUTCTime ndtNext utcBase
     (ndtTime, ndtOffset) <- liftIO getDiffTimes
-    lifeCycleOnClose $ do
+    lifecycleOnClose $ do
         takeMVar var
         throwTo thread MkCancelled
     return $ addUTCTime (ndtTime - ndtOffset) utcBase

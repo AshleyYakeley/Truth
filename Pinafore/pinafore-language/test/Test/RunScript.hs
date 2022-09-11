@@ -67,21 +67,21 @@ testExpression ::
        forall a. HasPinaforeType 'Negative a
     => Text
     -> Text
-    -> ((?pinafore :: PinaforeContext) => IO a -> LifeCycle ())
+    -> ((?pinafore :: PinaforeContext) => IO a -> Lifecycle ())
     -> ScriptTestTree
 testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
             fullscript = prefix scDeclarations <> script
             in withTestPinaforeContext scFetchModule stdout $ \_getTableState ->
-                   call $ throwInterpretResult $ pinaforeInterpretTextAtType "<test>" fullscript
+                   call $ fromInterpretResult $ pinaforeInterpretTextAtType "<test>" fullscript
 
 testScript ::
-       Text -> Text -> ((?pinafore :: PinaforeContext) => IO (PinaforeAction ()) -> LifeCycle ()) -> ScriptTestTree
+       Text -> Text -> ((?pinafore :: PinaforeContext) => IO (PinaforeAction ()) -> Lifecycle ()) -> ScriptTestTree
 testScript = testExpression @(PinaforeAction ())
 
 testScriptCatchStop ::
-       Text -> Text -> ((?pinafore :: PinaforeContext) => IO (PinaforeAction ()) -> LifeCycle ()) -> ScriptTestTree
+       Text -> Text -> ((?pinafore :: PinaforeContext) => IO (PinaforeAction ()) -> Lifecycle ()) -> ScriptTestTree
 testScriptCatchStop name script = testScript name $ "onStop (" <> script <> ") (fail \"stopped\")"
 
 data ScriptExpectation

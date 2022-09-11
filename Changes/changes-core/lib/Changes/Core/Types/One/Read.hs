@@ -39,7 +39,7 @@ liftOneReadFunction ::
     => ReadFunction ra rb
     -> ReadFunction (OneReader f ra) (OneReader f rb)
 liftOneReadFunction _rfrarb mr ReadHasOne = mr ReadHasOne
-liftOneReadFunction rfrarb (mr :: Readable m _) (ReadOne rbt) = getComposeInner $ rfrarb (oneReadFunctionF mr) rbt
+liftOneReadFunction rfrarb (mr :: Readable m _) (ReadOne rbt) = unComposeInner $ rfrarb (oneReadFunctionF mr) rbt
 
 instance (MonadInner f, FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
-    readableToSubject mr = getComposeInner $ readableToSubject $ oneReadFunctionF mr
+    readableToSubject mr = unComposeInner $ readableToSubject $ oneReadFunctionF mr

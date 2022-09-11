@@ -11,7 +11,7 @@ import Shapes.Test
 testReadType :: Text -> TestTree
 testReadType text =
     testTree @Assertion (unpack text) $
-    throwInterpretResult $ do
+    fromInterpretResult $ do
         _ <- runTestPinaforeSourceScoped $ parseType @'Positive text
         return ()
 

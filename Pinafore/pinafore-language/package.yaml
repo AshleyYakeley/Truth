@@ -101,7 +101,7 @@ library:
       - Pinafore.Language.Library.Std.Types
       - Pinafore.Language.Library.Std.Base
       - Pinafore.Language.Library.Std.Actions
-      - Pinafore.Language.Library.Std.LifeCycle
+      - Pinafore.Language.Library.Std.Lifecycle
       - Pinafore.Language.Library.Std.Tasks
       - Pinafore.Language.Library.Std.Interpreter
       - Pinafore.Language.Library.Std.Invocation

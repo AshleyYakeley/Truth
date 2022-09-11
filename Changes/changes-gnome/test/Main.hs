@@ -12,11 +12,11 @@ lockTest :: String -> GView 'Unlocked a -> (a -> GView 'Unlocked ()) -> TestTree
 lockTest name setup action =
     testTree name $ do
         task <-
-            runLifeCycleT $
+            runLifecycle $
             runGTK $ \gtkc -> do
                 runNewView $ do
                     a <- runGView gtkc setup
-                    viewLiftLifeCycle $
+                    viewLiftLifecycle $
                         liftIOWithUnlift $ \unlift -> forkSingleTask $ unlift $ runView $ runGView gtkc $ action a
         taskWait task
 

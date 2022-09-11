@@ -17,4 +17,4 @@ traceUnliftAll prefix mf =
         Dict -> traceBarrier_ prefix mf
 
 instance (forall m. c m => MonadIO m, TransConstraint MonadIO t) => TraceThing (WUnlift c t) where
-    traceThing prefix unlift = MkWUnlift $ traceUnliftAll prefix (runWUnlift unlift)
+    traceThing prefix unlift = MkWUnlift $ traceUnliftAll prefix (unWUnlift unlift)

@@ -111,28 +111,28 @@ deleteentity ref = langWholeRefSet ref Unknown
 newMemWhole :: forall a. PinaforeAction (LangWholeRef '( a, a))
 newMemWhole = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
-    model <- actionLiftLifeCycle $ makeReflectingModel r
+    model <- actionLiftLifecycle $ makeReflectingModel r
     uh <- pinaforeUndoHandler
     return $ pinaforeRefToWholeRef $ MkWModel $ undoHandlerModel uh model
 
 newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model <- actionLiftLifeCycle $ makeReflectingModel $ convertReference r
+    model <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ meetValueLangFiniteSetRef $ MkWModel $ undoHandlerModel uh model
 
 newMemList :: forall a. PinaforeAction (LangListRef '( a, a))
 newMemList = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model :: Model (ListUpdate (WholeUpdate a)) <- actionLiftLifeCycle $ makeReflectingModel $ convertReference r
+    model :: Model (ListUpdate (WholeUpdate a)) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ FullLangListRef $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
 
 newMemText :: PinaforeAction LangTextRef
 newMemText = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model :: Model (StringUpdate Text) <- actionLiftLifeCycle $ makeReflectingModel $ convertReference r
+    model :: Model (StringUpdate Text) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ MkLangTextRef $ MkWModel $ undoHandlerModel uh model
 

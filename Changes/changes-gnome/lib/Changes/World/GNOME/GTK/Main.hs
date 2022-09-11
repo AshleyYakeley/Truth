@@ -13,16 +13,16 @@ data RunState
     = RSRun
     | RSStop
 
-attachedIdleSource :: Maybe MainContext -> LifeCycle Source
+attachedIdleSource :: Maybe MainContext -> Lifecycle Source
 attachedIdleSource mmc = do
     source <- idleSourceNew
     _ <- sourceAttach source $ mmc
-    lifeCycleOnClose $ sourceDestroy source
+    lifecycleOnClose $ sourceDestroy source
     return source
 
-mainLoop :: CallbackLock -> MVar RunState -> LifeCycle ()
+mainLoop :: CallbackLock -> MVar RunState -> Lifecycle ()
 mainLoop uiLock runVar = do
-    shouldRun <- mVarRun runVar Shapes.get
+    shouldRun <- mVarRunStateT runVar Shapes.get
     case shouldRun of
         RSStop -> return ()
         RSRun -> do
@@ -34,7 +34,7 @@ mainLoop uiLock runVar = do
             let
                 mainloop :: IO ()
                 mainloop = do
-                    sr <- mVarRun runVar Shapes.get
+                    sr <- mVarRunStateT runVar Shapes.get
                     case sr of
                         RSRun -> do
                             _ <- mainContextIteration mc True
@@ -42,19 +42,19 @@ mainLoop uiLock runVar = do
                         RSStop -> return ()
             liftIO $ cbRunLocked uiLock mainloop
 
-runGTK :: forall a. (GTKContext -> LifeCycle a) -> LifeCycle a
+runGTK :: forall a. (GTKContext -> Lifecycle a) -> Lifecycle a
 runGTK call = do
     _ <- GI.init Nothing
     gtkcLock <- liftIO newCallbackLock
     runVar <- liftIO $ newMVar RSRun
     let
         gtkcExit :: IO ()
-        gtkcExit = mVarRun runVar $ put RSStop
-    (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone gtkcExit
+        gtkcExit = mVarRunStateT runVar $ put RSStop
+    (ondone, checkdone) <- liftIO $ lifecycleOnAllDone gtkcExit
     let
         gtkcExitOnClosed :: View --> View
         gtkcExitOnClosed ma = do
-            viewLiftLifeCycle ondone
+            viewLiftLifecycle ondone
             ma
     a <- call MkGTKContext {..}
     liftIO checkdone
@@ -62,4 +62,4 @@ runGTK call = do
     return a
 
 runGTKView :: forall a. (GTKContext -> View a) -> View a
-runGTKView call = viewLiftLifeCycleWithUnlift $ \unlift -> runGTK $ \gtkc -> unlift $ call gtkc
+runGTKView call = viewLiftLifecycleWithUnlift $ \unlift -> runGTK $ \gtkc -> unlift $ call gtkc

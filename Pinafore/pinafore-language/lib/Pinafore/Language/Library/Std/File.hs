@@ -25,7 +25,7 @@ file_import set continue = do
                         let
                             MkResource rr asub = sub
                         liftIO $
-                            runWMFunction rr $ do
+                            unWRaised rr $ do
                                 pushEdit $ refEdit [SingleReferenceDeleteCreate]
                                 aModelRead asub ReadSingleReferenceStore
                 destreference <-
@@ -36,7 +36,7 @@ file_import set continue = do
                 continue entity
 
 file_size :: Reference ByteStringEdit -> IO Int64
-file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
+file_size MkReference {..} = unWRaised objRun $ refRead ReadByteStringLength
 -}
 fileLibEntries :: [DocTreeEntry BindDoc]
 fileLibEntries =

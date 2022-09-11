@@ -91,7 +91,7 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testTree (unpack text) $ do
-        expr <- throwInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
+        expr <- fromInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
         assertEqual "" r $ showTypes expr
 
 badInterpretTest :: Text -> TestTree
@@ -106,7 +106,7 @@ simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
     testTree (unpack text) $ do
         simpexpr <-
-            throwInterpretResult $
+            fromInterpretResult $
             runTestPinaforeSourceScoped $ do
                 mt <- parseType @'Positive text
                 case mt of
@@ -121,7 +121,7 @@ unrollTest :: Text -> Text -> TestTree
 unrollTest rolledTypeText expectedUnrolledTypeText =
     testTree @Assertion (unpack rolledTypeText) $ do
         action <-
-            throwInterpretResult $
+            fromInterpretResult $
             runTestPinaforeSourceScoped $ do
                 mRolledType <- parseType @'Positive rolledTypeText
                 return $

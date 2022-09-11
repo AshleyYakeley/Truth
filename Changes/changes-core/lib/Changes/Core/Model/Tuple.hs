@@ -148,7 +148,7 @@ instance TupleResource AModel where
         -> AModel (TupleUpdate (ListElementType updates)) tt
         -> AModel (TupleUpdate (ListElementType (update : updates))) tt
     consTupleAResource (MkAModel anobj1 sub1 utask1) (MkAModel anobj2 sub2 utask2) =
-        case transStackDict @MonadIO @tt @LifeCycle of
+        case transStackDict @MonadIO @tt @Lifecycle of
             Dict -> let
                 anobj12 = unUAReference $ consTupleAResource (MkUAReference anobj1) (MkUAReference anobj2)
                 sub12 task recv12 = do

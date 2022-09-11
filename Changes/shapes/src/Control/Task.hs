@@ -48,7 +48,7 @@ singleTask ioa = do
         taskWait :: IO a
         taskWait = do
             rea <- readMVar var
-            throwResult rea
+            fromResult rea
         taskIsDone :: IO Bool
         taskIsDone = fmap isJust $ tryReadMVar var
         task = MkTask {..}

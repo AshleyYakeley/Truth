@@ -14,12 +14,12 @@ import Test.Context
 
 runUIAction :: GView 'Unlocked () -> Text -> IO ()
 runUIAction testaction script =
-    runLifeCycleT $
+    runLifecycle $
     runNewView $ do
-        (pc, _) <- viewLiftLifeCycle $ makeTestPinaforeContext stdout
+        (pc, _) <- viewLiftLifecycle $ makeTestPinaforeContext stdout
         runWithContext pc (libraryFetchModule gnomeLibrary) $ do
             scriptaction <-
-                throwInterpretResult $
+                fromInterpretResult $
                 pinaforeInterpretTextAtType @((LangContext -> View ()) -> PinaforeAction ()) "<test>" script
             donevar <- liftIO newEmptyMVar
             runPinaforeAction $

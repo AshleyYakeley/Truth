@@ -296,7 +296,7 @@ showAnnotation AnnotNegativeType = "type"
 interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> PinaforeInterpreter PinaforeValue
 interpretSpecialForm name annotations = do
     MkSpecialForm largs val <- lookupSpecialForm name
-    margs <- getComposeInner $ specialFormArgs largs $ toList annotations
+    margs <- unComposeInner $ specialFormArgs largs $ toList annotations
     case margs of
         Just args -> val args
         Nothing ->
@@ -320,7 +320,7 @@ interpretCase (MkSyntaxCase spat sexpr) =
 
 interpretExpressionShadowed :: [a] -> SyntaxExpression -> RefExpression
 interpretExpressionShadowed _names sbody =
-    interpretExpression sbody {-hoistRefNotation (MkWMFunction $ unregisterBindings names) $ -}
+    interpretExpression sbody {-hoistRefNotation (MkWRaised $ unregisterBindings names) $ -}
 
 interpretExpression' :: SyntaxExpression' -> RefExpression
 interpretExpression' (SESubsume sexpr stype) = do

@@ -189,7 +189,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> GView 'Locked ( Mod
             getSelection = do
                 mentry <- gvRunLocked getSelectedEntry
                 return $ fmap (entryModel . snd) mentry
-        MkWMFunction unliftToView <- gvGetUnliftToView
+        MkWRaised unliftToView <- gvGetUnliftToView
         getSelSig <-
             gvOnSignal tselection #changed $
             gvRunUnlocked $ gvLiftView $ runSelectNotify notifier $ unliftToView getSelection

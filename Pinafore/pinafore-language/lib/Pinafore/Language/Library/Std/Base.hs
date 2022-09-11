@@ -55,7 +55,7 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
 newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeRef UTCTime)
 newClock duration = do
-    (clockOM, ()) <- actionLiftLifeCycle $ makeSharedModel $ clockPremodel zeroTime duration
+    (clockOM, ()) <- actionLiftLifecycle $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableRef $ MkWModel $ clockOM
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)

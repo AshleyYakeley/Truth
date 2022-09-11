@@ -27,7 +27,7 @@ stateResourceRunnerTrace name s = do
     newResourceRunner $ \ma -> do
         liftIO $ hPutStrLn ?handle $ name <> ": outside ["
         a <-
-            mVarRun var $ do
+            mVarRunStateT var $ do
                 liftIO $ hPutStrLn ?handle $ name <> ": inside ["
                 a <- ma
                 liftIO $ hPutStrLn ?handle $ name <> ": inside ]"
@@ -57,7 +57,7 @@ testUnlift :: TestTree
 testUnlift =
     testTree "unlift" $ do
         var <- newMVar ()
-        mVarRun var $ liftWithUnlift $ \unlift -> unlift $ return ()
+        mVarRunStateT var $ liftWithUnlift $ \unlift -> unlift $ return ()
 
 testResource1 :: TestTree
 testResource1 =

@@ -109,7 +109,7 @@ instance IsLinearity lin => Category (GenChangeLens lin) where
             -> Readable m (NL lin (UpdateReader updateA))
             -> m (Maybe [UpdateEdit updateA])
         peAC ec mra =
-            getComposeInner $ do
+            unComposeInner $ do
                 ebs <- MkComposeInner $ peBC ec $ nlLiftReadFunction @lin gAB mra
                 MkComposeInner $ peAB ebs mra
         in MkChangeLens gAC uAC peAC
@@ -120,9 +120,9 @@ linearPutEditsFromPutEdit ::
     -> [editb]
     -> Readable m rd
     -> m' (Maybe [edita])
-linearPutEditsFromPutEdit _ [] _ = getComposeInner $ return []
+linearPutEditsFromPutEdit _ [] _ = unComposeInner $ return []
 linearPutEditsFromPutEdit putEdit (e:ee) _ =
-    getComposeInner $ do
+    unComposeInner $ do
         ea <- MkComposeInner $ putEdit e
         eea <- MkComposeInner $ linearPutEditsFromPutEdit @_ @_ @m putEdit ee nullReadable
         return $ ea ++ eea
@@ -133,9 +133,9 @@ clPutEditsFromPutEdit ::
     -> [editb]
     -> Readable m (EditReader edita)
     -> m' (Maybe [edita])
-clPutEditsFromPutEdit _ [] _ = getComposeInner $ return []
+clPutEditsFromPutEdit _ [] _ = unComposeInner $ return []
 clPutEditsFromPutEdit clPutEdit (e:ee) mr =
-    getComposeInner $ do
+    unComposeInner $ do
         ea <- MkComposeInner $ clPutEdit e mr
         eea <- MkComposeInner $ clPutEditsFromPutEdit clPutEdit ee $ applyEdits ea mr
         return $ ea ++ eea
@@ -147,7 +147,7 @@ clPutEditsFromSimplePutEdit ::
     -> Readable m (EditReader editA)
     -> m (Maybe [editA])
 clPutEditsFromSimplePutEdit putEdit editBs _ =
-    getComposeInner $ do
+    unComposeInner $ do
         editAss <- for editBs $ \update -> MkComposeInner $ putEdit update
         return $ mconcat editAss
 

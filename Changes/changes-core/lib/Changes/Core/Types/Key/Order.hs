@@ -42,7 +42,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
         -> ContainerKey cont
         -> m (Maybe o)
     getMaybeO ordr mr k =
-        getComposeInner $ clRead (rOrdLens ordr) (\rt -> MkComposeInner $ mr $ KeyReadItem k rt) ReadWhole
+        unComposeInner $ clRead (rOrdLens ordr) (\rt -> MkComposeInner $ mr $ KeyReadItem k rt) ReadWhole
     getO ::
            forall m. (HasCallStack, MonadIO m)
         => or
@@ -242,7 +242,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
             MkComposeInner $ fmap Just $ mr $ MkTupleUpdateReader SelectContext rt
         cmr (MkTupleUpdateReader SelectContent rt) =
             MkComposeInner $ mr $ MkTupleUpdateReader SelectContent $ KeyReadItem k rt
-        in getComposeInner $ clRead (rOrdLens ordr) cmr ReadWhole
+        in unComposeInner $ clRead (rOrdLens ordr) cmr ReadWhole
     getO ::
            forall m. MonadIO m
         => or
@@ -470,9 +470,9 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
         => [ContextUpdateEdit updateX (OrderedListUpdate updateN)]
         -> Readable m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m (Maybe [ContextUpdateEdit updateX (KeyUpdate cont updateN)])
-    sclPutEdits [] _ = getComposeInner $ return []
+    sclPutEdits [] _ = unComposeInner $ return []
     sclPutEdits (e:ee) mr =
-        getComposeInner $ do
+        unComposeInner $ do
             ea <- MkComposeInner $ sPutEdit e mr
             eea <- MkComposeInner $ sclPutEdits ee $ contentOnlyApplyEdits ea mr
             return $ ea ++ eea

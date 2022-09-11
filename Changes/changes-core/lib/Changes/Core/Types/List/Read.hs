@@ -13,7 +13,7 @@ itemReadFunction i mr rt = MkComposeInner $ mr $ ListReadItem i rt
 
 knownItemReadFunction :: SequencePoint -> ReadFunction (ListReader reader) reader
 knownItemReadFunction i mr rt = do
-    mt <- getComposeInner $ itemReadFunction i mr rt
+    mt <- unComposeInner $ itemReadFunction i mr rt
     case mt of
         Just t -> return t
         Nothing -> error $ "missing item " ++ show i ++ " in list"

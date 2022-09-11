@@ -139,7 +139,7 @@ testLensGet :: TestTree
 testLensGet =
     testTree "get" $ \srun (base :: String) ->
         ioProperty $
-        runLifeCycleT $ do
+        runLifecycle $ do
             MkFloatingChangeLens {..} <- return $ stringSectionLens srun
             r <- runFloatInit fclInit $ subjectToReadable base
             let
@@ -176,7 +176,7 @@ lensUpdateGetProperty ::
     -> Property
 lensUpdateGetProperty lens oldA editA =
     ioProperty @Property $
-    runLifeCycleT $ do
+    runLifecycle $ do
         MkFloatingChangeLens {..} <- return lens
         --oldState <- get
         r <- runFloatInit fclInit $ subjectToReadable oldA

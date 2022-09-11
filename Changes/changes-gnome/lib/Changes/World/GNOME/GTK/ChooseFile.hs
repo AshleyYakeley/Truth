@@ -9,7 +9,7 @@ import Shapes
 
 chooseFile :: FileChooserAction -> (Maybe (Text, Text) -> Bool) -> GView 'Locked (Maybe File)
 chooseFile action test =
-    gvSubLifeCycle $ do
+    gvSubLifecycle $ do
         dialog <- gvNew FileChooserNative [#action := action]
         ffilter <- new FileFilter [] -- don't unref
         fileFilterAddCustom ffilter [FileFilterFlagsMimeType] $ \finfo -> do

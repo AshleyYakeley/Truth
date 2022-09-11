@@ -36,7 +36,7 @@ data ContextOptions = MkContextOptions
 standardStorageModel :: Bool -> FilePath -> View (Model PinaforeStorageUpdate)
 standardStorageModel cache dataDir = do
     rc <- viewGetResourceContext
-    viewLiftLifeCycle $ do
+    viewLiftLifecycle $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dataDir </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-
@@ -59,7 +59,7 @@ standardFetchModule MkModuleOptions {..} = let
 standardPinaforeContext :: ContextOptions -> InvocationInfo -> View PinaforeContext
 standardPinaforeContext MkContextOptions {..} invinfo = do
     model <- standardStorageModel coCache coDataDir
-    pc <- viewLiftLifeCycle $ makePinaforeContext invinfo stdout model
+    pc <- viewLiftLifecycle $ makePinaforeContext invinfo stdout model
     return pc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
@@ -98,7 +98,7 @@ pinaforeInterpretFile ::
     -> m (View ())
 pinaforeInterpretFile fpath = do
     ptext <- liftIO $ readFile fpath
-    throwInterpretResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
+    fromInterpretResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
 pinaforeInteractHandles ::
        (?pinafore :: PinaforeContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()

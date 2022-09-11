@@ -16,11 +16,11 @@ module Changes.World.GNOME.GI.GView
     , gvGetUnliftToView
     , gvHoistView
     , gvHoistViewNoUI
-    , gvSubLifeCycle
+    , gvSubLifecycle
     , gvLiftIO
     , gvLiftIONoUI
     , gvLiftViewNoUI
-    , gvLiftLifeCycleNoUI
+    , gvLiftLifecycleNoUI
     , gvGetLock
     , gvRunLockedState
     , gvRunLocked
@@ -131,10 +131,10 @@ gvLiftViewWithUnlift call = gvLiftViewWithUnliftNoUI $ \unlift -> call unlift
 gvHoistViewNoUI :: (View --> View) -> GView ls --> GView ls
 gvHoistViewNoUI f gv = gvLiftViewWithUnliftNoUI $ \unlift -> f $ unlift gv
 
-gvGetUnliftToView :: forall ls. GView ls (WMFunction (GView 'Unlocked) View)
+gvGetUnliftToView :: forall ls. GView ls (WRaised (GView 'Unlocked) View)
 gvGetUnliftToView = do
     gtkc <- gvGetContext
-    return $ MkWMFunction $ runGView gtkc
+    return $ MkWRaised $ runGView gtkc
 
 gvHoistView :: (View a -> View b) -> GView ls a -> GView ls b
 gvHoistView f (MkGView gv) = MkGView $ monoHoist f gv
@@ -152,8 +152,8 @@ gvExitOnClosed gv = do
     gtkc <- gvGetContext
     gvHoistViewNoUI (gtkcExitOnClosed gtkc) gv
 
-gvSubLifeCycle :: GView ls --> GView ls
-gvSubLifeCycle (MkGView rva) = MkGView $ hoist viewSubLifeCycle rva
+gvSubLifecycle :: GView ls --> GView ls
+gvSubLifecycle (MkGView rva) = MkGView $ hoist viewSubLifecycle rva
 
 gvGetLock :: GView ls CallbackLock
 gvGetLock = MkGView $ asks gtkcLock
@@ -218,8 +218,8 @@ gvLiftRelock va =
         lock <- asks gtkcLock
         lift $ viewRelockClose @lsclose @ls lock $ viewRelockOpen @lsopen @ls lock va
 
-gvLiftLifeCycleNoUI :: LifeCycle --> GView ls
-gvLiftLifeCycleNoUI = gvLiftViewNoUI . viewLiftLifeCycle
+gvLiftLifecycleNoUI :: Lifecycle --> GView ls
+gvLiftLifecycleNoUI = gvLiftViewNoUI . viewLiftLifecycle
 
 gvWithUnliftLockedAsync ::
        forall ls a. Is LockStateType ls

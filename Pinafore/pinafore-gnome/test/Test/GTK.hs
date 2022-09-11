@@ -15,10 +15,10 @@ testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \hout ->
-           runLifeCycleT $
+           runLifecycle $
            runNewView $ do
                pc <-
-                   viewLiftLifeCycle $ do
+                   viewLiftLifecycle $ do
                        (model, _) <- makeTestStorageModel
                        makePinaforeContext nullInvocationInfo hout model
                action <- runWithContext pc (libraryFetchModule gnomeLibrary) $ pinaforeInterpretFile inpath

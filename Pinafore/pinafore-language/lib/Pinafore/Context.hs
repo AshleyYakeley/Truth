@@ -58,7 +58,7 @@ pinaforeInvocationInfo = pconInvocation ?pinafore
 pinaforeStdOut :: (?pinafore :: PinaforeContext) => Handle
 pinaforeStdOut = pconStdOut ?pinafore
 
-makePinaforeContext :: InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> LifeCycle PinaforeContext
+makePinaforeContext :: InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> Lifecycle PinaforeContext
 makePinaforeContext pconInvocation pconStdOut rmodel = do
     uh <- liftIO newUndoHandler
     let

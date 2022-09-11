@@ -72,7 +72,7 @@ exclusiveResource ::
        forall f m. (MapResource f, MonadCoroutine m, MonadAskUnliftIO m)
     => ResourceContext
     -> Resource f
-    -> LifeCycleT m (Resource f)
+    -> LifecycleT m (Resource f)
 exclusiveResource rc (MkResource trun f) = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     trun' <- exclusiveResourceRunner rc trun

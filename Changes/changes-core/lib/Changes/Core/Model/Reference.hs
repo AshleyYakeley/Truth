@@ -168,7 +168,7 @@ testEditAction test action = do
 
 singleEdit :: Monad m => (edit -> m (Maybe (EditSource -> m ()))) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 singleEdit call edits =
-    getComposeInner $ do
+    unComposeInner $ do
         actions <- for edits $ \edit -> MkComposeInner $ call edit
         return $ \esrc -> for_ actions $ \action -> action esrc
 
@@ -202,7 +202,7 @@ copyReference ::
     -> IO (Task ())
 copyReference rc esrc =
     joinResource_ $ \rr (MkAReference readSrc _ _) (MkAReference _ pushDest ctask) ->
-        runLifeCycleT $ do
+        runLifecycle $ do
             liftIO $
                 runResourceRunner rc rr $
                 replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy reference" esrc $ pushDest $ pure edit

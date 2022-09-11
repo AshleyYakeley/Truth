@@ -40,9 +40,9 @@ viewDynamic model initCV tovsCV taskCV recvCV = do
                 closeLifeState vs
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
-        recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
+        recvBind (stateVar, a) updates = mVarRunStateT stateVar $ recvCV a $ toList updates
     (stateVar, a) <- viewBindModel model Nothing initBind (\_ -> taskCV) recvBind
-    mVarRun stateVar $ recvCV a []
+    mVarRunStateT stateVar $ recvCV a []
     return a
 
 data OneWholeViews f =

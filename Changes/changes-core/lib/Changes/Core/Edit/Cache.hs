@@ -86,7 +86,7 @@ class CacheableEdit (edit :: Type) where
                 liftInner $ do
                     Refl <- testEquality rt rt'
                     return val
-            in getComposeInner $ applyEdit edit tmr rt
+            in unComposeInner $ applyEdit edit tmr rt
 
 editCacheUpdates ::
        forall edit cache. (CacheableEdit edit, IsCache cache)

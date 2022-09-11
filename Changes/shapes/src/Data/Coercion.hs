@@ -137,7 +137,7 @@ instance RepresentationalRole Vector where
 instance RepresentationalRole IO where
     representationalCoercion MkCoercion = MkCoercion
 
-instance RepresentationalRole m => RepresentationalRole (LifeCycleT m) where
+instance RepresentationalRole m => RepresentationalRole (LifecycleT m) where
     representationalCoercion c =
         case representationalCoercion @_ @_ @m c of
             MkCoercion -> MkCoercion

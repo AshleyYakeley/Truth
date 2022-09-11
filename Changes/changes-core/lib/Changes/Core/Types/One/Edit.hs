@@ -19,11 +19,11 @@ type instance EditReader (OneEdit f edit) = OneReader f (EditReader edit)
 
 instance (MonadInner f, ApplicableEdit edit) => ApplicableEdit (OneEdit f edit) where
     applyEdit (MkOneEdit _edita) mr ReadHasOne = mr ReadHasOne
-    applyEdit (MkOneEdit edita) mr (ReadOne rd) = getComposeInner $ applyEdit edita (oneReadFunctionF mr) rd
+    applyEdit (MkOneEdit edita) mr (ReadOne rd) = unComposeInner $ applyEdit edita (oneReadFunctionF mr) rd
 
 instance (MonadInner f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) where
     invertEdits editas mr = do
-        fme <- getComposeInner $ invertEdits (fmap (\(MkOneEdit edita) -> edita) editas) (oneReadFunctionF mr)
+        fme <- unComposeInner $ invertEdits (fmap (\(MkOneEdit edita) -> edita) editas) (oneReadFunctionF mr)
         return
             (case mToMaybe fme of
                  Just edits -> fmap MkOneEdit edits
@@ -53,7 +53,7 @@ oneLiftChangeLens (MkChangeLens g u pe) = let
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m [OneUpdate f updateB]
     clUpdate (MkOneUpdate ea) mr =
-        fmap (fmap MkOneUpdate . fromMaybe [] . mToMaybe) $ getComposeInner $ u ea $ oneReadFunctionF mr
+        fmap (fmap MkOneUpdate . fromMaybe [] . mToMaybe) $ unComposeInner $ u ea $ oneReadFunctionF mr
     clPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
@@ -61,7 +61,7 @@ oneLiftChangeLens (MkChangeLens g u pe) = let
         -> m (Maybe [OneEdit f (UpdateEdit updateA)])
     clPutEdits ebs mr =
         fmap (fmap (fmap MkOneEdit . fromMaybe []) . mToMaybe) $
-        getComposeInner $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
+        unComposeInner $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
     in MkChangeLens {..}
 
 oneNullChangeLens ::

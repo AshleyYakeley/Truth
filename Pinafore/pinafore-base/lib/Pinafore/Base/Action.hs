@@ -6,7 +6,7 @@ module Pinafore.Base.Action
     , actionLiftViewKnowWithUnlift
     , actionTunnelView
     , actionHoistView
-    , actionLiftLifeCycle
+    , actionLiftLifecycle
     , pinaforeGetCreateViewUnlift
     , pinaforeResourceContext
     , pinaforeFlushModelUpdates
@@ -45,7 +45,7 @@ newtype PinaforeAction a =
              )
 
 unPinaforeAction :: forall a. UndoHandler -> PinaforeAction a -> View (Know a)
-unPinaforeAction acUndoHandler (MkPinaforeAction action) = getComposeInner $ runReaderT action MkActionContext {..}
+unPinaforeAction acUndoHandler (MkPinaforeAction action) = unComposeInner $ runReaderT action MkActionContext {..}
 
 actionLiftView :: View --> PinaforeAction
 actionLiftView va = MkPinaforeAction $ lift $ lift va
@@ -56,7 +56,7 @@ actionLiftViewKnow va = MkPinaforeAction $ lift $ MkComposeInner va
 actionLiftViewKnowWithUnlift :: ((forall r. PinaforeAction r -> View (Know r)) -> View (Know a)) -> PinaforeAction a
 actionLiftViewKnowWithUnlift call =
     MkPinaforeAction $
-    liftWithUnlift $ \unlift -> MkComposeInner $ call $ \(MkPinaforeAction rma) -> getComposeInner $ unlift rma
+    liftWithUnlift $ \unlift -> MkComposeInner $ call $ \(MkPinaforeAction rma) -> unComposeInner $ unlift rma
 
 actionTunnelView ::
        forall r. (forall f. Functor f => (forall a. PinaforeAction a -> View (f a)) -> View (f r)) -> PinaforeAction r
@@ -64,16 +64,16 @@ actionTunnelView call =
     MkPinaforeAction $
     tunnel $ \unlift1 ->
         tunnel $ \unlift2 ->
-            fmap getComposeInner $ call $ \(MkPinaforeAction rx) -> fmap MkComposeInner $ unlift2 $ unlift1 rx
+            fmap unComposeInner $ call $ \(MkPinaforeAction rx) -> fmap MkComposeInner $ unlift2 $ unlift1 rx
 
 actionHoistView :: (View --> View) -> PinaforeAction --> PinaforeAction
 actionHoistView vv (MkPinaforeAction ma) = MkPinaforeAction $ hoist (hoist vv) ma
 
-pinaforeGetCreateViewUnlift :: PinaforeAction (WMFunction PinaforeAction (ComposeInner Know View))
+pinaforeGetCreateViewUnlift :: PinaforeAction (WRaised PinaforeAction (ComposeInner Know View))
 pinaforeGetCreateViewUnlift =
     MkPinaforeAction $ do
         MkWUnlift unlift <- askUnlift
-        return $ MkWMFunction $ \(MkPinaforeAction ra) -> unlift ra
+        return $ MkWRaised $ \(MkPinaforeAction ra) -> unlift ra
 
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = actionLiftView viewGetResourceContext
@@ -99,8 +99,8 @@ pinaforeRefPush model edits = do
         then return ()
         else empty
 
-actionLiftLifeCycle :: LifeCycle --> PinaforeAction
-actionLiftLifeCycle la = actionLiftView $ viewLiftLifeCycle la
+actionLiftLifecycle :: Lifecycle --> PinaforeAction
+actionLiftLifecycle la = actionLiftView $ viewLiftLifecycle la
 
 pinaforeUndoHandler :: PinaforeAction UndoHandler
 pinaforeUndoHandler = do
@@ -113,23 +113,23 @@ pinaforeActionKnow Unknown = empty
 
 knowPinaforeAction :: forall a. PinaforeAction a -> PinaforeAction (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
-    MkPinaforeAction $ ReaderT $ \r -> MkComposeInner $ fmap Known $ getComposeInner $ rka r
+    MkPinaforeAction $ ReaderT $ \r -> MkComposeInner $ fmap Known $ unComposeInner $ rka r
 
 actionOnClose :: PinaforeAction () -> PinaforeAction ()
 actionOnClose closer = do
-    MkWMFunction unlift <- pinaforeGetCreateViewUnlift
+    MkWRaised unlift <- pinaforeGetCreateViewUnlift
     actionLiftView $
         viewOnClose $ do
-            _ <- getComposeInner $ unlift closer
+            _ <- unComposeInner $ unlift closer
             return ()
 
 pinaforeEarlyCloser :: PinaforeAction a -> PinaforeAction (a, IO ())
 pinaforeEarlyCloser ra = do
-    MkWMFunction unlift <- pinaforeGetCreateViewUnlift
+    MkWRaised unlift <- pinaforeGetCreateViewUnlift
     MkPinaforeAction $
         lift $
         MkComposeInner $ do
-            (ka, closer) <- viewGetCloser $ getComposeInner $ unlift ra
+            (ka, closer) <- viewGetCloser $ unComposeInner $ unlift ra
             return $ fmap (\a -> (a, closer)) ka
 
 pinaforeFloatMap ::
@@ -139,7 +139,7 @@ pinaforeFloatMap ::
     -> PinaforeAction (f updateB)
 pinaforeFloatMap flens fa = do
     rc <- pinaforeResourceContext
-    actionLiftLifeCycle $ eaFloatMap rc flens fa
+    actionLiftLifecycle $ eaFloatMap rc flens fa
 
 pinaforeFloatMapReadOnly ::
        forall f updateA updateB. FloatingEditApplicative f

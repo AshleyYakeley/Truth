@@ -33,7 +33,7 @@ singleRunnerUnliftAllDict :: SingleRunner t -> Dict (MonadTransUnlift t)
 singleRunnerUnliftAllDict (MkSingleRunner _ _) = Dict
 
 discardingSingleRunner :: SingleRunner t -> SingleRunner t
-discardingSingleRunner (MkSingleRunner w run) = MkSingleRunner w $ discardingRunner run
+discardingSingleRunner (MkSingleRunner w run) = MkSingleRunner w $ toDiscardingUnlift run
 
 mkAnySingleRunner :: MonadTransUnlift t => IOWitness t -> WUnlift MonadUnliftIO t -> SingleRunner t
 mkAnySingleRunner wit (MkWUnlift unlift) = MkSingleRunner wit unlift
@@ -83,5 +83,5 @@ runSingleRunnerContext rr sr call =
                 Dict -> let
                     (rr', run, isRunner) = fetchSingleRunner rr sr
                     in case isRunner of
-                           True -> runWUnlift run $ liftWithUnlift $ \unlift -> call (rr' $ MkWUnlift unlift) unlift
-                           False -> call (rr' run) $ runWUnlift run
+                           True -> unWUnlift run $ liftWithUnlift $ \unlift -> call (rr' $ MkWUnlift unlift) unlift
+                           False -> call (rr' run) $ unWUnlift run

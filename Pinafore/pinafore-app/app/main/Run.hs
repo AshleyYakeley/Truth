@@ -10,7 +10,7 @@ import System.Environment
 
 runFiles :: Foldable t => (ContextOptions, ModuleOptions) -> Bool -> t (FilePath, [String]) -> IO ()
 runFiles (copts, modopts) fNoRun scripts =
-    runLifeCycleT $
+    runLifecycle $
     runNewView $
     for_ scripts $ \(fpath, iiScriptArguments) -> do
         let iiScriptName = fpath
@@ -23,7 +23,7 @@ runFiles (copts, modopts) fNoRun scripts =
 
 runInteractive :: (ContextOptions, ModuleOptions) -> IO ()
 runInteractive (copts, modopts) =
-    runLifeCycleT $
+    runLifecycle $
     runNewView $ do
         let
             iiScriptName = ""

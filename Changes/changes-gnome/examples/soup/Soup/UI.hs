@@ -78,8 +78,8 @@ soupReference dirpath = let
 
 soupWindow :: (WindowSpec -> GView 'Locked UIWindow) -> FilePath -> GView 'Locked ()
 soupWindow newWindow dirpath = do
-    smodel <- gvLiftLifeCycleNoUI $ makeReflectingModel $ soupReference dirpath
-    (selModel, selnotify) <- gvLiftLifeCycleNoUI $ makeSharedModel makePremodelSelectNotify
+    smodel <- gvLiftLifecycleNoUI $ makeReflectingModel $ soupReference dirpath
+    (selModel, selnotify) <- gvLiftLifecycleNoUI $ makeSharedModel makePremodelSelectNotify
     let
         withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Locked ()) -> GView 'Locked ()
         withSelection call = do

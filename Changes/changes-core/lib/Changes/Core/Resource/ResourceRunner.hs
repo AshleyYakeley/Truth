@@ -124,13 +124,13 @@ newResourceRunner run = do
 stateResourceRunner :: s -> IO (ResourceRunner '[ StateT s])
 stateResourceRunner s = do
     var <- newMVar s
-    newResourceRunner $ mVarRun var
+    newResourceRunner $ mVarRunStateT var
 
 mvarResourceRunner :: IOWitness (StateT s) -> MVar s -> ResourceRunner '[ StateT s]
-mvarResourceRunner iow var = mkResourceRunner iow $ mVarRun var
+mvarResourceRunner iow var = mkResourceRunner iow $ mVarRunStateT var
 
 discardingStateResourceRunner :: IOWitness (StateT s) -> s -> ResourceRunner '[ StateT s]
-discardingStateResourceRunner iow s = mkResourceRunner iow $ stateDiscardingUntrans s
+discardingStateResourceRunner iow s = mkResourceRunner iow $ discardingStateTUnlift s
 
 discardingResourceRunner :: ResourceRunner tt -> ResourceRunner tt
 discardingResourceRunner (MkResourceRunner run) = MkResourceRunner $ mapListType discardingSingleRunner run
@@ -194,9 +194,9 @@ exclusiveResourceRunner ::
        forall tt m. (MonadCoroutine m, MonadAskUnliftIO m)
     => ResourceContext
     -> ResourceRunner tt
-    -> LifeCycleT m (ResourceRunner '[ StackT tt])
+    -> LifecycleT m (ResourceRunner '[ StackT tt])
 exclusiveResourceRunner rc rr = do
     Dict <- return $ resourceRunnerUnliftAllDict rr
     iow <- liftIO $ newIOWitness
-    lifeCycleWith $ \call ->
+    lifecycleWith $ \call ->
         runResourceRunnerContext rc rr $ \_ unlift -> call $ mkResourceRunner iow $ \(MkStackT tma) -> unlift tma

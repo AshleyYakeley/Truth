@@ -25,11 +25,11 @@ plainComboBoxCell cbcText = let
 
 listStoreView ::
        forall update. (IsEditUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
-    => WMFunction (GView 'Locked) (GView 'Locked)
+    => WRaised (GView 'Locked) (GView 'Locked)
     -> Model (ReadOnlyUpdate (OrderedListUpdate update))
     -> EditSource
     -> GView 'Locked (SeqStore (UpdateSubject update))
-listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
+listStoreView (MkWRaised blockSignal) itemsModel esrc = let
     initV :: GView 'Locked (SeqStore (UpdateSubject update))
     initV = do
         subjects <- gvRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
@@ -68,7 +68,7 @@ cboxFromStore ::
     => Model (WholeUpdate t)
     -> EditSource
     -> SeqStore (t, ComboBoxCell)
-    -> GView 'Locked (WMFunction (GView 'Locked) (GView 'Locked), Widget)
+    -> GView 'Locked (WRaised (GView 'Locked) (GView 'Locked), Widget)
 cboxFromStore whichModel esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- gvNew CellRendererText []
@@ -114,7 +114,7 @@ cboxFromStore whichModel esrc store = do
                     Nothing -> return ()
     gvBindWholeModel whichModel (Just esrc) update
     w <- toWidget widget
-    return (MkWMFunction blockSignal, w)
+    return (MkWRaised blockSignal, w)
 
 createComboBox ::
        forall update t.

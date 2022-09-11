@@ -6,12 +6,12 @@ import Changes.Core
 import Shapes
 import Shapes.Test
 
-collectModelUpdates :: ResourceContext -> Model update -> LifeCycle (IO [update])
+collectModelUpdates :: ResourceContext -> Model update -> Lifecycle (IO [update])
 collectModelUpdates rc sub = do
     var <- liftIO $ newMVar []
     runResource rc sub $ \asub ->
         aModelSubscribe asub mempty $ \_ updates _ec -> do
-            mVarRun var $ do
+            mVarRunStateT var $ do
                 uu <- get
                 put $ uu <> toList updates
     return $ takeMVar var
@@ -63,7 +63,7 @@ testContextOrderedSetLensCase assigns expected =
             baseContentObj =
                 mapReference (convertChangeLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
         getUpdates <-
-            runLifeCycleT $ do
+            runLifecycle $ do
                 contextSub <- makeReflectingModel @UpdateX contextObj
                 baseContentSub <- makeReflectingModel @(FiniteSetUpdate Char) baseContentObj
                 let
@@ -72,7 +72,7 @@ testContextOrderedSetLensCase assigns expected =
                 olSub <- floatMapModel rc flens bothSub
                 getUpdates <- collectModelUpdates rc $ mapModel (tupleChangeLens SelectContent) olSub
                 let
-                    pushOneEdit :: (Char, Int) -> LifeCycle ()
+                    pushOneEdit :: (Char, Int) -> Lifecycle ()
                     pushOneEdit (c, i) =
                         liftIO $
                         modelPushEdits rc contextSub $

@@ -46,7 +46,7 @@ unitExpression = MkSealedExpression (pinaforeType :: _ ()) $ pure ()
 
 runPinafore :: ((?pinafore :: PinaforeContext) => PinaforeInterpreter a) -> IO a
 runPinafore ia =
-    withTestPinaforeContext mempty stdout $ \_getTableState -> throwInterpretResult $ runTestPinaforeSourceScoped ia
+    withTestPinaforeContext mempty stdout $ \_getTableState -> fromInterpretResult $ runTestPinaforeSourceScoped ia
 
 testSimple :: TestTree
 testSimple =
@@ -54,7 +54,7 @@ testSimple =
         MkT i <-
             runPinafore $ do
                 tExpression <-
-                    runTransformT (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
+                    unTransformT (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 resultOpenExpression <- typedExpressionToOpen tShimWit tExpression
                 evalExpression resultOpenExpression
@@ -68,9 +68,9 @@ testDependentLet =
     testTree "dependent-let" $ do
         MkT i <-
             runPinafore $
-            runTransformT (allocateVar "x") $ \varid -> do
+            unTransformT (allocateVar "x") $ \varid -> do
                 tExpression <-
-                    runTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
+                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 resultExpression <- qLetExpr varid (constIntegerExpression 17) tExpression
                 resultOpenExpression <- typedExpressionToOpen tShimWit resultExpression
@@ -82,9 +82,9 @@ testDependentFunction =
     testTree "dependent-function" $ do
         MkT i <-
             runPinafore $
-            runTransformT (allocateVar "x") $ \varid -> do
+            unTransformT (allocateVar "x") $ \varid -> do
                 tExpression <-
-                    runTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
+                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
@@ -127,9 +127,9 @@ testPolyDependentFunction =
                 OpenExpression (MkNameWitness var pinaforeType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
         MkT1 i <-
             runPinafore $
-            runTransformT (allocateVar "x") $ \varid -> do
+            unTransformT (allocateVar "x") $ \varid -> do
                 tExpression <-
-                    runTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
+                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
@@ -148,7 +148,7 @@ testFunctionType =
     testTree "function-type" $ do
         funcExpression <-
             runPinafore $
-            runTransformT registerT1Stuff $ \() -> do
+            unTransformT registerT1Stuff $ \() -> do
                 parseTopExpression "\\x => let subtype Unit <: T1 Integer = \\() => x in ((): T1 Integer)"
         assertEqual "function type" "T1 Integer -> T1 Integer" $ show (sealedExpressionType funcExpression)
 
@@ -161,15 +161,15 @@ testSemiScript1 =
                 OpenExpression (MkNameWitness var pinaforeType) $ pure $ \i -> functionToShim "conv" $ \() -> i
         MkT1 i <-
             runPinafore $
-            runTransformT
+            unTransformT
                 (do
                      registerT1Stuff
                      allocateVar "x") $ \varid -> do
                 tExpression <-
-                    runTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
+                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
-                runTransformT (registerLetBinding "f" "" funcExpression) $ \() -> do
+                unTransformT (registerLetBinding "f" "" funcExpression) $ \() -> do
                     parseValueUnify @(T1 Integer) "f (MkT1 62)"
         assertEqual "" 62 i
 
@@ -178,7 +178,7 @@ testSemiScript2 =
     testTree "semiscript-2" $ do
         MkT1 i <-
             runPinafore $
-            runTransformT registerT1Stuff $ \() -> do
+            unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
                     "let f = \\x => let subtype Unit <: T1 Integer = \\() => x in ((): T1 Integer) in f (MkT1 17)"
@@ -189,7 +189,7 @@ testSemiScript3 =
     testTree "semiscript-3" $ do
         MkT1 i <-
             runPinafore $
-            runTransformT registerT1Stuff $ \() -> do
+            unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
                     "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in ((): T1 Integer) in f 17"
@@ -200,7 +200,7 @@ testSemiScript4 =
     testTree "semiscript-4" $ do
         i <-
             runPinafore $
-            runTransformT registerT1Stuff $ \() -> do
+            unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @Integer
                     "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in (\\(MkT1 y) => y) () in f 17"

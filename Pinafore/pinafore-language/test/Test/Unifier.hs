@@ -25,7 +25,7 @@ testValue :: Text -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext)
 testValue name call = testTree (unpack name) $ withTestPinaforeContext mempty stdout $ \_ -> liftIO call
 
 testSourceScoped :: Text -> PinaforeInterpreter () -> TestTree
-testSourceScoped name action = testValue name $ throwInterpretResult $ runPinaforeScoped (initialPos "<test>") $ action
+testSourceScoped name action = testValue name $ fromInterpretResult $ runPinaforeScoped (initialPos "<test>") $ action
 
 showValType :: PinaforeValue -> String
 showValType (MkSomeOf (MkShimWit t _) _) = show t
