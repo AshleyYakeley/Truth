@@ -123,7 +123,7 @@ makeSharedModel om = do
         utaskP = utaskRunner <> ioTask (fmap mconcat getTasks)
     MkPremodelResult {..} <- om utaskP updatePAsync
     MkResource (trunC :: ResourceRunner tt) aModelAReference <- return pmrReference
-    Dict <- return $ resourceRunnerUnliftAllDict trunC
+    Dict <- return $ resourceRunnerUnliftDict trunC
     Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
     let
         aModelSubscribe ::
@@ -162,7 +162,7 @@ floatMapModel rc lens subA = do
 
 mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA -> Model updateB
 mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
-    case resourceRunnerUnliftAllDict rr of
+    case resourceRunnerUnliftDict rr of
         Dict -> let
             objB = mapAReference plens objA
             subB utask recvB = let

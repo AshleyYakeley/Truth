@@ -33,13 +33,13 @@ reflectingPremodel ::
     => Reference (UpdateEdit update)
     -> Premodel update ()
 reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e ctask)) utask recv = do
-    Dict <- return $ resourceRunnerUnliftAllDict trun
+    Dict <- return $ resourceRunnerUnliftDict trun
     Dict <- return $ transStackDict @MonadTunnelIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
-    Dict <- return $ concatMonadTransStackUnliftAllDict @tt @'[ DeferActionT]
+    Dict <- return $ concatMonadTransStackUnliftDict @tt @'[ DeferActionT]
     deferRR <- deferActionResourceRunner
     let trun' = combineIndependentResourceRunners trun deferRR
-    Dict <- return $ resourceRunnerUnliftAllDict trun'
+    Dict <- return $ resourceRunnerUnliftDict trun'
     let
         r' :: Readable (ApplyStack tt (DeferActionT IO)) (UpdateReader update)
         r' rt = stackUnderliftIO @tt @(DeferActionT IO) $ r rt
@@ -103,7 +103,7 @@ mapPremodel rc (MkFloatingChangeLens init rlens) uobja utask recvb = do
                             Just ebb -> recvb urc ebb esrc
                     objB :: Reference (UpdateEdit updateB)
                     objB =
-                        case resourceRunnerUnliftAllDict rr of
+                        case resourceRunnerUnliftDict rr of
                             Dict -> MkResource rr $ mapAReference lens anobjA
                 return (MkPremodelResult objB updTask val, recva')
     return result

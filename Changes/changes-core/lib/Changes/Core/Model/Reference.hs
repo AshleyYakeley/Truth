@@ -114,7 +114,7 @@ mapReference ::
     -> Reference (UpdateEdit updateA)
     -> Reference (UpdateEdit updateB)
 mapReference plens (MkResource rr anobjA) =
-    case resourceRunnerUnliftAllDict rr of
+    case resourceRunnerUnliftDict rr of
         Dict -> MkResource rr $ mapAReference plens anobjA
 
 floatMapAReference ::
@@ -177,7 +177,7 @@ convertReference ::
     => Reference edita
     -> Reference editb
 convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe refCommitTask)) =
-    case resourceRunnerUnliftAllDict trun of
+    case resourceRunnerUnliftDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
                 Dict -> let

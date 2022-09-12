@@ -1,7 +1,7 @@
 module Changes.Core.Resource.SingleRunner
     ( SingleRunner
     , mkSingleRunner
-    , singleRunnerUnliftAllDict
+    , singleRunnerUnliftDict
     , discardingSingleRunner
     , runSingleRunner
     , runSingleRunnerContext
@@ -29,8 +29,8 @@ mkSingleRunner ::
     -> SingleRunner t
 mkSingleRunner = MkSingleRunner
 
-singleRunnerUnliftAllDict :: SingleRunner t -> Dict (MonadTransUnlift t)
-singleRunnerUnliftAllDict (MkSingleRunner _ _) = Dict
+singleRunnerUnliftDict :: SingleRunner t -> Dict (MonadTransUnlift t)
+singleRunnerUnliftDict (MkSingleRunner _ _) = Dict
 
 discardingSingleRunner :: SingleRunner t -> SingleRunner t
 discardingSingleRunner (MkSingleRunner w run) = MkSingleRunner w $ toDiscardingUnlift run
@@ -63,7 +63,7 @@ runSingleRunner ::
     -> ((MonadTransUnlift t, MonadUnliftIO (t m)) => t m r)
     -> m r
 runSingleRunner rr sr call =
-    case singleRunnerUnliftAllDict sr of
+    case singleRunnerUnliftDict sr of
         Dict ->
             case hasTransConstraint @MonadUnliftIO @t @m of
                 Dict -> let
@@ -77,7 +77,7 @@ runSingleRunnerContext ::
     -> ((MonadTransUnlift t, MonadUnliftIO (t m)) => [Some SingleRunner] -> Unlift MonadUnliftIO t -> m r)
     -> m r
 runSingleRunnerContext rr sr call =
-    case singleRunnerUnliftAllDict sr of
+    case singleRunnerUnliftDict sr of
         Dict ->
             case hasTransConstraint @MonadUnliftIO @t @m of
                 Dict -> let

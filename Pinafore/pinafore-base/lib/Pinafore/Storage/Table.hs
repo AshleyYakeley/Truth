@@ -239,7 +239,7 @@ instance CacheableEdit PinaforeTableEdit where
 -- can't be a Lens, because reads can cause edits
 pinaforeTableEntityReference :: Reference PinaforeTableEdit -> Reference PinaforeStorageEdit
 pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) =
-    case resourceRunnerUnliftAllDict trun of
+    case resourceRunnerUnliftDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
                 Dict ->

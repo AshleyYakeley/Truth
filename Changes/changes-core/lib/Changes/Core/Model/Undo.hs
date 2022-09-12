@@ -124,9 +124,9 @@ undoHandlerReference ::
     -> Reference edit
 undoHandlerReference MkUndoHandler {..} ref@(MkResource rr aref) =
     combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case resourceRunnerUnliftAllDict rr of
+        case resourceRunnerUnliftDict rr of
             Dict ->
-                case resourceRunnerUnliftAllDict rr' of
+                case resourceRunnerUnliftDict rr' of
                     Dict ->
                         case resourceRunnerStackUnliftDict @IO rr' of
                             Dict -> MkResource rr' $ undoHandlerAReference ref liftw $ mapResource liftr aref
@@ -138,9 +138,9 @@ undoHandlerModel ::
     -> Model update
 undoHandlerModel MkUndoHandler {..} model@(MkResource rr amodel) =
     combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
-        case resourceRunnerUnliftAllDict rr of
+        case resourceRunnerUnliftDict rr of
             Dict ->
-                case resourceRunnerUnliftAllDict rr' of
+                case resourceRunnerUnliftDict rr' of
                     Dict ->
                         case resourceRunnerStackUnliftDict @IO rr' of
                             Dict ->

@@ -295,7 +295,7 @@ gvRunResourceContext ::
        forall ls f r.
        Resource f
     -> (forall tt.
-            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) => StackUnliftAll tt -> f tt -> GView ls r)
+            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) => StackUnlift tt -> f tt -> GView ls r)
     -> GView ls r
 gvRunResourceContext r call =
     gvLiftViewWithUnliftNoUI $ \unlift -> viewRunResourceContext r $ \uu ftt -> unlift $ call uu ftt

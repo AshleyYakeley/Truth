@@ -30,12 +30,12 @@ joinResource_ ::
     -> Resource f2
     -> r
 joinResource_ ff (MkResource (run1 :: ResourceRunner tt1) fma1) (MkResource (run2 :: ResourceRunner tt2) fma2) =
-    case resourceRunnerUnliftAllDict run1 of
+    case resourceRunnerUnliftDict run1 of
         Dict ->
-            case resourceRunnerUnliftAllDict run2 of
+            case resourceRunnerUnliftDict run2 of
                 Dict ->
                     combineResourceRunners run1 run2 $ \run12 tf1 tf2 ->
-                        case resourceRunnerUnliftAllDict run12 of
+                        case resourceRunnerUnliftDict run12 of
                             Dict -> ff run12 (mapResource tf1 fma1) (mapResource tf2 fma2)
 
 joinResource ::
@@ -47,7 +47,7 @@ joinResource ::
 joinResource ff =
     joinResource_ $ \run f1 f2 ->
         MkResource run $
-        case resourceRunnerUnliftAllDict run of
+        case resourceRunnerUnliftDict run of
             Dict -> ff f1 f2
 
 runResource ::
@@ -64,7 +64,7 @@ runResourceContext ::
     -> Resource f
     -> (forall tt.
             (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) =>
-                    ResourceContext -> StackUnliftAll tt -> f tt -> m r)
+                    ResourceContext -> StackUnlift tt -> f tt -> m r)
     -> m r
 runResourceContext rc (MkResource rr ftt) call = runResourceRunnerContext rc rr $ \rc' run -> call rc' run ftt
 
@@ -74,6 +74,6 @@ exclusiveResource ::
     -> Resource f
     -> LifecycleT m (Resource f)
 exclusiveResource rc (MkResource trun f) = do
-    Dict <- return $ resourceRunnerUnliftAllDict trun
+    Dict <- return $ resourceRunnerUnliftDict trun
     trun' <- exclusiveResourceRunner rc trun
     return $ MkResource trun' $ mapResource stackTransListFunction f

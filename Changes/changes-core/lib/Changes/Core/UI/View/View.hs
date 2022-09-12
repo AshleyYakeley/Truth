@@ -103,7 +103,7 @@ viewRunResource resource call = do
 viewRunResourceContext ::
        forall f r.
        Resource f
-    -> (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) => StackUnliftAll tt -> f tt -> View r)
+    -> (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) => StackUnlift tt -> f tt -> View r)
     -> View r
 viewRunResourceContext resource call = do
     rc <- viewGetResourceContext

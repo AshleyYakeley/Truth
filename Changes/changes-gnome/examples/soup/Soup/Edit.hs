@@ -44,7 +44,7 @@ type ReferenceSoupUpdate = SoupUpdate (ReferenceUpdate ByteStringUpdate)
 
 directorySoup :: Reference FSEdit -> FilePath -> Reference (UpdateEdit ReferenceSoupUpdate)
 directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAReference readFS pushFS ctask)) dirpath =
-    case resourceRunnerUnliftAllDict runFS of
+    case resourceRunnerUnliftDict runFS of
         Dict ->
             case transStackDict @MonadUnliftIO @tt @IO of
                 Dict -> let

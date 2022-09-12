@@ -32,7 +32,7 @@ saveBufferReference rc objP pmrUpdatesTask update = do
     iow <- liftIO $ newIOWitness
     deferRunner <- deferActionResourceRunner
     let rrC = combineIndependentResourceRunners (mvarResourceRunner iow sbVar) deferRunner
-    Dict <- return $ resourceRunnerUnliftAllDict rrC
+    Dict <- return $ resourceRunnerUnliftDict rrC
     let
         pmrReference :: Reference (UpdateEdit update)
         pmrReference = let
