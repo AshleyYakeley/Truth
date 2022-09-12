@@ -139,7 +139,7 @@ extendRightCodec :: Codec a b -> Codec (Either x a) b
 extendRightCodec (MkCodec d e) = MkCodec (\xa -> eitherRight xa >>= d) (Right . e)
 
 eitherTypeRepresentation :: HasVarMapping w => ListType w lt -> TypeRepresentation lt (ListSum lt)
-eitherTypeRepresentation NilListType = MkTypeRepresentation NilListType pNone
+eitherTypeRepresentation NilListType = MkTypeRepresentation NilListType rVoid
 eitherTypeRepresentation (ConsListType a1 ar) =
     case eitherTypeRepresentation ar of
         MkTypeRepresentation consr fvmapr ->

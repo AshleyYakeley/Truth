@@ -81,11 +81,11 @@ instance Invariant VarMapping where
     invmap ab ba = liftVarMapping1 (invmap ab ba)
 
 instance Summable VarMapping where
-    pNone = liftVarMapping0 pNone
+    rVoid = liftVarMapping0 rVoid
     (<+++>) = liftVarMapping2 (<+++>)
 
 instance Productable VarMapping where
-    pUnit = liftVarMapping0 pUnit
+    rUnit = liftVarMapping0 rUnit
     (<***>) = liftVarMapping2 (<***>)
 
 getArgumentMapping ::
@@ -117,7 +117,7 @@ instance HasVarMapping w => HasVarMapping (Compose ((,) x) w) where
     getVarMapping (Compose (_, wt)) = getVarMapping wt
 
 instance HasVarMapping w => HasVarMapping (ListProductType w) where
-    getVarMapping (MkListProductType NilListType) = pUnit
+    getVarMapping (MkListProductType NilListType) = rUnit
     getVarMapping (MkListProductType (ConsListType t1 tr)) = getVarMapping t1 <***> getVarMapping (MkListProductType tr)
 
 instance HasVarMapping w1 => HasVarMapping (PairType w1 w2) where

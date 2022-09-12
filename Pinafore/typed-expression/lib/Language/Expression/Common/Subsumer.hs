@@ -112,7 +112,7 @@ instance SubsumeTypeSystem ts => Invariant (SubsumerOpenExpression ts) where
     invmap ab _ = fmap ab
 
 instance SubsumeTypeSystem ts => Productable (SubsumerOpenExpression ts) where
-    pUnit = MkSubsumerOpenExpression (pure $ \_ -> ()) pUnit
+    rUnit = MkSubsumerOpenExpression (pure $ \_ -> ()) rUnit
     MkSubsumerOpenExpression subsumerA exprA <***> MkSubsumerOpenExpression subsumerB exprB = let
         subsumerAB = liftA2 (\fa fb ~(a, b) -> (fa a, fb b)) subsumerA subsumerB
         exprAB = exprA <***> exprB

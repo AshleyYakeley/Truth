@@ -42,19 +42,19 @@ instance Read SafeRational where
         assembleDigits (i, t) (c:cc) = assembleDigits (i * 10 + toInteger (digitToInt c), t * 10) cc
         readDigits :: ReadPrec (Integer, Integer)
         readDigits = do
-            s <- many' $ pSatisfy isDigit
+            s <- many' $ rSatisfy isDigit
             return $ assembleDigits (0, 1) s
         readDigits1 :: ReadPrec (Integer, Integer)
         readDigits1 = do
-            s <- many1' $ pSatisfy isDigit
+            s <- many1' $ rSatisfy isDigit
             return $ assembleDigits (0, 1) s
         readDecimalPart :: ReadPrec Rational
         readDecimalPart = do
-            pLiteral '.'
+            rLiteral '.'
             (fixN, fixD) <- readDigits
             repR <-
                 option' 0 $ do
-                    pLiteral '_'
+                    rLiteral '_'
                     (repN, repD) <- readDigits
                     return $
                         if repD == 1
@@ -63,12 +63,12 @@ instance Read SafeRational where
             return $ (fixN % fixD) + repR
         readFractionPart :: ReadPrec Integer
         readFractionPart = do
-            pLiteral '/'
+            rLiteral '/'
             (d, _) <- readDigits1
             return d
         readRational :: ReadPrec Rational
         readRational = do
-            sign <- (pLiteral '-' >> return negate) <++ return id
+            sign <- (rLiteral '-' >> return negate) <++ return id
             (intPart, _) <- readDigits1
             remaining <- option' (Left 0) $ fmap Left readDecimalPart <++ fmap Right readFractionPart
             return $
@@ -78,7 +78,7 @@ instance Read SafeRational where
                     Right d -> intPart % d
         readNaN :: ReadPrec SafeRational
         readNaN = do
-            pLiterals "NaN"
+            rLiterals "NaN"
             return SRNaN
         in fmap SRNumber readRational <++ readNaN
 

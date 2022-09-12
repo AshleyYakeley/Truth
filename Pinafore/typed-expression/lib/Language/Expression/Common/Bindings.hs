@@ -61,7 +61,7 @@ instance (AbstractTypeSystem ts, SubsumeTypeSystem ts) => Monoid (Bound ts) wher
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifierExpression ts (() -> a))
         abstractNames expr = return $ MkSolverExpression (pure ()) $ fmap (\a () ~() -> a) expr
         exprs :: SubsumerExpression ts ()
-        exprs = pUnit
+        exprs = rUnit
         getbinds ::
                UnifierSubstitutions ts -> SubsumerSubstitutions ts -> TSOpenExpression ts () -> TSOuter ts (BindMap ts)
         getbinds _ _ _ = return mempty

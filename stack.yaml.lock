@@ -69,6 +69,27 @@ packages:
       sha256: 38f62a16602902874ec79a107966c3147de25a94e39cb846ce18ac14d2adbdc4
   original:
     hackage: countable-1.2
+- completed:
+    hackage: witness-0.6.1@sha256:b522cb9e4d6eea7cb6361c50ec330ecc82d69596f57dbdff1dcee2127b557adc,3690
+    pantry-tree:
+      size: 2985
+      sha256: 71817dc97637b387de201feaece2285b629e7ca2a66ef5889115efc1c0eb82f6
+  original:
+    hackage: witness-0.6.1
+- completed:
+    hackage: open-witness-0.6@sha256:80d4ddbdf3acbe98b1a867388efe1478d73f5caf9a34e5bfbb8e0409c299e2da,2998
+    pantry-tree:
+      size: 921
+      sha256: 5a5ce32d86d386375d873ad26d0c63cba35ac4007703b09bd40dab47101eeb0d
+  original:
+    hackage: open-witness-0.6
+- completed:
+    hackage: type-rig-0.1@sha256:7ca3cb544b28926b2070cd45969beb5c65d540e15f487df824cbc738c2f5fb1a,2158
+    pantry-tree:
+      size: 472
+      sha256: 361a154dcc5f62c3fe54d072a7094b97c3ff4f753f9370ef17b17859c76e4662
+  original:
+    hackage: type-rig-0.1
 snapshots:
 - completed:
     size: 619399

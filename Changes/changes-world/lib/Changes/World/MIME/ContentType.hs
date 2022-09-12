@@ -32,7 +32,7 @@ mimeSerializer = let
     toMCT (t, (s, p)) = MkMIMEContentType_ t s p
     fromMCT :: MIMEContentType -> (Text, (Text, [(Text, Text)]))
     fromMCT (MkMIMEContentType_ t s p) = (t, (s, p))
-    in invmap toMCT fromMCT $ serializer <***> serializer <***> pList (serializer <***> serializer)
+    in invmap toMCT fromMCT $ serializer <***> serializer <***> rList (serializer <***> serializer)
 
 instance Serialize MIMEContentType where
     put = serialize mimeSerializer

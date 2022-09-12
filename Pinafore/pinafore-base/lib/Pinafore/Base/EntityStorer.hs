@@ -110,5 +110,5 @@ instance Invariant (EntityStorer 'MultipleMode) where
     invmap ab _ = fmap ab
 
 instance Summable (EntityStorer 'MultipleMode) where
-    pNone = mempty
+    rVoid = mempty
     esa <+++> esb = fmap Left esa <> fmap Right esb

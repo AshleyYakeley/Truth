@@ -199,7 +199,7 @@ instance Read Number where
     readPrec = let
         readInexact :: ReadPrec Double
         readInexact = do
-            pLiteral '~'
+            rLiteral '~'
             readPrec
         in fmap InexactNumber readInexact <++ do
                sr <- readPrec

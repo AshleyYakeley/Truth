@@ -19,10 +19,10 @@ instance Invariant ReadShow where
     invmap ab ba (MkReadShow s r) = MkReadShow (s . ba) (fmap ab r)
 
 instance Productable ReadShow where
-    pUnit :: ReadShow ()
-    pUnit = let
+    rUnit :: ReadShow ()
+    rUnit = let
         rsShow () = mempty
-        rsRead = pUnit
+        rsRead = rUnit
         in MkReadShow {..}
     (<***>) :: forall a b. ReadShow a -> ReadShow b -> ReadShow (a, b)
     MkReadShow sa ra <***> MkReadShow sb rb = let
@@ -31,10 +31,10 @@ instance Productable ReadShow where
         in MkReadShow sab rab
 
 instance Summable ReadShow where
-    pNone :: ReadShow Void
-    pNone = let
+    rVoid :: ReadShow Void
+    rVoid = let
         rsShow n = never n
-        rsRead = pNone
+        rsRead = rVoid
         in MkReadShow {..}
     MkReadShow sa ra <+++> MkReadShow sb rb = let
         sab (Left a) = sa a
@@ -52,38 +52,38 @@ instance CodecMap ReadShow where
             mpure $ decode a
 
 instance Riggable ReadShow where
-    pOptional (MkReadShow s r) = let
+    rOptional (MkReadShow s r) = let
         s' Nothing = mempty
         s' (Just x) = s x
-        r' = pOptional r
+        r' = rOptional r
         in MkReadShow s' r'
-    pList (MkReadShow s r) = let
+    rList (MkReadShow s r) = let
         s' [] = mempty
         s' (x:xs) = s x <> s' xs
-        r' = pList r
+        r' = rList r
         in MkReadShow s' r'
-    pList1 (MkReadShow s r) = let
+    rList1 (MkReadShow s r) = let
         s' [] = mempty
         s' (x:xs) = s'' (x :| xs)
         s'' (x :| xs) = s x <> s' xs
-        r' = pList1 r
+        r' = rList1 r
         in MkReadShow s'' r'
 
 instance Streamable ReadShow where
     type StreamableBasis ReadShow = String
-    pItem = MkReadShow pure pItem
-    pWhole = MkReadShow id pWhole
-    pLiterals s = let
+    rItem = MkReadShow pure rItem
+    rWhole = MkReadShow id rWhole
+    rLiterals s = let
         rsShow () = s
-        rsRead = pLiterals s
+        rsRead = rLiterals s
         in MkReadShow {..}
-    pLiteral c = let
+    rLiteral c = let
         rsShow () = pure c
-        rsRead = pLiteral c
+        rsRead = rLiteral c
         in MkReadShow {..}
-    pExact a (MkReadShow s r) = let
+    rExact a (MkReadShow s r) = let
         rsShow () = s a
-        rsRead = pExact a r
+        rsRead = rExact a r
         in MkReadShow {..}
 
 digitCodec :: Codec Char Integer
@@ -96,7 +96,7 @@ digitCodec = let
     in MkCodec {..}
 
 digitReadShow :: ReadShow Integer
-digitReadShow = codecMap digitCodec pItem
+digitReadShow = codecMap digitCodec rItem
 
 assembleDigits :: Integer -> [Integer] -> Integer
 assembleDigits i [] = i
@@ -111,7 +111,7 @@ digitsReadShow = let
     integerToList n = integerToList (div n 10) <> [mod n 10]
     integerToNonEmpty :: Integer -> NonEmpty Integer
     integerToNonEmpty n = fromMaybe (pure 0) $ nonEmpty $ integerToList n
-    in invmap nonEmptyToInteger integerToNonEmpty $ pList1 digitReadShow
+    in invmap nonEmptyToInteger integerToNonEmpty $ rList1 digitReadShow
 
 negateReadShow ::
        forall a. (Ord a, Num a)
@@ -125,7 +125,7 @@ negateReadShow ra = let
     integerToTuple i
         | i < 0 = (Just (), negate i)
     integerToTuple i = (Nothing, i)
-    in invmap tupleToInteger integerToTuple $ pOptional (pLiteral '-') <***> ra
+    in invmap tupleToInteger integerToTuple $ rOptional (rLiteral '-') <***> ra
 
 integerReadShow :: ReadShow Integer
 integerReadShow = negateReadShow digitsReadShow

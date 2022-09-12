@@ -70,17 +70,17 @@ givenMIMETypeSerializer :: MIMEContentType -> Serializer ()
 givenMIMETypeSerializer t =
     case lookup t mimeCompress of
         Just bcode -> pLiteralBytes bcode
-        Nothing -> pExact t rawMIMETypeSerializer
+        Nothing -> rExact t rawMIMETypeSerializer
 
 mimeToLiteralRaw :: MIMEContentType -> StrictByteString -> Literal
-mimeToLiteralRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> pWhole) (t, b)
+mimeToLiteralRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> rWhole) (t, b)
 
 mimeToLiteral :: MIMEContentType -> StrictByteString -> Literal
 mimeToLiteral (MkMIMEContentType TextMimeType "plain" []) = mimeToLiteralRaw plainTextMIMEType
 mimeToLiteral t = mimeToLiteralRaw t
 
 literalToMIME :: Literal -> Maybe (MIMEContentType, StrictByteString)
-literalToMIME (MkLiteral bs) = serializerStrictDecode (headerSerializer <***> pWhole) bs
+literalToMIME (MkLiteral bs) = serializerStrictDecode (headerSerializer <***> rWhole) bs
 
 pattern MkMIMELiteral ::
         MIMEContentType -> StrictByteString -> Literal
@@ -120,13 +120,13 @@ instance AsLiteral Literal where
     literalCodec = id
 
 instance AsLiteral Void where
-    literalCodec = pNone
+    literalCodec = rVoid
 
 instance AsLiteral Text
 
 instance AsMIMELiteral Text where
     literalMimeType = plainTextMIMEType
-    literalContentSerializer = codecMap' utf8Codec pWhole
+    literalContentSerializer = codecMap' utf8Codec rWhole
 
 instance AsLiteral String where
     literalCodec = bijectionCodec unpackBijection . literalCodec @Text
@@ -135,7 +135,7 @@ instance AsLiteral ()
 
 instance AsMIMELiteral () where
     literalMimeType = vndMIMEType "unit"
-    literalContentSerializer = pUnit
+    literalContentSerializer = rUnit
 
 instance AsLiteral Bool
 

@@ -14,8 +14,8 @@ instance Invariant Serializer where
     invmap ab ba (MkSerializer s d) = MkSerializer (s . ba) (fmap ab d)
 
 instance Productable Serializer where
-    pUnit :: Serializer ()
-    pUnit = let
+    rUnit :: Serializer ()
+    rUnit = let
         serialize () = return ()
         deserialize = return ()
         in MkSerializer {..}
@@ -26,8 +26,8 @@ instance Productable Serializer where
         in MkSerializer sab dab
 
 instance Summable Serializer where
-    pNone :: Serializer Void
-    pNone = let
+    rVoid :: Serializer Void
+    rVoid = let
         serialize n = never n
         deserialize = empty
         in MkSerializer {..}
@@ -38,17 +38,17 @@ instance Summable Serializer where
         in MkSerializer sab dab
 
 instance Riggable Serializer where
-    pOptional (MkSerializer s d) = let
+    rOptional (MkSerializer s d) = let
         s' Nothing = mempty
         s' (Just x) = s x
         d' = fmap Just d <|> return Nothing
         in MkSerializer s' d'
-    pList (MkSerializer s d) = let
+    rList (MkSerializer s d) = let
         s' [] = mempty
         s' (x:xs) = s x <> s' xs
         d' = liftA2 (:) d d' <|> return []
         in MkSerializer s' d'
-    pList1 (MkSerializer s d) = let
+    rList1 (MkSerializer s d) = let
         s' [] = mempty
         s' (x:xs) = s'' (x :| xs)
         s'' (x :| xs) = s x <> s' xs
@@ -58,14 +58,14 @@ instance Riggable Serializer where
 
 instance Streamable Serializer where
     type StreamableBasis Serializer = StrictByteString
-    pItem = MkSerializer Serialize.putWord8 Serialize.getWord8
-    pWhole = let
+    rItem = MkSerializer Serialize.putWord8 Serialize.getWord8
+    rWhole = let
         serialize = Serialize.putByteString
         deserialize = do
             n <- Serialize.remaining
             Serialize.getByteString n
         in MkSerializer {..}
-    pLiterals bs = let
+    rLiterals bs = let
         serialize () = Serialize.putByteString bs
         deserialize = do
             bs' <- Serialize.getByteString $ olength bs
@@ -73,7 +73,7 @@ instance Streamable Serializer where
                 then return ()
                 else empty
         in MkSerializer {..}
-    pLiteral w = let
+    rLiteral w = let
         serialize () = Serialize.putWord8 w
         deserialize = do
             w' <- Serialize.getWord8
@@ -81,7 +81,7 @@ instance Streamable Serializer where
                 then return ()
                 else empty
         in MkSerializer {..}
-    pExact a (MkSerializer s d) = let
+    rExact a (MkSerializer s d) = let
         serialize () = s a
         deserialize = do
             a' <- d
@@ -100,7 +100,7 @@ serializer :: Serialize a => Serializer a
 serializer = MkSerializer Serialize.put Serialize.get
 
 pLiteralBytes :: [Word8] -> Serializer ()
-pLiteralBytes ws = pLiterals $ pack ws
+pLiteralBytes ws = rLiterals $ pack ws
 
 serializerLazyCodec ::
        forall m a. MonadFail m
