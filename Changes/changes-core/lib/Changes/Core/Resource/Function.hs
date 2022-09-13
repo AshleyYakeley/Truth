@@ -22,7 +22,7 @@ fstTransListFunction = let
            forall m. Monad m
         => Proxy m
         -> ApplyStack tt1 m --> ApplyStack (Concat tt1 tt2) m
-    tlfFunction _ = concatFstMFunction @tt1 @tt2 @m
+    tlfFunction _ = stackConcatFst @tt1 @tt2 @m
     tlfBackFunction ::
            forall m. MonadTunnelIOInner m
         => Proxy m
@@ -31,7 +31,7 @@ fstTransListFunction = let
         case transStackConcatRefl @tt1 @tt2 @m of
             Refl ->
                 case transStackDict @MonadTunnelIOInner @tt2 @m of
-                    Dict -> stackLiftMBackFunction @tt1 $ stackLiftWithUnlift @tt2 @m
+                    Dict -> stackBackHoist @tt1 $ stackLiftWithUnlift @tt2 @m
     in MkTransListFunction {..}
 
 sndTransListFunction ::
@@ -42,7 +42,7 @@ sndTransListFunction = let
            forall m. Monad m
         => Proxy m
         -> ApplyStack tt2 m --> ApplyStack (Concat tt1 tt2) m
-    tlfFunction _ = concatSndMFunction @tt1 @tt2 @m
+    tlfFunction _ = stackConcatSnd @tt1 @tt2 @m
     tlfBackFunction ::
            forall m. MonadTunnelIOInner m
         => Proxy m
