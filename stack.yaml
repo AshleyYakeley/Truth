@@ -5,7 +5,7 @@ packages:
 #- external/witness
 #- external/open-witness
 #- external/type-rig
-- external/monadology
+#- external/monadology
 
 # Changes
 - Changes/thread-trace
@@ -44,6 +44,7 @@ extra-deps:
 - witness-0.6.1
 - open-witness-0.6
 - type-rig-0.1
+- monadology-0.1
 
 flags:
     changes-gnome:

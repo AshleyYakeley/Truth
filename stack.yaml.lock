@@ -90,6 +90,13 @@ packages:
       sha256: 361a154dcc5f62c3fe54d072a7094b97c3ff4f753f9370ef17b17859c76e4662
   original:
     hackage: type-rig-0.1
+- completed:
+    hackage: monadology-0.1@sha256:7289dd0026c0c83e9fe25f9208aa1d300c55925270fc469036ce815680d0f016,5726
+    pantry-tree:
+      size: 4248
+      sha256: 446af857136298d75271577de9015d368c528fb9ae3bfc480c820a64061c3ead
+  original:
+    hackage: monadology-0.1
 snapshots:
 - completed:
     size: 619399
