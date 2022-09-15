@@ -1,6 +1,20 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Common.Abstract where
+module Language.Expression.Common.Abstract
+    ( AbstractTypeSystem(..)
+    , AbstractResult(..)
+    , abstractNamedExpression
+    , FunctionWitness
+    , UnifierFunctionPosWitness
+    , UnifierFunctionNegWitness
+    , abstractSealedExpression
+    , applySealedExpression
+    , letSealedExpression
+    , bothSealedPattern
+    , caseSealedExpression
+    , caseAbstractSealedExpression
+    , applyPatternConstructor
+    ) where
 
 import Data.Shim
 import Language.Expression.Common.Error
