@@ -22,5 +22,5 @@ in do
     r <- newMemWhole;
     d <- getDate;
     r := d;
-    GTK.run $ \gtk => GTK.openWindow gtk (300,400) {show %r} $ ui r;
+    GTK.run $ fn gtk => GTK.openWindow gtk (300,400) {show %r} $ ui r;
     end

@@ -6,8 +6,8 @@ Within reference notation, unreferences are indicated with percent (`%`).
 For example:
 
 `{"example"}` is the same as `pureWhole "example"`  
-`{"answer: " ++ %r}` is the same as `coMapWhole (\v1 => "answer: " ++ v1) r`  
-`{%x + %(y ?? z)}` is the same as `applyWhole (coMapWhole (\v1 v2 => v1 + v2) x) (y ?? z)`
+`{"answer: " ++ %r}` is the same as `coMapWhole (fn v1 => "answer: " ++ v1) r`  
+`{%x + %(y ?? z)}` is the same as `applyWhole (coMapWhole (fns v1 v2 => v1 + v2) x) (y ?? z)`
 
 If `expr: T`, then `{expr}: WholeRef +T`.  
 If `ref: WholeRef {-P,+Q}`, then `%(ref): Q` within reference notation.

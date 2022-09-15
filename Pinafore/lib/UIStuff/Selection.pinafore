@@ -12,7 +12,7 @@ uiLabelled n ui = horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
 stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
-stdWindow gtk title moremenus contents = fixAction $ \window => do
+stdWindow gtk title moremenus contents = fixAction $ fn window => do
     textsel <- newMemWhole;
     let
         notify: Action TextRef -> Action Unit;
@@ -86,7 +86,7 @@ notebookPane title panes = do
         makePage (MkPane rname ui _) = uiPage rname ui;
         nui: Element;
         nui = notebook tabRef $ mapList makePage panes;
-        itemsRef = forWhole panes $ \(MkPane _ _ rmenus) => rmenus;
+        itemsRef = forWhole panes $ fn MkPane _ _ rmenus => rmenus;
         in MkPane (immutWhole title) nui $ fromMaybeWhole {index %itemsRef %tabRef};
     end;
 
@@ -116,7 +116,7 @@ selectionPane title iset createMenuItems iopen iui = do
         moremenus: List MenuItem;
         moremenus =
             [
-                menuSubmenu "Selection" $ mapList (\mi => mi $ \i => selection := i) createMenuItems ++
+                menuSubmenu "Selection" $ mapList (fn mi => mi $ fn i => selection := i) createMenuItems ++
                 [
                     menuAction "View" Nothing {viewItem},
                     menuAction "Delete" Nothing {deleteItem}
@@ -134,7 +134,7 @@ selectionPairPane:
     (WholeRef +item -> Element) -> # Element for the selected item
     Action Pane;
 selectionPairPane title iset createMenuItems iopen getSelectorUI getSelectedUI =
-    selectionPane title iset createMenuItems iopen $ \selection => let
+    selectionPane title iset createMenuItems iopen $ fn selection => let
         sidebarUI: Element;
         sidebarUI = getSelectorUI selection;
 

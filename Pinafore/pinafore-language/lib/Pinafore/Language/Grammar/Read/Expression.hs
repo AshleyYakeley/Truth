@@ -368,17 +368,24 @@ readExpression1 :: Parser SyntaxExpression
 readExpression1 =
     (do
          spos <- getPosition
-         readThis TokLambda
-         (readSourcePos $ do
-              readThis TokCase
-              scases <- readCases
-              readThis TokEnd
-              return $ SELambdaCase scases) <|>
-             (do
-                  args <- readPatterns
-                  readThis TokMap
-                  mval <- readExpression
-                  return $ seAbstracts spos args mval)) <|>
+         readThis TokFn
+         arg <- readPattern1
+         readThis TokMap
+         mval <- readExpression
+         return $ seAbstract spos arg mval) <|>
+    (do
+         spos <- getPosition
+         readThis TokFns
+         args <- readPatterns
+         readThis TokMap
+         mval <- readExpression
+         return $ seAbstracts spos args mval) <|>
+    readSourcePos
+        (do
+             readThis TokMatch
+             scases <- readCases
+             readThis TokEnd
+             return $ SELambdaCase scases) <|>
     readSourcePos
         (do
              sdecls <- readLetBindings

@@ -22,7 +22,7 @@ face =
 [
     source antiquewhite $ fill $ circle (0,0) 1,
     source black $ lineWidth 0.01 $ stroke $ circle (0,0) 1,
-    mapList (\m => rotate (m ~* pi ~/ 30) $ tickMark m) $ range 0 59
+    mapList (fn m => rotate (m ~* pi ~/ 30) $ tickMark m) $ range 0 59
 ];
 
 hourHand: Drawing (List None);
@@ -37,7 +37,7 @@ secondHand = source red $ lineWidth 0.01 $ stroke [moveTo (0,0), lineTo (0,-0.9)
 in do
     now <- newClock $ Seconds 0.1;
     tz <- getCurrentTimeZone;
-    GTK.run $ \gtk => openWindow gtk (300,400) {"Clock"} $ draw
+    GTK.run $ fn gtk => openWindow gtk (300,400) {"Clock"} $ draw
     {
         scaleDrawing $
             case timeToLocal tz %now of

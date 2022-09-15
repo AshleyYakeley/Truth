@@ -44,7 +44,7 @@ noTestAction = return ()
 
 testUIAction :: Text -> GView 'Unlocked () -> ScriptTestTree
 testUIAction text testaction =
-    scriptTestCase text ("\\call => GTK.run $ \\gtk => do " <> text <> "; call gtk; end") $ runUIAction testaction
+    scriptTestCase text ("fn call => GTK.run $ fn gtk => do " <> text <> "; call gtk; end") $ runUIAction testaction
 
 testActions :: ScriptTestTree
 testActions =

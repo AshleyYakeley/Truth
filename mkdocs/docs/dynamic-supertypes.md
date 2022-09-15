@@ -36,7 +36,7 @@ showNumberType n =
 
 This is equivalent to
 
-`\d => case d of t:T => Just t; _ -> Nothing end`
+`fn d => case d of t:T => Just t; _ -> Nothing end`
 
 ## Coerce
 
@@ -47,4 +47,4 @@ If you're sure that the retraction will always succeed, you can use `coerce`.
 
 This is equivalent to
 
-`\d => case d of t:T => t; _ => error "coercion from D(T) to T failed" end`
+`fn d => case d of t:T => t; _ => error "coercion from D(T) to T failed" end`

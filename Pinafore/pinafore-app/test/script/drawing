@@ -6,7 +6,7 @@ import GTK();
 
 # transform from (-1 .. +1,-1 .. +1)
 scaleDrawing: WholeRef (Drawing a) -> WholeRef (Integer *: Integer -> Drawing a);
-scaleDrawing rd = {\(w,h) => let
+scaleDrawing rd = {fn (w,h) => let
     size = min w h;
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
 
@@ -51,7 +51,7 @@ drawing ref =
 };
 
 import GTK();
-in GTK.run $ \gtk => do
+in GTK.run $ fn gtk => do
     ref <- newMemWhole;
     GTK.openWindow gtk (300,400) {"Drawing"} $ GTK.vertical
     [

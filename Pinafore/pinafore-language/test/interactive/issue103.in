@@ -10,7 +10,7 @@ let g: ((a -> a) & b) -> b; g x = x
 
 let ur: WholeRef a -> Unit; ur _ = ()
 :type ur
-:type newMemWhole >>= \ref => return (ref, ())
-:type newMemWhole >>= \ref => return (ref, ((\_ => ()) : WholeRef a -> Unit) ref)
-:type \ref => return (ref, ur ref)
-:type newMemWhole >>= \ref => return (ref, ur ref)
+:type newMemWhole >>= fn ref => return (ref, ())
+:type newMemWhole >>= fn ref => return (ref, ((fn _ => ()) : WholeRef a -> Unit) ref)
+:type fn ref => return (ref, ur ref)
+:type newMemWhole >>= fn ref => return (ref, ur ref)

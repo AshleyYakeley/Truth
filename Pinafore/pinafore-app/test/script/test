@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 
-GTK.run $ \gtk => let
+GTK.run $ fn gtk => let
 
 import GTK();
 
@@ -9,7 +9,7 @@ ui_page n ui = (GTK.label n,ui);
 ui_labelled n ui = GTK.horizontal [GTK.label n, GTK.layoutGrow  ui];
 
 std_window: WholeRef +Text -> GTK.Element -> Action GTK.Window;
-std_window title contents = fixAction $ \window => let
+std_window title contents = fixAction $ fn window => let
     mbar: GTK.Element;
     mbar = GTK.menuBar
         [
@@ -74,8 +74,8 @@ ui_people pp = GTK.exec $ do
     [
         GTK.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
         GTK.button {"View Person"} {get selectedperson >>= window_person},
-        GTK.button {"Remove Person"} {get selectedperson >>= \p => pp -= p},
-        GTK.layoutGrow $ GTK.listTable [({"Name"},\p => name !$ {p})] pplist window_person (Just selectedperson)
+        GTK.button {"Remove Person"} {get selectedperson >>= fn p => pp -= p},
+        GTK.layoutGrow $ GTK.listTable [({"Name"},fn p => name !$ {p})] pplist window_person (Just selectedperson)
     ];
     end;
 
@@ -169,7 +169,7 @@ window_file f = std_window {"File"} $ GTK.vertical
 ];
 in std_window {"Files"} $ GTK.vertical
 [
-    #GTK.button "Import" {file_import Files $ \f => std_window $ window_file f},
+    #GTK.button "Import" {file_import Files $ fn f => std_window $ window_file f},
     #GTK.layoutGrow $ GTK.listTable [column "Caption" caption, column "Size" file_size] window_file Files
 ];
 
@@ -205,7 +205,7 @@ window_css = do
 window_drawing: WholeRef +Time -> Action GTK.Window;
 window_drawing now = let import Colour; import Cairo in do
     tzref <- newTimeZoneRef now;
-    std_window {"Drawing"} $ GTK.draw {\(w,h) => let
+    std_window {"Drawing"} $ GTK.draw {fn (w,h) => let
         size = min w h;
         in case timeToLocal %tzref %now of
             DateAndTime _ (HourMinuteSecond _ _ s) =>
@@ -245,7 +245,7 @@ window_textselection = do
         GTK.notifySelection notify $ GTK.textArea tref1,
         GTK.notifySelection notify $ GTK.textArea tref2,
         GTK.notifySelection notify $ GTK.textArea tref3,
-        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea (wholeRefText tref)) %sel}
+        GTK.dynamic {GTK.exec $ mapAction (fn tref => GTK.textArea (wholeRefText tref)) %sel}
     ];
     end;
 
@@ -284,7 +284,7 @@ window_cairoimage = let
         block: Number -> Drawing Handler;
         block a =
         [
-            mapList (\(s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
+            mapList (fn (s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
             lineWidth 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 ~* pi)
         ];
         in

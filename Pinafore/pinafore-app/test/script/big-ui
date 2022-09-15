@@ -40,7 +40,7 @@ act = do
     Debug.message "ACTION: end";
     end
 
-in GTK.run $ \gtk => do
+in GTK.run $ fn gtk => do
     w1 <- w gtk;
     act;
     act;

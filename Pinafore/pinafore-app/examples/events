@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 
-GTK.run $ \gtk => let
+GTK.run $ fn gtk => let
 
 import UIStuff.Selection;
 import UIStuff.Named;
@@ -98,7 +98,7 @@ eventList todayref = {
 
 # Text for the overview tab.
 overviewRef: WholeRef +Date -> WholeRef +Text;
-overviewRef todayref = {textConcat $ mapList (\(t,n) => showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
+overviewRef todayref = {textConcat $ mapList (fn (t,n) => showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
 
 # Overview tab GTK
 overviewPane: Pane;
@@ -109,7 +109,7 @@ overviewPane = pane "Overview" $ GTK.exec $ do
     end;
 
 calendarWindow: WholeRef +Event -> Action GTK.Window;
-calendarWindow evt = fixAction $ \window =>
+calendarWindow evt = fixAction $ fn window =>
     GTK.openWindow gtk (200,200) {"date of " <> %(name !$% evt)} $ GTK.vertical
     [
         GTK.calendar $ eventRefTimeDate $ eventTime !$% evt,
@@ -146,9 +146,9 @@ eventsTableUI selection = let
     columns: List (WholeRef +Text *: (Event -> WholeRef Text));
     columns = let
         timeColumn: WholeRef +Text *: (Event -> WholeRef Text);
-        timeColumn = ({"When"},\e => {showEventTime $ %(eventTime !$ {e})});
+        timeColumn = ({"When"},fn e => {showEventTime $ %(eventTime !$ {e})});
         nameColumn: WholeRef +Text *: (Event -> WholeRef Text);
-        nameColumn = ({"What"},\e => name !$ {e});
+        nameColumn = ({"What"},fn e => name !$ {e});
         in [timeColumn,nameColumn];
     in GTK.exec $ do
         lref <- getSetList eventOrder events;

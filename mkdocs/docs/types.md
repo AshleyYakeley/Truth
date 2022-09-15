@@ -89,7 +89,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 #### Constructors & Functions
 `[]: List None`  
-`\x y => x::y: a -> List a -> List1 a`
+`fns x y => x::y: a -> List a -> List1 a`
 
 ### Cartesian Products
 
@@ -100,7 +100,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`\x y => (x, y): a -> b -> a *: b`  
+`fns x y => (x, y): a -> b -> a *: b`  
 `fst: a *: Any -> a`  
 `snd: Any *: b -> b`
 

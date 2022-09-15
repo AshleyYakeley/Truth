@@ -149,7 +149,7 @@ testFunctionType =
         funcExpression <-
             runPinafore $
             unTransformT registerT1Stuff $ \() -> do
-                parseTopExpression "\\x => let subtype Unit <: T1 Integer = \\() => x in ((): T1 Integer)"
+                parseTopExpression "fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer)"
         assertEqual "function type" "T1 Integer -> T1 Integer" $ show (sealedExpressionType funcExpression)
 
 testSemiScript1 :: TestTree
@@ -181,7 +181,7 @@ testSemiScript2 =
             unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
-                    "let f = \\x => let subtype Unit <: T1 Integer = \\() => x in ((): T1 Integer) in f (MkT1 17)"
+                    "let f = fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer) in f (MkT1 17)"
         assertEqual "" 17 i
 
 testSemiScript3 :: TestTree
@@ -192,7 +192,7 @@ testSemiScript3 =
             unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
-                    "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in ((): T1 Integer) in f 17"
+                    "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in ((): T1 Integer) in f 17"
         assertEqual "" 17 i
 
 testSemiScript4 :: TestTree
@@ -203,7 +203,7 @@ testSemiScript4 =
             unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @Integer
-                    "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in (\\(MkT1 y) => y) () in f 17"
+                    "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in (fn MkT1 y => y) () in f 17"
         assertEqual "" 17 i
 
 testScript :: TestTree
@@ -211,12 +211,12 @@ testScript =
     runScriptTestTree $
     tGroup
         "script"
-        [ tDecls ["datatype T of MkT Integer end", "unT = \\(MkT x) => x"] $
+        [ tDecls ["datatype T of MkT Integer end", "unT = fn (MkT x) => x"] $
           testExpectSuccess $
-          "let f = \\x => let subtype Unit <: T = \\() => MkT x in unT () in if f 17 == 17 then return () else fail \"FAILED\""
-        , tDecls ["datatype T1 +a of MkT1 a end", "unT1 = \\(MkT1 x) => x"] $
+          "let f = fn x => let subtype Unit <: T = fn () => MkT x in unT () in if f 17 == 17 then return () else fail \"FAILED\""
+        , tDecls ["datatype T1 +a of MkT1 a end", "unT1 = fn MkT1 x => x"] $
           testExpectSuccess $
-          "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in unT1 () in if f 17 == 17 then return () else fail \"FAILED\""
+          "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in unT1 () in if f 17 == 17 then return () else fail \"FAILED\""
         ]
 
 testSubtype :: TestTree

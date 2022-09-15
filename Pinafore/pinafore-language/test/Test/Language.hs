@@ -171,7 +171,7 @@ testSubsumeSubtype good t1 t2 vs =
 testFunctionSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
 testFunctionSubtype good t1 t2 vs =
     [ testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ goodLangResult good $ LRSuccess "<?>"
-    , testQuery ("(\\x => x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
+    , testQuery ("(fn x => x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
     ] <>
     fmap
         (\v ->
@@ -252,19 +252,21 @@ testQueries =
               ]
         , testTree
               "functions"
-              [ testQuery "\\x => x" $ LRSuccess "<?>"
-              , testQuery "\\x => 1" $ LRSuccess "<?>"
-              , testQuery "\\x y => y" $ LRSuccess "<?>"
-              , testQuery "\\x y z => [x,y,z]" $ LRSuccess "<?>"
+              [ testQuery "fn x => x" $ LRSuccess "<?>"
+              , testQuery "fn x => 1" $ LRSuccess "<?>"
+              , testQuery "fns x => x" $ LRSuccess "<?>"
+              , testQuery "fns x => 1" $ LRSuccess "<?>"
+              , testQuery "fns x y => y" $ LRSuccess "<?>"
+              , testQuery "fns x y z => [x,y,z]" $ LRSuccess "<?>"
               ]
         , testTree
               "predefined"
               [ testQuery "abs" $ LRSuccess "<?>"
               , testQuery "fst" $ LRSuccess "<?>"
               , testQuery "(+)" $ LRSuccess "<?>"
-              , testQuery "\\a b => a + b" $ LRSuccess "<?>"
+              , testQuery "fns a b => a + b" $ LRSuccess "<?>"
               , testQuery "(==)" $ LRSuccess "<?>"
-              , testQuery "\\a b => a == b" $ LRSuccess "<?>"
+              , testQuery "fns a b => a == b" $ LRSuccess "<?>"
               ]
         , testTree
               "let-binding"
@@ -290,39 +292,39 @@ testQueries =
                     , testQuery "let rec b=a;a=1 end in b" $ LRSuccess "1"
                     , testQuery "let rec a x = x end in a 1" $ LRSuccess "1"
                     , testQuery "let rec a x = x; b = a end in b" $ LRSuccess "<?>"
-                    , testQuery "let rec a = \\x => x end in let rec b = a 1 end in b" $ LRSuccess "1"
+                    , testQuery "let rec a = fn x => x end in let rec b = a 1 end in b" $ LRSuccess "1"
                     , testQuery "let rec a x = x; b = a 1 end in b" $ LRSuccess "1"
                     , testQuery "let rec a x = b; b = b end in a" $ LRSuccess "<?>"
                     , testQuery "let rec a x = 1; b = b end in a b" $ LRSuccess "1"
                     , testQuery "let rec a x = 1; b = a b end in b" $ LRSuccess "1"
                     , testQuery "let rec a x = 1 end in let rec b = a b end in b" $ LRSuccess "1"
-                    , testQuery "let rec b = (\\x => 1) b end in b" $ LRSuccess "1"
+                    , testQuery "let rec b = (fn x => 1) b end in b" $ LRSuccess "1"
                     , testQuery "let rec b = a b; a x = 1 end in b" $ LRSuccess "1"
                     , testQuery "let rec a x = 1; b = a c; c=b end in b" $ LRSuccess "1"
                     , testTree
                           "polymorphism"
-                          [ testQuery "let rec i = \\x => x end in (1 + i 1, i False)" $ LRSuccess "(2, False)"
-                          , testQuery "let rec i = \\x => x; r = (1 + i 1, i False) end in r" $ LRSuccess "(2, False)"
-                          , testQuery "let rec r = (1 + i 1, i False); i = \\x => x end in r" $ LRSuccess "(2, False)"
+                          [ testQuery "let rec i = fn x => x end in (1 + i 1, i False)" $ LRSuccess "(2, False)"
+                          , testQuery "let rec i = fn x => x; r = (1 + i 1, i False) end in r" $ LRSuccess "(2, False)"
+                          , testQuery "let rec r = (1 + i 1, i False); i = fn x => x end in r" $ LRSuccess "(2, False)"
                           ]
                     ]
               ]
         , testTree
               "scoping"
-              [ testQuery "(\\b => \\a => b) a" LRCheckFail
-              , testQuery "let b=a in \\a => b" LRCheckFail
+              [ testQuery "(fn b => fn a => b) a" LRCheckFail
+              , testQuery "let b=a in fn a => b" LRCheckFail
               , testQuery "let b=a in ()" LRCheckFail
               , testQuery "let rec b=a end in ()" LRCheckFail
-              , testQuery "let a=1 in let b=a in (\\a => b) 2" $ LRSuccess "1"
-              , testQuery "(\\a => let b=a in (\\a => b) 2) 1" $ LRSuccess "1"
+              , testQuery "let a=1 in let b=a in (fn a => b) 2" $ LRSuccess "1"
+              , testQuery "(fn a => let b=a in (fn a => b) 2) 1" $ LRSuccess "1"
               ]
         , testTree
               "name shadowing"
-              [ testQuery "let a=1 in (\\a => a) 2" $ LRSuccess "2"
-              , testQuery "let a=1 in (\\(Just a) => a) (Just 2)" $ LRSuccess "2"
+              [ testQuery "let a=1 in (fn a => a) 2" $ LRSuccess "2"
+              , testQuery "let a=1 in (fn (Just a) => a) (Just 2)" $ LRSuccess "2"
               , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
-              , testQuery "(\\a => let a=2 in a) 1" $ LRSuccess "2"
-              , testQuery "(\\a => \\a => a) 1 2" $ LRSuccess "2"
+              , testQuery "(fn a => let a=2 in a) 1" $ LRSuccess "2"
+              , testQuery "(fn a => fn a => a) 1 2" $ LRSuccess "2"
               , testQuery "let a=1 in case 2 of a => a end" $ LRSuccess "2"
               , testQuery "let a=1 in case Just 2 of Just a => a end" $ LRSuccess "2"
               , testQuery "case 1 of a => case 2 of a => a end end" $ LRSuccess "2"
@@ -433,9 +435,9 @@ testQueries =
         , testTree "product" [testQuery "fst (7,9)" $ LRSuccess "7", testQuery "snd (7,9)" $ LRSuccess "9"]
         , testTree
               "sum"
-              [ testQuery "fromEither (\\a => (\"Left\",a)) (\\a => (\"Right\",a)) $ Left \"x\"" $
+              [ testQuery "fromEither (fn a => (\"Left\",a)) (fn a => (\"Right\",a)) $ Left \"x\"" $
                 LRSuccess "(\"Left\", \"x\")"
-              , testQuery "fromEither (\\a => (\"Left\",a)) (\\a => (\"Right\",a)) $ Right \"x\"" $
+              , testQuery "fromEither (fn a => (\"Left\",a)) (fn a => (\"Right\",a)) $ Right \"x\"" $
                 LRSuccess "(\"Right\", \"x\")"
               ]
         , testTree
@@ -460,18 +462,18 @@ testQueries =
                     "polar"
                     [ testQuery "let x : Text | Number; x = 3 in x" $ LRSuccess "3"
                     , testQuery "let f : Any -> Integer; f _ = 3 in f ()" $ LRSuccess "3"
-                    , testQuery "(\\x => (x,x)) : ((a & Number) -> Showable *: a)" $ LRSuccess "<?>"
-                    , testQuery "let f = (\\x => (x,x)) : (a & Number) -> Showable *: a in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "(fn x => (x,x)) : ((a & Number) -> Showable *: a)" $ LRSuccess "<?>"
+                    , testQuery "let f = (fn x => (x,x)) : (a & Number) -> Showable *: a in f 3" $ LRSuccess "(3, 3)"
                     , testQuery "let f : (a & Number) -> Showable *: a; f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
                     ]
               ]
         , testTree
               "patterns"
-              [ testQuery "(\\a => 5) 2" $ LRSuccess "5"
-              , testQuery "(\\a => a) 2" $ LRSuccess "2"
-              , testQuery "(\\_ => 5) 2" $ LRSuccess "5"
-              , testQuery "(\\a@b => (a,b)) 2" $ LRSuccess "(2, 2)"
-              , testQuery "(\\(a,b) => a + b) (5,6)" $ LRSuccess "11"
+              [ testQuery "(fn a => 5) 2" $ LRSuccess "5"
+              , testQuery "(fn a => a) 2" $ LRSuccess "2"
+              , testQuery "(fn _ => 5) 2" $ LRSuccess "5"
+              , testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "(2, 2)"
+              , testQuery "(fn (a,b) => a + b) (5,6)" $ LRSuccess "11"
               ]
         , testTree
               "case"
@@ -535,13 +537,13 @@ testQueries =
               ]
         , testTree
               "lambda-case"
-              [ testQuery "(\\case a => 5 end) 2" $ LRSuccess "5"
-              , testQuery "(\\case a => 5; a => 3 end) 2" $ LRSuccess "5"
-              , testQuery "(\\case a => 5; a => 3; end) 2" $ LRSuccess "5"
-              , testQuery "(\\case a => a end) 2" $ LRSuccess "2"
-              , testQuery "(\\case _ => 5 end) 2" $ LRSuccess "5"
-              , testQuery "(\\case _ => 5; _ => 3 end) 2" $ LRSuccess "5"
-              , testQuery "(\\case a@b => (a,b) end) 2" $ LRSuccess "(2, 2)"
+              [ testQuery "(match a => 5 end) 2" $ LRSuccess "5"
+              , testQuery "(match a => 5; a => 3 end) 2" $ LRSuccess "5"
+              , testQuery "(match a => 5; a => 3; end) 2" $ LRSuccess "5"
+              , testQuery "(match a => a end) 2" $ LRSuccess "2"
+              , testQuery "(match _ => 5 end) 2" $ LRSuccess "5"
+              , testQuery "(match _ => 5; _ => 3 end) 2" $ LRSuccess "5"
+              , testQuery "(match a@b => (a,b) end) 2" $ LRSuccess "(2, 2)"
               ]
         , testTree
               "type-operator"
@@ -588,9 +590,9 @@ testQueries =
               ]
         , testTree
               "conversion"
-              [ testQuery ("case ((\\x => Just x): Integer -> Maybe Integer) 34 of Just x => x end") $ LRSuccess "34"
-              , testQuery ("((\\x => [x]): xy -> List1 xy: Integer -> List Integer) 79") $ LRSuccess "[79]"
-              , testQuery ("case ((\\x => x :: []): Integer -> List Integer) 57 of x::_ => x end") $ LRSuccess "57"
+              [ testQuery ("case ((fn x => Just x): Integer -> Maybe Integer) 34 of Just x => x end") $ LRSuccess "34"
+              , testQuery ("((fn x => [x]): xy -> List1 xy: Integer -> List Integer) 79") $ LRSuccess "[79]"
+              , testQuery ("case ((fn x => x :: []): Integer -> List Integer) 57 of x::_ => x end") $ LRSuccess "57"
               ]
         , testTree
               "recursive"
@@ -663,7 +665,7 @@ testQueries =
               , testTree
                     "lazy"
                     [ testQuery
-                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in (\\x => lazy x 1) (error \"strict\")" $
+                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in (fn x => lazy x 1) (error \"strict\")" $
                       LRSuccess "1"
                     , testQuery "let lazy: Any -> Integer -> Integer; lazy _ x = x in let rec x = lazy x 1 end in x" $
                       LRSuccess "1"
@@ -971,11 +973,11 @@ testShims =
         , testShim "negate 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $ testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , expectFailBecause "ISSUE #63" $ testShim "id 3" "Integer" "(join1 id)"
-        , expectFailBecause "ISSUE #63" $ testShim "\\x => x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        , expectFailBecause "ISSUE #63" $ testShim "(\\x => x) 3" "Integer" "(join1 id)"
+        , expectFailBecause "ISSUE #63" $ testShim "fn x => x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFailBecause "ISSUE #63" $ testShim "(fn x => x) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
-          testShim "\\x => 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
-        , testShim "(\\x => 4) 3" "Integer" "(join1 id)"
+          testShim "fn x => 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
+        , testShim "(fn x => 4) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
               "let rcount x = case x of Nothing => 0; Just y => 1 + rcount y end in rcount"

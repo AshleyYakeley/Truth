@@ -34,7 +34,7 @@ let
     end;
 
     rec
-    fact = \case
+    fact = match
         0 => 1;
         n => n * fact (n - 1);
         end;
@@ -56,7 +56,7 @@ let
     let
     datatype LowerCaseText of MkLowerCaseText Text end;
     fromLowerCase: LowerCaseText -> Text;
-    fromLowerCase = \(MkLowerCaseText t) => t;
+    fromLowerCase = fn MkLowerCaseText t => t;
     toLowerCase: Text -> LowerCaseText;
     toLowerCase t = MkLowerCaseText $ textLowerCase t;
     in expose LowerCaseText, fromLowerCase, toLowerCase; # MkLowerCaseText not exposed
@@ -77,5 +77,5 @@ import Colour (AlphaColour, crimson); # brings given names (and subtype relation
 
 import Cairo (); # brings only subtype relations from Cairo into scope
 
-in draw {\_ => source crimson paint}
+in draw {fn _ => source crimson paint}
 ```

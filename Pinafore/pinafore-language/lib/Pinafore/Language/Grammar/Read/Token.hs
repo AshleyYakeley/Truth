@@ -55,7 +55,10 @@ data Token t where
     TokLName :: Token Name
     TokQLName :: Token (ModuleName, Name)
     TokUnderscore :: Token ()
-    TokLambda :: Token ()
+    TokFn :: Token ()
+    TokFns :: Token ()
+    TokMatch :: Token ()
+    TokMatches :: Token ()
     TokAssign :: Token ()
     TokMap :: Token ()
     TokBackMap :: Token ()
@@ -102,7 +105,10 @@ instance TestEquality Token where
     testEquality TokLName TokLName = Just Refl
     testEquality TokQLName TokQLName = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
-    testEquality TokLambda TokLambda = Just Refl
+    testEquality TokFn TokFn = Just Refl
+    testEquality TokFns TokFns = Just Refl
+    testEquality TokMatch TokMatch = Just Refl
+    testEquality TokMatches TokMatches = Just Refl
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
     testEquality TokBackMap TokBackMap = Just Refl
@@ -150,7 +156,10 @@ instance Show (Token t) where
     show TokLName = "lname"
     show TokQLName = "qualified lname"
     show TokUnderscore = show ("_" :: String)
-    show TokLambda = show ("\\" :: String)
+    show TokFn = show ("fn" :: String)
+    show TokFns = show ("fns" :: String)
+    show TokMatch = show ("match" :: String)
+    show TokMatches = show ("matches" :: String)
     show TokAssign = show ("=" :: String)
     show TokMap = show ("=>" :: String)
     show TokBackMap = show ("<-" :: String)
@@ -266,6 +275,10 @@ readQName = do
 
 checkKeyword :: String -> Maybe (SomeOf Token)
 checkKeyword "_" = return $ MkSomeOf TokUnderscore ()
+checkKeyword "fn" = return $ MkSomeOf TokFn ()
+checkKeyword "fns" = return $ MkSomeOf TokFns ()
+checkKeyword "match" = return $ MkSomeOf TokMatch ()
+checkKeyword "matches" = return $ MkSomeOf TokMatches ()
 checkKeyword "rec" = return $ MkSomeOf TokRec ()
 checkKeyword "let" = return $ MkSomeOf TokLet ()
 checkKeyword "in" = return $ MkSomeOf TokIn ()
@@ -340,7 +353,6 @@ readOpToken = do
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
         ":" -> return $ MkSomeOf TokTypeJudge ()
-        "\\" -> return $ MkSomeOf TokLambda ()
         "=" -> return $ MkSomeOf TokAssign ()
         "=>" -> return $ MkSomeOf TokMap ()
         "<-" -> return $ MkSomeOf TokBackMap ()

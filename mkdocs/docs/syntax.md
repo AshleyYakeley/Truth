@@ -113,11 +113,12 @@ All declarations, including type declarations, are local to a `let` block.
 <infix-operator[n,dir]> ::= -- see table
 
 <expression-1> ::=
-    "\" <patterns> "=>" <expression> |
+    "fn" <pattern-1> "=>" <expression> |
+    "fns" <patterns> "=>" <expression> |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "case" <expression> "of" <cases> "end" |
-    "\" "case" <cases> "end" |
+    "match" <cases> "end" |
     "do" <do-lines> <expression> "end" |
     <expression-2>
 

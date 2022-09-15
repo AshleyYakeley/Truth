@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 
-GTK.run $ \gtk => do
+GTK.run $ fn gtk => do
 outputLn "BEGIN";
 w <- GTK.openWindow gtk (600,800) {"Window"} GTK.blank;
 outputLn "Open";

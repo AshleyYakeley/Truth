@@ -240,7 +240,7 @@ testEntity =
                     "do r <- newMemList; listWhole r := [10,20,30]; ir <- listGetItemRef True 1 r; listInsert 1 12 r; i <- get ir; testeqval 20 i; end"
               , testExpectSuccess
                     "do r <- newMemList; listWhole r := [10,20,30]; ir <- listGetItemRef True 1 r; listInsert 1 12 r; ir := 15; l <- get $ listWhole r; testeqval [10,12,15,30] l; end"
-              , testExpectSuccess "testImmutList True 1 $ \\_ => return ()"
+              , testExpectSuccess "testImmutList True 1 $ fn _ => return ()"
               ]
         , tDecls
               [ "convr : Rational -> Rational;convr = id"
@@ -518,7 +518,7 @@ testEntity =
                           "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (setCount (tea !@ {e1}))"
                     , testExpectSuccess $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (setList noOrder someset) >>= \\pp => for pp $ \\p => runWholeRef {counter := %counter + 1}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (setList noOrder someset) >>= fn pp => for pp $ fn p => runWholeRef {counter := %counter + 1}) >> testeq {1} counter"
                     ]
               , tGroup
                     "types"
@@ -871,7 +871,7 @@ testEntity =
                           , tDecls
                                 [ "datatype D -a of Mk1D (a -> Integer); Mk2D (a -> a -> Text) end"
                                 , "dShow: D Number"
-                                , "dShow = Mk2D $ \\a b => show a <> \",\" <> show b"
+                                , "dShow = Mk2D $ fns a b => show a <> \",\" <> show b"
                                 , "di: D Integer"
                                 , "di = dShow"
                                 , "showD: a -> D a -> Text"
@@ -942,10 +942,10 @@ testEntity =
                           , subtypeTest False SRNot "D1" "D3"
                           , tGroup
                                 "GDS"
-                                [ testExpectSuccess $ isOfType "\\x => case x of C1 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "\\x => case x of C2 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "\\x => case x of C3 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "\\x => case x of C4 => () end" "D1 -> Unit"
+                                [ testExpectSuccess $ isOfType "fn x => case x of C1 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "fn x => case x of C2 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "fn x => case x of C3 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "fn x => case x of C4 => () end" "D1 -> Unit"
                                 ]
                           ]
                     , testExpectSuccess
@@ -956,7 +956,7 @@ testEntity =
               ]
         , tGroup
               "subtype-decl"
-              [ tDecls ["datatype T of T1 Integer end", "unT1 = \\(T1 x) => x"] $
+              [ tDecls ["datatype T of T1 Integer end", "unT1 = fn T1 x => x"] $
                 tGroup
                     "simple"
                     [ tDecls ["subtype Integer <: T = T1"] $
@@ -974,7 +974,7 @@ testEntity =
                           , subtypeTest False SRSingle "T" "Integer"
                           ]
                     ]
-              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = \\(T1 x) => x"] $
+              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1 x => x"] $
                 tGroup
                     "parameter"
                     [ tDecls ["subtype Maybe Integer <: T Integer = T1"] $
@@ -992,24 +992,24 @@ testEntity =
                           , testExpectSuccess "testeq {Just 3} {unT1 $ Just 3}"
                           ]
                     ]
-              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = \\(T1 x) => x"] $
+              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1 x => x"] $
                 tGroup
                     "dependent"
                     [ testExpectSuccess $
-                      "let x = 17; f = let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 () in testeq {Just 17} {f}"
+                      "let x = 17; f = let subtype Unit <: T Integer = fn () => T1 (Just x) in unT1 () in testeq {Just 17} {f}"
                     , testExpectSuccess $
-                      "let rec f = let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 (); x = 17 end in testeq {Just 17} {f}"
+                      "let rec f = let subtype Unit <: T Integer = fn () => T1 (Just x) in unT1 (); x = 17 end in testeq {Just 17} {f}"
                     , testExpectSuccess $
-                      "let f = \\x => let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 () in testeq {Just 17} {f 17}"
+                      "let f = fn x => let subtype Unit <: T Integer = fn () => T1 (Just x) in unT1 () in testeq {Just 17} {f 17}"
                     , testExpectSuccess $
-                      "let f = \\x => let y = x; subtype Unit <: T Integer = \\() => T1 (Just y) in unT1 () in testeq {Just 17} {f 17}"
+                      "let f = fn x => let y = x; subtype Unit <: T Integer = fn () => T1 (Just y) in unT1 () in testeq {Just 17} {f 17}"
                     ]
               ]
         , tDecls ["closedtype T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
           tGroup
               "closedtype"
               [ testExpectSuccess "pass"
-              , testExpectSuccess "let f: T -> Entity; f = \\x => x in pass"
+              , testExpectSuccess "let f: T -> Entity; f = fn x => x in pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
               , testExpectSuccess "let f (T1 x _) = x in pass"
               , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
@@ -1067,8 +1067,8 @@ testEntity =
                     , testExpectSuccess "let rec closedtype P +a of P1 (P (a *: a)) !\"P1\" end end in pass"
                     , tDecls
                           [ "rec closedtype L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
-                          , "rec listToL: List a -> L a; listToL = \\case [] => Nil; x::xs => Cons x (listToL xs) end end"
-                          , "rec lToList: L a -> List a; lToList = \\case Nil => []; Cons x xs => x :: lToList xs end end"
+                          , "rec listToL: List a -> L a; listToL = match [] => Nil; x::xs => Cons x (listToL xs) end end"
+                          , "rec lToList: L a -> List a; lToList = match Nil => []; Cons x xs => x :: lToList xs end end"
                           ] $
                       tGroup
                           "list"
@@ -1094,15 +1094,15 @@ testEntity =
               ]
         , tGroup
               "general-subtype"
-              [ testExpectReject "let subtype Unit <: Unit = \\_ => () in pass"
-              , testExpectReject "let subtype Integer <: Unit = \\_ => () in pass"
+              [ testExpectReject "let subtype Unit <: Unit = fn _ => () in pass"
+              , testExpectReject "let subtype Integer <: Unit = fn _ => () in pass"
               , tDecls ["opentype P", "opentype Q"] $
                 tGroup
                     "opentype"
                     [ testExpectSuccess "let subtype P <: P in pass"
                     , testExpectSuccess "let subtype P <: Q in pass"
-                    , testExpectReject "let subtype P <: P = \\x => x in pass"
-                    , testExpectReject "let subtype P <: Q = \\_ => error \"\" in pass"
+                    , testExpectReject "let subtype P <: P = fn x => x in pass"
+                    , testExpectReject "let subtype P <: Q = fn _ => error \"\" in pass"
                     ]
               , tDecls ["datatype P of MkP Number end"] $
                 tGroup
@@ -1116,15 +1116,15 @@ testEntity =
                     , "datatype B of MkB Number end"
                     , "datatype C of MkC Number end"
                     , "datatype D of MkD Number end"
-                    , "subtype A <: B = \\(MkA x) => MkB x"
-                    , "subtype C <: D = \\(MkC x) => MkD x"
-                    , "subtype A <: D = \\(MkA x) => MkD x"
+                    , "subtype A <: B = fn MkA x => MkB x"
+                    , "subtype C <: D = fn MkC x => MkD x"
+                    , "subtype A <: D = fn MkA x => MkD x"
                     ] $
                 tGroup
                     "verify"
                     [ testExpectSuccess "pass"
-                    , testExpectReject "let subtype B <: B = \\(MkB x) => MkB x in pass"
-                    , testExpectReject "let subtype B <: C = \\(MkB x) => MkC x in pass"
+                    , testExpectReject "let subtype B <: B = fn MkB x => MkB x in pass"
+                    , testExpectReject "let subtype B <: C = fn MkB x => MkC x in pass"
                     ]
               ]
         , tDecls ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = openEntity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
@@ -1153,12 +1153,12 @@ testEntity =
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"5\""
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"let x = 5 in x\""
               , testExpectSuccess
-                    "do ar <- evaluate @(Integer -> Integer) \"\\\\x => x + 1\"; case ar of Left err => fail err; Right f => testeqval 8 $ f 7 end end"
+                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x + 1\"; case ar of Left err => fail err; Right f => testeqval 8 $ f 7 end end"
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
-                    "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action Unit) \"\\\\r => r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+                    "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action Unit) \"fn r => r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]
         , tGroup
               "text-sort"

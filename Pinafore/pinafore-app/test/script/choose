@@ -1,12 +1,12 @@
 #!/usr/bin/pinafore
-GTK.run $ \gtk => let
+GTK.run $ fn gtk => let
 import GTK();
 import Image();
 
 rec
     showFile: Action Unit;
     showFile = do
-        file <- GTK.chooseExistingFile gtk $ \case
+        file <- GTK.chooseExistingFile gtk $ match
             Just ("image",_) => True;
             _ => False;
             end;

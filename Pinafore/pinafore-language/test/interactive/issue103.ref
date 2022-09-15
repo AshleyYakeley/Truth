@@ -16,12 +16,12 @@ pinafore>
 pinafore> let ur: WholeRef a -> Unit; ur _ = ()
 pinafore> :type ur
 : WholeRef a -> Unit
-pinafore> :type newMemWhole >>= \ref => return (ref, ())
+pinafore> :type newMemWhole >>= fn ref => return (ref, ())
 : Action (WholeRef c *: Unit)
-pinafore> :type newMemWhole >>= \ref => return (ref, ((\_ => ()) : WholeRef a -> Unit) ref)
+pinafore> :type newMemWhole >>= fn ref => return (ref, ((fn _ => ()) : WholeRef a -> Unit) ref)
 : Action (WholeRef l *: Unit)
-pinafore> :type \ref => return (ref, ur ref)
+pinafore> :type fn ref => return (ref, ur ref)
 : (b & WholeRef c) -> Action (b *: Unit)
-pinafore> :type newMemWhole >>= \ref => return (ref, ur ref)
+pinafore> :type newMemWhole >>= fn ref => return (ref, ur ref)
 : Action (WholeRef l *: Unit)
 pinafore> <END>
