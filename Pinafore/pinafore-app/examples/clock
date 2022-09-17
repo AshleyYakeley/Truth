@@ -40,7 +40,7 @@ in do
     GTK.run $ fn gtk => openWindow gtk (300,400) {"Clock"} $ draw
     {
         scaleDrawing $
-            case timeToLocal tz %now of
+            timeToLocal tz %now >- match
                 DateAndTime _ (SinceMidnight (Seconds ss)) => let
                     s = floor $ modR ss 60; # floor for ticking motion
                     m = modR (ss / 60) 60;

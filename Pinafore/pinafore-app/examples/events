@@ -14,19 +14,19 @@ closedtype EventTime of
 end;
 
 showEventTime: EventTime -> Text
-= fn et => case et of
+= match
     EventTimeDate d => unixFormatDate "%F" d;
     EventTimeTime t => unixFormatLocalTime "%F %R" t;
     end;
 
 eventTimeDate: EventTime -> Date
-= fn et => case et of
+= match
     EventTimeDate d => d;
     EventTimeTime (DateAndTime d _) => d
     end;
 
 setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime
-= fns d et => Just $ case et of
+= fns d et => Just $ et >- match
     Just (EventTimeTime (DateAndTime _ t)) => EventTimeTime (DateAndTime d t);
     _ => EventTimeDate d;
     end;
@@ -37,15 +37,15 @@ eventRefTimeDate: WholeRef EventTime -> WholeRef Date
 eventRefTimeTimeOfDay: WholeRef EventTime -> WholeRef TimeOfDay
 = fn r => let
     eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay
-    = fn met => case met of
+    = match
         Just (EventTimeTime (DateAndTime _ tod)) => Just tod;
         _ => Nothing;
         end;
 
 setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime)
-= fns mtod met => Just $ case met of
+= fns mtod met => Just $ met >- match
     Nothing => Nothing;
-    Just et => Just $ case mtod of
+    Just et => Just $ mtod >- match
         Nothing => EventTimeDate $ eventTimeDate et;
         Just tod => EventTimeTime $ DateAndTime (eventTimeDate et) tod;
         end;
@@ -54,7 +54,7 @@ in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
 # for ordering
 eventTimeTime: EventTime -> LocalTime
-= fn et => case et of
+= match
     EventTimeDate d => DateAndTime d midnight;
     EventTimeTime t => t
     end;
@@ -105,7 +105,7 @@ overviewPane: Pane
 = pane "Overview" $ GTK.exec $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
-    return $ GTK.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ => d end};
+    return $ GTK.label $ overviewRef {timeToLocal %tz %now >- match DateAndTime d _ => d end};
     end;
 
 calendarWindow: WholeRef +Event -> Action GTK.Window

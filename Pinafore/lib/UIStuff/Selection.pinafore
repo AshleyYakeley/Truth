@@ -39,7 +39,7 @@ stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> 
         = do
             tref <- getTextRef;
             clip <- get $ clipboard gtk;
-            case clip of
+            clip >- match
                 text: Text => tref := text;
                 _ => return ();
             end;

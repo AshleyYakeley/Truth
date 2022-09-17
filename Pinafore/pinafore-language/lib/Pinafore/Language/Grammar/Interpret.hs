@@ -339,11 +339,7 @@ interpretExpression' (SEAbstract spat sbody) =
                 val <- interpretExpressionShadowed (sealedPatternNames pat) sbody
                 liftRefNotation $ qCaseAbstract [(pat, val)]
 interpretExpression' (SELet sdecls sbody) = interpretDeclarations sdecls $ interpretExpression sbody
-interpretExpression' (SECase sbody scases) = do
-    body <- interpretExpression sbody
-    pairs <- for scases interpretCase
-    liftRefNotation $ qCase body pairs
-interpretExpression' (SELambdaCase scases) = do
+interpretExpression' (SEMatch scases) = do
     pairs <- for scases interpretCase
     liftRefNotation $ qCaseAbstract pairs
 interpretExpression' (SEApply sf sarg) = do

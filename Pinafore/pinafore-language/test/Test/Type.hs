@@ -309,9 +309,9 @@ testType =
                     , textTypeTest "(1,False,(3,True))" "{} -> Integer *: Boolean *: Integer *: Boolean"
                     , textTypeTest "(1,(False,3,True))" "{} -> Integer *: Boolean *: Integer *: Boolean"
                     , textTypeTest "(1,False,3,True)" "{} -> Integer *: Boolean *: Integer *: Boolean"
-                    , textTypeTest "fn x => case x of (1,False) => () end" "{} -> Literal *: Literal -> Unit"
+                    , textTypeTest "match (1,False) => () end" "{} -> Literal *: Literal -> Unit"
                     , textTypeTest
-                          "fn x => case x of (1,False,3,True) => () end"
+                          "match (1,False,3,True) => () end"
                           "{} -> Literal *: Literal *: Literal *: Literal -> Unit"
                     ]
               , testTree

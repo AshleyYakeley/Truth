@@ -215,9 +215,7 @@ data SyntaxExpression'
     | SEUnref SyntaxExpression
     | SELet [SyntaxWithDoc SyntaxDeclaration]
             SyntaxExpression
-    | SECase SyntaxExpression
-             [SyntaxCase]
-    | SELambdaCase [SyntaxCase]
+    | SEMatch [SyntaxCase]
     | SEList [SyntaxExpression]
     deriving (Eq)
 
@@ -293,8 +291,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SELet binds expr) =
         difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
-    syntaxFreeVariables (SECase expr cases) = union (syntaxFreeVariables expr) (syntaxFreeVariables cases)
-    syntaxFreeVariables (SELambdaCase cases) = syntaxFreeVariables cases
+    syntaxFreeVariables (SEMatch cases) = syntaxFreeVariables cases
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
 
 instance SyntaxFreeVariables SyntaxBinding where

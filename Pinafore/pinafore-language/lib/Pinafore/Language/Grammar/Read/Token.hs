@@ -37,7 +37,6 @@ data Token t where
     TokLet :: Token ()
     TokIn :: Token ()
     TokDo :: Token ()
-    TokCase :: Token ()
     TokOf :: Token ()
     TokEnd :: Token ()
     TokIf :: Token ()
@@ -87,7 +86,6 @@ instance TestEquality Token where
     testEquality TokLet TokLet = Just Refl
     testEquality TokIn TokIn = Just Refl
     testEquality TokDo TokDo = Just Refl
-    testEquality TokCase TokCase = Just Refl
     testEquality TokOf TokOf = Just Refl
     testEquality TokEnd TokEnd = Just Refl
     testEquality TokIf TokIf = Just Refl
@@ -138,7 +136,6 @@ instance Show (Token t) where
     show TokLet = show ("let" :: String)
     show TokIn = show ("in" :: String)
     show TokDo = show ("do" :: String)
-    show TokCase = show ("case" :: String)
     show TokOf = show ("of" :: String)
     show TokEnd = show ("end" :: String)
     show TokIf = show ("if" :: String)
@@ -283,7 +280,6 @@ checkKeyword "rec" = return $ MkSomeOf TokRec ()
 checkKeyword "let" = return $ MkSomeOf TokLet ()
 checkKeyword "in" = return $ MkSomeOf TokIn ()
 checkKeyword "do" = return $ MkSomeOf TokDo ()
-checkKeyword "case" = return $ MkSomeOf TokCase ()
 checkKeyword "of" = return $ MkSomeOf TokOf ()
 checkKeyword "end" = return $ MkSomeOf TokEnd ()
 checkKeyword "if" = return $ MkSomeOf TokIf ()

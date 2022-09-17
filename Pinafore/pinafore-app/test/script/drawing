@@ -21,7 +21,7 @@ drawing: WholeRef Progress -> WholeRef +(Drawing GTK.Handler)
 {
     scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1
     [
-        source navy $ case %(toMaybeWhole ref) of
+        source navy $ %(toMaybeWhole ref) >- match
             Nothing =>
             [
                 pureDrawing $ GTK.onClick $ ref := ProgressPartial

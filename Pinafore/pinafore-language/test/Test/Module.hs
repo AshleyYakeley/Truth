@@ -29,11 +29,12 @@ testModule =
         , tModule "M" "let datatype T of T1; T2 end in expose T, T1, T2" $
           tGroup
               "type"
-              [ testExpectSuccess "let import M in case T1 of T1 => return (); T2 => fail \"wrong\" end"
-              , testExpectSuccess "case M.T1 of M.T1 => return (); M.T2 => fail \"wrong\" end"
-              , testExpectSuccess "let import M in let t: T = T1 in case t of T1 => return (); T2 => fail \"wrong\" end"
-              , testExpectSuccess "let import M; t: T = T1 in case t of T1 => return (); T2 => fail \"wrong\" end"
-              , testExpectSuccess "let t: M.T = M.T1 in case t of M.T1 => return (); M.T2 => fail \"wrong\" end"
+              [ testExpectSuccess "let import M in T1 >- match T1 => return (); T2 => fail \"wrong\" end"
+              , testExpectSuccess "M.T1 >- match M.T1 => return (); M.T2 => fail \"wrong\" end"
+              , testExpectSuccess
+                    "let import M in let t: T = T1 in t >- match T1 => return (); T2 => fail \"wrong\" end"
+              , testExpectSuccess "let import M; t: T = T1 in t >- match T1 => return (); T2 => fail \"wrong\" end"
+              , testExpectSuccess "let t: M.T = M.T1 in t >- match M.T1 => return (); M.T2 => fail \"wrong\" end"
               , testExpectSuccess "let import M; f: T -> T = fn x => x in return ()"
               , testExpectSuccess "let import M in let f: T -> T = fn x => x in return ()"
               , testExpectSuccess "let f: M.T -> M.T = fn x => x in return ()"

@@ -276,6 +276,7 @@ operatorFixity "+=" = MkFixity AssocNone 2
 operatorFixity "-=" = MkFixity AssocNone 2
 operatorFixity ">>=" = MkFixity AssocLeft 1
 operatorFixity ">>" = MkFixity AssocLeft 1
+operatorFixity ">-" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0
 operatorFixity _ = MkFixity AssocLeft 10
 
@@ -369,21 +370,13 @@ readExpression1 =
              readThis TokMatch
              scases <- readCases
              readThis TokEnd
-             return $ SELambdaCase scases) <|>
+             return $ SEMatch scases) <|>
     readSourcePos
         (do
              sdecls <- readLetBindings
              readThis TokIn
              sbody <- readExpression
              return $ SELet sdecls sbody) <|>
-    readSourcePos
-        (do
-             readThis TokCase
-             sbody <- readExpression
-             readThis TokOf
-             scases <- readCases
-             readThis TokEnd
-             return $ SECase sbody scases) <|>
     (do
          readThis TokDo
          dl <- readLines readDoLine

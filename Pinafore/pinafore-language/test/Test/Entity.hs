@@ -261,8 +261,9 @@ testEntity =
                     testLiteralConversion :: ScriptExpectation -> Text -> Text -> ScriptTestTree
                     testLiteralConversion se ptype val =
                         testScriptExpectation (val <> ": " <> ptype <> " => " <> pack (show se)) se $
-                        "case (" <>
-                        val <> "): Literal of val: " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
+                        "((" <>
+                        val <>
+                        "): Literal) >- match val: " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
                     testPairs :: [(Text, Text)]
                     testPairs =
                         [ ("Unit", "()")
@@ -738,31 +739,32 @@ testEntity =
               "greatest-dynamic-supertype"
               [ tGroup
                     "Literal"
-                    [ testExpectSuccess "testeqval 1 $ case 34.0 of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
-                    , testExpectSuccess "testeqval 2 $ case True of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
-                    , testExpectSuccess "testeqval 3 $ case \"hello\" of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
-                    , testExpectSuccess "testeqval 4 $ case () of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    [ testExpectSuccess "testeqval 1 $ 34.0 >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    , testExpectSuccess "testeqval 2 $ True >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 1 $ case 34.0 of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 3 $ \"hello\" >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    , testExpectSuccess "testeqval 4 $ () >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 2 $ case True of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 1 $ 34.0 >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 3 $ case \"hello\" of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 2 $ True >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 4 $ case () of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 3 $ \"hello\" >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 1 $ case 34.0 of _:Integer => 1; _:Rational => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 4 $ () >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 2 $ case 34.0 of _:Rational => 2; _:Integer => 1; _:Text => 3; _ => 4 end"
+                          "testeqval 1 $ 34.0 >- match _:Integer => 1; _:Rational => 2; _:Text => 3; _ => 4 end"
+                    , testExpectSuccess
+                          "testeqval 2 $ 34.0 >- match _:Rational => 2; _:Integer => 1; _:Text => 3; _ => 4 end"
                     ]
               , tGroup
                     "List"
-                    [ testExpectSuccess "testeqval 2 $ case [] of _ :: _ => 1; [] => 2 end"
-                    , testExpectSuccess "testeqval 2 $ case [] of _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 2 $ case [] of _: List1 Integer => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 1 $ case [3,4] of _ :: _ => 1; [] => 2 end"
-                    , testExpectSuccess "testeqval 1 $ case [3,4] of _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 1 $ case [3,4] of _: List1 Integer => 1; _ => 2 end"
+                    [ testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; [] => 2 end"
+                    , testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 2 $ [] >- match _: List1 Integer => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; [] => 2 end"
+                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _: List1 Integer => 1; _ => 2 end"
                     ]
               ]
         , tDecls
@@ -778,9 +780,9 @@ testEntity =
               , testExpectSuccess "testeq {Just e1} {check @P1 e1}"
               , testExpectSuccess "testeq {Nothing} {check @P2 e1}"
               , testExpectSuccess "testeq {Just e1} {check @Q e1}"
-              , testExpectSuccess "testeq {True} {case e1 of _: P1 => True; _ => False end}"
-              , testExpectSuccess "testeq {False} {case e1 of _: P2 => True; _ => False end}"
-              , testExpectSuccess "testeq {True} {case e1 of _: Q => True; _ => False end}"
+              , testExpectSuccess "testeq {True} {e1 >- match _: P1 => True; _ => False end}"
+              , testExpectSuccess "testeq {False} {e1 >- match _: P2 => True; _ => False end}"
+              , testExpectSuccess "testeq {True} {e1 >- match _: Q => True; _ => False end}"
               , testExpectSuccess "testeq {e1} {coerce @P1 e1}"
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
               ]
@@ -792,13 +794,13 @@ testEntity =
               [ testExpectSuccess "pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
               , testExpectSuccess "let f = fn T1 x _ => x in pass"
-              , testExpectSuccess "case T2 of T2 => pass end"
-              , testExpectSuccess "case T3 True of T3 True => pass end"
-              , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
+              , testExpectSuccess "T2 >- match T2 => pass end"
+              , testExpectSuccess "T3 True >- match T3 True => pass end"
+              , testExpectSuccess "T1 \"hello\" 3 >- match T1 \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
+                    "T1 \"hello\" 3 >- match T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "let f : Boolean -> Integer = fn b => if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff => if ff True == 1 then pass else fail \"ff\" end"
+                    "let f : Boolean -> Integer = fn b => if b then 1 else 0 in T5 \"abcd\" f >- match T5 _ ff => if ff True == 1 then pass else fail \"ff\" end"
               , testExpectReject "let datatype B of MkB a end in pass"
               , testExpectSuccess "let datatype P of end in pass"
               , testExpectSuccess "let datatype P of P1 end in pass"
@@ -825,11 +827,11 @@ testEntity =
                     , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of Q1 P end end in pass"
                     , testExpectSuccess "let rec datatype P of P1 P end end in pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = fn p => case p of P1 q => case q of Q1 p => p end end end in pass"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = match P1 q => q >- match Q1 p => p end end end in pass"
                     , testExpectSuccess "let rec datatype P of P1 Q end; closedtype Q of Q1 !\"Q1\" end end in pass"
                     , testExpectReject "let rec closedtype P of P1 Q end; datatype Q of Q1 !\"Q1\" end end in pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) => p end"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1 (Q1 pass) end in pqpass >- match P1 (Q1 p) => p end"
                     ]
               , tGroup
                     "parameters"
@@ -874,7 +876,7 @@ testEntity =
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
                                 [ "rec datatype RList +a of MkRList (Maybe (a *: RList a)) end end"
-                                , "rec showRList: RList Showable -> Text = fn MkRList rl => case rl of Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end end"
+                                , "rec showRList: RList Showable -> Text = fn MkRList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end end"
                                 , "rlisti: RList Integer = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"
                                 , "rlists: RList Showable = rlisti"
                                 , "sd: Text = showRList rlists"
@@ -929,10 +931,10 @@ testEntity =
                           , subtypeTest False SRNot "D1" "D3"
                           , tGroup
                                 "GDS"
-                                [ testExpectSuccess $ isOfType "fn x => case x of C1 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "fn x => case x of C2 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "fn x => case x of C3 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "fn x => case x of C4 => () end" "D1 -> Unit"
+                                [ testExpectSuccess $ isOfType "match C1 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "match C2 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "match C3 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "match C4 => () end" "D1 -> Unit"
                                 ]
                           ]
                     , testExpectSuccess
@@ -999,9 +1001,9 @@ testEntity =
               , testExpectSuccess "let f: T -> Entity = fn x => x in pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
               , testExpectSuccess "let f = fn T1 x _ => x in pass"
-              , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
+              , testExpectSuccess "T1 \"hello\" 3 >- match T1 \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
+                    "T1 \"hello\" 3 >- match T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
               , testExpectSuccess "let closedtype P of end in pass"
               , testExpectSuccess "let closedtype P of P1 !\"P1\" end in pass"
               , testExpectSuccess "let closedtype P of P1 !\"P1\"; end in pass"
@@ -1130,9 +1132,9 @@ testEntity =
                     "do r <- newMemWhole; interpretDateAsText r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
               ]
         , tDecls
-              [ "runresult = fns ar arg => case ar of Left err => fail err; Right f => f arg end"
+              [ "runresult = fns ar arg => ar >- match Left err => fail err; Right f => f arg end"
               , "testaction = fns expected action => do found <- action; testeqval expected found end"
-              , "testleft = fn action => do found <- action; case found of Left _ => pass; Right _ => fail \"not Left\" end end"
+              , "testleft = fn action => do found <- action; found >- match Left _ => pass; Right _ => fail \"not Left\" end end"
               ] $
           tGroup
               "evaluate"
@@ -1140,7 +1142,7 @@ testEntity =
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"5\""
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"let x = 5 in x\""
               , testExpectSuccess
-                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x + 1\"; case ar of Left err => fail err; Right f => testeqval 8 $ f 7 end end"
+                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x + 1\"; ar >- match Left err => fail err; Right f => testeqval 8 $ f 7 end end"
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""

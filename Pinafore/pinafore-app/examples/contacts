@@ -109,10 +109,10 @@ organisationPages: WholeRef +Organisation -> List (GTK.Element *: GTK.Element)
 contactUI: LegalEntity -> GTK.Element
 = fn e => let
     pages: List (GTK.Element *: GTK.Element)
-    = contactPages {e} ++ case e of
+    = contactPages {e} ++ (e >- match
         p: Person => personPages {p};
         o: Organisation => organisationPages {o};
-        end;
+        end);
     in GTK.vertical
     [
         uiLabelled {"Name: "} $ GTK.textEntry $ name !$% {e},

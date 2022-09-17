@@ -161,6 +161,9 @@ greater f a b =
         GT -> a
         _ -> b
 
+revap :: A -> (A -> B) -> B
+revap x f = f x
+
 baseLibEntries :: [DocTreeEntry BindDoc]
 baseLibEntries =
     [ docTreeEntry
@@ -650,6 +653,7 @@ baseLibEntries =
           [ mkTypeEntry "->" "A pure function." $ MkBoundType funcGroundType
           , mkValEntry "id" "The identity function." $ id @(->) @A
           , mkValEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
+          , mkValEntry ">-" "Apply a value to a function." revap
           , mkValEntry "." "Compose functions." $ (.) @(->) @A @B @C
           , mkValEntry "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
           , mkValEntry

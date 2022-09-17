@@ -11,7 +11,7 @@ toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action Unit
 = fns now r => do
     n <- get now;
     oldstate <- get r;
-    newstate <- return $ case oldstate of
+    newstate <- return $ oldstate >- match
         StoppedState d => RunningState $ addTime (negateDuration d) n;
         RunningState t => StoppedState $ diffTime n t
         end;
@@ -19,7 +19,7 @@ toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action Unit
     end;
 
 showStopwatch: StopwatchState -> Time -> Text
-= fns state n => case state of
+= fns state n => state >- match
     StoppedState d => "[" <> show d <> "]";
     RunningState t => show $ diffTime n t
     end;

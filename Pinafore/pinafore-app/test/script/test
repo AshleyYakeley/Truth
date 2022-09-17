@@ -207,7 +207,7 @@ window_drawing: WholeRef +Time -> Action GTK.Window
     tzref <- newTimeZoneRef now;
     std_window {"Drawing"} $ GTK.draw {fn (w,h) => let
         size = min w h;
-        in case timeToLocal %tzref %now of
+        in timeToLocal %tzref %now >- match
             DateAndTime _ (HourMinuteSecond _ _ s) =>
                 translate (w / 2, h / 2) $
                 scale (size, size) $
@@ -313,7 +313,7 @@ window_start : Action GTK.Window
     let
         utcDate = {%now};
         localNow = {timeToLocal %timeZone %now};
-        today = {case %localNow of DateAndTime day _ => day end};
+        today = {%localNow >- match DateAndTime day _ => day end};
         in do
         std_window {"Pinafore"} $ GTK.vertical
         [

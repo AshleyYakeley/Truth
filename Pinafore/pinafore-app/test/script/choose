@@ -13,11 +13,11 @@ rec
         ref <- GIO.fileMakeRef file;
         lit <- get ref;
         let
-        path = case file of
+        path = file >- match
                 GIO.FileParseName path => path;
                 _ => "unknown";
             end;
-        in case lit of
+        in lit >- match
             image : Image.JPEGImage => GTK.openWindow gtk (Image.imageSize image) {path} $ GTK.image {image};
             _ => outputLn "not a JPEG image";
         end;
