@@ -134,33 +134,17 @@ readTypeDeclaration =
     readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readClosedTypeDeclaration <|>
     readDynamicTypeDeclaration
 
-readTypeSignature :: Parser SyntaxType
-readTypeSignature = do
-    readThis TokTypeJudge
-    readType
-
-readBindingRest :: Parser ([SyntaxPattern], SyntaxExpression)
-readBindingRest = do
-    args <- readPatterns
-    readThis TokAssign
-    rval <- readExpression
-    return (args, rval)
-
 readBinding :: Parser SyntaxBinding
 readBinding = do
     spos <- getPosition
     name <- readThis TokLName
-    (do
-         tp <- readTypeSignature
-         readThis TokSemicolon
-         name' <- readThis TokLName
-         (args, rval) <- readBindingRest
-         if name == name'
-             then return $ MkSyntaxBinding spos (Just tp) name' $ seAbstracts spos args rval
-             else fail $ "type signature name " <> show name <> " does not match definition for " <> show name') <|>
-        (do
-             (args, rval) <- readBindingRest
-             return $ MkSyntaxBinding spos Nothing name $ seAbstracts spos args rval)
+    mtp <-
+        optional $ do
+            readThis TokTypeJudge
+            readType
+    readThis TokAssign
+    defn <- readExpression
+    return $ MkSyntaxBinding spos mtp name defn
 
 readModuleName :: Parser ModuleName
 readModuleName =

@@ -232,12 +232,12 @@ testType =
                     "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> (c *: d) *: b"
               , testTree
                     "function"
-                    [ textTypeTest "let i: tvar -> tvar; i = id in i" "{} -> tvar -> tvar"
+                    [ textTypeTest "let i: tvar -> tvar = id in i" "{} -> tvar -> tvar"
                     , textTypeTest "id: tvar -> tvar" "{} -> tvar -> tvar"
-                    , textTypeTest "let i x = x in i" "{} -> a -> a"
-                    , textTypeTest "let i : a -> a; i x = x in i" "{} -> a -> a"
-                    , textTypeTest "let i : tvar -> tvar; i x = x in i" "{} -> tvar -> tvar"
-                    , textTypeTest "let i : a -> a; i x = x in i 3" "{} -> Integer"
+                    , textTypeTest "let i = fn x => x in i" "{} -> a -> a"
+                    , textTypeTest "let i : a -> a = fn x => x in i" "{} -> a -> a"
+                    , textTypeTest "let i : tvar -> tvar = fn x => x in i" "{} -> tvar -> tvar"
+                    , textTypeTest "let i : a -> a = fn x => x in i 3" "{} -> Integer"
                     ]
               , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1 a"
               , textTypeTest "fns v1 v2 => [v1,v2]" "{} -> a -> a -> List1 a"
@@ -247,56 +247,58 @@ testType =
                     "{} -> (c & a) -> (c & d) -> (d & a) -> (List1 c *: List1 d) *: List1 a"
               , testTree
                     "inversion"
-                    [ textTypeTest "fn x => let y : Integer; y = x in y" "{} -> Integer -> Integer"
-                    , badInterpretTest "fn x => let y : Boolean | Number; y = x in y"
-                    , badInterpretTest "fn x => let y : (a -> a) *: (Boolean | Number); y = x in y"
-                    , badInterpretTest "fn x => let y : (b -> b) *: (Boolean | Number); y = x in y"
+                    [ textTypeTest "fn x => let y : Integer = x in y" "{} -> Integer -> Integer"
+                    , badInterpretTest "fn x => let y : Boolean | Number = x in y"
+                    , badInterpretTest "fn x => let y : (a -> a) *: (Boolean | Number) = x in y"
+                    , badInterpretTest "fn x => let y : (b -> b) *: (Boolean | Number) = x in y"
                     , textTypeTest
-                          "fn x => let y: Boolean *: Number; y = (x,x) in y"
+                          "fn x => let y: Boolean *: Number = (x,x) in y"
                           "{} -> (Number & Boolean) -> Boolean *: Number"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: Boolean *: Number; y = (x1,x2) in y"
+                          "fn x1 => fn x2 => let y: Boolean *: Number = (x1,x2) in y"
                           "{} -> Boolean -> Number -> Boolean *: Number"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (a -> a) *: (a -> a *: a); y = (x1,x2) in y"
+                          "fn x1 => fn x2 => let y: (a -> a) *: (a -> a *: a) = (x1,x2) in y"
                           "{} -> (a -> a) -> (a -> a *: a) -> (a -> a) *: (a -> a *: a)"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (a -> a) *: (b -> b *: b); y = (x1,x2) in y"
+                          "fn x1 => fn x2 => let y: (a -> a) *: (b -> b *: b) = (x1,x2) in y"
                           "{} -> (a -> a) -> (b -> b *: b) -> (a -> a) *: (b -> b *: b)"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (b -> b) *: (a -> a *: a); y = (x1,x2) in y"
+                          "fn x1 => fn x2 => let y: (b -> b) *: (a -> a *: a) = (x1,x2) in y"
                           "{} -> (b -> b) -> (a -> a *: a) -> (b -> b) *: (a -> a *: a)"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (a -> b) *: (b -> a); y = (x1,x2) in y"
+                          "fn x1 => fn x2 => let y: (a -> b) *: (b -> a) = (x1,x2) in y"
                           "{} -> (a -> b) -> (b -> a) -> (a -> b) *: (b -> a)"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (c -> d) *: (d -> c); y = (x1,x2) in y"
+                          "fn x1 => fn x2 => let y: (c -> d) *: (d -> c) = (x1,x2) in y"
                           "{} -> (c -> d) -> (d -> c) -> (c -> d) *: (d -> c)"
                     ]
-              , textTypeTest "let f : Entity; f = Nothing in f" "{} -> Entity"
-              , textTypeTest "let f : Entity -> Entity; f = Just in f" "{} -> Entity -> Entity"
-              , textTypeTest "let f : Entity; f = [] in f" "{} -> Entity"
-              , textTypeTest "let f : Entity -> Entity; f x = [x] in f" "{} -> Entity -> Entity"
-              , textTypeTest "let f : Entity -> Entity -> Entity; f a b = (a,b) in f" "{} -> Entity -> Entity -> Entity"
-              , textTypeTest "let f : Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
-              , textTypeTest "let f : Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity = Nothing in f" "{} -> Entity"
+              , textTypeTest "let f : Entity -> Entity = Just in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity = [] in f" "{} -> Entity"
+              , textTypeTest "let f : Entity -> Entity = fn x => [x] in f" "{} -> Entity -> Entity"
+              , textTypeTest
+                    "let f : Entity -> Entity -> Entity = fns a b => (a,b) in f"
+                    "{} -> Entity -> Entity -> Entity"
+              , textTypeTest "let f : Entity -> Entity = Left in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity -> Entity = Right in f" "{} -> Entity -> Entity"
               , textTypeTest "fn x => if odd x then x else (x:Number)" "{} -> Integer -> Number"
               , testTree
                     "recursive"
-                    [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let rec x : rec a. Maybe a; x = Just x end in x" "{} -> rec a. Maybe a"
+                    [ textTypeTest "let x : rec a. Maybe a = Nothing in x" "{} -> rec a. Maybe a"
+                    , textTypeTest "let rec x : rec a. Maybe a = Just x end in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let rec x = Just x end in x" "{} -> rec e. Maybe e"
-                    , textTypeTest "let rec x : Entity; x = Just x end in x" "{} -> Entity"
-                    , textTypeTest "let rec x : Maybe Entity; x = Just x end in x" "{} -> Maybe Entity"
+                    , textTypeTest "let rec x : Entity = Just x end in x" "{} -> Entity"
+                    , textTypeTest "let rec x : Maybe Entity = Just x end in x" "{} -> Maybe Entity"
                     , textTypeTest
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount"
+                          "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end in rcount"
                           "{} -> (rec e. Maybe e) -> Integer"
                     , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + r1count y end; r1count x = case x of Nothing => 0; Just y => 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing"
+                          "let rec rcount = match Nothing => 0; Just y => 1 + r1count y end; r1count = match Nothing => 0; Just y => 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
                     , textTypeTest
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
+                          "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
                           "{} -> ((rec e. Maybe e) -> Integer) *: (rec e. Maybe e) *: Integer"
                     ]
               , testTree

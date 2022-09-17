@@ -7,8 +7,8 @@ datatype StopwatchState of
     RunningState Time;
 end;
 
-toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action Unit;
-toggleStopwatch now r = do
+toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action Unit
+= fns now r => do
     n <- get now;
     oldstate <- get r;
     newstate <- return $ case oldstate of
@@ -18,14 +18,14 @@ toggleStopwatch now r = do
     r := newstate;
     end;
 
-showStopwatch: StopwatchState -> Time -> Text;
-showStopwatch state n = case state of
+showStopwatch: StopwatchState -> Time -> Text
+= fns state n => case state of
     StoppedState d => "[" <> show d <> "]";
     RunningState t => show $ diffTime n t
     end;
 
-ui: WholeRef +Time -> WholeRef StopwatchState -> GTK.Element;
-ui now r = GTK.button {showStopwatch %r %now} {toggleStopwatch now r};
+ui: WholeRef +Time -> WholeRef StopwatchState -> GTK.Element
+= fns now r => GTK.button {showStopwatch %r %now} {toggleStopwatch now r};
 
 in do
     now <- newClock $ Seconds 0.001;

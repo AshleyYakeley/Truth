@@ -1,13 +1,13 @@
 #!/usr/bin/pinafore
 let
-fix: (a -> a) -> a;
-fix f = let rec x = f x end in x;
+fix: (a -> a) -> a
+= fn f => let rec x = f x end in x;
 
-recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b;
-recf s a b = if a <= 0 then Just b else s (a - 1) b;
+recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b
+= fns s a b => if a <= 0 then Just b else s (a - 1) b;
 
-f: Integer -> Integer -> Maybe Integer;
-f = fix recf;
+f: Integer -> Integer -> Maybe Integer
+= fix recf;
 in outputLn $ show $ case f 2 5 of
     Just b => b;
     Nothing => 0;

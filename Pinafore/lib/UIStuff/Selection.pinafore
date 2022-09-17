@@ -4,39 +4,39 @@ import GTK;
 
 ### Useful GTK stuff
 
-uiPage: WholeRef +Text -> Element -> Element *: Element;
-uiPage n ui = (label n,ui);
+uiPage: WholeRef +Text -> Element -> Element *: Element
+= fns n ui => (label n,ui);
 
-uiLabelled: WholeRef +Text -> Element -> Element;
-uiLabelled n ui = horizontal [label n, layoutGrow ui];
+uiLabelled: WholeRef +Text -> Element -> Element
+= fns n ui => horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
-stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
-stdWindow gtk title moremenus contents = fixAction $ fn window => do
+stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window
+= fns gtk title moremenus contents => fixAction $ fn window => do
     textsel <- newMemWhole;
     let
-        notify: Action TextRef -> Action Unit;
-        notify atref = textsel := atref;
-        getTextRef: Action (WholeRef Text);
-        getTextRef = do
+        notify: Action TextRef -> Action Unit
+        = fn atref => textsel := atref;
+        getTextRef: Action (WholeRef Text)
+        = do
             atref <- get textsel;
             atref;
         end;
-        selCopy: Action Unit;
-        selCopy = do
+        selCopy: Action Unit
+        = do
             tref <- getTextRef;
             text <- get tref;
             clipboard gtk := text;
         end;
-        selCut: Action Unit;
-        selCut = do
+        selCut: Action Unit
+        = do
             tref <- getTextRef;
             text <- get tref;
             clipboard gtk := text;
             tref := "";
         end;
-        selPaste: Action Unit;
-        selPaste = do
+        selPaste: Action Unit
+        = do
             tref <- getTextRef;
             clip <- get $ clipboard gtk;
             case clip of
@@ -44,8 +44,8 @@ stdWindow gtk title moremenus contents = fixAction $ fn window => do
                 _ => return ();
             end;
         end;
-        mbar: Element;
-        mbar = dynamic
+        mbar: Element
+        = dynamic
             {menuBar $ [
                 menuSubmenu "File"
                 [
@@ -71,21 +71,21 @@ datatype Pane of
     MkPane (WholeRef Text) Element (WholeRef (List MenuItem))
 end;
 
-paneWindow: Context -> Pane -> Action Window;
-paneWindow gtk (MkPane title ui moremenus) = stdWindow gtk title moremenus ui;
+paneWindow: Context -> Pane -> Action Window
+= fns gtk (MkPane title ui moremenus) => stdWindow gtk title moremenus ui;
 
-pane: Text -> Element -> Pane;
-pane title ui = MkPane {title} ui {[]};
+pane: Text -> Element -> Pane
+= fns title ui => MkPane {title} ui {[]};
 
 #| A notebook from a list of panes
-notebookPane: WholeRef +Text -> List Pane -> Action Pane;
-notebookPane title panes = do
+notebookPane: WholeRef +Text -> List Pane -> Action Pane
+= fns title panes => do
     tabRef <- newMemWhole;
     return $ let
-        makePage: Pane -> Element *: Element;
-        makePage (MkPane rname ui _) = uiPage rname ui;
-        nui: Element;
-        nui = notebook tabRef $ mapList makePage panes;
+        makePage: Pane -> Element *: Element
+        = fn MkPane rname ui _ => uiPage rname ui;
+        nui: Element
+        = notebook tabRef $ mapList makePage panes;
         itemsRef = forWhole panes $ fn MkPane _ _ rmenus => rmenus;
         in MkPane (immutWhole title) nui $ fromMaybeWhole {index %itemsRef %tabRef};
     end;
@@ -96,25 +96,25 @@ selectionPane:
     List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) ->
-    Action Pane;
-selectionPane title iset createMenuItems iopen iui = do
+    Action Pane
+= fns title iset createMenuItems iopen iui => do
     selection <- newMemWhole;
     return $ let
-        viewItem: Action Unit;
-        viewItem = do
+        viewItem: Action Unit
+        = do
             item <- get selection;
             iopen item;
             return ();
             end;
 
-        deleteItem: Action Unit;
-        deleteItem = do
+        deleteItem: Action Unit
+        = do
             item <- get selection;
             iset -= item;
             end;
 
-        moremenus: List MenuItem;
-        moremenus =
+        moremenus: List MenuItem
+        =
             [
                 menuSubmenu "Selection" $ mapList (fn mi => mi $ fn i => selection := i) createMenuItems ++
                 [
@@ -132,14 +132,14 @@ selectionPairPane:
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) -> # Element for the item selector
     (WholeRef +item -> Element) -> # Element for the selected item
-    Action Pane;
-selectionPairPane title iset createMenuItems iopen getSelectorUI getSelectedUI =
+    Action Pane
+= fns title iset createMenuItems iopen getSelectorUI getSelectedUI =>
     selectionPane title iset createMenuItems iopen $ fn selection => let
-        sidebarUI: Element;
-        sidebarUI = getSelectorUI selection;
+        sidebarUI: Element
+        = getSelectorUI selection;
 
-        selectedUI: Element;
-        selectedUI = getSelectedUI $ immutWhole selection;
+        selectedUI: Element
+        = getSelectedUI $ immutWhole selection;
 
         in horizontal [sidebarUI, layoutGrow selectedUI];
 
@@ -150,8 +150,8 @@ selectionWindow:
     List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) ->
-    Action Window;
-selectionWindow gtk wtitle iset createMenuItems iopen iui = do
+    Action Window
+= fns gtk wtitle iset createMenuItems iopen iui => do
     mui <- selectionPane wtitle iset createMenuItems iopen iui;
     paneWindow gtk mui;
     end;
@@ -165,14 +165,14 @@ selectionPairWindow:
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) -> # Element for the item selector
     (WholeRef +item -> Element) -> # Element for the selected item
-    Action Window;
-selectionPairWindow gtk wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
+    Action Window
+= fns gtk wtitle iset createMenuItems iopen getSelectorUI getSelectedUI => do
     mui <- selectionPairPane wtitle iset createMenuItems iopen getSelectorUI getSelectedUI;
     paneWindow gtk mui;
     end;
 
-newItemMenuAction: Text -> Maybe Text -> Action a -> SetRef a -> (a -> Action Unit) -> MenuItem;
-newItemMenuAction name mkey newItem set setsel = menuAction name mkey
+newItemMenuAction: Text -> Maybe Text -> Action a -> SetRef a -> (a -> Action Unit) -> MenuItem
+= fns name mkey newItem set setsel => menuAction name mkey
     {do
     item <- newItem;
     set += item;

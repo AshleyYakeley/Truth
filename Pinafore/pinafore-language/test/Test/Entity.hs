@@ -28,7 +28,7 @@ data SubtypeResult
     | SRSingle
 
 isOfType :: Text -> Text -> Text
-isOfType v t = "let x: " <> t <> "; x= " <> v <> " in pass"
+isOfType v t = "let x: " <> t <> " = " <> v <> " in pass"
 
 subtypeTests :: Bool -> SubtypeResult -> Text -> Text -> [ScriptTestTree]
 subtypeTests polar sr p q =
@@ -36,19 +36,19 @@ subtypeTests polar sr p q =
     , tGroup
           "unify"
           [ testSubtypeUnify sr $
-            "let f: (" <> q <> ") -> Unit; f _ = (); x: " <> p <> "; x = undefined; fx = f x in pass"
+            "let f: (" <> q <> ") -> Unit = fn _ => (); x: " <> p <> " = undefined; fx = f x in pass"
           , testSubtypeUnify sr $
-            "let rec f: (" <> q <> ") -> Unit; f = f end; rec x: " <> p <> "; x = x; end; fx = f x in pass"
+            "let rec f: (" <> q <> ") -> Unit = f end; rec x: " <> p <> " = x; end; fx = f x in pass"
           ]
     , tGroup "subsume" $
-      [ testSubtypeSubsume sr $ "let rec x: " <> p <> "; x = x end; y: " <> q <> "; y = x in pass"
-      , testSubtypeSubsume sr $ "let x: " <> p <> "; x = undefined; y: " <> q <> "; y = x in pass"
-      , testSubtypeSubsume sr $ "let x: " <> q <> "; x = undefined: " <> p <> " in pass"
+      [ testSubtypeSubsume sr $ "let rec x: " <> p <> " = x end; y: " <> q <> " = x in pass"
+      , testSubtypeSubsume sr $ "let x: " <> p <> " = undefined; y: " <> q <> " = x in pass"
+      , testSubtypeSubsume sr $ "let x: " <> q <> " = undefined: " <> p <> " in pass"
       , testSubtypeSubsume sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
       , (if polar
              then testExpectReject
              else testSubtypeSingle sr) $
-        "let f: (" <> p <> ") -> (" <> q <> "); f x = x in pass"
+        "let f: (" <> p <> ") -> (" <> q <> ") = fn x => x in pass"
       ]
     ]
   where
@@ -80,14 +80,14 @@ testEntity =
     tDecls
         [ "pass = return ()"
         , "undefined = error \"undefined\""
-        , "runWholeRef r = do a <- get r; a end"
-        , "runreforfail r = runWholeRef (r ?? {fail \"unknown ref\"})"
-        , "testeq expected found = runreforfail {if %expected == %found then pass else fail \"not equal\"}"
-        , "testneq expected found = runreforfail {if %expected /= %found then pass else fail \"equal\"}"
-        , "testisknown t = runWholeRef {if %(known t) then pass else fail \"known\"}"
-        , "testisunknown t = runWholeRef {if %(known t) then fail \"known\" else pass}"
-        , "testeqval e f = testeq {e} {f}"
-        , "expectStop p = onStop (p >> fail \"no stop\") pass"
+        , "runWholeRef = fn r => do a <- get r; a end"
+        , "runreforfail = fn r => runWholeRef (r ?? {fail \"unknown ref\"})"
+        , "testeq = fns expected found => runreforfail {if %expected == %found then pass else fail \"not equal\"}"
+        , "testneq = fns expected found => runreforfail {if %expected /= %found then pass else fail \"equal\"}"
+        , "testisknown = fn t => runWholeRef {if %(known t) then pass else fail \"known\"}"
+        , "testisunknown = fn t => runWholeRef {if %(known t) then fail \"known\" else pass}"
+        , "testeqval = fns e f => testeq {e} {f}"
+        , "expectStop = fn p => onStop (p >> fail \"no stop\") pass"
         ] $
     tGroup
         "entity"
@@ -199,10 +199,9 @@ testEntity =
               , testExpectSuccess "expectStop $ do r <- newMemWhole; immutWhole r := 5; end"
               ]
         , tDecls
-              [ "showVal: Showable -> Action Unit; showVal v = Debug.message $ show v"
-              , "showList: List Showable -> Action Unit; showList l = do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
-              , mif False "testImmutList: Boolean -> Integer -> (ListRef Integer -> Action Unit) -> Action Unit;" <>
-                "testImmutList present n call = do lr <- newMemWhole; lr := [10,20,30]; r <- listGetItemRef present n lr; ir <- listGetItemRef present n $ immutWhole lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
+              [ "showVal: Showable -> Action Unit = fn v => Debug.message $ show v"
+              , "showList: List Showable -> Action Unit = fn l => do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
+              , "testImmutList = fns present n call => do lr <- newMemWhole; lr := [10,20,30]; r <- listGetItemRef present n lr; ir <- listGetItemRef present n $ immutWhole lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
               ] $
           tGroup
               "list references"
@@ -243,10 +242,10 @@ testEntity =
               , testExpectSuccess "testImmutList True 1 $ fn _ => return ()"
               ]
         , tDecls
-              [ "convr : Rational -> Rational;convr = id"
-              , "convn : Number -> Number;convn = id"
-              , "convl : Literal -> Literal;convl = id"
-              , "testconvr : Rational -> Action Unit;testconvr r = testeq {convl r} {convl $ convn r}"
+              [ "convr : Rational -> Rational= id"
+              , "convn : Number -> Number = id"
+              , "convl : Literal -> Literal = id"
+              , "testconvr : Rational -> Action Unit = fn r => testeq {convl r} {convl $ convn r}"
               ] $
           tGroup
               "literal"
@@ -613,24 +612,24 @@ testEntity =
                           "1"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess "let opentype Q; subtype P <: Q in pass"
-                          , testExpectSuccess "let opentype Q; subtype P <: Q; f : P -> Q; f x = x in pass"
-                          , testExpectReject "let opentype Q; subtype P <: Q; f : Q -> P; f x = x in pass"
+                          , testExpectSuccess "let opentype Q; subtype P <: Q; f : P -> Q = fn x => x in pass"
+                          , testExpectReject "let opentype Q; subtype P <: Q; f : Q -> P = fn x => x in pass"
                           ]
                     , tDecls ["opentype Q"] $
                       tGroup
                           "2"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess "let opentype P; subtype P <: Q in pass"
-                          , testExpectSuccess "let opentype P; subtype P <: Q; f : P -> Q; f x = x in pass"
-                          , testExpectReject "let opentype P; subtype P <: Q; f : Q -> P; f x = x in pass"
+                          , testExpectSuccess "let opentype P; subtype P <: Q; f : P -> Q = fn x => x in pass"
+                          , testExpectReject "let opentype P; subtype P <: Q; f : Q -> P = fn x => x in pass"
                           ]
                     , tDecls ["opentype P", "opentype Q"] $
                       tGroup
                           "3"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess "let subtype P <: Q in pass"
-                          , testExpectSuccess "let subtype P <: Q; f : P -> Q; f x = x in pass"
-                          , testExpectReject "let subtype P <: Q; f : Q -> P; f x = x in pass"
+                          , testExpectSuccess "let subtype P <: Q; f : P -> Q = fn x => x in pass"
+                          , testExpectReject "let subtype P <: Q; f : Q -> P = fn x => x in pass"
                           ]
                     ]
               , tGroup
@@ -639,18 +638,18 @@ testEntity =
                       tGroup
                           "setSingle"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let f : P -> P; f x = x in pass"
-                          , testExpectSuccess "let f : List P -> List P; f x = x in pass"
+                          , testExpectSuccess "let f : P -> P = fn x => x in pass"
+                          , testExpectSuccess "let f : List P -> List P = fn x => x in pass"
                           ]
                     , tDecls ["opentype P", "opentype Q", "subtype P <: Q", "subtype Q <: P"] $
                       tGroup
                           "pair"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let f : P -> P; f x = x in pass"
-                          , testExpectSuccess "let f : Q -> Q; f x = x in pass"
-                          , testExpectSuccess "let f : P -> Q; f x = x in pass"
-                          , testExpectSuccess "let f : List P -> List Q; f x = x in pass"
-                          , testExpectSuccess "let f : Q -> P; f x = x in pass"
+                          , testExpectSuccess "let f : P -> P = fn x => x in pass"
+                          , testExpectSuccess "let f : Q -> Q = fn x => x in pass"
+                          , testExpectSuccess "let f : P -> Q = fn x => x in pass"
+                          , testExpectSuccess "let f : List P -> List Q = fn x => x in pass"
+                          , testExpectSuccess "let f : Q -> P = fn x => x in pass"
                           ]
                     ]
               , tDecls ["opentype Q", "subtype Maybe Number <: Q"] $
@@ -670,10 +669,10 @@ testEntity =
                 tGroup "closed" $ strictSubtypeTests "P" "R"
               , tGroup
                     "Entity"
-                    [ testExpectSuccess "let f : Number -> Entity; f x = x in pass"
-                    , testExpectSuccess "let f : (a & Number) -> Entity *: a; f x = (x,x) in pass"
-                    , testExpectSuccess "let f : Maybe Number -> Entity; f x = x in pass"
-                    , testExpectSuccess "let f : Maybe (a & Number) -> Entity *: Maybe a; f x = (x,x) in pass"
+                    [ testExpectSuccess "let f : Number -> Entity = fn x => x in pass"
+                    , testExpectSuccess "let f : (a & Number) -> Entity *: a = fn x => (x,x) in pass"
+                    , testExpectSuccess "let f : Maybe Number -> Entity = fn x => x in pass"
+                    , testExpectSuccess "let f : Maybe (a & Number) -> Entity *: Maybe a = fn x => (x,x) in pass"
                     ]
               , tGroup "dynamic" $
                 [ tGroup "DynamicEntity <: Entity" $ strictSubtypeTests "DynamicEntity" "Entity"
@@ -792,14 +791,14 @@ testEntity =
               "datatype"
               [ testExpectSuccess "pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
-              , testExpectSuccess "let f (T1 x _) = x in pass"
+              , testExpectSuccess "let f = fn T1 x _ => x in pass"
               , testExpectSuccess "case T2 of T2 => pass end"
               , testExpectSuccess "case T3 True of T3 True => pass end"
               , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
               , testExpectSuccess
                     "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "let f : Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff => if ff True == 1 then pass else fail \"ff\" end"
+                    "let f : Boolean -> Integer = fn b => if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff => if ff True == 1 then pass else fail \"ff\" end"
               , testExpectReject "let datatype B of MkB a end in pass"
               , testExpectSuccess "let datatype P of end in pass"
               , testExpectSuccess "let datatype P of P1 end in pass"
@@ -810,13 +809,13 @@ testEntity =
               , testExpectSuccess "let datatype P of P1 Integer; P2 Text; end in pass"
               , tGroup
                     "nominal"
-                    [ testExpectSuccess "let datatype P of P1 end; f : P -> P; f x = x in pass"
-                    , testExpectReject "let datatype P of P1 end; datatype Q of end; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let datatype P of end; datatype Q of Q1 end; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let datatype P of end; datatype Q of end; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let datatype P of P1 end; datatype Q of Q1 end; f : P -> Q; f x = x in pass"
+                    [ testExpectSuccess "let datatype P of P1 end; f : P -> P = fn x => x in pass"
+                    , testExpectReject "let datatype P of P1 end; datatype Q of end; f : P -> Q = fn x => x in pass"
+                    , testExpectReject "let datatype P of end; datatype Q of Q1 end; f : P -> Q = fn x => x in pass"
+                    , testExpectReject "let datatype P of end; datatype Q of end; f : P -> Q = fn x => x in pass"
+                    , testExpectReject "let datatype P of P1 end; datatype Q of Q1 end; f : P -> Q = fn x => x in pass"
                     , testExpectReject
-                          "let datatype P of P1 Integer end; datatype Q of Q1 Integer end; f : P -> Q; f x = x in pass"
+                          "let datatype P of P1 Integer end; datatype Q of Q1 Integer end; f : P -> Q = fn x => x in pass"
                     ]
               , tGroup
                     "recursive"
@@ -826,7 +825,7 @@ testEntity =
                     , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of Q1 P end end in pass"
                     , testExpectSuccess "let rec datatype P of P1 P end end in pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P; f p = case p of P1 q => case q of Q1 p => p end end end in pass"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = fn p => case p of P1 q => case q of Q1 p => p end end end in pass"
                     , testExpectSuccess "let rec datatype P of P1 Q end; closedtype Q of Q1 !\"Q1\" end end in pass"
                     , testExpectReject "let rec closedtype P of P1 Q end; datatype Q of Q1 !\"Q1\" end end in pass"
                     , testExpectSuccess
@@ -860,37 +859,25 @@ testEntity =
                           "conversion"
                           [ tDecls
                                 [ "datatype D +a of Mk1D (List a); Mk2D (Maybe a) end"
-                                , "showD: D Showable -> Text"
-                                , "showD t = case t of Mk1D aa => show aa; Mk2D ma => show ma end"
-                                , "di: D Integer"
-                                , "di = Mk1D [576,469,12]"
-                                , "sdi: Text"
-                                , "sdi = showD di"
+                                , "showD: D Showable -> Text = match Mk1D aa => show aa; Mk2D ma => show ma end"
+                                , "di: D Integer = Mk1D [576,469,12]"
+                                , "sdi: Text = showD di"
                                 ] $
                             testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
                           , tDecls
                                 [ "datatype D -a of Mk1D (a -> Integer); Mk2D (a -> a -> Text) end"
-                                , "dShow: D Number"
-                                , "dShow = Mk2D $ fns a b => show a <> \",\" <> show b"
-                                , "di: D Integer"
-                                , "di = dShow"
-                                , "showD: a -> D a -> Text"
-                                , "showD a da = case da of Mk1D ai => show $ ai a; Mk2D aat => aat a a end"
-                                , "sd: Text"
-                                , "sd = showD 356 di"
+                                , "dShow: D Number = Mk2D $ fns a b => show a <> \",\" <> show b"
+                                , "di: D Integer = dShow"
+                                , "showD: a -> D a -> Text = fn a => match Mk1D ai => show $ ai a; Mk2D aat => aat a a end"
+                                , "sd: Text = showD 356 di"
                                 ] $
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
                                 [ "rec datatype RList +a of MkRList (Maybe (a *: RList a)) end end"
-                                , "rec showRList: RList Showable -> Text"
-                                , "showRList (MkRList rl) = case rl of Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end"
-                                , "end"
-                                , "rlisti: RList Integer"
-                                , "rlisti = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"
-                                , "rlists: RList Showable"
-                                , "rlists = rlisti"
-                                , "sd: Text"
-                                , "sd = showRList rlists"
+                                , "rec showRList: RList Showable -> Text = fn MkRList rl => case rl of Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end end"
+                                , "rlisti: RList Integer = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"
+                                , "rlists: RList Showable = rlisti"
+                                , "sd: Text = showRList rlists"
                                 ] $
                             testExpectSuccess "if sd == \"45;72;18;\" then pass else fail sd"
                           ]
@@ -1009,9 +996,9 @@ testEntity =
           tGroup
               "closedtype"
               [ testExpectSuccess "pass"
-              , testExpectSuccess "let f: T -> Entity; f = fn x => x in pass"
+              , testExpectSuccess "let f: T -> Entity = fn x => x in pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
-              , testExpectSuccess "let f (T1 x _) = x in pass"
+              , testExpectSuccess "let f = fn T1 x _ => x in pass"
               , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
               , testExpectSuccess
                     "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
@@ -1024,34 +1011,34 @@ testEntity =
               , testExpectSuccess "let closedtype P of P1 Integer !\"P1\"; P2 Text !\"P2\"; end in pass"
               , tGroup
                     "nominal"
-                    [ testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> P; f x = x in pass"
+                    [ testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> P = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of P1 !\"P1\" end; closedtype Q of end; f : P -> Q; f x = x in pass"
+                          "let closedtype P of P1 !\"P1\" end; closedtype Q of end; f : P -> Q = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let closedtype P of end; closedtype Q of end; f : P -> Q; f x = x in pass"
+                          "let closedtype P of end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
+                    , testExpectReject "let closedtype P of end; closedtype Q of end; f : P -> Q = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of P1 !\"P1\" end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q; f x = x in pass"
+                          "let closedtype P of P1 !\"P1\" end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of P1 Integer !\"P1\" end; closedtype Q of Q1 Integer !\"Q1\" end; f : P -> Q; f x = x in pass"
+                          "let closedtype P of P1 Integer !\"P1\" end; closedtype Q of Q1 Integer !\"Q1\" end; f : P -> Q = fn x => x in pass"
                     ]
               , tGroup
                     "parameters"
                     [ testExpectSuccess
-                          "let closedtype P +a of P1 !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                          "let closedtype P +a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P -a of P1 !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                          "let closedtype P -a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P a of P1 !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                          "let closedtype P a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> Integer; f (P1 x) = x in pass"
-                    , testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> Entity; f x = x in pass"
+                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> Integer= fn P1 x => x in pass"
+                    , testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> Entity = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a of P1 a !\"P1\" end; f : P Entity -> Entity; f x = x in pass"
+                          "let closedtype P +a of P1 a !\"P1\" end; f : P Entity -> Entity = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a +b of P1 a b !\"P1\" end; f : P Entity Entity -> Entity; f x = x in pass"
+                          "let closedtype P +a +b of P1 a b !\"P1\" end; f : P Entity Entity -> Entity = fn x => x in pass"
                     ]
               , tGroup
                     "recursive"
@@ -1067,8 +1054,8 @@ testEntity =
                     , testExpectSuccess "let rec closedtype P +a of P1 (P (a *: a)) !\"P1\" end end in pass"
                     , tDecls
                           [ "rec closedtype L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
-                          , "rec listToL: List a -> L a; listToL = match [] => Nil; x::xs => Cons x (listToL xs) end end"
-                          , "rec lToList: L a -> List a; lToList = match Nil => []; Cons x xs => x :: lToList xs end end"
+                          , "rec listToL: List a -> L a = match [] => Nil; x::xs => Cons x (listToL xs) end end"
+                          , "rec lToList: L a -> List a = match Nil => []; Cons x xs => x :: lToList xs end end"
                           ] $
                       tGroup
                           "list"
@@ -1084,13 +1071,13 @@ testEntity =
         , tGroup
               "type escape"
               [ testExpectSuccess
-                    "let opentype T; t = let in openEntity @T !\"t\"; f = let f : T -> Action Unit; f _ = pass in f; in f t"
+                    "let opentype T; t = let in openEntity @T !\"t\"; f = let f : T -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let opentype T1; opentype T2; t = let in openEntity @T1 !\"t\"; f = let f : T2 -> Action Unit; f _ = pass in f; in f t"
+                    "let opentype T1; opentype T2; t = let in openEntity @T1 !\"t\"; f = let f : T2 -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T in openEntity @T !\"t\"; f = let opentype T; f : T -> Action Unit; f _ = pass in f; in f t"
+                    "let t = let opentype T in openEntity @T !\"t\"; f = let opentype T; f : T -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T1 in openEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action Unit; f _ = pass in f; in f t"
+                    "let t = let opentype T1 in openEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action Unit = fn _ => pass in f; in f t"
               ]
         , tGroup
               "general-subtype"
@@ -1143,9 +1130,9 @@ testEntity =
                     "do r <- newMemWhole; interpretDateAsText r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
               ]
         , tDecls
-              [ "runresult ar arg = case ar of Left err => fail err; Right f => f arg end"
-              , "testaction expected action = do found <- action; testeqval expected found end"
-              , "testleft action = do found <- action; case found of Left _ => pass; Right _ => fail \"not Left\" end end"
+              [ "runresult = fns ar arg => case ar of Left err => fail err; Right f => f arg end"
+              , "testaction = fns expected action => do found <- action; testeqval expected found end"
+              , "testleft = fn action => do found <- action; case found of Left _ => pass; Right _ => fail \"not Left\" end end"
               ] $
           tGroup
               "evaluate"

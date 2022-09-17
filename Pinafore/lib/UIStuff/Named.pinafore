@@ -6,36 +6,36 @@ import UIStuff.Selection;
 opentype Named;
 
 #| A name is a text that identifies (in some sense) an entity.
-name: Named ~> Text;
-name = property @Named @Text !"identify.name";
+name: Named ~> Text
+= property @Named @Text !"identify.name";
 
 #| Order alphabetically (case-insensitive) by name
-nameOrder: RefOrder Named;
-nameOrder = orderOn name alphabetical;
+nameOrder: RefOrder Named
+= orderOn name alphabetical;
 
 #| Order a set of entities by their names.
-byName: FiniteSetRef {+a,+Named} -> WholeRef +(List (a *: Text));
-byName ref = setList (mapOrder fst nameOrder) $ (identity !** name) !$$ ref;
+byName: FiniteSetRef {+a,+Named} -> WholeRef +(List (a *: Text))
+= fn ref => setList (mapOrder fst nameOrder) $ (identity !** name) !$$ ref;
 
-namedPane: (WholeRef +a -> Element) -> WholeRef +(a & Named) -> Pane;
-namedPane iui e = MkPane (name !$% e) (iui $ immutWhole e) {[]};
+namedPane: (WholeRef +a -> Element) -> WholeRef +(a & Named) -> Pane
+= fns iui e => MkPane (name !$% e) (iui $ immutWhole e) {[]};
 
-nameColumn: WholeRef +Text *: (Named -> WholeRef Text);
-nameColumn = ({"Name"},fn p => name !$ {p});
+nameColumn: WholeRef +Text *: (Named -> WholeRef Text)
+= ({"Name"},fn p => name !$ {p});
 
-namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> Element;
-namedTable sref onActivate msel = exec $ do
+namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> Element
+= fns sref onActivate msel => exec $ do
     lref <- getSetList nameOrder sref;
     return $ listTable [nameColumn] lref onActivate msel;
     end;
 
-namedItemTable: FiniteSetRef {a,+Named} -> (WholeRef +a -> Element) -> Maybe (WholeRef {a,+Named}) -> Element;
-namedItemTable set iui msel = withContext $ fn gtk => namedTable set (fn e => paneWindow gtk $ namedPane iui {e}) msel;
+namedItemTable: FiniteSetRef {a,+Named} -> (WholeRef +a -> Element) -> Maybe (WholeRef {a,+Named}) -> Element
+= fns set iui msel => withContext $ fn gtk => namedTable set (fn e => paneWindow gtk $ namedPane iui {e}) msel;
 
-namedPairPane: Context -> Text -> FiniteSetRef {a,+Named} -> List (SetRef a -> ((a & Named) -> Action Unit) -> MenuItem) -> (WholeRef +a -> Element) -> Action Pane;
-namedPairPane gtk name set mitems getSelectedUI = let
-    getSelectorUI sel = namedItemTable set getSelectedUI (Just sel);
-    iopen e = paneWindow gtk $ namedPane getSelectedUI {e};
+namedPairPane: Context -> Text -> FiniteSetRef {a,+Named} -> List (SetRef a -> ((a & Named) -> Action Unit) -> MenuItem) -> (WholeRef +a -> Element) -> Action Pane
+= fns gtk name set mitems getSelectedUI => let
+    getSelectorUI = fn sel => namedItemTable set getSelectedUI (Just sel);
+    iopen = fn e => paneWindow gtk $ namedPane getSelectedUI {e};
     in selectionPairPane name set (mapList (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
 
 in expose

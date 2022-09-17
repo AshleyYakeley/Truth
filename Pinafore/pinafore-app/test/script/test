@@ -5,13 +5,13 @@ GTK.run $ fn gtk => let
 import GTK();
 
 ### Useful
-ui_page n ui = (GTK.label n,ui);
-ui_labelled n ui = GTK.horizontal [GTK.label n, GTK.layoutGrow  ui];
+ui_page = fns n ui => (GTK.label n,ui);
+ui_labelled = fns n ui => GTK.horizontal [GTK.label n, GTK.layoutGrow  ui];
 
-std_window: WholeRef +Text -> GTK.Element -> Action GTK.Window;
-std_window title contents = fixAction $ fn window => let
-    mbar: GTK.Element;
-    mbar = GTK.menuBar
+std_window: WholeRef +Text -> GTK.Element -> Action GTK.Window
+= fns title contents => fixAction $ fn window => let
+    mbar: GTK.Element
+    = GTK.menuBar
         [
             GTK.menuSubmenu "File"
             [
@@ -42,8 +42,8 @@ mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085";
 father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5";
 # parents : WholeRef Person -> FiniteSetRef Person;
 # parents p = (mother !$ p) <|> (father !$ p);
-children : WholeRef Person -> FiniteSetRef Person;
-children p = mother !@ p <:|:> father !@ p;
+children : WholeRef Person -> FiniteSetRef Person
+= fn p => mother !@ p <:|:> father !@ p;
 
 employer = property @Person @Person !"72f612af-ae47-4c18-b3df-6932ae914f62";
 
@@ -66,8 +66,8 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
 # GTK
 rec
-ui_people : FiniteSetRef Person -> GTK.Element;
-ui_people pp = GTK.exec $ do
+ui_people : FiniteSetRef Person -> GTK.Element
+= fn pp => GTK.exec $ do
     selectedperson <- newMemWhole;
     pplist <- getSetList noOrder pp;
     return $ GTK.vertical
@@ -79,11 +79,11 @@ ui_people pp = GTK.exec $ do
     ];
     end;
 
-peopleByName : WholeRef +(List (Person *: Text));
-peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
+peopleByName : WholeRef +(List (Person *: Text))
+= setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
-ui_person : WholeRef Person -> GTK.Element;
-ui_person p = GTK.vertical
+ui_person : WholeRef Person -> GTK.Element
+= fn p => GTK.vertical
 [
     ui_labelled {"Name: "} $ GTK.textEntry $ name !$ p,
     GTK.layoutGrow $ GTK.notebook unknown
@@ -118,65 +118,65 @@ ui_person p = GTK.vertical
     ]
 ];
 
-window_person : Person -> Action GTK.Window;
-window_person p = std_window (name !$ {p}) (ui_person {p});
+window_person : Person -> Action GTK.Window
+= fn p => std_window (name !$ {p}) (ui_person {p});
 
-window_people : Action GTK.Window;
-window_people = std_window {"People"} (ui_people people);
+window_people : Action GTK.Window
+= std_window {"People"} (ui_people people);
 end;
 
 ### Calculator
 
-window_calc : Action GTK.Window;
-window_calc = let
-opentype P;
-pvalue = property @P @Number !"pvalue";
-aval = pvalue !$ {openEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
-bval = pvalue !$ {openEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
-in std_window {"Calc"} $ GTK.vertical
-[
-    #GTK.textEntry aval,
-    #GTK.textEntry bval,
-    #GTK.label $ aval / bval
-];
+window_calc : Action GTK.Window
+= let
+    opentype P;
+    pvalue = property @P @Number !"pvalue";
+    aval = pvalue !$ {openEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
+    bval = pvalue !$ {openEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
+    in std_window {"Calc"} $ GTK.vertical
+    [
+        #GTK.textEntry aval,
+        #GTK.textEntry bval,
+        #GTK.label $ aval / bval
+    ];
 
 ### Switching Value
 
-window_switch : Action GTK.Window;
-window_switch = let
-opentype P;
-pbool = property @P @Boolean !"pbool";
-ptext = property @P @Text !"ptext";
-sw_pick = pbool !$ {openEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
-sw_val1 = ptext !$ {openEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
-sw_val2 = ptext !$ {openEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
-in std_window {"Switch"} $ GTK.vertical
-[
-    #GTK.textEntry sw_pick),
-    GTK.checkBox {"pick"} sw_pick,
-    GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea (wholeRefText sw_val1) else GTK.textArea (wholeRefText sw_val2)}
-];
+window_switch : Action GTK.Window
+= let
+    opentype P;
+    pbool = property @P @Boolean !"pbool";
+    ptext = property @P @Text !"ptext";
+    sw_pick = pbool !$ {openEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
+    sw_val1 = ptext !$ {openEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
+    sw_val2 = ptext !$ {openEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
+    in std_window {"Switch"} $ GTK.vertical
+    [
+        #GTK.textEntry sw_pick),
+        GTK.checkBox {"pick"} sw_pick,
+        GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea (wholeRefText sw_val1) else GTK.textArea (wholeRefText sw_val2)}
+    ];
 
 ### Imported Files
 
-window_files : Action GTK.Window;
-window_files = let
-#Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
-#caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-window_file f = std_window {"File"} $ GTK.vertical
-[
-    #GTK.textEntry $ caption f
-];
-in std_window {"Files"} $ GTK.vertical
-[
-    #GTK.button "Import" {file_import Files $ fn f => std_window $ window_file f},
-    #GTK.layoutGrow $ GTK.listTable [column "Caption" caption, column "Size" file_size] window_file Files
-];
+window_files : Action GTK.Window
+= let
+    #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
+    #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
+    window_file = fn f => std_window {"File"} $ GTK.vertical
+    [
+        #GTK.textEntry $ caption f
+    ];
+    in std_window {"Files"} $ GTK.vertical
+    [
+        #GTK.button "Import" {file_import Files $ fn f => std_window $ window_file f},
+        #GTK.layoutGrow $ GTK.listTable [column "Caption" caption, column "Size" file_size] window_file Files
+    ];
 
 ### Constant Edit
 
-window_constant : Action GTK.Window;
-window_constant = std_window {"Constant"} $ GTK.vertical
+window_constant : Action GTK.Window
+= std_window {"Constant"} $ GTK.vertical
 [
     GTK.checkBox {"off"} {False},
     GTK.checkBox {"on"} {True},
@@ -185,8 +185,8 @@ window_constant = std_window {"Constant"} $ GTK.vertical
 ];
 
 ### CSS
-window_css: Action GTK.Window;
-window_css = do
+window_css: Action GTK.Window
+= do
     cssref <- newMemText;
     cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
     sometext <- newMemWhole;
@@ -202,8 +202,8 @@ window_css = do
     end;
 
 ### Drawing
-window_drawing: WholeRef +Time -> Action GTK.Window;
-window_drawing now = let import Colour; import Cairo in do
+window_drawing: WholeRef +Time -> Action GTK.Window
+= fn now => let import Colour; import Cairo in do
     tzref <- newTimeZoneRef now;
     std_window {"Drawing"} $ GTK.draw {fn (w,h) => let
         size = min w h;
@@ -221,15 +221,15 @@ window_drawing now = let import Colour; import Cairo in do
             end};
     end;
 
-window_list: Action GTK.Window;
-window_list = do
+window_list: Action GTK.Window
+= do
     peopleList <- getSetList (orderOn name alphabetical) people;
     std_window {"List"} $ GTK.list ui_person peopleList;
     end;
 
 ### Text Selection
-window_textselection: Action GTK.Window;
-window_textselection = do
+window_textselection: Action GTK.Window
+= do
     tref1 <- newMemText;
     tref1 := "111";
     tref2 <- newMemText;
@@ -238,8 +238,8 @@ window_textselection = do
     tref3 := "333";
     sel <- newMemWhole;
     let
-        notify: Action TextRef -> Action Unit;
-        notify atref = sel := atref;
+        notify: Action TextRef -> Action Unit
+        = fn atref => sel := atref;
     in std_window {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
     [
         GTK.notifySelection notify $ GTK.textArea tref1,
@@ -250,20 +250,20 @@ window_textselection = do
     end;
 
 ### Cairo Image
-window_cairoimage: Action GTK.Window;
-window_cairoimage = let
+window_cairoimage: Action GTK.Window
+= let
     import Colour;
     import Cairo;
     import GTK;
-    dimensions: Integer *: Integer;
-    dimensions = (400,400);
-    drawing: Integer *: Integer -> Drawing Handler;
-    drawing (w,h) = let
+    dimensions: Integer *: Integer
+    = (400,400);
+    drawing: Integer *: Integer -> Drawing Handler
+    = fn (w,h) => let
         size = min w h;
-        square: Drawing Handler;
-        square = fill [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
-        squares: List ((Integer *: Integer) *: Colour);
-        squares =
+        square: Drawing Handler
+        = fill [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
+        squares: List ((Integer *: Integer) *: Colour)
+        =
         [
             ((0,0), black),
             ((1,0), red),
@@ -281,8 +281,8 @@ window_cairoimage = let
             ((1,3), ivory),
             ((2,3), midnightblue)
         ];
-        block: Number -> Drawing Handler;
-        block a =
+        block: Number -> Drawing Handler
+        = fn a =>
         [
             mapList (fn (s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
             lineWidth 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 ~* pi)
@@ -306,8 +306,8 @@ window_cairoimage = let
 ### Start Window
 
 rec
-window_start : Action GTK.Window;
-window_start = do
+window_start : Action GTK.Window
+= do
     now <- newClock $ Seconds 1;
     timeZone <- newTimeZoneRef now;
     let

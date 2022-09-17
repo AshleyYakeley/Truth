@@ -3,11 +3,11 @@ let
 
 import GTK();
 
-dateText: Date ~> Text;
-dateText = property @Date @Text !"example.calendar:dateText";
+dateText: Date ~> Text
+= property @Date @Text !"example.calendar:dateText";
 
-ui: WholeRef Date -> GTK.Element;
-ui r = GTK.vertical
+ui: WholeRef Date -> GTK.Element
+= fn r => GTK.vertical
     [
     GTK.horizontal
         [

@@ -154,28 +154,27 @@ testQuery query expected =
 
 testSubsumeSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
 testSubsumeSubtype good t1 t2 vs =
-    [ testQuery ("let rec r = r end; x : " <> t1 <> "; x = r; y : " <> t2 <> "; y = x in ()") $
+    [ testQuery ("let rec r = r end; x : " <> t1 <> " = r; y : " <> t2 <> " = x in ()") $
       goodLangResult good $ LRSuccess "()"
     ] <>
     fmap
         (\v ->
-             testQuery ("let x : " <> t1 <> "; x = " <> v <> " in x : " <> t2) $
-             goodLangResult good $ LRSuccess $ unpack v)
+             testQuery ("let x : " <> t1 <> " = " <> v <> " in x : " <> t2) $ goodLangResult good $ LRSuccess $ unpack v)
         vs <>
     fmap
         (\v ->
-             testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $
+             testQuery ("let x : " <> t1 <> " = " <> v <> "; y : " <> t2 <> " = x in y") $
              goodLangResult good $ LRSuccess $ unpack v)
         vs
 
 testFunctionSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
 testFunctionSubtype good t1 t2 vs =
-    [ testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ goodLangResult good $ LRSuccess "<?>"
+    [ testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f") $ goodLangResult good $ LRSuccess "<?>"
     , testQuery ("(fn x => x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
     ] <>
     fmap
         (\v ->
-             testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $
+             testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f " <> v) $
              goodLangResult good $ LRSuccess $ unpack v)
         vs
 
@@ -290,17 +289,17 @@ testQueries =
                     , testQuery "let rec a=1;a=2 end in a" $ LRCheckFail
                     , testQuery "let rec a=1;b=a end in b" $ LRSuccess "1"
                     , testQuery "let rec b=a;a=1 end in b" $ LRSuccess "1"
-                    , testQuery "let rec a x = x end in a 1" $ LRSuccess "1"
-                    , testQuery "let rec a x = x; b = a end in b" $ LRSuccess "<?>"
+                    , testQuery "let rec a = fn x => x end in a 1" $ LRSuccess "1"
+                    , testQuery "let rec a = fn x => x; b = a end in b" $ LRSuccess "<?>"
                     , testQuery "let rec a = fn x => x end in let rec b = a 1 end in b" $ LRSuccess "1"
-                    , testQuery "let rec a x = x; b = a 1 end in b" $ LRSuccess "1"
-                    , testQuery "let rec a x = b; b = b end in a" $ LRSuccess "<?>"
-                    , testQuery "let rec a x = 1; b = b end in a b" $ LRSuccess "1"
-                    , testQuery "let rec a x = 1; b = a b end in b" $ LRSuccess "1"
-                    , testQuery "let rec a x = 1 end in let rec b = a b end in b" $ LRSuccess "1"
+                    , testQuery "let rec a = fn x => x; b = a 1 end in b" $ LRSuccess "1"
+                    , testQuery "let rec a = fn x => b; b = b end in a" $ LRSuccess "<?>"
+                    , testQuery "let rec a = fn x => 1; b = b end in a b" $ LRSuccess "1"
+                    , testQuery "let rec a = fn x => 1; b = a b end in b" $ LRSuccess "1"
+                    , testQuery "let rec a = fn x => 1 end in let rec b = a b end in b" $ LRSuccess "1"
                     , testQuery "let rec b = (fn x => 1) b end in b" $ LRSuccess "1"
-                    , testQuery "let rec b = a b; a x = 1 end in b" $ LRSuccess "1"
-                    , testQuery "let rec a x = 1; b = a c; c=b end in b" $ LRSuccess "1"
+                    , testQuery "let rec b = a b; a = fn x => 1 end in b" $ LRSuccess "1"
+                    , testQuery "let rec a = fn x => 1; b = a c; c=b end in b" $ LRSuccess "1"
                     , testTree
                           "polymorphism"
                           [ testQuery "let rec i = fn x => x end in (1 + i 1, i False)" $ LRSuccess "(2, False)"
@@ -395,7 +394,7 @@ testQueries =
               , testQuery "\"abc\" <>\"def\"" $ LRSuccess "\"abcdef\""
               , testQuery "\"abc\"<> \"def\"" $ LRSuccess "\"abcdef\""
               , testQuery "\"abc\" <> \"def\"" $ LRSuccess "\"abcdef\""
-              , testQuery "let f x = x + 2 in f -1" $ LRSuccess "1"
+              , testQuery "let f = fn x => x + 2 in f -1" $ LRSuccess "1"
               , testQuery "let f = 2 in f - 1" $ LRSuccess "1"
               , testTree
                     "precedence"
@@ -442,29 +441,29 @@ testQueries =
               ]
         , testTree
               "type-signature"
-              [ testQuery "let i x = x in i 3" $ LRSuccess "3"
-              , testQuery "let i : tvar -> tvar; i x = x in i 3" $ LRSuccess "3"
-              , testQuery "let i : a -> a; i x = x in i 3" $ LRSuccess "3"
-              , testQuery "let i : Number -> Number; i x = x in i 3" $ LRSuccess "3"
-              , testQuery "let i : Text -> Text; i x = x in i 3" $ LRCheckFail
-              , testQuery "let i : a -> a; i x = x in i \"t\"" $ LRSuccess "\"t\""
-              , testQuery "let i : Number -> Number; i x = x in i \"t\"" $ LRCheckFail
-              , testQuery "let i : Text -> Text; i x = x in i \"t\"" $ LRSuccess "\"t\""
-              , testQuery "let i : a -> a; i x = x in 0" $ LRSuccess "0"
-              , testQuery "let i : a -> Number; i x = x in 0" $ LRCheckFail
-              , testQuery "let i : Number -> a; i x = x in 0" $ LRCheckFail
-              , testQuery "let i : Number -> Number; i x = x in 0" $ LRSuccess "0"
-              , testQuery "let i : Number +: Boolean; i = Left 5 in i" $ LRSuccess "Left 5"
-              , testQuery "let i : Number +: Boolean; i = Right False in i" $ LRSuccess "Right False"
-              , testQuery "let i : Maybe Number; i = Just 5 in i" $ LRSuccess "Just 5"
-              , testQuery "let i : Maybe Number; i = Nothing in i" $ LRSuccess "Nothing"
+              [ testQuery "let i = fn x => x in i 3" $ LRSuccess "3"
+              , testQuery "let i : tvar -> tvar = fn x => x in i 3" $ LRSuccess "3"
+              , testQuery "let i : a -> a = fn x => x in i 3" $ LRSuccess "3"
+              , testQuery "let i : Number -> Number = fn x => x in i 3" $ LRSuccess "3"
+              , testQuery "let i : Text -> Text = fn x => x in i 3" $ LRCheckFail
+              , testQuery "let i : a -> a = fn x => x in i \"t\"" $ LRSuccess "\"t\""
+              , testQuery "let i : Number -> Number = fn x => x in i \"t\"" $ LRCheckFail
+              , testQuery "let i : Text -> Text = fn x => x in i \"t\"" $ LRSuccess "\"t\""
+              , testQuery "let i : a -> a = fn x => x in 0" $ LRSuccess "0"
+              , testQuery "let i : a -> Number = fn x => x in 0" $ LRCheckFail
+              , testQuery "let i : Number -> a = fn x => x in 0" $ LRCheckFail
+              , testQuery "let i : Number -> Number = fn x => x in 0" $ LRSuccess "0"
+              , testQuery "let i : Number +: Boolean = Left 5 in i" $ LRSuccess "Left 5"
+              , testQuery "let i : Number +: Boolean = Right False in i" $ LRSuccess "Right False"
+              , testQuery "let i : Maybe Number = Just 5 in i" $ LRSuccess "Just 5"
+              , testQuery "let i : Maybe Number = Nothing in i" $ LRSuccess "Nothing"
               , testTree
                     "polar"
-                    [ testQuery "let x : Text | Number; x = 3 in x" $ LRSuccess "3"
-                    , testQuery "let f : Any -> Integer; f _ = 3 in f ()" $ LRSuccess "3"
+                    [ testQuery "let x : Text | Number = 3 in x" $ LRSuccess "3"
+                    , testQuery "let f : Any -> Integer = fn _ => 3 in f ()" $ LRSuccess "3"
                     , testQuery "(fn x => (x,x)) : ((a & Number) -> Showable *: a)" $ LRSuccess "<?>"
                     , testQuery "let f = (fn x => (x,x)) : (a & Number) -> Showable *: a in f 3" $ LRSuccess "(3, 3)"
-                    , testQuery "let f : (a & Number) -> Showable *: a; f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "let f : (a & Number) -> Showable *: a = fn x => (x,x) in f 3" $ LRSuccess "(3, 3)"
                     ]
               ]
         , testTree
@@ -559,34 +558,34 @@ testQueries =
               ]
         , testTree
               "subtype"
-              [ testQuery "let i : Integer -> Number; i x = x in i 3" $ LRSuccess "3"
-              , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ LRSuccess "3"
-              , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ LRSuccess "3"
-              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ LRSuccess "3"
+              [ testQuery "let i : Integer -> Number = fn x => x in i 3" $ LRSuccess "3"
+              , testQuery "let a : Integer = 3; b : Number = a in b" $ LRSuccess "3"
+              , testQuery "let i : FiniteSetRef -a -> SetRef a = fn x => x in 3" $ LRSuccess "3"
+              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a = fn x => x in 3" $ LRSuccess "3"
               ]
         , testTree
               "subsume"
-              [ testQuery "let rec a: Unit; a = a end in ()" $ LRSuccess "()"
-              , testQuery "let rec a: Integer; a = a end in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text; a = error \"undefined\" in ()" $ LRSuccess "()"
-              , testQuery "let rec a: Integer|Text; a = a end in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text; a = 3 in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text; a = 3; b: Integer|Text; b = 3 in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text; a = 3; b: Integer|Text; b = a in ()" $ LRSuccess "()"
-              , testQuery "let rec r = r end in let a: Integer|Text; a = r in ()" $ LRSuccess "()"
-              , testQuery "let rec r = r end; a: Integer|Text; a = r in ()" $ LRSuccess "()"
-              , testQuery "let rec r = a; a: Integer|Text; a = r end in ()" $ LRSuccess "()"
-              , testQuery "let rec a: None; a = a end in ()" $ LRSuccess "()"
-              , testQuery "let rec r = r end in let a : None; a = r in ()" $ LRSuccess "()"
-              , testQuery "let rec r = r end; a: None; a = r in ()" $ LRSuccess "()"
-              , testQuery "let rec r = a; a: None; a = r end in ()" $ LRSuccess "()"
-              , testQuery "let a: List (Integer|Text); a = [] in a" $ LRSuccess "[]"
-              , testQuery "let a: List Integer | List Text; a = [] in a" $ LRSuccess "[]"
+              [ testQuery "let rec a: Unit = a end in ()" $ LRSuccess "()"
+              , testQuery "let rec a: Integer = a end in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text = error \"undefined\" in ()" $ LRSuccess "()"
+              , testQuery "let rec a: Integer|Text = a end in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text = 3 in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text = 3; b: Integer|Text = 3 in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text = 3; b: Integer|Text = a in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end in let a: Integer|Text = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end; a: Integer|Text = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = a; a: Integer|Text = r end in ()" $ LRSuccess "()"
+              , testQuery "let rec a: None = a end in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end in let a : None = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end; a: None = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = a; a: None = r end in ()" $ LRSuccess "()"
+              , testQuery "let a: List (Integer|Text) = [] in a" $ LRSuccess "[]"
+              , testQuery "let a: List Integer | List Text = [] in a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
               , testSameType False "List (Integer|Text)" "List (Integer|Text)" ["[]"]
               , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
               , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]
-              , testQuery "let a: Integer|Text; a = 3; b: List Integer | List Text; b = [a] in b" $ LRSuccess "[3]"
+              , testQuery "let a: Integer|Text = 3; b: List Integer | List Text = [a] in b" $ LRSuccess "[3]"
               ]
         , testTree
               "conversion"
@@ -596,7 +595,7 @@ testQueries =
               ]
         , testTree
               "recursive"
-              [ testQuery "let x : rec a. List a; x = [] in x" $ LRSuccess "[]"
+              [ testQuery "let x : rec a. List a = [] in x" $ LRSuccess "[]"
               , let
                     atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
                     in testTree
@@ -665,216 +664,217 @@ testQueries =
               , testTree
                     "lazy"
                     [ testQuery
-                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in (fn x => lazy x 1) (error \"strict\")" $
+                          "let lazy: Any -> Integer -> Integer = fns _ x => x in (fn x => lazy x 1) (error \"strict\")" $
                       LRSuccess "1"
-                    , testQuery "let lazy: Any -> Integer -> Integer; lazy _ x = x in let rec x = lazy x 1 end in x" $
-                      LRSuccess "1"
-                    , testQuery
-                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in let x = lazy (error \"strict\") 1 in x" $
-                      LRSuccess "1"
-                    , testQuery "let lazy: Any -> Integer -> Integer; lazy _ x = x in let rec f = lazy f end in f 1" $
+                    , testQuery "let lazy: Any -> Integer -> Integer = fns _ x => x in let rec x = lazy x 1 end in x" $
                       LRSuccess "1"
                     , testQuery
-                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in let f = lazy (error \"strict\") in f 1" $
+                          "let lazy: Any -> Integer -> Integer = fns _ x => x in let x = lazy (error \"strict\") 1 in x" $
+                      LRSuccess "1"
+                    , testQuery "let lazy: Any -> Integer -> Integer = fns _ x => x in let rec f = lazy f end in f 1" $
+                      LRSuccess "1"
+                    , testQuery
+                          "let lazy: Any -> Integer -> Integer = fns _ x => x in let f = lazy (error \"strict\") in f 1" $
                       LRSuccess "1"
                     ]
               , testTree
                     "subsume"
-                    [ testQuery "let rec rval: rec a. Maybe a; rval = rval end in ()" $ LRSuccess "()"
-                    , testQuery "let rec rval: rec a. Maybe a; rval = Just rval end in ()" $ LRSuccess "()"
+                    [ testQuery "let rec rval: rec a. Maybe a = rval end in ()" $ LRSuccess "()"
+                    , testQuery "let rec rval: rec a. Maybe a = Just rval end in ()" $ LRSuccess "()"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount" $
+                          "let rec rcount: (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount" $
                       LRSuccess "<?>"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount Nothing" $
+                          "let rec rcount: (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount Nothing" $
                       LRSuccess "0"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec a. Maybe a) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount" $
+                          "let rec rcount: (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount" $
                       LRSuccess "<?>"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1 = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount = rcount1; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
+                          "let rec rcount = rcount1; rcount1 = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
+                          "let rec rcount: (rec a. Maybe a) -> Integer = rcount1; rcount1 = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec xb. Maybe xb) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount: (rec xb. Maybe xb) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
+                          "let rec rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
+                          "let rec rcount: (rec xa. Maybe xa) -> Integer = rcount1; rcount1: (rec xb. Maybe xb) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec x. Maybe x) -> Integer; rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in ()" $
+                          "let rec rcount: (rec x. Maybe x) -> Integer = rcount1; rcount1: (rec x. Maybe x) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in ()" $
                       LRSuccess "()"
                     , testQuery
-                          "let rec rcount = rcount1; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount = rcount1; rcount1 = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec xa. Maybe xa) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount: (rec xa. Maybe xa) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
-                          "let rec rcount: (rec xc. Maybe xc) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount: (rec xc. Maybe xc) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end; rcount1 = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testTree
                           "lazy"
                           [ testQuery
-                                "let f: (x -> Integer) -> Maybe x -> Integer; f rc x = case x of Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z. Maybe z) -> Integer; rcount = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
+                                "let f: (x -> Integer) -> Maybe x -> Integer = fns rc x => case x of Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z. Maybe z) -> Integer = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "let f: ((rec x. Maybe x) -> Integer) -> (rec x. Maybe x) -> Integer; f rc x = case x of Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z. Maybe z) -> Integer; rcount = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
+                                "let f: ((rec x. Maybe x) -> Integer) -> (rec x. Maybe x) -> Integer = fns rc x => case x of Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z. Maybe z) -> Integer = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "let f: (Integer -> Integer) -> Integer -> Integer; f rc x = if x == 0 then 0 else 1 + rc (x - 1) in let rec rcount: Integer -> Integer; rcount = rcount1; rcount1 = f rcount end in rcount 1" $
+                                "let f: (Integer -> Integer) -> Integer -> Integer = fns rc x => if x == 0 then 0 else 1 + rc (x - 1) in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
                             LRSuccess "1"
-                          , testQuery "let f _ x = x in let rec rcount = f rcount end in rcount 1" $ LRSuccess "1"
-                          , testQuery
-                                "let f: Any -> Integer -> Integer; f _ x = x in let rec rcount = f (seq (error \"strict\") rcount) end in rcount 1" $
+                          , testQuery "let f = fns _ x => x in let rec rcount = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let f: Any -> Integer -> Integer; f _ x = x in let rec rcount = f (seq rcount (error \"strict\")) end in rcount 1" $
+                                "let f: Any -> Integer -> Integer = fns _ x => x in let rec rcount = f (seq (error \"strict\") rcount) end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let f: (Integer -> Integer) -> Integer -> Integer; f _ x = x in let rec rcount = f rcount end in rcount 1" $
+                                "let f: Any -> Integer -> Integer = fns _ x => x in let rec rcount = f (seq rcount (error \"strict\")) end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let f: (Integer -> Integer) -> Integer -> Integer; f _ x = x in let rec rcount = rcount1; rcount1 = f rcount end in rcount 1" $
+                                "let f: (Integer -> Integer) -> Integer -> Integer = fns _ x => x in let rec rcount = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let f: (Integer -> Integer) -> Integer -> Integer; f _ x = x in let rec rcount: Integer -> Integer; rcount = rcount1; rcount1 = f rcount end in rcount 1" $
+                                "let f: (Integer -> Integer) -> Integer -> Integer = fns _ x => x in let rec rcount = rcount1; rcount1 = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let rec rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                                "let f: (Integer -> Integer) -> Integer -> Integer = fns _ x => x in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let rec rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1: (rec a. Maybe a) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                                "let rec rcount: (rec a. Maybe a) -> Integer = rcount1; rcount1 = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "let rec rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                                "let rec rcount: (rec a. Maybe a) -> Integer = rcount1; rcount1: (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let rec rcount: (rec xa. Maybe xa) -> Integer = rcount1; rcount1: (rec xb. Maybe xb) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           ]
                     ]
               , testTree
                     "case"
                     [ testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount Nothing" $
                       LRSuccess "0"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => if True then 1 else 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => if True then 1 else 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => if True then 2 else 1 + rcount y end end end in rcount $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => if True then 2 else 1 + rcount y end end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => if True then 1 else 1 + rcount y end end in rcount $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => if True then 1 else 1 + rcount y end end in rcount $ Just $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end end in rcount $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end end in rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => if True then 2 else 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => if True then 2 else 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => case z of Nothing => 2; Just p => if True then 3 else 1 + rcount y end end end end in rcount $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => case z of Nothing => 2; Just p => if True then 3 else 1 + rcount y end end end end in rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => case z of Nothing => 2; Just p => 1 + rcount y end end end end in rcount $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => case z of Nothing => 2; Just p => 1 + rcount y end end end end in rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => case z of Nothing => 2; Just p => 1 + rcount y end end end; rcount1 x = rcount x end in rcount1 $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => case y of Nothing => 1; Just z => case z of Nothing => 2; Just p => 1 + rcount y end end end; rcount1 = fn x => rcount x end in rcount1 $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount1 y = case y of Nothing => 0; Just z => 1 + rcount z end; rcount x = case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount1 = fn y => case y of Nothing => 0; Just z => 1 + rcount z; end; rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "4"
                     , testQuery
-                          "let rec rcount1 y = case y of Nothing => 0; Just z => 1 + rcount z end; rcount x = case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount1 = fn y => case y of Nothing => 0; Just z => 1 + rcount z end; rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "12"
                     , testQuery
-                          "let rec rcount1 y = case y of Nothing => 0; Just z => 1 + rcount z end; rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount1 = fn y => case y of Nothing => 0; Just z => 1 + rcount z end; rcount : (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "12"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end; rval : rec a. Maybe a = Just $ Just Nothing end in rcount rval" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a. Maybe a = Just $ Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "4"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a. Maybe a; rval = Just rval end in rcount rval" $
+                          "let rec rcount : (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a. Maybe a = Just rval end in rcount rval" $
                       LRSuccess "5"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval : rec a. Maybe a = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "10"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "10"
                     , testQuery
-                          "let fix: (a -> a) -> a; fix f = let rec x = f x end in x; rc: (a -> Integer) -> Maybe a -> Integer; rc r x = case x of Nothing => 0; Just y => 1 + r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let fix: (a -> a) -> a = fn f => let rec x = f x end in x; rc: (a -> Integer) -> Maybe a -> Integer = fns r x => case x of Nothing => 0; Just y => 1 + r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "4"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just Nothing end in rcount rval" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe None)) ; rval = Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe None)) = Just $ Just Nothing end in rcount rval" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just Nothing end in rcount rval" $
                       LRSuccess "2"
                     , testQuery "Just $ Just $ Just Nothing" $ LRSuccess "Just Just Just Nothing"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe (Maybe None)))) ; rval = Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe (Maybe None)))) = Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just y => 1 + r1count y end; r1count x = case x of Nothing => 0; Just y => 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just y => 1 + r1count y end; r1count = match Nothing => 0; Just y => 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
                           "case Just $ Just $ Just Nothing of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount : (rec a . Maybe a) -> Integer = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just y))) => 4 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount : (rec a . Maybe a) -> Integer = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just y))) => 4 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount : (rec a . Maybe a) -> Integer = fn x => case x of Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     ]
               ]
@@ -892,26 +892,25 @@ testQueries =
                          [ testQuery
                                ("let x: " <>
                                 supertype <>
-                                "; x=" <>
+                                " = " <>
                                 val <>
                                 "; y: " <>
-                                subtype <>
-                                "; y = case x of (z: " <> subtype <> ") => z; _ => " <> altval <> "; end in y")
+                                subtype <> " = case x of (z: " <> subtype <> ") => z; _ => " <> altval <> "; end in y")
                                result
                          , testQuery
                                ("let x: " <>
                                 supertype <>
-                                "; x=" <>
+                                " = " <>
                                 val <>
                                 "; y: " <>
                                 subtype <>
-                                "; y = case check @(" <>
+                                " = case check @(" <>
                                 subtype <> ") x of Just z => z; Nothing => " <> altval <> "; end in y")
                                result
                          , testQuery
                                ("let x: " <>
                                 supertype <>
-                                "; x=" <> val <> "; y: " <> subtype <> "; y = coerce @(" <> subtype <> ") x in y") $
+                                " = " <> val <> "; y: " <> subtype <> " = coerce @(" <> subtype <> ") x in y") $
                            if good
                                then result
                                else LRRunError
@@ -980,12 +979,12 @@ testShims =
         , testShim "(fn x => 4) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
-              "let rcount x = case x of Nothing => 0; Just y => 1 + rcount y end in rcount"
+              "let rcount = fn x => case x of Nothing => 0; Just y => 1 + rcount y end in rcount"
               "(rec c. Maybe c) -> Integer"
               "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
-              "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing => 0; Just y => 1 + rcount y end in rcount"
+              "let rcount : (rec a. Maybe a) -> Integer = fn x => case x of Nothing => 0; Just y => 1 + rcount y end in rcount"
               "(rec a. Maybe a) -> Integer"
               "(join1 id)"
         ]

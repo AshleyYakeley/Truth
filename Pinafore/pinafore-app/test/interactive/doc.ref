@@ -15,7 +15,7 @@ pinafore> :doc notfound
 ! notfound not found
 pinafore> let aa = 8
 pinafore> :doc aa
-pinafore> let {#| doc 1 xx #} xx: Integer; xx = 45
+pinafore> let {#| doc 1 xx #} xx: Integer = 45
 pinafore> :doc xx
 #| doc 1 xx
 pinafore> let {#| doc 2 yy #} yy = 57

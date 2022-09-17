@@ -20,8 +20,8 @@ postcode = property @Location @Text !"location.address.postcode";
 province = property @Location @Text !"location.address.province";
 country = property @Location @Text !"location.address.country";
 
-locationUI: WholeRef +Location -> GTK.Element;
-locationUI loc = GTK.vertical
+locationUI: WholeRef +Location -> GTK.Element
+= fn loc => GTK.vertical
 [
     GTK.layoutGrow $ uiLabelled {"Address: "} $ GTK.textArea (wholeRefText $ address !$% loc),
     uiLabelled {"City: "} $ GTK.textEntry $ city !$% loc,
@@ -39,36 +39,36 @@ subtype LegalEntity <: Lifespanned;
 email = property @LegalEntity @Text !"contact.email";
 phone = property @LegalEntity @Text !"contact.telephone";
 home = property @LegalEntity @Location !"being.location";
-legalentities: FiniteSetRef LegalEntity;
-legalentities = property @LegalEntity @Unit !"type.legalentity" !@ {()};
+legalentities: FiniteSetRef LegalEntity
+= property @LegalEntity @Unit !"type.legalentity" !@ {()};
 
 # a person
 dynamictype Person = !"type.person";
-people: FiniteSetRef Person;
-people = maybeMapFiniteSet (check @Person) legalentities;
+people: FiniteSetRef Person
+= maybeMapFiniteSet (check @Person) legalentities;
 # family relationships between people
 mother = property @Person @Person !"relation.family.mother";
 father = property @Person @Person !"relation.family.father";
-children: WholeRef +Person -> FiniteSetRef Person;
-children p = (mother !@% p) <:|:> (father !@% p);
+children: WholeRef +Person -> FiniteSetRef Person
+= fn p => (mother !@% p) <:|:> (father !@% p);
 married = property @Person @Boolean !"relation.family.spouse.exist";
 
 # employment relationship
 employer = property @Person @LegalEntity !"relation.employer";
-employees: WholeRef +LegalEntity -> FiniteSetRef Person;
-employees p = employer !@% p;
+employees: WholeRef +LegalEntity -> FiniteSetRef Person
+= fn p => employer !@% p;
 
 # an organisation
 dynamictype Organisation = !"type.organisation";
-organisations: FiniteSetRef Organisation;
-organisations = property @Organisation @Unit !"type.organisation" !@ {()};
+organisations: FiniteSetRef Organisation
+= property @Organisation @Unit !"type.organisation" !@ {()};
 end;
 
 ### User Interface
 
 rec
-contactPages: WholeRef +LegalEntity -> List (GTK.Element *: GTK.Element);
-contactPages er =
+contactPages: WholeRef +LegalEntity -> List (GTK.Element *: GTK.Element)
+= fn er =>
 [
     uiPage {"Social"} $ GTK.vertical
     [
@@ -78,8 +78,8 @@ contactPages er =
     uiPage {"Home"} $ locationUI $ home !$% er
 ];
 
-personPages: WholeRef +Person -> List (GTK.Element *: GTK.Element);
-personPages p =
+personPages: WholeRef +Person -> List (GTK.Element *: GTK.Element)
+= fn p =>
 [
     uiPage {"Work"} $ GTK.vertical
     [
@@ -88,8 +88,8 @@ personPages p =
     uiPage {"Family"} $ familyUI p
 ];
 
-familyUI: WholeRef +Person -> GTK.Element;
-familyUI p = GTK.vertical
+familyUI: WholeRef +Person -> GTK.Element
+= fn p => GTK.vertical
 [
     uiLabelled {"Birth: "} $ GTK.textEntry $ interpretDateAsText $ birthdate !$% p,
     uiLabelled {"Death: "} $ GTK.textEntry $ interpretDateAsText $ deathdate !$% p,
@@ -100,16 +100,16 @@ familyUI p = GTK.vertical
     GTK.layoutGrow $ namedItemTable (children p) contactRefUI Nothing
 ];
 
-organisationPages: WholeRef +Organisation -> List (GTK.Element *: GTK.Element);
-organisationPages subj =
+organisationPages: WholeRef +Organisation -> List (GTK.Element *: GTK.Element)
+= fn subj =>
 [
     uiPage {"Employees"} $ namedItemTable (employees subj) contactRefUI Nothing
 ];
 
-contactUI: LegalEntity -> GTK.Element;
-contactUI e = let
-    pages: List (GTK.Element *: GTK.Element);
-    pages = contactPages {e} ++ case e of
+contactUI: LegalEntity -> GTK.Element
+= fn e => let
+    pages: List (GTK.Element *: GTK.Element)
+    = contactPages {e} ++ case e of
         p: Person => personPages {p};
         o: Organisation => organisationPages {o};
         end;
@@ -119,12 +119,12 @@ contactUI e = let
         GTK.layoutGrow $ GTK.notebook unknown pages
     ];
 
-contactRefUI: WholeRef +LegalEntity -> GTK.Element;
-contactRefUI ref = GTK.dynamic $ coMapWhole contactUI ref;
+contactRefUI: WholeRef +LegalEntity -> GTK.Element
+= fn ref => GTK.dynamic $ coMapWhole contactUI ref;
 end;
 
-contactsPane: GTK.Context -> Action Pane;
-contactsPane gtk = let
+contactsPane: GTK.Context -> Action Pane
+= fn gtk => let
     menuItems =
     [
         newItemMenuAction "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
@@ -132,8 +132,8 @@ contactsPane gtk = let
     ];
     in namedPairPane gtk "Contacts" legalentities menuItems contactRefUI;
 
-contactsWindow: GTK.Context -> Action GTK.Window;
-contactsWindow gtk = do
+contactsWindow: GTK.Context -> Action GTK.Window
+= fn gtk => do
     p <- contactsPane gtk;
     paneWindow gtk p;
     end;

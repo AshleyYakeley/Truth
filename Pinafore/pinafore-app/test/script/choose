@@ -4,8 +4,8 @@ import GTK();
 import Image();
 
 rec
-    showFile: Action Unit;
-    showFile = do
+    showFile: Action Unit
+    = do
         file <- GTK.chooseExistingFile gtk $ match
             Just ("image",_) => True;
             _ => False;

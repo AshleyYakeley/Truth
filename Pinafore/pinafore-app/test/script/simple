@@ -12,11 +12,11 @@ name = property @Person @Text !"example:name";
 me = openEntity @Person !"example:me";
 
 # GTK
-ui_person : Person -> GTK.Element;
-ui_person p = GTK.textEntry $ name !$ {p};
+ui_person : Person -> GTK.Element
+= fn p => GTK.textEntry $ name !$ {p};
 
-window_person : GTK.Context -> Person -> Action GTK.Window;
-window_person gtk p = GTK.openWindow gtk (300,400) {"Name"} (ui_person p);
+window_person : GTK.Context -> Person -> Action GTK.Window
+= fns gtk p => GTK.openWindow gtk (300,400) {"Name"} (ui_person p);
 
 in GTK.run $ fn gtk => do
     window_person gtk me;

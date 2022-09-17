@@ -1,14 +1,14 @@
-let f: ((a -> a) & b) -> Maybe b; f = Just
-let i: a -> a; i x = x;
+let f: ((a -> a) & b) -> Maybe b = Just
+let i: a -> a = fn x => x;
 :type f
 :type i
 :type f i
 
-let g: ((a -> a) & b) -> b; g x = x
+let g: ((a -> a) & b) -> b = fn x => x
 :type g
 :type g i
 
-let ur: WholeRef a -> Unit; ur _ = ()
+let ur: WholeRef a -> Unit = fn _ => ()
 :type ur
 :type newMemWhole >>= fn ref => return (ref, ())
 :type newMemWhole >>= fn ref => return (ref, ((fn _ => ()) : WholeRef a -> Unit) ref)

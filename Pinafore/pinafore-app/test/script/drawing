@@ -5,8 +5,8 @@ import Cairo;
 import GTK();
 
 # transform from (-1 .. +1,-1 .. +1)
-scaleDrawing: WholeRef (Drawing a) -> WholeRef (Integer *: Integer -> Drawing a);
-scaleDrawing rd = {fn (w,h) => let
+scaleDrawing: WholeRef (Drawing a) -> WholeRef (Integer *: Integer -> Drawing a)
+= fn rd => {fn (w,h) => let
     size = min w h;
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
 
@@ -16,8 +16,8 @@ datatype Progress of
     ProgressDone;
 end;
 
-drawing: WholeRef Progress -> WholeRef +(Drawing GTK.Handler);
-drawing ref =
+drawing: WholeRef Progress -> WholeRef +(Drawing GTK.Handler)
+= fn ref =>
 {
     scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1
     [

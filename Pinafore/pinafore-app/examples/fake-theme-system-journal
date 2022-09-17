@@ -2,26 +2,26 @@
 
 let
 
-years: FiniteSetRef Integer;
-years = property @Integer @Unit !"FTSJ.years" !@ {()};
+years: FiniteSetRef Integer
+= property @Integer @Unit !"FTSJ.years" !@ {()};
 
-yearTheme: Integer ~> Text;
-yearTheme = property @Integer @Text !"FTSJ.yearTheme";
+yearTheme: Integer ~> Text
+= property @Integer @Text !"FTSJ.yearTheme";
 
 import GTK;
 import UIStuff.Selection;
 
-frontCoverPane: Pane;
-frontCoverPane = pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+frontCoverPane: Pane
+= pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
-getThemesPane: Action Pane;
-getThemesPane = return $ pane "Themes" $ blank;
+getThemesPane: Action Pane
+= return $ pane "Themes" $ blank;
 
-daysPane: Pane;
-daysPane = pane "Days" $ blank;
+daysPane: Pane
+= pane "Days" $ blank;
 
-createMainPane: Action Pane;
-createMainPane = do
+createMainPane: Action Pane
+= do
     themesPane <- getThemesPane;
     notebookPane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
     end;

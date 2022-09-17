@@ -8,7 +8,7 @@ let import Cairo
 :doc notfound
 let aa = 8
 :doc aa
-let {#| doc 1 xx #} xx: Integer; xx = 45
+let {#| doc 1 xx #} xx: Integer = 45
 :doc xx
 let {#| doc 2 yy #} yy = 57
 :doc yy

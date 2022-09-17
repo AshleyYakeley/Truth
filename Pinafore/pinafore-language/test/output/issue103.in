@@ -2,11 +2,11 @@
 
 let
 
-e1: Entity;
-e1 = ();
+e1: Entity
+= ();
 
-f: WholeRef a -> Unit;
-f _ = ();
+f: WholeRef a -> Unit
+= fn _ => ();
 
 in do
     (ref,_) <- newMemWhole >>= fn ref => return (ref, f ref);

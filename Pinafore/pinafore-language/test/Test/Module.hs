@@ -31,16 +31,15 @@ testModule =
               "type"
               [ testExpectSuccess "let import M in case T1 of T1 => return (); T2 => fail \"wrong\" end"
               , testExpectSuccess "case M.T1 of M.T1 => return (); M.T2 => fail \"wrong\" end"
-              , testExpectSuccess
-                    "let import M in let t: T; t = T1 in case t of T1 => return (); T2 => fail \"wrong\" end"
-              , testExpectSuccess "let import M; t: T; t = T1 in case t of T1 => return (); T2 => fail \"wrong\" end"
-              , testExpectSuccess "let t: M.T; t = M.T1 in case t of M.T1 => return (); M.T2 => fail \"wrong\" end"
-              , testExpectSuccess "let import M; f: T -> T; f x = x in return ()"
-              , testExpectSuccess "let import M in let f: T -> T; f x = x in return ()"
-              , testExpectSuccess "let f: M.T -> M.T; f x = x in return ()"
-              , testExpectSuccess "let import M (T); f: T -> T; f x = x in return ()"
-              , testExpectReject "let import M (); f: T -> T; f x = x in return ()"
-              , testExpectReject "let import M (T1, T2); f: T -> T; f x = x in return ()"
+              , testExpectSuccess "let import M in let t: T = T1 in case t of T1 => return (); T2 => fail \"wrong\" end"
+              , testExpectSuccess "let import M; t: T = T1 in case t of T1 => return (); T2 => fail \"wrong\" end"
+              , testExpectSuccess "let t: M.T = M.T1 in case t of M.T1 => return (); M.T2 => fail \"wrong\" end"
+              , testExpectSuccess "let import M; f: T -> T = fn x => x in return ()"
+              , testExpectSuccess "let import M in let f: T -> T = fn x => x in return ()"
+              , testExpectSuccess "let f: M.T -> M.T = fn x => x in return ()"
+              , testExpectSuccess "let import M (T); f: T -> T = fn x => x in return ()"
+              , testExpectReject "let import M (); f: T -> T = fn x => x in return ()"
+              , testExpectReject "let import M (T1, T2); f: T -> T = fn x => x in return ()"
               , testExpectSuccess "let import M (T1); f = T1 in return ()"
               , testExpectReject "let import M (T2); f = T1 in return ()"
               ]
@@ -55,9 +54,9 @@ testModule =
           tModule "N" "let import M; subtype P <: Q in expose" $
           tGroup
               "subtype"
-              [ testExpectReject "let import M; f: P -> Q; f x = x in return ()"
-              , testExpectSuccess "let import M; import N; f: P -> Q; f x = x in return ()"
-              , testExpectSuccess "let import N; import M; f: P -> Q; f x = x in return ()"
-              , testExpectSuccess "let import M; import N(); f: P -> Q; f x = x in return ()"
+              [ testExpectReject "let import M; f: P -> Q = fn x => x in return ()"
+              , testExpectSuccess "let import M; import N; f: P -> Q = fn x => x in return ()"
+              , testExpectSuccess "let import N; import M; f: P -> Q = fn x => x in return ()"
+              , testExpectSuccess "let import M; import N(); f: P -> Q = fn x => x in return ()"
               ]
         ]

@@ -1,10 +1,11 @@
 #!/usr/bin/pinafore
 let
-fix: (a -> a) -> a;
-fix f = let rec x = f x end in x;
+fix: (a -> a) -> a
+= fn f => let rec x = f x end in x;
 
-rrange s a b = if a > b then [] else a :: s (a + 1) b;
+rrange
+= fns s a b => if a > b then [] else a :: s (a + 1) b;
 
-range: Integer -> Number -> List Integer;
-range = fix rrange;
+range: Integer -> Number -> List Integer
+= fix rrange;
 in for_ (range 1 5) $ fn n => outputLn (show n)

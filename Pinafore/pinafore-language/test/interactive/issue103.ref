@@ -1,5 +1,5 @@
-pinafore> let f: ((a -> a) & b) -> Maybe b; f = Just
-pinafore> let i: a -> a; i x = x;
+pinafore> let f: ((a -> a) & b) -> Maybe b = Just
+pinafore> let i: a -> a = fn x => x;
 pinafore> :type f
 : (a -> a & b) -> Maybe b
 pinafore> :type i
@@ -7,13 +7,13 @@ pinafore> :type i
 pinafore> :type f i
 : Maybe (i -> i)
 pinafore> 
-pinafore> let g: ((a -> a) & b) -> b; g x = x
+pinafore> let g: ((a -> a) & b) -> b = fn x => x
 pinafore> :type g
 : (a -> a & b) -> b
 pinafore> :type g i
 : i -> i
 pinafore> 
-pinafore> let ur: WholeRef a -> Unit; ur _ = ()
+pinafore> let ur: WholeRef a -> Unit = fn _ => ()
 pinafore> :type ur
 : WholeRef a -> Unit
 pinafore> :type newMemWhole >>= fn ref => return (ref, ())
