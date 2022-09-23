@@ -27,6 +27,7 @@ instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) 
     renameNewFreeVar = return $ MkNewVar unitypeShimWit unitypeShimWit
     namespace _ = runIdentityT
     runRenamer = runIdentityT
+    finalRenamer = id
 
 instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) where
     type Unifier (Unitype m name val) = Identity

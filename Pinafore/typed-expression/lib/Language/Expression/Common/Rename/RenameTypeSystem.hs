@@ -25,8 +25,9 @@ class ( TypeSystem ts
     renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegWitness ts t)
     renamePosWitness :: Monad m => TSPosWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSPosWitness ts t)
     renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
-    namespace :: Monad m => NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) r -> RenamerT ts m r
-    runRenamer :: Monad m => RenamerT ts m r -> m r
+    namespace :: Monad m => NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
+    runRenamer :: Monad m => RenamerT ts m --> m
+    finalRenamer :: Monad m => RenamerT ts m --> RenamerT ts m
 
 renameNegShimWit ::
        forall ts m t. (RenameTypeSystem ts, Monad m)

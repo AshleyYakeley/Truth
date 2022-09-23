@@ -86,7 +86,7 @@ singleBound (MkTSBinding name bd mexpr) = do
             -> TSOuter ts (BindMap ts)
         getbinds usubs ssubs fexpr = do
             fexpr' <- subsumerExpressionSubstitute @ts ssubs fexpr
-            expr <- unifierSubstituteAndSimplify @ts usubs $ MkSealedExpression decltype fexpr'
+            expr <- unifierSubstituteSimplifyFinalRename @ts usubs $ MkSealedExpression decltype fexpr'
             return $ singletonMap name (bd, expr)
     return $ MkBound abstractNames subsexpr getbinds
 

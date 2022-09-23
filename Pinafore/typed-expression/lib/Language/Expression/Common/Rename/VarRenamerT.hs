@@ -1,14 +1,14 @@
 module Language.Expression.Common.Rename.VarRenamerT
     ( VarRenamerT
     , runVarRenamerT
+    , finalVarRenamerT
     ) where
 
 import Language.Expression.Common.Rename.VarNamespaceT
 import Shapes
 
 data RenamerState = MkRenamerState
-    { rsAssignedNames :: [String]
-    , rsRigidNames :: [String]
+    { rsRigidNames :: [String]
     , rsIndex :: Int
     }
 
@@ -37,7 +37,6 @@ instance TransConstraint MonadFail (VarRenamerT ts) where
 
 runVarRenamerT :: Monad m => VarRenamerT ts m a -> m a
 runVarRenamerT (MkVarRenamerT sma) = let
-    rsAssignedNames = []
     rsRigidNames = []
     rsIndex = 0
     in evalStateT sma MkRenamerState {..}
@@ -47,50 +46,35 @@ varName i
     | i < 26 = pure $ toEnum $ i + fromEnum 'a'
 varName i = varName (pred (div i 26)) <> (pure $ toEnum $ (mod i 26) + fromEnum 'a')
 
-modifyState :: Monad m => (RenamerState -> RenamerState) -> VarRenamerT ts m ()
-modifyState ff = MkVarRenamerT $ modify ff
-
-incIndex :: Monad m => VarRenamerT ts m ()
-incIndex = modifyState $ \state -> state {rsIndex = succ $ rsIndex state}
-
-assignName :: Monad m => NameRigidity -> String -> VarRenamerT ts m String
-assignName rgd name = do
-    modifyState $ \state -> state {rsAssignedNames = name : rsAssignedNames state}
-    case rgd of
-        FreeName -> return ()
-        RigidName -> modifyState $ \state -> state {rsRigidNames = name : rsRigidNames state}
-    return name
-
-debugForceNew :: Bool
-debugForceNew = False
-
 debugTagVar :: String -> String
 debugTagVar n = n
 
 renamerGenerateNew :: Monad m => NameRigidity -> VarRenamerT ts m String
 renamerGenerateNew rgd = do
     state <- MkVarRenamerT get
-    let newname = debugTagVar $ varName $ rsIndex state
-    incIndex
-    if elem newname $ rsAssignedNames state
+    let
+        i = rsIndex state
+        newname = debugTagVar $ varName i
+    MkVarRenamerT $ put $ state {rsIndex = succ i}
+    renamerCheckGenerateNew rgd newname
+
+renamerCheckGenerateNew :: Monad m => NameRigidity -> String -> VarRenamerT ts m String
+renamerCheckGenerateNew rgd name = do
+    state <- MkVarRenamerT get
+    if elem name $ rsRigidNames state
         then renamerGenerateNew rgd
-        else assignName rgd newname
+        else do
+            case rgd of
+                FreeName -> return ()
+                RigidName -> MkVarRenamerT $ put $ state {rsRigidNames = name : rsRigidNames state}
+            return name
 
 instance Monad m => RenamerMonad (VarRenamerT ts m) where
     renamerGenerate :: NameRigidity -> Maybe String -> VarRenamerT ts m String
-    renamerGenerate rgd _
-        | debugForceNew = renamerGenerateNew rgd
-    renamerGenerate rgd Nothing = renamerGenerateNew rgd
-    renamerGenerate rgd (Just name) = do
-        state <- MkVarRenamerT get
-        if elem name $ rsAssignedNames state
-            then renamerGenerateNew rgd
-            else assignName rgd name
+    renamerGenerate RigidName (Just name) = renamerCheckGenerateNew RigidName name
+    renamerGenerate rgd _ = renamerGenerateNew rgd
     renamerRemoveName :: String -> VarRenamerT ts m ()
-    renamerRemoveName name =
-        modifyState $ \state -> let
-            newvars = filter ((/=) name) $ rsAssignedNames state
-            in state {rsAssignedNames = newvars}
+    renamerRemoveName _ = return ()
     renamerGetNameRigidity :: VarRenamerT ts m (String -> NameRigidity)
     renamerGetNameRigidity = do
         state <- MkVarRenamerT get
@@ -98,3 +82,9 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
             if elem name $ rsRigidNames state
                 then RigidName
                 else FreeName
+
+finalVarRenamerT :: Monad m => VarRenamerT ts m --> VarRenamerT ts m
+finalVarRenamerT (MkVarRenamerT sta) =
+    MkVarRenamerT $ do
+        state <- get
+        lift $ evalStateT sta state {rsIndex = 0}

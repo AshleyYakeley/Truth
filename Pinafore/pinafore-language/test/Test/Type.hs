@@ -96,7 +96,7 @@ textTypeTest text r =
 
 badInterpretTest :: Text -> TestTree
 badInterpretTest text =
-    testTree (unpack text) $ do
+    testTree ("REJECT: " <> unpack text) $ do
         result <- runInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
         case result of
             FailureResult _ -> return ()
@@ -147,7 +147,7 @@ testType =
               , exprTypeTest "apply-id-number" (return "{} -> Number") $ apExpr idExpr numExpr
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
-              , exprTypeTest "apply id var" (return "{v : b} -> b") $ apExpr idExpr varExpr
+              , exprTypeTest "apply id var" (return "{v : a} -> a") $ apExpr idExpr varExpr
               , exprTypeTest "apply nb var" (return "{v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
               , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
               , exprTypeTest "list1" (return "{} -> a -> List a") $ return list1Expr
@@ -173,11 +173,11 @@ testType =
                 joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
               , exprTypeTest "snd" (return "{} -> Any *: a -> a") $ return sndExpr
               , exprTypeTest "thing" (return "{} -> a *: b -> a *: (a | b)") $ return thingExpr
-              , exprTypeTest "snd . thing" (return "{} -> c *: c -> c") $ do
+              , exprTypeTest "snd . thing" (return "{} -> a *: a -> a") $ do
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
               , exprTypeTest "twice" (return "{} -> a -> a *: a") $ return twiceExpr
-              , exprTypeTest "thing . twice" (return "{} -> e -> e *: e") $ do
+              , exprTypeTest "thing . twice" (return "{} -> a -> a *: a") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
               , exprTypeTest "thing $ twice number" (return "{} -> Number *: Number") $ do
@@ -216,7 +216,7 @@ testType =
         , testTree
               "read"
               [ textTypeTest "v" "{v : a} -> a"
-              , textTypeTest "if t then v1 else v2" "{t : Boolean, v1 : c, v2 : c} -> c"
+              , textTypeTest "if t then v1 else v2" "{t : Boolean, v1 : a, v2 : a} -> a"
               , textTypeTest "[]" "{} -> List None"
               , textTypeTest "fn v => 1" "{} -> Any -> Integer"
               , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1 a"
@@ -229,7 +229,7 @@ testType =
               , textTypeTest "(v 3,v False)" "{v : Integer -> a, v : Boolean -> b} -> a *: b"
               , textTypeTest
                     "((v 3,v False),v 3)"
-                    "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> (c *: d) *: b"
+                    "{v : Integer -> a, v : Boolean -> b, v : Integer -> c} -> (a *: b) *: c"
               , testTree
                     "function"
                     [ textTypeTest "let i: tvar -> tvar = id in i" "{} -> tvar -> tvar"
@@ -241,10 +241,10 @@ testType =
                     ]
               , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1 a"
               , textTypeTest "fns v1 v2 => [v1,v2]" "{} -> a -> a -> List1 a"
-              , textTypeTest "fns v1 v2 v3 => ([v1,v2],[v2,v3])" "{} -> c -> (c & a) -> a -> List1 c *: List1 a"
+              , textTypeTest "fns v1 v2 v3 => ([v1,v2],[v2,v3])" "{} -> a -> (b & a) -> b -> List1 a *: List1 b"
               , textTypeTest
                     "fns v1 v2 v3 => (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (c & a) -> (c & d) -> (d & a) -> (List1 c *: List1 d) *: List1 a"
+                    "{} -> (a & b) -> (c & b) -> (a & c) -> (List1 b *: List1 c) *: List1 a"
               , testTree
                     "inversion"
                     [ textTypeTest "fn x => let y : Integer = x in y" "{} -> Integer -> Integer"
@@ -265,13 +265,13 @@ testType =
                           "{} -> (a -> a) -> (b -> b *: b) -> (a -> a) *: (b -> b *: b)"
                     , textTypeTest
                           "fn x1 => fn x2 => let y: (b -> b) *: (a -> a *: a) = (x1,x2) in y"
-                          "{} -> (b -> b) -> (a -> a *: a) -> (b -> b) *: (a -> a *: a)"
+                          "{} -> (a -> a) -> (b -> b *: b) -> (a -> a) *: (b -> b *: b)"
                     , textTypeTest
                           "fn x1 => fn x2 => let y: (a -> b) *: (b -> a) = (x1,x2) in y"
                           "{} -> (a -> b) -> (b -> a) -> (a -> b) *: (b -> a)"
                     , textTypeTest
                           "fn x1 => fn x2 => let y: (c -> d) *: (d -> c) = (x1,x2) in y"
-                          "{} -> (c -> d) -> (d -> c) -> (c -> d) *: (d -> c)"
+                          "{} -> (a -> b) -> (b -> a) -> (a -> b) *: (b -> a)"
                     ]
               , textTypeTest "let f : Entity = Nothing in f" "{} -> Entity"
               , textTypeTest "let f : Entity -> Entity = Just in f" "{} -> Entity -> Entity"
@@ -287,19 +287,19 @@ testType =
                     "recursive"
                     [ textTypeTest "let x : rec a. Maybe a = Nothing in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let rec x : rec a. Maybe a = Just x end in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let rec x = Just x end in x" "{} -> rec e. Maybe e"
+                    , textTypeTest "let rec x = Just x end in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let rec x : Entity = Just x end in x" "{} -> Entity"
                     , textTypeTest "let rec x : Maybe Entity = Just x end in x" "{} -> Maybe Entity"
                     , textTypeTest
                           "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end in rcount"
-                          "{} -> (rec e. Maybe e) -> Integer"
+                          "{} -> (rec a. Maybe a) -> Integer"
                     , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
                           "let rec rcount = match Nothing => 0; Just y => 1 + r1count y end; r1count = match Nothing => 0; Just y => 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
                     , textTypeTest
                           "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
-                          "{} -> ((rec e. Maybe e) -> Integer) *: (rec e. Maybe e) *: Integer"
+                          "{} -> ((rec a. Maybe a) -> Integer) *: (rec b. Maybe b) *: Integer"
                     ]
               , testTree
                     "tuple"

@@ -5,23 +5,23 @@ pinafore> :type f
 pinafore> :type i
 : a -> a
 pinafore> :type f i
-: Maybe (i -> i)
+: Maybe (a -> a)
 pinafore> 
 pinafore> let g: ((a -> a) & b) -> b = fn x => x
 pinafore> :type g
 : (a -> a & b) -> b
 pinafore> :type g i
-: i -> i
+: a -> a
 pinafore> 
 pinafore> let ur: WholeRef a -> Unit = fn _ => ()
 pinafore> :type ur
 : WholeRef a -> Unit
 pinafore> :type newMemWhole >>= fn ref => return (ref, ())
-: Action (WholeRef c *: Unit)
+: Action (WholeRef a *: Unit)
 pinafore> :type newMemWhole >>= fn ref => return (ref, ((fn _ => ()) : WholeRef a -> Unit) ref)
-: Action (WholeRef l *: Unit)
+: Action (WholeRef a *: Unit)
 pinafore> :type fn ref => return (ref, ur ref)
-: (b & WholeRef c) -> Action (b *: Unit)
+: (WholeRef a & b) -> Action (b *: Unit)
 pinafore> :type newMemWhole >>= fn ref => return (ref, ur ref)
-: Action (WholeRef l *: Unit)
+: Action (WholeRef a *: Unit)
 pinafore> <END>

@@ -2,6 +2,7 @@
 
 module Language.Expression.Common.Abstract
     ( AbstractTypeSystem(..)
+    , unifierSubstituteSimplifyFinalRename
     , AbstractResult(..)
     , abstractNamedExpression
     , FunctionWitness
@@ -39,6 +40,16 @@ class ( RenameTypeSystem ts
       , TSOuter ts ~ RenamerT ts (TSInner ts)
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type
+
+unifierSubstituteSimplifyFinalRename ::
+       forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
+    => UnifierSubstitutions ts
+    -> a
+    -> TSOuter ts a
+unifierSubstituteSimplifyFinalRename subs a = do
+    a' <- unifierSubstituteAndSimplify @ts subs a
+    -- finalRenamer only needed to "clean up" type variable names
+    finalRenamer @ts $ rename @ts FreeName a'
 
 abstractNamedExpressionUnifier ::
        forall ts t a r. UnifyTypeSystem ts
@@ -363,7 +374,7 @@ abstractSealedExpression absw name sexpr =
         MkSealedExpression twt expr <- rename @ts FreeName sexpr
         MkAbstractResult (MkShimWit vwt (MkPolarMap uconv)) expr' <- abstractNamedExpression @ts name expr
         (convexpr, subs) <- solveUUShim @ts uconv
-        unifierSubstituteAndSimplify @ts subs $
+        unifierSubstituteSimplifyFinalRename @ts subs $
             MkSealedExpression (absw (mkShimWit vwt) twt) $ liftA2 (\f conv -> f . shimToFunction conv) expr' convexpr
 
 applySealedExpression ::
@@ -381,7 +392,7 @@ applySealedExpression appw sexprf sexpra =
         let vax = appw ta vx
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts tf) (uuLiftNegShimWit @ts vax)
         (convexpr, subs) <- solveUUShim @ts $ uconv
-        unifierSubstituteAndSimplify @ts subs $
+        unifierSubstituteSimplifyFinalRename @ts subs $
             case convexpr of
                 ClosedExpression conv ->
                     shimExtractFunction conv $ \fconv tconv ->
@@ -403,7 +414,7 @@ letSealedExpression name sexpre sexprb =
         MkAbstractResult uvt exprf <- abstractNamedExpression @ts name exprb
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts te) uvt
         (convexpr, subs) <- solveUUShim @ts uconv
-        unifierSubstituteAndSimplify @ts subs $
+        unifierSubstituteSimplifyFinalRename @ts subs $
             MkSealedExpression tb $ (\f conv e -> f $ shimToFunction conv e) <$> exprf <*> convexpr <*> expre
 
 bothSealedPattern ::
@@ -419,7 +430,7 @@ bothSealedPattern spat1 spat2 =
         MkShimWit tr (MkPolarMap uconv) <-
             unifyUUNegShimWit @ts (uuLiftNegExpressionShimWit @ts tw1) (uuLiftNegExpressionShimWit @ts tw2)
         (convexpr, subs) <- solveUUShim @ts uconv
-        unifierSubstituteAndSimplify @ts subs $
+        unifierSubstituteSimplifyFinalRename @ts subs $
             MkSealedPattern (MkExpressionWitness (mkShimWit tr) convexpr) $
             proc (MkMeetType (t, shim)) -> do
                 let ab = shimToFunction shim t
@@ -443,7 +454,7 @@ caseSealedExpression sbexpr rawcases =
         MkSealedExpression btwt bexpr <- rename @ts FreeName sbexpr
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts btwt) rvwt
         (convexpr, subs) <- solveUnifierExpression @ts $ liftA2 (,) (uuGetShim @ts uconv) (uuGetShim @ts tuconv)
-        unifierSubstituteAndSimplify @ts subs $
+        unifierSubstituteSimplifyFinalRename @ts subs $
             MkSealedExpression (mkShimWit rtt) $
             (\(conv, tconv) fta t -> shimToFunction tconv $ runPurityFunction fta $ shimToFunction conv t) <$> convexpr <*>
             rexpr <*>
@@ -465,7 +476,7 @@ caseAbstractSealedExpression absw rawcases =
         MkPatternResult (MkShimWit rtt (MkPolarMap tuconv)) (MkShimWit rvt (MkPolarMap vuconv)) rexpr <-
             joinPatternResults patrs
         (convexpr, subs) <- solveUnifierExpression @ts $ liftA2 (,) (uuGetShim @ts tuconv) (uuGetShim @ts vuconv)
-        unifierSubstituteAndSimplify @ts subs $
+        unifierSubstituteSimplifyFinalRename @ts subs $
             MkSealedExpression (absw (mkShimWit rvt) (mkShimWit rtt)) $
             (\(tconv, vconv) fta t -> shimToFunction tconv $ runPurityFunction fta $ shimToFunction vconv t) <$>
             convexpr <*>
@@ -508,7 +519,7 @@ multiCaseAbstractSealedExpression absw nn rawcases =
         negativeToListShim nl $ \rvts vuconvs -> do
             (convexpr, subs) <-
                 solveUnifierExpression @ts $ (,,) <$> uuGetShim @ts tuconv <*> sequenceListShim vuconvs <*> urexpr
-            unifierSubstituteAndSimplify @ts subs $
+            unifierSubstituteSimplifyFinalRename @ts subs $
                 MkSealedExpression (listAbstract @ts absw rvts (mkShimWit rtt)) $
                 (\(tconv, vconv, fta) ->
                      productToFunctionOnList vconv $
@@ -530,7 +541,7 @@ applyPatternConstructor patcon patarg =
                 MkSealedPattern (MkExpressionWitness ta tconvexpr) pata <- rename @ts FreeName patarg
                 uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts pca) (uuLiftNegShimWit @ts ta)
                 (convexpr, subs) <- solveUUShim @ts uconv
-                unifierSubstituteAndSimplify @ts subs $
+                unifierSubstituteSimplifyFinalRename @ts subs $
                     MkPatternConstructor (MkExpressionWitness pcw $ (,,) <$> pcconvexpr <*> tconvexpr <*> convexpr) pcla $
                     proc (MkMeetType (t, (r, r1, conv))) -> do
                         (a, l) <- pcpat -< MkMeetType (t, r)

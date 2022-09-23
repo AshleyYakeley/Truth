@@ -62,7 +62,7 @@ tsUnifyExpressionTo witn (MkSealedExpression witp expr) =
         witp' <- rename @ts FreeName witp
         witn' <- rename @ts RigidName witn
         (convexpr, subs) <- unifyPosNegShimWit @ts witp' witn'
-        expr' <- unifierSubstituteAndSimplify @ts subs expr
+        expr' <- unifierSubstituteSimplifyFinalRename @ts subs expr
         return $ liftA2 shimToFunction convexpr expr'
 
 tsUnifyValueTo ::
