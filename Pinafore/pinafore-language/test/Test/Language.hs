@@ -548,9 +548,15 @@ testQueries =
               "matches"
               [ testQuery "(matches a => 5 end) 2" $ LRSuccess "5"
               , testQuery "(matches a b => a + b end) 2 3" $ LRSuccess "5"
-              , testQuery "(matches Nothing Nothing => 1; Nothing (Just a) => a + 10; (Just a) _ => a + 20; end) (Just 1) (Just 2)" $ LRSuccess "21"
-              , testQuery "(matches Nothing Nothing => 1; (Just a) Nothing => a + 10; _ (Just a) => a + 20; end) (Just 1) (Just 2)" $ LRSuccess "22"
-              , testQuery "(matches Nothing Nothing => 1; (Just a) Nothing => a + 10; Nothing (Just a) => a + 20; (Just a) (Just b) => a + b + 30; end) (Just 1) (Just 2)" $ LRSuccess "33"
+              , testQuery
+                    "(matches Nothing Nothing => 1; Nothing (Just a) => a + 10; (Just a) _ => a + 20; end) (Just 1) (Just 2)" $
+                LRSuccess "21"
+              , testQuery
+                    "(matches Nothing Nothing => 1; (Just a) Nothing => a + 10; _ (Just a) => a + 20; end) (Just 1) (Just 2)" $
+                LRSuccess "22"
+              , testQuery
+                    "(matches Nothing Nothing => 1; (Just a) Nothing => a + 10; Nothing (Just a) => a + 20; (Just a) (Just b) => a + b + 30; end) (Just 1) (Just 2)" $
+                LRSuccess "33"
               ]
         , testTree
               "type-operator"
@@ -983,7 +989,7 @@ testShims =
         , expectFailBecause "ISSUE #63" $ testShim "(fn x => x) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim "fn x => 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
-        , testShim "(fn x => 4) 3" "Integer" "(join1 id)"
+        , expectFailBecause "ISSUE #63" $ testShim "(fn x => 4) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
               "let rcount = match Nothing => 0; Just y => 1 + rcount y end in rcount"
