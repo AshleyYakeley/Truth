@@ -6,6 +6,7 @@ module Pinafore.Language.Grammar.Read.Expression
     , operatorFixity
     ) where
 
+import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Read.Constructor
 import Pinafore.Language.Grammar.Read.Infix
@@ -276,7 +277,7 @@ operatorFixity "+=" = MkFixity AssocNone 2
 operatorFixity "-=" = MkFixity AssocNone 2
 operatorFixity ">>=" = MkFixity AssocLeft 1
 operatorFixity ">>" = MkFixity AssocLeft 1
-operatorFixity ">-" = MkFixity AssocLeft 1
+operatorFixity ">-" = MkFixity AssocRight 1
 operatorFixity "$" = MkFixity AssocRight 0
 operatorFixity _ = MkFixity AssocLeft 10
 
@@ -305,15 +306,12 @@ readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis Tok
 readModule :: Parser SyntaxModule
 readModule = readExpose
 
-readCase :: Parser SyntaxCase
-readCase = do
+readMatch :: Parser SyntaxMatch
+readMatch = do
     pat <- readPattern1
     readThis TokMap
-    e <- readExpression
-    return $ MkSyntaxCase pat e
-
-readCases :: Parser [SyntaxCase]
-readCases = readLines readCase
+    expr <- readExpression
+    return $ MkSyntaxMatch pat expr
 
 data DoLine
     = ExpressionDoLine SyntaxExpression
@@ -349,28 +347,50 @@ doLines (BindDoLine pat expra) (l:ll) = do
             (MkWithSourcePos (getSourcePos exprb) $ SEConst SCBind)
             [expra, seAbstract (getSourcePos pat) pat exprb]
 
+readMultimatch :: Parser (Some SyntaxMultimatch)
+readMultimatch = do
+    patlist <- readPatterns
+    readThis TokMap
+    expr <- readExpression
+    return $ fixedFromList patlist $ \_ pats -> MkSome $ MkSyntaxMultimatch pats expr
+
+getMultimatch :: PeanoNatType n -> Some SyntaxMultimatch -> Parser (SyntaxMultimatch n)
+getMultimatch expected (MkSome mm) = let
+    found = syntaxMultimatchLength mm
+    in case testEquality expected found of
+           Just Refl -> return mm
+           Nothing ->
+               throw $
+               MatchesDifferentCount (peanoToNatural $ witnessToValue expected) (peanoToNatural $ witnessToValue found)
+
 readExpression1 :: Parser SyntaxExpression
 readExpression1 =
     (do
          spos <- getPosition
          readThis TokFn
-         arg <- readPattern1
-         readThis TokMap
-         mval <- readExpression
-         return $ seAbstract spos arg mval) <|>
+         match <- readMatch
+         return $ MkWithSourcePos spos $ SEAbstract match) <|>
     (do
          spos <- getPosition
          readThis TokFns
-         args <- readPatterns
-         readThis TokMap
-         mval <- readExpression
-         return $ seAbstracts spos args mval) <|>
+         mmatch <- readMultimatch
+         return $ MkWithSourcePos spos $ SEAbstracts mmatch) <|>
     readSourcePos
         (do
              readThis TokMatch
-             scases <- readCases
+             smatches <- readLines readMatch
              readThis TokEnd
-             return $ SEMatch scases) <|>
+             return $ SEMatch smatches) <|>
+    readSourcePos
+        (do
+             readThis TokMatches
+             smultimatches <- readLines1 readMultimatch
+             readThis TokEnd
+             case head smultimatches of
+                 MkSome m -> do
+                     let n = syntaxMultimatchLength m
+                     smm <- for (toList smultimatches) $ getMultimatch n
+                     return $ SEMatches $ MkSyntaxMultimatchList n smm) <|>
     readSourcePos
         (do
              sdecls <- readLetBindings

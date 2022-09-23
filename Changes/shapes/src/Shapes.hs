@@ -30,6 +30,7 @@ import Data.KeyedOrder as I
 import Data.KindMorphism as I
 import Data.Lens as I
 import Data.MonoApplicative as I
+import Data.PurityFunction as I
 import Data.ReadShow as I
 import Data.SameItem as I
 import Data.Serialize.Instances as I ()

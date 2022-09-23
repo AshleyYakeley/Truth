@@ -36,7 +36,8 @@ updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMa
 
 textKey :: Text -> DocTreeEntry BindDoc
 textKey name =
-    mkValPatEntry (MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $ \n ->
+    mkValPatEntry (MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
+    ImpureFunction $ \n ->
         if n == name
             then Just ()
             else Nothing
@@ -105,7 +106,8 @@ metadataStuff =
         , mkValPatEntry
               "MkHasMetadata"
               "Construct metadata out of key-value pairs. Duplicates will be removed."
-              mkHasMetadata $ \hm -> Just (getAllMetadata hm, ())
+              mkHasMetadata $
+          PureFunction $ \hm -> (getAllMetadata hm, ())
         , mkValEntry "lookupMetadata" "Look up metadata by name." lookupMetadata
         , mkValEntry "updateMetadata" "Update metadata item." updateMetadata
         , mkValEntry "metadataResolution" "The resolution of an image (in dots/inch), if available." metadataResolution

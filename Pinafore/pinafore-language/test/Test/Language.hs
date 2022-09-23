@@ -545,6 +545,14 @@ testQueries =
               , testQuery "(match a@b => (a,b) end) 2" $ LRSuccess "(2, 2)"
               ]
         , testTree
+              "matches"
+              [ testQuery "(matches a => 5 end) 2" $ LRSuccess "5"
+              , testQuery "(matches a b => a + b end) 2 3" $ LRSuccess "5"
+              , testQuery "(matches Nothing Nothing => 1; Nothing (Just a) => a + 10; (Just a) _ => a + 20; end) (Just 1) (Just 2)" $ LRSuccess "21"
+              , testQuery "(matches Nothing Nothing => 1; (Just a) Nothing => a + 10; _ (Just a) => a + 20; end) (Just 1) (Just 2)" $ LRSuccess "22"
+              , testQuery "(matches Nothing Nothing => 1; (Just a) Nothing => a + 10; Nothing (Just a) => a + 20; (Just a) (Just b) => a + b + 30; end) (Just 1) (Just 2)" $ LRSuccess "33"
+              ]
+        , testTree
               "type-operator"
               [ testSameType True "Unit" "Unit" ["()"]
               , testSameType True "List a" "List a" []

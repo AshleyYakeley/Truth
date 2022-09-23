@@ -11,7 +11,7 @@ module Pinafore.Base.Number
     , readNumberLiteral
     ) where
 
-import Data.List (head)
+import qualified Data.List (head)
 import Pinafore.Base.SafeRational
 import Pinafore.Base.Showable
 import Shapes hiding ((+++))
@@ -172,7 +172,7 @@ showDecimalRational maxDigits r = let
                      i = div n d
                      fn = n - i * d
                      numbers = iterate (\fn10 -> (mod fn10 d) * 10) $ fn * 10
-                     toDigit fn10 = head $ show $ div fn10 d
+                     toDigit fn10 = Data.List.head $ show $ div fn10 d
                      (preNumbers, repNumbers) = splitAt fixedCount numbers
                      repeating =
                          case repNumbers of

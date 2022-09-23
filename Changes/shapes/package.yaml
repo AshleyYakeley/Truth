@@ -63,6 +63,7 @@ library:
       - Data.Store
       - Data.ConstFunction
       - Data.CoerceFunction
+      - Data.PurityFunction
       - Data.Codec
       - Data.KeyedOrder
       - Data.KeyContainer

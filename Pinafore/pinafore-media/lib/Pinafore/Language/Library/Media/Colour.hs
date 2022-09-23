@@ -170,15 +170,18 @@ colourLibraryModule =
         , mkValPatEntry
               "SRGB16"
               "Construct a Colour from sRGB (perceptual) red, green, blue, integers in range 0 to 65535. (This is what it actually stored.)"
-              MkPerceptualSRGB16 $ \(MkPerceptualSRGB16 r g b) -> Just (r, (g, (b, ())))
+              MkPerceptualSRGB16 $
+          PureFunction $ \(MkPerceptualSRGB16 r g b) -> (r, (g, (b, ())))
         , mkValPatEntry
               "SRGB"
               "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
-              MkPerceptualSRGBFraction $ \(MkPerceptualSRGBFraction r g b) -> Just (r, (g, (b, ())))
+              MkPerceptualSRGBFraction $
+          PureFunction $ \(MkPerceptualSRGBFraction r g b) -> (r, (g, (b, ())))
         , mkValPatEntry
               "LinearRGB"
               "Construct a Colour from linear red, green, blue, in range 0 to 1."
-              MkLinearRGBFraction $ \(MkLinearRGBFraction r g b) -> Just (r, (g, (b, ())))
+              MkLinearRGBFraction $
+          PureFunction $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
         , mkTypeEntry "AlphaColour" "A human-perceivable colour, with opacity." $ MkBoundType alphaColourGroundType
         , literalSubtypeRelationEntry @LangAlphaColour
         , hasSubtypeRelationEntry @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $
@@ -186,11 +189,13 @@ colourLibraryModule =
         , mkValPatEntry
               "MkAlphaColour16"
               "Construct an AlphaColour from an opacity in range 0 to 65535 and a Colour."
-              MkAlphaColour16 $ \(MkAlphaColour16 op col) -> Just (op, (col, ()))
+              MkAlphaColour16 $
+          PureFunction $ \(MkAlphaColour16 op col) -> (op, (col, ()))
         , mkValPatEntry
               "MkAlphaColourFraction"
               "Construct an AlphaColour from an opacity in range 0 to 1 and a Colour."
-              MkAlphaColourFraction $ \(MkAlphaColourFraction op col) -> Just (op, (col, ()))
+              MkAlphaColourFraction $
+          PureFunction $ \(MkAlphaColourFraction op col) -> (op, (col, ()))
         , mkValEntry "transparent" "The zero-opacity AlphaColour" transparent
         {- https://github.com/lehins/Color/issues/9
         , mkValEntry "over" "An AlphaColour over a Colour" $ over @Colour @Word16

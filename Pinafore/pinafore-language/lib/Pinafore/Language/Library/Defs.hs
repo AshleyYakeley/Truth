@@ -159,7 +159,7 @@ mkValPatEntry ::
     => Name
     -> Markdown
     -> t
-    -> (v -> Maybe (ListProduct lt))
+    -> PurityFunction Maybe v (ListProduct lt)
     -> DocTreeEntry BindDoc
 mkValPatEntry name docDescription val pat = let
     bdScopeEntry =

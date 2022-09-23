@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Grammar.Read.Parser
     ( module Pinafore.Language.Grammar.Read.Parser
     , SourcePos
@@ -17,7 +19,7 @@ import Pinafore.Markdown
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
-type Parser = Parsec [(SourcePos, SomeOf Token)] ()
+type Parser = ParsecT [(SourcePos, SomeOf Token)] () (Result PinaforeError)
 
 readEnd :: Parser ()
 readEnd = do
@@ -33,9 +35,10 @@ parseReader r text = let
     in do
            spos <- get
            toks <- parseTokens text
-           case parse r' (sourceName spos) toks of
-               Right a -> return a
-               Left e -> throw $ parseErrorMessage e
+           case runParserT r' () (sourceName spos) toks of
+               SuccessResult (Right a) -> return a
+               SuccessResult (Left e) -> throw $ parseErrorMessage e
+               FailureResult e -> throw e
 
 parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeInterpreter t
 parseScopedReaderWhole parser text = do
@@ -46,11 +49,23 @@ parseScopedReaderWhole parser text = do
         FailureResult e -> throw e
 
 readToken :: Token t -> Parser t
-readToken stok =
-    token (\(_, MkSomeOf tok _) -> show tok) fst $ \(_, MkSomeOf tok t) ->
+readToken stok = let
+    showToken :: (SourcePos, SomeOf Token) -> String
+    showToken (_, MkSomeOf tok _) = show tok
+    nextpos _ tok ts =
+        case runIdentity (Text.Parsec.uncons ts) of
+            Nothing -> fst tok
+            Just (tok', _) -> fst tok'
+    test (_, MkSomeOf tok t) =
         case testEquality stok tok of
             Just Refl -> Just t
             Nothing -> Nothing
+    in tokenPrim showToken nextpos test
+
+instance MonadThrow ErrorType Parser where
+    throw err = do
+        spos <- getPosition
+        lift $ throwExc $ MkPinaforeError $ pure $ MkErrorMessage spos err mempty
 
 readComments :: Parser [Comment]
 readComments = many $ readToken TokComment
@@ -147,16 +162,17 @@ readReferenceLName =
 readReferenceName :: Parser ReferenceName
 readReferenceName = readReferenceUName <|> readReferenceLName
 
+readLines1 :: Parser a -> Parser (NonEmpty a)
+readLines1 p = do
+    a <- try p
+    ma <-
+        optional $ do
+            readThis TokSemicolon
+            readLines p
+    return $ a :| fromMaybe [] ma
+
 readLines :: Parser a -> Parser [a]
-readLines p =
-    (do
-         a <- try p
-         ma <-
-             optional $ do
-                 readThis TokSemicolon
-                 readLines p
-         return $ a : fromMaybe [] ma) <|>
-    (return [])
+readLines p = (fmap toList $ readLines1 p) <|> (return [])
 
 readWithDoc :: Parser t -> Parser (SyntaxWithDoc t)
 readWithDoc pt = do

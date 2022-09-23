@@ -35,18 +35,20 @@ interpretPatternConstructor :: SyntaxConstructor -> PinaforeInterpreter (Pinafor
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
-    qToPatternConstructor $ \v' ->
+    qToPatternConstructor $
+    ImpureFunction $ \v' ->
         if v == v'
             then Just ()
             else Nothing
 interpretPatternConstructor (SLString v) =
     return $
-    qToPatternConstructor $ \v' ->
+    qToPatternConstructor $
+    ImpureFunction $ \v' ->
         if v == v'
             then Just ()
             else Nothing
-interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ \() -> Just ()
-interpretPatternConstructor SLPair = return $ qToPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
+interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ PureFunction $ \() -> ()
+interpretPatternConstructor SLPair = return $ qToPatternConstructor $ PureFunction $ \(a :: A, b :: B) -> (a, (b, ()))
 
 interpretPattern :: SyntaxPattern -> ScopeBuilder PinaforePattern
 interpretPattern (MkWithSourcePos _ AnySyntaxPattern) = return qAnyPattern
@@ -69,7 +71,7 @@ interpretPattern (MkWithSourcePos spos (ConstructorSyntaxPattern scons spats)) =
                 ff (MkMeetType (mt, r)) = do
                     t <- mt
                     return (MkMeetType (t, r))
-                in MkSealedPattern (MkExpressionWitness stw vexpr) $ contramap1Pattern ff patw
+                in MkSealedPattern (MkExpressionWitness stw vexpr) $ contramap1Pattern (ImpureFunction ff) patw
 interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
     pat <- interpretPattern spat
     lift $
@@ -86,12 +88,9 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
                                 pc :: PinaforePatternConstructor
                                 pc =
                                     toExpressionPatternConstructor $
-                                    toPatternConstructor dtn (ConsListType tpw NilListType) $ fmap $ \a -> (a, ())
+                                    toPatternConstructor dtn (ConsListType tpw NilListType) $
+                                    ImpureFunction $ fmap $ \a -> (a, ())
                             qConstructPattern pc [pat]
-
-interpretPatternOrName :: SyntaxPattern -> Either Name (ScopeBuilder PinaforePattern)
-interpretPatternOrName (MkWithSourcePos _ (VarSyntaxPattern n)) = Left n
-interpretPatternOrName pat = Right $ interpretPattern pat
 
 interpretExpression :: SyntaxExpression -> RefExpression
 interpretExpression (MkWithSourcePos spos sexpr) = sourcePosRefNotation spos $ interpretExpression' sexpr
@@ -312,11 +311,17 @@ interpretConstant SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
-interpretCase :: SyntaxCase -> RefNotation (PinaforePattern, PinaforeExpression)
-interpretCase (MkSyntaxCase spat sexpr) =
+interpretCase :: SyntaxMatch -> RefNotation (PinaforePattern, PinaforeExpression)
+interpretCase (MkSyntaxMatch spat sexpr) =
     runScopeBuilder (interpretPattern spat) $ \pat -> do
         expr <- interpretExpressionShadowed (sealedPatternNames pat) sexpr
         return (pat, expr)
+
+interpretMultimatch :: SyntaxMultimatch n -> RefNotation (FixedList n PinaforePattern, PinaforeExpression)
+interpretMultimatch (MkSyntaxMultimatch spats sexpr) =
+    runScopeBuilder (for spats interpretPattern) $ \pats -> do
+        expr <- interpretExpressionShadowed (mconcat $ fmap sealedPatternNames $ toList pats) sexpr
+        return (pats, expr)
 
 interpretExpressionShadowed :: [a] -> SyntaxExpression -> RefExpression
 interpretExpressionShadowed _names sbody =
@@ -328,20 +333,20 @@ interpretExpression' (SESubsume sexpr stype) = do
     liftRefNotation $ do
         t <- interpretType stype
         qSubsumeExpr t expr
-interpretExpression' (SEAbstract spat sbody) =
-    case interpretPatternOrName spat of
-        Left name ->
-            runScopeBuilder (allocateVarScopeBuilder name) $ \vid -> do
-                val <- interpretExpressionShadowed [name] sbody
-                liftRefNotation $ qAbstractExpr vid val
-        Right mpat ->
-            runScopeBuilder mpat $ \pat -> do
-                val <- interpretExpressionShadowed (sealedPatternNames pat) sbody
-                liftRefNotation $ qCaseAbstract [(pat, val)]
+interpretExpression' (SEAbstract (MkSyntaxMatch spat sbody)) =
+    runScopeBuilder (interpretPattern spat) $ \pat -> do
+        val <- interpretExpressionShadowed (sealedPatternNames pat) sbody
+        liftRefNotation $ qCaseAbstract [(pat, val)]
+interpretExpression' (SEAbstracts (MkSome multimatch)) = do
+    (pats, expr) <- interpretMultimatch multimatch
+    liftRefNotation $ qMultiCaseAbstract (fixedListLength pats) [(pats, expr)]
 interpretExpression' (SELet sdecls sbody) = interpretDeclarations sdecls $ interpretExpression sbody
 interpretExpression' (SEMatch scases) = do
     pairs <- for scases interpretCase
     liftRefNotation $ qCaseAbstract pairs
+interpretExpression' (SEMatches (MkSyntaxMultimatchList nn scases)) = do
+    pairs <- for scases interpretMultimatch
+    liftRefNotation $ qMultiCaseAbstract nn pairs
 interpretExpression' (SEApply sf sarg) = do
     f <- interpretExpression sf
     arg <- interpretExpression sarg

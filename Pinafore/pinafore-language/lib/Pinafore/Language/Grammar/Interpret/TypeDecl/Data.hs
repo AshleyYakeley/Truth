@@ -414,7 +414,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 expr =
                                                     qConstExprAny $
                                                     MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $ encode codec
-                                                pc = toPatternConstructor ctfneg ltp $ decode codec
+                                                pc = toPatternConstructor ctfneg ltp $ ImpureFunction $ decode codec
                                             registerPatternConstructor (ctName constructor) (ctDoc constructor) expr $
                                                 toExpressionPatternConstructor pc
                                 constructorBox ::

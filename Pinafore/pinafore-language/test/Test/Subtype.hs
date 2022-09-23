@@ -141,7 +141,7 @@ registerT1Stuff :: PinaforeScopeInterpreter ()
 registerT1Stuff = do
     registerType "T1" "" t1GroundType
     registerPatternConstructor "MkT1" "" (MkSealedExpression (pinaforeType :: _ (AP -> T1 AP)) $ pure MkT1) $
-        qToPatternConstructor $ \(MkT1 (a :: AQ)) -> Just (a, ())
+        qToPatternConstructor $ PureFunction $ \(MkT1 (a :: AQ)) -> (a, ())
 
 testFunctionType :: TestTree
 testFunctionType =

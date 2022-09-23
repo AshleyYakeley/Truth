@@ -18,7 +18,7 @@ toPatternConstructor ::
        forall name poswit negwit t lt.
        negwit t
     -> ListType poswit lt
-    -> (t -> Maybe (ListProduct lt))
+    -> PurityFunction Maybe t (ListProduct lt)
     -> PatternConstructor name poswit negwit
 toPatternConstructor nwt tlt f = MkPatternConstructor nwt tlt $ ClosedPattern f
 

@@ -106,27 +106,34 @@ tsApply ::
     => TSSealedExpression ts
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-tsApply tf ta = applySealedExpression @ts (tsFunctionNegShimWit @ts) tf ta
+tsApply = applySealedExpression @ts (tsFunctionNegShimWit @ts)
 
 tsAbstract ::
        forall ts. CompleteTypeSystem ts
     => TSVarID ts
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-tsAbstract n expr = abstractSealedExpression @ts (tsFunctionPosShimWit @ts) n expr
+tsAbstract = abstractSealedExpression @ts (tsFunctionPosShimWit @ts)
 
 tsCase ::
        forall ts. CompleteTypeSystem ts
     => TSSealedExpression ts
     -> [(TSSealedExpressionPattern ts, TSSealedExpression ts)]
     -> TSInner ts (TSSealedExpression ts)
-tsCase expr cases = caseSealedExpression @ts expr cases
+tsCase = caseSealedExpression @ts
 
 tsCaseAbstract ::
        forall ts. CompleteTypeSystem ts
     => [(TSSealedExpressionPattern ts, TSSealedExpression ts)]
     -> TSInner ts (TSSealedExpression ts)
-tsCaseAbstract cases = caseAbstractSealedExpression @ts (tsFunctionPosShimWit @ts) cases
+tsCaseAbstract = caseAbstractSealedExpression @ts (tsFunctionPosShimWit @ts)
+
+tsMultiCaseAbstract ::
+       forall ts n. CompleteTypeSystem ts
+    => PeanoNatType n
+    -> [(FixedList n (TSSealedExpressionPattern ts), TSSealedExpression ts)]
+    -> TSInner ts (TSSealedExpression ts)
+tsMultiCaseAbstract = multiCaseAbstractSealedExpression @ts (tsFunctionPosShimWit @ts)
 
 tsVar ::
        forall ts. CompleteTypeSystem ts

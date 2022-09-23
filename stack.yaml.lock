@@ -7,99 +7,92 @@ packages:
 - completed:
     hackage: invariant-0.6@sha256:1193c311e5c087406cda2a30b4f497763c597985e3756a4cdd553e98669bd86c,3466
     pantry-tree:
-      size: 650
       sha256: be7b90e2fb3bba0ef4ddeac6086f1b84b0900704b8a59dccea7a928e1de5a863
+      size: 650
   original:
     hackage: invariant-0.6
 - completed:
     hackage: blake3-0.2@sha256:d1146b9a51ccfbb0532780778b6d016a614e3d44c05d8c1923dde9a8be869045,2448
     pantry-tree:
-      size: 1433
       sha256: 0264ef3e7919e7b0d668c4153f6ce0d88e6965626b52d9dfd2cafd70309501d3
+      size: 1433
   original:
     hackage: blake3-0.2
 - completed:
+    commit: a2225286fa8349de93b4c0ccc85b8cae8c5d8d05
+    git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
-    version: 1.23.1
-    git: https://github.com/AshleyYakeley/haskell-src-exts.git
     pantry-tree:
-      size: 98740
       sha256: d50d2cd982bed8deaa8a8608e9062558ecccffc22d24b1b6b421041c32fd4238
-    commit: a2225286fa8349de93b4c0ccc85b8cae8c5d8d05
+      size: 98740
+    version: 1.23.1
   original:
+    commit: a2225286fa8349de93b4c0ccc85b8cae8c5d8d05
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
-    commit: a2225286fa8349de93b4c0ccc85b8cae8c5d8d05
 - completed:
+    commit: 79666871c61c2846c1ec1f7b33c8ebe04546ef73
+    git: https://github.com/AshleyYakeley/hindent.git
     name: hindent
-    version: 5.3.1
-    git: https://github.com/AshleyYakeley/hindent.git
     pantry-tree:
-      size: 2019
       sha256: af5fb4298e35d29b935c9dc55b5daf54d0c534a03079d89745eeae159f4f3a2d
-    commit: 79666871c61c2846c1ec1f7b33c8ebe04546ef73
+      size: 2019
+    version: 5.3.1
   original:
+    commit: 79666871c61c2846c1ec1f7b33c8ebe04546ef73
     git: https://github.com/AshleyYakeley/hindent.git
-    commit: 79666871c61c2846c1ec1f7b33c8ebe04546ef73
 - completed:
+    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
+    git: https://github.com/AshleyYakeley/licensor.git
     name: licensor
-    version: 0.4.0
-    git: https://github.com/AshleyYakeley/licensor.git
     pantry-tree:
-      size: 729
       sha256: c037a42f539d085a28d79da36453275e7c6135df5c49d323762e2df77f0eafec
-    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
+      size: 729
+    version: 0.4.0
   original:
+    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
     git: https://github.com/AshleyYakeley/licensor.git
-    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
 - completed:
+    commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
+    git: https://github.com/fpco/ghc-prof-flamegraph.git
     name: ghc-prof-flamegraph
-    version: 0.2.0.0
-    git: https://github.com/fpco/ghc-prof-flamegraph.git
     pantry-tree:
-      size: 14253
       sha256: 047358356b9c79891b04d1dc9a035f6d7041ddb56e9d43e722d0d15225e2d1a5
-    commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
+      size: 14253
+    version: 0.2.0.0
   original:
-    git: https://github.com/fpco/ghc-prof-flamegraph.git
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
+    git: https://github.com/fpco/ghc-prof-flamegraph.git
 - completed:
     hackage: countable-1.2@sha256:4c1d43a9886ddd9ef02b3df7042122d8cf3390256d51b061b24365b682652ad2,2638
     pantry-tree:
-      size: 1050
       sha256: 38f62a16602902874ec79a107966c3147de25a94e39cb846ce18ac14d2adbdc4
+      size: 1050
   original:
     hackage: countable-1.2
 - completed:
-    hackage: witness-0.6.1@sha256:b522cb9e4d6eea7cb6361c50ec330ecc82d69596f57dbdff1dcee2127b557adc,3690
-    pantry-tree:
-      size: 2985
-      sha256: 71817dc97637b387de201feaece2285b629e7ca2a66ef5889115efc1c0eb82f6
-  original:
-    hackage: witness-0.6.1
-- completed:
     hackage: open-witness-0.6@sha256:80d4ddbdf3acbe98b1a867388efe1478d73f5caf9a34e5bfbb8e0409c299e2da,2998
     pantry-tree:
-      size: 921
       sha256: 5a5ce32d86d386375d873ad26d0c63cba35ac4007703b09bd40dab47101eeb0d
+      size: 921
   original:
     hackage: open-witness-0.6
 - completed:
     hackage: type-rig-0.1@sha256:7ca3cb544b28926b2070cd45969beb5c65d540e15f487df824cbc738c2f5fb1a,2158
     pantry-tree:
-      size: 472
       sha256: 361a154dcc5f62c3fe54d072a7094b97c3ff4f753f9370ef17b17859c76e4662
+      size: 472
   original:
     hackage: type-rig-0.1
 - completed:
     hackage: monadology-0.1@sha256:7289dd0026c0c83e9fe25f9208aa1d300c55925270fc469036ce815680d0f016,5726
     pantry-tree:
-      size: 4248
       sha256: 446af857136298d75271577de9015d368c528fb9ae3bfc480c820a64061c3ead
+      size: 4248
   original:
     hackage: monadology-0.1
 snapshots:
 - completed:
+    sha256: 5098594e71bdefe0c13e9e6236f12e3414ef91a2b89b029fd30e8fc8087f3a07
     size: 619399
     url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/22.yaml
-    sha256: 5098594e71bdefe0c13e9e6236f12e3414ef91a2b89b029fd30e8fc8087f3a07
   original: lts-19.22

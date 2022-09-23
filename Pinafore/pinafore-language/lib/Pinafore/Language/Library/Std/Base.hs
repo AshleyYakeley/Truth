@@ -194,11 +194,13 @@ baseLibEntries =
                 [ mkTypeEntry "Boolean" "" $ MkBoundType booleanGroundType
                 , literalSubtypeRelationEntry @Bool
                 , showableSubtypeRelationEntry @Bool
-                , mkValPatEntry "True" "Boolean TRUE." True $ \v ->
+                , mkValPatEntry "True" "Boolean TRUE." True $
+                  ImpureFunction $ \v ->
                       if v
                           then Just ()
                           else Nothing
-                , mkValPatEntry "False" "Boolean FALSE." False $ \v ->
+                , mkValPatEntry "False" "Boolean FALSE." False $
+                  ImpureFunction $ \v ->
                       if v
                           then Nothing
                           else Just ()
@@ -212,15 +214,18 @@ baseLibEntries =
                 [ mkTypeEntry "Ordering" "" $ MkBoundType orderingGroundType
                 , literalSubtypeRelationEntry @Ordering
                 , showableSubtypeRelationEntry @Ordering
-                , mkValPatEntry "LT" "Less than." LT $ \v ->
+                , mkValPatEntry "LT" "Less than." LT $
+                  ImpureFunction $ \v ->
                       case v of
                           LT -> Just ()
                           _ -> Nothing
-                , mkValPatEntry "EQ" "Equal to." EQ $ \v ->
+                , mkValPatEntry "EQ" "Equal to." EQ $
+                  ImpureFunction $ \v ->
                       case v of
                           EQ -> Just ()
                           _ -> Nothing
-                , mkValPatEntry "GT" "Greater than." GT $ \v ->
+                , mkValPatEntry "GT" "Greater than." GT $
+                  ImpureFunction $ \v ->
                       case v of
                           GT -> Just ()
                           _ -> Nothing
@@ -410,8 +415,8 @@ baseLibEntries =
                   [ mkTypeEntry "Duration" "" $ MkBoundType durationGroundType
                   , literalSubtypeRelationEntry @NominalDiffTime
                   , showableSubtypeRelationEntry @NominalDiffTime
-                  , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $ \d ->
-                        Just (nominalDiffTimeToSeconds d, ())
+                  , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $
+                    PureFunction $ \d -> (nominalDiffTimeToSeconds d, ())
                   ] <>
                   -- plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
                   [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
@@ -441,11 +446,12 @@ baseLibEntries =
                   ]
                 , docTreeEntry "Calendar" "" $
                   [ mkTypeEntry "Date" "" $ MkBoundType dateGroundType
-                  , mkValPatEntry "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $ \day -> let
+                  , mkValPatEntry "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
+                    PureFunction $ \day -> let
                         (y, m, d) = toGregorian day
-                        in Just (y, (m, (d, ())))
-                  , mkValPatEntry "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $ \day ->
-                        Just (toModifiedJulianDay day, ())
+                        in (y, (m, (d, ())))
+                  , mkValPatEntry "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $
+                    PureFunction $ \day -> (toModifiedJulianDay day, ())
                   , literalSubtypeRelationEntry @Day
                   , showableSubtypeRelationEntry @Day
                   ] <>
@@ -458,13 +464,13 @@ baseLibEntries =
                   ]
                 , docTreeEntry "Time of Day" "" $
                   [ mkTypeEntry "TimeOfDay" "" $ MkBoundType timeOfDayGroundType
-                  , mkValPatEntry "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
-                        Just (todHour, (todMin, (todSec, ())))
+                  , mkValPatEntry "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
+                    PureFunction $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
                   , mkValPatEntry
                         "SinceMidnight"
                         "Construct a `TimeOfDay` from duration since midnight (wrapping whole days)."
                         (snd . timeToDaysAndTimeOfDay)
-                        (\t -> Just (daysAndTimeOfDayToTime 0 t, ()))
+                        (PureFunction $ \t -> (daysAndTimeOfDayToTime 0 t, ()))
                   , literalSubtypeRelationEntry @TimeOfDay
                   , showableSubtypeRelationEntry @TimeOfDay
                   ] <>
@@ -473,8 +479,8 @@ baseLibEntries =
                   [mkValEntry "midnight" "Midnight." midnight, mkValEntry "midday" "Midday." midday]
                 , docTreeEntry "Local Time" "" $
                   [ mkTypeEntry "LocalTime" "" $ MkBoundType localTimeGroundType
-                  , mkValPatEntry "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $ \LocalTime {..} ->
-                        Just (localDay, (localTimeOfDay, ()))
+                  , mkValPatEntry "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $
+                    PureFunction $ \LocalTime {..} -> (localDay, (localTimeOfDay, ()))
                   , literalSubtypeRelationEntry @LocalTime
                   , showableSubtypeRelationEntry @LocalTime
                   ] <>
@@ -570,11 +576,13 @@ baseLibEntries =
           "Maybe"
           ""
           [ mkTypeEntry "Maybe" "" $ MkBoundType maybeGroundType
-          , mkValPatEntry "Just" "Construct a Maybe from a value." (Just @A) $ \(v :: Maybe A) ->
+          , mkValPatEntry "Just" "Construct a Maybe from a value." (Just @A) $
+            ImpureFunction $ \(v :: Maybe A) ->
                 case v of
                     Just a -> Just (a, ())
                     _ -> Nothing
-          , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @BottomType) $ \(v :: Maybe A) ->
+          , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @BottomType) $
+            ImpureFunction $ \(v :: Maybe A) ->
                 case v of
                     Nothing -> Just ()
                     _ -> Nothing
@@ -598,11 +606,13 @@ baseLibEntries =
           "+:"
           ""
           [ mkTypeEntry "+:" "" $ MkBoundType eitherGroundType
-          , mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(v :: Either A B) ->
+          , mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $
+            ImpureFunction $ \(v :: Either A B) ->
                 case v of
                     Left a -> Just (a, ())
                     _ -> Nothing
-          , mkValPatEntry "Right" "Construct an Either from the right." (Right @A @B) $ \(v :: Either A B) ->
+          , mkValPatEntry "Right" "Construct an Either from the right." (Right @A @B) $
+            ImpureFunction $ \(v :: Either A B) ->
                 case v of
                     Right a -> Just (a, ())
                     _ -> Nothing
@@ -621,11 +631,13 @@ baseLibEntries =
           [ mkTypeEntry "List" "A list." $ MkBoundType listGroundType
           , mkTypeEntry "List1" "A list with at least one element." $ MkBoundType list1GroundType
           , hasSubtypeRelationEntry @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
-          , mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
+          , mkValPatEntry "[]" "Empty list" ([] @BottomType) $
+            ImpureFunction $ \(v :: [A]) ->
                 case v of
                     [] -> Just ()
                     _ -> Nothing
-          , mkValPatEntry "::" "Construct a list" ((:|) @A) $ \(v :: [A]) ->
+          , mkValPatEntry "::" "Construct a list" ((:|) @A) $
+            ImpureFunction $ \(v :: [A]) ->
                 case v of
                     a:b -> Just (a, (b, ()))
                     _ -> Nothing

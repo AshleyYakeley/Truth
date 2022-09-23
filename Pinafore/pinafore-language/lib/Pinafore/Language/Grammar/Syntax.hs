@@ -183,10 +183,27 @@ data SyntaxPattern'
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 
-data SyntaxCase =
-    MkSyntaxCase SyntaxPattern
-                 SyntaxExpression
+data SyntaxMatch =
+    MkSyntaxMatch SyntaxPattern
+                  SyntaxExpression
     deriving (Eq)
+
+data SyntaxMultimatch (n :: PeanoNat) =
+    MkSyntaxMultimatch (FixedList n SyntaxPattern)
+                       SyntaxExpression
+
+syntaxMultimatchLength :: SyntaxMultimatch n -> PeanoNatType n
+syntaxMultimatchLength (MkSyntaxMultimatch l _) = fixedListLength l
+
+instance TestEquality SyntaxMultimatch where
+    testEquality (MkSyntaxMultimatch patsa expa) (MkSyntaxMultimatch patsb expb) = do
+        Refl <- testEquality (fixedListLength patsa) (fixedListLength patsb)
+        if expa == expb
+            then Just Refl
+            else Nothing
+
+instance Eq (SyntaxMultimatch n) where
+    a == b = isJust $ testEquality a b
 
 data SyntaxAnnotation
     = SAType SyntaxType
@@ -200,6 +217,16 @@ data SyntaxConstant
     | SCConstructor SyntaxConstructor
     deriving (Eq)
 
+data SyntaxMultimatchList =
+    forall (n :: PeanoNat). MkSyntaxMultimatchList (PeanoNatType n)
+                                                   [SyntaxMultimatch n]
+
+instance Eq SyntaxMultimatchList where
+    MkSyntaxMultimatchList na aa == MkSyntaxMultimatchList nb bb =
+        fromMaybe False $ do
+            Refl <- testEquality na nb
+            return $ aa == bb
+
 data SyntaxExpression'
     = SESubsume SyntaxExpression
                 SyntaxType
@@ -209,13 +236,14 @@ data SyntaxExpression'
                     (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression
-    | SEAbstract SyntaxPattern
-                 SyntaxExpression
+    | SEAbstract SyntaxMatch
+    | SEAbstracts (Some SyntaxMultimatch)
+    | SEMatch [SyntaxMatch]
+    | SEMatches SyntaxMultimatchList
     | SERef SyntaxExpression
     | SEUnref SyntaxExpression
     | SELet [SyntaxWithDoc SyntaxDeclaration]
             SyntaxExpression
-    | SEMatch [SyntaxCase]
     | SEList [SyntaxExpression]
     deriving (Eq)
 
@@ -223,7 +251,7 @@ seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc
 
 seAbstract :: SourcePos -> SyntaxPattern -> SyntaxExpression -> SyntaxExpression
-seAbstract spos pat expr = MkWithSourcePos spos $ SEAbstract pat expr
+seAbstract spos pat expr = MkWithSourcePos spos $ SEAbstract $ MkSyntaxMatch pat expr
 
 seAbstracts :: SourcePos -> [SyntaxPattern] -> SyntaxExpression -> SyntaxExpression
 seAbstracts _ [] expr = expr
@@ -273,11 +301,27 @@ class SyntaxFreeVariables t where
 instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
     syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
 
+instance SyntaxFreeVariables t => SyntaxFreeVariables (NonEmpty t) where
+    syntaxFreeVariables tt = syntaxFreeVariables $ toList tt
+
+instance SyntaxFreeVariables t => SyntaxFreeVariables (FixedList n t) where
+    syntaxFreeVariables tt = syntaxFreeVariables $ toList tt
+
 instance SyntaxFreeVariables st => SyntaxFreeVariables (WithSourcePos st) where
     syntaxFreeVariables (MkWithSourcePos _ e) = syntaxFreeVariables e
 
-instance SyntaxFreeVariables SyntaxCase where
-    syntaxFreeVariables (MkSyntaxCase pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
+instance SyntaxFreeVariables SyntaxMatch where
+    syntaxFreeVariables (MkSyntaxMatch pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
+
+instance SyntaxFreeVariables (SyntaxMultimatch n) where
+    syntaxFreeVariables (MkSyntaxMultimatch pats expr) =
+        difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
+
+instance SyntaxFreeVariables (Some SyntaxMultimatch) where
+    syntaxFreeVariables (MkSome m) = syntaxFreeVariables m
+
+instance SyntaxFreeVariables SyntaxMultimatchList where
+    syntaxFreeVariables (MkSyntaxMultimatchList _ l) = syntaxFreeVariables l
 
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
@@ -286,12 +330,14 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEVar (QualifiedReferenceName _ _)) = mempty
     syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
-    syntaxFreeVariables (SEAbstract pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
+    syntaxFreeVariables (SEAbstract match) = syntaxFreeVariables match
+    syntaxFreeVariables (SEAbstracts match) = syntaxFreeVariables match
+    syntaxFreeVariables (SEMatch match) = syntaxFreeVariables match
+    syntaxFreeVariables (SEMatches match) = syntaxFreeVariables match
     syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SELet binds expr) =
         difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
-    syntaxFreeVariables (SEMatch cases) = syntaxFreeVariables cases
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
 
 instance SyntaxFreeVariables SyntaxBinding where
@@ -314,6 +360,12 @@ class SyntaxBindingVariables t where
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
+
+instance SyntaxBindingVariables t => SyntaxBindingVariables (NonEmpty t) where
+    syntaxBindingVariables tt = syntaxBindingVariables $ toList tt
+
+instance SyntaxBindingVariables t => SyntaxBindingVariables (FixedList n t) where
+    syntaxBindingVariables tt = syntaxBindingVariables $ toList tt
 
 instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) where
     syntaxBindingVariables (MkWithSourcePos _ pat) = syntaxBindingVariables pat

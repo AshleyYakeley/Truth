@@ -14,6 +14,7 @@ module Language.Expression.Common.Abstract
     , caseSealedExpression
     , caseAbstractSealedExpression
     , applyPatternConstructor
+    , multiCaseAbstractSealedExpression
     ) where
 
 import Data.Shim
@@ -24,6 +25,7 @@ import Language.Expression.Common.Pattern
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Simplifier
+import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
@@ -63,16 +65,6 @@ data AbstractResult ts a =
 instance Functor (AbstractResult ts) where
     fmap ab (MkAbstractResult vwt uexpr) = MkAbstractResult vwt $ fmap (fmap ab) uexpr
 
-joinAbstractResult ::
-       forall ts a b c. UnifyTypeSystem ts
-    => (a -> b -> c)
-    -> AbstractResult ts a
-    -> AbstractResult ts b
-    -> TSOuter ts (AbstractResult ts c)
-joinAbstractResult abc (MkAbstractResult wa expra) (MkAbstractResult wb exprb) = do
-    wab <- unifyUUNegShimWit @ts wa wb
-    return $ MkAbstractResult wab $ (\aa bb (BothMeetType a b) -> abc (aa a) (bb b)) <$> expra <*> exprb
-
 abstractNamedExpression ::
        forall ts a. AbstractTypeSystem ts
     => TSVarID ts
@@ -87,42 +79,170 @@ patternAbstractUnifyExpression ::
        forall ts q a t r. AbstractTypeSystem ts
     => TSOpenPattern ts q t
     -> TSOpenExpression ts a
-    -> (forall pa. UUShim ts pa a -> TSOpenExpression ts (q -> Maybe (pa, t)) -> TSOuter ts r)
+    -> (forall pa. UUShim ts pa a -> TSOpenExpression ts (PurityFunction Maybe q (pa, t)) -> TSOuter ts r)
     -> TSOuter ts r
-patternAbstractUnifyExpression (ClosedPattern qmt) expr cont = cont id $ fmap (\a q -> fmap (\t -> (a, t)) $ qmt q) expr
+patternAbstractUnifyExpression (ClosedPattern qmt) expr cont = cont id $ fmap (\a -> fmap (\t -> (a, t)) qmt) expr
 patternAbstractUnifyExpression (OpenPattern (MkNameWitness name vwt) pat) expr cont = do
     MkAbstractResult absvwt absexpr <- abstractNamedExpression @ts name expr
     uabsconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts vwt) absvwt
     patternAbstractUnifyExpression @ts pat absexpr $ \uuconv rexpr ->
-        cont (applf uuconv uabsconv) $ fmap (fmap (fmap $ \(pa, (t1, t)) -> (BothMeetType pa t1, t))) rexpr
+        cont (applf uuconv uabsconv) $ fmap (fmap $ \(pa, (t1, t)) -> (BothMeetType pa t1, t)) rexpr
 
-data PatternResult ts f =
-    forall a. MkPatternResult (UUPosShimWit ts a)
-                              (AbstractResult ts (f a))
+data PurityType (f :: Type -> Type) where
+    PureType :: PurityType Identity
+    ImpureType :: PurityType Maybe
+
+purityIsMonad :: PurityType f -> (MonadInner f => r) -> r
+purityIsMonad PureType cr = cr
+purityIsMonad ImpureType cr = cr
+
+matchPurityType ::
+       PurityType fa
+    -> PurityType fb
+    -> (forall fab. MonadInner fab => PurityType fab -> (fa --> fab) -> (fb --> fab) -> r)
+    -> r
+matchPurityType PureType PureType call = call PureType id id
+matchPurityType PureType ImpureType call = call ImpureType (Just . runIdentity) id
+matchPurityType ImpureType PureType call = call ImpureType id (Just . runIdentity)
+matchPurityType ImpureType ImpureType call = call ImpureType id id
+
+data OpenPurityExpression ts a b =
+    forall f. MkOpenPurityExpression (PurityType f)
+                                     (TSOpenExpression ts (a -> f b))
+
+instance Functor (OpenPurityExpression ts a) where
+    fmap ab (MkOpenPurityExpression purity expr) =
+        MkOpenPurityExpression purity $ purityIsMonad purity $ fmap (fmap $ fmap ab) expr
+
+patternAbstractUnifyPFExpression ::
+       forall ts ap bp bf r. AbstractTypeSystem ts
+    => TSOpenPattern ts ap bp
+    -> TSOpenExpression ts bf
+    -> (forall bf'. UUShim ts bf' bf -> OpenPurityExpression ts ap (bp, bf') -> TSOuter ts r)
+    -> TSOuter ts r
+patternAbstractUnifyPFExpression (ClosedPattern (PureFunction qt)) expr cont =
+    cont id $ MkOpenPurityExpression PureType $ fmap (\a q -> pure (qt q, a)) expr
+patternAbstractUnifyPFExpression (ClosedPattern (ImpureFunction qmt)) expr cont =
+    cont id $ MkOpenPurityExpression ImpureType $ fmap (\a q -> fmap (\t -> (t, a)) $ qmt q) expr
+patternAbstractUnifyPFExpression (OpenPattern (MkNameWitness name vwt) pat) expr cont = do
+    MkAbstractResult absvwt absexpr <- abstractNamedExpression @ts name expr
+    uabsconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts vwt) absvwt
+    patternAbstractUnifyPFExpression @ts pat absexpr $ \uuconv rexpr ->
+        cont (applf uuconv uabsconv) $ fmap (\((t, bp), bf) -> (bp, BothMeetType bf t)) rexpr
+
+data UnifierPurityFunction ts a b =
+    forall f. MkUnifierPurityFunction (PurityType f)
+                                      (UnifierExpression ts (a -> f b))
+
+instance UnifyTypeSystem ts => Functor (UnifierPurityFunction ts a) where
+    fmap ab (MkUnifierPurityFunction purity expr) =
+        MkUnifierPurityFunction purity $ purityIsMonad purity $ fmap (fmap $ fmap ab) expr
+
+instance UnifyTypeSystem ts => Applicative (UnifierPurityFunction ts a) where
+    pure b = arr $ \_ -> b
+    liftA2 f (MkUnifierPurityFunction purityA exprA) (MkUnifierPurityFunction purityB exprB) =
+        matchPurityType purityA purityB $ \purityAB cA cB ->
+            MkUnifierPurityFunction purityAB $ liftA2 (liftA2 $ \fa fb -> liftA2 f (cA fa) (cB fb)) exprA exprB
+
+mii :: Maybe a -> Identity a -> Identity a
+mii (Just a) _ = Identity a
+mii Nothing ia = ia
+
+instance UnifyTypeSystem ts => Alternative (UnifierPurityFunction ts a) where
+    empty = MkUnifierPurityFunction ImpureType $ pure $ pure empty
+    MkUnifierPurityFunction PureType expr <|> _ = MkUnifierPurityFunction PureType expr
+    MkUnifierPurityFunction ImpureType expr1 <|> MkUnifierPurityFunction PureType expr2 =
+        MkUnifierPurityFunction PureType $ liftA2 (liftA2 mii) expr1 expr2
+    MkUnifierPurityFunction ImpureType expr1 <|> MkUnifierPurityFunction ImpureType expr2 =
+        MkUnifierPurityFunction ImpureType $ liftA2 (liftA2 (<|>)) expr1 expr2
+
+instance UnifyTypeSystem ts => Category (UnifierPurityFunction ts) where
+    id = MkUnifierPurityFunction PureType $ pure Identity
+    MkUnifierPurityFunction purityBC exprBC . MkUnifierPurityFunction purityAB exprAB =
+        matchPurityType purityBC purityAB $ \purityAC c1 c2 ->
+            MkUnifierPurityFunction purityAC $ liftA2 (\bfc afb a -> c2 (afb a) >>= \b -> c1 $ bfc b) exprBC exprAB
+
+instance UnifyTypeSystem ts => Arrow (UnifierPurityFunction ts) where
+    arr f = MkUnifierPurityFunction PureType $ pure $ \a -> Identity $ f a
+    first (MkUnifierPurityFunction purity expr) =
+        MkUnifierPurityFunction purity $ purityIsMonad purity $ fmap (\bfc (b, d) -> fmap (\c -> (c, d)) $ bfc b) expr
+
+openUnifierPurityFunction :: UnifyTypeSystem ts => TSOpenExpression ts a -> UnifierPurityFunction ts () a
+openUnifierPurityFunction expr =
+    MkUnifierPurityFunction PureType $ solverExpressionLiftValue $ fmap (\a () -> Identity a) expr
+
+patternAbstractUnifyThingExpression ::
+       forall ts ap bp bf. AbstractTypeSystem ts
+    => TSOpenPattern ts ap bp
+    -> UnifierExpression ts bf
+    -> TSOuter ts (UnifierPurityFunction ts ap (bp, bf))
+patternAbstractUnifyThingExpression pat (MkSolverExpression uua exp) =
+    patternAbstractUnifyPFExpression @ts pat exp $ \(MkComposeShim conv) (MkOpenPurityExpression purity texpr) ->
+        return $
+        MkUnifierPurityFunction purity $
+        purityIsMonad purity $
+        (\sptbf t apf ap -> fmap (second $ \pa -> shimToFunction sptbf pa t) $ apf ap) <$> conv <*>
+        solverExpressionLiftType uua <*>
+        solverExpressionLiftValue texpr
+
+patternAbstractUnifyThing2Expression ::
+       forall ts ap bp af bf. AbstractTypeSystem ts
+    => TSOpenPattern ts ap bp
+    -> UnifierPurityFunction ts af bf
+    -> TSOuter ts (UnifierPurityFunction ts (ap, af) (bp, bf))
+patternAbstractUnifyThing2Expression pat (MkUnifierPurityFunction purity1 uexpr1) = do
+    MkUnifierPurityFunction purity2 uexpr2 <- patternAbstractUnifyThingExpression @ts pat uexpr1
+    return $
+        matchPurityType purity1 purity2 $ \purity12 c1 c2 ->
+            MkUnifierPurityFunction purity12 $
+            fmap
+                (\af2z (ap, af) -> do
+                     (bp, afbf) <- c2 $ af2z ap
+                     bf <- c1 $ afbf af
+                     return (bp, bf))
+                uexpr2
+
+data PatternResult ts =
+    forall t a. MkPatternResult (UUPosShimWit ts a)
+                                (UUNegShimWit ts t)
+                                (TSOpenExpression ts (PurityFunction Maybe t a))
+
+runPurity :: PurityType f -> f a -> a
+runPurity PureType (Identity a) = a
+runPurity ImpureType (Just a) = a
+runPurity ImpureType Nothing = error "missing case"
+
+runPurityFunction :: PurityFunction Maybe a b -> a -> b
+runPurityFunction (PureFunction ab) a = ab a
+runPurityFunction (ImpureFunction amb) a =
+    case amb a of
+        Just b -> b
+        Nothing -> error "missing case"
+
+joinPurityFunctions ::
+       PurityFunction Maybe a1 b1
+    -> PurityFunction Maybe a2 b2
+    -> PurityFunction Maybe (MeetType a1 a2) (JoinType b1 b2)
+joinPurityFunctions pf1 pf2 = (arr join1 . pf1 . arr meet1) <|> (arr join2 . pf2 . arr meet2)
 
 joinPatternResult ::
        forall ts. UnifyTypeSystem ts
-    => PatternResult ts Maybe
-    -> PatternResult ts Identity
-    -> TSOuter ts (PatternResult ts Identity)
-joinPatternResult (MkPatternResult wa expra) (MkPatternResult wb exprb) = do
-    wab <- unifyUUPosShimWit @ts wa wb
-    let
-        pickpat (Just a) _ = Identity $ join1 a -- pattern matched
-        pickpat Nothing (Identity b) = Identity $ join2 b -- pattern didn't match, try the rest of the patterns
-    exprab <- joinAbstractResult pickpat expra exprb
-    return $ MkPatternResult wab exprab
+    => PatternResult ts
+    -> PatternResult ts
+    -> TSOuter ts (PatternResult ts)
+joinPatternResult (MkPatternResult pa na expra) (MkPatternResult pb nb exprb) = do
+    pab <- unifyUUPosShimWit @ts pa pb
+    nab <- unifyUUNegShimWit @ts na nb
+    return $ MkPatternResult pab nab $ joinPurityFunctions <$> expra <*> exprb
 
 joinPatternResults ::
        forall ts. AbstractTypeSystem ts
-    => [PatternResult ts Maybe]
-    -> TSOuter ts (PatternResult ts Identity)
+    => [PatternResult ts]
+    -> TSOuter ts (PatternResult ts)
 joinPatternResults [] = do
     MkNewVar tt _ <- renameNewFreeVar @ts
     MkNewVar _ ta <- renameNewFreeVar @ts
-    return $
-        MkPatternResult (uuLiftPosShimWit @ts ta) $
-        MkAbstractResult (uuLiftNegShimWit @ts tt) $ pure $ \_ -> error "missing case"
+    return $ MkPatternResult (uuLiftPosShimWit @ts ta) (uuLiftNegShimWit @ts tt) $ pure empty
 joinPatternResults (p:pp) = do
     c <- joinPatternResults pp
     joinPatternResult p c
@@ -131,12 +251,99 @@ patternAbstractSealedExpression ::
        forall ts. AbstractTypeSystem ts
     => TSSealedExpressionPattern ts
     -> TSSealedExpression ts
-    -> TSOuter ts (PatternResult ts Maybe)
+    -> TSOuter ts (PatternResult ts)
 patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression twt expr) =
     patternAbstractUnifyExpression @ts pat expr $ \uconv uexpr' ->
         return $
-        MkPatternResult (mapPosShimWit (applf id uconv) $ uuLiftPosShimWit @ts twt) $
-        (fmap $ fmap $ \(pa, ()) -> BothMeetType id pa) $ MkAbstractResult (uuLiftNegExpressionShimWit @ts vwt) uexpr'
+        MkPatternResult (mapPosShimWit (applf id uconv) $ uuLiftPosShimWit @ts twt) (uuLiftNegExpressionShimWit @ts vwt) $
+        (fmap $ fmap $ \(pa, ()) -> BothMeetType id pa) uexpr'
+
+type MultiPatternResult :: Type -> PeanoNat -> Type
+data MultiPatternResult ts n =
+    forall (tt :: [Type]) a. (ListLength tt ~ n) =>
+                                 MkMultiPatternResult (UUPosShimWit ts a)
+                                                      (ListType (UUNegShimWit ts) tt)
+                                                      (UnifierPurityFunction ts (ListProduct tt) a)
+
+type ListShim :: ShimKind Type -> [Type] -> [Type] -> Type
+data ListShim shim aa bb where
+    NilListShim :: ListShim shim '[] '[]
+    ConsListShim :: shim a b -> ListShim shim aa bb -> ListShim shim (a ': aa) (b ': bb)
+
+listShimApply ::
+       forall shim aa bb. (forall a b. shim a b -> a -> b) -> ListShim shim aa bb -> ListProduct aa -> ListProduct bb
+listShimApply _ NilListShim () = ()
+listShimApply f (ConsListShim shim shims) (a, aa) = (f shim a, listShimApply f shims aa)
+
+sequenceListShim :: Applicative f => ListShim (ComposeShim f shim) aa bb -> f (ListShim shim aa bb)
+sequenceListShim NilListShim = pure NilListShim
+sequenceListShim (ConsListShim (MkComposeShim fshim) shims) = ConsListShim <$> fshim <*> sequenceListShim shims
+
+negativeToListShim ::
+       ListType (ShimWit (PolarMap shim 'Negative) wit) tt
+    -> (forall aa. ListType wit aa -> ListShim shim aa tt -> r)
+    -> r
+negativeToListShim NilListType call = call NilListType NilListShim
+negativeToListShim (ConsListType (MkShimWit w (MkPolarMap conv)) ww) call =
+    negativeToListShim ww $ \tt ss -> call (ConsListType w tt) (ConsListShim conv ss)
+
+multiJoin ::
+       forall ts (r :: Type) tta ttb. (UnifyTypeSystem ts, ListLength tta ~ ListLength ttb)
+    => ListType (UUNegShimWit ts) tta
+    -> ListType (UUNegShimWit ts) ttb
+    -> (forall ttab.
+            (ListLength tta ~ ListLength ttab) =>
+                    ListType (UUNegShimWit ts) ttab -> (ListProduct ttab -> ListProduct tta) -> (ListProduct ttab -> ListProduct ttb) -> TSOuter ts r)
+    -> TSOuter ts r
+multiJoin NilListType NilListType call = call NilListType id id
+multiJoin (ConsListType a aa) (ConsListType b bb) call = do
+    ab <- unifyUUNegShimWit @ts a b
+    multiJoin @ts aa bb $ \aabb aconv bconv ->
+        call (ConsListType ab aabb) (\(x, xx) -> (meet1 x, aconv xx)) (\(x, xx) -> (meet2 x, bconv xx))
+
+joinMultiPatternResult ::
+       forall ts n. UnifyTypeSystem ts
+    => MultiPatternResult ts n
+    -> MultiPatternResult ts n
+    -> TSOuter ts (MultiPatternResult ts n)
+joinMultiPatternResult (MkMultiPatternResult pa na expra) (MkMultiPatternResult pb nb exprb) = do
+    pab <- unifyUUPosShimWit @ts pa pb
+    multiJoin @ts na nb $ \nab aconv bconv ->
+        return $ MkMultiPatternResult pab nab $ (arr join1 . expra . arr aconv) <|> (arr join2 . exprb . arr bconv)
+
+multiNew ::
+       forall ts n r. AbstractTypeSystem ts
+    => PeanoNatType n
+    -> (forall tt. (ListLength tt ~ n) => ListType (UUNegShimWit ts) tt -> TSOuter ts r)
+    -> TSOuter ts r
+multiNew ZeroType call = call NilListType
+multiNew (SuccType n) call = do
+    MkNewVar tt _ <- renameNewFreeVar @ts
+    multiNew @ts n $ \lt -> call $ ConsListType (uuLiftNegShimWit @ts tt) lt
+
+joinMultiPatternResults ::
+       forall ts n. AbstractTypeSystem ts
+    => PeanoNatType n
+    -> [MultiPatternResult ts n]
+    -> TSOuter ts (MultiPatternResult ts n)
+joinMultiPatternResults nn [] = do
+    MkNewVar _ ta <- renameNewFreeVar @ts
+    multiNew @ts nn $ \lnwit -> return $ MkMultiPatternResult (uuLiftPosShimWit @ts ta) lnwit empty
+joinMultiPatternResults nn (p:pp) = do
+    c <- joinMultiPatternResults nn pp
+    joinMultiPatternResult p c
+
+multiPatternAbstractSealedExpression ::
+       forall ts n. AbstractTypeSystem ts
+    => FixedList n (TSSealedExpressionPattern ts)
+    -> TSSealedExpression ts
+    -> TSOuter ts (MultiPatternResult ts n)
+multiPatternAbstractSealedExpression NilFixedList (MkSealedExpression t expr) =
+    return $ MkMultiPatternResult (uuLiftPosShimWit @ts t) NilListType $ openUnifierPurityFunction expr
+multiPatternAbstractSealedExpression (ConsFixedList (MkSealedPattern vwt pat) pats) expr = do
+    MkMultiPatternResult twt vww texpr <- multiPatternAbstractSealedExpression @ts pats expr
+    upf <- patternAbstractUnifyThing2Expression @ts pat texpr
+    return $ MkMultiPatternResult twt (ConsListType (uuLiftNegExpressionShimWit @ts vwt) vww) $ fmap snd upf
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 
@@ -232,13 +439,13 @@ caseSealedExpression sbexpr rawcases =
                 pat <- rename @ts FreeName rawpat
                 expr <- rename @ts FreeName rawexpr
                 patternAbstractSealedExpression @ts pat expr
-        MkPatternResult (MkShimWit rtt (MkPolarMap tuconv)) (MkAbstractResult rvwt rexpr) <- joinPatternResults patrs
+        MkPatternResult (MkShimWit rtt (MkPolarMap tuconv)) rvwt rexpr <- joinPatternResults patrs
         MkSealedExpression btwt bexpr <- rename @ts FreeName sbexpr
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts btwt) rvwt
         (convexpr, subs) <- solveUnifierExpression @ts $ liftA2 (,) (uuGetShim @ts uconv) (uuGetShim @ts tuconv)
         unifierSubstituteAndSimplify @ts subs $
             MkSealedExpression (mkShimWit rtt) $
-            (\(conv, tconv) tia t -> shimToFunction tconv $ runIdentity $ tia $ shimToFunction conv t) <$> convexpr <*>
+            (\(conv, tconv) fta t -> shimToFunction tconv $ runPurityFunction fta $ shimToFunction conv t) <$> convexpr <*>
             rexpr <*>
             bexpr
 
@@ -255,13 +462,58 @@ caseAbstractSealedExpression absw rawcases =
                 pat <- rename @ts FreeName rawpat
                 expr <- rename @ts FreeName rawexpr
                 patternAbstractSealedExpression @ts pat expr
-        MkPatternResult (MkShimWit rtt (MkPolarMap tuconv)) (MkAbstractResult (MkShimWit rvt (MkPolarMap vuconv)) rexpr) <-
+        MkPatternResult (MkShimWit rtt (MkPolarMap tuconv)) (MkShimWit rvt (MkPolarMap vuconv)) rexpr <-
             joinPatternResults patrs
         (convexpr, subs) <- solveUnifierExpression @ts $ liftA2 (,) (uuGetShim @ts tuconv) (uuGetShim @ts vuconv)
         unifierSubstituteAndSimplify @ts subs $
             MkSealedExpression (absw (mkShimWit rvt) (mkShimWit rtt)) $
-            (\(tconv, vconv) tia t -> shimToFunction tconv $ runIdentity $ tia $ shimToFunction vconv t) <$> convexpr <*>
+            (\(tconv, vconv) fta t -> shimToFunction tconv $ runPurityFunction fta $ shimToFunction vconv t) <$>
+            convexpr <*>
             rexpr
+
+type FunctionOnList :: [Type] -> Type -> Type
+type family FunctionOnList tt b where
+    FunctionOnList '[] b = b
+    FunctionOnList (a ': aa) b = a -> FunctionOnList aa b
+
+productToFunctionOnList :: ListShim shim aa bb -> (ListProduct aa -> b) -> FunctionOnList aa b
+productToFunctionOnList NilListShim f = f ()
+productToFunctionOnList (ConsListShim _ ls) f = \a -> productToFunctionOnList ls $ \l -> f (a, l)
+
+listAbstract ::
+       forall ts aa b. UnifyTypeSystem ts
+    => UnifierFunctionPosWitness ts
+    -> ListType (TSNegWitness ts) aa
+    -> TSPosShimWit ts b
+    -> TSPosShimWit ts (FunctionOnList aa b)
+listAbstract _ NilListType b = b
+listAbstract absw (ConsListType a aa) b = absw (mkShimWit a) $ listAbstract @ts absw aa b
+
+multiCaseAbstractSealedExpression ::
+       forall ts n. AbstractTypeSystem ts
+    => UnifierFunctionPosWitness ts
+    -> PeanoNatType n
+    -> [(FixedList n (TSSealedExpressionPattern ts), TSSealedExpression ts)]
+    -> TSInner ts (TSSealedExpression ts)
+multiCaseAbstractSealedExpression absw nn rawcases =
+    runRenamer @ts $
+    withTransConstraintTM @Monad $ do
+        patrs <-
+            for rawcases $ \(rawpatlist, rawexpr) -> do
+                patlist <- for rawpatlist $ rename @ts FreeName
+                expr <- rename @ts FreeName rawexpr
+                multiPatternAbstractSealedExpression @ts patlist expr
+        MkMultiPatternResult (MkShimWit rtt (MkPolarMap tuconv)) nl (MkUnifierPurityFunction purity urexpr) <-
+            joinMultiPatternResults nn patrs
+        negativeToListShim nl $ \rvts vuconvs -> do
+            (convexpr, subs) <-
+                solveUnifierExpression @ts $ (,,) <$> uuGetShim @ts tuconv <*> sequenceListShim vuconvs <*> urexpr
+            unifierSubstituteAndSimplify @ts subs $
+                MkSealedExpression (listAbstract @ts absw rvts (mkShimWit rtt)) $
+                (\(tconv, vconv, fta) ->
+                     productToFunctionOnList vconv $
+                     shimToFunction tconv . runPurity purity . fta . listShimApply shimToFunction vconv) <$>
+                convexpr
 
 applyPatternConstructor ::
        forall ts. AbstractTypeSystem ts

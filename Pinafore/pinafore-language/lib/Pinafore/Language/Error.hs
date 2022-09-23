@@ -4,6 +4,7 @@ import Data.Shim
 import Language.Expression.Common
 import Pinafore.Language.Name
 import Shapes
+import Shapes.Numeric
 import Text.Parsec.Error
 import Text.Parsec.Pos
 
@@ -32,6 +33,8 @@ data ErrorType
                              Text
     | TypeNotInvertibleError Text
     | NotationBareUnquoteError
+    | MatchesDifferentCount Natural
+                            Natural
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
     | InterpretTypeNotAmbipolarError Text
@@ -105,10 +108,10 @@ instance Show ErrorType where
     show (LookupRefNameUnknownError n) = "undefined: " <> show n
     show (LookupTypeUnknownError n) = "unknown type: " <> show n
     show (LookupSpecialFormUnknownError n) = "unknown special form: " <> show n
-    show (SpecialFormWrongAnnotationsError n exp found) =
+    show (SpecialFormWrongAnnotationsError n expected found) =
         "wrong annotations for special form " <>
         show n <>
-        ": expecting " <> intercalate " " (fmap unpack exp) <> ", found " <> intercalate " " (fmap unpack found)
+        ": expecting " <> intercalate " " (fmap unpack expected) <> ", found " <> intercalate " " (fmap unpack found)
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
@@ -119,6 +122,8 @@ instance Show ErrorType where
     show (GroundTypeConvertError ta tb) = unpack $ "cannot convert " <> ta <> " <: " <> tb
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside WholeRef quote"
+    show (MatchesDifferentCount expected found) =
+        "different number of patterns in matches, expected " <> show expected <> ", found " <> show found
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"

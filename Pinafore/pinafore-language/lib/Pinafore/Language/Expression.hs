@@ -57,7 +57,7 @@ qToPatternConstructor ::
        ( ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
        , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
        )
-    => (t -> Maybe (ListProduct lt))
+    => PurityFunction Maybe t (ListProduct lt)
     -> PinaforePatternConstructor
 qToPatternConstructor tml =
     toExpressionPatternConstructor $
@@ -103,6 +103,10 @@ qFunctionPosWitnesses (ConsListType ta la) tb =
 
 qCaseAbstract :: [(PinaforePattern, PinaforeExpression)] -> PinaforeInterpreter PinaforeExpression
 qCaseAbstract = tsCaseAbstract @PinaforeTypeSystem
+
+qMultiCaseAbstract ::
+       PeanoNatType n -> [(FixedList n PinaforePattern, PinaforeExpression)] -> PinaforeInterpreter PinaforeExpression
+qMultiCaseAbstract = tsMultiCaseAbstract @PinaforeTypeSystem
 
 qApplyExpr :: PinaforeExpression -> PinaforeExpression -> PinaforeInterpreter PinaforeExpression
 qApplyExpr exprf expra = tsApply @PinaforeTypeSystem exprf expra
