@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-GTK.run $ \gtk => do
+GTK.run $ fn gtk => do
 w <- GTK.openWindow gtk (300,400) {"Test"} $ GTK.label {"Hello"};
 GTK.closeWindow w;
 end
