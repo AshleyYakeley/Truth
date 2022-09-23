@@ -16,9 +16,9 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - syntax
       . type names (+:), (*:), List, Unit
       . tuple constructor/pattern (,,) etc.
-      . use => in lambda and case expressions
+      . type signatures now attach to bindings, not stand-alone
+      . new syntax for function expressions: fn, fns, match, matches, =>
       . new syntax for datatype and closedtype definitions
-      . lambda-case expressions
   * Interactive
     - :doc to retrieve name documentation
   * Library

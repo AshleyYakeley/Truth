@@ -49,46 +49,46 @@ benchScripts =
         [ benchScript "do a <- return $ return (); a end"
         , benchScript "do a <- get {return ()}; a end"
         , benchScript "do a <- get $ pureWhole $ return (); a end"
-        , benchScript "get {return ()} >>= \\v => v"
-        , benchScript "get {False} >>= \\v => return ()"
-        , benchScript "get (pureWhole False) >>= \\v => return ()"
-        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ \\v => return ()"
+        , benchScript "get {return ()} >>= fn v => v"
+        , benchScript "get {False} >>= fn v => return ()"
+        , benchScript "get (pureWhole False) >>= fn v => return ()"
+        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => return ()"
         , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=return () end in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
         , benchScript
-              "let import GTK; const a b = a; ui_labelled n ui = horizontal [label n, layoutGrow ui] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} GTK.blank"
-        , benchScript "let const a b = a; rec r = 3::r end in const (return ()) r"
+              "let import GTK; const = fns a b => a; ui_labelled = fns n ui => horizontal [label n, layoutGrow ui] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} GTK.blank"
+        , benchScript "let const = fns a b => a; rec r = 3::r end in const (return ()) r"
         , benchScript
-              "let cpass x = return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let cpass = fn x => return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass x = return (); rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
+              "let cpass = fn x => return (); rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
         , benchScript
-              "let cpass x = return () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let cpass = fn x => return () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass x = return () in let f = \\a => let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
+              "let cpass = fn x => return () in let f = fn a => let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x => return (); q = [" <>
+          "let g = fn r => get r >>= fn x => return (); q = [" <>
           intercalate "," (replicate 50 "g (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g1 r = get r >>= \\x => return (); g2 r = get r >>= \\x => return (); q = [" <>
+          "let g1 = fn r => get r >>= fn x => return (); g2 = fn r => get r >>= fn x => return (); q = [" <>
           intercalate "," (replicate 25 "g1 (pureWhole 1)" <> replicate 25 "g2 (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x => return () in let q = [" <>
+          "let g = fn r => get r >>= fn x => return () in let q = [" <>
           intercalate "," (replicate 50 "g (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x => return () in let q = [" <>
+          "let g = fn r => get r >>= fn x => return () in let q = [" <>
           intercalate "," (fmap (\(i :: Int) -> "g (pureWhole " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x => return (); q = [" <>
-          intercalate "," (replicate 50 "get (pureWhole 1) >>= \\x => return ()") <> "] in for_ q id"
+          "let g = fn r => get r >>= fn x => return (); q = [" <>
+          intercalate "," (replicate 50 "get (pureWhole 1) >>= fn x => return ()") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = list (return ()) (\\x y => return ()) r; q = [" <>
+          "let g = fn r => list (return ()) (fns x y => return ()) r; q = [" <>
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
@@ -115,9 +115,9 @@ benchUpdates =
         "update"
         [ benchUpdate "do ref <- newMemWhole; return (ref := 1, ref) end"
         , benchUpdate
-              "let id x = x in do ref <- newMemWhole; return (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
+              "let id = fn x => x in do ref <- newMemWhole; return (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
         , benchUpdate
-              "let id x = x in do ref <- newMemWhole; return (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
+              "let id = fn x => x in do ref <- newMemWhole; return (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
         ]
 
 main :: IO ()
