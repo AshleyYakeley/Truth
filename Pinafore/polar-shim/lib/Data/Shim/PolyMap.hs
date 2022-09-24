@@ -47,7 +47,6 @@ instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind
     meet1 = MkPolyMapT meet1
     meet2 = MkPolyMapT meet2
     meetf ra rb = MkPolyMapT $ meetf (unPolyMapT ra) (unPolyMapT rb)
-    applf rab ra = MkPolyMapT $ applf (unPolyMapT rab) (unPolyMapT ra)
 
 instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind). LazyCategory (f (pshim Type)) =>
              LazyCategory (PolyMapT f pshim Type) where

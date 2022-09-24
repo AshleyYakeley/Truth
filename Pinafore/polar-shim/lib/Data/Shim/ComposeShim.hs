@@ -45,7 +45,6 @@ instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, Joi
     meet1 = MkComposeShim $ pure meet1
     meet2 = MkComposeShim $ pure meet2
     meetf (MkComposeShim maconv) (MkComposeShim mbconv) = MkComposeShim $ liftA2 meetf maconv mbconv
-    applf (MkComposeShim maconv) (MkComposeShim mbconv) = MkComposeShim $ liftA2 applf maconv mbconv
 
 instance forall (shim :: ShimKind Type) m. (LazyCategory shim, Applicative m) => LazyCategory (ComposeShim m shim) where
     iLazy (MkComposeShim ab) = MkComposeShim $ fmap iLazy ab

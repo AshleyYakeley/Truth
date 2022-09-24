@@ -120,7 +120,6 @@ class JoinMeetIsoCategory shim => JoinMeetCategory (shim :: ShimKind Type) where
     meet1 :: shim (MeetType a b) a
     meet2 :: shim (MeetType a b) b
     meetf :: shim r a -> shim r b -> shim r (MeetType a b)
-    applf :: shim r1 (a -> b) -> shim r2 a -> shim (MeetType r1 r2) b
 
 instance JoinMeetIsoCategory (->)
 
@@ -134,7 +133,6 @@ instance JoinMeetCategory (->) where
     meet1 (BothMeetType v _) = v
     meet2 (BothMeetType _ v) = v
     meetf f1 f2 v = BothMeetType (f1 v) (f2 v)
-    applf rab ra (BothMeetType r1 r2) = rab r1 (ra r2)
 
 class (CoercibleKind k, Category shim) => IsoMapShim (shim :: ShimKind k) where
     isoMapShim ::

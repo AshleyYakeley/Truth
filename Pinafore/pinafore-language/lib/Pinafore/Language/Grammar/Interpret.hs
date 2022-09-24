@@ -314,18 +314,14 @@ interpretConstant (SCConstructor lit) = interpretConstructor lit
 interpretCase :: SyntaxMatch -> RefNotation (PinaforePattern, PinaforeExpression)
 interpretCase (MkSyntaxMatch spat sexpr) =
     runScopeBuilder (interpretPattern spat) $ \pat -> do
-        expr <- interpretExpressionShadowed (sealedPatternNames pat) sexpr
+        expr <- interpretExpression sexpr
         return (pat, expr)
 
 interpretMultimatch :: SyntaxMultimatch n -> RefNotation (FixedList n PinaforePattern, PinaforeExpression)
 interpretMultimatch (MkSyntaxMultimatch spats sexpr) =
     runScopeBuilder (for spats interpretPattern) $ \pats -> do
-        expr <- interpretExpressionShadowed (mconcat $ fmap sealedPatternNames $ toList pats) sexpr
+        expr <- interpretExpression sexpr
         return (pats, expr)
-
-interpretExpressionShadowed :: [a] -> SyntaxExpression -> RefExpression
-interpretExpressionShadowed _names sbody =
-    interpretExpression sbody {-hoistRefNotation (MkWRaised $ unregisterBindings names) $ -}
 
 interpretExpression' :: SyntaxExpression' -> RefExpression
 interpretExpression' (SESubsume sexpr stype) = do
@@ -335,7 +331,7 @@ interpretExpression' (SESubsume sexpr stype) = do
         qSubsumeExpr t expr
 interpretExpression' (SEAbstract (MkSyntaxMatch spat sbody)) =
     runScopeBuilder (interpretPattern spat) $ \pat -> do
-        val <- interpretExpressionShadowed (sealedPatternNames pat) sbody
+        val <- interpretExpression sbody
         liftRefNotation $ qCaseAbstract [(pat, val)]
 interpretExpression' (SEAbstracts (MkSome multimatch)) = do
     (pats, expr) <- interpretMultimatch multimatch

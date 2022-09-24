@@ -47,6 +47,7 @@ library:
       - Language.Expression.Common.SolverExpression
       - Language.Expression.Common.Unifier
       - Language.Expression.Common.Subsumer
+      - Language.Expression.Common.UnifierPurityFunction
       - Language.Expression.Common.Abstract
       - Language.Expression.Common.Bindings
       - Language.Expression.Common.CompleteTypeSystem

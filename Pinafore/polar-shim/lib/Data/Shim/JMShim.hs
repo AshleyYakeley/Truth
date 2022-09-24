@@ -26,7 +26,6 @@ data JMShim k a b where
     Meet1JMShim :: JMShim Type a t -> JMShim Type (MeetType a b) t
     Meet2JMShim :: JMShim Type b t -> JMShim Type (MeetType a b) t
     MeetFJMShim :: JMShim Type t a -> JMShim Type t b -> JMShim Type t (MeetType a b)
-    ApplFJMShim :: JMShim Type t1 (a -> b) -> JMShim Type t2 a -> JMShim Type (MeetType t1 t2) b
     ConsJMShim
         :: forall (v :: CCRVariance) k (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
            CCRVarianceType v
@@ -49,7 +48,6 @@ instance Show (JMShim k a b) where
     show (Meet1JMShim s) = "(meet1 " <> show s <> ")"
     show (Meet2JMShim s) = "(meet2 " <> show s <> ")"
     show (MeetFJMShim s1 s2) = "(meetf " <> show s1 <> " " <> show s2 <> ")"
-    show (ApplFJMShim s1 s2) = "(applf " <> show s1 <> " " <> show s2 <> ")"
     show (ConsJMShim vt _ _ s1 s2) =
         "(" <> show vt <> " " <> show s1 <> " " <> ccrVarianceCategoryShow @(JMShim Type) vt s2 <> ")"
 
@@ -117,11 +115,6 @@ instance JoinMeetCategory (JMShim Type) where
     meet2 = Meet2JMShim id
     meetf (Meet1JMShim IdentityJMShim) (Meet2JMShim IdentityJMShim) = IdentityJMShim
     meetf a b = MeetFJMShim a b
-    applf (Meet1JMShim p) q = applf p q . iMeetPair meet1 id
-    applf (ConsJMShim CoCCRVarianceType _ _ IdentityJMShim p) q = p . applf id q
-    applf (ConsJMShim CoCCRVarianceType _ _ (ConsJMShim ContraCCRVarianceType _ _ IdentityJMShim (MkCatDual pa)) pb) q =
-        pb . applf id (pa . q)
-    applf p q = ApplFJMShim p q
 
 instance LazyCategory (JMShim Type)
 
@@ -170,7 +163,6 @@ instance CoercibleKind k => FunctionShim (JMShim k) where
     shimToFunction (Meet1JMShim ta) = shimToFunction ta . meet1
     shimToFunction (Meet2JMShim tb) = shimToFunction tb . meet2
     shimToFunction (MeetFJMShim pa pb) = meetf (shimToFunction pa) (shimToFunction pb)
-    shimToFunction (ApplFJMShim pa pb) = applf (shimToFunction pa) (shimToFunction pb)
     shimToFunction (ConsJMShim vt _ ccrvg jmf jma) = let
         fromCon ::
                forall (v :: CCRVariance) (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a' :: CCRVarianceKind v) (b' :: CCRVarianceKind v).

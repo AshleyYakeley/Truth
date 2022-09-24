@@ -61,9 +61,9 @@ tsUnifyExpressionTo witn (MkSealedExpression witp expr) =
     runRenamer @ts $ do
         witp' <- rename @ts FreeName witp
         witn' <- rename @ts RigidName witn
-        (convexpr, subs) <- unifyPosNegShimWit @ts witp' witn'
-        expr' <- unifierSubstituteSimplifyFinalRename @ts subs expr
-        return $ liftA2 shimToFunction convexpr expr'
+        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn')
+        unifierSolveSubstituteSimplifyFinalRename @ts (uuGetShim @ts uconv) $ \convexpr ->
+            liftA2 shimToFunction convexpr expr
 
 tsUnifyValueTo ::
        forall ts t. CompleteTypeSystem ts
