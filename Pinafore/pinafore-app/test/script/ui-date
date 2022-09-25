@@ -1,8 +1,8 @@
 #!/usr/bin/pinafore
 do
-dref <- newMemWhole;
-tref <- newMemWhole;
-iref <- newMemWhole;
+dref <- newMemWholeModel;
+tref <- newMemWholeModel;
+iref <- newMemWholeModel;
 GTK.openWindow (300,400) {"Date"} $ GTK.vertical
     [
         (GTK.textEntry tref, False),

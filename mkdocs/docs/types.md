@@ -223,41 +223,41 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 ## Orders
 
-`RefOrder -a`  
+`ModelOrder -a`  
 
 An order on a type. Can order by morphisms.
 
-Every order (comparison function) is a `RefOrder`:
+Every order (comparison function) is a `ModelOrder`:
 
-`a -> a -> Ordering <: RefOrder a`
+`a -> a -> Ordering <: ModelOrder a`
 
-## Reference Types
+## Model Types
 
-References (of the various reference types) keep track of updates, and will update user interfaces constructed from them when their value changes.
+Models (of the various model types) keep track of updates, and will update user interfaces constructed from them when their value changes.
 
-### Whole References
+### Whole Models
 
-`WholeRef {-p,+q}`
+`WholeModel {-p,+q}`
 
-A whole reference a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
+A whole model a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
 
-Whole references may be "unknown"
+Whole models may be "unknown"
 
-### Set References
+### Set Models
 
-`SetRef -a`
+`SetModel -a`
 
-A set reference is a mutable predicate, like a test on values. Values can be added to it or deleted from it.
+A set model is a mutable predicate, like a test on values. Values can be added to it or deleted from it.
 
-### Finite Set References
+### Finite Set Models
 
-`FiniteSetRef {-p,+q}`
+`FiniteSetModel {-p,+q}`
 
-Finite set references are set references:
+Finite set models are set models:
 
-`FiniteSetRef -a <: SetRef a`
+`FiniteSetModel -a <: SetModel a`
 
-Finite set references contain a finite number of members, which can be retrieved.
+Finite set models contain a finite number of members, which can be retrieved.
 
 ## Morphisms
 

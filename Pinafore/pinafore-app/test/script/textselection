@@ -2,13 +2,13 @@
 let
 import GTK();
 in GTK.run $ \gtk => do
-    tref1 <- newMemWhole;
+    tref1 <- newMemWholeModel;
     tref1 := "111";
-    tref2 <- newMemWhole;
+    tref2 <- newMemWholeModel;
     tref2 := "222";
-    tref3 <- newMemWhole;
+    tref3 <- newMemWholeModel;
     tref3 := "333";
-    sel <- newMemWhole;
+    sel <- newMemWholeModel;
     GTK.openWindow gtk (400,500) {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
     [
         GTK.textArea tref1 sel,

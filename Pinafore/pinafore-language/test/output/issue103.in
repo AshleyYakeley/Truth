@@ -5,13 +5,13 @@ let
 e1: Entity
 = ();
 
-f: WholeRef a -> Unit
+f: WholeModel a -> Unit
 = fn _ => ();
 
 in do
-    (ref,_) <- newMemWhole >>= fn ref => return (ref, f ref);
-    ref := e1;
-    e2 <- get ref;
+    (model,_) <- newMemWholeModel >>= fn model => return (model, f model);
+    model := e1;
+    e2 <- get model;
     Debug.checkEntity "CHECK e1" e1;
     Debug.checkEntity "CHECK e2" e2;
     outputLn "LAST";

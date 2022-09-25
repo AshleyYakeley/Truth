@@ -2,7 +2,7 @@ module Pinafore.Base.ModelOrder where
 
 import Changes.Core
 import Pinafore.Base.FunctionMorphism
-import Pinafore.Base.ImmutableWholeRef
+import Pinafore.Base.ImmutableWholeModel
 import Pinafore.Base.Know
 import Pinafore.Base.ModelBased
 import Pinafore.Base.ModelMorphism
@@ -11,47 +11,47 @@ import Pinafore.Base.Order
 import Pinafore.Base.Ref
 import Shapes
 
-data RefOrder a update =
-    forall t. MkRefOrder (PinaforeFunctionMorphism update (Know a) t)
-                         (Order t)
+data ModelOrder a update =
+    forall t. MkModelOrder (PinaforeFunctionMorphism update (Know a) t)
+                           (Order t)
 
-instance EditContraFunctor (RefOrder a) where
-    eaContraMap lens (MkRefOrder fm order) = MkRefOrder (mapPinaforeFunctionMorphismBase lens fm) order
+instance EditContraFunctor (ModelOrder a) where
+    eaContraMap lens (MkModelOrder fm order) = MkModelOrder (mapPinaforeFunctionMorphismBase lens fm) order
 
-instance Semigroup (RefOrder a update) where
-    MkRefOrder fa oa <> MkRefOrder fb ob =
-        MkRefOrder (liftA2 (,) fa fb) $ \(a1, b1) (a2, b2) -> joinOrderings (oa a1 a2) (ob b1 b2)
+instance Semigroup (ModelOrder a update) where
+    MkModelOrder fa oa <> MkModelOrder fb ob =
+        MkModelOrder (liftA2 (,) fa fb) $ \(a1, b1) (a2, b2) -> joinOrderings (oa a1 a2) (ob b1 b2)
 
-instance Monoid (RefOrder a update) where
-    mempty = MkRefOrder (pure ()) $ compare @()
+instance Monoid (ModelOrder a update) where
+    mempty = MkModelOrder (pure ()) $ compare @()
     mappend = (<>)
 
-instance CatFunctor (CatDual (->)) (NestedMorphism (->)) RefOrder where
-    cfmap (MkCatDual f) = MkNestedMorphism $ \(MkRefOrder ef o) -> MkRefOrder (ef . (arr $ fmap f)) o
+instance CatFunctor (CatDual (->)) (NestedMorphism (->)) ModelOrder where
+    cfmap (MkCatDual f) = MkNestedMorphism $ \(MkModelOrder ef o) -> MkModelOrder (ef . (arr $ fmap f)) o
 
-reverseRefOrder :: RefOrder a update -> RefOrder a update
-reverseRefOrder (MkRefOrder ef o) = MkRefOrder ef $ reverseOrder o
+reverseModelOrder :: ModelOrder a update -> ModelOrder a update
+reverseModelOrder (MkModelOrder ef o) = MkModelOrder ef $ reverseOrder o
 
-refOrderOn :: PinaforeLensMorphism ap aq bp bq update -> RefOrder bq update -> RefOrder ap update
-refOrderOn pm (MkRefOrder ef o) = MkRefOrder (ef . lensFunctionMorphism pm) o
+modelOrderOn :: PinaforeLensMorphism ap aq bp bq update -> ModelOrder bq update -> ModelOrder ap update
+modelOrderOn pm (MkModelOrder ef o) = MkModelOrder (ef . lensFunctionMorphism pm) o
 
-type ModelRefOrder a = ModelBased (RefOrder a)
+type ModelModelOrder a = ModelBased (ModelOrder a)
 
-pureModelRefOrder :: Order a -> ModelRefOrder a
-pureModelRefOrder cmp = pureModelBased $ MkRefOrder id $ knowOrder cmp
+pureModelModelOrder :: Order a -> ModelModelOrder a
+pureModelModelOrder cmp = pureModelBased $ MkModelOrder id $ knowOrder cmp
 
-mapModelRefOrder :: (b -> a) -> ModelRefOrder a -> ModelRefOrder b
-mapModelRefOrder f = mapModelBased $ ccontramap1 f
+mapModelModelOrder :: (b -> a) -> ModelModelOrder a -> ModelModelOrder b
+mapModelModelOrder f = mapModelBased $ ccontramap1 f
 
-reverseModelRefOrder :: ModelRefOrder a -> ModelRefOrder a
-reverseModelRefOrder = mapModelBased reverseRefOrder
+reverseModelModelOrder :: ModelModelOrder a -> ModelModelOrder a
+reverseModelModelOrder = mapModelBased reverseModelOrder
 
-modelRefOrderOn :: ModelMorphism ap aq bp bq -> ModelRefOrder bq -> ModelRefOrder ap
-modelRefOrderOn = combineModelBased refOrderOn
+modelModelOrderOn :: ModelMorphism ap aq bp bq -> ModelModelOrder bq -> ModelModelOrder ap
+modelModelOrderOn = combineModelBased modelOrderOn
 
-modelRefOrderSet :: ModelRefOrder a -> PinaforeROWRef (FiniteSet a) -> PinaforeROWRef (Know [a])
-modelRefOrderSet ro pset =
-    modelBasedModel ro $ \model (MkRefOrder (ofunc :: PinaforeFunctionMorphism update (Know a) t) oord) -> let
+modelModelOrderSet :: ModelModelOrder a -> PinaforeROWModel (FiniteSet a) -> PinaforeROWModel (Know [a])
+modelModelOrderSet ro pset =
+    modelBasedModel ro $ \model (MkModelOrder (ofunc :: PinaforeFunctionMorphism update (Know a) t) oord) -> let
         cmp :: Order (a, t)
         cmp (_, t1) (_, t2) = oord t1 t2
         ofuncpair :: PinaforeFunctionMorphism update a (a, t)
@@ -59,26 +59,26 @@ modelRefOrderSet ro pset =
             proc a -> do
                 kt <- ofunc -< Known a
                 returnA -< (a, kt)
-        upairs :: PinaforeROWRef (FiniteSet (a, t))
+        upairs :: PinaforeROWModel (FiniteSet (a, t))
         upairs = applyPinaforeFunction model (cfmap ofuncpair) pset
         sortpoints :: FiniteSet (a, t) -> [a]
         sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
         in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
-modelRefOrderCompare ::
+modelModelOrderCompare ::
        forall a.
-       ModelRefOrder a
-    -> PinaforeImmutableWholeRef a
-    -> PinaforeImmutableWholeRef a
-    -> PinaforeImmutableWholeRef Ordering
-modelRefOrderCompare ro fv1 fv2 =
-    modelBasedModel ro $ \model (MkRefOrder ef o) ->
-        o <$> (applyImmutableRef model (fmap Known ef) fv1) <*> (applyImmutableRef model (fmap Known ef) fv2)
+       ModelModelOrder a
+    -> PinaforeImmutableWholeModel a
+    -> PinaforeImmutableWholeModel a
+    -> PinaforeImmutableWholeModel Ordering
+modelModelOrderCompare ro fv1 fv2 =
+    modelBasedModel ro $ \model (MkModelOrder ef o) ->
+        o <$> (applyImmutableModel model (fmap Known ef) fv1) <*> (applyImmutableModel model (fmap Known ef) fv2)
 
 modelRefUpdateOrder ::
-       ModelRefOrder a
+       ModelModelOrder a
     -> (forall update. Model update -> UpdateOrder (ContextUpdate update (WholeUpdate (Know a))) -> r)
     -> r
 modelRefUpdateOrder ro call =
-    modelBasedModel ro $ \model (MkRefOrder m cmp) ->
+    modelBasedModel ro $ \model (MkModelOrder m cmp) ->
         call model $ mkUpdateOrder cmp $ pinaforeFunctionMorphismContextChangeLens m

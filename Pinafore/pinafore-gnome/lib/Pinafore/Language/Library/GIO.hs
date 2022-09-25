@@ -44,12 +44,13 @@ literalConv =
                       _ -> Nothing
         }
 
-fileMakeRef :: File -> PinaforeAction (LangWholeRef '( Literal, Literal))
+fileMakeRef :: File -> PinaforeAction (LangWholeModel '( Literal, Literal))
 fileMakeRef f = do
     fref <- liftIO $ giFileReference f
     (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-
         actionLiftLifecycle $ makeSharedModel $ reflectingPremodel fref
-    return $ pinaforeRefToWholeRef $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
+    return $
+        pinaforeModelToWholeModel $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
 
 gioLibraryModule :: LibraryModule
 gioLibraryModule =

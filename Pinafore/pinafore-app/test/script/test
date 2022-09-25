@@ -8,7 +8,7 @@ import GTK();
 ui_page = fns n ui => (GTK.label n,ui);
 ui_labelled = fns n ui => GTK.horizontal [GTK.label n, GTK.layoutGrow  ui];
 
-std_window: WholeRef +Text -> GTK.Element -> Action GTK.Window
+std_window: WholeModel +Text -> GTK.Element -> Action GTK.Window
 = fns title contents => fixAction $ fn window => let
     mbar: GTK.Element
     = GTK.menuBar
@@ -40,9 +40,9 @@ name = property @Person @Text !"498260df-6a8a-44f0-b285-68a63565a33b";
 
 mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085";
 father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5";
-# parents : WholeRef Person -> FiniteSetRef Person;
+# parents : WholeModel Person -> FiniteSetModel Person;
 # parents p = (mother !$ p) <|> (father !$ p);
-children : WholeRef Person -> FiniteSetRef Person
+children : WholeModel Person -> FiniteSetModel Person
 = fn p => mother !@ p <:|:> father !@ p;
 
 employer = property @Person @Person !"72f612af-ae47-4c18-b3df-6932ae914f62";
@@ -66,10 +66,10 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
 # GTK
 rec
-ui_people : FiniteSetRef Person -> GTK.Element
+ui_people : FiniteSetModel Person -> GTK.Element
 = fn pp => GTK.exec $ do
-    selectedperson <- newMemWhole;
-    pplist <- getSetList noOrder pp;
+    selectedperson <- newMemWholeModel;
+    pplist <- getFiniteSetModelList noOrder pp;
     return $ GTK.vertical
     [
         GTK.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
@@ -79,10 +79,10 @@ ui_people : FiniteSetRef Person -> GTK.Element
     ];
     end;
 
-peopleByName : WholeRef +(List (Person *: Text))
-= setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
+peopleByName : WholeModel +(List (Person *: Text))
+= finiteSetModelList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
-ui_person : WholeRef Person -> GTK.Element
+ui_person : WholeModel Person -> GTK.Element
 = fn p => GTK.vertical
 [
     ui_labelled {"Name: "} $ GTK.textEntry $ name !$ p,
@@ -95,7 +95,7 @@ ui_person : WholeRef Person -> GTK.Element
         ],
         ui_page {"Home"} $ let homep = home !$ p in GTK.vertical
         [
-            ui_labelled {"Address: "} $ GTK.textArea (wholeRefText $ address !$ homep),
+            ui_labelled {"Address: "} $ GTK.textArea (wholeModelText $ address !$ homep),
             ui_labelled {"City: "} $ GTK.textEntry $ city !$ homep,
             ui_labelled {"Postcode/ZIP: "} $ GTK.textEntry $ postcode !$ homep,
             ui_labelled {"State/Province: "} $ GTK.textEntry $ province !$ homep,
@@ -154,7 +154,7 @@ window_switch : Action GTK.Window
     [
         #GTK.textEntry sw_pick),
         GTK.checkBox {"pick"} sw_pick,
-        GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea (wholeRefText sw_val1) else GTK.textArea (wholeRefText sw_val2)}
+        GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea (wholeModelText sw_val1) else GTK.textArea (wholeModelText sw_val2)}
     ];
 
 ### Imported Files
@@ -181,15 +181,15 @@ window_constant : Action GTK.Window
     GTK.checkBox {"off"} {False},
     GTK.checkBox {"on"} {True},
     GTK.textEntry {"constant"},
-    GTK.layoutGrow $ GTK.textArea (wholeRefText $ {"constant"})
+    GTK.layoutGrow $ GTK.textArea (wholeModelText $ {"constant"})
 ];
 
 ### CSS
 window_css: Action GTK.Window
 = do
-    cssref <- newMemText;
+    cssref <- newMemTextModel;
     cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
-    sometext <- newMemWhole;
+    sometext <- newMemWholeModel;
     sometext := "whatever";
     std_window {"CSS"} $ GTK.styleSheet (Debug.GTK.ignoreUpdateUIExceptions cssref) $ GTK.name "root" $ GTK.vertical
         [
@@ -202,9 +202,9 @@ window_css: Action GTK.Window
     end;
 
 ### Drawing
-window_drawing: WholeRef +Time -> Action GTK.Window
+window_drawing: WholeModel +Time -> Action GTK.Window
 = fn now => let import Colour; import Cairo in do
-    tzref <- newTimeZoneRef now;
+    tzref <- newTimeZoneModel now;
     std_window {"Drawing"} $ GTK.draw {fn (w,h) => let
         size = min w h;
         in timeToLocal %tzref %now >- match
@@ -223,29 +223,29 @@ window_drawing: WholeRef +Time -> Action GTK.Window
 
 window_list: Action GTK.Window
 = do
-    peopleList <- getSetList (orderOn name alphabetical) people;
+    peopleList <- getFiniteSetModelList (orderOn name alphabetical) people;
     std_window {"List"} $ GTK.list ui_person peopleList;
     end;
 
 ### Text Selection
 window_textselection: Action GTK.Window
 = do
-    tref1 <- newMemText;
+    tref1 <- newMemTextModel;
     tref1 := "111";
-    tref2 <- newMemText;
+    tref2 <- newMemTextModel;
     tref2 := "222";
-    tref3 <- newMemText;
+    tref3 <- newMemTextModel;
     tref3 := "333";
-    sel <- newMemWhole;
+    sel <- newMemWholeModel;
     let
-        notify: Action TextRef -> Action Unit
+        notify: Action TextModel -> Action Unit
         = fn atref => sel := atref;
     in std_window {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
     [
         GTK.notifySelection notify $ GTK.textArea tref1,
         GTK.notifySelection notify $ GTK.textArea tref2,
         GTK.notifySelection notify $ GTK.textArea tref3,
-        GTK.dynamic {GTK.exec $ mapAction (fn tref => GTK.textArea (wholeRefText tref)) %sel}
+        GTK.dynamic {GTK.exec $ mapAction (fn tref => GTK.textArea (wholeModelText tref)) %sel}
     ];
     end;
 
@@ -309,7 +309,7 @@ rec
 window_start : Action GTK.Window
 = do
     now <- newClock $ Seconds 1;
-    timeZone <- newTimeZoneRef now;
+    timeZone <- newTimeZoneModel now;
     let
         utcDate = {%now};
         localNow = {timeToLocal %timeZone %now};

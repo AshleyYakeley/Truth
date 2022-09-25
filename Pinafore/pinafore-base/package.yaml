@@ -42,7 +42,7 @@ library:
       - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
-      - Pinafore.Base.ImmutableWholeRef
+      - Pinafore.Base.ImmutableWholeModel
       - Pinafore.Base.File
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database

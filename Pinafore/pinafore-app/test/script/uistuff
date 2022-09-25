@@ -4,7 +4,7 @@ GTK.run $ \gtk => let
 import GTK;
 import UIStuff.Selection;
 in do
-    tref1 <- newMemText;
-    tref2 <- newMemText;
+    tref1 <- newMemTextModel;
+    tref2 <- newMemTextModel;
     paneWindow gtk $ pane "Text" $ vertical [layoutGrow $ textArea tref1, layoutGrow $ textArea tref2];
     end

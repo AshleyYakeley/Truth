@@ -32,7 +32,7 @@ data Token t where
     TokOpenBrace :: Token ()
     TokCloseBrace :: Token ()
     TokString :: Token Text
-    TokUnref :: Token ()
+    TokUnquote :: Token ()
     TokRec :: Token ()
     TokLet :: Token ()
     TokIn :: Token ()
@@ -81,7 +81,7 @@ instance TestEquality Token where
     testEquality TokOpenBrace TokOpenBrace = Just Refl
     testEquality TokCloseBrace TokCloseBrace = Just Refl
     testEquality TokString TokString = Just Refl
-    testEquality TokUnref TokUnref = Just Refl
+    testEquality TokUnquote TokUnquote = Just Refl
     testEquality TokRec TokRec = Just Refl
     testEquality TokLet TokLet = Just Refl
     testEquality TokIn TokIn = Just Refl
@@ -131,7 +131,7 @@ instance Show (Token t) where
     show TokOpenBrace = show ("{" :: String)
     show TokCloseBrace = show ("}" :: String)
     show TokString = "quoted string"
-    show TokUnref = "unreference"
+    show TokUnquote = "unquote"
     show TokRec = show ("rec" :: String)
     show TokLet = show ("let" :: String)
     show TokIn = show ("in" :: String)
@@ -352,7 +352,7 @@ readOpToken = do
         "=" -> return $ MkSomeOf TokAssign ()
         "=>" -> return $ MkSomeOf TokMap ()
         "<-" -> return $ MkSomeOf TokBackMap ()
-        "%" -> return $ MkSomeOf TokUnref ()
+        "%" -> return $ MkSomeOf TokUnquote ()
         "!" ->
             (do
                  anchor <- readHexAnchor

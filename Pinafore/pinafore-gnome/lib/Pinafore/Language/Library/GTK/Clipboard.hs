@@ -20,9 +20,10 @@ clipBijection = let
     isoBackwards _ = Nothing
     in MkIsomorphism {..}
 
-langClipboard :: LangContext -> LangWholeRef '( Literal, Literal)
+langClipboard :: LangContext -> LangWholeModel '( Literal, Literal)
 langClipboard c =
-    pinaforeRefToWholeRef $ eaMap (bijectionWholeChangeLens clipBijection) $ MkWModel $ ocClipboard $ lcOtherContext c
+    pinaforeModelToWholeModel $
+    eaMap (bijectionWholeChangeLens clipBijection) $ MkWModel $ ocClipboard $ lcOtherContext c
 
 clipboardStuff :: DocTreeEntry BindDoc
 clipboardStuff =

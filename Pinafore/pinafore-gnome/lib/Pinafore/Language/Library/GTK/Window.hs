@@ -47,7 +47,7 @@ openWindow ::
        (?pinafore :: PinaforeContext)
     => LangContext
     -> (Int32, Int32)
-    -> PinaforeImmutableWholeRef Text
+    -> PinaforeImmutableWholeModel Text
     -> LangElement
     -> PinaforeAction LangWindow
 openWindow lc wsSize title (MkLangElement element) =
@@ -60,7 +60,7 @@ openWindow lc wsSize title (MkLangElement element) =
                 wsCloseBoxAction :: GView 'Locked ()
                 wsCloseBoxAction = lwClose w
                 wsTitle :: Model (ROWUpdate Text)
-                wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
+                wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
                 wsContent :: AccelGroup -> GView 'Locked Widget
                 wsContent ag =
                     element

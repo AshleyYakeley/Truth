@@ -11,8 +11,8 @@ module Pinafore.Base.Action
     , pinaforeResourceContext
     , pinaforeFlushModelUpdates
     , pinaforeFlushModelCommits
-    , pinaforeRefGet
-    , pinaforeRefPush
+    , pinaforeModelGet
+    , pinaforeModelPush
     , pinaforeUndoHandler
     , pinaforeActionKnow
     , knowPinaforeAction
@@ -84,14 +84,14 @@ pinaforeFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTas
 pinaforeFlushModelCommits :: WModel update -> PinaforeAction ()
 pinaforeFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitTask model
 
-pinaforeRefGet :: WModel update -> ReadM (UpdateReader update) t -> PinaforeAction t
-pinaforeRefGet model rm = do
+pinaforeModelGet :: WModel update -> ReadM (UpdateReader update) t -> PinaforeAction t
+pinaforeModelGet model rm = do
     pinaforeFlushModelUpdates model
     rc <- pinaforeResourceContext
     liftIO $ wModelGet rc model rm
 
-pinaforeRefPush :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
-pinaforeRefPush model edits = do
+pinaforeModelPush :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeModelPush model edits = do
     pinaforeFlushModelUpdates model
     rc <- pinaforeResourceContext
     ok <- liftIO $ wModelPush rc model edits

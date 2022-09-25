@@ -31,10 +31,10 @@ setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime
     _ => EventTimeDate d;
     end;
 
-eventRefTimeDate: WholeRef EventTime -> WholeRef Date
-= fn r => lensMapWhole eventTimeDate setEventTimeDate r;
+eventModelTimeDate: WholeModel EventTime -> WholeModel Date
+= fn r => lensMapWholeModel eventTimeDate setEventTimeDate r;
 
-eventRefTimeTimeOfDay: WholeRef EventTime -> WholeRef TimeOfDay
+eventModelTimeTimeOfDay: WholeModel EventTime -> WholeModel TimeOfDay
 = fn r => let
     eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay
     = match
@@ -50,7 +50,7 @@ setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventT
         Just tod => EventTimeTime $ DateAndTime (eventTimeDate et) tod;
         end;
     end;
-in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
+in maybeLensMapWholeModel eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
 # for ordering
 eventTimeTime: EventTime -> LocalTime
@@ -59,7 +59,7 @@ eventTimeTime: EventTime -> LocalTime
     EventTimeTime t => t
     end;
 
-eventTimeOrder: RefOrder EventTime
+eventTimeOrder: ModelOrder EventTime
 = mapOrder eventTimeTime localChronological;
 
 
@@ -67,66 +67,65 @@ eventTimeOrder: RefOrder EventTime
 
 opentype Event;
 subtype Event <: Named;
-events: FiniteSetRef Event
+events: FiniteSetModel Event
 = property @Event @Unit !"type.event" !@ {()};
 
 eventTime = property @Event @EventTime !"event.time";
 eventNotes = property @Event @Text !"item.description";
 
-eventOrder: RefOrder Event
+eventOrder: ModelOrder Event
 = orderOn eventTime eventTimeOrder;
 
-eventData: FiniteSetRef (EventTime *: Text)
+eventData: FiniteSetModel (EventTime *: Text)
 = (eventTime !** name) !$$ events;
 
-eventDataOrder: RefOrder (EventTime *: Text)
+eventDataOrder: ModelOrder (EventTime *: Text)
 = mapOrder fst eventTimeOrder;
 
-eventList: WholeRef +Date -> WholeRef +(List (EventTime *: Text))
-= fn todayref => {
+eventList: WholeModel +Date -> WholeModel +(List (EventTime *: Text))
+= fn todaymodel => {
     let
-        today: Date
-        = %todayref;
+        today: Date = %todaymodel;
 
         pickCurrent: EventTime *: Text -> Boolean
         = fn (t,_) => ge $ calendrical (eventTimeDate t) today;
-    in (EventTimeDate today,"Today") :: filter pickCurrent %(setList eventDataOrder eventData)
+    in (EventTimeDate today,"Today") :: filter pickCurrent %(finiteSetModelList eventDataOrder eventData)
     };
 
 
 ### GTK
 
 # Text for the overview tab.
-overviewRef: WholeRef +Date -> WholeRef +Text
-= fn todayref => {textConcat $ mapList (fn (t,n) => showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
+overviewModel: WholeModel +Date -> WholeModel +Text
+= fn todaymodel => {textConcat $ mapList (fn (t,n) => showEventTime t <> ": " <> n <> "\n") %(eventList todaymodel)};
 
 # Overview tab GTK
 overviewPane: Pane
 = pane "Overview" $ GTK.exec $ do
     now <- newClock $ Seconds 60; # update every minute
-    tz <- newTimeZoneRef now;
-    return $ GTK.label $ overviewRef {timeToLocal %tz %now >- match DateAndTime d _ => d end};
+    tz <- newTimeZoneModel now;
+    return $ GTK.label $ overviewModel {timeToLocal %tz %now >- match DateAndTime d _ => d end};
     end;
 
-calendarWindow: WholeRef +Event -> Action GTK.Window
+calendarWindow: WholeModel +Event -> Action GTK.Window
 = fn evt => fixAction $ fn window =>
     GTK.openWindow gtk (200,200) {"date of " <> %(name !$% evt)} $ GTK.vertical
     [
-        GTK.calendar $ eventRefTimeDate $ eventTime !$% evt,
-        GTK.button {"Done: " <> show %(eventRefTimeDate $ eventTime !$% evt)} {GTK.closeWindow window}
+        GTK.calendar $ eventModelTimeDate $ eventTime !$% evt,
+        GTK.button {"Done: " <> show %(eventModelTimeDate $ eventTime !$% evt)} {GTK.closeWindow window}
     ];
 
-eventUI: WholeRef +Event -> GTK.Element
+eventUI: WholeModel +Event -> GTK.Element
 = fn evt => GTK.vertical
 [
     GTK.textEntry $ name !$% evt,
     GTK.horizontal
     [
         GTK.button {"cal"} {calendarWindow evt},
-        GTK.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt,
-        GTK.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt
+        GTK.textEntry $ interpretDateAsText $ eventModelTimeDate $ eventTime !$% evt,
+        GTK.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventModelTimeTimeOfDay $ eventTime !$% evt
     ],
-    GTK.layoutGrow $ GTK.textArea (wholeRefText $ eventNotes !$% evt)
+    GTK.layoutGrow $ GTK.textArea (wholeModelText $ eventNotes !$% evt)
 ];
 
 eventWindow: Event -> Action GTK.Window
@@ -141,18 +140,18 @@ newEvent: Action Event
     return item;
     end;
 
-eventsTableUI: WholeRef Event -> GTK.Element
+eventsTableUI: WholeModel Event -> GTK.Element
 = fn selection => let
-    columns: List (WholeRef +Text *: (Event -> WholeRef Text))
+    columns: List (WholeModel +Text *: (Event -> WholeModel Text))
     = let
-        timeColumn: WholeRef +Text *: (Event -> WholeRef Text)
+        timeColumn: WholeModel +Text *: (Event -> WholeModel Text)
         = ({"When"},fn e => {showEventTime $ %(eventTime !$ {e})});
-        nameColumn: WholeRef +Text *: (Event -> WholeRef Text)
+        nameColumn: WholeModel +Text *: (Event -> WholeModel Text)
         = ({"What"},fn e => name !$ {e});
         in [timeColumn,nameColumn];
     in GTK.exec $ do
-        lref <- getSetList eventOrder events;
-        return $ GTK.listTable columns lref eventWindow (Just selection);
+        lm <- getFiniteSetModelList eventOrder events;
+        return $ GTK.listTable columns lm eventWindow (Just selection);
         end;
 
 in do

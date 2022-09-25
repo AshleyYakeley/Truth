@@ -43,7 +43,7 @@ menuAction ::
        (?pinafore :: PinaforeContext)
     => Text
     -> Maybe Text
-    -> PinaforeImmutableWholeRef (PinaforeAction TopType)
+    -> PinaforeImmutableWholeModel (PinaforeAction TopType)
     -> LangMenuItem
 menuAction label maccelStr raction = let
     maccel = do

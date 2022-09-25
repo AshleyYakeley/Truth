@@ -34,13 +34,13 @@ library:
       - Pinafore.Markdown
       - Pinafore.Context
       - Pinafore.Language.Value.Instances
-      - Pinafore.Language.Value.WholeRef
-      - Pinafore.Language.Value.SetRef
-      - Pinafore.Language.Value.FiniteSetRef
-      - Pinafore.Language.Value.ListRef
-      - Pinafore.Language.Value.TextRef
+      - Pinafore.Language.Value.WholeModel
+      - Pinafore.Language.Value.SetModel
+      - Pinafore.Language.Value.FiniteSetModel
+      - Pinafore.Language.Value.ListModel
+      - Pinafore.Language.Value.TextModel
       - Pinafore.Language.Value.Morphism
-      - Pinafore.Language.Value.RefOrder
+      - Pinafore.Language.Value.ModelOrder
       - Pinafore.Language.Value
       - Pinafore.Language.Name
       - Pinafore.Language.Shim
@@ -106,7 +106,7 @@ library:
       - Pinafore.Language.Library.Std.Interpreter
       - Pinafore.Language.Library.Std.Invocation
       - Pinafore.Language.Library.Std.Undo
-      - Pinafore.Language.Library.Std.Reference
+      - Pinafore.Language.Library.Std.Model
       - Pinafore.Language.Library.Std.File
       - Pinafore.Language.Library.Std
       - Pinafore.Language.Library.Debug

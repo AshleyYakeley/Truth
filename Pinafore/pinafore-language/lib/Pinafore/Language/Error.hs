@@ -121,7 +121,7 @@ instance Show ErrorType where
         unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
     show (GroundTypeConvertError ta tb) = unpack $ "cannot convert " <> ta <> " <: " <> tb
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
-    show NotationBareUnquoteError = "unquote outside WholeRef quote"
+    show NotationBareUnquoteError = "unquote outside WholeModel quote"
     show (MatchesDifferentCount expected found) =
         "different number of patterns in matches, expected " <> show expected <> ", found " <> show found
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"

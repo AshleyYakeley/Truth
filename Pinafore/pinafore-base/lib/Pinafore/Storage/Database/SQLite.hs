@@ -77,7 +77,7 @@ instance WitnessConstraint ToField RefCountTable where
 
 instance WitnessConstraint IsSQLiteTable PinaforeSchema where
     witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeRefCount = Dict
+    witnessConstraint PinaforeModelCount = Dict
     witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict
 
@@ -94,7 +94,7 @@ sqlitePinaforeSchema = let
                         TripleValue -> MkColumnSchema "value" ColumnTypeNotNull False
                 tableIndexes = [MkIndexSchema "propval" [MkSome TriplePredicate, MkSome TripleValue]]
                 in MkTableSchema {..}
-            PinaforeRefCount -> let
+            PinaforeModelCount -> let
                 tableName = "refcount"
                 tableColumns =
                     mkFiniteAllFor @ColumnSchema $ \case
@@ -156,7 +156,7 @@ sqlitePinaforeLens = let
         (row :: [AllOf ((:~:) RefCount)]) <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeRefCount)
+                (SingleTable $ MkTupleTableSel PinaforeModelCount)
                 (MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v)
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr RefCountValue)
@@ -215,7 +215,7 @@ sqlitePinaforeLens = let
         return $
         Just $
         pure $
-        DatabaseInsert (MkTupleTableSel PinaforeRefCount) $
+        DatabaseInsert (MkTupleTableSel PinaforeModelCount) $
         MkTupleInsertClause $
         pure $
         MkAllOf $ \case
@@ -225,7 +225,8 @@ sqlitePinaforeLens = let
         return $
         Just $
         pure $
-        DatabaseDelete (MkTupleTableSel PinaforeRefCount) $ MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v
+        DatabaseDelete (MkTupleTableSel PinaforeModelCount) $
+        MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v
     clPutEdit (PinaforeTableEditFactSet p s (Just v)) =
         return $
         Just $
@@ -268,7 +269,7 @@ sqlitePinaforeLens = let
 
 instance WitnessConstraint IsPinaforeRow PinaforeSchema where
     witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeRefCount = Dict
+    witnessConstraint PinaforeModelCount = Dict
     witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict
 

@@ -7,7 +7,7 @@ datatype StopwatchState of
     RunningState Time;
 end;
 
-toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action Unit
+toggleStopwatch: WholeModel +Time -> WholeModel StopwatchState -> Action Unit
 = fns now r => do
     n <- get now;
     oldstate <- get r;
@@ -24,12 +24,12 @@ showStopwatch: StopwatchState -> Time -> Text
     RunningState t => show $ diffTime n t
     end;
 
-ui: WholeRef +Time -> WholeRef StopwatchState -> GTK.Element
+ui: WholeModel +Time -> WholeModel StopwatchState -> GTK.Element
 = fns now r => GTK.button {showStopwatch %r %now} {toggleStopwatch now r};
 
 in do
     now <- newClock $ Seconds 0.001;
-    r <- newMemWhole;
+    r <- newMemWholeModel;
     r := StoppedState zeroDuration;
     GTK.run $ fn gtk => GTK.openWindow gtk (150,40) {"Stopwatch"} $ ui now r;
     end

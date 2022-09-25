@@ -7,7 +7,7 @@ import Pinafore.Language.Library.GTK.Context
 import Shapes
 
 data SelectionModel =
-    TextSelectionModel LangTextRef
+    TextSelectionModel LangTextModel
 
 data ElementContext = MkElementContext
     { ecUnlift :: View --> IO

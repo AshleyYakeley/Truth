@@ -8,14 +8,14 @@ pinafore> let qp = property @Q @P !"qp"
 pinafore> :t pp
 : P ~> P
 pinafore> :t pp !$ {p}
-: WholeRef P
+: WholeModel P
 pinafore> :t pp !$ {q}
-<input>:10:7: cannot convert WholeRef P -> WholeRef P+ <: WholeRef +Q -> a-
- <input>:10:7: cannot convert WholeRef +Q+ <: WholeRef P-
+<input>:10:7: cannot convert WholeModel P -> WholeModel P+ <: WholeModel +Q -> a-
+ <input>:10:7: cannot convert WholeModel +Q+ <: WholeModel P-
   <input>:10:7: cannot convert Q+ <: P-
    <input>:10:7: cannot convert Q <: P
 pinafore> :t qp !$ {p}
-: WholeRef P
+: WholeModel P
 pinafore> :t qp !$ {q}
-: WholeRef P
+: WholeModel P
 pinafore> <END>

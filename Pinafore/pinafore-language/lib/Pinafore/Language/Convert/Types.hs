@@ -62,20 +62,21 @@ instance HasPinaforeGroundType '[ CoCCRVariance] NonEmpty where
 instance HasPinaforeGroundType '[ CoCCRVariance] PinaforeAction where
     pinaforeGroundType = actionGroundType
 
--- LangWholeRef
-wholeRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef
-wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWholeRef)|]) "WholeRef"
+-- LangWholeModel
+wholeModelGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangWholeModel
+wholeModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWholeModel)|]) "WholeModel"
 
-instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef where
-    pinaforeGroundType = wholeRefGroundType
+instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangWholeModel where
+    pinaforeGroundType = wholeModelGroundType
 
--- PinaforeImmutableWholeRef
-instance (HasPinaforeType 'Negative a) => HasPinaforeType 'Negative (PinaforeImmutableWholeRef a) where
+-- PinaforeImmutableWholeModel
+instance (HasPinaforeType 'Negative a) => HasPinaforeType 'Negative (PinaforeImmutableWholeModel a) where
     pinaforeType =
-        mapNegShimWit (functionToShim "langWholeRefToImmutable" $ langWholeRefToImmutable @BottomType) pinaforeType
+        mapNegShimWit (functionToShim "langWholeModelToImmutable" $ langWholeModelToImmutable @BottomType) pinaforeType
 
-instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeImmutableWholeRef a) where
-    pinaforeType = mapPosShimWit (functionToShim "pinaforeImmutableToWholeRef" pinaforeImmutableToWholeRef) pinaforeType
+instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeImmutableWholeModel a) where
+    pinaforeType =
+        mapPosShimWit (functionToShim "pinaforeImmutableToWholeModel" pinaforeImmutableToWholeModel) pinaforeType
 
 -- Literal types
 instance HasPinaforeGroundType '[] Literal where

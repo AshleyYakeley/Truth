@@ -26,7 +26,7 @@ func1 = fns n a b c d e f => func2 n a b c d e f;
 func0 = fns n a b c d e f => func1 n a b c d e f;
 
 w : GTK.Context -> Action GTK.Window
-= fn gtk => GTK.openWindow gtk (300,400) {"Test"} $ func0 (pureWhole "Text") False False False False False False;
+= fn gtk => GTK.openWindow gtk (300,400) {"Test"} $ func0 (pureWholeModel "Text") False False False False False False;
 
 prop0 = property @T @Text !"000";
 

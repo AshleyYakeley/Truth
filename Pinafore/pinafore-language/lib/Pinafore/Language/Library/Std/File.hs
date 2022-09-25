@@ -8,7 +8,7 @@ import Pinafore.Language.Library.Defs
 --import Changes.World.File
 {-
 file_import ::
-        LangFiniteSetRef '( A, A)
+        LangFiniteSetModel '( A, A)
     -> (A -> PinaforeAction ())
     -> PinaforeAction ()
 file_import set continue = do

@@ -13,15 +13,15 @@ pinafore> :type g
 pinafore> :type g i
 : a -> a
 pinafore> 
-pinafore> let ur: WholeRef a -> Unit = fn _ => ()
+pinafore> let ur: WholeModel a -> Unit = fn _ => ()
 pinafore> :type ur
-: WholeRef a -> Unit
-pinafore> :type newMemWhole >>= fn ref => return (ref, ())
-: Action (WholeRef a *: Unit)
-pinafore> :type newMemWhole >>= fn ref => return (ref, ((fn _ => ()) : WholeRef a -> Unit) ref)
-: Action (WholeRef a *: Unit)
-pinafore> :type fn ref => return (ref, ur ref)
-: (WholeRef a & b) -> Action (b *: Unit)
-pinafore> :type newMemWhole >>= fn ref => return (ref, ur ref)
-: Action (WholeRef a *: Unit)
+: WholeModel a -> Unit
+pinafore> :type newMemWholeModel >>= fn model => return (model, ())
+: Action (WholeModel a *: Unit)
+pinafore> :type newMemWholeModel >>= fn model => return (model, ((fn _ => ()) : WholeModel a -> Unit) model)
+: Action (WholeModel a *: Unit)
+pinafore> :type fn model => return (model, ur model)
+: (WholeModel a & b) -> Action (b *: Unit)
+pinafore> :type newMemWholeModel >>= fn model => return (model, ur model)
+: Action (WholeModel a *: Unit)
 pinafore> <END>

@@ -31,8 +31,6 @@ All declarations, including type declarations, are local to a `let` block.
 
 <name> ::= uname | lname | "(" <infix-operator[n]> ")"
 
-<refname> ::= uname | lname | "(" <infix-operator[n]> ")"
-
 <qname> ::= quname | qlname
 
 <interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>

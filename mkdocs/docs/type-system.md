@@ -35,7 +35,7 @@ If `T` has a contravariant parameter,
 Intuitively, the word "of" suggests covariance, while the words "for" and "on" suggest contravariance.
 For example, a number is a literal (`Number <: Literal`), and a list *of* numbers is a list of literals (`[Number] <: [Literal]`).
 Thus "list of" is covariant.
-And an order *on* literals is an order on numbers (`RefOrder Literal <: RefOrder Number`).
+And an order *on* literals is an order on numbers (`ModelOrder Literal <: ModelOrder Number`).
 Thus "order on" is contravariant.
 
 ## Any & None

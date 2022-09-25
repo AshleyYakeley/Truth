@@ -137,7 +137,7 @@ testQuery query expected =
             runInterpretResult $
             runPinaforeScoped (initialPos "<input>") $ do
                 v <- parseValue query
-                showPinaforeRef v
+                showPinaforeModel v
         case result of
             FailureResult e ->
                 case expected of
@@ -574,8 +574,8 @@ testQueries =
               "subtype"
               [ testQuery "let i : Integer -> Number = fn x => x in i 3" $ LRSuccess "3"
               , testQuery "let a : Integer = 3; b : Number = a in b" $ LRSuccess "3"
-              , testQuery "let i : FiniteSetRef -a -> SetRef a = fn x => x in 3" $ LRSuccess "3"
-              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a = fn x => x in 3" $ LRSuccess "3"
+              , testQuery "let i : FiniteSetModel -a -> SetModel a = fn x => x in 3" $ LRSuccess "3"
+              , testQuery "let i : FiniteSetModel {-a,+Integer} -> SetModel a = fn x => x in 3" $ LRSuccess "3"
               ]
         , testTree
               "subsume"

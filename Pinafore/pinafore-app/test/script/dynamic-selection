@@ -4,8 +4,8 @@ let
 
 opentype Named;
 name = property @Named @Text !"identify.name";
-byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
-byName ref = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ ref;
+byName: FiniteSetModel {+a,+Named} -> WholeModel +[(a,Text)];
+byName ref = finiteSetModelList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ ref;
 
 dynamictype Person = !"type.person";
 testpt = dynamicEntity @Person !"testpt";
@@ -31,11 +31,11 @@ debugThing t action = do
     end;
 
 in debugThing "SCRIPT" $ do
-    selection <- newMemWhole;
-    subscribeWhole selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
+    selection <- newMemWholeModel;
+    subscribeWholeModel selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
     window <- fixAction $ \w -> GTK.openWindow (300,400) {"Test"} $
-        GTK.dynamic $ coMapWhole (\e -> GTK.run $ debugThing "DYNAMIC" $ do
+        GTK.dynamic $ coMapWholeModel (\e -> GTK.run $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
             return $ GTK.vertical [(True,GTK.label {"Set Text"})];

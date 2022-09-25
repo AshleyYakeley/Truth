@@ -25,7 +25,7 @@ nav:
   - Type System: 'type-system.md'
   - Types: 'types.md'
   - Dynamic Supertypes: 'dynamic-supertypes.md'
-  - Reference Notation: 'reference-notation.md'
+  - Model Notation: 'model-notation.md'
   - Modules: 'modules.md'
 - Library:
   - Std: 'library/Std.md'

@@ -8,9 +8,9 @@ let g: ((a -> a) & b) -> b = fn x => x
 :type g
 :type g i
 
-let ur: WholeRef a -> Unit = fn _ => ()
+let ur: WholeModel a -> Unit = fn _ => ()
 :type ur
-:type newMemWhole >>= fn ref => return (ref, ())
-:type newMemWhole >>= fn ref => return (ref, ((fn _ => ()) : WholeRef a -> Unit) ref)
-:type fn ref => return (ref, ur ref)
-:type newMemWhole >>= fn ref => return (ref, ur ref)
+:type newMemWholeModel >>= fn model => return (model, ())
+:type newMemWholeModel >>= fn model => return (model, ((fn _ => ()) : WholeModel a -> Unit) model)
+:type fn model => return (model, ur model)
+:type newMemWholeModel >>= fn model => return (model, ur model)

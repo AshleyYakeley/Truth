@@ -83,13 +83,13 @@ instance FiniteWitness LiteralTable where
 
 data PinaforeSchema colsel where
     PinaforeProperty :: PinaforeSchema TripleTable
-    PinaforeRefCount :: PinaforeSchema RefCountTable
+    PinaforeModelCount :: PinaforeSchema RefCountTable
     PinaforeFact :: PinaforeSchema TripleTable
     PinaforeLiteral :: PinaforeSchema LiteralTable
 
 instance Show (PinaforeSchema colsel) where
     show PinaforeProperty = "property"
-    show PinaforeRefCount = "refcount"
+    show PinaforeModelCount = "refcount"
     show PinaforeFact = "fact"
     show PinaforeLiteral = "literal"
 
@@ -98,7 +98,7 @@ instance AllConstraint Show PinaforeSchema where
 
 instance TestEquality PinaforeSchema where
     testEquality PinaforeProperty PinaforeProperty = Just Refl
-    testEquality PinaforeRefCount PinaforeRefCount = Just Refl
+    testEquality PinaforeModelCount PinaforeModelCount = Just Refl
     testEquality PinaforeFact PinaforeFact = Just Refl
     testEquality PinaforeLiteral PinaforeLiteral = Just Refl
     testEquality _ _ = Nothing
@@ -108,28 +108,28 @@ instance FiniteWitness PinaforeSchema where
         (\ft fr ff fl ->
              MkAllFor $ \case
                  PinaforeProperty -> ft
-                 PinaforeRefCount -> fr
+                 PinaforeModelCount -> fr
                  PinaforeFact -> ff
                  PinaforeLiteral -> fl) <$>
         getTable PinaforeProperty <*>
-        getTable PinaforeRefCount <*>
+        getTable PinaforeModelCount <*>
         getTable PinaforeFact <*>
         getTable PinaforeLiteral
 
 instance WitnessConstraint FiniteWitness PinaforeSchema where
     witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeRefCount = Dict
+    witnessConstraint PinaforeModelCount = Dict
     witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict
 
 instance WitnessConstraint (AllConstraint Show) PinaforeSchema where
     witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeRefCount = Dict
+    witnessConstraint PinaforeModelCount = Dict
     witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict
 
 instance WitnessConstraint (WitnessConstraint Show) PinaforeSchema where
     witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeRefCount = Dict
+    witnessConstraint PinaforeModelCount = Dict
     witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict

@@ -34,10 +34,10 @@ or alternatively, retrieve the set of people whose mother's name is a given name
 
 ## User Interface
 
-Pinafore allows the composition of typed "references" to information, which can be attached to appropriate user interface elements.
-References can be read and modified either in code or by the attached user interfaces.
-References are also "live" in that they automatically propagate updates to user interfaces.
-Information is retrieved from storage in the form of these live references.
+Pinafore allows the composition of typed "models" of information, which can be attached to appropriate user interface elements.
+Models can be read and modified either in code or by the attached user interfaces.
+Models are also "live" in that they automatically propagate updates to user interfaces.
+Information is retrieved from storage in the form of these live models.
 
 For example, one can easily create a user interface element listing everyone whose mother's name is "Jane".
 Whenever this set of people changes, the user interface will automatically update to reflect it.

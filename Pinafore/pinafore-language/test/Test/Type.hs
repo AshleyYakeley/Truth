@@ -398,11 +398,11 @@ testType =
         , testTree
               "library"
               [ textTypeTest "()" "{} -> Unit"
-              , textTypeTest "{3}" "{} -> WholeRef +Integer"
-              , textTypeTest "identity !$% {3}" "{} -> WholeRef +Integer"
-              , textTypeTest "identity !$ {3}" "{} -> WholeRef +Integer"
-              , textTypeTest "(identity !. identity) !$% {3}" "{} -> WholeRef +Integer"
-              , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeRef +Integer"
+              , textTypeTest "{3}" "{} -> WholeModel +Integer"
+              , textTypeTest "identity !$% {3}" "{} -> WholeModel +Integer"
+              , textTypeTest "identity !$ {3}" "{} -> WholeModel +Integer"
+              , textTypeTest "(identity !. identity) !$% {3}" "{} -> WholeModel +Integer"
+              , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeModel +Integer"
               , textTypeTest
                     "property @Integer @Text !\"a\" !** property @Number @Text !\"b\""
                     "{} -> {-Integer,+Number} ~> (Text *: Text)"
@@ -411,16 +411,16 @@ testType =
                     "{} -> (Text +: Text) ~> {-Integer,+Number}"
               , textTypeTest
                     "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$% {3}"
-                    "{} -> WholeRef (Text *: Text)"
+                    "{} -> WholeModel (Text *: Text)"
               , textTypeTest
                     "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$ {3}"
-                    "{} -> WholeRef (Text *: Text)"
-              , textTypeTest "property @Integer @Text !\"a\" !@% {\"x\"}" "{} -> FiniteSetRef Integer"
-              , textTypeTest "property @Integer @Text !\"a\" !@ {\"x\"}" "{} -> FiniteSetRef Integer"
+                    "{} -> WholeModel (Text *: Text)"
+              , textTypeTest "property @Integer @Text !\"a\" !@% {\"x\"}" "{} -> FiniteSetModel Integer"
+              , textTypeTest "property @Integer @Text !\"a\" !@ {\"x\"}" "{} -> FiniteSetModel Integer"
               , textTypeTest
                     "(property @Integer @Text !\"a\" !@% {\"x\"}) <:*:> (property @Number @Text !\"b\" !@% {\"y\"})"
-                    "{} -> FiniteSetRef (Integer *: Number)"
-              , textTypeTest "pairWhole {3} {\"x\"}" "{} -> WholeRef {-(Any *: Any),+(Integer *: Text)}"
-              , textTypeTest "immutWhole $ pairWhole {3} {\"x\"}" "{} -> WholeRef +(Integer *: Text)"
+                    "{} -> FiniteSetModel (Integer *: Number)"
+              , textTypeTest "pairWholeModel {3} {\"x\"}" "{} -> WholeModel {-(Any *: Any),+(Integer *: Text)}"
+              , textTypeTest "immutWholeModel $ pairWholeModel {3} {\"x\"}" "{} -> WholeModel +(Integer *: Text)"
               ]
         ]

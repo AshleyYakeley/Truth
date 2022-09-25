@@ -28,7 +28,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add Showable type for showing, show replacing toText
       . add min/max/lesser/greater functions
       . add List1 type for non-empty lists, subtype of List
-      . add TextRef type & associated functions, use for uiTextArea
+      . rename "Ref" types and functions to "Model"
+      . add TextModel type & associated functions, use for uiTextArea
       . add Task type & associated functions
     - Colour
       . add Colour & AlphaColour types, etc.

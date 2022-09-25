@@ -17,4 +17,4 @@ root = openEntity @Root !"example:root";
 people = property @Person @Root !"example:people" !@ {root};
 
 in
-get (setList (reverse alphabetical) (name !$$ people)) >>= fn l => for_ l outputLn
+get (finiteSetModelList (reverse alphabetical) (name !$$ people)) >>= fn l => for_ l outputLn

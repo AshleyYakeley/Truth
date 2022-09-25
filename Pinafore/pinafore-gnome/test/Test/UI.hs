@@ -55,7 +55,7 @@ testActions =
         , testUIAction "emptywindow gtk" noTestAction
         , testUIAction "buttonwindow gtk $ return ()" noTestAction
         , testUIAction "buttonwindow gtk $ return ()" runClickButton
-        , testUIAction "buttonwindow gtk $ newMemFiniteSet" runClickButton
+        , testUIAction "buttonwindow gtk $ newMemFiniteSetModel" runClickButton
         , testUIAction "buttonwindow gtk $ newpoint" runClickButton
         , testUIAction "buttonwindow gtk $ emptywindow gtk" runClickButton
         , testUIAction "buttonwindow gtk $ newpoint >> newpoint" runClickButton
@@ -70,7 +70,7 @@ testUI =
     tDecls
         [ "emptywindow: GTK.Context -> Action Unit = fn gtk => do GTK.openWindow gtk (300,400) {\"Empty\"} GTK.blank; return (); end"
         , "opentype T"
-        , "newpoint: Action Unit = do s <- newMemFiniteSet; p <- newOpenEntity @T; s += p; return (); end"
+        , "newpoint: Action Unit = do s <- newMemFiniteSetModel; p <- newOpenEntity @T; s += p; return (); end"
         , "buttonwindow: GTK.Context -> Action Any -> Action Unit = fns gtk action => do GTK.openWindow gtk (300,400) {\"Test\"} (GTK.button {\"Button\"} {action}); return (); end"
         ]
         testActions

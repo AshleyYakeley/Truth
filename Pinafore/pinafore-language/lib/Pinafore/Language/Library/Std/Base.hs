@@ -53,23 +53,23 @@ entityAnchor p = pack $ show p
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
-newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeRef UTCTime)
+newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeModel UTCTime)
 newClock duration = do
     (clockOM, ()) <- actionLiftLifecycle $ makeSharedModel $ clockPremodel zeroTime duration
-    return $ functionImmutableRef $ MkWModel $ clockOM
+    return $ functionImmutableModel $ MkWModel $ clockOM
 
-newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
-newTimeZoneRef now = do
-    ref <-
+newTimeZoneModel :: PinaforeImmutableWholeModel UTCTime -> PinaforeAction (PinaforeImmutableWholeModel Int)
+newTimeZoneModel now = do
+    model <-
         pinaforeFloatMapReadOnly
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
-        immutableRefToReadOnlyRef now
-    return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeRef ref
+        immutableModelToReadOnlyModel now
+    return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeModel model
 
 interpretAsText ::
        forall a. (Read a, TextShow a)
-    => LangWholeRef '( a, a)
-    -> LangWholeRef '( Text, Text)
+    => LangWholeModel '( a, a)
+    -> LangWholeModel '( Text, Text)
 interpretAsText = let
     getter :: Maybe a -> Maybe Text
     getter Nothing = Just ""
@@ -78,7 +78,7 @@ interpretAsText = let
     setter Nothing _ = Just Nothing
     setter (Just "") _ = Just Nothing
     setter (Just t) _ = fmap Just $ textReadMaybe t
-    in maybeLensLangWholeRef getter setter
+    in maybeLensLangWholeModel getter setter
 
 textReadMaybe :: Read t => Text -> Maybe t
 textReadMaybe t = readMaybe $ unpack t
@@ -93,7 +93,7 @@ plainFormattingDefs uname lname =
       textReadMaybe @t
     , mkValEntry
           (MkName $ "interpret" <> uname <> "AsText")
-          ("Interpret " <> plainMarkdown lname <> " reference as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
       interpretAsText @t
     ]
 
@@ -114,8 +114,8 @@ unixParse fmt text = parseTimeM True defaultTimeLocale (unpack fmt) (unpack text
 unixInterpretAsText ::
        forall a. (FormatTime a, ParseTime a)
     => Text
-    -> LangWholeRef '( a, a)
-    -> LangWholeRef '( Text, Text)
+    -> LangWholeModel '( a, a)
+    -> LangWholeModel '( Text, Text)
 unixInterpretAsText fmt = let
     getter :: Maybe a -> Maybe Text
     getter Nothing = Just ""
@@ -124,7 +124,7 @@ unixInterpretAsText fmt = let
     setter Nothing _ = Just Nothing
     setter (Just "") _ = Just Nothing
     setter (Just t) _ = fmap Just $ unixParse fmt t
-    in maybeLensLangWholeRef getter setter
+    in maybeLensLangWholeModel getter setter
 
 unixFormattingDefs ::
        forall t. (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t, FormatTime t, ParseTime t)
@@ -142,7 +142,7 @@ unixFormattingDefs uname lname =
       unixParse @t
     , mkValEntry
           (MkName $ "unixInterpret" <> uname <> "AsText")
-          ("Interpret " <> plainMarkdown lname <> " reference as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
       unixInterpretAsText @t
     ]
 
@@ -441,7 +441,7 @@ baseLibEntries =
                   , mkValEntry "getTime" "Get the current time." $ getCurrentTime
                   , mkValEntry
                         "newClock"
-                        "Make a reference to the current time that updates per the given duration."
+                        "Make a model of the current time that updates per the given duration."
                         newClock
                   ]
                 , docTreeEntry "Calendar" "" $
@@ -495,7 +495,7 @@ baseLibEntries =
                   , mkValEntry "getCurrentTimeZone" "Get the current time zone offset in minutes." $
                     fmap timeZoneMinutes getCurrentTimeZone
                   , mkValEntry "getLocalTime" "Get the current local time." getLocalTime
-                  , mkValEntry "newTimeZoneRef" "The current time zone offset in minutes." newTimeZoneRef
+                  , mkValEntry "newTimeZoneModel" "The current time zone offset in minutes." newTimeZoneModel
                   ]
                 ]
           , docTreeEntry
@@ -534,13 +534,6 @@ baseLibEntries =
                 "Dynamic Entity Types"
                 ""
                 [ mkTypeEntry "DynamicEntity" "" $ MkBoundType dynamicEntityGroundType
-                {-
-                , mkSubtypeRelationEntry "(any dynamic entity type)" (fst $ pgtShowType dynamicEntityGroundType) "" $
-                  MkSubtypeConversionEntry dynamicEntityGroundType $ \MkPinaforeGroundType {..} -> do
-                      Refl <- testEquality pgtVarianceType NilListType
-                      MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness pgtFamilyType
-                      return IdentitySubtypeConversion
-                -}
                 , hasSubtypeRelationEntry @DynamicEntity @Entity Verify "" $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry

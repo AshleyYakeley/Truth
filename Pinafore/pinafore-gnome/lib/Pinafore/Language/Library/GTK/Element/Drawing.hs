@@ -51,13 +51,13 @@ handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> Fal
 
 uiDraw ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing LangHandler)
+    => PinaforeImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler)
     -> LangElement
-uiDraw ref =
+uiDraw model =
     MkLangElement $ \ec ->
         createCairo $
         unWModel $
-        pinaforeImmutableRefValue mempty $ fmap (\d p -> fmap (fmap $ runLangHandler ec) $ unLangDrawing (d p)) ref
+        pinaforeImmutableModelValue mempty $ fmap (\d p -> fmap (fmap $ runLangHandler ec) $ unLangDrawing (d p)) model
 
 drawingStuff :: DocTreeEntry BindDoc
 drawingStuff =

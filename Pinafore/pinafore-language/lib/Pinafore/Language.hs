@@ -33,7 +33,7 @@ module Pinafore.Language
     , X
     , Y
     , Entity
-    , showPinaforeRef
+    , showPinaforeModel
     , runPinaforeScoped
     , exprShow
     ) where
@@ -99,8 +99,8 @@ parseValueSubsume t text = do
     val <- parseValue text
     tsSubsumeValue @PinaforeTypeSystem t val
 
-showPinaforeRef :: PinaforeValue -> PinaforeInterpreter String
-showPinaforeRef val = catch (fmap show $ typedAnyToPinaforeVal @Showable val) (\(_ :: PinaforeError) -> return "<?>")
+showPinaforeModel :: PinaforeValue -> PinaforeInterpreter String
+showPinaforeModel val = catch (fmap show $ typedAnyToPinaforeVal @Showable val) (\(_ :: PinaforeError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT PinaforeInterpreter View)
 
@@ -121,7 +121,7 @@ runValue outh val =
     (typedAnyToPinaforeVal val) <|>
     (fmap (\(text :: Text) -> liftIO $ hPutStrLn outh $ unpack text) $ typedAnyToPinaforeVal val) <|>
     (do
-         s <- showPinaforeRef val
+         s <- showPinaforeModel val
          return $ liftIO $ hPutStrLn outh s)
 
 interactParse :: Text -> Interact InteractiveCommand

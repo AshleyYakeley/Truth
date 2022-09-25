@@ -452,7 +452,7 @@ readExpression3 =
              return $ SERef rexpr) <|>
     readSourcePos
         (do
-             readThis TokUnref
+             readThis TokUnquote
              rexpr <- readExpression3
              return $ SEUnref rexpr) <|>
     (readParen $
