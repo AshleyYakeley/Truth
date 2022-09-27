@@ -32,7 +32,7 @@ debugThing t action = do
 
 in debugThing "SCRIPT" $ do
     selection <- newMemWholeModel;
-    subscribeWholeModel selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
+    onWholeModelUpdate selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
     window <- fixAction $ \w -> GTK.openWindow (300,400) {"Test"} $
         GTK.dynamic $ coMapWholeModel (\e -> GTK.run $ debugThing "DYNAMIC" $ do

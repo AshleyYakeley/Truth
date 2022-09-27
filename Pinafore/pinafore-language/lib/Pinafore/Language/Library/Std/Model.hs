@@ -195,7 +195,7 @@ modelLibEntries =
                   langWholeModelGet @BottomType @A
                 , mkValEntry ":=" "Set a whole model to a value. Stop if failed." setentity
                 , mkValEntry "delete" "Delete a whole model (i.e., make unknown). Stop if failed." deleteentity
-                , mkValEntry "subscribeWholeModel" "Do an action initially and on every update, until closed." $
+                , mkValEntry "onWholeModelUpdate" "Do an action initially and on every update, during this lifecycle." $
                   langWholeModelSubscribe @A
                 , mkValEntry "newMemWholeModel" "Create a new whole model of memory, initially unknown." $
                   newMemWholeModel @A
