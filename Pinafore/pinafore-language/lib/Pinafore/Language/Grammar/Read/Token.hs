@@ -45,6 +45,7 @@ data Token t where
     TokDataType :: Token ()
     TokOpenType :: Token ()
     TokSubtype :: Token ()
+    TokTrustMe :: Token ()
     TokClosedType :: Token ()
     TokDynamicType :: Token ()
     TokExpose :: Token ()
@@ -94,6 +95,7 @@ instance TestEquality Token where
     testEquality TokDataType TokDataType = Just Refl
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
+    testEquality TokTrustMe TokTrustMe = Just Refl
     testEquality TokClosedType TokClosedType = Just Refl
     testEquality TokDynamicType TokDynamicType = Just Refl
     testEquality TokExpose TokExpose = Just Refl
@@ -144,6 +146,7 @@ instance Show (Token t) where
     show TokDataType = show ("datatype" :: String)
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
+    show TokTrustMe = show ("trustme" :: String)
     show TokClosedType = show ("closedtype" :: String)
     show TokDynamicType = show ("dynamictype" :: String)
     show TokExpose = show ("expose" :: String)
@@ -288,6 +291,7 @@ checkKeyword "else" = return $ MkSomeOf TokElse ()
 checkKeyword "datatype" = return $ MkSomeOf TokDataType ()
 checkKeyword "opentype" = return $ MkSomeOf TokOpenType ()
 checkKeyword "subtype" = return $ MkSomeOf TokSubtype ()
+checkKeyword "trustme" = return $ MkSomeOf TokTrustMe ()
 checkKeyword "closedtype" = return $ MkSomeOf TokClosedType ()
 checkKeyword "dynamictype" = return $ MkSomeOf TokDynamicType ()
 checkKeyword "expose" = return $ MkSomeOf TokExpose ()

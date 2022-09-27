@@ -26,6 +26,7 @@ import Shapes
 data TrustOrVerify
     = TrustMe
     | Verify
+    deriving (Eq)
 
 type SubtypeConversionEntry :: GroundTypeKind -> Type
 data SubtypeConversionEntry ground =

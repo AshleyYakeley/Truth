@@ -155,8 +155,11 @@ interpretRecursiveDocDeclarations ddecls = do
                     docItem = TypeDocItem {..}
                     docDescription = doc
                     in (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
-                SubtypeSyntaxDeclaration spos sta stb mbody ->
-                    (mempty, sourcePosScopeBuilder spos >> interpretSubtypeRelation doc sta stb mbody, mempty, mempty)
+                SubtypeSyntaxDeclaration spos trustme sta stb mbody ->
+                    ( mempty
+                    , sourcePosScopeBuilder spos >> interpretSubtypeRelation doc trustme sta stb mbody
+                    , mempty
+                    , mempty)
                 BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _) -> let
                     diName = name
                     diType =
@@ -221,9 +224,9 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
                 docItem = TypeDocItem {..}
                 docDescription = doc
             return $ defDocs MkDefDoc {..}
-        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration spos sta stb mbody) -> do
+        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration spos trustme sta stb mbody) -> do
             sourcePosScopeBuilder spos
-            interpretSubtypeRelation doc sta stb mbody
+            interpretSubtypeRelation doc trustme sta stb mbody
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _)) -> do
             interpretSequentialLetBinding (doc, sbind)
             let
@@ -396,8 +399,8 @@ interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
 interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter PinaforeExpression
 interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
 
-interpretGeneralSubtypeRelation :: SyntaxType -> SyntaxType -> SyntaxExpression -> ScopeBuilder ()
-interpretGeneralSubtypeRelation sta stb sbody = do
+interpretGeneralSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> ScopeBuilder ()
+interpretGeneralSubtypeRelation trustme sta stb sbody = do
     interpScopeBuilder $ do
         ata <- lift $ interpretNonpolarType sta
         atb <- lift $ interpretNonpolarType stb
@@ -416,7 +419,7 @@ interpretGeneralSubtypeRelation sta stb sbody = do
                         body <- lift $ interpretTopExpression sbody
                         convexpr <- lift $ typedExpressionToOpen funcWit body
                         registerSubtypeConversion $
-                            subtypeConversionEntry Verify ta tb $ fmap (functionToShim "user-subtype") convexpr
+                            subtypeConversionEntry trustme ta tb $ fmap (functionToShim "user-subtype") convexpr
                     MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
             MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 
@@ -447,10 +450,11 @@ interpretOpenEntitySubtypeRelation sta stb =
                                  entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
                     Nothing -> lift $ throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
-interpretSubtypeRelation :: Markdown -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder Docs
-interpretSubtypeRelation docDescription sta stb mbody = do
+interpretSubtypeRelation ::
+       Markdown -> TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder Docs
+interpretSubtypeRelation docDescription trustme sta stb mbody = do
     case mbody of
-        Just body -> interpretGeneralSubtypeRelation sta stb body
+        Just body -> interpretGeneralSubtypeRelation trustme sta stb body
         Nothing -> interpretOpenEntitySubtypeRelation sta stb
     let
         diSubtype = exprShow sta

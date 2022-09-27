@@ -6,6 +6,7 @@ module Pinafore.Language.Grammar.Read.Expression
     , operatorFixity
     ) where
 
+import Language.Expression.Dolan
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Read.Constructor
@@ -29,6 +30,12 @@ readSubtypeDeclaration :: Parser SyntaxRecursiveDeclaration
 readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
+    trustme <-
+        fmap
+            (\case
+                 Just () -> TrustMe
+                 Nothing -> Verify) $
+        optional $ readThis TokTrustMe
     sta <- readType
     readThis TokSubtypeOf
     stb <- readType
@@ -36,7 +43,7 @@ readSubtypeDeclaration = do
         optional $ do
             readThis TokAssign
             readExpression
-    return $ SubtypeSyntaxDeclaration spos sta stb mbody
+    return $ SubtypeSyntaxDeclaration spos trustme sta stb mbody
 
 readDataTypeConstructor :: Parser SyntaxDatatypeConstructorOrSubtype
 readDataTypeConstructor =

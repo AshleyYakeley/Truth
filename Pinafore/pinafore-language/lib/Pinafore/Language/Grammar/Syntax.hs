@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Syntax where
 
+import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
@@ -58,6 +59,7 @@ data SyntaxRecursiveDeclaration
                             Name
                             SyntaxTypeDeclaration
     | SubtypeSyntaxDeclaration SourcePos
+                               TrustOrVerify
                                SyntaxType
                                SyntaxType
                                (Maybe SyntaxExpression)
@@ -287,7 +289,7 @@ instance HasSourcePos SyntaxTopDeclarations where
 instance HasSourcePos SyntaxRecursiveDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
-    getSourcePos (SubtypeSyntaxDeclaration spos _ _ _) = spos
+    getSourcePos (SubtypeSyntaxDeclaration spos _ _ _ _) = spos
 
 instance HasSourcePos SyntaxDeclaration where
     getSourcePos (DirectSyntaxDeclaration decl) = getSourcePos decl
