@@ -107,9 +107,9 @@ tracePureM s = tracePure s $ pure ()
 
 tracePureBracket :: Monad m => String -> m a -> m a
 tracePureBracket s ma = do
-    tracePureM $ s ++ " ["
+    () <- tracePureM $ s ++ " ["
     a <- ma
-    tracePureM $ s ++ " ]"
+    () <- tracePureM $ s ++ " ]"
     return a
 
 class TraceThing t where

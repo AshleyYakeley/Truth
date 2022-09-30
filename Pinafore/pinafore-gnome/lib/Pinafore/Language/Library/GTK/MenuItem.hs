@@ -65,7 +65,7 @@ menuItemStuff =
     docTreeEntry
         "Menu"
         ""
-        [ mkTypeEntry "MenuItem" "A item of a menu." $ MkBoundType menuItemGroundType
+        [ mkTypeEntry "MenuItem" "A item of a menu." $ MkSomeGroundType menuItemGroundType
         , mkValEntry "menuSeparator" "Separator menu item." $ MkLangMenuItem $ \_ -> SeparatorMenuEntry
         , mkValEntry "menuSubmenu" "Submenu menu item." menuSubmenu
         , mkValEntry

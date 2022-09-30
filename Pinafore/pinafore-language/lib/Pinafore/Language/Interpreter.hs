@@ -1,7 +1,7 @@
 module Pinafore.Language.Interpreter
     ( InterpreterGroundType
     , InterpreterFamilyType
-    , BoundType(..)
+    , InterpreterBoundType
     , runInterpreter
     , allocateVar
     , EntryDoc
@@ -63,11 +63,7 @@ type instance forall (gt :: GroundTypeKind). InterpreterGroundType (DolanTypeSys
 
 type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
 
-data BoundType (ts :: Type) where
-    MkBoundType
-        :: forall (ts :: Type) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-           InterpreterGroundType ts dv t
-        -> BoundType ts
+type InterpreterBoundType (ts :: Type) = SomeGroundType (InterpreterGroundType ts)
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
     { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> PinaforeAction (Either Text t)
@@ -78,7 +74,7 @@ data InterpreterBinding (ts :: Type)
     = LambdaBinding VarID
     | ValueBinding (TSSealedExpression ts)
                    (Maybe (TSExpressionPatternConstructor ts))
-    | TypeBinding (BoundType ts)
+    | TypeBinding (InterpreterBoundType ts)
     | SpecialFormBinding (SpecialForm ts (Interpreter ts))
 
 type DocInterpreterBinding ts = (Markdown, InterpreterBinding ts)
@@ -91,7 +87,8 @@ data Scope (ts :: Type) = MkScope
 emptyScope :: Scope ts
 emptyScope = MkScope mempty mempty
 
-type HasInterpreter ts = (IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts), ExprShow (BoundType ts))
+type HasInterpreter ts
+     = (IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts), ExprShow (InterpreterBoundType ts))
 
 checkEntryConsistency ::
        forall ts. HasInterpreter ts
@@ -106,7 +103,7 @@ checkEntryConsistency (MkSubtypeConversionEntry Verify ta tb sconv) entries =
             if isNeutralSubtypeConversion sconv && isNeutralSubtypeConversion esconv
                 then return ()
                 else throw $
-                     InterpretSubtypeInconsistent (exprShow $ MkBoundType @ts eta) (exprShow $ MkBoundType @ts etb)
+                     InterpretSubtypeInconsistent (exprShow $ MkSomeGroundType eta) (exprShow $ MkSomeGroundType etb)
 
 addSCEntry ::
        forall ts. HasInterpreter ts
@@ -426,7 +423,7 @@ lookupSpecialForm name = do
         Just (SpecialFormBinding sf) -> return sf
         _ -> throw $ LookupSpecialFormUnknownError name
 
-lookupBoundTypeM :: ReferenceName -> Interpreter ts (Maybe (BoundType ts))
+lookupBoundTypeM :: ReferenceName -> Interpreter ts (Maybe (InterpreterBoundType ts))
 lookupBoundTypeM name = do
     mb <- lookupBinding name
     return $
@@ -434,7 +431,7 @@ lookupBoundTypeM name = do
             Just (TypeBinding t) -> Just t
             _ -> Nothing
 
-lookupBoundType :: ReferenceName -> Interpreter ts (BoundType ts)
+lookupBoundType :: ReferenceName -> Interpreter ts (InterpreterBoundType ts)
 lookupBoundType name = do
     mnt <- lookupBoundTypeM name
     case mnt of
@@ -468,7 +465,7 @@ withNewTypeID call = do
     case stid of
         MkSome tid -> call tid
 
-registerBoundType :: Name -> Markdown -> BoundType ts -> ScopeInterpreter ts ()
+registerBoundType :: Name -> Markdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
 registerBoundType name doc t = do
     mnt <- lift $ lookupBinding $ UnqualifiedReferenceName name
     case mnt of
@@ -476,7 +473,7 @@ registerBoundType name doc t = do
         Nothing -> registerBinding name (doc, TypeBinding t)
 
 registerType :: Name -> Markdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
-registerType name doc t = registerBoundType name doc $ MkBoundType t
+registerType name doc t = registerBoundType name doc $ MkSomeGroundType t
 
 type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 

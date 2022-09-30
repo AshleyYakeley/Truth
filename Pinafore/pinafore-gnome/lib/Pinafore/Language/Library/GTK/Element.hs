@@ -282,7 +282,7 @@ elementStuff =
         "Element"
         ""
         [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
-          MkBoundType elementGroundType
+          MkSomeGroundType elementGroundType
         , hasSubtypeRelationEntry @LangElement @LangLayoutElement Verify "" $
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "exec" "Element that runs an Action first." uiExec

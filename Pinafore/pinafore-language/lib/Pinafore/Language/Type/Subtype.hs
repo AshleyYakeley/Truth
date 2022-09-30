@@ -35,7 +35,9 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
         case pgtSubtypeGroup t of
             Just sg -> sg
             Nothing -> singletonSubtypeGroup t
-    throwGroundTypeConvertError ta tb = throw $ GroundTypeConvertError (showGroundType ta) (showGroundType tb)
+    throwNoGroundTypeConversionError ta tb = throw $ NoGroundTypeConversionError (showGroundType ta) (showGroundType tb)
+    throwIncoherentGroundTypeConversionError ta tb =
+        throw $ IncoherentGroundTypeConversionError (showGroundType ta) (showGroundType tb)
 
 instance IsDolanFunctionGroundType PinaforeGroundType where
     functionGroundType = funcGroundType

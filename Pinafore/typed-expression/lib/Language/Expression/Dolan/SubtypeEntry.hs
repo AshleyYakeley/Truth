@@ -14,14 +14,37 @@ module Language.Expression.Dolan.SubtypeEntry
     ) where
 
 import Control.Applicative.Wrapped
-import qualified Data.List as List
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unifier
 import Language.Expression.Dolan.Variance
 import Shapes
+
+partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
+partitionM _ [] = return ([], [])
+partitionM t (a:aa) = do
+    r <- t a
+    let
+        pair =
+            if r
+                then ([a], [])
+                else ([], [a])
+    pairs <- partitionM t aa
+    return $ pair <> pairs
+
+bestM :: Monad m => (a -> a -> m Bool) -> [a] -> m [a]
+bestM _ [] = return []
+bestM asGoodAs (a:aa) = do
+    bb <- bestM asGoodAs aa
+    rr <- partitionM (asGoodAs a) bb
+    return $
+        case rr of
+            ([], []) -> [a]
+            ([], bb') -> bb'
+            (_:_, bb') -> a : bb'
 
 data TrustOrVerify
     = TrustMe
@@ -67,7 +90,7 @@ testEqualitySubtypeGroupTest ::
 testEqualitySubtypeGroupTest =
     MkSubtypeGroupTest $ \ta tb -> do
         (Refl, HRefl) <- groundTypeTestEquality ta tb
-        return IdentitySubtypeConversion
+        return identitySubtypeConversion
 
 type SubtypeGroup :: GroundTypeKind -> Type
 data SubtypeGroup ground = MkSubtypeGroup
@@ -110,7 +133,7 @@ instance forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVar
     show (MkGreaterConversionWit gt _) = show gt
 
 mkGreaterConversionWit :: forall (ground :: GroundTypeKind) dv gt. ground dv gt -> GreaterConversionWit ground dv gt
-mkGreaterConversionWit t = MkGreaterConversionWit t IdentitySubtypeConversion
+mkGreaterConversionWit t = MkGreaterConversionWit t identitySubtypeConversion
 
 greaterToSome :: forall (ground :: GroundTypeKind) dv gt. GreaterConversionWit ground dv gt -> SomeGroundType ground
 greaterToSome (MkGreaterConversionWit t _) = MkSomeGroundType t
@@ -125,7 +148,7 @@ instance forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVar
     show (MkLesserConversionWit t _) = show t
 
 mkLesserConversionWit :: forall (ground :: GroundTypeKind) dv gt. ground dv gt -> LesserConversionWit ground dv gt
-mkLesserConversionWit t = MkLesserConversionWit t IdentitySubtypeConversion
+mkLesserConversionWit t = MkLesserConversionWit t identitySubtypeConversion
 
 lesserToSome :: forall (ground :: GroundTypeKind) dv gt. LesserConversionWit ground dv gt -> SomeGroundType ground
 lesserToSome (MkLesserConversionWit t _) = MkSomeGroundType t
@@ -149,14 +172,6 @@ lesserCWGroup ::
     => LesserConversionWit ground dv gt
     -> SubtypeGroup ground
 lesserCWGroup (MkLesserConversionWit t _) = getSubtypeGroup t
-
-instance forall (ground :: GroundTypeKind) dva gta. IsDolanSubtypeEntriesGroundType ground =>
-             Eq (GreaterConversionWit ground dva gta) where
-    p == q = greaterCWGroup p == greaterCWGroup q
-
-instance forall (ground :: GroundTypeKind) dva gta. IsDolanSubtypeEntriesGroundType ground =>
-             Eq (LesserConversionWit ground dva gta) where
-    p == q = lesserCWGroup p == lesserCWGroup q
 
 matchGreater ::
        forall (ground :: GroundTypeKind) dva gta. IsDolanSubtypeEntriesGroundType ground
@@ -198,28 +213,26 @@ getImmediateLessers rejectTrustMe entries t = mapMaybe (\entry -> matchLesser re
 
 greaterContains ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
-    => [GreaterConversionWit ground dva gta]
-    -> ground dvb gtb
+    => ground dvb gtb
+    -> GreaterConversionWit ground dva gta
     -> Maybe (SubtypeConversion ground dva gta dvb gtb)
-greaterContains [] _ = Nothing
-greaterContains (MkGreaterConversionWit ta conv:_) tb
-    | Just convm <- matchBySubtypeGroup ta tb = Just $ composeSubtypeConversion convm conv
-greaterContains (_:aa) tb = greaterContains aa tb
+greaterContains tb (MkGreaterConversionWit ta conv) = do
+    convm <- matchBySubtypeGroup ta tb
+    return $ composeSubtypeConversion convm conv
 
 findGreater ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
     => [SubtypeConversionEntry ground]
-    -> [GreaterConversionWit ground dva gta]
+    -> [SubtypeGroup ground]
     -> [GreaterConversionWit ground dva gta]
     -> ground dvb gtb
-    -> Maybe (SubtypeConversion ground dva gta dvb gtb)
-findGreater _entries _old [] _target = Nothing
-findGreater _entries _old current target
-    | Just conv <- greaterContains current target = Just conv
+    -> [SubtypeConversion ground dva gta dvb gtb]
+findGreater _entries _old [] _target = []
 findGreater entries old current target = let
-    allnew = nub $ mconcat $ fmap (getImmediateGreaters False entries) current
-    new = allnew List.\\ old
-    in findGreater entries (old <> current) new target
+    convs = mapMaybe (greaterContains target) current
+    allnew = mconcat $ fmap (getImmediateGreaters False entries) current
+    new = filter (\w -> not $ elem (greaterCWGroup w) old) allnew
+    in convs <> findGreater entries (fmap greaterCWGroup current <> old) new target
 
 getAllGreaters ::
        forall (ground :: GroundTypeKind) dv gt. IsDolanSubtypeEntriesGroundType ground
@@ -227,8 +240,9 @@ getAllGreaters ::
     -> [GreaterConversionWit ground dv gt]
     -> [GreaterConversionWit ground dv gt]
 getAllGreaters entries current = let
-    allnew = nub $ mconcat $ fmap (getImmediateGreaters True entries) current
-    in case allnew List.\\ current of
+    allnew = mconcat $ fmap (getImmediateGreaters True entries) current
+    old = fmap greaterCWGroup current
+    in case filter (\w -> not $ elem (greaterCWGroup w) old) allnew of
            [] -> current
            new -> getAllGreaters entries $ current <> new
 
@@ -238,8 +252,9 @@ getAllLessers ::
     -> [LesserConversionWit ground dv gt]
     -> [LesserConversionWit ground dv gt]
 getAllLessers entries current = let
-    allnew = nub $ mconcat $ fmap (getImmediateLessers True entries) current
-    in case allnew List.\\ current of
+    allnew = mconcat $ fmap (getImmediateLessers True entries) current
+    old = fmap lesserCWGroup current
+    in case filter (\w -> not $ elem (lesserCWGroup w) old) allnew of
            [] -> current
            new -> getAllLessers entries $ current <> new
 
@@ -248,7 +263,7 @@ getSubtypeShim ::
     => [SubtypeConversionEntry ground]
     -> ground dva gta
     -> ground dvb gtb
-    -> Maybe (SubtypeConversion ground dva gta dvb gtb)
+    -> [SubtypeConversion ground dva gta dvb gtb]
 getSubtypeShim entries gta gtb = findGreater entries [] [mkGreaterConversionWit gta] gtb
 
 type IsDolanSubtypeEntriesGroundType :: GroundTypeKind -> Constraint
@@ -256,7 +271,8 @@ class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground 
     getSubtypeGroup :: forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). ground dv gt -> SubtypeGroup ground
     getSubtypeGroup = singletonSubtypeGroup
     subtypeConversionEntries :: DolanM ground [SubtypeConversionEntry ground]
-    throwGroundTypeConvertError :: ground dva gta -> ground dvb gtb -> DolanM ground a
+    throwNoGroundTypeConversionError :: ground dva gta -> ground dvb gtb -> DolanM ground a
+    throwIncoherentGroundTypeConversionError :: ground dva gta -> ground dvb gtb -> DolanM ground a
 
 entries_subtypeGroundedTypes ::
        forall (ground :: GroundTypeKind) solver pola polb a b.
@@ -270,15 +286,15 @@ entries_subtypeGroundedTypes ::
     -> DolanGroundedType ground pola a
     -> DolanGroundedType ground polb b
     -> solver (DolanShim ground a b)
-entries_subtypeGroundedTypes sc (MkDolanGroundedType (ta :: ground dva gta) argsa) (MkDolanGroundedType (tb :: ground dvb gtb) argsb) = let
-    margswit :: DolanTypeCheckM ground (SubtypeArguments ground solver dvb gtb a)
-    margswit = do
+entries_subtypeGroundedTypes sc (MkDolanGroundedType (ta :: ground dva gta) argsa) (MkDolanGroundedType (tb :: ground dvb gtb) argsb) =
+    wexec $ do
         entries <- lift subtypeConversionEntries
-        case getSubtypeShim entries ta tb of
-            Just sconv -> getSubtypeConversion sconv sc argsa
-            Nothing -> lift $ throwGroundTypeConvertError ta tb
-    in wbind margswit $ \(MkSubtypeArguments argsb' sargsconv) ->
-           (\p q -> p . q) <$> subtypeDolanArguments sc tb argsb' argsb <*> sargsconv
+        let conversions = getSubtypeShim entries ta tb
+        bestConversions <- lift $ bestM unifierSubtypeConversionAsGeneralAs conversions
+        case bestConversions of
+            [sconv] -> runSubtypeConversion sc sconv (groundTypeVarianceMap ta) argsa argsb
+            [] -> lift $ throwNoGroundTypeConversionError ta tb
+            _ -> lift $ throwIncoherentGroundTypeConversionError ta tb
 
 checkSubtypeConsistency ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeEntriesGroundType ground

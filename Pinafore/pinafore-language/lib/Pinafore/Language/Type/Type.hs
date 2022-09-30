@@ -43,7 +43,7 @@ type instance InterpreterFamilyType PinaforeTypeSystem = FamilialType
 
 type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 
-type PinaforeBoundType = BoundType PinaforeTypeSystem
+type PinaforeBoundType = InterpreterBoundType PinaforeTypeSystem
 
 type PinaforeScope = Scope PinaforeTypeSystem
 

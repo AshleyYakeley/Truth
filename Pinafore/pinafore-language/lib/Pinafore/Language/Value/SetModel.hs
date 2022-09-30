@@ -3,6 +3,7 @@ module Pinafore.Language.Value.SetModel where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
 import Shapes
 
@@ -31,6 +32,9 @@ instance MaybeRepresentational LangSetModel where
 
 instance HasVariance LangSetModel where
     type VarianceOf LangSetModel = 'Contravariance
+
+langSetModelToModel :: forall a. LangSetModel a -> LangModel
+langSetModelToModel (MkLangSetModel _ model) = MkLangModel model
 
 langSetModelImmutable :: forall a. LangSetModel a -> LangSetModel a
 langSetModelImmutable (MkLangSetModel eq sv) =

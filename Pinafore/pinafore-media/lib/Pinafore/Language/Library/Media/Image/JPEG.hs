@@ -56,7 +56,7 @@ jpegStuff =
     docTreeEntry
         "JPEG"
         ""
-        [ mkTypeEntry "JPEGImage" "An image in JPEG format." $ MkBoundType jpegImageGroundType
+        [ mkTypeEntry "JPEGImage" "An image in JPEG format." $ MkSomeGroundType jpegImageGroundType
         , hasSubtypeRelationEntry @LangJPEGImage @LangImage Verify "" $
           functionToShim "jpegImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationEntry @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral

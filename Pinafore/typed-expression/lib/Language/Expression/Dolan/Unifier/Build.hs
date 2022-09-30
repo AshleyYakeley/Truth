@@ -2,6 +2,7 @@
 
 module Language.Expression.Dolan.Unifier.Build
     ( UnifierSolver
+    , unifySubtypeContext
     , unifyTypes
     , subsumeSingularTypes
     ) where

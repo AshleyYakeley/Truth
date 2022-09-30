@@ -34,6 +34,7 @@ library:
       - Pinafore.Markdown
       - Pinafore.Context
       - Pinafore.Language.Value.Instances
+      - Pinafore.Language.Value.Model
       - Pinafore.Language.Value.WholeModel
       - Pinafore.Language.Value.SetModel
       - Pinafore.Language.Value.FiniteSetModel

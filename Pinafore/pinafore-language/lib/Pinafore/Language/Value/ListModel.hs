@@ -3,6 +3,7 @@ module Pinafore.Language.Value.ListModel where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
 import Shapes
 
@@ -22,6 +23,10 @@ instance MaybeRepresentational LangListModel where
     maybeRepresentational = Nothing
 
 instance HasCCRVariance 'RangeCCRVariance LangListModel
+
+langListModelToModel :: forall p q. LangListModel '( p, q) -> LangModel
+langListModelToModel (OrderedLangListModel model) = MkLangModel model
+langListModelToModel (FullLangListModel model) = MkLangModel model
 
 langListModelToOrdered :: LangListModel '( p, q) -> WModel (OrderedListUpdate (ROWUpdate q))
 langListModelToOrdered (OrderedLangListModel model) = model

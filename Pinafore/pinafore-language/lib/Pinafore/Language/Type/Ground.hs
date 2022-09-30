@@ -84,8 +84,8 @@ instance IsDolanGroundType PinaforeGroundType where
         HRefl <- testHetEquality (pgtFamilyType ta) (pgtFamilyType tb)
         Just (Refl, HRefl)
 
-instance ExprShow (BoundType PinaforeTypeSystem) where
-    exprShowPrec (MkBoundType t) = exprShowPrec t
+instance ExprShow (SomeGroundType PinaforeGroundType) where
+    exprShowPrec (MkSomeGroundType t) = exprShowPrec t
 
 showPrecVariance ::
        forall w polarity sv t.

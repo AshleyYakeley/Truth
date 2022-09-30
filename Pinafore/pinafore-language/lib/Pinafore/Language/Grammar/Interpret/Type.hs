@@ -181,5 +181,5 @@ interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
 
 interpretGroundTypeConst :: SyntaxGroundType -> PinaforeInterpreter PinaforeGroundTypeM
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
-    MkBoundType t <- lookupBoundType n
+    MkSomeGroundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkSome t

@@ -8,7 +8,7 @@ module Pinafore.Language.API
     , module Pinafore.Context
     , WitKind(..)
     , FamilialType(..)
-    , BoundType(..)
+    , SomeGroundType(..)
     , PinaforePolyShim
     , EntityGroundType(..)
     , FamilyKind
@@ -41,7 +41,6 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
 import Pinafore.Language.Library.Std.Base

@@ -166,7 +166,7 @@ colourLibraryModule =
     MkDocTree
         "Colour"
         ""
-        [ mkTypeEntry "Colour" "A human-perceivable colour." $ MkBoundType colourGroundType
+        [ mkTypeEntry "Colour" "A human-perceivable colour." $ MkSomeGroundType colourGroundType
         , mkValPatEntry
               "SRGB16"
               "Construct a Colour from sRGB (perceptual) red, green, blue, integers in range 0 to 65535. (This is what it actually stored.)"
@@ -182,7 +182,7 @@ colourLibraryModule =
               "Construct a Colour from linear red, green, blue, in range 0 to 1."
               MkLinearRGBFraction $
           PureFunction $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
-        , mkTypeEntry "AlphaColour" "A human-perceivable colour, with opacity." $ MkBoundType alphaColourGroundType
+        , mkTypeEntry "AlphaColour" "A human-perceivable colour, with opacity." $ MkSomeGroundType alphaColourGroundType
         , literalSubtypeRelationEntry @LangAlphaColour
         , hasSubtypeRelationEntry @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $
           functionToShim "opaque" opaque

@@ -443,7 +443,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                Verify
                                                subGroundType
                                                superGroundType
-                                               IdentitySubtypeConversion
+                                               identitySubtypeConversion
                                 subtypeBox ::
                                        TypeData dv maintype
                                     -> PinaforeFixBox ( PinaforeGroundType dv maintype

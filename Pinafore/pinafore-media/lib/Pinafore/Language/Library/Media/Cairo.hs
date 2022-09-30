@@ -128,7 +128,7 @@ cairoLibraryModule =
     MkDocTree
         "Cairo"
         ""
-        [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkBoundType drawingGroundType
+        [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkSomeGroundType drawingGroundType
         , hasSubtypeRelationEntry @[LangDrawing A] @(LangDrawing [A]) Verify "Monoidal relationship" $
           functionToShim "mconcat" $ \dd -> mconcat $ fmap (fmap pure) dd
         , mkValEntry "pureDrawing" "" $ pure @LangDrawing @A
@@ -185,7 +185,7 @@ cairoLibraryModule =
         , docTreeEntry
               "Path"
               ""
-              [ mkTypeEntry "Path" "A path on a drawing." $ MkBoundType pathGroundType
+              [ mkTypeEntry "Path" "A path on a drawing." $ MkSomeGroundType pathGroundType
               , monoidSubtypeRelationEntry @LangPath
               , mkValEntry "stroke" "Draw this path" $ lift1Drawing $ stroke @[BottomType]
               , mkValEntry "fill" "Fill this path" $ lift1Drawing $ fill @[BottomType]
@@ -230,7 +230,7 @@ cairoLibraryModule =
         , docTreeEntry
               "Patterns"
               ""
-              [ mkTypeEntry "Pattern" "" $ MkBoundType patternGroundType
+              [ mkTypeEntry "Pattern" "" $ MkSomeGroundType patternGroundType
               , mkValEntry "patternSource" "" langPatternSource
               , mkValEntry "patternMask" "" langPatternMask
               , mkValEntry "solidPattern" "" solidPattern

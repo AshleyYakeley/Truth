@@ -56,7 +56,7 @@ pngStuff =
     docTreeEntry
         "PNG"
         ""
-        [ mkTypeEntry "PNGImage" "An image in PNG format." $ MkBoundType pngImageGroundType
+        [ mkTypeEntry "PNGImage" "An image in PNG format." $ MkSomeGroundType pngImageGroundType
         , hasSubtypeRelationEntry @LangPNGImage @LangImage Verify "" $
           functionToShim "pngImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationEntry @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral

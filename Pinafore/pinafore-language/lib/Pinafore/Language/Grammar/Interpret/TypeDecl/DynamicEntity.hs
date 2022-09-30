@@ -15,7 +15,7 @@ interpretSyntaxDynamicEntityConstructor ::
        SyntaxDynamicEntityConstructor -> Interpreter PinaforeTypeSystem DynamicEntityType
 interpretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ opoint $ mkDynamicType a
 interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
-    MkBoundType t <- lookupBoundType name
+    MkSomeGroundType t <- lookupBoundType name
     case matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType t of
         Just (MkADynamicEntityFamily _ det) -> return det
         Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name

@@ -5,6 +5,7 @@ import Data.Shim
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Value.Instances ()
+import Pinafore.Language.Value.Model
 import Shapes
 
 data LangWholeModel (pq :: (Type, Type)) where
@@ -20,6 +21,10 @@ instance MaybeRepresentational LangWholeModel where
     maybeRepresentational = Nothing
 
 instance HasCCRVariance 'RangeCCRVariance LangWholeModel
+
+langWholeModelToModel :: forall p q. LangWholeModel '( p, q) -> LangModel
+langWholeModelToModel (MutableLangWholeModel model) = MkLangModel model
+langWholeModelToModel (ImmutableLangWholeModel model) = MkLangModel $ immutableModelToReadOnlyModel model
 
 langWholeModelToReadOnlyValue :: LangWholeModel '( BottomType, a) -> PinaforeROWModel (Know a)
 langWholeModelToReadOnlyValue model =

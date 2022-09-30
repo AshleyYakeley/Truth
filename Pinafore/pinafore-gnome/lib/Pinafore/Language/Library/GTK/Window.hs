@@ -94,12 +94,12 @@ windowStuff =
     docTreeEntry
         "Windows"
         ""
-        [ mkTypeEntry "Context" "Context for GTK" $ MkBoundType contextGroundType
+        [ mkTypeEntry "Context" "Context for GTK" $ MkSomeGroundType contextGroundType
         , mkValEntry
               "run"
               "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
           run @A
-        , mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
+        , mkTypeEntry "Window" "A user interface window." $ MkSomeGroundType windowGroundType
         , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
         , mkValEntry "closeWindow" "Close a window." uiWindowClose
         , mkValEntry "showWindow" "Show a window." showWindow

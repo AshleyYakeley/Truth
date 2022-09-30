@@ -80,7 +80,7 @@ dynamicTest =
         MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType ta
     --Refl <- testEquality (pgtVarianceType tb) NilListType
     --MkADynamicEntityFamily _ detb <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType tb
-        return IdentitySubtypeConversion
+        return identitySubtypeConversion
 
 -- P <: Q
 aDynamicTest :: SubtypeGroupTest PinaforeGroundType
@@ -90,7 +90,7 @@ aDynamicTest =
         MkADynamicEntityFamily _ deta <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType ta
         Refl <- testEquality (pgtVarianceType tb) NilListType
         MkADynamicEntityFamily _ detb <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType tb
-        ifpure (isSubsetOf deta detb) IdentitySubtypeConversion
+        ifpure (isSubsetOf deta detb) identitySubtypeConversion
 
 dynamicEntitySubtypeGroup :: SubtypeGroup PinaforeGroundType
 dynamicEntitySubtypeGroup =

@@ -2,11 +2,15 @@ module Pinafore.Language.Value.TextModel where
 
 import Changes.Core
 import Pinafore.Base
+import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
 import Shapes
 
 newtype LangTextModel =
     MkLangTextModel (WModel (StringUpdate Text))
+
+langTextModelToModel :: LangTextModel -> LangModel
+langTextModelToModel (MkLangTextModel model) = MkLangModel model
 
 langWholeModelToTextModel :: LangWholeModel '( Text, Text) -> LangTextModel
 langWholeModelToTextModel wref =

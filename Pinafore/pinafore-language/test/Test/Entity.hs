@@ -36,38 +36,32 @@ subtypeTests polar sr p q =
     [ testExpectSuccess "pass"
     , tGroup
           "unify"
-          [ testSubtypeUnify sr $
+          [ testSubtypeUnify polar sr $
             "let f: (" <> q <> ") -> Unit = fn _ => (); x: " <> p <> " = undefined; fx = f x in pass"
-          , testSubtypeUnify sr $
+          , testSubtypeUnify polar sr $
             "let rec f: (" <> q <> ") -> Unit = f end; rec x: " <> p <> " = x; end; fx = f x in pass"
           ]
     , tGroup "subsume" $
-      [ testSubtypeSubsume sr $ "let rec x: " <> p <> " = x end; y: " <> q <> " = x in pass"
-      , testSubtypeSubsume sr $ "let x: " <> p <> " = undefined; y: " <> q <> " = x in pass"
-      , testSubtypeSubsume sr $ "let x: " <> q <> " = undefined: " <> p <> " in pass"
-      , testSubtypeSubsume sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
-      , (if polar
-             then testExpectReject
-             else testSubtypeSingle sr) $
-        "let f: (" <> p <> ") -> (" <> q <> ") = fn x => x in pass"
+      [ testSubtypeSubsume polar sr $ "let rec x: " <> p <> " = x end; y: " <> q <> " = x in pass"
+      , testSubtypeSubsume polar sr $ "let x: " <> p <> " = undefined; y: " <> q <> " = x in pass"
+      , testSubtypeSubsume polar sr $ "let x: " <> q <> " = undefined: " <> p <> " in pass"
+      , testSubtypeSubsume polar sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
+      , testSubtypeSingle polar sr $ "let f: (" <> p <> ") -> (" <> q <> ") = fn x => x in pass"
       ]
     ]
   where
-    testSubtypeUnify :: SubtypeResult -> Text -> ScriptTestTree
-    testSubtypeUnify SRNot = testExpectReject
-    testSubtypeUnify SRUnify = testExpectSuccess
-    testSubtypeUnify SRSubsume = testExpectSuccess
-    testSubtypeUnify SRSingle = testExpectSuccess
-    testSubtypeSubsume :: SubtypeResult -> Text -> ScriptTestTree
-    testSubtypeSubsume SRNot = testExpectReject
-    testSubtypeSubsume SRUnify = testExpectReject
-    testSubtypeSubsume SRSubsume = testExpectSuccess
-    testSubtypeSubsume SRSingle = testExpectSuccess
-    testSubtypeSingle :: SubtypeResult -> Text -> ScriptTestTree
-    testSubtypeSingle SRNot = testExpectReject
-    testSubtypeSingle SRUnify = testExpectReject
-    testSubtypeSingle SRSubsume = testExpectReject
-    testSubtypeSingle SRSingle = testExpectSuccess
+    testSubtypeUnify :: Bool -> SubtypeResult -> Text -> ScriptTestTree
+    testSubtypeUnify _ SRNot = testExpectReject
+    testSubtypeUnify True SRSubsume = testExpectReject
+    testSubtypeUnify _ _ = testExpectSuccess
+    testSubtypeSubsume :: Bool -> SubtypeResult -> Text -> ScriptTestTree
+    testSubtypeSubsume _ SRNot = testExpectReject
+    testSubtypeSubsume _ SRUnify = testExpectReject
+    testSubtypeSubsume _ SRSubsume = testExpectSuccess
+    testSubtypeSubsume _ SRSingle = testExpectSuccess
+    testSubtypeSingle :: Bool -> SubtypeResult -> Text -> ScriptTestTree
+    testSubtypeSingle False SRSingle = testExpectSuccess
+    testSubtypeSingle _ _ = testExpectReject
 
 subtypeTest :: Bool -> SubtypeResult -> Text -> Text -> ScriptTestTree
 subtypeTest polar sr p q = tGroup (unpack $ p <> " <: " <> q) $ subtypeTests polar sr p q
@@ -649,7 +643,7 @@ testEntity =
                     "circular"
                     [ tDecls ["opentype P", "subtype P <: P"] $
                       tGroup
-                          "finiteSetModelSingle"
+                          "singular"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess "let f : P -> P = fn x => x in pass"
                           , testExpectSuccess "let f : List P -> List P = fn x => x in pass"
@@ -1126,6 +1120,65 @@ testEntity =
                     [ testExpectSuccess "pass"
                     , testExpectReject "let subtype B <: B = fn MkB x => MkB x in pass"
                     , testExpectReject "let subtype B <: C = fn MkB x => MkC x in pass"
+                    ]
+              , tDecls ["datatype A of MkA Number end", "datatype B of MkB Number end"] $
+                tGroup
+                    "trustme"
+                    [ testExpectSuccess "pass"
+                    , testExpectSuccess "let subtype A <: B = fn MkA x => MkB x in pass"
+                    , testExpectReject
+                          "let subtype A <: B = fn MkA x => MkB x; subtype A <: B = fn MkA x => MkB x in pass"
+                    , testExpectSuccess
+                          "let subtype A <: B = fn MkA x => MkB x; subtype trustme A <: B = fn MkA x => MkB x in pass"
+                    , testExpectSuccess
+                          "let subtype trustme A <: B = fn MkA x => MkB x; subtype A <: B = fn MkA x => MkB x in pass"
+                    ]
+              , tDecls ["datatype A +x of MkA x end", "datatype B +x of MkB x end", "datatype C of MkC end"] $
+                tGroup
+                    "preferred"
+                    [ testExpectSuccess "pass"
+                    , testExpectSuccess "let subtype trustme A Number <: B Number = fn MkA x => MkB x in pass"
+                    , tDecls
+                          [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                          , "subtype trustme B Number <: C = fn MkB _ => MkC"
+                          , "subtype trustme A a <: C = fn MkA _ => MkC"
+                          ] $
+                      subtypeTest False SRSingle "A Unit" "C"
+                    , tDecls
+                          [ "subtype trustme A a <: C = fn MkA _ => MkC"
+                          , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                          , "subtype trustme B Number <: C = fn MkB _ => MkC"
+                          ] $
+                      subtypeTest False SRSingle "A Unit" "C"
+                    , tDecls
+                          [ "subtype trustme A a <: B a = fn MkA x => MkB x"
+                          , "subtype trustme B a <: C = fn MkB _ => MkC"
+                          , "subtype trustme A Number <: C = fn MkA _ => MkC"
+                          ] $
+                      subtypeTest False SRSingle "A Unit" "C"
+                    , tDecls
+                          [ "subtype trustme A Number <: C = fn MkA _ => MkC"
+                          , "subtype trustme A a <: B a = fn MkA x => MkB x"
+                          , "subtype trustme B a <: C = fn MkB _ => MkC"
+                          ] $
+                      subtypeTest False SRSingle "A Unit" "C"
+                    , tDecls
+                          [ "subtype trustme A a <: B a = fn MkA x => MkB x"
+                          , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                          ] $
+                      subtypeTest False SRSingle "A Unit" "B Unit"
+                    , tDecls
+                          [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                          , "subtype trustme A a <: B a = fn MkA x => MkB x"
+                          ] $
+                      subtypeTest False SRSingle "A Unit" "B Unit"
+                    , tDecls ["subtype List (A a) <: A (List a) = fn aa => MkA $ mapList (fn MkA a => a) aa"] $
+                      tGroup
+                          "monoid"
+                          [ testExpectSuccess "pass"
+                          , subtypeTest False SRSingle "List (A Integer)" "A (List Integer)"
+                          , subtypeTest True SRSubsume "List (A None)" "A (List None)"
+                          ]
                     ]
               ]
         , tDecls ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = openEntity @E !\"e1\"", "rt1 = eta !$ {e1}"] $

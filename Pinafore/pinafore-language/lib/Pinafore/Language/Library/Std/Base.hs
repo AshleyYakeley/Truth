@@ -15,7 +15,6 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Std.Types
@@ -169,29 +168,30 @@ baseLibEntries =
     [ docTreeEntry
           "Literals & Entities"
           ""
-          [ mkTypeEntry "Entity" "" $ MkBoundType entityGroundType
+          [ mkTypeEntry "Entity" "" $ MkSomeGroundType entityGroundType
           , mkValEntry "==" "Entity equality." $ (==) @Entity
           , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
           , mkValEntry "entityAnchor" "The anchor of an entity, as text." entityAnchor
-          , mkTypeEntry "Literal" "" $ MkBoundType literalGroundType
+          , mkTypeEntry "Literal" "" $ MkSomeGroundType literalGroundType
           , hasSubtypeRelationEntry @Literal @Entity Verify "" $ functionToShim "literalToEntity" literalToEntity
           , docTreeEntry
                 "Showable"
                 ""
-                [ mkTypeEntry "Showable" "Something that can be represented as `Text`." $ MkBoundType showableGroundType
+                [ mkTypeEntry "Showable" "Something that can be represented as `Text`." $
+                  MkSomeGroundType showableGroundType
                 , mkValEntry "show" "Show something as `Text`" $ textShow @Showable
                 ]
           , docTreeEntry
                 "Unit"
                 ""
-                [ mkTypeEntry "Unit" "" $ MkBoundType unitGroundType
+                [ mkTypeEntry "Unit" "" $ MkSomeGroundType unitGroundType
                 , literalSubtypeRelationEntry @()
                 , showableSubtypeRelationEntry @()
                 ]
           , docTreeEntry
                 "Boolean"
                 ""
-                [ mkTypeEntry "Boolean" "" $ MkBoundType booleanGroundType
+                [ mkTypeEntry "Boolean" "" $ MkSomeGroundType booleanGroundType
                 , literalSubtypeRelationEntry @Bool
                 , showableSubtypeRelationEntry @Bool
                 , mkValPatEntry "True" "Boolean TRUE." True $
@@ -211,7 +211,7 @@ baseLibEntries =
           , docTreeEntry
                 "Ordering"
                 ""
-                [ mkTypeEntry "Ordering" "" $ MkBoundType orderingGroundType
+                [ mkTypeEntry "Ordering" "" $ MkSomeGroundType orderingGroundType
                 , literalSubtypeRelationEntry @Ordering
                 , showableSubtypeRelationEntry @Ordering
                 , mkValPatEntry "LT" "Less than." LT $
@@ -255,7 +255,7 @@ baseLibEntries =
           , docTreeEntry
                 "Text"
                 ""
-                [ mkTypeEntry "Text" "" $ MkBoundType textGroundType
+                [ mkTypeEntry "Text" "" $ MkSomeGroundType textGroundType
                 , literalSubtypeRelationEntry @Text
                 , showableSubtypeRelationEntry @Text
                 , mkValEntry "<>" "Concatenate text." $ (<>) @Text
@@ -292,7 +292,7 @@ baseLibEntries =
                        , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
                        , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
                        , docTreeEntry "Integer" "" $
-                         [ mkTypeEntry "Integer" "" $ MkBoundType integerGroundType
+                         [ mkTypeEntry "Integer" "" $ MkSomeGroundType integerGroundType
                          , hasSubtypeRelationEntry @Integer @SafeRational Verify "" $
                            functionToShim "integerSafeRational" $ encode integerSafeRational
                          ] <>
@@ -324,7 +324,7 @@ baseLibEntries =
                            arithList @Integer
                          ]
                        , docTreeEntry "Rational" "" $
-                         [ mkTypeEntry "Rational" "" $ MkBoundType rationalGroundType
+                         [ mkTypeEntry "Rational" "" $ MkSomeGroundType rationalGroundType
                          , hasSubtypeRelationEntry @SafeRational @Number Verify "" $
                            functionToShim "safeRationalNumber" $ encode safeRationalNumber
                          ] <>
@@ -347,7 +347,7 @@ baseLibEntries =
                          ]
                        , docTreeEntry "Number" "" $
                          plainFormattingDefs @Number "Number" "a number" <>
-                         [ mkTypeEntry "Number" "" $ MkBoundType numberGroundType
+                         [ mkTypeEntry "Number" "" $ MkSomeGroundType numberGroundType
                          , literalSubtypeRelationEntry @Number
                          , showableSubtypeRelationEntry @Number
                          , mkValEntry "minN" "Lesser of two Numbers" $ min @Number
@@ -412,7 +412,7 @@ baseLibEntries =
                 "Date & Time"
                 ""
                 [ docTreeEntry "Duration" "" $
-                  [ mkTypeEntry "Duration" "" $ MkBoundType durationGroundType
+                  [ mkTypeEntry "Duration" "" $ MkSomeGroundType durationGroundType
                   , literalSubtypeRelationEntry @NominalDiffTime
                   , showableSubtypeRelationEntry @NominalDiffTime
                   , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $
@@ -430,7 +430,7 @@ baseLibEntries =
                         (realToFrac (a / b) :: Number)
                   ]
                 , docTreeEntry "Time" "" $
-                  [ mkTypeEntry "Time" "Absolute time as measured by UTC." $ MkBoundType timeGroundType
+                  [ mkTypeEntry "Time" "Absolute time as measured by UTC." $ MkSomeGroundType timeGroundType
                   , literalSubtypeRelationEntry @UTCTime
                   , showableSubtypeRelationEntry @UTCTime
                   ] <>
@@ -445,7 +445,7 @@ baseLibEntries =
                         newClock
                   ]
                 , docTreeEntry "Calendar" "" $
-                  [ mkTypeEntry "Date" "" $ MkBoundType dateGroundType
+                  [ mkTypeEntry "Date" "" $ MkSomeGroundType dateGroundType
                   , mkValPatEntry "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
                     PureFunction $ \day -> let
                         (y, m, d) = toGregorian day
@@ -463,7 +463,7 @@ baseLibEntries =
                   , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
                   ]
                 , docTreeEntry "Time of Day" "" $
-                  [ mkTypeEntry "TimeOfDay" "" $ MkBoundType timeOfDayGroundType
+                  [ mkTypeEntry "TimeOfDay" "" $ MkSomeGroundType timeOfDayGroundType
                   , mkValPatEntry "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
                     PureFunction $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
                   , mkValPatEntry
@@ -478,7 +478,7 @@ baseLibEntries =
                   unixFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
                   [mkValEntry "midnight" "Midnight." midnight, mkValEntry "midday" "Midday." midday]
                 , docTreeEntry "Local Time" "" $
-                  [ mkTypeEntry "LocalTime" "" $ MkBoundType localTimeGroundType
+                  [ mkTypeEntry "LocalTime" "" $ MkSomeGroundType localTimeGroundType
                   , mkValPatEntry "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $
                     PureFunction $ \LocalTime {..} -> (localDay, (localTimeOfDay, ()))
                   , literalSubtypeRelationEntry @LocalTime
@@ -533,7 +533,7 @@ baseLibEntries =
           , docTreeEntry
                 "Dynamic Entity Types"
                 ""
-                [ mkTypeEntry "DynamicEntity" "" $ MkBoundType dynamicEntityGroundType
+                [ mkTypeEntry "DynamicEntity" "" $ MkSomeGroundType dynamicEntityGroundType
                 , hasSubtypeRelationEntry @DynamicEntity @Entity Verify "" $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry
@@ -568,7 +568,7 @@ baseLibEntries =
     , docTreeEntry
           "Maybe"
           ""
-          [ mkTypeEntry "Maybe" "" $ MkBoundType maybeGroundType
+          [ mkTypeEntry "Maybe" "" $ MkSomeGroundType maybeGroundType
           , mkValPatEntry "Just" "Construct a Maybe from a value." (Just @A) $
             ImpureFunction $ \(v :: Maybe A) ->
                 case v of
@@ -586,7 +586,7 @@ baseLibEntries =
     , docTreeEntry
           "*:"
           ""
-          [ mkTypeEntry "*:" "" $ MkBoundType pairGroundType
+          [ mkTypeEntry "*:" "" $ MkSomeGroundType pairGroundType
           , hasSubtypeRelationEntry @(Entity, Entity) @Entity Verify "" $
             functionToShim "pairEntityConvert" pairEntityConvert
           , hasSubtypeRelationEntry @(Showable, Showable) @Showable Verify "" $ functionToShim "show" textShowable
@@ -598,7 +598,7 @@ baseLibEntries =
     , docTreeEntry
           "+:"
           ""
-          [ mkTypeEntry "+:" "" $ MkBoundType eitherGroundType
+          [ mkTypeEntry "+:" "" $ MkSomeGroundType eitherGroundType
           , mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $
             ImpureFunction $ \(v :: Either A B) ->
                 case v of
@@ -621,8 +621,8 @@ baseLibEntries =
     , docTreeEntry
           "Lists"
           ""
-          [ mkTypeEntry "List" "A list." $ MkBoundType listGroundType
-          , mkTypeEntry "List1" "A list with at least one element." $ MkBoundType list1GroundType
+          [ mkTypeEntry "List" "A list." $ MkSomeGroundType listGroundType
+          , mkTypeEntry "List1" "A list with at least one element." $ MkSomeGroundType list1GroundType
           , hasSubtypeRelationEntry @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
           , mkValPatEntry "[]" "Empty list" ([] @BottomType) $
             ImpureFunction $ \(v :: [A]) ->
@@ -655,7 +655,7 @@ baseLibEntries =
     , docTreeEntry
           "Functions"
           ""
-          [ mkTypeEntry "->" "A pure function." $ MkBoundType funcGroundType
+          [ mkTypeEntry "->" "A pure function." $ MkSomeGroundType funcGroundType
           , mkValEntry "id" "The identity function." $ id @(->) @A
           , mkValEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
           , mkValEntry ">-" "Apply a value to a function." revap

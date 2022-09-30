@@ -12,7 +12,6 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.SpecialForm
@@ -20,6 +19,13 @@ import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
+
+-- LangModel
+modelGroundType :: PinaforeGroundType '[] LangModel
+modelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangModel)|]) "Model"
+
+instance HasPinaforeGroundType '[] LangModel where
+    pinaforeGroundType = modelGroundType
 
 -- WModel
 instance (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t) =>
@@ -144,12 +150,20 @@ modelLibEntries =
           "Models"
           "Models keep track of updates, and will update user interfaces constructed from them when their value changes."
           [ docTreeEntry
+                "Models"
+                ""
+                [ mkTypeEntry "Model" "" $ MkSomeGroundType modelGroundType
+                , mkValEntry "onModelUpdate" "Do this on every update, during this lifecycle." langModelSubscribe
+                ]
+          , docTreeEntry
                 "Whole Models"
                 ""
                 [ mkTypeEntry
                       "WholeModel"
                       "A whole model of type `WholeModel {-p,+q}` has a setting type of `p` and a getting type of `q`." $
-                  MkBoundType wholeModelGroundType
+                  MkSomeGroundType wholeModelGroundType
+                , hasSubtypeRelationEntry TrustMe "" $
+                  functionToShim "WholeModel to Model" $ langWholeModelToModel @BottomType @TopType
                 , mkValEntry
                       "pureWholeModel"
                       "A constant whole model for a value."
@@ -203,7 +217,9 @@ modelLibEntries =
           , docTreeEntry
                 "Set Models"
                 ""
-                [ mkTypeEntry "SetModel" "" $ MkBoundType setModelGroundType
+                [ mkTypeEntry "SetModel" "" $ MkSomeGroundType setModelGroundType
+                , hasSubtypeRelationEntry Verify "" $
+                  functionToShim "SetModel to Model" $ langSetModelToModel @BottomType
                 , mkValEntry
                       "mapSetModel"
                       "Map a function on a set."
@@ -241,7 +257,7 @@ modelLibEntries =
           , docTreeEntry
                 "Finite Set Models"
                 ""
-                [ mkTypeEntry "FiniteSetModel" "" $ MkBoundType finiteSetModelGroundType
+                [ mkTypeEntry "FiniteSetModel" "" $ MkSomeGroundType finiteSetModelGroundType
                 , hasSubtypeRelationEntry Verify "" $
                   functionToShim "FiniteSetModel to SetModel" $ langFiniteSetModelToSetModel @A @TopType
                 , mkValEntry
@@ -302,7 +318,9 @@ modelLibEntries =
           , docTreeEntry
                 "List Models"
                 ""
-                [ mkTypeEntry "ListModel" "" $ MkBoundType listModelGroundType
+                [ mkTypeEntry "ListModel" "" $ MkSomeGroundType listModelGroundType
+                , hasSubtypeRelationEntry Verify "" $
+                  functionToShim "langListModelToModel" $ langListModelToModel @BottomType @TopType
                 , hasSubtypeRelationEntry @(LangWholeModel '( Vector A, Vector A)) @(LangListModel '( A, A)) Verify "" $
                   functionToShim "langWholeModelToListModel" langWholeModelToListModel
                 , mkValEntry "listModelWhole" "Represent a list model as a whole model." $ langListModelToWholeModel @A
@@ -323,7 +341,8 @@ modelLibEntries =
           , docTreeEntry
                 "Text Models"
                 ""
-                [ mkTypeEntry "TextModel" "" $ MkBoundType textModelGroundType
+                [ mkTypeEntry "TextModel" "" $ MkSomeGroundType textModelGroundType
+                , hasSubtypeRelationEntry TrustMe "" $ functionToShim "langTextModelToModel" langTextModelToModel
                 , hasSubtypeRelationEntry @LangTextModel @(LangWholeModel '( Text, Text)) Verify "" $
                   functionToShim "langTextModelToWholeModel" langTextModelToWholeModel
                 , mkValEntry "wholeModelText" "Represent a whole model as a text model." langWholeModelToTextModel
@@ -342,7 +361,7 @@ modelLibEntries =
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkTypeEntry "~>" "" $ MkBoundType morphismGroundType
+          [ mkTypeEntry "~>" "" $ MkSomeGroundType morphismGroundType
           , mkValEntry "identity" "The identity morphism." $ identityLangMorphism @X @Y
           , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @AP @AQ @BX @BY @CP @CQ
           , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @A @A @B @B @C @C
@@ -405,7 +424,7 @@ modelLibEntries =
     , docTreeEntry
           "ModelOrders"
           ""
-          [ mkTypeEntry "ModelOrder" "" $ MkBoundType modelOrderGroundType
+          [ mkTypeEntry "ModelOrder" "" $ MkSomeGroundType modelOrderGroundType
           , hasSubtypeRelationEntry Verify "" $ functionToShim "Order to ModelOrder" $ pureLangModelOrder @A
           , mkValEntry "orders" "Join `ModelOrder`s by priority." $ modelOrders @A
           , mkValEntry

@@ -172,6 +172,9 @@ mpure Nothing = empty
 mcatch :: Alternative m => m a -> m (Maybe a)
 mcatch ma = fmap Just ma <|> pure Nothing
 
+altIs :: Alternative m => m a -> m Bool
+altIs ma = fmap (\_ -> True) ma <|> pure False
+
 choice :: Alternative m => [m a] -> m a
 choice = foldr (<|>) empty
 

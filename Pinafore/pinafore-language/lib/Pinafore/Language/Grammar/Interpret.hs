@@ -441,7 +441,7 @@ interpretOpenEntitySubtypeRelation sta stb =
                     Just (MkLiftedFamily _) ->
                         registerSubtypeConversion $
                         case matchFamilyType openEntityFamilyWitness tfa of
-                            Just (MkLiftedFamily _) -> MkSubtypeConversionEntry Verify gta gtb CoerceSubtypeConversion
+                            Just (MkLiftedFamily _) -> MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                             Nothing ->
                                 MkSubtypeConversionEntry TrustMe gta gtb $
                                 nilSubtypeConversion $

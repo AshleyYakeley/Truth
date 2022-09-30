@@ -6,7 +6,6 @@ import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Type
@@ -56,7 +55,7 @@ tasksLibEntries =
     [ docTreeEntry
           "Tasks"
           ""
-          [ mkTypeEntry "Task" "A task is an action running in another thread." $ MkBoundType taskGroundType
+          [ mkTypeEntry "Task" "A task is an action running in another thread." $ MkSomeGroundType taskGroundType
           , mkValEntry "mapTask" "" $ fmap @LangTask @A @B
           , mkValEntry "pureTask" "A task that's already completed with this value." $ pure @LangTask @A
           , mkValEntry "pairTask" "Combine two tasks." $ pairTask @A @B

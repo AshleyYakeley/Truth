@@ -102,7 +102,7 @@ metadataStuff =
     docTreeEntry
         "Metadata"
         ""
-        [ mkTypeEntry "HasMetadata" "Something that has metadata." $ MkBoundType hasMetadataGroundType
+        [ mkTypeEntry "HasMetadata" "Something that has metadata." $ MkSomeGroundType hasMetadataGroundType
         , mkValPatEntry
               "MkHasMetadata"
               "Construct metadata out of key-value pairs. Duplicates will be removed."

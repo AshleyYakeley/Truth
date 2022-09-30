@@ -109,7 +109,7 @@ mkTypeEntry name docDescription t = let
     diName = name
     diParams =
         case t of
-            MkBoundType pt -> getTypeParameters nameSupply $ pgtVarianceType pt
+            MkSomeGroundType pt -> getTypeParameters nameSupply $ pgtVarianceType pt
     docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}

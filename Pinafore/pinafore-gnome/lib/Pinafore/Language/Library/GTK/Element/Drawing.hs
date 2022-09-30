@@ -64,7 +64,7 @@ drawingStuff =
     docTreeEntry
         "Drawing"
         ""
-        [ mkTypeEntry "Handler" "Response to button-clicked events" $ MkBoundType handlerGroundType
+        [ mkTypeEntry "Handler" "Response to button-clicked events" $ MkSomeGroundType handlerGroundType
         , hasSubtypeRelationEntry @[LangHandler] @LangHandler Verify "Monoidal relationship" $
           functionToShim "mconcat" mconcat
         , mkValEntry "onClick" "Action to perform on click" langOnClick

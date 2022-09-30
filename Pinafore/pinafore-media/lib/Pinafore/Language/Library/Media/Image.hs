@@ -31,7 +31,7 @@ imageLibraryModule =
     MkDocTree
         "Image"
         ""
-        [ mkTypeEntry "Image" "An image." $ MkBoundType imageGroundType
+        [ mkTypeEntry "Image" "An image." $ MkSomeGroundType imageGroundType
         , mkValEntry "imageSize" "The size of an image" langImageSize
         , mkValEntry "blankImage" "An image of one colour" langBlankImage
         , metadataStuff

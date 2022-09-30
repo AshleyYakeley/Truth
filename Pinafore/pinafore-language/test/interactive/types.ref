@@ -13,7 +13,7 @@ pinafore> :t pp !$ {q}
 <input>:10:7: cannot convert WholeModel P -> WholeModel P+ <: WholeModel +Q -> a-
  <input>:10:7: cannot convert WholeModel +Q+ <: WholeModel P-
   <input>:10:7: cannot convert Q+ <: P-
-   <input>:10:7: cannot convert Q <: P
+   <input>:10:7: no ground conversion for Q <: P
 pinafore> :t qp !$ {p}
 : WholeModel P
 pinafore> :t qp !$ {q}

@@ -2,7 +2,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Unifier
-    ( invertType
+    ( unifierSubtypeConversionAsGeneralAs
+    , invertType
     , subtypeSingularType
     , invertedPolarSubtype
     ) where
@@ -18,6 +19,7 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier.Build
 import Language.Expression.Dolan.Unifier.Constraint
 import Language.Expression.Dolan.Unifier.UnifierM
+import Language.Expression.Dolan.Variance
 import Shapes
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type
@@ -382,3 +384,21 @@ invertedPolarSubtype ta tb = do
             PositiveType -> fmap MkPolarMap $ unifyTypes @ground ta tb
             NegativeType -> fmap MkPolarMap $ unifyTypes tb ta
     evalDolanUnifierExpression uexpr
+
+runCheckUnifier ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => UnifierSolver ground a
+    -> DolanTypeCheckM ground Bool
+runCheckUnifier us =
+    altIs $ do
+        MkSolverExpression expr _ <- runSolver us
+        _ <- solveUnifier @(DolanTypeSystem ground) expr
+        return ()
+
+unifierSubtypeConversionAsGeneralAs ::
+       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       IsDolanSubtypeGroundType ground
+    => SubtypeConversion ground dva gta dvb gtb
+    -> SubtypeConversion ground dva gta dvb gtb
+    -> DolanM ground Bool
+unifierSubtypeConversionAsGeneralAs = subtypeConversionAsGeneralAs runCheckUnifier unifySubtypeContext

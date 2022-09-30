@@ -10,7 +10,6 @@ import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Type
@@ -39,7 +38,7 @@ actionsLibEntries =
     [ docTreeEntry
           "Actions"
           ""
-          [ mkTypeEntry "Action" "" $ MkBoundType actionGroundType
+          [ mkTypeEntry "Action" "" $ MkSomeGroundType actionGroundType
           , mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
           , mkValEntry ">>" "Do actions in sequence." $ qbind_

@@ -29,8 +29,10 @@ data ErrorType
                        Polarity
                        Text
                        Polarity
-    | GroundTypeConvertError Text
-                             Text
+    | NoGroundTypeConversionError Text
+                                  Text
+    | IncoherentGroundTypeConversionError Text
+                                          Text
     | TypeNotInvertibleError Text
     | NotationBareUnquoteError
     | MatchesDifferentCount Natural
@@ -119,7 +121,9 @@ instance Show ErrorType where
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
     show (TypeConvertError ta pa tb pb) =
         unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
-    show (GroundTypeConvertError ta tb) = unpack $ "cannot convert " <> ta <> " <: " <> tb
+    show (NoGroundTypeConversionError ta tb) = unpack $ "no ground conversion for " <> ta <> " <: " <> tb
+    show (IncoherentGroundTypeConversionError ta tb) =
+        unpack $ "incoherent ground conversions for " <> ta <> " <: " <> tb
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside WholeModel quote"
     show (MatchesDifferentCount expected found) =
