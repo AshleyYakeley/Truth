@@ -2,11 +2,11 @@
 while [[ ! -z "$1" ]]; do
     case "$1" in
         --build)
-            make nodocker=1 exe
+            make exe
             shift 1
             ;;
         -i)
-            `stack --no-docker path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore -i
+            `stack path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore -i
             shift 1
             ;;
         -*)
@@ -14,7 +14,7 @@ while [[ ! -z "$1" ]]; do
             exit 1
             ;;
         *)
-            `stack --no-docker path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore "Pinafore/pinafore-app/test/script/$1"
+            `stack path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore "Pinafore/pinafore-app/test/script/$1"
             shift 1
             ;;
     esac
