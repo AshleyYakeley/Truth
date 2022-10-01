@@ -1141,37 +1141,90 @@ testEntity =
                     , tDecls
                           [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
                           , "subtype trustme B Number <: C = fn MkB _ => MkC"
-                          , "subtype trustme A a <: C = fn MkA _ => MkC"
+                          , "subtype trustme A Any <: C = fn MkA _ => MkC"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
                     , tDecls
-                          [ "subtype trustme A a <: C = fn MkA _ => MkC"
+                          [ "subtype trustme A Any <: C = fn MkA _ => MkC"
                           , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
                           , "subtype trustme B Number <: C = fn MkB _ => MkC"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
                     , tDecls
                           [ "subtype trustme A a <: B a = fn MkA x => MkB x"
-                          , "subtype trustme B a <: C = fn MkB _ => MkC"
+                          , "subtype trustme B Any <: C = fn MkB _ => MkC"
                           , "subtype trustme A Number <: C = fn MkA _ => MkC"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
                     , tDecls
                           [ "subtype trustme A Number <: C = fn MkA _ => MkC"
                           , "subtype trustme A a <: B a = fn MkA x => MkB x"
-                          , "subtype trustme B a <: C = fn MkB _ => MkC"
+                          , "subtype trustme B Any <: C = fn MkB _ => MkC"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
-                    , tDecls
-                          [ "subtype trustme A a <: B a = fn MkA x => MkB x"
-                          , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
-                          ] $
-                      subtypeTest False SRSingle "A Unit" "B Unit"
-                    , tDecls
-                          [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
-                          , "subtype trustme A a <: B a = fn MkA x => MkB x"
-                          ] $
-                      subtypeTest False SRSingle "A Unit" "B Unit"
+                    , tGroup
+                          "order"
+                          [ tGroup
+                                "var"
+                                [ tDecls
+                                      [ "subtype trustme A a <: B a = fn MkA x => MkB x"
+                                      , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      ] $
+                                  subtypeTest False SRSingle "A Unit" "B Unit"
+                                , tDecls
+                                      [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      , "subtype trustme A a <: B a = fn MkA x => MkB x"
+                                      ] $
+                                  subtypeTest False SRSingle "A Unit" "B Unit"
+                                ]
+                          , tGroup
+                                "sub"
+                                [ tDecls
+                                      [ "subtype trustme A Integer <: B Integer = fn MkA x => MkB x"
+                                      , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      ] $
+                                  tGroup
+                                      "1"
+                                      [ subtypeTest False SRSingle "A Number" "B Number"
+                                      , subtypeTest False SRSingle "A Integer" "B Integer"
+                                      ]
+                                , tDecls
+                                      [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      , "subtype trustme A Integer <: B Integer = fn MkA x => MkB x"
+                                      ] $
+                                  tGroup
+                                      "2"
+                                      [ subtypeTest False SRSingle "A Number" "B Number"
+                                      , subtypeTest False SRSingle "A Integer" "B Integer"
+                                      ]
+                                ]
+                          , tGroup
+                                "in"
+                                [ tDecls
+                                      [ "subtype trustme A Integer <: C = fn MkA _ => MkC"
+                                      , "subtype trustme A Number <: C = fn MkA _ => MkC"
+                                      ] $
+                                  subtypeTest False SRSingle "A Number" "C"
+                                , tDecls
+                                      [ "subtype trustme A Number <: C = fn MkA _ => MkC"
+                                      , "subtype trustme A Integer <: C = fn MkA _ => MkC"
+                                      ] $
+                                  subtypeTest False SRSingle "A Number" "C"
+                                ]
+                          , tGroup
+                                "out"
+                                [ tDecls
+                                      [ "subtype trustme C <: B Integer = fn MkC => MkB 0"
+                                      , "subtype trustme C <: B Number = fn MkC => MkB 0"
+                                      ] $
+                                  subtypeTest False SRSingle "C" "B Integer"
+                                , tDecls
+                                      [ "subtype trustme C <: B Number = fn MkC => MkB 0"
+                                      , "subtype trustme C <: B Integer = fn MkC => MkB 0"
+                                      ] $
+                                  subtypeTest False SRSingle "C" "B Integer"
+                                ]
+                          ]
                     , tDecls ["subtype List (A a) <: A (List a) = fn aa => MkA $ mapList (fn MkA a => a) aa"] $
                       tGroup
                           "monoid"
