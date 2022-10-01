@@ -285,7 +285,7 @@ subtypeConversionAsGeneralAs runSolver sc (GeneralSubtypeConversion cs1) (Genera
                 args2b <- dolanNamespaceRenameArguments vmb rawargs2b
                 return (args2a, args2b)
         let
-            sconva = subtypeDolanArguments sc vma args1a args2a
-            sconvb = subtypeDolanArguments sc vmb args2b args1b
+            sconva = subtypeDolanArguments sc vma args2a args1a
+            sconvb = subtypeDolanArguments sc vmb args1b args2b
             sthing = liftA2 (,) sconva sconvb
         runSolver sthing

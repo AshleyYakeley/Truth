@@ -1178,15 +1178,15 @@ testEntity =
                                   subtypeTest False SRSingle "A Unit" "B Unit"
                                 ]
                           , tGroup
-                                "sub"
+                                "incoherent"
                                 [ tDecls
                                       [ "subtype trustme A Integer <: B Integer = fn MkA x => MkB x"
                                       , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
                                       ] $
                                   tGroup
                                       "1"
-                                      [ subtypeTest False SRSingle "A Number" "B Number"
-                                      , subtypeTest False SRSingle "A Integer" "B Integer"
+                                      [ subtypeTest False SRNot "A Number" "B Number"
+                                      , subtypeTest False SRNot "A Integer" "B Integer"
                                       ]
                                 , tDecls
                                       [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
@@ -1194,9 +1194,30 @@ testEntity =
                                       ] $
                                   tGroup
                                       "2"
-                                      [ subtypeTest False SRSingle "A Number" "B Number"
-                                      , subtypeTest False SRSingle "A Integer" "B Integer"
+                                      [ subtypeTest False SRNot "A Number" "B Number"
+                                      , subtypeTest False SRNot "A Integer" "B Integer"
                                       ]
+                                ]
+                          , tGroup
+                                "duplicate"
+                                [ tDecls
+                                      [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      ] $
+                                  subtypeTest False SRSingle "A Number" "B Number"
+                                ]
+                          , tGroup
+                                "sub"
+                                [ tDecls
+                                      [ "subtype trustme A Integer <: B Number = fn MkA x => MkB x"
+                                      , "subtype trustme A Number <: B Integer = fn MkA _ => MkB 0"
+                                      ] $
+                                  subtypeTest False SRSingle "A Number" "B Integer"
+                                , tDecls
+                                      [ "subtype trustme A Number <: B Integer = fn MkA _ => MkB 0"
+                                      , "subtype trustme A Integer <: B Number = fn MkA x => MkB x"
+                                      ] $
+                                  subtypeTest False SRSingle "A Number" "B Integer"
                                 ]
                           , tGroup
                                 "in"

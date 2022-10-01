@@ -37,14 +37,18 @@ partitionM t (a:aa) = do
 
 bestM :: Monad m => (a -> a -> m Bool) -> [a] -> m [a]
 bestM _ [] = return []
+bestM _ [a] = return [a]
 bestM asGoodAs (a:aa) = do
     bb <- bestM asGoodAs aa
     rr <- partitionM (asGoodAs a) bb
-    return $
-        case rr of
-            ([], []) -> [a]
-            ([], bb') -> bb'
-            (_:_, bb') -> a : bb'
+    case rr of
+        ([], bb') -> do
+            has <- shortOr (\b -> asGoodAs b a) bb'
+            return $
+                if has
+                    then bb'
+                    else a : bb'
+        (_:_, bb') -> return $ a : bb'
 
 data TrustOrVerify
     = TrustMe
