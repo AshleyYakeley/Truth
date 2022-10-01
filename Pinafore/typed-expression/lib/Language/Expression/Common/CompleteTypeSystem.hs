@@ -173,17 +173,28 @@ tsSingleBinding name bd madecltype expr =
         expr' <- rename @ts FreeName expr
         subsumerExpression madecltype' expr'
 
+tsSubsumeExpressionTo ::
+       forall ts t. CompleteTypeSystem ts
+    => TSPosWitness ts t
+    -> TSSealedExpression ts
+    -> TSInner ts (TSOpenExpression ts t)
+tsSubsumeExpressionTo tdecl expr =
+    runRenamer @ts $ do
+        _ <- renameTypeSignature @ts $ MkSome tdecl
+        expr' <- rename @ts FreeName expr
+        subsumeExpressionTo @ts tdecl expr'
+
 tsSubsumeExpression ::
        forall ts. CompleteTypeSystem ts
     => Some (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-tsSubsumeExpression decltype expr =
+tsSubsumeExpression tdecl expr =
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        decltype' <- renameTypeSignature @ts decltype
+        tdecl' <- renameTypeSignature @ts tdecl
         expr' <- rename @ts FreeName expr
-        subsumeExpression @ts decltype' expr'
+        subsumeExpression @ts tdecl' expr'
 
 tsUncheckedRecursiveLet ::
        forall ts. (Ord (TSVarID ts), CompleteTypeSystem ts)

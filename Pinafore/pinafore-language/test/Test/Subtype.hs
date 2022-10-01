@@ -56,7 +56,7 @@ testSimple =
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
-                resultOpenExpression <- typedExpressionToOpen tShimWit tExpression
+                resultOpenExpression <- typedUnifyExpressionToOpen tShimWit tExpression
                 evalExpression resultOpenExpression
         assertEqual "" 12 i
 
@@ -73,7 +73,7 @@ testDependentLet =
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 resultExpression <- qLetExpr varid (constIntegerExpression 17) tExpression
-                resultOpenExpression <- typedExpressionToOpen tShimWit resultExpression
+                resultOpenExpression <- typedUnifyExpressionToOpen tShimWit resultExpression
                 evalExpression resultOpenExpression
         assertEqual "" 17 i
 
@@ -88,7 +88,7 @@ testDependentFunction =
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
-                resultOpenExpression <- typedExpressionToOpen tShimWit resultExpression
+                resultOpenExpression <- typedUnifyExpressionToOpen tShimWit resultExpression
                 evalExpression resultOpenExpression
         assertEqual "" 91 i
 
@@ -133,7 +133,7 @@ testPolyDependentFunction =
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
-                resultOpenExpression <- typedExpressionToOpen t1ShimWit resultExpression
+                resultOpenExpression <- typedUnifyExpressionToOpen t1ShimWit resultExpression
                 evalExpression resultOpenExpression
         assertEqual "" 91 i
 

@@ -154,9 +154,13 @@ qEvalExpr expr = tsEval @PinaforeTypeSystem expr
 typedAnyToVal :: forall t. PinaforeShimWit 'Negative t -> PinaforeValue -> PinaforeInterpreter t
 typedAnyToVal = tsUnifyValueTo @PinaforeTypeSystem
 
-typedExpressionToOpen ::
+typedUnifyExpressionToOpen ::
        forall t. PinaforeShimWit 'Negative t -> PinaforeExpression -> PinaforeInterpreter (PinaforeOpenExpression t)
-typedExpressionToOpen = tsUnifyExpressionTo @PinaforeTypeSystem
+typedUnifyExpressionToOpen = tsUnifyExpressionTo @PinaforeTypeSystem
+
+typedSubsumeExpressionToOpen ::
+       forall t. PinaforeType 'Positive t -> PinaforeExpression -> PinaforeInterpreter (PinaforeOpenExpression t)
+typedSubsumeExpressionToOpen = tsSubsumeExpressionTo @PinaforeTypeSystem
 
 typedAnyToPinaforeVal ::
        forall t. HasPinaforeType 'Negative t

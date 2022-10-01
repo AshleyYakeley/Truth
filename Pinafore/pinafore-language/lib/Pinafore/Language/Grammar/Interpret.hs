@@ -402,26 +402,26 @@ interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
 interpretGeneralSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> ScopeBuilder ()
 interpretGeneralSubtypeRelation trustme sta stb sbody = do
     interpScopeBuilder $ do
-        ata <- lift $ interpretNonpolarType sta
-        atb <- lift $ interpretNonpolarType stb
+        ata <- lift $ interpretType @'Negative sta
+        atb <- lift $ interpretType @'Positive stb
         case ata of
-            MkSome (GroundedNonpolarType gta argsa) ->
+            MkSome ta@(dolanToMaybeType -> Just gta) ->
                 case atb of
-                    MkSome (GroundedNonpolarType gtb argsb) -> do
+                    MkSome tb@(dolanToMaybeType -> Just gtb) -> do
                         let
-                            ta :: forall polarity. Is PolarityType polarity
-                               => PinaforeGroundedShimWit polarity _
-                            ta = groundedNonpolarToDolanType gta argsa
-                            tb :: forall polarity. Is PolarityType polarity
-                               => PinaforeGroundedShimWit polarity _
-                            tb = groundedNonpolarToDolanType gtb argsb
-                            funcWit = funcShimWit (shimWitToDolan ta) (shimWitToDolan tb)
+                            funcWit :: PinaforeIsoShimWit 'Positive _
+                            funcWit = funcShimWit (mkShimWit ta) (mkShimWit tb)
                         body <- lift $ interpretTopExpression sbody
-                        convexpr <- lift $ typedExpressionToOpen funcWit body
-                        registerSubtypeConversion $
-                            subtypeConversionEntry trustme ta tb $ fmap (functionToShim "user-subtype") convexpr
-                    MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
-            MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
+                        case funcWit of
+                            MkShimWit funcType iconv -> do
+                                convexpr <- lift $ typedSubsumeExpressionToOpen funcType body
+                                registerSubtypeConversion $
+                                    subtypeConversionEntry trustme gta gtb $
+                                    fmap
+                                        (functionToShim "user-subtype" . (shimToFunction $ polarPolyIsoNegative iconv))
+                                        convexpr
+                    _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
+            _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 
 nonpolarSimpleEntityType :: PinaforeNonpolarType t -> PinaforeInterpreter (PinaforeGroundType '[] t, EntityGroundType t)
 nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)

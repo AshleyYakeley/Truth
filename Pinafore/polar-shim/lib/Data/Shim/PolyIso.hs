@@ -103,6 +103,15 @@ polyIsoPolar iab =
         PositiveType -> isoForwards $ unPolyMapT iab
         NegativeType -> isoBackwards $ unPolyMapT iab
 
+instance forall (pshim :: PolyShimKind) cat. CatFunctor (pshim Type) (pshim (Type -> Type)) cat =>
+             CatFunctor (PolyIso pshim Type) (PolyIso pshim (Type -> Type)) cat where
+    cfmap (MkPolyMapT (MkIsomorphism ab ba)) = MkPolyMapT $ MkIsomorphism (cfmap ab) (cfmap ba)
+
+instance forall (pshim :: PolyShimKind) cat. CatFunctor (CatDual (pshim Type)) (pshim (Type -> Type)) cat =>
+             CatFunctor (CatDual (PolyIso pshim Type)) (PolyIso pshim (Type -> Type)) cat where
+    cfmap (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =
+        MkPolyMapT $ MkIsomorphism (cfmap $ MkCatDual ab) (cfmap $ MkCatDual ba)
+
 instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
              IsoMapShim (PolyIso pshim k) where
     isoMapShim ::

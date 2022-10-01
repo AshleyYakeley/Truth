@@ -30,10 +30,15 @@ eitherShimWit swa swb =
             ConsCCRArguments (CoCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
 
 funcShimWit ::
-       forall polarity a b. Is PolarityType polarity
-    => PinaforeShimWit (InvertPolarity polarity) a
-    -> PinaforeShimWit polarity b
-    -> PinaforeShimWit polarity (a -> b)
+       forall polarity (pshim :: PolyShimKind) a b.
+       ( ApplyPolyShim pshim
+       , JoinMeetIsoCategory (pshim Type)
+       , CatFunctor (CatDual (pshim Type)) (pshim (Type -> Type)) (->)
+       , Is PolarityType polarity
+       )
+    => PShimWit (pshim Type) PinaforeType (InvertPolarity polarity) a
+    -> PShimWit (pshim Type) PinaforeType polarity b
+    -> PShimWit (pshim Type) PinaforeType polarity (a -> b)
 funcShimWit (MkShimWit ta conva) (MkShimWit tb convb) = let
     fshim =
         case polarityType @polarity of
