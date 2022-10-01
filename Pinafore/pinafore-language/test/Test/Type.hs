@@ -329,7 +329,7 @@ testType =
                           "{} -> Integer -> Action Integer"
                     , textTypeTest
                           "let subtype Unit <: Action Integer = fn () => return x in ((): Action Integer)"
-                          "{x : Integer} -> Action Integer"
+                          "{x : b & Integer} -> Action Integer"
                     ]
               ]
         , testTree
