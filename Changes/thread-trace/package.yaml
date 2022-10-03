@@ -13,4 +13,5 @@ library:
       - containers
       - monadology
     exposed-modules:
+      - Debug.Trace.Null
       - Debug.ThreadTrace

@@ -1,6 +1,6 @@
 module Debug.Trace.Null where
 
-import Shapes.Import
+import Prelude
 
 trace :: String -> a -> a
 trace _ a = a

@@ -120,6 +120,7 @@ tests:
           - base >= 4.12
           - shapes
           - filepath
+          - thread-trace
           - polar-shim
           - typed-expression
           - changes-core

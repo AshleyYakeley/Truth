@@ -81,7 +81,6 @@ library:
       - Control.AsyncRunner
       - Unsafe.Type
       - Unsafe.IO
-      - Debug.Trace.Null
       - Shapes
       - Shapes.Numeric
       - Shapes.Unsafe
