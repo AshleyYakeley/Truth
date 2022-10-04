@@ -64,11 +64,43 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
         tb' <- dolanNamespaceRename @ground tb
         return $ ConsDolanType ta' tb'
 
+typeNamesArguments ::
+       forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanVarianceMap dv gt
+    -> DolanArguments dv (DolanType ground) gt polarity t
+    -> [String]
+typeNamesArguments dvm args =
+    runIdentity $
+    execWriterT $ mapDolanArgumentsM @_ @PEqual (\t -> tell (typeNames t) >> return (mkShimWit t)) dvm args
+
+typeNamesGrounded ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanGroundedType ground polarity t
+    -> [String]
+typeNamesGrounded (MkDolanGroundedType gt args) = typeNamesArguments (groundTypeVarianceMap gt) args
+
+typeNamesSingular ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanSingularType ground polarity t
+    -> [String]
+typeNamesSingular (GroundedDolanSingularType t) = typeNamesGrounded t
+typeNamesSingular (VarDolanSingularType var) = [uVarName var]
+typeNamesSingular (RecursiveDolanSingularType var t) = uVarName var : typeNames t
+
+typeNames ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanType ground polarity t
+    -> [String]
+typeNames NilDolanType = return []
+typeNames (ConsDolanType t1 tr) = typeNamesSingular t1 <> typeNames tr
+
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
     type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
     type RenamerNamespaceT (DolanTypeSystem ground) = VarNamespaceT (DolanTypeSystem ground)
     renameNegWitness = dolanNamespaceRename @ground
     renamePosWitness = dolanNamespaceRename @ground
+    typeNamesNegWitness = typeNames
+    typeNamesPosWitness = typeNames
     renameNewFreeVar = do
         n <- renamerGenerateFree
         newUVar n $ \wit -> return $ MkNewVar (varDolanShimWit wit) (varDolanShimWit wit)

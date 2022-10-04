@@ -16,14 +16,14 @@ import Language.Expression.Common.TypeVariable
 import Shapes
 
 class Monad m => RenamerMonad m where
-    renamerGenerate :: NameRigidity -> Maybe String -> m String
+    renamerGenerate :: NameRigidity -> m String
     renamerRemoveName :: String -> m ()
     renamerGetNameRigidity :: m (String -> NameRigidity)
 
 renamerGenerateFree ::
        forall m. RenamerMonad m
     => m String
-renamerGenerateFree = renamerGenerate FreeName Nothing
+renamerGenerateFree = renamerGenerate FreeName
 
 renamerGenerateFreeUVar ::
        forall m. RenamerMonad m
@@ -55,7 +55,7 @@ varNamespaceTAddName :: RenamerMonad m => String -> VarNamespaceT ts m String
 varNamespaceTAddName oldname = do
     rigid <- MkVarNamespaceT ask
     pairs <- MkVarNamespaceT $ lift get
-    newname <- lift $ renamerGenerate rigid $ Just oldname
+    newname <- lift $ renamerGenerate rigid
     MkVarNamespaceT $ lift $ put $ (oldname, newname) : pairs
     return newname
 
@@ -84,7 +84,7 @@ varNamespaceTRemoveMapping oldname =
 -- | Use this for variable quantifiers (e.g. rec, forall)
 varNamespaceTLocal :: RenamerMonad m => String -> (String -> VarNamespaceT ts m a) -> VarNamespaceT ts m a
 varNamespaceTLocal oldname call = do
-    newname <- lift $ renamerGenerate FreeName $ Just oldname
+    newname <- lift $ renamerGenerate FreeName
     varNamespaceTAddMapping oldname newname
     a <- call newname
     varNamespaceTRemoveMapping oldname

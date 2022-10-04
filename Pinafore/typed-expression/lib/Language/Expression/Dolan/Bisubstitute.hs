@@ -151,7 +151,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
         newvar <-
             if isRecursive
                 then return $ uVarName oldvar
-                else runVarRenamerT $ do
+                else runVarRenamerT [] $ do
                          runVarNamespaceT FreeName $ do
                             -- find a name that isn't free in either sub or t,
                             -- if possible the same name as oldvar

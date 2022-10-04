@@ -3,6 +3,8 @@ module Language.Expression.Common.Rename.RenameTypeSystem
     , rename
     , renameTypeSignature
     , NewVar(..)
+    , typeNamesWM
+    , typeSignatureNames
     ) where
 
 import Data.Shim
@@ -24,9 +26,11 @@ class ( TypeSystem ts
     type RenamerNamespaceT ts :: (Type -> Type) -> (Type -> Type)
     renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegWitness ts t)
     renamePosWitness :: Monad m => TSPosWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSPosWitness ts t)
+    typeNamesNegWitness :: TSNegWitness ts t -> [String]
+    typeNamesPosWitness :: TSPosWitness ts t -> [String]
     renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
     namespace :: Monad m => NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
-    runRenamer :: Monad m => RenamerT ts m --> m
+    runRenamer :: Monad m => [String] -> RenamerT ts m --> m
     finalRenamer :: Monad m => RenamerT ts m --> RenamerT ts m
 
 renameNegShimWit ::
@@ -63,6 +67,23 @@ rename ::
 rename rigid a =
     withTransConstraintTM @Monad $
     namespace @ts rigid $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
+
+typeNamesWM ::
+       forall ts a. (RenameTypeSystem ts, WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts) a)
+    => a
+    -> [String]
+typeNamesWM a = let
+    tellPos :: forall t. TSPosShimWit ts t -> _ (TSPosShimWit ts t)
+    tellPos w@(MkShimWit t _) = tell (typeNamesPosWitness @ts t) >> return w
+    tellNeg :: forall t. TSNegShimWit ts t -> _ (TSNegShimWit ts t)
+    tellNeg w@(MkShimWit t _) = tell (typeNamesNegWitness @ts t) >> return w
+    in runIdentity $ execWriterT $ mapWitnessesM tellPos tellNeg a
+
+typeSignatureNames ::
+       forall ts. RenameTypeSystem ts
+    => Some (TSPosWitness ts)
+    -> [String]
+typeSignatureNames (MkSome t) = typeNamesPosWitness @ts t
 
 renameTypeSignature ::
        forall ts m. (RenameTypeSystem ts, Monad m)

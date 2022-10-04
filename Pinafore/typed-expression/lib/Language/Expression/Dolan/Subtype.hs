@@ -275,7 +275,7 @@ subtypeConversionAsGeneralAs _ _ _ IdentitySubtypeConversion = return False
 subtypeConversionAsGeneralAs _ _ CoerceSubtypeConversion _ = return True
 subtypeConversionAsGeneralAs _ _ _ CoerceSubtypeConversion = return False
 subtypeConversionAsGeneralAs runSolver sc (GeneralSubtypeConversion cs1) (GeneralSubtypeConversion cs2) =
-    runVarRenamerT $ do
+    runVarRenamerT [] $ do
     -- cs1 is as general as cs2 if cs1 can subsume to cs2
         MkSubtypeArguments _ args1a _ args1b _ <- cs1 sc
         MkSubtypeArguments vma rawargs2a vmb rawargs2b _ <- cs2 sc

@@ -111,7 +111,7 @@ simplifyTypeTest text e =
                 mt <- parseType @'Positive text
                 case mt of
                     MkSome t ->
-                        runRenamer @PinaforeTypeSystem $
+                        runRenamer @PinaforeTypeSystem [] $
                         simplify @PinaforeTypeSystem @PExpression $
                         MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
         case simpexpr of
@@ -186,31 +186,31 @@ testType =
               , exprTypeTest "simplify $ thing $ twice number" (return "{} -> Number *: Number") $ do
                     e1 <- apExpr twiceExpr numExpr
                     r <- apExpr thingExpr e1
-                    runRenamer @TS $ simplify @TS r
+                    runRenamer @TS [] $ simplify @TS r
               , exprTypeTest "simplify duplicate" (return "{} -> Number") $
-                runRenamer @TS $
+                runRenamer @TS [] $
                 simplify @TS $ typeFConstExpression toJMShimWit (MkJoinType (Right 3) :: JoinType Number Number)
               , exprTypeTest "simplify duplicate list" (return "{} -> List Number") $
-                runRenamer @TS $
+                runRenamer @TS [] $
                 simplify @TS $ typeFConstExpression toJMShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
               , exprTypeTest "simplify duplicate pair" (return "{} -> Number *: Number") $
-                runRenamer @TS $
+                runRenamer @TS [] $
                 simplify @TS $
                 typeFConstExpression
                     toJMShimWit
                     (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
-                runRenamer @TS $
+                runRenamer @TS [] $
                 simplify @TS $
                 typeFConstExpression toJMShimWit ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
-                runRenamer @TS $
+                runRenamer @TS [] $
                 simplify @TS $
                 typeFConstExpression
                     toJMShimWit
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in list" (return "{} -> List Number") $
-                runRenamer @TS $
+                runRenamer @TS [] $
                 simplify @TS $ typeFConstExpression toJMShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
         , testTree
@@ -232,11 +232,11 @@ testType =
                     "{v : Integer -> a, v : Boolean -> b, v : Integer -> c} -> (a *: b) *: c"
               , testTree
                     "function"
-                    [ textTypeTest "let i: tvar -> tvar = id in i" "{} -> tvar -> tvar"
+                    [ textTypeTest "let i: tvar -> tvar = id in i" "{} -> a -> a"
                     , textTypeTest "id: tvar -> tvar" "{} -> tvar -> tvar"
                     , textTypeTest "let i = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : a -> a = fn x => x in i" "{} -> a -> a"
-                    , textTypeTest "let i : tvar -> tvar = fn x => x in i" "{} -> tvar -> tvar"
+                    , textTypeTest "let i : tvar -> tvar = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : a -> a = fn x => x in i 3" "{} -> Integer"
                     ]
               , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1 a"

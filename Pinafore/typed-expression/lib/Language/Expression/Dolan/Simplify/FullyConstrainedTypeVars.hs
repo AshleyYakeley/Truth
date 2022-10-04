@@ -167,7 +167,7 @@ testInvertedCombinedSubtype ::
     -> DolanM ground (Maybe (DolanShim ground a b))
 testInvertedCombinedSubtype negtype postype =
     mcatch $ do
-        expr <- runVarRenamerT $ getCompose $ invertedCombinedSubtype @ground negtype postype
+        expr <- runVarRenamerT [] $ getCompose $ invertedCombinedSubtype @ground negtype postype
         evalExpression expr
 
 reduceUsageSolution ::

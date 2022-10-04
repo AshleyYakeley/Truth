@@ -400,7 +400,7 @@ interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter PinaforeExpres
 interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
 
 interpretGeneralSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> ScopeBuilder ()
-interpretGeneralSubtypeRelation trustme sta stb sbody = do
+interpretGeneralSubtypeRelation trustme sta stb sbody =
     interpScopeBuilder $ do
         ata <- lift $ interpretType @'Negative sta
         atb <- lift $ interpretType @'Positive stb
