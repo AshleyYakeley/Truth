@@ -162,7 +162,7 @@ modelLibEntries =
                       "WholeModel"
                       "A whole model of type `WholeModel {-p,+q}` has a setting type of `p` and a getting type of `q`." $
                   MkSomeGroundType wholeModelGroundType
-                , hasSubtypeRelationEntry TrustMe "" $
+                , hasSubtypeRelationEntry Verify "" $
                   functionToShim "WholeModel to Model" $ langWholeModelToModel @BottomType @TopType
                 , mkValEntry
                       "pureWholeModel"
@@ -319,11 +319,11 @@ modelLibEntries =
                 "List Models"
                 ""
                 [ mkTypeEntry "ListModel" "" $ MkSomeGroundType listModelGroundType
-                , hasSubtypeRelationEntry Verify "" $
+                , hasSubtypeRelationEntry TrustMe "" $
                   functionToShim "langListModelToModel" $ langListModelToModel @BottomType @TopType
-                , hasSubtypeRelationEntry @(LangWholeModel '( Vector A, Vector A)) @(LangListModel '( A, A)) Verify "" $
-                  functionToShim "langWholeModelToListModel" langWholeModelToListModel
-                , mkValEntry "listModelWhole" "Represent a list model as a whole model." $ langListModelToWholeModel @A
+                , hasSubtypeRelationEntry @(LangListModel '( A, A)) @(LangWholeModel '( Vector A, Vector A)) Verify "" $
+                  functionToShim "langListModelToWholeModel" langListModelToWholeModel
+                , mkValEntry "wholeModelList" "Represent a whole model as a list model." $ langWholeModelToListModel @A
                 , mkValEntry "listModelGetCount" "Get Count of elements in a list model." langListModelGetCount
                 , mkValEntry "listModelGetItem" "Get an element of a list model." $ langListModelGetItem @Q
                 , mkValEntry "listModelInsert" "Insert an element in a list model." $ langListModelInsert @P
@@ -335,6 +335,7 @@ modelLibEntries =
                       "listModelItem"
                       "Get a whole model of a particular item in the list. It will track the item as the list changes. Pass `True` for an existing item, `False` for a point between items." $
                   langListModelItem @P @Q
+                , mkValEntry "immutListModel" "Convert a list model to immutable." $ langImmutListModel @A
                 , mkValEntry "newMemListModel" "Create a new list model of memory, initially empty." $
                   newMemListModel @A
                 ]
@@ -342,7 +343,6 @@ modelLibEntries =
                 "Text Models"
                 ""
                 [ mkTypeEntry "TextModel" "" $ MkSomeGroundType textModelGroundType
-                , hasSubtypeRelationEntry TrustMe "" $ functionToShim "langTextModelToModel" langTextModelToModel
                 , hasSubtypeRelationEntry @LangTextModel @(LangWholeModel '( Text, Text)) Verify "" $
                   functionToShim "langTextModelToWholeModel" langTextModelToWholeModel
                 , mkValEntry "wholeModelText" "Represent a whole model as a text model." langWholeModelToTextModel

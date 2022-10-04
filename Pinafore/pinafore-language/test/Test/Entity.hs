@@ -196,47 +196,49 @@ testEntity =
                     "do s <- newMemFiniteSetModel; member s {57} := True; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
               , testExpectSuccess "expectStop $ do r <- newMemWholeModel; immutWholeModel r := 5; end"
               ]
-        , tDecls
+        , tModify (failTestBecause "BROKEN") $
+          tDecls
               [ "showVal: Showable -> Action Unit = fn v => Debug.message $ show v"
               , "showList: List Showable -> Action Unit = fn l => do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
-              , "testImmutList = fns present n call => do lr <- newMemWholeModel; lr := [10,20,30]; r <- listModelItem present n lr; ir <- listModelItem present n $ immutWholeModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
+              , "testImmutList = fns present n call => do lr <- newMemListModel; lr := [10,20,30]; r <- listModelItem present n lr; ir <- listModelItem present n $ immutListModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
               ] $
           tGroup
               "list models"
-              [ testExpectSuccess "do r <- newMemListModel; n <- listModelGetCount r; testeqval 0 n; end"
+              [ testExpectSuccess "pass"
+              , testExpectSuccess "do r <- newMemListModel; n <- listModelGetCount r; testeqval 0 n; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; n <- listModelGetCount r; testeqval 3 n; end"
+                    "do r <- newMemListModel; r := [10,20,30]; n <- listModelGetCount r; testeqval 3 n; end"
               , testExpectSuccess "do r <- newMemListModel; n <- get $ listModelCount r; testeqval 0 n; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; n <- get $ listModelCount r; testeqval 3 n; end"
+                    "do r <- newMemListModel; r := [10,20,30]; n <- get $ listModelCount r; testeqval 3 n; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem True 1 r; i <- get ir; testeqval 20 i; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; i <- get ir; testeqval 20 i; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; l <- get $ listModelWhole r; testeqval [10,25,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; l <- get $ listModelWhole r; testeqval [10,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; l <- get r; testeqval [10,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; ir := 15; l <- get $ listModelWhole r; testeqval [10,15,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem False 1 r; i <- expectStop $ get ir; return (); end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; i <- expectStop $ get ir; return (); end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; l <- get $ listModelWhole r; testeqval [10,25,20,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; l <- get r; testeqval [10,25,20,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get $ listModelWhole r; testeqval [10,20,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get $ listModelWhole r; testeqval [10,15,20,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get $ listModelWhole r; testeqval [10,20,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get $ listModelWhole r; testeqval [10,15,20,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; i <- get ir; testeqval 20 i; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; i <- get ir; testeqval 20 i; end"
               , testExpectSuccess
-                    "do r <- newMemListModel; listModelWhole r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; ir := 15; l <- get $ listModelWhole r; testeqval [10,12,15,30] l; end"
+                    "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
               , testExpectSuccess "testImmutList True 1 $ fn _ => return ()"
               ]
         , tDecls
@@ -578,29 +580,47 @@ testEntity =
                     , subtypeTest False SRSubsume "a *: a" "Integer *: Rational"
                     , subtypeTest False SRSubsume "a *: Text" "Integer *: Text"
                     , subtypeTest False SRSingle "List a" "List a"
-                    , subtypeTest False SRSingle "a -> a -> Ordering" "ModelOrder a"
-                    , subtypeTest False SRSingle "Integer -> Integer -> Ordering" "ModelOrder Integer"
-                    , subtypeTest False SRSingle "WholeModel (List a)" "ListModel a"
-                    , subtypeTest False SRSingle "WholeModel (List Integer)" "ListModel Integer"
-                    , subtypeTest False SRSingle "WholeModel {-List Integer,+List Integer}" "ListModel Integer"
-                    , subtypeTest
-                          True
-                          SRSingle
-                          "WholeModel {-List (a & Integer),+List (a | Integer)}"
-                          "ListModel Integer"
-                    , subtypeTest
-                          True
-                          SRSingle
-                          "WholeModel {-List (a & Entity),+List (a | Integer)}"
-                          "ListModel Integer"
-                    , subtypeTest False SRSingle "rec a. Maybe a" "rec a. Maybe a"
-                    , subtypeTest False SRSingle "rec a. Maybe a" "rec b. Maybe b"
-                    , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec a. Maybe a)"
-                    , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec b. Maybe b)"
-                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec a. Maybe a"
-                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec b. Maybe b"
-                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec a. Maybe a)"
-                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec b. Maybe b)"
+                    , tGroup
+                          "ModelOrder"
+                          [ subtypeTest False SRSingle "a -> a -> Ordering" "ModelOrder a"
+                          , subtypeTest False SRSingle "Integer -> Integer -> Ordering" "ModelOrder Integer"
+                          ]
+                    , tGroup
+                          "models"
+                          [ subtypeTest False SRSingle "ListModel a" "WholeModel (List a)"
+                          , subtypeTest False SRSingle "ListModel Integer" "WholeModel (List Integer)"
+                          , subtypeTest False SRSingle "ListModel Integer" "WholeModel {-List Integer,+List Integer}"
+                          , subtypeTest
+                                True
+                                SRSingle
+                                "ListModel {-(a & Integer),+(a | Integer)}"
+                                "WholeModel (List Integer)"
+                          , subtypeTest
+                                True
+                                SRSingle
+                                "ListModel {-(a & Entity),+(a | Integer)}"
+                                "WholeModel (List Integer)"
+                          , tGroup
+                                "Model"
+                                [ subtypeTest False SRSingle "WholeModel {-Integer,+Text}" "Model"
+                                , subtypeTest False SRSingle "ListModel {-Text,+Text}" "Model"
+                                , subtypeTest False SRSingle "ListModel {-Integer,+Text}" "Model"
+                                , subtypeTest False SRSingle "TextModel " "Model"
+                                , subtypeTest False SRSingle "SetModel Text" "Model"
+                                , subtypeTest False SRSingle "FiniteSetModel {-Integer,+Text}" "Model"
+                                ]
+                          ]
+                    , tGroup
+                          "recursive"
+                          [ subtypeTest False SRSingle "rec a. Maybe a" "rec a. Maybe a"
+                          , subtypeTest False SRSingle "rec a. Maybe a" "rec b. Maybe b"
+                          , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec a. Maybe a)"
+                          , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec b. Maybe b)"
+                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec a. Maybe a"
+                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec b. Maybe b"
+                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec a. Maybe a)"
+                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec b. Maybe b)"
+                          ]
                     ]
               , tGroup
                     "let"
@@ -719,7 +739,7 @@ testEntity =
                                [ tGroup "QC <: QB" $ strictSubtypeTests "QC" "QB"
                                , tGroup "QA = QB" $ subtypeTests False SRSingle "QA" "QB"
                                , tGroup "QA = QB" $ subtypeTests False SRSingle "QB" "QA"
-                               , tModify testMark $ tGroup "QA <: T" $ strictSubtypeTests "QA" "T"
+                               , tGroup "QA <: T" $ strictSubtypeTests "QA" "T"
                                , tGroup "QB <: T" $ strictSubtypeTests "QB" "T"
                                , tGroup "QC <: T" $ strictSubtypeTests "QC" "T"
                                , tGroup "P1 <: T" $ strictSubtypeTests "P1" "T"

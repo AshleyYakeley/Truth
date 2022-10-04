@@ -36,6 +36,9 @@ langListModelToOrdered (FullLangListModel model) =
          listOrderedListChangeLens . fromReadOnlyRejectingChangeLens . biReadOnlyChangeLens)
         model
 
+langImmutListModel :: forall q. LangListModel '( BottomType, q) -> LangListModel '( TopType, q)
+langImmutListModel model = OrderedLangListModel $ langListModelToOrdered model
+
 langListModelCountModel :: LangListModel '( BottomType, TopType) -> PinaforeImmutableWholeModel Int64
 langListModelCountModel (OrderedLangListModel model) =
     functionImmutableModel $ eaMap (funcChangeLens coerce . orderedListLengthLens) model
