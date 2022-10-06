@@ -101,142 +101,147 @@ testUnifier =
     testTree
         "unifier"
         [ testTree
-              "op1"
+              "unifier"
               [ testTree
-                    "unify"
-                    [ testUnifyToType @(Text -> (Text -> Text) -> Text) (return $ jmToValue op1) [] $ \found ->
-                          assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
-                    , testUnifyToType @(X -> (X -> X) -> X) (return $ jmToValue op1) [] $ \found ->
-                          assignUVarT @Text (MkSymbolType @"x") $
-                          assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
-                    , testUnifyToType @(A -> (A -> A) -> A) (return $ jmToValue op1) [] $ \found ->
-                          assignUVarT @Text (MkSymbolType @"a") $
-                          assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
+                    "op1"
+                    [ testTree
+                          "unify"
+                          [ testUnifyToType @(Text -> (Text -> Text) -> Text) (return $ jmToValue op1) [] $ \found ->
+                                assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
+                          , testUnifyToType @(X -> (X -> X) -> X) (return $ jmToValue op1) [] $ \found ->
+                                assignUVarT @Text (MkSymbolType @"x") $
+                                assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
+                          , testUnifyToType @(A -> (A -> A) -> A) (return $ jmToValue op1) [] $ \found ->
+                                assignUVarT @Text (MkSymbolType @"a") $
+                                assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
+                          ]
+                    , runScriptTestTree $
+                      tLibrary testLib $
+                      tDecls ["import TEST"] $
+                      tGroup
+                          "interpret"
+                          [ testInterpret @(A -> (A -> A) -> A) "op1" $ \found ->
+                                assignUVarT @Text (MkSymbolType @"a") $
+                                assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
+                          , testInterpret @(Text -> (Text -> Text) -> Text) "op1" $ \found ->
+                                assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
+                          , testInterpret @((Text -> Text) -> Text) "op1 \"PQPQPQ\"" $ \found ->
+                                assertEqual "" "PQPQPQ" $ found id
+                          , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> assertEqual "" "PQPQPQ" found
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" idText"
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" id"
+                          ]
                     ]
-              , runScriptTestTree $
-                tLibrary testLib $
-                tDecls ["import TEST"] $
-                tGroup
-                    "interpret"
-                    [ testInterpret @(A -> (A -> A) -> A) "op1" $ \found ->
-                          assignUVarT @Text (MkSymbolType @"a") $
-                          assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
-                    , testInterpret @(Text -> (Text -> Text) -> Text) "op1" $ \found ->
-                          assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
-                    , testInterpret @((Text -> Text) -> Text) "op1 \"PQPQPQ\"" $ \found ->
-                          assertEqual "" "PQPQPQ" $ found id
-                    , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> assertEqual "" "PQPQPQ" found
-                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" idText"
-                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" id"
+              , testTree
+                    "op2"
+                    [ testTree
+                          "unify"
+                          [ testUnifyToType
+                                @(Text -> (Text -> Text) -> (Text -> Text) -> Text)
+                                (return $ jmToValue op2)
+                                [] $ \found -> assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
+                          , testUnifyToType @(A -> (A -> Text) -> (A -> A) -> Text) (return $ jmToValue op2) [] $ \found ->
+                                assignUVarT @Text (MkSymbolType @"a") $
+                                assertEqual "" "PQPQPQ" $ found (MkVar "PQPQPQ") unVar id
+                          , let
+                                makeVal :: PinaforeInterpreter PinaforeValue
+                                makeVal = do
+                                    expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                                    qEvalExpr expr1
+                                checkVal found = assertEqual "" "PQPQPQ" $ found idText id
+                                in testUnifyToType @((Text -> Text) -> (Text -> Text) -> Text) makeVal [] checkVal
+                          , let
+                                makeVal :: PinaforeInterpreter PinaforeValue
+                                makeVal = do
+                                    expr1 <- qApplyExpr (qConstExpr op2Text) (qConstExpr @Text "PQPQPQ")
+                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                                    qEvalExpr expr2
+                                checkVal found = assertEqual "" "PQPQPQ" $ found id
+                                in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
+                          , testSourceScoped "value1" $ do
+                                expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                                val1 <- qEvalExpr expr1
+                                found1 <- typedAnyToPinaforeVal @((Text -> Text) -> (Text -> Text) -> Text) val1
+                                liftIO $ assertEqual "found1" "PQPQPQ" $ found1 idText id
+                          , let
+                                makeVal :: PinaforeInterpreter PinaforeValue
+                                makeVal = do
+                                    expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                                    val1 <- qEvalExpr expr1
+                                    expr2 <- qApplyExpr (qConstExprAny val1) (qConstExpr idText)
+                                    qEvalExpr expr2
+                                checkVal found = assertEqual "" "PQPQPQ" $ found id
+                                in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
+                          , let
+                                makeVal :: PinaforeInterpreter PinaforeValue
+                                makeVal = do
+                                    expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                                    qEvalExpr expr2
+                                checkVal found = assertEqual "" "PQPQPQ" $ found id
+                                in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
+                          ]
+                    , runScriptTestTree $
+                      tLibrary testLib $
+                      tDecls ["import TEST"] $
+                      tGroup
+                          "interpret"
+                          [ testInterpret @(Text -> (Text -> Text) -> (Text -> Text) -> Text) "op2" $ \found ->
+                                assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
+                          , testInterpret @((Text -> Text) -> (Text -> Text) -> Text) "op2 \"PQPQPQ\"" $ \found ->
+                                assertEqual "" "PQPQPQ" $ found id id
+                          , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" id" $ \found ->
+                                assertEqual "" "PQPQPQ" $ found id
+                          , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" idText" $ \found ->
+                                assertEqual "" "PQPQPQ" $ found id
+                          , testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found -> assertEqual "" "PQPQPQ" found
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id idText"
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id id"
+                          ]
                     ]
-              ]
-        , testTree
-              "op2"
-              [ testTree
-                    "unify"
-                    [ testUnifyToType @(Text -> (Text -> Text) -> (Text -> Text) -> Text) (return $ jmToValue op2) [] $ \found ->
-                          assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
-                    , testUnifyToType @(A -> (A -> Text) -> (A -> A) -> Text) (return $ jmToValue op2) [] $ \found ->
-                          assignUVarT @Text (MkSymbolType @"a") $
-                          assertEqual "" "PQPQPQ" $ found (MkVar "PQPQPQ") unVar id
-                    , let
-                          makeVal :: PinaforeInterpreter PinaforeValue
-                          makeVal = do
-                              expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
-                              qEvalExpr expr1
-                          checkVal found = assertEqual "" "PQPQPQ" $ found idText id
-                          in testUnifyToType @((Text -> Text) -> (Text -> Text) -> Text) makeVal [] checkVal
-                    , let
-                          makeVal :: PinaforeInterpreter PinaforeValue
-                          makeVal = do
-                              expr1 <- qApplyExpr (qConstExpr op2Text) (qConstExpr @Text "PQPQPQ")
-                              expr2 <- qApplyExpr expr1 (qConstExpr idText)
-                              qEvalExpr expr2
-                          checkVal found = assertEqual "" "PQPQPQ" $ found id
-                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
-                    , testSourceScoped "value1" $ do
-                          expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
-                          val1 <- qEvalExpr expr1
-                          found1 <- typedAnyToPinaforeVal @((Text -> Text) -> (Text -> Text) -> Text) val1
-                          liftIO $ assertEqual "found1" "PQPQPQ" $ found1 idText id
-                    , let
-                          makeVal :: PinaforeInterpreter PinaforeValue
-                          makeVal = do
-                              expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
-                              val1 <- qEvalExpr expr1
-                              expr2 <- qApplyExpr (qConstExprAny val1) (qConstExpr idText)
-                              qEvalExpr expr2
-                          checkVal found = assertEqual "" "PQPQPQ" $ found id
-                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
-                    , let
-                          makeVal :: PinaforeInterpreter PinaforeValue
-                          makeVal = do
-                              expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
-                              expr2 <- qApplyExpr expr1 (qConstExpr idText)
-                              qEvalExpr expr2
-                          checkVal found = assertEqual "" "PQPQPQ" $ found id
-                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
+              , testTree
+                    "op3"
+                    [ testTree @[TestTree] "unify" []
+                    , runScriptTestTree $
+                      tLibrary testLib $
+                      tDecls ["import TEST"] $
+                      tGroup
+                          "interpret"
+                          [ testExpectSuccess "testSameT \"PQPQPQ\" \"PQPQPQ\""
+                          , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") idText"
+                          , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") id"
+                          , testExpectSuccess "op3 10 (testSameI 10) id"
+                          ]
                     ]
-              , runScriptTestTree $
-                tLibrary testLib $
-                tDecls ["import TEST"] $
-                tGroup
-                    "interpret"
-                    [ testInterpret @(Text -> (Text -> Text) -> (Text -> Text) -> Text) "op2" $ \found ->
-                          assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
-                    , testInterpret @((Text -> Text) -> (Text -> Text) -> Text) "op2 \"PQPQPQ\"" $ \found ->
-                          assertEqual "" "PQPQPQ" $ found id id
-                    , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" id" $ \found ->
-                          assertEqual "" "PQPQPQ" $ found id
-                    , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" idText" $ \found ->
-                          assertEqual "" "PQPQPQ" $ found id
-                    , testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found -> assertEqual "" "PQPQPQ" found
-                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id idText"
-                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id id"
-                    ]
-              ]
-        , testTree
-              "op3"
-              [ testTree @[TestTree] "unify" []
-              , runScriptTestTree $
-                tLibrary testLib $
-                tDecls ["import TEST"] $
-                tGroup
-                    "interpret"
-                    [ testExpectSuccess "testSameT \"PQPQPQ\" \"PQPQPQ\""
-                    , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") idText"
-                    , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") id"
-                    , testExpectSuccess "op3 10 (testSameI 10) id"
-                    ]
-              ]
-        , testTree
-              "op4"
-              [ testTree
-                    "unify"
-                    [ let
-                          makeVal :: PinaforeInterpreter PinaforeValue
-                          makeVal = do
-                              expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
-                              qEvalExpr expr1
-                          checkVal found = assertEqual "" "PQPQPQ" $ found idText "PQPQPQ"
-                          in testUnifyToType @((Text -> Text) -> Text -> Text) makeVal [] checkVal
-                    , let
-                          makeVal :: PinaforeInterpreter PinaforeValue
-                          makeVal = do
-                              expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
-                              expr2 <- qApplyExpr expr1 (qConstExpr idText)
-                              qEvalExpr expr2
-                          checkVal found = assertEqual "" "PQPQPQ" $ found "PQPQPQ"
-                          in testUnifyToType @(Text -> Text) makeVal [] checkVal
-                    , let
-                          makeVal :: PinaforeInterpreter PinaforeValue
-                          makeVal = do
-                              expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
-                              expr2 <- qApplyExpr expr1 (qConstExpr idText)
-                              expr3 <- qApplyExpr expr2 (qConstExpr @Text "PQPQPQ")
-                              qEvalExpr expr3
-                          checkVal found = assertEqual "" "PQPQPQ" found
-                          in testUnifyToType @Text makeVal [] checkVal
+              , testTree
+                    "op4"
+                    [ testTree
+                          "unify"
+                          [ let
+                                makeVal :: PinaforeInterpreter PinaforeValue
+                                makeVal = do
+                                    expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
+                                    qEvalExpr expr1
+                                checkVal found = assertEqual "" "PQPQPQ" $ found idText "PQPQPQ"
+                                in testUnifyToType @((Text -> Text) -> Text -> Text) makeVal [] checkVal
+                          , let
+                                makeVal :: PinaforeInterpreter PinaforeValue
+                                makeVal = do
+                                    expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
+                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                                    qEvalExpr expr2
+                                checkVal found = assertEqual "" "PQPQPQ" $ found "PQPQPQ"
+                                in testUnifyToType @(Text -> Text) makeVal [] checkVal
+                          , let
+                                makeVal :: PinaforeInterpreter PinaforeValue
+                                makeVal = do
+                                    expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
+                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                                    expr3 <- qApplyExpr expr2 (qConstExpr @Text "PQPQPQ")
+                                    qEvalExpr expr3
+                                checkVal found = assertEqual "" "PQPQPQ" found
+                                in testUnifyToType @Text makeVal [] checkVal
+                          ]
                     ]
               ]
         ]
