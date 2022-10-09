@@ -75,7 +75,7 @@ withNullPinaforeContext :: MonadIO m => ((?pinafore :: PinaforeContext, ?library
 withNullPinaforeContext = runWithContext nullPinaforeContext mempty
 
 runTestPinaforeSourceScoped :: PinaforeInterpreter a -> InterpretResult a
-runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeScoped (initialPos "<input>") sa
+runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeScoped "<input>" sa
 
 checkUpdateEditor ::
        forall a. Eq a

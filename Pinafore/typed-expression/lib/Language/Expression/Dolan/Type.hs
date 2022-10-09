@@ -76,12 +76,14 @@ class ( IsDolanGroundType ground
       , MonadIO (DolanM ground)
       , forall dv (gt :: DolanVarianceKind dv). Show (ground dv gt)
       , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
+      , forall polarity t. Is PolarityType polarity => Show (DolanGroundedType ground polarity t)
       ) => DebugIsDolanGroundType ground
 
 instance forall (ground :: GroundTypeKind). ( IsDolanGroundType ground
          , MonadIO (DolanM ground)
          , forall dv (gt :: DolanVarianceKind dv). Show (ground dv gt)
          , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
+         , forall polarity t. Is PolarityType polarity => Show (DolanGroundedType ground polarity t)
          ) => DebugIsDolanGroundType ground
 
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
@@ -110,9 +112,18 @@ class Is PolarityType polarity => DolanTypeSub ground polarity w | w -> ground p
         => DolanType ground polarity t
         -> Maybe (PolarShimWit shim w polarity t)
 
+dolanToMaybeTypeShim ::
+       forall (ground :: GroundTypeKind) polarity w t.
+       (DolanTypeSub ground polarity w, JoinMeetIsoCategory (DolanShim ground))
+    => DolanType ground polarity t
+    -> Maybe (PolarShimWit (DolanShim ground) w polarity t)
+dolanToMaybeTypeShim = dolanToMaybeType
+
 typeToSomeDolan ::
-       forall (ground :: GroundTypeKind) polarity w t. JoinMeetIsoCategory (DolanShim ground)
-    => DolanTypeSub ground polarity w => w t -> Some (DolanType ground polarity)
+       forall (ground :: GroundTypeKind) polarity w t.
+       (DolanTypeSub ground polarity w, JoinMeetIsoCategory (DolanShim ground))
+    => w t
+    -> Some (DolanType ground polarity)
 typeToSomeDolan t = shimWitToSome $ typeToDolan @ground @polarity @w @(DolanShim ground) t
 
 shimWitToDolan ::

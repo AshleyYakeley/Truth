@@ -75,6 +75,20 @@ tsUnifyValueTo witn (MkSomeOf witp val) =
         conv <- lift $ evalExpression convexpr
         return $ shimToFunction conv val
 
+-- | for debugging
+tsUnifyValueToFree ::
+       forall ts t. (CompleteTypeSystem ts, FromPolarShimWit (TSShim ts) (TSNegWitness ts) t)
+    => TSValue ts
+    -> TSInner ts t
+tsUnifyValueToFree (MkSomeOf witp val) = let
+    witn = fromPolarShimWit
+    in runRenamer @ts [] $ do
+           witp' <- rename @ts FreeName witp
+           witn' <- rename @ts FreeName witn
+           (convexpr, _) <- unifyPosNegShimWit @ts witp' witn'
+           conv <- lift $ evalExpression convexpr
+           return $ shimToFunction conv val
+
 tsUnifyValue ::
        forall ts t. (CompleteTypeSystem ts, FromPolarShimWit (TSShim ts) (TSNegWitness ts) t)
     => TSValue ts

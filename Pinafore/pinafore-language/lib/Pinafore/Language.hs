@@ -58,18 +58,18 @@ import System.IO.Error
 
 runPinaforeScoped ::
        (?pinafore :: PinaforeContext, ?library :: LibraryContext)
-    => SourcePos
+    => String
     -> PinaforeInterpreter a
     -> InterpretResult a
-runPinaforeScoped spos scp =
-    runInterpreter spos (lcLoadModule ?library) spvals $
+runPinaforeScoped sourcename scp =
+    runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $
     transformTMap (void $ interpretImportDeclaration stdModuleName) scp
 
 spvals :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => PinaforeSpecialVals
 spvals = let
     specialEvaluate :: forall t. PinaforeType 'Positive t -> Text -> PinaforeAction (Either Text t)
     specialEvaluate t text = do
-        ier <- liftIO $ evaluate $ runPinaforeScoped (initialPos "<evaluate>") $ parseValueSubsume t text
+        ier <- liftIO $ evaluate $ runPinaforeScoped "<evaluate>" $ parseValueSubsume t text
         result <- runInterpretResult ier
         return $
             case result of
@@ -88,7 +88,7 @@ parseValueUnify ::
     -> PinaforeInterpreter t
 parseValueUnify text = do
     val <- parseValue text
-    typedAnyToPinaforeVal val
+    qUnifyValue val
 
 parseValueSubsume ::
        forall t. (?pinafore :: PinaforeContext)
@@ -100,7 +100,7 @@ parseValueSubsume t text = do
     tsSubsumeValue @PinaforeTypeSystem t val
 
 showPinaforeModel :: PinaforeValue -> PinaforeInterpreter String
-showPinaforeModel val = catch (fmap show $ typedAnyToPinaforeVal @Showable val) (\(_ :: PinaforeError) -> return "<?>")
+showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: PinaforeError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT PinaforeInterpreter View)
 
@@ -118,8 +118,7 @@ interactEvalExpression texpr =
 runValue :: Handle -> PinaforeValue -> Interact (PinaforeAction ())
 runValue outh val =
     interactRunSourceScoped $
-    (typedAnyToPinaforeVal val) <|>
-    (fmap (\(text :: Text) -> liftIO $ hPutStrLn outh $ unpack text) $ typedAnyToPinaforeVal val) <|>
+    (qUnifyValue val) <|> (fmap (\(text :: Text) -> liftIO $ hPutStrLn outh $ unpack text) $ qUnifyValue val) <|>
     (do
          s <- showPinaforeModel val
          return $ liftIO $ hPutStrLn outh s)
@@ -194,4 +193,4 @@ interact :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => Handle
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
-        fromInterpretResult . runPinaforeScoped (initialPos "<UNKNOWN>")
+        fromInterpretResult . runPinaforeScoped "<UNKNOWN>"

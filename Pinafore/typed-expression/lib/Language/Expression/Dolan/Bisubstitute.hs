@@ -48,6 +48,9 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m oldname new
         mpos' <- for mpos $ dolanNamespaceRename @ground
         mneg' <- for mneg $ dolanNamespaceRename @ground
         return $ MkDeferredBisubstitution isRecursive var mpos' mneg'
+    namespaceTypeNames (MkDeferredBisubstitution _ _ mpos mneg) =
+        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mpos)) <>
+        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mneg))
 
 type Bisubstitution :: GroundTypeKind -> ShimKind Type -> (Type -> Type) -> Type
 data Bisubstitution ground shim m =
@@ -89,6 +92,9 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. (IsDolanGr
         mpos' <- for mpos $ dolanNamespaceRename @ground
         mneg' <- for mneg $ dolanNamespaceRename @ground
         return $ MkBisubstitution isRecursive var mpos' mneg'
+    namespaceTypeNames (MkBisubstitution _ _ mpos mneg) =
+        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mpos)) <>
+        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mneg))
 
 mkPolarBisubstitution ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity m name. Is PolarityType polarity
@@ -116,7 +122,7 @@ class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polari
     | w -> ground polarity
     where
     deferBisubstituteType ::
-           forall m oldname newtypepos newtypeneg t. (MonadInner m)
+           forall m oldname newtypepos newtypeneg t. MonadInner m
         => DeferredBisubstitution m ground (pshim Type) oldname newtypepos newtypeneg
         -> w t
         -> m (PShimWit (DeferredShim pshim (UVarT oldname) newtypepos newtypeneg) (DolanType ground) polarity t)
@@ -151,13 +157,9 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
         newvar <-
             if isRecursive
                 then return $ uVarName oldvar
-                else runVarRenamerT [] $ do
-                         runVarNamespaceT FreeName $ do
                             -- find a name that isn't free in either sub or t,
-                            -- if possible the same name as oldvar
-                             _ <- dolanNamespaceRename @ground t
-                             _ <- dolanNamespaceRename @ground sub
-                             varNamespaceTRename $ uVarName oldvar
+                else runVarRenamerT (dolanNamespaceTypeNames @ground t <> dolanNamespaceTypeNames @ground sub) $ do
+                         runVarNamespaceT FreeName $ varNamespaceTRename $ uVarName oldvar
         pts <- deferBisubstituteType sub pt
         return $ shimWitToDolan $ recursiveRenameDolanShimWit oldvar newvar pts
     deferBisubstituteType sub t = do
@@ -212,16 +214,6 @@ bisubstitutes (sub:subs) expr = do
     expr' <- bisubstitute sub expr
     bisubstitutes subs expr'
 
-{-
-lazyPolarMap ::
-       forall (shim :: ShimKind Type) polarity a b. (LazyCategory shim, Is PolarityType polarity)
-    => PolarMap shim polarity a b
-    -> PolarMap shim polarity a b
-
-fixPolarMap :: forall (shim :: ShimKind Type) polarity a b. (LazyCategory shim, Is PolarityType polarity)
-    => (PolarMap shim polarity a b -> PolarMap shim polarity a b) -> PolarMap shim polarity a b
-fixPolarMap f =
--}
 reducePolarMap ::
        forall (pshim :: PolyShimKind) polarity a b c d. (ReduciblePolyShim pshim, Is PolarityType polarity)
     => (PolarMap (ReducedPolyShim pshim Type) polarity a b -> PolarMap (ReducedPolyShim pshim Type) polarity c d)

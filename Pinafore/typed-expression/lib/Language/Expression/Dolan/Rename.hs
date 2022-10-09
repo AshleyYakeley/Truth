@@ -3,6 +3,7 @@
 module Language.Expression.Dolan.Rename
     ( dolanNamespaceRename
     , dolanNamespaceRenameArguments
+    , dolanNamespaceTypeNames
     ) where
 
 import Data.Shim
@@ -37,11 +38,28 @@ dolanNamespaceRename ::
     -> VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m) t
 dolanNamespaceRename = namespaceRename @(DolanTypeSystem ground)
 
+dolanNamespaceTypeNames ::
+       forall (ground :: GroundTypeKind) t. (NamespaceRenamable (DolanTypeSystem ground) t)
+    => t
+    -> [String]
+dolanNamespaceTypeNames = namespaceTypeNames @(DolanTypeSystem ground)
+
+typeNamesArguments ::
+       forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanVarianceMap dv gt
+    -> DolanArguments dv (DolanType ground) gt polarity t
+    -> [String]
+typeNamesArguments dvm args =
+    runIdentity $
+    execWriterT $
+    mapDolanArgumentsM @_ @PEqual (\t -> tell (dolanNamespaceTypeNames @ground t) >> return (mkShimWit t)) dvm args
+
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanGroundedType ground polarity t) where
     namespaceRename (MkDolanGroundedType gt args) = do
         args' <- dolanNamespaceRenameArguments (groundTypeVarianceMap gt) args
         return $ MkDolanGroundedType gt args'
+    namespaceTypeNames (MkDolanGroundedType gt args) = typeNamesArguments (groundTypeVarianceMap gt) args
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanSingularType ground polarity t) where
@@ -55,6 +73,9 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
         varNamespaceTLocalUVar @Type oldvar $ \(MkVarType newvar) -> do
             st' <- dolanNamespaceRename @ground st
             return $ RecursiveDolanSingularType newvar st'
+    namespaceTypeNames (GroundedDolanSingularType t) = dolanNamespaceTypeNames @ground t
+    namespaceTypeNames (VarDolanSingularType var) = [uVarName var]
+    namespaceTypeNames (RecursiveDolanSingularType var t) = uVarName var : dolanNamespaceTypeNames @ground t
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanType ground polarity t) where
@@ -63,44 +84,16 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
         ta' <- dolanNamespaceRename @ground ta
         tb' <- dolanNamespaceRename @ground tb
         return $ ConsDolanType ta' tb'
-
-typeNamesArguments ::
-       forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanVarianceMap dv gt
-    -> DolanArguments dv (DolanType ground) gt polarity t
-    -> [String]
-typeNamesArguments dvm args =
-    runIdentity $
-    execWriterT $ mapDolanArgumentsM @_ @PEqual (\t -> tell (typeNames t) >> return (mkShimWit t)) dvm args
-
-typeNamesGrounded ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanGroundedType ground polarity t
-    -> [String]
-typeNamesGrounded (MkDolanGroundedType gt args) = typeNamesArguments (groundTypeVarianceMap gt) args
-
-typeNamesSingular ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanSingularType ground polarity t
-    -> [String]
-typeNamesSingular (GroundedDolanSingularType t) = typeNamesGrounded t
-typeNamesSingular (VarDolanSingularType var) = [uVarName var]
-typeNamesSingular (RecursiveDolanSingularType var t) = uVarName var : typeNames t
-
-typeNames ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanType ground polarity t
-    -> [String]
-typeNames NilDolanType = return []
-typeNames (ConsDolanType t1 tr) = typeNamesSingular t1 <> typeNames tr
+    namespaceTypeNames NilDolanType = []
+    namespaceTypeNames (ConsDolanType t1 tr) = dolanNamespaceTypeNames @ground t1 <> dolanNamespaceTypeNames @ground tr
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
     type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
     type RenamerNamespaceT (DolanTypeSystem ground) = VarNamespaceT (DolanTypeSystem ground)
     renameNegWitness = dolanNamespaceRename @ground
     renamePosWitness = dolanNamespaceRename @ground
-    typeNamesNegWitness = typeNames
-    typeNamesPosWitness = typeNames
+    typeNamesNegWitness = dolanNamespaceTypeNames @ground
+    typeNamesPosWitness = dolanNamespaceTypeNames @ground
     renameNewFreeVar = do
         n <- renamerGenerateFree
         newUVar n $ \wit -> return $ MkNewVar (varDolanShimWit wit) (varDolanShimWit wit)

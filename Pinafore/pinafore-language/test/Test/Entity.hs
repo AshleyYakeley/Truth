@@ -217,35 +217,29 @@ testEntity =
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; i <- get ir; testeqval 20 i; end"
                     , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
-                    , tModify (failTestBecause "BROKEN") $
-                      testExpectSuccess
+                    , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
                     , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; l <- get r; testeqval [10,30] l; end"
-                    , tModify (failTestBecause "BROKEN") $
-                      testExpectSuccess
+                    , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
                     , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; i <- expectStop $ get ir; return (); end"
                     , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
-                    , tModify (failTestBecause "BROKEN") $
-                      testExpectSuccess
+                    , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; l <- get r; testeqval [10,25,20,30] l; end"
                     , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
-                    , tModify (failTestBecause "BROKEN") $
-                      testExpectSuccess
+                    , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
                     , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
-                    , tModify (failTestBecause "BROKEN") $
-                      testExpectSuccess
+                    , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
                     , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; i <- get ir; testeqval 20 i; end"
-                    , tModify (failTestBecause "BROKEN") $
-                      testExpectSuccess
+                    , testExpectSuccess
                           "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
                     , testExpectSuccess "testImmutList True 1 $ fn _ => return ()"
                     ]

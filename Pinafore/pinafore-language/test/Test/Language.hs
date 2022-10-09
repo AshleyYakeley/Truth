@@ -135,7 +135,7 @@ testQuery query expected =
         result <-
             withNullPinaforeContext $
             runInterpretResult $
-            runPinaforeScoped (initialPos "<input>") $ do
+            runPinaforeScoped "<input>" $ do
                 v <- parseValue query
                 showPinaforeModel v
         case result of
@@ -600,6 +600,10 @@ testQueries =
               , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
               , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]
               , testQuery "let a: Integer|Text = 3; b: List Integer | List Text = [a] in b" $ LRSuccess "[3]"
+              , testQuery "newMemWholeModel >>= fn m => m := 1 >> get m >>= outputLn" LRCheckFail
+              , testQuery
+                    "newMemWholeModel >>= fn m => let n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text in n1 := 1 >> get n2 >>= outputLn"
+                    LRCheckFail
               ]
         , testTree
               "conversion"
@@ -968,8 +972,7 @@ testQueries =
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
     testTree (unpack query) $ do
-        result <-
-            withNullPinaforeContext $ runInterpretResult $ runPinaforeScoped (initialPos "<input>") $ parseValue query
+        result <- withNullPinaforeContext $ runInterpretResult $ runPinaforeScoped "<input>" $ parseValue query
         case result of
             FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
             SuccessResult (MkSomeOf (MkPosShimWit t shim) _) -> do

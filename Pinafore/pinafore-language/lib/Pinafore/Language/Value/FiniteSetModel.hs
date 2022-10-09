@@ -24,6 +24,13 @@ instance MaybeRepresentational LangFiniteSetModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangFiniteSetModel
 
+newMemFiniteSetModel :: forall a. PinaforeAction (LangFiniteSetModel '( MeetType Entity a, a))
+newMemFiniteSetModel = do
+    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
+    model <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
+    uh <- pinaforeUndoHandler
+    return $ meetValueLangFiniteSetModel $ MkWModel $ undoHandlerModel uh model
+
 langFiniteSetModelValue :: LangFiniteSetModel '( q, q) -> WModel (FiniteSetUpdate q)
 langFiniteSetModelValue (MkLangFiniteSetModel tr lv) =
     eaMap (bijectionFiniteSetChangeLens (isoMapCat shimToFunction $ rangeBijection tr)) lv

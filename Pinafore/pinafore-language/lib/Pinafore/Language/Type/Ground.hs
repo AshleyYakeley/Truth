@@ -128,3 +128,9 @@ instance Is PolarityType polarity => Show (DolanType PinaforeGroundType polarity
 
 instance Is PolarityType polarity => AllConstraint Show (DolanType PinaforeGroundType polarity) where
     allConstraint = Dict
+
+instance Is PolarityType polarity => Show (DolanGroundedType PinaforeGroundType polarity a) where
+    show t = unpack $ exprShow t
+
+instance Is PolarityType polarity => AllConstraint Show (DolanGroundedType PinaforeGroundType polarity) where
+    allConstraint = Dict

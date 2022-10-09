@@ -22,6 +22,13 @@ instance MaybeRepresentational LangWholeModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangWholeModel
 
+newMemWholeModel :: forall a. PinaforeAction (LangWholeModel '( a, a))
+newMemWholeModel = do
+    r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
+    model <- actionLiftLifecycle $ makeReflectingModel r
+    uh <- pinaforeUndoHandler
+    return $ pinaforeModelToWholeModel $ MkWModel $ undoHandlerModel uh model
+
 langWholeModelToModel :: forall p q. LangWholeModel '( p, q) -> LangModel
 langWholeModelToModel (MutableLangWholeModel model) = MkLangModel model
 langWholeModelToModel (ImmutableLangWholeModel model) = MkLangModel $ immutableModelToReadOnlyModel model

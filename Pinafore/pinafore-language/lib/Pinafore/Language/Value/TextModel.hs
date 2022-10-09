@@ -9,6 +9,13 @@ import Shapes
 newtype LangTextModel =
     MkLangTextModel (WModel (StringUpdate Text))
 
+newMemTextModel :: PinaforeAction LangTextModel
+newMemTextModel = do
+    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
+    model :: Model (StringUpdate Text) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
+    uh <- pinaforeUndoHandler
+    return $ MkLangTextModel $ MkWModel $ undoHandlerModel uh model
+
 langTextModelToModel :: LangTextModel -> LangModel
 langTextModelToModel (MkLangTextModel model) = MkLangModel model
 

@@ -13,6 +13,7 @@ class NamespaceRenamable ts t where
            forall m. Monad m
         => t
         -> RenamerNamespaceT ts (RenamerT ts m) t
+    namespaceTypeNames :: t -> [String]
 
 instance (RenameTypeSystem ts, forall t'. NamespaceRenamable ts (w t')) =>
              NamespaceRenamable ts (PolarShimWit shim w polarity t) where
@@ -21,6 +22,8 @@ instance (RenameTypeSystem ts, forall t'. NamespaceRenamable ts (w t')) =>
         withTransConstraintTM @Monad $ do
             wt' <- namespaceRename @ts wt
             return $ MkShimWit wt' conv
+    namespaceTypeNames (MkShimWit wt _) = namespaceTypeNames @ts wt
 
 instance (RenamerNamespaceT ts ~ VarNamespaceT ts, RenamerT ts ~ VarRenamerT ts) => NamespaceRenamable ts (VarType t) where
     namespaceRename (MkVarType var) = varNamespaceTRenameUVar @_ @_ @ts var
+    namespaceTypeNames (MkVarType var) = [uVarName var]

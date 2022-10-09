@@ -64,20 +64,42 @@ bisubstituteUnifier ::
     -> DolanUnifier ground a
     -> UnifierSolver ground a
 bisubstituteUnifier _ (ClosedExpression a) = pure a
-bisubstituteUnifier bisub@(MkBisubstitution _ vsub mwp _) (OpenExpression (LEUnifierConstraint vwit polwit tw _) expr)
+bisubstituteUnifier bisub@(MkBisubstitution _ vsub mwp _) (OpenExpression (LEUnifierConstraint vwit PositiveType tw _) expr)
     | Just Refl <- testEquality vsub vwit =
-        withRepresentative polwit $
         bindUnifierMWit mwp $ \tp convp -> do
             conv <- unifyTypes tp tw
             val' <- bisubstituteUnifier bisub expr
             pure $ val' $ conv . convp
-bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (GEUnifierConstraint vwit polwit tw _) expr)
+bisubstituteUnifier bisub (OpenExpression (LEUnifierConstraint vwit NegativeType tw _) expr)
+    | Just (MkShimWit (VarDolanSingularType v) (MkPolarMap conv)) <- dolanToMaybeTypeShim tw
+    , Just Refl <- testEquality v vwit = do
+        val' <- bisubstituteUnifier bisub expr
+        pure $ val' conv
+bisubstituteUnifier bisub@(MkBisubstitution _ vsub mwp _) (OpenExpression (LEUnifierConstraint vwit NegativeType tw _) expr)
     | Just Refl <- testEquality vsub vwit =
-        withRepresentative polwit $
+        bindUnifierMWit mwp $ \tp convp ->
+            bindUnifierMWit (bisubstituteType bisub tw) $ \tw' convw -> do
+                conv <- unifyTypes tp tw'
+                val' <- bisubstituteUnifier bisub expr
+                pure $ val' $ convw . conv . convp
+bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (GEUnifierConstraint vwit NegativeType tw _) expr)
+    | Just Refl <- testEquality vsub vwit =
         bindUnifierMWit mwq $ \tq convq -> do
             conv <- unifyTypes tw tq
             val' <- bisubstituteUnifier bisub expr
             pure $ val' $ convq . conv
+bisubstituteUnifier bisub (OpenExpression (GEUnifierConstraint vwit PositiveType tw _) expr)
+    | Just (MkShimWit (VarDolanSingularType v) (MkPolarMap conv)) <- dolanToMaybeTypeShim tw
+    , Just Refl <- testEquality v vwit = do
+        val' <- bisubstituteUnifier bisub expr
+        pure $ val' conv
+bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (GEUnifierConstraint vwit PositiveType tw _) expr)
+    | Just Refl <- testEquality vsub vwit =
+        bindUnifierMWit mwq $ \tq convq ->
+            bindUnifierMWit (bisubstituteType bisub tw) $ \tw' convw -> do
+                conv <- unifyTypes tw' tq
+                val' <- bisubstituteUnifier bisub expr
+                pure $ val' $ convq . conv . convw
 bisubstituteUnifier bisub (OpenExpression (LEUnifierConstraint vn NegativeType tw _) expr) =
     bindUnifierMWit (bisubstituteType bisub tw) $ \tp' conv -> do
         val' <- bisubstituteUnifier bisub expr
@@ -166,7 +188,7 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar NegativeType (ptw :: _ pt
                     (return $ joinMeetShimWit (varDolanShimWit newvar) (mkPolarShimWit ptw))
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
         expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
-        expr'' <- runUnifierExpression @ground expr'
+        expr'' <- runUnifierExpression expr'
         tell [bisub]
         return $ fmap (\sa -> sa meet2) $ expr''
 runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt) False) expr) = do

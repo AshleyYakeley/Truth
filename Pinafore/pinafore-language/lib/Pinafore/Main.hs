@@ -84,7 +84,7 @@ pinaforeInterpretTextAtType ::
     => FilePath
     -> Text
     -> InterpretResult t
-pinaforeInterpretTextAtType puipath puitext = runPinaforeScoped (initialPos puipath) $ parseValueUnify puitext
+pinaforeInterpretTextAtType puipath puitext = runPinaforeScoped puipath $ parseValueUnify puitext
 
 pinaforeInterpretText ::
        (?pinafore :: PinaforeContext, ?library :: LibraryContext) => FilePath -> Text -> InterpretResult (View ())

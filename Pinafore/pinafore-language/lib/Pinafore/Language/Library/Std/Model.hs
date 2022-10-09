@@ -116,34 +116,6 @@ setentity model val = langWholeModelSet model $ Known val
 deleteentity :: LangWholeModel '( BottomType, TopType) -> PinaforeAction ()
 deleteentity model = langWholeModelSet model Unknown
 
-newMemWholeModel :: forall a. PinaforeAction (LangWholeModel '( a, a))
-newMemWholeModel = do
-    r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
-    model <- actionLiftLifecycle $ makeReflectingModel r
-    uh <- pinaforeUndoHandler
-    return $ pinaforeModelToWholeModel $ MkWModel $ undoHandlerModel uh model
-
-newMemFiniteSetModel :: PinaforeAction (LangFiniteSetModel '( MeetType Entity A, A))
-newMemFiniteSetModel = do
-    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- pinaforeUndoHandler
-    return $ meetValueLangFiniteSetModel $ MkWModel $ undoHandlerModel uh model
-
-newMemListModel :: forall a. PinaforeAction (LangListModel '( a, a))
-newMemListModel = do
-    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model :: Model (ListUpdate (WholeUpdate a)) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- pinaforeUndoHandler
-    return $ FullLangListModel $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
-
-newMemTextModel :: PinaforeAction LangTextModel
-newMemTextModel = do
-    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model :: Model (StringUpdate Text) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- pinaforeUndoHandler
-    return $ MkLangTextModel $ MkWModel $ undoHandlerModel uh model
-
 modelLibEntries :: [DocTreeEntry BindDoc]
 modelLibEntries =
     [ docTreeEntry
@@ -310,10 +282,8 @@ modelLibEntries =
                       "finiteSetModelClear"
                       "Remove all entities from a finite set."
                       (langFiniteSetModelRemoveAll :: LangFiniteSetModel '( BottomType, TopType) -> PinaforeAction ())
-                , mkValEntry
-                      "newMemFiniteSetModel"
-                      "Create a new finite set model of memory, initially empty."
-                      newMemFiniteSetModel
+                , mkValEntry "newMemFiniteSetModel" "Create a new finite set model of memory, initially empty." $
+                  newMemFiniteSetModel @A
                 ]
           , docTreeEntry
                 "List Models"
@@ -324,18 +294,23 @@ modelLibEntries =
                 , hasSubtypeRelationEntry @(LangListModel '( A, A)) @(LangWholeModel '( Vector A, Vector A)) Verify "" $
                   functionToShim "langListModelToWholeModel" langListModelToWholeModel
                 , mkValEntry "wholeModelList" "Represent a whole model as a list model." $ langWholeModelToListModel @A
-                , mkValEntry "listModelGetCount" "Get Count of elements in a list model." langListModelGetCount
-                , mkValEntry "listModelGetItem" "Get an element of a list model." $ langListModelGetItem @Q
-                , mkValEntry "listModelInsert" "Insert an element in a list model." $ langListModelInsert @P
-                , mkValEntry "listModelSet" "Set an element of a list model." $ langListModelSet @P
-                , mkValEntry "listModelDelete" "Delete an element of a list model." langListModelDelete
-                , mkValEntry "listModelClear" "Delete all elements of a list model." langListModelClear
-                , mkValEntry "listModelCount" "Model of a count of elements in a list model." langListModelCountModel
+                , mkValEntry "listModelGetCount" "Get Count of elements in a list model." $
+                  langListModelGetCount @BottomType @TopType
+                , mkValEntry "listModelGetItem" "Get an element of a list model." $ langListModelGetItem @BottomType @Q
+                , mkValEntry "listModelInsert" "Insert an element in a list model." $ langListModelInsert @P @TopType
+                , mkValEntry "listModelSet" "Set an element of a list model." $ langListModelSet @P @TopType
+                , mkValEntry "listModelDelete" "Delete an element of a list model." $
+                  langListModelDelete @BottomType @TopType
+                , mkValEntry "listModelClear" "Delete all elements of a list model." $
+                  langListModelClear @BottomType @TopType
+                , mkValEntry "listModelCount" "Model of a count of elements in a list model." $
+                  langListModelCountModel @BottomType @TopType
                 , mkValEntry
                       "listModelItem"
                       "Get a whole model of a particular item in the list. It will track the item as the list changes. Pass `True` for an existing item, `False` for a point between items." $
                   langListModelItem @P @Q
-                , mkValEntry "immutListModel" "Convert a list model to immutable." $ langImmutListModel @A
+                , mkValEntry "immutListModel" "Convert a list model to immutable." $
+                  langImmutListModel @BottomType @A @TopType
                 , mkValEntry "newMemListModel" "Create a new list model of memory, initially empty." $
                   newMemListModel @A
                 ]

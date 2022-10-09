@@ -162,15 +162,22 @@ typedSubsumeExpressionToOpen ::
        forall t. PinaforeType 'Positive t -> PinaforeExpression -> PinaforeInterpreter (PinaforeOpenExpression t)
 typedSubsumeExpressionToOpen = tsSubsumeExpressionTo @PinaforeTypeSystem
 
-typedAnyToPinaforeVal ::
+qUnifyValue ::
        forall t. HasPinaforeType 'Negative t
     => PinaforeValue
     -> PinaforeInterpreter t
-typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem
+qUnifyValue = tsUnifyValue @PinaforeTypeSystem
 
 -- | for debugging
-rigidTypedAnyToPinaforeVal ::
+qUnifyRigidValue ::
        forall t. HasPinaforeType 'Negative t
     => PinaforeValue
     -> PinaforeInterpreter t
-rigidTypedAnyToPinaforeVal = tsUnifyRigidValue @PinaforeTypeSystem
+qUnifyRigidValue = tsUnifyRigidValue @PinaforeTypeSystem
+
+-- | for debugging
+qUnifyValueToFree ::
+       forall t. HasPinaforeType 'Negative t
+    => PinaforeValue
+    -> PinaforeInterpreter t
+qUnifyValueToFree = tsUnifyValueToFree @PinaforeTypeSystem
