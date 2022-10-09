@@ -12,27 +12,27 @@ scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a
 circle: Number *: Number -> Number -> Path
 = fns centre radius => arc centre radius 0 (2 ~* pi);
 
-tickMark: Integer -> Drawing (List None)
+tickMark: Integer -> Drawing None
 = fn m => let
     major = mod m 5 == 0
-    in lineWidth (if major then 0.015 else 0.005) $ stroke [moveTo (0,if major then 0.8 else 0.85), lineTo (0,0.95)];
+    in lineWidth (if major then 0.015 else 0.005) $ stroke $ concatPath [moveTo (0,if major then 0.8 else 0.85), lineTo (0,0.95)];
 
-face: Drawing (List None)
-=
+face: Drawing None
+= concatDrawing
 [
     source antiquewhite $ fill $ circle (0,0) 1,
     source black $ lineWidth 0.01 $ stroke $ circle (0,0) 1,
-    mapList (fn m => rotate (m ~* pi ~/ 30) $ tickMark m) $ range 0 59
+    concatDrawing $ mapList (fn m => rotate (m ~* pi ~/ 30) $ tickMark m) $ range 0 59
 ];
 
-hourHand: Drawing (List None)
-= source navy $ lineWidth 0.1 $ stroke [moveTo (0,0), lineTo (0,-0.5)];
+hourHand: Drawing None
+= source navy $ lineWidth 0.1 $ stroke $ concatPath [moveTo (0,0), lineTo (0,-0.5)];
 
-minuteHand: Drawing (List None)
-= source navy $ lineWidth 0.05 $ stroke [moveTo (0,0), lineTo (0,-0.8)];
+minuteHand: Drawing None
+= source navy $ lineWidth 0.05 $ stroke $ concatPath [moveTo (0,0), lineTo (0,-0.8)];
 
-secondHand: Drawing (List None)
-= source red $ lineWidth 0.01 $ stroke [moveTo (0,0), lineTo (0,-0.9)];
+secondHand: Drawing None
+= source red $ lineWidth 0.01 $ stroke $ concatPath [moveTo (0,0), lineTo (0,-0.9)];
 
 in do
     now <- newClock $ Seconds 0.1;
@@ -45,7 +45,7 @@ in do
                     s = floor $ modR ss 60; # floor for ticking motion
                     m = modR (ss / 60) 60;
                     h = modR (ss / 3600) 24;
-                    in
+                    in concatDrawing
                     [
                         face,
                         rotate (h ~* pi ~/ 6) hourHand,

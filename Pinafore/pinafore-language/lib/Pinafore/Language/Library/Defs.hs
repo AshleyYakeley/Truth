@@ -143,13 +143,6 @@ hasSubtypeRelationEntry trustme doc conv = let
     tb = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ b)
     in subtypeRelationEntry trustme doc ta tb conv
 
--- | The 'Monoid' trick of representing @Monoid T@ as @List T <: T@.
-monoidSubtypeRelationEntry ::
-       forall t. (HasPinaforeType 'Negative t, HasPinaforeType 'Positive t, Monoid t)
-    => DocTreeEntry BindDoc
-monoidSubtypeRelationEntry =
-    hasSubtypeRelationEntry @[t] @t Verify "Monoidal relationship" $ functionToShim "mconcat" mconcat
-
 mkValPatEntry ::
        forall t v lt.
        ( HasPinaforeType 'Positive t

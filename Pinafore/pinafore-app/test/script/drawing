@@ -2,7 +2,7 @@
 let
 import Colour;
 import Cairo;
-import GTK();
+import GTK(Handler,concatDrawing,onClick);
 
 # transform from (-1 .. +1,-1 .. +1)
 scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a)
@@ -16,32 +16,26 @@ datatype Progress of
     ProgressDone;
 end;
 
-drawing: WholeModel Progress -> WholeModel +(Drawing GTK.Handler)
+drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
 = fn ref =>
 {
-    scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1
+    scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1 $ concatDrawing
     [
         source navy $ %(toMaybeWholeModel ref) >- match
-            Nothing =>
-            [
-                pureDrawing $ GTK.onClick $ ref := ProgressPartial
-            ];
-            Just ProgressNone =>
-            [
-                pureDrawing $ GTK.onClick $ ref := ProgressPartial
-            ];
-            Just ProgressPartial =>
-            [
-                fill [arc (0,0) 1 0 pi, closePath],
-                pureDrawing $ GTK.onClick $ ref := ProgressDone
-            ];
-            Just ProgressDone =>
-            [
-                fill [arc (0,0) 1 0 (2 ~* pi)],
-                pureDrawing $ GTK.onClick $ ref := ProgressNone
-            ];
+            Nothing => pureDrawing $ onClick $ ref := ProgressPartial;
+            Just ProgressNone => pureDrawing $ onClick $ ref := ProgressPartial;
+            Just ProgressPartial => concatDrawing
+                [
+                    fill $ concatPath [arc (0,0) 1 0 pi, closePath],
+                    pureDrawing $ onClick $ ref := ProgressDone
+                ];
+            Just ProgressDone => concatDrawing
+                [
+                    fill $ concatPath [arc (0,0) 1 0 (2 ~* pi)],
+                    pureDrawing $ onClick $ ref := ProgressNone
+                ];
         end,
-        stroke
+        stroke $ concatPath
         [
             arc (0,0) 1 0 (2 ~* pi),
             moveTo (-1,0),
@@ -50,12 +44,12 @@ drawing: WholeModel Progress -> WholeModel +(Drawing GTK.Handler)
     ]
 };
 
-import GTK();
-in GTK.run $ fn gtk => do
+import GTK;
+in run $ fn gtk => do
     ref <- newMemWholeModel;
-    GTK.openWindow gtk (300,400) {"Drawing"} $ GTK.vertical
+    openWindow gtk (300,400) {"Drawing"} $ vertical
     [
-        GTK.layoutGrow $ GTK.draw $ scaleDrawing $ drawing ref,
-        GTK.layoutGrow $ GTK.draw $ scaleDrawing $ drawing ref
+        layoutGrow $ draw $ scaleDrawing $ drawing ref,
+        layoutGrow $ draw $ scaleDrawing $ drawing ref
     ];
     end

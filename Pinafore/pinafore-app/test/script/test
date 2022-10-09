@@ -217,7 +217,7 @@ window_drawing: WholeModel +Time -> Action GTK.Window
                 source purple $
                 lineCapSquare $
                 lineWidth 0.01 $
-                stroke [moveTo (0, 0), lineTo (0, 1)];
+                stroke $ concatPath [moveTo (0, 0), lineTo (0, 1)];
             end};
     end;
 
@@ -261,7 +261,7 @@ window_cairoimage: Action GTK.Window
     = fn (w,h) => let
         size = min w h;
         square: Drawing Handler
-        = fill [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
+        = fill $ concatPath [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
         squares: List ((Integer *: Integer) *: Colour)
         =
         [
@@ -282,15 +282,15 @@ window_cairoimage: Action GTK.Window
             ((2,3), midnightblue)
         ];
         block: Number -> Drawing Handler
-        = fn a =>
+        = fn a => concatDrawing
         [
-            mapList (fn (s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
+            concatDrawing $ mapList (fn (s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
             lineWidth 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 ~* pi)
         ];
         in
             scale (size, size) $
             scale (0.125, 0.125) $
-            operatorOver
+            operatorOver $ concatDrawing
             [
                 translate (0,0) $ block 1,
                 translate (0,4) $ block (2/3),

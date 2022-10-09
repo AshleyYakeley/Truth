@@ -187,6 +187,7 @@ baseLibEntries =
                 [ mkTypeEntry "Unit" "" $ MkSomeGroundType unitGroundType
                 , literalSubtypeRelationEntry @()
                 , showableSubtypeRelationEntry @()
+                , mkValEntry "concatUnit" "Concatenate units." $ mconcat @()
                 ]
           , docTreeEntry
                 "Boolean"

@@ -17,15 +17,15 @@ import Shapes.Numeric
 
 -- LangDrawing
 newtype LangDrawing a = MkLangDrawing
-    { unLangDrawing :: Drawing (PixelPoint -> a)
+    { unLangDrawing :: Drawing (PixelPoint -> [a])
     } deriving (Semigroup, Monoid)
 
 instance Functor LangDrawing where
-    fmap ab (MkLangDrawing d) = MkLangDrawing $ fmap (fmap ab) d
+    fmap ab (MkLangDrawing d) = MkLangDrawing $ fmap (fmap (fmap ab)) d
 
 instance Applicative LangDrawing where
-    pure a = MkLangDrawing $ pure $ pure a
-    liftA2 f (MkLangDrawing pa) (MkLangDrawing pb) = MkLangDrawing $ liftA2 (liftA2 f) pa pb
+    pure a = MkLangDrawing $ pure $ pure $ pure a
+    liftA2 f (MkLangDrawing pa) (MkLangDrawing pb) = MkLangDrawing $ liftA2 (liftA2 (liftA2 f)) pa pb
 
 instance RepresentationalRole LangDrawing where
     representationalCoercion MkCoercion = MkCoercion
@@ -43,12 +43,12 @@ instance HasPinaforeGroundType '[ CoCCRVariance] LangDrawing where
     pinaforeGroundType = drawingGroundType
 
 langPointDrawing :: LangDrawing (Double, Double)
-langPointDrawing = MkLangDrawing $ pointDrawing id
+langPointDrawing = MkLangDrawing $ pointDrawing pure
 
-liftDrawing :: forall a. Drawing a -> LangDrawing a
+liftDrawing :: forall a. Drawing [a] -> LangDrawing a
 liftDrawing d = MkLangDrawing $ fmap (\a _ -> a) d
 
-lift1Drawing :: forall a b. (a -> Drawing b) -> a -> LangDrawing b
+lift1Drawing :: forall a b. (a -> Drawing [b]) -> a -> LangDrawing b
 lift1Drawing d a = liftDrawing $ d a
 
 hoistDrawing :: forall t. (Drawing --> Drawing) -> LangDrawing t -> LangDrawing t
@@ -63,10 +63,10 @@ hoist2Drawing f a = hoist1Drawing $ f a
 hoist3Drawing :: forall t a b c. (a -> b -> c -> Drawing --> Drawing) -> a -> b -> c -> LangDrawing t -> LangDrawing t
 hoist3Drawing f a = hoist2Drawing $ f a
 
-langIfPoint :: ((Double, Double) -> Bool) -> LangDrawing A -> LangDrawing [A]
-langIfPoint f (MkLangDrawing d) = MkLangDrawing $ ifPoint f (fmap (fmap pure) d)
+langIfPoint :: ((Double, Double) -> Bool) -> LangDrawing A -> LangDrawing A
+langIfPoint f (MkLangDrawing d) = MkLangDrawing $ ifPoint f d
 
-langIfInRect :: ((Double, Double), (Double, Double)) -> LangDrawing A -> LangDrawing [A]
+langIfInRect :: ((Double, Double), (Double, Double)) -> LangDrawing A -> LangDrawing A
 langIfInRect ((x0, y0), (w, h)) = langIfPoint $ \(x, y) -> (x >= x0) && (x < x0 + w) && (y >= y0) && (y < y0 + h)
 
 -- LangPath
@@ -129,8 +129,7 @@ cairoLibraryModule =
         "Cairo"
         ""
         [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkSomeGroundType drawingGroundType
-        , hasSubtypeRelationEntry @[LangDrawing A] @(LangDrawing [A]) Verify "Monoidal relationship" $
-          functionToShim "mconcat" $ \dd -> mconcat $ fmap (fmap pure) dd
+        , mkValEntry "concatDrawing" "Layer drawings." $ mconcat @(LangDrawing A)
         , mkValEntry "pureDrawing" "" $ pure @LangDrawing @A
         , mkValEntry "mapDrawing" "" $ fmap @LangDrawing @A @B
         , mkValEntry "apDrawing" "" $ (<*>) @LangDrawing @A @B
@@ -186,7 +185,7 @@ cairoLibraryModule =
               "Path"
               ""
               [ mkTypeEntry "Path" "A path on a drawing." $ MkSomeGroundType pathGroundType
-              , monoidSubtypeRelationEntry @LangPath
+              , mkValEntry "concatPath" "Join a list of paths." $ mconcat @LangPath
               , mkValEntry "stroke" "Draw this path" $ lift1Drawing $ stroke @[BottomType]
               , mkValEntry "fill" "Fill this path" $ lift1Drawing $ fill @[BottomType]
               , mkValEntry "clip" "Clip drawing to this path" $ hoist1Drawing @A clip
@@ -249,7 +248,7 @@ cairoLibraryModule =
 langPatternSource :: LangPattern -> LangDrawing A -> LangDrawing A
 langPatternSource (MkLangPattern pat) (MkLangDrawing d) = MkLangDrawing $ patternSource pat d
 
-langPatternMask :: LangPattern -> LangDrawing [BottomType]
+langPatternMask :: LangPattern -> LangDrawing BottomType
 langPatternMask (MkLangPattern pat) = MkLangDrawing $ patternMask pat
 
 langColorDrawingPattern :: LangDrawing TopType -> LangPattern

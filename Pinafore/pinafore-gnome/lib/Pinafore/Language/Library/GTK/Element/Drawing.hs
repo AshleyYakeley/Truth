@@ -4,7 +4,6 @@ module Pinafore.Language.Library.GTK.Element.Drawing
 
 import Changes.Core
 import Changes.World.GNOME.GTK
-import Data.Shim
 import GI.Gdk as GI
 import Pinafore.Base
 import Pinafore.Language.API
@@ -57,7 +56,8 @@ uiDraw model =
     MkLangElement $ \ec ->
         createCairo $
         unWModel $
-        pinaforeImmutableModelValue mempty $ fmap (\d p -> fmap (fmap $ runLangHandler ec) $ unLangDrawing (d p)) model
+        pinaforeImmutableModelValue mempty $
+        fmap (\d p -> fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $ unLangDrawing (d p)) model
 
 drawingStuff :: DocTreeEntry BindDoc
 drawingStuff =
@@ -65,8 +65,7 @@ drawingStuff =
         "Drawing"
         ""
         [ mkTypeEntry "Handler" "Response to button-clicked events" $ MkSomeGroundType handlerGroundType
-        , hasSubtypeRelationEntry @[LangHandler] @LangHandler Verify "Monoidal relationship" $
-          functionToShim "mconcat" mconcat
+        , mkValEntry "concatHandler" "Collect handlers." $ mconcat @LangHandler
         , mkValEntry "onClick" "Action to perform on click" langOnClick
         , mkValEntry "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
         , mkValEntry "draw" "Drawable element" uiDraw
