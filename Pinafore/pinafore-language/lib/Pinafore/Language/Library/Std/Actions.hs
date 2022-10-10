@@ -5,7 +5,7 @@ module Pinafore.Language.Library.Std.Actions
     ( actionsLibEntries
     ) where
 
-import Data.Time.Clock.System
+import Data.Time
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
@@ -15,11 +15,6 @@ import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
-
-getTimeMS :: IO Integer
-getTimeMS = do
-    MkSystemTime s ns <- getSystemTime
-    return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
 output :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
 output text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
@@ -64,9 +59,8 @@ actionsLibEntries =
           , mkValEntry "output" "Output text to standard output." $ output
           , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn
           , mkValEntry
-                "getTimeMS"
-                "Get the time as a whole number of milliseconds."
-                (liftIO getTimeMS :: PinaforeAction Integer)
-          , mkValEntry "sleep" "Do nothing for this number of milliseconds." (\t -> threadDelay $ t * 1000)
+                "sleep"
+                "Do nothing for this duration."
+                (\d -> threadDelay $ truncate $ (nominalDiffTimeToSeconds d) * 1000000)
           ]
     ]

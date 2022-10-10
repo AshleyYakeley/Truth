@@ -18,13 +18,13 @@ lifecycleLibEntries =
           [ mkValEntry
                 "lifecycle"
                 "Close everything that gets opened in the given action.\n\n\
-                \Example: `lifecycle $ do openResource; sleep 1000 end`  \n\
+                \Example: `lifecycle $ do openResource; sleep (Seconds 1) end`  \n\
                 \This opens some resource, sleeps for one second, and then closes it again." $
             (actionHoistView viewSubLifecycle) @A
           , mkValEntry
                 "onClose"
                 "Add this action as to be done when closing.\n\n\
-                \Example: `lifecycle $ do onClose $ outputLn \"hello\"; sleep 1000 end`  \n\
+                \Example: `lifecycle $ do onClose $ outputLn \"hello\"; sleep (Seconds 1) end`  \n\
                 \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
                 actionOnClose
           , mkValEntry

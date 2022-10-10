@@ -1323,12 +1323,12 @@ testEntity =
         , tGroup
               "task"
               [ testExpectSuccess
-                    "do t <- async $ do sleep 10; return True end; v <- await t; if v then pass else fail \"\" end"
+                    "do t <- async $ do sleep $ Seconds 0.01; return True end; v <- await t; if v then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- async $ do sleep 10; r := 1; end; await t; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- async $ do sleep $ Seconds 0.01; r := 1; end; await t; v <- get r; if v == 1 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- async $ do sleep 50; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- async $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- lifecycle $ async $ do sleep 50; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- lifecycle $ async $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
               ]
         ]
