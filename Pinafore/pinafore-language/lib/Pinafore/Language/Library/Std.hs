@@ -10,7 +10,6 @@ import Pinafore.Language.Library.Std.File
 import Pinafore.Language.Library.Std.Interpreter
 import Pinafore.Language.Library.Std.Lifecycle
 import Pinafore.Language.Library.Std.Model
-import Pinafore.Language.Library.Std.Tasks
 import Pinafore.Language.Library.Std.Undo
 import Shapes
 
@@ -23,7 +22,6 @@ stdLibraryModule =
         [ baseLibEntries
         , actionsLibEntries
         , lifecycleLibEntries
-        , tasksLibEntries
         , interpreterLibEntries
         , undoLibEntries
         , modelLibEntries

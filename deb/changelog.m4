@@ -30,6 +30,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add List1 type for non-empty lists, subtype of List
       . rename "Ref" types and functions to "Model"
       . add TextModel type & associated functions, use for uiTextArea
+    - new Task module
       . add Task type & associated functions
     - new Stream module
       . add sinks & sources

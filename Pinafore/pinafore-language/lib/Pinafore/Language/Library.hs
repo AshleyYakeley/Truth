@@ -24,12 +24,13 @@ import Pinafore.Language.Library.Env
 import Pinafore.Language.Library.FetchModule
 import Pinafore.Language.Library.Std
 import Pinafore.Language.Library.Stream
+import Pinafore.Language.Library.Task
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
 library :: [LibraryModule]
-library = [stdLibraryModule, streamLibraryModule, envLibraryModule, debugLibraryModule]
+library = [stdLibraryModule, taskLibraryModule, streamLibraryModule, envLibraryModule, debugLibraryModule]
 
 libraryDoc :: [LibraryModule] -> [DocTree DefDoc]
 libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib

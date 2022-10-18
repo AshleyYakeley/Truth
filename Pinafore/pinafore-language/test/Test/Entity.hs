@@ -1323,12 +1323,12 @@ testEntity =
         , tGroup
               "task"
               [ testExpectSuccess
-                    "do t <- asyncTask $ do sleep $ Seconds 0.01; return True end; v <- awaitTask t; if v then pass else fail \"\" end"
+                    "do t <- Task.async $ do sleep $ Seconds 0.01; return True end; v <- Task.await t; if v then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- asyncTask $ do sleep $ Seconds 0.01; r := 1; end; awaitTask t; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- Task.async $ do sleep $ Seconds 0.01; r := 1; end; Task.await t; v <- get r; if v == 1 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- asyncTask $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- Task.async $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- lifecycle $ asyncTask $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- lifecycle $ Task.async $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
               ]
         ]

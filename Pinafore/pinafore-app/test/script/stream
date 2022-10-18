@@ -1,0 +1,2 @@
+#!/usr/bin/pinafore
+Stream.connect Env.stdin Env.stdout
