@@ -31,13 +31,18 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . rename "Ref" types and functions to "Model"
       . add TextModel type & associated functions, use for uiTextArea
       . add Task type & associated functions
-    - Colour
+    - new Stream module
+      . add sinks & sources
+    - new Context module
+      . move invocation-type stuff
+      . add stdin, stdout, stderr
+    - new Colour module
       . add Colour & AlphaColour types, etc.
-    - GIO
+    - new GIO module
       . add GIO File type and functions
-    - Cairo
+    - new Cairo module
       . add Cairo-based functions for creating drawings
-    - Image
+    - new Image module
       . add Image, HasMetadata, PNGImage, JPEGImage types, etc.
     - GTK
       . rename (from "UI")

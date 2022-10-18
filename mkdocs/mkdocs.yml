@@ -29,6 +29,8 @@ nav:
   - Modules: 'modules.md'
 - Library:
   - Std: 'library/Std.md'
+  - Stream: 'library/Stream.md'
+  - Context: 'library/Context.md'
   - Colour: 'library/Colour.md'
   - Cairo: 'library/Cairo.md'
   - Image: 'library/Image.md'

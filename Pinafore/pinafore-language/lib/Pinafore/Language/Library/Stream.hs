@@ -1,5 +1,7 @@
-module Pinafore.Language.Library.Std.Streams
-    ( streamsLibEntries
+module Pinafore.Language.Library.Stream
+    ( streamLibraryModule
+    , LangSink(..)
+    , LangSource(..)
     ) where
 
 import Pinafore.Base
@@ -40,12 +42,6 @@ langSinkWriteEnd (MkLangSink sink) = sinkWriteEnd sink
 
 langSinkWriteLn :: LangSink Text -> Text -> PinaforeAction ()
 langSinkWriteLn (MkLangSink sink) = sinkWriteLn sink
-
-langStdOut :: LangSink Text
-langStdOut = MkLangSink $ hoistSink liftIO stdoutTextSink
-
-langStdErr :: LangSink Text
-langStdErr = MkLangSink $ hoistSink liftIO stderrTextSink
 
 langGather :: forall a. IO ((LangSink a, IO [a]), LangTask [a])
 langGather = do
@@ -100,34 +96,26 @@ lineBufferSource (MkLangSource source) = do
     rs <- filterSource lineBufferFilter source
     return $ MkLangSource rs
 
-langStdIn :: LangSource Text
-langStdIn = MkLangSource $ hoistSource liftIO stdinTextSource
-
-streamsLibEntries :: [DocTreeEntry BindDoc]
-streamsLibEntries =
-    [ docTreeEntry
-          "Sinks & Sources"
-          ""
-          [ mkTypeEntry "Sink" "A sink is something you can write values (and \"end\") to." $
-            MkSomeGroundType sinkGroundType
-          , mkValEntry "mapSink" "" $ contramap @LangSink @A @B
-          , mkValEntry "sinkWrite" "" $ langSinkWrite @A
-          , mkValEntry "sinkWriteEnd" "" $ langSinkWriteEnd @BottomType
-          , mkValEntry "sinkWriteLn" "" langSinkWriteLn
-          , mkValEntry "gatheringSink" "" $ langGather @A
-          , mkValEntry "stdout" "" langStdOut
-          , mkValEntry "stderr" "" langStdErr
-          , mkTypeEntry "Source" "A source is something you can listen to data from." $
-            MkSomeGroundType sourceGroundType
-          , mkValEntry "mapSource" "" $ fmap @LangSource @A @B
-          , mkValEntry "sourceReady" "" $ langSourceReady @TopType
-          , mkValEntry "sourceRead" "" $ langSourceRead @A
-          , mkValEntry "sourceReadAvailable" "" $ langSourceReadAvailable @A
-          , mkValEntry "sourceReadAllAvailable" "" $ langSourceReadAllAvailable @A
-          , mkValEntry "sourceGather" "" $ langSourceGather @A
-          , mkValEntry "connect" "" $ langConnectSourceSink @A
-          , mkValEntry "createPipe" "" $ langCreatePipe @A
-          , mkValEntry "lineBufferSource" "" lineBufferSource
-          , mkValEntry "stdin" "" langStdIn
-          ]
-    ]
+streamLibraryModule :: LibraryModule
+streamLibraryModule =
+    MkDocTree
+        "Stream"
+        "Sinks & Sources"
+        [ mkTypeEntry "Sink" "A sink is something you can write values (and \"end\") to." $
+          MkSomeGroundType sinkGroundType
+        , mkValEntry "mapSink" "" $ contramap @LangSink @A @B
+        , mkValEntry "write" "" $ langSinkWrite @A
+        , mkValEntry "writeEnd" "" $ langSinkWriteEnd @BottomType
+        , mkValEntry "writeLn" "" langSinkWriteLn
+        , mkValEntry "gatheringSink" "" $ langGather @A
+        , mkTypeEntry "Source" "A source is something you can listen to data from." $ MkSomeGroundType sourceGroundType
+        , mkValEntry "mapSource" "" $ fmap @LangSource @A @B
+        , mkValEntry "isReady" "" $ langSourceReady @TopType
+        , mkValEntry "read" "" $ langSourceRead @A
+        , mkValEntry "readAvailable" "" $ langSourceReadAvailable @A
+        , mkValEntry "readAllAvailable" "" $ langSourceReadAllAvailable @A
+        , mkValEntry "gather" "" $ langSourceGather @A
+        , mkValEntry "connect" "" $ langConnectSourceSink @A
+        , mkValEntry "createPipe" "" $ langCreatePipe @A
+        , mkValEntry "lineBufferSource" "" lineBufferSource
+        ]
