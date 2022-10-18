@@ -157,6 +157,7 @@ deb: out/$(PACKAGEFULLNAME).deb
 
 LIBMODULES := \
     Std \
+    Task \
     Stream \
     Env \
     Colour \
