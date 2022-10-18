@@ -9,7 +9,6 @@ import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.Library.Std.Tasks
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
@@ -42,11 +41,6 @@ langSinkWriteEnd (MkLangSink sink) = sinkWriteEnd sink
 
 langSinkWriteLn :: LangSink Text -> Text -> PinaforeAction ()
 langSinkWriteLn (MkLangSink sink) = sinkWriteLn sink
-
-langGather :: forall a. IO ((LangSink a, IO [a]), LangTask [a])
-langGather = do
-    (sink, watch, task) <- gatherSink
-    return ((liftSink sink, watch), liftTask task)
 
 -- LangSource
 newtype LangSource a =
@@ -100,22 +94,32 @@ streamLibraryModule :: LibraryModule
 streamLibraryModule =
     MkDocTree
         "Stream"
-        "Sinks & Sources"
-        [ mkTypeEntry "Sink" "A sink is something you can write values (and \"end\") to." $
+        "Sinks and sources."
+        [ mkTypeEntry "Sink" "A sink is something you can write data (and \"end\") to." $
           MkSomeGroundType sinkGroundType
         , mkValEntry "mapSink" "" $ contramap @LangSink @A @B
-        , mkValEntry "write" "" $ langSinkWrite @A
-        , mkValEntry "writeEnd" "" $ langSinkWriteEnd @BottomType
-        , mkValEntry "writeLn" "" langSinkWriteLn
-        , mkValEntry "gatheringSink" "" $ langGather @A
-        , mkTypeEntry "Source" "A source is something you can listen to data from." $ MkSomeGroundType sourceGroundType
+        , mkValEntry "write" "Write an item to a sink." $ langSinkWrite @A
+        , mkValEntry "writeEnd" "Write end to a sink. You should not write to the sink after this." $
+          langSinkWriteEnd @BottomType
+        , mkValEntry "writeLn" "Write text followed by a newline to a text sink." langSinkWriteLn
+        , mkTypeEntry "Source" "A source is something you can read data from." $ MkSomeGroundType sourceGroundType
         , mkValEntry "mapSource" "" $ fmap @LangSource @A @B
-        , mkValEntry "isReady" "" $ langSourceReady @TopType
-        , mkValEntry "read" "" $ langSourceRead @A
-        , mkValEntry "readAvailable" "" $ langSourceReadAvailable @A
-        , mkValEntry "readAllAvailable" "" $ langSourceReadAllAvailable @A
-        , mkValEntry "gather" "" $ langSourceGather @A
-        , mkValEntry "connect" "" $ langConnectSourceSink @A
-        , mkValEntry "createPipe" "" $ langCreatePipe @A
-        , mkValEntry "lineBufferSource" "" lineBufferSource
+        , mkValEntry "isReady" "Does this source have data available now?" $ langSourceReady @TopType
+        , mkValEntry "read" "Read data (or end), waiting if necessary." $ langSourceRead @A
+        , mkValEntry "readAvailable" "Read data (or end), if it is now available." $ langSourceReadAvailable @A
+        , mkValEntry "readAllAvailable" "Read all data now available. Second value is set if end was read." $
+          langSourceReadAllAvailable @A
+        , mkValEntry "gather" "Gather all data (until end) from a source." $ langSourceGather @A
+        , mkValEntry
+              "connect"
+              "Read all data (until end) from a source and write it to a sink, as it becomes available. Does not write end to the sink." $
+          langConnectSourceSink @A
+        , mkValEntry
+              "createPipe"
+              "Create a pipe. Data written to the sink will be added to a buffer, which can be read from with the source. Can be used to transfer data between asynchronous tasks." $
+          langCreatePipe @A
+        , mkValEntry
+              "lineBufferSource"
+              "Get a line-buffering source from a text source. Each read will be exactly one line."
+              lineBufferSource
         ]
