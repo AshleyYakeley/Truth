@@ -8,4 +8,4 @@ recf: (Integer -> b -> b) -> Integer -> b -> b
 
 f: Integer -> Integer -> Integer
 = fix recf;
-in outputLn $ show $ f 2 5
+in Context.outputLn $ show $ f 2 5

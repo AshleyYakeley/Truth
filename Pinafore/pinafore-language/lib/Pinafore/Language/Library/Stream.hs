@@ -2,6 +2,7 @@ module Pinafore.Language.Library.Stream
     ( streamLibraryModule
     , LangSink(..)
     , LangSource(..)
+    , langSinkWriteLn
     ) where
 
 import Pinafore.Base
@@ -90,6 +91,9 @@ lineBufferSource (MkLangSource source) = do
     rs <- filterSource lineBufferFilter source
     return $ MkLangSource rs
 
+langListSource :: forall a. [a] -> IO (LangSource a)
+langListSource aa = fmap liftSource $ listSource aa
+
 streamLibraryModule :: LibraryModule
 streamLibraryModule =
     MkDocTree
@@ -110,6 +114,7 @@ streamLibraryModule =
         , mkValEntry "readAllAvailable" "Read all data now available. Second value is set if end was read." $
           langSourceReadAllAvailable @A
         , mkValEntry "gather" "Gather all data (until end) from a source." $ langSourceGather @A
+        , mkValEntry "listSource" "Create a source for a list of items." $ langListSource @A
         , mkValEntry
               "connect"
               "Read all data (until end) from a source and write it to a sink, as it becomes available. Does not write end to the sink." $

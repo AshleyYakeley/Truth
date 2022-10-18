@@ -59,7 +59,7 @@ standardFetchModule MkModuleOptions {..} = let
 standardPinaforeContext :: ContextOptions -> InvocationInfo -> View PinaforeContext
 standardPinaforeContext MkContextOptions {..} invinfo = do
     model <- standardStorageModel coCache coDataDir
-    pc <- viewLiftLifecycle $ makePinaforeContext invinfo stdout model
+    pc <- viewLiftLifecycle $ makePinaforeContext invinfo model
     return pc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()

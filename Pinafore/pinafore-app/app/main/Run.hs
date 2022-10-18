@@ -13,7 +13,11 @@ runFiles (copts, modopts) fNoRun scripts =
     runLifecycle $
     runNewView $
     for_ scripts $ \(fpath, iiScriptArguments) -> do
-        let iiScriptName = fpath
+        let
+            iiScriptName = fpath
+            iiStdIn = stdinTextSource
+            iiStdOut = stdoutTextSink
+            iiStdErr = stderrTextSink
         iiEnvironment <- liftIO getEnvironment
         context <- standardPinaforeContext copts MkInvocationInfo {..}
         action <- runWithContext context (standardFetchModule modopts) $ pinaforeInterpretFile fpath
@@ -28,6 +32,9 @@ runInteractive (copts, modopts) =
         let
             iiScriptName = ""
             iiScriptArguments = []
+            iiStdIn = stdinTextSource
+            iiStdOut = stdoutTextSink
+            iiStdErr = stderrTextSink
         iiEnvironment <- liftIO getEnvironment
         context <- standardPinaforeContext copts MkInvocationInfo {..}
         runWithContext context (standardFetchModule modopts) pinaforeInteract

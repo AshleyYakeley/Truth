@@ -17,10 +17,7 @@ testFile inpath = let
     in testHandleVsFile dir testName $ \hout ->
            runLifecycle $
            runNewView $ do
-               pc <-
-                   viewLiftLifecycle $ do
-                       (model, _) <- makeTestStorageModel
-                       makePinaforeContext nullInvocationInfo hout model
+               (pc, _) <- viewLiftLifecycle $ makeTestPinaforeContext hout
                action <- runWithContext pc (libraryFetchModule gnomeLibrary) $ pinaforeInterpretFile inpath
                action
                return ()

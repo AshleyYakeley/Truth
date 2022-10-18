@@ -8,7 +8,7 @@ recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b
 
 f: Integer -> Integer -> Maybe Integer
 = fix recf;
-in outputLn $ show $ f 2 5 >- match
+in Context.outputLn $ show $ f 2 5 >- match
     Just b => b;
     Nothing => 0;
     end

@@ -1,2 +1,2 @@
 #!/usr/bin/pinafore
-outputLn "OUTPUT"
+Context.outputLn "OUTPUT"

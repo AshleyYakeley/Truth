@@ -9,7 +9,6 @@ module Pinafore.Context
     , nullPinaforeContext
     , pinaforeStorageModel
     , pinaforeInvocationInfo
-    , pinaforeStdOut
     ) where
 
 import Changes.Core
@@ -20,6 +19,9 @@ data InvocationInfo = MkInvocationInfo
     { iiScriptName :: String
     , iiScriptArguments :: [String]
     , iiEnvironment :: [(String, String)]
+    , iiStdIn :: Source IO Text
+    , iiStdOut :: Sink IO Text
+    , iiStdErr :: Sink IO Text
     }
 
 nullInvocationInfo :: InvocationInfo
@@ -27,13 +29,15 @@ nullInvocationInfo = let
     iiScriptName = ""
     iiScriptArguments = []
     iiEnvironment = []
+    iiStdIn = nullSource
+    iiStdOut = mempty
+    iiStdErr = mempty
     in MkInvocationInfo {..}
 
 data PinaforeContext = MkPinaforeContext
     { pconUnliftAction :: forall a. PinaforeAction a -> View (Know a)
     , pconStorageModel :: Model PinaforeStorageUpdate
     , pconInvocation :: InvocationInfo
-    , pconStdOut :: Handle
     }
 
 unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> View (Know a)
@@ -55,11 +59,8 @@ pinaforeStorageModel = pconStorageModel ?pinafore
 pinaforeInvocationInfo :: (?pinafore :: PinaforeContext) => InvocationInfo
 pinaforeInvocationInfo = pconInvocation ?pinafore
 
-pinaforeStdOut :: (?pinafore :: PinaforeContext) => Handle
-pinaforeStdOut = pconStdOut ?pinafore
-
-makePinaforeContext :: InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> Lifecycle PinaforeContext
-makePinaforeContext pconInvocation pconStdOut rmodel = do
+makePinaforeContext :: InvocationInfo -> Model PinaforeStorageUpdate -> Lifecycle PinaforeContext
+makePinaforeContext pconInvocation rmodel = do
     uh <- liftIO newUndoHandler
     let
         pconUnliftAction :: forall a. PinaforeAction a -> View (Know a)
@@ -72,5 +73,4 @@ nullPinaforeContext = let
     pconUnliftAction _ = fail "null Pinafore context"
     pconStorageModel = error "no pinafore base"
     pconInvocation = nullInvocationInfo
-    pconStdOut = stdout
     in MkPinaforeContext {..}

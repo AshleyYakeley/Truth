@@ -36,7 +36,7 @@ act : Action Unit
     tstart <- getTime;
     prop0 !$ {me} := "Example";
     tend <- getTime;
-    outputLn $ "Time: " <> show (diffTime tend tstart >- fn Seconds s => round (s .* 1000));
+    Context.outputLn $ "Time: " <> show (diffTime tend tstart >- fn Seconds s => round (s .* 1000));
     Debug.message "ACTION: end";
     end
 

@@ -14,5 +14,5 @@ in do
     e2 <- get model;
     Debug.checkEntity "CHECK e1" e1;
     Debug.checkEntity "CHECK e2" e2;
-    outputLn "LAST";
+    Context.outputLn "LAST";
     end

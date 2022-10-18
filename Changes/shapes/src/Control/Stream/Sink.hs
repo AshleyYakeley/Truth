@@ -10,6 +10,12 @@ newtype Sink m a =
 instance Contravariant (Sink m) where
     contramap ab (MkSink f) = MkSink $ \a -> f $ fmap ab a
 
+instance Monad m => Semigroup (Sink m a) where
+    MkSink f1 <> MkSink f2 = MkSink $ \ea -> f1 ea >> f2 ea
+
+instance Monad m => Monoid (Sink m a) where
+    mempty = MkSink $ \_ -> return ()
+
 hoistSink :: (m1 --> m2) -> Sink m1 --> Sink m2
 hoistSink mm (MkSink f) = MkSink $ \ma -> mm $ f ma
 
@@ -58,8 +64,11 @@ handleSink h =
         End -> hClose h
         Item t -> hPut h $ fromStrict t
 
+handleSinkText :: Handle -> Sink IO Text
+handleSinkText h = contramap encodeUtf8 $ handleSink h
+
 stdoutTextSink :: Sink IO Text
-stdoutTextSink = contramap encodeUtf8 $ handleSink stdout
+stdoutTextSink = handleSinkText stdout
 
 stderrTextSink :: Sink IO Text
-stderrTextSink = contramap encodeUtf8 $ handleSink stderr
+stderrTextSink = handleSinkText stderr

@@ -12,14 +12,14 @@ import Shapes
 getEnv :: (?pinafore :: PinaforeContext) => Text -> Maybe Text
 getEnv n = fmap pack $ lookup (unpack n) $ iiEnvironment pinaforeInvocationInfo
 
-langStdIn :: LangSource Text
-langStdIn = MkLangSource $ hoistSource liftIO stdinTextSource
+langStdIn :: (?pinafore :: PinaforeContext) => LangSource Text
+langStdIn = MkLangSource $ hoistSource liftIO $ iiStdIn pinaforeInvocationInfo
 
-langStdOut :: LangSink Text
-langStdOut = MkLangSink $ hoistSink liftIO stdoutTextSink
+langStdOut :: (?pinafore :: PinaforeContext) => LangSink Text
+langStdOut = MkLangSink $ hoistSink liftIO $ iiStdOut pinaforeInvocationInfo
 
-langStdErr :: LangSink Text
-langStdErr = MkLangSink $ hoistSink liftIO stderrTextSink
+langStdErr :: (?pinafore :: PinaforeContext) => LangSink Text
+langStdErr = MkLangSink $ hoistSink liftIO $ iiStdErr pinaforeInvocationInfo
 
 contextLibraryModule :: LibraryModule
 contextLibraryModule =
@@ -39,4 +39,6 @@ contextLibraryModule =
         , mkValEntry "stdin" "Standard input source." langStdIn
         , mkValEntry "stdout" "Standard output sink." langStdOut
         , mkValEntry "stderr" "Standard error/diagnostics sink." langStdErr
+        , mkValEntry "outputLn" "Output text and a newline to standard output. Same as `writeLn stdout`." $
+          langSinkWriteLn langStdOut
         ]

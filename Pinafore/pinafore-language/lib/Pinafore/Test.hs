@@ -58,7 +58,7 @@ makeTestStorageModel = do
 makeTestPinaforeContext :: Handle -> Lifecycle (PinaforeContext, IO PinaforeTableSubject)
 makeTestPinaforeContext hout = do
     (model, getTableState) <- makeTestStorageModel
-    pc <- makePinaforeContext nullInvocationInfo hout model
+    pc <- makePinaforeContext nullInvocationInfo {iiStdOut = handleSinkText hout} model
     return (pc, getTableState)
 
 withTestPinaforeContext ::

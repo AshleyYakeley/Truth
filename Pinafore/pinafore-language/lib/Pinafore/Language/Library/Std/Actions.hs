@@ -6,7 +6,6 @@ module Pinafore.Language.Library.Std.Actions
     ) where
 
 import Pinafore.Base
-import Pinafore.Context
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
 import Pinafore.Language.Library.Defs
@@ -14,12 +13,6 @@ import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
-
-output :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
-output text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
-
-outputLn :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
-outputLn text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
 
 qfail :: Text -> PinaforeAction BottomType
 qfail t = fail $ unpack t
@@ -55,8 +48,6 @@ actionsLibEntries =
                 "for"
                 "Perform an action on each value of a list, returning a list."
                 (for :: [A] -> (A -> PinaforeAction B) -> PinaforeAction [B])
-          , mkValEntry "output" "Output text to standard output." $ output
-          , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn
           , mkValEntry "sleep" "Do nothing for this duration." threadSleep
           ]
     ]

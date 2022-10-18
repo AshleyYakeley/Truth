@@ -15,6 +15,21 @@ data Source m a = MkSource
 instance Functor m => Functor (Source m) where
     fmap ab (MkSource hd stake) = MkSource hd $ fmap (fmap ab) stake
 
+nullSource :: Monad m => Source m a
+nullSource = MkSource (return True) (return End)
+
+listSource :: [a] -> IO (Source IO a)
+listSource aa = do
+    var <- newMVar aa
+    return $
+        MkSource (return True) $ do
+            old <- takeMVar var
+            case old of
+                [] -> return End
+                (a:ar) -> do
+                    putMVar var ar
+                    return $ Item a
+
 hoistSource :: (m1 --> m2) -> Source m1 --> Source m2
 hoistSource mm (MkSource hd stake) = MkSource (mm hd) (mm stake)
 
