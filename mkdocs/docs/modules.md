@@ -7,7 +7,7 @@ Like this:
 ```pinafore
 let
 import My.Stuff;
-in Context.outputLn sometext
+in Env.outputLn sometext
 ```
 
 Module names are one or more unames, separated by periods.
@@ -15,7 +15,7 @@ Module names are one or more unames, separated by periods.
 You can also qualify names (of types, constructors, values) with module names, which will import the module and find the name in it:
 
 ```pinafore
-Context.outputLn My.Stuff.sometext
+Env.outputLn My.Stuff.sometext
 ```
 
 To import the module `My.Stuff`, Pinafore will look for a file in these paths in this order:

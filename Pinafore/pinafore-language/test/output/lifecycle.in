@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-let import Context in
+let import Env in
 do
     outputLn "A";
     onClose $ outputLn "B";

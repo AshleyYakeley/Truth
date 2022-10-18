@@ -1,2 +1,2 @@
 #!/usr/bin/pinafore
-Context.outputLn "hello"
+Env.outputLn "hello"

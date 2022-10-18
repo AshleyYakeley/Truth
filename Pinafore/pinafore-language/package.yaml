@@ -110,7 +110,7 @@ library:
       - Pinafore.Language.Library.Std.File
       - Pinafore.Language.Library.Std
       - Pinafore.Language.Library.Stream
-      - Pinafore.Language.Library.Context
+      - Pinafore.Language.Library.Env
       - Pinafore.Language.Library.Debug
       - Pinafore.Language.Library
 

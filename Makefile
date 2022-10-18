@@ -158,7 +158,7 @@ deb: out/$(PACKAGEFULLNAME).deb
 LIBMODULES := \
     Std \
     Stream \
-    Context \
+    Env \
     Colour \
     Cairo \
     Image \

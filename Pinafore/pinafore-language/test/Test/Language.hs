@@ -600,9 +600,9 @@ testQueries =
               , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
               , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]
               , testQuery "let a: Integer|Text = 3; b: List Integer | List Text = [a] in b" $ LRSuccess "[3]"
-              , testQuery "newMemWholeModel >>= fn m => m := 1 >> get m >>= Context.outputLn" LRCheckFail
+              , testQuery "newMemWholeModel >>= fn m => m := 1 >> get m >>= Env.outputLn" LRCheckFail
               , testQuery
-                    "newMemWholeModel >>= fn m => let n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text in n1 := 1 >> get n2 >>= Context.outputLn"
+                    "newMemWholeModel >>= fn m => let n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text in n1 := 1 >> get n2 >>= Env.outputLn"
                     LRCheckFail
               ]
         , testTree

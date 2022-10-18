@@ -1,9 +1,9 @@
 #!/usr/bin/pinafore
 
 GTK.run $ fn gtk => do
-Context.outputLn "BEGIN";
+Env.outputLn "BEGIN";
 w <- GTK.openWindow gtk (600,800) {"Window"} GTK.blank;
-Context.outputLn "Open";
+Env.outputLn "Open";
 GTK.closeWindow w;
-Context.outputLn "END";
+Env.outputLn "END";
 end

@@ -33,7 +33,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add Task type & associated functions
     - new Stream module
       . add sinks & sources
-    - new Context module
+    - new Env module
       . move invocation-type stuff
       . add stdin, stdout, stderr
     - new Colour module

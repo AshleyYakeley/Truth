@@ -8,4 +8,4 @@ rrange
 
 range: Integer -> Number -> List Integer
 = fix rrange;
-in for_ (range 1 5) $ fn n => Context.outputLn (show n)
+in for_ (range 1 5) $ fn n => Env.outputLn (show n)
