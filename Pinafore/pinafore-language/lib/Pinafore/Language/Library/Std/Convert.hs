@@ -10,6 +10,10 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Type
 import Shapes
 
+-- EndOrItem
+instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (EndOrItem a) where
+    pinaforeType = mapPosShimWit (functionToShim "eoiToMaybe" eoiToMaybe) pinaforeType
+
 -- IO
 instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (IO a) where
     pinaforeType = mapPosShimWit (functionToShim "liftIO" $ liftIO @PinaforeAction) pinaforeType

@@ -104,6 +104,7 @@ library:
       - Pinafore.Language.Library.Std.Actions
       - Pinafore.Language.Library.Std.Lifecycle
       - Pinafore.Language.Library.Std.Tasks
+      - Pinafore.Language.Library.Std.Streams
       - Pinafore.Language.Library.Std.Interpreter
       - Pinafore.Language.Library.Std.Invocation
       - Pinafore.Language.Library.Std.Undo

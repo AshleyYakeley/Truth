@@ -9,8 +9,8 @@ import Changes.Core.UI.View.View
 type Editing :: Type -> Type -> Type
 data Editing update r = MkEditing
     { editingUpdate :: NonEmpty update -> EditContext -> View ()
-    , editingTask :: Task ()
-    , editingDo :: Task () -> View r
+    , editingTask :: Task IO ()
+    , editingDo :: Task IO () -> View r
     }
 
 instance Functor (Editing update) where

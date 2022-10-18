@@ -5,7 +5,6 @@ module Pinafore.Language.Library.Std.Actions
     ( actionsLibEntries
     ) where
 
-import Data.Time
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
@@ -58,9 +57,6 @@ actionsLibEntries =
                 (for :: [A] -> (A -> PinaforeAction B) -> PinaforeAction [B])
           , mkValEntry "output" "Output text to standard output." $ output
           , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn
-          , mkValEntry
-                "sleep"
-                "Do nothing for this duration."
-                (\d -> threadDelay $ truncate $ (nominalDiffTimeToSeconds d) * 1000000)
+          , mkValEntry "sleep" "Do nothing for this duration." threadSleep
           ]
     ]

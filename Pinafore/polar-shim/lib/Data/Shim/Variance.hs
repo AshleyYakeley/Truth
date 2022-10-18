@@ -74,6 +74,3 @@ instance HasVariance Either where
 
 instance HasVariance Vector where
     type VarianceOf Vector = 'Covariance
-
-instance HasVariance Task where
-    type VarianceOf Task = 'Covariance

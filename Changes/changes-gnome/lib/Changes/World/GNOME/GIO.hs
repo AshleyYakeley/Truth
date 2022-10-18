@@ -124,6 +124,6 @@ giFileReference path = do
                        NonEmpty (MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate))
                     -> M (Maybe (EditSource -> M ()))
                 refEdit = singleAlwaysEdit objOneEdit
-                refCommitTask :: Task ()
+                refCommitTask :: Task IO ()
                 refCommitTask = mempty
                 in MkResource objRun MkAReference {..}

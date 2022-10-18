@@ -33,7 +33,7 @@ clock utcBase ndtInterval call = do
                 ndtRemaining = ndtInterval - ndtOffset
                 ndtNext = ndtTime + ndtRemaining
             putMVar var ()
-            threadDelay $ truncate $ (nominalDiffTimeToSeconds ndtRemaining) * 1E6
+            threadSleep ndtRemaining
             takeMVar var
             call $ addUTCTime ndtNext utcBase
     (ndtTime, ndtOffset) <- liftIO getDiffTimes

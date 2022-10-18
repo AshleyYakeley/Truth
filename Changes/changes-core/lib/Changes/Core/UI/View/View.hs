@@ -137,7 +137,7 @@ viewBindModelUpdates ::
        Model update
     -> (EditSource -> Bool)
     -> View a
-    -> (a -> Task ())
+    -> (a -> Task IO ())
     -> (a -> NonEmpty update -> EditContext -> View ())
     -> View a
 viewBindModelUpdates model testesrc initv utask recv = do
@@ -164,7 +164,7 @@ viewBindModel ::
        Model update
     -> Maybe EditSource
     -> View a
-    -> (a -> Task ())
+    -> (a -> Task IO ())
     -> (a -> NonEmpty update -> View ())
     -> View a
 viewBindModel model mesrc initv utask recv =

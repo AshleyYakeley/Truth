@@ -42,6 +42,6 @@ fileReference path = let
         lift $ hPut h bs
     refEdit :: NonEmpty ByteStringEdit -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
     refEdit = singleAlwaysEdit objOneEdit
-    refCommitTask :: Task ()
+    refCommitTask :: Task IO ()
     refCommitTask = mempty
     in MkResource objRun MkAReference {..}

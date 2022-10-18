@@ -30,8 +30,8 @@ import Changes.Core.Types
 
 data AModel update tt = MkAModel
     { aModelAReference :: AReference (UpdateEdit update) tt
-    , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
-    , aModelUpdatesTask :: Task ()
+    , aModelSubscribe :: Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
+    , aModelUpdatesTask :: Task IO ()
     }
 
 aModelRead :: AModel update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
@@ -58,17 +58,17 @@ instance MapResource (AModel update) where
 
 type Model update = Resource (AModel update)
 
-type UpdateStoreEntry update = (Task (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
+type UpdateStoreEntry update = (Task IO (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
 
 type UpdateStore update = Store (UpdateStoreEntry update)
 
 modelReference :: Model update -> Reference (UpdateEdit update)
 modelReference (MkResource rr amodel) = MkResource rr $ aModelAReference amodel
 
-modelUpdatesTask :: Model update -> Task ()
+modelUpdatesTask :: Model update -> Task IO ()
 modelUpdatesTask (MkResource _ asub) = aModelUpdatesTask asub
 
-modelCommitTask :: Model update -> Task ()
+modelCommitTask :: Model update -> Task IO ()
 modelCommitTask (MkResource _ asub) = refCommitTask $ aModelAReference asub
 
 newtype UpdateQueue update =
@@ -92,7 +92,7 @@ singleUpdateQueue updates ec = MkUpdateQueue $ pure (ec, updates)
 
 getRunner ::
        (ResourceContext -> NonEmpty update -> EditContext -> IO ())
-    -> Lifecycle (Task (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
+    -> Lifecycle (Task IO (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
 getRunner recv = do
     (runAsync, utask) <-
         asyncRunner $ \(MkUpdateQueue sourcedupdates) ->
@@ -115,11 +115,11 @@ makeSharedModel om = do
             for_ store $ \(_, entry) -> entry rc updates ectxt
     (utaskRunner, updatePAsync) <- getRunner updateP
     let
-        getTasks :: IO ([Task ()])
+        getTasks :: IO ([Task IO ()])
         getTasks = do
             store <- mVarRunStateT var get
             return $ fmap fst $ toList store
-        utaskP :: Task ()
+        utaskP :: Task IO ()
         utaskP = utaskRunner <> ioTask (fmap mconcat getTasks)
     MkPremodelResult {..} <- om utaskP updatePAsync
     MkResource (trunC :: ResourceRunner tt) aModelAReference <- return pmrReference
@@ -127,7 +127,7 @@ makeSharedModel om = do
     Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
     let
         aModelSubscribe ::
-               Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
+               Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt Lifecycle ()
         aModelSubscribe taskC updateC =
             stackLift @tt @Lifecycle $ do
                 key <- liftIO $ mVarRunStateT var $ addStoreStateT (taskC, updateC)

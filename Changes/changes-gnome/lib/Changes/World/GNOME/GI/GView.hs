@@ -235,7 +235,7 @@ gvBindModelUpdates ::
     => Model update
     -> (EditSource -> Bool)
     -> GView ls a
-    -> (a -> Task ())
+    -> (a -> Task IO ())
     -> (a -> NonEmpty update -> EditContext -> GView 'Unlocked ())
     -> GView ls a
 gvBindModelUpdates model testesrc initv utask recv = do
@@ -249,7 +249,7 @@ gvBindModel ::
     => Model update
     -> Maybe EditSource
     -> GView ls a
-    -> (a -> Task ())
+    -> (a -> Task IO ())
     -> (a -> NonEmpty update -> GView 'Unlocked ())
     -> GView ls a
 gvBindModel model mesrc initv utask recv =
@@ -305,7 +305,7 @@ gvDynamic ::
        Model update
     -> GView 'Unlocked (dvs, a)
     -> (dvs -> IO (GViewState 'Unlocked))
-    -> Task ()
+    -> Task IO ()
     -> (a -> [update] -> StateT dvs (GView 'Unlocked) ())
     -> GView 'Unlocked a
 gvDynamic model initCV tovsCV taskCV recvCV =

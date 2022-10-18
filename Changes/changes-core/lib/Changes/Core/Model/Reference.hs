@@ -12,12 +12,12 @@ import Changes.Core.Types.Whole
 data AReference edit (tt :: [TransKind]) = MkAReference
     { refRead :: Readable (ApplyStack tt IO) (EditReader edit)
     , refEdit :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-    , refCommitTask :: Task ()
+    , refCommitTask :: Task IO ()
     }
 
 type Reference edit = Resource (AReference edit)
 
-referenceCommitTask :: Reference edit -> Task ()
+referenceCommitTask :: Reference edit -> Task IO ()
 referenceCommitTask (MkResource _ anobj) = refCommitTask anobj
 
 instance MapResource (AReference edit) where
@@ -199,7 +199,7 @@ copyReference ::
     -> EditSource
     -> Reference edit
     -> Reference edit
-    -> IO (Task ())
+    -> IO (Task IO ())
 copyReference rc esrc =
     joinResource_ $ \rr (MkAReference readSrc _ _) (MkAReference _ pushDest ctask) ->
         runLifecycle $ do

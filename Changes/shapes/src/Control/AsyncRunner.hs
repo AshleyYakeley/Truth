@@ -33,7 +33,7 @@ asyncWaitRunner ::
        forall t. Semigroup t
     => Int
     -> (t -> IO ())
-    -> Lifecycle (Maybe t -> IO (), Task ())
+    -> Lifecycle (Maybe t -> IO (), Task IO ())
 asyncWaitRunner mus doit = do
     bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSIdle
     let
@@ -96,7 +96,7 @@ asyncWaitRunner mus doit = do
                 case vs of
                     VSPending oldval False -> writeTVar bufferVar $ VSPending oldval True
                     _ -> return ()
-        utask :: Task ()
+        utask :: Task IO ()
         utask = let
             taskWait = atomicallyDo waitForIdle
             taskIsDone =
@@ -122,12 +122,12 @@ asyncWaitRunner mus doit = do
 asyncRunner ::
        forall t. Semigroup t
     => (t -> IO ())
-    -> Lifecycle (t -> IO (), Task ())
+    -> Lifecycle (t -> IO (), Task IO ())
 asyncRunner doit = do
     (asyncDoIt, utask) <- asyncWaitRunner 0 doit
     return (\t -> asyncDoIt $ Just t, utask)
 
-asyncIORunner :: Lifecycle (IO () -> IO (), Task ())
+asyncIORunner :: Lifecycle (IO () -> IO (), Task IO ())
 asyncIORunner = do
     (asyncDoIt, utask) <- asyncRunner sequence_
     return (\io -> asyncDoIt [io], utask)

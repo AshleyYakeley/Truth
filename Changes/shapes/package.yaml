@@ -77,6 +77,10 @@ library:
       - Control.Category.Lifted
       - Control.Clock
       - Control.Task
+      - Control.Stream.Filter
+      - Control.Stream.Sink
+      - Control.Stream.Source
+      - Control.Stream
       - Control.CallbackLock
       - Control.AsyncRunner
       - Unsafe.Type

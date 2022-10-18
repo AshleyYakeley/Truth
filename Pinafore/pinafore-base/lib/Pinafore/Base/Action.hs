@@ -40,6 +40,8 @@ newtype PinaforeAction a =
              , MonadFix
              , MonadFail
              , MonadIO
+             , MonadHoistIO
+             , MonadTunnelIO
              , MonadException
              , RepresentationalRole
              )

@@ -34,7 +34,7 @@ getClipboard = do
         refEdit edits =
             case last edits of
                 MkWholeReaderEdit mclip -> return $ Just $ \_ -> writeClipboard mclip
-        refCommitTask :: Task ()
+        refCommitTask :: Task IO ()
         refCommitTask = mempty
         ref :: Reference (WholeEdit (Maybe Clip))
         ref = MkResource nilResourceRunner $ MkAReference {..}

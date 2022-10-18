@@ -88,7 +88,7 @@ checkUpdateEditor val push =
         let
             editingUpdate :: NonEmpty (WholeUpdate a) -> EditContext -> View ()
             editingUpdate updates _ = liftIO $ putMVar var updates
-            editingDo :: Task () -> View ()
+            editingDo :: Task IO () -> View ()
             editingDo _ = do
                 push
                 updates <- liftIO $ takeMVar var

@@ -18,7 +18,7 @@ import Changes.Core.Types
 
 data PremodelResult edit a = MkPremodelResult
     { pmrReference :: Reference edit
-    , pmrUpdatesTask :: Task ()
+    , pmrUpdatesTask :: Task IO ()
     , pmrValue :: a
     }
 
@@ -26,7 +26,7 @@ instance Functor (PremodelResult edit) where
     fmap ab (MkPremodelResult r u v) = MkPremodelResult r u $ ab v
 
 type Premodel update a
-     = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> Lifecycle (PremodelResult (UpdateEdit update) a)
+     = Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> Lifecycle (PremodelResult (UpdateEdit update) a)
 
 reflectingPremodel ::
        forall update. IsUpdate update
@@ -57,7 +57,7 @@ reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e cta
                             deferAction @IO $ recv emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
         anobj :: AReference (UpdateEdit update) (Concat tt '[ DeferActionT])
         anobj = MkAReference r' e' ctask
-        pmrUpdatesTask :: Task ()
+        pmrUpdatesTask :: Task IO ()
         pmrUpdatesTask = utask
         pmrValue = ()
         pmrReference :: Reference (UpdateEdit update)

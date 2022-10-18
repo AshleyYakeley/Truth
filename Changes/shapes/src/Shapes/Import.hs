@@ -115,10 +115,15 @@ import Data.Serialize as I (Serialize)
 -- text
 import Data.Text as I (Text, strip)
 import Data.Text.Encoding as I (decodeUtf8')
+import Data.Text.Encoding
 import Data.Text.Encoding.Error as I (UnicodeException(..))
+import Data.Text.Encoding.Error
 
 -- cereal-text
 import Data.Serialize.Text as I ()
+
+-- time
+import Data.Time as I
 
 -- random
 import System.Random as I hiding (Finite)
@@ -144,6 +149,9 @@ import Data.Type.OpenWitness.Witnessed as I
 type LazyByteString = Data.ByteString.Lazy.ByteString
 
 type StrictByteString = Data.ByteString.ByteString
+
+decodeUtf8Lenient :: StrictByteString -> Text
+decodeUtf8Lenient = decodeUtf8With lenientDecode
 
 insertMapLazy :: Ord k => k -> v -> Map k v -> Map k v
 insertMapLazy = Data.Map.Lazy.insert
@@ -295,3 +303,6 @@ lifecycleOnAllDone onzero = do
                 then onzero
                 else return ()
     return (ondone, checkdone)
+
+threadSleep :: NominalDiffTime -> IO ()
+threadSleep d = threadDelay $ truncate $ (nominalDiffTimeToSeconds d) * 1E6

@@ -25,7 +25,7 @@ viewDynamic ::
        Model update
     -> View (dvs, a)
     -> (dvs -> IO ViewState)
-    -> Task ()
+    -> Task IO ()
     -> (a -> [update] -> StateT dvs View ())
     -> View a
 viewDynamic model initCV tovsCV taskCV recvCV = do

@@ -13,7 +13,7 @@ data RunState
     = RSRun
     | RSStop
 
-attachedIdleSource :: Maybe MainContext -> Lifecycle Source
+attachedIdleSource :: Maybe MainContext -> Lifecycle GI.Source
 attachedIdleSource mmc = do
     source <- idleSourceNew
     _ <- sourceAttach source $ mmc
