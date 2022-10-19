@@ -2,6 +2,7 @@ module Data.Coercion where
 
 import Control.Category.Dual
 import Control.Category.Groupoid
+import Control.Stream
 import Data.CatFunctor
 import Data.Isomorphism
 import Data.KindMorphism
@@ -180,3 +181,6 @@ instance (RepresentationalRole inner, RepresentationalRole outer) => Representat
     representationalCoercion cab =
         case representationalCoercion @_ @_ @outer $ representationalCoercion @_ @_ @inner cab of
             MkCoercion -> MkCoercion
+
+instance RepresentationalRole EndOrItem where
+    representationalCoercion MkCoercion = MkCoercion

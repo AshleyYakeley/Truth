@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Library.Stream
     ( streamLibraryModule
     , LangSink(..)
@@ -14,6 +16,19 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
 
+-- EndOrItem
+instance MaybeRepresentational EndOrItem where
+    maybeRepresentational = Just Dict
+
+instance HasVariance EndOrItem where
+    type VarianceOf EndOrItem = 'Covariance
+
+endOrItemGroundType :: PinaforeGroundType '[ CoCCRVariance] EndOrItem
+endOrItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily EndOrItem)|]) "EndOrItem"
+
+instance HasPinaforeGroundType '[ CoCCRVariance] EndOrItem where
+    pinaforeGroundType = endOrItemGroundType
+
 -- LangSink
 newtype LangSink a =
     MkLangSink (Sink PinaforeAction a)
@@ -24,6 +39,12 @@ instance MaybeRepresentational LangSink where
 
 instance HasVariance LangSink where
     type VarianceOf LangSink = 'Contravariance
+
+toLangSink :: forall a. (EndOrItem a -> PinaforeAction ()) -> LangSink a
+toLangSink = MkLangSink . MkSink
+
+fromLangSink :: forall a. LangSink a -> EndOrItem a -> PinaforeAction ()
+fromLangSink (MkLangSink (MkSink f)) = f
 
 sinkGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangSink
 sinkGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangSink)|]) "Sink"
@@ -99,32 +120,58 @@ streamLibraryModule =
     MkDocTree
         "Stream"
         "Sinks and sources."
-        [ mkTypeEntry "Sink" "A sink is something you can write data (and \"end\") to." $
-          MkSomeGroundType sinkGroundType
-        , mkValEntry "mapSink" "" $ contramap @LangSink @A @B
-        , mkValEntry "write" "Write an item to a sink." $ langSinkWrite @A
-        , mkValEntry "writeEnd" "Write end to a sink. You should not write to the sink after this." $
-          langSinkWriteEnd @BottomType
-        , mkValEntry "writeLn" "Write text followed by a newline to a text sink." langSinkWriteLn
-        , mkTypeEntry "Source" "A source is something you can read data from." $ MkSomeGroundType sourceGroundType
-        , mkValEntry "mapSource" "" $ fmap @LangSource @A @B
-        , mkValEntry "isReady" "Does this source have data available now?" $ langSourceReady @TopType
-        , mkValEntry "read" "Read data (or end), waiting if necessary." $ langSourceRead @A
-        , mkValEntry "readAvailable" "Read data (or end), if it is now available." $ langSourceReadAvailable @A
-        , mkValEntry "readAllAvailable" "Read all data now available. Second value is set if end was read." $
-          langSourceReadAllAvailable @A
-        , mkValEntry "gather" "Gather all data (until end) from a source." $ langSourceGather @A
-        , mkValEntry "listSource" "Create a source for a list of items." $ langListSource @A
-        , mkValEntry
-              "connect"
-              "Read all data (until end) from a source and write it to a sink, as it becomes available. Does not write end to the sink." $
-          langConnectSourceSink @A
-        , mkValEntry
-              "createPipe"
-              "Create a pipe. Data written to the sink will be added to a buffer, which can be read from with the source. Can be used to transfer data between asynchronous tasks." $
-          langCreatePipe @A
-        , mkValEntry
-              "lineBufferSource"
-              "Get a line-buffering source from a text source. Each read will be exactly one line."
-              lineBufferSource
+        [ docTreeEntry
+              "EndOrItem"
+              ""
+              [ mkTypeEntry "EndOrItem" "Either an item, or end (meaning end of stream)." $
+                MkSomeGroundType endOrItemGroundType
+              , mkValPatEntry "Item" "Construct an `EndOrItem` representing an item." (Item @A) $
+                ImpureFunction $ \(v :: EndOrItem A) ->
+                    case v of
+                        Item a -> Just (a, ())
+                        _ -> Nothing
+              , mkValPatEntry "End" "Construct an `EndOrItem` representing end of stream." (End @BottomType) $
+                ImpureFunction $ \(v :: EndOrItem A) ->
+                    case v of
+                        End -> Just ()
+                        _ -> Nothing
+              ]
+        , docTreeEntry
+              "Sink"
+              ""
+              [ mkTypeEntry "Sink" "A sink is something you can write data (and \"end\") to." $
+                MkSomeGroundType sinkGroundType
+              , mkValPatEntry "MkSink" "Construct a `Sink` from a function." (toLangSink @A) $
+                PureFunction $ \v -> (fromLangSink @A v, ())
+              , mkValEntry "mapSink" "" $ contramap @LangSink @A @B
+              , mkValEntry "write" "Write an item to a sink." $ langSinkWrite @A
+              , mkValEntry "writeEnd" "Write end to a sink. You should not write to the sink after this." $
+                langSinkWriteEnd @BottomType
+              , mkValEntry "writeLn" "Write text followed by a newline to a text sink." langSinkWriteLn
+              ]
+        , docTreeEntry
+              "Source"
+              ""
+              [ mkTypeEntry "Source" "A source is something you can read data from." $ MkSomeGroundType sourceGroundType
+              , mkValEntry "mapSource" "" $ fmap @LangSource @A @B
+              , mkValEntry "isReady" "Does this source have data available now?" $ langSourceReady @TopType
+              , mkValEntry "read" "Read data (or end), waiting if necessary." $ langSourceRead @A
+              , mkValEntry "readAvailable" "Read data (or end), if it is now available." $ langSourceReadAvailable @A
+              , mkValEntry "readAllAvailable" "Read all data now available. Second value is set if end was read." $
+                langSourceReadAllAvailable @A
+              , mkValEntry "gather" "Gather all data (until end) from a source." $ langSourceGather @A
+              , mkValEntry "listSource" "Create a source for a list of items." $ langListSource @A
+              , mkValEntry
+                    "connect"
+                    "Read all data (until end) from a source and write it to a sink, as it becomes available. Does not write end to the sink." $
+                langConnectSourceSink @A
+              , mkValEntry
+                    "createPipe"
+                    "Create a pipe. Data written to the sink will be added to a buffer, which can be read from with the source. Can be used to transfer data between asynchronous tasks." $
+                langCreatePipe @A
+              , mkValEntry
+                    "lineBufferSource"
+                    "Get a line-buffering source from a text source. Each read will be exactly one line."
+                    lineBufferSource
+              ]
         ]
