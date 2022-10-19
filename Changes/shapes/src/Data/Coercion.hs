@@ -182,5 +182,5 @@ instance (RepresentationalRole inner, RepresentationalRole outer) => Representat
         case representationalCoercion @_ @_ @outer $ representationalCoercion @_ @_ @inner cab of
             MkCoercion -> MkCoercion
 
-instance RepresentationalRole EndOrItem where
+instance RepresentationalRole ItemOrEnd where
     representationalCoercion MkCoercion = MkCoercion

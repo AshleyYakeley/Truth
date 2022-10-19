@@ -16,17 +16,17 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
 
--- EndOrItem
-instance MaybeRepresentational EndOrItem where
+-- ItemOrEnd
+instance MaybeRepresentational ItemOrEnd where
     maybeRepresentational = Just Dict
 
-instance HasVariance EndOrItem where
-    type VarianceOf EndOrItem = 'Covariance
+instance HasVariance ItemOrEnd where
+    type VarianceOf ItemOrEnd = 'Covariance
 
-endOrItemGroundType :: PinaforeGroundType '[ CoCCRVariance] EndOrItem
-endOrItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily EndOrItem)|]) "EndOrItem"
+endOrItemGroundType :: PinaforeGroundType '[ CoCCRVariance] ItemOrEnd
+endOrItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ItemOrEnd)|]) "ItemOrEnd"
 
-instance HasPinaforeGroundType '[ CoCCRVariance] EndOrItem where
+instance HasPinaforeGroundType '[ CoCCRVariance] ItemOrEnd where
     pinaforeGroundType = endOrItemGroundType
 
 -- LangSink
@@ -40,10 +40,10 @@ instance MaybeRepresentational LangSink where
 instance HasVariance LangSink where
     type VarianceOf LangSink = 'Contravariance
 
-toLangSink :: forall a. (EndOrItem a -> PinaforeAction ()) -> LangSink a
+toLangSink :: forall a. (ItemOrEnd a -> PinaforeAction ()) -> LangSink a
 toLangSink = MkLangSink . MkSink
 
-fromLangSink :: forall a. LangSink a -> EndOrItem a -> PinaforeAction ()
+fromLangSink :: forall a. LangSink a -> ItemOrEnd a -> PinaforeAction ()
 fromLangSink (MkLangSink (MkSink f)) = f
 
 sinkGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangSink
@@ -87,10 +87,10 @@ liftSource source = MkLangSource $ hoistSource liftIO source
 langSourceReady :: forall a. LangSource a -> PinaforeAction Bool
 langSourceReady (MkLangSource source) = sourceHasData source
 
-langSourceRead :: forall a. LangSource a -> PinaforeAction (EndOrItem a)
+langSourceRead :: forall a. LangSource a -> PinaforeAction (ItemOrEnd a)
 langSourceRead (MkLangSource source) = sourceTake source
 
-langSourceReadAvailable :: forall a. LangSource a -> PinaforeAction (Maybe (EndOrItem a))
+langSourceReadAvailable :: forall a. LangSource a -> PinaforeAction (Maybe (ItemOrEnd a))
 langSourceReadAvailable (MkLangSource source) = sourceTakeAvailable source
 
 langSourceReadAllAvailable :: forall a. LangSource a -> PinaforeAction ([a], Bool)
@@ -121,17 +121,17 @@ streamLibraryModule =
         "Stream"
         "Sinks and sources."
         [ docTreeEntry
-              "EndOrItem"
+              "ItemOrEnd"
               ""
-              [ mkTypeEntry "EndOrItem" "Either an item, or end (meaning end of stream)." $
+              [ mkTypeEntry "ItemOrEnd" "Either an item, or end (meaning end of stream)." $
                 MkSomeGroundType endOrItemGroundType
-              , mkValPatEntry "Item" "Construct an `EndOrItem` representing an item." (Item @A) $
-                ImpureFunction $ \(v :: EndOrItem A) ->
+              , mkValPatEntry "Item" "Construct an `ItemOrEnd` representing an item." (Item @A) $
+                ImpureFunction $ \(v :: ItemOrEnd A) ->
                     case v of
                         Item a -> Just (a, ())
                         _ -> Nothing
-              , mkValPatEntry "End" "Construct an `EndOrItem` representing end of stream." (End @BottomType) $
-                ImpureFunction $ \(v :: EndOrItem A) ->
+              , mkValPatEntry "End" "Construct an `ItemOrEnd` representing end of stream." (End @BottomType) $
+                ImpureFunction $ \(v :: ItemOrEnd A) ->
                     case v of
                         End -> Just ()
                         _ -> Nothing

@@ -9,7 +9,7 @@ import System.IO.Error
 
 data Source m a = MkSource
     { sourceHasData :: m Bool
-    , sourceTake :: m (EndOrItem a)
+    , sourceTake :: m (ItemOrEnd a)
     }
 
 instance Functor m => Functor (Source m) where
@@ -33,15 +33,15 @@ listSource aa = do
 hoistSource :: (m1 --> m2) -> Source m1 --> Source m2
 hoistSource mm (MkSource hd stake) = MkSource (mm hd) (mm stake)
 
-mvarSource :: forall a. MVar (EndOrItem a) -> Source IO a
+mvarSource :: forall a. MVar (ItemOrEnd a) -> Source IO a
 mvarSource var = let
-    sourceTake :: IO (EndOrItem a)
+    sourceTake :: IO (ItemOrEnd a)
     sourceTake = takeMVar var
     sourceHasData :: IO Bool
     sourceHasData = fmap isJust $ tryReadMVar var
     in MkSource {..}
 
-sourceTakeAvailable :: Monad m => Source m a -> m (Maybe (EndOrItem a))
+sourceTakeAvailable :: Monad m => Source m a -> m (Maybe (ItemOrEnd a))
 sourceTakeAvailable source = do
     hd <- sourceHasData source
     if hd
@@ -66,14 +66,14 @@ filterSource ::
 filterSource (MkFilter (s0 :: s) f) source = do
     var <- newMVar (s0, [])
     let
-        runStep :: EndOrItem a -> StateT s m [EndOrItem b]
+        runStep :: ItemOrEnd a -> StateT s m [ItemOrEnd b]
         runStep ea = do
             bb <- f ea
             return $
                 case ea of
                     Item _ -> fmap Item bb
                     End -> fmap Item bb <> [End]
-        stepAvailable :: [EndOrItem b] -> StateT s m [EndOrItem b]
+        stepAvailable :: [ItemOrEnd b] -> StateT s m [ItemOrEnd b]
         stepAvailable [] = do
             mea <- lift $ sourceTakeAvailable source
             case mea of
@@ -92,13 +92,13 @@ filterSource (MkFilter (s0 :: s) f) source = do
                     case newbb of
                         _:_ -> True
                         [] -> False
-        stepTake :: [EndOrItem b] -> StateT s m (NonEmpty (EndOrItem b))
+        stepTake :: [ItemOrEnd b] -> StateT s m (NonEmpty (ItemOrEnd b))
         stepTake [] = do
             ea <- lift $ sourceTake source
             newbb <- runStep ea
             stepTake newbb
         stepTake (b:bb) = return $ b :| bb
-        stake :: m (EndOrItem b)
+        stake :: m (ItemOrEnd b)
         stake =
             dangerousMVarRunStateT var $ do
                 oldbb <- lensStateT sndLens $ get

@@ -5,7 +5,7 @@ import Control.Task
 import Shapes.Import
 
 newtype Sink m a =
-    MkSink (EndOrItem a -> m ())
+    MkSink (ItemOrEnd a -> m ())
 
 instance Contravariant (Sink m) where
     contramap ab (MkSink f) = MkSink $ \a -> f $ fmap ab a

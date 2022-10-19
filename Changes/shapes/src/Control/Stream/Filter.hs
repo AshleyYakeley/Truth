@@ -3,21 +3,21 @@ module Control.Stream.Filter where
 import Data.Lens
 import Shapes.Import
 
-data EndOrItem a
+data ItemOrEnd a
     = Item a
     | End
 
-instance Functor EndOrItem where
+instance Functor ItemOrEnd where
     fmap ab (Item a) = Item $ ab a
     fmap _ End = End
 
-eoiToMaybe :: EndOrItem a -> Maybe a
+eoiToMaybe :: ItemOrEnd a -> Maybe a
 eoiToMaybe (Item a) = Just a
 eoiToMaybe End = Nothing
 
 data Filter m a b =
     forall s. MkFilter s
-                       (EndOrItem a -> StateT s m [b])
+                       (ItemOrEnd a -> StateT s m [b])
 
 instance Monad m => Functor (Filter m a) where
     fmap ab (MkFilter s0 f) = MkFilter s0 $ (fmap $ fmap $ fmap ab) f
