@@ -1,2 +1,12 @@
 #!/usr/bin/pinafore
-Stream.connect Env.stdin Env.stderr
+let
+import Stream;
+import Env;
+in
+do
+connect stdin $ MkSink $ match
+    Item t => writeLn stdout $ "Item: " <>t;
+    End => writeLn stdout "End (shouldn't happen)";
+    end;
+writeLn stdout "Done.";
+end
