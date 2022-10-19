@@ -21,6 +21,7 @@ import Pinafore.Language.ExprShow
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Env
+import Pinafore.Language.Library.Eval
 import Pinafore.Language.Library.FetchModule
 import Pinafore.Language.Library.Std
 import Pinafore.Language.Library.Stream
@@ -30,7 +31,8 @@ import Pinafore.Language.Type
 import Shapes
 
 library :: [LibraryModule]
-library = [stdLibraryModule, taskLibraryModule, streamLibraryModule, envLibraryModule, debugLibraryModule]
+library =
+    [stdLibraryModule, taskLibraryModule, streamLibraryModule, envLibraryModule, evalLibraryModule, debugLibraryModule]
 
 libraryDoc :: [LibraryModule] -> [DocTree DefDoc]
 libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib

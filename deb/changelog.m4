@@ -35,8 +35,10 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - new Stream module
       . add sinks & sources
     - new Env module
-      . move invocation-type stuff
+      . move invocation-type stuff here
       . add stdin, stdout, stderr
+    - new Eval module
+      . move evaluate here
     - new Colour module
       . add Colour & AlphaColour types, etc.
     - new GIO module

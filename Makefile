@@ -160,6 +160,7 @@ LIBMODULES := \
     Task \
     Stream \
     Env \
+    Eval \
     Colour \
     Cairo \
     Image \

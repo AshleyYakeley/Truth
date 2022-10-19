@@ -32,6 +32,7 @@ nav:
   - Task: 'library/Task.md'
   - Stream: 'library/Stream.md'
   - Env: 'library/Env.md'
+  - Eval: 'library/Eval.md'
   - Colour: 'library/Colour.md'
   - Cairo: 'library/Cairo.md'
   - Image: 'library/Image.md'

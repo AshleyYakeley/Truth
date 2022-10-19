@@ -1297,6 +1297,7 @@ testEntity =
               [ "runresult = fns ar arg => ar >- match Left err => fail err; Right f => f arg end"
               , "testaction = fns expected action => do found <- action; testeqval expected found end"
               , "testleft = fn action => do found <- action; found >- match Left _ => pass; Right _ => fail \"not Left\" end end"
+              , "import Eval"
               ] $
           tGroup
               "evaluate"
