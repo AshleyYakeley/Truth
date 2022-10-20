@@ -3,7 +3,6 @@ module Test.ReadType
     ) where
 
 import Data.Shim
-import Pinafore
 import Pinafore.Test
 import Shapes
 import Shapes.Test
@@ -11,8 +10,8 @@ import Shapes.Test
 testReadType :: Text -> TestTree
 testReadType text =
     testTree @Assertion (unpack text) $
-    fromInterpretResult $ do
-        _ <- runTestPinaforeSourceScoped $ parseType @'Positive text
+    runTester defaultTester $ do
+        _ <- testerLiftInterpreter $ parseType @'Positive text
         return ()
 
 testReadTypes :: TestTree

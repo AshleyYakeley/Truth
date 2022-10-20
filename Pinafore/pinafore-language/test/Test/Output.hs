@@ -2,7 +2,6 @@ module Test.Output
     ( getTestOutput
     ) where
 
-import Changes.Core
 import Pinafore
 import Pinafore.Test
 import Shapes hiding ((.))
@@ -14,9 +13,10 @@ testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \hout ->
-           withTestQContext mempty hout $ \_ -> do
+           runTester defaultTester {tstOutput = hout} $
+           testerLiftView $ do
                action <- qInterpretFile inpath
-               runNewView action
+               action
 
 getTestOutput :: IO TestTree
 getTestOutput = do

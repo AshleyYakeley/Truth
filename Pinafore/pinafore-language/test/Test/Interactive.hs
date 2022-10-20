@@ -2,7 +2,6 @@ module Test.Interactive
     ( getTestInteractive
     ) where
 
-import Changes.Core
 import Pinafore
 import Pinafore.Test
 import Shapes hiding ((.))
@@ -15,8 +14,8 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestQContext mempty outh $ \_ -> do
-                   runNewView $ qInteractHandles inh outh True
+               runTester defaultTester {tstOutput = outh} $ do
+                   testerLiftView $ qInteractHandles inh outh True
                    liftIO $ hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree

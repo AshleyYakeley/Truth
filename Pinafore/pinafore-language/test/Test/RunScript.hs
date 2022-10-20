@@ -17,7 +17,6 @@ module Test.RunScript
     , testExpectStop
     ) where
 
-import Changes.Core
 import Data.Shim
 import Pinafore
 import Pinafore.Test
@@ -67,19 +66,19 @@ testExpression ::
        forall a. HasQType 'Negative a
     => Text
     -> Text
-    -> ((?qcontext :: QContext) => IO a -> Lifecycle ())
+    -> (Tester a -> Tester ())
     -> ScriptTestTree
 testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
             fullscript = prefix scDeclarations <> script
-            in withTestQContext scFetchModule stdout $ \_getTableState ->
-                   call $ fromInterpretResult $ qInterpretTextAtType "<test>" fullscript
+            in runTester defaultTester {tstFetchModule = scFetchModule} $ do
+                   call $ testerLiftInterpreter $ parseValueUnify fullscript
 
-testScript :: Text -> Text -> ((?qcontext :: QContext) => IO (Action ()) -> Lifecycle ()) -> ScriptTestTree
+testScript :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> ScriptTestTree
 testScript = testExpression @(Action ())
 
-testScriptCatchStop :: Text -> Text -> ((?qcontext :: QContext) => IO (Action ()) -> Lifecycle ()) -> ScriptTestTree
+testScriptCatchStop :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> ScriptTestTree
 testScriptCatchStop name script = testScript name $ "onStop (" <> script <> ") (fail \"stopped\")"
 
 data ScriptExpectation
@@ -94,25 +93,28 @@ instance Show ScriptExpectation where
     show ScriptExpectStop = "stop"
     show ScriptExpectSuccess = "success"
 
+testerAssertThrowsException ::
+       forall ex a. Exception ex
+    => (ex -> Bool)
+    -> Tester a
+    -> Tester ()
+testerAssertThrowsException checkEx ta = liftIOWithUnlift $ \unlift -> assertThrowsException checkEx $ unlift ta
+
 testScriptExpectation :: Text -> ScriptExpectation -> Text -> ScriptTestTree
 testScriptExpectation name (ScriptExpectRejection checkEx) script =
-    testScript name script $ \interpret -> liftIO $ assertThrowsException checkEx interpret
+    testScript name script $ \interpret -> testerAssertThrowsException checkEx interpret
 testScriptExpectation name (ScriptExpectRuntimeException checkEx) script =
-    testScript name script $ \interpret ->
-        liftIOWithUnlift $ \unlift -> do
-            action <- interpret
-            assertThrowsException checkEx $ unlift $ runView $ runAction action
+    testScript name script $ \interpret -> do
+        action <- interpret
+        testerAssertThrowsException checkEx $ testerRunAction action
 testScriptExpectation name ScriptExpectStop script =
-    testScriptCatchStop name script $ \interpret ->
-        liftIOWithUnlift $ \unlift -> do
-            action <- interpret
-            assertThrowsException @IOException (\err -> show err == "user error (stopped)") $
-                unlift $ runView $ runAction action
+    testScriptCatchStop name script $ \interpret -> do
+        action <- interpret
+        testerAssertThrowsException @IOException (\err -> show err == "user error (stopped)") $ testerRunAction action
 testScriptExpectation name ScriptExpectSuccess script =
-    testScriptCatchStop name script $ \interpret ->
-        liftIOWithUnlift $ \unlift -> do
-            action <- interpret
-            unlift $ runView $ runAction action
+    testScriptCatchStop name script $ \interpret -> do
+        action <- interpret
+        testerRunAction action
 
 testExpectSuccess :: Text -> ScriptTestTree
 testExpectSuccess script = testScriptExpectation script ScriptExpectSuccess script

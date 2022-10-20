@@ -2,7 +2,6 @@ module Test.GTK
     ( getTestGTK
     ) where
 
-import Changes.Core
 import Pinafore
 import Pinafore.Language.Library.GNOME
 import Pinafore.Test
@@ -15,12 +14,10 @@ testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \hout ->
-           runLifecycle $
-           runNewView $ do
-               (pc, _) <- viewLiftLifecycle $ makeTestQContext hout
-               action <- runWithContext pc (libraryFetchModule gnomeLibrary) $ qInterpretFile inpath
-               action
-               return ()
+           runTester defaultTester {tstFetchModule = libraryFetchModule gnomeLibrary, tstOutput = hout} $ do
+               testerLiftView $ do
+                   action <- qInterpretFile inpath
+                   action
 
 getTestGTK :: IO TestTree
 getTestGTK = do

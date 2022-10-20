@@ -128,7 +128,6 @@ tests:
           - pinafore-language
         main: Main.hs
         other-modules:
-          - Test.Tester
           - Test.RunScript
           - Test.Language
           - Test.Unifier

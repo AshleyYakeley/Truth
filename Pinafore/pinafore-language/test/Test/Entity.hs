@@ -12,9 +12,9 @@ import Test.RunScript
 testUpdate :: Text -> ScriptTestTree
 testUpdate text =
     testExpression text text $ \interpret -> do
-        (stuff :: Action _) <- liftIO $ interpret
-        (sendUpdate, model) <- runView $ unliftActionOrFail stuff
-        runView $
+        action <- interpret
+        (sendUpdate, model) <- testerLiftAction action
+        testerLiftView $
             runEditor (unWModel $ immutableModelToRejectingModel model) $
             checkUpdateEditor (Known (1 :: Integer)) $ unliftActionOrFail sendUpdate
 

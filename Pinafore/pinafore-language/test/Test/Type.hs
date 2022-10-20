@@ -25,11 +25,13 @@ showTypes (MkSealedExpression (MkShimWit t _) expr) =
 
 exprTypeTest :: String -> Maybe String -> QInterpreter PExpression -> TestTree
 exprTypeTest name expected mexpr =
-    testTree name $ do
-        result <- runInterpretResult $ runTestPinaforeSourceScoped mexpr
-        assertEqual "" expected $ do
-            expr <- resultToMaybe result
-            return $ showTypes expr
+    testTree name $
+    runTester defaultTester $ do
+        result <- tryExc $ testerLiftInterpreter mexpr
+        liftIO $
+            assertEqual "" expected $ do
+                expr <- resultToMaybe result
+                return $ showTypes expr
 
 apExpr :: PExpression -> PExpression -> QInterpreter PExpression
 apExpr = tsApply @TS
@@ -90,39 +92,43 @@ joinExpr exp1 exp2 = do
 
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
-    testTree (unpack text) $ do
-        expr <- fromInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
-        assertEqual "" r $ showTypes expr
+    testTree (unpack text) $
+    runTester defaultTester $ do
+        expr <- testerLiftInterpreter $ parseTopExpression text
+        liftIO $ assertEqual "" r $ showTypes expr
 
 badInterpretTest :: Text -> TestTree
 badInterpretTest text =
-    testTree ("REJECT: " <> unpack text) $ do
-        result <- runInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
-        case result of
-            FailureResult _ -> return ()
-            SuccessResult _ -> assertFailure "no exception"
+    testTree ("REJECT: " <> unpack text) $
+    runTester defaultTester $ do
+        result <- tryExc $ testerLiftInterpreter $ parseTopExpression text
+        liftIO $
+            case result of
+                FailureResult _ -> return ()
+                SuccessResult _ -> assertFailure "no exception"
 
 simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
-    testTree (unpack text) $ do
+    testTree (unpack text) $
+    runTester defaultTester $ do
         simpexpr <-
-            fromInterpretResult $
-            runTestPinaforeSourceScoped $ do
+            testerLiftInterpreter $ do
                 mt <- parseType @'Positive text
                 case mt of
                     MkSome t ->
                         runRenamer @QTypeSystem [] $
                         simplify @QTypeSystem @PExpression $
                         MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
-        case simpexpr of
-            MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'
+        liftIO $
+            case simpexpr of
+                MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'
 
 unrollTest :: Text -> Text -> TestTree
 unrollTest rolledTypeText expectedUnrolledTypeText =
-    testTree @Assertion (unpack rolledTypeText) $ do
+    testTree @Assertion (unpack rolledTypeText) $
+    runTester defaultTester $ do
         action <-
-            fromInterpretResult $
-            runTestPinaforeSourceScoped $ do
+            testerLiftInterpreter $ do
                 mRolledType <- parseType @'Positive rolledTypeText
                 return $
                     case mRolledType of
@@ -131,7 +137,7 @@ unrollTest rolledTypeText expectedUnrolledTypeText =
                                 MkShimWit unrolledType _ ->
                                     assertEqual "" expectedUnrolledTypeText $ exprShow unrolledType
                         _ -> fail "not a recursive type"
-        action
+        liftIO $ action
 
 testType :: TestTree
 testType =

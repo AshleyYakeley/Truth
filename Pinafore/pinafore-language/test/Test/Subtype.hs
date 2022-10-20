@@ -44,30 +44,28 @@ openConversionExpression var =
 unitExpression :: QExpression
 unitExpression = MkSealedExpression (qType :: _ ()) $ pure ()
 
-runPinafore :: ((?qcontext :: QContext) => QInterpreter a) -> IO a
-runPinafore ia =
-    withTestQContext mempty stdout $ \_getTableState -> fromInterpretResult $ runTestPinaforeSourceScoped ia
-
 testSimple :: TestTree
 testSimple =
-    testTree "simple" $ do
+    testTree "simple" $
+    runTester defaultTester $ do
         MkT i <-
-            runPinafore $ do
+            testerLiftInterpreter $ do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 resultOpenExpression <- typedUnifyExpressionToOpen tShimWit tExpression
                 evalExpression resultOpenExpression
-        assertEqual "" 12 i
+        liftIO $ assertEqual "" 12 i
 
 constIntegerExpression :: Integer -> QExpression
 constIntegerExpression i = MkSealedExpression qType $ pure i
 
 testDependentLet :: TestTree
 testDependentLet =
-    testTree "dependent-let" $ do
+    testTree "dependent-let" $
+    runTester defaultTester $ do
         MkT i <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT (allocateVar "x") $ \varid -> do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
@@ -75,13 +73,14 @@ testDependentLet =
                 resultExpression <- qLetExpr varid (constIntegerExpression 17) tExpression
                 resultOpenExpression <- typedUnifyExpressionToOpen tShimWit resultExpression
                 evalExpression resultOpenExpression
-        assertEqual "" 17 i
+        liftIO $ assertEqual "" 17 i
 
 testDependentFunction :: TestTree
 testDependentFunction =
-    testTree "dependent-function" $ do
+    testTree "dependent-function" $
+    runTester defaultTester $ do
         MkT i <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT (allocateVar "x") $ \varid -> do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
@@ -90,7 +89,7 @@ testDependentFunction =
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
                 resultOpenExpression <- typedUnifyExpressionToOpen tShimWit resultExpression
                 evalExpression resultOpenExpression
-        assertEqual "" 91 i
+        liftIO $ assertEqual "" 91 i
 
 newtype T1 a =
     MkT1 a
@@ -120,13 +119,14 @@ t1ShimWit = qType
 
 testPolyDependentFunction :: TestTree
 testPolyDependentFunction =
-    testTree "poly-dependent-function" $ do
+    testTree "poly-dependent-function" $
+    runTester defaultTester $ do
         let
             openConversionExpression1 :: VarID -> QOpenExpression (QPolyShim Type () (T1 Integer))
             openConversionExpression1 var =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
         MkT1 i <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT (allocateVar "x") $ \varid -> do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
@@ -135,7 +135,7 @@ testPolyDependentFunction =
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
                 resultOpenExpression <- typedUnifyExpressionToOpen t1ShimWit resultExpression
                 evalExpression resultOpenExpression
-        assertEqual "" 91 i
+        liftIO $ assertEqual "" 91 i
 
 registerT1Stuff :: QScopeInterpreter ()
 registerT1Stuff = do
@@ -145,22 +145,24 @@ registerT1Stuff = do
 
 testFunctionType :: TestTree
 testFunctionType =
-    testTree "function-type" $ do
+    testTree "function-type" $
+    runTester defaultTester $ do
         funcExpression <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT registerT1Stuff $ \() -> do
                 parseTopExpression "fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer)"
-        assertEqual "function type" "T1 Integer -> T1 Integer" $ show (sealedExpressionType funcExpression)
+        liftIO $ assertEqual "function type" "T1 Integer -> T1 Integer" $ show (sealedExpressionType funcExpression)
 
 testSemiScript1 :: TestTree
 testSemiScript1 =
-    testTree "semiscript-1" $ do
+    testTree "semiscript-1" $
+    runTester defaultTester $ do
         let
             openConversionExpression1 :: VarID -> QOpenExpression (QPolyShim Type () (T1 Integer))
             openConversionExpression1 var =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> i
         MkT1 i <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT
                 (do
                      registerT1Stuff
@@ -171,40 +173,43 @@ testSemiScript1 =
                 funcExpression <- qAbstractExpr varid tExpression
                 unTransformT (registerLetBinding "f" "" funcExpression) $ \() -> do
                     parseValueUnify @(T1 Integer) "f (MkT1 62)"
-        assertEqual "" 62 i
+        liftIO $ assertEqual "" 62 i
 
 testSemiScript2 :: TestTree
 testSemiScript2 =
-    testTree "semiscript-2" $ do
+    testTree "semiscript-2" $
+    runTester defaultTester $ do
         MkT1 i <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer) in f (MkT1 17)"
-        assertEqual "" 17 i
+        liftIO $ assertEqual "" 17 i
 
 testSemiScript3 :: TestTree
 testSemiScript3 =
-    testTree "semiscript-3" $ do
+    testTree "semiscript-3" $
+    runTester defaultTester $ do
         MkT1 i <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in ((): T1 Integer) in f 17"
-        assertEqual "" 17 i
+        liftIO $ assertEqual "" 17 i
 
 testSemiScript4 :: TestTree
 testSemiScript4 =
-    testTree "semiscript-4" $ do
+    testTree "semiscript-4" $
+    runTester defaultTester $ do
         i <-
-            runPinafore $
+            testerLiftInterpreter $
             unTransformT registerT1Stuff $ \() -> do
                 parseValueUnify
                     @Integer
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in (fn MkT1 y => y) () in f 17"
-        assertEqual "" 17 i
+        liftIO $ assertEqual "" 17 i
 
 testScript :: TestTree
 testScript =

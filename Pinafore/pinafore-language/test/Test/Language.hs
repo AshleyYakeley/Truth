@@ -131,26 +131,27 @@ goodLangResult False _ = LRCheckFail
 
 testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
-    testTree (show $ unpack query) $ do
+    testTree (show $ unpack query) $
+    runTester defaultTester $ do
         result <-
-            withNullQContext $
-            runInterpretResult $
-            runPinaforeScoped "<input>" $ do
+            tryExc $
+            testerLiftInterpreter $ do
                 v <- parseValue query
                 showPinaforeModel v
-        case result of
-            FailureResult e ->
-                case expected of
-                    LRCheckFail -> return ()
-                    _ -> assertFailure $ "check: expected success, found failure: " ++ show e
-            SuccessResult r -> do
-                me <- catchPureError r
-                case (expected, me) of
-                    (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
-                    (LRRunError, Nothing) -> assertFailure $ "run: expected error, found success: " ++ r
-                    (LRRunError, Just _) -> return ()
-                    (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
-                    (LRSuccess s, Nothing) -> assertEqual "result" s r
+        liftIO $
+            case result of
+                FailureResult e ->
+                    case expected of
+                        LRCheckFail -> return ()
+                        _ -> assertFailure $ "check: expected success, found failure: " ++ show e
+                SuccessResult r -> do
+                    me <- catchPureError r
+                    case (expected, me) of
+                        (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
+                        (LRRunError, Nothing) -> assertFailure $ "run: expected error, found success: " ++ r
+                        (LRRunError, Just _) -> return ()
+                        (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
+                        (LRSuccess s, Nothing) -> assertEqual "result" s r
 
 testSubsumeSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
 testSubsumeSubtype good t1 t2 vs =
@@ -971,13 +972,15 @@ testQueries =
 
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
-    testTree (unpack query) $ do
-        result <- withNullQContext $ runInterpretResult $ runPinaforeScoped "<input>" $ parseValue query
-        case result of
-            FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
-            SuccessResult (MkSomeOf (MkPosShimWit t shim) _) -> do
-                assertEqual "type" expectedType $ unpack $ exprShow t
-                assertEqual "shim" expectedShim $ show shim
+    testTree (unpack query) $
+    runTester defaultTester $ do
+        result <- tryExc $ testerLiftInterpreter $ parseValue query
+        liftIO $
+            case result of
+                FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
+                SuccessResult (MkSomeOf (MkPosShimWit t shim) _) -> do
+                    assertEqual "type" expectedType $ unpack $ exprShow t
+                    assertEqual "shim" expectedShim $ show shim
 
 testShims :: TestTree
 testShims =

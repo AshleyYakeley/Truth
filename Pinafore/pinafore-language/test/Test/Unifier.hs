@@ -11,7 +11,6 @@ import Pinafore.Language.API
 import Pinafore.Test
 import Shapes
 import Test.RunScript
-import Test.Tester
 
 type PinaforeBisubstitution = Bisubstitution QGroundType (QPolyShim Type) (UnifierM QGroundType)
 
@@ -22,11 +21,8 @@ pinaforeBisubstitutes bisubs val = do
     liftIO $ traceIO $ "bisubstitute: after: " <> showValType val'
     return val'
 
-testValue :: Text -> ((?qcontext :: QContext, ?library :: LibraryContext) => IO ()) -> TestTree
-testValue name call = testTree (unpack name) $ withTestQContext mempty stdout $ \_ -> liftIO call
-
 testSourceScoped :: Text -> QInterpreter () -> TestTree
-testSourceScoped name action = testValue name $ fromInterpretResult $ runPinaforeScoped "<test>" $ action
+testSourceScoped name action = testTree (unpack name) $ runTester defaultTester $ testerLiftInterpreter action
 
 showValType :: QValue -> String
 showValType (MkSomeOf (MkShimWit t _) _) = show t
@@ -49,13 +45,12 @@ testUnifyToType mval bisubs checkVal =
 testInterpret ::
        forall t. HasQType 'Negative t
     => Text
-    -> (t -> IO ())
+    -> (t -> Tester ())
     -> ScriptTestTree
 testInterpret expr checkVal =
-    testExpression @t expr expr $ \interpret ->
-        liftIO $ do
-            found <- interpret
-            checkVal found
+    testExpression @t expr expr $ \interpret -> do
+        found <- interpret
+        checkVal found
 
 op1 :: X -> (X -> X) -> X
 op1 v r = r $ r v
@@ -123,12 +118,12 @@ testUnifier =
                           "interpret"
                           [ testInterpret @(A -> (A -> A) -> A) "op1" $ \found ->
                                 assignUVarT @Text (MkSymbolType @"a") $
-                                assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
+                                liftIO $ assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
                           , testInterpret @(Text -> (Text -> Text) -> Text) "op1" $ \found ->
-                                assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
+                                liftIO $ assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
                           , testInterpret @((Text -> Text) -> Text) "op1 \"PQPQPQ\"" $ \found ->
-                                assertEqual "" "PQPQPQ" $ found id
-                          , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> assertEqual "" "PQPQPQ" found
+                                liftIO $ assertEqual "" "PQPQPQ" $ found id
+                          , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> liftIO $ assertEqual "" "PQPQPQ" found
                           , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" idText"
                           , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" id"
                           ]
@@ -188,14 +183,15 @@ testUnifier =
                       tGroup
                           "interpret"
                           [ testInterpret @(Text -> (Text -> Text) -> (Text -> Text) -> Text) "op2" $ \found ->
-                                assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
+                                liftIO $ assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
                           , testInterpret @((Text -> Text) -> (Text -> Text) -> Text) "op2 \"PQPQPQ\"" $ \found ->
-                                assertEqual "" "PQPQPQ" $ found id id
+                                liftIO $ assertEqual "" "PQPQPQ" $ found id id
                           , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" id" $ \found ->
-                                assertEqual "" "PQPQPQ" $ found id
+                                liftIO $ assertEqual "" "PQPQPQ" $ found id
                           , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" idText" $ \found ->
-                                assertEqual "" "PQPQPQ" $ found id
-                          , testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found -> assertEqual "" "PQPQPQ" found
+                                liftIO $ assertEqual "" "PQPQPQ" $ found id
+                          , testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found ->
+                                liftIO $ assertEqual "" "PQPQPQ" found
                           , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id idText"
                           , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id id"
                           ]
@@ -248,7 +244,7 @@ testUnifier =
         , testTree
               "subtype"
               [ testTree "t8" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     action <-
                         testerLiftInterpreter $ do
                             a1Expr <-
@@ -268,7 +264,7 @@ testUnifier =
                             then return ()
                             else fail $ "different: " <> show l
               , testTree "t7" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     action <-
                         testerLiftInterpreter $ do
                             actionExpr <- parseTopExpression "do r <- newMemListModel; return (r: ListModel a) end"
@@ -282,7 +278,7 @@ testUnifier =
                             then return ()
                             else fail $ "different: " <> show l
               , testTree "t6" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     action <-
                         testerLiftInterpreter $ do
                             a1Expr <-
@@ -303,7 +299,7 @@ testUnifier =
                             then return ()
                             else fail $ "different: " <> show l
               , testTree "t5" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     r <- testerLiftAction $ newMemListModel @A
                     (_r' :: LangListModel '( Integer, Integer), wr' :: LangWholeModel '( [Integer], [Integer])) <-
                         testerLiftInterpreter $ do
@@ -317,7 +313,7 @@ testUnifier =
                         then return ()
                         else fail "different"
               , testTree "t4" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     r <- testerLiftAction $ newMemListModel @A
                     action <-
                         testerLiftInterpreter $ do
@@ -330,7 +326,7 @@ testUnifier =
                         then return ()
                         else fail "different"
               , testTree "t3" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     r <- testerLiftAction $ newMemListModel @A
                     action <-
                         testerLiftInterpreter $ do
@@ -343,7 +339,7 @@ testUnifier =
                         then return ()
                         else fail "different"
               , testTree "t2" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     action <-
                         testerLiftInterpreter $ do
                             expr <-
@@ -356,7 +352,7 @@ testUnifier =
                         then return ()
                         else fail "different"
               , testTree "t1" $
-                runTester mempty $ do
+                runTester defaultTester $ do
                     action <-
                         testerLiftInterpreter $ do
                             expr <-

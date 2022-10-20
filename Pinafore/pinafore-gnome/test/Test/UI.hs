@@ -14,26 +14,22 @@ import Test.Context
 
 runUIAction :: GView 'Unlocked () -> Text -> IO ()
 runUIAction testaction script =
-    runLifecycle $
-    runNewView $ do
-        (pc, _) <- viewLiftLifecycle $ makeTestQContext stdout
-        runWithContext pc (libraryFetchModule gnomeLibrary) $ do
-            scriptaction <-
-                fromInterpretResult $ qInterpretTextAtType @((LangContext -> View ()) -> Action ()) "<test>" script
-            donevar <- liftIO newEmptyMVar
-            runAction $
-                scriptaction $ \lc -> do
-                    _ <-
-                        liftIOWithUnlift $ \unlift ->
-                            forkIO $
-                            unlift $
-                            runGView (lcGTKContext lc) $ do
-                                gvSleep 50000
-                                testaction
-                                gvExitUI
-                                gvLiftIONoUI $ putMVar donevar ()
-                    return ()
-            liftIO $ takeMVar donevar
+    runTester defaultTester {tstFetchModule = libraryFetchModule gnomeLibrary} $ do
+        scriptaction <- testerLiftView $ qInterpretTextAtType @((LangContext -> View ()) -> Action ()) "<test>" script
+        donevar <- liftIO newEmptyMVar
+        testerLiftAction $
+            scriptaction $ \lc -> do
+                _ <-
+                    liftIOWithUnlift $ \unlift ->
+                        forkIO $
+                        unlift $
+                        runGView (lcGTKContext lc) $ do
+                            gvSleep 50000
+                            testaction
+                            gvExitUI
+                            gvLiftIONoUI $ putMVar donevar ()
+                return ()
+        liftIO $ takeMVar donevar
 
 runClickButton :: GView 'Unlocked ()
 runClickButton = gvRunLocked clickOnlyWindowButton

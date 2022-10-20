@@ -79,24 +79,26 @@ sqliteQDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 qInterpretTextAtType ::
-       forall t. (?qcontext :: QContext, ?library :: LibraryContext, HasQType 'Negative t)
+       forall t m.
+       (?qcontext :: QContext, ?library :: LibraryContext, HasQType 'Negative t, MonadIO m, MonadThrow PinaforeError m)
     => FilePath
     -> Text
-    -> InterpretResult t
-qInterpretTextAtType puipath puitext = runPinaforeScoped puipath $ parseValueUnify puitext
+    -> m t
+qInterpretTextAtType puipath puitext = fromInterpretResult $ runPinaforeScoped puipath $ parseValueUnify puitext
 
-qInterpretText :: (?qcontext :: QContext, ?library :: LibraryContext) => FilePath -> Text -> InterpretResult (View ())
+qInterpretText ::
+       (?qcontext :: QContext, ?library :: LibraryContext, MonadIO m, MonadThrow PinaforeError m)
+    => FilePath
+    -> Text
+    -> m (View ())
 qInterpretText puipath puitext = do
     action <- qInterpretTextAtType @(Action TopType) puipath puitext
     return $ runAction $ fmap (\MkTopType -> ()) $ action
 
-qInterpretFile ::
-       (?qcontext :: QContext, ?library :: LibraryContext, MonadIO m, MonadThrow PinaforeError m)
-    => FilePath
-    -> m (View ())
+qInterpretFile :: (?qcontext :: QContext, ?library :: LibraryContext) => FilePath -> View (View ())
 qInterpretFile fpath = do
     ptext <- liftIO $ readFile fpath
-    fromInterpretResult $ qInterpretText fpath $ decodeUtf8 $ toStrict ptext
+    qInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
 qInteractHandles :: (?qcontext :: QContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 qInteractHandles inh outh echo = interact inh outh echo

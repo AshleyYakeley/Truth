@@ -2,7 +2,6 @@ module Test.Interactive
     ( getTestInteractive
     ) where
 
-import Changes.Core
 import Pinafore
 import Pinafore.Libs
 import Pinafore.Test
@@ -16,8 +15,8 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestQContext (libraryFetchModule extraLibrary) outh $ \_ -> do
-                   runNewView $ qInteractHandles inh outh True
+               runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary, tstOutput = outh} $ do
+                   testerLiftView $ qInteractHandles inh outh True
                    liftIO $ hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree

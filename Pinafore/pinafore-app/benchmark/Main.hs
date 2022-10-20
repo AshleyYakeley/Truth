@@ -95,10 +95,10 @@ benchScripts =
 
 interpretUpdater :: (?qcontext :: QContext) => Text -> IO ()
 interpretUpdater text =
-    withTestQContext mempty stdout $ \_getTableState -> do
-        action <- fromInterpretResult $ qInterpretTextAtType "<test>" text
-        (sendUpdate, ref) <- runNewView $ unliftActionOrFail action
-        runNewView $
+    runTester defaultTester $ do
+        action <- testerLiftView $ qInterpretTextAtType "<test>" text
+        (sendUpdate, ref) <- testerLiftAction action
+        testerLiftView $
             runEditor (unWModel $ immutableModelToRejectingModel ref) $
             checkUpdateEditor (Known (1 :: Integer)) $ unliftActionOrFail sendUpdate
 
