@@ -11,44 +11,42 @@ import Pinafore.Base.Morphism
 import Shapes
 
 propertyMorphism ::
-       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism a a b b PinaforeStorageUpdate
+       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> StorageLensMorphism a a b b QStorageUpdate
 propertyMorphism eaa eab prd = let
     ap = entityAdapterConvert eaa
     bp = entityAdapterConvert eab
-    pmGet :: a -> ReadM PinaforeStorageRead (Know b)
+    pmGet :: a -> ReadM QStorageRead (Know b)
     pmGet a = do
-        valp <- readM $ PinaforeStorageReadGet eaa prd a
-        readM $ PinaforeStorageReadEntity eab valp
-    pmBaseUpdate ::
-           PinaforeStorageUpdate -> ReadM PinaforeStorageRead (Maybe (a -> ReadM PinaforeStorageRead (Maybe (Know b))))
-    pmBaseUpdate (MkPinaforeStorageUpdate p s kv)
+        valp <- readM $ QStorageReadGet eaa prd a
+        readM $ QStorageReadEntity eab valp
+    pmBaseUpdate :: QStorageUpdate -> ReadM QStorageRead (Maybe (a -> ReadM QStorageRead (Maybe (Know b))))
+    pmBaseUpdate (MkQStorageUpdate p s kv)
         | p == prd =
             return $
             Just $ \a ->
                 case ap a == s of
                     False -> return Nothing
                     True -> do
-                        kb <- for kv $ \b -> readM $ PinaforeStorageReadEntity eab b
+                        kb <- for kv $ \b -> readM $ QStorageReadEntity eab b
                         return $ Just $ exec kb
     pmBaseUpdate _ = return Nothing
-    pmPut :: Know a -> Know b -> ReadM PinaforeStorageRead (Maybe ([PinaforeStorageEdit], Maybe (Know a)))
-    pmPut (Known subja) kvalb = return $ Just ([MkPinaforeStorageEdit eaa eab prd subja kvalb], Nothing)
+    pmPut :: Know a -> Know b -> ReadM QStorageRead (Maybe ([QStorageEdit], Maybe (Know a)))
+    pmPut (Known subja) kvalb = return $ Just ([MkQStorageEdit eaa eab prd subja kvalb], Nothing)
     pmPut Unknown _ = return Nothing
-    pmInvGet :: b -> ReadM PinaforeStorageRead [a]
+    pmInvGet :: b -> ReadM QStorageRead [a]
     pmInvGet valb = do
-        setp <- readM $ PinaforeStorageReadLookup prd $ bp valb
-        setka <- for (setToList setp) $ \p -> readM $ PinaforeStorageReadEntity eaa p
+        setp <- readM $ QStorageReadLookup prd $ bp valb
+        setka <- for (setToList setp) $ \p -> readM $ QStorageReadEntity eaa p
         return $ catKnowns setka
-    pmInvBaseUpdate ::
-           PinaforeStorageUpdate -> ReadM PinaforeStorageRead (Maybe (b -> ReadM PinaforeStorageRead [(Bool, a)]))
-    pmInvBaseUpdate (MkPinaforeStorageUpdate p s kv)
+    pmInvBaseUpdate :: QStorageUpdate -> ReadM QStorageRead (Maybe (b -> ReadM QStorageRead [(Bool, a)]))
+    pmInvBaseUpdate (MkQStorageUpdate p s kv)
         | p == prd =
             return $
             Just $ \b -> do
-                ka <- readM $ PinaforeStorageReadEntity eaa s
+                ka <- readM $ QStorageReadEntity eaa s
                 return $
                     case ka of
                         Known a -> [(kv == Known (bp b), a)]
                         Unknown -> []
     pmInvBaseUpdate _ = return Nothing
-    in MkPinaforeLensMorphism {..}
+    in MkStorageLensMorphism {..}

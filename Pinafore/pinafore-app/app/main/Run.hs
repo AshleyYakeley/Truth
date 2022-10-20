@@ -19,8 +19,8 @@ runFiles (copts, modopts) fNoRun scripts =
             iiStdOut = stdoutTextSink
             iiStdErr = stderrTextSink
         iiEnvironment <- liftIO getEnvironment
-        context <- standardPinaforeContext copts MkInvocationInfo {..}
-        action <- runWithContext context (standardFetchModule modopts) $ pinaforeInterpretFile fpath
+        context <- standardQContext copts MkInvocationInfo {..}
+        action <- runWithContext context (standardFetchModule modopts) $ qInterpretFile fpath
         if fNoRun
             then return ()
             else action
@@ -36,5 +36,5 @@ runInteractive (copts, modopts) =
             iiStdOut = stdoutTextSink
             iiStdErr = stderrTextSink
         iiEnvironment <- liftIO getEnvironment
-        context <- standardPinaforeContext copts MkInvocationInfo {..}
-        runWithContext context (standardFetchModule modopts) pinaforeInteract
+        context <- standardQContext copts MkInvocationInfo {..}
+        runWithContext context (standardFetchModule modopts) qInteract

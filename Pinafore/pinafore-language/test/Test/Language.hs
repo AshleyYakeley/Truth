@@ -133,7 +133,7 @@ testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
     testTree (show $ unpack query) $ do
         result <-
-            withNullPinaforeContext $
+            withNullQContext $
             runInterpretResult $
             runPinaforeScoped "<input>" $ do
                 v <- parseValue query
@@ -972,7 +972,7 @@ testQueries =
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
     testTree (unpack query) $ do
-        result <- withNullPinaforeContext $ runInterpretResult $ runPinaforeScoped "<input>" $ parseValue query
+        result <- withNullQContext $ runInterpretResult $ runPinaforeScoped "<input>" $ parseValue query
         case result of
             FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
             SuccessResult (MkSomeOf (MkPosShimWit t shim) _) -> do

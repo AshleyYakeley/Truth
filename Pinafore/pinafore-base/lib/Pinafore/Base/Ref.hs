@@ -15,40 +15,36 @@ contextualiseModels subx subn =
 contextualisePinaforeModel :: Model baseupdate -> WModel update -> WModel (ContextUpdate baseupdate update)
 contextualisePinaforeModel basesub (MkWModel sv) = MkWModel $ contextualiseModels basesub sv
 
-type PinaforeROWModel a = WModel (ROWUpdate a)
+type WROWModel a = WModel (ROWUpdate a)
 
-applyPinaforeFunction ::
-       forall baseupdate a b.
-       Model baseupdate
-    -> PinaforeFunctionMorphism baseupdate a b
-    -> PinaforeROWModel a
-    -> PinaforeROWModel b
-applyPinaforeFunction basesub m val =
-    eaMap (pinaforeFunctionMorphismContextChangeLens m) $
+applyStorageFunction ::
+       forall baseupdate a b. Model baseupdate -> StorageFunctionMorphism baseupdate a b -> WROWModel a -> WROWModel b
+applyStorageFunction basesub m val =
+    eaMap (storageFunctionMorphismContextChangeLens m) $
     contextualisePinaforeModel basesub $ eaMap fromReadOnlyRejectingChangeLens val
 
-applyPinaforeLens ::
+applyStorageLens ::
        forall baseupdate ap aq bp bq.
        Model baseupdate
-    -> PinaforeLensMorphism ap aq bp bq baseupdate
+    -> StorageLensMorphism ap aq bp bq baseupdate
     -> WModel (BiWholeUpdate (Know aq) (Know ap))
     -> WModel (BiWholeUpdate (Know bp) (Know bq))
-applyPinaforeLens basesub pm val = eaMap (pinaforeLensMorphismChangeLens pm) $ contextualisePinaforeModel basesub val
+applyStorageLens basesub pm val = eaMap (storageLensMorphismChangeLens pm) $ contextualisePinaforeModel basesub val
 
-applyInversePinaforeLens ::
+applyInverseStorageLens ::
        forall baseupdate a bp bq. (Eq a)
     => Model baseupdate
-    -> PinaforeLensMorphism a a bq bp baseupdate
+    -> StorageLensMorphism a a bq bp baseupdate
     -> WModel (BiWholeUpdate (Know bp) (Know bq))
     -> WModel (FiniteSetUpdate a)
-applyInversePinaforeLens basesub pm val =
-    eaMap (pinaforeLensMorphismInverseChangeLens pm) $ contextualisePinaforeModel basesub val
+applyInverseStorageLens basesub pm val =
+    eaMap (storageLensMorphismInverseChangeLens pm) $ contextualisePinaforeModel basesub val
 
-applyInversePinaforeLensSet ::
+applyInverseStorageLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
     => Model baseupdate
-    -> PinaforeLensMorphism a a b b baseupdate
+    -> StorageLensMorphism a a b b baseupdate
     -> WModel (FiniteSetUpdate b)
     -> WModel (FiniteSetUpdate a)
-applyInversePinaforeLensSet basesub pm val =
-    eaMap (pinaforeLensMorphismInverseChangeLensSet pm) $ contextualisePinaforeModel basesub val
+applyInverseStorageLensSet basesub pm val =
+    eaMap (storageLensMorphismInverseChangeLensSet pm) $ contextualisePinaforeModel basesub val

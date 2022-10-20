@@ -17,14 +17,14 @@ libDir = "../lib"
 testCheckScript :: FilePath -> String -> TestTree
 testCheckScript fpath name =
     testTree name $
-    withTestPinaforeContext (libraryFetchModule extraLibrary <> directoryFetchModule libDir) stdout $ \_getTableState -> do
-        _ <- pinaforeInterpretFile fpath
+    withTestQContext (libraryFetchModule extraLibrary <> directoryFetchModule libDir) stdout $ \_getTableState -> do
+        _ <- qInterpretFile fpath
         return ()
 
 testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $
-    withTestPinaforeContext (libraryFetchModule extraLibrary <> directoryFetchModule libDir) stdout $ \_ -> do
+    withTestQContext (libraryFetchModule extraLibrary <> directoryFetchModule libDir) stdout $ \_ -> do
         modname <- maybeToM "bad module name" $ toModuleName $ pack name
         _ <- fromInterpretResult $ runPinaforeScoped name $ lcLoadModule ?library modname
         return ()

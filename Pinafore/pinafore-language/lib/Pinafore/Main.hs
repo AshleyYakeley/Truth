@@ -1,17 +1,17 @@
 module Pinafore.Main
     ( ModuleOptions(..)
     , standardFetchModule
-    , PinaforeContext
-    , nullPinaforeContext
-    , makePinaforeContext
+    , QContext
+    , nullQContext
+    , makeQContext
     , ContextOptions(..)
-    , standardPinaforeContext
-    , sqlitePinaforeDumpTable
-    , pinaforeInterpretTextAtType
-    , pinaforeInterpretText
-    , pinaforeInterpretFile
-    , pinaforeInteractHandles
-    , pinaforeInteract
+    , standardQContext
+    , sqliteQDumpTable
+    , qInterpretTextAtType
+    , qInterpretText
+    , qInterpretFile
+    , qInteractHandles
+    , qInteract
     ) where
 
 import Changes.Core
@@ -33,11 +33,11 @@ data ContextOptions = MkContextOptions
     , coDataDir :: FilePath
     }
 
-standardStorageModel :: Bool -> FilePath -> View (Model PinaforeStorageUpdate)
+standardStorageModel :: Bool -> FilePath -> View (Model QStorageUpdate)
 standardStorageModel cache dataDir = do
     rc <- viewGetResourceContext
     viewLiftLifecycle $ do
-        sqlReference <- liftIO $ sqlitePinaforeTableReference $ dataDir </> "tables.sqlite3"
+        sqlReference <- liftIO $ sqliteTableReference $ dataDir </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-
             if cache
@@ -45,7 +45,7 @@ standardStorageModel cache dataDir = do
                     tableReferenceF <- cacheReference rc 500000 tableReference1 -- half-second delay before writing
                     return $ tableReferenceF rc
                 else return tableReference1
-        (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
+        (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
         return model
 
 standardFetchModule :: ModuleOptions -> FetchModule
@@ -56,20 +56,19 @@ standardFetchModule MkModuleOptions {..} = let
     dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
     in extraLibFetchModule <> dirFetchModule
 
-standardPinaforeContext :: ContextOptions -> InvocationInfo -> View PinaforeContext
-standardPinaforeContext MkContextOptions {..} invinfo = do
+standardQContext :: ContextOptions -> InvocationInfo -> View QContext
+standardQContext MkContextOptions {..} invinfo = do
     model <- standardStorageModel coCache coDataDir
-    pc <- viewLiftLifecycle $ makePinaforeContext invinfo model
+    pc <- viewLiftLifecycle $ makeQContext invinfo model
     return pc
 
-sqlitePinaforeDumpTable :: FilePath -> IO ()
-sqlitePinaforeDumpTable dirpath = do
-    MkAllFor tables <- sqlitePinaforeTableGetEntireDatabase emptyResourceContext $ dirpath </> "tables.sqlite3"
+sqliteQDumpTable :: FilePath -> IO ()
+sqliteQDumpTable dirpath = do
+    MkAllFor tables <- sqliteTableGetEntireDatabase emptyResourceContext $ dirpath </> "tables.sqlite3"
     let
         littable :: [(Entity, Literal)]
-        littable =
-            fmap (\(MkAllOf lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
-    for_ (tables $ MkTupleTableSel PinaforeProperty) $ \(MkAllOf row) -> let
+        littable = fmap (\(MkAllOf lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel QSLiteral
+    for_ (tables $ MkTupleTableSel QSProperty) $ \(MkAllOf row) -> let
         p = row TriplePredicate
         s = row TripleSubject
         v = row TripleValue
@@ -79,30 +78,28 @@ sqlitePinaforeDumpTable dirpath = do
                 Nothing -> show v
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
-pinaforeInterpretTextAtType ::
-       forall t. (?pinafore :: PinaforeContext, ?library :: LibraryContext, HasPinaforeType 'Negative t)
+qInterpretTextAtType ::
+       forall t. (?qcontext :: QContext, ?library :: LibraryContext, HasQType 'Negative t)
     => FilePath
     -> Text
     -> InterpretResult t
-pinaforeInterpretTextAtType puipath puitext = runPinaforeScoped puipath $ parseValueUnify puitext
+qInterpretTextAtType puipath puitext = runPinaforeScoped puipath $ parseValueUnify puitext
 
-pinaforeInterpretText ::
-       (?pinafore :: PinaforeContext, ?library :: LibraryContext) => FilePath -> Text -> InterpretResult (View ())
-pinaforeInterpretText puipath puitext = do
-    action <- pinaforeInterpretTextAtType @(PinaforeAction TopType) puipath puitext
-    return $ runPinaforeAction $ fmap (\MkTopType -> ()) $ action
+qInterpretText :: (?qcontext :: QContext, ?library :: LibraryContext) => FilePath -> Text -> InterpretResult (View ())
+qInterpretText puipath puitext = do
+    action <- qInterpretTextAtType @(Action TopType) puipath puitext
+    return $ runAction $ fmap (\MkTopType -> ()) $ action
 
-pinaforeInterpretFile ::
-       (?pinafore :: PinaforeContext, ?library :: LibraryContext, MonadIO m, MonadThrow PinaforeError m)
+qInterpretFile ::
+       (?qcontext :: QContext, ?library :: LibraryContext, MonadIO m, MonadThrow PinaforeError m)
     => FilePath
     -> m (View ())
-pinaforeInterpretFile fpath = do
+qInterpretFile fpath = do
     ptext <- liftIO $ readFile fpath
-    fromInterpretResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
+    fromInterpretResult $ qInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
-pinaforeInteractHandles ::
-       (?pinafore :: PinaforeContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
-pinaforeInteractHandles inh outh echo = interact inh outh echo
+qInteractHandles :: (?qcontext :: QContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
+qInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => View ()
-pinaforeInteract = pinaforeInteractHandles stdin stdout False
+qInteract :: (?qcontext :: QContext, ?library :: LibraryContext) => View ()
+qInteract = qInteractHandles stdin stdout False

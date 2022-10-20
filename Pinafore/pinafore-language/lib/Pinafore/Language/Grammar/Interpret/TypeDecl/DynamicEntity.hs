@@ -11,8 +11,7 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-interpretSyntaxDynamicEntityConstructor ::
-       SyntaxDynamicEntityConstructor -> Interpreter PinaforeTypeSystem DynamicEntityType
+interpretSyntaxDynamicEntityConstructor :: SyntaxDynamicEntityConstructor -> Interpreter QTypeSystem DynamicEntityType
 interpretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ opoint $ mkDynamicType a
 interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
     MkSomeGroundType t <- lookupBoundType name
@@ -20,15 +19,14 @@ interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name
         Just (MkADynamicEntityFamily _ det) -> return det
         Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
 
-makeDynamicEntityTypeBox ::
-       Name -> Markdown -> NonEmpty SyntaxDynamicEntityConstructor -> PinaforeInterpreter (PinaforeFixBox () ())
+makeDynamicEntityTypeBox :: Name -> Markdown -> NonEmpty SyntaxDynamicEntityConstructor -> QInterpreter (QFixBox () ())
 makeDynamicEntityTypeBox name doc stcons =
     return $ let
-        register :: DynamicEntityType -> PinaforeScopeInterpreter ()
+        register :: DynamicEntityType -> QScopeInterpreter ()
         register det = do
             let tp = aDynamicEntityGroundType name det
             registerType name doc tp
-        construct :: () -> PinaforeScopeInterpreter (DynamicEntityType, ())
+        construct :: () -> QScopeInterpreter (DynamicEntityType, ())
         construct _ = do
             dts <- lift $ for stcons interpretSyntaxDynamicEntityConstructor
             let det = mconcat $ toList dts

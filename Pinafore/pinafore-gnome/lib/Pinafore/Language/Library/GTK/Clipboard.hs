@@ -22,8 +22,7 @@ clipBijection = let
 
 langClipboard :: LangContext -> LangWholeModel '( Literal, Literal)
 langClipboard c =
-    pinaforeModelToWholeModel $
-    eaMap (bijectionWholeChangeLens clipBijection) $ MkWModel $ ocClipboard $ lcOtherContext c
+    wModelToWholeModel $ eaMap (bijectionWholeChangeLens clipBijection) $ MkWModel $ ocClipboard $ lcOtherContext c
 
 clipboardStuff :: DocTreeEntry BindDoc
 clipboardStuff =

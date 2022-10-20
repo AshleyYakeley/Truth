@@ -6,9 +6,9 @@ import Pinafore.Test
 import Shapes
 
 data TesterContext = MkTesterContext
-    { tcPinafore :: PinaforeContext
+    { tcPinafore :: QContext
     , tcLibrary :: LibraryContext
-    , tcGetTableState :: IO PinaforeTableSubject
+    , tcGetTableState :: IO QTableSubject
     }
 
 newtype Tester a =
@@ -17,31 +17,31 @@ newtype Tester a =
 
 runTester :: FetchModule -> Tester () -> IO ()
 runTester fm (MkTester ta) =
-    withTestPinaforeContext fm stdout $ \getTableState ->
-        runView $ runReaderT ta $ MkTesterContext ?pinafore ?library getTableState
+    withTestQContext fm stdout $ \getTableState ->
+        runView $ runReaderT ta $ MkTesterContext ?qcontext ?library getTableState
 
-testerRunAction :: PinaforeAction () -> Tester ()
+testerRunAction :: Action () -> Tester ()
 testerRunAction pa =
     MkTester $
     ReaderT $ \MkTesterContext {..} -> let
-        ?pinafore = tcPinafore
-        in runPinaforeAction pa
+        ?qcontext = tcPinafore
+        in runAction pa
 
-testerLiftAction :: PinaforeAction --> Tester
+testerLiftAction :: Action --> Tester
 testerLiftAction pa =
     MkTester $
     ReaderT $ \MkTesterContext {..} -> let
-        ?pinafore = tcPinafore
+        ?qcontext = tcPinafore
         in do
-               ka <- unliftPinaforeAction pa
+               ka <- unliftAction pa
                case ka of
                    Known a -> return a
                    Unknown -> fail "stopped"
 
-testerLiftInterpreter :: PinaforeInterpreter --> Tester
+testerLiftInterpreter :: QInterpreter --> Tester
 testerLiftInterpreter pia =
     MkTester $
     ReaderT $ \MkTesterContext {..} -> let
-        ?pinafore = tcPinafore
+        ?qcontext = tcPinafore
         ?library = tcLibrary
         in fromInterpretResult $ runPinaforeScoped "<input>" pia

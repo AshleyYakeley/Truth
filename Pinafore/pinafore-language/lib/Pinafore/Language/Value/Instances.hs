@@ -12,8 +12,8 @@ instance MaybeRepresentational Know where
 instance HasVariance Know where
     type VarianceOf Know = 'Covariance
 
-instance MaybeRepresentational PinaforeAction where
+instance MaybeRepresentational Action where
     maybeRepresentational = Just Dict
 
-instance HasVariance PinaforeAction where
-    type VarianceOf PinaforeAction = 'Covariance
+instance HasVariance Action where
+    type VarianceOf Action = 'Covariance

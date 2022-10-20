@@ -1,32 +1,32 @@
 module Pinafore.Base.FunctionMorphism
-    ( PinaforeFunctionMorphism(..)
-    , pinaforeFunctionMorphismContextChangeLens
-    , mapPinaforeFunctionMorphismBase
+    ( StorageFunctionMorphism(..)
+    , storageFunctionMorphismContextChangeLens
+    , mapStorageFunctionMorphismBase
     ) where
 
 import Changes.Core
 import Shapes
 
-data PinaforeFunctionMorphism baseupdate a b = MkPinaforeFunctionMorphism
+data StorageFunctionMorphism baseupdate a b = MkStorageFunctionMorphism
     { pfFuncRead :: a -> ReadM (UpdateReader baseupdate) b
     , pfUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe b)))
     }
 
-instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (PinaforeFunctionMorphism baseupdate) where
+instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageFunctionMorphism baseupdate) where
     cfmap f =
-        MkNestedMorphism $ \(MkPinaforeFunctionMorphism fr up) -> let
+        MkNestedMorphism $ \(MkStorageFunctionMorphism fr up) -> let
             fr' = (cfmap1 f) fr
             up' = (fmap $ fmap $ fmap $ cfmap1 f) up
-            in MkPinaforeFunctionMorphism fr' up'
+            in MkStorageFunctionMorphism fr' up'
 
-instance Functor (PinaforeFunctionMorphism baseupdate a) where
-    fmap :: forall p q. (p -> q) -> PinaforeFunctionMorphism baseupdate a p -> PinaforeFunctionMorphism baseupdate a q
-    fmap pq (MkPinaforeFunctionMorphism fr up) = let
+instance Functor (StorageFunctionMorphism baseupdate a) where
+    fmap :: forall p q. (p -> q) -> StorageFunctionMorphism baseupdate a p -> StorageFunctionMorphism baseupdate a q
+    fmap pq (MkStorageFunctionMorphism fr up) = let
         fr' = (fmap $ fmap pq) fr
         up' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap pq) up
-        in MkPinaforeFunctionMorphism fr' up'
+        in MkStorageFunctionMorphism fr' up'
 
-instance Applicative (PinaforeFunctionMorphism baseupdate a) where
+instance Applicative (StorageFunctionMorphism baseupdate a) where
     pure b = arr $ \_ -> b
     fmxy <*> fmx =
         proc a -> do
@@ -34,16 +34,16 @@ instance Applicative (PinaforeFunctionMorphism baseupdate a) where
             x <- fmx -< a
             returnA -< xy x
 
-instance Category (PinaforeFunctionMorphism baseupdate) where
+instance Category (StorageFunctionMorphism baseupdate) where
     id = let
         pfFuncRead = return
         pfUpdate _ = return Nothing
-        in MkPinaforeFunctionMorphism {..}
+        in MkStorageFunctionMorphism {..}
     (.) :: forall a b c.
-           PinaforeFunctionMorphism baseupdate b c
-        -> PinaforeFunctionMorphism baseupdate a b
-        -> PinaforeFunctionMorphism baseupdate a c
-    MkPinaforeFunctionMorphism getBC buBC . MkPinaforeFunctionMorphism getAB buAB = let
+           StorageFunctionMorphism baseupdate b c
+        -> StorageFunctionMorphism baseupdate a b
+        -> StorageFunctionMorphism baseupdate a c
+    MkStorageFunctionMorphism getBC buBC . MkStorageFunctionMorphism getAB buAB = let
         pfFuncRead a = getAB a >>= getBC
         pfUpdate ::
                baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe c)))
@@ -69,15 +69,15 @@ instance Category (PinaforeFunctionMorphism baseupdate) where
                                 Just b -> do
                                     c <- getBC b
                                     return $ Just c
-        in MkPinaforeFunctionMorphism {..}
+        in MkStorageFunctionMorphism {..}
 
-instance Arrow (PinaforeFunctionMorphism baseupdate) where
+instance Arrow (StorageFunctionMorphism baseupdate) where
     arr ab = let
         pfFuncRead a = return $ ab a
         pfUpdate _ = return Nothing
-        in MkPinaforeFunctionMorphism {..}
-    first :: forall b c d. PinaforeFunctionMorphism baseupdate b c -> PinaforeFunctionMorphism baseupdate (b, d) (c, d)
-    first (MkPinaforeFunctionMorphism bmc umbmc) = let
+        in MkStorageFunctionMorphism {..}
+    first :: forall b c d. StorageFunctionMorphism baseupdate b c -> StorageFunctionMorphism baseupdate (b, d) (c, d)
+    first (MkStorageFunctionMorphism bmc umbmc) = let
         pfFuncRead :: (b, d) -> ReadM (UpdateReader baseupdate) (c, d)
         pfFuncRead (b, d) = do
             c <- bmc b
@@ -94,15 +94,15 @@ instance Arrow (PinaforeFunctionMorphism baseupdate) where
                         Just $ \(b, d) -> do
                             mc <- brmc b
                             return $ fmap (\c -> (c, d)) mc
-        in MkPinaforeFunctionMorphism {..}
+        in MkStorageFunctionMorphism {..}
     second = cfmap
 
-instance ArrowChoice (PinaforeFunctionMorphism baseupdate) where
+instance ArrowChoice (StorageFunctionMorphism baseupdate) where
     left ::
            forall b c d.
-           PinaforeFunctionMorphism baseupdate b c
-        -> PinaforeFunctionMorphism baseupdate (Either b d) (Either c d)
-    left (MkPinaforeFunctionMorphism fr upd) = let
+           StorageFunctionMorphism baseupdate b c
+        -> StorageFunctionMorphism baseupdate (Either b d) (Either c d)
+    left (MkStorageFunctionMorphism fr upd) = let
         pfFuncRead (Left b) = fmap Left $ fr b
         pfFuncRead (Right d) = return $ Right d
         pfUpdate ::
@@ -119,12 +119,12 @@ instance ArrowChoice (PinaforeFunctionMorphism baseupdate) where
                                 mc <- brmc b
                                 return $ fmap Left mc
                             Right _ -> return Nothing
-        in MkPinaforeFunctionMorphism {..}
+        in MkStorageFunctionMorphism {..}
     right ::
            forall b c d.
-           PinaforeFunctionMorphism baseupdate b c
-        -> PinaforeFunctionMorphism baseupdate (Either d b) (Either d c)
-    right (MkPinaforeFunctionMorphism fr upd) = let
+           StorageFunctionMorphism baseupdate b c
+        -> StorageFunctionMorphism baseupdate (Either d b) (Either d c)
+    right (MkStorageFunctionMorphism fr upd) = let
         pfFuncRead (Left d) = return $ Left d
         pfFuncRead (Right b) = fmap Right $ fr b
         pfUpdate ::
@@ -141,11 +141,11 @@ instance ArrowChoice (PinaforeFunctionMorphism baseupdate) where
                             Right b -> do
                                 mc <- brmc b
                                 return $ fmap Right mc
-        in MkPinaforeFunctionMorphism {..}
+        in MkStorageFunctionMorphism {..}
 
-instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseupdate) (PinaforeFunctionMorphism baseupdate) f where
-    cfmap :: forall a b. PinaforeFunctionMorphism baseupdate a b -> PinaforeFunctionMorphism baseupdate (f a) (f b)
-    cfmap (MkPinaforeFunctionMorphism f upd) = let
+instance Traversable f => CatFunctor (StorageFunctionMorphism baseupdate) (StorageFunctionMorphism baseupdate) f where
+    cfmap :: forall a b. StorageFunctionMorphism baseupdate a b -> StorageFunctionMorphism baseupdate (f a) (f b)
+    cfmap (MkStorageFunctionMorphism f upd) = let
         pfFuncRead fa = for fa f
         pfUpdate ::
                baseupdate
@@ -169,13 +169,13 @@ instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseupdate) (Pina
                                 True -> do
                                     fb <- for fmb $ \(_, mb) -> mb
                                     return $ Just fb
-        in MkPinaforeFunctionMorphism {..}
+        in MkStorageFunctionMorphism {..}
 
-pinaforeFunctionMorphismContextChangeLens ::
+storageFunctionMorphismContextChangeLens ::
        forall baseupdate a b.
-       PinaforeFunctionMorphism baseupdate a b
+       StorageFunctionMorphism baseupdate a b
     -> ChangeLens (ContextUpdate baseupdate (WholeUpdate a)) (ROWUpdate b)
-pinaforeFunctionMorphismContextChangeLens MkPinaforeFunctionMorphism {..} = let
+storageFunctionMorphismContextChangeLens MkStorageFunctionMorphism {..} = let
     getB ::
            forall m. MonadIO m
         => Readable m (ContextUpdateReader baseupdate (WholeUpdate a))
@@ -205,12 +205,12 @@ pinaforeFunctionMorphismContextChangeLens MkPinaforeFunctionMorphism {..} = let
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate b]
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
-mapPinaforeFunctionMorphismBase ::
+mapStorageFunctionMorphismBase ::
        forall baseA baseB a b.
        ChangeLens baseB baseA
-    -> PinaforeFunctionMorphism baseA a b
-    -> PinaforeFunctionMorphism baseB a b
-mapPinaforeFunctionMorphismBase aef (MkPinaforeFunctionMorphism frA updA) = let
+    -> StorageFunctionMorphism baseA a b
+    -> StorageFunctionMorphism baseB a b
+mapStorageFunctionMorphismBase aef (MkStorageFunctionMorphism frA updA) = let
     rf :: ReadFunction (UpdateReader baseB) (UpdateReader baseA)
     rf = clRead aef
     frB a = mapReadM rf $ frA a
@@ -227,4 +227,4 @@ mapPinaforeFunctionMorphismBase aef (MkPinaforeFunctionMorphism frA updA) = let
                             Nothing -> return Nothing
                             Just armb -> armb a
             return $ lastM $ catMaybes chs
-    in MkPinaforeFunctionMorphism frB updB
+    in MkStorageFunctionMorphism frB updB

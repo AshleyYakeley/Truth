@@ -15,13 +15,13 @@ import Pinafore.Language.Type
 import Shapes hiding (try)
 
 data InteractiveCommand
-    = LetInteractiveCommand (PinaforeInterpreter --> PinaforeInterpreter)
-    | ExpressionInteractiveCommand (PinaforeInterpreter PinaforeExpression)
+    = LetInteractiveCommand (QInterpreter --> QInterpreter)
+    | ExpressionInteractiveCommand (QInterpreter QExpression)
     | ShowDocInteractiveCommand ReferenceName
     | ShowTypeInteractiveCommand Bool
-                                 (PinaforeInterpreter PinaforeExpression)
+                                 (QInterpreter QExpression)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
-                                                      (PinaforeInterpreter (Some (PinaforeType polarity)))
+                                                      (QInterpreter (Some (QType polarity)))
     | ErrorInteractiveCommand Text
 
 showDocInteractiveCommand :: Parser InteractiveCommand

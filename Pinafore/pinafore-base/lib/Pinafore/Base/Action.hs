@@ -1,25 +1,25 @@
 module Pinafore.Base.Action
-    ( PinaforeAction
-    , unPinaforeAction
+    ( Action
+    , unAction
     , actionLiftView
     , actionLiftViewKnow
     , actionLiftViewKnowWithUnlift
     , actionTunnelView
     , actionHoistView
     , actionLiftLifecycle
-    , pinaforeGetCreateViewUnlift
-    , pinaforeResourceContext
-    , pinaforeFlushModelUpdates
-    , pinaforeFlushModelCommits
-    , pinaforeModelGet
-    , pinaforeModelPush
-    , pinaforeUndoHandler
-    , pinaforeActionKnow
-    , knowPinaforeAction
+    , actionGetCreateViewUnlift
+    , actionResourceContext
+    , actionFlushModelUpdates
+    , actionFlushModelCommits
+    , actionModelGet
+    , actionModelPush
+    , actionUndoHandler
+    , actionKnow
+    , knowAction
     , actionOnClose
-    , pinaforeEarlyCloser
-    , pinaforeFloatMap
-    , pinaforeFloatMapReadOnly
+    , actionEarlyCloser
+    , actionFloatMap
+    , actionFloatMapReadOnly
     ) where
 
 import Changes.Core
@@ -30,8 +30,8 @@ data ActionContext = MkActionContext
     { acUndoHandler :: UndoHandler
     }
 
-newtype PinaforeAction a =
-    MkPinaforeAction (ReaderT ActionContext (ComposeInner Know View) a)
+newtype Action a =
+    MkAction (ReaderT ActionContext (ComposeInner Know View) a)
     deriving ( Functor
              , Applicative
              , Monad
@@ -46,106 +46,102 @@ newtype PinaforeAction a =
              , RepresentationalRole
              )
 
-unPinaforeAction :: forall a. UndoHandler -> PinaforeAction a -> View (Know a)
-unPinaforeAction acUndoHandler (MkPinaforeAction action) = unComposeInner $ runReaderT action MkActionContext {..}
+unAction :: forall a. UndoHandler -> Action a -> View (Know a)
+unAction acUndoHandler (MkAction action) = unComposeInner $ runReaderT action MkActionContext {..}
 
-actionLiftView :: View --> PinaforeAction
-actionLiftView va = MkPinaforeAction $ lift $ lift va
+actionLiftView :: View --> Action
+actionLiftView va = MkAction $ lift $ lift va
 
-actionLiftViewKnow :: View (Know a) -> PinaforeAction a
-actionLiftViewKnow va = MkPinaforeAction $ lift $ MkComposeInner va
+actionLiftViewKnow :: View (Know a) -> Action a
+actionLiftViewKnow va = MkAction $ lift $ MkComposeInner va
 
-actionLiftViewKnowWithUnlift :: ((forall r. PinaforeAction r -> View (Know r)) -> View (Know a)) -> PinaforeAction a
+actionLiftViewKnowWithUnlift :: ((forall r. Action r -> View (Know r)) -> View (Know a)) -> Action a
 actionLiftViewKnowWithUnlift call =
-    MkPinaforeAction $
-    liftWithUnlift $ \unlift -> MkComposeInner $ call $ \(MkPinaforeAction rma) -> unComposeInner $ unlift rma
+    MkAction $ liftWithUnlift $ \unlift -> MkComposeInner $ call $ \(MkAction rma) -> unComposeInner $ unlift rma
 
-actionTunnelView ::
-       forall r. (forall f. Functor f => (forall a. PinaforeAction a -> View (f a)) -> View (f r)) -> PinaforeAction r
+actionTunnelView :: forall r. (forall f. Functor f => (forall a. Action a -> View (f a)) -> View (f r)) -> Action r
 actionTunnelView call =
-    MkPinaforeAction $
+    MkAction $
     tunnel $ \unlift1 ->
-        tunnel $ \unlift2 ->
-            fmap unComposeInner $ call $ \(MkPinaforeAction rx) -> fmap MkComposeInner $ unlift2 $ unlift1 rx
+        tunnel $ \unlift2 -> fmap unComposeInner $ call $ \(MkAction rx) -> fmap MkComposeInner $ unlift2 $ unlift1 rx
 
-actionHoistView :: (View --> View) -> PinaforeAction --> PinaforeAction
-actionHoistView vv (MkPinaforeAction ma) = MkPinaforeAction $ hoist (hoist vv) ma
+actionHoistView :: (View --> View) -> Action --> Action
+actionHoistView vv (MkAction ma) = MkAction $ hoist (hoist vv) ma
 
-pinaforeGetCreateViewUnlift :: PinaforeAction (WRaised PinaforeAction (ComposeInner Know View))
-pinaforeGetCreateViewUnlift =
-    MkPinaforeAction $ do
+actionGetCreateViewUnlift :: Action (WRaised Action (ComposeInner Know View))
+actionGetCreateViewUnlift =
+    MkAction $ do
         MkWUnlift unlift <- askUnlift
-        return $ MkWRaised $ \(MkPinaforeAction ra) -> unlift ra
+        return $ MkWRaised $ \(MkAction ra) -> unlift ra
 
-pinaforeResourceContext :: PinaforeAction ResourceContext
-pinaforeResourceContext = actionLiftView viewGetResourceContext
+actionResourceContext :: Action ResourceContext
+actionResourceContext = actionLiftView viewGetResourceContext
 
-pinaforeFlushModelUpdates :: WModel update -> PinaforeAction ()
-pinaforeFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
+actionFlushModelUpdates :: WModel update -> Action ()
+actionFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
 
-pinaforeFlushModelCommits :: WModel update -> PinaforeAction ()
-pinaforeFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitTask model
+actionFlushModelCommits :: WModel update -> Action ()
+actionFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitTask model
 
-pinaforeModelGet :: WModel update -> ReadM (UpdateReader update) t -> PinaforeAction t
-pinaforeModelGet model rm = do
-    pinaforeFlushModelUpdates model
-    rc <- pinaforeResourceContext
+actionModelGet :: WModel update -> ReadM (UpdateReader update) t -> Action t
+actionModelGet model rm = do
+    actionFlushModelUpdates model
+    rc <- actionResourceContext
     liftIO $ wModelGet rc model rm
 
-pinaforeModelPush :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
-pinaforeModelPush model edits = do
-    pinaforeFlushModelUpdates model
-    rc <- pinaforeResourceContext
+actionModelPush :: WModel update -> NonEmpty (UpdateEdit update) -> Action ()
+actionModelPush model edits = do
+    actionFlushModelUpdates model
+    rc <- actionResourceContext
     ok <- liftIO $ wModelPush rc model edits
     if ok
         then return ()
         else empty
 
-actionLiftLifecycle :: Lifecycle --> PinaforeAction
+actionLiftLifecycle :: Lifecycle --> Action
 actionLiftLifecycle la = actionLiftView $ viewLiftLifecycle la
 
-pinaforeUndoHandler :: PinaforeAction UndoHandler
-pinaforeUndoHandler = do
-    MkActionContext {..} <- MkPinaforeAction ask
+actionUndoHandler :: Action UndoHandler
+actionUndoHandler = do
+    MkActionContext {..} <- MkAction ask
     return acUndoHandler
 
-pinaforeActionKnow :: forall a. Know a -> PinaforeAction a
-pinaforeActionKnow (Known a) = pure a
-pinaforeActionKnow Unknown = empty
+actionKnow :: forall a. Know a -> Action a
+actionKnow (Known a) = pure a
+actionKnow Unknown = empty
 
-knowPinaforeAction :: forall a. PinaforeAction a -> PinaforeAction (Know a)
-knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
-    MkPinaforeAction $ ReaderT $ \r -> MkComposeInner $ fmap Known $ unComposeInner $ rka r
+knowAction :: forall a. Action a -> Action (Know a)
+knowAction (MkAction (ReaderT rka)) = MkAction $ ReaderT $ \r -> MkComposeInner $ fmap Known $ unComposeInner $ rka r
 
-actionOnClose :: PinaforeAction () -> PinaforeAction ()
+actionOnClose :: Action () -> Action ()
 actionOnClose closer = do
-    MkWRaised unlift <- pinaforeGetCreateViewUnlift
+    MkWRaised unlift <- actionGetCreateViewUnlift
     actionLiftView $
         viewOnClose $ do
             _ <- unComposeInner $ unlift closer
             return ()
 
-pinaforeEarlyCloser :: PinaforeAction a -> PinaforeAction (a, IO ())
-pinaforeEarlyCloser ra = do
-    MkWRaised unlift <- pinaforeGetCreateViewUnlift
-    MkPinaforeAction $
+actionEarlyCloser :: Action a -> Action (a, IO ())
+actionEarlyCloser ra = do
+    MkWRaised unlift <- actionGetCreateViewUnlift
+    MkAction $
         lift $
         MkComposeInner $ do
             (ka, closer) <- viewGetCloser $ unComposeInner $ unlift ra
             return $ fmap (\a -> (a, closer)) ka
 
-pinaforeFloatMap ::
+actionFloatMap ::
        forall f updateA updateB. FloatingEditApplicative f
     => FloatingChangeLens updateA updateB
     -> f updateA
-    -> PinaforeAction (f updateB)
-pinaforeFloatMap flens fa = do
-    rc <- pinaforeResourceContext
+    -> Action (f updateB)
+actionFloatMap flens fa = do
+    rc <- actionResourceContext
     actionLiftLifecycle $ eaFloatMap rc flens fa
 
-pinaforeFloatMapReadOnly ::
+actionFloatMapReadOnly ::
        forall f updateA updateB. FloatingEditApplicative f
     => FloatingChangeLens updateA (ReadOnlyUpdate updateB)
     -> f (ReadOnlyUpdate updateA)
-    -> PinaforeAction (f (ReadOnlyUpdate updateB))
-pinaforeFloatMapReadOnly flens = pinaforeFloatMap $ liftReadOnlyFloatingChangeLens flens
+    -> Action (f (ReadOnlyUpdate updateB))
+actionFloatMapReadOnly flens = actionFloatMap $ liftReadOnlyFloatingChangeLens flens

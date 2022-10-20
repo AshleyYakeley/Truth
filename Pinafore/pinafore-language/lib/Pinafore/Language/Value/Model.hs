@@ -9,6 +9,6 @@ import Shapes
 data LangModel where
     MkLangModel :: WModel update -> LangModel
 
-langModelSubscribe :: (?pinafore :: PinaforeContext) => LangModel -> PinaforeAction () -> PinaforeAction ()
+langModelSubscribe :: (?qcontext :: QContext) => LangModel -> Action () -> Action ()
 langModelSubscribe (MkLangModel (MkWModel model)) update =
-    actionLiftView $ viewBindModel model Nothing (return ()) mempty $ \() _ -> runPinaforeAction update
+    actionLiftView $ viewBindModel model Nothing (return ()) mempty $ \() _ -> runAction update

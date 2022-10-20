@@ -14,12 +14,12 @@ import Shapes
 newtype LangHasMetadata =
     MkLangHasMetadata (Map Text Literal)
 
-hasMetadataGroundType :: PinaforeGroundType '[] LangHasMetadata
+hasMetadataGroundType :: QGroundType '[] LangHasMetadata
 hasMetadataGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHasMetadata)|]) "HasMetadata")
 
-instance HasPinaforeGroundType '[] LangHasMetadata where
-    pinaforeGroundType = hasMetadataGroundType
+instance HasQGroundType '[] LangHasMetadata where
+    qGroundType = hasMetadataGroundType
 
 mkHasMetadata :: [(Text, Literal)] -> LangHasMetadata
 mkHasMetadata pairs = MkLangHasMetadata $ mapFromList pairs

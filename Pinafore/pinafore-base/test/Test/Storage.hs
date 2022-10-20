@@ -20,30 +20,29 @@ data TestContext = MkTestContext
 testStorageCase :: String -> (TestContext -> IO ()) -> TestTree
 testStorageCase name action =
     testTree name $ do
-        storageRef <- makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
+        storageRef <- makeMemoryReference (MkQTableSubject [] [] [] []) $ \_ -> True
         let
-            getState :: IO PinaforeTableSubject
+            getState :: IO QTableSubject
             getState = runResource emptyResourceContext storageRef $ \aref -> refRead aref ReadWhole
             checkEmpty :: String -> IO ()
             checkEmpty msg = do
                 state <- getState
                 case state of
-                    MkPinaforeTableSubject [] [] [] [] -> return ()
-                    MkPinaforeTableSubject ps rs fs ls ->
+                    MkQTableSubject [] [] [] [] -> return ()
+                    MkQTableSubject ps rs fs ls ->
                         fail $ msg <> ": non-empty state: " <> show (length ps, length rs, length fs, length ls)
             checkNonEmpty :: String -> IO ()
             checkNonEmpty msg = do
                 state <- getState
                 case state of
-                    MkPinaforeTableSubject [] [] [] [] -> fail $ msg <> ": empty state"
+                    MkQTableSubject [] [] [] [] -> fail $ msg <> ": empty state"
                     _ -> return ()
             tableRef = convertReference storageRef
-            entityRef = pinaforeTableEntityReference tableRef
+            entityRef = qTableEntityReference tableRef
             putProperty :: forall s v. EntityAdapter s -> EntityAdapter v -> Predicate -> s -> Know v -> IO ()
             putProperty st vt p s kv =
                 runResource emptyResourceContext entityRef $ \aref ->
-                    pushOrFail "can't push table edit" noEditSource $
-                    refEdit aref $ pure $ MkPinaforeStorageEdit st vt p s kv
+                    pushOrFail "can't push table edit" noEditSource $ refEdit aref $ pure $ MkQStorageEdit st vt p s kv
             readProperty ::
                    forall s v. (Show v, Eq v)
                 => EntityAdapter s
@@ -53,24 +52,23 @@ testStorageCase name action =
                 -> Know v
                 -> IO ()
             readProperty st vt p s kv = do
-                e <- runResource emptyResourceContext entityRef $ \aref -> refRead aref $ PinaforeStorageReadGet st p s
+                e <- runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadGet st p s
                 case kv of
                     Known v -> do
                         assertEqual "entity" (entityAdapterConvert vt v) e
                         kv' <-
-                            runResource emptyResourceContext entityRef $ \aref ->
-                                refRead aref $ PinaforeStorageReadEntity vt e
+                            runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadEntity vt e
                         assertEqual "typed" (Known v) kv'
                     Unknown -> return ()
             readCount :: forall s v. EntityAdapter s -> EntityAdapter v -> Predicate -> v -> Int -> IO ()
             readCount st vt p v expcount = do
                 fset <-
                     runResource emptyResourceContext entityRef $ \aref ->
-                        refRead aref $ PinaforeStorageReadLookup p (entityAdapterConvert vt v)
+                        refRead aref $ QStorageReadLookup p (entityAdapterConvert vt v)
                 assertEqual "entity count" expcount $ length fset
                 tset <-
                     runResource emptyResourceContext entityRef $ \aref ->
-                        forf fset $ \e -> fmap knowToMaybe $ refRead aref $ PinaforeStorageReadEntity st e
+                        forf fset $ \e -> fmap knowToMaybe $ refRead aref $ QStorageReadEntity st e
                 assertEqual "typed count" expcount $ length tset
             testContext = MkTestContext {..}
         action testContext

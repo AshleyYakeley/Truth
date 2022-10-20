@@ -47,8 +47,8 @@ allOperatorNames test = let
     in mapMaybe getDocName $ mconcat $ fmap toList library
 
 data LibraryContext = MkLibraryContext
-    { lcLoadModule :: ModuleName -> PinaforeInterpreter (Maybe PinaforeModule)
+    { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
     }
 
-mkLibraryContext :: (?pinafore :: PinaforeContext) => FetchModule -> LibraryContext
+mkLibraryContext :: (?qcontext :: QContext) => FetchModule -> LibraryContext
 mkLibraryContext fetchModule = MkLibraryContext $ runFetchModule $ libraryFetchModule library <> fetchModule

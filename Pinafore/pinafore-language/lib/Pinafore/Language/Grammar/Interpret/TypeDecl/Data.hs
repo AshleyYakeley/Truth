@@ -64,7 +64,7 @@ withCCRTypeParam (RangeSyntaxTypeParameter np nq) cont =
 tParamToPolarArgument ::
        forall sv (t :: CCRVarianceKind sv) polarity. Is PolarityType polarity
     => CCRTypeParam sv t
-    -> CCRPolarArgumentShimWit (PinaforePolyShim Type) PinaforeType polarity sv t
+    -> CCRPolarArgumentShimWit (QPolyShim Type) QType polarity sv t
 tParamToPolarArgument (CoCCRTypeParam var) =
     case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv
@@ -107,17 +107,14 @@ paramsUnEndo (ConsCCRArguments p pp) tt = let
     in MkNestedMorphism ff
 
 getDataTypeMappingOrError ::
-       forall v n t. Name -> VarianceType v -> SymbolType n -> VarMapping t -> PinaforeInterpreter (Mapping n t)
+       forall v n t. Name -> VarianceType v -> SymbolType n -> VarMapping t -> QInterpreter (Mapping n t)
 getDataTypeMappingOrError tname vt var vm =
     case runVarMapping vm vt var of
         Nothing -> throw $ InterpretTypeDeclTypeVariableWrongPolarityError tname $ symbolTypeToName var
         Just vmap -> return vmap
 
 getCCRVariation ::
-       Name
-    -> CCRTypeParam sv a
-    -> VarMapping t
-    -> PinaforeInterpreter (CCRVarianceCategory KindFunction sv a a -> (t -> t))
+       Name -> CCRTypeParam sv a -> VarMapping t -> QInterpreter (CCRVarianceCategory KindFunction sv a a -> (t -> t))
 getCCRVariation tname (CoCCRTypeParam v) vm = do
     f <- getDataTypeMappingOrError tname CoVarianceType v vm
     return $ runMapping f
@@ -141,7 +138,7 @@ paramsCCRVMap p ff pp ab = assignCCRTypeParam @sv @a p $ assignCCRTypeParam @sv 
 assignDolanArgVars :: forall sv dv gt t a. CCRTypeParam sv t -> DolanVarianceMap dv (gt t) -> DolanVarianceMap dv (gt a)
 assignDolanArgVars p dvm = assignCCRTypeParam @sv @a p dvm
 
-getDolanVarianceMap :: Name -> CCRTypeParams dv gt t -> VarMapping t -> PinaforeInterpreter (DolanVarianceMap dv gt)
+getDolanVarianceMap :: Name -> CCRTypeParams dv gt t -> VarMapping t -> QInterpreter (DolanVarianceMap dv gt)
 getDolanVarianceMap _ NilCCRArguments _ = return NilDolanVarianceMap
 getDolanVarianceMap tname (ConsCCRArguments p pp) vm = do
     ff <- getCCRVariation tname p vm
@@ -149,15 +146,15 @@ getDolanVarianceMap tname (ConsCCRArguments p pp) vm = do
     return $ ConsDolanVarianceMap (MkCCRVariation Nothing $ paramsCCRVMap p ff pp) $ assignDolanArgVars p args
 
 data TypeConstruction dv gt extra =
-    forall x y. MkTypeConstruction (DolanVarianceMap dv gt -> extra -> PinaforeInterpreter x)
-                                   (x -> PinaforeInterpreter (GroundTypeFromTypeID dv gt y))
-                                   (PinaforeGroundType dv gt -> y -> PinaforeScopeInterpreter ())
+    forall x y. MkTypeConstruction (DolanVarianceMap dv gt -> extra -> QInterpreter x)
+                                   (x -> QInterpreter (GroundTypeFromTypeID dv gt y))
+                                   (QGroundType dv gt -> y -> QScopeInterpreter ())
 
 type GroundTypeFromTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 newtype GroundTypeFromTypeID dv gt y = MkGroundTypeFromTypeID
     { unGroundTypeFromTypeID :: forall (tid :: Nat).
                                     (IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid) =>
-                                            Name -> TypeIDType tid -> (PinaforeGroundType dv gt, y)
+                                            Name -> TypeIDType tid -> (QGroundType dv gt, y)
     }
 
 type GroundTypeMaker extra
@@ -176,7 +173,7 @@ data MatchingTypeID dv t where
 instance forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). Eq (MatchingTypeID dv t) where
     MkMatchingTypeID ta == MkMatchingTypeID tb = isJust $ testEquality ta tb
 
-newMatchingTypeID :: forall (dv :: DolanVariance). PinaforeInterpreter (Some (MatchingTypeID dv))
+newMatchingTypeID :: forall (dv :: DolanVariance). QInterpreter (Some (MatchingTypeID dv))
 newMatchingTypeID =
     withNewTypeID $ \(typeID :: _ tid) ->
         case unsafeIdentifyKind @_ @(DolanVarianceKind dv) typeID of
@@ -194,7 +191,7 @@ getConsSubtypeData ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv) extra.
        TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
-    -> PinaforeInterpreter [TypeData dv t]
+    -> QInterpreter [TypeData dv t]
 getConsSubtypeData _ (MkSyntaxWithDoc _ (ConstructorSyntaxConstructorOrSubtype _ _ _)) = return mempty
 getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
     ssubtid <- newMatchingTypeID @dv
@@ -210,7 +207,7 @@ getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubty
             return $ subTD : subtdata
 
 getConssSubtypeData ::
-       TypeData dv t -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> PinaforeInterpreter [TypeData dv t]
+       TypeData dv t -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> QInterpreter [TypeData dv t]
 getConssSubtypeData superTD conss = do
     tdatas <- for conss $ getConsSubtypeData superTD
     return $ mconcat tdatas
@@ -223,7 +220,7 @@ data Constructor dv t extra = MkConstructor
     , ctExtra :: extra
     }
 
-typeDataLookup :: [TypeData dv t] -> Name -> PinaforeInterpreter (TypeData dv t)
+typeDataLookup :: [TypeData dv t] -> Name -> QInterpreter (TypeData dv t)
 typeDataLookup [] _ = liftIO $ fail "type name not found"
 typeDataLookup (t:_) name
     | tdName t == name = return t
@@ -233,7 +230,7 @@ getConstructor ::
        [TypeData dv t]
     -> TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
-    -> PinaforeInterpreter [Constructor dv t extra]
+    -> QInterpreter [Constructor dv t extra]
 getConstructor _ typeNM (MkSyntaxWithDoc doc (ConstructorSyntaxConstructorOrSubtype consName stypes extra)) =
     return $ pure $ MkConstructor consName doc typeNM stypes extra
 getConstructor tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes)) = do
@@ -244,11 +241,11 @@ getConstructors ::
        [TypeData dv t]
     -> TypeData dv t
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
-    -> PinaforeInterpreter [Constructor dv t extra]
+    -> QInterpreter [Constructor dv t extra]
 getConstructors tdata typeNM syntaxConstructorList =
     fmap mconcat $ for syntaxConstructorList $ getConstructor tdata typeNM
 
-interpretConstructorTypes :: Constructor dv t extra -> PinaforeInterpreter (Some (ListType PinaforeNonpolarType))
+interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some (ListType PinaforeNonpolarType))
 interpretConstructorTypes c = do
     etypes <- for (ctInnerTypes c) interpretNonpolarType
     return $ assembleListType etypes
@@ -260,7 +257,7 @@ makeBox ::
     -> Markdown
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> GenCCRTypeParams dv
-    -> PinaforeInterpreter (PinaforeFixBox () ())
+    -> QInterpreter (QFixBox () ())
 makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
     stid <- newMatchingTypeID @dv
     case stid of
@@ -285,7 +282,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                         withRepresentative (ccrArgumentsType tparams) $
                         case gmaker mainTypeName tparams of
                             MkTypeConstruction mkx (mkgt :: x -> _ (_ y)) postregister -> let
-                                mainRegister :: x -> PinaforeScopeInterpreter ()
+                                mainRegister :: x -> QScopeInterpreter ()
                                 mainRegister x = do
                                     MkGroundTypeFromTypeID gttid <- lift $ mkgt x
                                     let (gt, y) = gttid mainTypeName mainTypeID
@@ -293,11 +290,11 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     postregister gt y
                                 mainConstruct ::
                                        ()
-                                    -> PinaforeScopeInterpreter ( x
-                                                                , ( x
-                                                                  , DolanVarianceMap dv maintype
-                                                                  , FixedList conscount (ConstructorCodec decltype)
-                                                                  , decltype -> TypeData dv maintype))
+                                    -> QScopeInterpreter ( x
+                                                         , ( x
+                                                           , DolanVarianceMap dv maintype
+                                                           , FixedList conscount (ConstructorCodec decltype)
+                                                           , decltype -> TypeData dv maintype))
                                 mainConstruct () = do
                                     constructorInnerTypes <- lift $ for constructorFixedList interpretConstructorTypes
                                     assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
@@ -330,26 +327,26 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                             mkx dvm $ toList $ liftA2 (,) codecs $ fmap ctExtra constructorFixedList
                                         return $ (x, (x, dvm, codecs, \t -> ctOuterType $ pickn t constructorFixedList))
                                 mainBox ::
-                                       PinaforeFixBox () ( x
-                                                         , DolanVarianceMap dv maintype
-                                                         , FixedList conscount (ConstructorCodec decltype)
-                                                         , decltype -> TypeData dv maintype)
+                                       QFixBox () ( x
+                                                  , DolanVarianceMap dv maintype
+                                                  , FixedList conscount (ConstructorCodec decltype)
+                                                  , decltype -> TypeData dv maintype)
                                 mainBox = mkFixBox mainRegister mainConstruct
-                                mainTypeBox :: PinaforeFixBox x (PinaforeGroundType dv maintype)
+                                mainTypeBox :: QFixBox x (QGroundType dv maintype)
                                 mainTypeBox =
                                     mkConstructFixBox $ \x -> do
                                         gtft <- lift $ mkgt x
                                         return $ fst $ unGroundTypeFromTypeID gtft mainTypeName mainTypeID
                                 getGroundType ::
-                                       PinaforeGroundType dv maintype
+                                       QGroundType dv maintype
                                     -> (decltype -> TypeData dv maintype)
                                     -> GroundTypeFromTypeID dv maintype y
                                     -> TypeData dv maintype
-                                    -> PinaforeGroundType dv maintype
+                                    -> QGroundType dv maintype
                                 getGroundType mainGroundType picktype (MkGroundTypeFromTypeID gttid) tdata =
                                     case tdID tdata of
                                         MkMatchingTypeID (typeID :: _ subtid) -> let
-                                            baseGroundType :: PinaforeGroundType dv maintype
+                                            baseGroundType :: QGroundType dv maintype
                                             (baseGroundType, _) = gttid (tdName tdata) typeID
                                             gds :: PinaforePolyGreatestDynamicSupertype dv maintype
                                             gds =
@@ -371,26 +368,26 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                    }
                                 registerConstructor ::
                                        Constructor dv maintype extra
-                                    -> ( PinaforeGroundType dv maintype
+                                    -> ( QGroundType dv maintype
                                        , decltype -> TypeData dv maintype
                                        , x
                                        , DolanVarianceMap dv maintype
                                        , ConstructorCodec decltype)
-                                    -> PinaforeScopeInterpreter ()
+                                    -> QScopeInterpreter ()
                                 registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor (MkListProductType lt) codec) = do
                                     gttid <- lift $ mkgt x
                                     let
-                                        groundType :: PinaforeGroundType dv maintype
+                                        groundType :: QGroundType dv maintype
                                         groundType =
                                             getGroundType mainGroundType picktype gttid $ ctOuterType constructor
                                         getargs ::
                                                forall polarity. Is PolarityType polarity
-                                            => DolanArgumentsShimWit PinaforePolyShim dv PinaforeType maintype polarity decltype
+                                            => DolanArgumentsShimWit QPolyShim dv QType maintype polarity decltype
                                         getargs =
                                             mapCCRArguments
-                                                @PinaforePolyShim
+                                                @QPolyShim
                                                 @CCRTypeParam
-                                                @(CCRPolarArgument PinaforeType polarity)
+                                                @(CCRPolarArgument QType polarity)
                                                 @dv
                                                 @polarity
                                                 @maintype
@@ -400,16 +397,16 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     case (getargs @'Positive, getargs @'Negative) of
                                         (MkShimWit posargs posconv, MkShimWit negargs negconv) -> do
                                             let
-                                                ctfpos :: PinaforeShimWit 'Positive decltype
+                                                ctfpos :: QShimWit 'Positive decltype
                                                 ctfpos =
                                                     mapShimWit posconv $
                                                     typeToDolan $ MkDolanGroundedType groundType posargs
-                                                ctfneg :: PinaforeShimWit 'Negative decltype
+                                                ctfneg :: QShimWit 'Negative decltype
                                                 ctfneg =
                                                     mapShimWit negconv $
                                                     typeToDolan $ MkDolanGroundedType groundType negargs
-                                            ltp <- return $ mapListType (nonpolarToPositive @PinaforeTypeSystem) lt
-                                            ltn <- return $ mapListType (nonpolarToNegative @PinaforeTypeSystem) lt
+                                            ltp <- return $ mapListType (nonpolarToPositive @QTypeSystem) lt
+                                            ltn <- return $ mapListType (nonpolarToNegative @QTypeSystem) lt
                                             let
                                                 expr =
                                                     qConstExprAny $
@@ -419,24 +416,24 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 toExpressionPatternConstructor pc
                                 constructorBox ::
                                        Constructor dv maintype extra
-                                    -> PinaforeFixBox ( PinaforeGroundType dv maintype
-                                                      , decltype -> TypeData dv maintype
-                                                      , x
-                                                      , DolanVarianceMap dv maintype
-                                                      , ConstructorCodec decltype) ()
+                                    -> QFixBox ( QGroundType dv maintype
+                                               , decltype -> TypeData dv maintype
+                                               , x
+                                               , DolanVarianceMap dv maintype
+                                               , ConstructorCodec decltype) ()
                                 constructorBox constructor = mkConstructFixBox $ registerConstructor constructor
                                 subtypeRegister ::
                                        TypeData dv maintype
-                                    -> (PinaforeGroundType dv maintype, decltype -> TypeData dv maintype, x)
-                                    -> PinaforeScopeInterpreter ()
+                                    -> (QGroundType dv maintype, decltype -> TypeData dv maintype, x)
+                                    -> QScopeInterpreter ()
                                 subtypeRegister tdata (~(mainGroundType, picktype, x)) = do
                                     gttid <- lift $ mkgt x
                                     let
-                                        subGroundType :: PinaforeGroundType dv maintype
+                                        subGroundType :: QGroundType dv maintype
                                         subGroundType = getGroundType mainGroundType picktype gttid tdata
                                     registerType (tdName tdata) (tdDoc tdata) subGroundType
                                     for_ (tdSupertype tdata) $ \supertdata -> let
-                                        superGroundType :: PinaforeGroundType dv maintype
+                                        superGroundType :: QGroundType dv maintype
                                         superGroundType = getGroundType mainGroundType picktype gttid supertdata
                                         in registerSubtypeConversion $
                                            MkSubtypeConversionEntry
@@ -446,9 +443,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                identitySubtypeConversion
                                 subtypeBox ::
                                        TypeData dv maintype
-                                    -> PinaforeFixBox ( PinaforeGroundType dv maintype
-                                                      , decltype -> TypeData dv maintype
-                                                      , x) ()
+                                    -> QFixBox (QGroundType dv maintype, decltype -> TypeData dv maintype, x) ()
                                 subtypeBox tdata = mkRegisterFixBox $ subtypeRegister tdata
                                 in return $
                                    proc () -> do
@@ -465,7 +460,7 @@ makeDeclTypeBox ::
     -> Markdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
-    -> PinaforeInterpreter (PinaforeFixBox () ())
+    -> QInterpreter (QFixBox () ())
 makeDeclTypeBox gmaker name doc params syntaxConstructorList =
     case getAnyCCRTypeParams params of
         MkAnyCCRTypeParams gtparams -> makeBox gmaker name doc syntaxConstructorList gtparams
@@ -478,9 +473,9 @@ makeDataGroundType ::
 makeDataGroundType _ tparams = let
     dvt :: DolanVarianceType dv
     dvt = ccrArgumentsType tparams
-    mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> PinaforeInterpreter (DolanVarianceMap dv gt)
+    mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (DolanVarianceMap dv gt)
     mkx dvm _ = return dvm
-    mkgt :: DolanVarianceMap dv gt -> PinaforeInterpreter (GroundTypeFromTypeID dv gt ())
+    mkgt :: DolanVarianceMap dv gt -> QInterpreter (GroundTypeFromTypeID dv gt ())
     mkgt dvm =
         return $
         MkGroundTypeFromTypeID $ \name mainTypeID -> let
@@ -501,5 +496,5 @@ makeDataTypeBox ::
     -> Markdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxDatatypeConstructorOrSubtype]
-    -> PinaforeInterpreter (PinaforeFixBox () ())
+    -> QInterpreter (QFixBox () ())
 makeDataTypeBox = makeDeclTypeBox makeDataGroundType

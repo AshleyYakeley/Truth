@@ -3,11 +3,11 @@ module Pinafore.Storage.Table
     , Predicate(..)
     , Entity(..)
     , RefCount
-    , PinaforeTableSubject(..)
-    , PinaforeTableRead(..)
-    , PinaforeTableEdit(..)
-    , PinaforeTableUpdate
-    , pinaforeTableEntityReference
+    , QTableSubject(..)
+    , QTableRead(..)
+    , QTableEdit(..)
+    , QTableUpdate
+    , qTableEntityReference
     ) where
 
 import Changes.Core
@@ -16,82 +16,81 @@ import Shapes
 
 type RefCount = Int
 
-data PinaforeTableRead t where
-    PinaforeTableReadPropertyGet :: Predicate -> Entity -> PinaforeTableRead (Maybe Entity)
-    PinaforeTableReadPropertyLookup :: Predicate -> Entity -> PinaforeTableRead (FiniteSet Entity)
-    PinaforeTableReadEntityRefCount :: Entity -> PinaforeTableRead (Maybe RefCount)
-    PinaforeTableReadFactGet :: Predicate -> Entity -> PinaforeTableRead (Maybe Entity)
-    PinaforeTableReadLiteralGet :: Entity -> PinaforeTableRead (Maybe Literal)
+data QTableRead t where
+    QTableReadPropertyGet :: Predicate -> Entity -> QTableRead (Maybe Entity)
+    QTableReadPropertyLookup :: Predicate -> Entity -> QTableRead (FiniteSet Entity)
+    QTableReadEntityRefCount :: Entity -> QTableRead (Maybe RefCount)
+    QTableReadFactGet :: Predicate -> Entity -> QTableRead (Maybe Entity)
+    QTableReadLiteralGet :: Entity -> QTableRead (Maybe Literal)
 
-instance Show (PinaforeTableRead t) where
-    show (PinaforeTableReadPropertyGet p s) = "prop get " ++ show p ++ " of " ++ show s
-    show (PinaforeTableReadPropertyLookup p v) = "prop lookup " ++ show p ++ " for " ++ show v
-    show (PinaforeTableReadEntityRefCount v) = "entity ref count " ++ show v
-    show (PinaforeTableReadFactGet p s) = "fact get " ++ show p ++ " of " ++ show s
-    show (PinaforeTableReadLiteralGet v) = "literal get " ++ show v
+instance Show (QTableRead t) where
+    show (QTableReadPropertyGet p s) = "prop get " ++ show p ++ " of " ++ show s
+    show (QTableReadPropertyLookup p v) = "prop lookup " ++ show p ++ " for " ++ show v
+    show (QTableReadEntityRefCount v) = "entity ref count " ++ show v
+    show (QTableReadFactGet p s) = "fact get " ++ show p ++ " of " ++ show s
+    show (QTableReadLiteralGet v) = "literal get " ++ show v
 
-instance WitnessConstraint Show PinaforeTableRead where
-    witnessConstraint (PinaforeTableReadPropertyGet _ _) = Dict
-    witnessConstraint (PinaforeTableReadPropertyLookup _ _) = Dict
-    witnessConstraint (PinaforeTableReadEntityRefCount _) = Dict
-    witnessConstraint (PinaforeTableReadFactGet _ _) = Dict
-    witnessConstraint (PinaforeTableReadLiteralGet _) = Dict
+instance WitnessConstraint Show QTableRead where
+    witnessConstraint (QTableReadPropertyGet _ _) = Dict
+    witnessConstraint (QTableReadPropertyLookup _ _) = Dict
+    witnessConstraint (QTableReadEntityRefCount _) = Dict
+    witnessConstraint (QTableReadFactGet _ _) = Dict
+    witnessConstraint (QTableReadLiteralGet _) = Dict
 
-instance AllConstraint Show PinaforeTableRead where
+instance AllConstraint Show QTableRead where
     allConstraint = Dict
 
-data PinaforeTableEdit where
-    PinaforeTableEditPropertySet :: Predicate -> Entity -> Maybe Entity -> PinaforeTableEdit -- pred subj mval
-    PinaforeTableEditEntityRefCount :: Entity -> Maybe RefCount -> PinaforeTableEdit -- pred subj mval
-    PinaforeTableEditFactSet :: Predicate -> Entity -> Maybe Entity -> PinaforeTableEdit -- pred subj mval
-    PinaforeTableEditLiteralSet :: Entity -> Maybe Literal -> PinaforeTableEdit
+data QTableEdit where
+    QTableEditPropertySet :: Predicate -> Entity -> Maybe Entity -> QTableEdit -- pred subj mval
+    QTableEditEntityRefCount :: Entity -> Maybe RefCount -> QTableEdit -- pred subj mval
+    QTableEditFactSet :: Predicate -> Entity -> Maybe Entity -> QTableEdit -- pred subj mval
+    QTableEditLiteralSet :: Entity -> Maybe Literal -> QTableEdit
 
-instance Show PinaforeTableEdit where
-    show (PinaforeTableEditPropertySet p s mv) = "prop set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
-    show (PinaforeTableEditEntityRefCount v rc) = "entity count " ++ show v ++ " to " ++ show rc
-    show (PinaforeTableEditFactSet p s v) = "fact set " ++ show p ++ " of " ++ show s ++ " is " ++ show v
-    show (PinaforeTableEditLiteralSet v l) = "literal set " ++ show v ++ " is " ++ show l
+instance Show QTableEdit where
+    show (QTableEditPropertySet p s mv) = "prop set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
+    show (QTableEditEntityRefCount v rc) = "entity count " ++ show v ++ " to " ++ show rc
+    show (QTableEditFactSet p s v) = "fact set " ++ show p ++ " of " ++ show s ++ " is " ++ show v
+    show (QTableEditLiteralSet v l) = "literal set " ++ show v ++ " is " ++ show l
 
-data PinaforeTableSubject = MkPinaforeTableSubject
+data QTableSubject = MkQTableSubject
     { ptsPredicates :: [(Predicate, Entity, Entity)]
     , ptsRefCounts :: [(Entity, RefCount)]
     , ptsFacts :: [(Predicate, Entity, Entity)]
     , ptsLiterals :: [(Entity, Literal)]
     }
 
-instance SubjectReader PinaforeTableRead where
-    type ReaderSubject PinaforeTableRead = PinaforeTableSubject
-    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadPropertyGet rp rs) =
+instance SubjectReader QTableRead where
+    type ReaderSubject QTableRead = QTableSubject
+    subjectToRead MkQTableSubject {..} (QTableReadPropertyGet rp rs) =
         listToMaybe $ [v | (p, s, v) <- ptsPredicates, p == rp && s == rs]
-    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadPropertyLookup rp rv) =
+    subjectToRead MkQTableSubject {..} (QTableReadPropertyLookup rp rv) =
         MkFiniteSet [s | (p, s, v) <- ptsPredicates, p == rp, v == rv]
-    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadEntityRefCount rv) =
+    subjectToRead MkQTableSubject {..} (QTableReadEntityRefCount rv) =
         listToMaybe $ [c | (v, c) <- ptsRefCounts, v == rv]
-    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadFactGet rp rs) =
+    subjectToRead MkQTableSubject {..} (QTableReadFactGet rp rs) =
         listToMaybe $ [v | (p, s, v) <- ptsFacts, p == rp && s == rs]
-    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadLiteralGet rv) =
-        listToMaybe [l | (v, l) <- ptsLiterals, v == rv]
+    subjectToRead MkQTableSubject {..} (QTableReadLiteralGet rv) = listToMaybe [l | (v, l) <- ptsLiterals, v == rv]
 
-instance Floating PinaforeTableEdit PinaforeTableEdit
+instance Floating QTableEdit QTableEdit
 
-type instance EditReader PinaforeTableEdit = PinaforeTableRead
+type instance EditReader QTableEdit = QTableRead
 
-instance ApplicableEdit PinaforeTableEdit where
-    applyEdit (PinaforeTableEditPropertySet p s mv) _ (PinaforeTableReadPropertyGet p' s')
+instance ApplicableEdit QTableEdit where
+    applyEdit (QTableEditPropertySet p s mv) _ (QTableReadPropertyGet p' s')
         | p == p' && s == s' = return mv
-    applyEdit (PinaforeTableEditPropertySet p s mv) mr (PinaforeTableReadPropertyLookup p' v')
+    applyEdit (QTableEditPropertySet p s mv) mr (QTableReadPropertyLookup p' v')
         | p == p' = do
-            fs <- mr $ PinaforeTableReadPropertyLookup p' v'
+            fs <- mr $ QTableReadPropertyLookup p' v'
             return $
                 case mv of
                     Just v
                         | v == v' -> insertSet s fs
                     _ -> deleteSet s fs
-    applyEdit (PinaforeTableEditEntityRefCount v mc) _ (PinaforeTableReadEntityRefCount v')
+    applyEdit (QTableEditEntityRefCount v mc) _ (QTableReadEntityRefCount v')
         | v == v' = return mc
-    applyEdit (PinaforeTableEditFactSet p s mv) _ (PinaforeTableReadFactGet p' s')
+    applyEdit (QTableEditFactSet p s mv) _ (QTableReadFactGet p' s')
         | p == p' && s == s' = return mv
-    applyEdit (PinaforeTableEditLiteralSet v ml) _ (PinaforeTableReadLiteralGet v')
+    applyEdit (QTableEditLiteralSet v ml) _ (QTableReadLiteralGet v')
         | v == v' = return ml
     applyEdit _ mr rt = mr rt
 
@@ -120,44 +119,44 @@ replaceOrAdd f mitem aa =
                 Nothing -> aa'
                 Just a -> a : aa'
 
-instance SubjectMapEdit PinaforeTableEdit where
+instance SubjectMapEdit QTableEdit where
     mapSubjectEdits =
-        mapEditToMapEdits $ \edit (MkPinaforeTableSubject oldPredicates oldRefCounts oldFacts oldLiterals) ->
+        mapEditToMapEdits $ \edit (MkQTableSubject oldPredicates oldRefCounts oldFacts oldLiterals) ->
             case edit of
-                PinaforeTableEditPropertySet prd (checkEntity "store.prop.s" -> s) (fmap (checkEntity "store.prop.v") -> mv) -> let
+                QTableEditPropertySet prd (checkEntity "store.prop.s" -> s) (fmap (checkEntity "store.prop.v") -> mv) -> let
                     newPredicates =
                         replaceOrAdd
                             (\(prd', s', _) -> (prd' == prd) && (s == s'))
                             (fmap (\v -> (prd, s, v)) mv)
                             oldPredicates
-                    in return $ MkPinaforeTableSubject newPredicates oldRefCounts oldFacts oldLiterals
-                PinaforeTableEditEntityRefCount v mrc -> let
+                    in return $ MkQTableSubject newPredicates oldRefCounts oldFacts oldLiterals
+                QTableEditEntityRefCount v mrc -> let
                     newRefCounts = replaceOrAdd (\(v', _) -> v == v') (fmap (\rc -> (v, rc)) mrc) oldRefCounts
-                    in return $ MkPinaforeTableSubject oldPredicates newRefCounts oldFacts oldLiterals
-                PinaforeTableEditFactSet prd (checkEntity "store.fact.s" -> s) (fmap (checkEntity "store.fact.v") -> mv) -> let
+                    in return $ MkQTableSubject oldPredicates newRefCounts oldFacts oldLiterals
+                QTableEditFactSet prd (checkEntity "store.fact.s" -> s) (fmap (checkEntity "store.fact.v") -> mv) -> let
                     newFacts =
                         replaceOrAdd
                             (\(prd', s', _) -> (prd' == prd) && (s == s'))
                             (fmap (\v -> (prd, s, v)) mv)
                             oldFacts
-                    in return $ MkPinaforeTableSubject oldPredicates oldRefCounts newFacts oldLiterals
-                PinaforeTableEditLiteralSet (checkEntity "store.literal.v" -> v) ml -> let
+                    in return $ MkQTableSubject oldPredicates oldRefCounts newFacts oldLiterals
+                QTableEditLiteralSet (checkEntity "store.literal.v" -> v) ml -> let
                     newLiterals = replaceOrAdd (\(v', _) -> v == v') (fmap (\l -> (v, l)) ml) oldLiterals
-                    in return $ MkPinaforeTableSubject oldPredicates oldRefCounts oldFacts newLiterals
+                    in return $ MkQTableSubject oldPredicates oldRefCounts oldFacts newLiterals
 
-instance InvertibleEdit PinaforeTableEdit where
-    invertEdit (PinaforeTableEditPropertySet p s _) mr = do
-        mv <- mr $ PinaforeTableReadPropertyGet p s
-        return [PinaforeTableEditPropertySet p s mv]
-    invertEdit (PinaforeTableEditEntityRefCount v _) mr = do
-        mrc <- mr $ PinaforeTableReadEntityRefCount v
-        return [PinaforeTableEditEntityRefCount v mrc]
-    invertEdit (PinaforeTableEditFactSet p s _) mr = do
-        mv <- mr $ PinaforeTableReadFactGet p s
-        return [PinaforeTableEditFactSet p s mv]
-    invertEdit (PinaforeTableEditLiteralSet v _) mr = do
-        ml <- mr $ PinaforeTableReadLiteralGet v
-        return [PinaforeTableEditLiteralSet v ml]
+instance InvertibleEdit QTableEdit where
+    invertEdit (QTableEditPropertySet p s _) mr = do
+        mv <- mr $ QTableReadPropertyGet p s
+        return [QTableEditPropertySet p s mv]
+    invertEdit (QTableEditEntityRefCount v _) mr = do
+        mrc <- mr $ QTableReadEntityRefCount v
+        return [QTableEditEntityRefCount v mrc]
+    invertEdit (QTableEditFactSet p s _) mr = do
+        mv <- mr $ QTableReadFactGet p s
+        return [QTableEditFactSet p s mv]
+    invertEdit (QTableEditLiteralSet v _) mr = do
+        ml <- mr $ QTableReadLiteralGet v
+        return [QTableEditLiteralSet v ml]
 
 data PropertyCacheKey cache t ct where
     GetPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey Entity (Maybe t)))
@@ -168,57 +167,54 @@ instance Eq t => TestEquality (PropertyCacheKey cache t) where
     testEquality LookupPropertyCacheKey LookupPropertyCacheKey = Just Refl
     testEquality _ _ = Nothing
 
-data PinaforeTableEditCacheKey cache ct where
-    PropertyPinaforeTableEditCacheKey
-        :: Predicate -> PinaforeTableEditCacheKey cache (cache (PropertyCacheKey cache Entity))
-    RefCountPinaforeTableEditCacheKey
-        :: PinaforeTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe RefCount)))
-    FactPinaforeTableEditCacheKey
-        :: Predicate -> PinaforeTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe Entity)))
-    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe Literal)))
+data QTableEditCacheKey cache ct where
+    PropertyQTableEditCacheKey :: Predicate -> QTableEditCacheKey cache (cache (PropertyCacheKey cache Entity))
+    RefCountQTableEditCacheKey :: QTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe RefCount)))
+    FactQTableEditCacheKey :: Predicate -> QTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe Entity)))
+    LiteralQTableEditCacheKey :: QTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe Literal)))
 
-instance TestEquality (PinaforeTableEditCacheKey cache) where
-    testEquality (PropertyPinaforeTableEditCacheKey p1) (PropertyPinaforeTableEditCacheKey p2)
+instance TestEquality (QTableEditCacheKey cache) where
+    testEquality (PropertyQTableEditCacheKey p1) (PropertyQTableEditCacheKey p2)
         | p1 == p2 = Just Refl
-    testEquality RefCountPinaforeTableEditCacheKey RefCountPinaforeTableEditCacheKey = Just Refl
-    testEquality (FactPinaforeTableEditCacheKey p1) (FactPinaforeTableEditCacheKey p2)
+    testEquality RefCountQTableEditCacheKey RefCountQTableEditCacheKey = Just Refl
+    testEquality (FactQTableEditCacheKey p1) (FactQTableEditCacheKey p2)
         | p1 == p2 = Just Refl
-    testEquality LiteralPinaforeTableEditCacheKey LiteralPinaforeTableEditCacheKey = Just Refl
+    testEquality LiteralQTableEditCacheKey LiteralQTableEditCacheKey = Just Refl
     testEquality _ _ = Nothing
 
-instance CacheableEdit PinaforeTableEdit where
-    type EditCacheKey cache PinaforeTableEdit = PinaforeTableEditCacheKey cache
-    editCacheAdd (PinaforeTableReadPropertyGet p s) mv =
-        subcacheModify (PropertyPinaforeTableEditCacheKey p) $
+instance CacheableEdit QTableEdit where
+    type EditCacheKey cache QTableEdit = QTableEditCacheKey cache
+    editCacheAdd (QTableReadPropertyGet p s) mv =
+        subcacheModify (PropertyQTableEditCacheKey p) $
         subcacheModify GetPropertyCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
-    editCacheAdd (PinaforeTableReadPropertyLookup p v) fs =
-        subcacheModify (PropertyPinaforeTableEditCacheKey p) $
+    editCacheAdd (QTableReadPropertyLookup p v) fs =
+        subcacheModify (PropertyQTableEditCacheKey p) $
         subcacheModify LookupPropertyCacheKey $ cacheAdd (MkSimpleCacheKey v) fs
-    editCacheAdd (PinaforeTableReadEntityRefCount v) mv =
-        subcacheModify RefCountPinaforeTableEditCacheKey $ cacheAdd (MkSimpleCacheKey v) mv
-    editCacheAdd (PinaforeTableReadFactGet p s) mv =
-        subcacheModify (FactPinaforeTableEditCacheKey p) $ cacheAdd (MkSimpleCacheKey s) mv
-    editCacheAdd (PinaforeTableReadLiteralGet s) mv =
-        subcacheModify LiteralPinaforeTableEditCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
-    editCacheLookup (PinaforeTableReadPropertyGet p s) cache = do
-        subcache1 <- cacheLookup (PropertyPinaforeTableEditCacheKey p) cache
+    editCacheAdd (QTableReadEntityRefCount v) mv =
+        subcacheModify RefCountQTableEditCacheKey $ cacheAdd (MkSimpleCacheKey v) mv
+    editCacheAdd (QTableReadFactGet p s) mv =
+        subcacheModify (FactQTableEditCacheKey p) $ cacheAdd (MkSimpleCacheKey s) mv
+    editCacheAdd (QTableReadLiteralGet s) mv =
+        subcacheModify LiteralQTableEditCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
+    editCacheLookup (QTableReadPropertyGet p s) cache = do
+        subcache1 <- cacheLookup (PropertyQTableEditCacheKey p) cache
         subcache2 <- cacheLookup GetPropertyCacheKey subcache1
         cacheLookup (MkSimpleCacheKey s) subcache2
-    editCacheLookup (PinaforeTableReadPropertyLookup p v) cache = do
-        subcache1 <- cacheLookup (PropertyPinaforeTableEditCacheKey p) cache
+    editCacheLookup (QTableReadPropertyLookup p v) cache = do
+        subcache1 <- cacheLookup (PropertyQTableEditCacheKey p) cache
         subcache2 <- cacheLookup LookupPropertyCacheKey subcache1
         cacheLookup (MkSimpleCacheKey v) subcache2
-    editCacheLookup (PinaforeTableReadEntityRefCount v) cache = do
-        subcache1 <- cacheLookup RefCountPinaforeTableEditCacheKey cache
+    editCacheLookup (QTableReadEntityRefCount v) cache = do
+        subcache1 <- cacheLookup RefCountQTableEditCacheKey cache
         cacheLookup (MkSimpleCacheKey v) subcache1
-    editCacheLookup (PinaforeTableReadFactGet p s) cache = do
-        subcache1 <- cacheLookup (FactPinaforeTableEditCacheKey p) cache
+    editCacheLookup (QTableReadFactGet p s) cache = do
+        subcache1 <- cacheLookup (FactQTableEditCacheKey p) cache
         cacheLookup (MkSimpleCacheKey s) subcache1
-    editCacheLookup (PinaforeTableReadLiteralGet s) cache = do
-        subcache1 <- cacheLookup LiteralPinaforeTableEditCacheKey cache
+    editCacheLookup (QTableReadLiteralGet s) cache = do
+        subcache1 <- cacheLookup LiteralQTableEditCacheKey cache
         cacheLookup (MkSimpleCacheKey s) subcache1
-    editCacheUpdate (PinaforeTableEditPropertySet p s mv) =
-        subcacheModify (PropertyPinaforeTableEditCacheKey p) $ do
+    editCacheUpdate (QTableEditPropertySet p s mv) =
+        subcacheModify (PropertyQTableEditCacheKey p) $ do
             subcacheModify GetPropertyCacheKey $ cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just mv
             subcacheModify LookupPropertyCacheKey $
                 cacheTraverse $ \(MkSimpleCacheKey v') ss' ->
@@ -229,39 +225,39 @@ instance CacheableEdit PinaforeTableEdit where
                          else deleteKey)
                         s
                         ss'
-    editCacheUpdate (PinaforeTableEditEntityRefCount v t) =
-        subcacheModify RefCountPinaforeTableEditCacheKey $ do cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just t
-    editCacheUpdate (PinaforeTableEditFactSet prd s t) =
-        subcacheModify (FactPinaforeTableEditCacheKey prd) $ do cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just t
-    editCacheUpdate (PinaforeTableEditLiteralSet v t) =
-        subcacheModify LiteralPinaforeTableEditCacheKey $ do cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just t
+    editCacheUpdate (QTableEditEntityRefCount v t) =
+        subcacheModify RefCountQTableEditCacheKey $ do cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just t
+    editCacheUpdate (QTableEditFactSet prd s t) =
+        subcacheModify (FactQTableEditCacheKey prd) $ do cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just t
+    editCacheUpdate (QTableEditLiteralSet v t) =
+        subcacheModify LiteralQTableEditCacheKey $ do cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just t
 
 -- can't be a Lens, because reads can cause edits
-pinaforeTableEntityReference :: Reference PinaforeTableEdit -> Reference PinaforeStorageEdit
-pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) =
+qTableEntityReference :: Reference QTableEdit -> Reference QStorageEdit
+qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) =
     case resourceRunnerUnliftDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
                 Dict ->
                     case transStackDict @MonadFail @tt @IO of
                         Dict -> let
-                            tablePush :: EditSource -> PinaforeTableEdit -> ApplyStack tt IO ()
+                            tablePush :: EditSource -> QTableEdit -> ApplyStack tt IO ()
                             tablePush esrc edit = pushOrFail "can't push table edit" esrc $ tableMPush $ pure edit
                             acquireEntity :: EditSource -> Entity -> ApplyStack tt IO ()
                             acquireEntity esrc entity = do
-                                mrc <- tableRead $ PinaforeTableReadEntityRefCount entity
+                                mrc <- tableRead $ QTableReadEntityRefCount entity
                                 newrc <-
                                     return $
                                     case mrc of
                                         Nothing -> 1
                                         Just oldrc -> succ oldrc
-                                tablePush esrc $ PinaforeTableEditEntityRefCount entity $ Just newrc
+                                tablePush esrc $ QTableEditEntityRefCount entity $ Just newrc
                             releaseByFact ::
                                    forall t. EditSource -> FieldStorer 'MultipleMode t -> Entity -> ApplyStack tt IO ()
                             releaseByFact esrc (MkFieldStorer p subdef) entity = do
-                                msubv <- tableRead $ PinaforeTableReadFactGet p entity
+                                msubv <- tableRead $ QTableReadFactGet p entity
                                 for_ msubv $ \subv -> releaseByEntity esrc subdef subv
-                                tablePush esrc $ PinaforeTableEditFactSet p entity Nothing
+                                tablePush esrc $ QTableEditFactSet p entity Nothing
                             releaseByConstructor ::
                                    forall t.
                                    EditSource
@@ -272,19 +268,18 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                             releaseByConstructor _ LiteralConstructorStorer entity
                                 | Just _ <- entityToLiteral entity = return ()
                             releaseByConstructor esrc LiteralConstructorStorer entity =
-                                tablePush esrc $ PinaforeTableEditLiteralSet entity Nothing
+                                tablePush esrc $ QTableEditLiteralSet entity Nothing
                             releaseByConstructor esrc (ConstructorConstructorStorer _ facts) entity =
                                 listTypeFor_ facts $ \fact -> releaseByFact esrc fact entity
                             releaseByEntity ::
                                    forall t. EditSource -> EntityStorer 'MultipleMode t -> Entity -> ApplyStack tt IO ()
                             releaseByEntity esrc (MkEntityStorer css) entity = do
-                                mrc <- tableRead $ PinaforeTableReadEntityRefCount entity
+                                mrc <- tableRead $ QTableReadEntityRefCount entity
                                 case mrc of
                                     Just 1 -> do
-                                        tablePush esrc $ PinaforeTableEditEntityRefCount entity Nothing
+                                        tablePush esrc $ QTableEditEntityRefCount entity Nothing
                                         for_ css $ \(MkKnowShim def _) -> releaseByConstructor esrc def entity
-                                    Just oldrc ->
-                                        tablePush esrc $ PinaforeTableEditEntityRefCount entity $ Just $ pred oldrc
+                                    Just oldrc -> tablePush esrc $ QTableEditEntityRefCount entity $ Just $ pred oldrc
                                     Nothing -> return ()
                             releaseByAdapter :: forall t. EditSource -> EntityAdapter t -> Entity -> ApplyStack tt IO ()
                             releaseByAdapter esrc vtype entity =
@@ -298,11 +293,11 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                 -> ApplyStack tt IO ()
                             setFact esrc (MkFieldStorer p subdef) v t = do
                                 let subv = entityStorerToEntity subdef t
-                                moldsub <- tableRead $ PinaforeTableReadFactGet p v
+                                moldsub <- tableRead $ QTableReadFactGet p v
                                 case moldsub of
                                     Just _ -> return ()
                                     Nothing -> do
-                                        tablePush esrc $ PinaforeTableEditFactSet p v $ Just subv
+                                        tablePush esrc $ QTableEditFactSet p v $ Just subv
                                         acquireEntity esrc subv
                                 setEntity esrc subdef subv t
                             setFacts ::
@@ -327,7 +322,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                             setConstructor _ LiteralConstructorStorer v _
                                 | Just _ <- entityToLiteral v = return ()
                             setConstructor esrc LiteralConstructorStorer v l =
-                                tablePush esrc $ PinaforeTableEditLiteralSet v $ Just l
+                                tablePush esrc $ QTableEditLiteralSet v $ Just l
                             setConstructor esrc (ConstructorConstructorStorer _ facts) v t = setFacts esrc facts v t
                             setEntity ::
                                    forall (t :: Type).
@@ -341,12 +336,12 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                             setEntityFromAdapter esrc entity ea t = do
                                 case entityAdapterToDefinition ea t of
                                     MkSomeOf def tt -> setEntity esrc def entity tt
-                            doEntityEdit :: EditSource -> PinaforeStorageEdit -> ApplyStack tt IO ()
-                            doEntityEdit esrc (MkPinaforeStorageEdit stype vtype p s (Known v)) = do
+                            doEntityEdit :: EditSource -> QStorageEdit -> ApplyStack tt IO ()
+                            doEntityEdit esrc (MkQStorageEdit stype vtype p s (Known v)) = do
                                 let
                                     se = entityAdapterConvert stype s
                                     ve = entityAdapterConvert vtype v
-                                mroldv <- tableRead $ PinaforeTableReadPropertyGet p se
+                                mroldv <- tableRead $ QTableReadPropertyGet p se
                                 case mroldv of
                                     Just oldv
                                         | oldv == ve -> return ()
@@ -359,24 +354,23 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                         setEntityFromAdapter esrc ve vtype v
                                         acquireEntity esrc ve
                                         releaseByAdapter esrc vtype oldv
-                                tablePush esrc $ PinaforeTableEditPropertySet p se $ Just ve
-                            doEntityEdit esrc (MkPinaforeStorageEdit stype vtype p s Unknown) = do
+                                tablePush esrc $ QTableEditPropertySet p se $ Just ve
+                            doEntityEdit esrc (MkQStorageEdit stype vtype p s Unknown) = do
                                 let se = entityAdapterConvert stype s
-                                mroldv <- tableRead $ PinaforeTableReadPropertyGet p se
+                                mroldv <- tableRead $ QTableReadPropertyGet p se
                                 case mroldv of
                                     Nothing -> return ()
                                     Just oldv -> do
                                         releaseByAdapter esrc stype se
                                         releaseByAdapter esrc vtype oldv
-                                        tablePush esrc $ PinaforeTableEditPropertySet p se Nothing
+                                        tablePush esrc $ QTableEditPropertySet p se Nothing
                             readFact ::
                                    forall (t :: Type).
                                    FieldStorer 'MultipleMode t
                                 -> Entity
                                 -> ComposeInner Know (ApplyStack tt IO) t
                             readFact (MkFieldStorer p subdef) entity = do
-                                subentity <-
-                                    MkComposeInner $ fmap maybeToKnow $ tableRead $ PinaforeTableReadFactGet p entity
+                                subentity <- MkComposeInner $ fmap maybeToKnow $ tableRead $ QTableReadFactGet p entity
                                 readEntity subdef subentity
                             readFacts ::
                                    forall (t :: [Type]).
@@ -397,7 +391,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                             readConstructor LiteralConstructorStorer entity
                                 | Just lit <- entityToLiteral entity = return lit
                             readConstructor LiteralConstructorStorer entity =
-                                MkComposeInner $ fmap maybeToKnow $ tableRead $ PinaforeTableReadLiteralGet entity
+                                MkComposeInner $ fmap maybeToKnow $ tableRead $ QTableReadLiteralGet entity
                             readConstructor (ConstructorConstructorStorer _ facts) entity = readFacts facts entity
                             firstKnown :: MonadPlus m => [a] -> (a -> m b) -> m b
                             firstKnown [] _ = empty
@@ -411,24 +405,22 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                 firstKnown css $ \(MkKnowShim def f) -> do
                                     dt <- readConstructor def entity
                                     liftInner $ f dt
-                            refRead :: Readable (ApplyStack tt IO) PinaforeStorageRead
-                            refRead (PinaforeStorageReadGet stype prd subj) = do
-                                mval <- tableRead $ PinaforeTableReadPropertyGet prd $ entityAdapterConvert stype subj
+                            refRead :: Readable (ApplyStack tt IO) QStorageRead
+                            refRead (QStorageReadGet stype prd subj) = do
+                                mval <- tableRead $ QTableReadPropertyGet prd $ entityAdapterConvert stype subj
                                 case mval of
                                     Just val -> return val
                                     Nothing -> do
                                         val <- newEntity
                                         doEntityEdit noEditSource $
-                                            MkPinaforeStorageEdit stype plainEntityAdapter prd subj (Known val)
+                                            MkQStorageEdit stype plainEntityAdapter prd subj (Known val)
                                         return val
-                            refRead (PinaforeStorageReadLookup prd val) =
-                                tableRead $ PinaforeTableReadPropertyLookup prd val
-                            refRead (PinaforeStorageReadEntity ea entity) =
+                            refRead (QStorageReadLookup prd val) = tableRead $ QTableReadPropertyLookup prd val
+                            refRead (QStorageReadEntity ea entity) =
                                 unComposeInner $ readEntity (entityAdapterDefinitions ea) entity
                             refEdit ::
-                                   NonEmpty PinaforeStorageEdit
-                                -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                                   NonEmpty QStorageEdit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                             refEdit = singleAlwaysEdit $ \edit esrc -> doEntityEdit esrc edit
                             in MkResource trun MkAReference {..}
 
-type PinaforeTableUpdate = EditUpdate PinaforeTableEdit
+type QTableUpdate = EditUpdate QTableEdit

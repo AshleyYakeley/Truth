@@ -14,39 +14,39 @@ import Test.RunScript
 newtype T =
     MkT Integer
 
-tGroundType :: PinaforeGroundType '[] T
+tGroundType :: QGroundType '[] T
 tGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily T)|]) "T"
 
-instance HasPinaforeGroundType '[] T where
-    pinaforeGroundType = tGroundType
+instance HasQGroundType '[] T where
+    qGroundType = tGroundType
 
 tShimWit ::
        forall polarity. Is PolarityType polarity
-    => PinaforeShimWit polarity T
-tShimWit = pinaforeType
+    => QShimWit polarity T
+tShimWit = qType
 
 subtypeEntry ::
-       forall a b. (HasPinaforeType 'Negative a, HasPinaforeType 'Positive b)
-    => PinaforeOpenExpression (PinaforePolyShim Type a b)
-    -> SubtypeConversionEntry PinaforeGroundType
+       forall a b. (HasQType 'Negative a, HasQType 'Positive b)
+    => QOpenExpression (QPolyShim Type a b)
+    -> SubtypeConversionEntry QGroundType
 subtypeEntry convexpr = let
-    ta = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ a)
-    tb = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ b)
+    ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
+    tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)
     in subtypeConversionEntry Verify ta tb convexpr
 
-simpleConversionExpression :: PinaforeOpenExpression (PinaforePolyShim Type () T)
+simpleConversionExpression :: QOpenExpression (QPolyShim Type () T)
 simpleConversionExpression = pure $ functionToShim "conv" $ \() -> MkT 12
 
-openConversionExpression :: VarID -> PinaforeOpenExpression (PinaforePolyShim Type () T)
+openConversionExpression :: VarID -> QOpenExpression (QPolyShim Type () T)
 openConversionExpression var =
-    OpenExpression (MkNameWitness var pinaforeType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT i
+    OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT i
 
-unitExpression :: PinaforeExpression
-unitExpression = MkSealedExpression (pinaforeType :: _ ()) $ pure ()
+unitExpression :: QExpression
+unitExpression = MkSealedExpression (qType :: _ ()) $ pure ()
 
-runPinafore :: ((?pinafore :: PinaforeContext) => PinaforeInterpreter a) -> IO a
+runPinafore :: ((?qcontext :: QContext) => QInterpreter a) -> IO a
 runPinafore ia =
-    withTestPinaforeContext mempty stdout $ \_getTableState -> fromInterpretResult $ runTestPinaforeSourceScoped ia
+    withTestQContext mempty stdout $ \_getTableState -> fromInterpretResult $ runTestPinaforeSourceScoped ia
 
 testSimple :: TestTree
 testSimple =
@@ -60,8 +60,8 @@ testSimple =
                 evalExpression resultOpenExpression
         assertEqual "" 12 i
 
-constIntegerExpression :: Integer -> PinaforeExpression
-constIntegerExpression i = MkSealedExpression pinaforeType $ pure i
+constIntegerExpression :: Integer -> QExpression
+constIntegerExpression i = MkSealedExpression qType $ pure i
 
 testDependentLet :: TestTree
 testDependentLet =
@@ -107,24 +107,24 @@ instance MaybeRepresentational T1 where
 instance HasVariance T1 where
     type VarianceOf T1 = 'Covariance
 
-t1GroundType :: PinaforeGroundType '[ CoCCRVariance] T1
+t1GroundType :: QGroundType '[ CoCCRVariance] T1
 t1GroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily T1)|]) "T1"
 
-instance HasPinaforeGroundType '[ CoCCRVariance] T1 where
-    pinaforeGroundType = t1GroundType
+instance HasQGroundType '[ CoCCRVariance] T1 where
+    qGroundType = t1GroundType
 
 t1ShimWit ::
        forall polarity. Is PolarityType polarity
-    => PinaforeShimWit polarity (T1 Integer)
-t1ShimWit = pinaforeType
+    => QShimWit polarity (T1 Integer)
+t1ShimWit = qType
 
 testPolyDependentFunction :: TestTree
 testPolyDependentFunction =
     testTree "poly-dependent-function" $ do
         let
-            openConversionExpression1 :: VarID -> PinaforeOpenExpression (PinaforePolyShim Type () (T1 Integer))
+            openConversionExpression1 :: VarID -> QOpenExpression (QPolyShim Type () (T1 Integer))
             openConversionExpression1 var =
-                OpenExpression (MkNameWitness var pinaforeType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
+                OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
         MkT1 i <-
             runPinafore $
             unTransformT (allocateVar "x") $ \varid -> do
@@ -137,10 +137,10 @@ testPolyDependentFunction =
                 evalExpression resultOpenExpression
         assertEqual "" 91 i
 
-registerT1Stuff :: PinaforeScopeInterpreter ()
+registerT1Stuff :: QScopeInterpreter ()
 registerT1Stuff = do
     registerType "T1" "" t1GroundType
-    registerPatternConstructor "MkT1" "" (MkSealedExpression (pinaforeType :: _ (AP -> T1 AP)) $ pure MkT1) $
+    registerPatternConstructor "MkT1" "" (MkSealedExpression (qType :: _ (AP -> T1 AP)) $ pure MkT1) $
         qToPatternConstructor $ PureFunction $ \(MkT1 (a :: AQ)) -> (a, ())
 
 testFunctionType :: TestTree
@@ -156,9 +156,9 @@ testSemiScript1 :: TestTree
 testSemiScript1 =
     testTree "semiscript-1" $ do
         let
-            openConversionExpression1 :: VarID -> PinaforeOpenExpression (PinaforePolyShim Type () (T1 Integer))
+            openConversionExpression1 :: VarID -> QOpenExpression (QPolyShim Type () (T1 Integer))
             openConversionExpression1 var =
-                OpenExpression (MkNameWitness var pinaforeType) $ pure $ \i -> functionToShim "conv" $ \() -> i
+                OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> i
         MkT1 i <-
             runPinafore $
             unTransformT

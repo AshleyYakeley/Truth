@@ -21,78 +21,74 @@ import Pinafore.Language.Var
 import Shapes
 
 -- LangModel
-modelGroundType :: PinaforeGroundType '[] LangModel
+modelGroundType :: QGroundType '[] LangModel
 modelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangModel)|]) "Model"
 
-instance HasPinaforeGroundType '[] LangModel where
-    pinaforeGroundType = modelGroundType
+instance HasQGroundType '[] LangModel where
+    qGroundType = modelGroundType
 
 -- WModel
-instance (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t) =>
-             HasPinaforeType 'Positive (WModel (WholeUpdate (Know t))) where
-    pinaforeType = mapPosShimWit (functionToShim "pinaforeModelToWholeModel" pinaforeModelToWholeModel) pinaforeType
+instance (HasQType 'Positive t, HasQType 'Negative t) => HasQType 'Positive (WModel (WholeUpdate (Know t))) where
+    qType = mapPosShimWit (functionToShim "wModelToWholeModel" wModelToWholeModel) qType
 
-instance (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t) =>
-             HasPinaforeType 'Negative (WModel (WholeUpdate (Know t))) where
-    pinaforeType = mapNegShimWit (functionToShim "langWholeModelToValue" langWholeModelToValue) pinaforeType
+instance (HasQType 'Positive t, HasQType 'Negative t) => HasQType 'Negative (WModel (WholeUpdate (Know t))) where
+    qType = mapNegShimWit (functionToShim "langWholeModelToValue" langWholeModelToValue) qType
 
--- PinaforeROWModel
-instance (HasPinaforeType 'Negative a) => HasPinaforeType 'Negative (PinaforeROWModel (Know a)) where
-    pinaforeType =
-        mapNegShimWit (functionToShim "langWholeModelToReadOnlyValue" langWholeModelToReadOnlyValue) pinaforeType
+-- WROWModel
+instance (HasQType 'Negative a) => HasQType 'Negative (WROWModel (Know a)) where
+    qType = mapNegShimWit (functionToShim "langWholeModelToReadOnlyValue" langWholeModelToReadOnlyValue) qType
 
-instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeROWModel (Know a)) where
-    pinaforeType =
-        mapPosShimWit (functionToShim "pinaforeROWModelToWholeModel" pinaforeROWModelToWholeModel) pinaforeType
+instance (HasQType 'Positive a) => HasQType 'Positive (WROWModel (Know a)) where
+    qType = mapPosShimWit (functionToShim "wROWModelToWholeModel" wROWModelToWholeModel) qType
 
 -- SetModel
-setModelGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangSetModel
+setModelGroundType :: QGroundType '[ ContraCCRVariance] LangSetModel
 setModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangSetModel)|]) "SetModel"
 
-instance HasPinaforeGroundType '[ ContraCCRVariance] LangSetModel where
-    pinaforeGroundType = setModelGroundType
+instance HasQGroundType '[ ContraCCRVariance] LangSetModel where
+    qGroundType = setModelGroundType
 
 -- FiniteSetModel
-finiteSetModelGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangFiniteSetModel
+finiteSetModelGroundType :: QGroundType '[ 'RangeCCRVariance] LangFiniteSetModel
 finiteSetModelGroundType =
     stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangFiniteSetModel)|]) "FiniteSetModel"
 
-instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangFiniteSetModel where
-    pinaforeGroundType = finiteSetModelGroundType
+instance HasQGroundType '[ 'RangeCCRVariance] LangFiniteSetModel where
+    qGroundType = finiteSetModelGroundType
 
 -- ListModel
-listModelGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangListModel
+listModelGroundType :: QGroundType '[ 'RangeCCRVariance] LangListModel
 listModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangListModel)|]) "ListModel"
 
-instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangListModel where
-    pinaforeGroundType = listModelGroundType
+instance HasQGroundType '[ 'RangeCCRVariance] LangListModel where
+    qGroundType = listModelGroundType
 
 -- TextModel
-textModelGroundType :: PinaforeGroundType '[] LangTextModel
+textModelGroundType :: QGroundType '[] LangTextModel
 textModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangTextModel)|]) "TextModel"
 
-instance HasPinaforeGroundType '[] LangTextModel where
-    pinaforeGroundType = textModelGroundType
+instance HasQGroundType '[] LangTextModel where
+    qGroundType = textModelGroundType
 
 -- ModelOrder
-modelOrderGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangModelOrder
+modelOrderGroundType :: QGroundType '[ ContraCCRVariance] LangModelOrder
 modelOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangModelOrder)|]) "ModelOrder"
 
-instance HasPinaforeGroundType '[ ContraCCRVariance] LangModelOrder where
-    pinaforeGroundType = modelOrderGroundType
+instance HasQGroundType '[ ContraCCRVariance] LangModelOrder where
+    qGroundType = modelOrderGroundType
 
 -- LangMorphism
-morphismGroundType :: PinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
+morphismGroundType :: QGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
 morphismGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMorphism)|]) $ \ta tb ->
         (precShow 1 ta <> " ~> " <> precShow 2 tb, 2)
 
-instance HasPinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism where
-    pinaforeGroundType = morphismGroundType
+instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism where
+    qGroundType = morphismGroundType
 
 getFiniteSetModelList :: LangModelOrder A -> LangFiniteSetModel '( A, EnA) -> View (LangListModel '( TopType, A))
 getFiniteSetModelList order val =
-    pinaforeUpdateOrder order $ \(model :: Model update) uorder -> do
+    modelOrderUpdateOrder order $ \(model :: Model update) uorder -> do
         let
             uo :: UpdateOrder (ContextUpdate update (ConstWholeUpdate EnA))
             uo =
@@ -110,10 +106,10 @@ getFiniteSetModelList order val =
             eaMap (liftOrderedListChangeLens (constWholeChangeLens meet2) . tupleChangeLens SelectContent) $
             MkWModel colSub
 
-setentity :: LangWholeModel '( A, TopType) -> A -> PinaforeAction ()
+setentity :: LangWholeModel '( A, TopType) -> A -> Action ()
 setentity model val = langWholeModelSet model $ Known val
 
-deleteentity :: LangWholeModel '( BottomType, TopType) -> PinaforeAction ()
+deleteentity :: LangWholeModel '( BottomType, TopType) -> Action ()
 deleteentity model = langWholeModelSet model Unknown
 
 modelLibEntries :: [DocTreeEntry BindDoc]
@@ -136,14 +132,11 @@ modelLibEntries =
                   MkSomeGroundType wholeModelGroundType
                 , hasSubtypeRelationEntry Verify "" $
                   functionToShim "WholeModel to Model" $ langWholeModelToModel @BottomType @TopType
-                , mkValEntry
-                      "pureWholeModel"
-                      "A constant whole model for a value."
-                      (pure :: A -> PinaforeImmutableWholeModel A)
+                , mkValEntry "pureWholeModel" "A constant whole model for a value." (pure :: A -> ImmutableWholeModel A)
                 , mkValEntry
                       "immutWholeModel"
                       "Convert a whole model to immutable.\n`immutWholeModel r = {%r}`"
-                      (id :: PinaforeImmutableWholeModel A -> PinaforeImmutableWholeModel A)
+                      (id :: ImmutableWholeModel A -> ImmutableWholeModel A)
                 , mkValEntry
                       "coMapWholeModel"
                       "Map a function on getting a whole model."
@@ -161,22 +154,22 @@ modelLibEntries =
                 , mkValEntry "fromMaybeWholeModel" "Map `Maybe` to known/unknown for a whole model." $
                   langFromMaybeWholeModel @A @B
                 , mkValEntry "forWholeModel" "Traverse a list to make a model of a list." $
-                  (for :: [A] -> (A -> PinaforeImmutableWholeModel B) -> PinaforeImmutableWholeModel [B])
+                  (for :: [A] -> (A -> ImmutableWholeModel B) -> ImmutableWholeModel [B])
                 , mkValEntry "pairWholeModel" "Combine whole models." $ langPairWholeModels @AP @AQ @BP @BQ
                 , mkValEntry
                       "applyWholeModel"
                       "Combine getting of whole models.\n`applyWholeModel f x` = `{%f %x}`"
-                      ((<*>) :: PinaforeImmutableWholeModel (A -> B) -> PinaforeImmutableWholeModel A -> PinaforeImmutableWholeModel B)
+                      ((<*>) :: ImmutableWholeModel (A -> B) -> ImmutableWholeModel A -> ImmutableWholeModel B)
                 , mkValEntry
                       "unknown"
                       "The unknown whole model, representing missing information."
-                      (empty :: PinaforeImmutableWholeModel BottomType)
-                , mkValEntry "known" "True if the whole model is known." $ \(val :: PinaforeROWModel (Know TopType)) ->
-                      (eaMapReadOnlyWhole (Known . isKnown) val :: PinaforeROWModel (Know Bool))
+                      (empty :: ImmutableWholeModel BottomType)
+                , mkValEntry "known" "True if the whole model is known." $ \(val :: WROWModel (Know TopType)) ->
+                      (eaMapReadOnlyWhole (Known . isKnown) val :: WROWModel (Know Bool))
                 , mkValEntry
                       "??"
                       "`p ?? q` = `p` if it is known, else `q`."
-                      ((<|>) :: PinaforeImmutableWholeModel A -> PinaforeImmutableWholeModel A -> PinaforeImmutableWholeModel A)
+                      ((<|>) :: ImmutableWholeModel A -> ImmutableWholeModel A -> ImmutableWholeModel A)
                 , mkValEntry "get" "Get a whole model, or `stop` if the whole model is unknown." $
                   langWholeModelGet @BottomType @A
                 , mkValEntry ":=" "Set a whole model to a value. Stop if failed." setentity
@@ -264,7 +257,7 @@ modelLibEntries =
                       "<:*:>"
                       "Cartesian product of finite sets. The resulting finite set will be read-only." $
                   langFiniteSetModelCartesianProduct @A @A @B @B
-                , mkValEntry "finiteSetModelList" "All members of a finite set, by an order." $ pinaforeSetGetOrdered @A
+                , mkValEntry "finiteSetModelList" "All members of a finite set, by an order." $ finiteSetGetOrdered @A
                 , mkValEntry
                       "getFiniteSetModelList"
                       "Get all members of a finite set, by an order. \
@@ -281,7 +274,7 @@ modelLibEntries =
                 , mkValEntry
                       "finiteSetModelClear"
                       "Remove all entities from a finite set."
-                      (langFiniteSetModelRemoveAll :: LangFiniteSetModel '( BottomType, TopType) -> PinaforeAction ())
+                      (langFiniteSetModelRemoveAll :: LangFiniteSetModel '( BottomType, TopType) -> Action ())
                 , mkValEntry "newMemFiniteSetModel" "Create a new finite set model of memory, initially empty." $
                   newMemFiniteSetModel @A
                 ]
@@ -371,12 +364,8 @@ modelLibEntries =
                 eta <- getMonoEntityType ta
                 etb <- getMonoEntityType tb
                 let
-                    bta =
-                        biRangeSomeFor
-                            (nonpolarToNegative @PinaforeTypeSystem ta, nonpolarToPositive @PinaforeTypeSystem ta)
-                    btb =
-                        biRangeSomeFor
-                            (nonpolarToNegative @PinaforeTypeSystem tb, nonpolarToPositive @PinaforeTypeSystem tb)
+                    bta = biRangeSomeFor (nonpolarToNegative @QTypeSystem ta, nonpolarToPositive @QTypeSystem ta)
+                    btb = biRangeSomeFor (nonpolarToNegative @QTypeSystem tb, nonpolarToPositive @QTypeSystem tb)
                     in case (bta, btb) of
                            (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
                                typef =
@@ -388,7 +377,7 @@ modelLibEntries =
                                    propertyMorphism (monoEntityAdapter eta) (monoEntityAdapter etb) (MkPredicate anchor)
                                pinamorphism =
                                    MkLangMorphism $
-                                   storageModelBased pinaforeStorageModel $
+                                   storageModelBased qStorageModel $
                                    cfmap4 (MkCatDual $ shimToFunction praContra) $
                                    cfmap3 (shimToFunction praCo) $
                                    cfmap2 (MkCatDual $ shimToFunction prbContra) $

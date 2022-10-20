@@ -28,10 +28,7 @@ evalLibraryModule =
           MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
               spvals <- getSpecialVals
               let
-                  valShimWit ::
-                         forall t.
-                         PinaforeShimWit 'Positive t
-                      -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
+                  valShimWit :: forall t. QShimWit 'Positive t -> QShimWit 'Positive (Text -> Action (Either Text t))
                   valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
               return $ MkSomeOf (valShimWit $ mkPolarShimWit tp) $ specialEvaluate spvals tp
         ]

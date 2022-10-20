@@ -17,28 +17,28 @@ import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Shapes
 
-type RefNotation = WriterT [(VarID, PinaforeExpression)] (StateT VarIDState PinaforeInterpreter)
+type RefNotation = WriterT [(VarID, QExpression)] (StateT VarIDState QInterpreter)
 
 sourcePosRefNotation :: SourcePos -> RefNotation --> RefNotation
 sourcePosRefNotation = paramWith $ liftParam $ liftParam sourcePosParam
 
-runRefWriterT :: RefNotation --> StateT VarIDState PinaforeInterpreter
+runRefWriterT :: RefNotation --> StateT VarIDState QInterpreter
 runRefWriterT wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
         _ -> throw NotationBareUnquoteError
 
-liftRefNotation :: PinaforeInterpreter --> RefNotation
+liftRefNotation :: QInterpreter --> RefNotation
 liftRefNotation = lift . lift
 
-hoistRefNotation :: WRaised PinaforeInterpreter PinaforeInterpreter -> RefNotation --> RefNotation
+hoistRefNotation :: WRaised QInterpreter QInterpreter -> RefNotation --> RefNotation
 hoistRefNotation (MkWRaised mm) = hoist $ hoist mm
 
-runRefNotation :: RefNotation --> PinaforeInterpreter
+runRefNotation :: RefNotation --> QInterpreter
 runRefNotation rexpr = evalStateT (runRefWriterT rexpr) firstVarIDState
 
-type RefExpression = RefNotation PinaforeExpression
+type RefExpression = RefNotation QExpression
 
 allocateVarRefNotation :: Name -> RefNotation VarID
 allocateVarRefNotation name = do
@@ -53,7 +53,7 @@ refNotationUnquote rexpr = do
     tell $ pure (v, expr)
     return $ qVarExpr v
 
-aplist :: PinaforeExpression -> [PinaforeExpression] -> PinaforeInterpreter PinaforeExpression
+aplist :: QExpression -> [QExpression] -> QInterpreter QExpression
 aplist expr [] = return expr
 aplist expr (arg:args) = do
     aprefExpr <- qName $ QualifiedReferenceName stdModuleName "applyWholeModel"

@@ -23,21 +23,21 @@ data LangLayoutElement =
     MkLangLayoutElement LayoutOptions
                         LangElement
 
-layoutElementGroundType :: PinaforeGroundType '[] LangLayoutElement
+layoutElementGroundType :: QGroundType '[] LangLayoutElement
 layoutElementGroundType =
     stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangLayoutElement)|]) "LayoutElement"
 
-instance HasPinaforeGroundType '[] LangLayoutElement where
-    pinaforeGroundType = layoutElementGroundType
+instance HasQGroundType '[] LangLayoutElement where
+    qGroundType = layoutElementGroundType
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
 uiListTable ::
-       (HasCallStack, ?pinafore :: PinaforeContext)
+       (HasCallStack, ?qcontext :: QContext)
     => [(LangWholeModel '( BottomType, Text), A -> LangWholeModel '( BottomType, Text))]
     -> LangListModel '( BottomType, EnA)
-    -> (A -> PinaforeAction TopType)
+    -> (A -> Action TopType)
     -> Maybe (LangWholeModel '( A, EnA))
     -> LangElement
 uiListTable cols lref onDoubleClick mSelectionLangRef =
@@ -99,7 +99,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
             in gvBindModel selectionModel (Just esrc) init mempty recv
         return widget
 
-uiList :: (PinaforeImmutableWholeModel A -> LangElement) -> LangListModel '( BottomType, A) -> LangElement
+uiList :: (ImmutableWholeModel A -> LangElement) -> LangListModel '( BottomType, A) -> LangElement
 uiList mkElement listModel =
     MkLangElement $ \ec ->
         createListBox (\model -> unLangElement (mkElement $ functionImmutableModel $ MkWModel model) ec) $
@@ -109,7 +109,7 @@ type PickerType = Know EnA
 
 type PickerPairType = (PickerType, ComboBoxCell)
 
-uiPick :: PinaforeImmutableWholeModel (Vector (EnA, Text)) -> LangWholeModel '( A, EnA) -> LangElement
+uiPick :: ImmutableWholeModel (Vector (EnA, Text)) -> LangWholeModel '( A, EnA) -> LangElement
 uiPick itemsRef ref =
     MkLangElement $ \_ -> do
         let
@@ -133,31 +133,27 @@ uiPick itemsRef ref =
         createComboBox subOpts subVal
 
 actionRef ::
-       (?pinafore :: PinaforeContext)
+       (?qcontext :: QContext)
     => (View --> IO)
-    -> PinaforeImmutableWholeModel (PinaforeAction TopType)
-    -> PinaforeROWModel (Maybe (GView 'Locked ()))
+    -> ImmutableWholeModel (Action TopType)
+    -> WROWModel (Maybe (GView 'Locked ()))
 actionRef unlift raction =
     eaMapReadOnlyWhole (fmap (\action -> gvRunAction unlift $ action >> return ()) . knowToMaybe) $
     immutableModelToReadOnlyModel raction
 
-uiButton ::
-       (?pinafore :: PinaforeContext)
-    => PinaforeImmutableWholeModel Text
-    -> PinaforeImmutableWholeModel (PinaforeAction TopType)
-    -> LangElement
+uiButton :: (?qcontext :: QContext) => ImmutableWholeModel Text -> ImmutableWholeModel (Action TopType) -> LangElement
 uiButton text raction =
     MkLangElement $ \MkElementContext {..} ->
         createButton
             (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text)
             (unWModel $ actionRef ecUnlift raction)
 
-uiLabel :: PinaforeImmutableWholeModel Text -> LangElement
+uiLabel :: ImmutableWholeModel Text -> LangElement
 uiLabel text =
     MkLangElement $ \_ ->
         createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text
 
-uiDynamic :: PinaforeImmutableWholeModel LangElement -> LangElement
+uiDynamic :: ImmutableWholeModel LangElement -> LangElement
 uiDynamic uiref =
     MkLangElement $ \ec -> let
         getSpec :: Know LangElement -> GView 'Locked Widget
@@ -168,13 +164,13 @@ uiDynamic uiref =
 uiScrolled :: LangElement -> LangElement
 uiScrolled (MkLangElement lui) = MkLangElement $ \ec -> lui ec >>= createScrolled
 
-uiUnitCheckBox :: PinaforeImmutableWholeModel Text -> WModel (WholeUpdate (Know ())) -> LangElement
+uiUnitCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know ())) -> LangElement
 uiUnitCheckBox name val =
     MkLangElement $ \_ ->
         createCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
         unWModel $ eaMap (toChangeLens knowBool) val
 
-uiCheckBox :: PinaforeImmutableWholeModel Text -> WModel (WholeUpdate (Know Bool)) -> LangElement
+uiCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know Bool)) -> LangElement
 uiCheckBox name val =
     MkLangElement $ \_ ->
         createMaybeCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
@@ -205,19 +201,19 @@ uiNotebook selref mitems =
                 return (t, b)
         createNotebook (langWholeModelSelectNotify noEditSource selref) items
 
-uiExec :: (?pinafore :: PinaforeContext) => PinaforeAction LangElement -> LangElement
+uiExec :: (?qcontext :: QContext) => Action LangElement -> LangElement
 uiExec pui =
     MkLangElement $ \ec -> do
-        kui <- gvRunUnlocked $ gvLiftView $ unliftPinaforeAction pui
+        kui <- gvRunUnlocked $ gvLiftView $ unliftAction pui
         case kui of
             Known (MkLangElement ui) -> ui ec
             Unknown -> createBlank
 
-uiStyleSheet :: PinaforeImmutableWholeModel Text -> LangElement -> LangElement
+uiStyleSheet :: ImmutableWholeModel Text -> LangElement -> LangElement
 uiStyleSheet cssmodel (MkLangElement mw) =
     MkLangElement $ \ec -> do
         widget <- mw ec
-        bindCSS True maxBound (unWModel $ pinaforeImmutableModelValue mempty cssmodel) widget
+        bindCSS True maxBound (unWModel $ immutableWholeModelValue mempty cssmodel) widget
         return widget
 
 uiName :: Text -> LangElement -> LangElement
@@ -251,17 +247,12 @@ uiWithContext call =
         gtkc <- gvGetContext
         unLangElement (call $ MkLangContext gtkc $ ecOtherContext ec) ec
 
-uiNotifySelection ::
-       (?pinafore :: PinaforeContext)
-    => (PinaforeAction LangTextModel -> PinaforeAction ())
-    -> LangElement
-    -> LangElement
+uiNotifySelection :: (?qcontext :: QContext) => (Action LangTextModel -> Action ()) -> LangElement -> LangElement
 uiNotifySelection notify (MkLangElement e) = let
     sel :: SelectNotify SelectionModel
     sel =
         MkSelectNotify $ \vms ->
-            runPinaforeAction $
-            notify $ actionLiftViewKnow $ fmap (fmap (\(TextSelectionModel x) -> x) . maybeToKnow) vms
+            runAction $ notify $ actionLiftViewKnow $ fmap (fmap (\(TextSelectionModel x) -> x) . maybeToKnow) vms
     in MkLangElement $ \ec -> e (ec {ecSelectNotify = ecSelectNotify ec <> sel})
 
 uiOwned :: LangElement -> LangElement
@@ -269,7 +260,7 @@ uiOwned (MkLangElement mw) =
     MkLangElement $ \ec ->
         liftIOWithUnlift $ \unliftIO -> unliftIO $ mw ec {ecUnlift = unliftIO . gvLiftRelock @'Locked @'Unlocked}
 
-langImage :: PinaforeImmutableWholeModel LangImage -> LangElement
+langImage :: ImmutableWholeModel LangImage -> LangElement
 langImage ref =
     MkLangElement $ \_ ->
         createImage $

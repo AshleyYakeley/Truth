@@ -21,7 +21,7 @@ import System.Directory (doesFileExist)
 import System.FilePath
 
 newtype FetchModule = MkFetchModule
-    { runFetchModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeInterpreter (Maybe PinaforeModule)
+    { runFetchModule :: (?qcontext :: QContext) => ModuleName -> QInterpreter (Maybe QModule)
     }
 
 instance Semigroup FetchModule where
@@ -35,11 +35,11 @@ instance Semigroup FetchModule where
 instance Monoid FetchModule where
     mempty = MkFetchModule $ \_ -> return Nothing
 
-loadModuleFromText :: ModuleName -> Text -> PinaforeInterpreter PinaforeModule
+loadModuleFromText :: ModuleName -> Text -> QInterpreter QModule
 loadModuleFromText modname text =
     transformTMap (void $ interpretImportDeclaration stdModuleName) $ parseModule modname text
 
-loadModuleFromByteString :: ModuleName -> LazyByteString -> PinaforeInterpreter PinaforeModule
+loadModuleFromByteString :: ModuleName -> LazyByteString -> QInterpreter QModule
 loadModuleFromByteString modname bs =
     case eitherToResult $ decodeUtf8' $ toStrict bs of
         SuccessResult text -> loadModuleFromText modname text
@@ -66,21 +66,21 @@ directoryFetchModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString modname bs
                 return $ Just mm
 
-getLibraryModuleModule :: (?pinafore :: PinaforeContext) => LibraryModule -> PinaforeInterpreter PinaforeModule
+getLibraryModuleModule :: (?qcontext :: QContext) => LibraryModule -> QInterpreter QModule
 getLibraryModuleModule libmod = do
     let
         bindDocs :: [BindDoc]
         bindDocs = toList libmod
-        seBinding :: ScopeEntry -> Maybe (Name, PinaforeInterpreterBinding)
+        seBinding :: ScopeEntry -> Maybe (Name, QInterpreterBinding)
         seBinding (BindScopeEntry name mb) = do
             b <- mb
-            return (name, b ?pinafore)
+            return (name, b ?qcontext)
         seBinding _ = Nothing
-        getEntry :: BindDoc -> Maybe (Name, DocInterpreterBinding PinaforeTypeSystem)
+        getEntry :: BindDoc -> Maybe (Name, DocInterpreterBinding QTypeSystem)
         getEntry MkBindDoc {..} = do
             (name, b) <- seBinding bdScopeEntry
             return (name, (docDescription bdDoc, b))
-        bscope :: PinaforeScope
+        bscope :: QScope
         bscope = bindingsScope $ mapFromList $ mapMaybe getEntry bindDocs
     dscopes <-
         for bindDocs $ \bd ->

@@ -12,11 +12,11 @@ import Pinafore.Base.Ref
 import Shapes
 
 data ModelOrder a update =
-    forall t. MkModelOrder (PinaforeFunctionMorphism update (Know a) t)
+    forall t. MkModelOrder (StorageFunctionMorphism update (Know a) t)
                            (Order t)
 
 instance EditContraFunctor (ModelOrder a) where
-    eaContraMap lens (MkModelOrder fm order) = MkModelOrder (mapPinaforeFunctionMorphismBase lens fm) order
+    eaContraMap lens (MkModelOrder fm order) = MkModelOrder (mapStorageFunctionMorphismBase lens fm) order
 
 instance Semigroup (ModelOrder a update) where
     MkModelOrder fa oa <> MkModelOrder fb ob =
@@ -32,7 +32,7 @@ instance CatFunctor (CatDual (->)) (NestedMorphism (->)) ModelOrder where
 reverseModelOrder :: ModelOrder a update -> ModelOrder a update
 reverseModelOrder (MkModelOrder ef o) = MkModelOrder ef $ reverseOrder o
 
-modelOrderOn :: PinaforeLensMorphism ap aq bp bq update -> ModelOrder bq update -> ModelOrder ap update
+modelOrderOn :: StorageLensMorphism ap aq bp bq update -> ModelOrder bq update -> ModelOrder ap update
 modelOrderOn pm (MkModelOrder ef o) = MkModelOrder (ef . lensFunctionMorphism pm) o
 
 type ModelModelOrder a = ModelBased (ModelOrder a)
@@ -49,28 +49,24 @@ reverseModelModelOrder = mapModelBased reverseModelOrder
 modelModelOrderOn :: ModelMorphism ap aq bp bq -> ModelModelOrder bq -> ModelModelOrder ap
 modelModelOrderOn = combineModelBased modelOrderOn
 
-modelModelOrderSet :: ModelModelOrder a -> PinaforeROWModel (FiniteSet a) -> PinaforeROWModel (Know [a])
+modelModelOrderSet :: ModelModelOrder a -> WROWModel (FiniteSet a) -> WROWModel (Know [a])
 modelModelOrderSet ro pset =
-    modelBasedModel ro $ \model (MkModelOrder (ofunc :: PinaforeFunctionMorphism update (Know a) t) oord) -> let
+    modelBasedModel ro $ \model (MkModelOrder (ofunc :: StorageFunctionMorphism update (Know a) t) oord) -> let
         cmp :: Order (a, t)
         cmp (_, t1) (_, t2) = oord t1 t2
-        ofuncpair :: PinaforeFunctionMorphism update a (a, t)
+        ofuncpair :: StorageFunctionMorphism update a (a, t)
         ofuncpair =
             proc a -> do
                 kt <- ofunc -< Known a
                 returnA -< (a, kt)
-        upairs :: PinaforeROWModel (FiniteSet (a, t))
-        upairs = applyPinaforeFunction model (cfmap ofuncpair) pset
+        upairs :: WROWModel (FiniteSet (a, t))
+        upairs = applyStorageFunction model (cfmap ofuncpair) pset
         sortpoints :: FiniteSet (a, t) -> [a]
         sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
         in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 modelModelOrderCompare ::
-       forall a.
-       ModelModelOrder a
-    -> PinaforeImmutableWholeModel a
-    -> PinaforeImmutableWholeModel a
-    -> PinaforeImmutableWholeModel Ordering
+       forall a. ModelModelOrder a -> ImmutableWholeModel a -> ImmutableWholeModel a -> ImmutableWholeModel Ordering
 modelModelOrderCompare ro fv1 fv2 =
     modelBasedModel ro $ \model (MkModelOrder ef o) ->
         o <$> (applyImmutableModel model (fmap Known ef) fv1) <*> (applyImmutableModel model (fmap Known ef) fv2)
@@ -81,4 +77,4 @@ modelRefUpdateOrder ::
     -> r
 modelRefUpdateOrder ro call =
     modelBasedModel ro $ \model (MkModelOrder m cmp) ->
-        call model $ mkUpdateOrder cmp $ pinaforeFunctionMorphismContextChangeLens m
+        call model $ mkUpdateOrder cmp $ storageFunctionMorphismContextChangeLens m

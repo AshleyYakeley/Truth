@@ -16,14 +16,14 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-typeDeclarationTypeBox :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter (PinaforeFixBox () ())
+typeDeclarationTypeBox :: Name -> Markdown -> SyntaxTypeDeclaration -> QInterpreter (QFixBox () ())
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
 typeDeclarationTypeBox name doc (ClosedEntitySyntaxTypeDeclaration params sconss) =
     makeClosedEntityTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (DatatypeSyntaxTypeDeclaration params sconss) = makeDataTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (DynamicEntitySyntaxTypeDeclaration stcons) = makeDynamicEntityTypeBox name doc stcons
 
-checkDynamicTypeCycles :: [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeInterpreter ()
+checkDynamicTypeCycles :: [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> QInterpreter ()
 checkDynamicTypeCycles decls = let
     constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
     constructorName (NameSyntaxDynamicEntityConstructor (UnqualifiedReferenceName n)) = Just n
@@ -42,13 +42,12 @@ checkDynamicTypeCycles decls = let
            [] -> return ()
            (nn@((spos, _) :| _):_) -> paramWith sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
-interpretSequentialTypeDeclaration :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeScopeInterpreter ()
+interpretSequentialTypeDeclaration :: Name -> Markdown -> SyntaxTypeDeclaration -> QScopeInterpreter ()
 interpretSequentialTypeDeclaration name doc tdecl = do
     tbox <- lift $ typeDeclarationTypeBox name doc tdecl
     boxSequential tbox ()
 
-interpretRecursiveTypeDeclarations ::
-       [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeScopeInterpreter ()
+interpretRecursiveTypeDeclarations :: [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> QScopeInterpreter ()
 interpretRecursiveTypeDeclarations decls = do
     lift $ checkDynamicTypeCycles decls
     wfs <-

@@ -12,19 +12,19 @@ import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
-qConstExprAny :: PinaforeValue -> PinaforeExpression
-qConstExprAny = tsConst @PinaforeTypeSystem
+qConstExprAny :: QValue -> QExpression
+qConstExprAny = tsConst @QTypeSystem
 
 qConstExpr ::
-       forall a. HasPinaforeType 'Positive a
+       forall a. HasQType 'Positive a
     => a
-    -> PinaforeExpression
+    -> QExpression
 qConstExpr a = qConstExprAny $ jmToValue a
 
-qVarExpr :: VarID -> PinaforeExpression
-qVarExpr name = tsVar @PinaforeTypeSystem name
+qVarExpr :: VarID -> QExpression
+qVarExpr name = tsVar @QTypeSystem name
 
-qName :: ReferenceName -> PinaforeInterpreter PinaforeExpression
+qName :: ReferenceName -> QInterpreter QExpression
 qName name = do
     mexpr <- lookupLetBinding name
     case mexpr of
@@ -34,150 +34,139 @@ qName name = do
             spos <- paramAsk sourcePosParam
             return $ qVarExpr $ mkBadVarID spos name
 
-qAbstractExpr :: VarID -> PinaforeExpression -> PinaforeInterpreter PinaforeExpression
-qAbstractExpr name expr = tsAbstract @PinaforeTypeSystem name expr
+qAbstractExpr :: VarID -> QExpression -> QInterpreter QExpression
+qAbstractExpr name expr = tsAbstract @QTypeSystem name expr
 
-qAbstractsExpr :: [VarID] -> PinaforeExpression -> PinaforeInterpreter PinaforeExpression
+qAbstractsExpr :: [VarID] -> QExpression -> QInterpreter QExpression
 qAbstractsExpr [] e = return e
 qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
-qVarPattern :: VarID -> PinaforePattern
-qVarPattern = tsVarPattern @PinaforeTypeSystem
+qVarPattern :: VarID -> QPattern
+qVarPattern = tsVarPattern @QTypeSystem
 
-qAnyPattern :: PinaforePattern
-qAnyPattern = tsAnyPattern @PinaforeTypeSystem
+qAnyPattern :: QPattern
+qAnyPattern = tsAnyPattern @QTypeSystem
 
-qBothPattern :: PinaforePattern -> PinaforePattern -> PinaforeInterpreter PinaforePattern
-qBothPattern = tsBothPattern @PinaforeTypeSystem
+qBothPattern :: QPattern -> QPattern -> QInterpreter QPattern
+qBothPattern = tsBothPattern @QTypeSystem
 
 qToPatternConstructor ::
        forall t lt.
-       ( ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
-       , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
-       )
+       (ToListShimWit (QPolyShim Type) (QType 'Positive) lt, FromPolarShimWit (QPolyShim Type) (QType 'Negative) t)
     => PurityFunction Maybe t (ListProduct lt)
-    -> PinaforePatternConstructor
+    -> QPatternConstructor
 qToPatternConstructor tml =
     toExpressionPatternConstructor $
-    toPatternConstructor (fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit tml
+    toPatternConstructor (fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative)) toListShimWit tml
 
-qApplyPatternConstructor ::
-       PinaforePatternConstructor -> PinaforePattern -> PinaforeInterpreter (PinaforePatternConstructor)
-qApplyPatternConstructor = tsApplyPatternConstructor @PinaforeTypeSystem
+qApplyPatternConstructor :: QPatternConstructor -> QPattern -> QInterpreter (QPatternConstructor)
+qApplyPatternConstructor = tsApplyPatternConstructor @QTypeSystem
 
 qSealPatternConstructor ::
        forall m. MonadThrow ExpressionError m
-    => PinaforePatternConstructor
-    -> m PinaforePattern
-qSealPatternConstructor = tsSealPatternConstructor @PinaforeTypeSystem
+    => QPatternConstructor
+    -> m QPattern
+qSealPatternConstructor = tsSealPatternConstructor @QTypeSystem
 
-qApplyAllPatternConstructor ::
-       PinaforePatternConstructor -> [PinaforePattern] -> PinaforeInterpreter (PinaforePatternConstructor)
+qApplyAllPatternConstructor :: QPatternConstructor -> [QPattern] -> QInterpreter (QPatternConstructor)
 qApplyAllPatternConstructor pc [] = return pc
 qApplyAllPatternConstructor pc (pat:pats) = do
     pc' <- qApplyPatternConstructor pc pat
     qApplyAllPatternConstructor pc' pats
 
-qConstructPattern :: PinaforePatternConstructor -> [PinaforePattern] -> PinaforeInterpreter PinaforePattern
+qConstructPattern :: QPatternConstructor -> [QPattern] -> QInterpreter QPattern
 qConstructPattern pc pats = do
     pc' <- qApplyAllPatternConstructor pc pats
     qSealPatternConstructor pc'
 
-qCase :: PinaforeExpression -> [(PinaforePattern, PinaforeExpression)] -> PinaforeInterpreter PinaforeExpression
-qCase = tsCase @PinaforeTypeSystem
+qCase :: QExpression -> [(QPattern, QExpression)] -> QInterpreter QExpression
+qCase = tsCase @QTypeSystem
 
-qFunctionPosWitness ::
-       forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
-qFunctionPosWitness = tsFunctionPosShimWit @PinaforeTypeSystem
+qFunctionPosWitness :: forall a b. QShimWit 'Negative a -> QShimWit 'Positive b -> QShimWit 'Positive (a -> b)
+qFunctionPosWitness = tsFunctionPosShimWit @QTypeSystem
 
 qFunctionPosWitnesses ::
-       ListType (PinaforeShimWit 'Negative) a
-    -> PinaforeShimWit 'Positive b
-    -> PinaforeShimWit 'Positive (ListProduct a -> b)
+       ListType (QShimWit 'Negative) a -> QShimWit 'Positive b -> QShimWit 'Positive (ListProduct a -> b)
 qFunctionPosWitnesses NilListType tb = mapPosShimWit (functionToShim "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
     mapPosShimWit (functionToShim "poswitness" $ \f a l -> f (a, l)) $
     qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
 
-qCaseAbstract :: [(PinaforePattern, PinaforeExpression)] -> PinaforeInterpreter PinaforeExpression
-qCaseAbstract = tsCaseAbstract @PinaforeTypeSystem
+qCaseAbstract :: [(QPattern, QExpression)] -> QInterpreter QExpression
+qCaseAbstract = tsCaseAbstract @QTypeSystem
 
-qMultiCaseAbstract ::
-       PeanoNatType n -> [(FixedList n PinaforePattern, PinaforeExpression)] -> PinaforeInterpreter PinaforeExpression
-qMultiCaseAbstract = tsMultiCaseAbstract @PinaforeTypeSystem
+qMultiCaseAbstract :: PeanoNatType n -> [(FixedList n QPattern, QExpression)] -> QInterpreter QExpression
+qMultiCaseAbstract = tsMultiCaseAbstract @QTypeSystem
 
-qApplyExpr :: PinaforeExpression -> PinaforeExpression -> PinaforeInterpreter PinaforeExpression
-qApplyExpr exprf expra = tsApply @PinaforeTypeSystem exprf expra
+qApplyExpr :: QExpression -> QExpression -> QInterpreter QExpression
+qApplyExpr exprf expra = tsApply @QTypeSystem exprf expra
 
-qApplyAllExpr :: PinaforeExpression -> [PinaforeExpression] -> PinaforeInterpreter PinaforeExpression
+qApplyAllExpr :: QExpression -> [QExpression] -> QInterpreter QExpression
 qApplyAllExpr e [] = return e
 qApplyAllExpr e (a:aa) = do
     e' <- qApplyExpr e a
     qApplyAllExpr e' aa
 
-qEmptyList :: PinaforeExpression
+qEmptyList :: QExpression
 qEmptyList = qConstExpr $ [] @BottomType
 
-qConsList :: PinaforeExpression
+qConsList :: QExpression
 qConsList = qConstExpr $ (:|) @A
 
-qSequenceExpr :: [PinaforeExpression] -> PinaforeInterpreter PinaforeExpression
+qSequenceExpr :: [QExpression] -> QInterpreter QExpression
 qSequenceExpr [] = return $ qEmptyList
 qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-qBindExpr :: VarID -> Markdown -> Maybe (Some (PinaforeType 'Positive)) -> PinaforeExpression -> PinaforeBinding
-qBindExpr = tsSingleBinding @PinaforeTypeSystem
+qBindExpr :: VarID -> Markdown -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
+qBindExpr = tsSingleBinding @QTypeSystem
 
-qSubsumeExpr :: Some (PinaforeType 'Positive) -> PinaforeExpression -> PinaforeInterpreter PinaforeExpression
-qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
+qSubsumeExpr :: Some (QType 'Positive) -> QExpression -> QInterpreter QExpression
+qSubsumeExpr = tsSubsumeExpression @QTypeSystem
 
-qLetExpr :: VarID -> PinaforeExpression -> PinaforeExpression -> PinaforeInterpreter PinaforeExpression
-qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
+qLetExpr :: VarID -> QExpression -> QExpression -> QInterpreter QExpression
+qLetExpr name exp body = tsLet @QTypeSystem name exp body
 
-qUncheckedBindingsRecursiveLetExpr ::
-       [PinaforeBinding] -> PinaforeInterpreter (Map VarID (Markdown, PinaforeExpression))
-qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @PinaforeTypeSystem
+qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> QInterpreter (Map VarID (Markdown, QExpression))
+qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @QTypeSystem
 
-qBindingSequentialLetExpr :: PinaforeBinding -> PinaforeInterpreter (Map VarID (Markdown, PinaforeExpression))
-qBindingSequentialLetExpr = tsSequentialLet @PinaforeTypeSystem
+qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (Markdown, QExpression))
+qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
 
 qEvalExpr ::
        forall m. MonadThrow ExpressionError m
-    => PinaforeExpression
-    -> m PinaforeValue
-qEvalExpr expr = tsEval @PinaforeTypeSystem expr
+    => QExpression
+    -> m QValue
+qEvalExpr expr = tsEval @QTypeSystem expr
 
-typedAnyToVal :: forall t. PinaforeShimWit 'Negative t -> PinaforeValue -> PinaforeInterpreter t
-typedAnyToVal = tsUnifyValueTo @PinaforeTypeSystem
+typedAnyToVal :: forall t. QShimWit 'Negative t -> QValue -> QInterpreter t
+typedAnyToVal = tsUnifyValueTo @QTypeSystem
 
-typedUnifyExpressionToOpen ::
-       forall t. PinaforeShimWit 'Negative t -> PinaforeExpression -> PinaforeInterpreter (PinaforeOpenExpression t)
-typedUnifyExpressionToOpen = tsUnifyExpressionTo @PinaforeTypeSystem
+typedUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
+typedUnifyExpressionToOpen = tsUnifyExpressionTo @QTypeSystem
 
-typedSubsumeExpressionToOpen ::
-       forall t. PinaforeType 'Positive t -> PinaforeExpression -> PinaforeInterpreter (PinaforeOpenExpression t)
-typedSubsumeExpressionToOpen = tsSubsumeExpressionTo @PinaforeTypeSystem
+typedSubsumeExpressionToOpen :: forall t. QType 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
+typedSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem
 
 qUnifyValue ::
-       forall t. HasPinaforeType 'Negative t
-    => PinaforeValue
-    -> PinaforeInterpreter t
-qUnifyValue = tsUnifyValue @PinaforeTypeSystem
+       forall t. HasQType 'Negative t
+    => QValue
+    -> QInterpreter t
+qUnifyValue = tsUnifyValue @QTypeSystem
 
 -- | for debugging
 qUnifyRigidValue ::
-       forall t. HasPinaforeType 'Negative t
-    => PinaforeValue
-    -> PinaforeInterpreter t
-qUnifyRigidValue = tsUnifyRigidValue @PinaforeTypeSystem
+       forall t. HasQType 'Negative t
+    => QValue
+    -> QInterpreter t
+qUnifyRigidValue = tsUnifyRigidValue @QTypeSystem
 
 -- | for debugging
 qUnifyValueToFree ::
-       forall t. HasPinaforeType 'Negative t
-    => PinaforeValue
-    -> PinaforeInterpreter t
-qUnifyValueToFree = tsUnifyValueToFree @PinaforeTypeSystem
+       forall t. HasQType 'Negative t
+    => QValue
+    -> QInterpreter t
+qUnifyValueToFree = tsUnifyValueToFree @QTypeSystem

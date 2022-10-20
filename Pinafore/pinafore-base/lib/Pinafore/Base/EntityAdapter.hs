@@ -2,7 +2,6 @@ module Pinafore.Base.EntityAdapter
     ( EntityAdapter(..)
     , nullEntityAdapter
     , entityAdapterConvert
-    --, entityAdapterType
     , plainEntityAdapter
     , literalEntityAdapter
     , constructorEntityAdapter

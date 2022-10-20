@@ -64,24 +64,22 @@ prefix :: [String] -> Text
 prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
 testExpression ::
-       forall a. HasPinaforeType 'Negative a
+       forall a. HasQType 'Negative a
     => Text
     -> Text
-    -> ((?pinafore :: PinaforeContext) => IO a -> Lifecycle ())
+    -> ((?qcontext :: QContext) => IO a -> Lifecycle ())
     -> ScriptTestTree
 testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
             fullscript = prefix scDeclarations <> script
-            in withTestPinaforeContext scFetchModule stdout $ \_getTableState ->
-                   call $ fromInterpretResult $ pinaforeInterpretTextAtType "<test>" fullscript
+            in withTestQContext scFetchModule stdout $ \_getTableState ->
+                   call $ fromInterpretResult $ qInterpretTextAtType "<test>" fullscript
 
-testScript ::
-       Text -> Text -> ((?pinafore :: PinaforeContext) => IO (PinaforeAction ()) -> Lifecycle ()) -> ScriptTestTree
-testScript = testExpression @(PinaforeAction ())
+testScript :: Text -> Text -> ((?qcontext :: QContext) => IO (Action ()) -> Lifecycle ()) -> ScriptTestTree
+testScript = testExpression @(Action ())
 
-testScriptCatchStop ::
-       Text -> Text -> ((?pinafore :: PinaforeContext) => IO (PinaforeAction ()) -> Lifecycle ()) -> ScriptTestTree
+testScriptCatchStop :: Text -> Text -> ((?qcontext :: QContext) => IO (Action ()) -> Lifecycle ()) -> ScriptTestTree
 testScriptCatchStop name script = testScript name $ "onStop (" <> script <> ") (fail \"stopped\")"
 
 data ScriptExpectation
@@ -103,18 +101,18 @@ testScriptExpectation name (ScriptExpectRuntimeException checkEx) script =
     testScript name script $ \interpret ->
         liftIOWithUnlift $ \unlift -> do
             action <- interpret
-            assertThrowsException checkEx $ unlift $ runView $ runPinaforeAction action
+            assertThrowsException checkEx $ unlift $ runView $ runAction action
 testScriptExpectation name ScriptExpectStop script =
     testScriptCatchStop name script $ \interpret ->
         liftIOWithUnlift $ \unlift -> do
             action <- interpret
             assertThrowsException @IOException (\err -> show err == "user error (stopped)") $
-                unlift $ runView $ runPinaforeAction action
+                unlift $ runView $ runAction action
 testScriptExpectation name ScriptExpectSuccess script =
     testScriptCatchStop name script $ \interpret ->
         liftIOWithUnlift $ \unlift -> do
             action <- interpret
-            unlift $ runView $ runPinaforeAction action
+            unlift $ runView $ runAction action
 
 testExpectSuccess :: Text -> ScriptTestTree
 testExpectSuccess script = testScriptExpectation script ScriptExpectSuccess script

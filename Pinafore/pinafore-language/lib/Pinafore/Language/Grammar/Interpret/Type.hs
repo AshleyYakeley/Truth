@@ -13,52 +13,52 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
-type PinaforeTypeM = MPolarW PinaforeType
+type PinaforeTypeM = MPolarW QType
 
-type PinaforeRangeType3 = MPolarRangeType PinaforeType
+type PinaforeRangeType3 = MPolarRangeType QType
 
 interpretType ::
        forall polarity. Is PolarityType polarity
     => SyntaxType
-    -> PinaforeInterpreter (Some (PinaforeType polarity))
+    -> QInterpreter (Some (QType polarity))
 interpretType st = do
     mpol <- isMPolarity @polarity $ interpretTypeM @('Just polarity) st
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretOpenEntityType :: SyntaxType -> PinaforeInterpreter (Some OpenEntityType)
+interpretOpenEntityType :: SyntaxType -> QInterpreter (Some OpenEntityType)
 interpretOpenEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
         BothMPolarW atm -> getOpenEntityType $ atm @'Positive
 
-interpretConcreteDynamicEntityType :: SyntaxType -> PinaforeInterpreter (Name, DynamicType)
+interpretConcreteDynamicEntityType :: SyntaxType -> QInterpreter (Name, DynamicType)
 interpretConcreteDynamicEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
         BothMPolarW atm -> getConcreteDynamicEntityType $ atm @'Positive
 
-interpretNonpolarType :: SyntaxType -> PinaforeInterpreter (Some PinaforeNonpolarType)
+interpretNonpolarType :: SyntaxType -> QInterpreter (Some PinaforeNonpolarType)
 interpretNonpolarType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
         BothMPolarW atm ->
             case atm @'Positive of
                 MkSome tm ->
-                    case positiveToNonpolar @PinaforeTypeSystem tm of
+                    case positiveToNonpolar @QTypeSystem tm of
                         Just t -> return $ shimWitToSome t
                         Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 
 interpretTypeM ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeInterpreter (PinaforeTypeM mpolarity)
+    -> QInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM (MkWithSourcePos spos t) = paramWith sourcePosParam spos $ interpretTypeM' t
 
 interpretTypeM' ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType'
-    -> PinaforeInterpreter (PinaforeTypeM mpolarity)
+    -> QInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM' BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
@@ -104,13 +104,13 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeInterpreter (PinaforeRangeType3 mpolarity)
+    -> QInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeFromType st = do
     t <- interpretTypeM @'Nothing st
     let
         ff :: forall polarity. Is PolarityType polarity
            => PinaforeTypeM 'Nothing
-           -> Some (RangeType PinaforeType polarity)
+           -> Some (RangeType QType polarity)
         ff (BothMPolarW atw) =
             case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
                 (MkSome tp, MkSome tq) -> MkSome $ MkRangeType tp tq
@@ -119,7 +119,7 @@ interpretTypeRangeFromType st = do
 interpretTypeArgument ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxTypeArgument
-    -> PinaforeInterpreter (PinaforeRangeType3 mpolarity)
+    -> QInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeArgument (SimpleSyntaxTypeArgument st) = interpretTypeRangeFromType st
 interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
     tt <- for ss interpretTypeRangeItem
@@ -128,7 +128,7 @@ interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
 interpretTypeRangeItem ::
        forall mpolarity. Is MPolarityType mpolarity
     => (Maybe SyntaxVariance, SyntaxType)
-    -> PinaforeInterpreter (PinaforeRangeType3 mpolarity)
+    -> QInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
     return $ toMPolar (\(MkSome tq) -> MkSome $ MkRangeType NilDolanType tq) atq
@@ -141,14 +141,14 @@ groundTypeText :: SyntaxGroundType -> Text
 groundTypeText (ConstSyntaxGroundType n) = toText n
 
 data PinaforeGroundTypeM where
-    MkPinaforeGroundTypeM :: Some (PinaforeGroundType dv) -> PinaforeGroundTypeM
+    MkPinaforeGroundTypeM :: Some (QGroundType dv) -> PinaforeGroundTypeM
 
 interpretArgs ::
        forall polarity dv (gt :: DolanVarianceKind dv). Is PolarityType polarity
     => SyntaxGroundType
     -> DolanVarianceType dv
     -> [SyntaxTypeArgument]
-    -> PinaforeInterpreter (Some (DolanArguments dv PinaforeType gt polarity))
+    -> QInterpreter (Some (DolanArguments dv QType gt polarity))
 interpretArgs _ NilListType [] = return $ MkSome NilCCRArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
@@ -179,7 +179,7 @@ interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
             case aargs of
                 MkSome args -> return $ MkSome $ ConsCCRArguments (RangeCCRPolarArgument tp tq) args
 
-interpretGroundTypeConst :: SyntaxGroundType -> PinaforeInterpreter PinaforeGroundTypeM
+interpretGroundTypeConst :: SyntaxGroundType -> QInterpreter PinaforeGroundTypeM
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     MkSomeGroundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkSome t

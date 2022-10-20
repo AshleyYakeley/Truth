@@ -27,7 +27,7 @@ closedEntityGroundType ::
        forall tid dv (gt :: DolanVarianceKind dv). (IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid)
     => TypeIDType tid
     -> EntityProperties dv gt
-    -> PinaforeGroundType dv gt
+    -> QGroundType dv gt
 closedEntityGroundType tidsym props@MkEntityProperties {..} =
     MkPinaforeGroundType
         { pgtVarianceType = covaryToDolanVarianceType epKind

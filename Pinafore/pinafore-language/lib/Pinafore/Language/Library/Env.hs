@@ -9,32 +9,32 @@ import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Stream
 import Shapes
 
-getVar :: (?pinafore :: PinaforeContext) => Text -> Maybe Text
-getVar n = fmap pack $ lookup (unpack n) $ iiEnvironment pinaforeInvocationInfo
+getVar :: (?qcontext :: QContext) => Text -> Maybe Text
+getVar n = fmap pack $ lookup (unpack n) $ iiEnvironment qInvocationInfo
 
-langStdIn :: (?pinafore :: PinaforeContext) => LangSource Text
-langStdIn = MkLangSource $ hoistSource liftIO $ iiStdIn pinaforeInvocationInfo
+langStdIn :: (?qcontext :: QContext) => LangSource Text
+langStdIn = MkLangSource $ hoistSource liftIO $ iiStdIn qInvocationInfo
 
-langStdOut :: (?pinafore :: PinaforeContext) => LangSink Text
-langStdOut = MkLangSink $ hoistSink liftIO $ iiStdOut pinaforeInvocationInfo
+langStdOut :: (?qcontext :: QContext) => LangSink Text
+langStdOut = MkLangSink $ hoistSink liftIO $ iiStdOut qInvocationInfo
 
-langStdErr :: (?pinafore :: PinaforeContext) => LangSink Text
-langStdErr = MkLangSink $ hoistSink liftIO $ iiStdErr pinaforeInvocationInfo
+langStdErr :: (?qcontext :: QContext) => LangSink Text
+langStdErr = MkLangSink $ hoistSink liftIO $ iiStdErr qInvocationInfo
 
 envLibraryModule :: LibraryModule
 envLibraryModule =
     MkDocTree
         "Env"
         "The environment in which the script was invoked."
-        [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName pinaforeInvocationInfo :: Text)
+        [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName qInvocationInfo :: Text)
         , mkValEntry
               "arguments"
               "Arguments passed to the script."
-              (fmap pack $ iiScriptArguments pinaforeInvocationInfo :: [Text])
+              (fmap pack $ iiScriptArguments qInvocationInfo :: [Text])
         , mkValEntry
               "variables"
               "Environment variables."
-              (fmap (\(n, v) -> (pack n, pack v)) $ iiEnvironment pinaforeInvocationInfo :: [(Text, Text)])
+              (fmap (\(n, v) -> (pack n, pack v)) $ iiEnvironment qInvocationInfo :: [(Text, Text)])
         , mkValEntry "getVar" "Get environment variable." getVar
         , mkValEntry "stdin" "Standard input source." langStdIn
         , mkValEntry "stdout" "Standard output sink." langStdOut

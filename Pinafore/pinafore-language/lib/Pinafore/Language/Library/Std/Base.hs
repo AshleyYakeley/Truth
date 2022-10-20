@@ -29,20 +29,20 @@ import Shapes.Numeric
 import qualified Text.Collate
 
 -- Showable
-showableGroundType :: PinaforeGroundType '[] Showable
+showableGroundType :: QGroundType '[] Showable
 showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"
 
-instance HasPinaforeGroundType '[] Showable where
-    pinaforeGroundType = showableGroundType
+instance HasQGroundType '[] Showable where
+    qGroundType = showableGroundType
 
 showableSubtypeRelationEntry ::
-       forall a. (HasPinaforeType 'Negative a, TextShow a)
+       forall a. (HasQType 'Negative a, TextShow a)
     => DocTreeEntry BindDoc
 showableSubtypeRelationEntry =
     hasSubtypeRelationEntry @a @Showable Verify "" $ functionToShim "textShowable" textShowable
 
 literalSubtypeRelationEntry ::
-       forall a. (HasPinaforeType 'Negative a, AsLiteral a)
+       forall a. (HasQType 'Negative a, AsLiteral a)
     => DocTreeEntry BindDoc
 literalSubtypeRelationEntry = hasSubtypeRelationEntry @a @Literal Verify "" $ functionToShim "toLiteral" toLiteral
 
@@ -52,18 +52,18 @@ entityAnchor p = pack $ show p
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
-newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeModel UTCTime)
+newClock :: NominalDiffTime -> Action (ImmutableWholeModel UTCTime)
 newClock duration = do
     (clockOM, ()) <- actionLiftLifecycle $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableModel $ MkWModel $ clockOM
 
-newTimeZoneModel :: PinaforeImmutableWholeModel UTCTime -> PinaforeAction (PinaforeImmutableWholeModel Int)
+newTimeZoneModel :: ImmutableWholeModel UTCTime -> Action (ImmutableWholeModel Int)
 newTimeZoneModel now = do
     model <-
-        pinaforeFloatMapReadOnly
+        actionFloatMapReadOnly
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
         immutableModelToReadOnlyModel now
-    return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeModel model
+    return $ fmap timeZoneMinutes $ MkImmutableWholeModel model
 
 interpretAsText ::
        forall a. (Read a, TextShow a)
@@ -83,7 +83,7 @@ textReadMaybe :: Read t => Text -> Maybe t
 textReadMaybe t = readMaybe $ unpack t
 
 plainFormattingDefs ::
-       forall t. (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t, Read t, TextShow t)
+       forall t. (HasQType 'Positive t, HasQType 'Negative t, Read t, TextShow t)
     => Text
     -> Text
     -> [DocTreeEntry BindDoc]
@@ -126,7 +126,7 @@ unixInterpretAsText fmt = let
     in maybeLensLangWholeModel getter setter
 
 unixFormattingDefs ::
-       forall t. (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t, FormatTime t, ParseTime t)
+       forall t. (HasQType 'Positive t, HasQType 'Negative t, FormatTime t, ParseTime t)
     => Text
     -> Text
     -> [DocTreeEntry BindDoc]
@@ -526,7 +526,7 @@ baseLibEntries =
                       return $
                           case mtp of
                               MkSome (tp :: OpenEntityType tid) -> let
-                                  pt :: PinaforeAction (OpenEntity tid)
+                                  pt :: Action (OpenEntity tid)
                                   pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
                                   typef = actionShimWit $ openEntityShimWit tp
                                   in MkSomeOf typef pt
@@ -557,7 +557,7 @@ baseLibEntries =
                   MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                       (n, dt) <- getConcreteDynamicEntityType t
                       let
-                          pt :: PinaforeAction DynamicEntity
+                          pt :: Action DynamicEntity
                           pt =
                               liftIO $ do
                                   e <- newKeyContainerItem @(FiniteSet Entity)

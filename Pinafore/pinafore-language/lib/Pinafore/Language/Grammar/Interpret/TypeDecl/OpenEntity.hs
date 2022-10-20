@@ -8,10 +8,10 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-makeOpenEntityTypeBox :: Name -> Markdown -> PinaforeInterpreter (PinaforeFixBox () ())
+makeOpenEntityTypeBox :: Name -> Markdown -> QInterpreter (QFixBox () ())
 makeOpenEntityTypeBox name doc =
     withNewTypeID $ \tidsym -> let
-        register :: () -> PinaforeScopeInterpreter ()
+        register :: () -> QScopeInterpreter ()
         register _ = do
             let t = openEntityGroundType $ MkOpenEntityType name tidsym
             registerType name doc t

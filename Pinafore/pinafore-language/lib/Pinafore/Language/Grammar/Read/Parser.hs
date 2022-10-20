@@ -40,7 +40,7 @@ parseReader r text = let
                SuccessResult (Left e) -> throw $ parseErrorMessage e
                FailureResult e -> throw e
 
-parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeInterpreter t
+parseScopedReaderWhole :: Parser (QInterpreter t) -> Text -> QInterpreter t
 parseScopedReaderWhole parser text = do
     spos <- paramAsk sourcePosParam
     result <- runInterpretResult $ evalStateT (parseReader parser text) spos

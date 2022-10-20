@@ -44,7 +44,7 @@ maybeEntityConvert = entityAdapterConvert $ maybeEntityAdapter plainEntityAdapte
 
 maybeEntityFamily :: EntityFamily
 maybeEntityFamily =
-    pinaforeEntityFamily maybeGroundType $ \epShowType -> let
+    qEntityFamily maybeGroundType $ \epShowType -> let
         epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
         epAdapter :: forall t. Arguments EntityAdapter Maybe t -> EntityAdapter t
@@ -71,7 +71,7 @@ listEntityConvert = entityAdapterConvert $ listEntityAdapter plainEntityAdapter
 
 listEntityFamily :: EntityFamily
 listEntityFamily =
-    pinaforeEntityFamily listGroundType $ \epShowType -> let
+    qEntityFamily listGroundType $ \epShowType -> let
         epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
         epAdapter :: forall t. Arguments EntityAdapter [] t -> EntityAdapter t
@@ -93,7 +93,7 @@ pairEntityConvert = entityAdapterConvert $ pairEntityAdapter plainEntityAdapter 
 
 pairEntityFamily :: EntityFamily
 pairEntityFamily =
-    pinaforeEntityFamily pairGroundType $ \epShowType -> let
+    qEntityFamily pairGroundType $ \epShowType -> let
         epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
         epAdapter :: forall t. Arguments EntityAdapter (,) t -> EntityAdapter t
@@ -117,14 +117,14 @@ eitherEntityConvert = entityAdapterConvert $ eitherEntityAdapter plainEntityAdap
 
 eitherEntityFamily :: EntityFamily
 eitherEntityFamily =
-    pinaforeEntityFamily eitherGroundType $ \epShowType -> let
+    qEntityFamily eitherGroundType $ \epShowType -> let
         epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
         epAdapter :: forall t. Arguments EntityAdapter Either t -> EntityAdapter t
         epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherEntityAdapter ta tb
         in MkEntityProperties {..}
 
-entityGroundType :: PinaforeGroundType '[] Entity
+entityGroundType :: QGroundType '[] Entity
 entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Entity)|]) "Entity"
 
 entityEntityFamily :: EntityFamily
@@ -132,7 +132,7 @@ entityEntityFamily = simplePinaforeEntityFamily entityGroundType plainEntityAdap
 
 literalEntityFamily :: EntityFamily
 literalEntityFamily =
-    pinaforeEntityFamily literalGroundType $ \showtype ->
+    qEntityFamily literalGroundType $ \showtype ->
         MkEntityProperties
             { epKind = NilListType
             , epCovaryMap = covarymap
@@ -140,7 +140,7 @@ literalEntityFamily =
             , epShowType = showtype
             }
 
-literalEntityGroundType :: Codec Literal t -> PinaforeGroundType '[] t -> EntityGroundType t
+literalEntityGroundType :: Codec Literal t -> QGroundType '[] t -> EntityGroundType t
 literalEntityGroundType codec MkPinaforeGroundType {..} =
     MkEntityGroundType pgtFamilyType $
     MkSealedEntityProperties $
@@ -172,10 +172,10 @@ allEntityFamilies =
     , literalEntityFamily
     ]
 
-instance CovarySubtype PinaforeGroundType EntityGroundType where
+instance CovarySubtype QGroundType EntityGroundType where
     dolanToMonoGroundType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-           PinaforeGroundType dv t
+           QGroundType dv t
         -> Maybe (CovaryType dv, EntityGroundType t)
     dolanToMonoGroundType agt@MkPinaforeGroundType {..} =
         (findmap allEntityFamilies $ \(MkEntityFamily wit ff) -> do

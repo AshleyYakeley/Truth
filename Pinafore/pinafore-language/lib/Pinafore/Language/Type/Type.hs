@@ -11,60 +11,60 @@ import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Shapes
 
-type PinaforeSingularType :: Polarity -> Type -> Type
-type PinaforeSingularType = DolanSingularType PinaforeGroundType
+type QSingularType :: Polarity -> Type -> Type
+type QSingularType = DolanSingularType QGroundType
 
-type PinaforeSingularShimWit :: Polarity -> Type -> Type
-type PinaforeSingularShimWit polarity = DolanSingularShimWit PinaforeGroundType polarity
+type QSingularShimWit :: Polarity -> Type -> Type
+type QSingularShimWit polarity = DolanSingularShimWit QGroundType polarity
 
-type PinaforeGroundedType :: Polarity -> Type -> Type
-type PinaforeGroundedType = DolanGroundedType PinaforeGroundType
+type QGroundedType :: Polarity -> Type -> Type
+type QGroundedType = DolanGroundedType QGroundType
 
-type PinaforeGroundedShimWit :: Polarity -> Type -> Type
-type PinaforeGroundedShimWit polarity = DolanGroundedShimWit PinaforeGroundType polarity
+type QGroundedShimWit :: Polarity -> Type -> Type
+type QGroundedShimWit polarity = DolanGroundedShimWit QGroundType polarity
 
-type PinaforeType :: Polarity -> Type -> Type
-type PinaforeType = DolanType PinaforeGroundType
+type QType :: Polarity -> Type -> Type
+type QType = DolanType QGroundType
 
-type PinaforeShimWit :: Polarity -> Type -> Type
-type PinaforeShimWit polarity = DolanShimWit PinaforeGroundType polarity
+type QShimWit :: Polarity -> Type -> Type
+type QShimWit polarity = DolanShimWit QGroundType polarity
 
-type PinaforeIsoShimWit :: Polarity -> Type -> Type
-type PinaforeIsoShimWit polarity = DolanIsoShimWit PinaforeGroundType polarity
+type QIsoShimWit :: Polarity -> Type -> Type
+type QIsoShimWit polarity = DolanIsoShimWit QGroundType polarity
 
-type PinaforeArgumentsShimWit :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Polarity -> Type -> Type
-type PinaforeArgumentsShimWit dv gt polarity = DolanArgumentsShimWit PinaforePolyShim dv PinaforeType gt polarity
+type QArgumentsShimWit :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Polarity -> Type -> Type
+type QArgumentsShimWit dv gt polarity = DolanArgumentsShimWit QPolyShim dv QType gt polarity
 
-type PinaforeValue = TSValue PinaforeTypeSystem
+type QValue = TSValue QTypeSystem
 
-type PinaforeOpenExpression = TSOpenExpression PinaforeTypeSystem
+type QOpenExpression = TSOpenExpression QTypeSystem
 
-type PinaforeExpression = TSSealedExpression PinaforeTypeSystem
+type QExpression = TSSealedExpression QTypeSystem
 
-type PinaforePatternConstructor = TSExpressionPatternConstructor PinaforeTypeSystem
+type QPatternConstructor = TSExpressionPatternConstructor QTypeSystem
 
-type PinaforePattern = TSSealedExpressionPattern PinaforeTypeSystem
+type QPattern = TSSealedExpressionPattern QTypeSystem
 
-type instance InterpreterFamilyType PinaforeTypeSystem = FamilialType
+type instance InterpreterFamilyType QTypeSystem = FamilialType
 
-type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
+type QSpecialVals = SpecialVals QTypeSystem
 
-type PinaforeBoundType = InterpreterBoundType PinaforeTypeSystem
+type QBoundType = InterpreterBoundType QTypeSystem
 
-type PinaforeScope = Scope PinaforeTypeSystem
+type QScope = Scope QTypeSystem
 
-type PinaforeModule = Module PinaforeTypeSystem
+type QModule = Module QTypeSystem
 
-type PinaforeBinding = TSBinding PinaforeTypeSystem
+type QBinding = TSBinding QTypeSystem
 
-type PinaforeInterpreterBinding = InterpreterBinding PinaforeTypeSystem
+type QInterpreterBinding = InterpreterBinding QTypeSystem
 
-type PinaforeInterpreter = Interpreter PinaforeTypeSystem
+type QInterpreter = Interpreter QTypeSystem
 
-type PinaforeScopeInterpreter = ScopeInterpreter PinaforeTypeSystem
+type QScopeInterpreter = ScopeInterpreter QTypeSystem
 
-type PinaforeAnnotation = Annotation PinaforeTypeSystem
+type QAnnotation = Annotation QTypeSystem
 
-type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeInterpreter
+type QSpecialForm = SpecialForm QTypeSystem QInterpreter
 
-type PinaforeFixBox = ScopeFixBox PinaforeTypeSystem
+type QFixBox = ScopeFixBox QTypeSystem

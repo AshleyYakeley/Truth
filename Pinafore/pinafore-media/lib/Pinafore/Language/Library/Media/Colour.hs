@@ -27,16 +27,16 @@ type LangColour = Color (SRGB 'NonLinear) Word16
 instance AsLiteral LangColour where
     literalCodec = alphaCodec . literalCodec
 
-colourGroundType :: PinaforeGroundType '[] LangColour
+colourGroundType :: QGroundType '[] LangColour
 colourGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance Is PolarityType polarity => HasPinaforeType polarity LangColour where
-    pinaforeType = groundPinaforeType
+instance Is PolarityType polarity => HasQType polarity LangColour where
+    qType = groundQType
 
-instance HasPinaforeGroundType '[] LangColour where
-    pinaforeGroundType = colourGroundType
+instance HasQGroundType '[] LangColour where
+    qGroundType = colourGroundType
 
 -- LangColour
 type LangAlphaColour = Color (Alpha (SRGB 'NonLinear)) Word16
@@ -58,16 +58,16 @@ instance AsMIMELiteral LangAlphaColour where
         toT (Alpha (ColorSRGB r g b) a) = (r, (g, (b, a)))
         in invmap fromT toT $ serializer <***> serializer <***> serializer <***> serializer
 
-alphaColourGroundType :: PinaforeGroundType '[] LangAlphaColour
+alphaColourGroundType :: QGroundType '[] LangAlphaColour
 alphaColourGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance Is PolarityType polarity => HasPinaforeType polarity LangAlphaColour where
-    pinaforeType = groundPinaforeType
+instance Is PolarityType polarity => HasQType polarity LangAlphaColour where
+    qType = groundQType
 
-instance HasPinaforeGroundType '[] LangAlphaColour where
-    pinaforeGroundType = alphaColourGroundType
+instance HasQGroundType '[] LangAlphaColour where
+    qGroundType = alphaColourGroundType
 
 clamp16 :: Integer -> Word16
 clamp16 x = fromInteger $ min (max 0 x) 65536

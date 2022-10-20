@@ -13,8 +13,8 @@ qifthenelse :: Bool -> A -> A -> A
 qifthenelse True v _ = v
 qifthenelse False _ v = v
 
-qbind :: PinaforeAction A -> (A -> PinaforeAction B) -> PinaforeAction B
+qbind :: Action A -> (A -> Action B) -> Action B
 qbind = (>>=)
 
-qbind_ :: PinaforeAction TopType -> PinaforeAction A -> PinaforeAction A
+qbind_ :: Action TopType -> Action A -> Action A
 qbind_ = (>>)

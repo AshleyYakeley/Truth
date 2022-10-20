@@ -18,18 +18,18 @@ newtype LangPNGImage =
     MkLangPNGImage (DataLiteral PNGData)
     deriving (IsDataLiteral PNGData)
 
-pngImageGroundType :: PinaforeGroundType '[] LangPNGImage
+pngImageGroundType :: QGroundType '[] LangPNGImage
 pngImageGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPNGImage)|]) "PNGImage")
         { pgtGreatestDynamicSupertype =
               SimplePolyGreatestDynamicSupertype
-                  pinaforeGroundType
+                  qGroundType
                   (functionToShim "fromLiteral" pngFromLiteral)
                   (functionToShim "pngLiteral" idlLiteral)
         }
 
-instance HasPinaforeGroundType '[] LangPNGImage where
-    pinaforeGroundType = pngImageGroundType
+instance HasQGroundType '[] LangPNGImage where
+    qGroundType = pngImageGroundType
 
 pngDataFromLiteral :: Literal -> Maybe PNGData
 pngDataFromLiteral (MkMIMELiteral (MkMIMEContentType "image" "png" _) bs) = do

@@ -16,7 +16,7 @@ import Shapes
 
 -- Task
 newtype LangTask a = MkLangTask
-    { unLangTask :: Task PinaforeAction a
+    { unLangTask :: Task Action a
     } deriving (Functor, Applicative)
 
 instance MaybeRepresentational LangTask where
@@ -25,16 +25,16 @@ instance MaybeRepresentational LangTask where
 instance HasVariance LangTask where
     type VarianceOf LangTask = 'Covariance
 
-taskGroundType :: PinaforeGroundType '[ CoCCRVariance] LangTask
+taskGroundType :: QGroundType '[ CoCCRVariance] LangTask
 taskGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangTask)|]) "Task"
 
-instance HasPinaforeGroundType '[ CoCCRVariance] LangTask where
-    pinaforeGroundType = taskGroundType
+instance HasQGroundType '[ CoCCRVariance] LangTask where
+    qGroundType = taskGroundType
 
 liftTask :: Task IO a -> LangTask a
 liftTask task = MkLangTask $ hoistTask liftIO task
 
-asyncTask :: PinaforeAction a -> PinaforeAction (LangTask a)
+asyncTask :: Action a -> Action (LangTask a)
 asyncTask pa = do
     task <- forkTask pa
     actionOnClose $ do
@@ -42,13 +42,13 @@ asyncTask pa = do
         return ()
     return $ MkLangTask task
 
-awaitTask :: forall a. LangTask a -> PinaforeAction a
+awaitTask :: forall a. LangTask a -> Action a
 awaitTask task = taskWait $ unLangTask task
 
-isDone :: forall a. LangTask a -> PinaforeAction Bool
+isDone :: forall a. LangTask a -> Action Bool
 isDone task = taskIsDone $ unLangTask task
 
-langCheckTask :: forall a. LangTask a -> PinaforeAction (Maybe a)
+langCheckTask :: forall a. LangTask a -> Action (Maybe a)
 langCheckTask task = checkTask $ unLangTask task
 
 pairTask :: forall a b. LangTask a -> LangTask b -> LangTask (a, b)
@@ -60,7 +60,7 @@ langTimeTask t = liftTask $ timeTask t
 langDurationTask :: NominalDiffTime -> IO (LangTask ())
 langDurationTask d = fmap liftTask $ durationTask d
 
-langRaceTasks :: forall a. [LangTask a] -> PinaforeAction (LangTask a)
+langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
 taskLibraryModule :: LibraryModule

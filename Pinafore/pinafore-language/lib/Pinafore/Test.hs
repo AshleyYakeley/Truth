@@ -1,34 +1,34 @@
 module Pinafore.Test
     ( parseType
     , runInterpreter
-    , PinaforeTypeSystem
+    , QTypeSystem
     , Name
     , VarID
     , mkVarID
     , firstVarIDState
     , UVar
     , Var(..)
-    , PinaforeGroundType(..)
+    , QGroundType(..)
     , EntityGroundType(..)
-    , PinaforeValue
-    , PinaforeType
-    , PinaforePolyShim
-    , PinaforeOpenExpression
-    , PinaforeExpression
-    , PinaforeShimWit
-    , PinaforeSingularType
-    , PinaforeSingularShimWit
-    , PinaforeInterpreter
+    , QValue
+    , QType
+    , QPolyShim
+    , QOpenExpression
+    , QExpression
+    , QShimWit
+    , QSingularType
+    , QSingularShimWit
+    , QInterpreter
     , toJMShimWit
     , allocateVar
-    , PinaforeScopeInterpreter
+    , QScopeInterpreter
     , registerType
     , registerLetBindings
     , registerLetBinding
     , registerPatternConstructor
     , registerSubtypeConversion
     , module Pinafore.Language.Expression
-    , PinaforeTableSubject(..)
+    , QTableSubject(..)
     , module Pinafore.Test
     ) where
 
@@ -43,39 +43,39 @@ import Pinafore.Language.Var
 import Pinafore.Language.VarID
 import Shapes
 
-makeTestStorageModel :: Lifecycle (Model PinaforeStorageUpdate, IO PinaforeTableSubject)
+makeTestStorageModel :: Lifecycle (Model QStorageUpdate, IO QTableSubject)
 makeTestStorageModel = do
-    tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
-        liftIO $ makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
+    tableStateReference :: Reference (WholeEdit QTableSubject) <-
+        liftIO $ makeMemoryReference (MkQTableSubject [] [] [] []) $ \_ -> True
     let
-        tableReference :: Reference PinaforeTableEdit
+        tableReference :: Reference QTableEdit
         tableReference = convertReference tableStateReference
-        getTableState :: IO PinaforeTableSubject
+        getTableState :: IO QTableSubject
         getTableState = getReferenceSubject emptyResourceContext tableStateReference
-    (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
+    (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
     return (model, getTableState)
 
-makeTestPinaforeContext :: Handle -> Lifecycle (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext hout = do
+makeTestQContext :: Handle -> Lifecycle (QContext, IO QTableSubject)
+makeTestQContext hout = do
     (model, getTableState) <- makeTestStorageModel
-    pc <- makePinaforeContext nullInvocationInfo {iiStdOut = handleSinkText hout} model
+    pc <- makeQContext nullInvocationInfo {iiStdOut = handleSinkText hout} model
     return (pc, getTableState)
 
-withTestPinaforeContext ::
+withTestQContext ::
        FetchModule
     -> Handle
-    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO PinaforeTableSubject -> Lifecycle r)
+    -> ((?qcontext :: QContext, ?library :: LibraryContext) => IO QTableSubject -> Lifecycle r)
     -> IO r
-withTestPinaforeContext fetchModule hout call =
+withTestQContext fetchModule hout call =
     runLifecycle $ do
-        (pc, getTableState) <- makeTestPinaforeContext hout
+        (pc, getTableState) <- makeTestQContext hout
         runWithContext pc fetchModule $ call getTableState
 
-withNullPinaforeContext :: MonadIO m => ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => m r) -> m r
-withNullPinaforeContext = runWithContext nullPinaforeContext mempty
+withNullQContext :: MonadIO m => ((?qcontext :: QContext, ?library :: LibraryContext) => m r) -> m r
+withNullQContext = runWithContext nullQContext mempty
 
-runTestPinaforeSourceScoped :: PinaforeInterpreter a -> InterpretResult a
-runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeScoped "<input>" sa
+runTestPinaforeSourceScoped :: QInterpreter a -> InterpretResult a
+runTestPinaforeSourceScoped sa = withNullQContext $ runPinaforeScoped "<input>" sa
 
 checkUpdateEditor ::
        forall a. Eq a

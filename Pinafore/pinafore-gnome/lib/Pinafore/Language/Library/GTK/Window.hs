@@ -8,7 +8,7 @@ module Pinafore.Language.Library.GTK.Window
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
-import GI.Gtk as GI
+import GI.Gtk as GI hiding (Action)
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GIO
@@ -23,15 +23,15 @@ data LangWindow = MkLangWindow
     , lwWindow :: UIWindow
     }
 
-windowGroundType :: PinaforeGroundType '[] LangWindow
+windowGroundType :: QGroundType '[] LangWindow
 windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWindow)|]) "Window"
 
-instance HasPinaforeGroundType '[] LangWindow where
-    pinaforeGroundType = windowGroundType
+instance HasQGroundType '[] LangWindow where
+    qGroundType = windowGroundType
 
 -- UIWindow
-instance HasPinaforeType 'Negative UIWindow where
-    pinaforeType = mapNegShimWit (functionToShim "lwWindow" lwWindow) pinaforeType
+instance HasQType 'Negative UIWindow where
+    qType = mapNegShimWit (functionToShim "lwWindow" lwWindow) qType
 
 createLangWindow :: LangContext -> WindowSpec -> View LangWindow
 createLangWindow lc uiw = do
@@ -44,12 +44,12 @@ uiWindowClose :: LangWindow -> View ()
 uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked lwClose
 
 openWindow ::
-       (?pinafore :: PinaforeContext)
+       (?qcontext :: QContext)
     => LangContext
     -> (Int32, Int32)
-    -> PinaforeImmutableWholeModel Text
+    -> ImmutableWholeModel Text
     -> LangElement
-    -> PinaforeAction LangWindow
+    -> Action LangWindow
 openWindow lc wsSize title (MkLangElement element) =
     actionLiftView $
     mfix $ \w ->
@@ -81,7 +81,7 @@ showWindow MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked $
 hideWindow :: LangWindow -> View ()
 hideWindow MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowHide lwWindow
 
-run :: forall a. (LangContext -> PinaforeAction a) -> PinaforeAction a
+run :: forall a. (LangContext -> Action a) -> Action a
 run call =
     actionTunnelView $ \unlift ->
         runGTKView $ \gtkc -> do
@@ -107,7 +107,7 @@ windowStuff =
         , mkValEntry "exit" "Exit the user interface." exitUI
         ]
 
-langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Bool) -> PinaforeAction File
+langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Bool) -> Action File
 langChooseFile action lc test =
     actionLiftViewKnow $ fmap maybeToKnow $ runGView (lcGTKContext lc) $ gvRunLocked $ chooseFile action test
 

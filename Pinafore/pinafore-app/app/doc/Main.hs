@@ -64,7 +64,7 @@ showDefDesc h _ desc = do
 
 printModuleDoc :: ModuleOptions -> Text -> IO ()
 printModuleDoc modopts tmodname = do
-    let ?pinafore = nullPinaforeContext
+    let ?qcontext = nullQContext
     let fmodule = standardFetchModule modopts
     let ?library = mkLibraryContext fmodule
     modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname

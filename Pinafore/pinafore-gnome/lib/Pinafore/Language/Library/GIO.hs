@@ -8,18 +8,18 @@ module Pinafore.Language.Library.GIO
 import Changes.Core
 import Changes.World.GNOME.GIO
 import Changes.World.MIME
-import GI.Gio as GI
+import GI.Gio as GI hiding (Action)
 import Pinafore.Base
 import Pinafore.Language.API
 import Shapes
 import Shapes.Unsafe
 
 -- File
-fileGroundType :: PinaforeGroundType '[] File
+fileGroundType :: QGroundType '[] File
 fileGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily File)|]) "File"
 
-instance HasPinaforeGroundType '[] File where
-    pinaforeGroundType = fileGroundType
+instance HasQGroundType '[] File where
+    qGroundType = fileGroundType
 
 fileToParseName :: File -> Text
 fileToParseName f = unsafePerformIO $ fileGetParseName f
@@ -44,13 +44,12 @@ literalConv =
                       _ -> Nothing
         }
 
-fileMakeRef :: File -> PinaforeAction (LangWholeModel '( Literal, Literal))
+fileMakeRef :: File -> Action (LangWholeModel '( Literal, Literal))
 fileMakeRef f = do
     fref <- liftIO $ giFileReference f
     (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-
         actionLiftLifecycle $ makeSharedModel $ reflectingPremodel fref
-    return $
-        pinaforeModelToWholeModel $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
+    return $ wModelToWholeModel $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
 
 gioLibraryModule :: LibraryModule
 gioLibraryModule =

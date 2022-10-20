@@ -1,8 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Storage.Database.SQLite
-    ( sqlitePinaforeTableReference
-    , sqlitePinaforeTableGetEntireDatabase
+    ( sqliteTableReference
+    , sqliteTableGetEntireDatabase
     ) where
 
 import Changes.Core
@@ -75,17 +75,17 @@ instance WitnessConstraint ToField RefCountTable where
     witnessConstraint RefCountKey = Dict
     witnessConstraint RefCountValue = Dict
 
-instance WitnessConstraint IsSQLiteTable PinaforeSchema where
-    witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeModelCount = Dict
-    witnessConstraint PinaforeFact = Dict
-    witnessConstraint PinaforeLiteral = Dict
+instance WitnessConstraint IsSQLiteTable QSchema where
+    witnessConstraint QSProperty = Dict
+    witnessConstraint QSModelCount = Dict
+    witnessConstraint QSFact = Dict
+    witnessConstraint QSLiteral = Dict
 
-sqlitePinaforeSchema :: DatabaseSchema PinaforeSchema
-sqlitePinaforeSchema = let
+sqliteQSchema :: DatabaseSchema QSchema
+sqliteQSchema = let
     databaseTables =
         mkFiniteAllFor @TableSchema $ \case
-            PinaforeProperty -> let
+            QSProperty -> let
                 tableName = "property"
                 tableColumns =
                     mkFiniteAllFor @ColumnSchema $ \case
@@ -94,7 +94,7 @@ sqlitePinaforeSchema = let
                         TripleValue -> MkColumnSchema "value" ColumnTypeNotNull False
                 tableIndexes = [MkIndexSchema "propval" [MkSome TriplePredicate, MkSome TripleValue]]
                 in MkTableSchema {..}
-            PinaforeModelCount -> let
+            QSModelCount -> let
                 tableName = "refcount"
                 tableColumns =
                     mkFiniteAllFor @ColumnSchema $ \case
@@ -102,7 +102,7 @@ sqlitePinaforeSchema = let
                         RefCountValue -> MkColumnSchema "value" ColumnTypeNotNull False
                 tableIndexes = []
                 in MkTableSchema {..}
-            PinaforeFact -> let
+            QSFact -> let
                 tableName = "fact"
                 tableColumns =
                     mkFiniteAllFor @ColumnSchema $ \case
@@ -111,7 +111,7 @@ sqlitePinaforeSchema = let
                         TripleValue -> MkColumnSchema "value" ColumnTypeNotNull False
                 tableIndexes = [MkIndexSchema "factval" [MkSome TriplePredicate, MkSome TripleValue]]
                 in MkTableSchema {..}
-            PinaforeLiteral -> let
+            QSLiteral -> let
                 tableName = "literal"
                 tableColumns =
                     mkFiniteAllFor @ColumnSchema $ \case
@@ -126,58 +126,58 @@ class (FiniteWitness colsel, WitnessConstraint Show colsel, AllConstraint Show c
 
 instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllConstraint Show colsel) => IsPinaforeRow colsel
 
-instance TupleDatabase SQLiteDatabase PinaforeSchema where
-    type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
+instance TupleDatabase SQLiteDatabase QSchema where
+    type TupleDatabaseRowWitness SQLiteDatabase QSchema = IsPinaforeRow
 
-sqlitePinaforeLens :: ChangeLens (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
+sqlitePinaforeLens :: ChangeLens (SQLiteUpdate QSchema) QTableUpdate
 sqlitePinaforeLens = let
-    clRead :: ReadFunction (SQLiteReader PinaforeSchema) PinaforeTableRead
-    clRead mr (PinaforeTableReadPropertyGet p s) = do
+    clRead :: ReadFunction (SQLiteReader QSchema) QTableRead
+    clRead mr (QTableReadPropertyGet p s) = do
         row <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeProperty)
+                (SingleTable $ MkTupleTableSel QSProperty)
                 (MkTupleWhereClause $
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
         return $ fmap getSingleAllOf $ listToMaybe row
-    clRead mr (PinaforeTableReadPropertyLookup p v) = do
+    clRead mr (QTableReadPropertyLookup p v) = do
         row <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeProperty)
+                (SingleTable $ MkTupleTableSel QSProperty)
                 (MkTupleWhereClause $
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
         return $ MkFiniteSet $ fmap getSingleAllOf row
-    clRead mr (PinaforeTableReadEntityRefCount v) = do
+    clRead mr (QTableReadEntityRefCount v) = do
         (row :: [AllOf ((:~:) RefCount)]) <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeModelCount)
+                (SingleTable $ MkTupleTableSel QSModelCount)
                 (MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v)
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr RefCountValue)
         return $ do
             sa <- listToMaybe row
             return $ getSingleAllOf sa
-    clRead mr (PinaforeTableReadFactGet p s) = do
+    clRead mr (QTableReadFactGet p s) = do
         row <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeFact)
+                (SingleTable $ MkTupleTableSel QSFact)
                 (MkTupleWhereClause $
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
         return $ fmap getSingleAllOf $ listToMaybe row
-    clRead mr (PinaforeTableReadLiteralGet v) = do
+    clRead mr (QTableReadLiteralGet v) = do
         (row :: [AllOf ((:~:) Literal)]) <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeLiteral)
+                (SingleTable $ MkTupleTableSel QSLiteral)
                 (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue)
@@ -186,102 +186,100 @@ sqlitePinaforeLens = let
             return $ getSingleAllOf sa
     clUpdate ::
            forall m. MonadIO m
-        => SQLiteUpdate PinaforeSchema
-        -> Readable m (EditReader (SQLiteEdit PinaforeSchema))
-        -> m [PinaforeTableUpdate]
+        => SQLiteUpdate QSchema
+        -> Readable m (EditReader (SQLiteEdit QSchema))
+        -> m [QTableUpdate]
     clUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
     clPutEdit ::
            forall m. MonadIO m
-        => PinaforeTableEdit
-        -> m (Maybe [SQLiteEdit PinaforeSchema])
-    clPutEdit (PinaforeTableEditPropertySet p s (Just v)) =
+        => QTableEdit
+        -> m (Maybe [SQLiteEdit QSchema])
+    clPutEdit (QTableEditPropertySet p s (Just v)) =
         return $
         Just $
         pure $
-        DatabaseInsert (MkTupleTableSel PinaforeProperty) $
+        DatabaseInsert (MkTupleTableSel QSProperty) $
         MkTupleInsertClause $
         pure $
         MkAllOf $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    clPutEdit (PinaforeTableEditPropertySet p s Nothing) =
+    clPutEdit (QTableEditPropertySet p s Nothing) =
         return $
         Just $
         pure $
-        DatabaseDelete (MkTupleTableSel PinaforeProperty) $
+        DatabaseDelete (MkTupleTableSel QSProperty) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    clPutEdit (PinaforeTableEditEntityRefCount v (Just rc)) =
+    clPutEdit (QTableEditEntityRefCount v (Just rc)) =
         return $
         Just $
         pure $
-        DatabaseInsert (MkTupleTableSel PinaforeModelCount) $
+        DatabaseInsert (MkTupleTableSel QSModelCount) $
         MkTupleInsertClause $
         pure $
         MkAllOf $ \case
             RefCountKey -> v
             RefCountValue -> rc
-    clPutEdit (PinaforeTableEditEntityRefCount v Nothing) =
+    clPutEdit (QTableEditEntityRefCount v Nothing) =
         return $
         Just $
         pure $
-        DatabaseDelete (MkTupleTableSel PinaforeModelCount) $
-        MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v
-    clPutEdit (PinaforeTableEditFactSet p s (Just v)) =
+        DatabaseDelete (MkTupleTableSel QSModelCount) $ MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v
+    clPutEdit (QTableEditFactSet p s (Just v)) =
         return $
         Just $
         pure $
-        DatabaseInsert (MkTupleTableSel PinaforeFact) $
+        DatabaseInsert (MkTupleTableSel QSFact) $
         MkTupleInsertClause $
         pure $
         MkAllOf $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    clPutEdit (PinaforeTableEditFactSet p s Nothing) =
+    clPutEdit (QTableEditFactSet p s Nothing) =
         return $
         Just $
         pure $
-        DatabaseDelete (MkTupleTableSel PinaforeFact) $
+        DatabaseDelete (MkTupleTableSel QSFact) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    clPutEdit (PinaforeTableEditLiteralSet v (Just l)) =
+    clPutEdit (QTableEditLiteralSet v (Just l)) =
         return $
         Just $
         pure $
-        DatabaseInsert (MkTupleTableSel PinaforeLiteral) $
+        DatabaseInsert (MkTupleTableSel QSLiteral) $
         MkTupleInsertClause $
         pure $
         MkAllOf $ \case
             LiteralKey -> v
             LiteralValue -> l
-    clPutEdit (PinaforeTableEditLiteralSet v Nothing) =
+    clPutEdit (QTableEditLiteralSet v Nothing) =
         return $
         Just $
-        pure $
-        DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v
+        pure $ DatabaseDelete (MkTupleTableSel QSLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v
     clPutEdits ::
            forall m. MonadIO m
-        => [PinaforeTableEdit]
-        -> Readable m (SQLiteReader PinaforeSchema)
-        -> m (Maybe [SQLiteEdit PinaforeSchema])
+        => [QTableEdit]
+        -> Readable m (SQLiteReader QSchema)
+        -> m (Maybe [SQLiteEdit QSchema])
     clPutEdits = clPutEditsFromSimplePutEdit clPutEdit
     in MkChangeLens {..}
 
-instance WitnessConstraint IsPinaforeRow PinaforeSchema where
-    witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeModelCount = Dict
-    witnessConstraint PinaforeFact = Dict
-    witnessConstraint PinaforeLiteral = Dict
+instance WitnessConstraint IsPinaforeRow QSchema where
+    witnessConstraint QSProperty = Dict
+    witnessConstraint QSModelCount = Dict
+    witnessConstraint QSFact = Dict
+    witnessConstraint QSLiteral = Dict
 
-instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
+instance ShowableTupleDatabase SQLiteDatabase QSchema where
     witnessTupleRow = Dict
 
-sqlitePinaforeTableReference :: FilePath -> IO (Reference PinaforeTableEdit)
-sqlitePinaforeTableReference path = do
-    obj <- sqliteReference path sqlitePinaforeSchema
+sqliteTableReference :: FilePath -> IO (Reference QTableEdit)
+sqliteTableReference path = do
+    obj <- sqliteReference path sqliteQSchema
     return $ mapReference sqlitePinaforeLens obj
 
-sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllFor [] (TupleTableSel PinaforeSchema))
-sqlitePinaforeTableGetEntireDatabase rc path = do
-    obj <- sqliteReference path sqlitePinaforeSchema
+sqliteTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllFor [] (TupleTableSel QSchema))
+sqliteTableGetEntireDatabase rc path = do
+    obj <- sqliteReference path sqliteQSchema
     getReferenceSubject rc obj

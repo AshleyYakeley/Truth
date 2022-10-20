@@ -91,13 +91,13 @@ langSetModelCartesianProduct (MkLangSetModel eqA svA) (MkLangSetModel eqB svB) =
     in MkLangSetModel eqAB $
        eaMap (fromReadOnlyRejectingChangeLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
 
-langSetModelAdd :: forall a. LangSetModel a -> a -> PinaforeAction ()
+langSetModelAdd :: forall a. LangSetModel a -> a -> Action ()
 langSetModelAdd (MkLangSetModel _eq sv) a =
-    pinaforeModelPush sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
+    actionModelPush sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
 
-langSetModelRemove :: forall a. LangSetModel a -> a -> PinaforeAction ()
+langSetModelRemove :: forall a. LangSetModel a -> a -> Action ()
 langSetModelRemove (MkLangSetModel _eq sv) a =
-    pinaforeModelPush sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
+    actionModelPush sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
 
 langSetModelMember :: forall a. LangSetModel a -> LangWholeModel '( BottomType, a) -> LangWholeModel '( Bool, Bool)
 langSetModelMember (MkLangSetModel eq sv) aref = let
@@ -168,7 +168,7 @@ langSetModelMember (MkLangSetModel eq sv) aref = let
                                 MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                             _ -> Nothing
         in MkChangeLens {..}
-    in pinaforeModelToWholeModel $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
+    in wModelToWholeModel $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
 
 predicateToLangSetModel :: forall a. (a -> Bool) -> LangSetModel (MeetType Entity a)
 predicateToLangSetModel p = MkLangSetModel (==) $ eaMap fromReadOnlyRejectingChangeLens $ eaPure $ \mea -> p $ meet2 mea

@@ -36,11 +36,11 @@ instance MaybeRepresentational LangDrawing where
 instance HasVariance LangDrawing where
     type VarianceOf LangDrawing = 'Covariance
 
-drawingGroundType :: PinaforeGroundType '[ CoCCRVariance] LangDrawing
+drawingGroundType :: QGroundType '[ CoCCRVariance] LangDrawing
 drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangDrawing)|]) "Drawing"
 
-instance HasPinaforeGroundType '[ CoCCRVariance] LangDrawing where
-    pinaforeGroundType = drawingGroundType
+instance HasQGroundType '[ CoCCRVariance] LangDrawing where
+    qGroundType = drawingGroundType
 
 langPointDrawing :: LangDrawing (Double, Double)
 langPointDrawing = MkLangDrawing $ pointDrawing pure
@@ -72,11 +72,11 @@ langIfInRect ((x0, y0), (w, h)) = langIfPoint $ \(x, y) -> (x >= x0) && (x < x0 
 -- LangPath
 type LangPath = Path
 
-pathGroundType :: PinaforeGroundType '[] LangPath
+pathGroundType :: QGroundType '[] LangPath
 pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPath)|]) "Path"
 
-instance HasPinaforeGroundType '[] LangPath where
-    pinaforeGroundType = pathGroundType
+instance HasQGroundType '[] LangPath where
+    qGroundType = pathGroundType
 
 -- LangPattern
 newtype LangPattern =
@@ -85,11 +85,11 @@ newtype LangPattern =
 liftPattern :: Pattern -> LangPattern
 liftPattern p = MkLangPattern p
 
-patternGroundType :: PinaforeGroundType '[] LangPattern
+patternGroundType :: QGroundType '[] LangPattern
 patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPattern)|]) "Pattern"
 
-instance HasPinaforeGroundType '[] LangPattern where
-    pinaforeGroundType = patternGroundType
+instance HasQGroundType '[] LangPattern where
+    qGroundType = patternGroundType
 
 colourToTuple :: LangColour -> (Double, Double, Double)
 colourToTuple (MkPerceptualSRGBFraction r g b) = (r, g, b)
@@ -100,8 +100,8 @@ alphaColourToTuple (MkAlphaColourFraction op col) = (colourToTuple col, op)
 toPatternColorStop :: (Double, LangAlphaColour) -> PatternColorStop
 toPatternColorStop (offset, MkAlphaColourFraction op col) = MkPatternColorStop offset (colourToTuple col, Just op)
 
-instance HasPinaforeType 'Negative PatternColorStop where
-    pinaforeType = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) pinaforeType
+instance HasQType 'Negative PatternColorStop where
+    qType = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) qType
 
 langSource :: LangAlphaColour -> LangDrawing A -> LangDrawing A
 langSource acol = hoistDrawing $ sourceRGBA $ alphaColourToTuple acol

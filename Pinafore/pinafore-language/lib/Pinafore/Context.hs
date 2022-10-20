@@ -1,14 +1,14 @@
 module Pinafore.Context
     ( InvocationInfo(..)
     , nullInvocationInfo
-    , PinaforeContext
-    , unliftPinaforeAction
-    , unliftPinaforeActionOrFail
-    , runPinaforeAction
-    , makePinaforeContext
-    , nullPinaforeContext
-    , pinaforeStorageModel
-    , pinaforeInvocationInfo
+    , QContext
+    , unliftAction
+    , unliftActionOrFail
+    , runAction
+    , makeQContext
+    , nullQContext
+    , qStorageModel
+    , qInvocationInfo
     ) where
 
 import Changes.Core
@@ -34,43 +34,43 @@ nullInvocationInfo = let
     iiStdErr = mempty
     in MkInvocationInfo {..}
 
-data PinaforeContext = MkPinaforeContext
-    { pconUnliftAction :: forall a. PinaforeAction a -> View (Know a)
-    , pconStorageModel :: Model PinaforeStorageUpdate
+data QContext = MkQContext
+    { pconUnliftAction :: forall a. Action a -> View (Know a)
+    , pconStorageModel :: Model QStorageUpdate
     , pconInvocation :: InvocationInfo
     }
 
-unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> View (Know a)
-unliftPinaforeAction = pconUnliftAction ?pinafore
+unliftAction :: (?qcontext :: QContext) => Action a -> View (Know a)
+unliftAction = pconUnliftAction ?qcontext
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext) => PinaforeAction --> View
-unliftPinaforeActionOrFail action = do
-    ka <- unliftPinaforeAction action
+unliftActionOrFail :: (?qcontext :: QContext) => Action --> View
+unliftActionOrFail action = do
+    ka <- unliftAction action
     case ka of
         Known a -> return a
         Unknown -> fail "action stopped"
 
-runPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction () -> View ()
-runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
+runAction :: (?qcontext :: QContext) => Action () -> View ()
+runAction action = fmap (\_ -> ()) $ unliftAction action
 
-pinaforeStorageModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
-pinaforeStorageModel = pconStorageModel ?pinafore
+qStorageModel :: (?qcontext :: QContext) => Model QStorageUpdate
+qStorageModel = pconStorageModel ?qcontext
 
-pinaforeInvocationInfo :: (?pinafore :: PinaforeContext) => InvocationInfo
-pinaforeInvocationInfo = pconInvocation ?pinafore
+qInvocationInfo :: (?qcontext :: QContext) => InvocationInfo
+qInvocationInfo = pconInvocation ?qcontext
 
-makePinaforeContext :: InvocationInfo -> Model PinaforeStorageUpdate -> Lifecycle PinaforeContext
-makePinaforeContext pconInvocation rmodel = do
+makeQContext :: InvocationInfo -> Model QStorageUpdate -> Lifecycle QContext
+makeQContext pconInvocation rmodel = do
     uh <- liftIO newUndoHandler
     let
-        pconUnliftAction :: forall a. PinaforeAction a -> View (Know a)
-        pconUnliftAction = unPinaforeAction uh
+        pconUnliftAction :: forall a. Action a -> View (Know a)
+        pconUnliftAction = unAction uh
         pconStorageModel = undoHandlerModel uh rmodel
-    return $ MkPinaforeContext {..}
+    return $ MkQContext {..}
 
-nullPinaforeContext :: PinaforeContext
-nullPinaforeContext = let
+nullQContext :: QContext
+nullQContext = let
     pconUnliftAction _ = fail "null Pinafore context"
     pconStorageModel = error "no pinafore base"
     pconInvocation = nullInvocationInfo
-    in MkPinaforeContext {..}
+    in MkQContext {..}

@@ -17,17 +17,17 @@ import Pinafore.Markdown
 import Shapes
 
 qPositiveTypeDescription ::
-       forall t. HasPinaforeType 'Positive t
+       forall t. HasQType 'Positive t
     => Text
 qPositiveTypeDescription =
-    case toPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Positive) @t of
+    case toPolarShimWit @Type @(QPolyShim Type) @(QType 'Positive) @t of
         MkShimWit w _ -> exprShow w
 
 qNegativeTypeDescription ::
-       forall t. HasPinaforeType 'Negative t
+       forall t. HasQType 'Negative t
     => Text
 qNegativeTypeDescription =
-    case fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative) @t of
+    case fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
 type LibraryModule = DocTree BindDoc
@@ -36,8 +36,8 @@ type EnA = MeetType Entity A
 
 data ScopeEntry
     = BindScopeEntry Name
-                     (Maybe (PinaforeContext -> PinaforeInterpreterBinding))
-    | SubtypeScopeEntry (SubtypeConversionEntry PinaforeGroundType)
+                     (Maybe (QContext -> QInterpreterBinding))
+    | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
 
 data BindDoc = MkBindDoc
     { bdScopeEntry :: ScopeEntry
@@ -45,16 +45,16 @@ data BindDoc = MkBindDoc
     }
 
 mkValEntry ::
-       forall t. HasPinaforeType 'Positive t
+       forall t. HasQType 'Positive t
     => Name
     -> Markdown
-    -> ((?pinafore :: PinaforeContext) => t)
+    -> ((?qcontext :: QContext) => t)
     -> DocTreeEntry BindDoc
 mkValEntry name docDescription val = let
     bdScopeEntry =
         BindScopeEntry name $
         Just $ \pc -> let
-            ?pinafore = pc
+            ?qcontext = pc
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
     diName = name
     diType = qPositiveTypeDescription @t
@@ -63,10 +63,10 @@ mkValEntry name docDescription val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall t. HasPinaforeType 'Positive t
+       forall t. HasQType 'Positive t
     => Name
     -> Markdown
-    -> ((?pinafore :: PinaforeContext) => t)
+    -> ((?qcontext :: QContext) => t)
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
     bdScopeEntry = BindScopeEntry name Nothing
@@ -103,7 +103,7 @@ getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeFor dvt getTyp
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-mkTypeEntry :: Name -> Markdown -> PinaforeBoundType -> DocTreeEntry BindDoc
+mkTypeEntry :: Name -> Markdown -> QBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
     diName = name
@@ -114,7 +114,7 @@ mkTypeEntry name docDescription t = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkSubtypeRelationEntry :: Text -> Text -> Markdown -> SubtypeConversionEntry PinaforeGroundType -> DocTreeEntry BindDoc
+mkSubtypeRelationEntry :: Text -> Text -> Markdown -> SubtypeConversionEntry QGroundType -> DocTreeEntry BindDoc
 mkSubtypeRelationEntry diSubtype diSupertype docDescription scentry = let
     bdScopeEntry = SubtypeScopeEntry scentry
     docItem = SubtypeRelationDocItem {..}
@@ -125,30 +125,26 @@ subtypeRelationEntry ::
        forall a b.
        TrustOrVerify
     -> Markdown
-    -> PinaforeGroundedShimWit 'Negative a
-    -> PinaforeGroundedShimWit 'Positive b
-    -> PinaforePolyShim Type a b
+    -> QGroundedShimWit 'Negative a
+    -> QGroundedShimWit 'Positive b
+    -> QPolyShim Type a b
     -> DocTreeEntry BindDoc
 subtypeRelationEntry trustme desc ta tb conv =
     mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry trustme ta tb $ pure conv
 
 hasSubtypeRelationEntry ::
-       forall a b. (HasPinaforeType 'Negative a, HasPinaforeType 'Positive b)
+       forall a b. (HasQType 'Negative a, HasQType 'Positive b)
     => TrustOrVerify
     -> Markdown
-    -> PinaforePolyShim Type a b
+    -> QPolyShim Type a b
     -> DocTreeEntry BindDoc
 hasSubtypeRelationEntry trustme doc conv = let
-    ta = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ a)
-    tb = fromJust $ dolanToMaybeShimWit (pinaforeType :: _ b)
+    ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
+    tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)
     in subtypeRelationEntry trustme doc ta tb conv
 
 mkValPatEntry ::
-       forall t v lt.
-       ( HasPinaforeType 'Positive t
-       , HasPinaforeType 'Negative v
-       , ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
-       )
+       forall t v lt. (HasQType 'Positive t, HasQType 'Negative v, ToListShimWit (QPolyShim Type) (QType 'Positive) lt)
     => Name
     -> Markdown
     -> t
@@ -165,17 +161,12 @@ mkValPatEntry name docDescription val pat = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSpecialFormEntry ::
-       Name
-    -> Markdown
-    -> [Text]
-    -> Text
-    -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm)
-    -> DocTreeEntry BindDoc
+       Name -> Markdown -> [Text] -> Text -> ((?qcontext :: QContext) => QSpecialForm) -> DocTreeEntry BindDoc
 mkSpecialFormEntry name docDescription params diType sf = let
     bdScopeEntry =
         BindScopeEntry name $
         Just $ \pc -> let
-            ?pinafore = pc
+            ?qcontext = pc
             in SpecialFormBinding sf
     diName = name
     diParams = params

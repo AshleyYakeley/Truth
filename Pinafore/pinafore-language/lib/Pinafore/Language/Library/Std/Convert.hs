@@ -11,17 +11,17 @@ import Pinafore.Language.Type
 import Shapes
 
 -- IO
-instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (IO a) where
-    pinaforeType = mapPosShimWit (functionToShim "liftIO" $ liftIO @PinaforeAction) pinaforeType
+instance (HasQType 'Positive a) => HasQType 'Positive (IO a) where
+    qType = mapPosShimWit (functionToShim "liftIO" $ liftIO @Action) qType
 
 -- View
-instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (View a) where
-    pinaforeType = mapPosShimWit (functionToShim "actionLiftView" actionLiftView) pinaforeType
+instance (HasQType 'Positive a) => HasQType 'Positive (View a) where
+    qType = mapPosShimWit (functionToShim "actionLiftView" actionLiftView) qType
 
 -- Entity
-instance HasPinaforeGroundType '[] Entity where
-    pinaforeGroundType = entityGroundType
+instance HasQGroundType '[] Entity where
+    qGroundType = entityGroundType
 
 -- DynamicEntity
-instance HasPinaforeGroundType '[] DynamicEntity where
-    pinaforeGroundType = dynamicEntityGroundType
+instance HasQGroundType '[] DynamicEntity where
+    qGroundType = dynamicEntityGroundType

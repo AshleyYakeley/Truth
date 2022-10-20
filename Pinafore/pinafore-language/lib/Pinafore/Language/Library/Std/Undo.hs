@@ -15,12 +15,12 @@ undoLibEntries =
           "Undo"
           "Undo and redo changes."
           [ mkValEntry "queueUndo" "Undo an action." $ do
-                uh <- pinaforeUndoHandler
-                rc <- pinaforeResourceContext
+                uh <- actionUndoHandler
+                rc <- actionResourceContext
                 liftIO $ undoHandlerUndo uh rc noEditSource
           , mkValEntry "queueRedo" "Redo an action." $ do
-                uh <- pinaforeUndoHandler
-                rc <- pinaforeResourceContext
+                uh <- actionUndoHandler
+                rc <- actionResourceContext
                 liftIO $ undoHandlerRedo uh rc noEditSource
           ]
     ]

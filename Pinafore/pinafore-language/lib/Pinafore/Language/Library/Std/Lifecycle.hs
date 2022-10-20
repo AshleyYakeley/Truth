@@ -33,6 +33,6 @@ lifecycleLibEntries =
                 \Example: `(cl,r) <- closer openResource`  \n\
                 \This opens a resource `r`, also creating an action `cl`, that will close the resource when first called (subsequent calls do nothing).\n\
                 \This action will also be run at the end of the lifecycle, only if it hasn't already." $
-            pinaforeEarlyCloser @A
+            actionEarlyCloser @A
           ]
     ]

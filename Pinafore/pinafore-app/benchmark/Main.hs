@@ -28,17 +28,17 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext stdout) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestQContext stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in bgroup
                (show $ unpack text)
                [ bench "check" $
                  nfIO $
                  runWithContext pc (libraryFetchModule extraLibrary) $
-                 fromInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
+                 fromInterpretResult $ qInterpretText "<test>" text >> return ()
                , env (fmap const $
                       runWithContext pc (libraryFetchModule extraLibrary) $
-                      fromInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
+                      fromInterpretResult $ qInterpretText "<test>" text) $ \action ->
                      bench "run" $ nfIO (nullViewIO $ action ())
                ]
 
@@ -93,21 +93,21 @@ benchScripts =
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
-interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
+interpretUpdater :: (?qcontext :: QContext) => Text -> IO ()
 interpretUpdater text =
-    withTestPinaforeContext mempty stdout $ \_getTableState -> do
-        action <- fromInterpretResult $ pinaforeInterpretTextAtType "<test>" text
-        (sendUpdate, ref) <- runNewView $ unliftPinaforeActionOrFail action
+    withTestQContext mempty stdout $ \_getTableState -> do
+        action <- fromInterpretResult $ qInterpretTextAtType "<test>" text
+        (sendUpdate, ref) <- runNewView $ unliftActionOrFail action
         runNewView $
             runEditor (unWModel $ immutableModelToRejectingModel ref) $
-            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+            checkUpdateEditor (Known (1 :: Integer)) $ unliftActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext stdout) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestQContext stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
-               ?pinafore = pc
+               ?qcontext = pc
                in bench (show $ unpack text) $ nfIO $ interpretUpdater text
 
 benchUpdates :: Benchmark

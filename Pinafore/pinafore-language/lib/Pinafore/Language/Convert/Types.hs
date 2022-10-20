@@ -13,21 +13,21 @@ import Shapes
 import Shapes.Numeric
 
 -- top, bottom, join, meet
-instance HasPinaforeType 'Positive BottomType where
-    pinaforeType = nilDolanShimWit
+instance HasQType 'Positive BottomType where
+    qType = nilDolanShimWit
 
-instance HasPinaforeType 'Negative TopType where
-    pinaforeType = nilDolanShimWit
+instance HasQType 'Negative TopType where
+    qType = nilDolanShimWit
 
-instance (HasPinaforeType 'Positive a, HasPinaforeType 'Positive b) => HasPinaforeType 'Positive (JoinType a b) where
-    pinaforeType = joinMeetShimWit pinaforeType pinaforeType
+instance (HasQType 'Positive a, HasQType 'Positive b) => HasQType 'Positive (JoinType a b) where
+    qType = joinMeetShimWit qType qType
 
-instance (HasPinaforeType 'Negative a, HasPinaforeType 'Negative b) => HasPinaforeType 'Negative (MeetType a b) where
-    pinaforeType = joinMeetShimWit pinaforeType pinaforeType
+instance (HasQType 'Negative a, HasQType 'Negative b) => HasQType 'Negative (MeetType a b) where
+    qType = joinMeetShimWit qType qType
 
 -- Var Type
-instance (Is PolarityType polarity, KnownSymbol name) => HasPinaforeType polarity (Var name) where
-    pinaforeType =
+instance (Is PolarityType polarity, KnownSymbol name) => HasQType polarity (Var name) where
+    qType =
         shimWitToDolan $
         MkShimWit (VarDolanSingularType $ MkSymbolType @name) $
         case polarityType @polarity of
@@ -35,213 +35,211 @@ instance (Is PolarityType polarity, KnownSymbol name) => HasPinaforeType polarit
             NegativeType -> MkPolarMap $ coerceShim "var"
 
 -- (,)
-instance HasPinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,) where
-    pinaforeGroundType = pairGroundType
+instance HasQGroundType '[ CoCCRVariance, CoCCRVariance] (,) where
+    qGroundType = pairGroundType
 
 -- Either
-instance HasPinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either where
-    pinaforeGroundType = eitherGroundType
+instance HasQGroundType '[ CoCCRVariance, CoCCRVariance] Either where
+    qGroundType = eitherGroundType
 
 -- (->)
-instance HasPinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->) where
-    pinaforeGroundType = funcGroundType
+instance HasQGroundType '[ ContraCCRVariance, CoCCRVariance] (->) where
+    qGroundType = funcGroundType
 
 -- Maybe
-instance HasPinaforeGroundType '[ CoCCRVariance] Maybe where
-    pinaforeGroundType = maybeGroundType
+instance HasQGroundType '[ CoCCRVariance] Maybe where
+    qGroundType = maybeGroundType
 
 -- []
-instance HasPinaforeGroundType '[ CoCCRVariance] [] where
-    pinaforeGroundType = listGroundType
+instance HasQGroundType '[ CoCCRVariance] [] where
+    qGroundType = listGroundType
 
 -- NonEmpty
-instance HasPinaforeGroundType '[ CoCCRVariance] NonEmpty where
-    pinaforeGroundType = list1GroundType
+instance HasQGroundType '[ CoCCRVariance] NonEmpty where
+    qGroundType = list1GroundType
 
--- PinaforeAction
-instance HasPinaforeGroundType '[ CoCCRVariance] PinaforeAction where
-    pinaforeGroundType = actionGroundType
+-- Action
+instance HasQGroundType '[ CoCCRVariance] Action where
+    qGroundType = actionGroundType
 
 -- LangWholeModel
-wholeModelGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangWholeModel
+wholeModelGroundType :: QGroundType '[ 'RangeCCRVariance] LangWholeModel
 wholeModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWholeModel)|]) "WholeModel"
 
-instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangWholeModel where
-    pinaforeGroundType = wholeModelGroundType
+instance HasQGroundType '[ 'RangeCCRVariance] LangWholeModel where
+    qGroundType = wholeModelGroundType
 
--- PinaforeImmutableWholeModel
-instance (HasPinaforeType 'Negative a) => HasPinaforeType 'Negative (PinaforeImmutableWholeModel a) where
-    pinaforeType =
-        mapNegShimWit (functionToShim "langWholeModelToImmutable" $ langWholeModelToImmutable @BottomType) pinaforeType
+-- ImmutableWholeModel
+instance (HasQType 'Negative a) => HasQType 'Negative (ImmutableWholeModel a) where
+    qType = mapNegShimWit (functionToShim "langWholeModelToImmutable" $ langWholeModelToImmutable @BottomType) qType
 
-instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeImmutableWholeModel a) where
-    pinaforeType =
-        mapPosShimWit (functionToShim "pinaforeImmutableToWholeModel" pinaforeImmutableToWholeModel) pinaforeType
+instance (HasQType 'Positive a) => HasQType 'Positive (ImmutableWholeModel a) where
+    qType = mapPosShimWit (functionToShim "immutableToWholeModel" immutableToWholeModel) qType
 
 -- Literal types
-instance HasPinaforeGroundType '[] Literal where
-    pinaforeGroundType = literalGroundType
+instance HasQGroundType '[] Literal where
+    qGroundType = literalGroundType
 
-unitGroundType :: PinaforeGroundType '[] ()
+unitGroundType :: QGroundType '[] ()
 unitGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] () where
-    pinaforeGroundType = unitGroundType
+instance HasQGroundType '[] () where
+    qGroundType = unitGroundType
 
-textGroundType :: PinaforeGroundType '[] Text
+textGroundType :: QGroundType '[] Text
 textGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 textShimWit ::
        forall polarity. Is PolarityType polarity
-    => PinaforeShimWit polarity Text
+    => QShimWit polarity Text
 textShimWit = typeToDolan $ MkDolanGroundedType textGroundType NilCCRArguments
 
-instance HasPinaforeGroundType '[] Text where
-    pinaforeGroundType = textGroundType
+instance HasQGroundType '[] Text where
+    qGroundType = textGroundType
 
-numberGroundType :: PinaforeGroundType '[] Number
+numberGroundType :: QGroundType '[] Number
 numberGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] Number where
-    pinaforeGroundType = numberGroundType
+instance HasQGroundType '[] Number where
+    qGroundType = numberGroundType
 
-rationalGroundType :: PinaforeGroundType '[] SafeRational
+rationalGroundType :: QGroundType '[] SafeRational
 rationalGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] SafeRational where
-    pinaforeGroundType = rationalGroundType
+instance HasQGroundType '[] SafeRational where
+    qGroundType = rationalGroundType
 
-integerGroundType :: PinaforeGroundType '[] Integer
+integerGroundType :: QGroundType '[] Integer
 integerGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] Integer where
-    pinaforeGroundType = integerGroundType
+instance HasQGroundType '[] Integer where
+    qGroundType = integerGroundType
 
-booleanGroundType :: PinaforeGroundType '[] Bool
+booleanGroundType :: QGroundType '[] Bool
 booleanGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] Bool where
-    pinaforeGroundType = booleanGroundType
+instance HasQGroundType '[] Bool where
+    qGroundType = booleanGroundType
 
-orderingGroundType :: PinaforeGroundType '[] Ordering
+orderingGroundType :: QGroundType '[] Ordering
 orderingGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] Ordering where
-    pinaforeGroundType = orderingGroundType
+instance HasQGroundType '[] Ordering where
+    qGroundType = orderingGroundType
 
-timeGroundType :: PinaforeGroundType '[] UTCTime
+timeGroundType :: QGroundType '[] UTCTime
 timeGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] UTCTime where
-    pinaforeGroundType = timeGroundType
+instance HasQGroundType '[] UTCTime where
+    qGroundType = timeGroundType
 
-durationGroundType :: PinaforeGroundType '[] NominalDiffTime
+durationGroundType :: QGroundType '[] NominalDiffTime
 durationGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] NominalDiffTime where
-    pinaforeGroundType = durationGroundType
+instance HasQGroundType '[] NominalDiffTime where
+    qGroundType = durationGroundType
 
-dateGroundType :: PinaforeGroundType '[] Day
+dateGroundType :: QGroundType '[] Day
 dateGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] Day where
-    pinaforeGroundType = dateGroundType
+instance HasQGroundType '[] Day where
+    qGroundType = dateGroundType
 
-timeOfDayGroundType :: PinaforeGroundType '[] TimeOfDay
+timeOfDayGroundType :: QGroundType '[] TimeOfDay
 timeOfDayGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] TimeOfDay where
-    pinaforeGroundType = timeOfDayGroundType
+instance HasQGroundType '[] TimeOfDay where
+    qGroundType = timeOfDayGroundType
 
-localTimeGroundType :: PinaforeGroundType '[] LocalTime
+localTimeGroundType :: QGroundType '[] LocalTime
 localTimeGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
-instance HasPinaforeGroundType '[] LocalTime where
-    pinaforeGroundType = localTimeGroundType
+instance HasQGroundType '[] LocalTime where
+    qGroundType = localTimeGroundType
 
 -- Double
-instance HasPinaforeType 'Positive Double where
-    pinaforeType = mapPosShimWit (functionToShim "InexactNumber" InexactNumber) pinaforeType
+instance HasQType 'Positive Double where
+    qType = mapPosShimWit (functionToShim "InexactNumber" InexactNumber) qType
 
-instance HasPinaforeType 'Negative Double where
-    pinaforeType = mapNegShimWit (functionToShim "numberToDouble" numberToDouble) pinaforeType
+instance HasQType 'Negative Double where
+    qType = mapNegShimWit (functionToShim "numberToDouble" numberToDouble) qType
 
 -- Int
-instance HasPinaforeType 'Positive Int where
-    pinaforeType = mapPosShimWit (functionToShim "toInteger" toInteger) pinaforeType
+instance HasQType 'Positive Int where
+    qType = mapPosShimWit (functionToShim "toInteger" toInteger) qType
 
-instance HasPinaforeType 'Negative Int where
-    pinaforeType = mapNegShimWit (functionToShim "fromInteger" fromInteger) pinaforeType
+instance HasQType 'Negative Int where
+    qType = mapNegShimWit (functionToShim "fromInteger" fromInteger) qType
 
 -- Int32
-instance HasPinaforeType 'Positive Int32 where
-    pinaforeType = mapPosShimWit (functionToShim "toInteger" toInteger) pinaforeType
+instance HasQType 'Positive Int32 where
+    qType = mapPosShimWit (functionToShim "toInteger" toInteger) qType
 
-instance HasPinaforeType 'Negative Int32 where
-    pinaforeType = mapNegShimWit (functionToShim "fromInteger" fromInteger) pinaforeType
+instance HasQType 'Negative Int32 where
+    qType = mapNegShimWit (functionToShim "fromInteger" fromInteger) qType
 
 -- Int64
-instance HasPinaforeType 'Positive Int64 where
-    pinaforeType = mapPosShimWit (functionToShim "toInteger" toInteger) pinaforeType
+instance HasQType 'Positive Int64 where
+    qType = mapPosShimWit (functionToShim "toInteger" toInteger) qType
 
-instance HasPinaforeType 'Negative Int64 where
-    pinaforeType = mapNegShimWit (functionToShim "fromInteger" fromInteger) pinaforeType
+instance HasQType 'Negative Int64 where
+    qType = mapNegShimWit (functionToShim "fromInteger" fromInteger) qType
 
 -- Rational
-instance HasPinaforeType 'Positive Rational where
-    pinaforeType = mapPosShimWit (functionToShim "fromRational" $ fromRational @SafeRational) pinaforeType
+instance HasQType 'Positive Rational where
+    qType = mapPosShimWit (functionToShim "fromRational" $ fromRational @SafeRational) qType
 
-instance HasPinaforeType 'Negative Rational where
-    pinaforeType = mapNegShimWit (functionToShim "toRational" $ toRational @SafeRational) pinaforeType
+instance HasQType 'Negative Rational where
+    qType = mapNegShimWit (functionToShim "toRational" $ toRational @SafeRational) qType
 
 -- Fixed
-instance HasResolution r => HasPinaforeType 'Positive (Fixed r) where
-    pinaforeType = mapPosShimWit (functionToShim "toRational" toRational) pinaforeType
+instance HasResolution r => HasQType 'Positive (Fixed r) where
+    qType = mapPosShimWit (functionToShim "toRational" toRational) qType
 
-instance HasResolution r => HasPinaforeType 'Negative (Fixed r) where
-    pinaforeType = mapNegShimWit (functionToShim "fromRational" fromRational) pinaforeType
+instance HasResolution r => HasQType 'Negative (Fixed r) where
+    qType = mapNegShimWit (functionToShim "fromRational" fromRational) qType
 
 -- Vector
-instance HasPinaforeType 'Positive a => HasPinaforeType 'Positive (Vector a) where
-    pinaforeType = mapPosShimWit (functionToShim "toList" toList) pinaforeType
+instance HasQType 'Positive a => HasQType 'Positive (Vector a) where
+    qType = mapPosShimWit (functionToShim "toList" toList) qType
 
-instance HasPinaforeType 'Negative a => HasPinaforeType 'Negative (Vector a) where
-    pinaforeType = mapNegShimWit (functionToShim "fromList" fromList) pinaforeType
+instance HasQType 'Negative a => HasQType 'Negative (Vector a) where
+    qType = mapNegShimWit (functionToShim "fromList" fromList) qType
 
 -- SequencePoint
-instance HasPinaforeType 'Positive SequencePoint where
-    pinaforeType = mapPosShimWit (coerceShim "unSequencePoint") $ pinaforeType @_ @Int64
+instance HasQType 'Positive SequencePoint where
+    qType = mapPosShimWit (coerceShim "unSequencePoint") $ qType @_ @Int64
 
-instance HasPinaforeType 'Negative SequencePoint where
-    pinaforeType = mapNegShimWit (coerceShim "MkSequencePoint") $ pinaforeType @_ @Int64
+instance HasQType 'Negative SequencePoint where
+    qType = mapNegShimWit (coerceShim "MkSequencePoint") $ qType @_ @Int64
 
 -- SequenceRun
-instance HasPinaforeType 'Positive SequenceRun where
-    pinaforeType = mapPosShimWit (functionToShim "unSequenceRun" (\(MkSequenceRun s e) -> (s, e))) pinaforeType
+instance HasQType 'Positive SequenceRun where
+    qType = mapPosShimWit (functionToShim "unSequenceRun" (\(MkSequenceRun s e) -> (s, e))) qType
 
-instance HasPinaforeType 'Negative SequenceRun where
-    pinaforeType = mapNegShimWit (functionToShim "MkSequenceRun" (\(s, e) -> MkSequenceRun s e)) pinaforeType
+instance HasQType 'Negative SequenceRun where
+    qType = mapNegShimWit (functionToShim "MkSequenceRun" (\(s, e) -> MkSequenceRun s e)) qType

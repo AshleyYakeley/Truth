@@ -20,11 +20,11 @@ data EntityProperties dv gt = MkEntityProperties
 
 saturateEntityAdapter ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) a r.
-       PinaforeShimWit 'Negative a
+       QShimWit 'Negative a
     -> EntityAdapter a
     -> CovaryType dv
     -> CovaryMap gt
-    -> (forall t. PinaforeArgumentsShimWit dv gt 'Negative t -> Arguments EntityAdapter gt t -> r)
+    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> Arguments EntityAdapter gt t -> r)
     -> r
 saturateEntityAdapter _ _ NilListType NilCovaryMap call = call nilDolanArgumentsShimWit NilArguments
 saturateEntityAdapter tt adapter (ConsListType Refl ct) (ConsCovaryMap ccrv cvm) call =
@@ -38,10 +38,10 @@ saturateEntityAdapter tt adapter (ConsListType Refl ct) (ConsCovaryMap ccrv cvm)
 
 entityPropertiesSaturatedAdapter ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) a r.
-       PinaforeShimWit 'Negative a
+       QShimWit 'Negative a
     -> EntityAdapter a
     -> EntityProperties dv gt
-    -> (forall t. PinaforeArgumentsShimWit dv gt 'Negative t -> EntityAdapter t -> r)
+    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> EntityAdapter t -> r)
     -> r
 entityPropertiesSaturatedAdapter tt adapter MkEntityProperties {..} call =
     saturateEntityAdapter tt adapter epKind epCovaryMap $ \args eargs -> call args (epAdapter eargs)
@@ -97,20 +97,20 @@ singleEntityFamily (MkFamilialType wit t) eprops =
         HRefl <- testHetEquality t t'
         return $ MkSealedEntityProperties eprops
 
-pinaforeEntityFamily ::
+qEntityFamily ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-       PinaforeGroundType dv t
+       QGroundType dv t
     -> (ListTypeExprShow dv -> EntityProperties dv t)
     -> EntityFamily
-pinaforeEntityFamily MkPinaforeGroundType {..} eprops = singleEntityFamily pgtFamilyType $ eprops pgtShowType
+qEntityFamily MkPinaforeGroundType {..} eprops = singleEntityFamily pgtFamilyType $ eprops pgtShowType
 
 simplePinaforeEntityFamily ::
        forall (gt :: Type). Eq gt
-    => PinaforeGroundType '[] gt
+    => QGroundType '[] gt
     -> EntityAdapter gt
     -> EntityFamily
 simplePinaforeEntityFamily gt adapter =
-    pinaforeEntityFamily gt $ \epShowType -> let
+    qEntityFamily gt $ \epShowType -> let
         epKind = NilListType
         epCovaryMap = covarymap
         epAdapter :: forall t. Arguments EntityAdapter gt t -> EntityAdapter t

@@ -81,55 +81,55 @@ instance FiniteWitness LiteralTable where
         getw LiteralKey <*>
         getw LiteralValue
 
-data PinaforeSchema colsel where
-    PinaforeProperty :: PinaforeSchema TripleTable
-    PinaforeModelCount :: PinaforeSchema RefCountTable
-    PinaforeFact :: PinaforeSchema TripleTable
-    PinaforeLiteral :: PinaforeSchema LiteralTable
+data QSchema colsel where
+    QSProperty :: QSchema TripleTable
+    QSModelCount :: QSchema RefCountTable
+    QSFact :: QSchema TripleTable
+    QSLiteral :: QSchema LiteralTable
 
-instance Show (PinaforeSchema colsel) where
-    show PinaforeProperty = "property"
-    show PinaforeModelCount = "refcount"
-    show PinaforeFact = "fact"
-    show PinaforeLiteral = "literal"
+instance Show (QSchema colsel) where
+    show QSProperty = "property"
+    show QSModelCount = "refcount"
+    show QSFact = "fact"
+    show QSLiteral = "literal"
 
-instance AllConstraint Show PinaforeSchema where
+instance AllConstraint Show QSchema where
     allConstraint = Dict
 
-instance TestEquality PinaforeSchema where
-    testEquality PinaforeProperty PinaforeProperty = Just Refl
-    testEquality PinaforeModelCount PinaforeModelCount = Just Refl
-    testEquality PinaforeFact PinaforeFact = Just Refl
-    testEquality PinaforeLiteral PinaforeLiteral = Just Refl
+instance TestEquality QSchema where
+    testEquality QSProperty QSProperty = Just Refl
+    testEquality QSModelCount QSModelCount = Just Refl
+    testEquality QSFact QSFact = Just Refl
+    testEquality QSLiteral QSLiteral = Just Refl
     testEquality _ _ = Nothing
 
-instance FiniteWitness PinaforeSchema where
+instance FiniteWitness QSchema where
     assembleAllFor getTable =
         (\ft fr ff fl ->
              MkAllFor $ \case
-                 PinaforeProperty -> ft
-                 PinaforeModelCount -> fr
-                 PinaforeFact -> ff
-                 PinaforeLiteral -> fl) <$>
-        getTable PinaforeProperty <*>
-        getTable PinaforeModelCount <*>
-        getTable PinaforeFact <*>
-        getTable PinaforeLiteral
+                 QSProperty -> ft
+                 QSModelCount -> fr
+                 QSFact -> ff
+                 QSLiteral -> fl) <$>
+        getTable QSProperty <*>
+        getTable QSModelCount <*>
+        getTable QSFact <*>
+        getTable QSLiteral
 
-instance WitnessConstraint FiniteWitness PinaforeSchema where
-    witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeModelCount = Dict
-    witnessConstraint PinaforeFact = Dict
-    witnessConstraint PinaforeLiteral = Dict
+instance WitnessConstraint FiniteWitness QSchema where
+    witnessConstraint QSProperty = Dict
+    witnessConstraint QSModelCount = Dict
+    witnessConstraint QSFact = Dict
+    witnessConstraint QSLiteral = Dict
 
-instance WitnessConstraint (AllConstraint Show) PinaforeSchema where
-    witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeModelCount = Dict
-    witnessConstraint PinaforeFact = Dict
-    witnessConstraint PinaforeLiteral = Dict
+instance WitnessConstraint (AllConstraint Show) QSchema where
+    witnessConstraint QSProperty = Dict
+    witnessConstraint QSModelCount = Dict
+    witnessConstraint QSFact = Dict
+    witnessConstraint QSLiteral = Dict
 
-instance WitnessConstraint (WitnessConstraint Show) PinaforeSchema where
-    witnessConstraint PinaforeProperty = Dict
-    witnessConstraint PinaforeModelCount = Dict
-    witnessConstraint PinaforeFact = Dict
-    witnessConstraint PinaforeLiteral = Dict
+instance WitnessConstraint (WitnessConstraint Show) QSchema where
+    witnessConstraint QSProperty = Dict
+    witnessConstraint QSModelCount = Dict
+    witnessConstraint QSFact = Dict
+    witnessConstraint QSLiteral = Dict

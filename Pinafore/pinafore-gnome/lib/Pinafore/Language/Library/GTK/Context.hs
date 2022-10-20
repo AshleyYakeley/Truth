@@ -17,14 +17,14 @@ data LangContext = MkLangContext
     , lcOtherContext :: OtherContext
     }
 
-contextGroundType :: PinaforeGroundType '[] LangContext
+contextGroundType :: QGroundType '[] LangContext
 contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangContext)|]) "Context"
 
-instance HasPinaforeGroundType '[] LangContext where
-    pinaforeGroundType = contextGroundType
+instance HasQGroundType '[] LangContext where
+    qGroundType = contextGroundType
 
-gvRunAction :: (?pinafore :: PinaforeContext) => (View --> IO) -> PinaforeAction () -> GView 'Locked ()
-gvRunAction unlift pa = gvRunUnlockedIO $ unlift $ runPinaforeAction pa
+gvRunAction :: (?qcontext :: QContext) => (View --> IO) -> Action () -> GView 'Locked ()
+gvRunAction unlift pa = gvRunUnlockedIO $ unlift $ runAction pa
 
-gvRunActionDefault :: (?pinafore :: PinaforeContext) => (View --> IO) -> a -> PinaforeAction a -> GView 'Locked a
-gvRunActionDefault unlift a pa = fmap (fromKnow a) $ gvRunUnlockedIO $ unlift $ unliftPinaforeAction pa
+gvRunActionDefault :: (?qcontext :: QContext) => (View --> IO) -> a -> Action a -> GView 'Locked a
+gvRunActionDefault unlift a pa = fmap (fromKnow a) $ gvRunUnlockedIO $ unlift $ unliftAction pa

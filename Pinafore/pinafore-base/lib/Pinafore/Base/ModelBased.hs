@@ -14,7 +14,7 @@ import Shapes
 
 type ModelBaseType :: Type -> Type
 data ModelBaseType update where
-    StorageModelBaseType :: ModelBaseType PinaforeStorageUpdate
+    StorageModelBaseType :: ModelBaseType QStorageUpdate
     OtherModelBaseType :: ModelBaseType update
 
 instance TestEquality ModelBaseType where
@@ -38,7 +38,7 @@ modelBasedModel (ProvidedModelBased _ model f) call = call model f
 pureModelBased :: (forall update. f update) -> ModelBased f
 pureModelBased = NullModelBased
 
-storageModelBased :: Model PinaforeStorageUpdate -> f PinaforeStorageUpdate -> ModelBased f
+storageModelBased :: Model QStorageUpdate -> f QStorageUpdate -> ModelBased f
 storageModelBased = ProvidedModelBased StorageModelBaseType
 
 otherModelBased :: Model update -> f update -> ModelBased f

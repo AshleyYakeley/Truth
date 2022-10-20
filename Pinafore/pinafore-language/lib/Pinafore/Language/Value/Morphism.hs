@@ -13,7 +13,7 @@ newtype LangMorphism (a :: (Type, Type)) (b :: (Type, Type)) =
 
 combineLangMorphisms ::
        (forall update.
-                PinaforeLensMorphism (Contra a1) (Co a1) (Contra b1) (Co b1) update -> PinaforeLensMorphism (Contra a2) (Co a2) (Contra b2) (Co b2) update -> PinaforeLensMorphism (Contra a12) (Co a12) (Contra b12) (Co b12) update)
+                StorageLensMorphism (Contra a1) (Co a1) (Contra b1) (Co b1) update -> StorageLensMorphism (Contra a2) (Co a2) (Contra b2) (Co b2) update -> StorageLensMorphism (Contra a12) (Co a12) (Contra b12) (Co b12) update)
     -> LangMorphism a1 b1
     -> LangMorphism a2 b2
     -> LangMorphism a12 b12
@@ -40,31 +40,31 @@ instance HasCCRVariance 'RangeCCRVariance LangMorphism
 instance HasCCRVariance 'RangeCCRVariance (LangMorphism a)
 
 identityLangMorphism :: forall x y. LangMorphism '( x, y) '( y, x)
-identityLangMorphism = MkLangMorphism $ pureModelBased identityPinaforeLensMorphism
+identityLangMorphism = MkLangMorphism $ pureModelBased identityStorageLensMorphism
 
 composeLangMorphism ::
-       forall ap aq bx by cp cq. (?pinafore :: PinaforeContext)
+       forall ap aq bx by cp cq. (?qcontext :: QContext)
     => LangMorphism '( bx, by) '( cp, cq)
     -> LangMorphism '( ap, aq) '( by, bx)
     -> LangMorphism '( ap, aq) '( cp, cq)
-composeLangMorphism = combineLangMorphisms composePinaforeLensMorphism
+composeLangMorphism = combineLangMorphisms composeStorageLensMorphism
 
 pairLangMorphism ::
-       forall ap aq bp bq cp cq. (?pinafore :: PinaforeContext)
+       forall ap aq bp bq cp cq. (?qcontext :: QContext)
     => LangMorphism '( ap, MeetType Entity aq) '( bp, bq)
     -> LangMorphism '( ap, MeetType Entity aq) '( cp, cq)
     -> LangMorphism '( ap, aq) '( (bp, cp), (bq, cq))
-pairLangMorphism = combineLangMorphisms $ \m1 m2 -> cfmap3 (meet2 @(->)) $ pairPinaforeLensMorphism m1 m2
+pairLangMorphism = combineLangMorphisms $ \m1 m2 -> cfmap3 (meet2 @(->)) $ pairStorageLensMorphism m1 m2
 
 eitherLangMorphism ::
-       forall ap aq bp bq cp cq. (?pinafore :: PinaforeContext)
+       forall ap aq bp bq cp cq. (?qcontext :: QContext)
     => LangMorphism '( ap, aq) '( cp, cq)
     -> LangMorphism '( bp, bq) '( cp, cq)
     -> LangMorphism '( Either ap bp, Either aq bq) '( cp, cq)
-eitherLangMorphism = combineLangMorphisms eitherPinaforeLensMorphism
+eitherLangMorphism = combineLangMorphisms eitherStorageLensMorphism
 
 applyLangMorphismModel ::
-       forall ap aq bp bq. (?pinafore :: PinaforeContext)
+       forall ap aq bp bq. (?qcontext :: QContext)
     => LangMorphism '( ap, aq) '( bp, bq)
     -> LangWholeModel '( aq, ap)
     -> LangWholeModel '( bp, bq)
@@ -72,33 +72,33 @@ applyLangMorphismModel (MkLangMorphism m) model =
     MutableLangWholeModel $ applyModelMorphism m $ langWholeModelToBiWholeModel model
 
 applyLangMorphismImmutModel ::
-       forall a bp bq. (?pinafore :: PinaforeContext)
+       forall a bp bq. (?qcontext :: QContext)
     => LangMorphism '( a, TopType) '( bp, bq)
-    -> PinaforeImmutableWholeModel a
+    -> ImmutableWholeModel a
     -> LangWholeModel '( bp, bq)
-applyLangMorphismImmutModel m r = applyLangMorphismModel m $ pinaforeImmutableToWholeModel r
+applyLangMorphismImmutModel m r = applyLangMorphismModel m $ immutableToWholeModel r
 
 applyLangMorphismSet ::
-       forall a b. (?pinafore :: PinaforeContext)
+       forall a b. (?qcontext :: QContext)
     => LangMorphism '( a, TopType) '( BottomType, MeetType Entity b)
     -> LangFiniteSetModel '( BottomType, a)
     -> LangFiniteSetModel '( MeetType Entity b, b)
 applyLangMorphismSet (MkLangMorphism m) (MkLangFiniteSetModel (tr :: Range _ t _) ss) =
     modelBasedModel m $ \model (pm :: _ update) -> let
-        tbkm :: PinaforeFunctionMorphism update (Know t) (Know (MeetType Entity b))
+        tbkm :: StorageFunctionMorphism update (Know t) (Know (MeetType Entity b))
         tbkm = ccontramap1 (fmap $ shimToFunction $ rangeCo tr) $ lensFunctionMorphism pm
-        tbskm :: PinaforeFunctionMorphism update (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
+        tbskm :: StorageFunctionMorphism update (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
         tbskm = cfmap tbkm
-        tbsm :: PinaforeFunctionMorphism update (FiniteSet t) (FiniteSet (MeetType Entity b))
+        tbsm :: StorageFunctionMorphism update (FiniteSet t) (FiniteSet (MeetType Entity b))
         tbsm = ccontramap1 (fmap Known) $ fmap (mapMaybe knowToMaybe) tbskm
-        tsetref :: PinaforeROWModel (FiniteSet t)
+        tsetref :: WROWModel (FiniteSet t)
         tsetref = eaToReadOnlyWhole ss
-        bsetref :: PinaforeROWModel (FiniteSet (MeetType Entity b))
-        bsetref = applyPinaforeFunction model tbsm tsetref
+        bsetref :: WROWModel (FiniteSet (MeetType Entity b))
+        bsetref = applyStorageFunction model tbsm tsetref
         in MkLangFiniteSetModel (MkRange id meet2) $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
 
 inverseApplyLangMorphismModel ::
-       forall a bx by. (?pinafore :: PinaforeContext)
+       forall a bx by. (?qcontext :: QContext)
     => LangMorphism '( a, MeetType Entity a) '( bx, by)
     -> LangWholeModel '( by, bx)
     -> LangFiniteSetModel '( MeetType Entity a, a)
@@ -107,14 +107,14 @@ inverseApplyLangMorphismModel (MkLangMorphism m) model =
     applyInverseModelMorphism (mapModelBased (cfmap4 (MkCatDual $ meet2 @(->))) m) $ langWholeModelToBiWholeModel model
 
 inverseApplyLangMorphismImmutModel ::
-       forall a b. (?pinafore :: PinaforeContext)
+       forall a b. (?qcontext :: QContext)
     => LangMorphism '( a, MeetType Entity a) '( b, TopType)
-    -> PinaforeImmutableWholeModel b
+    -> ImmutableWholeModel b
     -> LangFiniteSetModel '( MeetType Entity a, a)
-inverseApplyLangMorphismImmutModel m r = inverseApplyLangMorphismModel m $ pinaforeImmutableToWholeModel r
+inverseApplyLangMorphismImmutModel m r = inverseApplyLangMorphismModel m $ immutableToWholeModel r
 
 inverseApplyLangMorphismSet ::
-       forall a bx by. (?pinafore :: PinaforeContext)
+       forall a bx by. (?qcontext :: QContext)
     => LangMorphism '( a, MeetType Entity a) '( bx, by)
     -> LangFiniteSetModel '( by, bx)
     -> LangFiniteSetModel '( MeetType Entity a, a)

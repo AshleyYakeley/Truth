@@ -8,19 +8,19 @@ import Changes.World.ReferenceStore
 import Pinafore.Base
 import Shapes
 
-type PinaforeFileUpdate = ReferenceStoreUpdate FileEntity ByteStringEdit
+type QFileUpdate = ReferenceStoreUpdate FileEntity ByteStringEdit
 
-instance BaseChangeLens PinaforeFileUpdate PinaforeFileUpdate where
+instance BaseChangeLens QFileUpdate QFileUpdate where
     baseChangeLens = id
 
-pinaforeFileItemLens ::
-       BaseChangeLens PinaforeFileUpdate baseupdate
+storageFileItemLens ::
+       BaseChangeLens QFileUpdate baseupdate
     => FileEntity
     -> ChangeLens baseupdate (SingleReferenceUpdate ByteStringEdit)
-pinaforeFileItemLens entity = tupleChangeLens (MkFunctionSelector entity) . baseChangeLens
+storageFileItemLens entity = tupleChangeLens (MkFunctionSelector entity) . baseChangeLens
 
-directoryPinaforeFileReference :: FilePath -> Reference (UpdateEdit PinaforeFileUpdate)
-directoryPinaforeFileReference path =
+directoryStorageFileReference :: FilePath -> Reference (UpdateEdit QFileUpdate)
+directoryStorageFileReference path =
     directoryReferenceStore
         (subdirectoryReference True path fileSystemReference)
         (\(MkFileEntity (MkEntity anchor)) -> show anchor)

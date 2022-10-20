@@ -18,11 +18,11 @@ import Shapes
 newtype LangMenuItem =
     MkLangMenuItem ((View --> IO) -> MenuEntry)
 
-menuItemGroundType :: PinaforeGroundType '[] LangMenuItem
+menuItemGroundType :: QGroundType '[] LangMenuItem
 menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuItem)|]) "MenuItem"
 
-instance HasPinaforeGroundType '[] LangMenuItem where
-    pinaforeGroundType = menuItemGroundType
+instance HasQGroundType '[] LangMenuItem where
+    qGroundType = menuItemGroundType
 
 type LangMenuBar = [LangMenuItem]
 
@@ -39,12 +39,7 @@ interpretAccelerator ('A':'l':'t':'+':s) = do
     return $ MkMenuAccelerator (KMAlt : mods) c
 interpretAccelerator _ = Nothing
 
-menuAction ::
-       (?pinafore :: PinaforeContext)
-    => Text
-    -> Maybe Text
-    -> PinaforeImmutableWholeModel (PinaforeAction TopType)
-    -> LangMenuItem
+menuAction :: (?qcontext :: QContext) => Text -> Maybe Text -> ImmutableWholeModel (Action TopType) -> LangMenuItem
 menuAction label maccelStr raction = let
     maccel = do
         accelStr <- maccelStr

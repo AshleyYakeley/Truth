@@ -10,7 +10,7 @@ import Pinafore.Language.Type.Ground
 import Pinafore.Language.Value ()
 import Shapes
 
-literalGroundType :: PinaforeGroundType '[] Literal
+literalGroundType :: QGroundType '[] Literal
 literalGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
 
 literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
@@ -20,21 +20,21 @@ literalGreatestDynamicSupertype =
         (functionToShim "fromLiteral" fromLiteral)
         (functionToShim "toLiteral" toLiteral)
 
-actionGroundType :: PinaforeGroundType '[ CoCCRVariance] PinaforeAction
-actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily PinaforeAction)|]) "Action"
+actionGroundType :: QGroundType '[ CoCCRVariance] Action
+actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Action)|]) "Action"
 
-funcGroundType :: PinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
+funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
         (precShow 5 ta <> " -> " <> precShow 6 tb, 6)
 
-maybeGroundType :: PinaforeGroundType '[ CoCCRVariance] Maybe
+maybeGroundType :: QGroundType '[ CoCCRVariance] Maybe
 maybeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe"
 
-listGroundType :: PinaforeGroundType '[ CoCCRVariance] []
+listGroundType :: QGroundType '[ CoCCRVariance] []
 listGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List"
 
-list1GroundType :: IsDolanSubtypeGroundType PinaforeGroundType => PinaforeGroundType '[ CoCCRVariance] NonEmpty
+list1GroundType :: IsDolanSubtypeGroundType QGroundType => QGroundType '[ CoCCRVariance] NonEmpty
 list1GroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
         { pgtGreatestDynamicSupertype =
@@ -43,12 +43,12 @@ list1GroundType =
                   in Just $ MkShimWit tt (MkPolarMap $ functionToShim "nonEmpty" nonEmpty)
         }
 
-eitherGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either
+eitherGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] Either
 eitherGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) $ \ta tb ->
         (precShow 3 ta <> " +: " <> precShow 4 tb, 4)
 
-pairGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,)
+pairGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] (,)
 pairGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
         (precShow 2 ta <> " *: " <> precShow 3 tb, 3)

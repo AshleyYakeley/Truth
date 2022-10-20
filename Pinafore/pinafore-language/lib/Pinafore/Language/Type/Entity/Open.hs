@@ -36,7 +36,7 @@ newtype OpenEntity tid = MkOpenEntity
 openEntityFamilyWitness :: IOWitness ('MkWitKind (LiftedFamily OpenEntityType OpenEntity))
 openEntityFamilyWitness = $(iowitness [t|'MkWitKind (LiftedFamily OpenEntityType OpenEntity)|])
 
-openEntityGroundType :: forall tid. OpenEntityType tid -> PinaforeGroundType '[] (OpenEntity tid)
+openEntityGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
 openEntityGroundType oet =
     singleGroundType' (MkFamilialType openEntityFamilyWitness $ MkLiftedFamily oet) $ exprShowPrec oet
 
@@ -50,9 +50,9 @@ openEntityFamily =
         epShowType = exprShowPrec oet
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
-getOpenEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Some OpenEntityType)
+getOpenEntityType :: MonadThrow ErrorType m => Some (QType 'Positive) -> m (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
-    case dolanToMaybeType @PinaforeGroundType @_ @_ @(PinaforePolyShim Type) tm of
+    case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkSome t
         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm

@@ -21,8 +21,8 @@ newtype LangElement = MkLangElement
     { unLangElement :: ElementContext -> GView 'Locked Widget
     }
 
-elementGroundType :: PinaforeGroundType '[] LangElement
+elementGroundType :: QGroundType '[] LangElement
 elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangElement)|]) "Element"
 
-instance HasPinaforeGroundType '[] LangElement where
-    pinaforeGroundType = elementGroundType
+instance HasQGroundType '[] LangElement where
+    qGroundType = elementGroundType

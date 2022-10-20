@@ -15,7 +15,7 @@ import Pinafore.Language.Type.Show
 import Pinafore.Language.Type.Types
 import Shapes
 
-instance IsDolanSubtypeGroundType PinaforeGroundType where
+instance IsDolanSubtypeGroundType QGroundType where
     subtypeGroundedTypes = entries_subtypeGroundedTypes
     tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
         spos <- paramAsk sourcePosParam
@@ -29,7 +29,7 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
             ma
     throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
 
-instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
+instance IsDolanSubtypeEntriesGroundType QGroundType where
     subtypeConversionEntries = getSubtypeConversions
     getSubtypeGroup t =
         case pgtSubtypeGroup t of
@@ -39,5 +39,5 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
     throwIncoherentGroundTypeConversionError ta tb =
         throw $ IncoherentGroundTypeConversionError (showGroundType ta) (showGroundType tb)
 
-instance IsDolanFunctionGroundType PinaforeGroundType where
+instance IsDolanFunctionGroundType QGroundType where
     functionGroundType = funcGroundType

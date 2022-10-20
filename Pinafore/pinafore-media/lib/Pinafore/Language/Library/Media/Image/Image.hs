@@ -10,11 +10,11 @@ newtype LangImage = MkLangImage
     { unLangImage :: SomeFor Image PixelType
     }
 
-imageGroundType :: PinaforeGroundType '[] LangImage
+imageGroundType :: QGroundType '[] LangImage
 imageGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangImage)|]) "Image"
 
-instance HasPinaforeGroundType '[] LangImage where
-    pinaforeGroundType = imageGroundType
+instance HasQGroundType '[] LangImage where
+    qGroundType = imageGroundType
 
 data DataLiteral t = MkDataLiteral
     { dlLiteral :: Literal

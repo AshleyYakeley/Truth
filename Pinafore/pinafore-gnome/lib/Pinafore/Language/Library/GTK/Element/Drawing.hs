@@ -13,7 +13,7 @@ import Pinafore.Language.Library.Media
 import Shapes
 
 newtype LangHandler =
-    MkLangHandler (EventButton -> PinaforeAction Bool)
+    MkLangHandler (EventButton -> Action Bool)
 
 instance Semigroup LangHandler where
     MkLangHandler evta <> MkLangHandler evtb =
@@ -26,16 +26,16 @@ instance Semigroup LangHandler where
 instance Monoid LangHandler where
     mempty = MkLangHandler $ \_ -> return False
 
-handlerGroundType :: PinaforeGroundType '[] LangHandler
+handlerGroundType :: QGroundType '[] LangHandler
 handlerGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHandler)|]) "Handler"
 
-instance HasPinaforeGroundType '[] LangHandler where
-    pinaforeGroundType = handlerGroundType
+instance HasQGroundType '[] LangHandler where
+    qGroundType = handlerGroundType
 
-runLangHandler :: (?pinafore :: PinaforeContext) => ElementContext -> LangHandler -> UIEvents
+runLangHandler :: (?qcontext :: QContext) => ElementContext -> LangHandler -> UIEvents
 runLangHandler ec (MkLangHandler action) = MkUIEvents $ \eb -> gvRunActionDefault (ecUnlift ec) True $ action eb
 
-langOnClick :: PinaforeAction () -> LangHandler
+langOnClick :: Action () -> LangHandler
 langOnClick action =
     MkLangHandler $ \event -> do
         click <- GI.get event #type
@@ -48,15 +48,12 @@ langOnClick action =
 handlerFallThrough :: LangHandler -> LangHandler
 handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> False) $ uie evt
 
-uiDraw ::
-       (?pinafore :: PinaforeContext)
-    => PinaforeImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler)
-    -> LangElement
+uiDraw :: (?qcontext :: QContext) => ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangElement
 uiDraw model =
     MkLangElement $ \ec ->
         createCairo $
         unWModel $
-        pinaforeImmutableModelValue mempty $
+        immutableWholeModelValue mempty $
         fmap (\d p -> fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $ unLangDrawing (d p)) model
 
 drawingStuff :: DocTreeEntry BindDoc

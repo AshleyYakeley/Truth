@@ -7,45 +7,44 @@ import Pinafore.Base.Know
 import Pinafore.Base.Ref
 import Shapes
 
-newtype PinaforeImmutableWholeModel a =
-    MkPinaforeImmutableWholeModel (PinaforeROWModel (Know a))
+newtype ImmutableWholeModel a =
+    MkImmutableWholeModel (WROWModel (Know a))
 
-instance Functor PinaforeImmutableWholeModel where
-    fmap ab (MkPinaforeImmutableWholeModel sa) = MkPinaforeImmutableWholeModel $ eaMapReadOnlyWhole (fmap ab) sa
+instance Functor ImmutableWholeModel where
+    fmap ab (MkImmutableWholeModel sa) = MkImmutableWholeModel $ eaMapReadOnlyWhole (fmap ab) sa
 
-instance Applicative PinaforeImmutableWholeModel where
-    pure a = MkPinaforeImmutableWholeModel $ eaPure $ Known a
-    (MkPinaforeImmutableWholeModel sab) <*> (MkPinaforeImmutableWholeModel sa) =
-        MkPinaforeImmutableWholeModel $ eaMapReadOnlyWhole (\(mab, ma) -> mab <*> ma) $ eaPairReadOnlyWhole sab sa
+instance Applicative ImmutableWholeModel where
+    pure a = MkImmutableWholeModel $ eaPure $ Known a
+    (MkImmutableWholeModel sab) <*> (MkImmutableWholeModel sa) =
+        MkImmutableWholeModel $ eaMapReadOnlyWhole (\(mab, ma) -> mab <*> ma) $ eaPairReadOnlyWhole sab sa
 
-instance Alternative PinaforeImmutableWholeModel where
-    empty = MkPinaforeImmutableWholeModel $ eaPure Unknown
-    (MkPinaforeImmutableWholeModel sa) <|> (MkPinaforeImmutableWholeModel sb) =
-        MkPinaforeImmutableWholeModel $ eaMapReadOnlyWhole (\(ma, mb) -> ma <|> mb) $ eaPairReadOnlyWhole sa sb
+instance Alternative ImmutableWholeModel where
+    empty = MkImmutableWholeModel $ eaPure Unknown
+    (MkImmutableWholeModel sa) <|> (MkImmutableWholeModel sb) =
+        MkImmutableWholeModel $ eaMapReadOnlyWhole (\(ma, mb) -> ma <|> mb) $ eaPairReadOnlyWhole sa sb
 
-immutableModelToReadOnlyModel :: PinaforeImmutableWholeModel a -> PinaforeROWModel (Know a)
-immutableModelToReadOnlyModel (MkPinaforeImmutableWholeModel fv) = fv
+immutableModelToReadOnlyModel :: ImmutableWholeModel a -> WROWModel (Know a)
+immutableModelToReadOnlyModel (MkImmutableWholeModel fv) = fv
 
-immutableModelToRejectingModel :: PinaforeImmutableWholeModel a -> WModel (WholeUpdate (Know a))
+immutableModelToRejectingModel :: ImmutableWholeModel a -> WModel (WholeUpdate (Know a))
 immutableModelToRejectingModel model = eaMap fromReadOnlyRejectingChangeLens $ immutableModelToReadOnlyModel model
 
-immutableModelToRejectingBiModel :: PinaforeImmutableWholeModel a -> WModel (BiUpdate pupdate (WholeUpdate (Know a)))
+immutableModelToRejectingBiModel :: ImmutableWholeModel a -> WModel (BiUpdate pupdate (WholeUpdate (Know a)))
 immutableModelToRejectingBiModel model =
     eaMap (fromReadOnlyRejectingChangeLens . readOnlyBiChangeLens) $ immutableModelToReadOnlyModel model
 
-getImmutableModel :: PinaforeImmutableWholeModel a -> PinaforeAction (Know a)
-getImmutableModel model = pinaforeModelGet (immutableModelToReadOnlyModel model) $ readM ReadWhole
+getImmutableModel :: ImmutableWholeModel a -> Action (Know a)
+getImmutableModel model = actionModelGet (immutableModelToReadOnlyModel model) $ readM ReadWhole
 
-functionImmutableModel :: PinaforeROWModel a -> PinaforeImmutableWholeModel a
-functionImmutableModel fv = MkPinaforeImmutableWholeModel $ eaMap (liftReadOnlyChangeLens $ funcChangeLens Known) fv
+functionImmutableModel :: WROWModel a -> ImmutableWholeModel a
+functionImmutableModel fv = MkImmutableWholeModel $ eaMap (liftReadOnlyChangeLens $ funcChangeLens Known) fv
 
-pinaforeImmutableModelValue :: a -> PinaforeImmutableWholeModel a -> PinaforeROWModel a
-pinaforeImmutableModelValue def model = eaMapReadOnlyWhole (fromKnow def) $ immutableModelToReadOnlyModel model
+immutableWholeModelValue :: a -> ImmutableWholeModel a -> WROWModel a
+immutableWholeModelValue def model = eaMapReadOnlyWhole (fromKnow def) $ immutableModelToReadOnlyModel model
 
 applyImmutableModel ::
        Model baseupdate
-    -> PinaforeFunctionMorphism baseupdate (Know a) (Know b)
-    -> PinaforeImmutableWholeModel a
-    -> PinaforeImmutableWholeModel b
-applyImmutableModel basesub m (MkPinaforeImmutableWholeModel v) =
-    MkPinaforeImmutableWholeModel $ applyPinaforeFunction basesub m v
+    -> StorageFunctionMorphism baseupdate (Know a) (Know b)
+    -> ImmutableWholeModel a
+    -> ImmutableWholeModel b
+applyImmutableModel basesub m (MkImmutableWholeModel v) = MkImmutableWholeModel $ applyStorageFunction basesub m v

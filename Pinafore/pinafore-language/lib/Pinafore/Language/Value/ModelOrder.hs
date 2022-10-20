@@ -33,23 +33,19 @@ modelOrders = mconcat
 reverseLangModelOrder :: forall a. LangModelOrder a -> LangModelOrder a
 reverseLangModelOrder (MkLangModelOrder o) = MkLangModelOrder $ reverseModelModelOrder o
 
-qOrderSet :: forall a. LangModelOrder a -> PinaforeROWModel (FiniteSet a) -> PinaforeROWModel (Know [a])
+qOrderSet :: forall a. LangModelOrder a -> WROWModel (FiniteSet a) -> WROWModel (Know [a])
 qOrderSet (MkLangModelOrder ro) = modelModelOrderSet ro
 
 langModelOrderCompare ::
-       forall a.
-       LangModelOrder a
-    -> PinaforeImmutableWholeModel a
-    -> PinaforeImmutableWholeModel a
-    -> PinaforeImmutableWholeModel Ordering
+       forall a. LangModelOrder a -> ImmutableWholeModel a -> ImmutableWholeModel a -> ImmutableWholeModel Ordering
 langModelOrderCompare (MkLangModelOrder m) = modelModelOrderCompare m
 
-pinaforeSetGetOrdered ::
+finiteSetGetOrdered ::
        forall a. LangModelOrder a -> LangFiniteSetModel '( BottomType, a) -> LangWholeModel '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeROWModelToWholeModel $ qOrderSet order $ langFiniteSetModelFunctionValue set
+finiteSetGetOrdered order set = wROWModelToWholeModel $ qOrderSet order $ langFiniteSetModelFunctionValue set
 
-pinaforeUpdateOrder ::
+modelOrderUpdateOrder ::
        LangModelOrder a
     -> (forall update. Model update -> UpdateOrder (ContextUpdate update (WholeUpdate (Know a))) -> r)
     -> r
-pinaforeUpdateOrder (MkLangModelOrder m) = modelRefUpdateOrder m
+modelOrderUpdateOrder (MkLangModelOrder m) = modelRefUpdateOrder m

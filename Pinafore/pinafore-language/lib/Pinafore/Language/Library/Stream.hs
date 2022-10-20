@@ -23,15 +23,15 @@ instance MaybeRepresentational ItemOrEnd where
 instance HasVariance ItemOrEnd where
     type VarianceOf ItemOrEnd = 'Covariance
 
-endOrItemGroundType :: PinaforeGroundType '[ CoCCRVariance] ItemOrEnd
+endOrItemGroundType :: QGroundType '[ CoCCRVariance] ItemOrEnd
 endOrItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ItemOrEnd)|]) "ItemOrEnd"
 
-instance HasPinaforeGroundType '[ CoCCRVariance] ItemOrEnd where
-    pinaforeGroundType = endOrItemGroundType
+instance HasQGroundType '[ CoCCRVariance] ItemOrEnd where
+    qGroundType = endOrItemGroundType
 
 -- LangSink
 newtype LangSink a =
-    MkLangSink (Sink PinaforeAction a)
+    MkLangSink (Sink Action a)
     deriving (Contravariant)
 
 instance MaybeRepresentational LangSink where
@@ -40,33 +40,33 @@ instance MaybeRepresentational LangSink where
 instance HasVariance LangSink where
     type VarianceOf LangSink = 'Contravariance
 
-toLangSink :: forall a. (ItemOrEnd a -> PinaforeAction ()) -> LangSink a
+toLangSink :: forall a. (ItemOrEnd a -> Action ()) -> LangSink a
 toLangSink = MkLangSink . MkSink
 
-fromLangSink :: forall a. LangSink a -> ItemOrEnd a -> PinaforeAction ()
+fromLangSink :: forall a. LangSink a -> ItemOrEnd a -> Action ()
 fromLangSink (MkLangSink (MkSink f)) = f
 
-sinkGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangSink
+sinkGroundType :: QGroundType '[ ContraCCRVariance] LangSink
 sinkGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangSink)|]) "Sink"
 
-instance HasPinaforeGroundType '[ ContraCCRVariance] LangSink where
-    pinaforeGroundType = sinkGroundType
+instance HasQGroundType '[ ContraCCRVariance] LangSink where
+    qGroundType = sinkGroundType
 
 liftSink :: Sink IO a -> LangSink a
 liftSink sink = MkLangSink $ hoistSink liftIO sink
 
-langSinkWrite :: forall a. LangSink a -> a -> PinaforeAction ()
+langSinkWrite :: forall a. LangSink a -> a -> Action ()
 langSinkWrite (MkLangSink sink) = sinkWrite sink
 
-langSinkWriteEnd :: forall a. LangSink a -> PinaforeAction ()
+langSinkWriteEnd :: forall a. LangSink a -> Action ()
 langSinkWriteEnd (MkLangSink sink) = sinkWriteEnd sink
 
-langSinkWriteLn :: LangSink Text -> Text -> PinaforeAction ()
+langSinkWriteLn :: LangSink Text -> Text -> Action ()
 langSinkWriteLn (MkLangSink sink) = sinkWriteLn sink
 
 -- LangSource
 newtype LangSource a =
-    MkLangSource (Source PinaforeAction a)
+    MkLangSource (Source Action a)
     deriving (Functor)
 
 instance MaybeRepresentational LangSource where
@@ -75,31 +75,31 @@ instance MaybeRepresentational LangSource where
 instance HasVariance LangSource where
     type VarianceOf LangSource = 'Covariance
 
-sourceGroundType :: PinaforeGroundType '[ CoCCRVariance] LangSource
+sourceGroundType :: QGroundType '[ CoCCRVariance] LangSource
 sourceGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangSource)|]) "Source"
 
-instance HasPinaforeGroundType '[ CoCCRVariance] LangSource where
-    pinaforeGroundType = sourceGroundType
+instance HasQGroundType '[ CoCCRVariance] LangSource where
+    qGroundType = sourceGroundType
 
 liftSource :: Source IO a -> LangSource a
 liftSource source = MkLangSource $ hoistSource liftIO source
 
-langSourceReady :: forall a. LangSource a -> PinaforeAction Bool
+langSourceReady :: forall a. LangSource a -> Action Bool
 langSourceReady (MkLangSource source) = sourceHasData source
 
-langSourceRead :: forall a. LangSource a -> PinaforeAction (ItemOrEnd a)
+langSourceRead :: forall a. LangSource a -> Action (ItemOrEnd a)
 langSourceRead (MkLangSource source) = sourceTake source
 
-langSourceReadAvailable :: forall a. LangSource a -> PinaforeAction (Maybe (ItemOrEnd a))
+langSourceReadAvailable :: forall a. LangSource a -> Action (Maybe (ItemOrEnd a))
 langSourceReadAvailable (MkLangSource source) = sourceTakeAvailable source
 
-langSourceReadAllAvailable :: forall a. LangSource a -> PinaforeAction ([a], Bool)
+langSourceReadAllAvailable :: forall a. LangSource a -> Action ([a], Bool)
 langSourceReadAllAvailable (MkLangSource source) = sourceTakeAllAvailable source
 
-langSourceGather :: forall a. LangSource a -> PinaforeAction [a]
+langSourceGather :: forall a. LangSource a -> Action [a]
 langSourceGather (MkLangSource source) = sourceGather source
 
-langConnectSourceSink :: forall a. LangSource a -> LangSink a -> PinaforeAction ()
+langConnectSourceSink :: forall a. LangSource a -> LangSink a -> Action ()
 langConnectSourceSink (MkLangSource source) (MkLangSink sink) = connectSourceSink source sink
 
 langCreatePipe :: forall a. IO (LangSink a, LangSource a)

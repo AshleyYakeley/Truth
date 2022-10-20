@@ -9,22 +9,22 @@ module Pinafore.Language.API
     , WitKind(..)
     , FamilialType(..)
     , SomeGroundType(..)
-    , PinaforePolyShim
+    , QPolyShim
     , EntityGroundType(..)
     , FamilyKind
     , SingletonFamily
-    , PinaforeGroundType(..)
+    , QGroundType(..)
     , PolyGreatestDynamicSupertype(..)
     , literalSubtypeRelationEntry
     , literalGreatestDynamicSupertype
     , showableSubtypeRelationEntry
     , stdSingleGroundType
-    , PinaforeSingularType
-    , PinaforeType
+    , QSingularType
+    , QType
     , funcGroundType
-    , HasPinaforeType(..)
-    , HasPinaforeGroundType(..)
-    , groundPinaforeType
+    , HasQType(..)
+    , HasQGroundType(..)
+    , groundQType
     , CCRArguments(..)
     , DolanArgumentsShimWit
     , nilDolanArgumentsShimWit

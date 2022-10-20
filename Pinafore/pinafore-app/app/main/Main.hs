@@ -16,7 +16,7 @@ main =
         ShowVersionOption -> printVersion
         DumpTableOption mdirpath -> do
             pinaforedir <- getPinaforeDir mdirpath
-            sqlitePinaforeDumpTable pinaforedir
+            sqliteQDumpTable pinaforedir
         RunFileOption ropts fNoRun fscript -> do
             copts <- getContextOptions ropts
             runFiles copts fNoRun [fscript]

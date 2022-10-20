@@ -59,7 +59,7 @@ lookupVar ::
        forall f dv (gt :: DolanVarianceKind dv) name ta.
        CovParams dv gt ta
     -> SymbolType name
-    -> PinaforeInterpreter (Arguments f gt ta -> f (UVarT name))
+    -> QInterpreter (Arguments f gt ta -> f (UVarT name))
 lookupVar NilCCRArguments var = throw $ InterpretTypeNotEntityError $ exprShow var
 lookupVar (ConsCCRArguments (MkCovParam var') params) var
     | Just Refl <- testEquality var var' =
@@ -75,7 +75,7 @@ lookupVar (ConsCCRArguments _ params) var = do
 nonpolarToEntityAdapter ::
        CovParams dv gt ta
     -> PinaforeNonpolarType t
-    -> PinaforeInterpreter (Compose ((->) (Arguments EntityAdapter gt ta)) EntityAdapter t)
+    -> QInterpreter (Compose ((->) (Arguments EntityAdapter gt ta)) EntityAdapter t)
 nonpolarToEntityAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
 nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
     (cvt, MkEntityGroundType _ (MkSealedEntityProperties eprops)) <-
@@ -88,7 +88,7 @@ nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
 closedEntityConstructorAdapter ::
        CovParams dv gt decltype
     -> ListType PinaforeNonpolarType lt
-    -> PinaforeInterpreter (WithArgs (Thing (ListType EntityAdapter lt) decltype) gt)
+    -> QInterpreter (WithArgs (Thing (ListType EntityAdapter lt) decltype) gt)
 closedEntityConstructorAdapter params pts = do
     ets <- mapMListType (nonpolarToEntityAdapter params) pts
     return $
@@ -97,9 +97,7 @@ closedEntityConstructorAdapter params pts = do
                 Refl -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl
 
 closedEntityTypeAdapter ::
-       CovParams dv gt decltype
-    -> [(ConstructorCodec decltype, Anchor)]
-    -> PinaforeInterpreter (WithArgs EntityAdapter gt)
+       CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs EntityAdapter gt)
 closedEntityTypeAdapter params conss = do
     ff <-
         for conss $ \(MkSomeFor (MkListProductType cc) codec, anchor) -> do
@@ -120,7 +118,7 @@ makeClosedEntityGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
     mkx :: DolanVarianceMap dv gt
         -> [(ConstructorCodec decltype, Anchor)]
-        -> PinaforeInterpreter (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
+        -> QInterpreter (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
     mkx dvm conss = do
         cvt <-
             case dolanVarianceToCovaryType dvt of
@@ -131,7 +129,7 @@ makeClosedEntityGroundType mainTypeName tparams = let
         return (dvm, adapter)
     mkgt ::
            (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
-        -> PinaforeInterpreter (GroundTypeFromTypeID dv gt (EntityProperties dv gt))
+        -> QInterpreter (GroundTypeFromTypeID dv gt (EntityProperties dv gt))
     mkgt ~(dvm, ~(MkWithArgs epAdapter)) = do
         cvt <-
             case dolanVarianceToCovaryType dvt of
@@ -146,7 +144,7 @@ makeClosedEntityGroundType mainTypeName tparams = let
                 eprops :: EntityProperties dv gt
                 eprops = MkEntityProperties {..}
                 in (closedEntityGroundType tidsym eprops, eprops)
-    postregister :: PinaforeGroundType dv gt -> EntityProperties dv gt -> PinaforeScopeInterpreter ()
+    postregister :: QGroundType dv gt -> EntityProperties dv gt -> QScopeInterpreter ()
     postregister gt eprops =
         registerSubtypeConversion $
         MkSubtypeConversionEntry TrustMe gt entityGroundType $
@@ -163,5 +161,5 @@ makeClosedEntityTypeBox ::
     -> Markdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxClosedEntityConstructorOrSubtype]
-    -> PinaforeInterpreter (PinaforeFixBox () ())
+    -> QInterpreter (QFixBox () ())
 makeClosedEntityTypeBox = makeDeclTypeBox makeClosedEntityGroundType

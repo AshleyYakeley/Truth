@@ -15,8 +15,8 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestPinaforeContext mempty outh $ \_ -> do
-                   runNewView $ pinaforeInteractHandles inh outh True
+               withTestQContext mempty outh $ \_ -> do
+                   runNewView $ qInteractHandles inh outh True
                    liftIO $ hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree

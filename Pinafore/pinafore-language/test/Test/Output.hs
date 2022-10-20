@@ -14,8 +14,8 @@ testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \hout ->
-           withTestPinaforeContext mempty hout $ \_ -> do
-               action <- pinaforeInterpretFile inpath
+           withTestQContext mempty hout $ \_ -> do
+               action <- qInterpretFile inpath
                runNewView action
 
 getTestOutput :: IO TestTree

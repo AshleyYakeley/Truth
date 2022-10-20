@@ -24,11 +24,11 @@ instance MaybeRepresentational LangListModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangListModel
 
-newMemListModel :: forall a. PinaforeAction (LangListModel '( a, a))
+newMemListModel :: forall a. Action (LangListModel '( a, a))
 newMemListModel = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
     model :: Model (ListUpdate (WholeUpdate a)) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- pinaforeUndoHandler
+    uh <- actionUndoHandler
     return $ FullLangListModel $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
 
 langListModelToModel :: forall p q. LangListModel '( p, q) -> LangModel
@@ -46,51 +46,51 @@ langListModelToOrdered (FullLangListModel model) =
 langImmutListModel :: forall p q r. LangListModel '( p, q) -> LangListModel '( r, q)
 langImmutListModel model = OrderedLangListModel $ langListModelToOrdered model
 
-langListModelCountModel :: forall p q. LangListModel '( p, q) -> PinaforeImmutableWholeModel Int64
+langListModelCountModel :: forall p q. LangListModel '( p, q) -> ImmutableWholeModel Int64
 langListModelCountModel (OrderedLangListModel model) =
     functionImmutableModel $ eaMap (funcChangeLens coerce . orderedListLengthLens) model
 langListModelCountModel (FullLangListModel model) =
     functionImmutableModel $
     eaMap (funcChangeLens coerce . liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens) model
 
-langListModelRead :: forall p q t. LangListModel '( p, q) -> ReadM (ListReader (WholeReader q)) t -> PinaforeAction t
-langListModelRead (OrderedLangListModel model) rm = pinaforeModelGet model rm
-langListModelRead (FullLangListModel model) rm = pinaforeModelGet model rm
+langListModelRead :: forall p q t. LangListModel '( p, q) -> ReadM (ListReader (WholeReader q)) t -> Action t
+langListModelRead (OrderedLangListModel model) rm = actionModelGet model rm
+langListModelRead (FullLangListModel model) rm = actionModelGet model rm
 
-langListModelGetCount :: forall p q. LangListModel '( p, q) -> PinaforeAction Int64
+langListModelGetCount :: forall p q. LangListModel '( p, q) -> Action Int64
 langListModelGetCount model = fmap unSequencePoint $ langListModelRead model $ readM ListReadLength
 
-langListModelGetItem :: forall p q. Int64 -> LangListModel '( p, q) -> PinaforeAction q
+langListModelGetItem :: forall p q. Int64 -> LangListModel '( p, q) -> Action q
 langListModelGetItem i model = do
     mq <- langListModelRead model $ readM $ ListReadItem (MkSequencePoint i) ReadWhole
-    pinaforeActionKnow $ maybeToKnow mq
+    actionKnow $ maybeToKnow mq
 
-langListModelInsert :: forall p q. Int64 -> p -> LangListModel '( p, q) -> PinaforeAction ()
+langListModelInsert :: forall p q. Int64 -> p -> LangListModel '( p, q) -> Action ()
 langListModelInsert _ _ (OrderedLangListModel _) = empty
 langListModelInsert i val (FullLangListModel model) =
-    pinaforeModelPush model $ pure $ MkBiEdit $ ListEditInsert (MkSequencePoint i) val
+    actionModelPush model $ pure $ MkBiEdit $ ListEditInsert (MkSequencePoint i) val
 
-langListModelSet :: forall p q. Int64 -> p -> LangListModel '( p, q) -> PinaforeAction ()
+langListModelSet :: forall p q. Int64 -> p -> LangListModel '( p, q) -> Action ()
 langListModelSet _ _ (OrderedLangListModel _) = empty
 langListModelSet i val (FullLangListModel model) =
-    pinaforeModelPush model $ pure $ MkBiEdit $ ListEditItem (MkSequencePoint i) $ MkWholeReaderEdit val
+    actionModelPush model $ pure $ MkBiEdit $ ListEditItem (MkSequencePoint i) $ MkWholeReaderEdit val
 
-langListModelDelete :: forall p q. Int64 -> LangListModel '( p, q) -> PinaforeAction ()
+langListModelDelete :: forall p q. Int64 -> LangListModel '( p, q) -> Action ()
 langListModelDelete i (OrderedLangListModel model) =
-    pinaforeModelPush model $ pure $ OrderedListEditDelete (MkSequencePoint i)
+    actionModelPush model $ pure $ OrderedListEditDelete (MkSequencePoint i)
 langListModelDelete i (FullLangListModel model) =
-    pinaforeModelPush model $ pure $ MkBiEdit $ ListEditDelete (MkSequencePoint i)
+    actionModelPush model $ pure $ MkBiEdit $ ListEditDelete (MkSequencePoint i)
 
-langListModelClear :: forall p q. LangListModel '( p, q) -> PinaforeAction ()
-langListModelClear (OrderedLangListModel model) = pinaforeModelPush model $ pure OrderedListEditClear
-langListModelClear (FullLangListModel model) = pinaforeModelPush model $ pure $ MkBiEdit ListEditClear
+langListModelClear :: forall p q. LangListModel '( p, q) -> Action ()
+langListModelClear (OrderedLangListModel model) = actionModelPush model $ pure OrderedListEditClear
+langListModelClear (FullLangListModel model) = actionModelPush model $ pure $ MkBiEdit ListEditClear
 
 langWholeModelToListModel :: forall a. LangWholeModel '( Vector a, Vector a) -> LangListModel '( a, a)
 langWholeModelToListModel (MutableLangWholeModel model) =
     FullLangListModel $ eaMap (convertBiChangeLens id . biFromKnowWhole) model
 langWholeModelToListModel (ImmutableLangWholeModel model) =
     OrderedLangListModel $
-    eaMap (fromReadOnlyRejectingChangeLens . convertReadOnlyChangeLens) $ pinaforeImmutableModelValue mempty model
+    eaMap (fromReadOnlyRejectingChangeLens . convertReadOnlyChangeLens) $ immutableWholeModelValue mempty model
 
 langListModelToWholeModel :: forall a. LangListModel '( a, a) -> LangWholeModel '( Vector a, Vector a)
 langListModelToWholeModel (FullLangListModel model) =
@@ -98,7 +98,7 @@ langListModelToWholeModel (FullLangListModel model) =
 langListModelToWholeModel (OrderedLangListModel model) =
     ImmutableLangWholeModel $ functionImmutableModel $ eaMap convertReadOnlyChangeLens model
 
-langListModelItem :: forall p q. Bool -> Int64 -> LangListModel '( p, q) -> PinaforeAction (LangWholeModel '( p, q))
+langListModelItem :: forall p q. Bool -> Int64 -> LangListModel '( p, q) -> Action (LangWholeModel '( p, q))
 langListModelItem present i (FullLangListModel lmodel) = do
     let
         linearListItemCL :: forall t. LinearFloatingChangeLens _ (ListUpdate (WholeUpdate t)) (WholeUpdate (Know t))
@@ -106,11 +106,11 @@ langListModelItem present i (FullLangListModel lmodel) = do
             composeExpFloatingChangeLens (changeLensToExpFloating $ bijectionWholeChangeLens $ invert knowMaybe) $
             listItemLinearLens present $ MkSequencePoint i
     wmodel <-
-        pinaforeFloatMap
+        actionFloatMap
             (expToFloatingChangeLens $ biLinearFloatingChangeLens (linearListItemCL @p) (linearListItemCL @q))
             lmodel
     return $ MutableLangWholeModel wmodel
 langListModelItem _present i (OrderedLangListModel lmodel) = do
     let ip = MkSequencePoint i
-    wmodel <- pinaforeFloatMap (changeLensToFloating (funcChangeLens maybeToKnow) . orderedListItemLens ip) lmodel
-    return $ ImmutableLangWholeModel $ MkPinaforeImmutableWholeModel wmodel
+    wmodel <- actionFloatMap (changeLensToFloating (funcChangeLens maybeToKnow) . orderedListItemLens ip) lmodel
+    return $ ImmutableLangWholeModel $ MkImmutableWholeModel wmodel

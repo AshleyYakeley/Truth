@@ -2,5 +2,5 @@ module Pinafore.Language.Shim where
 
 import Data.Shim
 
-type PinaforePolyShim :: PolyShimKind
-type PinaforePolyShim = JMShim
+type QPolyShim :: PolyShimKind
+type QPolyShim = JMShim

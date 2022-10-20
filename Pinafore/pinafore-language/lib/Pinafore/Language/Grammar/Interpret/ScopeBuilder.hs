@@ -47,13 +47,13 @@ runScopeBuilder sb = unTransformT sb
 sourcePosScopeBuilder :: SourcePos -> ScopeBuilder ()
 sourcePosScopeBuilder spos = interpScopeBuilder $ refPut (transformParamRef sourcePosParam) spos
 
-interpScopeBuilder :: PinaforeScopeInterpreter --> ScopeBuilder
+interpScopeBuilder :: QScopeInterpreter --> ScopeBuilder
 interpScopeBuilder = liftTransformT . liftTransformT
 
 refScopeBuilder :: RefNotation (ScopeBuilder a) -> ScopeBuilder a
 refScopeBuilder = execMapTransformT
 
-pureScopeBuilder :: PinaforeScope -> ScopeBuilder ()
+pureScopeBuilder :: QScope -> ScopeBuilder ()
 pureScopeBuilder scope = interpScopeBuilder $ registerScope scope
 
 allocateVarScopeBuilder :: Name -> ScopeBuilder VarID

@@ -9,8 +9,8 @@ import Pinafore.Language.Library.Defs
 {-
 file_import ::
         LangFiniteSetModel '( A, A)
-    -> (A -> PinaforeAction ())
-    -> PinaforeAction ()
+    -> (A -> Action ())
+    -> Action ()
 file_import set continue = do
     chooseFile <- pinaforeActionRequest witChooseFile
     mpath <- liftIO chooseFile
@@ -21,7 +21,7 @@ file_import set continue = do
             newEntity set $ \entity -> do
                 mdestreference <-
                     pinaforeLiftView $
-                    viewMapEdit (pinaforeFileItemLens entity) $ do
+                    viewMapEdit (storageFileItemLens entity) $ do
                         let
                             MkResource rr asub = sub
                         liftIO $

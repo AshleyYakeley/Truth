@@ -91,8 +91,8 @@ instance Productable VarMapping where
 getArgumentMapping ::
        forall (t :: Type) (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv).
        CCRVariation sv f
-    -> NonpolarArgument PinaforeGroundType sv a
-    -> NonpolarArguments PinaforeGroundType dv (f a) t
+    -> NonpolarArgument QGroundType sv a
+    -> NonpolarArguments QGroundType dv (f a) t
     -> VarMapping t
 getArgumentMapping svm (CoNonpolarArgument t) args =
     mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) $ getVarMapping t
@@ -105,7 +105,7 @@ getArgumentMapping svm (RangeNonpolarArgument tp tq) args =
         (getVarMapping tq)
 
 getArgumentsMapping ::
-       forall (t :: Type) dv gt. DolanVarianceMap dv gt -> NonpolarArguments PinaforeGroundType dv gt t -> VarMapping t
+       forall (t :: Type) dv gt. DolanVarianceMap dv gt -> NonpolarArguments QGroundType dv gt t -> VarMapping t
 getArgumentsMapping NilDolanVarianceMap NilCCRArguments = mempty
 getArgumentsMapping (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) =
     getArgumentMapping ccrv arg args <> getArgumentsMapping dvm args

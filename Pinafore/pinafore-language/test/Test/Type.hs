@@ -10,11 +10,11 @@ import Pinafore.Test
 import Shapes
 import Shapes.Test
 
-type TS = PinaforeTypeSystem
+type TS = QTypeSystem
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression VarID (PinaforeShimWit 'Negative) t -> [String]
+showVars :: NamedExpression VarID (QShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
     (show name <> " : " <> unpack (exprShow t)) : showVars expr
@@ -23,7 +23,7 @@ showTypes :: PExpression -> String
 showTypes (MkSealedExpression (MkShimWit t _) expr) =
     "{" <> intercalate ", " (showVars expr) <> "} -> " <> unpack (exprShow t)
 
-exprTypeTest :: String -> Maybe String -> PinaforeInterpreter PExpression -> TestTree
+exprTypeTest :: String -> Maybe String -> QInterpreter PExpression -> TestTree
 exprTypeTest name expected mexpr =
     testTree name $ do
         result <- runInterpretResult $ runTestPinaforeSourceScoped mexpr
@@ -31,7 +31,7 @@ exprTypeTest name expected mexpr =
             expr <- resultToMaybe result
             return $ showTypes expr
 
-apExpr :: PExpression -> PExpression -> PinaforeInterpreter PExpression
+apExpr :: PExpression -> PExpression -> QInterpreter PExpression
 apExpr = tsApply @TS
 
 idExpr :: PExpression
@@ -82,7 +82,7 @@ listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [Tr
 listBoolNumFuncExpr :: PExpression
 listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> PinaforeInterpreter PExpression
+joinExpr :: PExpression -> PExpression -> QInterpreter PExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
@@ -111,8 +111,8 @@ simplifyTypeTest text e =
                 mt <- parseType @'Positive text
                 case mt of
                     MkSome t ->
-                        runRenamer @PinaforeTypeSystem [] $
-                        simplify @PinaforeTypeSystem @PExpression $
+                        runRenamer @QTypeSystem [] $
+                        simplify @QTypeSystem @PExpression $
                         MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'

@@ -66,7 +66,7 @@ type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
 type InterpreterBoundType (ts :: Type) = SomeGroundType (InterpreterGroundType ts)
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
-    { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> PinaforeAction (Either Text t)
+    { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> Action (Either Text t)
         -- ^ in Action because this can do things like import files
     }
 

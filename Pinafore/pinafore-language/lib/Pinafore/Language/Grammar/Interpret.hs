@@ -29,9 +29,9 @@ import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
-type instance EntryDoc PinaforeTypeSystem = DefDoc
+type instance EntryDoc QTypeSystem = DefDoc
 
-interpretPatternConstructor :: SyntaxConstructor -> PinaforeInterpreter (PinaforePatternConstructor)
+interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (QPatternConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
@@ -50,7 +50,7 @@ interpretPatternConstructor (SLString v) =
 interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ PureFunction $ \() -> ()
 interpretPatternConstructor SLPair = return $ qToPatternConstructor $ PureFunction $ \(a :: A, b :: B) -> (a, (b, ()))
 
-interpretPattern :: SyntaxPattern -> ScopeBuilder PinaforePattern
+interpretPattern :: SyntaxPattern -> ScopeBuilder QPattern
 interpretPattern (MkWithSourcePos _ AnySyntaxPattern) = return qAnyPattern
 interpretPattern (MkWithSourcePos _ (VarSyntaxPattern n)) = do
     vid <- allocateVarScopeBuilder n
@@ -85,7 +85,7 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
                         Just dtn -> do
                             tpw <- invertType tn
                             let
-                                pc :: PinaforePatternConstructor
+                                pc :: QPatternConstructor
                                 pc =
                                     toExpressionPatternConstructor $
                                     toPatternConstructor dtn (ConsListType tpw NilListType) $
@@ -175,7 +175,7 @@ interpretRecursiveDocDeclarations ddecls = do
     interpretRecursiveLetBindings bindingDecls
     return $ stDocDecls <> docDecls
 
-interpretExpose :: SyntaxExpose -> RefNotation (Docs -> Docs, PinaforeScope)
+interpretExpose :: SyntaxExpose -> RefNotation (Docs -> Docs, QScope)
 interpretExpose (SExpExpose spos names) = do
     scope <- liftRefNotation $ paramWith sourcePosParam spos $ exportScope names
     return (exposeDocs names, scope)
@@ -190,7 +190,7 @@ interpretExposeDeclaration sexp = do
     pureScopeBuilder scope
     return $ docs []
 
-interpretImportDeclaration :: ModuleName -> PinaforeScopeInterpreter Docs
+interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
     newmod <- lift $ getModule modname
     registerScope $ moduleScope newmod
@@ -269,15 +269,14 @@ interpretConstructor (SLNamedConstructor v) = interpretNamedConstructor v
 interpretConstructor SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor SLUnit = return $ qConstExprAny $ jmToValue ()
 
-specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe PinaforeInterpreter t
+specialFormArg :: QAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe QInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
 specialFormArg AnnotNonpolarType (SAType st) = lift $ interpretNonpolarType st
 specialFormArg AnnotPositiveType (SAType st) = lift $ interpretType @'Positive st
 specialFormArg AnnotNegativeType (SAType st) = lift $ interpretType @'Negative st
 specialFormArg _ _ = liftInner Nothing
 
-specialFormArgs ::
-       ListType PinaforeAnnotation lt -> [SyntaxAnnotation] -> ComposeInner Maybe PinaforeInterpreter (ListProduct lt)
+specialFormArgs :: ListType QAnnotation lt -> [SyntaxAnnotation] -> ComposeInner Maybe QInterpreter (ListProduct lt)
 specialFormArgs NilListType [] = return ()
 specialFormArgs (ConsListType t tt) (a:aa) = do
     v <- specialFormArg t a
@@ -289,13 +288,13 @@ showSA :: SyntaxAnnotation -> Text
 showSA (SAType _) = "type"
 showSA (SAAnchor _) = "anchor"
 
-showAnnotation :: PinaforeAnnotation a -> Text
+showAnnotation :: QAnnotation a -> Text
 showAnnotation AnnotAnchor = "anchor"
 showAnnotation AnnotNonpolarType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
-interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> PinaforeInterpreter PinaforeValue
+interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> QInterpreter QValue
 interpretSpecialForm name annotations = do
     MkSpecialForm largs val <- lookupSpecialForm name
     margs <- unComposeInner $ specialFormArgs largs $ toList annotations
@@ -314,13 +313,13 @@ interpretConstant SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
-interpretCase :: SyntaxMatch -> RefNotation (PinaforePattern, PinaforeExpression)
+interpretCase :: SyntaxMatch -> RefNotation (QPattern, QExpression)
 interpretCase (MkSyntaxMatch spat sexpr) =
     runScopeBuilder (interpretPattern spat) $ \pat -> do
         expr <- interpretExpression sexpr
         return (pat, expr)
 
-interpretMultimatch :: SyntaxMultimatch n -> RefNotation (FixedList n PinaforePattern, PinaforeExpression)
+interpretMultimatch :: SyntaxMultimatch n -> RefNotation (FixedList n QPattern, QExpression)
 interpretMultimatch (MkSyntaxMultimatch spats sexpr) =
     runScopeBuilder (for spats interpretPattern) $ \pats -> do
         expr <- interpretExpression sexpr
@@ -362,7 +361,7 @@ interpretExpression' (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ qSequenceExpr exprs
 
-checkExprVars :: MonadThrow PinaforeError m => PinaforeExpression -> m ()
+checkExprVars :: MonadThrow PinaforeError m => QExpression -> m ()
 checkExprVars (MkSealedExpression _ expr) = let
     getBadVarErrors ::
            forall w t. AllConstraint Show w
@@ -383,20 +382,20 @@ interpretClosedExpression sexpr = do
     checkExprVars expr
     return expr
 
-interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation PinaforeBinding
+interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation QBinding
 interpretBinding ((doc, MkSyntaxBinding spos mstype _ sexpr), vid) = do
     mtype <- liftRefNotation $ paramWith sourcePosParam spos $ for mstype interpretType
     expr <- interpretClosedExpression sexpr
     return $ qBindExpr vid doc mtype expr
 
-interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [PinaforeBinding]
+interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [QBinding]
 interpretBindings sbinds = for sbinds interpretBinding
 
-interpretTopDeclarations :: SyntaxTopDeclarations -> PinaforeInterpreter --> PinaforeInterpreter
+interpretTopDeclarations :: SyntaxTopDeclarations -> QInterpreter --> QInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
     paramWith sourcePosParam spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
 
-interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter PinaforeExpression
+interpretTopExpression :: SyntaxExpression -> QInterpreter QExpression
 interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
 
 interpretGeneralSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> ScopeBuilder ()
@@ -409,7 +408,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                 case atb of
                     MkSome tb@(dolanToMaybeType -> Just gtb) -> do
                         let
-                            funcWit :: PinaforeIsoShimWit 'Positive _
+                            funcWit :: QIsoShimWit 'Positive _
                             funcWit = funcShimWit (mkShimWit ta) (mkShimWit tb)
                         body <- lift $ interpretTopExpression sbody
                         case funcWit of
@@ -423,7 +422,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                     _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
             _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 
-nonpolarSimpleEntityType :: PinaforeNonpolarType t -> PinaforeInterpreter (PinaforeGroundType '[] t, EntityGroundType t)
+nonpolarSimpleEntityType :: PinaforeNonpolarType t -> QInterpreter (QGroundType '[] t, EntityGroundType t)
 nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
@@ -462,7 +461,7 @@ interpretSubtypeRelation docDescription trustme sta stb mbody = do
         docItem = SubtypeRelationDocItem {..}
     return $ defDocs MkDefDoc {..}
 
-interpretModule :: ModuleName -> SyntaxModule -> PinaforeInterpreter PinaforeModule
+interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
     return $ MkModule (MkDocTree (toText moduleName) "" $ docs []) scope

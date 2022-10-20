@@ -9,8 +9,7 @@ import Pinafore.Language.Value.WholeModel
 import Shapes
 
 data LangFiniteSetModel pq where
-    MkLangFiniteSetModel
-        :: Eq t => Range (PinaforePolyShim Type) t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq
+    MkLangFiniteSetModel :: Eq t => Range (QPolyShim Type) t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq
 
 unLangFiniteSetModel :: LangFiniteSetModel '( p, p) -> WModel (FiniteSetUpdate p)
 unLangFiniteSetModel (MkLangFiniteSetModel tr lv) =
@@ -24,11 +23,11 @@ instance MaybeRepresentational LangFiniteSetModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangFiniteSetModel
 
-newMemFiniteSetModel :: forall a. PinaforeAction (LangFiniteSetModel '( MeetType Entity a, a))
+newMemFiniteSetModel :: forall a. Action (LangFiniteSetModel '( MeetType Entity a, a))
 newMemFiniteSetModel = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
     model <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- pinaforeUndoHandler
+    uh <- actionUndoHandler
     return $ meetValueLangFiniteSetModel $ MkWModel $ undoHandlerModel uh model
 
 langFiniteSetModelValue :: LangFiniteSetModel '( q, q) -> WModel (FiniteSetUpdate q)
@@ -41,7 +40,7 @@ valueLangFiniteSetModel lv = MkLangFiniteSetModel identityRange lv
 langFiniteSetMaybeMap ::
        forall ap aq b. (aq -> Maybe b) -> LangFiniteSetModel '( ap, aq) -> LangFiniteSetModel '( MeetType ap b, b)
 langFiniteSetMaybeMap f (MkLangFiniteSetModel (tr :: _ t _) lv) = let
-    tr' :: Range (PinaforePolyShim Type) (MeetType t b) '( MeetType ap b, b)
+    tr' :: Range (QPolyShim Type) (MeetType t b) '( MeetType ap b, b)
     tr' = MkRange (iMeetPair (rangeContra tr) id) meet2
     amb :: t -> Maybe (MeetType t b)
     amb t = do
@@ -78,36 +77,36 @@ langFiniteSetModelJoin seta setb =
     eaMap (fromReadOnlyRejectingChangeLens . joinChangeLens) $
     eaPair (langFiniteSetModelMeetValue seta) (langFiniteSetModelMeetValue setb)
 
-langFiniteSetModelAdd :: LangFiniteSetModel '( p, q) -> p -> PinaforeAction ()
+langFiniteSetModelAdd :: LangFiniteSetModel '( p, q) -> p -> Action ()
 langFiniteSetModelAdd (MkLangFiniteSetModel tr set) p =
-    pinaforeModelPush set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
+    actionModelPush set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
 
-langFiniteSetModelRemove :: LangFiniteSetModel '( p, q) -> p -> PinaforeAction ()
+langFiniteSetModelRemove :: LangFiniteSetModel '( p, q) -> p -> Action ()
 langFiniteSetModelRemove (MkLangFiniteSetModel tr set) p =
-    pinaforeModelPush set $ pure $ KeyEditDelete $ shimToFunction (rangeContra tr) p
+    actionModelPush set $ pure $ KeyEditDelete $ shimToFunction (rangeContra tr) p
 
-langFiniteSetModelRemoveAll :: LangFiniteSetModel '( BottomType, TopType) -> PinaforeAction ()
-langFiniteSetModelRemoveAll (MkLangFiniteSetModel _ set) = pinaforeModelPush set $ pure KeyEditClear
+langFiniteSetModelRemoveAll :: LangFiniteSetModel '( BottomType, TopType) -> Action ()
+langFiniteSetModelRemoveAll (MkLangFiniteSetModel _ set) = actionModelPush set $ pure KeyEditClear
 
-langFiniteSetModelFunctionValue :: LangFiniteSetModel '( t, a) -> PinaforeROWModel (FiniteSet a)
+langFiniteSetModelFunctionValue :: LangFiniteSetModel '( t, a) -> WROWModel (FiniteSet a)
 langFiniteSetModelFunctionValue (MkLangFiniteSetModel tr set) =
     eaMapReadOnlyWhole (fmap $ shimToFunction $ rangeCo tr) $ eaToReadOnlyWhole set
 
 langFiniteSetModelMember :: forall a. LangFiniteSetModel '( a, TopType) -> a -> LangWholeModel '( Bool, Bool)
 langFiniteSetModelMember (MkLangFiniteSetModel tr set) val = let
     tval = shimToFunction (rangeContra tr) val
-    in pinaforeModelToWholeModel $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
+    in wModelToWholeModel $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
 
 langFiniteSetModelSingle ::
        forall a. LangFiniteSetModel '( BottomType, MeetType Entity a) -> LangWholeModel '( TopType, a)
 langFiniteSetModelSingle set =
-    pinaforeROWModelToWholeModel $
+    wROWModelToWholeModel $
     eaMapReadOnlyWhole (fmap meet2 . maybeToKnow . getSingle) $ langFiniteSetModelFunctionValue set
 
 langFiniteSetModelFunc ::
        forall a b. (FiniteSet a -> b) -> LangFiniteSetModel '( BottomType, a) -> LangWholeModel '( TopType, b)
 langFiniteSetModelFunc f set =
-    pinaforeROWModelToWholeModel $ eaMapReadOnlyWhole (Known . f) $ langFiniteSetModelFunctionValue set
+    wROWModelToWholeModel $ eaMapReadOnlyWhole (Known . f) $ langFiniteSetModelFunctionValue set
 
 langFiniteSetModelCartesianSum ::
        forall ap aq bp bq.

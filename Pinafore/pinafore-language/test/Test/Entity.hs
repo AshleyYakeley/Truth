@@ -12,11 +12,11 @@ import Test.RunScript
 testUpdate :: Text -> ScriptTestTree
 testUpdate text =
     testExpression text text $ \interpret -> do
-        (stuff :: PinaforeAction _) <- liftIO $ interpret
-        (sendUpdate, model) <- runView $ unliftPinaforeActionOrFail stuff
+        (stuff :: Action _) <- liftIO $ interpret
+        (sendUpdate, model) <- runView $ unliftActionOrFail stuff
         runView $
             runEditor (unWModel $ immutableModelToRejectingModel model) $
-            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+            checkUpdateEditor (Known (1 :: Integer)) $ unliftActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates =

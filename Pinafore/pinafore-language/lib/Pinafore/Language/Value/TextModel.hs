@@ -9,11 +9,11 @@ import Shapes
 newtype LangTextModel =
     MkLangTextModel (WModel (StringUpdate Text))
 
-newMemTextModel :: PinaforeAction LangTextModel
+newMemTextModel :: Action LangTextModel
 newMemTextModel = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
     model :: Model (StringUpdate Text) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- pinaforeUndoHandler
+    uh <- actionUndoHandler
     return $ MkLangTextModel $ MkWModel $ undoHandlerModel uh model
 
 langTextModelToModel :: LangTextModel -> LangModel
@@ -27,22 +27,22 @@ langTextModelToWholeModel :: LangTextModel -> LangWholeModel '( Text, Text)
 langTextModelToWholeModel (MkLangTextModel model) =
     MutableLangWholeModel $ eaMap (biToKnowWhole . singleBiChangeLens . convertChangeLens) model
 
-langTextModelGetLength :: LangTextModel -> PinaforeAction SequencePoint
-langTextModelGetLength (MkLangTextModel model) = pinaforeModelGet model $ readM StringReadLength
+langTextModelGetLength :: LangTextModel -> Action SequencePoint
+langTextModelGetLength (MkLangTextModel model) = actionModelGet model $ readM StringReadLength
 
-langTextModelGet :: LangTextModel -> PinaforeAction Text
-langTextModelGet (MkLangTextModel model) = pinaforeModelGet model $ readableToSubject readM
+langTextModelGet :: LangTextModel -> Action Text
+langTextModelGet (MkLangTextModel model) = actionModelGet model $ readableToSubject readM
 
-langTextModelSet :: Text -> LangTextModel -> PinaforeAction ()
-langTextModelSet t (MkLangTextModel model) = pinaforeModelPush model $ pure $ StringReplaceWhole t
+langTextModelSet :: Text -> LangTextModel -> Action ()
+langTextModelSet t (MkLangTextModel model) = actionModelPush model $ pure $ StringReplaceWhole t
 
-langTextModelGetSection :: SequenceRun -> LangTextModel -> PinaforeAction Text
-langTextModelGetSection run (MkLangTextModel model) = pinaforeModelGet model $ readM $ StringReadSection run
+langTextModelGetSection :: SequenceRun -> LangTextModel -> Action Text
+langTextModelGetSection run (MkLangTextModel model) = actionModelGet model $ readM $ StringReadSection run
 
-langTextModelSetSection :: SequenceRun -> Text -> LangTextModel -> PinaforeAction ()
-langTextModelSetSection run t (MkLangTextModel model) = pinaforeModelPush model $ pure $ StringReplaceSection run t
+langTextModelSetSection :: SequenceRun -> Text -> LangTextModel -> Action ()
+langTextModelSetSection run t (MkLangTextModel model) = actionModelPush model $ pure $ StringReplaceSection run t
 
-langTextModelSection :: SequenceRun -> LangTextModel -> PinaforeAction LangTextModel
+langTextModelSection :: SequenceRun -> LangTextModel -> Action LangTextModel
 langTextModelSection run (MkLangTextModel model) = do
-    secmodel <- pinaforeFloatMap (stringSectionLens run) model
+    secmodel <- actionFloatMap (stringSectionLens run) model
     return $ MkLangTextModel secmodel
