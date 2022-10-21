@@ -52,18 +52,27 @@ import Test.Tasty
 import Test.Tasty.ExpectedFailure
 import Test.Tasty.Golden
 import Test.Tasty.HUnit
+import Test.Tasty.Ingredients.Basic
+import Test.Tasty.Options
 import Test.Tasty.Providers
 import Test.Tasty.Providers.ConsoleFormat
 import Test.Tasty.QuickCheck
 import Test.Tasty.Runners
 
+ingredientSetOptions :: (OptionSet -> OptionSet) -> Ingredient -> Ingredient
+ingredientSetOptions f (TestReporter ods t) = TestReporter ods $ t . f
+ingredientSetOptions f (TestManager ods t) = TestManager ods $ t . f
+
+defaultTestIngredients :: [Ingredient]
+defaultTestIngredients = fmap (ingredientSetOptions $ setOption $ AnsiTricks False) defaultIngredients
+
 testMain :: TestTree -> IO ()
-testMain = defaultMain
+testMain = defaultMainWithIngredients defaultTestIngredients
 
 testMainNoSignalHandler :: TestTree -> IO ()
 testMainNoSignalHandler tests = do
-    opts <- parseOptions defaultIngredients tests
-    case tryIngredients defaultIngredients opts tests of
+    opts <- parseOptions defaultTestIngredients tests
+    case tryIngredients defaultTestIngredients opts tests of
         Nothing -> do
             hPutStrLn
                 stderr
