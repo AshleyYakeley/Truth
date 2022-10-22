@@ -1,5 +1,8 @@
 module Pinafore.Base.ModelBased
     ( ModelBased
+    , QStore
+    , qStoreGetModel
+    , mkQStore
     , modelBasedModel
     , pureModelBased
     , storageModelBased
@@ -12,13 +15,26 @@ import Changes.Core
 import Pinafore.Base.Edit
 import Shapes
 
+data QStore =
+    MkQStore Unique
+             (Model QStorageUpdate)
+
+qStoreGetModel :: QStore -> Model QStorageUpdate
+qStoreGetModel (MkQStore _ model) = model
+
+mkQStore :: Model QStorageUpdate -> IO QStore
+mkQStore model = do
+    sid <- newUnique
+    return $ MkQStore sid model
+
 type ModelBaseType :: Type -> Type
 data ModelBaseType update where
-    StorageModelBaseType :: ModelBaseType QStorageUpdate
+    StorageModelBaseType :: Unique -> ModelBaseType QStorageUpdate
     OtherModelBaseType :: ModelBaseType update
 
 instance TestEquality ModelBaseType where
-    testEquality StorageModelBaseType StorageModelBaseType = Just Refl
+    testEquality (StorageModelBaseType id1) (StorageModelBaseType id2)
+        | id1 == id2 = Just Refl
     testEquality _ _ = Nothing
 
 -- The purpose of this mechanism is optimisation, to reduce mapping of morphisms etc. in the common case when they're both on the same model.
@@ -38,8 +54,8 @@ modelBasedModel (ProvidedModelBased _ model f) call = call model f
 pureModelBased :: (forall update. f update) -> ModelBased f
 pureModelBased = NullModelBased
 
-storageModelBased :: Model QStorageUpdate -> f QStorageUpdate -> ModelBased f
-storageModelBased = ProvidedModelBased StorageModelBaseType
+storageModelBased :: QStore -> f QStorageUpdate -> ModelBased f
+storageModelBased (MkQStore sid model) = ProvidedModelBased (StorageModelBaseType sid) model
 
 otherModelBased :: Model update -> f update -> ModelBased f
 otherModelBased = ProvidedModelBased OtherModelBaseType

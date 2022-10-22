@@ -9,12 +9,14 @@ import Shapes
 newtype LangTextModel =
     MkLangTextModel (WModel (StringUpdate Text))
 
+instance IsInvertibleModel LangTextModel where
+    invertibleModelLens f (MkLangTextModel model) = fmap MkLangTextModel $ wInvertibleModelLens f model
+
 newMemTextModel :: Action LangTextModel
 newMemTextModel = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
     model :: Model (StringUpdate Text) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- actionUndoHandler
-    return $ MkLangTextModel $ MkWModel $ undoHandlerModel uh model
+    return $ MkLangTextModel $ MkWModel model
 
 langTextModelToModel :: LangTextModel -> LangModel
 langTextModelToModel (MkLangTextModel model) = MkLangModel model

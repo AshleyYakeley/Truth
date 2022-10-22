@@ -1,15 +1,16 @@
 #!/usr/bin/pinafore
 
+let import UIStuff.Selection in runUIStuff $ fns store uisc =>
 let
+import Storage;
 
 years: FiniteSetModel Integer
-= property @Integer @Unit !"FTSJ.years" !@ {()};
+= property @Integer @Unit !"FTSJ.years" store !@ {()};
 
 yearTheme: Integer ~> Text
-= property @Integer @Text !"FTSJ.yearTheme";
+= property @Integer @Text !"FTSJ.yearTheme" store;
 
 import GTK;
-import UIStuff.Selection;
 
 frontCoverPane: Pane
 = pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
@@ -26,7 +27,7 @@ createMainPane: Action Pane
     notebookPane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
     end;
 
-in run $ fn gtk => do
+in do
     mainPane <- createMainPane;
-    paneWindow gtk mainPane;
+    paneWindow uisc mainPane;
     end

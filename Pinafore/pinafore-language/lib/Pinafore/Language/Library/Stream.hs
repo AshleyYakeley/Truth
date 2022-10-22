@@ -115,8 +115,9 @@ lineBufferSource (MkLangSource source) = do
 langListSource :: forall a. [a] -> IO (LangSource a)
 langListSource aa = fmap liftSource $ listSource aa
 
-streamLibraryModule :: LibraryModule
+streamLibraryModule :: LibraryModule context
 streamLibraryModule =
+    MkLibraryModule $
     MkDocTree
         "Stream"
         "Sinks and sources."

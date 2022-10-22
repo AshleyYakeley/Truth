@@ -1,6 +1,8 @@
 #!/usr/bin/pinafore
 
+Env.openDefaultStore >>= fn store =>
 let
+import Storage;
 import GTK();
 import UIStuff.Selection;
 import UIStuff.Named;
@@ -8,17 +10,17 @@ import UIStuff.Named;
 # something with a lifespan
 opentype Lifespanned;
 # birth and death dates
-birthdate = property @Lifespanned @Date !"lifespan.start.date";
-deathdate = property @Lifespanned @Date !"lifespan.end.date";
+birthdate = property @Lifespanned @Date !"lifespan.start.date" store;
+deathdate = property @Lifespanned @Date !"lifespan.end.date" store;
 
 # physical locations, that have addresses
 opentype Location;
-address = property @Location @Text !"location.address.withincity";
-locphone = property @Location @Text !"location.telephone";
-city = property @Location @Text !"location.address.city";
-postcode = property @Location @Text !"location.address.postcode";
-province = property @Location @Text !"location.address.province";
-country = property @Location @Text !"location.address.country";
+address = property @Location @Text !"location.address.withincity" store;
+locphone = property @Location @Text !"location.telephone" store;
+city = property @Location @Text !"location.address.city" store;
+postcode = property @Location @Text !"location.address.postcode" store;
+province = property @Location @Text !"location.address.province" store;
+country = property @Location @Text !"location.address.country" store;
 
 locationUI: WholeModel +Location -> GTK.Element
 = fn loc => GTK.vertical
@@ -36,32 +38,32 @@ rec
 dynamictype LegalEntity = Person | Organisation;
 subtype LegalEntity <: Named;
 subtype LegalEntity <: Lifespanned;
-email = property @LegalEntity @Text !"contact.email";
-phone = property @LegalEntity @Text !"contact.telephone";
-home = property @LegalEntity @Location !"being.location";
+email = property @LegalEntity @Text !"contact.email" store;
+phone = property @LegalEntity @Text !"contact.telephone" store;
+home = property @LegalEntity @Location !"being.location" store;
 legalentities: FiniteSetModel LegalEntity
-= property @LegalEntity @Unit !"type.legalentity" !@ {()};
+= property @LegalEntity @Unit !"type.legalentity" !@ {()} store;
 
 # a person
 dynamictype Person = !"type.person";
 people: FiniteSetModel Person
 = maybeMapFiniteSetModel (check @Person) legalentities;
 # family relationships between people
-mother = property @Person @Person !"relation.family.mother";
-father = property @Person @Person !"relation.family.father";
+mother = property @Person @Person !"relation.family.mother" store;
+father = property @Person @Person !"relation.family.father" store;
 children: WholeModel +Person -> FiniteSetModel Person
 = fn p => (mother !@% p) <:|:> (father !@% p);
-married = property @Person @Boolean !"relation.family.spouse.exist";
+married = property @Person @Boolean !"relation.family.spouse.exist" store;
 
 # employment relationship
-employer = property @Person @LegalEntity !"relation.employer";
+employer = property @Person @LegalEntity !"relation.employer" store;
 employees: WholeModel +LegalEntity -> FiniteSetModel Person
 = fn p => employer !@% p;
 
 # an organisation
 dynamictype Organisation = !"type.organisation";
 organisations: FiniteSetModel Organisation
-= property @Organisation @Unit !"type.organisation" !@ {()};
+= property @Organisation @Unit !"type.organisation" !@ {()} store;
 end;
 
 ### User Interface

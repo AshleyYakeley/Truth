@@ -16,5 +16,5 @@ getPinaforeDir mdirpath = do
     liftIO $ createDirectoryIfMissing True pinaforedir
     return pinaforedir
 
-extraLibrary :: [LibraryModule]
+extraLibrary :: [LibraryModule ()]
 extraLibrary = mediaLibrary <> gnomeLibrary

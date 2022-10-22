@@ -41,7 +41,6 @@ module Pinafore.Language
 import Changes.Core
 import Control.Exception (Handler(..), catches)
 import Pinafore.Base
-import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
@@ -56,13 +55,12 @@ import Pinafore.Markdown
 import Shapes
 import System.IO.Error
 
-runPinaforeScoped ::
-       (?qcontext :: QContext, ?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
+runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename scp =
     runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $
     transformTMap (void $ interpretImportDeclaration stdModuleName) scp
 
-spvals :: (?qcontext :: QContext, ?library :: LibraryContext) => QSpecialVals
+spvals :: (?library :: LibraryContext) => QSpecialVals
 spvals = let
     specialEvaluate :: forall t. QType 'Positive t -> Text -> Action (Either Text t)
     specialEvaluate t text = do
@@ -74,24 +72,20 @@ spvals = let
                 FailureResult err -> Left $ pack $ show err
     in MkSpecialVals {..}
 
-parseValue :: (?qcontext :: QContext) => Text -> QInterpreter QValue
+parseValue :: Text -> QInterpreter QValue
 parseValue text = do
     rexpr <- parseTopExpression text
     qEvalExpr rexpr
 
 parseValueUnify ::
-       forall t. (HasQType 'Negative t, ?qcontext :: QContext)
+       forall t. (HasQType 'Negative t)
     => Text
     -> QInterpreter t
 parseValueUnify text = do
     val <- parseValue text
     qUnifyValue val
 
-parseValueSubsume ::
-       forall t. (?qcontext :: QContext)
-    => QType 'Positive t
-    -> Text
-    -> QInterpreter t
+parseValueSubsume :: forall t. QType 'Positive t -> Text -> QInterpreter t
 parseValueSubsume t text = do
     val <- parseValue text
     tsSubsumeValue @QTypeSystem t val
@@ -123,7 +117,7 @@ runValue outh val =
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = hoist fromInterpretResult $ parseInteractiveCommand t
 
-interactLoop :: (?qcontext :: QContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> Interact ()
+interactLoop :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
     liftIO $ hPutStr outh "pinafore> "
     eof <- liftIO $ hIsEOF inh
@@ -184,7 +178,7 @@ interactLoop inh outh echo = do
                     ]
             interactLoop inh outh echo
 
-interact :: (?qcontext :: QContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
+interact :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $

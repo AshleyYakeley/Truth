@@ -3,7 +3,6 @@ module Pinafore.Language.Value.WholeModel where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Context
 import Pinafore.Language.Value.Instances ()
 import Pinafore.Language.Value.Model
 import Shapes
@@ -22,12 +21,15 @@ instance MaybeRepresentational LangWholeModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangWholeModel
 
+instance IsInvertibleModel (LangWholeModel '( t, t)) where
+    invertibleModelLens f (MutableLangWholeModel model) = fmap MutableLangWholeModel $ wInvertibleModelLens f model
+    invertibleModelLens f (ImmutableLangWholeModel model) = fmap ImmutableLangWholeModel $ invertibleModelLens f model
+
 newMemWholeModel :: forall a. Action (LangWholeModel '( a, a))
 newMemWholeModel = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
     model <- actionLiftLifecycle $ makeReflectingModel r
-    uh <- actionUndoHandler
-    return $ wModelToWholeModel $ MkWModel $ undoHandlerModel uh model
+    return $ wModelToWholeModel $ MkWModel model
 
 langWholeModelToModel :: forall p q. LangWholeModel '( p, q) -> LangModel
 langWholeModelToModel (MutableLangWholeModel model) = MkLangModel model
@@ -70,11 +72,7 @@ langWholeModelMapModel ff (MutableLangWholeModel model) = fmap MutableLangWholeM
 langWholeModelMapModel ff (ImmutableLangWholeModel (MkImmutableWholeModel model)) =
     fmap (ImmutableLangWholeModel . MkImmutableWholeModel) $ ff model
 
-langWholeModelSubscribe ::
-       forall a. (?qcontext :: QContext)
-    => ImmutableWholeModel a
-    -> (Maybe a -> Action ())
-    -> Action ()
+langWholeModelSubscribe :: forall a. ImmutableWholeModel a -> (Maybe a -> Action ()) -> Action ()
 langWholeModelSubscribe (MkImmutableWholeModel (MkWModel model)) update =
     actionLiftView $ viewBindReadOnlyWholeModel model $ \_ ka -> runAction $ update $ knowToMaybe ka
 

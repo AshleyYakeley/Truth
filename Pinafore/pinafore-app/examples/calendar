@@ -1,10 +1,12 @@
 #!/usr/bin/pinafore
+Env.openDefaultStore >>= fn store =>
 let
+import Storage;
 
 import GTK();
 
 dateText: Date ~> Text
-= property @Date @Text !"example.calendar:dateText";
+= property @Date @Text !"example.calendar:dateText" store;
 
 ui: WholeModel Date -> GTK.Element
 = fn r => GTK.vertical

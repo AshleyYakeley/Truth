@@ -34,7 +34,7 @@ clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
 uiListTable ::
-       (HasCallStack, ?qcontext :: QContext)
+       HasCallStack
     => [(LangWholeModel '( BottomType, Text), A -> LangWholeModel '( BottomType, Text))]
     -> LangListModel '( BottomType, EnA)
     -> (A -> Action TopType)
@@ -132,16 +132,12 @@ uiPick itemsRef ref =
             subVal = unWModel $ langWholeModelToValue $ contraRangeLift meet2 ref
         createComboBox subOpts subVal
 
-actionRef ::
-       (?qcontext :: QContext)
-    => (View --> IO)
-    -> ImmutableWholeModel (Action TopType)
-    -> WROWModel (Maybe (GView 'Locked ()))
+actionRef :: (View --> IO) -> ImmutableWholeModel (Action TopType) -> WROWModel (Maybe (GView 'Locked ()))
 actionRef unlift raction =
     eaMapReadOnlyWhole (fmap (\action -> gvRunAction unlift $ action >> return ()) . knowToMaybe) $
     immutableModelToReadOnlyModel raction
 
-uiButton :: (?qcontext :: QContext) => ImmutableWholeModel Text -> ImmutableWholeModel (Action TopType) -> LangElement
+uiButton :: ImmutableWholeModel Text -> ImmutableWholeModel (Action TopType) -> LangElement
 uiButton text raction =
     MkLangElement $ \MkElementContext {..} ->
         createButton
@@ -201,7 +197,7 @@ uiNotebook selref mitems =
                 return (t, b)
         createNotebook (langWholeModelSelectNotify noEditSource selref) items
 
-uiExec :: (?qcontext :: QContext) => Action LangElement -> LangElement
+uiExec :: Action LangElement -> LangElement
 uiExec pui =
     MkLangElement $ \ec -> do
         kui <- gvRunUnlocked $ gvLiftView $ unliftAction pui
@@ -247,7 +243,7 @@ uiWithContext call =
         gtkc <- gvGetContext
         unLangElement (call $ MkLangContext gtkc $ ecOtherContext ec) ec
 
-uiNotifySelection :: (?qcontext :: QContext) => (Action LangTextModel -> Action ()) -> LangElement -> LangElement
+uiNotifySelection :: (Action LangTextModel -> Action ()) -> LangElement -> LangElement
 uiNotifySelection notify (MkLangElement e) = let
     sel :: SelectNotify SelectionModel
     sel =
@@ -267,7 +263,7 @@ langImage ref =
         unWModel $
         eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableModelToReadOnlyModel ref
 
-elementStuff :: DocTreeEntry BindDoc
+elementStuff :: DocTreeEntry (BindDoc ())
 elementStuff =
     docTreeEntry
         "Element"

@@ -24,12 +24,6 @@ pattern MkBiWholeUpdate q = MkBiUpdate (MkWholeUpdate q)
 
 {-# COMPLETE MkBiWholeUpdate #-}
 
-{-
-instance Floating (BiWholeEdit p q) (BiWholeEdit p q)
-
-instance ApplicableEdit (BiWholeEdit t t) where
-    applyEdit (MkBiWholeEdit t) _ ReadWhole = return t
--}
 lensBiWholeChangeLens ::
        forall p1 q1 p2 q2.
        (q1 -> q2)

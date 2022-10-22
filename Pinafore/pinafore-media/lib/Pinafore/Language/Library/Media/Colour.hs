@@ -146,7 +146,7 @@ opaque = MkOpaqueAlphaColour
 transparent :: LangAlphaColour
 transparent = MkAlphaColour16 0 $ fromSVGColor black
 
-mkNamedColourEntry :: (String, Color (SRGB 'NonLinear) Word8) -> DocTreeEntry BindDoc
+mkNamedColourEntry :: (String, Color (SRGB 'NonLinear) Word8) -> DocTreeEntry (BindDoc ())
 mkNamedColourEntry (name, colour) = let
     ColorSRGB r g b = colour
     tr = pack $ show r
@@ -161,8 +161,9 @@ mkNamedColourEntry (name, colour) = let
         "," <> tb <> ")\">&nbsp;&nbsp;&nbsp;&nbsp;</span> SRGB " <> tr <> "\\/255 " <> tg <> "\\/255 " <> tb <> "\\/255"
     in mkValEntry (fromString name) desc $ fromSVGColor colour
 
-colourLibraryModule :: LibraryModule
+colourLibraryModule :: LibraryModule ()
 colourLibraryModule =
+    MkLibraryModule $
     MkDocTree
         "Colour"
         ""

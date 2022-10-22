@@ -7,9 +7,7 @@ module Pinafore.Language.Library.FetchModule
     , textFetchModule
     ) where
 
-import Pinafore.Context
 import Pinafore.Language.DefDoc
-import Pinafore.Language.DocTree
 import Pinafore.Language.Error
 import Pinafore.Language.Grammar
 import Pinafore.Language.Interpreter
@@ -20,20 +18,23 @@ import Shapes
 import System.Directory (doesFileExist)
 import System.FilePath
 
-newtype FetchModule = MkFetchModule
-    { runFetchModule :: (?qcontext :: QContext) => ModuleName -> QInterpreter (Maybe QModule)
+newtype FetchModule context = MkFetchModule
+    { runFetchModule :: context -> ModuleName -> QInterpreter (Maybe QModule)
     }
 
-instance Semigroup FetchModule where
+instance Semigroup (FetchModule context) where
     MkFetchModule fma <> MkFetchModule fmb =
-        MkFetchModule $ \mname -> do
-            mrr <- fma mname
+        MkFetchModule $ \context mname -> do
+            mrr <- fma context mname
             case mrr of
                 Just rr -> return $ Just rr
-                Nothing -> fmb mname
+                Nothing -> fmb context mname
 
-instance Monoid FetchModule where
-    mempty = MkFetchModule $ \_ -> return Nothing
+instance Monoid (FetchModule context) where
+    mempty = MkFetchModule $ \_ _ -> return Nothing
+
+instance Contravariant FetchModule where
+    contramap ab (MkFetchModule f) = MkFetchModule $ f . ab
 
 loadModuleFromText :: ModuleName -> Text -> QInterpreter QModule
 loadModuleFromText modname text =
@@ -45,18 +46,18 @@ loadModuleFromByteString modname bs =
         SuccessResult text -> loadModuleFromText modname text
         FailureResult err -> throw $ UnicodeDecodeError $ pack $ show err
 
-textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule
+textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule context
 textFetchModule getText =
-    MkFetchModule $ \modname -> do
+    MkFetchModule $ \_ modname -> do
         mtext <- liftIO $ getText modname
         for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText modname text
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
 
-directoryFetchModule :: FilePath -> FetchModule
+directoryFetchModule :: FilePath -> FetchModule context
 directoryFetchModule dirpath =
-    MkFetchModule $ \modname -> do
+    MkFetchModule $ \_ modname -> do
         let fpath = dirpath </> moduleRelativePath modname
         found <- liftIO $ doesFileExist fpath
         case found of
@@ -66,17 +67,17 @@ directoryFetchModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString modname bs
                 return $ Just mm
 
-getLibraryModuleModule :: (?qcontext :: QContext) => LibraryModule -> QInterpreter QModule
-getLibraryModuleModule libmod = do
+getLibraryModuleModule :: forall context. context -> LibraryModule context -> QInterpreter QModule
+getLibraryModuleModule context libmod = do
     let
-        bindDocs :: [BindDoc]
-        bindDocs = toList libmod
-        seBinding :: ScopeEntry -> Maybe (Name, QInterpreterBinding)
+        bindDocs :: [BindDoc context]
+        bindDocs = libraryModuleEntries libmod
+        seBinding :: ScopeEntry context -> Maybe (Name, QInterpreterBinding)
         seBinding (BindScopeEntry name mb) = do
             b <- mb
-            return (name, b ?qcontext)
+            return (name, b context)
         seBinding _ = Nothing
-        getEntry :: BindDoc -> Maybe (Name, DocInterpreterBinding QTypeSystem)
+        getEntry :: BindDoc context -> Maybe (Name, DocInterpreterBinding QTypeSystem)
         getEntry MkBindDoc {..} = do
             (name, b) <- seBinding bdScopeEntry
             return (name, (docDescription bdDoc, b))
@@ -87,12 +88,12 @@ getLibraryModuleModule libmod = do
             case bdScopeEntry bd of
                 BindScopeEntry _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
-    let moduleDoc = fmap bdDoc libmod
+    let moduleDoc = libraryModuleDocumentation libmod
     moduleScope <- joinAllScopes dscopes bscope
     return $ MkModule {..}
 
-libraryFetchModule :: [LibraryModule] -> FetchModule
+libraryFetchModule :: forall context. [LibraryModule context] -> FetchModule context
 libraryFetchModule lmods = let
-    m :: Map Text LibraryModule
-    m = mapFromList $ fmap (\lmod -> (docTreeName lmod, lmod)) lmods
-    in MkFetchModule $ \mname -> for (lookup (toText mname) m) getLibraryModuleModule
+    m :: Map Text (LibraryModule context)
+    m = mapFromList $ fmap (\lmod -> (libraryModuleName lmod, lmod)) lmods
+    in MkFetchModule $ \context mname -> for (lookup (toText mname) m) $ getLibraryModuleModule context

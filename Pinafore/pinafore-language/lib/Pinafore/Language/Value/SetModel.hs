@@ -33,6 +33,9 @@ instance MaybeRepresentational LangSetModel where
 instance HasVariance LangSetModel where
     type VarianceOf LangSetModel = 'Contravariance
 
+instance Eq a => IsInvertibleModel (LangSetModel a) where
+    invertibleModelLens f (MkLangSetModel eq model) = fmap (MkLangSetModel eq) $ wInvertibleModelLens f model
+
 langSetModelToModel :: forall a. LangSetModel a -> LangModel
 langSetModelToModel (MkLangSetModel _ model) = MkLangModel model
 

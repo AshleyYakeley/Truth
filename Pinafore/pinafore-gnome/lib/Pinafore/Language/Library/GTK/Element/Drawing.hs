@@ -32,7 +32,7 @@ handlerGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFami
 instance HasQGroundType '[] LangHandler where
     qGroundType = handlerGroundType
 
-runLangHandler :: (?qcontext :: QContext) => ElementContext -> LangHandler -> UIEvents
+runLangHandler :: ElementContext -> LangHandler -> UIEvents
 runLangHandler ec (MkLangHandler action) = MkUIEvents $ \eb -> gvRunActionDefault (ecUnlift ec) True $ action eb
 
 langOnClick :: Action () -> LangHandler
@@ -48,7 +48,7 @@ langOnClick action =
 handlerFallThrough :: LangHandler -> LangHandler
 handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> False) $ uie evt
 
-uiDraw :: (?qcontext :: QContext) => ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangElement
+uiDraw :: ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangElement
 uiDraw model =
     MkLangElement $ \ec ->
         createCairo $
@@ -56,7 +56,7 @@ uiDraw model =
         immutableWholeModelValue mempty $
         fmap (\d p -> fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $ unLangDrawing (d p)) model
 
-drawingStuff :: DocTreeEntry BindDoc
+drawingStuff :: DocTreeEntry (BindDoc ())
 drawingStuff =
     docTreeEntry
         "Drawing"

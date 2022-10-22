@@ -39,7 +39,7 @@ interpretAccelerator ('A':'l':'t':'+':s) = do
     return $ MkMenuAccelerator (KMAlt : mods) c
 interpretAccelerator _ = Nothing
 
-menuAction :: (?qcontext :: QContext) => Text -> Maybe Text -> ImmutableWholeModel (Action TopType) -> LangMenuItem
+menuAction :: Text -> Maybe Text -> ImmutableWholeModel (Action TopType) -> LangMenuItem
 menuAction label maccelStr raction = let
     maccel = do
         accelStr <- maccelStr
@@ -55,7 +55,7 @@ uiMenuBar lmb =
     MkLangElement $ \MkElementContext {..} ->
         createMenuBar ecAccelGroup $ fmap (\(MkLangMenuItem me) -> me ecUnlift) lmb
 
-menuItemStuff :: DocTreeEntry BindDoc
+menuItemStuff :: DocTreeEntry (BindDoc ())
 menuItemStuff =
     docTreeEntry
         "Menu"

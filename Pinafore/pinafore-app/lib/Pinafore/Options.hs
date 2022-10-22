@@ -1,6 +1,6 @@
 module Pinafore.Options
     ( RunOptions(..)
-    , getContextOptions
+    , getStorageModelOptions
     ) where
 
 import Pinafore
@@ -17,11 +17,11 @@ data RunOptions = MkRunOptions
 stdIncludeDirs :: FilePath -> [FilePath]
 stdIncludeDirs pinaforedir = [pinaforedir </> "lib", "/usr/local/share/pinafore/lib", "/usr/share/pinafore/lib"]
 
-getContextOptions :: MonadIO m => RunOptions -> m (ContextOptions, ModuleOptions)
-getContextOptions MkRunOptions {..} = do
-    coDataDir <- getPinaforeDir roDataDir
+getStorageModelOptions :: MonadIO m => RunOptions -> m (StorageModelOptions, ModuleOptions)
+getStorageModelOptions MkRunOptions {..} = do
+    smoDataDir <- getPinaforeDir roDataDir
     let
-        coCache = roCache
+        smoCache = roCache
         moExtraLibrary = extraLibrary
-        moModuleDirs = roIncludeDirs <> stdIncludeDirs coDataDir
-    return (MkContextOptions {..}, MkModuleOptions {..})
+        moModuleDirs = roIncludeDirs <> stdIncludeDirs smoDataDir
+    return (MkStorageModelOptions {..}, MkModuleOptions {..})

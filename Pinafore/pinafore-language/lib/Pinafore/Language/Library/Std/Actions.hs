@@ -20,7 +20,7 @@ qfail t = fail $ unpack t
 onStop :: Action A -> Action A -> Action A
 onStop p q = p <|> q
 
-actionsLibEntries :: [DocTreeEntry BindDoc]
+actionsLibEntries :: [DocTreeEntry (BindDoc context)]
 actionsLibEntries =
     [ docTreeEntry
           "Actions"

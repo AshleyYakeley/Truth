@@ -1,7 +1,6 @@
 module Pinafore.Language.Library.Defs where
 
 import Pinafore.Base
-import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
@@ -15,6 +14,40 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Markdown
 import Shapes
+
+data ScopeEntry context
+    = BindScopeEntry Name
+                     (Maybe (context -> QInterpreterBinding))
+    | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
+
+instance Contravariant ScopeEntry where
+    contramap ab (BindScopeEntry name f) = BindScopeEntry name $ fmap (\cb -> cb . ab) f
+    contramap _ (SubtypeScopeEntry entry) = SubtypeScopeEntry entry
+
+data BindDoc context = MkBindDoc
+    { bdScopeEntry :: ScopeEntry context
+    , bdDoc :: DefDoc
+    }
+
+instance Contravariant BindDoc where
+    contramap ab (MkBindDoc se d) = MkBindDoc (contramap ab se) d
+
+newtype LibraryModule context =
+    MkLibraryModule (DocTree (BindDoc context))
+
+instance Contravariant LibraryModule where
+    contramap ab (MkLibraryModule tt) = MkLibraryModule $ fmap (contramap ab) tt
+
+libraryModuleName :: LibraryModule context -> Text
+libraryModuleName (MkLibraryModule lmod) = docTreeName lmod
+
+libraryModuleEntries :: LibraryModule context -> [BindDoc context]
+libraryModuleEntries (MkLibraryModule lmod) = toList lmod
+
+libraryModuleDocumentation :: LibraryModule context -> DocTree DefDoc
+libraryModuleDocumentation (MkLibraryModule lmod) = fmap bdDoc lmod
+
+type EnA = MeetType Entity A
 
 qPositiveTypeDescription ::
        forall t. HasQType 'Positive t
@@ -30,31 +63,17 @@ qNegativeTypeDescription =
     case fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
-type LibraryModule = DocTree BindDoc
-
-type EnA = MeetType Entity A
-
-data ScopeEntry
-    = BindScopeEntry Name
-                     (Maybe (QContext -> QInterpreterBinding))
-    | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
-
-data BindDoc = MkBindDoc
-    { bdScopeEntry :: ScopeEntry
-    , bdDoc :: DefDoc
-    }
-
 mkValEntry ::
-       forall t. HasQType 'Positive t
+       forall context t. HasQType 'Positive t
     => Name
     -> Markdown
-    -> ((?qcontext :: QContext) => t)
-    -> DocTreeEntry BindDoc
+    -> ((?qcontext :: context) => t)
+    -> DocTreeEntry (BindDoc context)
 mkValEntry name docDescription val = let
     bdScopeEntry =
         BindScopeEntry name $
-        Just $ \pc -> let
-            ?qcontext = pc
+        Just $ \context -> let
+            ?qcontext = context
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
     diName = name
     diType = qPositiveTypeDescription @t
@@ -63,11 +82,11 @@ mkValEntry name docDescription val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall t. HasQType 'Positive t
+       forall context t. HasQType 'Positive t
     => Name
     -> Markdown
-    -> ((?qcontext :: QContext) => t)
-    -> DocTreeEntry BindDoc
+    -> ((?qcontext :: context) => t)
+    -> DocTreeEntry (BindDoc context)
 mkSupertypeEntry name docDescription _val = let
     bdScopeEntry = BindScopeEntry name Nothing
     diName = name
@@ -103,7 +122,7 @@ getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeFor dvt getTyp
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-mkTypeEntry :: Name -> Markdown -> QBoundType -> DocTreeEntry BindDoc
+mkTypeEntry :: forall context. Name -> Markdown -> QBoundType -> DocTreeEntry (BindDoc context)
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
     diName = name
@@ -114,7 +133,8 @@ mkTypeEntry name docDescription t = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkSubtypeRelationEntry :: Text -> Text -> Markdown -> SubtypeConversionEntry QGroundType -> DocTreeEntry BindDoc
+mkSubtypeRelationEntry ::
+       forall context. Text -> Text -> Markdown -> SubtypeConversionEntry QGroundType -> DocTreeEntry (BindDoc context)
 mkSubtypeRelationEntry diSubtype diSupertype docDescription scentry = let
     bdScopeEntry = SubtypeScopeEntry scentry
     docItem = SubtypeRelationDocItem {..}
@@ -122,34 +142,35 @@ mkSubtypeRelationEntry diSubtype diSupertype docDescription scentry = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 subtypeRelationEntry ::
-       forall a b.
+       forall context a b.
        TrustOrVerify
     -> Markdown
     -> QGroundedShimWit 'Negative a
     -> QGroundedShimWit 'Positive b
     -> QPolyShim Type a b
-    -> DocTreeEntry BindDoc
+    -> DocTreeEntry (BindDoc context)
 subtypeRelationEntry trustme desc ta tb conv =
     mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry trustme ta tb $ pure conv
 
 hasSubtypeRelationEntry ::
-       forall a b. (HasQType 'Negative a, HasQType 'Positive b)
+       forall a b context. (HasQType 'Negative a, HasQType 'Positive b)
     => TrustOrVerify
     -> Markdown
     -> QPolyShim Type a b
-    -> DocTreeEntry BindDoc
+    -> DocTreeEntry (BindDoc context)
 hasSubtypeRelationEntry trustme doc conv = let
     ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)
     in subtypeRelationEntry trustme doc ta tb conv
 
 mkValPatEntry ::
-       forall t v lt. (HasQType 'Positive t, HasQType 'Negative v, ToListShimWit (QPolyShim Type) (QType 'Positive) lt)
+       forall context t v lt.
+       (HasQType 'Positive t, HasQType 'Negative v, ToListShimWit (QPolyShim Type) (QType 'Positive) lt)
     => Name
     -> Markdown
     -> t
     -> PurityFunction Maybe v (ListProduct lt)
-    -> DocTreeEntry BindDoc
+    -> DocTreeEntry (BindDoc context)
 mkValPatEntry name docDescription val pat = let
     bdScopeEntry =
         BindScopeEntry name $
@@ -161,7 +182,13 @@ mkValPatEntry name docDescription val pat = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSpecialFormEntry ::
-       Name -> Markdown -> [Text] -> Text -> ((?qcontext :: QContext) => QSpecialForm) -> DocTreeEntry BindDoc
+       forall context.
+       Name
+    -> Markdown
+    -> [Text]
+    -> Text
+    -> ((?qcontext :: context) => QSpecialForm)
+    -> DocTreeEntry (BindDoc context)
 mkSpecialFormEntry name docDescription params diType sf = let
     bdScopeEntry =
         BindScopeEntry name $

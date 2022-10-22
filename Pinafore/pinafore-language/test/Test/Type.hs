@@ -21,7 +21,7 @@ showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
 
 showTypes :: PExpression -> String
 showTypes (MkSealedExpression (MkShimWit t _) expr) =
-    "{" <> intercalate ", " (showVars expr) <> "} -> " <> unpack (exprShow t)
+    "{" <> intercalate ", " (nub $ showVars expr) <> "} -> " <> unpack (exprShow t)
 
 exprTypeTest :: String -> Maybe String -> QInterpreter PExpression -> TestTree
 exprTypeTest name expected mexpr =
@@ -226,8 +226,8 @@ testType =
               , textTypeTest "[]" "{} -> List None"
               , textTypeTest "fn v => 1" "{} -> Any -> Integer"
               , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1 a"
-              , textTypeTest "[v,v,v]" "{v : a, v : a, v : a} -> List1 a"
-              , textTypeTest "[x,y,x,y]" "{x : a, y : a, x : a, y : a} -> List1 a"
+              , textTypeTest "[v,v,v]" "{v : a} -> List1 a"
+              , textTypeTest "[x,y,x,y]" "{x : a, y : a} -> List1 a"
               , textTypeTest "(v 3,v \"text\")" "{v : Integer -> a, v : Text -> b} -> a *: b"
               , textTypeTest "(v,v)" "{v : a, v : b} -> a *: b"
               , textTypeTest "(v 3,v 3)" "{v : Integer -> a, v : Integer -> b} -> a *: b"
@@ -410,22 +410,26 @@ testType =
               , textTypeTest "(identity !. identity) !$% {3}" "{} -> WholeModel +Integer"
               , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeModel +Integer"
               , textTypeTest
-                    "property @Integer @Text !\"a\" !** property @Number @Text !\"b\""
-                    "{} -> {-Integer,+Number} ~> (Text *: Text)"
+                    "Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store"
+                    "{store : Store} -> {-Integer,+Number} ~> (Text *: Text)"
               , textTypeTest
-                    "property @Text @Integer !\"a\" !++ property @Text @Number !\"b\""
-                    "{} -> (Text +: Text) ~> {-Integer,+Number}"
+                    "Storage.property @Text @Integer !\"a\" store !++ Storage.property @Text @Number !\"b\" store"
+                    "{store : Store} -> (Text +: Text) ~> {-Integer,+Number}"
               , textTypeTest
-                    "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$% {3}"
-                    "{} -> WholeModel (Text *: Text)"
+                    "(Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store) !$% {3}"
+                    "{store : Store} -> WholeModel (Text *: Text)"
               , textTypeTest
-                    "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$ {3}"
-                    "{} -> WholeModel (Text *: Text)"
-              , textTypeTest "property @Integer @Text !\"a\" !@% {\"x\"}" "{} -> FiniteSetModel Integer"
-              , textTypeTest "property @Integer @Text !\"a\" !@ {\"x\"}" "{} -> FiniteSetModel Integer"
+                    "(Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store) !$ {3}"
+                    "{store : Store} -> WholeModel (Text *: Text)"
               , textTypeTest
-                    "(property @Integer @Text !\"a\" !@% {\"x\"}) <:*:> (property @Number @Text !\"b\" !@% {\"y\"})"
-                    "{} -> FiniteSetModel (Integer *: Number)"
+                    "Storage.property @Integer @Text !\"a\" store !@% {\"x\"}"
+                    "{store : Store} -> FiniteSetModel Integer"
+              , textTypeTest
+                    "Storage.property @Integer @Text !\"a\" store !@ {\"x\"}"
+                    "{store : Store} -> FiniteSetModel Integer"
+              , textTypeTest
+                    "(Storage.property @Integer @Text !\"a\" store !@% {\"x\"}) <:*:> (Storage.property @Number @Text !\"b\" store !@% {\"y\"})"
+                    "{store : Store} -> FiniteSetModel (Integer *: Number)"
               , textTypeTest "pairWholeModel {3} {\"x\"}" "{} -> WholeModel {-(Any *: Any),+(Integer *: Text)}"
               , textTypeTest "immutWholeModel $ pairWholeModel {3} {\"x\"}" "{} -> WholeModel +(Integer *: Text)"
               ]

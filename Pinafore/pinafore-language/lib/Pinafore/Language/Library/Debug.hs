@@ -23,8 +23,9 @@ debugLiteralLength = olength . unLiteral
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
-debugLibraryModule :: LibraryModule
+debugLibraryModule :: LibraryModule context
 debugLibraryModule =
+    MkLibraryModule $
     MkDocTree
         "Debug"
         "Functions for debugging."

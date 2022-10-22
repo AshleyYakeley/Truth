@@ -43,13 +43,7 @@ createLangWindow lc uiw = do
 uiWindowClose :: LangWindow -> View ()
 uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked lwClose
 
-openWindow ::
-       (?qcontext :: QContext)
-    => LangContext
-    -> (Int32, Int32)
-    -> ImmutableWholeModel Text
-    -> LangElement
-    -> Action LangWindow
+openWindow :: LangContext -> (Int32, Int32) -> ImmutableWholeModel Text -> LangElement -> Action LangWindow
 openWindow lc wsSize title (MkLangElement element) =
     actionLiftView $
     mfix $ \w ->
@@ -89,7 +83,7 @@ run call =
             unlift $
                 call $ MkLangContext {lcGTKContext = gtkc, lcOtherContext = MkOtherContext {ocClipboard = clipboard}}
 
-windowStuff :: DocTreeEntry BindDoc
+windowStuff :: DocTreeEntry (BindDoc ())
 windowStuff =
     docTreeEntry
         "Windows"
@@ -111,7 +105,7 @@ langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Boo
 langChooseFile action lc test =
     actionLiftViewKnow $ fmap maybeToKnow $ runGView (lcGTKContext lc) $ gvRunLocked $ chooseFile action test
 
-dialogStuff :: DocTreeEntry BindDoc
+dialogStuff :: DocTreeEntry (BindDoc ())
 dialogStuff =
     docTreeEntry
         "Dialogs"

@@ -24,31 +24,42 @@ import Pinafore.Language.Library.Env
 import Pinafore.Language.Library.Eval
 import Pinafore.Language.Library.FetchModule
 import Pinafore.Language.Library.Std
+import Pinafore.Language.Library.Storage
 import Pinafore.Language.Library.Stream
 import Pinafore.Language.Library.Task
+import Pinafore.Language.Library.Undo
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
-library :: [LibraryModule]
+library :: [LibraryModule InvocationInfo]
 library =
-    [stdLibraryModule, taskLibraryModule, streamLibraryModule, envLibraryModule, evalLibraryModule, debugLibraryModule]
+    [ stdLibraryModule
+    , taskLibraryModule
+    , streamLibraryModule
+    , storageLibraryModule
+    , undoLibraryModule
+    , envLibraryModule
+    , evalLibraryModule
+    , debugLibraryModule
+    ]
 
-libraryDoc :: [LibraryModule] -> [DocTree DefDoc]
-libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib
+libraryDoc :: [LibraryModule InvocationInfo] -> [DocTree DefDoc]
+libraryDoc extralib = fmap libraryModuleDocumentation $ library <> extralib
 
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
-    getDocName :: BindDoc -> Maybe Name
+    getDocName :: forall context. BindDoc context -> Maybe Name
     getDocName MkBindDoc {bdScopeEntry = BindScopeEntry name _, bdDoc = dd}
         | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing
-    in mapMaybe getDocName $ mconcat $ fmap toList library
+    in mapMaybe getDocName $ mconcat $ fmap libraryModuleEntries library
 
 data LibraryContext = MkLibraryContext
     { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
     }
 
-mkLibraryContext :: (?qcontext :: QContext) => FetchModule -> LibraryContext
-mkLibraryContext fetchModule = MkLibraryContext $ runFetchModule $ libraryFetchModule library <> fetchModule
+mkLibraryContext :: InvocationInfo -> FetchModule InvocationInfo -> LibraryContext
+mkLibraryContext context fetchModule =
+    MkLibraryContext $ runFetchModule (libraryFetchModule library <> fetchModule) context

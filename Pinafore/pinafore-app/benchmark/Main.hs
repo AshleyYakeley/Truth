@@ -26,21 +26,26 @@ benchHashes =
               "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
         ]
 
+getBenchEnv :: IO (() -> LibraryContext)
+getBenchEnv = do
+    (library, _) <-
+        getLifeState $ do
+            (ii, _) <- makeTestInvocationInfo stdout
+            return $ mkLibraryContext ii $ libraryFetchModule $ fmap (contramap $ \_ -> ()) extraLibrary
+    return $ \() -> library
+
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestQContext stdout) $ \tpc -> let
-        ((pc, _), _) = tpc ()
-        in bgroup
-               (show $ unpack text)
-               [ bench "check" $
-                 nfIO $
-                 runWithContext pc (libraryFetchModule extraLibrary) $
-                 fromInterpretResult $ qInterpretText "<test>" text >> return ()
-               , env (fmap const $
-                      runWithContext pc (libraryFetchModule extraLibrary) $
-                      fromInterpretResult $ qInterpretText "<test>" text) $ \action ->
-                     bench "run" $ nfIO (nullViewIO $ action ())
-               ]
+    env getBenchEnv $ \tpc -> let
+        library = tpc ()
+        in let
+               ?library = library
+               in bgroup
+                      (show $ unpack text)
+                      [ bench "check" $ nfIO $ fromInterpretResult $ qInterpretText "<test>" text >> return ()
+                      , env (fmap const $ fromInterpretResult $ qInterpretText "<test>" text) $ \action ->
+                            bench "run" $ nfIO (nullViewIO $ action ())
+                      ]
 
 benchScripts :: Benchmark
 benchScripts =
@@ -93,7 +98,7 @@ benchScripts =
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
-interpretUpdater :: (?qcontext :: QContext) => Text -> IO ()
+interpretUpdater :: Text -> IO ()
 interpretUpdater text =
     runTester defaultTester $ do
         action <- testerLiftView $ qInterpretTextAtType "<test>" text
@@ -104,7 +109,7 @@ interpretUpdater text =
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestQContext stdout) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestInvocationInfo stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?qcontext = pc

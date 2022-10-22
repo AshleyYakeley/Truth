@@ -10,7 +10,7 @@ import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Var
 import Shapes
 
-lifecycleLibEntries :: [DocTreeEntry BindDoc]
+lifecycleLibEntries :: [DocTreeEntry (BindDoc context)]
 lifecycleLibEntries =
     [ docTreeEntry
           "Lifecycles"

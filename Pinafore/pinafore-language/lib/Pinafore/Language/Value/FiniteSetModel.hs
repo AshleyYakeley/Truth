@@ -4,6 +4,7 @@ import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Shim
+import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.SetModel
 import Pinafore.Language.Value.WholeModel
 import Shapes
@@ -23,12 +24,15 @@ instance MaybeRepresentational LangFiniteSetModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangFiniteSetModel
 
+instance IsInvertibleModel (LangFiniteSetModel pq) where
+    invertibleModelLens f (MkLangFiniteSetModel tr model) =
+        fmap (MkLangFiniteSetModel tr) $ wInvertibleModelLens f model
+
 newMemFiniteSetModel :: forall a. Action (LangFiniteSetModel '( MeetType Entity a, a))
 newMemFiniteSetModel = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
     model <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- actionUndoHandler
-    return $ meetValueLangFiniteSetModel $ MkWModel $ undoHandlerModel uh model
+    return $ meetValueLangFiniteSetModel $ MkWModel model
 
 langFiniteSetModelValue :: LangFiniteSetModel '( q, q) -> WModel (FiniteSetUpdate q)
 langFiniteSetModelValue (MkLangFiniteSetModel tr lv) =

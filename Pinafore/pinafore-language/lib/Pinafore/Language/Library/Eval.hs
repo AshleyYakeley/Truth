@@ -13,8 +13,9 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalLibraryModule :: LibraryModule
+evalLibraryModule :: LibraryModule context
 evalLibraryModule =
+    MkLibraryModule $
     MkDocTree
         "Eval"
         ""

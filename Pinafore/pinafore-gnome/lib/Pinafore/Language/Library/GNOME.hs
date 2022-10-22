@@ -7,7 +7,6 @@ module Pinafore.Language.Library.GNOME
 import Pinafore.Language.API
 import Pinafore.Language.Library.GIO
 import Pinafore.Language.Library.GTK
-import Shapes
 
-gnomeLibrary :: [LibraryModule]
-gnomeLibrary = [gioLibraryModule] <> gtkLibrary
+gnomeLibrary :: [LibraryModule ()]
+gnomeLibrary = gioLibraryModule : gtkLibrary

@@ -1,7 +1,9 @@
 #!/usr/bin/pinafore
 
-GTK.run $ fn gtk => let
-
+Env.openDefaultStore >>= fn store =>
+GTK.run $ fn gtk =>
+let
+import Storage;
 import UIStuff.Selection;
 import UIStuff.Named;
 
@@ -68,10 +70,10 @@ eventTimeOrder: ModelOrder EventTime
 opentype Event;
 subtype Event <: Named;
 events: FiniteSetModel Event
-= property @Event @Unit !"type.event" !@ {()};
+= property @Event @Unit !"type.event" store !@ {()};
 
-eventTime = property @Event @EventTime !"event.time";
-eventNotes = property @Event @Text !"item.description";
+eventTime = property @Event @EventTime !"event.time" store;
+eventNotes = property @Event @Text !"item.description" store;
 
 eventOrder: ModelOrder Event
 = orderOn eventTime eventTimeOrder;

@@ -8,8 +8,8 @@ import Pinafore
 import Shapes
 import System.Environment
 
-runFiles :: Foldable t => (ContextOptions, ModuleOptions) -> Bool -> t (FilePath, [String]) -> IO ()
-runFiles (copts, modopts) fNoRun scripts =
+runFiles :: Foldable t => (StorageModelOptions, ModuleOptions) -> Bool -> t (FilePath, [String]) -> IO ()
+runFiles (smopts, modopts) fNoRun scripts =
     runLifecycle $
     runNewView $
     for_ scripts $ \(fpath, iiScriptArguments) -> do
@@ -18,15 +18,16 @@ runFiles (copts, modopts) fNoRun scripts =
             iiStdIn = stdinTextSource
             iiStdOut = stdoutTextSink
             iiStdErr = stderrTextSink
+            iiDefaultStorageModel = standardStorageModel smopts
         iiEnvironment <- liftIO getEnvironment
-        context <- standardQContext copts MkInvocationInfo {..}
-        action <- runWithContext context (standardFetchModule modopts) $ qInterpretFile fpath
+        let ?library = mkLibraryContext MkInvocationInfo {..} $ standardFetchModule modopts
+        action <- qInterpretFile fpath
         if fNoRun
             then return ()
             else action
 
-runInteractive :: (ContextOptions, ModuleOptions) -> IO ()
-runInteractive (copts, modopts) =
+runInteractive :: (StorageModelOptions, ModuleOptions) -> IO ()
+runInteractive (smopts, modopts) =
     runLifecycle $
     runNewView $ do
         let
@@ -35,6 +36,7 @@ runInteractive (copts, modopts) =
             iiStdIn = stdinTextSource
             iiStdOut = stdoutTextSink
             iiStdErr = stderrTextSink
+            iiDefaultStorageModel = standardStorageModel smopts
         iiEnvironment <- liftIO getEnvironment
-        context <- standardQContext copts MkInvocationInfo {..}
-        runWithContext context (standardFetchModule modopts) qInteract
+        let ?library = mkLibraryContext MkInvocationInfo {..} $ standardFetchModule modopts
+        qInteract

@@ -24,12 +24,15 @@ instance MaybeRepresentational LangListModel where
 
 instance HasCCRVariance 'RangeCCRVariance LangListModel
 
+instance IsInvertibleModel (LangListModel '( t, t)) where
+    invertibleModelLens f (OrderedLangListModel model) = fmap OrderedLangListModel $ wUninvertibleModelLens f model
+    invertibleModelLens f (FullLangListModel model) = fmap FullLangListModel $ wInvertibleModelLens f model
+
 newMemListModel :: forall a. Action (LangListModel '( a, a))
 newMemListModel = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
     model :: Model (ListUpdate (WholeUpdate a)) <- actionLiftLifecycle $ makeReflectingModel $ convertReference r
-    uh <- actionUndoHandler
-    return $ FullLangListModel $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
+    return $ FullLangListModel $ eaMap singleBiChangeLens $ MkWModel model
 
 langListModelToModel :: forall p q. LangListModel '( p, q) -> LangModel
 langListModelToModel (OrderedLangListModel model) = MkLangModel model

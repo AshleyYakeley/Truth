@@ -63,8 +63,9 @@ langDurationTask d = fmap liftTask $ durationTask d
 langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
-taskLibraryModule :: LibraryModule
+taskLibraryModule :: LibraryModule context
 taskLibraryModule =
+    MkLibraryModule $
     MkDocTree
         "Task"
         ""

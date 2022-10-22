@@ -1,11 +1,9 @@
 module Pinafore.Main
     ( ModuleOptions(..)
     , standardFetchModule
-    , QContext
-    , nullQContext
-    , makeQContext
-    , ContextOptions(..)
-    , standardQContext
+    , nullInvocationInfo
+    , StorageModelOptions(..)
+    , standardStorageModel
     , sqliteQDumpTable
     , qInterpretTextAtType
     , qInterpretText
@@ -23,24 +21,24 @@ import Pinafore.Storage
 import Shapes
 import System.FilePath
 
+data StorageModelOptions = MkStorageModelOptions
+    { smoCache :: Bool
+    , smoDataDir :: FilePath
+    }
+
 data ModuleOptions = MkModuleOptions
-    { moExtraLibrary :: [LibraryModule]
+    { moExtraLibrary :: [LibraryModule ()]
     , moModuleDirs :: [FilePath]
     }
 
-data ContextOptions = MkContextOptions
-    { coCache :: Bool
-    , coDataDir :: FilePath
-    }
-
-standardStorageModel :: Bool -> FilePath -> View (Model QStorageUpdate)
-standardStorageModel cache dataDir = do
+standardStorageModel :: StorageModelOptions -> View (Model QStorageUpdate)
+standardStorageModel MkStorageModelOptions {..} = do
     rc <- viewGetResourceContext
     viewLiftLifecycle $ do
-        sqlReference <- liftIO $ sqliteTableReference $ dataDir </> "tables.sqlite3"
+        sqlReference <- liftIO $ sqliteTableReference $ smoDataDir </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-
-            if cache
+            if smoCache
                 then do
                     tableReferenceF <- cacheReference rc 500000 tableReference1 -- half-second delay before writing
                     return $ tableReferenceF rc
@@ -48,19 +46,13 @@ standardStorageModel cache dataDir = do
         (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
         return model
 
-standardFetchModule :: ModuleOptions -> FetchModule
+standardFetchModule :: forall context. ModuleOptions -> FetchModule context
 standardFetchModule MkModuleOptions {..} = let
-    extraLibFetchModule :: FetchModule
-    extraLibFetchModule = libraryFetchModule moExtraLibrary
-    dirFetchModule :: FetchModule
+    extraLibFetchModule :: FetchModule context
+    extraLibFetchModule = contramap (\_ -> ()) $ libraryFetchModule moExtraLibrary
+    dirFetchModule :: FetchModule context
     dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
     in extraLibFetchModule <> dirFetchModule
-
-standardQContext :: ContextOptions -> InvocationInfo -> View QContext
-standardQContext MkContextOptions {..} invinfo = do
-    model <- standardStorageModel coCache coDataDir
-    pc <- viewLiftLifecycle $ makeQContext invinfo model
-    return pc
 
 sqliteQDumpTable :: FilePath -> IO ()
 sqliteQDumpTable dirpath = do
@@ -79,29 +71,24 @@ sqliteQDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 qInterpretTextAtType ::
-       forall t m.
-       (?qcontext :: QContext, ?library :: LibraryContext, HasQType 'Negative t, MonadIO m, MonadThrow PinaforeError m)
+       forall t m. (?library :: LibraryContext, HasQType 'Negative t, MonadIO m, MonadThrow PinaforeError m)
     => FilePath
     -> Text
     -> m t
 qInterpretTextAtType puipath puitext = fromInterpretResult $ runPinaforeScoped puipath $ parseValueUnify puitext
 
-qInterpretText ::
-       (?qcontext :: QContext, ?library :: LibraryContext, MonadIO m, MonadThrow PinaforeError m)
-    => FilePath
-    -> Text
-    -> m (View ())
+qInterpretText :: (?library :: LibraryContext, MonadIO m, MonadThrow PinaforeError m) => FilePath -> Text -> m (View ())
 qInterpretText puipath puitext = do
     action <- qInterpretTextAtType @(Action TopType) puipath puitext
     return $ runAction $ fmap (\MkTopType -> ()) $ action
 
-qInterpretFile :: (?qcontext :: QContext, ?library :: LibraryContext) => FilePath -> View (View ())
+qInterpretFile :: (?library :: LibraryContext) => FilePath -> View (View ())
 qInterpretFile fpath = do
     ptext <- liftIO $ readFile fpath
     qInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
-qInteractHandles :: (?qcontext :: QContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
+qInteractHandles :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 qInteractHandles inh outh echo = interact inh outh echo
 
-qInteract :: (?qcontext :: QContext, ?library :: LibraryContext) => View ()
+qInteract :: (?library :: LibraryContext) => View ()
 qInteract = qInteractHandles stdin stdout False

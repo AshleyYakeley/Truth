@@ -1,6 +1,8 @@
 module Pinafore.Base.Action
     ( Action
-    , unAction
+    , unliftAction
+    , unliftActionOrFail
+    , runAction
     , actionLiftView
     , actionLiftViewKnow
     , actionLiftViewKnowWithUnlift
@@ -13,7 +15,6 @@ module Pinafore.Base.Action
     , actionFlushModelCommits
     , actionModelGet
     , actionModelPush
-    , actionUndoHandler
     , actionKnow
     , knowAction
     , actionOnClose
@@ -26,53 +27,52 @@ import Changes.Core
 import Pinafore.Base.Know
 import Shapes
 
-data ActionContext = MkActionContext
-    { acUndoHandler :: UndoHandler
-    }
+newtype Action a = MkAction
+    { unAction :: ComposeInner Know View a
+    } deriving ( Functor
+               , Applicative
+               , Monad
+               , Alternative
+               , MonadPlus
+               , MonadFix
+               , MonadFail
+               , MonadIO
+               , MonadHoistIO
+               , MonadTunnelIO
+               , MonadException
+               , RepresentationalRole
+               )
 
-newtype Action a =
-    MkAction (ReaderT ActionContext (ComposeInner Know View) a)
-    deriving ( Functor
-             , Applicative
-             , Monad
-             , Alternative
-             , MonadPlus
-             , MonadFix
-             , MonadFail
-             , MonadIO
-             , MonadHoistIO
-             , MonadTunnelIO
-             , MonadException
-             , RepresentationalRole
-             )
+unliftAction :: forall a. Action a -> View (Know a)
+unliftAction = unComposeInner . unAction
 
-unAction :: forall a. UndoHandler -> Action a -> View (Know a)
-unAction acUndoHandler (MkAction action) = unComposeInner $ runReaderT action MkActionContext {..}
+unliftActionOrFail :: Action --> View
+unliftActionOrFail action = do
+    ka <- unliftAction action
+    case ka of
+        Known a -> return a
+        Unknown -> fail "action stopped"
+
+runAction :: Action () -> View ()
+runAction action = fmap (\_ -> ()) $ unliftAction action
 
 actionLiftView :: View --> Action
-actionLiftView va = MkAction $ lift $ lift va
+actionLiftView va = MkAction $ lift va
 
 actionLiftViewKnow :: View (Know a) -> Action a
-actionLiftViewKnow va = MkAction $ lift $ MkComposeInner va
+actionLiftViewKnow va = MkAction $ MkComposeInner va
 
 actionLiftViewKnowWithUnlift :: ((forall r. Action r -> View (Know r)) -> View (Know a)) -> Action a
-actionLiftViewKnowWithUnlift call =
-    MkAction $ liftWithUnlift $ \unlift -> MkComposeInner $ call $ \(MkAction rma) -> unComposeInner $ unlift rma
+actionLiftViewKnowWithUnlift call = actionLiftViewKnow $ call unliftAction
 
 actionTunnelView :: forall r. (forall f. Functor f => (forall a. Action a -> View (f a)) -> View (f r)) -> Action r
-actionTunnelView call =
-    MkAction $
-    tunnel $ \unlift1 ->
-        tunnel $ \unlift2 -> fmap unComposeInner $ call $ \(MkAction rx) -> fmap MkComposeInner $ unlift2 $ unlift1 rx
+actionTunnelView call = actionLiftViewKnow $ call unliftAction
 
 actionHoistView :: (View --> View) -> Action --> Action
-actionHoistView vv (MkAction ma) = MkAction $ hoist (hoist vv) ma
+actionHoistView vv (MkAction ma) = MkAction $ hoist vv ma
 
 actionGetCreateViewUnlift :: Action (WRaised Action (ComposeInner Know View))
-actionGetCreateViewUnlift =
-    MkAction $ do
-        MkWUnlift unlift <- askUnlift
-        return $ MkWRaised $ \(MkAction ra) -> unlift ra
+actionGetCreateViewUnlift = return $ MkWRaised $ \(MkAction ra) -> ra
 
 actionResourceContext :: Action ResourceContext
 actionResourceContext = actionLiftView viewGetResourceContext
@@ -101,17 +101,12 @@ actionModelPush model edits = do
 actionLiftLifecycle :: Lifecycle --> Action
 actionLiftLifecycle la = actionLiftView $ viewLiftLifecycle la
 
-actionUndoHandler :: Action UndoHandler
-actionUndoHandler = do
-    MkActionContext {..} <- MkAction ask
-    return acUndoHandler
-
 actionKnow :: forall a. Know a -> Action a
 actionKnow (Known a) = pure a
 actionKnow Unknown = empty
 
 knowAction :: forall a. Action a -> Action (Know a)
-knowAction (MkAction (ReaderT rka)) = MkAction $ ReaderT $ \r -> MkComposeInner $ fmap Known $ unComposeInner $ rka r
+knowAction (MkAction ka) = MkAction $ MkComposeInner $ fmap Known $ unComposeInner ka
 
 actionOnClose :: Action () -> Action ()
 actionOnClose closer = do
@@ -125,7 +120,6 @@ actionEarlyCloser :: Action a -> Action (a, IO ())
 actionEarlyCloser ra = do
     MkWRaised unlift <- actionGetCreateViewUnlift
     MkAction $
-        lift $
         MkComposeInner $ do
             (ka, closer) <- viewGetCloser $ unComposeInner $ unlift ra
             return $ fmap (\a -> (a, closer)) ka

@@ -123,8 +123,9 @@ fontFace' fname italic bold =
 drawToImage :: (Int, Int) -> LangDrawing a -> LangImage
 drawToImage s (MkLangDrawing d) = MkLangImage $ MkSomeFor RGBA8PixelType $ renderToImage s $ drawingRender d
 
-cairoLibraryModule :: LibraryModule
+cairoLibraryModule :: LibraryModule ()
 cairoLibraryModule =
+    MkLibraryModule $
     MkDocTree
         "Cairo"
         ""

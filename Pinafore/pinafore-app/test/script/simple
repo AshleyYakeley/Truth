@@ -1,12 +1,14 @@
 #!/usr/bin/pinafore
+Env.openDefaultStore >>= fn store =>
 let
+import Storage;
 
 # Ontology
 # Define a type of entity for people
 opentype Person;
 
 # Properties of Person
-name = property @Person @Text !"example:name";
+name = property @Person @Text !"example:name" store;
 
 # One particular Person
 me = openEntity @Person !"example:me";

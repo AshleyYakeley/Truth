@@ -3,18 +3,17 @@
 
 module Pinafore.Language.Library.Std.Model
     ( modelLibEntries
+    , morphismGroundType
     ) where
 
 import Changes.Core
 import Pinafore.Base
-import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -112,7 +111,7 @@ setentity model val = langWholeModelSet model $ Known val
 deleteentity :: LangWholeModel '( BottomType, TopType) -> Action ()
 deleteentity model = langWholeModelSet model Unknown
 
-modelLibEntries :: [DocTreeEntry BindDoc]
+modelLibEntries :: [DocTreeEntry (BindDoc context)]
 modelLibEntries =
     [ docTreeEntry
           "Models"
@@ -354,36 +353,6 @@ modelLibEntries =
             inverseApplyLangMorphismImmutModel @A @B
           , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @BX @BY
           , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B
-          , mkSpecialFormEntry
-                "property"
-                "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
-                ["@A", "@B", "<anchor>"]
-                "A ~> B" $
-            MkSpecialForm
-                (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
-                eta <- getMonoEntityType ta
-                etb <- getMonoEntityType tb
-                let
-                    bta = biRangeSomeFor (nonpolarToNegative @QTypeSystem ta, nonpolarToPositive @QTypeSystem ta)
-                    btb = biRangeSomeFor (nonpolarToNegative @QTypeSystem tb, nonpolarToPositive @QTypeSystem tb)
-                    in case (bta, btb) of
-                           (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
-                               typef =
-                                   typeToDolan $
-                                   MkDolanGroundedType morphismGroundType $
-                                   ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
-                                   ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
-                               morphism =
-                                   propertyMorphism (monoEntityAdapter eta) (monoEntityAdapter etb) (MkPredicate anchor)
-                               pinamorphism =
-                                   MkLangMorphism $
-                                   storageModelBased qStorageModel $
-                                   cfmap4 (MkCatDual $ shimToFunction praContra) $
-                                   cfmap3 (shimToFunction praCo) $
-                                   cfmap2 (MkCatDual $ shimToFunction prbContra) $
-                                   cfmap1 (shimToFunction prbCo) morphism
-                               anyval = MkSomeOf typef pinamorphism
-                               in return anyval
           ]
     , docTreeEntry
           "ModelOrders"

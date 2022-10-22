@@ -64,9 +64,8 @@ showDefDesc h _ desc = do
 
 printModuleDoc :: ModuleOptions -> Text -> IO ()
 printModuleDoc modopts tmodname = do
-    let ?qcontext = nullQContext
     let fmodule = standardFetchModule modopts
-    let ?library = mkLibraryContext fmodule
+    let ?library = mkLibraryContext nullInvocationInfo fmodule
     modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod

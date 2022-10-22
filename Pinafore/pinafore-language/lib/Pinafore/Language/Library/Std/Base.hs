@@ -36,14 +36,14 @@ instance HasQGroundType '[] Showable where
     qGroundType = showableGroundType
 
 showableSubtypeRelationEntry ::
-       forall a. (HasQType 'Negative a, TextShow a)
-    => DocTreeEntry BindDoc
+       forall a context. (HasQType 'Negative a, TextShow a)
+    => DocTreeEntry (BindDoc context)
 showableSubtypeRelationEntry =
     hasSubtypeRelationEntry @a @Showable Verify "" $ functionToShim "textShowable" textShowable
 
 literalSubtypeRelationEntry ::
-       forall a. (HasQType 'Negative a, AsLiteral a)
-    => DocTreeEntry BindDoc
+       forall a context. (HasQType 'Negative a, AsLiteral a)
+    => DocTreeEntry (BindDoc context)
 literalSubtypeRelationEntry = hasSubtypeRelationEntry @a @Literal Verify "" $ functionToShim "toLiteral" toLiteral
 
 entityAnchor :: Entity -> Text
@@ -83,10 +83,10 @@ textReadMaybe :: Read t => Text -> Maybe t
 textReadMaybe t = readMaybe $ unpack t
 
 plainFormattingDefs ::
-       forall t. (HasQType 'Positive t, HasQType 'Negative t, Read t, TextShow t)
+       forall t context. (HasQType 'Positive t, HasQType 'Negative t, Read t, TextShow t)
     => Text
     -> Text
-    -> [DocTreeEntry BindDoc]
+    -> [DocTreeEntry (BindDoc context)]
 plainFormattingDefs uname lname =
     [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> plainMarkdown lname <> ". Inverse of `show`.") $
       textReadMaybe @t
@@ -126,10 +126,10 @@ unixInterpretAsText fmt = let
     in maybeLensLangWholeModel getter setter
 
 unixFormattingDefs ::
-       forall t. (HasQType 'Positive t, HasQType 'Negative t, FormatTime t, ParseTime t)
+       forall t context. (HasQType 'Positive t, HasQType 'Negative t, FormatTime t, ParseTime t)
     => Text
     -> Text
-    -> [DocTreeEntry BindDoc]
+    -> [DocTreeEntry (BindDoc context)]
 unixFormattingDefs uname lname =
     [ mkValEntry
           (MkName $ "unixFormat" <> uname)
@@ -163,7 +163,7 @@ greater f a b =
 revap :: A -> (A -> B) -> B
 revap x f = f x
 
-baseLibEntries :: [DocTreeEntry BindDoc]
+baseLibEntries :: [DocTreeEntry (BindDoc context)]
 baseLibEntries =
     [ docTreeEntry
           "Literals & Entities"

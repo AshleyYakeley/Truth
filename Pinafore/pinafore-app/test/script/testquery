@@ -1,20 +1,22 @@
 #!/usr/bin/pinafore
+Env.openDefaultStore >>= fn store =>
 let
+import Storage;
 
 # Define a type of entity for people
 opentype Person;
 
 # Properties of Person
-name = property @Person @Text !"example:name";
-mother = property @Person @Person !"example:mother";
-father = property @Person @Person !"example:father";
+name = property @Person @Text !"example:name" store;
+mother = property @Person @Person !"example:mother" store;
+father = property @Person @Person !"example:father" store;
 
 # Root type and entity
 opentype Root;
 root = openEntity @Root !"example:root";
 
 # The set of people connected to root.
-people = property @Person @Root !"example:people" !@ {root};
+people = property @Person @Root !"example:people" store !@ {root};
 
 in
 get (finiteSetModelList (reverse alphabetical) (name !$$ people)) >>= fn l => for_ l Env.outputLn

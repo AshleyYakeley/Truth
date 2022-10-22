@@ -26,7 +26,7 @@ import Shapes.Test.Context
 
 data ScriptContext = MkScriptContext
     { scDeclarations :: [String]
-    , scFetchModule :: FetchModule
+    , scFetchModule :: FetchModule ()
     }
 
 type ScriptTestTree = ContextTestTree ScriptContext
@@ -37,7 +37,7 @@ tDecls defs = tContext $ \sc -> sc {scDeclarations = scDeclarations sc <> defs}
 tDeclsRec :: [String] -> ScriptTestTree -> ScriptTestTree
 tDeclsRec defs = tDecls $ pure $ "rec\n" ++ intercalate ";\n" defs ++ "\nend"
 
-tFetchModule :: FetchModule -> ScriptTestTree -> ScriptTestTree
+tFetchModule :: FetchModule () -> ScriptTestTree -> ScriptTestTree
 tFetchModule fm = tContext $ \sc -> sc {scFetchModule = fm <> scFetchModule sc}
 
 tModule :: Text -> Text -> ScriptTestTree -> ScriptTestTree
@@ -49,7 +49,7 @@ tModule name script =
             then Just script
             else Nothing
 
-tLibrary :: LibraryModule -> ScriptTestTree -> ScriptTestTree
+tLibrary :: LibraryModule () -> ScriptTestTree -> ScriptTestTree
 tLibrary libm = tFetchModule $ libraryFetchModule [libm]
 
 runScriptTestTree :: ScriptTestTree -> TestTree

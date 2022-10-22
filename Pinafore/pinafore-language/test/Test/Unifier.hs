@@ -70,7 +70,7 @@ op4 withVal r v = withVal $ r $ r v
 idText :: Text -> Text
 idText = id
 
-testLib :: LibraryModule
+testLib :: LibraryModule context
 testLib = let
     testSameT :: Text -> Text -> Action ()
     testSameT expected found =
@@ -82,7 +82,8 @@ testLib = let
         if expected == found
             then return ()
             else fail "different"
-    in MkDocTree "TEST" "" $
+    in MkLibraryModule $
+       MkDocTree "TEST" "" $
        [ mkValEntry "idText" "TEST" idText
        , mkValEntry "testSameT" "TEST" testSameT
        , mkValEntry "testSameI" "TEST" testSameI

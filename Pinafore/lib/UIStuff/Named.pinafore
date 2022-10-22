@@ -1,4 +1,5 @@
 let
+import Storage;
 import GTK;
 import UIStuff.Selection;
 
@@ -7,7 +8,7 @@ opentype Named;
 
 #| A name is a text that identifies (in some sense) an entity.
 name: Named ~> Text
-= property @Named @Text !"identify.name";
+= property @Named @Text !"identify.name" store;
 
 #| Order alphabetically (case-insensitive) by name
 nameOrder: ModelOrder Named

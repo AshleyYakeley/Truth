@@ -20,6 +20,16 @@ newtype BiUpdate (pupdate :: Type) (qupdate :: Type) =
 
 type instance UpdateEdit (BiUpdate pupdate qupdate) = BiEdit (UpdateEdit pupdate) (UpdateEdit qupdate)
 
+instance Floating edit edit => Floating (BiEdit edit edit) (BiEdit edit edit) where
+    floatingUpdate (MkBiEdit edit) (MkBiEdit t) = MkBiEdit $ floatingUpdate edit t
+
+instance ApplicableEdit edit => ApplicableEdit (BiEdit edit edit) where
+    applyEdit (MkBiEdit edit) = applyEdit edit
+
+instance InvertibleEdit edit => InvertibleEdit (BiEdit edit edit) where
+    invertEdit (MkBiEdit edit) rd = fmap (fmap MkBiEdit) $ invertEdit edit rd
+    invertEdits bes rd = fmap (fmap MkBiEdit) $ invertEdits (fmap unBiEdit bes) rd
+
 biSingleChangeLens :: forall update. ChangeLens (BiUpdate update update) update
 biSingleChangeLens = let
     clRead :: ReadFunction (UpdateReader update) (UpdateReader update)

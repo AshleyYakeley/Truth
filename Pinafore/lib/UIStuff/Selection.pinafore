@@ -4,6 +4,18 @@ import GTK;
 
 ### Useful GTK stuff
 
+datatype UISContext of
+    MkUISContext GTK.Context Undo.UndoHandler;
+end;
+
+runUIStuff: (Storage.Store -> UISContext -> Action a) -> Action a
+= fn call => do
+    dstore <- Env.openDefaultStore;
+    uh <- Undo.newUndoHandler;
+    store <- Undo.handleStore uh dstore;
+    GTK.run $ fn gtk => call store $ MkUISContext gtk uh;
+end;
+
 uiPage: WholeModel +Text -> Element -> Element *: Element
 = fns n ui => (label n,ui);
 
@@ -11,8 +23,8 @@ uiLabelled: WholeModel +Text -> Element -> Element
 = fns n ui => horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
-stdWindow: Context -> WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
-= fns gtk title moremenus contents => fixAction $ fn window => do
+stdWindow: UISContext -> WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
+= fns (MkUISContext gtk uh) title moremenus contents => fixAction $ fn window => do
     textsel <- newMemWholeModel;
     let
         notify: Action TextModel -> Action Unit
@@ -55,8 +67,8 @@ stdWindow: Context -> WholeModel +Text -> WholeModel +(List MenuItem) -> Element
                 ],
                 menuSubmenu "Edit"
                 [
-                    menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
-                    menuAction "Redo" (Just "Ctrl+Y") {queueRedo},
+                    menuAction "Undo" (Just "Ctrl+Z") {Undo.queueUndo uh},
+                    menuAction "Redo" (Just "Ctrl+Y") {Undo.queueRedo uh},
                     menuSeparator,
                     menuAction "Cut" (Just "Ctrl+X") {selCut},
                     menuAction "Copy" (Just "Ctrl+C") {selCopy},
@@ -71,8 +83,8 @@ datatype Pane of
     MkPane (WholeModel Text) Element (WholeModel (List MenuItem))
 end;
 
-paneWindow: Context -> Pane -> Action Window
-= fns gtk (MkPane title ui moremenus) => stdWindow gtk title moremenus ui;
+paneWindow: UISContext -> Pane -> Action Window
+= fns uisc (MkPane title ui moremenus) => stdWindow uisc title moremenus ui;
 
 pane: Text -> Element -> Pane
 = fns title ui => MkPane {title} ui {[]};
@@ -143,21 +155,21 @@ selectionPairPane:
         in horizontal [sidebarUI, layoutGrow selectedUI];
 
 selectionWindow:
-    Context ->
+    UISContext ->
     Text -> # window title
     SetModel item -> # the set of items
     List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeModel item -> Element) ->
     Action Window
-= fns gtk wtitle iset createMenuItems iopen iui => do
+= fns uisc wtitle iset createMenuItems iopen iui => do
     mui <- selectionPane wtitle iset createMenuItems iopen iui;
-    paneWindow gtk mui;
+    paneWindow uisc mui;
     end;
 
 #| This is a two-pane window, the left has a "selector" of items (e.g. a table), and the right shows the selected item.
 selectionPairWindow:
-    Context ->
+    UISContext ->
     Text -> # window title
     SetModel item -> # the set of items
     List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
@@ -165,9 +177,9 @@ selectionPairWindow:
     (WholeModel item -> Element) -> # Element for the item selector
     (WholeModel +item -> Element) -> # Element for the selected item
     Action Window
-= fns gtk wtitle iset createMenuItems iopen getSelectorUI getSelectedUI => do
+= fns uisc wtitle iset createMenuItems iopen getSelectorUI getSelectedUI => do
     mui <- selectionPairPane wtitle iset createMenuItems iopen getSelectorUI getSelectedUI;
-    paneWindow gtk mui;
+    paneWindow uisc mui;
     end;
 
 newItemMenuAction: Text -> Maybe Text -> Action a -> SetModel a -> (a -> Action Unit) -> MenuItem
@@ -179,6 +191,8 @@ newItemMenuAction: Text -> Maybe Text -> Action a -> SetModel a -> (a -> Action 
     end};
 
 in expose
+    UISContext, MkUISContext,
+    runUIStuff,
     stdWindow,
     selectionWindow,
     selectionPairWindow,

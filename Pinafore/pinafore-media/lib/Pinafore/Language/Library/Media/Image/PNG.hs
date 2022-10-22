@@ -51,7 +51,7 @@ pngEncode mdata (MkLangImage image) = let
 pngMetadata :: LangPNGImage -> LangHasMetadata
 pngMetadata image = keyMapToMetadata $ fst $ idlData image
 
-pngStuff :: DocTreeEntry BindDoc
+pngStuff :: DocTreeEntry (BindDoc ())
 pngStuff =
     docTreeEntry
         "PNG"

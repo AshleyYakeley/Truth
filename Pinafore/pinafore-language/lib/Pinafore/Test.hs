@@ -30,7 +30,7 @@ module Pinafore.Test
     , module Pinafore.Language.Expression
     , checkUpdateEditor
     , QTableSubject(..)
-    , makeTestQContext
+    , makeTestInvocationInfo
     , TesterOptions(..)
     , defaultTester
     , Tester
@@ -75,8 +75,8 @@ checkUpdateEditor val push =
             editingTask = mempty
         return MkEditing {..}
 
-makeTestQContext :: Handle -> Lifecycle (QContext, View QTableSubject)
-makeTestQContext hout = do
+makeTestInvocationInfo :: Handle -> Lifecycle (InvocationInfo, View QTableSubject)
+makeTestInvocationInfo hout = do
     tableStateReference :: Reference (WholeEdit QTableSubject) <-
         liftIO $ makeMemoryReference (MkQTableSubject [] [] [] []) $ \_ -> True
     let
@@ -87,11 +87,11 @@ makeTestQContext hout = do
             rc <- viewGetResourceContext
             liftIO $ getReferenceSubject rc tableStateReference
     (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
-    qc <- makeQContext nullInvocationInfo {iiStdOut = handleSinkText hout} model
-    return (qc, getTableState)
+    let ii = nullInvocationInfo {iiStdOut = handleSinkText hout, iiDefaultStorageModel = return model}
+    return (ii, getTableState)
 
 data TesterOptions = MkTesterOptions
-    { tstFetchModule :: FetchModule
+    { tstFetchModule :: FetchModule ()
     , tstOutput :: Handle
     }
 
@@ -102,7 +102,7 @@ defaultTester = let
     in MkTesterOptions {..}
 
 data TesterContext = MkTesterContext
-    { tcQContext :: QContext
+    { tcInvocationInfo :: InvocationInfo
     , tcLibrary :: LibraryContext
     , tcGetTableState :: View QTableSubject
     }
@@ -117,14 +117,14 @@ instance MonadUnliftIO Tester where
 runTester :: TesterOptions -> Tester () -> IO ()
 runTester MkTesterOptions {..} (MkTester ta) =
     runLifecycle $ do
-        (qc, getTableState) <- makeTestQContext tstOutput
-        runWithContext qc tstFetchModule $ runView $ runReaderT ta $ MkTesterContext ?qcontext ?library getTableState
+        (ii, getTableState) <- makeTestInvocationInfo tstOutput
+        let library = mkLibraryContext ii $ contramap (\_ -> ()) tstFetchModule
+        runView $ runReaderT ta $ MkTesterContext ii library getTableState
 
-testerLiftView :: forall a. ((?qcontext :: QContext, ?library :: LibraryContext) => View a) -> Tester a
+testerLiftView :: forall a. ((?library :: LibraryContext) => View a) -> Tester a
 testerLiftView va =
     MkTester $
     ReaderT $ \MkTesterContext {..} -> let
-        ?qcontext = tcQContext
         ?library = tcLibrary
         in va
 
@@ -132,14 +132,9 @@ testerRunAction :: Action () -> Tester ()
 testerRunAction pa = testerLiftView $ runAction pa
 
 testerLiftAction :: Action --> Tester
-testerLiftAction pa =
-    testerLiftView $ do
-        ka <- unliftAction pa
-        case ka of
-            Known a -> return a
-            Unknown -> fail "stopped"
+testerLiftAction pa = testerLiftView $ unliftActionOrFail pa
 
-testerLiftInterpreter :: forall a. ((?qcontext :: QContext, ?library :: LibraryContext) => QInterpreter a) -> Tester a
+testerLiftInterpreter :: forall a. ((?library :: LibraryContext) => QInterpreter a) -> Tester a
 testerLiftInterpreter pia = testerLiftView $ fromInterpretResult $ runPinaforeScoped "<input>" pia
 
 testerGetTableState :: Tester QTableSubject

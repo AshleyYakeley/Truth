@@ -26,8 +26,9 @@ langBlankImage (MkOpaqueAlphaColour col) size =
     MkLangImage $ MkSomeFor RGB16PixelType $ blankImage size $ colourToPixel col
 langBlankImage acol size = MkLangImage $ MkSomeFor RGBA16PixelType $ blankImage size $ alphaColourToPixel acol
 
-imageLibraryModule :: LibraryModule
+imageLibraryModule :: LibraryModule ()
 imageLibraryModule =
+    MkLibraryModule $
     MkDocTree
         "Image"
         ""

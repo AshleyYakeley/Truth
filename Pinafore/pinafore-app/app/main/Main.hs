@@ -18,8 +18,8 @@ main =
             pinaforedir <- getPinaforeDir mdirpath
             sqliteQDumpTable pinaforedir
         RunFileOption ropts fNoRun fscript -> do
-            copts <- getContextOptions ropts
+            copts <- getStorageModelOptions ropts
             runFiles copts fNoRun [fscript]
         RunInteractiveOption ropts -> do
-            copts <- getContextOptions ropts
+            copts <- getStorageModelOptions ropts
             runInteractive copts

@@ -34,7 +34,7 @@ updateMetadata :: Text -> Maybe Literal -> LangHasMetadata -> LangHasMetadata
 updateMetadata key (Just val) (MkLangHasMetadata mp) = MkLangHasMetadata $ insertMap key val mp
 updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMap key mp
 
-textKey :: Text -> DocTreeEntry BindDoc
+textKey :: Text -> DocTreeEntry (BindDoc ())
 textKey name =
     mkValPatEntry (MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
     ImpureFunction $ \n ->
@@ -97,7 +97,7 @@ metadataResolution md = do
     dy <- fromLiteral lity
     return (fromInteger dx, fromInteger dy)
 
-metadataStuff :: DocTreeEntry BindDoc
+metadataStuff :: DocTreeEntry (BindDoc ())
 metadataStuff =
     docTreeEntry
         "Metadata"

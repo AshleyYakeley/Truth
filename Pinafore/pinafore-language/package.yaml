@@ -103,14 +103,15 @@ library:
       - Pinafore.Language.Library.Std.Base
       - Pinafore.Language.Library.Std.Actions
       - Pinafore.Language.Library.Std.Lifecycle
-      - Pinafore.Language.Library.Task
-      - Pinafore.Language.Library.Eval
-      - Pinafore.Language.Library.Std.Undo
       - Pinafore.Language.Library.Std.Model
       - Pinafore.Language.Library.Std.File
       - Pinafore.Language.Library.Std
+      - Pinafore.Language.Library.Task
       - Pinafore.Language.Library.Stream
+      - Pinafore.Language.Library.Storage
+      - Pinafore.Language.Library.Undo
       - Pinafore.Language.Library.Env
+      - Pinafore.Language.Library.Eval
       - Pinafore.Language.Library.Debug
       - Pinafore.Language.Library
 
