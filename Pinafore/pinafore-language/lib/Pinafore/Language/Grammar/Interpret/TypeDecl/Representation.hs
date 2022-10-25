@@ -24,14 +24,20 @@ data TypeRepresentation lt t = MkTypeRepresentation
     }
 
 class MaybeUnitWitness w where
-    maybeUnitWitness :: forall t. w t -> Maybe (() :~: t)
+    maybeUnitWitness :: forall t. w t -> Maybe (Dict (Singular t))
 
-instance MaybeUnitWitness ((:~:) ()) where
-    maybeUnitWitness Refl = Just Refl
+instance Singular t => MaybeUnitWitness ((:~:) t) where
+    maybeUnitWitness Refl = Just Dict
 
 instance MaybeUnitWitness (ListProductType w) where
-    maybeUnitWitness (MkListProductType NilListType) = Just Refl
+    maybeUnitWitness (MkListProductType NilListType) = Just Dict
     maybeUnitWitness (MkListProductType (ConsListType _ _)) = Nothing
+
+instance MaybeUnitWitness (ListVProductType w) where
+    maybeUnitWitness (MkListVProductType (MkListVType lv :: ListVType w tt)) = do
+        Refl <- listVectorIsEmpty lv
+        Refl <- return $ emptyMapTypeRefl @Type @Type @w @tt
+        return Dict
 
 instance MaybeUnitWitness w => MaybeUnitWitness (Compose ((,) x) w) where
     maybeUnitWitness (Compose (_, wa)) = maybeUnitWitness wa
@@ -47,14 +53,14 @@ getListEnumTypeRepresentation ::
     -> Maybe r
 getListEnumTypeRepresentation ltw call = do
     let
-        toRep :: forall a. Compose ((,) Int) w a -> Maybe (Compose ((,) Int) ((:~:) ()) a)
+        toRep :: forall a. Compose ((,) Int) w a -> Maybe (Compose ((,) Int) (Compose Dict Singular) a)
         toRep (Compose (i, wa)) = do
-            Refl <- maybeUnitWitness wa
-            return $ Compose (i, Refl)
+            Dict <- maybeUnitWitness wa
+            return $ Compose (i, Compose Dict)
     repltw <- mapMListType toRep $ numberWitnesses 0 ltw
     let
-        codecFromRep :: forall a. Compose ((,) Int) ((:~:) ()) a -> Codec Int a
-        codecFromRep (Compose (i, Refl)) = singleCodec i
+        codecFromRep :: forall a. Compose ((,) Int) (Compose Dict Singular) a -> Codec Int a
+        codecFromRep (Compose (i, Compose Dict)) = invmap (\() -> single) (\_ -> ()) $ singleCodec i
         codecs :: ListType (Codec Int) lt
         codecs = mapListType codecFromRep repltw
         tf :: Int -> SomeOf (ListElementType lt)
@@ -64,7 +70,7 @@ getListEnumTypeRepresentation ltw call = do
                 mapSome (fromMaybe (error "bad value") . peanoGreater (listTypeLengthType repltw)) $
                 valueToSome $ naturalToPeano $ fromIntegral i
             in case sf of
-                   MkSomeFor n (Compose (_, Refl)) -> MkSomeOf n ()
+                   MkSomeFor n (Compose (_, Compose Dict)) -> MkSomeOf n single
     return $ call (MkTypeRepresentation codecs mempty) tf
 
 witnessRepCodec :: TestEquality w => w a -> Codec (SomeOf w) a

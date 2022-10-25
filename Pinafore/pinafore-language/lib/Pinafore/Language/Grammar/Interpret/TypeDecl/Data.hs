@@ -12,7 +12,6 @@ import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
-
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
@@ -25,22 +24,23 @@ import Pinafore.Markdown
 import Shapes
 import Shapes.Unsafe (unsafeGetRefl, unsafeRefl)
 
-type ConstructorCodec t = SomeFor (Codec t) (ListProductType PinaforeNonpolarType)
+type ConstructorCodec t = SomeFor (Codec t) (ListVProductType PinaforeNonpolarType)
 
 constructorFreeVariables :: ConstructorCodec t -> [Some SymbolType]
-constructorFreeVariables (MkSomeFor (MkListProductType lt) _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
+constructorFreeVariables (MkSomeFor (MkListVProductType lt) _) =
+    mconcat $ toList $ listVTypeToVector nonpolarTypeFreeVariables lt
 
 assembleDataType ::
        forall n.
-       FixedList n (Some (ListType PinaforeNonpolarType))
+       FixedList n (Some (ListVType PinaforeNonpolarType))
     -> forall r.
                (forall t. FixedList n (ConstructorCodec t) -> VarMapping t -> (t -> (forall a. FixedList n a -> a)) -> r) -> r
 assembleDataType tconss call = let
-    nconss :: FixedList n (Some (ListProductType PinaforeNonpolarType))
-    nconss = fmap (\(MkSome lt) -> MkSome $ MkListProductType lt) tconss
+    nconss :: FixedList n (Some (ListVProductType PinaforeNonpolarType))
+    nconss = fmap (\(MkSome lt) -> MkSome $ MkListVProductType lt) tconss
     in listTypeFromFixedList nconss $ \lcons ->
            getPreferredTypeRepresentation lcons $ \(MkTypeRepresentation ccons vmap) pickcons -> let
-               conss :: FixedList n (SomeFor (Codec _) (ListProductType PinaforeNonpolarType))
+               conss :: FixedList n (SomeFor (Codec _) (ListVProductType PinaforeNonpolarType))
                conss = listTypeToFixedList getConst $ joinListType (\codec el -> Const $ MkSomeFor el codec) ccons lcons
                in call conss vmap $ \t -> fixedListElement $ listElementTypeIndex $ someForToSome $ pickcons t
 
@@ -216,7 +216,7 @@ data Constructor dv t extra = MkConstructor
     { ctName :: Name
     , ctDoc :: Markdown
     , ctOuterType :: TypeData dv t
-    , ctInnerTypes :: [SyntaxType]
+    , ctInnerTypes :: Vector SyntaxType
     , ctExtra :: extra
     }
 
@@ -232,7 +232,7 @@ getConstructor ::
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [Constructor dv t extra]
 getConstructor _ typeNM (MkSyntaxWithDoc doc (ConstructorSyntaxConstructorOrSubtype consName stypes extra)) =
-    return $ pure $ MkConstructor consName doc typeNM stypes extra
+    return $ pure $ MkConstructor consName doc typeNM (fromList stypes) extra
 getConstructor tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes)) = do
     subtypeTD <- typeDataLookup tdata subtypeName
     getConstructors tdata subtypeTD stypes
@@ -245,10 +245,10 @@ getConstructors ::
 getConstructors tdata typeNM syntaxConstructorList =
     fmap mconcat $ for syntaxConstructorList $ getConstructor tdata typeNM
 
-interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some (ListType PinaforeNonpolarType))
+interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some (ListVType PinaforeNonpolarType))
 interpretConstructorTypes c = do
     etypes <- for (ctInnerTypes c) interpretNonpolarType
-    return $ assembleListType etypes
+    return $ assembleListVType etypes
 
 makeBox ::
        forall extra (dv :: DolanVariance).
@@ -374,7 +374,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                        , DolanVarianceMap dv maintype
                                        , ConstructorCodec decltype)
                                     -> QScopeInterpreter ()
-                                registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor (MkListProductType lt) codec) = do
+                                registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor (MkListVProductType lt) codec) = do
                                     gttid <- lift $ mkgt x
                                     let
                                         groundType :: QGroundType dv maintype
@@ -405,13 +405,16 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 ctfneg =
                                                     mapShimWit negconv $
                                                     typeToDolan $ MkDolanGroundedType groundType negargs
-                                            ltp <- return $ mapListType (nonpolarToPositive @QTypeSystem) lt
-                                            ltn <- return $ mapListType (nonpolarToNegative @QTypeSystem) lt
+                                            ltp <- return $ mapListVType (nonpolarToPositive @QTypeSystem) lt
+                                            ltn <- return $ mapListVType (nonpolarToNegative @QTypeSystem) lt
                                             let
                                                 expr =
                                                     qConstExprAny $
-                                                    MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $ encode codec
-                                                pc = toPatternConstructor ctfneg ltp $ ImpureFunction $ decode codec
+                                                    MkSomeOf (qFunctionPosWitnesses (listVTypeToType ltn) ctfpos) $
+                                                    encode codec . listProductToVProduct lt
+                                                pc =
+                                                    toPatternConstructor ctfneg (listVTypeToType ltp) $
+                                                    ImpureFunction $ fmap listVProductToProduct . decode codec
                                             registerPatternConstructor (ctName constructor) (ctDoc constructor) expr $
                                                 toExpressionPatternConstructor pc
                                 constructorBox ::

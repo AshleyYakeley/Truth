@@ -100,12 +100,14 @@ closedEntityTypeAdapter ::
        CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs EntityAdapter gt)
 closedEntityTypeAdapter params conss = do
     ff <-
-        for conss $ \(MkSomeFor (MkListProductType cc) codec, anchor) -> do
-            MkWithArgs wa <- closedEntityConstructorAdapter params cc
+        for conss $ \(MkSomeFor (MkListVProductType cc) codec, anchor) -> do
+            MkWithArgs wa <- closedEntityConstructorAdapter params $ listVTypeToType cc
             return $
                 MkWithArgs $ \args ->
                     case wa args of
-                        MkThing tt Refl -> Compose $ Endo $ codecSum codec $ constructorEntityAdapter anchor tt
+                        MkThing tt Refl -> let
+                            vcodec = invmap listVProductToProduct (listProductToVProduct $ listTypeToVType tt) codec
+                            in Compose $ Endo $ codecSum vcodec $ constructorEntityAdapter anchor tt
     return $
         MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullEntityAdapter
 

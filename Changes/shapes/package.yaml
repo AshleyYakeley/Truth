@@ -73,6 +73,7 @@ library:
       - Data.Serializer
       - Data.Serialize.Instances
       - Data.ReadShow
+      - Data.Witness.ListVProduct
       - Control.Category.Dual
       - Control.Category.Lifted
       - Control.Clock

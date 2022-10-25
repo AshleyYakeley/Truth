@@ -127,6 +127,20 @@ instance HasVarMapping PinaforeNonpolarType where
     getVarMapping (VarNonpolarType var) = varVarMapping var
     getVarMapping (GroundedNonpolarType gt args) = getArgumentsMapping (pgtVarianceMap gt) args
 
+instance HasVarMapping w => HasVarMapping (ListVProductType w) where
+    getVarMapping (MkListVProductType (MkListVType lvt :: _ tt)) =
+        MkVarMapping $ \v n ->
+            fmap (MkMapping . Kleisli) $
+            getCompose $
+            fmap (endoListVProduct @tt) $
+            mapListMVProduct
+                @_
+                @w
+                @Endo
+                @tt
+                (\w -> Compose $ fmap (\(MkMapping (Kleisli mm)) -> mm) $ runVarMapping (getVarMapping w) v n)
+                lvt
+
 data DependentMapping n t =
     forall a. MkDependentMapping a
                                  (a -> t)

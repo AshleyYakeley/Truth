@@ -107,7 +107,7 @@ import Data.ByteString.Lazy as I (appendFile, getContents, hGet, hGetContents, h
 import qualified Data.ByteString.Lazy
 
 -- vector
-import Data.Vector as I (Vector)
+import Data.Vector as I (Vector, zipWith, zipWithM)
 
 -- cereal
 import Data.Serialize as I (Serialize)
@@ -138,6 +138,7 @@ import Data.TypeRig as I
 import Data.Countable as I
 import Data.Empty as I
 import Data.Searchable as I
+import Data.Singular as I
 
 -- witness
 import Data.Type.Witness as I
