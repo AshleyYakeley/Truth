@@ -72,6 +72,7 @@ library:
       - Pinafore.Language.Type
       - Pinafore.Language.DefDoc
       - Pinafore.Language.Grammar.Syntax
+      - Pinafore.Language.Grammar.FreeVars
       - Pinafore.Language.Grammar.Read.Token
       - Pinafore.Language.Grammar.Read.Parser
       - Pinafore.Language.Grammar.Read.Type

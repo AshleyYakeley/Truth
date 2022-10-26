@@ -50,6 +50,8 @@ data Token t where
     TokDynamicType :: Token ()
     TokExpose :: Token ()
     TokImport :: Token ()
+    TokAs :: Token ()
+    TokUsing :: Token ()
     TokUName :: Token Name
     TokQUName :: Token (NonEmpty Name, Name)
     TokLName :: Token Name
@@ -100,6 +102,8 @@ instance TestEquality Token where
     testEquality TokDynamicType TokDynamicType = Just Refl
     testEquality TokExpose TokExpose = Just Refl
     testEquality TokImport TokImport = Just Refl
+    testEquality TokAs TokAs = Just Refl
+    testEquality TokUsing TokUsing = Just Refl
     testEquality TokUName TokUName = Just Refl
     testEquality TokQUName TokQUName = Just Refl
     testEquality TokLName TokLName = Just Refl
@@ -151,6 +155,8 @@ instance Show (Token t) where
     show TokDynamicType = show ("dynamictype" :: String)
     show TokExpose = show ("expose" :: String)
     show TokImport = show ("import" :: String)
+    show TokAs = show ("as" :: String)
+    show TokUsing = show ("using" :: String)
     show TokUName = "uname"
     show TokQUName = "qualified uname"
     show TokLName = "lname"
@@ -296,6 +302,8 @@ checkKeyword "closedtype" = return $ MkSomeOf TokClosedType ()
 checkKeyword "dynamictype" = return $ MkSomeOf TokDynamicType ()
 checkKeyword "expose" = return $ MkSomeOf TokExpose ()
 checkKeyword "import" = return $ MkSomeOf TokImport ()
+checkKeyword "as" = return $ MkSomeOf TokAs ()
+checkKeyword "using" = return $ MkSomeOf TokUsing ()
 checkKeyword _ = Nothing
 
 readTextToken :: Parser (SomeOf Token)
