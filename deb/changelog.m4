@@ -5,6 +5,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Language
     - fix defect in lexical scoping
     - overhaul of declarations
+      . separate namespaces from modules,
+        with "namespace" and "using" declarations
       . declarations now non-recursive, with recursive rec-blocks
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments

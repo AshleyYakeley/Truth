@@ -167,11 +167,11 @@ All declarations, including type declarations, are local to a `let` block.
 
 <declaration> ::=
     direct-declaration |
-    "import" <module-name> <opt-import-list> |
+    "import" <module-name> |
+    "using" <namespace> |
+    "namespace" <namepace> "of" <declarations> "end" |
     <expose-declaration> |
     "rec" <direct-declarations> "end"
-
-<opt-import-list> ::=  | "(" <names> ")"
 
 <direct-declarations> ::=  | <direct-declaration> ";" <direct-declarations>
 
@@ -183,10 +183,11 @@ All declarations, including type declarations, are local to a `let` block.
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
-<expose-declaration> ::= <let-declarations> "in" <expose-declaration> |
-    "expose" <names>
+<expose-declaration> ::= "expose" <names> "of" <declarations> "end"
 
-<module-name> ::= uname | uname "." <module-name>
+<namespace> ::= uname | uname "." <namespace>
+
+<module-name> ::= <namespace>
 
 <opt-trustme> ::=  | "trustme"
 
@@ -242,7 +243,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <patterns> ::=  | <pattern-4> <patterns>
 
-<pattern-1> ::= <pattern-2> | <pattern-2> ":" <type>
+<pattern-1> ::= <pattern-2> | <pattern-1> ":" <type> | <pattern-1> "as" <namespace>
 
 <pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
 

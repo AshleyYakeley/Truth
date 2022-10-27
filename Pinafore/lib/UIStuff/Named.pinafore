@@ -1,4 +1,13 @@
-let
+expose
+    Named,
+    name,
+    byName,
+    namedPane,
+    namedTable,
+    namedItemTable,
+    namedPairPane
+of
+
 import GTK;
 import UIStuff.Selection;
 
@@ -38,11 +47,4 @@ namedPairPane: Context -> Text -> FiniteSetModel {a,+Named} -> List (SetModel a 
     iopen = fn e => paneWindow gtk $ namedPane getSelectedUI {e};
     in selectionPairPane name set (mapList (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
 
-in expose
-    Named,
-    name,
-    byName,
-    namedPane,
-    namedTable,
-    namedItemTable,
-    namedPairPane
+end

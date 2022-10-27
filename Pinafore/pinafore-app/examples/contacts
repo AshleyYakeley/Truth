@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 
 let
-import GTK();
+expose of import GTK end;
 import UIStuff.Selection;
 import UIStuff.Named;
 

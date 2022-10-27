@@ -13,6 +13,7 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
+import Pinafore.Language.Grammar.FreeVars
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Grammar.Interpret.ScopeBuilder
 import Pinafore.Language.Grammar.Interpret.Type
@@ -28,7 +29,6 @@ import Pinafore.Language.Var
 import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
-import Pinafore.Language.Grammar.FreeVars
 
 type instance EntryDoc QTypeSystem = DefDoc
 
@@ -60,11 +60,10 @@ interpretPattern' (BothSyntaxPattern spat1 spat2) = do
     pat1 <- interpretPattern spat1
     pat2 <- interpretPattern spat2
     lift $ liftRefNotation $ qBothPattern pat1 pat2
-interpretPattern'  (ConstructorSyntaxPattern scons spats) = do
+interpretPattern' (ConstructorSyntaxPattern scons spats) = do
     pc <- lift $ liftRefNotation $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
-    pat@(MkSealedPattern (MkExpressionWitness tw vexpr) patw) <-
-        lift $ liftRefNotation $ qConstructPattern pc pats
+    pat@(MkSealedPattern (MkExpressionWitness tw vexpr) patw) <- lift $ liftRefNotation $ qConstructPattern pc pats
     return $
         case getOptGreatestDynamicSupertypeSW tw of
             Nothing -> pat
@@ -98,7 +97,6 @@ interpretPattern (MkWithSourcePos spos pat) = do
     sourcePosScopeBuilder spos
     interpretPattern' pat
 
-
 interpretExpression :: SyntaxExpression -> RefExpression
 interpretExpression (MkWithSourcePos spos sexpr) = sourcePosRefNotation spos $ interpretExpression' sexpr
 
@@ -108,8 +106,9 @@ dsbBinding :: DocSyntaxBinding -> SyntaxBinding
 dsbBinding (MkSyntaxWithDoc _ b) = b
 
 dsbName :: DocSyntaxBinding -> Name
-dsbName dsb = case dsbBinding dsb of
-    MkSyntaxBinding _ n _ -> n
+dsbName dsb =
+    case dsbBinding dsb of
+        MkSyntaxBinding _ n _ -> n
 
 dsbNode :: DocSyntaxBinding -> (DocSyntaxBinding, Name, [Name])
 dsbNode db = (db, dsbName db, setToList $ bindingFreeVariables $ dsbBinding db)
@@ -142,7 +141,7 @@ interpretRecursiveLetBindings sbinds = do
     lift $ liftRefNotation $ checkSyntaxBindingsDuplicates $ fmap dsbBinding sbinds
     interpretRecursiveLetBindingss $ clumpBindings sbinds
 
-interpretSequentialLetBinding ::  DocSyntaxBinding -> ScopeBuilder ()
+interpretSequentialLetBinding :: DocSyntaxBinding -> ScopeBuilder ()
 interpretSequentialLetBinding sbind = do
     let n = dsbName sbind
     vid <- allocateVarScopeBuilder n
@@ -156,7 +155,7 @@ interpretRecursiveDocDeclarations ddecls = do
     let
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
-                TypeSyntaxDeclaration  name defn -> let
+                TypeSyntaxDeclaration name defn -> let
                     diName = name
                     diParams =
                         case defn of
@@ -166,7 +165,7 @@ interpretRecursiveDocDeclarations ddecls = do
                     docItem = TypeDocItem {..}
                     docDescription = doc
                     in (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
-                SubtypeSyntaxDeclaration  trustme sta stb mbody ->
+                SubtypeSyntaxDeclaration trustme sta stb mbody ->
                     ( mempty
                     , sourcePosScopeBuilder spos >> interpretSubtypeRelation doc trustme sta stb mbody
                     , mempty
@@ -186,20 +185,11 @@ interpretRecursiveDocDeclarations ddecls = do
     interpretRecursiveLetBindings bindingDecls
     return $ stDocDecls <> docDecls
 
-interpretExpose :: SyntaxExpose -> RefNotation (Docs -> Docs, QScope)
-interpretExpose (SExpExpose spos names) = do
-    scope <- liftRefNotation $ paramWith sourcePosParam spos $ exportScope names
-    return (exposeDocs names, scope)
-interpretExpose (SExpLet sdecls expose) =
-    runScopeBuilder (interpretDocDeclarations sdecls) $ \olddoc -> do
-        (restrict, scope) <- interpretExpose expose
-        return (\newdoc -> restrict $ olddoc <> newdoc, scope)
-
-interpretExposeDeclaration :: SyntaxExpose -> ScopeBuilder Docs
-interpretExposeDeclaration sexp = do
-    (docs, scope) <- lift $ interpretExpose sexp
-    pureScopeBuilder scope
-    return $ docs []
+interpretExpose :: SyntaxExposeDeclaration -> RefNotation (Docs, QScope)
+interpretExpose (MkSyntaxExposeDeclaration names sdecls) =
+    runScopeBuilder (interpretDocDeclarations sdecls) $ \doc -> do
+        scope <- liftRefNotation $ exportScope names
+        return (exposeDocs names doc, scope)
 
 interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
@@ -211,17 +201,14 @@ interpretDocDeclaration :: SyntaxDeclaration -> ScopeBuilder Docs
 interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
     sourcePosScopeBuilder spos
     case decl of
-        ExposeSyntaxDeclaration sexp -> interpretExposeDeclaration sexp
-        ImportSyntaxDeclaration  modname Nothing -> do
-            interpScopeBuilder $ interpretImportDeclaration modname
-        ImportSyntaxDeclaration  modname (Just names) -> do
-            refScopeBuilder $
-                runScopeBuilder (interpScopeBuilder $ interpretImportDeclaration modname) $ \docentries -> do
-                    scope <- liftRefNotation $ exportScope names
-                    return $ do
-                        pureScopeBuilder scope
-                        return (exposeDocs names docentries)
-        DirectSyntaxDeclaration (TypeSyntaxDeclaration  name defn) -> do
+        ExposeSyntaxDeclaration expdecl ->
+            refScopeBuilder $ do
+                (docs, scope) <- interpretExpose expdecl
+                return $ do
+                    pureScopeBuilder scope
+                    return docs
+        ImportSyntaxDeclaration modname -> interpScopeBuilder $ interpretImportDeclaration modname
+        DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
             interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
             let
                 diName = name
@@ -233,9 +220,9 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 docItem = TypeDocItem {..}
                 docDescription = doc
             return $ defDocs MkDefDoc {..}
-        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration  trustme sta stb mbody) -> do
+        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) ->
             interpretSubtypeRelation doc trustme sta stb mbody
-        DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding  mtype name _)) -> do
+        DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding mtype name _)) -> do
             interpretSequentialLetBinding $ MkSyntaxWithDoc doc sbind
             let
                 diName = name
@@ -246,15 +233,14 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 docItem = ValueDocItem {..}
                 docDescription = doc
             return $ defDocs MkDefDoc {..}
-        RecursiveSyntaxDeclaration  rdecls -> do
-            interpretRecursiveDocDeclarations rdecls
+        RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
         UsingSyntaxDeclaration _ -> lift $ throw $ KnownIssueError 170 "NYI"
         NamespaceSyntaxDeclaration _ _ -> lift $ throw $ KnownIssueError 170 "NYI"
 
-interpretDocDeclarations :: [ SyntaxDeclaration] -> ScopeBuilder Docs
+interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
 
-interpretDeclarations :: [ SyntaxDeclaration] -> RefNotation --> RefNotation
+interpretDeclarations :: [SyntaxDeclaration] -> RefNotation --> RefNotation
 interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
 interpretNamedConstructor :: ReferenceName -> RefExpression
@@ -392,7 +378,7 @@ interpretClosedExpression sexpr = do
     return expr
 
 interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation QBinding
-interpretBinding ((MkSyntaxWithDoc doc  (MkSyntaxBinding  mstype _ sexpr)),vid) = do
+interpretBinding ((MkSyntaxWithDoc doc (MkSyntaxBinding mstype _ sexpr)), vid) = do
     mtype <- liftRefNotation $ for mstype interpretType
     expr <- interpretClosedExpression sexpr
     return $ qBindExpr vid doc mtype expr
@@ -473,4 +459,4 @@ interpretSubtypeRelation docDescription trustme sta stb mbody = do
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
-    return $ MkModule (MkDocTree (toText moduleName) "" $ docs []) scope
+    return $ MkModule (MkDocTree (toText moduleName) "" $ docs) scope

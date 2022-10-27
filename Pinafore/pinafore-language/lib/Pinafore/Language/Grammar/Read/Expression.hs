@@ -107,7 +107,7 @@ readDataTypeDeclaration = do
     readThis TokOf
     constructors <- readLines $ readWithDoc readDataTypeConstructor
     readThis TokEnd
-    return $ TypeSyntaxDeclaration  name $ DatatypeSyntaxTypeDeclaration parameters constructors
+    return $ TypeSyntaxDeclaration name $ DatatypeSyntaxTypeDeclaration parameters constructors
 
 readClosedTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readClosedTypeDeclaration = do
@@ -117,7 +117,7 @@ readClosedTypeDeclaration = do
     readThis TokOf
     constructors <- readLines $ readWithDoc readClosedTypeConstructor
     readThis TokEnd
-    return $ TypeSyntaxDeclaration  name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
+    return $ TypeSyntaxDeclaration name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =
@@ -130,7 +130,7 @@ readDynamicTypeDeclaration = do
     name <- readTypeNewName
     readThis TokAssign
     tcons <- readSeparated1 (readThis TokOr) $ fmap pure readDynamicTypeConstructor
-    return $ TypeSyntaxDeclaration  name $ DynamicEntitySyntaxTypeDeclaration tcons
+    return $ TypeSyntaxDeclaration name $ DynamicEntitySyntaxTypeDeclaration tcons
 
 readTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readTypeDeclaration =
@@ -146,34 +146,40 @@ readBinding = do
             readType
     readThis TokAssign
     defn <- readExpression
-    return $ MkSyntaxBinding  mtp name defn
-
-readModuleName :: Parser ModuleName
-readModuleName =
-    fmap MkModuleName $ (fmap pure $ readThis TokUName) <|> (fmap (\(nn, n) -> nn <> pure n) $ readThis TokQUName)
+    return $ MkSyntaxBinding mtp name defn
 
 readImport :: Parser SyntaxDeclaration'
 readImport = do
     readThis TokImport
     mname <- readModuleName
-    mimportnames <- optional $ readParen readNames
-    return $ ImportSyntaxDeclaration  mname mimportnames
+    return $ ImportSyntaxDeclaration mname
+
+readUsing :: Parser SyntaxDeclaration'
+readUsing = do
+    readThis TokUsing
+    mname <- readNamespaceName
+    return $ UsingSyntaxDeclaration mname
+
+readNamespace :: Parser SyntaxDeclaration'
+readNamespace = do
+    readThis TokNamespace
+    nspace <- readNamespaceName
+    readThis TokOf
+    decls <- readDeclarations
+    readThis TokEnd
+    return $ NamespaceSyntaxDeclaration nspace decls
 
 readNames :: Parser [Name]
 readNames = readCommaList readName
 
-readExpose :: Parser SyntaxExpose
-readExpose =
-    (do
-         sdecls <- readLetBindings
-         readThis TokIn
-         sbody <- readExpose
-         return $ SExpLet sdecls sbody) <|>
-    (do
-         spos <- getPosition
-         readThis TokExpose
-         names <- readNames
-         return $ SExpExpose spos names)
+readExpose :: Parser SyntaxExposeDeclaration
+readExpose = do
+    readThis TokExpose
+    names <- readNames
+    readThis TokOf
+    decls <- readDeclarations
+    readThis TokEnd
+    return $ MkSyntaxExposeDeclaration names decls
 
 readDirectDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
@@ -183,21 +189,23 @@ readRecursiveDeclaration = do
     readThis TokRec
     decls <- readLines $ readWithDoc $ readSourcePos readDirectDeclaration
     readThis TokEnd
-    return $ RecursiveSyntaxDeclaration  decls
+    return $ RecursiveSyntaxDeclaration decls
 
 readDeclaration :: Parser SyntaxDeclaration
-readDeclaration = readWithDoc $ readSourcePos $
-    fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readRecursiveDeclaration <|> do
-        expb <- readExpose
-        return $ ExposeSyntaxDeclaration  expb
+readDeclaration =
+    readWithDoc $
+    readSourcePos $
+    fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readUsing <|> readNamespace <|>
+    readRecursiveDeclaration <|>
+    fmap ExposeSyntaxDeclaration readExpose
 
-readDocDeclarations :: Parser [ SyntaxDeclaration]
-readDocDeclarations = readLines readDeclaration
+readDeclarations :: Parser [SyntaxDeclaration]
+readDeclarations = readLines readDeclaration
 
 readLetBindings :: Parser [SyntaxDeclaration]
 readLetBindings = do
     readThis TokLet
-    readDocDeclarations
+    readDeclarations
 
 readTopDeclarations :: Parser SyntaxTopDeclarations
 readTopDeclarations = do
@@ -301,7 +309,7 @@ readExpression = do
 readName :: Parser Name
 readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis TokOperator)
 
-readModule :: Parser SyntaxModule
+readModule :: Parser SyntaxExposeDeclaration
 readModule = readExpose
 
 readMatch :: Parser SyntaxMatch

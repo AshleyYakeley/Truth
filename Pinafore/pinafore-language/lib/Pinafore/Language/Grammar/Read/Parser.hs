@@ -162,6 +162,13 @@ readReferenceLName =
 readReferenceName :: Parser ReferenceName
 readReferenceName = readReferenceUName <|> readReferenceLName
 
+readNamespaceName :: Parser ModuleName
+readNamespaceName =
+    fmap MkModuleName $ (fmap pure $ readThis TokUName) <|> (fmap (\(nn, n) -> nn <> pure n) $ readThis TokQUName)
+
+readModuleName :: Parser ModuleName
+readModuleName = readNamespaceName
+
 readLines1 :: Parser a -> Parser (NonEmpty a)
 readLines1 p = do
     a <- try p
@@ -179,3 +186,6 @@ readWithDoc pt = do
     doc <- readDocComment
     decl <- pt
     return $ MkSyntaxWithDoc doc decl
+
+chainModify :: forall a. (a -> Parser a) -> a -> Parser a
+chainModify p a = (p a >>= chainModify p) <|> return a

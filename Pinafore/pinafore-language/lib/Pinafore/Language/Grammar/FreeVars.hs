@@ -1,8 +1,10 @@
-module Pinafore.Language.Grammar.FreeVars(bindingFreeVariables) where
+module Pinafore.Language.Grammar.FreeVars
+    ( bindingFreeVariables
+    ) where
 
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes
-import Pinafore.Language.Grammar.Syntax
 
 -- | get bindings for ref in a recursive set
 bindingFreeVariables :: SyntaxBinding -> FiniteSet Name
@@ -102,8 +104,8 @@ instance SyntaxBindingVariables SyntaxRecursiveDeclaration' where
 
 instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind
-    syntaxBindingVariables (RecursiveSyntaxDeclaration  decls) = syntaxBindingVariables decls
+    syntaxBindingVariables (RecursiveSyntaxDeclaration decls) = syntaxBindingVariables decls
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxBinding where
-    syntaxBindingVariables (MkSyntaxBinding  _ name _) = singletonSet name
+    syntaxBindingVariables (MkSyntaxBinding _ name _) = singletonSet name

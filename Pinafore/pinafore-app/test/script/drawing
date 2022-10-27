@@ -2,7 +2,7 @@
 let
 import Colour;
 import Cairo;
-import GTK(Handler,concatDrawing,onClick);
+expose Handler,concatDrawing,onClick of import GTK end;
 
 # transform from (-1 .. +1,-1 .. +1)
 scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a)

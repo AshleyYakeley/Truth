@@ -2,7 +2,7 @@
 
 GTK.run $ fn gtk => let
 
-import GTK();
+expose of import GTK end;
 
 ### Useful
 ui_page = fns n ui => (GTK.label n,ui);

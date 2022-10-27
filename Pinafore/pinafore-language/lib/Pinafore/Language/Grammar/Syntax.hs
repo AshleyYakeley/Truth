@@ -47,13 +47,6 @@ data SyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
     deriving (Eq)
 
-data SyntaxExpose
-    = SExpExpose SourcePos
-                 [Name]
-    | SExpLet [ SyntaxDeclaration]
-              SyntaxExpose
-    deriving (Eq)
-
 data SyntaxRecursiveDeclaration'
     = TypeSyntaxDeclaration Name
                             SyntaxTypeDeclaration
@@ -71,14 +64,19 @@ data SyntaxWithDoc t =
                     t
     deriving (Eq)
 
+data SyntaxExposeDeclaration =
+    MkSyntaxExposeDeclaration [Name]
+                              [SyntaxDeclaration]
+    deriving (Eq)
+
 data SyntaxDeclaration'
     = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
     | ImportSyntaxDeclaration ModuleName
-                              (Maybe [Name])
-    | ExposeSyntaxDeclaration SyntaxExpose
+    | ExposeSyntaxDeclaration SyntaxExposeDeclaration
     | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
     | UsingSyntaxDeclaration ModuleName
-    | NamespaceSyntaxDeclaration ModuleName [SyntaxDeclaration]
+    | NamespaceSyntaxDeclaration ModuleName
+                                 [SyntaxDeclaration]
     deriving (Eq)
 
 type SyntaxDeclaration = SyntaxWithDoc (WithSourcePos SyntaxDeclaration')
@@ -181,7 +179,8 @@ data SyntaxPattern'
                                [SyntaxPattern]
     | TypedSyntaxPattern SyntaxPattern
                          SyntaxType
-    | NamespaceSyntaxPattern SyntaxPattern ModuleName
+    | NamespaceSyntaxPattern SyntaxPattern
+                             ModuleName
     deriving (Eq)
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
@@ -245,7 +244,7 @@ data SyntaxExpression'
     | SEMatches SyntaxMultimatchList
     | SERef SyntaxExpression
     | SEUnref SyntaxExpression
-    | SELet [ SyntaxDeclaration]
+    | SELet [SyntaxDeclaration]
             SyntaxExpression
     | SEList [SyntaxExpression]
     deriving (Eq)
@@ -269,11 +268,11 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
-type SyntaxModule = SyntaxExpose
+type SyntaxModule = SyntaxExposeDeclaration
 
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
-                            [ SyntaxDeclaration]
+                            [SyntaxDeclaration]
 
 class HasSourcePos t where
     getSourcePos :: t -> SourcePos
@@ -294,4 +293,4 @@ checkSyntaxBindingsDuplicates = let
         case nonEmpty $ duplicates nn of
             Nothing -> return ()
             Just b -> throw $ InterpretBindingsDuplicateError b
-    in checkDuplicates . fmap (\(MkSyntaxBinding  _ name _) -> name)
+    in checkDuplicates . fmap (\(MkSyntaxBinding _ name _) -> name)

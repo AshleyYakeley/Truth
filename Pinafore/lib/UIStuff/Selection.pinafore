@@ -1,4 +1,18 @@
-let
+expose
+    stdWindow,
+    selectionWindow,
+    selectionPairWindow,
+    uiPage,
+    uiLabelled,
+    Pane,
+    MkPane,
+    pane,
+    paneWindow,
+    notebookPane,
+    selectionPane,
+    selectionPairPane,
+    newItemMenuAction
+of
 
 import GTK;
 
@@ -178,17 +192,4 @@ newItemMenuAction: Text -> Maybe Text -> Action a -> SetModel a -> (a -> Action 
     setsel item;
     end};
 
-in expose
-    stdWindow,
-    selectionWindow,
-    selectionPairWindow,
-    uiPage,
-    uiLabelled,
-    Pane,
-    MkPane,
-    pane,
-    paneWindow,
-    notebookPane,
-    selectionPane,
-    selectionPairPane,
-    newItemMenuAction
+end
