@@ -1,7 +1,6 @@
 #!/usr/bin/pinafore
 let
-
-import GTK;
+import "pinafore-gnome";
 
 dateText: Date ~> Text
 = property @Date @Text !"example.calendar:dateText";

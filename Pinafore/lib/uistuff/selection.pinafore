@@ -14,7 +14,7 @@ expose
     newItemMenuAction
 of
 
-import GTK;
+import "pinafore-gnome";
 using GTK;
 
 ### Useful GTK stuff

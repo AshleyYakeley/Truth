@@ -25,8 +25,7 @@ testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $
     runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary <> directoryFetchModule libDir} $ do
-        modname <- maybeToM "bad module name" $ toModuleName $ pack name
-        _ <- testerLiftInterpreter $ lcLoadModule ?library modname
+        _ <- testerLiftInterpreter $ lcLoadModule ?library $ fromString name
         return ()
 
 testRelPath :: FilePath -> Maybe TestTree

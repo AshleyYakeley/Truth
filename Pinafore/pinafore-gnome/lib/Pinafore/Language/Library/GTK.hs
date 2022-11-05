@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.GTK
-    ( gtkLibrary
+    ( allGTKStuff
     , LangContext(..)
     ) where
 
@@ -13,10 +13,10 @@ import Pinafore.Language.Library.GTK.MenuItem
 import Pinafore.Language.Library.GTK.Window
 import Shapes
 
-gtkLibraryModule :: LibraryModule
-gtkLibraryModule =
-    MkDocTree "GTK" "User interface, using GTK." $
+gtkStuff :: DocTreeEntry BindDoc
+gtkStuff =
+    docTreeEntry "GTK" "User interface, using GTK." $
     namespaceRelative "GTK" [elementStuff, drawingStuff, menuItemStuff, windowStuff, clipboardStuff, dialogStuff]
 
-gtkLibrary :: [LibraryModule]
-gtkLibrary = [gtkLibraryModule, gtkDebugLibraryModule]
+allGTKStuff :: [DocTreeEntry BindDoc]
+allGTKStuff = [gtkStuff, gtkDebugStuff]

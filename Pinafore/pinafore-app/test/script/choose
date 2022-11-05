@@ -1,8 +1,7 @@
 #!/usr/bin/pinafore
 let
-import GTK;
-import Image;
-import GIO;
+import "pinafore-media";
+import "pinafore-gnome";
 in
 GTK.run $ fn gtk => let
 

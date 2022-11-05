@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Env
-    ( envLibraryModule
+    ( envStuff
     ) where
 
 import Pinafore.Context
@@ -22,9 +22,9 @@ langStdOut = MkLangSink $ hoistSink liftIO $ iiStdOut qInvocationInfo
 langStdErr :: (?qcontext :: QContext) => LangSink Text
 langStdErr = MkLangSink $ hoistSink liftIO $ iiStdErr qInvocationInfo
 
-envLibraryModule :: LibraryModule
-envLibraryModule =
-    MkDocTree "Env" "The environment in which the script was invoked." $
+envStuff :: DocTreeEntry BindDoc
+envStuff =
+    docTreeEntry "Env" "The environment in which the script was invoked." $
     namespaceRelative
         "Env"
         [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName qInvocationInfo :: Text)

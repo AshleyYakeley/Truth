@@ -1,8 +1,7 @@
 #!/usr/bin/pinafore
 let
-import GTK;
-import Colour;
-import Cairo;
+import "pinafore-media";
+import "pinafore-gnome";
 using GTK;
 using Colour;
 using Cairo;

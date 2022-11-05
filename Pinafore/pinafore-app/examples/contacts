@@ -1,9 +1,8 @@
 #!/usr/bin/pinafore
-
 let
-import GTK;
-import UIStuff.Selection;
-import UIStuff.Named;
+import "pinafore-gnome";
+import "uistuff/selection";
+import "uistuff/named";
 
 # something with a lifespan
 opentype Lifespanned;

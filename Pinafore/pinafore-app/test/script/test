@@ -1,9 +1,7 @@
 #!/usr/bin/pinafore
 let
-import GTK;
-import Debug.GTK;
-import Cairo;
-import Colour;
+import "pinafore-media";
+import "pinafore-gnome";
 in
 GTK.run $ fn gtk => let
 

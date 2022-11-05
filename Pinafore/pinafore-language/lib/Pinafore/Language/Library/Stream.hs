@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Stream
-    ( streamLibraryModule
+    ( streamStuff
     , LangSink(..)
     , LangSource(..)
     , langSinkWriteLn
@@ -116,9 +116,9 @@ lineBufferSource (MkLangSource source) = do
 langListSource :: forall a. [a] -> IO (LangSource a)
 langListSource aa = fmap liftSource $ listSource aa
 
-streamLibraryModule :: LibraryModule
-streamLibraryModule =
-    MkDocTree "Stream" "Sinks and sources." $
+streamStuff :: DocTreeEntry BindDoc
+streamStuff =
+    docTreeEntry "Stream" "Sinks and sources." $
     namespaceRelative
         "Stream"
         [ docTreeEntry

@@ -1,9 +1,7 @@
 #!/usr/bin/pinafore
-
 let
-
-import GTK;
-import UIStuff.Selection;
+import "pinafore-gnome";
+import "uistuff/selection";
 
 years: FiniteSetModel Integer
 = property @Integer @Unit !"FTSJ.years" !@ {()};

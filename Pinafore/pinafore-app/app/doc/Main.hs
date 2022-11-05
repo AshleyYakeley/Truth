@@ -67,7 +67,7 @@ printModuleDoc modopts tmodname = do
     let ?qcontext = nullQContext
     let fmodule = standardFetchModule modopts
     let ?library = mkLibraryContext fmodule
-    modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname
+    let modname = MkModuleName tmodname
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
     runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout) 1 $ moduleDoc pmodule

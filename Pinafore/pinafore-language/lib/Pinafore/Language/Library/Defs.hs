@@ -32,7 +32,10 @@ qNegativeTypeDescription =
     case fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
-type LibraryModule = DocTree BindDoc
+data LibraryModule = MkLibraryModule
+    { lmName :: ModuleName
+    , lmContents :: DocTree BindDoc
+    }
 
 type EnA = MeetType Entity A
 

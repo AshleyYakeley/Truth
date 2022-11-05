@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Debug
-    ( debugLibraryModule
+    ( debugStuff
     ) where
 
 import Changes.Debug
@@ -24,9 +24,9 @@ debugLiteralLength = olength . unLiteral
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
-debugLibraryModule :: LibraryModule
-debugLibraryModule =
-    MkDocTree "Debug" "Functions for debugging." $
+debugStuff :: DocTreeEntry BindDoc
+debugStuff =
+    docTreeEntry "Debug" "Functions for debugging." $
     namespaceRelative
         "Debug"
         [ mkValEntry "message" "Debug message to std error." debugMessage

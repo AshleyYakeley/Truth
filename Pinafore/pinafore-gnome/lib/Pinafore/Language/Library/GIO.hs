@@ -2,7 +2,7 @@
 
 module Pinafore.Language.Library.GIO
     ( File
-    , gioLibraryModule
+    , gioStuff
     ) where
 
 import Changes.Core
@@ -51,9 +51,9 @@ fileMakeRef f = do
         actionLiftLifecycle $ makeSharedModel $ reflectingPremodel fref
     return $ wModelToWholeModel $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
 
-gioLibraryModule :: LibraryModule
-gioLibraryModule =
-    MkDocTree "GIO" "GNOME file access." $
+gioStuff :: DocTreeEntry BindDoc
+gioStuff =
+    docTreeEntry "GIO" "GNOME file access." $
     namespaceRelative
         "GIO"
         [ mkTypeEntry "File" "A file." $ MkSomeGroundType fileGroundType

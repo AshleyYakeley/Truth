@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Media.Cairo
-    ( cairoLibraryModule
+    ( cairoStuff
     , LangDrawing(..)
     ) where
 
@@ -123,9 +123,9 @@ fontFace' fname italic bold =
 drawToImage :: (Int, Int) -> LangDrawing a -> LangImage
 drawToImage s (MkLangDrawing d) = MkLangImage $ MkSomeFor RGBA8PixelType $ renderToImage s $ drawingRender d
 
-cairoLibraryModule :: LibraryModule
-cairoLibraryModule =
-    MkDocTree "Cairo" "" $
+cairoStuff :: DocTreeEntry BindDoc
+cairoStuff =
+    docTreeEntry "Cairo" "" $
     namespaceRelative
         "Cairo"
         [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkSomeGroundType drawingGroundType

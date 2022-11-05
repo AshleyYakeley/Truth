@@ -63,7 +63,7 @@ testUI :: TestTree
 testUI =
     runScriptTestTree $
     tDecls
-        [ "import GTK"
+        [ "import \"pinafore-gnome\""
         , "emptywindow: GTK.Context -> Action Unit = fn gtk => do GTK.openWindow gtk (300,400) {\"Empty\"} GTK.blank; return (); end"
         , "opentype T"
         , "newpoint: Action Unit = do s <- newMemFiniteSetModel; p <- newOpenEntity @T; s += p; return (); end"

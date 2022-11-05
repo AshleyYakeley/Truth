@@ -4,8 +4,8 @@ pinafore> :doc Time
 #| Absolute time as measured by UTC.
 pinafore> :doc Just
 #| Construct a Maybe from a value.
-pinafore> let import GTK
-pinafore> let import Cairo
+pinafore> let import "pinafore-gnome"
+pinafore> let import "pinafore-media"
 pinafore> let using Cairo
 pinafore> :doc paintAlpha
 #| Paint everywhere with this alpha (within the clip)

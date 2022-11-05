@@ -206,9 +206,8 @@ neList (a:aa) b = a :| (aa <> [b])
 
 readModuleName :: Parser ModuleName
 readModuleName = do
-    MkTokenNames {..} <- readThis TokNamesUpper
-    altIf $ not tnAbsolute
-    return $ MkModuleName $ neList tnSpace tnName
+    s <- readThis TokString
+    return $ MkModuleName s
 
 readLines1 :: Parser a -> Parser (NonEmpty a)
 readLines1 p = do

@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Eval
-    ( evalLibraryModule
+    ( evalStuff
     ) where
 
 import Pinafore.Base
@@ -14,9 +14,9 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalLibraryModule :: LibraryModule
-evalLibraryModule =
-    MkDocTree "Eval" "" $
+evalStuff :: DocTreeEntry BindDoc
+evalStuff =
+    docTreeEntry "Eval" "" $
     namespaceRelative
         "Eval"
         [ mkSpecialFormEntry

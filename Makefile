@@ -102,17 +102,17 @@ DEBIANREL := buster
 
 .build/deb/$(PACKAGEFULLNAME).deb: \
 		${BINPATH}/pinafore \
-		Pinafore/lib/UIStuff/Selection.pinafore \
-		Pinafore/lib/UIStuff/Named.pinafore \
+		Pinafore/lib/uistuff/selection.pinafore \
+		Pinafore/lib/uistuff/named.pinafore \
 		deb/copyright \
 		deb/control.m4 \
 		deb/changelog.m4
 	rm -rf $(PACKAGEDIR)
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
-	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff
-	cp Pinafore/lib/UIStuff/Selection.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
-	cp Pinafore/lib/UIStuff/Named.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
+	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/uistuff
+	cp Pinafore/lib/uistuff/selection.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/uistuff/
+	cp Pinafore/lib/uistuff/named.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/uistuff/
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
 	stack $(STACKFLAGS) exec -- \
@@ -168,8 +168,8 @@ LIBMODULES := \
     GTK \
     Debug \
     Debug.GTK \
-	UIStuff.Selection \
-	UIStuff.Named
+	uistuff.selection \
+	uistuff.named
 
 mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library

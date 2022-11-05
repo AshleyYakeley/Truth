@@ -185,17 +185,17 @@ instance Show FullNameRef where
     show = unpack . toText
 
 newtype ModuleName =
-    MkModuleName (NonEmpty Name)
+    MkModuleName Text
     deriving (Eq, Ord)
 
-toModuleName :: Text -> Maybe ModuleName
-toModuleName t = fmap (MkModuleName . fmap MkName) $ nonEmpty $ splitSeq "." t
-
 instance ToText ModuleName where
-    toText (MkModuleName nn) = intercalate "." $ fmap toText $ toList nn
+    toText (MkModuleName t) = t
 
 instance Show ModuleName where
     show = unpack . toText
 
+instance IsString ModuleName where
+    fromString s = MkModuleName $ fromString s
+
 builtInModuleName :: ModuleName
-builtInModuleName = MkModuleName $ opoint "Std"
+builtInModuleName = MkModuleName ""

@@ -64,18 +64,18 @@ let
 in toLowerCase "Hello";
 ```
 
-## Import Declarations
+## Import Declarations WRONG
 
 An import declaration brings names from a module into scope.
 
 ```pinafore
 let
 
-import GTK; # brings everything from GTK into scope
+import "pinafore-gnome"; # brings everything from GTK into scope
 
-import Colour (AlphaColour, crimson); # brings given names (and subtype relations) from Colour into scope
+import "pinafore-media" (AlphaColour, crimson); # brings given names (and subtype relations) from Colour into scope
 
-import Cairo (); # brings only subtype relations from Cairo into scope
+import "pinafore-media" (); # brings only subtype relations from Cairo into scope
 
 in draw {fn _ => source crimson paint}
 ```

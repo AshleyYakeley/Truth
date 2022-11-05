@@ -1,6 +1,5 @@
 module Pinafore.Language.Library.FetchModule
-    ( getLibraryModuleModule
-    , FetchModule
+    ( FetchModule
     , runFetchModule
     , directoryFetchModule
     , libraryFetchModule
@@ -52,7 +51,7 @@ textFetchModule getText =
         for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText modname text
 
 moduleRelativePath :: ModuleName -> FilePath
-moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
+moduleRelativePath (MkModuleName t) = unpack $ t <> ".pinafore"
 
 directoryFetchModule :: FilePath -> FetchModule
 directoryFetchModule dirpath =
@@ -66,7 +65,7 @@ directoryFetchModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString modname bs
                 return $ Just mm
 
-getLibraryModuleModule :: (?qcontext :: QContext) => LibraryModule -> QInterpreter QModule
+getLibraryModuleModule :: (?qcontext :: QContext) => DocTree BindDoc -> QInterpreter QModule
 getLibraryModuleModule libmod = do
     let
         bindDocs :: [BindDoc]
@@ -94,6 +93,6 @@ getLibraryModuleModule libmod = do
 
 libraryFetchModule :: [LibraryModule] -> FetchModule
 libraryFetchModule lmods = let
-    m :: Map Text LibraryModule
-    m = mapFromList $ fmap (\lmod -> (docTreeName lmod, lmod)) lmods
-    in MkFetchModule $ \mname -> for (lookup (toText mname) m) getLibraryModuleModule
+    m :: Map ModuleName (DocTree BindDoc)
+    m = mapFromList $ fmap (\MkLibraryModule {..} -> (lmName, lmContents)) lmods
+    in MkFetchModule $ \mname -> for (lookup mname m) getLibraryModuleModule

@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 let
-import GTK;
+import "pinafore-gnome";
 
 # Ontology
 # Define a type of entity for people

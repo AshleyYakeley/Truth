@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 let
-import GTK;
+import "pinafore-gnome";
 opentype T;
 me = openEntity @T !"T";
 

@@ -189,7 +189,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <namespace> ::= uname | uname "." <namespace>
 
-<module-name> ::= <namespace>
+<module-name> ::= literal-text
 
 <opt-trustme> ::=  | "trustme"
 

@@ -32,19 +32,11 @@ import Shapes
 library :: [LibraryModule]
 library =
     pure $
-    MkDocTree "Std" "" $
-    fmap
-        TreeDocTreeEntry
-        [ stdLibraryModule
-        , taskLibraryModule
-        , streamLibraryModule
-        , envLibraryModule
-        , evalLibraryModule
-        , debugLibraryModule
-        ]
+    MkLibraryModule builtInModuleName $
+    MkDocTree "Built-In" "" [generalStuff, taskStuff, streamStuff, envStuff, evalStuff, debugStuff]
 
-libraryDoc :: [LibraryModule] -> [DocTree DefDoc]
-libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib
+libraryDoc :: [LibraryModule] -> [(ModuleName, DocTree DefDoc)]
+libraryDoc extralib = fmap (\MkLibraryModule {..} -> (lmName, fmap bdDoc lmContents)) $ library <> extralib
 
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
@@ -53,7 +45,7 @@ allOperatorNames test = let
         | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing
-    in mapMaybe getDocName $ mconcat $ fmap toList library
+    in mapMaybe getDocName $ mconcat $ fmap (toList . lmContents) library
 
 data LibraryContext = MkLibraryContext
     { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)

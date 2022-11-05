@@ -82,7 +82,8 @@ testLib = let
         if expected == found
             then return ()
             else fail "different"
-    in MkDocTree "TEST" "" $
+    in MkLibraryModule "TEST" $
+       MkDocTree "TEST" "" $
        [ mkValEntry "idText" "TEST" idText
        , mkValEntry "testSameT" "TEST" testSameT
        , mkValEntry "testSameI" "TEST" testSameI
@@ -113,7 +114,7 @@ testUnifier =
                           ]
                     , runScriptTestTree $
                       tLibrary testLib $
-                      tDecls ["import TEST"] $
+                      tDecls ["import \"TEST\""] $
                       tGroup
                           "interpret"
                           [ testInterpret @(A -> (A -> A) -> A) "op1" $ \found ->
@@ -179,7 +180,7 @@ testUnifier =
                           ]
                     , runScriptTestTree $
                       tLibrary testLib $
-                      tDecls ["import TEST"] $
+                      tDecls ["import \"TEST\""] $
                       tGroup
                           "interpret"
                           [ testInterpret @(Text -> (Text -> Text) -> (Text -> Text) -> Text) "op2" $ \found ->
@@ -201,7 +202,7 @@ testUnifier =
                     [ testTree @[TestTree] "unify" []
                     , runScriptTestTree $
                       tLibrary testLib $
-                      tDecls ["import TEST"] $
+                      tDecls ["import \"TEST\""] $
                       tGroup
                           "interpret"
                           [ testExpectSuccess "testSameT \"PQPQPQ\" \"PQPQPQ\""
