@@ -15,11 +15,10 @@ readPatterns :: Parser [SyntaxPattern]
 readPatterns = many readPattern4
 
 nilPattern :: SyntaxPattern'
-nilPattern = ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModuleName "[]") []
+nilPattern = ConstructorSyntaxPattern (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "[]") []
 
 consPattern :: SyntaxPattern -> SyntaxPattern -> SyntaxPattern'
-consPattern pat1 pat2 =
-    ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModuleName "::") [pat1, pat2]
+consPattern pat1 pat2 = ConstructorSyntaxPattern (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "::") [pat1, pat2]
 
 modifyPattern1 :: SyntaxPattern -> Parser SyntaxPattern
 modifyPattern1 pat =
@@ -29,7 +28,7 @@ modifyPattern1 pat =
          readSourcePos $ return $ TypedSyntaxPattern pat t) <|>
     (do
          readThis TokAs
-         nn <- readNamespaceName
+         nn <- readNamespaceRef
          readSourcePos $ return $ NamespaceSyntaxPattern pat nn)
 
 readPattern1 :: Parser SyntaxPattern
@@ -80,7 +79,7 @@ readPattern5 =
              return $ ConstructorSyntaxPattern c []) <|>
     readSourcePos
         (do
-             name <- readThis TokLName
+             name <- readLName
              return $ VarSyntaxPattern name) <|>
     readSourcePos
         (do

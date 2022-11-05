@@ -14,14 +14,14 @@ data ErrorType
     | UnicodeDecodeError Text
     | ParserError [Message]
     | ExpressionErrorError ExpressionError
-    | LookupNamesUnknownError (NonEmpty Name)
-    | LookupRefNameUnknownError ReferenceName
-    | LookupTypeUnknownError ReferenceName
-    | LookupSpecialFormUnknownError ReferenceName
-    | SpecialFormWrongAnnotationsError ReferenceName
+    | LookupNamesUnknownError (NonEmpty FullNameRef)
+    | LookupRefNameUnknownError FullNameRef
+    | LookupTypeUnknownError FullNameRef
+    | LookupSpecialFormUnknownError FullNameRef
+    | SpecialFormWrongAnnotationsError FullNameRef
                                        [Text]
                                        [Text]
-    | LookupConstructorUnknownError ReferenceName
+    | LookupConstructorUnknownError FullNameRef
     | DeclareTypeDuplicateError Name
     | DeclareConstructorDuplicateError Name
     | DeclareDynamicTypeCycleError (NonEmpty Name)
@@ -50,7 +50,7 @@ data ErrorType
     | InterpretTypeUnderApplyError Text
     | InterpretTypeOverApplyError Text
     | InterpretTypeRangeApplyError Text
-    | InterpretConstructorUnknownError ReferenceName
+    | InterpretConstructorUnknownError FullNameRef
     | InterpretBindingsDuplicateError (NonEmpty Name)
     | InterpretTypeDeclDuplicateTypeVariablesError Name
                                                    (NonEmpty Name)

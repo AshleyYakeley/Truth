@@ -11,13 +11,12 @@ import Pinafore.Language.Library.GTK.Element
 import Pinafore.Language.Library.GTK.Element.Drawing
 import Pinafore.Language.Library.GTK.MenuItem
 import Pinafore.Language.Library.GTK.Window
+import Shapes
 
 gtkLibraryModule :: LibraryModule
 gtkLibraryModule =
-    MkDocTree
-        "GTK"
-        "User interface, using GTK."
-        [elementStuff, drawingStuff, menuItemStuff, windowStuff, clipboardStuff, dialogStuff]
+    MkDocTree "GTK" "User interface, using GTK." $
+    namespaceRelative "GTK" [elementStuff, drawingStuff, menuItemStuff, windowStuff, clipboardStuff, dialogStuff]
 
 gtkLibrary :: [LibraryModule]
 gtkLibrary = [gtkLibraryModule, gtkDebugLibraryModule]

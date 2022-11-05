@@ -1,7 +1,9 @@
 :doc textLength
 :doc Time
 :doc Just
+let import GTK
 let import Cairo
+let using Cairo
 :doc paintAlpha
 :doc GTK.Element
 :doc GTK.textArea

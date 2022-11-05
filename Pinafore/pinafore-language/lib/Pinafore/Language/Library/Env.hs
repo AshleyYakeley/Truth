@@ -7,6 +7,7 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Stream
+import Pinafore.Language.Name
 import Shapes
 
 getVar :: (?qcontext :: QContext) => Text -> Maybe Text
@@ -23,9 +24,9 @@ langStdErr = MkLangSink $ hoistSink liftIO $ iiStdErr qInvocationInfo
 
 envLibraryModule :: LibraryModule
 envLibraryModule =
-    MkDocTree
+    MkDocTree "Env" "The environment in which the script was invoked." $
+    namespaceRelative
         "Env"
-        "The environment in which the script was invoked."
         [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName qInvocationInfo :: Text)
         , mkValEntry
               "arguments"

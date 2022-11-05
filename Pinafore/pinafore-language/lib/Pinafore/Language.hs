@@ -1,7 +1,5 @@
 module Pinafore.Language
-    ( Name
-    , ModuleName(..)
-    , toModuleName
+    ( module Pinafore.Language.Name
     , LibraryModule
     , FetchModule
     , directoryFetchModule
@@ -60,7 +58,7 @@ runPinaforeScoped ::
        (?qcontext :: QContext, ?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename scp =
     runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $
-    transformTMap (void $ interpretImportDeclaration stdModuleName) scp
+    transformTMap (void $ interpretImportDeclaration builtInModuleName) scp
 
 spvals :: (?qcontext :: QContext, ?library :: LibraryContext) => QSpecialVals
 spvals = let
@@ -148,12 +146,12 @@ interactLoop inh outh echo = do
                                  action <- runValue outh val
                                  lift $ lift $ runAction action
                              ShowDocInteractiveCommand rname -> do
-                                 md <- interactRunSourceScoped $ lookupDocBinding rname
+                                 md <- interactRunSourceScoped $ lookupBindingInfo rname
                                  liftIO $
-                                     case md of
+                                     case fmap biDocumentation md of
                                          Nothing -> hPutStrLn outh $ "! " <> show rname <> " not found"
-                                         Just ("", _) -> return ()
-                                         Just (doc, _) -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
+                                         Just "" -> return ()
+                                         Just doc -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
                              ShowTypeInteractiveCommand showinfo texpr -> do
                                  MkSomeOf (MkPosShimWit t shim) _ <- interactEvalExpression texpr
                                  liftIO $

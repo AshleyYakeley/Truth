@@ -10,6 +10,7 @@ of
 
 import GTK;
 import UIStuff.Selection;
+using GTK;
 
 #| An open entity type; something with a name
 opentype Named;

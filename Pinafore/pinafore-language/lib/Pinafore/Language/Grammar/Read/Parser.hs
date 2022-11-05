@@ -102,13 +102,14 @@ readThis tok =
         ignoreComments
         readToken tok
 
-readExactlyThis :: Eq t => Token t -> t -> Parser ()
-readExactlyThis tok t =
+readExactly :: Eq t => Parser t -> t -> Parser ()
+readExactly p t =
     try $ do
-        a <- readThis tok
-        if a == t
-            then return ()
-            else mzero
+        a <- p
+        altIf $ a == t
+
+readExactlyThis :: Eq t => Token t -> t -> Parser ()
+readExactlyThis tok t = readExactly (readThis tok) t
 
 readBracketed :: Token () -> Token () -> Parser t -> Parser t
 readBracketed op cl pp = do
@@ -149,25 +150,65 @@ readSourcePos p = do
     t <- p
     return $ MkWithSourcePos spos t
 
-readReferenceUName :: Parser ReferenceName
-readReferenceUName =
-    (fmap UnqualifiedReferenceName $ readThis TokUName) <|>
-    (fmap (\(m, n) -> QualifiedReferenceName (MkModuleName m) n) $ readThis TokQUName)
+readFullUName :: Parser FullNameRef
+readFullUName = do
+    MkTokenNames {..} <- readThis TokNamesUpper
+    return $
+        MkFullNameRef
+            ((if tnAbsolute
+                  then FullNamespaceRef . MkNamespace
+                  else RelativeNamespaceRef)
+                 tnSpace)
+            tnName
 
-readReferenceLName :: Parser ReferenceName
-readReferenceLName =
-    (fmap UnqualifiedReferenceName $ readThis TokLName) <|>
-    (fmap (\(m, n) -> QualifiedReferenceName m n) $ readThis TokQLName)
+readFullLName :: Parser FullNameRef
+readFullLName = do
+    MkTokenNames {..} <- readThis TokNamesLower
+    return $
+        MkFullNameRef
+            ((if tnAbsolute
+                  then FullNamespaceRef . MkNamespace
+                  else RelativeNamespaceRef)
+                 tnSpace)
+            tnName
 
-readReferenceName :: Parser ReferenceName
-readReferenceName = readReferenceUName <|> readReferenceLName
+readFullNameRef :: Parser FullNameRef
+readFullNameRef = readFullUName <|> readFullLName
 
-readNamespaceName :: Parser ModuleName
-readNamespaceName =
-    fmap MkModuleName $ (fmap pure $ readThis TokUName) <|> (fmap (\(nn, n) -> nn <> pure n) $ readThis TokQUName)
+readUName :: Parser Name
+readUName = do
+    MkTokenNames {..} <- readThis TokNamesUpper
+    altIf $ not tnAbsolute
+    case tnSpace of
+        [] -> return tnName
+        _ -> empty
+
+readLName :: Parser Name
+readLName = do
+    MkTokenNames {..} <- readThis TokNamesLower
+    altIf $ not tnAbsolute
+    case tnSpace of
+        [] -> return tnName
+        _ -> empty
+
+readNamespaceRef :: Parser NamespaceRef
+readNamespaceRef = do
+    MkTokenNames {..} <- readThis TokNamesUpper
+    return $
+        (if tnAbsolute
+             then FullNamespaceRef . MkNamespace
+             else RelativeNamespaceRef) $
+        tnSpace <> [tnName]
+
+neList :: [a] -> a -> NonEmpty a
+neList [] b = b :| []
+neList (a:aa) b = a :| (aa <> [b])
 
 readModuleName :: Parser ModuleName
-readModuleName = readNamespaceName
+readModuleName = do
+    MkTokenNames {..} <- readThis TokNamesUpper
+    altIf $ not tnAbsolute
+    return $ MkModuleName $ neList tnSpace tnName
 
 readLines1 :: Parser a -> Parser (NonEmpty a)
 readLines1 p = do

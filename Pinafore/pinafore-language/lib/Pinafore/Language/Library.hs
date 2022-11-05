@@ -17,7 +17,6 @@ module Pinafore.Language.Library
 import Pinafore.Context
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Env
@@ -32,7 +31,17 @@ import Shapes
 
 library :: [LibraryModule]
 library =
-    [stdLibraryModule, taskLibraryModule, streamLibraryModule, envLibraryModule, evalLibraryModule, debugLibraryModule]
+    pure $
+    MkDocTree "Std" "" $
+    fmap
+        TreeDocTreeEntry
+        [ stdLibraryModule
+        , taskLibraryModule
+        , streamLibraryModule
+        , envLibraryModule
+        , evalLibraryModule
+        , debugLibraryModule
+        ]
 
 libraryDoc :: [LibraryModule] -> [DocTree DefDoc]
 libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib
@@ -40,7 +49,7 @@ libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
     getDocName :: BindDoc -> Maybe Name
-    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry name _, bdDoc = dd}
+    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry (RootFullName name) _, bdDoc = dd}
         | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing

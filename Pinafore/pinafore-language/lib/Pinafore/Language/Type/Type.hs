@@ -59,6 +59,8 @@ type QBinding = TSBinding QTypeSystem
 
 type QInterpreterBinding = InterpreterBinding QTypeSystem
 
+type QBindingInfo = BindingInfo QTypeSystem
+
 type QInterpreter = Interpreter QTypeSystem
 
 type QScopeInterpreter = ScopeInterpreter QTypeSystem

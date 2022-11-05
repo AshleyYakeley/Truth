@@ -54,7 +54,7 @@ readDataTypeConstructor =
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
-         consName <- readThis TokUName
+         consName <- readUName
          mtypes <- many readType3
          return $ ConstructorSyntaxConstructorOrSubtype consName mtypes ())
 
@@ -69,7 +69,7 @@ readClosedTypeConstructor =
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
-         consName <- readThis TokUName
+         consName <- readUName
          mtypes <- many readType3
          anchor <- readThis TokAnchor
          return $ ConstructorSyntaxConstructorOrSubtype consName mtypes anchor)
@@ -122,7 +122,7 @@ readClosedTypeDeclaration = do
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =
     fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|>
-    fmap NameSyntaxDynamicEntityConstructor readTypeReferenceName
+    fmap NameSyntaxDynamicEntityConstructor readTypeFullNameRef
 
 readDynamicTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDynamicTypeDeclaration = do
@@ -139,7 +139,7 @@ readTypeDeclaration =
 
 readBinding :: Parser SyntaxBinding
 readBinding = do
-    name <- readThis TokLName
+    name <- readLName
     mtp <-
         optional $ do
             readThis TokTypeJudge
@@ -157,29 +157,34 @@ readImport = do
 readUsing :: Parser SyntaxDeclaration'
 readUsing = do
     readThis TokUsing
-    mname <- readNamespaceName
+    mname <- readNamespaceRef
     return $ UsingSyntaxDeclaration mname
 
 readNamespace :: Parser SyntaxDeclaration'
 readNamespace = do
     readThis TokNamespace
-    nspace <- readNamespaceName
+    nspace <- readNamespaceRef
     readThis TokOf
     decls <- readDeclarations
     readThis TokEnd
     return $ NamespaceSyntaxDeclaration nspace decls
 
-readNames :: Parser [Name]
-readNames = readCommaList readName
+readExposeItem :: Parser SyntaxExposeItem
+readExposeItem =
+    (do
+         readThis TokNamespace
+         name <- readNamespaceRef
+         return $ NamespaceSyntaxExposeItem name) <|>
+    fmap NameSyntaxExposeItem readFullNameRef
 
 readExpose :: Parser SyntaxExposeDeclaration
 readExpose = do
     readThis TokExpose
-    names <- readNames
+    items <- readCommaList readExposeItem
     readThis TokOf
     decls <- readDeclarations
     readThis TokEnd
-    return $ MkSyntaxExposeDeclaration names decls
+    return $ MkSyntaxExposeDeclaration items decls
 
 readDirectDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
@@ -297,7 +302,7 @@ expressionFixityReader =
                   return
                       ( name
                       , operatorFixity name
-                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar $ UnqualifiedReferenceName name) [e1, e2])
+                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar $ UnqualifiedFullNameRef name) [e1, e2])
         , efrMaxPrecedence = 10
         }
 
@@ -307,7 +312,7 @@ readExpression = do
     readSubsumedExpression expr
 
 readName :: Parser Name
-readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis TokOperator)
+readName = readUName <|> readLName <|> (readParen $ readThis TokOperator)
 
 readModule :: Parser SyntaxExposeDeclaration
 readModule = readExpose
@@ -442,7 +447,7 @@ readExpression3 :: Parser SyntaxExpression
 readExpression3 =
     readSourcePos
         (do
-             name <- readReferenceLName
+             name <- readFullLName
              annotations <- many readAnnotation
              return $
                  case annotations of
@@ -465,7 +470,7 @@ readExpression3 =
      readSourcePos
          (do
               name <- readThis TokOperator
-              return $ SEVar $ UnqualifiedReferenceName name) <|>
+              return $ SEVar $ UnqualifiedFullNameRef name) <|>
      (do
           spos <- getPosition
           msexpr1 <- optional readExpression

@@ -75,8 +75,8 @@ mapEditor l (MkEditor editor) =
 floatingMapEditor ::
        forall updateA updateB r. FloatingChangeLens updateA updateB -> Editor updateB r -> Editor updateA r
 floatingMapEditor (MkFloatingChangeLens (NoFloatInit r) rlens) editorB = mapEditor (rlens r) editorB
-floatingMapEditor (MkFloatingChangeLens (ReadFloatInit init) rlens) editorB =
+floatingMapEditor (MkFloatingChangeLens (ReadFloatInit finit) rlens) editorB =
     MkEditor $ \refA -> do
-        r <- viewRunResource refA $ \arefA -> init $ refRead arefA
+        r <- viewRunResource refA $ \arefA -> finit $ refRead arefA
         let MkEditor editorA = mapEditor (rlens r) editorB
         editorA refA

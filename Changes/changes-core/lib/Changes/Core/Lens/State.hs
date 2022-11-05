@@ -41,8 +41,8 @@ makeStateExpLens MkStateChangeLens {..} = let
         lensGet (s, _) = s
         lensPutback s _ = Identity (s, s)
         in MkLens {..}
-    init :: FloatInit (UpdateReader updateA) (StateLensVar s)
-    init =
+    finit :: FloatInit (UpdateReader updateA) (StateLensVar s)
+    finit =
         ReadFloatInit $ \mr -> do
             initial <- sclInit mr
             liftIO $ newMVar (initial, initial)
@@ -63,7 +63,7 @@ makeStateExpLens MkStateChangeLens {..} = let
             -> m (Maybe [UpdateEdit updateA])
         clPutEdits edits mr = dangerousMVarRunStateT var $ lensStateT tempLens $ sclPutEdits edits mr
         in MkChangeLens {..}
-    in MkExpFloatingChangeLens init rlens
+    in MkExpFloatingChangeLens finit rlens
 
 makeStateLens ::
        forall lin s updateA updateB. IsLinearity lin

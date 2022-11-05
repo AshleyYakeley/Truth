@@ -7,11 +7,11 @@ import Pinafore.Language.Name
 import Shapes
 
 -- | get bindings for ref in a recursive set
-bindingFreeVariables :: SyntaxBinding -> FiniteSet Name
+bindingFreeVariables :: SyntaxBinding -> FiniteSet FullNameRef
 bindingFreeVariables = syntaxFreeVariables
 
 class SyntaxFreeVariables t where
-    syntaxFreeVariables :: t -> FiniteSet Name
+    syntaxFreeVariables :: t -> FiniteSet FullNameRef
 
 instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
     syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
@@ -41,8 +41,7 @@ instance SyntaxFreeVariables SyntaxMultimatchList where
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
     syntaxFreeVariables (SEConst _) = mempty
-    syntaxFreeVariables (SEVar (UnqualifiedReferenceName name)) = opoint name
-    syntaxFreeVariables (SEVar (QualifiedReferenceName _ _)) = mempty
+    syntaxFreeVariables (SEVar name) = opoint name
     syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
     syntaxFreeVariables (SEAbstract match) = syntaxFreeVariables match
@@ -72,7 +71,7 @@ instance SyntaxFreeVariables SyntaxDeclaration' where
     syntaxFreeVariables _ = mempty
 
 class SyntaxBindingVariables t where
-    syntaxBindingVariables :: t -> FiniteSet Name
+    syntaxBindingVariables :: t -> FiniteSet FullNameRef
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
@@ -88,7 +87,7 @@ instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) 
 
 instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables AnySyntaxPattern = mempty
-    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet name
+    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet $ UnqualifiedFullNameRef name
     syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
     syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
@@ -108,4 +107,4 @@ instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxBinding where
-    syntaxBindingVariables (MkSyntaxBinding _ name _) = singletonSet name
+    syntaxBindingVariables (MkSyntaxBinding _ name _) = singletonSet $ UnqualifiedFullNameRef name

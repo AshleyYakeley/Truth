@@ -1,5 +1,6 @@
 module Pinafore.Test
-    ( parseType
+    ( parseTokens
+    , parseType
     , runInterpreter
     , QTypeSystem
     , Name
@@ -46,6 +47,7 @@ import Changes.Core
 import Pinafore
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
+import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.Type

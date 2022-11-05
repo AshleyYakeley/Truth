@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Read.Token
     ( Comment(..)
+    , TokenNames(..)
     , Token(..)
     , parseTokens
     ) where
@@ -19,6 +20,12 @@ data Comment
 commentWrite :: Comment -> String
 commentWrite (BlockComment t) = "{#|" <> t <> "#}"
 commentWrite (LineComment t) = "#|" <> t
+
+data TokenNames = MkTokenNames
+    { tnAbsolute :: Bool
+    , tnSpace :: [Name] -- always upper
+    , tnName :: Name
+    }
 
 data Token t where
     TokComment :: Token Comment
@@ -53,10 +60,8 @@ data Token t where
     TokAs :: Token ()
     TokNamespace :: Token ()
     TokUsing :: Token ()
-    TokUName :: Token Name
-    TokQUName :: Token (NonEmpty Name, Name)
-    TokLName :: Token Name
-    TokQLName :: Token (ModuleName, Name)
+    TokNamesUpper :: Token TokenNames
+    TokNamesLower :: Token TokenNames
     TokUnderscore :: Token ()
     TokFn :: Token ()
     TokFns :: Token ()
@@ -106,10 +111,8 @@ instance TestEquality Token where
     testEquality TokAs TokAs = Just Refl
     testEquality TokNamespace TokNamespace = Just Refl
     testEquality TokUsing TokUsing = Just Refl
-    testEquality TokUName TokUName = Just Refl
-    testEquality TokQUName TokQUName = Just Refl
-    testEquality TokLName TokLName = Just Refl
-    testEquality TokQLName TokQLName = Just Refl
+    testEquality TokNamesUpper TokNamesUpper = Just Refl
+    testEquality TokNamesLower TokNamesLower = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
     testEquality TokFn TokFn = Just Refl
     testEquality TokFns TokFns = Just Refl
@@ -160,10 +163,8 @@ instance Show (Token t) where
     show TokAs = show ("as" :: String)
     show TokNamespace = show ("namespace" :: String)
     show TokUsing = show ("using" :: String)
-    show TokUName = "uname"
-    show TokQUName = "qualified uname"
-    show TokLName = "lname"
-    show TokQLName = "qualified lname"
+    show TokNamesUpper = "unames"
+    show TokNamesLower = "lnames"
     show TokUnderscore = show ("_" :: String)
     show TokFn = show ("fn" :: String)
     show TokFns = show ("fns" :: String)
@@ -269,20 +270,33 @@ readNumber =
          text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
          mpure $ readNumberLiteral text)
 
-readQName :: Parser ([Name], Bool, String)
-readQName = do
+readName :: Parser (Bool, Name)
+readName = do
     firstC <- satisfy identifierFirstChar
     rest <- many $ satisfy identifierChar
-    let name = firstC : rest
-    if isUpper firstC
-        then (do
-                  readChar '.'
-                  (qual, u, n) <- readQName
-                  return (MkName (pack name) : qual, u, n)) <|>
-             return ([], True, name)
-        else return ([], False, name)
+    return (isUpper firstC, MkName $ pack $ firstC : rest)
 
-checkKeyword :: String -> Maybe (SomeOf Token)
+readTokenNames :: Parser (Bool, TokenNames)
+readTokenNames =
+    try $ do
+        mabs <- optional $ readChar '.'
+        bn <- readName
+        bns <-
+            many $
+            try $ do
+                readChar '.'
+                readName
+        let
+            nbns = bn :| bns
+            bspace = init nbns
+            (u, name) = last nbns
+        nspace <-
+            for bspace $ \(b, nspace) -> do
+                altIf b
+                return nspace
+        return (u, MkTokenNames {tnAbsolute = isJust mabs, tnSpace = nspace, tnName = name})
+
+checkKeyword :: Text -> Maybe (SomeOf Token)
 checkKeyword "_" = return $ MkSomeOf TokUnderscore ()
 checkKeyword "fn" = return $ MkSomeOf TokFn ()
 checkKeyword "fns" = return $ MkSomeOf TokFns ()
@@ -312,24 +326,19 @@ checkKeyword _ = Nothing
 
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do
-    (qual, u, name) <- readQName
-    case nonEmpty qual of
+    (u, tns) <- readTokenNames
+    case checkKeyword $ toText $ tnName tns of
+        Just stok ->
+            case tns of
+                MkTokenNames False [] _ -> return stok
+                _ -> empty
         Nothing ->
             return $
-            case checkKeyword name of
-                Just tok -> tok
-                Nothing ->
-                    if u
-                        then MkSomeOf TokUName $ MkName $ pack name
-                        else MkSomeOf TokLName $ MkName $ pack name
-        Just qualnames ->
-            case checkKeyword name of
-                Just _ -> empty
-                Nothing ->
-                    return $
-                    if u
-                        then MkSomeOf TokQUName (qualnames, MkName $ pack name)
-                        else MkSomeOf TokQLName (MkModuleName qualnames, MkName $ pack name)
+            MkSomeOf
+                (if u
+                     then TokNamesUpper
+                     else TokNamesLower)
+                tns
 
 toHexDigit :: Char -> Maybe Word8
 toHexDigit c =

@@ -70,7 +70,7 @@ functionLiftChangeLens ::
        forall a updateA updateB. (Eq a, ApplicableEdit (UpdateEdit updateA))
     => FloatingChangeLens updateA updateB
     -> FloatingChangeLens (FunctionUpdate a updateA) (FunctionUpdate a updateB)
-functionLiftChangeLens (MkFloatingChangeLens init g u pe) = let
+functionLiftChangeLens (MkFloatingChangeLens finit g u pe) = let
     g' :: ReadFunction (FunctionUpdateReader a updateA) (FunctionUpdateReader a updateB)
     g' mr (MkTupleUpdateReader (MkFunctionSelector a) rbt) = g (functionUnliftReadable a mr) rbt
     u' ::
@@ -89,7 +89,7 @@ functionLiftChangeLens (MkFloatingChangeLens init g u pe) = let
         clPutEditsFromPutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector a) editb) mr -> do
             meditas <- pe [editb] $ functionUnliftReadable a mr
             return $ (fmap $ fmap $ MkTupleUpdateEdit (MkFunctionSelector a)) meditas
-    in MkFloatingChangeLens init' g' u' pe'
+    in MkFloatingChangeLens finit' g' u' pe'
 -}
 functionEitherPairChangeLens ::
        forall a b update.

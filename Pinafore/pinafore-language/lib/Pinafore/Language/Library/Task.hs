@@ -10,6 +10,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
@@ -65,9 +66,9 @@ langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
 taskLibraryModule :: LibraryModule
 taskLibraryModule =
-    MkDocTree
+    MkDocTree "Task" "" $
+    namespaceRelative
         "Task"
-        ""
         [ mkTypeEntry "Task" "A task is something that can be waited for to give a result." $
           MkSomeGroundType taskGroundType
         , mkValEntry "mapTask" "" $ fmap @LangTask @A @B

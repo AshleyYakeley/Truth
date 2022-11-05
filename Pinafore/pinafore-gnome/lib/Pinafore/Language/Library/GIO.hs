@@ -53,9 +53,9 @@ fileMakeRef f = do
 
 gioLibraryModule :: LibraryModule
 gioLibraryModule =
-    MkDocTree
+    MkDocTree "GIO" "GNOME file access." $
+    namespaceRelative
         "GIO"
-        "GNOME file access."
         [ mkTypeEntry "File" "A file." $ MkSomeGroundType fileGroundType
         , mkValPatEntry "FileParseName" "Construct a file from its parse name." parseNameToFile $
           PureFunction $ \f -> (fileToParseName f, ())

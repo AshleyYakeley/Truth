@@ -18,6 +18,7 @@ library:
       - gi-gio
       - gi-gdk
       - gi-gtk
+      - thread-trace
       - changes-core
       - changes-world
       - changes-media
@@ -49,6 +50,7 @@ tests:
           - gi-gtk
           - gi-gobject
           - haskell-gi-base
+          - thread-trace
           - changes-core
           - changes-gnome
           - pinafore-language

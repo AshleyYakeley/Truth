@@ -111,14 +111,17 @@ dsbName dsb =
         MkSyntaxBinding _ n _ -> n
 
 dsbNode :: DocSyntaxBinding -> (DocSyntaxBinding, Name, [Name])
-dsbNode db = (db, dsbName db, setToList $ bindingFreeVariables $ dsbBinding db)
+dsbNode db = (db, dsbName db, mapMaybe fullNameRefToUnqualified $ setToList $ bindingFreeVariables $ dsbBinding db)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
 clumpBindings :: [DocSyntaxBinding] -> [[DocSyntaxBinding]]
 clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap dsbNode bb
 
-composeMap :: Ord b => Map b c -> Map a b -> Map a c
-composeMap m = mapMaybe $ \k -> lookup k m
+mapVarID :: Map VarID (Markdown, expr) -> [(Name, VarID)] -> [(Name, Markdown, expr)]
+mapVarID mm =
+    mapMaybe $ \(n, v) -> do
+        (d, e) <- lookup v mm
+        return (n, d, e)
 
 interpretRecursiveLetBindingsClump :: [DocSyntaxBinding] -> ScopeBuilder ()
 interpretRecursiveLetBindingsClump sbinds = do
@@ -127,11 +130,11 @@ interpretRecursiveLetBindingsClump sbinds = do
             let name = dsbName sbind
             vid <- allocateVarScopeBuilder name
             return (name, vid, sbind)
-    let nvmap = mapFromList $ fmap (\(name, vid, _) -> (name, vid)) items
+    let nvs = fmap (\(name, vid, _) -> (name, vid)) items
     bl <- lift $ interpretBindings $ fmap (\(_, vid, sbind) -> (sbind, vid)) items
     interpScopeBuilder $ do
         bmap <- lift $ qUncheckedBindingsRecursiveLetExpr bl
-        registerLetBindings (composeMap bmap nvmap)
+        registerLetBindings $ mapVarID bmap nvs
 
 interpretRecursiveLetBindingss :: [[DocSyntaxBinding]] -> ScopeBuilder ()
 interpretRecursiveLetBindingss bb = for_ bb interpretRecursiveLetBindingsClump
@@ -148,7 +151,7 @@ interpretSequentialLetBinding sbind = do
     b <- lift $ interpretBinding (sbind, vid)
     interpScopeBuilder $ do
         bmap <- lift $ qBindingSequentialLetExpr b
-        registerLetBindings (composeMap bmap $ singletonMap n vid)
+        registerLetBindings $ mapVarID bmap $ pure (n, vid)
 
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> ScopeBuilder Docs
 interpretRecursiveDocDeclarations ddecls = do
@@ -156,7 +159,7 @@ interpretRecursiveDocDeclarations ddecls = do
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
                 TypeSyntaxDeclaration name defn -> let
-                    diName = name
+                    diName = RootFullName name
                     diParams =
                         case defn of
                             ClosedEntitySyntaxTypeDeclaration params _ -> fmap exprShow params
@@ -171,7 +174,7 @@ interpretRecursiveDocDeclarations ddecls = do
                     , mempty
                     , mempty)
                 BindingSyntaxDeclaration sbind@(MkSyntaxBinding mtype name _) -> let
-                    diName = name
+                    diName = RootFullName name
                     diType =
                         case mtype of
                             Nothing -> ""
@@ -185,11 +188,16 @@ interpretRecursiveDocDeclarations ddecls = do
     interpretRecursiveLetBindings bindingDecls
     return $ stDocDecls <> docDecls
 
+partitionItem :: SyntaxExposeItem -> ([NamespaceRef], [FullNameRef])
+partitionItem (NameSyntaxExposeItem n) = ([], [n])
+partitionItem (NamespaceSyntaxExposeItem n) = ([n], [])
+
 interpretExpose :: SyntaxExposeDeclaration -> RefNotation (Docs, QScope)
-interpretExpose (MkSyntaxExposeDeclaration names sdecls) =
+interpretExpose (MkSyntaxExposeDeclaration items sdecls) =
     runScopeBuilder (interpretDocDeclarations sdecls) $ \doc -> do
-        scope <- liftRefNotation $ exportScope names
-        return (exposeDocs names doc, scope)
+        let (namespaces, names) = mconcat $ fmap partitionItem items
+        (bnames, scope) <- liftRefNotation $ exportScope namespaces names
+        return (exposeDocs bnames doc, scope)
 
 interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
@@ -211,7 +219,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
             interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
             let
-                diName = name
+                diName = RootFullName name
                 diParams =
                     case defn of
                         ClosedEntitySyntaxTypeDeclaration params _ -> fmap exprShow params
@@ -225,7 +233,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding mtype name _)) -> do
             interpretSequentialLetBinding $ MkSyntaxWithDoc doc sbind
             let
-                diName = name
+                diName = RootFullName name
                 diType =
                     case mtype of
                         Nothing -> ""
@@ -234,8 +242,14 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 docDescription = doc
             return $ defDocs MkDefDoc {..}
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
-        UsingSyntaxDeclaration _ -> lift $ throw $ KnownIssueError 170 "NYI"
-        NamespaceSyntaxDeclaration _ _ -> lift $ throw $ KnownIssueError 170 "NYI"
+        UsingSyntaxDeclaration nsn -> do
+            interpScopeBuilder $ usingNamespace nsn
+            return mempty
+        NamespaceSyntaxDeclaration nsn decls -> do
+            close <- interpScopeBuilder $ withNamespace nsn
+            r <- interpretDocDeclarations decls
+            interpScopeBuilder close
+            return r
 
 interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
@@ -243,7 +257,7 @@ interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
 interpretDeclarations :: [SyntaxDeclaration] -> RefNotation --> RefNotation
 interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
-interpretNamedConstructor :: ReferenceName -> RefExpression
+interpretNamedConstructor :: FullNameRef -> RefExpression
 interpretNamedConstructor n = do
     me <- liftRefNotation $ lookupLetBinding n
     case me of
@@ -289,7 +303,7 @@ showAnnotation AnnotNonpolarType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
-interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> QInterpreter QValue
+interpretSpecialForm :: FullNameRef -> NonEmpty SyntaxAnnotation -> QInterpreter QValue
 interpretSpecialForm name annotations = do
     MkSpecialForm largs val <- lookupSpecialForm name
     margs <- unComposeInner $ specialFormArgs largs $ toList annotations

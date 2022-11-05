@@ -37,7 +37,7 @@ instance Monoid FetchModule where
 
 loadModuleFromText :: ModuleName -> Text -> QInterpreter QModule
 loadModuleFromText modname text =
-    transformTMap (void $ interpretImportDeclaration stdModuleName) $ parseModule modname text
+    transformTMap (void $ interpretImportDeclaration builtInModuleName) $ parseModule modname text
 
 loadModuleFromByteString :: ModuleName -> LazyByteString -> QInterpreter QModule
 loadModuleFromByteString modname bs =
@@ -71,17 +71,18 @@ getLibraryModuleModule libmod = do
     let
         bindDocs :: [BindDoc]
         bindDocs = toList libmod
-        seBinding :: ScopeEntry -> Maybe (Name, QInterpreterBinding)
+        seBinding :: ScopeEntry -> Maybe (FullName, QInterpreterBinding)
         seBinding (BindScopeEntry name mb) = do
             b <- mb
             return (name, b ?qcontext)
         seBinding _ = Nothing
-        getEntry :: BindDoc -> Maybe (Name, DocInterpreterBinding QTypeSystem)
+        getEntry :: BindDoc -> Maybe QBindingInfo
         getEntry MkBindDoc {..} = do
-            (name, b) <- seBinding bdScopeEntry
-            return (name, (docDescription bdDoc, b))
+            (biName, biValue) <- seBinding bdScopeEntry
+            let biDocumentation = docDescription bdDoc
+            return MkBindingInfo {..}
         bscope :: QScope
-        bscope = bindingsScope $ mapFromList $ mapMaybe getEntry bindDocs
+        bscope = bindingInfosToScope $ mapMaybe getEntry bindDocs
     dscopes <-
         for bindDocs $ \bd ->
             case bdScopeEntry bd of

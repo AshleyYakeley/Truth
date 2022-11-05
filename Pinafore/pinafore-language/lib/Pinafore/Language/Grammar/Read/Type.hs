@@ -1,5 +1,5 @@
 module Pinafore.Language.Grammar.Read.Type
-    ( readTypeReferenceName
+    ( readTypeFullNameRef
     , readTypeNewName
     , readType
     , readType3
@@ -49,7 +49,8 @@ allowedTypeOperatorName _ = True
 readTypeOperatorName :: Parser Name
 readTypeOperatorName = do
     n <- readThis TokOperator
-    ifpure (allowedTypeOperatorName n) n
+    altIf $ allowedTypeOperatorName n
+    return n
 
 readInfix :: Parser (Name, Fixity, SyntaxTypeArgument -> SyntaxTypeArgument -> SyntaxTypeArgument)
 readInfix = do
@@ -60,7 +61,7 @@ readInfix = do
         , typeOperatorFixity name
         , \t1 t2 ->
               SimpleSyntaxTypeArgument $
-              MkWithSourcePos spos $ SingleSyntaxType (ConstSyntaxGroundType $ UnqualifiedReferenceName name) [t1, t2])
+              MkWithSourcePos spos $ SingleSyntaxType (ConstSyntaxGroundType $ UnqualifiedFullNameRef name) [t1, t2])
 
 typeFixityReader :: FixityReader SyntaxTypeArgument
 typeFixityReader = MkFixityReader {efrReadInfix = readInfix, efrMaxPrecedence = 3}
@@ -72,15 +73,15 @@ readType1 = do
         SimpleSyntaxTypeArgument t -> return t
         _ -> empty
 
-readTypeReferenceName :: Parser ReferenceName
-readTypeReferenceName = readReferenceUName
+readTypeFullNameRef :: Parser FullNameRef
+readTypeFullNameRef = readFullUName
 
 readTypeNewName :: Parser Name
-readTypeNewName = readThis TokUName
+readTypeNewName = readUName
 
 readTypeConstant :: Parser SyntaxGroundType
 readTypeConstant = do
-    name <- readTypeReferenceName
+    name <- readTypeFullNameRef
     return $ ConstSyntaxGroundType name
 
 readTypeArgument :: Parser SyntaxType -> Parser SyntaxTypeArgument
@@ -136,14 +137,14 @@ readSignedType rtype =
          return (ContraSyntaxVariance, t1))
 
 readTypeVar :: Parser Name
-readTypeVar = readThis TokLName
+readTypeVar = readLName
 
 readTypeLimit :: Parser SyntaxType
 readTypeLimit =
     readSourcePos $
     (do
-         readExactlyThis TokUName "Any"
+         readExactly readUName "Any"
          return TopSyntaxType) <|>
     (do
-         readExactlyThis TokUName "None"
+         readExactly readUName "None"
          return BottomSyntaxType)

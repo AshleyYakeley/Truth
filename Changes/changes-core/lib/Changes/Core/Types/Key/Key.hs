@@ -376,7 +376,7 @@ liftKeyElementFloatingChangeLens ::
     -> FloatingChangeLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
 liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (NoFloatInit r) rlens) =
     changeLensToFloating $ liftKeyElementChangeLens bma $ rlens r
-liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :: FloatInit _ r) rlens) = let
+liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit finit :: FloatInit _ r) rlens) = let
     sclInit :: StateLensInit (KeyReader conta (UpdateReader updateA)) (InternalKeyMap (ContainerKey conta) r)
     sclInit _ = return mempty
     getR ::
@@ -389,7 +389,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
         case lookup key rmap of
             Just r -> return $ Just r
             Nothing -> do
-                mnewr <- lift $ unComposeInner $ init $ \rt -> MkComposeInner $ mr $ KeyReadItem key rt
+                mnewr <- lift $ unComposeInner $ finit $ \rt -> MkComposeInner $ mr $ KeyReadItem key rt
                 case mnewr of
                     Just newr -> put $ insertMap key newr rmap
                     Nothing -> return ()
@@ -413,7 +413,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
         let
             imr :: Readable (StateT (InternalKeyMap (ContainerKey conta) r) m) (UpdateReader updateA)
             imr = subjectToReadable itema
-        r <- init imr
+        r <- finit imr
         itemb <- lift $ readableToSubject $ clRead (rlens r) $ subjectToReadable @m itema
         rmap <- get
         key <- readKey @conta imr

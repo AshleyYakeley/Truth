@@ -24,7 +24,7 @@ data VarID
     = GoodVarID Int
                 Name
     | BadVarID SourcePos
-               ReferenceName
+               FullNameRef
 
 instance Eq VarID where
     GoodVarID s1 _ == GoodVarID s2 _ = s1 == s2
@@ -45,5 +45,5 @@ mkVarID :: VarIDState -> Name -> VarID
 mkVarID (MkVarIDState s) = GoodVarID s
 
 -- We could just throw an exception here, but this way we get to see the type of the missing variable.
-mkBadVarID :: SourcePos -> ReferenceName -> VarID
+mkBadVarID :: SourcePos -> FullNameRef -> VarID
 mkBadVarID = BadVarID

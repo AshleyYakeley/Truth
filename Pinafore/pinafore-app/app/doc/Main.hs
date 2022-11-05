@@ -35,8 +35,8 @@ showDefEntry h _ MkDefDoc {..} = do
                     name = boldMarkdown $ codeMarkdown $ toText diName
                     in codeMarkdown "type" <>
                        " " <>
-                       case (nameIsInfix diName, diParams) of
-                           (True, p1:pr) ->
+                       case (fmap nameIsInfix $ fullNameToRoot diName, diParams) of
+                           (Just True, p1:pr) ->
                                codeMarkdown p1 <> " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) pr)
                            _ -> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
                 SupertypeDocItem {..} -> let

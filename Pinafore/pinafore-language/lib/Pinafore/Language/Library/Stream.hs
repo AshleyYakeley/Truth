@@ -12,6 +12,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
@@ -117,9 +118,9 @@ langListSource aa = fmap liftSource $ listSource aa
 
 streamLibraryModule :: LibraryModule
 streamLibraryModule =
-    MkDocTree
+    MkDocTree "Stream" "Sinks and sources." $
+    namespaceRelative
         "Stream"
-        "Sinks and sources."
         [ docTreeEntry
               "ItemOrEnd"
               ""

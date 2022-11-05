@@ -183,7 +183,9 @@ All declarations, including type declarations, are local to a `let` block.
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
-<expose-declaration> ::= "expose" <names> "of" <declarations> "end"
+<expose-item> ::= <name> | "namespace" <name>
+
+<expose-declaration> ::= "expose" <comma-separated(<expose-item>)> "of" <declarations> "end"
 
 <namespace> ::= uname | uname "." <namespace>
 

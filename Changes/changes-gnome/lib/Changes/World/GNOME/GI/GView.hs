@@ -264,8 +264,8 @@ gvBindWholeModel ::
 gvBindWholeModel model mesrc call = do
     ctx <- gvGetContext
     gvLiftRelock @ls @ls $
-        viewBindWholeModel model mesrc $ \init t ->
-            if init
+        viewBindWholeModel model mesrc $ \finit t ->
+            if finit
                 then gvUnliftRelock @ls @ls ctx $ call t
                 else gvUnliftRelock @'Unlocked @ls ctx $ call t
 
@@ -277,8 +277,8 @@ gvBindReadOnlyWholeModel ::
 gvBindReadOnlyWholeModel model call = do
     ctx <- gvGetContext
     gvLiftRelock @ls @ls $
-        viewBindReadOnlyWholeModel model $ \init t ->
-            if init
+        viewBindReadOnlyWholeModel model $ \finit t ->
+            if finit
                 then gvUnliftRelock @ls @ls ctx $ call t
                 else gvUnliftRelock @'Unlocked @ls ctx $ call t
 

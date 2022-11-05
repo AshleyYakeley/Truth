@@ -7,6 +7,7 @@ import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
+import Pinafore.Language.Name
 import Shapes
 
 debugMessage :: Text -> IO ()
@@ -25,9 +26,9 @@ debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
 debugLibraryModule :: LibraryModule
 debugLibraryModule =
-    MkDocTree
+    MkDocTree "Debug" "Functions for debugging." $
+    namespaceRelative
         "Debug"
-        "Functions for debugging."
         [ mkValEntry "message" "Debug message to std error." debugMessage
         , mkValEntry "checkEntity" "debugCheckEntity" debugCheckEntity
         , mkValEntry "literalLength" "Byte length of a Literal" debugLiteralLength

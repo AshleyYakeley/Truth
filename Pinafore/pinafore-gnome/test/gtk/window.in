@@ -1,9 +1,15 @@
 #!/usr/bin/pinafore
-
-GTK.run $ fn gtk => do
+let import GTK in
+do
 Env.outputLn "BEGIN";
+GTK.run $
+fn gtk =>
+do
+Env.outputLn "begin";
 w <- GTK.openWindow gtk (600,800) {"Window"} GTK.blank;
-Env.outputLn "Open";
+Env.outputLn "open";
 GTK.closeWindow w;
+Env.outputLn "end";
+end;
 Env.outputLn "END";
 end

@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Library.Defs where
 
 import Pinafore.Base
@@ -35,7 +37,7 @@ type LibraryModule = DocTree BindDoc
 type EnA = MeetType Entity A
 
 data ScopeEntry
-    = BindScopeEntry Name
+    = BindScopeEntry FullName
                      (Maybe (QContext -> QInterpreterBinding))
     | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
 
@@ -44,9 +46,21 @@ data BindDoc = MkBindDoc
     , bdDoc :: DefDoc
     }
 
+instance NamespaceRelative t => NamespaceRelative (DocTree t) where
+    namespaceRelative nsn = fmap $ namespaceRelative nsn
+
+instance NamespaceRelative t => NamespaceRelative (DocTreeEntry t) where
+    namespaceRelative nsn = fmap $ namespaceRelative nsn
+
+instance NamespaceRelative BindDoc where
+    namespaceRelative nsn bd =
+        case bdScopeEntry bd of
+            BindScopeEntry fn b -> bd {bdScopeEntry = BindScopeEntry (namespaceRelative nsn fn) b}
+            _ -> bd
+
 mkValEntry ::
        forall t. HasQType 'Positive t
-    => Name
+    => FullName
     -> Markdown
     -> ((?qcontext :: QContext) => t)
     -> DocTreeEntry BindDoc
@@ -64,7 +78,7 @@ mkValEntry name docDescription val = let
 
 mkSupertypeEntry ::
        forall t. HasQType 'Positive t
-    => Name
+    => FullName
     -> Markdown
     -> ((?qcontext :: QContext) => t)
     -> DocTreeEntry BindDoc
@@ -103,7 +117,7 @@ getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeFor dvt getTyp
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-mkTypeEntry :: Name -> Markdown -> QBoundType -> DocTreeEntry BindDoc
+mkTypeEntry :: FullName -> Markdown -> QBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
     diName = name
@@ -145,7 +159,7 @@ hasSubtypeRelationEntry trustme doc conv = let
 
 mkValPatEntry ::
        forall t v lt. (HasQType 'Positive t, HasQType 'Negative v, ToListShimWit (QPolyShim Type) (QType 'Positive) lt)
-    => Name
+    => FullName
     -> Markdown
     -> t
     -> PurityFunction Maybe v (ListProduct lt)
@@ -161,7 +175,7 @@ mkValPatEntry name docDescription val pat = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSpecialFormEntry ::
-       Name -> Markdown -> [Text] -> Text -> ((?qcontext :: QContext) => QSpecialForm) -> DocTreeEntry BindDoc
+       FullName -> Markdown -> [Text] -> Text -> ((?qcontext :: QContext) => QSpecialForm) -> DocTreeEntry BindDoc
 mkSpecialFormEntry name docDescription params diType sf = let
     bdScopeEntry =
         BindScopeEntry name $

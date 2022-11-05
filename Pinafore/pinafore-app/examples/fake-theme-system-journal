@@ -2,14 +2,16 @@
 
 let
 
+import GTK;
+import UIStuff.Selection;
+
 years: FiniteSetModel Integer
 = property @Integer @Unit !"FTSJ.years" !@ {()};
 
 yearTheme: Integer ~> Text
 = property @Integer @Text !"FTSJ.yearTheme";
 
-import GTK;
-import UIStuff.Selection;
+using GTK;
 
 frontCoverPane: Pane
 = pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};

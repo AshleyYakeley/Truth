@@ -1,9 +1,9 @@
 #!/usr/bin/pinafore
-
-GTK.run $ fn gtk => let
-
+let
+import GTK;
 import UIStuff.Selection;
 import UIStuff.Named;
+in GTK.run $ fn gtk => let
 
 ### EventTime
 

@@ -163,9 +163,9 @@ mkNamedColourEntry (name, colour) = let
 
 colourLibraryModule :: LibraryModule
 colourLibraryModule =
-    MkDocTree
+    MkDocTree "Colour" "" $
+    namespaceRelative
         "Colour"
-        ""
         [ mkTypeEntry "Colour" "A human-perceivable colour." $ MkSomeGroundType colourGroundType
         , mkValPatEntry
               "SRGB16"

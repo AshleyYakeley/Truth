@@ -5,21 +5,21 @@ import Pinafore.Markdown
 import Shapes
 
 data DocItem
-    = ValueDocItem { diName :: Name
+    = ValueDocItem { diName :: FullName
                    , diType :: Text }
-    | ValuePatternDocItem { diName :: Name
+    | ValuePatternDocItem { diName :: FullName
                           , diType :: Text }
-    | SpecialFormDocItem { diName :: Name
+    | SpecialFormDocItem { diName :: FullName
                          , diParams :: [Text]
                          , diType :: Text }
-    | TypeDocItem { diName :: Name
+    | TypeDocItem { diName :: FullName
                   , diParams :: [Text] }
-    | SupertypeDocItem { diName :: Name
+    | SupertypeDocItem { diName :: FullName
                        , diType :: Text }
     | SubtypeRelationDocItem { diSubtype :: Text
                              , diSupertype :: Text }
 
-diMatchName :: Name -> DocItem -> Bool
+diMatchName :: FullName -> DocItem -> Bool
 diMatchName t ValueDocItem {..} = t == diName
 diMatchName t ValuePatternDocItem {..} = t == diName
 diMatchName t SpecialFormDocItem {..} = t == diName

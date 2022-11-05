@@ -125,10 +125,10 @@ slowObject mus (MkResource rr (MkAReference rd push ct)) =
             in MkResource rr $ MkAReference rd push' ct
 
 instance TraceThing (FloatingChangeLens updateA updateB) where
-    traceThing prefix (MkFloatingChangeLens init lens) = let
-        init' =
-            case init of
+    traceThing prefix (MkFloatingChangeLens finit lens) = let
+        finit' =
+            case finit of
                 NoFloatInit r -> NoFloatInit r
-                ReadFloatInit fi -> ReadFloatInit $ \mr -> traceBracket_ (contextStr prefix "init") $ fi mr
+                ReadFloatInit fi -> ReadFloatInit $ \mr -> traceBracket_ (contextStr prefix "finit") $ fi mr
         lens' r = traceThing prefix $ lens r
-        in MkFloatingChangeLens init' lens'
+        in MkFloatingChangeLens finit' lens'

@@ -26,7 +26,7 @@ typeDeclarationTypeBox name doc (DynamicEntitySyntaxTypeDeclaration stcons) = ma
 checkDynamicTypeCycles :: [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> QInterpreter ()
 checkDynamicTypeCycles decls = let
     constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
-    constructorName (NameSyntaxDynamicEntityConstructor (UnqualifiedReferenceName n)) = Just n
+    constructorName (NameSyntaxDynamicEntityConstructor (UnqualifiedFullNameRef n)) = Just n
     constructorName _ = Nothing
     getDynamicTypeReferences ::
            (SourcePos, Name, Markdown, SyntaxTypeDeclaration) -> Maybe ((SourcePos, Name), Name, [Name])

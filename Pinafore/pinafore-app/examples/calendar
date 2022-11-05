@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 let
 
-expose of import GTK end;
+import GTK;
 
 dateText: Date ~> Text
 = property @Date @Text !"example.calendar:dateText";

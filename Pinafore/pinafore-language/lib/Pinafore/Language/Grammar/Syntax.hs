@@ -35,7 +35,7 @@ type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
-    | NameSyntaxDynamicEntityConstructor ReferenceName
+    | NameSyntaxDynamicEntityConstructor FullNameRef
     deriving (Eq)
 
 data SyntaxTypeDeclaration
@@ -64,8 +64,13 @@ data SyntaxWithDoc t =
                     t
     deriving (Eq)
 
+data SyntaxExposeItem
+    = NameSyntaxExposeItem FullNameRef
+    | NamespaceSyntaxExposeItem NamespaceRef
+    deriving (Eq)
+
 data SyntaxExposeDeclaration =
-    MkSyntaxExposeDeclaration [Name]
+    MkSyntaxExposeDeclaration [SyntaxExposeItem]
                               [SyntaxDeclaration]
     deriving (Eq)
 
@@ -74,8 +79,8 @@ data SyntaxDeclaration'
     | ImportSyntaxDeclaration ModuleName
     | ExposeSyntaxDeclaration SyntaxExposeDeclaration
     | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
-    | UsingSyntaxDeclaration ModuleName
-    | NamespaceSyntaxDeclaration ModuleName
+    | UsingSyntaxDeclaration NamespaceRef
+    | NamespaceSyntaxDeclaration NamespaceRef
                                  [SyntaxDeclaration]
     deriving (Eq)
 
@@ -99,7 +104,7 @@ instance ExprShow SyntaxVariance where
     exprShowPrec ContraSyntaxVariance = ("-", 0)
 
 newtype SyntaxGroundType =
-    ConstSyntaxGroundType ReferenceName
+    ConstSyntaxGroundType FullNameRef
     deriving (Eq)
 
 data SyntaxTypeArgument
@@ -141,7 +146,7 @@ instance ExprShow SyntaxType' where
     exprShowPrec TopSyntaxType = ("None", 0)
     exprShowPrec BottomSyntaxType = ("Any", 0)
     exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
-    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (UnqualifiedReferenceName n)) [ta, tb])
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (MkFullNameRef _ n)) [ta, tb])
         | nameIsInfix n = let
             MkFixity assc level = typeOperatorFixity n
             prec = 6 - level
@@ -165,7 +170,7 @@ data SyntaxBinding =
 data SyntaxConstructor
     = SLNumber Number
     | SLString Text
-    | SLNamedConstructor ReferenceName
+    | SLNamedConstructor FullNameRef
     | SLPair
     | SLUnit
     deriving (Eq)
@@ -180,7 +185,7 @@ data SyntaxPattern'
     | TypedSyntaxPattern SyntaxPattern
                          SyntaxType
     | NamespaceSyntaxPattern SyntaxPattern
-                             ModuleName
+                             NamespaceRef
     deriving (Eq)
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
@@ -233,8 +238,8 @@ data SyntaxExpression'
     = SESubsume SyntaxExpression
                 SyntaxType
     | SEConst SyntaxConstant
-    | SEVar ReferenceName
-    | SESpecialForm ReferenceName
+    | SEVar FullNameRef
+    | SESpecialForm FullNameRef
                     (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression

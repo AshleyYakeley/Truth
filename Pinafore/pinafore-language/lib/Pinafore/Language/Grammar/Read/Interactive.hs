@@ -17,7 +17,7 @@ import Shapes hiding (try)
 data InteractiveCommand
     = LetInteractiveCommand (QInterpreter --> QInterpreter)
     | ExpressionInteractiveCommand (QInterpreter QExpression)
-    | ShowDocInteractiveCommand ReferenceName
+    | ShowDocInteractiveCommand FullNameRef
     | ShowTypeInteractiveCommand Bool
                                  (QInterpreter QExpression)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
@@ -26,7 +26,7 @@ data InteractiveCommand
 
 showDocInteractiveCommand :: Parser InteractiveCommand
 showDocInteractiveCommand = do
-    name <- readReferenceName
+    name <- readFullNameRef
     return $ ShowDocInteractiveCommand name
 
 showTypeInteractiveCommand :: Bool -> Parser InteractiveCommand
@@ -62,7 +62,7 @@ readInteractiveCommand :: Parser InteractiveCommand
 readInteractiveCommand =
     (do
          readThis TokTypeJudge
-         MkName cmd <- readThis TokLName
+         MkName cmd <- readLName
          readSpecialCommand cmd) <|>
     (readEnd >> return (LetInteractiveCommand id)) <|>
     (try $ do

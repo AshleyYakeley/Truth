@@ -1,7 +1,10 @@
 #!/usr/bin/pinafore
+let
+import GTK;
+import Image;
+import GIO;
+in
 GTK.run $ fn gtk => let
-expose of import GTK end;
-expose of import Image end;
 
 rec
     showFile: Action Unit

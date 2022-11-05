@@ -26,7 +26,7 @@ import Data.Int as I
 import Data.Kind as I
 import Data.List as I ((++), iterate, nub, nubBy, zip)
 import qualified Data.List
-import Data.List.NonEmpty as I (NonEmpty(..), head, last, nonEmpty, tail)
+import Data.List.NonEmpty as I (NonEmpty(..), head, init, last, nonEmpty, tail)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
 import Data.Ord as I
@@ -169,6 +169,10 @@ eitherLeft (Right _) = Nothing
 eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
+
+altIf :: Alternative m => Bool -> m ()
+altIf False = empty
+altIf True = pure ()
 
 ifpure :: Alternative m => Bool -> a -> m a
 ifpure False _ = empty

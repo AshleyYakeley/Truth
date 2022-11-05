@@ -1,8 +1,11 @@
 #!/usr/bin/pinafore
 let
+import GTK;
 import Colour;
 import Cairo;
-expose Handler,concatDrawing,onClick of import GTK end;
+using GTK;
+using Colour;
+using Cairo;
 
 # transform from (-1 .. +1,-1 .. +1)
 scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a)
@@ -44,7 +47,7 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
     ]
 };
 
-import GTK;
+using GTK;
 in run $ fn gtk => do
     ref <- newMemWholeModel;
     openWindow gtk (300,400) {"Drawing"} $ vertical

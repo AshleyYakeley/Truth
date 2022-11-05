@@ -24,7 +24,7 @@ qConstExpr a = qConstExprAny $ jmToValue a
 qVarExpr :: VarID -> QExpression
 qVarExpr name = tsVar @QTypeSystem name
 
-qName :: ReferenceName -> QInterpreter QExpression
+qName :: FullNameRef -> QInterpreter QExpression
 qName name = do
     mexpr <- lookupLetBinding name
     case mexpr of

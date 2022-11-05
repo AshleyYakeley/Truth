@@ -2,6 +2,8 @@
 
 let
 
+import GTK;
+
 datatype StopwatchState of
     StoppedState Duration;
     RunningState Time;

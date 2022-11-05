@@ -125,9 +125,9 @@ drawToImage s (MkLangDrawing d) = MkLangImage $ MkSomeFor RGBA8PixelType $ rende
 
 cairoLibraryModule :: LibraryModule
 cairoLibraryModule =
-    MkDocTree
+    MkDocTree "Cairo" "" $
+    namespaceRelative
         "Cairo"
-        ""
         [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkSomeGroundType drawingGroundType
         , mkValEntry "concatDrawing" "Layer drawings." $ mconcat @(LangDrawing A)
         , mkValEntry "pureDrawing" "" $ pure @LangDrawing @A
