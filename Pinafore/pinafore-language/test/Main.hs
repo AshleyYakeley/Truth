@@ -8,6 +8,7 @@ import Test.Entity
 import Test.Interactive
 import Test.Language
 import Test.Module
+import Test.Namespace
 import Test.Output
 import Test.ReadType
 import Test.Subtype

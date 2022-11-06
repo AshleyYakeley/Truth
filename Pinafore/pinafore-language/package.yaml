@@ -138,6 +138,7 @@ tests:
           - Test.Type
           - Test.ReadType
           - Test.Output
+          - Test.Namespace
           - Test.Module
           - Test.Interactive
         ghc-options: -threaded
