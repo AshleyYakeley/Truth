@@ -90,7 +90,11 @@ interpretPattern' (TypedSyntaxPattern spat stype) = do
                                     toPatternConstructor dtn (ConsListType tpw NilListType) $
                                     ImpureFunction $ fmap $ \a -> (a, ())
                             qConstructPattern pc [pat]
-interpretPattern' (NamespaceSyntaxPattern _ _) = lift $ throw $ KnownIssueError 170 "NYI"
+interpretPattern' (NamespaceSyntaxPattern spat nref) = do
+    close <- interpScopeBuilder $ withNamespace nref
+    pat <- interpretPattern spat
+    interpScopeBuilder close
+    return pat
 
 interpretPattern :: SyntaxPattern -> ScopeBuilder QPattern
 interpretPattern (MkWithSourcePos spos pat) = do
