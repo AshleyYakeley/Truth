@@ -55,11 +55,13 @@ instance NamespaceRelative t => NamespaceRelative (DocTree t) where
 instance NamespaceRelative t => NamespaceRelative (DocTreeEntry t) where
     namespaceRelative nsn = fmap $ namespaceRelative nsn
 
+instance NamespaceRelative ScopeEntry where
+    namespaceRelative nsn (BindScopeEntry fn b) = BindScopeEntry (namespaceRelative nsn fn) b
+    namespaceRelative _ se = se
+
 instance NamespaceRelative BindDoc where
     namespaceRelative nsn bd =
-        case bdScopeEntry bd of
-            BindScopeEntry fn b -> bd {bdScopeEntry = BindScopeEntry (namespaceRelative nsn fn) b}
-            _ -> bd
+        bd {bdScopeEntry = namespaceRelative nsn $ bdScopeEntry bd, bdDoc = namespaceRelative nsn $ bdDoc bd}
 
 mkValEntry ::
        forall t. HasQType 'Positive t

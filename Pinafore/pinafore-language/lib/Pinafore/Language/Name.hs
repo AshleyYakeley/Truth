@@ -198,4 +198,4 @@ instance IsString ModuleName where
     fromString s = MkModuleName $ fromString s
 
 builtInModuleName :: ModuleName
-builtInModuleName = MkModuleName ""
+builtInModuleName = MkModuleName "pinafore"

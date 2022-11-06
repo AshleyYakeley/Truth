@@ -156,24 +156,15 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 deb: out/$(PACKAGEFULLNAME).deb
 
 LIBMODULES := \
-    Std \
-    Task \
-    Stream \
-    Env \
-    Eval \
-    Colour \
-    Cairo \
-    Image \
-    GIO \
-    GTK \
-    Debug \
-    Debug.GTK \
+    pinafore \
+    pinafore-media \
+    pinafore-gnome \
 	uistuff.selection \
 	uistuff.named
 
 mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library
-	$< --module $* --include Pinafore/lib > $@
+	$< --module $(subst .,/,$*) --include Pinafore/lib > $@
 
 mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
