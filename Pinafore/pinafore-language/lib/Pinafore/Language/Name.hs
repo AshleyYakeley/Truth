@@ -24,21 +24,23 @@ nameFromString "" = Nothing
 nameFromString s = Just $ MkName $ fromString s
 
 nameIsUpper :: Name -> Bool
-nameIsUpper n =
-    case unpack n of
-        c:_ -> isUpper c
-        _ -> False
-
-infixNameFromString :: String -> Maybe Name
-infixNameFromString s =
-    case s of
-        c:_
-            | isAlpha c -> Nothing
-        "[]" -> Nothing
-        _ -> nameFromString s
+nameIsUpper (MkName n) =
+    case headMay n of
+        Just c -> isUpper c
+        Nothing -> False
 
 nameIsInfix :: Name -> Bool
-nameIsInfix n = isJust $ infixNameFromString $ unpack n
+nameIsInfix (MkName n) =
+    case headMay n of
+        Just c -> not $ isAlpha c
+        Nothing -> False
+
+infixNameFromString :: String -> Maybe Name
+infixNameFromString s = do
+    name <- nameFromString s
+    if nameIsInfix name
+        then Just name
+        else Nothing
 
 type instance Element Name = Char
 
@@ -99,6 +101,8 @@ fullNameToRoot (RootFullName n) = Just n
 fullNameToRoot _ = Nothing
 
 instance ToText FullName where
+    toText (MkFullName RootNamespace name)
+        | nameIsInfix name = toText name
     toText (MkFullName nsn name) = toText nsn <> toText name
 
 instance Show FullName where
@@ -179,7 +183,11 @@ fullNameRefToUnqualified (UnqualifiedFullNameRef n) = Just n
 fullNameRefToUnqualified _ = Nothing
 
 instance ToText FullNameRef where
-    toText (MkFullNameRef ns n) = toText ns <> toText n
+    toText (MkFullNameRef RootNamespaceRef name)
+        | nameIsInfix name = toText name
+    toText (MkFullNameRef CurrentNamespaceRef name)
+        | nameIsInfix name = toText name
+    toText (MkFullNameRef ns name) = toText ns <> toText name
 
 instance Show FullNameRef where
     show = unpack . toText
