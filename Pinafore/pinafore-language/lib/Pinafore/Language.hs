@@ -146,9 +146,9 @@ interactLoop inh outh echo = do
                                  action <- runValue outh val
                                  lift $ lift $ runAction action
                              ShowDocInteractiveCommand rname -> do
-                                 md <- interactRunSourceScoped $ lookupBindingInfo rname
+                                 bmap <- interactRunSourceScoped $ getBindingMap
                                  liftIO $
-                                     case fmap biDocumentation md of
+                                     case fmap biDocumentation $ bmap rname of
                                          Nothing -> hPutStrLn outh $ "! " <> show rname <> " not found"
                                          Just "" -> return ()
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)

@@ -27,6 +27,10 @@ modifyPattern1 pat =
          t <- readType
          readSourcePos $ return $ TypedSyntaxPattern pat t) <|>
     (do
+         readThis TokTypeDynamic
+         t <- readType
+         readSourcePos $ return $ DynamicTypedSyntaxPattern pat t) <|>
+    (do
          readThis TokAs
          nn <- readNamespaceRef
          readSourcePos $ return $ NamespaceSyntaxPattern pat nn)

@@ -286,7 +286,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                 mainRegister x = do
                                     MkGroundTypeFromTypeID gttid <- lift $ mkgt x
                                     let (gt, y) = gttid mainTypeName mainTypeID
-                                    registerType mainTypeName mainTypeDoc gt
+                                    registerType (UnqualifiedFullNameRef mainTypeName) mainTypeDoc gt
                                     postregister gt y
                                 mainConstruct ::
                                        ()
@@ -415,7 +415,10 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 pc =
                                                     toPatternConstructor ctfneg (listVTypeToType ltp) $
                                                     ImpureFunction $ fmap listVProductToProduct . decode codec
-                                            registerPatternConstructor (ctName constructor) (ctDoc constructor) expr $
+                                            registerPatternConstructor
+                                                (UnqualifiedFullNameRef $ ctName constructor)
+                                                (ctDoc constructor)
+                                                expr $
                                                 toExpressionPatternConstructor pc
                                 constructorBox ::
                                        Constructor dv maintype extra
@@ -434,7 +437,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     let
                                         subGroundType :: QGroundType dv maintype
                                         subGroundType = getGroundType mainGroundType picktype gttid tdata
-                                    registerType (tdName tdata) (tdDoc tdata) subGroundType
+                                    registerType (UnqualifiedFullNameRef $ tdName tdata) (tdDoc tdata) subGroundType
                                     for_ (tdSupertype tdata) $ \supertdata -> let
                                         superGroundType :: QGroundType dv maintype
                                         superGroundType = getGroundType mainGroundType picktype gttid supertdata

@@ -40,7 +40,7 @@ runRefNotation rexpr = evalStateT (runRefWriterT rexpr) firstVarIDState
 
 type RefExpression = RefNotation QExpression
 
-allocateVarRefNotation :: Name -> RefNotation VarID
+allocateVarRefNotation :: FullName -> RefNotation VarID
 allocateVarRefNotation name = do
     i <- lift get
     lift $ put $ nextVarIDState i
@@ -48,7 +48,7 @@ allocateVarRefNotation name = do
 
 refNotationUnquote :: RefExpression -> RefExpression
 refNotationUnquote rexpr = do
-    v <- allocateVarRefNotation "%model"
+    v <- allocateVarRefNotation $ RootFullName "%model"
     expr <- lift $ runRefWriterT rexpr
     tell $ pure (v, expr)
     return $ qVarExpr v

@@ -22,7 +22,7 @@ nextVarIDState (MkVarIDState i) = MkVarIDState $ succ i
 
 data VarID
     = GoodVarID Int
-                Name
+                FullName
     | BadVarID SourcePos
                FullNameRef
 
@@ -41,7 +41,7 @@ instance Show VarID where
     show (GoodVarID _ n) = show n
     show (BadVarID _ n) = show n
 
-mkVarID :: VarIDState -> Name -> VarID
+mkVarID :: VarIDState -> FullName -> VarID
 mkVarID (MkVarIDState s) = GoodVarID s
 
 -- We could just throw an exception here, but this way we get to see the type of the missing variable.

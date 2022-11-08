@@ -32,6 +32,7 @@ data Token t where
     TokSemicolon :: Token ()
     TokComma :: Token ()
     TokTypeJudge :: Token ()
+    TokTypeDynamic :: Token ()
     TokOpenParen :: Token ()
     TokCloseParen :: Token ()
     TokOpenBracket :: Token ()
@@ -83,6 +84,7 @@ instance TestEquality Token where
     testEquality TokSemicolon TokSemicolon = Just Refl
     testEquality TokComma TokComma = Just Refl
     testEquality TokTypeJudge TokTypeJudge = Just Refl
+    testEquality TokTypeDynamic TokTypeDynamic = Just Refl
     testEquality TokOpenParen TokOpenParen = Just Refl
     testEquality TokCloseParen TokCloseParen = Just Refl
     testEquality TokOpenBracket TokOpenBracket = Just Refl
@@ -135,6 +137,7 @@ instance Show (Token t) where
     show TokSemicolon = show (";" :: String)
     show TokComma = show ("," :: String)
     show TokTypeJudge = show (":" :: String)
+    show TokTypeDynamic = show (":?" :: String)
     show TokOpenParen = show ("(" :: String)
     show TokCloseParen = show (")" :: String)
     show TokOpenBracket = show ("[" :: String)
@@ -374,6 +377,7 @@ readOpToken = do
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
         ":" -> return $ MkSomeOf TokTypeJudge ()
+        ":?" -> return $ MkSomeOf TokTypeDynamic ()
         "=" -> return $ MkSomeOf TokAssign ()
         "=>" -> return $ MkSomeOf TokMap ()
         "<-" -> return $ MkSomeOf TokBackMap ()

@@ -22,8 +22,8 @@ data ErrorType
                                        [Text]
                                        [Text]
     | LookupConstructorUnknownError FullNameRef
-    | DeclareTypeDuplicateError Name
-    | DeclareConstructorDuplicateError Name
+    | DeclareTypeDuplicateError FullNameRef
+    | DeclareConstructorDuplicateError FullNameRef
     | DeclareDynamicTypeCycleError (NonEmpty Name)
     | TypeConvertError Text
                        Polarity
@@ -51,7 +51,7 @@ data ErrorType
     | InterpretTypeOverApplyError Text
     | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError FullNameRef
-    | InterpretBindingsDuplicateError (NonEmpty Name)
+    | InterpretBindingsDuplicateError (NonEmpty FullName)
     | InterpretTypeDeclDuplicateTypeVariablesError Name
                                                    (NonEmpty Name)
     | InterpretTypeDeclUnboundTypeVariablesError Name

@@ -195,13 +195,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <subtype-body> ::=  | "=" <expression>
 
-<binding> ::=
-    <type-signature> ";" <unsigned-binding> |
-    <unsigned-binding>
-
-<unsigned-binding> ::= lname <patterns> "=" <expression>
-
-<type-signature> ::= lname ":" <type>
+<binding> ::= <pattern-1> "=" <expression>
 
 <datatype-parameters> ::=  | <datatype-parameter> <datatype-parameters>
 
@@ -245,7 +239,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <patterns> ::=  | <pattern-4> <patterns>
 
-<pattern-1> ::= <pattern-2> | <pattern-1> ":" <type> | <pattern-1> "as" <namespace>
+<pattern-1> ::= <pattern-2> | <pattern-1> ":" <type> | <pattern-1> ":?" <type> | <pattern-1> "as" <namespace>
 
 <pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
 

@@ -139,14 +139,10 @@ readTypeDeclaration =
 
 readBinding :: Parser SyntaxBinding
 readBinding = do
-    name <- readLName
-    mtp <-
-        optional $ do
-            readThis TokTypeJudge
-            readType
+    pat <- readPattern1
     readThis TokAssign
     defn <- readExpression
-    return $ MkSyntaxBinding mtp name defn
+    return $ MkSyntaxBinding pat defn
 
 readImport :: Parser SyntaxDeclaration'
 readImport = do

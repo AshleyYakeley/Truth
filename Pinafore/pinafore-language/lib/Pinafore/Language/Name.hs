@@ -118,7 +118,7 @@ instance IsString FullName where
             return $ MkFullName nspace name
 
 data NamespaceRef
-    = FullNamespaceRef Namespace
+    = AbsoluteNamespaceRef Namespace
     | RelativeNamespaceRef [Name]
     deriving (Eq, Ord)
 
@@ -128,7 +128,11 @@ pattern CurrentNamespaceRef = RelativeNamespaceRef []
 
 pattern RootNamespaceRef :: NamespaceRef
 
-pattern RootNamespaceRef = FullNamespaceRef RootNamespace
+pattern RootNamespaceRef = AbsoluteNamespaceRef RootNamespace
+
+namespaceRefInNamespace :: Namespace -> NamespaceRef -> Namespace
+namespaceRefInNamespace _ (AbsoluteNamespaceRef ns) = ns
+namespaceRefInNamespace ns (RelativeNamespaceRef names) = namespaceConcat ns names
 
 class NamespaceRelative t where
     namespaceRelative :: Namespace -> t -> t
@@ -144,7 +148,7 @@ instance NamespaceRelative t => NamespaceRelative [t] where
 
 instance ToText NamespaceRef where
     toText (RelativeNamespaceRef nn) = mconcat (fmap (\t -> toText t <> ".") nn)
-    toText (FullNamespaceRef asn) = toText asn
+    toText (AbsoluteNamespaceRef asn) = toText asn
 
 instance Show NamespaceRef where
     show = unpack . toText
@@ -157,7 +161,7 @@ namespaceRefFromStrings ss =
                 if nameIsUpper n
                     then return ()
                     else Nothing
-            return $ FullNamespaceRef $ MkNamespace ns
+            return $ AbsoluteNamespaceRef $ MkNamespace ns
         ns -> do
             for_ ns $ \n ->
                 if nameIsUpper n
@@ -191,6 +195,12 @@ instance ToText FullNameRef where
 
 instance Show FullNameRef where
     show = unpack . toText
+
+fullNameRefInNamespace :: Namespace -> FullNameRef -> FullName
+fullNameRefInNamespace ns (MkFullNameRef nref name) = MkFullName (namespaceRefInNamespace ns nref) name
+
+fullNameRef :: FullName -> FullNameRef
+fullNameRef (MkFullName ns name) = MkFullNameRef (AbsoluteNamespaceRef ns) name
 
 newtype ModuleName =
     MkModuleName Text

@@ -149,12 +149,12 @@ testType =
               , exprTypeTest "boolean" (return "{} -> Boolean") $ return boolExpr
               , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
               , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
-              , exprTypeTest "var" (return "{v : a} -> a") $ return varExpr
+              , exprTypeTest "var" (return "{.v : a} -> a") $ return varExpr
               , exprTypeTest "apply-id-number" (return "{} -> Number") $ apExpr idExpr numExpr
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
-              , exprTypeTest "apply id var" (return "{v : a} -> a") $ apExpr idExpr varExpr
-              , exprTypeTest "apply nb var" (return "{v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
+              , exprTypeTest "apply id var" (return "{.v : a} -> a") $ apExpr idExpr varExpr
+              , exprTypeTest "apply nb var" (return "{.v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
               , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
               , exprTypeTest "list1" (return "{} -> a -> List a") $ return list1Expr
               , exprTypeTest "listNumBool" (return "{} -> List (Boolean | Number)") $ do

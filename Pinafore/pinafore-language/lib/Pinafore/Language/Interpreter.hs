@@ -34,8 +34,9 @@ module Pinafore.Language.Interpreter
     , registerType
     , ScopeFixBox
     , FullName(..)
+    , getNameResolver
     , BindingInfo(..)
-    , lookupBindingInfo
+    , getBindingMap
     , bindingInfosToScope
     , InterpreterBinding(..)
     , lookupPatternConstructor
@@ -322,27 +323,31 @@ nsAndParents a@(MkNamespace nn) =
         Nothing -> []
         Just na -> nsAndParents $ MkNamespace $ init na
 
-namespacePriority :: NamespaceRef -> Interpreter ts [Namespace]
-namespacePriority (FullNamespaceRef ann) = return [ann]
-namespacePriority (RelativeNamespaceRef rnn) = do
+namespacePriority :: Interpreter ts (NamespaceRef -> [Namespace])
+namespacePriority = do
     curns <- paramAsk namespaceParam
     usingnss <- paramAsk usingNamespacesParam
-    return $ fmap (\ns -> namespaceConcat ns rnn) $ nsAndParents curns <> usingnss
+    return $ \case
+        AbsoluteNamespaceRef ann -> [ann]
+        RelativeNamespaceRef rnn -> fmap (\ns -> namespaceConcat ns rnn) $ nsAndParents curns <> usingnss
 
 namespaceCurrent :: NamespaceRef -> Interpreter ts Namespace
-namespaceCurrent (FullNamespaceRef ann) = return ann
+namespaceCurrent (AbsoluteNamespaceRef ann) = return ann
 namespaceCurrent (RelativeNamespaceRef rnn) = do
     curns <- paramAsk namespaceParam
     return $ namespaceConcat curns rnn
 
-lookupBindingInfo :: FullNameRef -> Interpreter ts (Maybe (BindingInfo ts))
-lookupBindingInfo (MkFullNameRef nsn name) = do
+getBindingMap :: Interpreter ts (FullNameRef -> Maybe (BindingInfo ts))
+getBindingMap = do
     (scopeBindings -> nspace) <- paramAsk scopeParam
-    nss <- namespacePriority nsn
-    return $ firstOf nss $ \ns -> nameMapLookupBindingInfo nspace $ MkFullName ns name
+    nsp <- namespacePriority
+    return $ \(MkFullNameRef nsn name) ->
+        firstOf (nsp nsn) $ \ns -> nameMapLookupBindingInfo nspace $ MkFullName ns name
 
 lookupBinding :: FullNameRef -> Interpreter ts (Maybe (InterpreterBinding ts))
-lookupBinding rname = fmap (fmap biValue) $ lookupBindingInfo rname
+lookupBinding rname = do
+    bindmap <- getBindingMap
+    return $ fmap biValue $ bindmap rname
 
 checkPureExpression ::
        forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
@@ -362,14 +367,16 @@ exportNames ::
     => [FullNameRef]
     -> Interpreter ts [BindingInfo ts]
 exportNames names = do
-    ebis <-
-        for names $ \name -> do
-            mbi <- lookupBindingInfo name
-            return $
-                case mbi of
-                    Just bi -> Right bi
-                    Nothing -> Left name
-    let (badnamesl, bis) = partitionEithers ebis
+    bindmap <- getBindingMap
+    let
+        (badnamesl, bis) =
+            partitionEithers $
+            fmap
+                (\name ->
+                     case bindmap name of
+                         Just bi -> Right bi
+                         Nothing -> Left name)
+                names
     case nonEmpty badnamesl of
         Just badnames -> throw $ LookupNamesUnknownError badnames
         Nothing -> return bis
@@ -412,22 +419,27 @@ usingNamespacesRef = transformParamRef usingNamespacesParam
 varIDStateRef :: Ref (ScopeInterpreter ts) VarIDState
 varIDStateRef = transformParamRef varIDStateParam
 
+getNameResolver :: ScopeInterpreter ts (FullNameRef -> FullName)
+getNameResolver = do
+    ns <- refGet namespaceRef
+    return $ fullNameRefInNamespace ns
+
 allocateVar ::
        forall ts. HasInterpreter ts
-    => Name
-    -> ScopeInterpreter ts VarID
+    => FullNameRef
+    -> ScopeInterpreter ts (FullName, VarID)
 allocateVar n = do
     vs <- refGet varIDStateRef
-    ns <- refGet namespaceRef
+    nsp <- getNameResolver
     let
-        vid = mkVarID vs n
-        biName = MkFullName ns n
+        biName = nsp n
+        vid = mkVarID vs biName
         biDocumentation = plainMarkdown "variable"
         biValue = LambdaBinding vid
         insertScope = MkScope (bindingInfoToNameMap MkBindingInfo {..}) mempty
     refPut varIDStateRef $ nextVarIDState vs
     refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
-    return vid
+    return (biName, vid)
 
 getRestore :: Monad m => Ref m a -> m (m ())
 getRestore r = do
@@ -484,7 +496,7 @@ getModule mname = do
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
 
-registerBinding :: Name -> DocInterpreterBinding ts -> ScopeInterpreter ts ()
+registerBinding :: FullNameRef -> DocInterpreterBinding ts -> ScopeInterpreter ts ()
 registerBinding name db = registerBindings $ singletonMap name db
 
 getSubtypeScope :: SubtypeConversionEntry (InterpreterGroundType ts) -> Interpreter ts (Scope ts)
@@ -492,10 +504,10 @@ getSubtypeScope sce = do
     key <- liftIO newUnique
     return $ emptyScope {scopeSubtypes = singletonMap key sce}
 
-registerBindings :: [(Name, DocInterpreterBinding ts)] -> ScopeInterpreter ts ()
+registerBindings :: [(FullNameRef, DocInterpreterBinding ts)] -> ScopeInterpreter ts ()
 registerBindings bb = do
-    nsp <- refGet namespaceRef
-    let newBindings = MkNameMap $ mapFromList $ fmap (\(n, b) -> (MkFullName nsp n, b)) bb
+    nsp <- getNameResolver
+    let newBindings = MkNameMap $ mapFromList $ fmap (\(n, b) -> (nsp n, b)) bb
     refModify scopeRef $ \oldScope -> oldScope {scopeBindings = scopeBindings oldScope <> newBindings}
 
 getSpecialVals :: Interpreter ts (SpecialVals ts)
@@ -511,13 +523,13 @@ lookupLetBinding name = do
 
 registerLetBindings ::
        forall ts. HasInterpreter ts
-    => [(Name, Markdown, TSSealedExpression ts)]
+    => [(FullNameRef, Markdown, TSSealedExpression ts)]
     -> ScopeInterpreter ts ()
 registerLetBindings bb = registerBindings $ fmap (\(name, doc, exp) -> (name, (doc, ValueBinding exp Nothing))) bb
 
 registerLetBinding ::
        forall ts. HasInterpreter ts
-    => Name
+    => FullNameRef
     -> Markdown
     -> TSSealedExpression ts
     -> ScopeInterpreter ts ()
@@ -572,22 +584,22 @@ withNewTypeID call = do
     case stid of
         MkSome tid -> call tid
 
-registerBoundType :: Name -> Markdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
+registerBoundType :: FullNameRef -> Markdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
 registerBoundType name doc t = do
-    mnt <- lift $ lookupBinding $ UnqualifiedFullNameRef name
+    mnt <- lift $ lookupBinding name
     case mnt of
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
         Nothing -> registerBinding name (doc, TypeBinding t)
 
-registerType :: Name -> Markdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
+registerType :: FullNameRef -> Markdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
 registerType name doc t = registerBoundType name doc $ MkSomeGroundType t
 
 type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 
 registerPatternConstructor ::
-       Name -> Markdown -> TSSealedExpression ts -> TSExpressionPatternConstructor ts -> ScopeInterpreter ts ()
+       FullNameRef -> Markdown -> TSSealedExpression ts -> TSExpressionPatternConstructor ts -> ScopeInterpreter ts ()
 registerPatternConstructor name doc exp pc = do
-    ma <- lift $ lookupBinding $ UnqualifiedFullNameRef name
+    ma <- lift $ lookupBinding name
     case ma of
         Just _ -> lift $ throw $ DeclareConstructorDuplicateError name
         Nothing -> registerBinding name $ (doc, ValueBinding exp $ Just pc)

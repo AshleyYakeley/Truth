@@ -2,7 +2,6 @@ module Pinafore.Language.Grammar.Syntax where
 
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Markdown
@@ -162,8 +161,7 @@ instance ExprShow SyntaxType' where
 type SyntaxType = WithSourcePos SyntaxType'
 
 data SyntaxBinding =
-    MkSyntaxBinding (Maybe SyntaxType)
-                    Name
+    MkSyntaxBinding SyntaxPattern
                     SyntaxExpression
     deriving (Eq)
 
@@ -184,6 +182,8 @@ data SyntaxPattern'
                                [SyntaxPattern]
     | TypedSyntaxPattern SyntaxPattern
                          SyntaxType
+    | DynamicTypedSyntaxPattern SyntaxPattern
+                                SyntaxType
     | NamespaceSyntaxPattern SyntaxPattern
                              NamespaceRef
     deriving (Eq)
@@ -287,15 +287,3 @@ instance HasSourcePos (WithSourcePos t) where
 
 instance HasSourcePos SyntaxTopDeclarations where
     getSourcePos (MkSyntaxTopDeclarations spos _) = spos
-
-checkSyntaxBindingsDuplicates ::
-       forall m. MonadThrow ErrorType m
-    => [SyntaxBinding]
-    -> m ()
-checkSyntaxBindingsDuplicates = let
-    checkDuplicates :: [Name] -> m ()
-    checkDuplicates nn =
-        case nonEmpty $ duplicates nn of
-            Nothing -> return ()
-            Just b -> throw $ InterpretBindingsDuplicateError b
-    in checkDuplicates . fmap (\(MkSyntaxBinding _ name _) -> name)

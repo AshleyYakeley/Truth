@@ -54,7 +54,7 @@ interpretPatternConstructor SLPair = return $ qToPatternConstructor $ PureFuncti
 interpretPattern' :: SyntaxPattern' -> ScopeBuilder QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
 interpretPattern' (VarSyntaxPattern n) = do
-    vid <- allocateVarScopeBuilder n
+    (_, vid) <- allocateVarScopeBuilder $ UnqualifiedFullNameRef n
     return $ qVarPattern vid
 interpretPattern' (BothSyntaxPattern spat1 spat2) = do
     pat1 <- interpretPattern spat1
@@ -90,6 +90,24 @@ interpretPattern' (TypedSyntaxPattern spat stype) = do
                                     toPatternConstructor dtn (ConsListType tpw NilListType) $
                                     ImpureFunction $ fmap $ \a -> (a, ())
                             qConstructPattern pc [pat]
+interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
+    pat <- interpretPattern spat
+    lift $
+        liftRefNotation $ do
+            mtn <- interpretType @'Negative stype
+            case mtn of
+                MkSome tn ->
+                    case getOptGreatestDynamicSupertype tn of
+                        Nothing -> return pat
+                        Just dtn -> do
+                            tpw <- invertType tn
+                            let
+                                pc :: QPatternConstructor
+                                pc =
+                                    toExpressionPatternConstructor $
+                                    toPatternConstructor dtn (ConsListType tpw NilListType) $
+                                    ImpureFunction $ fmap $ \a -> (a, ())
+                            qConstructPattern pc [pat]
 interpretPattern' (NamespaceSyntaxPattern spat nref) = do
     close <- interpScopeBuilder $ withNamespace nref
     pat <- interpretPattern spat
@@ -104,58 +122,79 @@ interpretPattern (MkWithSourcePos spos pat) = do
 interpretExpression :: SyntaxExpression -> RefExpression
 interpretExpression (MkWithSourcePos spos sexpr) = sourcePosRefNotation spos $ interpretExpression' sexpr
 
-type DocSyntaxBinding = SyntaxWithDoc SyntaxBinding
+data SingleBinding = MkSingleBinding
+    { sbName :: FullName
+    , sbVarID :: VarID
+    , sbType :: Maybe SyntaxType
+    , sbBody :: SyntaxExpression
+    , sbRefVars :: [FullName]
+    , sbDoc :: Markdown
+    }
 
-dsbBinding :: DocSyntaxBinding -> SyntaxBinding
-dsbBinding (MkSyntaxWithDoc _ b) = b
+sbDefDoc :: SingleBinding -> DefDoc
+sbDefDoc MkSingleBinding {..} = let
+    diName = sbName
+    diType = fromMaybe "" $ fmap exprShow sbType
+    docItem = ValueDocItem {..}
+    docDescription = sbDoc
+    in MkDefDoc {..}
 
-dsbName :: DocSyntaxBinding -> Name
-dsbName dsb =
-    case dsbBinding dsb of
-        MkSyntaxBinding _ n _ -> n
+syntaxToSingleBindings :: SyntaxBinding -> Markdown -> ScopeBuilder ([SingleBinding])
+syntaxToSingleBindings sbind@(MkSyntaxBinding (MkWithSourcePos _ pat) sbBody) sbDoc =
+    case pat of
+        VarSyntaxPattern name -> do
+            (sbName, sbVarID) <- allocateVarScopeBuilder $ UnqualifiedFullNameRef name
+            nameResolve <- interpScopeBuilder getNameResolver
+            let
+                sbType = Nothing
+                sbRefVars = fmap nameResolve $ toList $ bindingFreeVariables sbind
+            return $ pure MkSingleBinding {..}
+        TypedSyntaxPattern (MkWithSourcePos _ (VarSyntaxPattern name)) stype -> do
+            (sbName, sbVarID) <- allocateVarScopeBuilder $ UnqualifiedFullNameRef name
+            nameResolve <- interpScopeBuilder getNameResolver
+            let
+                sbType = Just stype
+                sbRefVars = fmap nameResolve $ toList $ bindingFreeVariables sbind
+            return $ pure MkSingleBinding {..}
+        _ -> lift $ throw $ KnownIssueError 169 "NYI"
 
-dsbNode :: DocSyntaxBinding -> (DocSyntaxBinding, Name, [Name])
-dsbNode db = (db, dsbName db, mapMaybe fullNameRefToUnqualified $ setToList $ bindingFreeVariables $ dsbBinding db)
+sbNode :: SingleBinding -> (SingleBinding, FullName, [FullName])
+sbNode sb = (sb, sbName sb, sbRefVars sb)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
-clumpBindings :: [DocSyntaxBinding] -> [[DocSyntaxBinding]]
-clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap dsbNode bb
+clumpBindings :: [SingleBinding] -> [[SingleBinding]]
+clumpBindings sbb = fmap flattenSCC $ stronglyConnComp $ fmap sbNode sbb
 
-mapVarID :: Map VarID (Markdown, expr) -> [(Name, VarID)] -> [(Name, Markdown, expr)]
+mapVarID :: Map VarID (Markdown, expr) -> [(FullName, VarID)] -> [(FullNameRef, Markdown, expr)]
 mapVarID mm =
     mapMaybe $ \(n, v) -> do
         (d, e) <- lookup v mm
-        return (n, d, e)
+        return (fullNameRef n, d, e)
 
-interpretRecursiveLetBindingsClump :: [DocSyntaxBinding] -> ScopeBuilder ()
+interpretRecursiveLetBindingsClump :: [SingleBinding] -> ScopeBuilder ()
 interpretRecursiveLetBindingsClump sbinds = do
-    items <-
-        for sbinds $ \sbind -> do
-            let name = dsbName sbind
-            vid <- allocateVarScopeBuilder name
-            return (name, vid, sbind)
-    let nvs = fmap (\(name, vid, _) -> (name, vid)) items
-    bl <- lift $ interpretBindings $ fmap (\(_, vid, sbind) -> (sbind, vid)) items
+    let nvs = fmap (\sb -> (sbName sb, sbVarID sb)) sbinds
+    bl <- lift $ interpretBindings sbinds
     interpScopeBuilder $ do
         bmap <- lift $ qUncheckedBindingsRecursiveLetExpr bl
         registerLetBindings $ mapVarID bmap nvs
 
-interpretRecursiveLetBindingss :: [[DocSyntaxBinding]] -> ScopeBuilder ()
+interpretRecursiveLetBindingss :: [[SingleBinding]] -> ScopeBuilder ()
 interpretRecursiveLetBindingss bb = for_ bb interpretRecursiveLetBindingsClump
 
-interpretRecursiveLetBindings :: [DocSyntaxBinding] -> ScopeBuilder ()
+interpretRecursiveLetBindings :: [SingleBinding] -> ScopeBuilder ()
 interpretRecursiveLetBindings sbinds = do
-    lift $ liftRefNotation $ checkSyntaxBindingsDuplicates $ fmap dsbBinding sbinds
+    case nonEmpty $ duplicates $ fmap sbName sbinds of
+        Nothing -> return ()
+        Just b -> lift $ throw $ InterpretBindingsDuplicateError b
     interpretRecursiveLetBindingss $ clumpBindings sbinds
 
-interpretSequentialLetBinding :: DocSyntaxBinding -> ScopeBuilder ()
+interpretSequentialLetBinding :: SingleBinding -> ScopeBuilder ()
 interpretSequentialLetBinding sbind = do
-    let n = dsbName sbind
-    vid <- allocateVarScopeBuilder n
-    b <- lift $ interpretBinding (sbind, vid)
+    b <- lift $ interpretBinding sbind
     interpScopeBuilder $ do
         bmap <- lift $ qBindingSequentialLetExpr b
-        registerLetBindings $ mapVarID bmap $ pure (n, vid)
+        registerLetBindings $ mapVarID bmap $ pure (sbName sbind, sbVarID sbind)
 
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> ScopeBuilder Docs
 interpretRecursiveDocDeclarations ddecls = do
@@ -171,22 +210,17 @@ interpretRecursiveDocDeclarations ddecls = do
                             _ -> []
                     docItem = TypeDocItem {..}
                     docDescription = doc
-                    in (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
+                    in return (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
                 SubtypeSyntaxDeclaration trustme sta stb mbody ->
-                    ( mempty
-                    , sourcePosScopeBuilder spos >> interpretSubtypeRelation doc trustme sta stb mbody
-                    , mempty
-                    , mempty)
-                BindingSyntaxDeclaration sbind@(MkSyntaxBinding mtype name _) -> let
-                    diName = RootFullName name
-                    diType =
-                        case mtype of
-                            Nothing -> ""
-                            Just st -> exprShow st
-                    docItem = ValueDocItem {..}
-                    docDescription = doc
-                    in (mempty, mempty, pure $ MkSyntaxWithDoc doc sbind, pure $ EntryDocTreeEntry $ MkDefDoc {..})
-        (typeDecls, subtypeSB, bindingDecls, docDecls) = mconcat $ fmap interp ddecls
+                    return
+                        ( mempty
+                        , sourcePosScopeBuilder spos >> interpretSubtypeRelation doc trustme sta stb mbody
+                        , mempty
+                        , mempty)
+                BindingSyntaxDeclaration sbind -> do
+                    binds <- syntaxToSingleBindings sbind doc
+                    return (mempty, mempty, binds, fmap (EntryDocTreeEntry . sbDefDoc) binds)
+    (typeDecls, subtypeSB, bindingDecls, docDecls) <- fmap mconcat $ for ddecls interp
     interpScopeBuilder $ interpretRecursiveTypeDeclarations typeDecls
     stDocDecls <- subtypeSB
     interpretRecursiveLetBindings bindingDecls
@@ -234,17 +268,10 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             return $ defDocs MkDefDoc {..}
         DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) ->
             interpretSubtypeRelation doc trustme sta stb mbody
-        DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding mtype name _)) -> do
-            interpretSequentialLetBinding $ MkSyntaxWithDoc doc sbind
-            let
-                diName = RootFullName name
-                diType =
-                    case mtype of
-                        Nothing -> ""
-                        Just st -> exprShow st
-                docItem = ValueDocItem {..}
-                docDescription = doc
-            return $ defDocs MkDefDoc {..}
+        DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
+            binds <- syntaxToSingleBindings sbind doc
+            for_ binds interpretSequentialLetBinding
+            return $ fmap (EntryDocTreeEntry . sbDefDoc) binds
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
         UsingSyntaxDeclaration nsn -> do
             interpScopeBuilder $ usingNamespace nsn
@@ -395,13 +422,13 @@ interpretClosedExpression sexpr = do
     checkExprVars expr
     return expr
 
-interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation QBinding
-interpretBinding ((MkSyntaxWithDoc doc (MkSyntaxBinding mstype _ sexpr)), vid) = do
-    mtype <- liftRefNotation $ for mstype interpretType
-    expr <- interpretClosedExpression sexpr
-    return $ qBindExpr vid doc mtype expr
+interpretBinding :: SingleBinding -> RefNotation QBinding
+interpretBinding MkSingleBinding {..} = do
+    mtype <- liftRefNotation $ for sbType interpretType
+    expr <- interpretClosedExpression sbBody
+    return $ qBindExpr sbVarID sbDoc mtype expr
 
-interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [QBinding]
+interpretBindings :: [SingleBinding] -> RefNotation [QBinding]
 interpretBindings sbinds = for sbinds interpretBinding
 
 interpretTopDeclarations :: SyntaxTopDeclarations -> QInterpreter --> QInterpreter

@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.FreeVars
     ( bindingFreeVariables
+    , bindingBindingVariables
     ) where
 
 import Pinafore.Language.Grammar.Syntax
@@ -9,6 +10,9 @@ import Shapes
 -- | get bindings for ref in a recursive set
 bindingFreeVariables :: SyntaxBinding -> FiniteSet FullNameRef
 bindingFreeVariables = syntaxFreeVariables
+
+bindingBindingVariables :: SyntaxBinding -> FiniteSet FullNameRef
+bindingBindingVariables = syntaxBindingVariables
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet FullNameRef
@@ -55,7 +59,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
 
 instance SyntaxFreeVariables SyntaxBinding where
-    syntaxFreeVariables (MkSyntaxBinding _ _ expr) = syntaxFreeVariables expr
+    syntaxFreeVariables (MkSyntaxBinding _ expr) = syntaxFreeVariables expr
 
 instance SyntaxFreeVariables t => SyntaxFreeVariables (SyntaxWithDoc t) where
     syntaxFreeVariables (MkSyntaxWithDoc _ decl) = syntaxFreeVariables decl
@@ -92,6 +96,7 @@ instance SyntaxBindingVariables SyntaxPattern' where
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
     syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
     syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
+    syntaxBindingVariables (DynamicTypedSyntaxPattern pat _) = syntaxBindingVariables pat
     syntaxBindingVariables (NamespaceSyntaxPattern _ _) = mempty
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) where
@@ -107,4 +112,4 @@ instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxBinding where
-    syntaxBindingVariables (MkSyntaxBinding _ name _) = singletonSet $ UnqualifiedFullNameRef name
+    syntaxBindingVariables (MkSyntaxBinding pat _) = syntaxBindingVariables pat

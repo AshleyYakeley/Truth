@@ -156,7 +156,7 @@ readFullUName = do
     return $
         MkFullNameRef
             ((if tnAbsolute
-                  then FullNamespaceRef . MkNamespace
+                  then AbsoluteNamespaceRef . MkNamespace
                   else RelativeNamespaceRef)
                  tnSpace)
             tnName
@@ -167,7 +167,7 @@ readFullLName = do
     return $
         MkFullNameRef
             ((if tnAbsolute
-                  then FullNamespaceRef . MkNamespace
+                  then AbsoluteNamespaceRef . MkNamespace
                   else RelativeNamespaceRef)
                  tnSpace)
             tnName
@@ -196,7 +196,7 @@ readNamespaceRef = do
     MkTokenNames {..} <- readThis TokNamesUpper
     return $
         (if tnAbsolute
-             then FullNamespaceRef . MkNamespace
+             then AbsoluteNamespaceRef . MkNamespace
              else RelativeNamespaceRef) $
         tnSpace <> [tnName]
 
