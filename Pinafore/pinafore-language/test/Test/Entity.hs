@@ -266,7 +266,7 @@ testEntity =
                         testScriptExpectation (val <> ": " <> ptype <> " => " <> pack (show se)) se $
                         "((" <>
                         val <>
-                        "): Literal) >- match val: " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
+                        "): Literal) >- match val:? " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
                     testPairs :: [(Text, Text)]
                     testPairs =
                         [ ("Unit", "()")
@@ -774,26 +774,26 @@ testEntity =
                           "testeqval 3 $ \"hello\" >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
                     , testExpectSuccess "testeqval 4 $ () >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 1 $ 34.0 >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 1 $ 34.0 >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 2 $ True >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 2 $ True >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 3 $ \"hello\" >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 3 $ \"hello\" >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 4 $ () >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 4 $ () >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 1 $ 34.0 >- match _:Integer => 1; _:Rational => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 1 $ 34.0 >- match _:?Integer => 1; _:?Rational => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 2 $ 34.0 >- match _:Rational => 2; _:Integer => 1; _:Text => 3; _ => 4 end"
+                          "testeqval 2 $ 34.0 >- match _:?Rational => 2; _:?Integer => 1; _:?Text => 3; _ => 4 end"
                     ]
               , tGroup
                     "List"
                     [ testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; [] => 2 end"
                     , testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 2 $ [] >- match _: List1 Integer => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 2 $ [] >- match _:? List1 Integer => 1; _ => 2 end"
                     , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; [] => 2 end"
                     , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _: List1 Integer => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _:? List1 Integer => 1; _ => 2 end"
                     ]
               ]
         , tDecls
@@ -809,9 +809,9 @@ testEntity =
               , testExpectSuccess "testeq {Just e1} {check @P1 e1}"
               , testExpectSuccess "testeq {Nothing} {check @P2 e1}"
               , testExpectSuccess "testeq {Just e1} {check @Q e1}"
-              , testExpectSuccess "testeq {True} {e1 >- match _: P1 => True; _ => False end}"
-              , testExpectSuccess "testeq {False} {e1 >- match _: P2 => True; _ => False end}"
-              , testExpectSuccess "testeq {True} {e1 >- match _: Q => True; _ => False end}"
+              , testExpectSuccess "testeq {True} {e1 >- match _:? P1 => True; _ => False end}"
+              , testExpectSuccess "testeq {False} {e1 >- match _:? P2 => True; _ => False end}"
+              , testExpectSuccess "testeq {True} {e1 >- match _:? Q => True; _ => False end}"
               , testExpectSuccess "testeq {e1} {coerce @P1 e1}"
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
               ]

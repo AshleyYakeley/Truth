@@ -55,7 +55,7 @@ stdWindow: Context -> WholeModel +Text -> WholeModel +(List MenuItem) -> Element
             tmodel <- getTextModel;
             clip <- get $ clipboard gtk;
             clip >- match
-                text: Text => tmodel := text;
+                text:? Text => tmodel := text;
                 _ => return ();
             end;
         end;

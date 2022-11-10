@@ -109,8 +109,8 @@ end;
     = fn e => let
         pages: List (GTK.Element *: GTK.Element)
         = contactPages {e} ++ (e >- match
-            p: Person => personPages {p};
-            o: Organisation => organisationPages {o};
+            p:? Person => personPages {p};
+            o:? Organisation => organisationPages {o};
             end);
         in GTK.vertical
         [

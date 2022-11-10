@@ -48,6 +48,7 @@ pattern MkNameWitness name wit =
 
 {-# COMPLETE MkNameWitness #-}
 
+type NamedExpression :: Type -> (Type -> Type) -> Type -> Type
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)
 
 instance WitnessMappable poswit negwit (NamedExpression name negwit a) where
@@ -62,7 +63,7 @@ namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) ->
 
 substituteExpression :: WitnessSubstitution Type vw1 vw2 -> NamedExpression name vw1 a -> NamedExpression name vw2 a
 substituteExpression _ (ClosedExpression a) = ClosedExpression a
-substituteExpression witmap@(MkWitnessMap wm) (OpenExpression (MkNameWitness name wt) expr) =
+substituteExpression witmap@(MkWitnessConvert wm) (OpenExpression (MkNameWitness name wt) expr) =
     wm wt $ \wt' bij ->
         OpenExpression (MkNameWitness name wt') $
         fmap (\ta t2 -> ta $ isoBackwards bij t2) $ substituteExpression witmap expr

@@ -3,6 +3,7 @@ module Language.Expression.Common.NameWit where
 import Language.Expression.Common.Expression
 import Shapes
 
+type NameTypeWitness :: forall kn kt. (kn -> Type) -> (kn -> kt -> Type) -> kt -> Type
 data NameTypeWitness nw vw t =
     forall n. MkNameTypeWitness (nw n)
                                 (vw n t)
@@ -17,6 +18,7 @@ instance (AllConstraint Show nw, AllConstraint (AllConstraint Show) vw) => Show 
 instance (AllConstraint Show nw, AllConstraint (AllConstraint Show) vw) => AllConstraint Show (NameTypeWitness nw vw) where
     allConstraint = Dict
 
+type NameTypeExpression :: (kn -> Type) -> (kn -> Type -> Type) -> Type -> Type
 type NameTypeExpression nw vw = Expression (NameTypeWitness nw vw)
 
 varNameTypeExpression :: nw n -> vw n t -> NameTypeExpression nw vw t

@@ -29,14 +29,35 @@ type TSPosShimWit ts = TSShimWit ts 'Positive
 
 type TSMappable ts = WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts)
 
+tsMapWitnessesM ::
+       forall ts m a. (TSMappable ts a, Applicative m)
+    => (forall t. TSPosShimWit ts t -> m (TSPosShimWit ts t))
+    -> (forall t. TSNegShimWit ts t -> m (TSNegShimWit ts t))
+    -> a
+    -> m a
+tsMapWitnessesM = mapWitnessesM
+
+tsMapWitnesses ::
+       forall ts a. TSMappable ts a
+    => (forall t. TSPosShimWit ts t -> TSPosShimWit ts t)
+    -> (forall t. TSNegShimWit ts t -> TSNegShimWit ts t)
+    -> a
+    -> a
+tsMapWitnesses = mapWitnesses
+
+type TSOpenExpression :: Type -> Type -> Type
 type TSOpenExpression ts = NamedExpression (TSVarID ts) (TSNegShimWit ts)
 
 type TSSealedExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
 
+type TSOpenPattern :: Type -> Type -> Type -> Type
 type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
 
-type TSSolverExpression ts typeexpr
+type TSOpenSolverExpression ts typeexpr
      = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenExpression ts)
+
+type TSOpenSolverPattern ts typeexpr
+     = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenPattern ts ())
 
 type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)
 

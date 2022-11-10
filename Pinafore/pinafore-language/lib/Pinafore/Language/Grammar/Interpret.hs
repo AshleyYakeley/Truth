@@ -78,18 +78,15 @@ interpretPattern' (TypedSyntaxPattern spat stype) = do
         liftRefNotation $ do
             mtn <- interpretType @'Negative stype
             case mtn of
-                MkSome tn ->
-                    case getOptGreatestDynamicSupertype tn of
-                        Nothing -> return pat
-                        Just dtn -> do
-                            tpw <- invertType tn
-                            let
-                                pc :: QPatternConstructor
-                                pc =
-                                    toExpressionPatternConstructor $
-                                    toPatternConstructor dtn (ConsListType tpw NilListType) $
-                                    ImpureFunction $ fmap $ \a -> (a, ())
-                            qConstructPattern pc [pat]
+                MkSome tn -> do
+                    tpw <- invertType tn
+                    let
+                        pc :: QPatternConstructor
+                        pc =
+                            toExpressionPatternConstructor $
+                            toPatternConstructor (mkShimWit tn) (ConsListType tpw NilListType) $
+                            PureFunction $ \a -> (a, ())
+                    qConstructPattern pc [pat]
 interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
     pat <- interpretPattern spat
     lift $
@@ -405,7 +402,7 @@ checkExprVars :: MonadThrow PinaforeError m => QExpression -> m ()
 checkExprVars (MkSealedExpression _ expr) = let
     getBadVarErrors ::
            forall w t. AllConstraint Show w
-        => NameTypeWitness (UnitType VarID) (UnitType' w) t
+        => NameWitness VarID w t
         -> Maybe ErrorMessage
     getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
         Just $ MkErrorMessage spos (ExpressionErrorError $ UndefinedBindingsError [show w]) mempty

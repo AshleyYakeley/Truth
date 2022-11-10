@@ -10,11 +10,13 @@ import Language.Expression.Common.Witness
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
+type NameTypePattern :: forall kn. (kn -> Type) -> (kn -> Type -> Type) -> Type -> Type -> Type
 type NameTypePattern nw vw = Pattern (NameTypeWitness nw vw)
 
 varNameTypePattern :: nw n -> vw n t -> NameTypePattern nw vw t ()
 varNameTypePattern n t = varPattern $ MkNameTypeWitness n t
 
+type NamedPattern :: Type -> (Type -> Type) -> Type -> Type -> Type
 type NamedPattern name w = NameTypePattern (UnitType name) (UnitType' w)
 
 instance WitnessMappable poswit negwit (NamedPattern name poswit a b) where
@@ -29,7 +31,7 @@ patternNames = patternFreeWitnesses $ \(MkNameTypeWitness (MkUnitType name) _) -
 
 substitutePattern :: WitnessSubstitution Type vw1 vw2 -> NamedPattern name vw1 q a -> NamedPattern name vw2 q a
 substitutePattern _ (ClosedPattern a) = ClosedPattern a
-substitutePattern witmap@(MkWitnessMap wm) (OpenPattern (MkNameWitness name wt) pat) =
+substitutePattern witmap@(MkWitnessConvert wm) (OpenPattern (MkNameWitness name wt) pat) =
     wm wt $ \wt' bij ->
         OpenPattern (MkNameWitness name wt') $ fmap (\(t, a) -> (isoForwards bij t, a)) $ substitutePattern witmap pat
 

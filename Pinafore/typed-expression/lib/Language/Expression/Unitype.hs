@@ -50,6 +50,7 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     showSubsumer _ = ""
     usubSubsumer () ia = lift $ return $ pure $ runIdentity ia
     solveSubsumer ia = pure $ (pure $ runIdentity ia, ())
+    subsumerPosSubstitute () Refl = return $ unitypeShimWit
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 

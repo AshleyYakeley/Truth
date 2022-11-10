@@ -354,6 +354,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
         subsumer' <- runSolver $ bisubstituteUnifier s subsumer
         usubSubsumerExpression @(DolanTypeSystem ground) ss subsumer'
     solveSubsumer = solveUnifier @(DolanTypeSystem ground)
+    subsumerPosSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
     subsumerNegSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = runSolver $ unifyTypes tinf tdecl
 

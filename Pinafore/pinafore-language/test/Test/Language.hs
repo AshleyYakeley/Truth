@@ -913,7 +913,7 @@ testQueries =
                                 " = " <>
                                 val <>
                                 "; y: " <>
-                                subtype <> " = x >- match (z: " <> subtype <> ") => z; _ => " <> altval <> "; end in y")
+                                subtype <> " = x >- match (z:? " <> subtype <> ") => z; _ => " <> altval <> "; end in y")
                                result
                          , testQuery
                                ("let x: " <>

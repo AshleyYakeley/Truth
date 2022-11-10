@@ -2,11 +2,13 @@ module Language.Expression.Common.Pattern.Pattern
     ( Pattern(..)
     , contramap1Pattern
     , patternFreeWitnesses
+    , anyPattern
     , varPattern
     ) where
 
 import Shapes
 
+type Pattern :: (Type -> Type) -> Type -> Type -> Type
 data Pattern w q a
     = ClosedPattern (PurityFunction Maybe q a)
     | forall t. OpenPattern (w t)
@@ -46,6 +48,9 @@ instance Arrow (Pattern w) where
 patternFreeWitnesses :: (forall t. w t -> r) -> Pattern w q a -> [r]
 patternFreeWitnesses _wr (ClosedPattern _) = []
 patternFreeWitnesses wr (OpenPattern wt pat) = (wr wt) : patternFreeWitnesses wr pat
+
+anyPattern :: Pattern w q ()
+anyPattern = pure ()
 
 varPattern :: w t -> Pattern w t ()
 varPattern wt = OpenPattern wt $ ClosedPattern $ PureFunction $ \t -> (t, ())

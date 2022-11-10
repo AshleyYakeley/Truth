@@ -3,6 +3,7 @@
 module Language.Expression.Common.Pattern.Sealed where
 
 import Language.Expression.Common.Pattern.Named
+import Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -20,7 +21,7 @@ varSealedPattern :: name -> tw t -> vw t -> SealedPattern name vw tw
 varSealedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt
 
 anySealedPattern :: tw t -> SealedPattern name vw tw
-anySealedPattern twt = MkSealedPattern twt $ pure ()
+anySealedPattern twt = MkSealedPattern twt anyPattern
 
 sealedPatternNames :: SealedPattern name vw tw -> [name]
 sealedPatternNames (MkSealedPattern _ pat) = patternNames pat
