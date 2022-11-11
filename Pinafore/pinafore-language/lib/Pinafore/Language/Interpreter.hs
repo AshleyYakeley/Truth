@@ -426,14 +426,18 @@ getNameResolver = do
 
 allocateVar ::
        forall ts. HasInterpreter ts
-    => FullNameRef
+    => Maybe FullNameRef
     -> ScopeInterpreter ts (FullName, VarID)
-allocateVar n = do
+allocateVar mnameref = do
     vs <- refGet varIDStateRef
     nsp <- getNameResolver
     let
-        biName = nsp n
-        vid = mkVarID vs biName
+        (vid, biName) =
+            case mnameref of
+                Just nameref -> let
+                    name = nsp nameref
+                    in (mkVarID vs name, name)
+                Nothing -> mkUniqueVarID vs
         biDocumentation = plainMarkdown "variable"
         biValue = LambdaBinding vid
         insertScope = MkScope (bindingInfoToNameMap MkBindingInfo {..}) mempty

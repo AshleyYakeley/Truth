@@ -1,18 +1,17 @@
 module Pinafore.Language.Grammar.FreeVars
-    ( bindingFreeVariables
-    , bindingBindingVariables
+    ( syntaxExpressionFreeVariables
+    , syntaxPatternBindingVariables
     ) where
 
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes
 
--- | get bindings for ref in a recursive set
-bindingFreeVariables :: SyntaxBinding -> FiniteSet FullNameRef
-bindingFreeVariables = syntaxFreeVariables
+syntaxExpressionFreeVariables :: SyntaxExpression -> [FullNameRef]
+syntaxExpressionFreeVariables expr = toList $ syntaxFreeVariables expr
 
-bindingBindingVariables :: SyntaxBinding -> FiniteSet FullNameRef
-bindingBindingVariables = syntaxBindingVariables
+syntaxPatternBindingVariables :: SyntaxPattern -> [FullNameRef]
+syntaxPatternBindingVariables pat = toList $ syntaxBindingVariables pat
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet FullNameRef

@@ -56,5 +56,5 @@ refScopeBuilder = execMapTransformT
 pureScopeBuilder :: QScope -> ScopeBuilder ()
 pureScopeBuilder scope = interpScopeBuilder $ registerScope scope
 
-allocateVarScopeBuilder :: FullNameRef -> ScopeBuilder (FullName, VarID)
+allocateVarScopeBuilder :: Maybe FullNameRef -> ScopeBuilder (FullName, VarID)
 allocateVarScopeBuilder n = interpScopeBuilder $ allocateVar n

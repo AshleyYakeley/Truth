@@ -66,7 +66,7 @@ testDependentLet =
     runTester defaultTester $ do
         MkT i <-
             testerLiftInterpreter $
-            unTransformT (allocateVar $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
+            unTransformT (allocateVar $ Just $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
@@ -81,7 +81,7 @@ testDependentFunction =
     runTester defaultTester $ do
         MkT i <-
             testerLiftInterpreter $
-            unTransformT (allocateVar $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
+            unTransformT (allocateVar $ Just $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
@@ -127,7 +127,7 @@ testPolyDependentFunction =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
         MkT1 i <-
             testerLiftInterpreter $
-            unTransformT (allocateVar $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
+            unTransformT (allocateVar $ Just $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
@@ -169,7 +169,7 @@ testSemiScript1 =
             unTransformT
                 (do
                      registerT1Stuff
-                     allocateVar $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
+                     allocateVar $ Just $ UnqualifiedFullNameRef "x") $ \(_, varid) -> do
                 tExpression <-
                     unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression

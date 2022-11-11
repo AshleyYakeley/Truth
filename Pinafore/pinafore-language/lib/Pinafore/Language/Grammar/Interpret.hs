@@ -54,7 +54,7 @@ interpretPatternConstructor SLPair = return $ qToPatternConstructor $ PureFuncti
 interpretPattern' :: SyntaxPattern' -> ScopeBuilder QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
 interpretPattern' (VarSyntaxPattern n) = do
-    (_, vid) <- allocateVarScopeBuilder $ UnqualifiedFullNameRef n
+    (_, vid) <- allocateVarScopeBuilder $ Just $ UnqualifiedFullNameRef n
     return $ qVarPattern vid
 interpretPattern' (BothSyntaxPattern spat1 spat2) = do
     pat1 <- interpretPattern spat1
@@ -136,24 +136,36 @@ sbDefDoc MkSingleBinding {..} = let
     docDescription = sbDoc
     in MkDefDoc {..}
 
-syntaxToSingleBindings :: SyntaxBinding -> Markdown -> ScopeBuilder ([SingleBinding])
-syntaxToSingleBindings sbind@(MkSyntaxBinding (MkWithSourcePos _ pat) sbBody) sbDoc =
+buildSingleBinding ::
+       Maybe FullNameRef -> Maybe SyntaxType -> SyntaxExpression -> Markdown -> ScopeBuilder (FullName, SingleBinding)
+buildSingleBinding mname sbType sbBody sbDoc = do
+    (sbName, sbVarID) <- allocateVarScopeBuilder mname
+    nameResolve <- interpScopeBuilder getNameResolver
+    let sbRefVars = fmap nameResolve $ syntaxExpressionFreeVariables sbBody
+    return (sbName, MkSingleBinding {..})
+
+typedSyntaxToSingleBindings ::
+       SyntaxPattern -> Maybe SyntaxType -> SyntaxExpression -> Markdown -> ScopeBuilder [SingleBinding]
+typedSyntaxToSingleBindings spat@(MkWithSourcePos spos pat) mstype sbody doc =
     case pat of
         VarSyntaxPattern name -> do
-            (sbName, sbVarID) <- allocateVarScopeBuilder $ UnqualifiedFullNameRef name
-            nameResolve <- interpScopeBuilder getNameResolver
-            let
-                sbType = Nothing
-                sbRefVars = fmap nameResolve $ toList $ bindingFreeVariables sbind
-            return $ pure MkSingleBinding {..}
-        TypedSyntaxPattern (MkWithSourcePos _ (VarSyntaxPattern name)) stype -> do
-            (sbName, sbVarID) <- allocateVarScopeBuilder $ UnqualifiedFullNameRef name
-            nameResolve <- interpScopeBuilder getNameResolver
-            let
-                sbType = Just stype
-                sbRefVars = fmap nameResolve $ toList $ bindingFreeVariables sbind
-            return $ pure MkSingleBinding {..}
-        _ -> lift $ throw $ KnownIssueError 169 "NYI"
+            (_, sb) <- buildSingleBinding (Just $ UnqualifiedFullNameRef name) mstype sbody doc
+            return $ pure sb
+        _ -> do
+            (pvname, sb) <- buildSingleBinding Nothing mstype sbody doc
+            let pvnameref = fullNameRef pvname
+            sbs <-
+                for (syntaxPatternBindingVariables spat) $ \pref -> let
+                    wspos = MkWithSourcePos spos
+                    funcsexpr = wspos $ SEAbstract $ MkSyntaxMatch spat $ wspos $ SEVar pref
+                    valsexpr = wspos $ SEApply funcsexpr $ wspos $ SEVar pvnameref
+                    in fmap snd $ buildSingleBinding (Just pref) Nothing valsexpr doc
+            return $ sb : sbs
+
+syntaxToSingleBindings :: SyntaxBinding -> Markdown -> ScopeBuilder [SingleBinding]
+syntaxToSingleBindings (MkSyntaxBinding (MkWithSourcePos _ (TypedSyntaxPattern spat stype)) sbody) doc =
+    typedSyntaxToSingleBindings spat (Just stype) sbody doc
+syntaxToSingleBindings (MkSyntaxBinding spat sbody) doc = typedSyntaxToSingleBindings spat Nothing sbody doc
 
 sbNode :: SingleBinding -> (SingleBinding, FullName, [FullName])
 sbNode sb = (sb, sbName sb, sbRefVars sb)

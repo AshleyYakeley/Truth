@@ -4,6 +4,7 @@ module Pinafore.Language.VarID
     , firstVarIDState
     , nextVarIDState
     , mkVarID
+    , mkUniqueVarID
     , mkBadVarID
     ) where
 
@@ -43,6 +44,12 @@ instance Show VarID where
 
 mkVarID :: VarIDState -> FullName -> VarID
 mkVarID (MkVarIDState s) = GoodVarID s
+
+mkUniqueVarID :: VarIDState -> (VarID, FullName)
+mkUniqueVarID (MkVarIDState s) = let
+    name :: FullName
+    name = fromString $ "%var-" <> show s
+    in (GoodVarID s name, name)
 
 -- We could just throw an exception here, but this way we get to see the type of the missing variable.
 mkBadVarID :: SourcePos -> FullNameRef -> VarID

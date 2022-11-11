@@ -308,6 +308,25 @@ testQueries =
                           , testQuery "let rec r = (1 + i 1, i False); i = fn x => x end in r" $ LRSuccess "(2, False)"
                           ]
                     ]
+              , testTree
+                    "pattern"
+                    [ testQuery "let (a,b) = (3,4) in a" $ LRSuccess "3"
+                    , testQuery "let (a,b) = (3,4) in b" $ LRSuccess "4"
+                    , testQuery "let (a,b): Integer *: Integer = (3,4) in (b,a)" $ LRSuccess "(4, 3)"
+                    , testQuery "let rec (a,b): Integer *: Integer = (3,a + 4) end in (b,a)" $ LRSuccess "(7, 3)"
+                    , testQuery "let rec (a,b) = (3,a + 4) end in (b,a)" $ LRSuccess "(7, 3)"
+                    , testQuery "let rec (a,b) = (3,a + 4); (c,d) = (8,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (8, 9)))"
+                    , testQuery "let rec (a,b) = (3,a + 4); (c,d) = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
+                    , testQuery "let rec (a,b) = (3,a + 4); (c,d): Integer *: Integer = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
+                    , testQuery "let rec (a,b): Integer *: Integer = (3,a + 4); (c,d) = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
+                    , testQuery
+                          "let rec (a,b): Integer *: Integer = (3,a + 4); (c,d): Integer *: Integer = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
+                    ]
               ]
         , testTree
               "scoping"
