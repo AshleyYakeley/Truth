@@ -19,6 +19,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . type names (+:), (*:), List, Unit
       . tuple constructor/pattern (,,) etc.
       . type signatures now attach to bindings, not stand-alone
+      . separate syntax for static ":" and dynamic ":?" pattern typing
       . new syntax for function expressions: fn, fns, match, matches, =>
       . new syntax for datatype and closedtype definitions
   * Interactive
