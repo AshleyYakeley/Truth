@@ -97,8 +97,8 @@ textTypeTest text r =
         expr <- testerLiftInterpreter $ parseTopExpression text
         liftIO $ assertEqual "" r $ showTypes expr
 
-badInterpretTest :: Text -> TestTree
-badInterpretTest text =
+rejectionTest :: Text -> TestTree
+rejectionTest text =
     testTree ("REJECT: " <> unpack text) $
     runTester defaultTester $ do
         result <- tryExc $ testerLiftInterpreter $ parseTopExpression text
@@ -254,30 +254,35 @@ testType =
               , testTree
                     "inversion"
                     [ textTypeTest "fn x => let y : Integer = x in y" "{} -> Integer -> Integer"
-                    , badInterpretTest "fn x => let y : Boolean | Number = x in y"
-                    , badInterpretTest "fn x => let y : (a -> a) *: (Boolean | Number) = x in y"
-                    , badInterpretTest "fn x => let y : (b -> b) *: (Boolean | Number) = x in y"
+                    , rejectionTest "fn x => let y : Boolean | Number = x in y"
+                    , rejectionTest "fn x => let y : (a -> a) *: (Boolean | Number) = x in y"
+                    , rejectionTest "fn x => let y : (b -> b) *: (Boolean | Number) = x in y"
                     , textTypeTest
                           "fn x => let y: Boolean *: Number = (x,x) in y"
                           "{} -> (Number & Boolean) -> Boolean *: Number"
                     , textTypeTest
                           "fn x1 => fn x2 => let y: Boolean *: Number = (x1,x2) in y"
                           "{} -> Boolean -> Number -> Boolean *: Number"
+                    , textTypeTest "let f : a -> a = fn x => x; g : a -> a = f in f 3" "{} -> Integer"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (a -> a) *: (a -> a *: a) = (x1,x2) in y"
-                          "{} -> (a -> a) -> (a -> a *: a) -> (a -> a) *: (a -> a *: a)"
+                          "let rec g : a -> a = f; f : a -> a = fn x => x end in (f 3, g \"t\")"
+                          "{} -> Integer *: Text"
+                    , textTypeTest "do i1 <- return $ fn x => x; return i1; end" "{} -> Action (a -> a)"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (a -> a) *: (b -> b *: b) = (x1,x2) in y"
-                          "{} -> (a -> a) -> (b -> b *: b) -> (a -> a) *: (b -> b *: b)"
+                          "do i1 <- return $ fn x => x; i2 <- return i1; return i2; end"
+                          "{} -> Action (a -> a)"
+                    , rejectionTest "do i1 <- return $ fn x => x; return (i1 : a -> a); end"
                     , textTypeTest
-                          "fn x1 => fn x2 => let y: (b -> b) *: (a -> a *: a) = (x1,x2) in y"
-                          "{} -> (a -> a) -> (b -> b *: b) -> (a -> a) *: (b -> b *: b)"
-                    , textTypeTest
-                          "fn x1 => fn x2 => let y: (a -> b) *: (b -> a) = (x1,x2) in y"
-                          "{} -> (a -> b) -> (b -> a) -> (a -> b) *: (b -> a)"
-                    , textTypeTest
-                          "fn x1 => fn x2 => let y: (c -> d) *: (d -> c) = (x1,x2) in y"
-                          "{} -> (a -> b) -> (b -> a) -> (a -> b) *: (b -> a)"
+                          "do i1 <- return $ fn x => x; return (i1 : Text -> Text); end"
+                          "{} -> Action (Text -> Text)"
+                    , textTypeTest "fn x => let y = x in y" "{} -> a -> a"
+                    , rejectionTest "fn x => let y : a -> a = x in y"
+                    , rejectionTest
+                          "do r <- newMemWholeModel; (r: WholeModel a) := 3; t <- get (r: WholeModel a); return $ textLength t end"
+                    , rejectionTest
+                          "do r <- newMemWholeModel; let r1: WholeModel a = r in r1 := 3; t <- let r1: WholeModel a = r in get r1; return $ textLength t end"
+                    , rejectionTest
+                          "do r <- newMemWholeModel; (r1: WholeModel a) <- return r; r1 := 3; t <- get r1; return $ textLength t end"
                     ]
               , textTypeTest "let f : Entity = Nothing in f" "{} -> Entity"
               , textTypeTest "let f : Entity -> Entity = Just in f" "{} -> Entity -> Entity"

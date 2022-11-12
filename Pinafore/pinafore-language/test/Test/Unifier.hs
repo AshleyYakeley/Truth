@@ -264,41 +264,6 @@ testUnifier =
                         if l == [10, 20]
                             then return ()
                             else fail $ "different: " <> show l
-              , testTree "t7" $
-                runTester defaultTester $ do
-                    action <-
-                        testerLiftInterpreter $ do
-                            actionExpr <- parseTopExpression "do r <- newMemListModel; return (r: ListModel a) end"
-                            actionVal <- qEvalExpr actionExpr
-                            qUnifyValue @(Action (LangWholeModel '( [Integer], [Integer]))) actionVal
-                    testerLiftAction $ do
-                        wr <- action
-                        langWholeModelSet wr $ Known [10, 20]
-                        l <- langWholeModelGet wr
-                        if l == [10, 20]
-                            then return ()
-                            else fail $ "different: " <> show l
-              , testTree "t6" $
-                runTester defaultTester $ do
-                    action <-
-                        testerLiftInterpreter $ do
-                            a1Expr <-
-                                return $
-                                qConstExpr ((>>=) newMemListModel :: (LangListModel '( A, A) -> Action B) -> Action B)
-                            a2Expr <-
-                                parseTopExpression "fn r => (return (r,r): Action (ListModel a *: WholeModel (List a)))"
-                            actionExpr <- qApplyExpr a1Expr a2Expr
-                            actionVal <- qEvalExpr actionExpr
-                            qUnifyValue
-                                @(Action (LangListModel '( Integer, Integer), LangWholeModel '( [Integer], [Integer])))
-                                actionVal
-                    testerLiftAction $ do
-                        (_r', wr') <- action
-                        langWholeModelSet wr' $ Known [10, 20]
-                        l <- langWholeModelGet wr'
-                        if l == [10, 20]
-                            then return ()
-                            else fail $ "different: " <> show l
               , testTree "t5" $
                 runTester defaultTester $ do
                     r <- testerLiftAction $ newMemListModel @A

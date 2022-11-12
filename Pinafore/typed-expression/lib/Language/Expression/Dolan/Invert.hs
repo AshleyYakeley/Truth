@@ -22,7 +22,7 @@ minimalPositiveSupertypeSingular ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanSingularType ground 'Negative a
     -> Maybe (DolanShimWit ground 'Positive a)
-minimalPositiveSupertypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
+minimalPositiveSupertypeSingular (VarDolanSingularType _) = Nothing
 minimalPositiveSupertypeSingular (GroundedDolanSingularType t) = minimalPositiveSupertypeGrounded t
 minimalPositiveSupertypeSingular (RecursiveDolanSingularType var t) = do
     t' <- minimalPositiveSupertype t
@@ -49,7 +49,7 @@ maximalNegativeSubtypeSingular ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanSingularType ground 'Positive a
     -> Maybe (DolanShimWit ground 'Negative a)
-maximalNegativeSubtypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
+maximalNegativeSubtypeSingular (VarDolanSingularType _) = Nothing
 maximalNegativeSubtypeSingular (GroundedDolanSingularType t) = maximalNegativeSubtypeGrounded t
 maximalNegativeSubtypeSingular (RecursiveDolanSingularType var t) = do
     t' <- maximalNegativeSubtype t
