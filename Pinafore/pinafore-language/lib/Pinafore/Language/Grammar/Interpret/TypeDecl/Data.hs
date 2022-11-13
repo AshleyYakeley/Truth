@@ -192,7 +192,6 @@ getConsSubtypeData ::
        TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [TypeData dv t]
-getConsSubtypeData _ (MkSyntaxWithDoc _ (ConstructorSyntaxConstructorOrSubtype _ _ _)) = return mempty
 getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
     ssubtid <- newMatchingTypeID @dv
     case (tdID superTD, ssubtid) of
@@ -205,6 +204,7 @@ getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubty
                     subTD = MkTypeData subMTID (Just superTD) subtypes tname doc
                 subtdata <- getConssSubtypeData subTD conss
             return $ subTD : subtdata
+getConsSubtypeData _ _ = return mempty
 
 getConssSubtypeData ::
        TypeData dv t -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> QInterpreter [TypeData dv t]
@@ -233,6 +233,8 @@ getConstructor ::
     -> QInterpreter [Constructor dv t extra]
 getConstructor _ typeNM (MkSyntaxWithDoc doc (ConstructorSyntaxConstructorOrSubtype consName stypes extra)) =
     return $ pure $ MkConstructor consName doc typeNM (fromList stypes) extra
+getConstructor _ _typeNM (MkSyntaxWithDoc _doc (RecordSyntaxConstructorOrSubtype _consName _sigs)) =
+    throw $ KnownIssueError 150 "NYI"
 getConstructor tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes)) = do
     subtypeTD <- typeDataLookup tdata subtypeName
     getConstructors tdata subtypeTD stypes

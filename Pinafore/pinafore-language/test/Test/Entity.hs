@@ -971,6 +971,31 @@ testEntity =
                     , testExpectSuccess
                           "let rec datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end end in pass"
                     ]
+              , tGroup
+                    "record-constructor"
+                    [ tGroup
+                          "rank-1"
+                          [ tDecls ["datatype R of MkR of di: Integer end end"] $
+                            tGroup
+                                "one"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq {22} {(let di = 22 in MkR) >- fn MkR => di}"
+                                , testExpectSuccess
+                                      "let f: Integer -> R = fn di => MkR; g: R -> Integer = fn MkR => di; in testeq {17} {g $ f 17}"
+                                ]
+                          , tDecls ["datatype R of MkR of di: Integer; dt: Text end end"] $
+                            tGroup
+                                "two"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess
+                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Integer = fn MkR => di; in testeq {17} {g $ f 17}"
+                                , testExpectSuccess
+                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Text = fn MkR => dT; in testeq {\"t\"} {g $ f 17}"
+                                ]
+                          ]
+                    , tDecls ["datatype R of MkR of df: (A -> A) -> A -> A end end"] $
+                      tGroup "rank-2" [testExpectSuccess "pass"]
+                    ]
               ]
         , tGroup
               "subtype-decl"

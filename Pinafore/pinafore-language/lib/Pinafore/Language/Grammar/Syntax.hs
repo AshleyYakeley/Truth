@@ -14,9 +14,18 @@ data SyntaxConstructorOrSubtype extra
                                             extra
     | SubtypeSyntaxConstructorOrSubtype Name
                                         [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
+    | RecordSyntaxConstructorOrSubtype Name
+                                       [SyntaxSignature]
     deriving (Eq)
 
 type SyntaxClosedEntityConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
+
+data SyntaxSignature' =
+    ValueSyntaxSignature Name
+                         SyntaxType
+    deriving (Eq)
+
+type SyntaxSignature = SyntaxWithDoc (WithSourcePos SyntaxSignature')
 
 data SyntaxTypeParameter
     = PositiveSyntaxTypeParameter Name
