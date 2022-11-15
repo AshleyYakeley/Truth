@@ -9,7 +9,6 @@ module Language.Expression.Common.Bindings
     , bindingsRecursiveLetSealedExpression
     ) where
 
-import Data.Shim
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
@@ -75,10 +74,7 @@ singleBound (MkTSBinding name bd mexpr) = do
     MkSealedSubsumerExpression (decltype :: _ tdecl) subsexpr <- mexpr
     let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifierExpression ts (tdecl -> a))
-        abstractNames expr = do
-            MkAbstractResult vwt expr' <- abstractNamedExpression @ts name expr
-            uuconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts decltype) vwt
-            return $ (\conv ta -> ta . shimToFunction conv) <$> uuGetShim @ts uuconv <*> solverExpressionLiftValue expr'
+        abstractNames = abstractExpression @ts name decltype
         getbinds ::
                UnifierSubstitutions ts
             -> SubsumerSubstitutions ts

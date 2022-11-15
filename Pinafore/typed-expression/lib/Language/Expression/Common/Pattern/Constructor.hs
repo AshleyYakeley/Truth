@@ -20,7 +20,7 @@ toPatternConstructor ::
     -> ListType poswit lt
     -> PurityFunction Maybe t (ListProduct lt)
     -> PatternConstructor name poswit negwit
-toPatternConstructor nwt tlt f = MkPatternConstructor nwt tlt $ ClosedPattern f
+toPatternConstructor nwt tlt f = MkPatternConstructor nwt tlt $ purityFunctionPattern f
 
 liftListProductPolwit ::
        forall m wit. Applicative m

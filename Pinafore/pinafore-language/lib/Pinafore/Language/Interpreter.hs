@@ -34,6 +34,9 @@ module Pinafore.Language.Interpreter
     , registerType
     , ScopeFixBox
     , FullName(..)
+    , Signature(..)
+    , RecordConstructor(..)
+    , RecordPattern(..)
     , getNameResolver
     , BindingInfo(..)
     , getBindingMap
@@ -45,6 +48,7 @@ module Pinafore.Language.Interpreter
     , getSubtypeConversions
     ) where
 
+import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
@@ -65,6 +69,8 @@ type instance forall (gt :: GroundTypeKind). InterpreterGroundType (DolanTypeSys
 
 type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
 
+type InterpreterType (ts :: Type) = DolanType (InterpreterGroundType ts)
+
 type InterpreterBoundType (ts :: Type) = SomeGroundType (InterpreterGroundType ts)
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
@@ -72,11 +78,27 @@ newtype SpecialVals (ts :: Type) = MkSpecialVals
         -- ^ in Action because this can do things like import files
     }
 
+data Signature (ts :: Type) (polarity :: Polarity) (t :: Type) =
+    ValueSignature Name
+                   (InterpreterType ts polarity t)
+
+data RecordConstructor (ts :: Type) =
+    forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListType (Signature ts 'Negative) tt)
+                                                           (InterpreterType ts 'Positive t)
+                                                           (ListVProduct tt -> t)
+
+data RecordPattern (ts :: Type) =
+    forall (t :: Type) (tt :: [Type]). MkRecordPattern (ListType (Signature ts 'Positive) tt)
+                                                       (InterpreterType ts 'Negative t)
+                                                       (t -> Maybe (ListVProduct tt))
+
 data InterpreterBinding (ts :: Type)
     = LambdaBinding VarID
     | ValueBinding (TSSealedExpression ts)
                    (Maybe (TSExpressionPatternConstructor ts))
     | TypeBinding (InterpreterBoundType ts)
+    | RecordConstructorBinding (RecordConstructor ts)
+                               (RecordPattern ts)
     | SpecialFormBinding (SpecialForm ts (Interpreter ts))
 
 instance Show (InterpreterBinding ts) where
@@ -84,6 +106,7 @@ instance Show (InterpreterBinding ts) where
     show (ValueBinding _ Nothing) = "val"
     show (ValueBinding _ (Just _)) = "val+pat"
     show (TypeBinding _) = "type"
+    show (RecordConstructorBinding _ _) = "recordpat"
     show (SpecialFormBinding _) = "special"
 
 type DocInterpreterBinding ts = (Markdown, InterpreterBinding ts)
@@ -561,15 +584,18 @@ lookupBoundType name = do
         Just nt -> return nt
         Nothing -> throw $ LookupTypeUnknownError name
 
-lookupPatternConstructorM :: FullNameRef -> Interpreter ts (Maybe (TSExpressionPatternConstructor ts))
+lookupPatternConstructorM ::
+       FullNameRef -> Interpreter ts (Maybe (Either (TSExpressionPatternConstructor ts) (RecordPattern ts)))
 lookupPatternConstructorM name = do
     mb <- lookupBinding name
     return $
         case mb of
-            Just (ValueBinding _ (Just pc)) -> Just pc
+            Just (ValueBinding _ (Just pc)) -> Just $ Left pc
+            Just (RecordConstructorBinding _ rp) -> Just $ Right rp
             _ -> Nothing
 
-lookupPatternConstructor :: FullNameRef -> Interpreter ts (TSExpressionPatternConstructor ts)
+lookupPatternConstructor ::
+       FullNameRef -> Interpreter ts (Either (TSExpressionPatternConstructor ts) (RecordPattern ts))
 lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM name
     case ma of

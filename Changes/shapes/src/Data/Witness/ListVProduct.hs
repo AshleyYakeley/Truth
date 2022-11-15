@@ -14,6 +14,7 @@ module Data.Witness.ListVProduct
     , listTypeToVType
     , listProductToVProduct
     , listVProductToProduct
+    , listVProductGetters
     ) where
 
 import Shapes.Import
@@ -198,3 +199,15 @@ typicalListToListProduct (a:aa) =
 
 listVProductToProduct :: forall (tt :: [Type]). ListVProduct tt -> ListProduct tt
 listVProductToProduct (MkListVProduct v) = typicalListToListProduct $ toList v
+
+getItem :: Int -> ListVProduct tt -> Typical tt
+getItem i (MkListVProduct v) = indexEx v i
+
+getters :: (Typical tt ~ Typical tt') => Int -> ListType w tt -> ListType ((->) (ListVProduct tt')) tt
+getters _ NilListType = NilListType
+getters i (ConsListType (_ :: _ a) (tt :: _ aa)) =
+    case (typicalHeadRefl @a @aa, typicalTailRefl @a @aa) of
+        (Refl, Refl) -> ConsListType (getItem i) $ getters (succ i) tt
+
+listVProductGetters :: forall (tt :: [Type]) w. ListType w tt -> ListType ((->) (ListVProduct tt)) tt
+listVProductGetters = getters 0

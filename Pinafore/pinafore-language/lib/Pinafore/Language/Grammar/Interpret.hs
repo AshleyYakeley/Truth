@@ -32,10 +32,11 @@ import Shapes
 
 type instance EntryDoc QTypeSystem = DefDoc
 
-interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (QPatternConstructor)
+interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordPattern)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
+    Left $
     qToPatternConstructor $
     ImpureFunction $ \v' ->
         if v == v'
@@ -43,13 +44,36 @@ interpretPatternConstructor (SLNumber v) =
             else Nothing
 interpretPatternConstructor (SLString v) =
     return $
+    Left $
     qToPatternConstructor $
     ImpureFunction $ \v' ->
         if v == v'
             then Just ()
             else Nothing
-interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ PureFunction $ \() -> ()
-interpretPatternConstructor SLPair = return $ qToPatternConstructor $ PureFunction $ \(a :: A, b :: B) -> (a, (b, ()))
+interpretPatternConstructor SLUnit = return $ Left $ qToPatternConstructor $ PureFunction $ \() -> ()
+interpretPatternConstructor SLPair =
+    return $ Left $ qToPatternConstructor $ PureFunction $ \(a :: A, b :: B) -> (a, (b, ()))
+
+recordNameWitnesses ::
+       ListType (QSignature 'Positive) tt
+    -> ScopeBuilder [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
+recordNameWitnesses lt =
+    listTypeFor (pairListType lt $ listVProductGetters lt) $ \case
+        MkPairType (ValueSignature name t) f -> do
+            (_, vid) <- allocateVarScopeBuilder $ Just $ UnqualifiedFullNameRef name
+            return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
+
+mkRecordPattern :: ListType (QSignature 'Positive) tt -> ScopeBuilder (QOpenPattern (Maybe (ListVProduct tt)) ())
+mkRecordPattern ww = do
+    sff <- recordNameWitnesses ww
+    return $ MkPattern sff $ ImpureFunction $ fmap $ \a -> (a, ())
+
+constructPattern :: Either QPatternConstructor QRecordPattern -> [QPattern] -> ScopeBuilder QPattern
+constructPattern (Left pc) pats = lift $ liftRefNotation $ qConstructPattern pc pats
+constructPattern (Right _) (_:_) = lift $ throw PatternTooManyConsArgsError
+constructPattern (Right (MkRecordPattern sigs tt decode)) [] = do
+    pat <- mkRecordPattern sigs
+    return $ MkSealedPattern (MkExpressionWitness (mkShimWit tt) $ pure ()) $ pat . arr (decode . meet1)
 
 interpretPattern' :: SyntaxPattern' -> ScopeBuilder QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
@@ -63,7 +87,7 @@ interpretPattern' (BothSyntaxPattern spat1 spat2) = do
 interpretPattern' (ConstructorSyntaxPattern scons spats) = do
     pc <- lift $ liftRefNotation $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
-    pat@(MkSealedPattern (MkExpressionWitness tw vexpr) patw) <- lift $ liftRefNotation $ qConstructPattern pc pats
+    pat@(MkSealedPattern (MkExpressionWitness tw vexpr) patw) <- constructPattern pc pats
     return $
         case getOptGreatestDynamicSupertypeSW tw of
             Nothing -> pat

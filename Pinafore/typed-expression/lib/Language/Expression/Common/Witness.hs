@@ -19,8 +19,6 @@ instance Category cat => Category (WitnessConvert cat) where
     (MkWitnessConvert m2) . (MkWitnessConvert m1) =
         MkWitnessConvert $ \wt0 cont -> m1 wt0 $ \wt1 c1 -> m2 wt1 $ \wt2 c2 -> cont wt2 $ c2 . c1
 
-type WitnessSubstitution k (a :: k -> Type) (b :: k -> Type) = WitnessConvert KindBijection a b
-
 hoistWitnessConvert :: (forall a b. cat1 a b -> cat2 a b) -> WitnessConvert cat1 w1 w2 -> WitnessConvert cat2 w1 w2
 hoistWitnessConvert mm (MkWitnessConvert f) = MkWitnessConvert $ \p call -> f p $ \q m -> call q $ mm m
 
@@ -34,3 +32,5 @@ listWitnessConvert (MkWitnessConvert f) =
         go NilListType call = call NilListType NilListCat
         go (ConsListType a aa) call = f a $ \b m -> go aa $ \bb mm -> call (ConsListType b bb) (ConsListCat m mm)
         in go
+
+type WitnessSubstitution k (a :: k -> Type) (b :: k -> Type) = WitnessConvert KindBijection a b
