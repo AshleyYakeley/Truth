@@ -990,7 +990,7 @@ testEntity =
                                 , testExpectSuccess
                                       "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Integer = fn MkR => di; in testeq {17} {g $ f 17}"
                                 , testExpectSuccess
-                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Text = fn MkR => dT; in testeq {\"t\"} {g $ f 17}"
+                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Text = fn MkR => dt; in testeq {\"t\"} {g $ f 17}"
                                 ]
                           ]
                     , tDecls ["datatype R of MkR of df: (a -> a) -> a -> a end end"] $

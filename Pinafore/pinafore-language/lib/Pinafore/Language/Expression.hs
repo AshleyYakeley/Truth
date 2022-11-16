@@ -28,9 +28,9 @@ qName :: FullNameRef -> QInterpreter QExpression
 qName name = do
     mexpr <- lookupLetBinding name
     case mexpr of
-        Just (Right expr) -> return expr
-        Just (Left v) -> return $ qVarExpr v
-        Nothing -> do
+        Just (ValueBoundValue expr) -> return expr
+        Just (LambdaBoundValue v) -> return $ qVarExpr v
+        _ -> do
             spos <- paramAsk sourcePosParam
             return $ qVarExpr $ mkBadVarID spos name
 

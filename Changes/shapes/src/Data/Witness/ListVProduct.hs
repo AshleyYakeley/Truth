@@ -8,6 +8,7 @@ module Data.Witness.ListVProduct
     , mapListVType
     , mapListMVProduct
     , endoListVProduct
+    , listVProductSequence
     , listVTypeToVector
     , assembleListVType
     , listVTypeToType
@@ -113,6 +114,14 @@ endoListVProduct :: forall tt. ListVProduct (MapType Endo tt) -> Endo (ListVProd
 endoListVProduct (MkListVProduct vf) =
     case mapTypeTypicalRefl @Endo @tt of
         Refl -> Endo $ \(MkListVProduct va) -> MkListVProduct $ zipWith (\(Endo f) a -> f a) vf va
+
+listVProductSequence ::
+       forall f tt. Applicative f
+    => ListVType f tt
+    -> f (ListVProduct tt)
+listVProductSequence (MkListVType (MkListVProduct v)) =
+    case mapTypeTypicalRefl @f @tt of
+        Refl -> fmap MkListVProduct $ sequenceA v
 
 listVTypeToVector :: forall (w :: Type -> Type) t r. (forall a. w a -> r) -> ListVType w t -> Vector r
 listVTypeToVector wr (MkListVType (MkListVProduct v)) =

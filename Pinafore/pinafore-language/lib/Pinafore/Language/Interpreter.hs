@@ -22,6 +22,7 @@ module Pinafore.Language.Interpreter
     , usingNamespace
     , SpecialVals(..)
     , getSpecialVals
+    , BoundValue(..)
     , lookupLetBinding
     , registerLetBindings
     , registerLetBinding
@@ -543,12 +544,18 @@ registerBindings bb = do
 getSpecialVals :: Interpreter ts (SpecialVals ts)
 getSpecialVals = paramAsk specialValsParam
 
-lookupLetBinding :: FullNameRef -> Interpreter ts (Maybe (Either VarID (TSSealedExpression ts)))
+data BoundValue ts
+    = LambdaBoundValue VarID
+    | ValueBoundValue (TSSealedExpression ts)
+    | RecordBoundValue (RecordConstructor ts)
+
+lookupLetBinding :: FullNameRef -> Interpreter ts (Maybe (BoundValue ts))
 lookupLetBinding name = do
     mb <- lookupBinding name
     case mb of
-        Just (ValueBinding exp _) -> return $ Just $ Right exp
-        Just (LambdaBinding v) -> return $ Just $ Left v
+        Just (ValueBinding exp _) -> return $ Just $ ValueBoundValue exp
+        Just (LambdaBinding v) -> return $ Just $ LambdaBoundValue v
+        Just (RecordConstructorBinding rc _) -> return $ Just $ RecordBoundValue rc
         _ -> return Nothing
 
 registerLetBindings ::

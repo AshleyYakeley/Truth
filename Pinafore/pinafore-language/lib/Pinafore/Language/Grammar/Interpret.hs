@@ -58,7 +58,7 @@ recordNameWitnesses ::
        ListType (QSignature 'Positive) tt
     -> ScopeBuilder [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
 recordNameWitnesses lt =
-    listTypeFor (pairListType lt $ listVProductGetters lt) $ \case
+    listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
         MkPairType (ValueSignature name t) f -> do
             (_, vid) <- allocateVarScopeBuilder $ Just $ UnqualifiedFullNameRef name
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
@@ -321,11 +321,22 @@ interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
 interpretDeclarations :: [SyntaxDeclaration] -> RefNotation --> RefNotation
 interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
+interpretRecordConstructor :: QRecordConstructor -> RefExpression
+interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
+    expr <-
+        liftRefNotation $
+        listTypeFor items $ \case
+            ValueSignature iname itype -> do
+                iexpr <- qName $ UnqualifiedFullNameRef iname
+                typedSubsumeExpressionToOpen itype iexpr
+    return $ MkSealedExpression vtype $ fmap conv $ listVProductSequence $ listTypeToVType expr
+
 interpretNamedConstructor :: FullNameRef -> RefExpression
 interpretNamedConstructor n = do
     me <- liftRefNotation $ lookupLetBinding n
     case me of
-        Just (Right e) -> return e
+        Just (ValueBoundValue e) -> return e
+        Just (RecordBoundValue rc) -> interpretRecordConstructor rc
         _ -> throw $ InterpretConstructorUnknownError n
 
 interpretConstructor :: SyntaxConstructor -> RefExpression

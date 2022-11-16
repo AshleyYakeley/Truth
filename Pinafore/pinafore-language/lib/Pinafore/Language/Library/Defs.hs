@@ -117,7 +117,7 @@ getTypeParameter RangeCCRVarianceType = do
     return $ RangeSyntaxTypeParameter vn vp
 
 getTypeParameters :: [Name] -> DolanVarianceType dv -> [Text]
-getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeFor dvt getTypeParameter) supply
+getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeForList dvt getTypeParameter) supply
 
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
