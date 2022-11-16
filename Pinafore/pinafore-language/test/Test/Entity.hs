@@ -993,7 +993,7 @@ testEntity =
                                       "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Text = fn MkR => dT; in testeq {\"t\"} {g $ f 17}"
                                 ]
                           ]
-                    , tDecls ["datatype R of MkR of df: (A -> A) -> A -> A end end"] $
+                    , tDecls ["datatype R of MkR of df: (a -> a) -> a -> a end end"] $
                       tGroup "rank-2" [testExpectSuccess "pass"]
                     ]
               ]

@@ -44,6 +44,7 @@ module Pinafore.Language.Interpreter
     , InterpreterBinding(..)
     , lookupPatternConstructor
     , registerPatternConstructor
+    , registerRecord
     , registerSubtypeConversion
     , getSubtypeConversions
     ) where
@@ -71,6 +72,8 @@ type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
 
 type InterpreterType (ts :: Type) = DolanType (InterpreterGroundType ts)
 
+type InterpreterShimWit (ts :: Type) (polarity :: Polarity) = DolanShimWit (InterpreterGroundType ts) polarity
+
 type InterpreterBoundType (ts :: Type) = SomeGroundType (InterpreterGroundType ts)
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
@@ -83,13 +86,13 @@ data Signature (ts :: Type) (polarity :: Polarity) (t :: Type) =
                    (InterpreterType ts polarity t)
 
 data RecordConstructor (ts :: Type) =
-    forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListType (Signature ts 'Negative) tt)
-                                                           (InterpreterType ts 'Positive t)
+    forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListType (Signature ts 'Positive) tt)
+                                                           (InterpreterShimWit ts 'Positive t)
                                                            (ListVProduct tt -> t)
 
 data RecordPattern (ts :: Type) =
     forall (t :: Type) (tt :: [Type]). MkRecordPattern (ListType (Signature ts 'Positive) tt)
-                                                       (InterpreterType ts 'Negative t)
+                                                       (InterpreterShimWit ts 'Negative t)
                                                        (t -> Maybe (ListVProduct tt))
 
 data InterpreterBinding (ts :: Type)
@@ -614,25 +617,35 @@ withNewTypeID call = do
     case stid of
         MkSome tid -> call tid
 
-registerBoundType :: FullNameRef -> Markdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
-registerBoundType name doc t = do
+checkName :: FullNameRef -> ScopeInterpreter ts ()
+checkName name = do
     mnt <- lift $ lookupBinding name
     case mnt of
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
-        Nothing -> registerBinding name (doc, TypeBinding t)
+        Nothing -> return ()
+
+registerBoundType :: FullNameRef -> Markdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
+registerBoundType name doc t = do
+    checkName name
+    registerBinding name (doc, TypeBinding t)
 
 registerType :: FullNameRef -> Markdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
-registerType name doc t = registerBoundType name doc $ MkSomeGroundType t
+registerType name doc t = do
+    checkName name
+    registerBoundType name doc $ MkSomeGroundType t
 
 type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 
 registerPatternConstructor ::
        FullNameRef -> Markdown -> TSSealedExpression ts -> TSExpressionPatternConstructor ts -> ScopeInterpreter ts ()
 registerPatternConstructor name doc exp pc = do
-    ma <- lift $ lookupBinding name
-    case ma of
-        Just _ -> lift $ throw $ DeclareConstructorDuplicateError name
-        Nothing -> registerBinding name $ (doc, ValueBinding exp $ Just pc)
+    checkName name
+    registerBinding name $ (doc, ValueBinding exp $ Just pc)
+
+registerRecord :: FullNameRef -> Markdown -> RecordConstructor ts -> RecordPattern ts -> ScopeInterpreter ts ()
+registerRecord name doc rc rp = do
+    checkName name
+    registerBinding name $ (doc, RecordConstructorBinding rc rp)
 
 registerSubtypeConversion ::
        forall ts. HasInterpreter ts

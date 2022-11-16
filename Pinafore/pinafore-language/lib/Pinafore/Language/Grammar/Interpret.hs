@@ -73,7 +73,7 @@ constructPattern (Left pc) pats = lift $ liftRefNotation $ qConstructPattern pc 
 constructPattern (Right _) (_:_) = lift $ throw PatternTooManyConsArgsError
 constructPattern (Right (MkRecordPattern sigs tt decode)) [] = do
     pat <- mkRecordPattern sigs
-    return $ MkSealedPattern (MkExpressionWitness (mkShimWit tt) $ pure ()) $ pat . arr (decode . meet1)
+    return $ MkSealedPattern (MkExpressionWitness tt $ pure ()) $ pat . arr (decode . meet1)
 
 interpretPattern' :: SyntaxPattern' -> ScopeBuilder QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
@@ -495,7 +495,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                     _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
             _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 
-nonpolarSimpleEntityType :: PinaforeNonpolarType t -> QInterpreter (QGroundType '[] t, EntityGroundType t)
+nonpolarSimpleEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, EntityGroundType t)
 nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t

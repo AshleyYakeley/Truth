@@ -59,6 +59,7 @@ data ErrorType
     | InterpretTypeDeclTypeVariableWrongPolarityError Name
                                                       Name
     | InterpretTypeDeclTypeVariableNotCovariantError Name
+    | InterpretTypeDeclTypeClosedEntityRecord
     | InterpretSubtypeInconsistent Text
                                    Text
     | ModuleNotFoundError ModuleName
@@ -153,6 +154,7 @@ instance Show ErrorType where
         "wrong polarity of type variable " <> show v <> " in declaration of " <> show n
     show (InterpretTypeDeclTypeVariableNotCovariantError n) =
         "type variable is not covariant in declaration of " <> show n
+    show InterpretTypeDeclTypeClosedEntityRecord = "record constructor not allowed in closed entity type"
     show (InterpretSubtypeInconsistent ta tb) =
         "subtype relation is inconsistent with existing subtype relation " <> unpack ta <> " <: " <> unpack tb
     show (ModuleNotFoundError mname) = "can't find module " <> show mname
