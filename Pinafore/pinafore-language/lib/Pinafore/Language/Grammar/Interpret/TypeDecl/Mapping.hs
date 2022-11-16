@@ -172,8 +172,8 @@ instance Is PolarityType polarity => HasVarMapping (QSingularType polarity) wher
                        ma <- runVarMapping vm v na
                        return $
                            mkMapping $ \vv -> let
-                               tt = runMapping mr tt
-                               in runMapping ma vv . tt
+                               tt = runMapping ma vv . runMapping mr tt
+                               in tt
                Nothing -> vm
 
 instance Is PolarityType polarity => HasVarMapping (QType polarity) where

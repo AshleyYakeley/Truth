@@ -993,8 +993,32 @@ testEntity =
                                       "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Text = fn MkR => dt; in testeq {\"t\"} {g $ f 17}"
                                 ]
                           ]
-                    , tDecls ["datatype R of MkR of df: (a -> a) -> a -> a end end"] $
-                      tGroup "rank-2" [testExpectSuccess "pass"]
+                    , tDecls
+                          [ "datatype R of MkR of df: (a -> a) -> a -> a end end"
+                          , "twice = fns f x => f (f x)"
+                          , "addone: Integer -> Integer = fn x => x + 1"
+                          ] $
+                      tGroup
+                          "rank-2"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess
+                                "let r:R = let df: (b -> b) -> b -> b = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
+                          , testExpectReject
+                                "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
+                          ]
+                    , tDecls
+                          [ "datatype Rec +a of MkRec of rval: rec r. Maybe (a *: r) end end"
+                          , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"
+                          , "rec3: a -> a -> a -> Rec a = fns x0 x1 x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
+                          , "rec rShow: (rec r. Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <> \",\" <> rShow r end end"
+                          , "recShow: Rec Showable -> Text = fn MkRec => rShow rval"
+                          ] $
+                      tGroup
+                          "recursive"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess
+                                "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57\"} {recShow r2}"
+                          ]
                     ]
               ]
         , tGroup

@@ -914,6 +914,12 @@ testQueries =
                           "let rec rcount : (rec a . Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     ]
+              , ignoreTestBecause "ISSUE #174" $
+                testTree
+                    "contra-var"
+                    [ testQuery "let f: rec r. (r -> Integer) = fn _ => 3 in 0" LRCheckFail
+                    , testQuery "let f: rec r. (r -> r) = fn x => x in 0" LRCheckFail
+                    ]
               ]
         , let
               testSupertype :: Text -> Text -> Text -> Text -> Bool -> TestTree
