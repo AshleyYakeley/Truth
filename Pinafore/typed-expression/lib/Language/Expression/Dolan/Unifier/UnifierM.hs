@@ -2,6 +2,7 @@ module Language.Expression.Dolan.Unifier.UnifierM where
 
 import Control.Applicative.Wrapped
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
@@ -28,10 +29,11 @@ runUnifierM (FailureResult (UninvertibleError t)) = throwTypeNotInvertible t
 
 invertTypeM ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => DolanType ground polarity a
+    => (String -> NameRigidity)
+    -> DolanType ground polarity a
     -> UnifierM ground (DolanShimWit ground (InvertPolarity polarity) a)
-invertTypeM t =
-    case invertTypeMaybe t of
+invertTypeM rigidity t =
+    case invertTypeMaybe rigidity t of
         Just r -> return r
         Nothing -> FailureResult (UninvertibleError t)
 
@@ -39,7 +41,7 @@ invertType ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity a
     -> DolanM ground (DolanShimWit ground (InvertPolarity polarity) a)
-invertType t = runUnifierM $ invertTypeM t
+invertType t = runUnifierM $ invertTypeM (\_ -> RigidName) t
 
 wbindUnifierM ::
        forall (ground :: GroundTypeKind) wit a r. IsDolanSubtypeGroundType ground

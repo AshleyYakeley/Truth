@@ -40,7 +40,6 @@ module Language.Expression.Dolan
     , unFromRangeShimWit
     , biRangeSomeFor
     , SubtypeContext(..)
-    , invertTypeMaybe
     , invertType
     , DolanTypeSystem
     , IsDolanGroundType(..)
@@ -56,7 +55,7 @@ import Language.Expression.Dolan.Argument as I
 import Language.Expression.Dolan.Arguments as I
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Covariance
-import Language.Expression.Dolan.Invert
+import Language.Expression.Dolan.FreeVars as I
 import Language.Expression.Dolan.MPolarity
 import Language.Expression.Dolan.Mono as I
 import Language.Expression.Dolan.Nonpolar as I

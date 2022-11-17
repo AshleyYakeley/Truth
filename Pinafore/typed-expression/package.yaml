@@ -52,6 +52,7 @@ library:
       - Language.Expression.Common.Bindings
       - Language.Expression.Common.CompleteTypeSystem
       - Language.Expression.Common.Arguments
+      - Language.Expression.Dolan.FreeVars
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance
       - Language.Expression.Dolan.Variance

@@ -5,6 +5,7 @@ module Language.Expression.Dolan.Type where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
@@ -101,6 +102,10 @@ data DolanType ground polarity t where
         -> DolanType ground polarity tr
         -> DolanType ground polarity (JoinMeetType polarity t1 tr)
 
+instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanType ground polarity t) where
+    freeTypeVariables NilDolanType = mempty
+    freeTypeVariables (ConsDolanType t1 tr) = freeTypeVariables t1 <> freeTypeVariables tr
+
 type DolanTypeSub :: GroundTypeKind -> Polarity -> (Type -> Type) -> Constraint
 class Is PolarityType polarity => DolanTypeSub ground polarity w | w -> ground polarity where
     typeToDolan ::
@@ -162,6 +167,9 @@ data DolanGroundedType ground polarity t where
         -> DolanArguments dv (DolanType ground) gt polarity t
         -> DolanGroundedType ground polarity t
 
+instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanGroundedType ground polarity t) where
+    freeTypeVariables (MkDolanGroundedType _ args) = freeTypeVariables args
+
 type DolanGroundedShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanGroundedShimWit ground polarity = PShimWit (DolanShim ground) (DolanGroundedType ground) polarity
 
@@ -192,6 +200,11 @@ data DolanSingularType ground polarity t where
            SymbolType name
         -> DolanType ground polarity (UVarT name)
         -> DolanSingularType ground polarity (UVarT name)
+
+instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanSingularType ground polarity t) where
+    freeTypeVariables (GroundedDolanSingularType t) = freeTypeVariables t
+    freeTypeVariables (VarDolanSingularType n) = freeTypeVariables n
+    freeTypeVariables (RecursiveDolanSingularType v t) = difference (freeTypeVariables t) (freeTypeVariables v)
 
 instance forall (ground :: GroundTypeKind) polarity. Is PolarityType polarity =>
              DolanTypeSub ground polarity (DolanSingularType ground polarity) where

@@ -328,7 +328,7 @@ interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
         listTypeFor items $ \case
             ValueSignature iname itype -> do
                 iexpr <- qName $ UnqualifiedFullNameRef iname
-                typedSubsumeExpressionToOpen itype iexpr
+                typedSubsumeExpressionToOpen (freeTypeVariables vtype) itype iexpr
     return $ MkSealedExpression vtype $ fmap conv $ listVProductSequence $ listTypeToVType expr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression
@@ -497,7 +497,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                         body <- lift $ interpretTopExpression sbody
                         case funcWit of
                             MkShimWit funcType iconv -> do
-                                convexpr <- lift $ typedSubsumeExpressionToOpen funcType body
+                                convexpr <- lift $ typedSubsumeExpressionToOpen mempty funcType body
                                 registerSubtypeConversion $
                                     subtypeConversionEntry trustme gta gtb $
                                     fmap

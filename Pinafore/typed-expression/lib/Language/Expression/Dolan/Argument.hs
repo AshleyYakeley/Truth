@@ -1,6 +1,7 @@
 module Language.Expression.Dolan.Argument where
 
 import Data.Shim
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.PShimWit
 import Shapes
 
@@ -23,6 +24,12 @@ data CCRPolarArgument ft polarity sv t where
     ContraCCRPolarArgument :: ft (InvertPolarity polarity) t -> CCRPolarArgument ft polarity ContraCCRVariance t
     RangeCCRPolarArgument
         :: ft (InvertPolarity polarity) p -> ft polarity q -> CCRPolarArgument ft polarity 'RangeCCRVariance '( p, q)
+
+instance (forall polarity' t'. FreeTypeVariables (ft polarity' t')) =>
+             FreeTypeVariables (CCRPolarArgument ft polarity sv t) where
+    freeTypeVariables (CoCCRPolarArgument t) = freeTypeVariables t
+    freeTypeVariables (ContraCCRPolarArgument t) = freeTypeVariables t
+    freeTypeVariables (RangeCCRPolarArgument p q) = freeTypeVariables p <> freeTypeVariables q
 
 instance forall ft polarity. (TestEquality (ft 'Positive), TestEquality (ft 'Negative), Is PolarityType polarity) =>
              IsCCRArg (CCRPolarArgument ft polarity) where

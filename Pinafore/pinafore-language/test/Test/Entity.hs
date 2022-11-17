@@ -1006,6 +1006,62 @@ testEntity =
                           , testExpectReject
                                 "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
                           ]
+                    , tGroup
+                          "inversion"
+                          [ tDecls
+                                [ "datatype W +a of MkW a end"
+                                , "wrap: a -> W a = MkW"
+                                , "unwrap: W a -> a = fn (MkW val) => val"
+                                ] $
+                            tGroup
+                                "plain"
+                                [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                          , tGroup
+                                "record"
+                                [ tDecls
+                                      [ "datatype W +p of MkW of val: p end end"
+                                      , "wrap: x -> W x = fn val => MkW"
+                                      , "unwrap: W y -> y = fn MkW => val"
+                                      ] $
+                                  tGroup
+                                      "id"
+                                      [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                                , tDecls
+                                      [ "datatype W +p of MkW of val: p end end"
+                                      , "wrap: x -> W x = fn v => let val = v in MkW"
+                                      , "unwrap: W y -> y = fn MkW => val"
+                                      ] $
+                                  tGroup
+                                      "let"
+                                      [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                                , tDecls
+                                      [ "datatype W +p of MkW of val: Maybe p end end"
+                                      , "wrap: Maybe x -> W x = fn val => MkW"
+                                      , "unwrap: W y -> Maybe y = fn MkW => val"
+                                      ] $
+                                  tGroup
+                                      "Maybe"
+                                      [ testExpectSuccess "pass"
+                                      , testExpectSuccess "testeq {Just 374} {unwrap $ wrap $ Just 374}"
+                                      ]
+                                , tDecls
+                                      [ "datatype R +p of MkR of val: q -> (q *: p) end end"
+                                      , "f = fn x => let val = fn y => (y,x) in MkR"
+                                      ] $
+                                  tGroup
+                                      "infer-var"
+                                      [testExpectSuccess "pass", testExpectSuccess $ isOfType "f" "a -> R a"]
+                                , tDecls
+                                      [ "datatype R +p of MkR of val: q -> (q *: p) end end"
+                                      , "f = fn x => let val = fn y => (y,x+1) in MkR"
+                                      ] $
+                                  tGroup
+                                      "infer-Integer"
+                                      [ testExpectSuccess "pass"
+                                      , testExpectSuccess $ isOfType "f" "Integer -> R Integer"
+                                      ]
+                                ]
+                          ]
                     , tDecls
                           [ "datatype Rec +a of MkRec of rval: rec r. Maybe (a *: r) end end"
                           , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"

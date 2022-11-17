@@ -62,7 +62,9 @@ traceBracketArgs s args showr ma = do
 traceBracket_ :: MonadIO m => String -> m r -> m r
 traceBracket_ s = traceBracketArgs s "" (\_ -> "")
 
-traceBracket :: (MonadException m, MonadIO m, Show (Exc m)) => String -> m r -> m r
+type DebugMonadIO m = (MonadException m, Show (Exc m), MonadIO m)
+
+traceBracket :: DebugMonadIO m => String -> m r -> m r
 traceBracket s ma = do
     traceIOM $ s ++ " ["
     catchExc
@@ -87,12 +89,7 @@ traceEvaluate s a = liftIO $ traceBracket ("evaluate " <> s) $ evaluate a
 traceBarrier_ :: (MonadIO m1, MonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
 traceBarrier_ s tr ma = traceBracket_ (contextStr s "outside") $ tr $ traceBracket_ (contextStr s "inside") ma
 
-traceBarrier ::
-       (MonadException m1, MonadIO m1, Show (Exc m1), MonadException m2, MonadIO m2, Show (Exc m2))
-    => String
-    -> (m1 a -> m2 b)
-    -> m1 a
-    -> m2 b
+traceBarrier :: (DebugMonadIO m1, DebugMonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
 traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket (contextStr s "inside") ma
 
 {-# NOINLINE tracePure #-}

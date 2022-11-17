@@ -3,6 +3,7 @@ module Language.Expression.Dolan.Invert
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Subtype
@@ -10,65 +11,81 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-minimalPositiveSupertypeGrounded ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+invertPositiveGrounded ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => DolanGroundedType ground 'Negative a
     -> Maybe (DolanShimWit ground 'Positive a)
-minimalPositiveSupertypeGrounded (MkDolanGroundedType gt args) = do
-    MkShimWit args' conv <- mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceMap gt) args
+invertPositiveGrounded (MkDolanGroundedType gt args) = do
+    MkShimWit args' conv <- mapInvertDolanArgumentsM invertPolarType (groundTypeVarianceMap gt) args
     return $ shimWitToDolan $ MkShimWit (MkDolanGroundedType gt args') conv
 
-minimalPositiveSupertypeSingular ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+invertPositiveSingular ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => DolanSingularType ground 'Negative a
     -> Maybe (DolanShimWit ground 'Positive a)
-minimalPositiveSupertypeSingular (VarDolanSingularType _) = Nothing
-minimalPositiveSupertypeSingular (GroundedDolanSingularType t) = minimalPositiveSupertypeGrounded t
-minimalPositiveSupertypeSingular (RecursiveDolanSingularType var t) = do
-    t' <- minimalPositiveSupertype t
+invertPositiveSingular (VarDolanSingularType v) =
+    case ?rigidity $ witnessToValue v of
+        FreeName -> Just $ varDolanShimWit v
+        RigidName -> Nothing
+invertPositiveSingular (GroundedDolanSingularType t) = invertPositiveGrounded t
+invertPositiveSingular (RecursiveDolanSingularType var t) = do
+    t' <- invertPositiveType t
     return $ shimWitToDolan $ recursiveDolanShimWit var t'
 
-minimalPositiveSupertype ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+invertPositiveType ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => DolanType ground 'Negative a
     -> Maybe (DolanShimWit ground 'Positive a)
-minimalPositiveSupertype (ConsDolanType t NilDolanType) = do
-    tf <- minimalPositiveSupertypeSingular t
+invertPositiveType (ConsDolanType t NilDolanType) = do
+    tf <- invertPositiveSingular t
     return $ ccontramap @_ @_ @(DolanShim ground) meet1 tf
-minimalPositiveSupertype _ = Nothing
+invertPositiveType _ = Nothing
 
-maximalNegativeSubtypeGrounded ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+invertNegativeGrounded ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => DolanGroundedType ground 'Positive a
     -> Maybe (DolanShimWit ground 'Negative a)
-maximalNegativeSubtypeGrounded (MkDolanGroundedType gt args) = do
-    MkShimWit args' conv <- mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceMap gt) args
+invertNegativeGrounded (MkDolanGroundedType gt args) = do
+    MkShimWit args' conv <- mapInvertDolanArgumentsM invertPolarType (groundTypeVarianceMap gt) args
     return $ shimWitToDolan $ MkShimWit (MkDolanGroundedType gt args') conv
 
-maximalNegativeSubtypeSingular ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+invertNegativeSingular ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => DolanSingularType ground 'Positive a
     -> Maybe (DolanShimWit ground 'Negative a)
-maximalNegativeSubtypeSingular (VarDolanSingularType _) = Nothing
-maximalNegativeSubtypeSingular (GroundedDolanSingularType t) = maximalNegativeSubtypeGrounded t
-maximalNegativeSubtypeSingular (RecursiveDolanSingularType var t) = do
-    t' <- maximalNegativeSubtype t
+invertNegativeSingular (VarDolanSingularType v) =
+    case ?rigidity $ witnessToValue v of
+        FreeName -> Just $ varDolanShimWit v
+        RigidName -> Nothing
+invertNegativeSingular (GroundedDolanSingularType t) = invertNegativeGrounded t
+invertNegativeSingular (RecursiveDolanSingularType var t) = do
+    t' <- invertNegativeType t
     return $ shimWitToDolan $ recursiveDolanShimWit var t'
 
-maximalNegativeSubtype ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+invertNegativeType ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => DolanType ground 'Positive a
     -> Maybe (DolanShimWit ground 'Negative a)
-maximalNegativeSubtype (ConsDolanType t NilDolanType) = do
-    tf <- maximalNegativeSubtypeSingular t
+invertNegativeType (ConsDolanType t NilDolanType) = do
+    tf <- invertNegativeSingular t
     return $ cfmap @_ @_ @(DolanShim ground) join1 tf
-maximalNegativeSubtype _ = Nothing
+invertNegativeType _ = Nothing
+
+invertPolarType ::
+       forall (ground :: GroundTypeKind) polarity a.
+       (IsDolanSubtypeGroundType ground, Is PolarityType polarity, ?rigidity :: String -> NameRigidity)
+    => DolanType ground polarity a
+    -> Maybe (DolanShimWit ground (InvertPolarity polarity) a)
+invertPolarType =
+    case polarityType @polarity of
+        PositiveType -> invertNegativeType @ground
+        NegativeType -> invertPositiveType @ground
 
 invertTypeMaybe ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => DolanType ground polarity a
+    => (String -> NameRigidity)
+    -> DolanType ground polarity a
     -> Maybe (DolanShimWit ground (InvertPolarity polarity) a)
-invertTypeMaybe =
-    case polarityType @polarity of
-        PositiveType -> maximalNegativeSubtype @ground
-        NegativeType -> minimalPositiveSupertype @ground
+invertTypeMaybe rigidity = let
+    ?rigidity = rigidity
+    in invertPolarType @ground

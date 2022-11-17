@@ -9,7 +9,6 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     , makeDataTypeBox
     ) where
 
-import qualified Data.List as List
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
@@ -45,13 +44,13 @@ instance HasVarMapping ConstructorType where
 
 type ConstructorCodec t = SomeFor (Codec t) ConstructorType
 
-constructorTypeFreeVariables :: ConstructorFlavour w -> w t -> [Some SymbolType]
-constructorTypeFreeVariables PositionalCF wt = nonpolarTypeFreeVariables wt
-constructorTypeFreeVariables RecordCF _ = []
+constructorTypeFreeVariables :: ConstructorFlavour w -> w t -> FiniteSet (Some SymbolType)
+constructorTypeFreeVariables PositionalCF wt = freeTypeVariables wt
+constructorTypeFreeVariables RecordCF _ = mempty
 
-constructorFreeVariables :: ConstructorCodec t -> [Some SymbolType]
-constructorFreeVariables (MkSomeFor (MkConstructorType cf w) _) =
-    mconcat $ toList $ listVTypeToVector (constructorTypeFreeVariables cf) w
+instance FreeTypeVariables (ConstructorCodec t) where
+    freeTypeVariables (MkSomeFor (MkConstructorType cf w) _) =
+        mconcat $ toList $ listVTypeToVector (constructorTypeFreeVariables cf) w
 
 assembleDataType ::
        forall n.
@@ -337,12 +336,12 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     constructorInnerTypes <- lift $ for constructorFixedList interpretConstructorTypes
                                     assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                         let
-                                            freevars :: [Some SymbolType]
-                                            freevars = nub $ mconcat $ fmap constructorFreeVariables $ toList codecs
+                                            freevars :: FiniteSet (Some SymbolType)
+                                            freevars = mconcat $ fmap freeTypeVariables $ toList codecs
                                             declaredvars :: [Some SymbolType]
                                             declaredvars = tParamsVars tparams
                                             unboundvars :: [Some SymbolType]
-                                            unboundvars = freevars List.\\ declaredvars
+                                            unboundvars = toList freevars \\ declaredvars
                                         case nonEmpty $ duplicates declaredvars of
                                             Nothing -> return ()
                                             Just vv ->

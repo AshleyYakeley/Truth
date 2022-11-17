@@ -10,6 +10,7 @@ import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem
+import Language.Expression.Common.TypeVariable
 import Language.Expression.Common.Unifier
 import Shapes
 
@@ -187,11 +188,12 @@ tsSingleBinding name bd madecltype expr =
 
 tsSubsumeExpressionTo ::
        forall ts t. CompleteTypeSystem ts
-    => TSPosWitness ts t
+    => FiniteSet (Some SymbolType)
+    -> TSPosWitness ts t
     -> TSSealedExpression ts
     -> TSInner ts (TSOpenExpression ts t)
-tsSubsumeExpressionTo tdecl expr =
-    runRenamer @ts (typeSignatureNames @ts $ MkSome tdecl) $ do
+tsSubsumeExpressionTo freevars tdecl expr =
+    runRenamer @ts (typeSignatureNames @ts (MkSome tdecl) \\ (fmap (\(MkSome v) -> uVarName v) $ toList freevars)) $ do
         expr' <- rename @ts FreeName expr
         subsumeExpressionTo @ts tdecl expr'
 

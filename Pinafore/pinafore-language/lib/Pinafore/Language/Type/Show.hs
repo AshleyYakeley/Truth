@@ -116,8 +116,8 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
         contrapieces = nub $ invertPolarity @polarity $ getpieces t1
         copieces = nub $ getpieces t2
         bothpieces = List.intersect contrapieces copieces
-        rcontrapieces = contrapieces List.\\ bothpieces
-        rcopieces = copieces List.\\ bothpieces
+        rcontrapieces = contrapieces \\ bothpieces
+        rcopieces = copieces \\ bothpieces
         pieces :: [Text]
         pieces = bothpieces <> fmap ("-" <>) rcontrapieces <> fmap ("+" <>) rcopieces
         text :: Text

@@ -24,7 +24,7 @@ import Data.Functor.Identity as I
 import Data.Functor.Product as I
 import Data.Int as I
 import Data.Kind as I
-import Data.List as I ((++), iterate, nub, nubBy, zip)
+import Data.List as I ((++), (\\), iterate, nub, nubBy, zip)
 import qualified Data.List
 import Data.List.NonEmpty as I (NonEmpty(..), head, init, last, nonEmpty, tail)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)

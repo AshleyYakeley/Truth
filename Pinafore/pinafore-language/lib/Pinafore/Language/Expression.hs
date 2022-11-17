@@ -148,7 +148,8 @@ typedAnyToVal = tsUnifyValueTo @QTypeSystem
 typedUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
 typedUnifyExpressionToOpen = tsUnifyExpressionTo @QTypeSystem
 
-typedSubsumeExpressionToOpen :: forall t. QType 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
+typedSubsumeExpressionToOpen ::
+       forall t. FiniteSet (Some SymbolType) -> QType 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
 typedSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem
 
 qUnifyValue ::
