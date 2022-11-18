@@ -39,6 +39,8 @@ data ErrorType
                             Natural
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
+    | InterpretTypeRecursionNotCovariant Name
+                                         Text
     | InterpretTypeNotAmbipolarError Text
     | InterpretTypeNotGroundedError Text
     | InterpretTypeNotEntityError Text
@@ -133,6 +135,8 @@ instance Show ErrorType where
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
     show (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
+    show (InterpretTypeRecursionNotCovariant var tp) =
+        "recursive variable " <> show var <> " is not covariant in type " <> unpack tp
     show (InterpretTypeNotAmbipolarError t) = unpack t <> " is not an ambipolar type"
     show (InterpretTypeNotGroundedError t) = unpack t <> " is not a grounded type"
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"

@@ -11,6 +11,7 @@ module Language.Expression.Dolan
     , toMPolar
     , toMPolarWM
     , mapMPolarW
+    , mapMPolarWM
     , forMPolarW
     , fromMPolarSingle
     , GroundTypeKind

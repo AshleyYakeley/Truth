@@ -85,5 +85,5 @@ testReadTypes =
         , testReadType ".WholeModel + .Text -> a -> .Action a"
         , testTree
               "recursive"
-              [testReadType "rec a. Maybe a", testReadType "rec a. Maybe a -> b", testReadType "rec a. rec b. a *: b"]
+              [testReadType "rec a. Maybe a", testReadType "(rec a. Maybe a) -> b", testReadType "rec a. rec b. a *: b"]
         ]
