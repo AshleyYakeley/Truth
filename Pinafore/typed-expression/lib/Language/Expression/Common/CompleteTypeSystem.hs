@@ -47,7 +47,7 @@ tsUnifyRigidValue ::
     -> TSInner ts t
 tsUnifyRigidValue (MkSomeOf witp val) = let
     witn = fromPolarShimWit
-    in runRenamer @ts (typeNamesWM @ts witp <> typeNamesWM @ts witn) $ do
+    in runRenamer @ts (typeNamesWM @ts witp <> typeNamesWM @ts witn) [] $ do
            (convexpr, _) <- unifyPosNegShimWit @ts witp witn
            conv <- lift $ evalExpression convexpr
            return $ shimToFunction conv val
@@ -58,7 +58,7 @@ tsUnifyExpressionTo ::
     -> TSSealedExpression ts
     -> TSInner ts (TSOpenExpression ts t)
 tsUnifyExpressionTo witn (MkSealedExpression witp expr) =
-    runRenamer @ts (typeNamesWM @ts witn) $ do
+    runRenamer @ts (typeNamesWM @ts witn) [] $ do
         witp' <- rename @ts FreeName witp
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
         unifierSolveSubstituteSimplifyFinalRename @ts (uuGetShim @ts uconv) $ \convexpr ->
@@ -70,7 +70,7 @@ tsUnifyValueTo ::
     -> TSValue ts
     -> TSInner ts t
 tsUnifyValueTo witn (MkSomeOf witp val) =
-    runRenamer @ts (typeNamesWM @ts witn) $ do
+    runRenamer @ts (typeNamesWM @ts witn) [] $ do
         witp' <- rename @ts FreeName witp
         (convexpr, _) <- unifyPosNegShimWit @ts witp' witn
         conv <- lift $ evalExpression convexpr
@@ -83,7 +83,7 @@ tsUnifyValueToFree ::
     -> TSInner ts t
 tsUnifyValueToFree (MkSomeOf witp val) = let
     witn = fromPolarShimWit
-    in runRenamer @ts [] $ do
+    in runRenamer @ts [] [] $ do
            witp' <- rename @ts FreeName witp
            witn' <- rename @ts FreeName witn
            (convexpr, _) <- unifyPosNegShimWit @ts witp' witn'
@@ -102,7 +102,8 @@ tsSubsume ::
     -> TSPosWitness ts decl
     -> TSInner ts (TSOpenExpression ts (TSShim ts inf decl))
 tsSubsume winf tdecl =
-    runRenamer @ts (typeSignatureNames @ts (MkSome tdecl) <> typeNamesWM @ts winf) $ solveSubsumeShimWit @ts winf tdecl
+    runRenamer @ts (typeSignatureNames @ts (MkSome tdecl) <> typeNamesWM @ts winf) [] $
+    solveSubsumeShimWit @ts winf tdecl
 
 tsSubsumeValue ::
        forall ts t. CompleteTypeSystem ts
@@ -154,7 +155,7 @@ tsVar ::
     -> TSSealedExpression ts
 tsVar name =
     runIdentity $
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar vwt twt <- renameNewFreeVar @ts
         return $ varSealedExpression name vwt twt
@@ -192,10 +193,13 @@ tsSubsumeExpressionTo ::
     -> TSPosWitness ts t
     -> TSSealedExpression ts
     -> TSInner ts (TSOpenExpression ts t)
-tsSubsumeExpressionTo freevars tdecl expr =
-    runRenamer @ts (typeSignatureNames @ts (MkSome tdecl) \\ (fmap (\(MkSome v) -> uVarName v) $ toList freevars)) $ do
-        expr' <- rename @ts FreeName expr
-        subsumeExpressionTo @ts tdecl expr'
+tsSubsumeExpressionTo freevars tdecl expr = let
+    fixednames = typeSignatureNames @ts $ MkSome tdecl
+    freenames = fmap (\(MkSome v) -> uVarName v) $ toList freevars
+    rigidnames = fixednames \\ freenames
+    in runRenamer @ts rigidnames freenames $ do
+           expr' <- rename @ts FreeName expr
+           subsumeExpressionTo @ts tdecl expr'
 
 tsSubsumeExpression ::
        forall ts. CompleteTypeSystem ts
@@ -203,7 +207,7 @@ tsSubsumeExpression ::
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 tsSubsumeExpression tdecl expr =
-    runRenamer @ts (typeSignatureNames @ts tdecl) $
+    runRenamer @ts (typeSignatureNames @ts tdecl) [] $
     withTransConstraintTM @Monad $ do
         expr' <- rename @ts FreeName expr
         subsumeExpression @ts tdecl expr'
@@ -226,7 +230,7 @@ tsVarPattern ::
     -> TSSealedExpressionPattern ts
 tsVarPattern name =
     runIdentity $
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar vwt twt <- renameNewFreeVar @ts
         return $ varSealedExpressionPattern name vwt $ mapShimWit (MkPolarMap meet1) twt
@@ -236,7 +240,7 @@ tsAnyPattern ::
     => TSSealedExpressionPattern ts
 tsAnyPattern =
     runIdentity $
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar twt _ <- renameNewFreeVar @ts
         return $ anySealedExpressionPattern twt

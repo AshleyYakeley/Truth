@@ -158,7 +158,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
             if isRecursive
                 then return $ uVarName oldvar
                             -- find a name that isn't free in either sub or t,
-                else runVarRenamerT (dolanNamespaceTypeNames @ground t <> dolanNamespaceTypeNames @ground sub) $ do
+                else runVarRenamerT (dolanNamespaceTypeNames @ground t <> dolanNamespaceTypeNames @ground sub) [] $ do
                          runVarNamespaceT FreeName $ varNamespaceTRename $ uVarName oldvar
         pts <- deferBisubstituteType sub pt
         return $ shimWitToDolan $ recursiveRenameDolanShimWit oldvar newvar pts

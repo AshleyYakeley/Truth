@@ -30,7 +30,7 @@ class ( TypeSystem ts
     typeNamesPosWitness :: TSPosWitness ts t -> [String]
     renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
     namespace :: Monad m => NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
-    runRenamer :: Monad m => [String] -> RenamerT ts m --> m
+    runRenamer :: Monad m => [String] -> [String] -> RenamerT ts m --> m
     finalRenamer :: Monad m => RenamerT ts m --> RenamerT ts m
 
 renameNegShimWit ::

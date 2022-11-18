@@ -168,12 +168,12 @@ interactLoop inh outh echo = do
                                          PositiveType -> do
                                              t' <-
                                                  interactRunSourceScoped $
-                                                 runRenamer @QTypeSystem [] $ simplify @QTypeSystem $ MkSome t
+                                                 runRenamer @QTypeSystem [] [] $ simplify @QTypeSystem $ MkSome t
                                              return $ exprShow t'
                                          NegativeType -> do
                                              t' <-
                                                  interactRunSourceScoped $
-                                                 runRenamer @QTypeSystem [] $ simplify @QTypeSystem $ MkSome t
+                                                 runRenamer @QTypeSystem [] [] $ simplify @QTypeSystem $ MkSome t
                                              return $ exprShow t'
                                  liftIO $ hPutStrLn outh $ unpack s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)

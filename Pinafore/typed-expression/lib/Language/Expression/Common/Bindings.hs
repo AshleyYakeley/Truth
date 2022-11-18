@@ -102,7 +102,7 @@ bindingsRecursiveLetSealedExpression ::
     => [TSBinding ts]
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 bindingsRecursiveLetSealedExpression bindings =
-    runRenamer @ts [] $ do
+    runRenamer @ts [] [] $ do
         bounds <- for bindings singleBound
         boundToMapRecursive $ mconcat bounds
 
@@ -111,7 +111,7 @@ bindingSequentialLetSealedExpression ::
     => TSBinding ts
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 bindingSequentialLetSealedExpression (MkTSBinding name bd mexpr) =
-    runRenamer @ts [] $ do
+    runRenamer @ts [] [] $ do
         MkSealedSubsumerExpression tdecl (MkSolverExpression subsumer expr) <- mexpr
         (ssexpr, ssubs) <- solveSubsumer @ts subsumer
         expr' <- subsumerSubstitute @ts ssubs expr

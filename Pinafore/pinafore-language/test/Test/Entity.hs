@@ -1063,7 +1063,23 @@ testEntity =
                                 ]
                           ]
                     , tDecls
+                          [ "datatype R +a of MkR of val: List a end end"
+                          , "mkR: List a -> R a = fn val => MkR"
+                          , "rShow: R Showable -> Text = fn MkR => show val"
+                          ] $
+                      tGroup
+                          "map"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess
+                                "let r1: R Integer = mkR []; r2: R Showable = r1 in testeq {\"[]\"} {rShow r2}"
+                          , testExpectSuccess
+                                "let r1: R Integer = mkR [57]; r2: R Showable = r1 in testeq {\"[57]\"} {rShow r2}"
+                          , testExpectSuccess
+                                "let r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1 in testeq {\"[12, 10, 57]\"} {rShow r2}"
+                          ]
+                    , tDecls
                           [ "datatype Rec +a of MkRec of rval: rec r. Maybe (a *: r) end end"
+                          , "rec0: Rec a = let rval = Nothing in MkRec"
                           , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"
                           , "rec3: a -> a -> a -> Rec a = fns x0 x1 x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
                           , "rec rShow: (rec r. Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <> \",\" <> rShow r end end"
@@ -1073,7 +1089,11 @@ testEntity =
                           "recursive"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess
-                                "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57\"} {recShow r2}"
+                                "let r1: Rec Integer = rec0; r2: Rec Showable = r1 in testeq {\"\"} {recShow r2}"
+                          , testExpectSuccess
+                                "let r1: Rec Integer = rec1 57; r2: Rec Showable = r1 in testeq {\"57,\"} {recShow r2}"
+                          , testExpectSuccess
+                                "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57,\"} {recShow r2}"
                           ]
                     ]
               ]

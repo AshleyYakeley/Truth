@@ -287,7 +287,7 @@ abstractSealedExpression ::
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 abstractSealedExpression absw name sexpr =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkSealedExpression twt expr <- rename @ts FreeName sexpr
         MkAbstractResult vwt uexpr' <- abstractResult @ts name expr
@@ -300,7 +300,7 @@ applySealedExpression ::
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 applySealedExpression appw sexprf sexpra =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkSealedExpression tf exprf <- rename @ts FreeName sexprf
         MkSealedExpression ta expra <- rename @ts FreeName sexpra
@@ -322,7 +322,7 @@ letSealedExpression ::
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 letSealedExpression name sexpre sexprb =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkSealedExpression te expre <- rename @ts FreeName sexpre
         MkSealedExpression tb exprb <- rename @ts FreeName sexprb
@@ -336,7 +336,7 @@ bothSealedPattern ::
     -> TSSealedExpressionPattern ts
     -> TSInner ts (TSSealedExpressionPattern ts)
 bothSealedPattern spat1 spat2 =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkSealedPattern tw1 pat1 <- rename @ts FreeName spat1
         MkSealedPattern tw2 pat2 <- rename @ts FreeName spat2
@@ -367,7 +367,7 @@ caseSealedExpression ::
     -> [(TSSealedExpressionPattern ts, TSSealedExpression ts)]
     -> TSInner ts (TSSealedExpression ts)
 caseSealedExpression sbexpr rawcases =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkPatternResult (MkShimWit rtt (MkPolarMap tuconv)) rvwt upfexpr <- casesPatternResult @ts rawcases
         MkSealedExpression btwt bexpr <- rename @ts FreeName sbexpr
@@ -384,7 +384,7 @@ caseAbstractSealedExpression ::
     -> [(TSSealedExpressionPattern ts, TSSealedExpression ts)]
     -> TSInner ts (TSSealedExpression ts)
 caseAbstractSealedExpression absw rawcases =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkPatternResult (MkShimWit rtt (MkPolarMap tuconv)) (MkShimWit rvt (MkPolarMap vuconv)) upfexpr <-
             casesPatternResult @ts rawcases
@@ -420,7 +420,7 @@ multiCaseAbstractSealedExpression ::
     -> [(FixedList n (TSSealedExpressionPattern ts), TSSealedExpression ts)]
     -> TSInner ts (TSSealedExpression ts)
 multiCaseAbstractSealedExpression absw nn rawcases =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         patrs <-
             for rawcases $ \(rawpatlist, rawexpr) -> do
@@ -444,7 +444,7 @@ applyPatternConstructor ::
     -> TSSealedExpressionPattern ts
     -> TSInner ts (TSExpressionPatternConstructor ts)
 applyPatternConstructor patcon patarg =
-    runRenamer @ts [] $
+    runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkPatternConstructor (MkExpressionWitness pcw pcconvexpr) pclt pcpat <- rename @ts FreeName patcon
         case pclt of
