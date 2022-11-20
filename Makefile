@@ -1,9 +1,9 @@
 default: full
 
 ifeq ($(nodocker),1)
-DOCKERFLAGS := --no-docker --ta --hide-successes
+DOCKERFLAGS := --no-docker
 else
-DOCKERFLAGS := --no-interleaved-output
+DOCKERFLAGS :=
 endif
 
 ifeq ($(single),1)
@@ -12,7 +12,7 @@ else
 JOBFLAGS := --keep-going
 endif
 
-STACKFLAGS := $(DOCKERFLAGS) $(JOBFLAGS)
+STACKFLAGS := $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
 ifeq ($(test),1)
 TESTFLAGS :=
