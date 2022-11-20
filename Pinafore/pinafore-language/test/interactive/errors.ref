@@ -1,9 +1,9 @@
 pinafore> )
-<input>:1:1: unexpected: ")"; expecting: end of input, expression
+<input>:1:1: unexpected: ")"; expecting: end of input, pattern, expression
 pinafore> (
 <input>:1:1: unexpected: "("; expecting: end of input, expression
 pinafore> in
-<input>:1:1: unexpected: "in"; expecting: end of input, expression
+<input>:1:1: unexpected: "in"; expecting: end of input, pattern, expression
 pinafore> a
 <input>:2:1: undefined: a: a
 pinafore> a

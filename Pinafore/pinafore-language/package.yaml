@@ -93,6 +93,8 @@ library:
       - Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl
+      - Pinafore.Language.Grammar.Interpret.Expression
+      - Pinafore.Language.Grammar.Interpret.Interact
       - Pinafore.Language.Grammar.Interpret
       - Pinafore.Language.Grammar
       - Pinafore.Language.Expression

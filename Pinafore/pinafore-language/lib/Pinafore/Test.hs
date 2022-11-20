@@ -41,12 +41,14 @@ module Pinafore.Test
     , testerRunAction
     , testerLiftInterpreter
     , testerGetTableState
+    , showPinaforeModel
     ) where
 
 import Changes.Core
 import Pinafore
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
+import Pinafore.Language.Grammar.Interpret.Interact
 import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim

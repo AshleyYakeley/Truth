@@ -58,6 +58,10 @@ instance HasQGroundType '[ CoCCRVariance] [] where
 instance HasQGroundType '[ CoCCRVariance] NonEmpty where
     qGroundType = list1GroundType
 
+-- Showable
+instance HasQGroundType '[] Showable where
+    qGroundType = showableGroundType
+
 -- Action
 instance HasQGroundType '[ CoCCRVariance] Action where
     qGroundType = actionGroundType

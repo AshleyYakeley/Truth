@@ -52,3 +52,6 @@ pairGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] (,)
 pairGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
         (precShow 2 ta <> " *: " <> precShow 3 tb, 3)
+
+showableGroundType :: QGroundType '[] Showable
+showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"

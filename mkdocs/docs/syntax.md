@@ -33,7 +33,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <qname> ::= quname | qlname
 
-<interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
+<interactive> ::= <do-line> | <let-declarations> | ":" <interactive-command>
 
 <interactive-command> ::=
     "doc" <qname> |

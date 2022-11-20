@@ -4,6 +4,8 @@ module Pinafore.Language.Grammar.Read.Expression
     , readModule
     , readTopDeclarations
     , operatorFixity
+    , DoLine(..)
+    , readDoLine
     ) where
 
 import Language.Expression.Dolan

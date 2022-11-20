@@ -28,13 +28,6 @@ import Shapes
 import Shapes.Numeric
 import qualified Text.Collate
 
--- Showable
-showableGroundType :: QGroundType '[] Showable
-showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"
-
-instance HasQGroundType '[] Showable where
-    qGroundType = showableGroundType
-
 showableSubtypeRelationEntry ::
        forall a context. (HasQType 'Negative a, TextShow a)
     => DocTreeEntry (BindDoc context)
