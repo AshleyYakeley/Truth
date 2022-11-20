@@ -3,6 +3,7 @@ module Language.Expression.Common.Expression where
 import Language.Expression.Common.Error
 import Shapes
 
+type Expression :: (Type -> Type) -> Type -> Type
 data Expression w a
     = ClosedExpression a
     | forall t. OpenExpression (w t)

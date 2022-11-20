@@ -8,7 +8,7 @@ import Control.Applicative as I
 import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
-import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), forever, void)
+import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), foldM, forever, void)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
@@ -24,9 +24,9 @@ import Data.Functor.Identity as I
 import Data.Functor.Product as I
 import Data.Int as I
 import Data.Kind as I
-import Data.List as I ((++), iterate, nub, nubBy, zip)
+import Data.List as I ((++), (\\), iterate, nub, nubBy, zip)
 import qualified Data.List
-import Data.List.NonEmpty as I (NonEmpty(..), head, last, nonEmpty, tail)
+import Data.List.NonEmpty as I (NonEmpty(..), head, init, last, nonEmpty, tail)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
 import Data.Ord as I
@@ -107,7 +107,7 @@ import Data.ByteString.Lazy as I (appendFile, getContents, hGet, hGetContents, h
 import qualified Data.ByteString.Lazy
 
 -- vector
-import Data.Vector as I (Vector)
+import Data.Vector as I (Vector, zipWith, zipWithM)
 
 -- cereal
 import Data.Serialize as I (Serialize)
@@ -138,6 +138,7 @@ import Data.TypeRig as I
 import Data.Countable as I
 import Data.Empty as I
 import Data.Searchable as I
+import Data.Singular as I
 
 -- witness
 import Data.Type.Witness as I
@@ -168,6 +169,10 @@ eitherLeft (Right _) = Nothing
 eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
+
+altIf :: Alternative m => Bool -> m ()
+altIf False = empty
+altIf True = pure ()
 
 ifpure :: Alternative m => Bool -> a -> m a
 ifpure False _ = empty

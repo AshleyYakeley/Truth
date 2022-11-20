@@ -40,7 +40,7 @@ instance Eq a => SetContainer (FiniteSet a) where
     member key (MkFiniteSet aa) = elem key aa
     notMember key set = not $ member key set
     union (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ List.union a b
-    difference (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ a List.\\ b
+    difference (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ a \\ b
     intersection (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ List.intersect a b
     keys (MkFiniteSet a) = a
 

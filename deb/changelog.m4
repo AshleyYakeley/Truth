@@ -3,22 +3,26 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Install
     - install on Ubuntu 18.04, 21.04, Debian buster
   * Language
-    - fix defect in lexical scoping
     - overhaul of declarations
+      . separate namespaces from modules,
+        with "namespace" and "using" declarations
       . declarations now non-recursive, with recursive rec-blocks
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments
     - datatype and closedtype declarations
       . can now have parameters
       . can now have subtypes
+      . record constructors/patterns for datatypes
     - can declare arbitrary subtype relations
     - import lists
     - syntax
       . type names (+:), (*:), List, Unit
       . tuple constructor/pattern (,,) etc.
       . type signatures now attach to bindings, not stand-alone
+      . separate syntax for static ":" and dynamic ":?" pattern typing
       . new syntax for function expressions: fn, fns, match, matches, =>
       . new syntax for datatype and closedtype definitions
+    - reject rather than mutate uninvertible type signatures
   * Interactive
     - :doc to retrieve name documentation
   * Library
@@ -56,6 +60,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - Anchors now 256 bit, hash using BLAKE3
     - Store literals as binary rather than as text
     - Embed smaller literals directly in the anchor
+  * Fixes
+    - fix defect in lexical scoping
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

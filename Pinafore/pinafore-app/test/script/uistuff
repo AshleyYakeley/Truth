@@ -1,8 +1,8 @@
 #!/usr/bin/pinafore
 
 GTK.run $ \gtk => let
-import GTK;
-import UIStuff.Selection;
+import "pinafore-gnome";
+import "uistuff/selection";
 in do
     tref1 <- newMemTextModel;
     tref2 <- newMemTextModel;

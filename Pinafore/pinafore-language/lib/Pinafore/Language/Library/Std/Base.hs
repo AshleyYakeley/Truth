@@ -88,10 +88,12 @@ plainFormattingDefs ::
     -> Text
     -> [DocTreeEntry (BindDoc context)]
 plainFormattingDefs uname lname =
-    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> plainMarkdown lname <> ". Inverse of `show`.") $
+    [ mkValEntry
+          (RootFullName $ MkName $ "parse" <> uname)
+          ("Parse text as " <> plainMarkdown lname <> ". Inverse of `show`.") $
       textReadMaybe @t
     , mkValEntry
-          (MkName $ "interpret" <> uname <> "AsText")
+          (RootFullName $ MkName $ "interpret" <> uname <> "AsText")
           ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
       interpretAsText @t
     ]
@@ -132,15 +134,15 @@ unixFormattingDefs ::
     -> [DocTreeEntry (BindDoc context)]
 unixFormattingDefs uname lname =
     [ mkValEntry
-          (MkName $ "unixFormat" <> uname)
+          (RootFullName $ MkName $ "unixFormat" <> uname)
           ("Format " <> plainMarkdown lname <> " as text, using a UNIX-style formatting string.") $
       unixFormat @t
     , mkValEntry
-          (MkName $ "unixParse" <> uname)
+          (RootFullName $ MkName $ "unixParse" <> uname)
           ("Parse text as " <> plainMarkdown lname <> ", using a UNIX-style formatting string.") $
       unixParse @t
     , mkValEntry
-          (MkName $ "unixInterpret" <> uname <> "AsText")
+          (RootFullName $ MkName $ "unixInterpret" <> uname <> "AsText")
           ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
       unixInterpretAsText @t
     ]

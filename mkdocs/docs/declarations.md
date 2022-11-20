@@ -40,8 +40,114 @@ let
         end;
     end;
 
-in fact 12;
+in fact 12
 ```
+
+## Namespaces
+
+A namespace is a space for declarations.
+Each namespace is either the root namespace, or a namespace with a name within another namespace.
+This name starts with an upper-case letter.
+Thus, each namespace can be identified by a list of zero or more names.
+
+In a given scope, all declaration names are in some namespace.
+The full name of a declaration consists of the namespace and the name.
+Full names are unique in the scope.
+
+### Referring to declarations
+
+In a given scope, there is a current namespace and a list of search namespaces.
+
+References to namespaces are either relative or absolute.
+Absolute namespace references consist of names separated by dots, with a leading dot.
+These names specify the namespace directly.
+
+Relative namespace references consist of names separated by dots.
+These names specify the namespace made by concatenating with the current namespace.
+
+For example,
+
+* `namespace .Image.Metadata` refers to the namespace `Metadata` within the namespace `Image` within the root namespace
+* `namespace Image.Metadata` refers to the namespace `Metadata` within the namespace `Image` within the current namespace
+
+Likewise, references to full names are either relative or absolute.
+Absolute full name references consist of names separated by dots, with a leading dot.
+These names specify the namespace directly, and then the name within the namespace.
+
+Relative full name references consist of names separated by dots.
+These names are searched in the following namespaces:
+
+* the current namespace, followed by all ancestor namespaces
+* the search namespaces in reverse order of introduction
+
+For example,
+
+* `.Task.async` refers to the declaration `async` within the namespace `Task` within the root namespace
+* `Task.async` refers to the first declaration of `async` within the namespace `Task` within the current namespace, followed by all ancestor namespaces, followed by the search namespaces.
+
+### Current namespace
+
+All declarations are placed within the current namespace.
+
+A `namespace` declaration specifies the current namespace for the declarations it contains.
+
+### Search namespaces
+
+A `using` declaration appends the specified namespace to the list of search namespaces.
+
+### Infix operators
+
+Built-in operators are all in the root namespace.
+New operators cannot be declared.
+No namespace qualification can be given for references to operators.
+
+### Example
+
+```pinafore
+let
+
+namespace A of
+p = 3;
+    namespace B of
+    q = 4;
+    end;
+
+    namespace .B of
+    r = 5;
+    end;
+end;
+
+namespace .A.B.C of
+s = 6;
+using .B;
+t = r;
+end;
+
+using A;
+
+s = p + B.q + B.C.s;
+
+in body
+```
+
+In this example, the scope for `body` contains declarations with these full names:
+
+```
+.A.p
+.A.B.q
+.B.r
+.A.B.C.s
+.A.B.C.t
+.s
+```
+
+At the point at which `.A.B.C.t` is declared, references such as `r` will be searched in these namespaces in this order:
+
+* `.A.B.C` (the current namespace)
+* `.A.B` (parent of the above)
+* `.A` (parent of the above)
+* root namespace (parent of the above)
+* `.B` (search namespace)
 
 ## Expose Declarations
 
@@ -53,29 +159,43 @@ A module consists of an expose declaration, but they can also be used within `le
 ```pinafore
 let
 
-    let
-    datatype LowerCaseText of MkLowerCaseText Text end;
-    fromLowerCase: LowerCaseText -> Text;
-    fromLowerCase = fn MkLowerCaseText t => t;
-    toLowerCase: Text -> LowerCaseText;
-    toLowerCase t = MkLowerCaseText $ textLowerCase t;
-    in expose LowerCaseText, fromLowerCase, toLowerCase; # MkLowerCaseText not exposed
+    expose LowerCaseText, fromLowerCase, toLowerCase of
+        # MkLowerCaseText not exposed
+        datatype LowerCaseText of MkLowerCaseText Text end;
+        fromLowerCase: LowerCaseText -> Text;
+        fromLowerCase = fn MkLowerCaseText t => t;
+        toLowerCase: Text -> LowerCaseText;
+        toLowerCase t = MkLowerCaseText $ textLowerCase t;
+    end;
 
-in toLowerCase "Hello";
+in toLowerCase "Hello"
 ```
 
-## Import Declarations
-
-An import declaration brings names from a module into scope.
+It's also possible to expose everything in a namespace:
 
 ```pinafore
 let
 
-import GTK; # brings everything from GTK into scope
+    expose namespace N, r of
+        x = 1; # not exposed
 
-import Colour (AlphaColour, crimson); # brings given names (and subtype relations) from Colour into scope
+        namespace N of
+            p = x + 2;
+            q = 3;
+        end;
+        
+        r = 4;
+    end;
 
-import Cairo (); # brings only subtype relations from Cairo into scope
+in N.p + N.q + r
+```
 
-in draw {fn _ => source crimson paint}
+## Import Declarations
+
+An import declaration brings declarations from a module into scope.
+
+```pinafore
+let
+import "pinafore-media";
+in Image.blankImage Colour.honeydew (512,512)
 ```

@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 Env.openDefaultStore >>= fn store =>
 let
-import Storage;
+using Storage;
 
 # Define a type of entity for people
 opentype Person;

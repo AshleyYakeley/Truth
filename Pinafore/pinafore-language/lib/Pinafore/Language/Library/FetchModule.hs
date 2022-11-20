@@ -1,6 +1,5 @@
 module Pinafore.Language.Library.FetchModule
-    ( getLibraryModuleModule
-    , FetchModule
+    ( FetchModule
     , runFetchModule
     , directoryFetchModule
     , libraryFetchModule
@@ -38,7 +37,7 @@ instance Contravariant FetchModule where
 
 loadModuleFromText :: ModuleName -> Text -> QInterpreter QModule
 loadModuleFromText modname text =
-    transformTMap (void $ interpretImportDeclaration stdModuleName) $ parseModule modname text
+    transformTMap (void $ interpretImportDeclaration builtInModuleName) $ parseModule modname text
 
 loadModuleFromByteString :: ModuleName -> LazyByteString -> QInterpreter QModule
 loadModuleFromByteString modname bs =
@@ -53,7 +52,7 @@ textFetchModule getText =
         for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText modname text
 
 moduleRelativePath :: ModuleName -> FilePath
-moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
+moduleRelativePath (MkModuleName t) = unpack $ t <> ".pinafore"
 
 directoryFetchModule :: FilePath -> FetchModule context
 directoryFetchModule dirpath =
@@ -72,17 +71,18 @@ getLibraryModuleModule context libmod = do
     let
         bindDocs :: [BindDoc context]
         bindDocs = libraryModuleEntries libmod
-        seBinding :: ScopeEntry context -> Maybe (Name, QInterpreterBinding)
+        seBinding :: ScopeEntry context -> Maybe (FullName, QInterpreterBinding)
         seBinding (BindScopeEntry name mb) = do
             b <- mb
             return (name, b context)
         seBinding _ = Nothing
-        getEntry :: BindDoc context -> Maybe (Name, DocInterpreterBinding QTypeSystem)
+        getEntry :: BindDoc context -> Maybe QBindingInfo
         getEntry MkBindDoc {..} = do
-            (name, b) <- seBinding bdScopeEntry
-            return (name, (docDescription bdDoc, b))
+            (biName, biValue) <- seBinding bdScopeEntry
+            let biDocumentation = docDescription bdDoc
+            return MkBindingInfo {..}
         bscope :: QScope
-        bscope = bindingsScope $ mapFromList $ mapMaybe getEntry bindDocs
+        bscope = bindingInfosToScope $ mapMaybe getEntry bindDocs
     dscopes <-
         for bindDocs $ \bd ->
             case bdScopeEntry bd of
@@ -94,6 +94,6 @@ getLibraryModuleModule context libmod = do
 
 libraryFetchModule :: forall context. [LibraryModule context] -> FetchModule context
 libraryFetchModule lmods = let
-    m :: Map Text (LibraryModule context)
-    m = mapFromList $ fmap (\lmod -> (libraryModuleName lmod, lmod)) lmods
-    in MkFetchModule $ \context mname -> for (lookup (toText mname) m) $ getLibraryModuleModule context
+    m :: Map ModuleName (LibraryModule context)
+    m = mapFromList $ fmap (\libmod -> (lmName libmod, libmod)) lmods
+    in MkFetchModule $ \context mname -> for (lookup mname m) $ getLibraryModuleModule context

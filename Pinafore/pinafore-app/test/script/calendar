@@ -1,8 +1,9 @@
 #!/usr/bin/pinafore
 Env.openDefaultStore >>= fn store =>
 let
-import Storage;
+using Storage;
+
 pdate = property @Unit @Date !"calendar-test" store;
 rdate = pdate !$ {()};
-import GTK();
+import "pinafore-gnome";
 in GTK.run $ fn gtk => GTK.openWindow gtk (300,400) {"Test Calendar"} $ GTK.vertical [GTK.calendar rdate,GTK.layoutGrow $ GTK.label {show %rdate}]

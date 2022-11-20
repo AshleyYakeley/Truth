@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
-
 let
+import "pinafore-gnome";
 
 datatype StopwatchState of
     StoppedState Duration;

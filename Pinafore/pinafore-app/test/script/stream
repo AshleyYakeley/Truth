@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 let
-import Stream;
-import Env;
+using Stream;
+using Env;
 in
 do
 connect stdin $ MkSink $ match

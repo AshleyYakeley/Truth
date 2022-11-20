@@ -32,8 +32,8 @@ instance Show (QGroundType dv gt) where
 type PinaforePolyGreatestDynamicSupertype :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype QGroundType dv gt
 
-type PinaforeNonpolarType :: Type -> Type
-type PinaforeNonpolarType = NonpolarDolanType QGroundType
+type QNonpolarType :: Type -> Type
+type QNonpolarType = NonpolarDolanType QGroundType
 
 singleGroundType' ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t

@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Std
-    ( stdLibraryModule
+    ( generalStuff
     ) where
 
 import Pinafore.Language.DocTree
@@ -10,10 +10,7 @@ import Pinafore.Language.Library.Std.Lifecycle
 import Pinafore.Language.Library.Std.Model
 import Shapes
 
-stdLibraryModule :: LibraryModule context
-stdLibraryModule =
-    MkLibraryModule $
-    MkDocTree
-        "Std"
-        "The standard library, implicitly imported. Entries in italics are supertypes of existing types, for convenience." $
+generalStuff :: DocTreeEntry (BindDoc context)
+generalStuff =
+    docTreeEntry "General" "General functionality, in the root namespace." $
     mconcat [baseLibEntries, actionsLibEntries, lifecycleLibEntries, modelLibEntries]

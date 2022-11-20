@@ -186,8 +186,8 @@ viewFloatMapModel flens model = do
 
 viewBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (Bool -> t -> View ()) -> View ()
 viewBindWholeModel model mesrc setf = let
-    init :: View ()
-    init =
+    finit :: View ()
+    finit =
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
             setf True val
@@ -195,12 +195,12 @@ viewBindWholeModel model mesrc setf = let
     recv () updates = let
         MkWholeUpdate val = last updates
         in setf False val
-    in viewBindModel model mesrc init mempty recv
+    in viewBindModel model mesrc finit mempty recv
 
 viewBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (Bool -> t -> View ()) -> View ()
 viewBindReadOnlyWholeModel model setf = let
-    init :: View ()
-    init =
+    finit :: View ()
+    finit =
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
             setf True val
@@ -208,4 +208,4 @@ viewBindReadOnlyWholeModel model setf = let
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates
         in setf False val
-    in viewBindModel model Nothing init mempty recv
+    in viewBindModel model Nothing finit mempty recv

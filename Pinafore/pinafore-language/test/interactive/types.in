@@ -3,8 +3,10 @@ let opentype Q
 let subtype P <: Q
 let p = openEntity @P !"p"
 let q = openEntity @Q !"q"
-let pp = property @P @P !"pp"
-let qp = property @Q @P !"qp"
+let using Storage
+store <- Env.openDefaultStore
+let pp = property @P @P !"pp" store
+let qp = property @Q @P !"qp" store
 :t pp
 :t pp !$ {p}
 :t pp !$ {q}

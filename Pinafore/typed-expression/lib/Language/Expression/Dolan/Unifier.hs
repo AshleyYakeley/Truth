@@ -197,6 +197,7 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt
             then lift renamerGenerateFreeUVar
             else return $ MkAnyVar oldvar
     assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
+        rigidity <- lift renamerGetNameRigidity
         let
             bisub =
                 mkPolarBisubstitution
@@ -204,7 +205,7 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt
                     oldvar
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
                     (do
-                         tq <- invertTypeM ptw
+                         tq <- invertTypeM rigidity ptw
                          return $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar PositiveType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
@@ -233,6 +234,7 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt
             then lift renamerGenerateFreeUVar
             else return $ MkAnyVar oldvar
     assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
+        rigidity <- lift renamerGetNameRigidity
         let
             bisub =
                 mkPolarBisubstitution
@@ -240,7 +242,7 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt
                     oldvar
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap join1)
                     (do
-                         tq <- invertTypeM ptw
+                         tq <- invertTypeM rigidity ptw
                          return $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar NegativeType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
@@ -274,6 +276,7 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) P
             else return $ MkAnyVar oldvar
     assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
         recvarname <- lift renamerGenerateFree
+        rigidity <- lift renamerGetNameRigidity
         let
             bisub =
                 mkPolarBisubstitution
@@ -281,7 +284,7 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) P
                     oldvar
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
                     (do
-                         tq <- invertTypeM ptw
+                         tq <- invertTypeM rigidity ptw
                          return $
                              shimWitToDolan $
                              recursiveRenameDolanShimWit oldvar recvarname $ joinMeetShimWit (varDolanShimWit newvar) tq)
@@ -317,6 +320,7 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) N
             else return $ MkAnyVar oldvar
     assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
         recvarname <- lift renamerGenerateFree
+        rigidity <- lift renamerGetNameRigidity
         let
             bisub =
                 mkPolarBisubstitution
@@ -324,7 +328,7 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) N
                     oldvar
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap join1)
                     (do
-                         tq <- invertTypeM ptw
+                         tq <- invertTypeM rigidity ptw
                          return $
                              shimWitToDolan $
                              recursiveRenameDolanShimWit oldvar recvarname $ joinMeetShimWit (varDolanShimWit newvar) tq)
@@ -354,6 +358,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
         subsumer' <- runSolver $ bisubstituteUnifier s subsumer
         usubSubsumerExpression @(DolanTypeSystem ground) ss subsumer'
     solveSubsumer = solveUnifier @(DolanTypeSystem ground)
+    subsumerPosSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
     subsumerNegSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = runSolver $ unifyTypes tinf tdecl
 

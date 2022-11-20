@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Eval
-    ( evalLibraryModule
+    ( evalStuff
     ) where
 
 import Pinafore.Base
@@ -9,16 +9,16 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Std.Types
+import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalLibraryModule :: LibraryModule context
-evalLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+evalStuff :: DocTreeEntry (BindDoc context)
+evalStuff =
+    docTreeEntry "Eval" "" $
+    namespaceRelative
         "Eval"
-        ""
         [ mkSpecialFormEntry
               "evaluate"
               "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\

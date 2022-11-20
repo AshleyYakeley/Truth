@@ -72,6 +72,7 @@ library:
       - Pinafore.Language.Type
       - Pinafore.Language.DefDoc
       - Pinafore.Language.Grammar.Syntax
+      - Pinafore.Language.Grammar.FreeVars
       - Pinafore.Language.Grammar.Read.Token
       - Pinafore.Language.Grammar.Read.Parser
       - Pinafore.Language.Grammar.Read.Type
@@ -129,6 +130,7 @@ tests:
           - pinafore-language
         main: Main.hs
         other-modules:
+          - Test.Token
           - Test.RunScript
           - Test.Language
           - Test.Unifier
@@ -137,6 +139,7 @@ tests:
           - Test.Type
           - Test.ReadType
           - Test.Output
+          - Test.Namespace
           - Test.Module
           - Test.Interactive
         ghc-options: -threaded

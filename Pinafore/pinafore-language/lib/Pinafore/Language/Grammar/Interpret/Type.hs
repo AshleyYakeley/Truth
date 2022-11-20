@@ -38,7 +38,7 @@ interpretConcreteDynamicEntityType st = do
     case mpol of
         BothMPolarW atm -> getConcreteDynamicEntityType $ atm @'Positive
 
-interpretNonpolarType :: SyntaxType -> QInterpreter (Some PinaforeNonpolarType)
+interpretNonpolarType :: SyntaxType -> QInterpreter (Some QNonpolarType)
 interpretNonpolarType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -98,8 +98,13 @@ interpretTypeM' (VarSyntaxType name) =
 interpretTypeM' (RecursiveSyntaxType name st) = do
     mt <- interpretTypeM st
     nameToSymbolType name $ \var ->
-        return $
-        mapMPolarW (\(MkSome t) -> assignUVarWit var t $ MkSome $ singleDolanType $ RecursiveDolanSingularType var t) mt
+        mapMPolarWM
+            (\(MkSome t) ->
+                 assignUVarWit var t $
+                 case safeRecursiveDolanSingularType var t of
+                     Just rt -> return $ MkSome $ singleDolanType rt
+                     Nothing -> throw $ InterpretTypeRecursionNotCovariant name (exprShow t))
+            mt
 
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity

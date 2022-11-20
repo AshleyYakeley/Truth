@@ -26,7 +26,7 @@ data FloatInit reader r where
     NoFloatInit :: r -> FloatInit reader r
 
 runFloatInit :: FloatInit reader r -> forall m. MonadIO m => Readable m reader -> m r
-runFloatInit (ReadFloatInit init) = init
+runFloatInit (ReadFloatInit finit) = finit
 runFloatInit (NoFloatInit r) = \_ -> return r
 
 mapFloatInit :: ReadFunction readerB readerA -> FloatInit readerA r -> FloatInit readerB r
@@ -34,7 +34,7 @@ mapFloatInit _ (NoFloatInit r) = NoFloatInit r
 mapFloatInit rf (ReadFloatInit i) = ReadFloatInit $ \mr -> i $ rf mr
 
 mapFFloatInit :: MonadInner f => ReadFunctionF f readerB readerA -> FloatInit readerA r -> FloatInit readerB (f r)
-mapFFloatInit rf init = ReadFloatInit $ \mr -> unComposeInner $ runFloatInit init $ rf mr
+mapFFloatInit rf finit = ReadFloatInit $ \mr -> unComposeInner $ runFloatInit finit $ rf mr
 
 type ExpFloatingChangeLens :: Linearity -> Type -> Type -> Type -> Type
 data ExpFloatingChangeLens lin r updateA updateB =
@@ -73,8 +73,8 @@ data FloatingChangeLens updateA updateB = forall r. MkFloatingChangeLens
 
 expToFloatingChangeLens ::
        IsLinearity lin => ExpFloatingChangeLens lin r updateA updateB -> FloatingChangeLens updateA updateB
-expToFloatingChangeLens (MkExpFloatingChangeLens init rlens) =
-    MkFloatingChangeLens init $ \r -> linearToChangeLens $ rlens r
+expToFloatingChangeLens (MkExpFloatingChangeLens finit rlens) =
+    MkFloatingChangeLens finit $ \r -> linearToChangeLens $ rlens r
 
 changeLensToFloating :: ChangeLens updateA updateB -> FloatingChangeLens updateA updateB
 changeLensToFloating lens = MkFloatingChangeLens (NoFloatInit ()) $ \_ -> lens
@@ -86,24 +86,24 @@ floatingToMaybeChangeLens _ = Nothing
 floatingToDiscardingChangeLens ::
        forall updateA updateB. FloatingChangeLens updateA updateB -> ChangeLens updateA updateB
 floatingToDiscardingChangeLens (MkFloatingChangeLens (NoFloatInit r) rlens) = rlens r
-floatingToDiscardingChangeLens (MkFloatingChangeLens (ReadFloatInit init) rlens) = let
+floatingToDiscardingChangeLens (MkFloatingChangeLens (ReadFloatInit finit) rlens) = let
     g :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     g mr rt = do
-        r <- init mr
+        r <- finit mr
         clRead (rlens r) mr rt
     u :: forall m. MonadIO m
       => updateA
       -> Readable m (UpdateReader updateA)
       -> m [updateB]
     u upd mr = do
-        r <- init mr
+        r <- finit mr
         clUpdate (rlens r) upd mr
     pe :: forall m. MonadIO m
        => [UpdateEdit updateB]
        -> Readable m (UpdateReader updateA)
        -> m (Maybe [UpdateEdit updateA])
     pe edits mr = do
-        r <- init mr
+        r <- finit mr
         clPutEdits (rlens r) edits mr
     in MkChangeLens g u pe
 
@@ -113,8 +113,8 @@ runFloatingChangeLens iol = let
     fclInit :: FloatInit (UpdateReader updateA) (ChangeLens updateA updateB)
     fclInit =
         ReadFloatInit $ \mr -> do
-            MkFloatingChangeLens init rlens <- liftIO iol
-            r <- runFloatInit init mr
+            MkFloatingChangeLens finit rlens <- liftIO iol
+            r <- runFloatInit finit mr
             return $ rlens r
     in MkFloatingChangeLens fclInit id
 
@@ -123,8 +123,8 @@ floatLift ::
     -> (ChangeLens updateA updateB -> ChangeLens updateC updateD)
     -> FloatingChangeLens updateA updateB
     -> FloatingChangeLens updateC updateD
-floatLift rf mappl (MkFloatingChangeLens init rlens) =
-    MkFloatingChangeLens (mapFloatInit rf init) $ \r -> mappl $ rlens r
+floatLift rf mappl (MkFloatingChangeLens finit rlens) =
+    MkFloatingChangeLens (mapFloatInit rf finit) $ \r -> mappl $ rlens r
 
 instance Category FloatingChangeLens where
     id :: forall update. FloatingChangeLens update update

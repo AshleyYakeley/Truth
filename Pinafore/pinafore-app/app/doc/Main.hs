@@ -35,8 +35,8 @@ showDefEntry h _ MkDefDoc {..} = do
                     name = boldMarkdown $ codeMarkdown $ toText diName
                     in codeMarkdown "type" <>
                        " " <>
-                       case (nameIsInfix diName, diParams) of
-                           (True, p1:pr) ->
+                       case (fmap nameIsInfix $ fullNameToRoot diName, diParams) of
+                           (Just True, p1:pr) ->
                                codeMarkdown p1 <> " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) pr)
                            _ -> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
                 SupertypeDocItem {..} -> let
@@ -66,7 +66,7 @@ printModuleDoc :: ModuleOptions -> Text -> IO ()
 printModuleDoc modopts tmodname = do
     let fmodule = standardFetchModule modopts
     let ?library = mkLibraryContext nullInvocationInfo fmodule
-    modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname
+    let modname = MkModuleName tmodname
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
     runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout) 1 $ moduleDoc pmodule

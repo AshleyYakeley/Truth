@@ -2,7 +2,6 @@ module Pinafore.Language.Library
     ( DefDoc(..)
     , DocTree
     , runDocTree
-    , libraryDoc
     , LibraryModule
     , FetchModule
     , directoryFetchModule
@@ -17,7 +16,6 @@ module Pinafore.Language.Library
 import Pinafore.Context
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Env
@@ -34,23 +32,17 @@ import Shapes
 
 library :: [LibraryModule InvocationInfo]
 library =
-    [ stdLibraryModule
-    , taskLibraryModule
-    , streamLibraryModule
-    , storageLibraryModule
-    , undoLibraryModule
-    , envLibraryModule
-    , evalLibraryModule
-    , debugLibraryModule
-    ]
-
-libraryDoc :: [LibraryModule InvocationInfo] -> [DocTree DefDoc]
-libraryDoc extralib = fmap libraryModuleDocumentation $ library <> extralib
+    pure $
+    MkLibraryModule builtInModuleName $
+    MkDocTree
+        "Built-In"
+        ""
+        [generalStuff, taskStuff, streamStuff, storageStuff, undoStuff, envStuff, evalStuff, debugStuff]
 
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
     getDocName :: forall context. BindDoc context -> Maybe Name
-    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry name _, bdDoc = dd}
+    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry (RootFullName name) _, bdDoc = dd}
         | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing

@@ -1,9 +1,8 @@
 #!/usr/bin/pinafore
 Env.openDefaultStore >>= fn store =>
 let
-import Storage;
-
-import GTK();
+import "pinafore-gnome";
+using Storage;
 
 dateText: Date ~> Text
 = property @Date @Text !"example.calendar:dateText" store;

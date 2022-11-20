@@ -1,8 +1,12 @@
 #!/usr/bin/pinafore
-
-let import UIStuff.Selection in runUIStuff $ fns store uisc =>
 let
-import Storage;
+import "pinafore-gnome";
+import "uistuff/selection";
+import "uistuff/named";
+in runUIStuff $ fn uistuff@MkUIStuff =>
+mkNamed uistuff >- fn MkNamedStuff =>
+let
+using Storage;
 
 years: FiniteSetModel Integer
 = property @Integer @Unit !"FTSJ.years" store !@ {()};
@@ -10,7 +14,7 @@ years: FiniteSetModel Integer
 yearTheme: Integer ~> Text
 = property @Integer @Text !"FTSJ.yearTheme" store;
 
-import GTK;
+using GTK;
 
 frontCoverPane: Pane
 = pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
@@ -29,5 +33,5 @@ createMainPane: Action Pane
 
 in do
     mainPane <- createMainPane;
-    paneWindow uisc mainPane;
+    paneWindow mainPane;
     end

@@ -51,7 +51,7 @@ class (TypeSystem ts, Applicative (Unifier ts), CartesianShim (TSShim ts), Show 
     unifierPosSubstitute :: UnifierSubstitutions ts -> TSPosWitness ts t -> TSOuter ts (TSPosShimWit ts t)
     unifierNegSubstitute :: UnifierSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
 
-type UnifierExpression ts = TSSolverExpression ts (Unifier ts)
+type UnifierExpression ts = TSOpenSolverExpression ts (Unifier ts)
 
 unifyUUNegShimWit ::
        forall ts a b. UnifyTypeSystem ts

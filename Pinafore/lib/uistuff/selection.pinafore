@@ -1,0 +1,226 @@
+expose
+    uiPage,
+    uiLabelled,
+    Pane,
+    MkPane,
+    pane,
+    notebookPane,
+    selectionPane,
+    selectionPairPane,
+    newItemMenuAction,
+    UIStuff, MkUIStuff,
+    runUIStuff
+of
+
+import "pinafore-gnome";
+using GTK;
+
+### Useful GTK stuff
+
+uiPage: WholeModel +Text -> Element -> Element *: Element
+= fns n ui => (label n,ui);
+
+uiLabelled: WholeModel +Text -> Element -> Element
+= fns n ui => horizontal [label n, layoutGrow ui];
+
+#| A pane is a title, GTK element, and menu.
+datatype Pane of
+    MkPane (WholeModel Text) Element (WholeModel (List MenuItem))
+end;
+
+pane: Text -> Element -> Pane
+= fns title ui => MkPane {title} ui {[]};
+
+#| A notebook from a list of panes
+notebookPane: WholeModel +Text -> List Pane -> Action Pane
+= fns title panes => do
+    tabModel <- newMemWholeModel;
+    return $ let
+        makePage: Pane -> Element *: Element
+        = fn MkPane rname ui _ => uiPage rname ui;
+        nui: Element = notebook tabModel $ mapList makePage panes;
+        itemsModel = forWholeModel panes $ fn MkPane _ _ rmenus => rmenus;
+        in MkPane (immutWholeModel title) nui $ fromMaybeWholeModel {index %itemsModel %tabModel};
+    end;
+
+selectionPane:
+    Text -> # window title
+    SetModel item -> # the set of items
+    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+    (item -> Action Any) -> # what to do when an item is activated
+    (WholeModel item -> Element) ->
+    Action Pane
+= fns title iset createMenuItems iopen iui => do
+    selection <- newMemWholeModel;
+    return $ let
+        viewItem: Action Unit
+        = do
+            item <- get selection;
+            iopen item;
+            return ();
+            end;
+
+        deleteItem: Action Unit
+        = do
+            item <- get selection;
+            iset -= item;
+            end;
+
+        moremenus: List MenuItem
+        =
+            [
+                menuSubmenu "Selection" $ mapList (fn mi => mi $ fn i => selection := i) createMenuItems ++
+                [
+                    menuAction "View" Nothing {viewItem},
+                    menuAction "Delete" Nothing {deleteItem}
+                ]
+            ];
+        in MkPane {title} (iui selection) {moremenus};
+    end;
+
+selectionPairPane:
+    Text -> # pane title
+    SetModel item -> # the set of items
+    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+    (item -> Action Any) -> # what to do when an item is activated
+    (WholeModel item -> Element) -> # Element for the item selector
+    (WholeModel +item -> Element) -> # Element for the selected item
+    Action Pane
+= fns title iset createMenuItems iopen getSelectorUI getSelectedUI =>
+    selectionPane title iset createMenuItems iopen $ fn selection => let
+        sidebarUI: Element
+        = getSelectorUI selection;
+
+        selectedUI: Element
+        = getSelectedUI $ immutWholeModel selection;
+
+        in horizontal [sidebarUI, layoutGrow selectedUI];
+
+newItemMenuAction: Text -> Maybe Text -> Action a -> SetModel a -> (a -> Action Unit) -> MenuItem
+= fns name mkey newItem set setsel => menuAction name mkey
+    {do
+    item <- newItem;
+    set += item;
+    setsel item;
+    end};
+
+datatype UIStuff of
+    MkUIStuff of
+        gtk: .GTK.Context;
+        undoHandler: .Undo.UndoHandler;
+        store: .Storage.Store;
+        #| A window that comes with some menus.
+        stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window;
+        paneWindow: Pane -> Action Window;
+        selectionWindow:
+            Text -> # window title
+            SetModel item -> # the set of items
+            List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+            (item -> Action Any) -> # what to do when an item is activated
+            (WholeModel item -> Element) ->
+            Action Window;
+        selectionPairWindow:
+            Text -> # window title
+            SetModel item -> # the set of items
+            List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+            (item -> Action Any) -> # what to do when an item is activated
+            (WholeModel item -> Element) -> # Element for the item selector
+            (WholeModel +item -> Element) -> # Element for the selected item
+            Action Window;
+    end;
+end;
+
+runUIStuff: (UIStuff -> Action a) -> Action a
+= fn call => do
+    dstore <- Env.openDefaultStore;
+    undoHandler <- Undo.newUndoHandler;
+    store <- Undo.handleStore undoHandler dstore;
+    GTK.run $ fn gtk => let
+        stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
+        = fns title moremenus contents => fixAction $ fn window => do
+            textsel <- newMemWholeModel;
+            let
+                notify: Action TextModel -> Action Unit
+                = fn atmodel => textsel := atmodel;
+                getTextModel: Action (WholeModel Text)
+                = do
+                    atmodel <- get textsel;
+                    atmodel;
+                end;
+                selCopy: Action Unit
+                = do
+                    tmodel <- getTextModel;
+                    text <- get tmodel;
+                    clipboard gtk := text;
+                end;
+                selCut: Action Unit
+                = do
+                    tmodel <- getTextModel;
+                    text <- get tmodel;
+                    clipboard gtk := text;
+                    tmodel := "";
+                end;
+                selPaste: Action Unit
+                = do
+                    tmodel <- getTextModel;
+                    clip <- get $ clipboard gtk;
+                    clip >- match
+                        text:? Text => tmodel := text;
+                        _ => return ();
+                    end;
+                end;
+                mbar: Element
+                = dynamic
+                    {menuBar $ [
+                        menuSubmenu "File"
+                        [
+                            menuAction "Close" (Just "Ctrl+W") {closeWindow window},
+                            menuSeparator,
+                            menuAction "Exit" (Just "Ctrl+Q") {exit gtk}
+                        ],
+                        menuSubmenu "Edit"
+                        [
+                            menuAction "Undo" (Just "Ctrl+Z") {Undo.queueUndo undoHandler},
+                            menuAction "Redo" (Just "Ctrl+Y") {Undo.queueRedo undoHandler},
+                            menuSeparator,
+                            menuAction "Cut" (Just "Ctrl+X") {selCut},
+                            menuAction "Copy" (Just "Ctrl+C") {selCopy},
+                            menuAction "Paste" (Just "Ctrl+V") {selPaste}
+                        ]
+                    ] ++ %moremenus};
+                in openWindow gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled $ notifySelection notify contents];
+            end;
+
+        paneWindow: Pane -> Action Window
+        = fn MkPane title ui moremenus => stdWindow title moremenus ui;
+
+        selectionWindow:
+            Text -> # window title
+            SetModel item -> # the set of items
+            List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+            (item -> Action Any) -> # what to do when an item is activated
+            (WholeModel item -> Element) ->
+            Action Window
+        = fns wtitle iset createMenuItems iopen iui => do
+            mui <- selectionPane wtitle iset createMenuItems iopen iui;
+            paneWindow mui;
+            end;
+
+        #| This is a two-pane window, the left has a "selector" of items (e.g. a table), and the right shows the selected item.
+        selectionPairWindow:
+            Text -> # window title
+            SetModel item -> # the set of items
+            List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+            (item -> Action Any) -> # what to do when an item is activated
+            (WholeModel item -> Element) -> # Element for the item selector
+            (WholeModel +item -> Element) -> # Element for the selected item
+            Action Window
+        = fns wtitle iset createMenuItems iopen getSelectorUI getSelectedUI => do
+            mui <- selectionPairPane wtitle iset createMenuItems iopen getSelectorUI getSelectedUI;
+            paneWindow mui;
+            end;
+
+        in call MkUIStuff;
+end;
+
+end

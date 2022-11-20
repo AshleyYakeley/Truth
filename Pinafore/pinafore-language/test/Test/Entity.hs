@@ -266,7 +266,7 @@ testEntity =
                         testScriptExpectation (val <> ": " <> ptype <> " => " <> pack (show se)) se $
                         "((" <>
                         val <>
-                        "): Literal) >- match val: " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
+                        "): Literal) >- match val:? " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
                     testPairs :: [(Text, Text)]
                     testPairs =
                         [ ("Unit", "()")
@@ -304,25 +304,27 @@ testEntity =
                            , (valtype, val) <- testPairs
                            ]
               ]
-        , tDecls
-              [ "opentype E"
-              , "eea = property @E @E !\"eea\""
-              , "eeb = property @E @E !\"eeb\""
-              , "eec = property @E @E !\"eec\""
-              , "eed = property @E @E !\"eed\""
-              , "eta = property @E @Text !\"eta\""
-              , "eia = property @E @Integer !\"eia\""
-              , "eib = property @E @Integer !\"eib\""
-              , "eic = property @E @Integer !\"eic\""
-              , "tea = property @Text @E !\"tea\""
-              , "nea = property @Integer @E !\"nea\""
+        , tOpenDefaultStore $
+          tDecls
+              [ "using Storage"
+              , "opentype E"
+              , "eea = property @E @E !\"eea\" store"
+              , "eeb = property @E @E !\"eeb\" store"
+              , "eec = property @E @E !\"eec\" store"
+              , "eed = property @E @E !\"eed\" store"
+              , "eta = property @E @Text !\"eta\" store"
+              , "eia = property @E @Integer !\"eia\" store"
+              , "eib = property @E @Integer !\"eib\" store"
+              , "eic = property @E @Integer !\"eic\" store"
+              , "tea = property @Text @E !\"tea\" store"
+              , "nea = property @Integer @E !\"nea\" store"
               , "e1 = openEntity @E !\"e1\""
               , "e2 = openEntity @E !\"e2\""
               , "e3 = openEntity @E !\"e3\""
               , "e4 = openEntity @E !\"e4\""
-              , "eba = property @E @Boolean !\"eba\""
-              , "era = property @E @Rational !\"era\""
-              , "ena = property @E @Number !\"ena\""
+              , "eba = property @E @Boolean !\"eba\" store"
+              , "era = property @E @Rational !\"era\" store"
+              , "ena = property @E @Number !\"ena\" store"
               ] $
           tGroup
               "storage"
@@ -537,31 +539,31 @@ testEntity =
               , tGroup
                     "Maybe"
                     [ testExpectSuccess
-                          "let enta = property @E @(Maybe Text) !\"enta\" in enta !$ {e1} := Just \"abc\" >> (testeq {Just \"abc\"} $ enta !$ {e1})"
+                          "let enta = property @E @(Maybe Text) !\"enta\" store in enta !$ {e1} := Just \"abc\" >> (testeq {Just \"abc\"} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Maybe Text) !\"enta\" in enta !$ {e1} := Nothing >> (testeq {Nothing} $ enta !$ {e1})"
+                          "let enta = property @E @(Maybe Text) !\"enta\" store in enta !$ {e1} := Nothing >> (testeq {Nothing} $ enta !$ {e1})"
                     ]
               , tGroup
                     "List"
                     [ testExpectSuccess
-                          "let enta = property @E @(List Text) !\"enta\" in enta !$ {e1} := [\"abc\", \"def\"] >> (testeq {[\"abc\", \"def\"]} $ enta !$ {e1})"
+                          "let enta = property @E @(List Text) !\"enta\" store in enta !$ {e1} := [\"abc\", \"def\"] >> (testeq {[\"abc\", \"def\"]} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(List Text) !\"enta\" in enta !$ {e1} := [] >> (testeq {[]} $ enta !$ {e1})"
+                          "let enta = property @E @(List Text) !\"enta\" store in enta !$ {e1} := [] >> (testeq {[]} $ enta !$ {e1})"
                     ]
               , tGroup
                     "Pair/Either"
                     [ testExpectSuccess
-                          "let enta = property @E @(Number *: Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testneq {(71,\"hmm\")} $ enta !$ {e1})"
+                          "let enta = property @E @(Number *: Text) !\"enta\" store in enta !$ {e1} := (74,\"hmm\") >> (testneq {(71,\"hmm\")} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number *: Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testeq {(74,\"hmm\")} $ enta !$ {e1})"
+                          "let enta = property @E @(Number *: Text) !\"enta\" store in enta !$ {e1} := (74,\"hmm\") >> (testeq {(74,\"hmm\")} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testneq {Left 73} $ enta !$ {e1})"
+                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Left 74 >> (testneq {Left 73} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testeq {Left 74} $ enta !$ {e1})"
+                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Left 74 >> (testeq {Left 74} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testneq {Right \"adbc\"} $ enta !$ {e1})"
+                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Right \"abc\" >> (testneq {Right \"adbc\"} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
+                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
                     ]
               ]
         , tGroup
@@ -774,26 +776,26 @@ testEntity =
                           "testeqval 3 $ \"hello\" >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
                     , testExpectSuccess "testeqval 4 $ () >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 1 $ 34.0 >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 1 $ 34.0 >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 2 $ True >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 2 $ True >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 3 $ \"hello\" >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 3 $ \"hello\" >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 4 $ () >- match _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 4 $ () >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 1 $ 34.0 >- match _:Integer => 1; _:Rational => 2; _:Text => 3; _ => 4 end"
+                          "testeqval 1 $ 34.0 >- match _:?Integer => 1; _:?Rational => 2; _:?Text => 3; _ => 4 end"
                     , testExpectSuccess
-                          "testeqval 2 $ 34.0 >- match _:Rational => 2; _:Integer => 1; _:Text => 3; _ => 4 end"
+                          "testeqval 2 $ 34.0 >- match _:?Rational => 2; _:?Integer => 1; _:?Text => 3; _ => 4 end"
                     ]
               , tGroup
                     "List"
                     [ testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; [] => 2 end"
                     , testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 2 $ [] >- match _: List1 Integer => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 2 $ [] >- match _:? List1 Integer => 1; _ => 2 end"
                     , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; [] => 2 end"
                     , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _: List1 Integer => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _:? List1 Integer => 1; _ => 2 end"
                     ]
               ]
         , tDecls
@@ -809,9 +811,9 @@ testEntity =
               , testExpectSuccess "testeq {Just e1} {check @P1 e1}"
               , testExpectSuccess "testeq {Nothing} {check @P2 e1}"
               , testExpectSuccess "testeq {Just e1} {check @Q e1}"
-              , testExpectSuccess "testeq {True} {e1 >- match _: P1 => True; _ => False end}"
-              , testExpectSuccess "testeq {False} {e1 >- match _: P2 => True; _ => False end}"
-              , testExpectSuccess "testeq {True} {e1 >- match _: Q => True; _ => False end}"
+              , testExpectSuccess "testeq {True} {e1 >- match _:? P1 => True; _ => False end}"
+              , testExpectSuccess "testeq {False} {e1 >- match _:? P2 => True; _ => False end}"
+              , testExpectSuccess "testeq {True} {e1 >- match _:? Q => True; _ => False end}"
               , testExpectSuccess "testeq {e1} {coerce @P1 e1}"
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
               ]
@@ -970,6 +972,131 @@ testEntity =
                           "let rec datatype L of LNil; subtype datatype L1 of LCons Unit L end end end in pass"
                     , testExpectSuccess
                           "let rec datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end end in pass"
+                    ]
+              , tGroup
+                    "record-constructor"
+                    [ tGroup
+                          "rank-1"
+                          [ tDecls ["datatype R of MkR of di: Integer end end"] $
+                            tGroup
+                                "one"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq {22} {(let di = 22 in MkR) >- fn MkR => di}"
+                                , testExpectSuccess
+                                      "let f: Integer -> R = fn di => MkR; g: R -> Integer = fn MkR => di; in testeq {17} {g $ f 17}"
+                                ]
+                          , tDecls ["datatype R of MkR of di: Integer; dt: Text end end"] $
+                            tGroup
+                                "two"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess
+                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Integer = fn MkR => di; in testeq {17} {g $ f 17}"
+                                , testExpectSuccess
+                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Text = fn MkR => dt; in testeq {\"t\"} {g $ f 17}"
+                                ]
+                          ]
+                    , tDecls
+                          [ "datatype R of MkR of df: (a -> a) -> a -> a end end"
+                          , "twice = fns f x => f (f x)"
+                          , "addone: Integer -> Integer = fn x => x + 1"
+                          ] $
+                      tGroup
+                          "rank-2"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess
+                                "let r:R = let df: (b -> b) -> b -> b = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
+                          , testExpectReject
+                                "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
+                          ]
+                    , tGroup
+                          "inversion"
+                          [ tDecls
+                                [ "datatype W +a of MkW a end"
+                                , "wrap: a -> W a = MkW"
+                                , "unwrap: W a -> a = fn (MkW val) => val"
+                                ] $
+                            tGroup
+                                "plain"
+                                [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                          , tGroup
+                                "record"
+                                [ tDecls
+                                      [ "datatype W +p of MkW of val: p end end"
+                                      , "wrap: x -> W x = fn val => MkW"
+                                      , "unwrap: W y -> y = fn MkW => val"
+                                      ] $
+                                  tGroup
+                                      "id"
+                                      [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                                , tDecls
+                                      [ "datatype W +p of MkW of val: p end end"
+                                      , "wrap: x -> W x = fn v => let val = v in MkW"
+                                      , "unwrap: W y -> y = fn MkW => val"
+                                      ] $
+                                  tGroup
+                                      "let"
+                                      [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                                , tDecls
+                                      [ "datatype W +p of MkW of val: Maybe p end end"
+                                      , "wrap: Maybe x -> W x = fn val => MkW"
+                                      , "unwrap: W y -> Maybe y = fn MkW => val"
+                                      ] $
+                                  tGroup
+                                      "Maybe"
+                                      [ testExpectSuccess "pass"
+                                      , testExpectSuccess "testeq {Just 374} {unwrap $ wrap $ Just 374}"
+                                      ]
+                                , tDecls
+                                      [ "datatype R +p of MkR of val: q -> (q *: p) end end"
+                                      , "f = fn x => let val = fn y => (y,x) in MkR"
+                                      ] $
+                                  tGroup
+                                      "infer-var"
+                                      [testExpectSuccess "pass", testExpectSuccess $ isOfType "f" "a -> R a"]
+                                , tDecls
+                                      [ "datatype R +p of MkR of val: q -> (q *: p) end end"
+                                      , "f = fn x => let val = fn y => (y,x+1) in MkR"
+                                      ] $
+                                  tGroup
+                                      "infer-Integer"
+                                      [ testExpectSuccess "pass"
+                                      , testExpectSuccess $ isOfType "f" "Integer -> R Integer"
+                                      ]
+                                ]
+                          ]
+                    , tDecls
+                          [ "datatype R +a of MkR of val: List a end end"
+                          , "mkR: List a -> R a = fn val => MkR"
+                          , "rShow: R Showable -> Text = fn MkR => show val"
+                          ] $
+                      tGroup
+                          "map"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess
+                                "let r1: R Integer = mkR []; r2: R Showable = r1 in testeq {\"[]\"} {rShow r2}"
+                          , testExpectSuccess
+                                "let r1: R Integer = mkR [57]; r2: R Showable = r1 in testeq {\"[57]\"} {rShow r2}"
+                          , testExpectSuccess
+                                "let r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1 in testeq {\"[12, 10, 57]\"} {rShow r2}"
+                          ]
+                    , tDecls
+                          [ "datatype Rec +a of MkRec of rval: rec r. Maybe (a *: r) end end"
+                          , "rec0: Rec a = let rval = Nothing in MkRec"
+                          , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"
+                          , "rec3: a -> a -> a -> Rec a = fns x0 x1 x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
+                          , "rec rShow: (rec r. Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <> \",\" <> rShow r end end"
+                          , "recShow: Rec Showable -> Text = fn MkRec => rShow rval"
+                          ] $
+                      tGroup
+                          "recursive"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess
+                                "let r1: Rec Integer = rec0; r2: Rec Showable = r1 in testeq {\"\"} {recShow r2}"
+                          , testExpectSuccess
+                                "let r1: Rec Integer = rec1 57; r2: Rec Showable = r1 in testeq {\"57,\"} {recShow r2}"
+                          , testExpectSuccess
+                                "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57,\"} {recShow r2}"
+                          ]
                     ]
               ]
         , tGroup
@@ -1278,14 +1405,22 @@ testEntity =
                           ]
                     ]
               ]
-        , tDecls ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = openEntity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
+        , testOpenUHStore $
+          tDecls
+              [ "using Storage"
+              , "using Undo"
+              , "opentype E"
+              , "eta = property @E @Text !\"eta\" store"
+              , "e1 = openEntity @E !\"e1\""
+              , "rt1 = eta !$ {e1}"
+              ] $
           tGroup
               "undo"
               [ testExpectSuccess "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; end"
               , testExpectSuccess
-                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo; testeq {\"A\"} rt1; end"
+                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo undoHandler; testeq {\"A\"} rt1; end"
               , testExpectSuccess
-                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo; testeq {\"A\"} rt1; queueRedo; testeq {\"B\"} rt1; end"
+                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo undoHandler; testeq {\"A\"} rt1; queueRedo undoHandler; testeq {\"B\"} rt1; end"
               ]
         , tGroup
               "interpret"
@@ -1297,7 +1432,7 @@ testEntity =
               [ "runresult = fns ar arg => ar >- match Left err => fail err; Right f => f arg end"
               , "testaction = fns expected action => do found <- action; testeqval expected found end"
               , "testleft = fn action => do found <- action; found >- match Left _ => pass; Right _ => fail \"not Left\" end end"
-              , "import Eval"
+              , "using Eval"
               ] $
           tGroup
               "evaluate"

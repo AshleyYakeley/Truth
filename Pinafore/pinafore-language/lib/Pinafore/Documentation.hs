@@ -4,7 +4,6 @@ module Pinafore.Documentation
     , DocTree(..)
     , DocItem(..)
     , runDocTree
-    , libraryDoc
     , operatorFixity
     , typeOperatorFixity
     , Fixity(..)

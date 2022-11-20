@@ -1,7 +1,5 @@
 module Pinafore.Language
-    ( Name
-    , ModuleName(..)
-    , toModuleName
+    ( module Pinafore.Language.Name
     , LibraryModule
     , FetchModule
     , directoryFetchModule
@@ -58,7 +56,7 @@ import System.IO.Error
 runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename scp =
     runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $
-    transformTMap (void $ interpretImportDeclaration stdModuleName) scp
+    transformTMap (void $ interpretImportDeclaration builtInModuleName) scp
 
 spvals :: (?library :: LibraryContext) => QSpecialVals
 spvals = let
@@ -142,12 +140,12 @@ interactLoop inh outh echo = do
                                  action <- runValue outh val
                                  lift $ lift $ runAction action
                              ShowDocInteractiveCommand rname -> do
-                                 md <- interactRunSourceScoped $ lookupDocBinding rname
+                                 bmap <- interactRunSourceScoped $ getBindingMap
                                  liftIO $
-                                     case md of
+                                     case fmap biDocumentation $ bmap rname of
                                          Nothing -> hPutStrLn outh $ "! " <> show rname <> " not found"
-                                         Just ("", _) -> return ()
-                                         Just (doc, _) -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
+                                         Just "" -> return ()
+                                         Just doc -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
                              ShowTypeInteractiveCommand showinfo texpr -> do
                                  MkSomeOf (MkPosShimWit t shim) _ <- interactEvalExpression texpr
                                  liftIO $
@@ -164,12 +162,12 @@ interactLoop inh outh echo = do
                                          PositiveType -> do
                                              t' <-
                                                  interactRunSourceScoped $
-                                                 runRenamer @QTypeSystem [] $ simplify @QTypeSystem $ MkSome t
+                                                 runRenamer @QTypeSystem [] [] $ simplify @QTypeSystem $ MkSome t
                                              return $ exprShow t'
                                          NegativeType -> do
                                              t' <-
                                                  interactRunSourceScoped $
-                                                 runRenamer @QTypeSystem [] $ simplify @QTypeSystem $ MkSome t
+                                                 runRenamer @QTypeSystem [] [] $ simplify @QTypeSystem $ MkSome t
                                              return $ exprShow t'
                                  liftIO $ hPutStrLn outh $ unpack s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)

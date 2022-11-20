@@ -6,13 +6,13 @@ module Language.Expression.Dolan.Nonpolar
     , NonpolarArguments
     , NonpolarShimWit
     , groundedNonpolarToDolanType
-    , nonpolarTypeFreeVariables
     ) where
 
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
@@ -76,22 +76,14 @@ type NonpolarArgumentShimWit ground polarity sv
 type NonpolarArguments :: GroundTypeKind -> forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 type NonpolarArguments ground = CCRArguments (NonpolarArgument ground)
 
-argFreeVariables :: forall (ground :: GroundTypeKind) sv t. NonpolarArgument ground sv t -> [Some SymbolType]
-argFreeVariables (CoNonpolarArgument arg) = nonpolarTypeFreeVariables arg
-argFreeVariables (ContraNonpolarArgument arg) = nonpolarTypeFreeVariables arg
-argFreeVariables (RangeNonpolarArgument argp argq) = nonpolarTypeFreeVariables argp <> nonpolarTypeFreeVariables argq
+instance forall (ground :: GroundTypeKind) sv t. FreeTypeVariables (NonpolarArgument ground sv t) where
+    freeTypeVariables (CoNonpolarArgument arg) = freeTypeVariables arg
+    freeTypeVariables (ContraNonpolarArgument arg) = freeTypeVariables arg
+    freeTypeVariables (RangeNonpolarArgument argp argq) = freeTypeVariables argp <> freeTypeVariables argq
 
-nonpolarArgumentsFreeVariables ::
-       forall (ground :: GroundTypeKind) dv (gt :: DolanVarianceKind dv) t.
-       NonpolarArguments ground dv gt t
-    -> [Some SymbolType]
-nonpolarArgumentsFreeVariables NilCCRArguments = []
-nonpolarArgumentsFreeVariables (ConsCCRArguments targ targs) =
-    nonpolarArgumentsFreeVariables @ground targs <> argFreeVariables @ground targ
-
-nonpolarTypeFreeVariables :: forall (ground :: GroundTypeKind) t. NonpolarDolanType ground t -> [Some SymbolType]
-nonpolarTypeFreeVariables (VarNonpolarType n) = [MkSome n]
-nonpolarTypeFreeVariables (GroundedNonpolarType _ args) = nonpolarArgumentsFreeVariables args
+instance forall (ground :: GroundTypeKind) t. FreeTypeVariables (NonpolarDolanType ground t) where
+    freeTypeVariables (VarNonpolarType n) = freeTypeVariables n
+    freeTypeVariables (GroundedNonpolarType _ args) = freeTypeVariables args
 
 nonpolarToDolanArg ::
        forall (ground :: GroundTypeKind) polarity sv t. (IsDolanGroundType ground, Is PolarityType polarity)

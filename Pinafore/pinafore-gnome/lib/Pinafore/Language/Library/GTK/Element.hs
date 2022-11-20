@@ -87,8 +87,8 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 Just $ do
                     a' <- readM ReadWhole
                     return $ a' == a
-            init :: GView 'Locked ()
-            init =
+            finit :: GView 'Locked ()
+            finit =
                 gvRunResourceContext selectionModel $ \unliftR (amod :: _ tt) -> do
                     ka <- liftIO $ unliftR $ aModelRead amod ReadWhole
                     setsel ka
@@ -96,7 +96,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
             recv () updates = let
                 MkBiWholeUpdate ka = last updates
                 in gvRunLocked $ setsel ka
-            in gvBindModel selectionModel (Just esrc) init mempty recv
+            in gvBindModel selectionModel (Just esrc) finit mempty recv
         return widget
 
 uiList :: (ImmutableWholeModel A -> LangElement) -> LangListModel '( BottomType, A) -> LangElement

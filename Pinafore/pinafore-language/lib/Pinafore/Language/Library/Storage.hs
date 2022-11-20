@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Storage
-    ( storageLibraryModule
+    ( storageStuff
     ) where
 
 import Pinafore.Base
@@ -11,6 +11,7 @@ import Pinafore.Language.Expression
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Std.Model
+import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
@@ -23,18 +24,17 @@ storeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[] QStore where
     qGroundType = storeGroundType
 
-storageLibraryModule :: LibraryModule context
-storageLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+storageStuff :: DocTreeEntry (BindDoc context)
+storageStuff =
+    docTreeEntry "Storage" "" $
+    namespaceRelative
         "Storage"
-        ""
         [ mkTypeEntry "Store" "Storage of information." $ MkSomeGroundType storeGroundType
         , mkSpecialFormEntry
               "property"
               "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
               ["@A", "@B", "<anchor>"]
-              "Storage -> A ~> B" $
+              "Store -> A ~> B" $
           MkSpecialForm
               (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
               eta <- getMonoEntityType ta

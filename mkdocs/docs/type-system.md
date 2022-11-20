@@ -123,3 +123,20 @@ And also,
 `T -A` = `T {-A}`  
 
 It's important to remember that `-` and `+` indicate contravariance and covariance, not negative and positive polarity.
+
+One consequence of this that may trip you up is that, for example, `T +A` in positive and negative position are not the same.
+Thus a type such as `T +A -> T +A` may not include the identity function, since this type is actually equivalent to `T {-None,+A} -> T {-Any,+A}`.
+
+## Type Inversion
+
+Type inversion is converting a positive type to a negative type, or vice-versa.
+Specifically, given a positive type `T`, there is some set `S` of positive types that can subsume to `T`.
+The inverse of `T` is a negative type `T'` such that the set of positive types that unify with `T'` is the same as `S`.
+
+As a rule of thumb, types that, after simplification, have free type variables, or mention `|`, `&`, `Any`, or `None`, cannot be inverted.
+
+Type inversion shows up in type signatures inside function bindings. Here's an example, given some positive type `T`:
+
+`f = fn x => let y:T = x in y`
+
+If `T` can be inverted (to `T'`), the type of `f` is `T' -> T`. Otherwise Pinafore will reject the expression with a "cannot invert type" error.

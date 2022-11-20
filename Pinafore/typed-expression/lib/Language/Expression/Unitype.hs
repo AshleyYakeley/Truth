@@ -28,7 +28,7 @@ instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) 
     type RenamerNamespaceT (Unitype m name val) = IdentityT
     renameNewFreeVar = return $ MkNewVar unitypeShimWit unitypeShimWit
     namespace _ = runIdentityT
-    runRenamer _ = runIdentityT
+    runRenamer _ _ = runIdentityT
     finalRenamer = id
 
 instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) where
@@ -50,6 +50,7 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     showSubsumer _ = ""
     usubSubsumer () ia = lift $ return $ pure $ runIdentity ia
     solveSubsumer ia = pure $ (pure $ runIdentity ia, ())
+    subsumerPosSubstitute () Refl = return $ unitypeShimWit
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 

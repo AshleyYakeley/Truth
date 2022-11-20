@@ -19,16 +19,14 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes hiding (try)
 
-readOpenEntityTypeDeclaration :: Parser SyntaxRecursiveDeclaration
+readOpenEntityTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readOpenEntityTypeDeclaration = do
-    spos <- getPosition
     readThis TokOpenType
     name <- readTypeNewName
-    return $ TypeSyntaxDeclaration spos name OpenEntitySyntaxTypeDeclaration
+    return $ TypeSyntaxDeclaration name OpenEntitySyntaxTypeDeclaration
 
-readSubtypeDeclaration :: Parser SyntaxRecursiveDeclaration
+readSubtypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readSubtypeDeclaration = do
-    spos <- getPosition
     readThis TokSubtype
     trustme <-
         fmap
@@ -43,7 +41,16 @@ readSubtypeDeclaration = do
         optional $ do
             readThis TokAssign
             readExpression
-    return $ SubtypeSyntaxDeclaration spos trustme sta stb mbody
+    return $ SubtypeSyntaxDeclaration trustme sta stb mbody
+
+readSignature :: Parser SyntaxSignature
+readSignature =
+    readWithDoc $
+    readSourcePos $ do
+        name <- readLName
+        readThis TokTypeJudge
+        t <- readType
+        return $ ValueSyntaxSignature name t
 
 readDataTypeConstructor :: Parser SyntaxDatatypeConstructorOrSubtype
 readDataTypeConstructor =
@@ -56,9 +63,15 @@ readDataTypeConstructor =
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
-         consName <- readThis TokUName
-         mtypes <- many readType3
-         return $ ConstructorSyntaxConstructorOrSubtype consName mtypes ())
+         consName <- readUName
+         (do
+              readThis TokOf
+              sigs <- readLines readSignature
+              readThis TokEnd
+              return $ RecordSyntaxConstructorOrSubtype consName sigs) <|>
+             (do
+                  mtypes <- many readType3
+                  return $ ConstructorSyntaxConstructorOrSubtype consName mtypes ()))
 
 readClosedTypeConstructor :: Parser SyntaxClosedEntityConstructorOrSubtype
 readClosedTypeConstructor =
@@ -71,7 +84,7 @@ readClosedTypeConstructor =
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
-         consName <- readThis TokUName
+         consName <- readUName
          mtypes <- many readType3
          anchor <- readThis TokAnchor
          return $ ConstructorSyntaxConstructorOrSubtype consName mtypes anchor)
@@ -101,112 +114,114 @@ readTypeParameter =
           varp <- readNegativeParameter
           return $ RangeSyntaxTypeParameter varp varq))
 
-readDataTypeDeclaration :: Parser SyntaxRecursiveDeclaration
+readDataTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDataTypeDeclaration = do
-    spos <- getPosition
     readThis TokDataType
     name <- readTypeNewName
     parameters <- many readTypeParameter
     readThis TokOf
     constructors <- readLines $ readWithDoc readDataTypeConstructor
     readThis TokEnd
-    return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration parameters constructors
+    return $ TypeSyntaxDeclaration name $ DatatypeSyntaxTypeDeclaration parameters constructors
 
-readClosedTypeDeclaration :: Parser SyntaxRecursiveDeclaration
+readClosedTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readClosedTypeDeclaration = do
-    spos <- getPosition
     readThis TokClosedType
     name <- readTypeNewName
     parameters <- many readTypeParameter
     readThis TokOf
     constructors <- readLines $ readWithDoc readClosedTypeConstructor
     readThis TokEnd
-    return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
+    return $ TypeSyntaxDeclaration name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =
     fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|>
-    fmap NameSyntaxDynamicEntityConstructor readTypeReferenceName
+    fmap NameSyntaxDynamicEntityConstructor readTypeFullNameRef
 
-readDynamicTypeDeclaration :: Parser SyntaxRecursiveDeclaration
+readDynamicTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDynamicTypeDeclaration = do
-    spos <- getPosition
     readThis TokDynamicType
     name <- readTypeNewName
     readThis TokAssign
     tcons <- readSeparated1 (readThis TokOr) $ fmap pure readDynamicTypeConstructor
-    return $ TypeSyntaxDeclaration spos name $ DynamicEntitySyntaxTypeDeclaration tcons
+    return $ TypeSyntaxDeclaration name $ DynamicEntitySyntaxTypeDeclaration tcons
 
-readTypeDeclaration :: Parser SyntaxRecursiveDeclaration
+readTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readTypeDeclaration =
     readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readClosedTypeDeclaration <|>
     readDynamicTypeDeclaration
 
 readBinding :: Parser SyntaxBinding
 readBinding = do
-    spos <- getPosition
-    name <- readThis TokLName
-    mtp <-
-        optional $ do
-            readThis TokTypeJudge
-            readType
+    pat <- readPattern1
     readThis TokAssign
     defn <- readExpression
-    return $ MkSyntaxBinding spos mtp name defn
+    return $ MkSyntaxBinding pat defn
 
-readModuleName :: Parser ModuleName
-readModuleName =
-    fmap MkModuleName $ (fmap pure $ readThis TokUName) <|> (fmap (\(nn, n) -> nn <> pure n) $ readThis TokQUName)
-
-readImport :: Parser SyntaxDeclaration
+readImport :: Parser SyntaxDeclaration'
 readImport = do
-    spos <- getPosition
     readThis TokImport
     mname <- readModuleName
-    mimportnames <- optional $ readParen readNames
-    return $ ImportSyntaxDeclaration spos mname mimportnames
+    return $ ImportSyntaxDeclaration mname
 
-readNames :: Parser [Name]
-readNames = readCommaList readName
+readUsing :: Parser SyntaxDeclaration'
+readUsing = do
+    readThis TokUsing
+    mname <- readNamespaceRef
+    return $ UsingSyntaxDeclaration mname
 
-readExpose :: Parser SyntaxExpose
-readExpose =
+readNamespace :: Parser SyntaxDeclaration'
+readNamespace = do
+    readThis TokNamespace
+    nspace <- readNamespaceRef
+    readThis TokOf
+    decls <- readDeclarations
+    readThis TokEnd
+    return $ NamespaceSyntaxDeclaration nspace decls
+
+readExposeItem :: Parser SyntaxExposeItem
+readExposeItem =
     (do
-         sdecls <- readLetBindings
-         readThis TokIn
-         sbody <- readExpose
-         return $ SExpLet sdecls sbody) <|>
-    (do
-         spos <- getPosition
-         readThis TokExpose
-         names <- readNames
-         return $ SExpExpose spos names)
+         readThis TokNamespace
+         name <- readNamespaceRef
+         return $ NamespaceSyntaxExposeItem name) <|>
+    fmap NameSyntaxExposeItem readFullNameRef
 
-readDirectDeclaration :: Parser SyntaxRecursiveDeclaration
+readExpose :: Parser SyntaxExposeDeclaration
+readExpose = do
+    readThis TokExpose
+    items <- readCommaList readExposeItem
+    readThis TokOf
+    decls <- readDeclarations
+    readThis TokEnd
+    return $ MkSyntaxExposeDeclaration items decls
+
+readDirectDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
 
-readRecursiveDeclaration :: Parser SyntaxDeclaration
+readRecursiveDeclaration :: Parser SyntaxDeclaration'
 readRecursiveDeclaration = do
-    spos <- getPosition
     readThis TokRec
-    decls <- readLines $ readWithDoc readDirectDeclaration
+    decls <- readLines $ readWithDoc $ readSourcePos readDirectDeclaration
     readThis TokEnd
-    return $ RecursiveSyntaxDeclaration spos decls
+    return $ RecursiveSyntaxDeclaration decls
 
 readDeclaration :: Parser SyntaxDeclaration
 readDeclaration =
-    fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readRecursiveDeclaration <|> do
-        spos <- getPosition
-        expb <- readExpose
-        return $ ExposeSyntaxDeclaration spos expb
+    readWithDoc $
+    readSourcePos $
+    fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readUsing <|> readNamespace <|>
+    readRecursiveDeclaration <|>
+    fmap ExposeSyntaxDeclaration readExpose
 
-readDocDeclarations :: Parser [SyntaxWithDoc SyntaxDeclaration]
-readDocDeclarations = readLines $ readWithDoc readDeclaration
+readDeclarations :: Parser [SyntaxDeclaration]
+readDeclarations = readLines readDeclaration
 
-readLetBindings :: Parser [SyntaxWithDoc SyntaxDeclaration]
+readLetBindings :: Parser [SyntaxDeclaration]
 readLetBindings = do
     readThis TokLet
-    readDocDeclarations
+    readDeclarations
 
 readTopDeclarations :: Parser SyntaxTopDeclarations
 readTopDeclarations = do
@@ -298,7 +313,7 @@ expressionFixityReader =
                   return
                       ( name
                       , operatorFixity name
-                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar $ UnqualifiedReferenceName name) [e1, e2])
+                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar $ UnqualifiedFullNameRef name) [e1, e2])
         , efrMaxPrecedence = 10
         }
 
@@ -308,9 +323,9 @@ readExpression = do
     readSubsumedExpression expr
 
 readName :: Parser Name
-readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis TokOperator)
+readName = readUName <|> readLName <|> (readParen $ readThis TokOperator)
 
-readModule :: Parser SyntaxModule
+readModule :: Parser SyntaxExposeDeclaration
 readModule = readExpose
 
 readMatch :: Parser SyntaxMatch
@@ -443,7 +458,7 @@ readExpression3 :: Parser SyntaxExpression
 readExpression3 =
     readSourcePos
         (do
-             name <- readReferenceLName
+             name <- readFullLName
              annotations <- many readAnnotation
              return $
                  case annotations of
@@ -466,7 +481,7 @@ readExpression3 =
      readSourcePos
          (do
               name <- readThis TokOperator
-              return $ SEVar $ UnqualifiedReferenceName name) <|>
+              return $ SEVar $ UnqualifiedFullNameRef name) <|>
      (do
           spos <- getPosition
           msexpr1 <- optional readExpression

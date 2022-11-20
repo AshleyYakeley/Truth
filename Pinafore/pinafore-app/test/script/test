@@ -1,12 +1,13 @@
 #!/usr/bin/pinafore
-
+let
+import "pinafore-media";
+import "pinafore-gnome";
+in
 Env.openDefaultStore >>= fn dstore =>
 Undo.newUndoHandler >>= fn uh =>
 Undo.handleStore uh dstore >>= fn store =>
-GTK.run $ fn gtk =>
-let
-import Storage;
-import GTK();
+GTK.run $ fn gtk => let
+using Storage;
 
 ### Useful
 ui_page = fns n ui => (GTK.label n,ui);
@@ -207,7 +208,7 @@ window_css: Action GTK.Window
 
 ### Drawing
 window_drawing: WholeModel +Time -> Action GTK.Window
-= fn now => let import Colour; import Cairo in do
+= fn now => let using Colour; using Cairo in do
     tzref <- newTimeZoneModel now;
     std_window {"Drawing"} $ GTK.draw {fn (w,h) => let
         size = min w h;
@@ -256,9 +257,9 @@ window_textselection: Action GTK.Window
 ### Cairo Image
 window_cairoimage: Action GTK.Window
 = let
-    import Colour;
-    import Cairo;
-    import GTK;
+    using Colour;
+    using Cairo;
+    using GTK;
     dimensions: Integer *: Integer
     = (400,400);
     drawing: Integer *: Integer -> Drawing Handler

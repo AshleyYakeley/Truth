@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Stream
-    ( streamLibraryModule
+    ( streamStuff
     , LangSink(..)
     , LangSource(..)
     , langSinkWriteLn
@@ -12,6 +12,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
@@ -115,12 +116,11 @@ lineBufferSource (MkLangSource source) = do
 langListSource :: forall a. [a] -> IO (LangSource a)
 langListSource aa = fmap liftSource $ listSource aa
 
-streamLibraryModule :: LibraryModule context
-streamLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+streamStuff :: DocTreeEntry (BindDoc context)
+streamStuff =
+    docTreeEntry "Stream" "Sinks and sources." $
+    namespaceRelative
         "Stream"
-        "Sinks and sources."
         [ docTreeEntry
               "ItemOrEnd"
               ""

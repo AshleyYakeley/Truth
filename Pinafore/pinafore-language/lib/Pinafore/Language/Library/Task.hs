@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Task
-    ( taskLibraryModule
+    ( taskStuff
     , LangTask(..)
     , liftTask
     , awaitTask
@@ -10,6 +10,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
@@ -63,12 +64,11 @@ langDurationTask d = fmap liftTask $ durationTask d
 langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
-taskLibraryModule :: LibraryModule context
-taskLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+taskStuff :: DocTreeEntry (BindDoc context)
+taskStuff =
+    docTreeEntry "Task" "" $
+    namespaceRelative
         "Task"
-        ""
         [ mkTypeEntry "Task" "A task is something that can be waited for to give a result." $
           MkSomeGroundType taskGroundType
         , mkValEntry "mapTask" "" $ fmap @LangTask @A @B

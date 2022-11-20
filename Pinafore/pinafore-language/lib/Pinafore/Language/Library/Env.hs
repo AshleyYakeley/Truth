@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Env
-    ( envLibraryModule
+    ( envStuff
     ) where
 
 import Changes.Core
@@ -10,6 +10,7 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Storage ()
 import Pinafore.Language.Library.Stream
+import Pinafore.Language.Name
 import Shapes
 
 getVar :: (?qcontext :: InvocationInfo) => Text -> Maybe Text
@@ -29,12 +30,11 @@ openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
 
-envLibraryModule :: LibraryModule InvocationInfo
-envLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+envStuff :: DocTreeEntry (BindDoc InvocationInfo)
+envStuff =
+    docTreeEntry "Env" "The environment in which the script was invoked." $
+    namespaceRelative
         "Env"
-        "The environment in which the script was invoked."
         [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName ?qcontext :: Text)
         , mkValEntry "arguments" "Arguments passed to the script." (fmap pack $ iiScriptArguments ?qcontext :: [Text])
         , mkValEntry

@@ -1,5 +1,7 @@
 module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
-    ( ConstructorCodec
+    ( ConstructorFlavour(..)
+    , ConstructorType(..)
+    , ConstructorCodec
     , TypeConstruction(..)
     , GroundTypeFromTypeID(..)
     , GroundTypeMaker
@@ -7,12 +9,10 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     , makeDataTypeBox
     ) where
 
-import qualified Data.List as List
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
-
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
@@ -25,24 +25,44 @@ import Pinafore.Markdown
 import Shapes
 import Shapes.Unsafe (unsafeGetRefl, unsafeRefl)
 
-type ConstructorCodec t = SomeFor (Codec t) (ListProductType PinaforeNonpolarType)
+data ConstructorFlavour (w :: Type -> Type) where
+    PositionalCF :: ConstructorFlavour QNonpolarType
+    RecordCF :: ConstructorFlavour (QSignature 'Positive)
 
-constructorFreeVariables :: ConstructorCodec t -> [Some SymbolType]
-constructorFreeVariables (MkSomeFor (MkListProductType lt) _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
+data ConstructorType (t :: Type) where
+    MkConstructorType :: ConstructorFlavour w -> ListVType w tt -> ConstructorType (ListVProduct tt)
+
+instance MaybeUnitWitness ConstructorType where
+    maybeUnitWitness (MkConstructorType _ (MkListVType t :: ListVType w tt)) = do
+        Refl <- listVectorIsEmpty t
+        case emptyMapTypeRefl @Type @Type @w @tt of
+            Refl -> return Dict
+
+instance HasVarMapping ConstructorType where
+    getVarMapping (MkConstructorType PositionalCF tt) = getVarMapping $ MkListVProductType tt
+    getVarMapping (MkConstructorType RecordCF tt) = getVarMapping $ MkListVProductType tt
+
+type ConstructorCodec t = SomeFor (Codec t) ConstructorType
+
+constructorTypeFreeVariables :: ConstructorFlavour w -> w t -> FiniteSet (Some SymbolType)
+constructorTypeFreeVariables PositionalCF wt = freeTypeVariables wt
+constructorTypeFreeVariables RecordCF _ = mempty
+
+instance FreeTypeVariables (ConstructorCodec t) where
+    freeTypeVariables (MkSomeFor (MkConstructorType cf w) _) =
+        mconcat $ toList $ listVTypeToVector (constructorTypeFreeVariables cf) w
 
 assembleDataType ::
        forall n.
-       FixedList n (Some (ListType PinaforeNonpolarType))
+       FixedList n (Some ConstructorType)
     -> forall r.
                (forall t. FixedList n (ConstructorCodec t) -> VarMapping t -> (t -> (forall a. FixedList n a -> a)) -> r) -> r
-assembleDataType tconss call = let
-    nconss :: FixedList n (Some (ListProductType PinaforeNonpolarType))
-    nconss = fmap (\(MkSome lt) -> MkSome $ MkListProductType lt) tconss
-    in listTypeFromFixedList nconss $ \lcons ->
-           getPreferredTypeRepresentation lcons $ \(MkTypeRepresentation ccons vmap) pickcons -> let
-               conss :: FixedList n (SomeFor (Codec _) (ListProductType PinaforeNonpolarType))
-               conss = listTypeToFixedList getConst $ joinListType (\codec el -> Const $ MkSomeFor el codec) ccons lcons
-               in call conss vmap $ \t -> fixedListElement $ listElementTypeIndex $ someForToSome $ pickcons t
+assembleDataType tconss call =
+    listTypeFromFixedList tconss $ \lcons ->
+        getPreferredTypeRepresentation lcons $ \(MkTypeRepresentation ccons vmap) pickcons -> let
+            conss :: FixedList n (SomeFor (Codec _) ConstructorType)
+            conss = listTypeToFixedList getConst $ joinListType (\codec el -> Const $ MkSomeFor el codec) ccons lcons
+            in call conss vmap $ \t -> fixedListElement $ listElementTypeIndex $ someForToSome $ pickcons t
 
 data DataTypeFamily :: FamilyKind where
     MkDataTypeFamily :: forall (tid :: Nat). TypeIDType tid -> DataTypeFamily (Identified tid)
@@ -192,7 +212,6 @@ getConsSubtypeData ::
        TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [TypeData dv t]
-getConsSubtypeData _ (MkSyntaxWithDoc _ (ConstructorSyntaxConstructorOrSubtype _ _ _)) = return mempty
 getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
     ssubtid <- newMatchingTypeID @dv
     case (tdID superTD, ssubtid) of
@@ -205,6 +224,7 @@ getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubty
                     subTD = MkTypeData subMTID (Just superTD) subtypes tname doc
                 subtdata <- getConssSubtypeData subTD conss
             return $ subTD : subtdata
+getConsSubtypeData _ _ = return mempty
 
 getConssSubtypeData ::
        TypeData dv t -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> QInterpreter [TypeData dv t]
@@ -216,7 +236,7 @@ data Constructor dv t extra = MkConstructor
     { ctName :: Name
     , ctDoc :: Markdown
     , ctOuterType :: TypeData dv t
-    , ctInnerTypes :: [SyntaxType]
+    , ctContents :: Either (Vector SyntaxType) (Vector SyntaxSignature)
     , ctExtra :: extra
     }
 
@@ -232,7 +252,9 @@ getConstructor ::
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [Constructor dv t extra]
 getConstructor _ typeNM (MkSyntaxWithDoc doc (ConstructorSyntaxConstructorOrSubtype consName stypes extra)) =
-    return $ pure $ MkConstructor consName doc typeNM stypes extra
+    return $ pure $ MkConstructor consName doc typeNM (Left $ fromList stypes) extra
+getConstructor _ typeNM (MkSyntaxWithDoc doc (RecordSyntaxConstructorOrSubtype consName sigs)) =
+    return $ pure $ MkConstructor consName doc typeNM (Right $ fromList sigs) $ error "record extra data"
 getConstructor tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes)) = do
     subtypeTD <- typeDataLookup tdata subtypeName
     getConstructors tdata subtypeTD stypes
@@ -245,10 +267,25 @@ getConstructors ::
 getConstructors tdata typeNM syntaxConstructorList =
     fmap mconcat $ for syntaxConstructorList $ getConstructor tdata typeNM
 
-interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some (ListType PinaforeNonpolarType))
-interpretConstructorTypes c = do
-    etypes <- for (ctInnerTypes c) interpretNonpolarType
-    return $ assembleListType etypes
+interpretSignature' :: SyntaxSignature' -> QInterpreter (Some (QSignature 'Positive))
+interpretSignature' (ValueSyntaxSignature name stype) = do
+    qtype <- interpretType stype
+    return $ mapSome (ValueSignature name) qtype
+
+interpretSignature :: SyntaxSignature -> QInterpreter (Some (QSignature 'Positive))
+interpretSignature (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' ssig
+
+interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some ConstructorType)
+interpretConstructorTypes c =
+    case ctContents c of
+        Left innerTypes -> do
+            etypes <- for innerTypes interpretNonpolarType
+            case assembleListVType etypes of
+                MkSome npts -> return $ MkSome $ MkConstructorType PositionalCF npts
+        Right sigs -> do
+            qsigs <- for sigs interpretSignature
+            case assembleListVType qsigs of
+                MkSome qsiglist -> return $ MkSome $ MkConstructorType RecordCF qsiglist
 
 makeBox ::
        forall extra (dv :: DolanVariance).
@@ -286,7 +323,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                 mainRegister x = do
                                     MkGroundTypeFromTypeID gttid <- lift $ mkgt x
                                     let (gt, y) = gttid mainTypeName mainTypeID
-                                    registerType mainTypeName mainTypeDoc gt
+                                    registerType (UnqualifiedFullNameRef mainTypeName) mainTypeDoc gt
                                     postregister gt y
                                 mainConstruct ::
                                        ()
@@ -299,12 +336,12 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     constructorInnerTypes <- lift $ for constructorFixedList interpretConstructorTypes
                                     assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                         let
-                                            freevars :: [Some SymbolType]
-                                            freevars = nub $ mconcat $ fmap constructorFreeVariables $ toList codecs
+                                            freevars :: FiniteSet (Some SymbolType)
+                                            freevars = mconcat $ fmap freeTypeVariables $ toList codecs
                                             declaredvars :: [Some SymbolType]
                                             declaredvars = tParamsVars tparams
                                             unboundvars :: [Some SymbolType]
-                                            unboundvars = freevars List.\\ declaredvars
+                                            unboundvars = toList freevars \\ declaredvars
                                         case nonEmpty $ duplicates declaredvars of
                                             Nothing -> return ()
                                             Just vv ->
@@ -374,7 +411,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                        , DolanVarianceMap dv maintype
                                        , ConstructorCodec decltype)
                                     -> QScopeInterpreter ()
-                                registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor (MkListProductType lt) codec) = do
+                                registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor ctype codec) = do
                                     gttid <- lift $ mkgt x
                                     let
                                         groundType :: QGroundType dv maintype
@@ -395,25 +432,42 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 dvm
                                                 tparams
                                     case (getargs @'Positive, getargs @'Negative) of
-                                        (MkShimWit posargs posconv, MkShimWit negargs negconv) -> do
-                                            let
-                                                ctfpos :: QShimWit 'Positive decltype
-                                                ctfpos =
-                                                    mapShimWit posconv $
-                                                    typeToDolan $ MkDolanGroundedType groundType posargs
-                                                ctfneg :: QShimWit 'Negative decltype
-                                                ctfneg =
-                                                    mapShimWit negconv $
-                                                    typeToDolan $ MkDolanGroundedType groundType negargs
-                                            ltp <- return $ mapListType (nonpolarToPositive @QTypeSystem) lt
-                                            ltn <- return $ mapListType (nonpolarToNegative @QTypeSystem) lt
-                                            let
-                                                expr =
-                                                    qConstExprAny $
-                                                    MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $ encode codec
-                                                pc = toPatternConstructor ctfneg ltp $ ImpureFunction $ decode codec
-                                            registerPatternConstructor (ctName constructor) (ctDoc constructor) expr $
-                                                toExpressionPatternConstructor pc
+                                        (MkShimWit posargs posconv, MkShimWit negargs negconv) -> let
+                                            ctnameref = UnqualifiedFullNameRef $ ctName constructor
+                                            ctfpos :: QShimWit 'Positive decltype
+                                            ctfpos =
+                                                mapShimWit posconv $
+                                                typeToDolan $ MkDolanGroundedType groundType posargs
+                                            ctfneg :: QShimWit 'Negative decltype
+                                            ctfneg =
+                                                mapShimWit negconv $
+                                                typeToDolan $ MkDolanGroundedType groundType negargs
+                                            in case ctype of
+                                                   MkConstructorType PositionalCF lt -> let
+                                                       ltp =
+                                                           listVTypeToType $
+                                                           mapListVType (nonpolarToPositive @QTypeSystem) lt
+                                                       ltn =
+                                                           listVTypeToType $
+                                                           mapListVType (nonpolarToNegative @QTypeSystem) lt
+                                                       expr =
+                                                           qConstExprAny $
+                                                           MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
+                                                           encode codec . listProductToVProduct lt
+                                                       pc =
+                                                           toPatternConstructor ctfneg ltp $
+                                                           ImpureFunction $ fmap listVProductToProduct . decode codec
+                                                       in registerPatternConstructor ctnameref (ctDoc constructor) expr $
+                                                          toExpressionPatternConstructor pc
+                                                   MkConstructorType RecordCF lt -> let
+                                                       ltp = listVTypeToType lt
+                                                       recordcons = MkRecordConstructor ltp ctfpos $ encode codec
+                                                       recordpat = MkRecordPattern ltp ctfneg $ decode codec
+                                                       in registerRecord
+                                                              ctnameref
+                                                              (ctDoc constructor)
+                                                              recordcons
+                                                              recordpat
                                 constructorBox ::
                                        Constructor dv maintype extra
                                     -> QFixBox ( QGroundType dv maintype
@@ -431,7 +485,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     let
                                         subGroundType :: QGroundType dv maintype
                                         subGroundType = getGroundType mainGroundType picktype gttid tdata
-                                    registerType (tdName tdata) (tdDoc tdata) subGroundType
+                                    registerType (UnqualifiedFullNameRef $ tdName tdata) (tdDoc tdata) subGroundType
                                     for_ (tdSupertype tdata) $ \supertdata -> let
                                         superGroundType :: QGroundType dv maintype
                                         superGroundType = getGroundType mainGroundType picktype gttid supertdata

@@ -40,7 +40,7 @@ runRefNotation rexpr = evalStateT (runRefWriterT rexpr) firstVarIDState
 
 type RefExpression = RefNotation QExpression
 
-allocateVarRefNotation :: Name -> RefNotation VarID
+allocateVarRefNotation :: FullName -> RefNotation VarID
 allocateVarRefNotation name = do
     i <- lift get
     lift $ put $ nextVarIDState i
@@ -48,7 +48,7 @@ allocateVarRefNotation name = do
 
 refNotationUnquote :: RefExpression -> RefExpression
 refNotationUnquote rexpr = do
-    v <- allocateVarRefNotation "%model"
+    v <- allocateVarRefNotation $ RootFullName "%model"
     expr <- lift $ runRefWriterT rexpr
     tell $ pure (v, expr)
     return $ qVarExpr v
@@ -56,7 +56,7 @@ refNotationUnquote rexpr = do
 aplist :: QExpression -> [QExpression] -> QInterpreter QExpression
 aplist expr [] = return expr
 aplist expr (arg:args) = do
-    aprefExpr <- qName $ QualifiedReferenceName stdModuleName "applyWholeModel"
+    aprefExpr <- qName $ MkFullNameRef RootNamespaceRef "applyWholeModel"
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args
 
@@ -65,7 +65,7 @@ refNotationQuote rexpr =
     lift $ do
         (expr, binds) <- runWriterT rexpr
         lift $ do
-            purerefExpr <- qName $ QualifiedReferenceName stdModuleName "pureWholeModel"
+            purerefExpr <- qName $ MkFullNameRef RootNamespaceRef "pureWholeModel"
             aexpr <- qAbstractsExpr (fmap fst binds) expr
             raexpr <- qApplyExpr purerefExpr aexpr
             aplist raexpr $ fmap snd binds

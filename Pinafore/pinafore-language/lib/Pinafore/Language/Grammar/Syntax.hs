@@ -2,7 +2,6 @@ module Pinafore.Language.Grammar.Syntax where
 
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Markdown
@@ -15,9 +14,18 @@ data SyntaxConstructorOrSubtype extra
                                             extra
     | SubtypeSyntaxConstructorOrSubtype Name
                                         [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
+    | RecordSyntaxConstructorOrSubtype Name
+                                       [SyntaxSignature]
     deriving (Eq)
 
 type SyntaxClosedEntityConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
+
+data SyntaxSignature' =
+    ValueSyntaxSignature Name
+                         SyntaxType
+    deriving (Eq)
+
+type SyntaxSignature = SyntaxWithDoc (WithSourcePos SyntaxSignature')
 
 data SyntaxTypeParameter
     = PositiveSyntaxTypeParameter Name
@@ -35,7 +43,7 @@ type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
-    | NameSyntaxDynamicEntityConstructor ReferenceName
+    | NameSyntaxDynamicEntityConstructor FullNameRef
     deriving (Eq)
 
 data SyntaxTypeDeclaration
@@ -47,40 +55,44 @@ data SyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
     deriving (Eq)
 
-data SyntaxExpose
-    = SExpExpose SourcePos
-                 [Name]
-    | SExpLet [SyntaxWithDoc SyntaxDeclaration]
-              SyntaxExpose
-    deriving (Eq)
-
-data SyntaxRecursiveDeclaration
-    = TypeSyntaxDeclaration SourcePos
-                            Name
+data SyntaxRecursiveDeclaration'
+    = TypeSyntaxDeclaration Name
                             SyntaxTypeDeclaration
-    | SubtypeSyntaxDeclaration SourcePos
-                               TrustOrVerify
+    | SubtypeSyntaxDeclaration TrustOrVerify
                                SyntaxType
                                SyntaxType
                                (Maybe SyntaxExpression)
     | BindingSyntaxDeclaration SyntaxBinding
     deriving (Eq)
 
+type SyntaxRecursiveDeclaration = SyntaxWithDoc (WithSourcePos SyntaxRecursiveDeclaration')
+
 data SyntaxWithDoc t =
     MkSyntaxWithDoc Markdown
                     t
     deriving (Eq)
 
-data SyntaxDeclaration
-    = DirectSyntaxDeclaration SyntaxRecursiveDeclaration
-    | ImportSyntaxDeclaration SourcePos
-                              ModuleName
-                              (Maybe [Name])
-    | ExposeSyntaxDeclaration SourcePos
-                              SyntaxExpose
-    | RecursiveSyntaxDeclaration SourcePos
-                                 [SyntaxWithDoc SyntaxRecursiveDeclaration]
+data SyntaxExposeItem
+    = NameSyntaxExposeItem FullNameRef
+    | NamespaceSyntaxExposeItem NamespaceRef
     deriving (Eq)
+
+data SyntaxExposeDeclaration =
+    MkSyntaxExposeDeclaration [SyntaxExposeItem]
+                              [SyntaxDeclaration]
+    deriving (Eq)
+
+data SyntaxDeclaration'
+    = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
+    | ImportSyntaxDeclaration ModuleName
+    | ExposeSyntaxDeclaration SyntaxExposeDeclaration
+    | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
+    | UsingSyntaxDeclaration NamespaceRef
+    | NamespaceSyntaxDeclaration NamespaceRef
+                                 [SyntaxDeclaration]
+    deriving (Eq)
+
+type SyntaxDeclaration = SyntaxWithDoc (WithSourcePos SyntaxDeclaration')
 
 data WithSourcePos t =
     MkWithSourcePos SourcePos
@@ -100,7 +112,7 @@ instance ExprShow SyntaxVariance where
     exprShowPrec ContraSyntaxVariance = ("-", 0)
 
 newtype SyntaxGroundType =
-    ConstSyntaxGroundType ReferenceName
+    ConstSyntaxGroundType FullNameRef
     deriving (Eq)
 
 data SyntaxTypeArgument
@@ -142,7 +154,7 @@ instance ExprShow SyntaxType' where
     exprShowPrec TopSyntaxType = ("None", 0)
     exprShowPrec BottomSyntaxType = ("Any", 0)
     exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
-    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (UnqualifiedReferenceName n)) [ta, tb])
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (MkFullNameRef _ n)) [ta, tb])
         | nameIsInfix n = let
             MkFixity assc level = typeOperatorFixity n
             prec = 6 - level
@@ -158,16 +170,14 @@ instance ExprShow SyntaxType' where
 type SyntaxType = WithSourcePos SyntaxType'
 
 data SyntaxBinding =
-    MkSyntaxBinding SourcePos
-                    (Maybe SyntaxType)
-                    Name
+    MkSyntaxBinding SyntaxPattern
                     SyntaxExpression
     deriving (Eq)
 
 data SyntaxConstructor
     = SLNumber Number
     | SLString Text
-    | SLNamedConstructor ReferenceName
+    | SLNamedConstructor FullNameRef
     | SLPair
     | SLUnit
     deriving (Eq)
@@ -181,6 +191,10 @@ data SyntaxPattern'
                                [SyntaxPattern]
     | TypedSyntaxPattern SyntaxPattern
                          SyntaxType
+    | DynamicTypedSyntaxPattern SyntaxPattern
+                                SyntaxType
+    | NamespaceSyntaxPattern SyntaxPattern
+                             NamespaceRef
     deriving (Eq)
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
@@ -233,8 +247,8 @@ data SyntaxExpression'
     = SESubsume SyntaxExpression
                 SyntaxType
     | SEConst SyntaxConstant
-    | SEVar ReferenceName
-    | SESpecialForm ReferenceName
+    | SEVar FullNameRef
+    | SESpecialForm FullNameRef
                     (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression
@@ -244,7 +258,7 @@ data SyntaxExpression'
     | SEMatches SyntaxMultimatchList
     | SERef SyntaxExpression
     | SEUnref SyntaxExpression
-    | SELet [SyntaxWithDoc SyntaxDeclaration]
+    | SELet [SyntaxDeclaration]
             SyntaxExpression
     | SEList [SyntaxExpression]
     deriving (Eq)
@@ -268,11 +282,11 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
-type SyntaxModule = SyntaxExpose
+type SyntaxModule = SyntaxExposeDeclaration
 
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
-                            [SyntaxWithDoc SyntaxDeclaration]
+                            [SyntaxDeclaration]
 
 class HasSourcePos t where
     getSourcePos :: t -> SourcePos
@@ -280,129 +294,5 @@ class HasSourcePos t where
 instance HasSourcePos (WithSourcePos t) where
     getSourcePos (MkWithSourcePos spos _) = spos
 
-instance HasSourcePos SyntaxBinding where
-    getSourcePos (MkSyntaxBinding spos _ _ _) = spos
-
 instance HasSourcePos SyntaxTopDeclarations where
     getSourcePos (MkSyntaxTopDeclarations spos _) = spos
-
-instance HasSourcePos SyntaxRecursiveDeclaration where
-    getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
-    getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
-    getSourcePos (SubtypeSyntaxDeclaration spos _ _ _ _) = spos
-
-instance HasSourcePos SyntaxDeclaration where
-    getSourcePos (DirectSyntaxDeclaration decl) = getSourcePos decl
-    getSourcePos (ImportSyntaxDeclaration spos _ _) = spos
-    getSourcePos (ExposeSyntaxDeclaration spos _) = spos
-    getSourcePos (RecursiveSyntaxDeclaration spos _) = spos
-
-class SyntaxFreeVariables t where
-    syntaxFreeVariables :: t -> FiniteSet Name
-
-instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
-    syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
-
-instance SyntaxFreeVariables t => SyntaxFreeVariables (NonEmpty t) where
-    syntaxFreeVariables tt = syntaxFreeVariables $ toList tt
-
-instance SyntaxFreeVariables t => SyntaxFreeVariables (FixedList n t) where
-    syntaxFreeVariables tt = syntaxFreeVariables $ toList tt
-
-instance SyntaxFreeVariables st => SyntaxFreeVariables (WithSourcePos st) where
-    syntaxFreeVariables (MkWithSourcePos _ e) = syntaxFreeVariables e
-
-instance SyntaxFreeVariables SyntaxMatch where
-    syntaxFreeVariables (MkSyntaxMatch pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
-
-instance SyntaxFreeVariables (SyntaxMultimatch n) where
-    syntaxFreeVariables (MkSyntaxMultimatch pats expr) =
-        difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
-
-instance SyntaxFreeVariables (Some SyntaxMultimatch) where
-    syntaxFreeVariables (MkSome m) = syntaxFreeVariables m
-
-instance SyntaxFreeVariables SyntaxMultimatchList where
-    syntaxFreeVariables (MkSyntaxMultimatchList _ l) = syntaxFreeVariables l
-
-instance SyntaxFreeVariables SyntaxExpression' where
-    syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
-    syntaxFreeVariables (SEConst _) = mempty
-    syntaxFreeVariables (SEVar (UnqualifiedReferenceName name)) = opoint name
-    syntaxFreeVariables (SEVar (QualifiedReferenceName _ _)) = mempty
-    syntaxFreeVariables (SESpecialForm _ _) = mempty
-    syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
-    syntaxFreeVariables (SEAbstract match) = syntaxFreeVariables match
-    syntaxFreeVariables (SEAbstracts match) = syntaxFreeVariables match
-    syntaxFreeVariables (SEMatch match) = syntaxFreeVariables match
-    syntaxFreeVariables (SEMatches match) = syntaxFreeVariables match
-    syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
-    syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
-    syntaxFreeVariables (SELet binds expr) =
-        difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
-    syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
-
-instance SyntaxFreeVariables SyntaxBinding where
-    syntaxFreeVariables (MkSyntaxBinding _ _ _ expr) = syntaxFreeVariables expr
-
-instance SyntaxFreeVariables t => SyntaxFreeVariables (SyntaxWithDoc t) where
-    syntaxFreeVariables (MkSyntaxWithDoc _ decl) = syntaxFreeVariables decl
-
-instance SyntaxFreeVariables SyntaxRecursiveDeclaration where
-    syntaxFreeVariables (BindingSyntaxDeclaration bind) = syntaxFreeVariables bind
-    syntaxFreeVariables _ = mempty
-
-instance SyntaxFreeVariables SyntaxDeclaration where
-    syntaxFreeVariables (DirectSyntaxDeclaration bind) = syntaxFreeVariables bind
-    syntaxFreeVariables (RecursiveSyntaxDeclaration _ decls) = syntaxFreeVariables decls
-    syntaxFreeVariables _ = mempty
-
-class SyntaxBindingVariables t where
-    syntaxBindingVariables :: t -> FiniteSet Name
-
-instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
-    syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
-
-instance SyntaxBindingVariables t => SyntaxBindingVariables (NonEmpty t) where
-    syntaxBindingVariables tt = syntaxBindingVariables $ toList tt
-
-instance SyntaxBindingVariables t => SyntaxBindingVariables (FixedList n t) where
-    syntaxBindingVariables tt = syntaxBindingVariables $ toList tt
-
-instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) where
-    syntaxBindingVariables (MkWithSourcePos _ pat) = syntaxBindingVariables pat
-
-instance SyntaxBindingVariables SyntaxPattern' where
-    syntaxBindingVariables AnySyntaxPattern = mempty
-    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet name
-    syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
-        union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
-    syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
-    syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
-
-instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) where
-    syntaxBindingVariables (MkSyntaxWithDoc _ decl) = syntaxBindingVariables decl
-
-instance SyntaxBindingVariables SyntaxRecursiveDeclaration where
-    syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
-    syntaxBindingVariables _ = mempty
-
-instance SyntaxBindingVariables SyntaxDeclaration where
-    syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind
-    syntaxBindingVariables (RecursiveSyntaxDeclaration _ decls) = syntaxBindingVariables decls
-    syntaxBindingVariables _ = mempty
-
-instance SyntaxBindingVariables SyntaxBinding where
-    syntaxBindingVariables (MkSyntaxBinding _ _ name _) = singletonSet name
-
-checkSyntaxBindingsDuplicates ::
-       forall m. MonadThrow ErrorType m
-    => [SyntaxBinding]
-    -> m ()
-checkSyntaxBindingsDuplicates = let
-    checkDuplicates :: [Name] -> m ()
-    checkDuplicates nn =
-        case nonEmpty $ duplicates nn of
-            Nothing -> return ()
-            Just b -> throw $ InterpretBindingsDuplicateError b
-    in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _) -> name)

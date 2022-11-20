@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Media.Image
-    ( imageLibraryModule
+    ( imageStuff
     , LangImage(..)
     ) where
 
@@ -26,12 +26,11 @@ langBlankImage (MkOpaqueAlphaColour col) size =
     MkLangImage $ MkSomeFor RGB16PixelType $ blankImage size $ colourToPixel col
 langBlankImage acol size = MkLangImage $ MkSomeFor RGBA16PixelType $ blankImage size $ alphaColourToPixel acol
 
-imageLibraryModule :: LibraryModule ()
-imageLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+imageStuff :: DocTreeEntry (BindDoc ())
+imageStuff =
+    docTreeEntry "Image" "" $
+    namespaceRelative
         "Image"
-        ""
         [ mkTypeEntry "Image" "An image." $ MkSomeGroundType imageGroundType
         , mkValEntry "imageSize" "The size of an image" langImageSize
         , mkValEntry "blankImage" "An image of one colour" langBlankImage

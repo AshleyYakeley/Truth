@@ -1,6 +1,5 @@
 #!/usr/bin/pinafore
-
-let import GTK in
+let import "pinafore-gnome" in
 run $
 \gtk =>
 fixAction $

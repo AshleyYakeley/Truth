@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Library.Defs where
 
 import Pinafore.Base
@@ -16,7 +18,7 @@ import Pinafore.Markdown
 import Shapes
 
 data ScopeEntry context
-    = BindScopeEntry Name
+    = BindScopeEntry FullName
                      (Maybe (context -> QInterpreterBinding))
     | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
 
@@ -32,20 +34,19 @@ data BindDoc context = MkBindDoc
 instance Contravariant BindDoc where
     contramap ab (MkBindDoc se d) = MkBindDoc (contramap ab se) d
 
-newtype LibraryModule context =
-    MkLibraryModule (DocTree (BindDoc context))
+data LibraryModule context = MkLibraryModule
+    { lmName :: ModuleName
+    , lmContents :: DocTree (BindDoc context)
+    }
 
 instance Contravariant LibraryModule where
-    contramap ab (MkLibraryModule tt) = MkLibraryModule $ fmap (contramap ab) tt
-
-libraryModuleName :: LibraryModule context -> Text
-libraryModuleName (MkLibraryModule lmod) = docTreeName lmod
+    contramap ab (MkLibraryModule n tt) = MkLibraryModule n $ fmap (contramap ab) tt
 
 libraryModuleEntries :: LibraryModule context -> [BindDoc context]
-libraryModuleEntries (MkLibraryModule lmod) = toList lmod
+libraryModuleEntries (MkLibraryModule _ lmod) = toList lmod
 
 libraryModuleDocumentation :: LibraryModule context -> DocTree DefDoc
-libraryModuleDocumentation (MkLibraryModule lmod) = fmap bdDoc lmod
+libraryModuleDocumentation (MkLibraryModule _ lmod) = fmap bdDoc lmod
 
 type EnA = MeetType Entity A
 
@@ -63,9 +64,23 @@ qNegativeTypeDescription =
     case fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
+instance NamespaceRelative t => NamespaceRelative (DocTree t) where
+    namespaceRelative nsn = fmap $ namespaceRelative nsn
+
+instance NamespaceRelative t => NamespaceRelative (DocTreeEntry t) where
+    namespaceRelative nsn = fmap $ namespaceRelative nsn
+
+instance NamespaceRelative (ScopeEntry context) where
+    namespaceRelative nsn (BindScopeEntry fn b) = BindScopeEntry (namespaceRelative nsn fn) b
+    namespaceRelative _ se = se
+
+instance NamespaceRelative (BindDoc context) where
+    namespaceRelative nsn bd =
+        bd {bdScopeEntry = namespaceRelative nsn $ bdScopeEntry bd, bdDoc = namespaceRelative nsn $ bdDoc bd}
+
 mkValEntry ::
        forall context t. HasQType 'Positive t
-    => Name
+    => FullName
     -> Markdown
     -> ((?qcontext :: context) => t)
     -> DocTreeEntry (BindDoc context)
@@ -83,7 +98,7 @@ mkValEntry name docDescription val = let
 
 mkSupertypeEntry ::
        forall context t. HasQType 'Positive t
-    => Name
+    => FullName
     -> Markdown
     -> ((?qcontext :: context) => t)
     -> DocTreeEntry (BindDoc context)
@@ -117,12 +132,12 @@ getTypeParameter RangeCCRVarianceType = do
     return $ RangeSyntaxTypeParameter vn vp
 
 getTypeParameters :: [Name] -> DolanVarianceType dv -> [Text]
-getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeFor dvt getTypeParameter) supply
+getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeForList dvt getTypeParameter) supply
 
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-mkTypeEntry :: forall context. Name -> Markdown -> QBoundType -> DocTreeEntry (BindDoc context)
+mkTypeEntry :: forall context. FullName -> Markdown -> QBoundType -> DocTreeEntry (BindDoc context)
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
     diName = name
@@ -166,7 +181,7 @@ hasSubtypeRelationEntry trustme doc conv = let
 mkValPatEntry ::
        forall context t v lt.
        (HasQType 'Positive t, HasQType 'Negative v, ToListShimWit (QPolyShim Type) (QType 'Positive) lt)
-    => Name
+    => FullName
     -> Markdown
     -> t
     -> PurityFunction Maybe v (ListProduct lt)
@@ -183,7 +198,7 @@ mkValPatEntry name docDescription val pat = let
 
 mkSpecialFormEntry ::
        forall context.
-       Name
+       FullName
     -> Markdown
     -> [Text]
     -> Text

@@ -135,9 +135,9 @@ liftFullResultOneFloatingChangeLens ::
        )
     => FloatingChangeLens updateA updateB
     -> FloatingChangeLens (FullResultOneUpdate f updateA) (FullResultOneUpdate f updateB)
-liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rlens) = let
+liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (finit :: FloatInit _ r) rlens) = let
     sclInit :: StateLensInit (OneReader f (UpdateReader updateA)) (f r)
-    sclInit mr = unComposeInner $ runFloatInit init $ oneReadFunctionF mr
+    sclInit mr = unComposeInner $ runFloatInit finit $ oneReadFunctionF mr
     reInit ::
            forall m. MonadIO m
         => Readable m (OneReader f (UpdateReader updateA))
@@ -145,7 +145,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
     reInit mr = do
         r <-
             lift $
-            runFloatInit init $ \rt -> do
+            runFloatInit finit $ \rt -> do
                 ft <- mr $ ReadOne rt
                 case retrieveInner ft of
                     SuccessResult t -> return t

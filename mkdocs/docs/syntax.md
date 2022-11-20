@@ -113,11 +113,11 @@ All declarations, including type declarations, are local to a `let` block.
 <expression-1> ::=
     "fn" <match> |
     "fns" <multimatch> |
-    "match" <matches> "end" |
-    "matches" <multimatches> "end" |
+    "match" <semicolon-separated(<match>)> "end" |
+    "matches" <semicolon-separated-1(<multimatch>)> "end" |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
-    "do" <do-lines> <expression> "end" |
+    "do" <semicolon-separated(<do-line>)> <expression> "end" |
     <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
@@ -149,56 +149,49 @@ All declarations, including type declarations, are local to a `let` block.
     n |
     <comma-separated-1(n)> "," n
 
-<matches> ::=  | <match> ";" <matches>
+<semicolon-separated(n)> ::=  | <semicolon-separated-1(n)>
+
+<semicolon-separated-1(n)> ::= n ";" <semicolon-separated(n)>
+
+<of(n)> ::= "of" <semicolon-separated(n)> "end"
 
 <match> ::= <pattern-1> "=>" <expression>
 
-<multimatches> ::= <multimatch> | <multimatch> ";" <multimatches>
-
 <multimatch> ::= <patterns> "=>" <expression>
-
-<do-lines> =  | <do-line> ";" <do-lines>
 
 <do-line> = <expression> | <pattern-1> "<-" <expression>
 
-<let-declarations> ::= "let" <declarations>
-
-<declarations> ::=  | <declaration> ";" <declarations>
+<let-declarations> ::= "let" <semicolon-separated(<declaration>)>
 
 <declaration> ::=
     direct-declaration |
-    "import" <module-name> <opt-import-list> |
+    "import" <module-name> |
+    "using" <namespace> |
+    "namespace" <namepace> <of(<declaration>)> |
     <expose-declaration> |
-    "rec" <direct-declarations> "end"
-
-<opt-import-list> ::=  | "(" <names> ")"
-
-<direct-declarations> ::=  | <direct-declaration> ";" <direct-declarations>
+    "rec" <semicolon-separated(<direct-declaration>)> "end"
 
 <direct-declaration> ::=
-    "datatype" <type-const> <datatype-parameters> "of" <datatype-body> "end" |
+    "datatype" <type-const> <datatype-parameters> <of(<datatype-constructor>)> |
     "opentype" <type-const> |
     "subtype" <opt-trustme> <type> "<:" <type> <subtype-body> |
-    "closedtype" <type-const> <closedtype-parameters> "of" <closedtype-body> "end" |
+    "closedtype" <type-const> <closedtype-parameters> <of(<closedtype-constructor>)> |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
-<expose-declaration> ::= <let-declarations> "in" <expose-declaration> |
-    "expose" <names>
+<expose-item> ::= <name> | "namespace" <name>
 
-<module-name> ::= uname | uname "." <module-name>
+<expose-declaration> ::= "expose" <comma-separated(<expose-item>)> <of(<declaration>)>
+
+<namespace> ::= uname | uname "." <namespace>
+
+<module-name> ::= literal-text
 
 <opt-trustme> ::=  | "trustme"
 
 <subtype-body> ::=  | "=" <expression>
 
-<binding> ::=
-    <type-signature> ";" <unsigned-binding> |
-    <unsigned-binding>
-
-<unsigned-binding> ::= lname <patterns> "=" <expression>
-
-<type-signature> ::= lname ":" <type>
+<binding> ::= <pattern-1> "=" <expression>
 
 <datatype-parameters> ::=  | <datatype-parameter> <datatype-parameters>
 
@@ -208,29 +201,20 @@ All declarations, including type declarations, are local to a `let` block.
     "{" "+" lname "," "-" lname "}" |
     "{" "-" lname "," "+" lname "}" |
 
-<datatype-body> ::=  | <datatype-constructors>
-
-<datatype-constructors> ::=
-    <datatype-constructor> |
-    <datatype-constructor> ";" <datatype-constructors>
-
 <datatype-constructor> ::=
     uname <types> |
-    "subtype" "datatype" <type-const> "of" <datatype-body> "end"
+    uname <of(<signature>)> |
+    "subtype" "datatype" <type-const> <of(<datatype-constructor>)>
+
+<signature> ::= lname ":" <type>
 
 <closedtype-parameters> ::=  | <closedtype-parameter> <closedtype-parameters>
 
 <closedtype-parameter> ::= "+" lname
 
-<closedtype-body> ::=  | <closedtype-constructors>
-
-<closedtype-constructors> ::=
-    <closedtype-constructor> |
-    <closedtype-constructor> ";" <closedtype-constructors>
-
 <closedtype-constructor> ::=
     uname <types> anchor |
-    "subtype" "closedtype" <type-const> "of" <closedtype-body> "end"
+    "subtype" "closedtype" <type-const> <of(<closedtype-constructor>)>
 
 <dynamictype-constructors> ::=
     <dynamictype-constructor> |
@@ -242,7 +226,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <patterns> ::=  | <pattern-4> <patterns>
 
-<pattern-1> ::= <pattern-2> | <pattern-2> ":" <type>
+<pattern-1> ::= <pattern-2> | <pattern-1> ":" <type> | <pattern-1> ":?" <type> | <pattern-1> "as" <namespace>
 
 <pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
 

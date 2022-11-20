@@ -25,10 +25,10 @@ type Docs = [DocTreeEntry DefDoc]
 defDocs :: DefDoc -> Docs
 defDocs doc = [EntryDocTreeEntry doc]
 
-exposeDeclids :: [Name] -> [DefDoc] -> [DefDoc]
+exposeDeclids :: [FullName] -> [DefDoc] -> [DefDoc]
 exposeDeclids names decls = let
-    inDecl :: Name -> Maybe DefDoc
-    inDecl n = find (diMatchName n . docItem) decls
+    inDecl :: FullName -> Maybe DefDoc
+    inDecl fn = find (diMatchName fn . docItem) decls
     isSubtypeDDI :: DefDoc -> Bool
     isSubtypeDDI doc =
         case docItem doc of
@@ -36,7 +36,7 @@ exposeDeclids names decls = let
             _ -> False
     in mapMaybe inDecl names <> filter isSubtypeDDI decls
 
-exposeDocs :: [Name] -> Docs -> Docs
+exposeDocs :: [FullName] -> Docs -> Docs
 exposeDocs names = fmap EntryDocTreeEntry . exposeDeclids names . mconcat . fmap toList
 
 type ScopeBuilder = TransformT RefNotation
@@ -56,5 +56,5 @@ refScopeBuilder = execMapTransformT
 pureScopeBuilder :: QScope -> ScopeBuilder ()
 pureScopeBuilder scope = interpScopeBuilder $ registerScope scope
 
-allocateVarScopeBuilder :: Name -> ScopeBuilder VarID
+allocateVarScopeBuilder :: Maybe FullNameRef -> ScopeBuilder (FullName, VarID)
 allocateVarScopeBuilder n = interpScopeBuilder $ allocateVar n

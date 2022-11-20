@@ -31,6 +31,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Covariance
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Variance
 import Shapes
@@ -43,6 +44,11 @@ data CCRArguments w dv gt t where
            w sv a
         -> CCRArguments w dv (gt a) t
         -> CCRArguments w (sv ': dv) gt t
+
+instance forall (w :: CCRArgumentKind) dv gt t. (forall sv a. FreeTypeVariables (w sv a)) =>
+             FreeTypeVariables (CCRArguments w dv gt t) where
+    freeTypeVariables NilCCRArguments = mempty
+    freeTypeVariables (ConsCCRArguments arg1 argr) = freeTypeVariables arg1 <> freeTypeVariables argr
 
 ccrArgumentsType ::
        forall (w :: CCRArgumentKind) dv gt t. IsCCRArg w

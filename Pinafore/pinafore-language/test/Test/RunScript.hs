@@ -5,6 +5,9 @@ module Test.RunScript
     , tDecls
     , tDeclsRec
     , tFetchModule
+    , tPrefix
+    , tOpenDefaultStore
+    , testOpenUHStore
     , tModule
     , tLibrary
     , runScriptTestTree
@@ -27,6 +30,7 @@ import Shapes.Test.Context
 data ScriptContext = MkScriptContext
     { scDeclarations :: [String]
     , scFetchModule :: FetchModule ()
+    , scPrefix :: Text
     }
 
 type ScriptTestTree = ContextTestTree ScriptContext
@@ -39,6 +43,17 @@ tDeclsRec defs = tDecls $ pure $ "rec\n" ++ intercalate ";\n" defs ++ "\nend"
 
 tFetchModule :: FetchModule () -> ScriptTestTree -> ScriptTestTree
 tFetchModule fm = tContext $ \sc -> sc {scFetchModule = fm <> scFetchModule sc}
+
+tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
+tPrefix t = tContext $ \sc -> sc {scPrefix = scPrefix sc <> t <> "\n"}
+
+tOpenDefaultStore :: ScriptTestTree -> ScriptTestTree
+tOpenDefaultStore = tPrefix "Env.openDefaultStore >>= fn store =>"
+
+testOpenUHStore :: ScriptTestTree -> ScriptTestTree
+testOpenUHStore =
+    tPrefix "Env.openDefaultStore >>= fn dstore =>" .
+    tPrefix "Undo.newUndoHandler >>= fn undoHandler =>" . tPrefix "Undo.handleStore undoHandler dstore >>= fn store =>"
 
 tModule :: Text -> Text -> ScriptTestTree -> ScriptTestTree
 tModule name script =
@@ -57,10 +72,11 @@ runScriptTestTree =
     runContextTestTree $ let
         scDeclarations = mempty
         scFetchModule = mempty
+        scPrefix = mempty
         in MkScriptContext {..}
 
-prefix :: [String] -> Text
-prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
+declsPrefix :: [String] -> Text
+declsPrefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
 testExpression ::
        forall a. HasQType 'Negative a
@@ -71,7 +87,7 @@ testExpression ::
 testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
-            fullscript = prefix scDeclarations <> script
+            fullscript = scPrefix <> declsPrefix scDeclarations <> script
             in runTester defaultTester {tstFetchModule = scFetchModule} $ do
                    call $ testerLiftInterpreter $ parseValueUnify fullscript
 

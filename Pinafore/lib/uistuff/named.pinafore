@@ -1,0 +1,58 @@
+expose
+    Named,
+    NamedStuff,
+    MkNamedStuff,
+    mkNamed
+of
+import "pinafore-gnome";
+import "uistuff/selection";
+
+using GTK;
+using Storage;
+
+#| An open entity type; something with a name
+opentype Named;
+
+datatype NamedStuff of
+    MkNamedStuff of
+        #| A name is a text that identifies (in some sense) an entity.
+        name: Named ~> Text;
+        #| Order alphabetically (case-insensitive) by name
+        nameOrder: ModelOrder Named;
+        #| Order a set of entities by their names.
+        byName: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text));
+        namedPane: (WholeModel +a -> Element) -> WholeModel +(a & Named) -> Pane;
+        nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
+        namedTable: FiniteSetModel {a,+Named} -> (a -> Action Any) -> Maybe (WholeModel {a,+Named}) -> Element;
+        namedItemTable: FiniteSetModel {a,+Named} -> (WholeModel +a -> Element) -> Maybe (WholeModel {a,+Named}) -> Element;
+        namedPairPane:
+            Text ->
+            FiniteSetModel {a,+Named} ->
+            List (SetModel a -> ((a & Named) -> Action Unit) -> MenuItem) ->
+            (WholeModel +a -> Element) ->
+            Action Pane;
+    end;
+end;
+
+mkNamed: UIStuff -> NamedStuff
+= fn MkUIStuff => let
+    name = property @Named @Text !"identify.name" store;
+    nameOrder = orderOn name alphabetical;
+    byName = fn model => finiteSetModelList (mapOrder fst nameOrder) $ (identity !** name) !$$ model;
+    namedPane = fns iui e => MkPane (name !$% e) (iui $ immutWholeModel e) {[]};
+    nameColumn = ({"Name"},fn p => name !$ {p});
+
+    namedTable = fns sm onActivate msel => exec $ do
+        lm <- getFiniteSetModelList nameOrder sm;
+        return $ listTable [nameColumn] lm onActivate msel;
+        end;
+
+    namedItemTable = fns set iui msel =>
+        namedTable set (fn e => paneWindow $ namedPane iui {e}) msel;
+    namedPairPane = fns name set mitems getSelectedUI => let
+        getSelectorUI = fn sel => namedItemTable set getSelectedUI (Just sel);
+        iopen = fn e => paneWindow $ namedPane getSelectedUI {e};
+        in selectionPairPane name set (mapList (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
+in MkNamedStuff;
+
+end

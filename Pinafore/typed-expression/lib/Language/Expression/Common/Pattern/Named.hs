@@ -10,28 +10,36 @@ import Language.Expression.Common.Witness
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
+type NameTypePattern :: forall kn. (kn -> Type) -> (kn -> Type -> Type) -> Type -> Type -> Type
 type NameTypePattern nw vw = Pattern (NameTypeWitness nw vw)
 
 varNameTypePattern :: nw n -> vw n t -> NameTypePattern nw vw t ()
 varNameTypePattern n t = varPattern $ MkNameTypeWitness n t
 
+type NamedPattern :: Type -> (Type -> Type) -> Type -> Type -> Type
 type NamedPattern name w = NameTypePattern (UnitType name) (UnitType' w)
 
 instance WitnessMappable poswit negwit (NamedPattern name poswit a b) where
-    mapWitnessesM _ _ (ClosedPattern a) = pure $ ClosedPattern a
-    mapWitnessesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
-        tt' <- mapPos tt
-        pat' <- mapWitnessesM mapPos mapNeg pat
-        pure $ OpenPattern (MkNameWitness name tt') pat'
+    mapWitnessesM mapPos _ (MkPattern ww pf) = do
+        ww' <-
+            for ww $ \(MkSomeFor (MkNameWitness name tt) conv) -> do
+                tt' <- mapPos tt
+                return $ MkSomeFor (MkNameWitness name tt') conv
+        return $ MkPattern ww' pf
 
 patternNames :: NamedPattern name vw q a -> [name]
-patternNames = patternFreeWitnesses $ \(MkNameTypeWitness (MkUnitType name) _) -> name
+patternNames = patternFreeWitnesses $ \(MkNameWitness name _) -> name
 
-substitutePattern :: WitnessSubstitution Type vw1 vw2 -> NamedPattern name vw1 q a -> NamedPattern name vw2 q a
-substitutePattern _ (ClosedPattern a) = ClosedPattern a
-substitutePattern witmap@(MkWitnessMap wm) (OpenPattern (MkNameWitness name wt) pat) =
-    wm wt $ \wt' bij ->
-        OpenPattern (MkNameWitness name wt') $ fmap (\(t, a) -> (isoForwards bij t, a)) $ substitutePattern witmap pat
+substitutePattern ::
+       forall vw1 vw2 name q a.
+       WitnessSubstitution Type vw1 vw2
+    -> NamedPattern name vw1 q a
+    -> NamedPattern name vw2 q a
+substitutePattern witmap (MkPattern ww pf) = let
+    susbstSomeFor :: SomeFor ((->) t) (NameWitness name vw1) -> SomeFor ((->) t) (NameWitness name vw2)
+    susbstSomeFor (MkSomeFor (MkNameWitness name t1) conv) =
+        unWitnessConvert witmap t1 $ \t2 bij -> MkSomeFor (MkNameWitness name t2) $ isoForwards bij . conv
+    in MkPattern (fmap susbstSomeFor ww) pf
 
 varNamedPattern :: name -> vw t -> NamedPattern name vw t ()
 varNamedPattern n t = varNameTypePattern (MkUnitType n) (MkUnitType' t)

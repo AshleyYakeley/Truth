@@ -1,11 +1,12 @@
 #!/usr/bin/pinafore
-
-Env.openDefaultStore >>= fn store =>
 let
-import Storage;
-import GTK();
-import UIStuff.Selection;
-import UIStuff.Named;
+import "pinafore-gnome";
+import "uistuff/selection";
+import "uistuff/named";
+in runUIStuff $ fn uistuff@MkUIStuff =>
+mkNamed uistuff >- fn MkNamedStuff =>
+let
+using Storage;
 
 # something with a lifespan
 opentype Lifespanned;
@@ -42,7 +43,7 @@ email = property @LegalEntity @Text !"contact.email" store;
 phone = property @LegalEntity @Text !"contact.telephone" store;
 home = property @LegalEntity @Location !"being.location" store;
 legalentities: FiniteSetModel LegalEntity
-= property @LegalEntity @Unit !"type.legalentity" !@ {()} store;
+= property @LegalEntity @Unit !"type.legalentity" store !@ {()};
 
 # a person
 dynamictype Person = !"type.person";
@@ -63,7 +64,7 @@ employees: WholeModel +LegalEntity -> FiniteSetModel Person
 # an organisation
 dynamictype Organisation = !"type.organisation";
 organisations: FiniteSetModel Organisation
-= property @Organisation @Unit !"type.organisation" !@ {()} store;
+= property @Organisation @Unit !"type.organisation" store !@ {()};
 end;
 
 ### User Interface
@@ -112,8 +113,8 @@ end;
     = fn e => let
         pages: List (GTK.Element *: GTK.Element)
         = contactPages {e} ++ (e >- match
-            p: Person => personPages {p};
-            o: Organisation => organisationPages {o};
+            p:? Person => personPages {p};
+            o:? Organisation => organisationPages {o};
             end);
         in GTK.vertical
         [

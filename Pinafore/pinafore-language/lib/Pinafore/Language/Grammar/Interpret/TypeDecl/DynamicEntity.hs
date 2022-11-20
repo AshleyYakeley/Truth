@@ -25,7 +25,7 @@ makeDynamicEntityTypeBox name doc stcons =
         register :: DynamicEntityType -> QScopeInterpreter ()
         register det = do
             let tp = aDynamicEntityGroundType name det
-            registerType name doc tp
+            registerType (UnqualifiedFullNameRef name) doc tp
         construct :: () -> QScopeInterpreter (DynamicEntityType, ())
         construct _ = do
             dts <- lift $ for stcons interpretSyntaxDynamicEntityConstructor

@@ -74,7 +74,7 @@ lookupVar (ConsCCRArguments _ params) var = do
 
 nonpolarToEntityAdapter ::
        CovParams dv gt ta
-    -> PinaforeNonpolarType t
+    -> QNonpolarType t
     -> QInterpreter (Compose ((->) (Arguments EntityAdapter gt ta)) EntityAdapter t)
 nonpolarToEntityAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
 nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
@@ -87,7 +87,7 @@ nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
 
 closedEntityConstructorAdapter ::
        CovParams dv gt decltype
-    -> ListType PinaforeNonpolarType lt
+    -> ListType QNonpolarType lt
     -> QInterpreter (WithArgs (Thing (ListType EntityAdapter lt) decltype) gt)
 closedEntityConstructorAdapter params pts = do
     ets <- mapMListType (nonpolarToEntityAdapter params) pts
@@ -100,12 +100,16 @@ closedEntityTypeAdapter ::
        CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs EntityAdapter gt)
 closedEntityTypeAdapter params conss = do
     ff <-
-        for conss $ \(MkSomeFor (MkListProductType cc) codec, anchor) -> do
-            MkWithArgs wa <- closedEntityConstructorAdapter params cc
-            return $
-                MkWithArgs $ \args ->
-                    case wa args of
-                        MkThing tt Refl -> Compose $ Endo $ codecSum codec $ constructorEntityAdapter anchor tt
+        for conss $ \case
+            (MkSomeFor (MkConstructorType PositionalCF cc) codec, anchor) -> do
+                MkWithArgs wa <- closedEntityConstructorAdapter params $ listVTypeToType cc
+                return $
+                    MkWithArgs $ \args ->
+                        case wa args of
+                            MkThing tt Refl -> let
+                                vcodec = invmap listVProductToProduct (listProductToVProduct $ listTypeToVType tt) codec
+                                in Compose $ Endo $ codecSum vcodec $ constructorEntityAdapter anchor tt
+            (MkSomeFor (MkConstructorType RecordCF _) _, _) -> throw InterpretTypeDeclTypeClosedEntityRecord
     return $
         MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullEntityAdapter
 

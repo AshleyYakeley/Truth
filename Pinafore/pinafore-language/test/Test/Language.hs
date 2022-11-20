@@ -239,7 +239,7 @@ testQueries =
               , testQuery "True" $ LRSuccess "True"
               , testQuery "False" $ LRSuccess "False"
               , testQuery "\"1\"" $ LRSuccess "\"1\""
-              , testQuery "Std.textLength" $ LRSuccess "<?>"
+              , testQuery ".textLength" $ LRSuccess "<?>"
               , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
               , testQuery "let opentype T in entityAnchor $ openEntity @T !\"example\"" $
                 LRSuccess "\"!61604E6E-5CD45F24-A9CEB59A-3FE58A09-5242FF8A-D0C603D0-8734E583-DC034C5F\""
@@ -307,6 +307,25 @@ testQueries =
                           , testQuery "let rec i = fn x => x; r = (1 + i 1, i False) end in r" $ LRSuccess "(2, False)"
                           , testQuery "let rec r = (1 + i 1, i False); i = fn x => x end in r" $ LRSuccess "(2, False)"
                           ]
+                    ]
+              , testTree
+                    "pattern"
+                    [ testQuery "let (a,b) = (3,4) in a" $ LRSuccess "3"
+                    , testQuery "let (a,b) = (3,4) in b" $ LRSuccess "4"
+                    , testQuery "let (a,b): Integer *: Integer = (3,4) in (b,a)" $ LRSuccess "(4, 3)"
+                    , testQuery "let rec (a,b): Integer *: Integer = (3,a + 4) end in (b,a)" $ LRSuccess "(7, 3)"
+                    , testQuery "let rec (a,b) = (3,a + 4) end in (b,a)" $ LRSuccess "(7, 3)"
+                    , testQuery "let rec (a,b) = (3,a + 4); (c,d) = (8,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (8, 9)))"
+                    , testQuery "let rec (a,b) = (3,a + 4); (c,d) = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
+                    , testQuery "let rec (a,b) = (3,a + 4); (c,d): Integer *: Integer = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
+                    , testQuery "let rec (a,b): Integer *: Integer = (3,a + 4); (c,d) = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
+                    , testQuery
+                          "let rec (a,b): Integer *: Integer = (3,a + 4); (c,d): Integer *: Integer = (b + 17,c + 1) end in (a,b,c,d)" $
+                      LRSuccess "(3, (7, (24, 25)))"
                     ]
               ]
         , testTree
@@ -895,6 +914,11 @@ testQueries =
                           "let rec rcount : (rec a . Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     ]
+              , testTree
+                    "contra-var"
+                    [ testQuery "let f: rec r. (r -> Integer) = fn _ => 3 in 0" LRCheckFail
+                    , testQuery "let f: rec r. (r -> r) = fn x => x in 0" LRCheckFail
+                    ]
               ]
         , let
               testSupertype :: Text -> Text -> Text -> Text -> Bool -> TestTree
@@ -913,7 +937,7 @@ testQueries =
                                 " = " <>
                                 val <>
                                 "; y: " <>
-                                subtype <> " = x >- match (z: " <> subtype <> ") => z; _ => " <> altval <> "; end in y")
+                                subtype <> " = x >- match (z:? " <> subtype <> ") => z; _ => " <> altval <> "; end in y")
                                result
                          , testQuery
                                ("let x: " <>

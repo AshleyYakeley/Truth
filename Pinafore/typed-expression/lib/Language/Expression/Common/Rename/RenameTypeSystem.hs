@@ -30,7 +30,7 @@ class ( TypeSystem ts
     typeNamesPosWitness :: TSPosWitness ts t -> [String]
     renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
     namespace :: Monad m => NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
-    runRenamer :: Monad m => [String] -> RenamerT ts m --> m
+    runRenamer :: Monad m => [String] -> [String] -> RenamerT ts m --> m
     finalRenamer :: Monad m => RenamerT ts m --> RenamerT ts m
 
 renameNegShimWit ::
@@ -60,7 +60,7 @@ renamePosShimWit =
                         return $ MkShimWit t' conv
 
 rename ::
-       forall ts m a. (RenameTypeSystem ts, Monad m, WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts) a)
+       forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
     => NameRigidity
     -> a
     -> RenamerT ts m a
@@ -69,7 +69,7 @@ rename rigid a =
     namespace @ts rigid $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
 
 typeNamesWM ::
-       forall ts a. (RenameTypeSystem ts, WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts) a)
+       forall ts a. (RenameTypeSystem ts, TSMappable ts a)
     => a
     -> [String]
 typeNamesWM a = let

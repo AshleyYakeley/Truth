@@ -43,6 +43,14 @@ type QExpression = TSSealedExpression QTypeSystem
 
 type QPatternConstructor = TSExpressionPatternConstructor QTypeSystem
 
+type QRecordConstructor = RecordConstructor QTypeSystem
+
+type QSignature = Signature QTypeSystem
+
+type QRecordPattern = RecordPattern QTypeSystem
+
+type QOpenPattern = TSOpenPattern QTypeSystem
+
 type QPattern = TSSealedExpressionPattern QTypeSystem
 
 type instance InterpreterFamilyType QTypeSystem = FamilialType
@@ -58,6 +66,8 @@ type QModule = Module QTypeSystem
 type QBinding = TSBinding QTypeSystem
 
 type QInterpreterBinding = InterpreterBinding QTypeSystem
+
+type QBindingInfo = BindingInfo QTypeSystem
 
 type QInterpreter = Interpreter QTypeSystem
 

@@ -14,16 +14,16 @@ data ErrorType
     | UnicodeDecodeError Text
     | ParserError [Message]
     | ExpressionErrorError ExpressionError
-    | LookupNamesUnknownError (NonEmpty Name)
-    | LookupRefNameUnknownError ReferenceName
-    | LookupTypeUnknownError ReferenceName
-    | LookupSpecialFormUnknownError ReferenceName
-    | SpecialFormWrongAnnotationsError ReferenceName
+    | LookupNamesUnknownError (NonEmpty FullNameRef)
+    | LookupRefNameUnknownError FullNameRef
+    | LookupTypeUnknownError FullNameRef
+    | LookupSpecialFormUnknownError FullNameRef
+    | SpecialFormWrongAnnotationsError FullNameRef
                                        [Text]
                                        [Text]
-    | LookupConstructorUnknownError ReferenceName
-    | DeclareTypeDuplicateError Name
-    | DeclareConstructorDuplicateError Name
+    | LookupConstructorUnknownError FullNameRef
+    | DeclareTypeDuplicateError FullNameRef
+    | DeclareConstructorDuplicateError FullNameRef
     | DeclareDynamicTypeCycleError (NonEmpty Name)
     | TypeConvertError Text
                        Polarity
@@ -39,6 +39,8 @@ data ErrorType
                             Natural
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
+    | InterpretTypeRecursionNotCovariant Name
+                                         Text
     | InterpretTypeNotAmbipolarError Text
     | InterpretTypeNotGroundedError Text
     | InterpretTypeNotEntityError Text
@@ -50,8 +52,8 @@ data ErrorType
     | InterpretTypeUnderApplyError Text
     | InterpretTypeOverApplyError Text
     | InterpretTypeRangeApplyError Text
-    | InterpretConstructorUnknownError ReferenceName
-    | InterpretBindingsDuplicateError (NonEmpty Name)
+    | InterpretConstructorUnknownError FullNameRef
+    | InterpretBindingsDuplicateError (NonEmpty FullName)
     | InterpretTypeDeclDuplicateTypeVariablesError Name
                                                    (NonEmpty Name)
     | InterpretTypeDeclUnboundTypeVariablesError Name
@@ -59,6 +61,7 @@ data ErrorType
     | InterpretTypeDeclTypeVariableWrongPolarityError Name
                                                       Name
     | InterpretTypeDeclTypeVariableNotCovariantError Name
+    | InterpretTypeDeclTypeClosedEntityRecord
     | InterpretSubtypeInconsistent Text
                                    Text
     | ModuleNotFoundError ModuleName
@@ -132,6 +135,8 @@ instance Show ErrorType where
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
     show (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
+    show (InterpretTypeRecursionNotCovariant var tp) =
+        "recursive variable " <> show var <> " is not covariant in type " <> unpack tp
     show (InterpretTypeNotAmbipolarError t) = unpack t <> " is not an ambipolar type"
     show (InterpretTypeNotGroundedError t) = unpack t <> " is not a grounded type"
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
@@ -153,6 +158,7 @@ instance Show ErrorType where
         "wrong polarity of type variable " <> show v <> " in declaration of " <> show n
     show (InterpretTypeDeclTypeVariableNotCovariantError n) =
         "type variable is not covariant in declaration of " <> show n
+    show InterpretTypeDeclTypeClosedEntityRecord = "record constructor not allowed in closed entity type"
     show (InterpretSubtypeInconsistent ta tb) =
         "subtype relation is inconsistent with existing subtype relation " <> unpack ta <> " <: " <> unpack tb
     show (ModuleNotFoundError mname) = "can't find module " <> show mname

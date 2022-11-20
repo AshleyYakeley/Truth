@@ -90,9 +90,9 @@ oneLiftFloatingChangeLens ::
        forall f updateA updateB. MonadInner f
     => FloatingChangeLens updateA updateB
     -> FloatingChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) lens) = let
+oneLiftFloatingChangeLens (MkFloatingChangeLens (finit :: FloatInit _ r) lens) = let
     fclInit :: FloatInit (OneReader f (UpdateReader updateA)) (f r)
-    fclInit = mapFFloatInit oneReadFunctionF init
+    fclInit = mapFFloatInit oneReadFunctionF finit
     fclLens :: f r -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
     fclLens fr =
         case retrieveInner fr of

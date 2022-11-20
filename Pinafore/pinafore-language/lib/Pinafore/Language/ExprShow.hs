@@ -27,7 +27,7 @@ instance ExprShow t => ExprShow (Maybe t) where
 instance ExprShow Name where
     exprShowPrec n = (toText n, 0)
 
-instance ExprShow ReferenceName where
+instance ExprShow FullNameRef where
     exprShowPrec n = (toText n, 0)
 
 instance ExprShow (SymbolType name) where
@@ -56,14 +56,6 @@ standardListTypeExprShow = let
     sh i NilListType t = (t, i)
     sh _ (ConsListType _ lt) t = \ta -> sh 2 lt (t <> " " <> precShow 0 ta)
     in sh 0 $ representative @_ @_ @dv
-
-nameIsInfix :: Name -> Bool
-nameIsInfix n =
-    case unpack n of
-        (c:_)
-            | isAlpha c -> False
-        "[]" -> False
-        _ -> True
 
 data FixAssoc
     = AssocNone

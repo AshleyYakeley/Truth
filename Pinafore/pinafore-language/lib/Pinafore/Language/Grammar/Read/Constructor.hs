@@ -10,7 +10,7 @@ import Shapes hiding (try)
 readConstructor :: Parser SyntaxConstructor
 readConstructor =
     (do
-         name <- readReferenceUName
+         name <- readFullUName
          return $ SLNamedConstructor name) <|>
     (do
          n <- readThis TokNumber

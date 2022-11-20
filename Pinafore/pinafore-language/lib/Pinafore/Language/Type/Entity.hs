@@ -191,7 +191,7 @@ instance CovarySubtype QGroundType EntityGroundType where
                         (NilListType, literalEntityGroundType (MkCodec (shimToFunction from) (shimToFunction to)) agt)
                 _ -> Nothing
 
-getMonoEntityType :: MonadThrow ErrorType m => PinaforeNonpolarType t -> m (MonoEntityType t)
+getMonoEntityType :: MonadThrow ErrorType m => QNonpolarType t -> m (MonoEntityType t)
 getMonoEntityType tm =
     case nonpolarToMonoType tm of
         Just t -> return t

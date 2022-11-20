@@ -122,10 +122,10 @@ floatMapAReference ::
     => FloatingChangeLens updateA updateB
     -> AReference (UpdateEdit updateA) tt
     -> ApplyStack tt IO (AReference (UpdateEdit updateB) tt)
-floatMapAReference (MkFloatingChangeLens init rlens) anobj =
+floatMapAReference (MkFloatingChangeLens finit rlens) anobj =
     case transStackDict @MonadIO @tt @IO of
         Dict -> do
-            r <- runFloatInit init $ refRead anobj
+            r <- runFloatInit finit $ refRead anobj
             return $ mapAReference (rlens r) anobj
 
 floatMapReference ::

@@ -36,7 +36,7 @@ updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMa
 
 textKey :: Text -> DocTreeEntry (BindDoc ())
 textKey name =
-    mkValPatEntry (MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
+    mkValPatEntry (RootFullName $ MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
     ImpureFunction $ \n ->
         if n == name
             then Just ()
@@ -99,18 +99,18 @@ metadataResolution md = do
 
 metadataStuff :: DocTreeEntry (BindDoc ())
 metadataStuff =
-    docTreeEntry
+    docTreeEntry "Metadata" "" $
+    namespaceRelative
         "Metadata"
-        ""
         [ mkTypeEntry "HasMetadata" "Something that has metadata." $ MkSomeGroundType hasMetadataGroundType
         , mkValPatEntry
               "MkHasMetadata"
               "Construct metadata out of key-value pairs. Duplicates will be removed."
               mkHasMetadata $
           PureFunction $ \hm -> (getAllMetadata hm, ())
-        , mkValEntry "lookupMetadata" "Look up metadata by name." lookupMetadata
-        , mkValEntry "updateMetadata" "Update metadata item." updateMetadata
-        , mkValEntry "metadataResolution" "The resolution of an image (in dots/inch), if available." metadataResolution
+        , mkValEntry "lookup" "Look up metadata by name." lookupMetadata
+        , mkValEntry "update" "Update metadata item." updateMetadata
+        , mkValEntry "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution
         , docTreeEntry
               "Keys"
               "Constructors for standard metadata keys"

@@ -16,14 +16,14 @@ In each case, there is a "check" function that can convert `D(T)` back to `Maybe
 
 ## Type Pattern
 
-If `pat` is a pattern of type `T`, then `pat: T` is a pattern of type `D(T)`. Here's an example:
+If `pat` is a pattern of type `T`, then `pat:? T` is a pattern of type `D(T)`. Here's an example:
 
 ```pinafore
 showNumberType: Number -> Text;
 showNumberType n =
     case n of
-        i: Integer => "integer: " <> show i;
-        r: Rational => "rational: " <> show r;
+        i:? Integer => "integer: " <> show i;
+        r:? Rational => "rational: " <> show r;
         _ => "number: " <> show n;
     end
 ```
@@ -36,7 +36,7 @@ showNumberType n =
 
 This is equivalent to
 
-`fn d => case d of t:T => Just t; _ -> Nothing end`
+`fn d => case d of t:?T => Just t; _ -> Nothing end`
 
 ## Coerce
 
@@ -47,4 +47,4 @@ If you're sure that the retraction will always succeed, you can use `coerce`.
 
 This is equivalent to
 
-`fn d => case d of t:T => t; _ => error "coercion from D(T) to T failed" end`
+`fn d => case d of t:?T => t; _ => error "coercion from D(T) to T failed" end`

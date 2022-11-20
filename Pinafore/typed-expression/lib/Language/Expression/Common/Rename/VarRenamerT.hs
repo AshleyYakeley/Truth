@@ -18,20 +18,22 @@ If you're seeing broken anchors, this is one place to check.
 All names come from namespaces.
 All the names in a type are in the same namespace.
 Sometimes more than one type is in one namespace.
+(Don't confuse type variable namespaces with declaration namespaces.)
 
-Namespaces (and therefore names in them) are of three kinds:
-* fixed rigid
+Namespaces are of three kinds:
+* fixed
 * renameable rigid
 * renameable free
 
 Fixed names are not renamed, while renameable names are.
 At most one namespace can be fixed (otherwise names in them would clash).
-The list of fixed names is passed to runRenamer (and doesn't change).
+Names in the fixed namespace may be rigid or free.
+The lists of fixed rigid names and fixed free names are passed to runRenamer (and don't change).
 
 The renamer keeps track of which names are free and which are rigid for the benefit of the unifier (renamerGetNameRigidity),
 but otherwise doesn't care about the difference.
-In the unifier, free names (from inferred types) can be assigned to types,
-while rigid names (from type signatures) cannot be.
+In the unifier, free names (from inferred types) can be assigned to types and can be inverted,
+while rigid names (forall-quantified from type signatures) cannot be.
 -}
 data RenamerState = MkRenamerState
     { rsRigidNames :: [String]
@@ -57,11 +59,11 @@ instance TransConstraint MonadIO (VarRenamerT ts) where
 instance TransConstraint MonadFail (VarRenamerT ts) where
     hasTransConstraint = Dict
 
-runVarRenamerT :: Monad m => [String] -> VarRenamerT ts m --> m
-runVarRenamerT fixedNames (MkVarRenamerT rsma) = let
-    rsRigidNames = fixedNames
+runVarRenamerT :: Monad m => [String] -> [String] -> VarRenamerT ts m --> m
+runVarRenamerT rigidFixedNames freeFixedNames (MkVarRenamerT rsma) = let
+    rsRigidNames = rigidFixedNames
     rsIndex = 0
-    in evalStateT (runReaderT rsma fixedNames) $ MkRenamerState {..}
+    in evalStateT (runReaderT rsma $ rigidFixedNames <> freeFixedNames) $ MkRenamerState {..}
 
 varName :: Int -> String
 varName i
@@ -98,6 +100,10 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
                 else FreeName
 
 finalVarRenamerT :: Monad m => VarRenamerT ts m --> VarRenamerT ts m
-finalVarRenamerT rma = do
-    fixedNames <- MkVarRenamerT ask
-    lift $ runVarRenamerT fixedNames rma
+finalVarRenamerT (MkVarRenamerT rsma) =
+    MkVarRenamerT $
+    hoist
+        (\sma -> do
+             rs <- get
+             lift $ evalStateT sma rs {rsIndex = 0})
+        rsma

@@ -14,6 +14,6 @@ makeOpenEntityTypeBox name doc =
         register :: () -> QScopeInterpreter ()
         register _ = do
             let t = openEntityGroundType $ MkOpenEntityType name tidsym
-            registerType name doc t
+            registerType (UnqualifiedFullNameRef name) doc t
             registerSubtypeConversion $ MkSubtypeConversionEntry Verify t entityGroundType coerceSubtypeConversion
         in return $ mkRegisterFixBox register

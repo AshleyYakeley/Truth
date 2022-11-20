@@ -25,21 +25,15 @@ testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $
     runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary <> directoryFetchModule libDir} $ do
-        modname <- maybeToM "bad module name" $ toModuleName $ pack name
-        _ <- testerLiftInterpreter $ lcLoadModule ?library modname
-        return ()
+        mm <- testerLiftInterpreter $ lcLoadModule ?library $ fromString name
+        case mm of
+            Just _ -> return ()
+            Nothing -> fail "module not found"
 
 testRelPath :: FilePath -> Maybe TestTree
 testRelPath relpath = do
     path <- endsWith ".pinafore" relpath
-    return $
-        testCheckModule $
-        fmap
-            (\c ->
-                 if c == '/'
-                     then '.'
-                     else c)
-            path
+    return $ testCheckModule path
 
 getRelFilePaths :: FilePath -> IO [FilePath]
 getRelFilePaths dir = do

@@ -5,29 +5,38 @@ import Pinafore.Markdown
 import Shapes
 
 data DocItem
-    = ValueDocItem { diName :: Name
+    = ValueDocItem { diName :: FullName
                    , diType :: Text }
-    | ValuePatternDocItem { diName :: Name
+    | ValuePatternDocItem { diName :: FullName
                           , diType :: Text }
-    | SpecialFormDocItem { diName :: Name
+    | SpecialFormDocItem { diName :: FullName
                          , diParams :: [Text]
                          , diType :: Text }
-    | TypeDocItem { diName :: Name
+    | TypeDocItem { diName :: FullName
                   , diParams :: [Text] }
-    | SupertypeDocItem { diName :: Name
+    | SupertypeDocItem { diName :: FullName
                        , diType :: Text }
     | SubtypeRelationDocItem { diSubtype :: Text
                              , diSupertype :: Text }
 
-diMatchName :: Name -> DocItem -> Bool
-diMatchName t ValueDocItem {..} = t == diName
-diMatchName t ValuePatternDocItem {..} = t == diName
-diMatchName t SpecialFormDocItem {..} = t == diName
-diMatchName t TypeDocItem {..} = t == diName
-diMatchName t SupertypeDocItem {..} = t == diName
-diMatchName _ SubtypeRelationDocItem {} = False
+diNameLens :: Applicative m => (FullName -> m FullName) -> DocItem -> m DocItem
+diNameLens f ValueDocItem {..} = fmap (\n -> ValueDocItem {diName = n, ..}) $ f diName
+diNameLens f ValuePatternDocItem {..} = fmap (\n -> ValuePatternDocItem {diName = n, ..}) $ f diName
+diNameLens f SpecialFormDocItem {..} = fmap (\n -> SpecialFormDocItem {diName = n, ..}) $ f diName
+diNameLens f TypeDocItem {..} = fmap (\n -> TypeDocItem {diName = n, ..}) $ f diName
+diNameLens f SupertypeDocItem {..} = fmap (\n -> SupertypeDocItem {diName = n, ..}) $ f diName
+diNameLens _ SubtypeRelationDocItem {..} = pure SubtypeRelationDocItem {..}
+
+diMatchName :: FullName -> DocItem -> Bool
+diMatchName n di = getAny $ execWriter $ diNameLens (\name -> (tell $ Any $ n == name) >> return name) di
 
 data DefDoc = MkDefDoc
     { docItem :: DocItem
     , docDescription :: Markdown
     }
+
+instance NamespaceRelative DocItem where
+    namespaceRelative nsn di = runIdentity $ diNameLens (Identity . namespaceRelative nsn) di
+
+instance NamespaceRelative DefDoc where
+    namespaceRelative nsn MkDefDoc {..} = MkDefDoc {docItem = namespaceRelative nsn docItem, ..}

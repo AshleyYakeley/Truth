@@ -1,7 +1,9 @@
 #!/usr/bin/pinafore
 Env.openDefaultStore >>= fn store =>
 let
-import Storage;
+import "pinafore-gnome";
+using Storage;
+
 opentype T;
 me = openEntity @T !"T";
 

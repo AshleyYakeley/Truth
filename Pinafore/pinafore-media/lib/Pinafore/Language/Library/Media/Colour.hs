@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Media.Colour
-    ( colourLibraryModule
+    ( colourStuff
     , LangColour
     , pattern ColorSRGB
     , pattern MkPerceptualSRGB16
@@ -161,12 +161,11 @@ mkNamedColourEntry (name, colour) = let
         "," <> tb <> ")\">&nbsp;&nbsp;&nbsp;&nbsp;</span> SRGB " <> tr <> "\\/255 " <> tg <> "\\/255 " <> tb <> "\\/255"
     in mkValEntry (fromString name) desc $ fromSVGColor colour
 
-colourLibraryModule :: LibraryModule ()
-colourLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+colourStuff :: DocTreeEntry (BindDoc ())
+colourStuff =
+    docTreeEntry "Colour" "" $
+    namespaceRelative
         "Colour"
-        ""
         [ mkTypeEntry "Colour" "A human-perceivable colour." $ MkSomeGroundType colourGroundType
         , mkValPatEntry
               "SRGB16"

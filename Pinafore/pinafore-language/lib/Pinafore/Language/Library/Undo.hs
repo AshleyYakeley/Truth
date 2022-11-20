@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Undo
-    ( undoLibraryModule
+    ( undoStuff
     ) where
 
 import Changes.Core
@@ -11,6 +11,7 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
 import Pinafore.Language.Library.Storage ()
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -44,12 +45,11 @@ handleSetModel uh model = handleModel uh $ contramap meet2 model
 handleStore :: UndoHandler -> QStore -> IO QStore
 handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreGetModel store
 
-undoLibraryModule :: LibraryModule context
-undoLibraryModule =
-    MkLibraryModule $
-    MkDocTree
+undoStuff :: DocTreeEntry (BindDoc context)
+undoStuff =
+    docTreeEntry "Undo" "Undo and redo changes to models." $
+    namespaceRelative
         "Undo"
-        "Undo and redo changes to models."
         [ mkTypeEntry "UndoHandler" "A queue of undo (and redo) actions." $ MkSomeGroundType undoHandlerGroundType
         , mkValEntry "newUndoHandler" "Create a new `UndoHandler`." newUndoHandler
         , mkValEntry "queueUndo" "Undo an action." $ \uh -> do

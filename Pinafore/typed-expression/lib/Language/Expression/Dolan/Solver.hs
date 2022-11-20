@@ -22,7 +22,7 @@ import Language.Expression.Dolan.Unroll
 import Shapes
 
 type DolanSolverExpression :: GroundTypeKind -> (Type -> Type) -> Type -> Type
-type DolanSolverExpression ground wit = TSSolverExpression (DolanTypeSystem ground) (Expression wit)
+type DolanSolverExpression ground wit = TSOpenSolverExpression (DolanTypeSystem ground) (Expression wit)
 
 typeOpenExpression ::
        forall (ground :: GroundTypeKind) wit t a.
