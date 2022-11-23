@@ -20,6 +20,8 @@ class (AbstractTypeSystem ts, SubsumeTypeSystem ts) => CompleteTypeSystem (ts ::
 
 type TSValue ts = SomeOf (TSPosShimWit ts)
 
+type TSValueF ts f = SomeFor f (TSPosShimWit ts)
+
 tsFunctionPosShimWit ::
        forall ts. CompleteTypeSystem ts
     => FunctionWitness (TSNegShimWit ts) (TSPosShimWit ts)
@@ -48,7 +50,8 @@ tsUnifyRigidValue ::
 tsUnifyRigidValue (MkSomeOf witp val) = let
     witn = fromPolarShimWit
     in runRenamer @ts (typeNamesWM @ts witp <> typeNamesWM @ts witn) [] $ do
-           (convexpr, _) <- unifyPosNegShimWit @ts witp witn
+           uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp) (uuLiftNegShimWit @ts witn)
+           convexpr <- unifierSolve @ts uconv return
            conv <- lift $ evalExpression convexpr
            return $ shimToFunction conv val
 
@@ -60,9 +63,8 @@ tsUnifyExpressionTo ::
 tsUnifyExpressionTo witn (MkSealedExpression witp expr) =
     runRenamer @ts (typeNamesWM @ts witn) [] $ do
         witp' <- rename @ts FreeName witp
-        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
-        unifierSolveSubstituteSimplifyFinalRename @ts (uuGetShim @ts uconv) $ \convexpr ->
-            liftA2 shimToFunction convexpr expr
+        uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
+        unifierSolve @ts uconv $ \convexpr -> return $ liftA2 shimToFunction convexpr expr
 
 tsUnifyValueTo ::
        forall ts t. CompleteTypeSystem ts
@@ -72,7 +74,8 @@ tsUnifyValueTo ::
 tsUnifyValueTo witn (MkSomeOf witp val) =
     runRenamer @ts (typeNamesWM @ts witn) [] $ do
         witp' <- rename @ts FreeName witp
-        (convexpr, _) <- unifyPosNegShimWit @ts witp' witn
+        uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
+        convexpr <- unifierSolve @ts uconv return
         conv <- lift $ evalExpression convexpr
         return $ shimToFunction conv val
 
@@ -86,7 +89,8 @@ tsUnifyValueToFree (MkSomeOf witp val) = let
     in runRenamer @ts [] [] $ do
            witp' <- rename @ts FreeName witp
            witn' <- rename @ts FreeName witn
-           (convexpr, _) <- unifyPosNegShimWit @ts witp' witn'
+           uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn')
+           convexpr <- unifierSolve @ts uconv return
            conv <- lift $ evalExpression convexpr
            return $ shimToFunction conv val
 
@@ -95,6 +99,20 @@ tsUnifyValue ::
     => TSValue ts
     -> TSInner ts t
 tsUnifyValue = tsUnifyValueTo @ts fromPolarShimWit
+
+tsUnifyF ::
+       forall ts f. CompleteTypeSystem ts
+    => (forall t. TSNegShimWit ts t -> TSNegShimWit ts (f t))
+    -> TSValue ts
+    -> TSInner ts (TSValueF ts f)
+tsUnifyF mapwit (MkSomeOf witp val) =
+    runRenamer @ts [] [] $ do
+        witp' <- rename @ts FreeName witp
+        MkNewVar varn varp <- renameNewFreeVar @ts
+        uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts (mapwit varn))
+        convexpr <- unifierSolve @ts uconv return
+        conv <- lift $ evalExpression convexpr
+        return $ MkSomeFor varp (shimToFunction conv val)
 
 tsSubsume ::
        forall ts inf decl. CompleteTypeSystem ts

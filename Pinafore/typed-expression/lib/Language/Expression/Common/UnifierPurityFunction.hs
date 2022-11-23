@@ -72,10 +72,6 @@ openUnifierPurityFunction expr = unifierUnifierPurityFunction $ solverExpression
 unifierPurityFunction :: UnifyTypeSystem ts => PurityFunction Maybe a b -> UnifierPurityFunction ts a b
 unifierPurityFunction (MkPurityFunction purity kab) = MkUnifierPurityFunction purity $ pure kab
 
-runPurity :: PurityType Maybe f -> f a -> a
-runPurity PureType (Identity a) = a
-runPurity ImpureType (Just a) = a
-runPurity ImpureType Nothing = error "missing case"
-
 runUnifierPurityFunction :: UnifierPurityFunction ts a b -> UnifierExpression ts (a -> b)
-runUnifierPurityFunction (MkUnifierPurityFunction purity uexpr) = fmap (\kab -> runPurity purity . runKleisli kab) uexpr
+runUnifierPurityFunction (MkUnifierPurityFunction purity uexpr) =
+    fmap (\kab -> runPurityCases purity . runKleisli kab) uexpr

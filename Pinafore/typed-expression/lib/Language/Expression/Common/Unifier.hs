@@ -2,11 +2,13 @@ module Language.Expression.Common.Unifier where
 
 import Data.Shim
 import Language.Expression.Common.Pattern
-import Language.Expression.Common.Simplifier
 import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
+
+runPurityCases :: PurityType Maybe f -> f a -> a
+runPurityCases purity fa = fromMaybe (error "missing case") $ runPurity purity fa
 
 type UUShim (ts :: Type) = ComposeShim (UnifierExpression ts) (TSShim ts)
 
@@ -71,25 +73,16 @@ unifyUUPosShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
     uab <- unifyPosWitnesses @ts wa wb
     return $ mapPolarShimWit (iPolarPair conva convb) uab
 
-unifyUUPosNegShimWit ::
+unifyPosNegShimWit ::
        forall ts a b. UnifyTypeSystem ts
     => UUPosShimWit ts a
     -> UUNegShimWit ts b
-    -> TSOuter ts (UUShim ts a b)
-unifyUUPosNegShimWit ta tb =
+    -> TSOuter ts (UnifierExpression ts (TSShim ts a b))
+unifyPosNegShimWit ta tb =
     unPosShimWit ta $ \wa conva ->
         unNegShimWit tb $ \wb convb -> do
             uab <- unifyPosNegWitnesses @ts wa wb
-            return $ convb . uab . conva
-
-unifyPosNegShimWit ::
-       forall ts a b. UnifyTypeSystem ts
-    => TSPosShimWit ts a
-    -> TSNegShimWit ts b
-    -> TSOuter ts (TSOpenExpression ts (TSShim ts a b), UnifierSubstitutions ts)
-unifyPosNegShimWit wa wb = do
-    MkComposeShim uexpr <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts wa) (uuLiftNegShimWit @ts wb)
-    solveUnifierExpression @ts uexpr
+            return $ uuGetShim @ts $ convb . uab . conva
 
 solveUnifierExpression ::
        forall ts a. UnifyTypeSystem ts
@@ -98,12 +91,6 @@ solveUnifierExpression ::
 solveUnifierExpression (MkSolverExpression ut eta) = do
     (texpr, subs) <- solveUnifier @ts ut
     return $ (eta <*> texpr, subs)
-
-solveUUShim ::
-       forall ts a b. UnifyTypeSystem ts
-    => UUShim ts a b
-    -> TSOuter ts (TSOpenExpression ts (TSShim ts a b), UnifierSubstitutions ts)
-solveUUShim (MkComposeShim uuconv) = solveUnifierExpression @ts uuconv
 
 unifierSubstitute ::
        forall ts a. (UnifyTypeSystem ts, TSMappable ts a)
@@ -114,12 +101,3 @@ unifierSubstitute subs =
     mapWitnessesM
         (chainPolarShimWitM $ unifierPosSubstitute @ts subs)
         (chainPolarShimWitM $ unifierNegSubstitute @ts subs)
-
-unifierSubstituteAndSimplify ::
-       forall ts a. (UnifyTypeSystem ts, SimplifyTypeSystem ts, TSMappable ts a)
-    => UnifierSubstitutions ts
-    -> a
-    -> TSOuter ts a
-unifierSubstituteAndSimplify subs a = do
-    a' <- unifierSubstitute @ts subs a
-    simplify @ts a'

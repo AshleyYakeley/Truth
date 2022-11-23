@@ -33,6 +33,7 @@ module Pinafore.Language.Interpreter
     , withNewTypeID
     , registerBoundType
     , registerType
+    , replaceLambdaBindings
     , ScopeFixBox
     , FullName(..)
     , Signature(..)
@@ -471,6 +472,18 @@ allocateVar mnameref = do
     refPut varIDStateRef $ nextVarIDState vs
     refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
     return (biName, vid)
+
+replaceLambdaBindings :: forall ts. [(VarID, TSSealedExpression ts)] -> ScopeInterpreter ts ()
+replaceLambdaBindings pairs = let
+    rmap :: Map VarID (TSSealedExpression ts)
+    rmap = mapFromList pairs
+    replaceBinding :: InterpreterBinding ts -> InterpreterBinding ts
+    replaceBinding (LambdaBinding vid)
+        | Just expr <- lookup vid rmap = ValueBinding expr Nothing
+    replaceBinding b = b
+    replaceMap :: NameMap ts -> NameMap ts
+    replaceMap (MkNameMap mm) = MkNameMap $ mapWithKey (\_ (doc, b) -> (doc, replaceBinding b)) mm
+    in refModify scopeRef $ \scope -> scope {scopeBindings = replaceMap $ scopeBindings scope}
 
 getRestore :: Monad m => Ref m a -> m (m ())
 getRestore r = do

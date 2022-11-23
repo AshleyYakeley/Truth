@@ -10,9 +10,13 @@ import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Expression
+import Pinafore.Language.Grammar.Interpret.RefNotation
+import Pinafore.Language.Grammar.Interpret.ScopeBuilder
 import Pinafore.Language.Grammar.Read
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
+import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 import System.IO.Error
@@ -27,10 +31,10 @@ interactRunQInterpreter sa = do
     spos <- get
     lift $ readerStateLift $ paramWith sourcePosParam spos $ sa
 
-interactEvalExpression :: QInterpreter QExpression -> Interact QValue
-interactEvalExpression texpr =
+interactEvalExpression :: SyntaxExpression -> Interact QValue
+interactEvalExpression sexpr =
     interactRunQInterpreter $ do
-        expr <- texpr
+        expr <- interpretTopExpression sexpr
         qEvalExpr expr
 
 runValue :: Handle -> QValue -> Interact (Action ())
@@ -43,6 +47,12 @@ runValue outh val =
 
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = hoist fromInterpretResult $ parseInteractiveCommand t
+
+actionWit :: QShimWit 'Negative t -> QShimWit 'Negative (Action t)
+actionWit (MkShimWit t (MkPolarMap conv)) =
+    shimWitToDolan $
+    mapShimWit (MkPolarMap $ cfmap conv) $
+    mkShimWit $ MkDolanGroundedType actionGroundType $ ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments
 
 interactLoop :: Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
@@ -69,11 +79,30 @@ interactLoop inh outh echo = do
                                  interactRunQInterpreter $ bind $ return () -- check errors
                                  lift $ readerStateUpdate bind
                              ExpressionInteractiveCommand sexpr -> do
-                                 val <- interactEvalExpression $ interpretTopExpression sexpr
+                                 val <- interactEvalExpression sexpr
                                  action <- runValue outh val
                                  lift $ lift $ runAction action
-                             BindActionInteractiveCommand {} ->
-                                 interactRunQInterpreter $ throw $ KnownIssueError 178 "NYI"
+                             BindActionInteractiveCommand spat sexpr -> do
+                                 aval <- interactEvalExpression sexpr
+                                 MkSomeFor rwit action <- interactRunQInterpreter $ qUnifyF actionWit aval
+                                 r <- lift $ lift $ unliftActionOrFail action
+                                 let
+                                     rval = MkSomeOf rwit r
+                                     bind :: QInterpreter --> QInterpreter
+                                     bind qia =
+                                         runRefNotation $
+                                         runScopeBuilder (interpretPattern spat) $ \pat ->
+                                             liftRefNotation $ do
+                                                 MkMatchResult purity mexpr ww <-
+                                                     qMatchSealedPattern pat $ qConstExprAny rval
+                                                 mval <- evalExpression mexpr
+                                                 let
+                                                     t = runPurityCases purity mval
+                                                     patbind :: (VarID, QShimWit 'Positive _) -> (VarID, QExpression)
+                                                     patbind (vid, val) = (vid, qConstExprAny $ MkSomeOf val t)
+                                                 transformTMap (replaceLambdaBindings $ fmap patbind ww) qia
+                                 interactRunQInterpreter $ bind $ return () -- check errors
+                                 lift $ readerStateUpdate bind
                              ShowDocInteractiveCommand rname -> do
                                  bmap <- interactRunQInterpreter $ getBindingMap
                                  liftIO $
@@ -82,8 +111,7 @@ interactLoop inh outh echo = do
                                          Just "" -> return ()
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
                              ShowTypeInteractiveCommand showinfo sexpr -> do
-                                 MkSomeOf (MkPosShimWit t shim) _ <-
-                                     interactEvalExpression $ interpretTopExpression sexpr
+                                 MkSomeOf (MkPosShimWit t shim) _ <- interactEvalExpression sexpr
                                  liftIO $
                                      hPutStrLn outh $
                                      ": " <>

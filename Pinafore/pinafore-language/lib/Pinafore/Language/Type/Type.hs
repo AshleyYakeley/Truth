@@ -37,6 +37,8 @@ type QArgumentsShimWit dv gt polarity = DolanArgumentsShimWit QPolyShim dv QType
 
 type QValue = TSValue QTypeSystem
 
+type QValueF f = TSValueF QTypeSystem f
+
 type QOpenExpression = TSOpenExpression QTypeSystem
 
 type QExpression = TSSealedExpression QTypeSystem

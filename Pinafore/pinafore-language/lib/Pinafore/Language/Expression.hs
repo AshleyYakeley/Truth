@@ -52,6 +52,9 @@ qAnyPattern = tsAnyPattern @QTypeSystem
 qBothPattern :: QPattern -> QPattern -> QInterpreter QPattern
 qBothPattern = tsBothPattern @QTypeSystem
 
+qMatchSealedPattern :: QPattern -> QExpression -> QInterpreter (MatchResult QTypeSystem)
+qMatchSealedPattern = tsMatchSealedPattern @QTypeSystem
+
 qToPatternConstructor ::
        forall t lt.
        (ToListShimWit (QPolyShim Type) (QType 'Positive) lt, FromPolarShimWit (QPolyShim Type) (QType 'Negative) t)
@@ -157,6 +160,9 @@ qUnifyValue ::
     => QValue
     -> QInterpreter t
 qUnifyValue = tsUnifyValue @QTypeSystem
+
+qUnifyF :: forall f. (forall t. QShimWit 'Negative t -> QShimWit 'Negative (f t)) -> QValue -> QInterpreter (QValueF f)
+qUnifyF = tsUnifyF @QTypeSystem
 
 -- | for debugging
 qUnifyRigidValue ::

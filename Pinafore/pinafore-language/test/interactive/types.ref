@@ -3,17 +3,19 @@ pinafore> let opentype Q
 pinafore> let subtype P <: Q
 pinafore> let p = openEntity @P !"p"
 pinafore> let q = openEntity @Q !"q"
-pinafore> let pp = property @P @P !"pp"
-pinafore> let qp = property @Q @P !"qp"
+pinafore> let using Storage
+pinafore> store <- Env.openDefaultStore
+pinafore> let pp = property @P @P !"pp" store
+pinafore> let qp = property @Q @P !"qp" store
 pinafore> :t pp
 : P ~> P
 pinafore> :t pp !$ {p}
 : WholeModel P
 pinafore> :t pp !$ {q}
-<input>:10:7: cannot convert WholeModel P -> WholeModel P+ <: WholeModel +Q -> a-
- <input>:10:7: cannot convert WholeModel +Q+ <: WholeModel P-
-  <input>:10:7: cannot convert Q+ <: P-
-   <input>:10:7: no ground conversion for Q <: P
+<input>:12:7: cannot convert WholeModel P -> WholeModel P+ <: WholeModel +Q -> a-
+ <input>:12:7: cannot convert WholeModel +Q+ <: WholeModel P-
+  <input>:12:7: cannot convert Q+ <: P-
+   <input>:12:7: no ground conversion for Q <: P
 pinafore> :t qp !$ {p}
 : WholeModel P
 pinafore> :t qp !$ {q}

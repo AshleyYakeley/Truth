@@ -8,8 +8,7 @@ import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-class (Monad (TSOuter ts), Category (TSShim ts), Category (TSShim ts), Eq (TSVarID ts), Show (TSVarID ts)) =>
-          TypeSystem (ts :: Type) where
+class (Monad (TSOuter ts), Category (TSShim ts), Eq (TSVarID ts), Show (TSVarID ts)) => TypeSystem (ts :: Type) where
     type TSOuter ts :: Type -> Type
     type TSNegWitness ts :: Type -> Type
     type TSPosWitness ts :: Type -> Type
@@ -68,3 +67,14 @@ type TSPatternConstructor ts = PatternConstructor (TSVarID ts) (TSPosShimWit ts)
 type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
 type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+
+tsMatchPattern ::
+       forall ts a b r. (TypeSystem ts, FunctionShim (TSShim ts))
+    => TSOpenPattern ts a b
+    -> TSOpenExpression ts a
+    -> (forall f t. PurityType Maybe f -> TSOpenExpression ts (f (t, b)) -> [(TSVarID ts, TSPosShimWit ts t)] -> r)
+    -> r
+tsMatchPattern pat expr call =
+    matchPattern pat expr $ \purity expr' ww ->
+        call purity expr' $
+        fmap (\(MkSomeFor (MkNameWitness n w) f) -> (n, mapShimWit (MkPolarMap $ functionToShim "match" f) w)) ww

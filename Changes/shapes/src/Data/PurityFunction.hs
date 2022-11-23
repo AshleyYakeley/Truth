@@ -25,6 +25,10 @@ matchPurityType PureType ImpureType call = call ImpureType (pure . runIdentity) 
 matchPurityType ImpureType PureType call = call ImpureType id (pure . runIdentity)
 matchPurityType ImpureType ImpureType call = call ImpureType id id
 
+runPurity :: Applicative m => PurityType m f -> f a -> m a
+runPurity PureType (Identity a) = pure a
+runPurity ImpureType ma = ma
+
 data PurityFunction m a b =
     forall f. MkPurityFunction (PurityType m f)
                                (Kleisli f a b)
