@@ -1,0 +1,17 @@
+#!/usr/bin/pinafore
+let
+opentype A;
+opentype B;
+
+datatype R of
+    MkR of
+    f: A -> Action Unit;
+    end;
+end;
+
+r: R = let f = fn _ => Env.outputLn "Done." in MkR;
+
+in r >- fn MkR =>
+    let
+    subtype B <: A
+    in f (error "" : B)
