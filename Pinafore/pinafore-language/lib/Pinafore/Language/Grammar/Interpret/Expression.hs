@@ -9,6 +9,7 @@ module Pinafore.Language.Grammar.Interpret.Expression
 
 import Data.Graph
 import Pinafore.Base
+import Pinafore.Language.Debug
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
 import Pinafore.Language.Error
@@ -315,6 +316,10 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             r <- interpretDocDeclarations decls
             interpScopeBuilder close
             return r
+        DebugSyntaxDeclaration nameref -> do
+            (fn, desc) <- interpScopeBuilder $ lift $ lookupDebugBindingInfo nameref
+            liftIO $ debugMessage $ toText fn <> ": " <> pack desc
+            return []
 
 interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls

@@ -90,6 +90,7 @@ data SyntaxDeclaration'
     | UsingSyntaxDeclaration NamespaceRef
     | NamespaceSyntaxDeclaration NamespaceRef
                                  [SyntaxDeclaration]
+    | DebugSyntaxDeclaration FullNameRef
     deriving (Eq)
 
 type SyntaxDeclaration = SyntaxWithDoc (WithSourcePos SyntaxDeclaration')

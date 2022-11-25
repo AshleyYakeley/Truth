@@ -2,16 +2,13 @@ module Pinafore.Language.Library.Debug
     ( debugStuff
     ) where
 
-import Changes.Debug
 import Pinafore.Base
+import Pinafore.Language.Debug
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
 import Pinafore.Language.Name
 import Shapes
-
-debugMessage :: Text -> IO ()
-debugMessage t = traceIOM $ unpack t
 
 debugCheckEntity :: Text -> Entity -> IO ()
 debugCheckEntity t e = do

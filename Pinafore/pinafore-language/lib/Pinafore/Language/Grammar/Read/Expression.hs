@@ -209,11 +209,22 @@ readRecursiveDeclaration = do
     readThis TokEnd
     return $ RecursiveSyntaxDeclaration decls
 
+debugScope :: Bool
+debugScope = False
+
+readDebugDeclaration :: Parser SyntaxDeclaration'
+readDebugDeclaration = do
+    altIf debugScope
+    readThis TokTypeJudge
+    name <- readFullNameRef
+    return $ DebugSyntaxDeclaration name
+
 readDeclaration :: Parser SyntaxDeclaration
 readDeclaration =
     readWithDoc $
     readSourcePos $
-    fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readUsing <|> readNamespace <|>
+    readDebugDeclaration <|> fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readUsing <|>
+    readNamespace <|>
     readRecursiveDeclaration <|>
     fmap ExposeSyntaxDeclaration readExpose
 

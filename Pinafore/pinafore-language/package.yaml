@@ -33,6 +33,7 @@ library:
     other-modules:
       - Pinafore.Markdown
       - Pinafore.Context
+      - Pinafore.Language.Debug
       - Pinafore.Language.Value.Instances
       - Pinafore.Language.Value.Model
       - Pinafore.Language.Value.WholeModel

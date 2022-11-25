@@ -49,6 +49,7 @@ module Pinafore.Language.Interpreter
     , registerRecord
     , registerSubtypeConversion
     , getSubtypeConversions
+    , lookupDebugBindingInfo
     ) where
 
 import Data.Shim
@@ -106,11 +107,11 @@ data InterpreterBinding (ts :: Type)
                                (RecordPattern ts)
     | SpecialFormBinding (SpecialForm ts (Interpreter ts))
 
-instance Show (InterpreterBinding ts) where
+instance HasInterpreter ts => Show (InterpreterBinding ts) where
     show (LambdaBinding _) = "fn"
-    show (ValueBinding _ Nothing) = "val"
-    show (ValueBinding _ (Just _)) = "val+pat"
-    show (TypeBinding _) = "type"
+    show (ValueBinding e Nothing) = "val: " <> show e
+    show (ValueBinding e (Just _)) = "val+pat: " <> show e
+    show (TypeBinding t) = "type: " <> unpack (exprShow t)
     show (RecordConstructorBinding _ _) = "recordpat"
     show (SpecialFormBinding _) = "special"
 
@@ -127,7 +128,7 @@ instance Semigroup (NameMap ts) where
 instance Monoid (NameMap ts) where
     mempty = MkNameMap mempty
 
-instance Show (NameMap ts) where
+instance HasInterpreter ts => Show (NameMap ts) where
     show (MkNameMap m) = "{" <> intercalate "," (fmap (\(n, (_, b)) -> show n <> "=" <> show b) $ mapToList m) <> "}"
 
 data BindingInfo ts = MkBindingInfo
@@ -160,7 +161,9 @@ emptyScope :: Scope ts
 emptyScope = MkScope mempty mempty
 
 type HasInterpreter ts
-     = (IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts), ExprShow (InterpreterBoundType ts))
+     = ( IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts)
+       , ExprShow (InterpreterBoundType ts)
+       , Show (TSSealedExpression ts))
 
 checkEntryConsistency ::
        forall ts. HasInterpreter ts
@@ -376,6 +379,13 @@ lookupBinding :: FullNameRef -> Interpreter ts (Maybe (InterpreterBinding ts))
 lookupBinding rname = do
     bindmap <- getBindingMap
     return $ fmap biValue $ bindmap rname
+
+lookupDebugBindingInfo :: HasInterpreter ts => FullNameRef -> Interpreter ts (FullName, String)
+lookupDebugBindingInfo name = do
+    bindmap <- getBindingMap
+    case bindmap name of
+        Nothing -> throw $ LookupRefNameUnknownError name
+        Just b -> return $ (biName b, show $ biValue b)
 
 checkPureExpression ::
        forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
