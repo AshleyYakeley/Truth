@@ -43,6 +43,8 @@ type QOpenExpression = TSOpenExpression QTypeSystem
 
 type QExpression = TSSealedExpression QTypeSystem
 
+type QPartialExpression = TSSealedPartialExpression QTypeSystem
+
 type QPatternConstructor = TSExpressionPatternConstructor QTypeSystem
 
 type QRecordConstructor = RecordConstructor QTypeSystem

@@ -7,9 +7,6 @@ import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-runPurityCases :: PurityType Maybe f -> f a -> a
-runPurityCases purity fa = fromMaybe (error "missing case") $ runPurity purity fa
-
 type UUShim (ts :: Type) = ComposeShim (UnifierExpression ts) (TSShim ts)
 
 uuLiftShim :: UnifyTypeSystem ts => TSShim ts a b -> UUShim ts a b

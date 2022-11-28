@@ -76,6 +76,7 @@ import Shapes
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              AbstractTypeSystem (DolanTypeSystem ground) where
     type TSInner (DolanTypeSystem ground) = DolanM ground
+    bottomShimWit = MkSome $ mkShimWit NilDolanType
 
 class (Eq (DolanVarID ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
     functionGroundType :: ground '[ ContraCCRVariance, CoCCRVariance] (->)

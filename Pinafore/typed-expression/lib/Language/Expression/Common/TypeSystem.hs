@@ -2,6 +2,7 @@ module Language.Expression.Common.TypeSystem where
 
 import Data.Shim
 import Language.Expression.Common.Named
+import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.SolverExpression
@@ -46,6 +47,8 @@ tsMapWitnesses = mapWitnesses
 
 type TSOpenExpression :: Type -> Type -> Type
 type TSOpenExpression ts = NamedExpression (TSVarID ts) (TSNegShimWit ts)
+
+type TSSealedPartialExpression ts = SealedPartialExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
 
 type TSSealedExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
 

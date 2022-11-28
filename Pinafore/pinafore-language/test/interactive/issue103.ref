@@ -21,7 +21,7 @@ pinafore> :type newMemWholeModel >>= fn model => return (model, ())
 pinafore> :type newMemWholeModel >>= fn model => return (model, ((fn _ => ()) : WholeModel a -> Unit) model)
 : Action (WholeModel a *: Unit)
 pinafore> :type fn model => return (model, ur model)
-: (WholeModel a & b) -> Action (b *: Unit)
+: (a & WholeModel b) -> Action (a *: Unit)
 pinafore> :type newMemWholeModel >>= fn model => return (model, ur model)
 : Action (WholeModel a *: Unit)
 pinafore> <END>

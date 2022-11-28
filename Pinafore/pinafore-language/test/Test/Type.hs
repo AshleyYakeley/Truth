@@ -247,10 +247,10 @@ testType =
                     ]
               , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1 a"
               , textTypeTest "fns v1 v2 => [v1,v2]" "{} -> a -> a -> List1 a"
-              , textTypeTest "fns v1 v2 v3 => ([v1,v2],[v2,v3])" "{} -> a -> (b & a) -> b -> List1 a *: List1 b"
+              , textTypeTest "fns v1 v2 v3 => ([v1,v2],[v2,v3])" "{} -> a -> (a & b) -> b -> List1 a *: List1 b"
               , textTypeTest
                     "fns v1 v2 v3 => (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (a & b) -> (c & b) -> (a & c) -> (List1 b *: List1 c) *: List1 a"
+                    "{} -> (a & b) -> (a & c) -> (c & b) -> (List1 a *: List1 c) *: List1 b"
               , testTree
                     "inversion"
                     [ textTypeTest "fn x => let y : Integer = x in y" "{} -> Integer -> Integer"

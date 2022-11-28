@@ -25,7 +25,7 @@ instance UnifyTypeSystem ts => Functor (UnifierPurityFunction ts a) where
 instance UnifyTypeSystem ts => Applicative (UnifierPurityFunction ts a) where
     pure b = arr $ \_ -> b
     liftA2 f (MkUnifierPurityFunction purityA exprA) (MkUnifierPurityFunction purityB exprB) =
-        matchPurityType purityA purityB $ \purityAB cA cB ->
+        purityTypeProduct purityA purityB $ \purityAB cA cB ->
             MkUnifierPurityFunction purityAB $
             liftA2 (\fa fb -> liftA2 f (mapKleisli cA fa) (mapKleisli cB fb)) exprA exprB
 
@@ -36,7 +36,7 @@ matchUnifierPurityFunction ::
     -> UnifierPurityFunction ts a2 b2
     -> UnifierPurityFunction ts a12 b12
 matchUnifierPurityFunction f (MkUnifierPurityFunction purity1 uk1) (MkUnifierPurityFunction purity2 uk2) =
-    matchPurityType purity1 purity2 $ \purity12 c1 c2 ->
+    purityTypeProduct purity1 purity2 $ \purity12 c1 c2 ->
         purityIs @MonadInner purity12 $
         MkUnifierPurityFunction purity12 $ liftA2 (\k1 k2 -> f (mapKleisli c1 k1) (mapKleisli c2 k2)) uk1 uk2
 

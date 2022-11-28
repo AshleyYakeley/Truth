@@ -11,6 +11,7 @@ import Language.Expression.Common.Expression as I
 import Language.Expression.Common.NameWit as I
 import Language.Expression.Common.Named as I
 import Language.Expression.Common.NonpolarTypeSystem as I
+import Language.Expression.Common.Partial as I
 import Language.Expression.Common.Pattern as I
 import Language.Expression.Common.Rename as I
 import Language.Expression.Common.Sealed as I

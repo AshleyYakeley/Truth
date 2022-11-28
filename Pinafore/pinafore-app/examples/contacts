@@ -126,19 +126,19 @@ end;
     = fn model => GTK.dynamic $ coMapWholeModel contactUI model;
     end;
 
-contactsPane: GTK.Context -> Action Pane
-= fn gtk => let
+contactsPane: Action Pane
+= let
     menuItems =
     [
         newItemMenuAction "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
         newItemMenuAction "New Organisation" Nothing $ newDynamicEntity @Organisation
     ];
-    in namedPairPane gtk "Contacts" legalentities menuItems contactModelUI;
+    in namedPairPane "Contacts" legalentities menuItems contactModelUI;
 
-contactsWindow: GTK.Context -> Action GTK.Window
-= fn gtk => do
-    p <- contactsPane gtk;
-    paneWindow gtk p;
+contactsWindow: Action GTK.Window
+= do
+    p <- contactsPane;
+    paneWindow p;
     end;
 
-in GTK.run contactsWindow
+in contactsWindow

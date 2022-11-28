@@ -29,7 +29,6 @@ qName name = do
     mexpr <- lookupLetBinding name
     case mexpr of
         Just (ValueBoundValue expr) -> return expr
-        Just (LambdaBoundValue v) -> return $ qVarExpr v
         _ -> do
             spos <- paramAsk sourcePosParam
             return $ qVarExpr $ mkBadVarID spos name
@@ -84,8 +83,14 @@ qConstructPattern pc pats = do
     pc' <- qApplyAllPatternConstructor pc pats
     qSealPatternConstructor pc'
 
-qCase :: QExpression -> [(QPattern, QExpression)] -> QInterpreter QExpression
-qCase = tsCase @QTypeSystem
+qPartialExpressionSumList :: [QPartialExpression] -> QInterpreter QPartialExpression
+qPartialExpressionSumList = tsPartialExpressionSumList @QTypeSystem
+
+qPatternGate :: VarID -> QPattern -> QPartialExpression -> QInterpreter QPartialExpression
+qPatternGate = tsPatternGate @QTypeSystem
+
+qPatternBindings :: VarID -> QPattern -> [(VarID, QExpression)]
+qPatternBindings = tsPatternBindings @QTypeSystem
 
 qFunctionPosWitness :: forall a b. QShimWit 'Negative a -> QShimWit 'Positive b -> QShimWit 'Positive (a -> b)
 qFunctionPosWitness = tsFunctionPosShimWit @QTypeSystem
@@ -96,12 +101,6 @@ qFunctionPosWitnesses NilListType tb = mapPosShimWit (functionToShim "poswitness
 qFunctionPosWitnesses (ConsListType ta la) tb =
     mapPosShimWit (functionToShim "poswitness" $ \f a l -> f (a, l)) $
     qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
-
-qCaseAbstract :: [(QPattern, QExpression)] -> QInterpreter QExpression
-qCaseAbstract = tsCaseAbstract @QTypeSystem
-
-qMultiCaseAbstract :: PeanoNatType n -> [(FixedList n QPattern, QExpression)] -> QInterpreter QExpression
-qMultiCaseAbstract = tsMultiCaseAbstract @QTypeSystem
 
 qApplyExpr :: QExpression -> QExpression -> QInterpreter QExpression
 qApplyExpr exprf expra = tsApply @QTypeSystem exprf expra

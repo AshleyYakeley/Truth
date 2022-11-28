@@ -403,17 +403,50 @@ interpretConstant SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
-interpretCase :: SyntaxMatch -> RefNotation (QPattern, QExpression)
-interpretCase (MkSyntaxMatch spat sexpr) =
-    runScopeBuilder (interpretPattern spat) $ \pat -> do
-        expr <- interpretExpression sexpr
-        return (pat, expr)
+patternBuildScope :: VarID -> QPattern -> QScopeInterpreter ()
+patternBuildScope varid pat =
+    registerLetBindings $ fmap (\(wvar, expr) -> (varIdNameRef wvar, "lambda", expr)) $ qPatternBindings varid pat
 
-interpretMultimatch :: SyntaxMultimatch n -> RefNotation (FixedList n QPattern, QExpression)
-interpretMultimatch (MkSyntaxMultimatch spats sexpr) =
-    runScopeBuilder (for spats interpretPattern) $ \pats -> do
-        expr <- interpretExpression sexpr
-        return (pats, expr)
+interpretPatternBuildScope :: VarID -> SyntaxPattern -> ScopeBuilder QPattern
+interpretPatternBuildScope varid spat = do
+    pat <- interpretPattern spat
+    interpScopeBuilder $ patternBuildScope varid pat
+    return pat
+
+withAllocateNewVar :: Maybe FullNameRef -> (VarID -> RefNotation a) -> RefNotation a
+withAllocateNewVar mn call = runScopeBuilder (allocateVarScopeBuilder mn) $ \(_, varid) -> call varid
+
+interpretSinglePattern :: VarID -> SyntaxPattern -> RefNotation QPartialExpression -> RefNotation QPartialExpression
+interpretSinglePattern varid spat mexp = do
+    unTransformT (interpretPatternBuildScope varid spat) $ \pat -> do
+        exp <- mexp
+        liftRefNotation $ qPatternGate varid pat exp
+
+interpretMatch :: VarID -> SyntaxMatch -> RefNotation QPartialExpression
+interpretMatch varid (MkSyntaxMatch spat sbody) =
+    interpretSinglePattern varid spat $ fmap sealedToPartialExpression $ interpretExpression sbody
+
+specialCaseVarPatterns :: Bool
+specialCaseVarPatterns = True
+
+interpretMultiPattern ::
+       FixedList n VarID
+    -> FixedList n SyntaxPattern
+    -> RefNotation QPartialExpression
+    -> RefNotation QPartialExpression
+interpretMultiPattern NilFixedList NilFixedList ma = ma
+interpretMultiPattern (ConsFixedList v vv) (ConsFixedList spat spats) ma =
+    interpretSinglePattern v spat $ interpretMultiPattern vv spats ma
+
+interpretMultimatch :: FixedList n VarID -> SyntaxMultimatch n -> RefNotation QPartialExpression
+interpretMultimatch varids (MkSyntaxMultimatch spats sbody) =
+    interpretMultiPattern varids spats $ fmap sealedToPartialExpression $ interpretExpression sbody
+
+multiAbstractExpr :: FixedList n VarID -> QExpression -> QInterpreter QExpression
+multiAbstractExpr NilFixedList exp = return exp
+multiAbstractExpr (ConsFixedList v vv) exp = do
+    exp' <- multiAbstractExpr vv exp
+    qAbstractExpr v exp'
 
 interpretExpression' :: SyntaxExpression' -> RefExpression
 interpretExpression' (SESubsume sexpr stype) = do
@@ -421,20 +454,35 @@ interpretExpression' (SESubsume sexpr stype) = do
     liftRefNotation $ do
         t <- interpretType stype
         qSubsumeExpr t expr
-interpretExpression' (SEAbstract (MkSyntaxMatch spat sbody)) =
-    runScopeBuilder (interpretPattern spat) $ \pat -> do
-        val <- interpretExpression sbody
-        liftRefNotation $ qCaseAbstract [(pat, val)]
-interpretExpression' (SEAbstracts (MkSome multimatch)) = do
-    (pats, expr) <- interpretMultimatch multimatch
-    liftRefNotation $ qMultiCaseAbstract (fixedListLength pats) [(pats, expr)]
+interpretExpression' (SEAbstract (MkSyntaxMatch (MkWithSourcePos _ AnySyntaxPattern) sbody))
+    | specialCaseVarPatterns =
+        withAllocateNewVar Nothing $ \varid -> do
+            expr <- interpretExpression sbody
+            liftRefNotation $ qAbstractExpr varid expr
+interpretExpression' (SEAbstract (MkSyntaxMatch (MkWithSourcePos _ (VarSyntaxPattern n)) sbody))
+    | specialCaseVarPatterns =
+        withAllocateNewVar (Just $ UnqualifiedFullNameRef n) $ \varid -> do
+            expr <- interpretExpression sbody
+            liftRefNotation $ qAbstractExpr varid expr
+interpretExpression' (SEAbstract match) =
+    withAllocateNewVar Nothing $ \varid -> do
+        pexpr <- interpretMatch varid match
+        liftRefNotation $ qAbstractExpr varid $ partialToSealedExpression pexpr
+interpretExpression' (SEAbstracts (MkSome multimatch@(MkSyntaxMultimatch spats _))) =
+    runScopeBuilder (for spats $ \_ -> fmap snd $ allocateVarScopeBuilder Nothing) $ \varids -> do
+        pexpr <- interpretMultimatch varids multimatch
+        liftRefNotation $ multiAbstractExpr varids $ partialToSealedExpression pexpr
 interpretExpression' (SELet sdecls sbody) = interpretDeclarations sdecls $ interpretExpression sbody
-interpretExpression' (SEMatch scases) = do
-    pairs <- for scases interpretCase
-    liftRefNotation $ qCaseAbstract pairs
-interpretExpression' (SEMatches (MkSyntaxMultimatchList nn scases)) = do
-    pairs <- for scases interpretMultimatch
-    liftRefNotation $ qMultiCaseAbstract nn pairs
+interpretExpression' (SEMatch scases) =
+    withAllocateNewVar Nothing $ \varid -> do
+        pexprs <- for scases $ interpretMatch varid
+        pexpr <- liftRefNotation $ qPartialExpressionSumList pexprs
+        liftRefNotation $ qAbstractExpr varid $ partialToSealedExpression pexpr
+interpretExpression' (SEMatches (MkSyntaxMultimatchList nn scases)) =
+    runScopeBuilder (fixedListGenerate nn $ fmap snd $ allocateVarScopeBuilder Nothing) $ \varids -> do
+        pexprs <- for scases $ interpretMultimatch varids
+        pexpr <- liftRefNotation $ qPartialExpressionSumList pexprs
+        liftRefNotation $ multiAbstractExpr varids $ partialToSealedExpression pexpr
 interpretExpression' (SEApply sf sarg) = do
     f <- interpretExpression sf
     arg <- interpretExpression sarg

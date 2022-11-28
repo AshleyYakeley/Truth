@@ -79,6 +79,14 @@ type InterpreterShimWit (ts :: Type) (polarity :: Polarity) = DolanShimWit (Inte
 
 type InterpreterBoundType (ts :: Type) = SomeGroundType (InterpreterGroundType ts)
 
+type HasInterpreter ts
+     = ( ts ~ DolanTypeSystem (InterpreterGroundType ts)
+       , IsDolanFunctionGroundType (InterpreterGroundType ts)
+       , IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts)
+       , TSVarID ts ~ VarID
+       , ExprShow (InterpreterBoundType ts)
+       , Show (TSSealedExpression ts))
+
 newtype SpecialVals (ts :: Type) = MkSpecialVals
     { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> Action (Either Text t)
         -- ^ in Action because this can do things like import files
@@ -159,11 +167,6 @@ data Scope (ts :: Type) = MkScope
 
 emptyScope :: Scope ts
 emptyScope = MkScope mempty mempty
-
-type HasInterpreter ts
-     = ( IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts)
-       , ExprShow (InterpreterBoundType ts)
-       , Show (TSSealedExpression ts))
 
 checkEntryConsistency ::
        forall ts. HasInterpreter ts
@@ -477,7 +480,7 @@ allocateVar mnameref = do
                     in (mkVarID vs name, name)
                 Nothing -> mkUniqueVarID vs
         biDocumentation = plainMarkdown "variable"
-        biValue = LambdaBinding vid
+        biValue = ValueBinding (tsVar @ts vid) Nothing
         insertScope = MkScope (bindingInfoToNameMap MkBindingInfo {..}) mempty
     refPut varIDStateRef $ nextVarIDState vs
     refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
@@ -568,16 +571,18 @@ getSpecialVals :: Interpreter ts (SpecialVals ts)
 getSpecialVals = paramAsk specialValsParam
 
 data BoundValue ts
-    = LambdaBoundValue VarID
-    | ValueBoundValue (TSSealedExpression ts)
+    = ValueBoundValue (TSSealedExpression ts)
     | RecordBoundValue (RecordConstructor ts)
 
-lookupLetBinding :: FullNameRef -> Interpreter ts (Maybe (BoundValue ts))
+lookupLetBinding ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (Maybe (BoundValue ts))
 lookupLetBinding name = do
     mb <- lookupBinding name
     case mb of
         Just (ValueBinding exp _) -> return $ Just $ ValueBoundValue exp
-        Just (LambdaBinding v) -> return $ Just $ LambdaBoundValue v
+        Just (LambdaBinding v) -> return $ Just $ ValueBoundValue $ tsVar @ts v
         Just (RecordConstructorBinding rc _) -> return $ Just $ RecordBoundValue rc
         _ -> return Nothing
 

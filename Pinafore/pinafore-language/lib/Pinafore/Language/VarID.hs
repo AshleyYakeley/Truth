@@ -1,5 +1,6 @@
 module Pinafore.Language.VarID
     ( VarID(..)
+    , varIdNameRef
     , VarIDState
     , firstVarIDState
     , nextVarIDState
@@ -41,6 +42,10 @@ instance Ord VarID where
 instance Show VarID where
     show (GoodVarID _ n) = show n
     show (BadVarID _ n) = show n
+
+varIdNameRef :: VarID -> FullNameRef
+varIdNameRef (GoodVarID _ n) = fullNameRef n
+varIdNameRef (BadVarID _ n) = n
 
 mkVarID :: VarIDState -> FullName -> VarID
 mkVarID (MkVarIDState s) = GoodVarID s

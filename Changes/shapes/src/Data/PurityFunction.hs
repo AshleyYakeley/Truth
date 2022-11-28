@@ -14,20 +14,38 @@ purityIs ::
 purityIs PureType r = r
 purityIs ImpureType r = r
 
-matchPurityType ::
+purityTypeProduct ::
        Applicative m
     => PurityType m fa
     -> PurityType m fb
     -> (forall fab. Applicative fab => PurityType m fab -> (fa --> fab) -> (fb --> fab) -> r)
     -> r
-matchPurityType PureType PureType call = call PureType id id
-matchPurityType PureType ImpureType call = call ImpureType (pure . runIdentity) id
-matchPurityType ImpureType PureType call = call ImpureType id (pure . runIdentity)
-matchPurityType ImpureType ImpureType call = call ImpureType id id
+purityTypeProduct PureType PureType call = call PureType id id
+purityTypeProduct PureType ImpureType call = call ImpureType (pure . runIdentity) id
+purityTypeProduct ImpureType PureType call = call ImpureType id (pure . runIdentity)
+purityTypeProduct ImpureType ImpureType call = call ImpureType id id
+
+purityTypeSum ::
+       PurityType Maybe fa
+    -> PurityType Maybe fb
+    -> (forall fab. Applicative fab => PurityType Maybe fab -> (forall x. fa x -> fb x -> fab x) -> r)
+    -> r
+purityTypeSum PureType _ call = call PureType $ \fax _ -> fax
+purityTypeSum ImpureType PureType call =
+    call PureType $ \case
+        Just x -> \_ -> Identity x
+        Nothing -> id
+purityTypeSum ImpureType ImpureType call =
+    call ImpureType $ \case
+        Just x -> \_ -> Just x
+        Nothing -> id
 
 runPurity :: Applicative m => PurityType m f -> f a -> m a
 runPurity PureType (Identity a) = pure a
 runPurity ImpureType ma = ma
+
+runPurityCases :: PurityType Maybe f -> f a -> a
+runPurityCases purity fa = fromMaybe (error "missing case") $ runPurity purity fa
 
 data PurityFunction m a b =
     forall f. MkPurityFunction (PurityType m f)
@@ -58,7 +76,7 @@ matchPurityFunction ::
     -> PurityFunction m a2 b2
     -> PurityFunction m a12 b12
 matchPurityFunction f (MkPurityFunction purity1 k1) (MkPurityFunction purity2 k2) =
-    matchPurityType purity1 purity2 $ \purity12 c1 c2 ->
+    purityTypeProduct purity1 purity2 $ \purity12 c1 c2 ->
         MkPurityFunction purity12 $ f purity12 (mapKleisli c1 k1) (mapKleisli c2 k2)
 
 applyPurityFunction :: Applicative m => PurityFunction m a b -> a -> m b
@@ -74,13 +92,8 @@ instance Applicative m => Applicative (PurityFunction m t) where
 
 instance Alternative (PurityFunction Maybe t) where
     empty = MkPurityFunction ImpureType $ empty
-    MkPurityFunction PureType k1 <|> _ = MkPurityFunction PureType k1
-    MkPurityFunction ImpureType (Kleisli amb1) <|> MkPurityFunction PureType (Kleisli aib2) = let
-        mii :: Maybe a -> Identity a -> Identity a
-        mii (Just a) _ = Identity a
-        mii Nothing ia = ia
-        in MkPurityFunction PureType $ Kleisli $ liftA2 mii amb1 aib2
-    MkPurityFunction ImpureType k1 <|> MkPurityFunction ImpureType k2 = MkPurityFunction ImpureType $ k1 <|> k2
+    MkPurityFunction p1 (Kleisli amb1) <|> MkPurityFunction p2 (Kleisli amb2) =
+        purityTypeSum p1 p2 $ \p12 conv -> MkPurityFunction p12 $ Kleisli $ \a -> conv (amb1 a) (amb2 a)
 
 instance Monad m => Category (PurityFunction m) where
     id = arr id

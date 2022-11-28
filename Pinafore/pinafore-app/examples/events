@@ -132,7 +132,7 @@ eventUI: WholeModel +Event -> GTK.Element
 ];
 
 eventWindow: Event -> Action GTK.Window
-= fn evt => paneWindow gtk $ namedPane eventUI {evt};
+= fn evt => paneWindow $ namedPane eventUI {evt};
 
 newEvent: Action Event
 = do
@@ -160,5 +160,5 @@ eventsTableUI: WholeModel Event -> GTK.Element
 in do
     eventsPane <- selectionPairPane "Events" events [newItemMenuAction ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
     p <- notebookPane {"Events"} [overviewPane,eventsPane];
-    paneWindow gtk p
+    paneWindow p
     end

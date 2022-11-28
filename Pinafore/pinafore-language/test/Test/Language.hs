@@ -327,6 +327,13 @@ testQueries =
                           "let rec (a,b): Integer *: Integer = (3,a + 4); (c,d): Integer *: Integer = (b + 17,c + 1) end in (a,b,c,d)" $
                       LRSuccess "(3, (7, (24, 25)))"
                     ]
+              , testTree
+                    "rename"
+                    [ testQuery "let f: List a -> Integer -> List a = fn x => fn _ => x in 0" $ LRSuccess "0"
+                    , testQuery "let f: List a -> Integer -> List a = fn x => fn p => x in 0" $ LRSuccess "0"
+                    , testQuery "let f: List a -> Integer *: Integer -> List a = fn x => fn (p,q) => x in 0" $
+                      LRSuccess "0"
+                    ]
               ]
         , testTree
               "scoping"
@@ -1019,7 +1026,7 @@ testShims =
         , expectFailBecause "ISSUE #63" $ testShim "(fn x => x) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim "fn x => 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
-        , expectFailBecause "ISSUE #63" $ testShim "(fn x => 4) 3" "Integer" "(join1 id)"
+        , testShim "(fn x => 4) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
               "let rcount = match Nothing => 0; Just y => 1 + rcount y end in rcount"

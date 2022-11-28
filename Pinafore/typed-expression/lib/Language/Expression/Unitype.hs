@@ -50,12 +50,13 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     showSubsumer _ = ""
     usubSubsumer () ia = lift $ return $ pure $ runIdentity ia
     solveSubsumer ia = pure $ (pure $ runIdentity ia, ())
-    subsumerPosSubstitute () Refl = return $ unitypeShimWit
-    subsumerNegSubstitute () Refl = return $ unitypeShimWit
+    subsumerPosSubstitute () Refl = return unitypeShimWit
+    subsumerNegSubstitute () Refl = return unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 
 instance (MonadThrow ExpressionError m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
     type TSInner (Unitype m name val) = m
+    bottomShimWit = MkSome unitypeShimWit
 
 class UnitypeValue val where
     applyValue :: val -> val -> val

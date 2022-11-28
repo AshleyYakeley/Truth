@@ -33,6 +33,7 @@ library:
       - Language.Expression.Common.NameWit
       - Language.Expression.Common.Named
       - Language.Expression.Common.Sealed
+      - Language.Expression.Common.Partial
       - Language.Expression.Common.TypeSystem
       - Language.Expression.Common.NonpolarTypeSystem
       - Language.Expression.Common.TypeFunction
