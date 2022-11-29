@@ -77,6 +77,8 @@ ifeq ($(haddock),1)
 endif
 endif
 	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
+	${BINPATH}/pinafore-doc --include Pinafore/pinafore-app/test/pinafore-doc --module test > Pinafore/pinafore-app/test/pinafore-doc/test.out
+	diff -u Pinafore/pinafore-app/test/pinafore-doc/test.ref Pinafore/pinafore-app/test/pinafore-doc/test.out
 ifeq ($(nodocker),1)
 else
 ifeq ($(haddock),1)

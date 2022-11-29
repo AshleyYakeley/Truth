@@ -1,0 +1,45 @@
+expose x, B, A, MkA1, MkA2, R, MkR, y, namespace N of
+
+    #| doc:A
+    datatype A {+p,-q} +r -s of
+        #| doc:MkA1
+        MkA1 (q -> s -> p) r;
+        #| doc:MkA2
+        MkA2 p (s -> r);
+    end;
+
+    #| doc:B
+    datatype B of
+        #| doc:MkB
+        MkB Integer;
+    end;
+
+    #| doc:x
+    x: Text = "x";
+
+    #| doc:y
+    y: Text -> Text = fn _ => "y";
+
+    #| doc:hidden
+    hidden: Unit = ();
+
+    #| doc:N
+    namespace N of
+        #| doc:N.q
+        q: Integer = 45;
+        #| doc:N.xx
+        xx: Text = "Hello";
+    end;
+
+    #| doc:R
+    datatype R of
+        #| doc:MkR
+        MkR of
+            #| doc:rp
+            rp: Integer -> a -> a;
+            #| doc:rq
+            rq: Integer | Text;
+        end;
+    end;
+
+end
