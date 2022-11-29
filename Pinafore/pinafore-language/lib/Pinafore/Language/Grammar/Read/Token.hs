@@ -17,9 +17,9 @@ data Comment
     = BlockComment String
     | LineComment String
 
-commentWrite :: Comment -> String
-commentWrite (BlockComment t) = "{#|" <> t <> "#}"
-commentWrite (LineComment t) = "#|" <> t
+instance Show Comment where
+    show (BlockComment t) = "{#" <> t <> "#}"
+    show (LineComment t) = "#" <> t
 
 data TokenNames = MkTokenNames
     { tnAbsolute :: Bool
@@ -201,7 +201,7 @@ readBlockComment = let
             readChar '{'
             readChar '#'
     blockCommentInterior :: Parser String
-    blockCommentInterior = (fmap commentWrite readBlockComment) <|> (endOfLine >> return "") <|> fmap pure anyToken
+    blockCommentInterior = (fmap show readBlockComment) <|> (endOfLine >> return "") <|> fmap pure anyToken
     blockCommentClose :: Parser ()
     blockCommentClose =
         try $ do

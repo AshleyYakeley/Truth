@@ -74,7 +74,7 @@ ignoreComments :: Parser ()
 ignoreComments = void readComments
 
 lineMarkdown :: [Comment] -> Maybe Markdown
-lineMarkdown [] = Nothing
+lineMarkdown [] = Just ""
 lineMarkdown (LineComment ('|':s):cc) = do
     ss <- lineMarkdown cc
     return $ (rawMarkdown $ strip $ pack s) <> "\n" <> ss

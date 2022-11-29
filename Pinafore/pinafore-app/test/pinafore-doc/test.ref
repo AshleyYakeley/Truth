@@ -1,1 +1,40 @@
-TBD
+# test
+**`.x`** `: Text`  
+doc:x
+
+
+`type` **`.B`**  
+doc:B
+
+
+MkB
+
+`type` **`.A`** `{-q,+p}` `+r` `-s`  
+doc:A
+
+
+MkA1
+MkA2
+
+`subtype` `A Integer Unit Unit` `<:` `B`  
+
+`type` **`.R`**  
+doc:R
+
+
+MkR
+    rp
+    rq
+
+**`.y`** `: Text -> Text`  
+doc:y
+
+
+**`.N.q`** `: Integer`  
+doc:N.q
+
+
+**`.N.xx`** `: Text`  
+doc:N.xx
+
+
