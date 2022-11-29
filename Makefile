@@ -69,7 +69,6 @@ out/licensing: ${BINPATH}/licensor out
 licensing: out/licensing
 
 ${BINPATH}/pinafore ${BINPATH}/pinafore-doc &: out docker-image
-	rm -rf .stack-work/logs
 ifeq ($(nodocker),1)
 else
 	rm -rf out/logs
@@ -77,10 +76,9 @@ ifeq ($(haddock),1)
 	rm -rf out/haddock
 endif
 endif
-	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS) || (test -d .stack-work/logs && cp -r .stack-work/logs out/; exit 1)
+	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
 ifeq ($(nodocker),1)
 else
-	cp -r .stack-work/logs out/
 ifeq ($(haddock),1)
 	cp -r `stack $(STACKFLAGS) path --local-doc-root` out/haddock
 endif
