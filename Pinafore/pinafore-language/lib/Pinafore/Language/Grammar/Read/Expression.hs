@@ -341,12 +341,12 @@ readName = readUName <|> readLName <|> (readParen $ readThis TokOperator)
 readModule :: Parser SyntaxExposeDeclaration
 readModule = readExpose
 
-readMatch :: Parser SyntaxMatch
+readMatch :: Parser SyntaxCase
 readMatch = do
     pat <- readPattern1
     readThis TokMap
     expr <- readExpression
-    return $ MkSyntaxMatch pat expr
+    return $ MkSyntaxCase pat expr
 
 data DoLine
     = ExpressionDoLine SyntaxExpression
@@ -382,16 +382,16 @@ doLines (BindDoLine pat expra) (l:ll) = do
             (MkWithSourcePos (getSourcePos exprb) $ SEConst SCBind)
             [expra, seAbstract (getSourcePos pat) pat exprb]
 
-readMultimatch :: Parser (Some SyntaxMultimatch)
-readMultimatch = do
+readMulticase :: Parser (Some SyntaxMulticase)
+readMulticase = do
     patlist <- readPatterns
     readThis TokMap
     expr <- readExpression
-    return $ fixedFromList patlist $ \_ pats -> MkSome $ MkSyntaxMultimatch pats expr
+    return $ fixedFromList patlist $ \_ pats -> MkSome $ MkSyntaxMulticase pats expr
 
-getMultimatch :: PeanoNatType n -> Some SyntaxMultimatch -> Parser (SyntaxMultimatch n)
-getMultimatch expected (MkSome mm) = let
-    found = syntaxMultimatchLength mm
+getMulticase :: PeanoNatType n -> Some SyntaxMulticase -> Parser (SyntaxMulticase n)
+getMulticase expected (MkSome mm) = let
+    found = syntaxMulticaseLength mm
     in case testEquality expected found of
            Just Refl -> return mm
            Nothing ->
@@ -408,7 +408,7 @@ readExpression1 =
     (do
          spos <- getPosition
          readThis TokFns
-         mmatch <- readMultimatch
+         mmatch <- readMulticase
          return $ MkWithSourcePos spos $ SEAbstracts mmatch) <|>
     readSourcePos
         (do
@@ -419,13 +419,13 @@ readExpression1 =
     readSourcePos
         (do
              readThis TokMatches
-             smultimatches <- readLines1 readMultimatch
+             smultimatches <- readLines1 readMulticase
              readThis TokEnd
              case head smultimatches of
                  MkSome m -> do
-                     let n = syntaxMultimatchLength m
-                     smm <- for (toList smultimatches) $ getMultimatch n
-                     return $ SEMatches $ MkSyntaxMultimatchList n smm) <|>
+                     let n = syntaxMulticaseLength m
+                     smm <- for (toList smultimatches) $ getMulticase n
+                     return $ SEMatches $ MkSyntaxMulticaseList n smm) <|>
     readSourcePos
         (do
              sdecls <- readLetBindings

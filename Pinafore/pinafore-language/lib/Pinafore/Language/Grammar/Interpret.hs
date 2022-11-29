@@ -4,7 +4,6 @@ module Pinafore.Language.Grammar.Interpret
     , interpretTopDeclarations
     , interpretType
     , interpretImportDeclaration
-    , interpretPattern
     , runInteract
     ) where
 

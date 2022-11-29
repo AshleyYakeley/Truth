@@ -51,9 +51,6 @@ qAnyPattern = tsAnyPattern @QTypeSystem
 qBothPattern :: QPattern -> QPattern -> QInterpreter QPattern
 qBothPattern = tsBothPattern @QTypeSystem
 
-qMatchSealedPattern :: QPattern -> QExpression -> QInterpreter (MatchResult QTypeSystem)
-qMatchSealedPattern = tsMatchSealedPattern @QTypeSystem
-
 qToPatternConstructor ::
        forall t lt.
        (ToListShimWit (QPolyShim Type) (QType 'Positive) lt, FromPolarShimWit (QPolyShim Type) (QType 'Negative) t)
@@ -86,11 +83,17 @@ qConstructPattern pc pats = do
 qPartialExpressionSumList :: [QPartialExpression] -> QInterpreter QPartialExpression
 qPartialExpressionSumList = tsPartialExpressionSumList @QTypeSystem
 
-qPatternGate :: VarID -> QPattern -> QPartialExpression -> QInterpreter QPartialExpression
-qPatternGate = tsPatternGate @QTypeSystem
+qLambdaPatternMatch :: VarID -> QPattern -> QMatch
+qLambdaPatternMatch = tsLambdaPatternMatch @QTypeSystem
 
-qPatternBindings :: VarID -> QPattern -> [(VarID, QExpression)]
-qPatternBindings = tsPatternBindings @QTypeSystem
+qExpressionPatternMatch :: QExpression -> QPattern -> QInterpreter QMatch
+qExpressionPatternMatch = tsExpressionPatternMatch @QTypeSystem
+
+qMatchGate :: QMatch -> QPartialExpression -> QInterpreter QPartialExpression
+qMatchGate = tsMatchGate @QTypeSystem
+
+qMatchBindings :: QMatch -> [(VarID, QExpression)]
+qMatchBindings = tsMatchBindings @QTypeSystem
 
 qFunctionPosWitness :: forall a b. QShimWit 'Negative a -> QShimWit 'Positive b -> QShimWit 'Positive (a -> b)
 qFunctionPosWitness = tsFunctionPosShimWit @QTypeSystem

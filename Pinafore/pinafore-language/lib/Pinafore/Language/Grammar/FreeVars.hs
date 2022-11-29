@@ -28,18 +28,18 @@ instance SyntaxFreeVariables t => SyntaxFreeVariables (FixedList n t) where
 instance SyntaxFreeVariables st => SyntaxFreeVariables (WithSourcePos st) where
     syntaxFreeVariables (MkWithSourcePos _ e) = syntaxFreeVariables e
 
-instance SyntaxFreeVariables SyntaxMatch where
-    syntaxFreeVariables (MkSyntaxMatch pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
+instance SyntaxFreeVariables SyntaxCase where
+    syntaxFreeVariables (MkSyntaxCase pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
 
-instance SyntaxFreeVariables (SyntaxMultimatch n) where
-    syntaxFreeVariables (MkSyntaxMultimatch pats expr) =
+instance SyntaxFreeVariables (SyntaxMulticase n) where
+    syntaxFreeVariables (MkSyntaxMulticase pats expr) =
         difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
 
-instance SyntaxFreeVariables (Some SyntaxMultimatch) where
+instance SyntaxFreeVariables (Some SyntaxMulticase) where
     syntaxFreeVariables (MkSome m) = syntaxFreeVariables m
 
-instance SyntaxFreeVariables SyntaxMultimatchList where
-    syntaxFreeVariables (MkSyntaxMultimatchList _ l) = syntaxFreeVariables l
+instance SyntaxFreeVariables SyntaxMulticaseList where
+    syntaxFreeVariables (MkSyntaxMulticaseList _ l) = syntaxFreeVariables l
 
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr

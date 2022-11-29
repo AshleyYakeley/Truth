@@ -58,36 +58,36 @@ interpretPatternConstructor SLPair =
 
 recordNameWitnesses ::
        ListType (QSignature 'Positive) tt
-    -> ScopeBuilder [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
+    -> QScopeInterpreter [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
 recordNameWitnesses lt =
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
         MkPairType (ValueSignature name t) f -> do
-            (_, vid) <- allocateVarScopeBuilder $ Just $ UnqualifiedFullNameRef name
+            (_, vid) <- allocateVar $ Just $ UnqualifiedFullNameRef name
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
 
-mkRecordPattern :: ListType (QSignature 'Positive) tt -> ScopeBuilder (QOpenPattern (Maybe (ListVProduct tt)) ())
+mkRecordPattern :: ListType (QSignature 'Positive) tt -> QScopeInterpreter (QOpenPattern (Maybe (ListVProduct tt)) ())
 mkRecordPattern ww = do
     sff <- recordNameWitnesses ww
     return $ MkPattern sff $ ImpureFunction $ fmap $ \a -> (a, ())
 
-constructPattern :: Either QPatternConstructor QRecordPattern -> [QPattern] -> ScopeBuilder QPattern
-constructPattern (Left pc) pats = lift $ liftRefNotation $ qConstructPattern pc pats
+constructPattern :: Either QPatternConstructor QRecordPattern -> [QPattern] -> QScopeInterpreter QPattern
+constructPattern (Left pc) pats = lift $ qConstructPattern pc pats
 constructPattern (Right _) (_:_) = lift $ throw PatternTooManyConsArgsError
 constructPattern (Right (MkRecordPattern sigs tt decode)) [] = do
     pat <- mkRecordPattern sigs
     return $ MkSealedPattern (MkExpressionWitness tt $ pure ()) $ pat . arr (decode . meet1)
 
-interpretPattern' :: SyntaxPattern' -> ScopeBuilder QPattern
+interpretPattern' :: SyntaxPattern' -> QScopeInterpreter QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
 interpretPattern' (VarSyntaxPattern n) = do
-    (_, vid) <- allocateVarScopeBuilder $ Just $ UnqualifiedFullNameRef n
+    (_, vid) <- allocateVar $ Just $ UnqualifiedFullNameRef n
     return $ qVarPattern vid
 interpretPattern' (BothSyntaxPattern spat1 spat2) = do
     pat1 <- interpretPattern spat1
     pat2 <- interpretPattern spat2
-    lift $ liftRefNotation $ qBothPattern pat1 pat2
+    lift $ qBothPattern pat1 pat2
 interpretPattern' (ConstructorSyntaxPattern scons spats) = do
-    pc <- lift $ liftRefNotation $ interpretPatternConstructor scons
+    pc <- lift $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
     pat@(MkSealedPattern (MkExpressionWitness tw vexpr) patw) <- constructPattern pc pats
     return $
@@ -100,46 +100,44 @@ interpretPattern' (ConstructorSyntaxPattern scons spats) = do
                 in MkSealedPattern (MkExpressionWitness stw vexpr) $ contramap1Pattern (ImpureFunction ff) patw
 interpretPattern' (TypedSyntaxPattern spat stype) = do
     pat <- interpretPattern spat
-    lift $
-        liftRefNotation $ do
-            mtn <- interpretType @'Negative stype
-            case mtn of
-                MkSome tn -> do
-                    tpw <- invertType tn
-                    let
-                        pc :: QPatternConstructor
-                        pc =
-                            toExpressionPatternConstructor $
-                            toPatternConstructor (mkShimWit tn) (ConsListType tpw NilListType) $
-                            PureFunction $ \a -> (a, ())
-                    qConstructPattern pc [pat]
+    lift $ do
+        mtn <- interpretType @'Negative stype
+        case mtn of
+            MkSome tn -> do
+                tpw <- invertType tn
+                let
+                    pc :: QPatternConstructor
+                    pc =
+                        toExpressionPatternConstructor $
+                        toPatternConstructor (mkShimWit tn) (ConsListType tpw NilListType) $
+                        PureFunction $ \a -> (a, ())
+                qConstructPattern pc [pat]
 interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
     pat <- interpretPattern spat
-    lift $
-        liftRefNotation $ do
-            mtn <- interpretType @'Negative stype
-            case mtn of
-                MkSome tn ->
-                    case getOptGreatestDynamicSupertype tn of
-                        Nothing -> return pat
-                        Just dtn -> do
-                            tpw <- invertType tn
-                            let
-                                pc :: QPatternConstructor
-                                pc =
-                                    toExpressionPatternConstructor $
-                                    toPatternConstructor dtn (ConsListType tpw NilListType) $
-                                    ImpureFunction $ fmap $ \a -> (a, ())
-                            qConstructPattern pc [pat]
+    lift $ do
+        mtn <- interpretType @'Negative stype
+        case mtn of
+            MkSome tn ->
+                case getOptGreatestDynamicSupertype tn of
+                    Nothing -> return pat
+                    Just dtn -> do
+                        tpw <- invertType tn
+                        let
+                            pc :: QPatternConstructor
+                            pc =
+                                toExpressionPatternConstructor $
+                                toPatternConstructor dtn (ConsListType tpw NilListType) $
+                                ImpureFunction $ fmap $ \a -> (a, ())
+                        qConstructPattern pc [pat]
 interpretPattern' (NamespaceSyntaxPattern spat nref) = do
-    close <- interpScopeBuilder $ withNamespace nref
+    close <- withNamespace nref
     pat <- interpretPattern spat
-    interpScopeBuilder close
+    close
     return pat
 
-interpretPattern :: SyntaxPattern -> ScopeBuilder QPattern
+interpretPattern :: SyntaxPattern -> QScopeInterpreter QPattern
 interpretPattern (MkWithSourcePos spos pat) = do
-    sourcePosScopeBuilder spos
+    scopeSourcePos spos
     interpretPattern' pat
 
 interpretExpression :: SyntaxExpression -> RefExpression
@@ -183,7 +181,7 @@ typedSyntaxToSingleBindings spat@(MkWithSourcePos spos pat) mstype sbody doc =
             sbs <-
                 for (syntaxPatternBindingVariables spat) $ \pref -> let
                     wspos = MkWithSourcePos spos
-                    funcsexpr = wspos $ SEAbstract $ MkSyntaxMatch spat $ wspos $ SEVar pref
+                    funcsexpr = wspos $ SEAbstract $ MkSyntaxCase spat $ wspos $ SEVar pref
                     valsexpr = wspos $ SEApply funcsexpr $ wspos $ SEVar pvnameref
                     in fmap snd $ buildSingleBinding (Just pref) Nothing valsexpr doc
             return $ sb : sbs
@@ -403,27 +401,26 @@ interpretConstant SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
-patternBuildScope :: VarID -> QPattern -> QScopeInterpreter ()
-patternBuildScope varid pat =
-    registerLetBindings $ fmap (\(wvar, expr) -> (varIdNameRef wvar, "lambda", expr)) $ qPatternBindings varid pat
-
-interpretPatternBuildScope :: VarID -> SyntaxPattern -> ScopeBuilder QPattern
-interpretPatternBuildScope varid spat = do
-    pat <- interpretPattern spat
-    interpScopeBuilder $ patternBuildScope varid pat
-    return pat
+withMatch :: QMatch -> RefNotation QPartialExpression -> RefNotation QPartialExpression
+withMatch match mexp =
+    unTransformT (interpScopeBuilder $ registerMatchBindings match) $ \() -> do
+        exp <- mexp
+        liftRefNotation $ qMatchGate match exp
 
 withAllocateNewVar :: Maybe FullNameRef -> (VarID -> RefNotation a) -> RefNotation a
 withAllocateNewVar mn call = runScopeBuilder (allocateVarScopeBuilder mn) $ \(_, varid) -> call varid
 
-interpretSinglePattern :: VarID -> SyntaxPattern -> RefNotation QPartialExpression -> RefNotation QPartialExpression
-interpretSinglePattern varid spat mexp = do
-    unTransformT (interpretPatternBuildScope varid spat) $ \pat -> do
-        exp <- mexp
-        liftRefNotation $ qPatternGate varid pat exp
+intepretLambdaMatch :: VarID -> SyntaxPattern -> QScopeInterpreter QMatch
+intepretLambdaMatch varid spat = do
+    pat <- interpretPattern spat
+    return $ qLambdaPatternMatch varid pat
 
-interpretMatch :: VarID -> SyntaxMatch -> RefNotation QPartialExpression
-interpretMatch varid (MkSyntaxMatch spat sbody) =
+interpretSinglePattern :: VarID -> SyntaxPattern -> RefNotation QPartialExpression -> RefNotation QPartialExpression
+interpretSinglePattern varid spat mexp =
+    unTransformT (interpScopeBuilder $ intepretLambdaMatch varid spat) $ \pat -> withMatch pat mexp
+
+interpretCase :: VarID -> SyntaxCase -> RefNotation QPartialExpression
+interpretCase varid (MkSyntaxCase spat sbody) =
     interpretSinglePattern varid spat $ fmap sealedToPartialExpression $ interpretExpression sbody
 
 specialCaseVarPatterns :: Bool
@@ -438,8 +435,8 @@ interpretMultiPattern NilFixedList NilFixedList ma = ma
 interpretMultiPattern (ConsFixedList v vv) (ConsFixedList spat spats) ma =
     interpretSinglePattern v spat $ interpretMultiPattern vv spats ma
 
-interpretMultimatch :: FixedList n VarID -> SyntaxMultimatch n -> RefNotation QPartialExpression
-interpretMultimatch varids (MkSyntaxMultimatch spats sbody) =
+interpretMulticase :: FixedList n VarID -> SyntaxMulticase n -> RefNotation QPartialExpression
+interpretMulticase varids (MkSyntaxMulticase spats sbody) =
     interpretMultiPattern varids spats $ fmap sealedToPartialExpression $ interpretExpression sbody
 
 multiAbstractExpr :: FixedList n VarID -> QExpression -> QInterpreter QExpression
@@ -454,33 +451,33 @@ interpretExpression' (SESubsume sexpr stype) = do
     liftRefNotation $ do
         t <- interpretType stype
         qSubsumeExpr t expr
-interpretExpression' (SEAbstract (MkSyntaxMatch (MkWithSourcePos _ AnySyntaxPattern) sbody))
+interpretExpression' (SEAbstract (MkSyntaxCase (MkWithSourcePos _ AnySyntaxPattern) sbody))
     | specialCaseVarPatterns =
         withAllocateNewVar Nothing $ \varid -> do
             expr <- interpretExpression sbody
             liftRefNotation $ qAbstractExpr varid expr
-interpretExpression' (SEAbstract (MkSyntaxMatch (MkWithSourcePos _ (VarSyntaxPattern n)) sbody))
+interpretExpression' (SEAbstract (MkSyntaxCase (MkWithSourcePos _ (VarSyntaxPattern n)) sbody))
     | specialCaseVarPatterns =
         withAllocateNewVar (Just $ UnqualifiedFullNameRef n) $ \varid -> do
             expr <- interpretExpression sbody
             liftRefNotation $ qAbstractExpr varid expr
 interpretExpression' (SEAbstract match) =
     withAllocateNewVar Nothing $ \varid -> do
-        pexpr <- interpretMatch varid match
+        pexpr <- interpretCase varid match
         liftRefNotation $ qAbstractExpr varid $ partialToSealedExpression pexpr
-interpretExpression' (SEAbstracts (MkSome multimatch@(MkSyntaxMultimatch spats _))) =
+interpretExpression' (SEAbstracts (MkSome multimatch@(MkSyntaxMulticase spats _))) =
     runScopeBuilder (for spats $ \_ -> fmap snd $ allocateVarScopeBuilder Nothing) $ \varids -> do
-        pexpr <- interpretMultimatch varids multimatch
+        pexpr <- interpretMulticase varids multimatch
         liftRefNotation $ multiAbstractExpr varids $ partialToSealedExpression pexpr
 interpretExpression' (SELet sdecls sbody) = interpretDeclarations sdecls $ interpretExpression sbody
 interpretExpression' (SEMatch scases) =
     withAllocateNewVar Nothing $ \varid -> do
-        pexprs <- for scases $ interpretMatch varid
+        pexprs <- for scases $ interpretCase varid
         pexpr <- liftRefNotation $ qPartialExpressionSumList pexprs
         liftRefNotation $ qAbstractExpr varid $ partialToSealedExpression pexpr
-interpretExpression' (SEMatches (MkSyntaxMultimatchList nn scases)) =
+interpretExpression' (SEMatches (MkSyntaxMulticaseList nn scases)) =
     runScopeBuilder (fixedListGenerate nn $ fmap snd $ allocateVarScopeBuilder Nothing) $ \varids -> do
-        pexprs <- for scases $ interpretMultimatch varids
+        pexprs <- for scases $ interpretMulticase varids
         pexpr <- liftRefNotation $ qPartialExpressionSumList pexprs
         liftRefNotation $ multiAbstractExpr varids $ partialToSealedExpression pexpr
 interpretExpression' (SEApply sf sarg) = do

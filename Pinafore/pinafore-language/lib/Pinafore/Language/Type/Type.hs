@@ -45,6 +45,8 @@ type QExpression = TSSealedExpression QTypeSystem
 
 type QPartialExpression = TSSealedPartialExpression QTypeSystem
 
+type QMatch = TSMatch QTypeSystem
+
 type QPatternConstructor = TSExpressionPatternConstructor QTypeSystem
 
 type QRecordConstructor = RecordConstructor QTypeSystem

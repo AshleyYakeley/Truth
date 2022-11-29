@@ -29,6 +29,7 @@ library:
       - Language.Expression.Common.Pattern.Sealed
       - Language.Expression.Common.Pattern.Constructor
       - Language.Expression.Common.Pattern.Expression
+      - Language.Expression.Common.Pattern.Match
       - Language.Expression.Common.Pattern
       - Language.Expression.Common.NameWit
       - Language.Expression.Common.Named

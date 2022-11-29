@@ -200,26 +200,26 @@ data SyntaxPattern'
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 
-data SyntaxMatch =
-    MkSyntaxMatch SyntaxPattern
-                  SyntaxExpression
+data SyntaxCase =
+    MkSyntaxCase SyntaxPattern
+                 SyntaxExpression
     deriving (Eq)
 
-data SyntaxMultimatch (n :: PeanoNat) =
-    MkSyntaxMultimatch (FixedList n SyntaxPattern)
-                       SyntaxExpression
+data SyntaxMulticase (n :: PeanoNat) =
+    MkSyntaxMulticase (FixedList n SyntaxPattern)
+                      SyntaxExpression
 
-syntaxMultimatchLength :: SyntaxMultimatch n -> PeanoNatType n
-syntaxMultimatchLength (MkSyntaxMultimatch l _) = fixedListLength l
+syntaxMulticaseLength :: SyntaxMulticase n -> PeanoNatType n
+syntaxMulticaseLength (MkSyntaxMulticase l _) = fixedListLength l
 
-instance TestEquality SyntaxMultimatch where
-    testEquality (MkSyntaxMultimatch patsa expa) (MkSyntaxMultimatch patsb expb) = do
+instance TestEquality SyntaxMulticase where
+    testEquality (MkSyntaxMulticase patsa expa) (MkSyntaxMulticase patsb expb) = do
         Refl <- testEquality (fixedListLength patsa) (fixedListLength patsb)
         if expa == expb
             then Just Refl
             else Nothing
 
-instance Eq (SyntaxMultimatch n) where
+instance Eq (SyntaxMulticase n) where
     a == b = isJust $ testEquality a b
 
 data SyntaxAnnotation
@@ -234,12 +234,12 @@ data SyntaxConstant
     | SCConstructor SyntaxConstructor
     deriving (Eq)
 
-data SyntaxMultimatchList =
-    forall (n :: PeanoNat). MkSyntaxMultimatchList (PeanoNatType n)
-                                                   [SyntaxMultimatch n]
+data SyntaxMulticaseList =
+    forall (n :: PeanoNat). MkSyntaxMulticaseList (PeanoNatType n)
+                                                  [SyntaxMulticase n]
 
-instance Eq SyntaxMultimatchList where
-    MkSyntaxMultimatchList na aa == MkSyntaxMultimatchList nb bb =
+instance Eq SyntaxMulticaseList where
+    MkSyntaxMulticaseList na aa == MkSyntaxMulticaseList nb bb =
         fromMaybe False $ do
             Refl <- testEquality na nb
             return $ aa == bb
@@ -253,10 +253,10 @@ data SyntaxExpression'
                     (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression
-    | SEAbstract SyntaxMatch
-    | SEAbstracts (Some SyntaxMultimatch)
-    | SEMatch [SyntaxMatch]
-    | SEMatches SyntaxMultimatchList
+    | SEAbstract SyntaxCase
+    | SEAbstracts (Some SyntaxMulticase)
+    | SEMatch [SyntaxCase]
+    | SEMatches SyntaxMulticaseList
     | SERef SyntaxExpression
     | SEUnref SyntaxExpression
     | SELet [SyntaxDeclaration]
@@ -268,11 +268,7 @@ seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc
 
 seAbstract :: SourcePos -> SyntaxPattern -> SyntaxExpression -> SyntaxExpression
-seAbstract spos pat expr = MkWithSourcePos spos $ SEAbstract $ MkSyntaxMatch pat expr
-
-seAbstracts :: SourcePos -> [SyntaxPattern] -> SyntaxExpression -> SyntaxExpression
-seAbstracts _ [] expr = expr
-seAbstracts spos (p:pp) expr = seAbstract spos p $ seAbstracts spos pp expr
+seAbstract spos pat expr = MkWithSourcePos spos $ SEAbstract $ MkSyntaxCase pat expr
 
 seApply :: SourcePos -> SyntaxExpression -> SyntaxExpression -> SyntaxExpression
 seApply spos f a = MkWithSourcePos spos $ SEApply f a

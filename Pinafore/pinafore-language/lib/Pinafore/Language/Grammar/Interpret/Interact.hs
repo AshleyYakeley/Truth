@@ -10,13 +10,10 @@ import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Expression
-import Pinafore.Language.Grammar.Interpret.RefNotation
-import Pinafore.Language.Grammar.Interpret.ScopeBuilder
 import Pinafore.Language.Grammar.Read
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
-import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 import System.IO.Error
@@ -88,19 +85,13 @@ interactLoop inh outh echo = do
                                  r <- lift $ lift $ unliftActionOrFail action
                                  let
                                      rval = MkSomeOf rwit r
+                                     buildScope :: QScopeInterpreter ()
+                                     buildScope = do
+                                         pat <- interpretPattern spat
+                                         match <- lift $ qExpressionPatternMatch (qConstExprAny rval) pat
+                                         registerMatchBindings match
                                      bind :: QInterpreter --> QInterpreter
-                                     bind qia =
-                                         runRefNotation $
-                                         runScopeBuilder (interpretPattern spat) $ \pat ->
-                                             liftRefNotation $ do
-                                                 MkMatchResult purity mexpr ww <-
-                                                     qMatchSealedPattern pat $ qConstExprAny rval
-                                                 mval <- evalExpression mexpr
-                                                 let
-                                                     t = runPurityCases purity mval
-                                                     patbind :: (VarID, QShimWit 'Positive _) -> (VarID, QExpression)
-                                                     patbind (vid, val) = (vid, qConstExprAny $ MkSomeOf val t)
-                                                 transformTMap (replaceLambdaBindings $ fmap patbind ww) qia
+                                     bind qia = transformTMap buildScope qia
                                  interactRunQInterpreter $ bind $ return () -- check errors
                                  lift $ readerStateUpdate bind
                              ShowDocInteractiveCommand rname -> do

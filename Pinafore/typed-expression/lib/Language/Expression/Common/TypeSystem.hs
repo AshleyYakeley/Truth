@@ -52,6 +52,8 @@ type TSSealedPartialExpression ts = SealedPartialExpression (TSVarID ts) (TSNegS
 
 type TSSealedExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
 
+type TSMatch ts = Match (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+
 type TSOpenPattern :: Type -> Type -> Type -> Type
 type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
 
@@ -70,14 +72,3 @@ type TSPatternConstructor ts = PatternConstructor (TSVarID ts) (TSPosShimWit ts)
 type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
 type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
-tsMatchPattern ::
-       forall ts a b r. (TypeSystem ts, FunctionShim (TSShim ts))
-    => TSOpenPattern ts a b
-    -> TSOpenExpression ts a
-    -> (forall f t. PurityType Maybe f -> TSOpenExpression ts (f (t, b)) -> [(TSVarID ts, TSPosShimWit ts t)] -> r)
-    -> r
-tsMatchPattern pat expr call =
-    matchPattern pat expr $ \purity expr' ww ->
-        call purity expr' $
-        fmap (\(MkSomeFor (MkNameWitness n w) f) -> (n, mapShimWit (MkPolarMap $ functionToShim "match" f) w)) ww

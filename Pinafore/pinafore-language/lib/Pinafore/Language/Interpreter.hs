@@ -18,6 +18,7 @@ module Pinafore.Language.Interpreter
     , Interpreter
     , ScopeInterpreter
     , sourcePosParam
+    , scopeSourcePos
     , withNamespace
     , usingNamespace
     , SpecialVals(..)
@@ -33,7 +34,6 @@ module Pinafore.Language.Interpreter
     , withNewTypeID
     , registerBoundType
     , registerType
-    , replaceLambdaBindings
     , ScopeFixBox
     , FullName(..)
     , Signature(..)
@@ -44,6 +44,7 @@ module Pinafore.Language.Interpreter
     , getBindingMap
     , bindingInfosToScope
     , InterpreterBinding(..)
+    , registerMatchBindings
     , lookupPatternConstructor
     , registerPatternConstructor
     , registerRecord
@@ -107,8 +108,7 @@ data RecordPattern (ts :: Type) =
                                                        (t -> Maybe (ListVProduct tt))
 
 data InterpreterBinding (ts :: Type)
-    = LambdaBinding VarID
-    | ValueBinding (TSSealedExpression ts)
+    = ValueBinding (TSSealedExpression ts)
                    (Maybe (TSExpressionPatternConstructor ts))
     | TypeBinding (InterpreterBoundType ts)
     | RecordConstructorBinding (RecordConstructor ts)
@@ -116,7 +116,6 @@ data InterpreterBinding (ts :: Type)
     | SpecialFormBinding (SpecialForm ts (Interpreter ts))
 
 instance HasInterpreter ts => Show (InterpreterBinding ts) where
-    show (LambdaBinding _) = "fn"
     show (ValueBinding e Nothing) = "val: " <> show e
     show (ValueBinding e (Just _)) = "val+pat: " <> show e
     show (TypeBinding t) = "type: " <> unpack (exprShow t)
@@ -460,6 +459,9 @@ usingNamespacesRef = transformParamRef usingNamespacesParam
 varIDStateRef :: Ref (ScopeInterpreter ts) VarIDState
 varIDStateRef = transformParamRef varIDStateParam
 
+scopeSourcePos :: SourcePos -> ScopeInterpreter ts ()
+scopeSourcePos = refPut (transformParamRef sourcePosParam)
+
 getNameResolver :: ScopeInterpreter ts (FullNameRef -> FullName)
 getNameResolver = do
     ns <- refGet namespaceRef
@@ -485,18 +487,6 @@ allocateVar mnameref = do
     refPut varIDStateRef $ nextVarIDState vs
     refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
     return (biName, vid)
-
-replaceLambdaBindings :: forall ts. [(VarID, TSSealedExpression ts)] -> ScopeInterpreter ts ()
-replaceLambdaBindings pairs = let
-    rmap :: Map VarID (TSSealedExpression ts)
-    rmap = mapFromList pairs
-    replaceBinding :: InterpreterBinding ts -> InterpreterBinding ts
-    replaceBinding (LambdaBinding vid)
-        | Just expr <- lookup vid rmap = ValueBinding expr Nothing
-    replaceBinding b = b
-    replaceMap :: NameMap ts -> NameMap ts
-    replaceMap (MkNameMap mm) = MkNameMap $ mapWithKey (\_ (doc, b) -> (doc, replaceBinding b)) mm
-    in refModify scopeRef $ \scope -> scope {scopeBindings = replaceMap $ scopeBindings scope}
 
 getRestore :: Monad m => Ref m a -> m (m ())
 getRestore r = do
@@ -582,7 +572,6 @@ lookupLetBinding name = do
     mb <- lookupBinding name
     case mb of
         Just (ValueBinding exp _) -> return $ Just $ ValueBoundValue exp
-        Just (LambdaBinding v) -> return $ Just $ ValueBoundValue $ tsVar @ts v
         Just (RecordConstructorBinding rc _) -> return $ Just $ RecordBoundValue rc
         _ -> return Nothing
 
@@ -599,6 +588,13 @@ registerLetBinding ::
     -> TSSealedExpression ts
     -> ScopeInterpreter ts ()
 registerLetBinding name doc expr = registerLetBindings $ pure (name, doc, expr)
+
+registerMatchBindings ::
+       forall ts. HasInterpreter ts
+    => TSMatch ts
+    -> ScopeInterpreter ts ()
+registerMatchBindings match =
+    registerLetBindings $ fmap (\(wvar, expr) -> (varIdNameRef wvar, "lambda", expr)) $ tsMatchBindings @ts match
 
 lookupSpecialForm :: FullNameRef -> Interpreter ts (SpecialForm ts (Interpreter ts))
 lookupSpecialForm name = do
