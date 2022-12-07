@@ -83,17 +83,17 @@ run call =
             unlift $
                 call $ MkLangContext {lcGTKContext = gtkc, lcOtherContext = MkOtherContext {ocClipboard = clipboard}}
 
-windowStuff :: DocTreeEntry (BindDoc ())
+windowStuff :: DocTreeEntry (BindDocTree ())
 windowStuff =
     docTreeEntry
         "Windows"
         ""
-        [ mkTypeEntry "Context" "Context for GTK" $ MkSomeGroundType contextGroundType
+        [ mkTypeEntry "Context" "Context for GTK" (MkSomeGroundType contextGroundType) []
         , mkValEntry
               "run"
               "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
           run @A
-        , mkTypeEntry "Window" "A user interface window." $ MkSomeGroundType windowGroundType
+        , mkTypeEntry "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
         , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
         , mkValEntry "closeWindow" "Close a window." uiWindowClose
         , mkValEntry "showWindow" "Show a window." showWindow
@@ -105,7 +105,7 @@ langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Boo
 langChooseFile action lc test =
     actionLiftViewKnow $ fmap maybeToKnow $ runGView (lcGTKContext lc) $ gvRunLocked $ chooseFile action test
 
-dialogStuff :: DocTreeEntry (BindDoc ())
+dialogStuff :: DocTreeEntry (BindDocTree ())
 dialogStuff =
     docTreeEntry
         "Dialogs"

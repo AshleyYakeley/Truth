@@ -10,7 +10,6 @@ module Pinafore.Language.Grammar.Read.Expression
 
 import Language.Expression.Dolan
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Read.Constructor
 import Pinafore.Language.Grammar.Read.Infix
 import Pinafore.Language.Grammar.Read.Parser

@@ -10,7 +10,6 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     ) where
 
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
@@ -530,19 +529,20 @@ makeDataGroundType _ tparams = let
     mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (DolanVarianceMap dv gt)
     mkx dvm _ = return dvm
     mkgt :: DolanVarianceMap dv gt -> QInterpreter (GroundTypeFromTypeID dv gt ())
-    mkgt dvm =
+    mkgt dvm = do
+        nsp <- getNameResolver
         return $
-        MkGroundTypeFromTypeID $ \name mainTypeID -> let
-            gt =
-                MkPinaforeGroundType
-                    { pgtVarianceType = dvt
-                    , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
-                    , pgtShowType = standardListTypeExprShow @dv $ exprShow name
-                    , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
-                    , pgtSubtypeGroup = Nothing
-                    , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
-                    }
-            in (gt, ())
+            MkGroundTypeFromTypeID $ \name mainTypeID -> let
+                gt =
+                    MkPinaforeGroundType
+                        { pgtVarianceType = dvt
+                        , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
+                        , pgtShowType = standardListTypeExprShow @dv $ toNamedText $ nsp $ UnqualifiedFullNameRef name
+                        , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
+                        , pgtSubtypeGroup = Nothing
+                        , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+                        }
+                in (gt, ())
     in MkTypeConstruction mkx mkgt $ \_ _ -> return ()
 
 makeDataTypeBox ::

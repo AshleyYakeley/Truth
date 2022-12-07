@@ -32,14 +32,12 @@ module Pinafore.Language
     , Y
     , Entity
     , runPinaforeScoped
-    , exprShow
     ) where
 
 import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
 import Pinafore.Language.Grammar.Interpret

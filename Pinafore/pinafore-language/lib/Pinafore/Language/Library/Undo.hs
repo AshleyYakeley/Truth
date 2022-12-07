@@ -45,12 +45,12 @@ handleSetModel uh model = handleModel uh $ contramap meet2 model
 handleStore :: UndoHandler -> QStore -> IO QStore
 handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreGetModel store
 
-undoStuff :: DocTreeEntry (BindDoc context)
+undoStuff :: DocTreeEntry (BindDocTree context)
 undoStuff =
     docTreeEntry "Undo" "Undo and redo changes to models." $
     namespaceRelative
         "Undo"
-        [ mkTypeEntry "UndoHandler" "A queue of undo (and redo) actions." $ MkSomeGroundType undoHandlerGroundType
+        [ mkTypeEntry "UndoHandler" "A queue of undo (and redo) actions." (MkSomeGroundType undoHandlerGroundType) []
         , mkValEntry "newUndoHandler" "Create a new `UndoHandler`." newUndoHandler
         , mkValEntry "queueUndo" "Undo an action." $ \uh -> do
               rc <- actionResourceContext

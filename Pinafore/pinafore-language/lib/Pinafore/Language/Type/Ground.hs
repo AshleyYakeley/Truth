@@ -3,8 +3,8 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
@@ -27,7 +27,7 @@ instance ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType
 
 instance Show (QGroundType dv gt) where
-    show t = unpack $ showGroundType t
+    show t = unpack $ toText $ showGroundType t
 
 type PinaforePolyGreatestDynamicSupertype :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype QGroundType dv gt
@@ -57,12 +57,22 @@ singleGroundType ::
     -> QGroundType dv t
 singleGroundType wit = singleGroundType' $ MkFamilialType wit HetRefl
 
+standardListTypeExprShow ::
+       forall (dv :: [CCRVariance]). Is DolanVarianceType dv
+    => NamedText
+    -> ListTypeExprShow dv
+standardListTypeExprShow = let
+    sh :: forall (dv' :: [CCRVariance]). Int -> DolanVarianceType dv' -> NamedText -> ListTypeExprShow dv'
+    sh i NilListType (MkNamedText nt) = MkPrecNamedText $ \fnt -> (nt fnt, i)
+    sh _ (ConsListType _ lt) t = \ta -> sh 2 lt (t <> " " <> precNamedText 0 ta)
+    in sh 0 $ representative @_ @_ @dv
+
 stdSingleGroundType ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
     => IOWitness ('MkWitKind (SingletonFamily t))
-    -> Text
+    -> FullName
     -> QGroundType dv t
-stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @dv name
+stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @dv $ toNamedText name
 
 type QTypeSystem = DolanTypeSystem QGroundType
 
@@ -94,7 +104,7 @@ showPrecVariance ::
        , forall a. ExprShow (RangeType w polarity a)
        )
     => CCRPolarArgument w polarity sv t
-    -> (Text, Int)
+    -> PrecNamedText
 showPrecVariance (CoCCRPolarArgument t) = exprShowPrec t
 showPrecVariance (ContraCCRPolarArgument t) = invertPolarity @polarity $ exprShowPrec t
 showPrecVariance (RangeCCRPolarArgument p q) = exprShowPrec (MkRangeType p q)
@@ -107,7 +117,7 @@ showPrecDolanVariance ::
        )
     => ListTypeExprShow dv
     -> DolanArguments dv w f polarity t
-    -> (Text, Int)
+    -> PrecNamedText
 showPrecDolanVariance f NilCCRArguments = f
 showPrecDolanVariance f (ConsCCRArguments t1 tr) = showPrecDolanVariance (f (showPrecVariance @w @polarity t1)) tr
 
@@ -120,17 +130,17 @@ instance GroundExprShow QGroundType where
            )
         => QGroundType dv f
         -> DolanArguments dv w f polarity t
-        -> (Text, Int)
+        -> PrecNamedText
     groundTypeShowPrec t args = showPrecDolanVariance (pgtShowType t) args
 
 instance Is PolarityType polarity => Show (DolanType QGroundType polarity a) where
-    show t = unpack $ exprShow t
+    show t = unpack $ toText $ exprShow t
 
 instance Is PolarityType polarity => AllConstraint Show (DolanType QGroundType polarity) where
     allConstraint = Dict
 
 instance Is PolarityType polarity => Show (DolanGroundedType QGroundType polarity a) where
-    show t = unpack $ exprShow t
+    show t = unpack $ toText $ exprShow t
 
 instance Is PolarityType polarity => AllConstraint Show (DolanGroundedType QGroundType polarity) where
     allConstraint = Dict

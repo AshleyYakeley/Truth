@@ -3,8 +3,8 @@ module Pinafore.Language.Grammar.Read.Infix
     , readInfixed
     ) where
 
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Read.Parser
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes hiding (try)
 

@@ -5,7 +5,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity.Type
@@ -50,9 +50,9 @@ openEntityFamily =
         epShowType = exprShowPrec oet
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
-getOpenEntityType :: MonadThrow ErrorType m => Some (QType 'Positive) -> m (Some OpenEntityType)
+getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkSome t
-        _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
+        _ -> throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tm

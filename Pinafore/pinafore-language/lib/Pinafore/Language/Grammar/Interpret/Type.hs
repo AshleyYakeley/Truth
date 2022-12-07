@@ -6,7 +6,6 @@ module Pinafore.Language.Grammar.Interpret.Type
     ) where
 
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
@@ -47,7 +46,7 @@ interpretNonpolarType st = do
                 MkSome tm ->
                     case positiveToNonpolar @QTypeSystem tm of
                         Just t -> return $ shimWitToSome t
-                        Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
+                        Nothing -> throwWithName $ \ntt -> InterpretTypeNotAmbipolarError $ ntt $ exprShow tm
 
 interpretTypeM ::
        forall mpolarity. Is MPolarityType mpolarity
@@ -103,7 +102,7 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
                  assignUVarWit var t $
                  case safeRecursiveDolanSingularType var t of
                      Just rt -> return $ MkSome $ singleDolanType rt
-                     Nothing -> throw $ InterpretTypeRecursionNotCovariant name (exprShow t))
+                     Nothing -> throwWithName $ \ntt -> InterpretTypeRecursionNotCovariant name $ ntt $ exprShow t)
             mt
 
 interpretTypeRangeFromType ::

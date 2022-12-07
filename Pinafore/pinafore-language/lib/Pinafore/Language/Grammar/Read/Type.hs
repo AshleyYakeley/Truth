@@ -6,7 +6,6 @@ module Pinafore.Language.Grammar.Read.Type
     , readTypeVar
     ) where
 
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Read.Infix
 import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Token

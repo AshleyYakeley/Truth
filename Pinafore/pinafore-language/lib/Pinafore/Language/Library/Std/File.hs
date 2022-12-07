@@ -38,7 +38,7 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = unWRaised objRun $ refRead ReadByteStringLength
 -}
-fileLibEntries :: [DocTreeEntry (BindDoc ())]
+fileLibEntries :: [DocTreeEntry (BindDocTree ())]
 fileLibEntries =
     [ docTreeEntry
           "File Storage"

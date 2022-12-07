@@ -20,12 +20,12 @@ qfail t = fail $ unpack t
 onStop :: Action A -> Action A -> Action A
 onStop p q = p <|> q
 
-actionsLibEntries :: [DocTreeEntry (BindDoc context)]
+actionsLibEntries :: [DocTreeEntry (BindDocTree context)]
 actionsLibEntries =
     [ docTreeEntry
           "Actions"
           ""
-          [ mkTypeEntry "Action" "" $ MkSomeGroundType actionGroundType
+          [ mkTypeEntry "Action" "" (MkSomeGroundType actionGroundType) []
           , mkValEntry "return" "A value as an Action." $ return @Action @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
           , mkValEntry ">>" "Do actions in sequence." $ qbind_

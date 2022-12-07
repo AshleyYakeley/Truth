@@ -1,4 +1,4 @@
-expose x, B, A, MkA1, MkA2, R, MkR, y, namespace N of
+expose x, B, A, MkA1, MkA2, RecA, MkRecA1, MkRecA2, RecB, R, MkR, y, namespace N of
 
     #| doc:A
     datatype A {+p,-q} +r -s of
@@ -16,6 +16,35 @@ expose x, B, A, MkA1, MkA2, R, MkR, y, namespace N of
 
     subtype A Integer Unit Unit <: B = fn _ => MkB 17;
 
+    rec
+        #| doc:RecA
+        datatype RecA {+p,-q} +r -s of
+            #| doc:MkRecA1
+            MkRecA1 (q -> s -> p) r;
+            #| doc:MkRecA2
+            MkRecA2 p (s -> r);
+        end;
+
+        #| doc:RecB
+        datatype RecB of
+            #| doc:MkRecB
+            MkRecB Integer;
+        end;
+
+        subtype RecA Integer Unit Unit <: RecB = fn _ => MkRecB 17;
+    end;
+
+    #| doc:R
+    datatype R of
+        #| doc:MkR
+        MkR of
+            #| doc:rp
+            rp: Integer -> a -> a;
+            #| doc:rq
+            rq: Integer | Text;
+        end;
+    end;
+
     #| doc:x
     x: Text = "x";
 
@@ -31,17 +60,52 @@ expose x, B, A, MkA1, MkA2, R, MkR, y, namespace N of
         q: Integer = 45;
         #| doc:N.xx
         xx: Text = "Hello";
-    end;
 
-    #| doc:R
-    datatype R of
-        #| doc:MkR
-        MkR of
-            #| doc:rp
-            rp: Integer -> a -> a;
-            #| doc:rq
-            rq: Integer | Text;
+        #| doc:NmA
+        datatype NmA {+p,-q} +r -s of
+            #| doc:MkNmA1
+            MkNmA1 (q -> s -> p) r;
+            #| doc:MkNmA2
+            MkNmA2 p (s -> r);
         end;
+
+        #| doc:NmB
+        datatype NmB of
+            #| doc:MkNmB
+            MkNmB Integer;
+        end;
+
+        subtype NmA Integer Unit Unit <: NmB = fn _ => MkNmB 17;
+
+        rec
+            #| doc:NmRecA
+            datatype NmRecA {+p,-q} +r -s of
+                #| doc:MkNmRecA1
+                MkNmRecA1 (q -> s -> p) r;
+                #| doc:MkNmRecA2
+                MkNmRecA2 p (s -> r);
+            end;
+
+            #| doc:NmRecB
+            datatype NmRecB of
+                #| doc:MkNmRecB
+                MkNmRecB Integer;
+            end;
+
+            subtype NmRecA Integer Unit Unit <: NmRecB = fn _ => MkNmRecB 17;
+        end;
+
+        #| doc:NmR
+        datatype NmR of
+            #| doc:MkNmR
+            MkNmR of
+                #| doc:nmrp
+                nmrp: Integer -> a -> a;
+                #| doc:nmrq
+                nmrq: Integer | Text;
+            end;
+        end;
+
     end;
 
 end

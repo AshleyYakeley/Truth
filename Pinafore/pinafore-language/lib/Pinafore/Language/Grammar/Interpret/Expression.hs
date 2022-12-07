@@ -13,7 +13,6 @@ import Pinafore.Language.Debug
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.FreeVars
 import Pinafore.Language.Grammar.Interpret.RefNotation
@@ -154,7 +153,7 @@ data SingleBinding = MkSingleBinding
 
 sbDefDoc :: SingleBinding -> DefDoc
 sbDefDoc MkSingleBinding {..} = let
-    diName = sbName
+    diName = fullNameRef sbName
     diType = fromMaybe "" $ fmap exprShow sbType
     docItem = ValueDocItem {..}
     docDescription = sbDoc
@@ -164,7 +163,7 @@ buildSingleBinding ::
        Maybe FullNameRef -> Maybe SyntaxType -> SyntaxExpression -> Markdown -> ScopeBuilder (FullName, SingleBinding)
 buildSingleBinding mname sbType sbBody sbDoc = do
     (sbName, sbVarID) <- allocateVarScopeBuilder mname
-    nameResolve <- interpScopeBuilder getNameResolver
+    nameResolve <- interpScopeBuilder $ lift getNameResolver
     let sbRefVars = fmap nameResolve $ syntaxExpressionFreeVariables sbBody
     return (sbName, MkSingleBinding {..})
 
@@ -232,18 +231,44 @@ interpretSequentialLetBinding sbind = do
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> ScopeBuilder Docs
 interpretRecursiveDocDeclarations ddecls = do
     let
+        sigDoc :: SyntaxSignature -> DefDoc
+        sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ (ValueSyntaxSignature name stype))) =
+            MkDefDoc (ValueDocItem (UnqualifiedFullNameRef name) $ exprShow stype) doc
+        consDoc :: Name -> [NamedText] -> SyntaxConstructorOrSubtype extra -> (DocItem, [Tree DefDoc])
+        consDoc tname _ (ConstructorSyntaxConstructorOrSubtype cname tt _) =
+            ( ValuePatternDocItem (UnqualifiedFullNameRef cname) $
+              intercalate " -> " $ fmap exprShow tt <> [exprShow tname]
+            , [])
+        consDoc _ tparams (SubtypeSyntaxConstructorOrSubtype tname tt) =
+            (TypeDocItem (UnqualifiedFullNameRef tname) tparams, typeConssDoc tname tparams tt)
+        consDoc tname _ (RecordSyntaxConstructorOrSubtype cname sigs) =
+            (ValuePatternDocItem (UnqualifiedFullNameRef cname) (exprShow tname), fmap (pure . sigDoc) sigs)
+        typeConsDoc :: Name -> [NamedText] -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
+        typeConsDoc tname tparams (MkSyntaxWithDoc cdoc scs) = let
+            (item, rest) = consDoc tname tparams scs
+            in Node (MkDefDoc item cdoc) rest
+        typeConssDoc :: Name -> [NamedText] -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> [Tree DefDoc]
+        typeConssDoc tname tparams = fmap $ typeConsDoc tname tparams
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
                 TypeSyntaxDeclaration name defn -> let
-                    diName = RootFullName name
-                    diParams =
+                    diName = UnqualifiedFullNameRef name
+                    (diParams, items) =
                         case defn of
-                            ClosedEntitySyntaxTypeDeclaration params _ -> fmap exprShow params
-                            DatatypeSyntaxTypeDeclaration params _ -> fmap exprShow params
-                            _ -> []
+                            ClosedEntitySyntaxTypeDeclaration params conss -> let
+                                tparams = fmap exprShow params
+                                in (tparams, typeConssDoc name tparams conss)
+                            DatatypeSyntaxTypeDeclaration params conss -> let
+                                tparams = fmap exprShow params
+                                in (tparams, typeConssDoc name tparams conss)
+                            _ -> mempty
                     docItem = TypeDocItem {..}
                     docDescription = doc
-                    in return (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
+                    in return
+                           ( pure (spos, name, doc, defn)
+                           , mempty
+                           , mempty
+                           , pure $ EntryDocTreeEntry $ Node MkDefDoc {..} items)
                 SubtypeSyntaxDeclaration trustme sta stb mbody ->
                     return
                         ( mempty
@@ -252,7 +277,7 @@ interpretRecursiveDocDeclarations ddecls = do
                         , mempty)
                 BindingSyntaxDeclaration sbind -> do
                     binds <- syntaxToSingleBindings sbind doc
-                    return (mempty, mempty, binds, fmap (EntryDocTreeEntry . sbDefDoc) binds)
+                    return (mempty, mempty, binds, fmap (EntryDocTreeEntry . pure . sbDefDoc) binds)
     (typeDecls, subtypeSB, bindingDecls, docDecls) <- fmap mconcat $ for ddecls interp
     interpScopeBuilder $ interpretRecursiveTypeDeclarations typeDecls
     stDocDecls <- subtypeSB
@@ -268,7 +293,7 @@ interpretExpose (MkSyntaxExposeDeclaration items sdecls) =
     runScopeBuilder (interpretDocDeclarations sdecls) $ \doc -> do
         let (namespaces, names) = mconcat $ fmap partitionItem items
         (bnames, scope) <- liftRefNotation $ exportScope namespaces names
-        return (exposeDocs bnames doc, scope)
+        return (exposeDocs (fmap fullNameRef bnames) doc, scope)
 
 interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
@@ -290,7 +315,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
             interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
             let
-                diName = RootFullName name
+                diName = UnqualifiedFullNameRef name
                 diParams =
                     case defn of
                         ClosedEntitySyntaxTypeDeclaration params _ -> fmap exprShow params
@@ -304,7 +329,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
             binds <- syntaxToSingleBindings sbind doc
             for_ binds interpretSequentialLetBinding
-            return $ fmap (EntryDocTreeEntry . sbDefDoc) binds
+            return $ fmap (EntryDocTreeEntry . pure . sbDefDoc) binds
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
         UsingSyntaxDeclaration nsn -> do
             interpScopeBuilder $ usingNamespace nsn
@@ -554,13 +579,13 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                                     fmap
                                         (functionToShim "user-subtype" . (shimToFunction $ polarPolyIsoNegative iconv))
                                         convexpr
-                    _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
-            _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
+                    _ -> lift $ throwWithName $ \ntt -> InterpretTypeNotGroundedError $ ntt $ exprShow atb
+            _ -> lift $ throwWithName $ \ntt -> InterpretTypeNotGroundedError $ ntt $ exprShow ata
 
 nonpolarSimpleEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, EntityGroundType t)
 nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
-nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
+nonpolarSimpleEntityType t = throwWithName $ \ntt -> InterpretTypeNotSimpleEntityError $ ntt $ exprShow t
 
 interpretOpenEntitySubtypeRelation :: SyntaxType -> SyntaxType -> ScopeBuilder ()
 interpretOpenEntitySubtypeRelation sta stb =
@@ -582,7 +607,7 @@ interpretOpenEntitySubtypeRelation sta stb =
                                 coerceShim "open entity" .
                                 (functionToShim "entityConvert" $
                                  entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
-                    Nothing -> lift $ throw $ InterpretTypeNotOpenEntityError $ exprShow tb
+                    Nothing -> lift $ throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tb
 
 interpretSubtypeRelation ::
        Markdown -> TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder Docs
@@ -599,4 +624,4 @@ interpretSubtypeRelation docDescription trustme sta stb mbody = do
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
-    return $ MkModule (MkDocTree (toText moduleName) "" $ docs) scope
+    return $ MkModule (MkDocTree (toText moduleName) "" docs) scope

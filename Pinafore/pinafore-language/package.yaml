@@ -44,6 +44,17 @@ library:
       - Pinafore.Language.Value.Morphism
       - Pinafore.Language.Value.ModelOrder
       - Pinafore.Language.Value
+      - Pinafore.Language.Name.ToText
+      - Pinafore.Language.Name.Name
+      - Pinafore.Language.Name.Namespace
+      - Pinafore.Language.Name.FullName
+      - Pinafore.Language.Name.NamespaceRef
+      - Pinafore.Language.Name.FullNameRef
+      - Pinafore.Language.Name.NamespaceRelative
+      - Pinafore.Language.Name.ModuleName
+      - Pinafore.Language.Name.NamedText
+      - Pinafore.Language.Name.PrecNamedText
+      - Pinafore.Language.Name.ExprShow
       - Pinafore.Language.Name
       - Pinafore.Language.Shim
       - Pinafore.Language.If
@@ -60,7 +71,6 @@ library:
       - Pinafore.Language.Convert.HasType
       - Pinafore.Language.Convert.Types
       - Pinafore.Language.Convert
-      - Pinafore.Language.ExprShow
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.GetDynamicSupertype
       - Pinafore.Language.Type.Subtype

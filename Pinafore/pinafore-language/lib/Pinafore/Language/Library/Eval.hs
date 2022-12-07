@@ -14,7 +14,7 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalStuff :: DocTreeEntry (BindDoc context)
+evalStuff :: DocTreeEntry (BindDocTree context)
 evalStuff =
     docTreeEntry "Eval" "" $
     namespaceRelative

@@ -51,12 +51,12 @@ jpegEncode q mdata (MkLangImage image) = let
 jpegMetadata :: LangJPEGImage -> LangHasMetadata
 jpegMetadata image = keyMapToMetadata $ fst $ idlData image
 
-jpegStuff :: DocTreeEntry (BindDoc ())
+jpegStuff :: DocTreeEntry (BindDocTree ())
 jpegStuff =
     docTreeEntry
         "JPEG"
         ""
-        [ mkTypeEntry "JPEGImage" "An image in JPEG format." $ MkSomeGroundType jpegImageGroundType
+        [ mkTypeEntry "JPEGImage" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
         , hasSubtypeRelationEntry @LangJPEGImage @LangImage Verify "" $
           functionToShim "jpegImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationEntry @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral

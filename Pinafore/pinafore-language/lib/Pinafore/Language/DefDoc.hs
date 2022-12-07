@@ -5,21 +5,30 @@ import Pinafore.Markdown
 import Shapes
 
 data DocItem
-    = ValueDocItem { diName :: FullName
-                   , diType :: Text }
-    | ValuePatternDocItem { diName :: FullName
-                          , diType :: Text }
-    | SpecialFormDocItem { diName :: FullName
-                         , diParams :: [Text]
-                         , diType :: Text }
-    | TypeDocItem { diName :: FullName
-                  , diParams :: [Text] }
-    | SupertypeDocItem { diName :: FullName
-                       , diType :: Text }
-    | SubtypeRelationDocItem { diSubtype :: Text
-                             , diSupertype :: Text }
+    = ValueDocItem { diName :: FullNameRef
+                   , diType :: NamedText }
+    | ValuePatternDocItem { diName :: FullNameRef
+                          , diType :: NamedText }
+    | SpecialFormDocItem { diName :: FullNameRef
+                         , diParams :: [NamedText]
+                         , diType :: NamedText }
+    | TypeDocItem { diName :: FullNameRef
+                  , diParams :: [NamedText] }
+    | SupertypeDocItem { diName :: FullNameRef
+                       , diType :: NamedText }
+    | SubtypeRelationDocItem { diSubtype :: NamedText
+                             , diSupertype :: NamedText }
 
-diNameLens :: Applicative m => (FullName -> m FullName) -> DocItem -> m DocItem
+instance Show DocItem where
+    show (ValueDocItem n t) = "val " <> show n <> ": " <> unpack (toText t)
+    show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
+    show (SpecialFormDocItem n pp t) =
+        "spform " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <> ": " <> unpack (toText t)
+    show (TypeDocItem n pp) = "type " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp)
+    show (SupertypeDocItem n t) = "sval " <> show n <> ": " <> unpack (toText t)
+    show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
+
+diNameLens :: Applicative m => (FullNameRef -> m FullNameRef) -> DocItem -> m DocItem
 diNameLens f ValueDocItem {..} = fmap (\n -> ValueDocItem {diName = n, ..}) $ f diName
 diNameLens f ValuePatternDocItem {..} = fmap (\n -> ValuePatternDocItem {diName = n, ..}) $ f diName
 diNameLens f SpecialFormDocItem {..} = fmap (\n -> SpecialFormDocItem {diName = n, ..}) $ f diName
@@ -27,13 +36,17 @@ diNameLens f TypeDocItem {..} = fmap (\n -> TypeDocItem {diName = n, ..}) $ f di
 diNameLens f SupertypeDocItem {..} = fmap (\n -> SupertypeDocItem {diName = n, ..}) $ f diName
 diNameLens _ SubtypeRelationDocItem {..} = pure SubtypeRelationDocItem {..}
 
-diMatchName :: FullName -> DocItem -> Bool
-diMatchName n di = getAny $ execWriter $ diNameLens (\name -> (tell $ Any $ n == name) >> return name) di
+diMatchNameOrSubtypeRel :: FullNameRef -> DocItem -> Bool
+diMatchNameOrSubtypeRel _ SubtypeRelationDocItem {} = True
+diMatchNameOrSubtypeRel n di = getAll $ execWriter $ diNameLens (\name -> (tell $ All $ n == name) >> return name) di
 
 data DefDoc = MkDefDoc
     { docItem :: DocItem
     , docDescription :: Markdown
     }
+
+instance Show DefDoc where
+    show (MkDefDoc i d) = show (i, d)
 
 instance NamespaceRelative DocItem where
     namespaceRelative nsn di = runIdentity $ diNameLens (Identity . namespaceRelative nsn) di

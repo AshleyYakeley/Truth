@@ -4,7 +4,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.ExprShow
+import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Type
@@ -124,7 +124,7 @@ showEntityType ::
        CovaryType dv
     -> ListTypeExprShow dv
     -> Arguments (MonoType EntityGroundType) t a
-    -> (Text, Int)
+    -> PrecNamedText
 showEntityType NilListType sh NilArguments = sh
 showEntityType (ConsListType _ cv) sh (ConsArguments ta tr) = showEntityType cv (sh $ exprShowPrec ta) tr
 
@@ -133,7 +133,7 @@ instance ExprShow (MonoEntityType t) where
         showEntityType (epKind eprops) (epShowType eprops) args
 
 instance Show (MonoEntityType t) where
-    show t = unpack $ exprShow t
+    show t = unpack $ toText $ exprShow t
 
 monoEntityAdapter :: forall t. MonoEntityType t -> EntityAdapter t
 monoEntityAdapter (MkMonoType gt args) = entityGroundTypeAdapter gt args

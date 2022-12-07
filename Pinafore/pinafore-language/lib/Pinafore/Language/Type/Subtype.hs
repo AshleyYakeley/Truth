@@ -8,8 +8,8 @@ module Pinafore.Language.Type.Subtype
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Type.Types
@@ -19,15 +19,16 @@ instance IsDolanSubtypeGroundType QGroundType where
     subtypeGroundedTypes = entries_subtypeGroundedTypes
     tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
         spos <- paramAsk sourcePosParam
+        ntt <- getRenderFullName
         rethrowCause
             spos
             (TypeConvertError
-                 (exprShow ta)
+                 (ntt $ exprShow ta)
                  (witnessToValue $ polarityType @pola)
-                 (exprShow tb)
+                 (ntt $ exprShow tb)
                  (witnessToValue $ polarityType @polb))
             ma
-    throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
+    throwTypeNotInvertible t = throwWithName $ \ntt -> TypeNotInvertibleError $ ntt $ exprShow t
 
 instance IsDolanSubtypeEntriesGroundType QGroundType where
     subtypeConversionEntries = getSubtypeConversions
@@ -35,9 +36,10 @@ instance IsDolanSubtypeEntriesGroundType QGroundType where
         case pgtSubtypeGroup t of
             Just sg -> sg
             Nothing -> singletonSubtypeGroup t
-    throwNoGroundTypeConversionError ta tb = throw $ NoGroundTypeConversionError (showGroundType ta) (showGroundType tb)
+    throwNoGroundTypeConversionError ta tb =
+        throwWithName $ \ntt -> NoGroundTypeConversionError (ntt $ showGroundType ta) (ntt $ showGroundType tb)
     throwIncoherentGroundTypeConversionError ta tb =
-        throw $ IncoherentGroundTypeConversionError (showGroundType ta) (showGroundType tb)
+        throwWithName $ \ntt -> IncoherentGroundTypeConversionError (ntt $ showGroundType ta) (ntt $ showGroundType tb)
 
 instance IsDolanFunctionGroundType QGroundType where
     functionGroundType = funcGroundType

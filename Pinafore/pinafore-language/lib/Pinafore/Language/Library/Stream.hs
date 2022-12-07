@@ -116,7 +116,7 @@ lineBufferSource (MkLangSource source) = do
 langListSource :: forall a. [a] -> IO (LangSource a)
 langListSource aa = fmap liftSource $ listSource aa
 
-streamStuff :: DocTreeEntry (BindDoc context)
+streamStuff :: DocTreeEntry (BindDocTree context)
 streamStuff =
     docTreeEntry "Stream" "Sinks and sources." $
     namespaceRelative
@@ -124,26 +124,32 @@ streamStuff =
         [ docTreeEntry
               "ItemOrEnd"
               ""
-              [ mkTypeEntry "ItemOrEnd" "Either an item, or end (meaning end of stream)." $
-                MkSomeGroundType endOrItemGroundType
-              , mkValPatEntry "Item" "Construct an `ItemOrEnd` representing an item." (Item @A) $
-                ImpureFunction $ \(v :: ItemOrEnd A) ->
-                    case v of
-                        Item a -> Just (a, ())
-                        _ -> Nothing
-              , mkValPatEntry "End" "Construct an `ItemOrEnd` representing end of stream." (End @BottomType) $
-                ImpureFunction $ \(v :: ItemOrEnd A) ->
-                    case v of
-                        End -> Just ()
-                        _ -> Nothing
+              [ mkTypeEntry
+                    "ItemOrEnd"
+                    "Either an item, or end (meaning end of stream)."
+                    (MkSomeGroundType endOrItemGroundType)
+                    [ mkValPatBDT "Item" "Construct an `ItemOrEnd` representing an item." (Item @A) $
+                      ImpureFunction $ \(v :: ItemOrEnd A) ->
+                          case v of
+                              Item a -> Just (a, ())
+                              _ -> Nothing
+                    , mkValPatBDT "End" "Construct an `ItemOrEnd` representing end of stream." (End @BottomType) $
+                      ImpureFunction $ \(v :: ItemOrEnd A) ->
+                          case v of
+                              End -> Just ()
+                              _ -> Nothing
+                    ]
               ]
         , docTreeEntry
               "Sink"
               ""
-              [ mkTypeEntry "Sink" "A sink is something you can write data (and \"end\") to." $
-                MkSomeGroundType sinkGroundType
-              , mkValPatEntry "MkSink" "Construct a `Sink` from a function." (toLangSink @A) $
-                PureFunction $ \v -> (fromLangSink @A v, ())
+              [ mkTypeEntry
+                    "Sink"
+                    "A sink is something you can write data (and \"end\") to."
+                    (MkSomeGroundType sinkGroundType)
+                    [ mkValPatBDT "MkSink" "Construct a `Sink` from a function." (toLangSink @A) $
+                      PureFunction $ \v -> (fromLangSink @A v, ())
+                    ]
               , mkValEntry "mapSink" "" $ contramap @LangSink @A @B
               , mkValEntry "write" "Write an item to a sink." $ langSinkWrite @A
               , mkValEntry "writeEnd" "Write end to a sink. You should not write to the sink after this." $
@@ -153,7 +159,11 @@ streamStuff =
         , docTreeEntry
               "Source"
               ""
-              [ mkTypeEntry "Source" "A source is something you can read data from." $ MkSomeGroundType sourceGroundType
+              [ mkTypeEntry
+                    "Source"
+                    "A source is something you can read data from."
+                    (MkSomeGroundType sourceGroundType)
+                    []
               , mkValEntry "mapSource" "" $ fmap @LangSource @A @B
               , mkValEntry "isReady" "Does this source have data available now?" $ langSourceReady @TopType
               , mkValEntry "read" "Read data (or end), waiting if necessary." $ langSourceRead @A

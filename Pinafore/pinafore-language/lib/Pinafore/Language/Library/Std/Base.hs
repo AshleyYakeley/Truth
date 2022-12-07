@@ -14,7 +14,6 @@ import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.DocTree
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Std.Types
@@ -30,13 +29,13 @@ import qualified Text.Collate
 
 showableSubtypeRelationEntry ::
        forall a context. (HasQType 'Negative a, TextShow a)
-    => DocTreeEntry (BindDoc context)
+    => DocTreeEntry (BindDocTree context)
 showableSubtypeRelationEntry =
     hasSubtypeRelationEntry @a @Showable Verify "" $ functionToShim "textShowable" textShowable
 
 literalSubtypeRelationEntry ::
        forall a context. (HasQType 'Negative a, AsLiteral a)
-    => DocTreeEntry (BindDoc context)
+    => DocTreeEntry (BindDocTree context)
 literalSubtypeRelationEntry = hasSubtypeRelationEntry @a @Literal Verify "" $ functionToShim "toLiteral" toLiteral
 
 entityAnchor :: Entity -> Text
@@ -79,14 +78,14 @@ plainFormattingDefs ::
        forall t context. (HasQType 'Positive t, HasQType 'Negative t, Read t, TextShow t)
     => Text
     -> Text
-    -> [DocTreeEntry (BindDoc context)]
+    -> [DocTreeEntry (BindDocTree context)]
 plainFormattingDefs uname lname =
     [ mkValEntry
-          (RootFullName $ MkName $ "parse" <> uname)
+          (UnqualifiedFullNameRef $ MkName $ "parse" <> uname)
           ("Parse text as " <> plainMarkdown lname <> ". Inverse of `show`.") $
       textReadMaybe @t
     , mkValEntry
-          (RootFullName $ MkName $ "interpret" <> uname <> "AsText")
+          (UnqualifiedFullNameRef $ MkName $ "interpret" <> uname <> "AsText")
           ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
       interpretAsText @t
     ]
@@ -124,18 +123,18 @@ unixFormattingDefs ::
        forall t context. (HasQType 'Positive t, HasQType 'Negative t, FormatTime t, ParseTime t)
     => Text
     -> Text
-    -> [DocTreeEntry (BindDoc context)]
+    -> [DocTreeEntry (BindDocTree context)]
 unixFormattingDefs uname lname =
     [ mkValEntry
-          (RootFullName $ MkName $ "unixFormat" <> uname)
+          (UnqualifiedFullNameRef $ MkName $ "unixFormat" <> uname)
           ("Format " <> plainMarkdown lname <> " as text, using a UNIX-style formatting string.") $
       unixFormat @t
     , mkValEntry
-          (RootFullName $ MkName $ "unixParse" <> uname)
+          (UnqualifiedFullNameRef $ MkName $ "unixParse" <> uname)
           ("Parse text as " <> plainMarkdown lname <> ", using a UNIX-style formatting string.") $
       unixParse @t
     , mkValEntry
-          (RootFullName $ MkName $ "unixInterpret" <> uname <> "AsText")
+          (UnqualifiedFullNameRef $ MkName $ "unixInterpret" <> uname <> "AsText")
           ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
       unixInterpretAsText @t
     ]
@@ -158,28 +157,31 @@ greater f a b =
 revap :: A -> (A -> B) -> B
 revap x f = f x
 
-baseLibEntries :: [DocTreeEntry (BindDoc context)]
+baseLibEntries :: [DocTreeEntry (BindDocTree context)]
 baseLibEntries =
     [ docTreeEntry
           "Literals & Entities"
           ""
-          [ mkTypeEntry "Entity" "" $ MkSomeGroundType entityGroundType
+          [ mkTypeEntry "Entity" "" (MkSomeGroundType entityGroundType) []
           , mkValEntry "==" "Entity equality." $ (==) @Entity
           , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
           , mkValEntry "entityAnchor" "The anchor of an entity, as text." entityAnchor
-          , mkTypeEntry "Literal" "" $ MkSomeGroundType literalGroundType
+          , mkTypeEntry "Literal" "" (MkSomeGroundType literalGroundType) []
           , hasSubtypeRelationEntry @Literal @Entity Verify "" $ functionToShim "literalToEntity" literalToEntity
           , docTreeEntry
                 "Showable"
                 ""
-                [ mkTypeEntry "Showable" "Something that can be represented as `Text`." $
-                  MkSomeGroundType showableGroundType
+                [ mkTypeEntry
+                      "Showable"
+                      "Something that can be represented as `Text`."
+                      (MkSomeGroundType showableGroundType)
+                      []
                 , mkValEntry "show" "Show something as `Text`" $ textShow @Showable
                 ]
           , docTreeEntry
                 "Unit"
                 ""
-                [ mkTypeEntry "Unit" "" $ MkSomeGroundType unitGroundType
+                [ mkTypeEntry "Unit" "" (MkSomeGroundType unitGroundType) []
                 , literalSubtypeRelationEntry @()
                 , showableSubtypeRelationEntry @()
                 , mkValEntry "concatUnit" "Concatenate units." $ mconcat @()
@@ -187,19 +189,23 @@ baseLibEntries =
           , docTreeEntry
                 "Boolean"
                 ""
-                [ mkTypeEntry "Boolean" "" $ MkSomeGroundType booleanGroundType
+                [ mkTypeEntry
+                      "Boolean"
+                      ""
+                      (MkSomeGroundType booleanGroundType)
+                      [ mkValPatBDT "True" "Boolean TRUE." True $
+                        ImpureFunction $ \v ->
+                            if v
+                                then Just ()
+                                else Nothing
+                      , mkValPatBDT "False" "Boolean FALSE." False $
+                        ImpureFunction $ \v ->
+                            if v
+                                then Nothing
+                                else Just ()
+                      ]
                 , literalSubtypeRelationEntry @Bool
                 , showableSubtypeRelationEntry @Bool
-                , mkValPatEntry "True" "Boolean TRUE." True $
-                  ImpureFunction $ \v ->
-                      if v
-                          then Just ()
-                          else Nothing
-                , mkValPatEntry "False" "Boolean FALSE." False $
-                  ImpureFunction $ \v ->
-                      if v
-                          then Nothing
-                          else Just ()
                 , mkValEntry "&&" "Boolean AND." (&&)
                 , mkValEntry "||" "Boolean OR." (||)
                 , mkValEntry "not" "Boolean NOT." not
@@ -207,24 +213,28 @@ baseLibEntries =
           , docTreeEntry
                 "Ordering"
                 ""
-                [ mkTypeEntry "Ordering" "" $ MkSomeGroundType orderingGroundType
+                [ mkTypeEntry
+                      "Ordering"
+                      ""
+                      (MkSomeGroundType orderingGroundType)
+                      [ mkValPatBDT "LT" "Less than." LT $
+                        ImpureFunction $ \v ->
+                            case v of
+                                LT -> Just ()
+                                _ -> Nothing
+                      , mkValPatBDT "EQ" "Equal to." EQ $
+                        ImpureFunction $ \v ->
+                            case v of
+                                EQ -> Just ()
+                                _ -> Nothing
+                      , mkValPatBDT "GT" "Greater than." GT $
+                        ImpureFunction $ \v ->
+                            case v of
+                                GT -> Just ()
+                                _ -> Nothing
+                      ]
                 , literalSubtypeRelationEntry @Ordering
                 , showableSubtypeRelationEntry @Ordering
-                , mkValPatEntry "LT" "Less than." LT $
-                  ImpureFunction $ \v ->
-                      case v of
-                          LT -> Just ()
-                          _ -> Nothing
-                , mkValPatEntry "EQ" "Equal to." EQ $
-                  ImpureFunction $ \v ->
-                      case v of
-                          EQ -> Just ()
-                          _ -> Nothing
-                , mkValPatEntry "GT" "Greater than." GT $
-                  ImpureFunction $ \v ->
-                      case v of
-                          GT -> Just ()
-                          _ -> Nothing
                 , mkValEntry "eq" "Equal." $ (==) EQ
                 , mkValEntry "ne" "Not equal." $ (/=) EQ
                 , mkValEntry "lt" "Less than." $ (==) LT
@@ -251,7 +261,7 @@ baseLibEntries =
           , docTreeEntry
                 "Text"
                 ""
-                [ mkTypeEntry "Text" "" $ MkSomeGroundType textGroundType
+                [ mkTypeEntry "Text" "" (MkSomeGroundType textGroundType) []
                 , literalSubtypeRelationEntry @Text
                 , showableSubtypeRelationEntry @Text
                 , mkValEntry "<>" "Concatenate text." $ (<>) @Text
@@ -288,7 +298,7 @@ baseLibEntries =
                        , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
                        , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
                        , docTreeEntry "Integer" "" $
-                         [ mkTypeEntry "Integer" "" $ MkSomeGroundType integerGroundType
+                         [ mkTypeEntry "Integer" "" (MkSomeGroundType integerGroundType) []
                          , hasSubtypeRelationEntry @Integer @SafeRational Verify "" $
                            functionToShim "integerSafeRational" $ encode integerSafeRational
                          ] <>
@@ -320,7 +330,7 @@ baseLibEntries =
                            arithList @Integer
                          ]
                        , docTreeEntry "Rational" "" $
-                         [ mkTypeEntry "Rational" "" $ MkSomeGroundType rationalGroundType
+                         [ mkTypeEntry "Rational" "" (MkSomeGroundType rationalGroundType) []
                          , hasSubtypeRelationEntry @SafeRational @Number Verify "" $
                            functionToShim "safeRationalNumber" $ encode safeRationalNumber
                          ] <>
@@ -343,7 +353,7 @@ baseLibEntries =
                          ]
                        , docTreeEntry "Number" "" $
                          plainFormattingDefs @Number "Number" "a number" <>
-                         [ mkTypeEntry "Number" "" $ MkSomeGroundType numberGroundType
+                         [ mkTypeEntry "Number" "" (MkSomeGroundType numberGroundType) []
                          , literalSubtypeRelationEntry @Number
                          , showableSubtypeRelationEntry @Number
                          , mkValEntry "minN" "Lesser of two Numbers" $ min @Number
@@ -408,11 +418,15 @@ baseLibEntries =
                 "Date & Time"
                 ""
                 [ docTreeEntry "Duration" "" $
-                  [ mkTypeEntry "Duration" "" $ MkSomeGroundType durationGroundType
+                  [ mkTypeEntry
+                        "Duration"
+                        ""
+                        (MkSomeGroundType durationGroundType)
+                        [ mkValPatBDT "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $
+                          PureFunction $ \d -> (nominalDiffTimeToSeconds d, ())
+                        ]
                   , literalSubtypeRelationEntry @NominalDiffTime
                   , showableSubtypeRelationEntry @NominalDiffTime
-                  , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $
-                    PureFunction $ \d -> (nominalDiffTimeToSeconds d, ())
                   ] <>
                   -- plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
                   [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
@@ -426,7 +440,7 @@ baseLibEntries =
                         (realToFrac (a / b) :: Number)
                   ]
                 , docTreeEntry "Time" "" $
-                  [ mkTypeEntry "Time" "Absolute time as measured by UTC." $ MkSomeGroundType timeGroundType
+                  [ mkTypeEntry "Time" "Absolute time as measured by UTC." (MkSomeGroundType timeGroundType) []
                   , literalSubtypeRelationEntry @UTCTime
                   , showableSubtypeRelationEntry @UTCTime
                   ] <>
@@ -441,13 +455,17 @@ baseLibEntries =
                         newClock
                   ]
                 , docTreeEntry "Calendar" "" $
-                  [ mkTypeEntry "Date" "" $ MkSomeGroundType dateGroundType
-                  , mkValPatEntry "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
-                    PureFunction $ \day -> let
-                        (y, m, d) = toGregorian day
-                        in (y, (m, (d, ())))
-                  , mkValPatEntry "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $
-                    PureFunction $ \day -> (toModifiedJulianDay day, ())
+                  [ mkTypeEntry
+                        "Date"
+                        ""
+                        (MkSomeGroundType dateGroundType)
+                        [ mkValPatBDT "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
+                          PureFunction $ \day -> let
+                              (y, m, d) = toGregorian day
+                              in (y, (m, (d, ())))
+                        , mkValPatBDT "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $
+                          PureFunction $ \day -> (toModifiedJulianDay day, ())
+                        ]
                   , literalSubtypeRelationEntry @Day
                   , showableSubtypeRelationEntry @Day
                   ] <>
@@ -459,14 +477,18 @@ baseLibEntries =
                   , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
                   ]
                 , docTreeEntry "Time of Day" "" $
-                  [ mkTypeEntry "TimeOfDay" "" $ MkSomeGroundType timeOfDayGroundType
-                  , mkValPatEntry "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
-                    PureFunction $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
-                  , mkValPatEntry
-                        "SinceMidnight"
-                        "Construct a `TimeOfDay` from duration since midnight (wrapping whole days)."
-                        (snd . timeToDaysAndTimeOfDay)
-                        (PureFunction $ \t -> (daysAndTimeOfDayToTime 0 t, ()))
+                  [ mkTypeEntry
+                        "TimeOfDay"
+                        ""
+                        (MkSomeGroundType timeOfDayGroundType)
+                        [ mkValPatBDT "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
+                          PureFunction $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
+                        , mkValPatBDT
+                              "SinceMidnight"
+                              "Construct a `TimeOfDay` from duration since midnight (wrapping whole days)."
+                              (snd . timeToDaysAndTimeOfDay)
+                              (PureFunction $ \t -> (daysAndTimeOfDayToTime 0 t, ()))
+                        ]
                   , literalSubtypeRelationEntry @TimeOfDay
                   , showableSubtypeRelationEntry @TimeOfDay
                   ] <>
@@ -474,9 +496,13 @@ baseLibEntries =
                   unixFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
                   [mkValEntry "midnight" "Midnight." midnight, mkValEntry "midday" "Midday." midday]
                 , docTreeEntry "Local Time" "" $
-                  [ mkTypeEntry "LocalTime" "" $ MkSomeGroundType localTimeGroundType
-                  , mkValPatEntry "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $
-                    PureFunction $ \LocalTime {..} -> (localDay, (localTimeOfDay, ()))
+                  [ mkTypeEntry
+                        "LocalTime"
+                        ""
+                        (MkSomeGroundType localTimeGroundType)
+                        [ mkValPatBDT "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $
+                          PureFunction $ \LocalTime {..} -> (localDay, (localTimeOfDay, ()))
+                        ]
                   , literalSubtypeRelationEntry @LocalTime
                   , showableSubtypeRelationEntry @LocalTime
                   ] <>
@@ -529,7 +555,7 @@ baseLibEntries =
           , docTreeEntry
                 "Dynamic Entity Types"
                 ""
-                [ mkTypeEntry "DynamicEntity" "" $ MkSomeGroundType dynamicEntityGroundType
+                [ mkTypeEntry "DynamicEntity" "" (MkSomeGroundType dynamicEntityGroundType) []
                 , hasSubtypeRelationEntry @DynamicEntity @Entity Verify "" $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry
@@ -564,17 +590,21 @@ baseLibEntries =
     , docTreeEntry
           "Maybe"
           ""
-          [ mkTypeEntry "Maybe" "" $ MkSomeGroundType maybeGroundType
-          , mkValPatEntry "Just" "Construct a Maybe from a value." (Just @A) $
-            ImpureFunction $ \(v :: Maybe A) ->
-                case v of
-                    Just a -> Just (a, ())
-                    _ -> Nothing
-          , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @BottomType) $
-            ImpureFunction $ \(v :: Maybe A) ->
-                case v of
-                    Nothing -> Just ()
-                    _ -> Nothing
+          [ mkTypeEntry
+                "Maybe"
+                ""
+                (MkSomeGroundType maybeGroundType)
+                [ mkValPatBDT "Just" "Construct a Maybe from a value." (Just @A) $
+                  ImpureFunction $ \(v :: Maybe A) ->
+                      case v of
+                          Just a -> Just (a, ())
+                          _ -> Nothing
+                , mkValPatBDT "Nothing" "Construct a Maybe without a value." (Nothing @BottomType) $
+                  ImpureFunction $ \(v :: Maybe A) ->
+                      case v of
+                          Nothing -> Just ()
+                          _ -> Nothing
+                ]
           , hasSubtypeRelationEntry @(Maybe Entity) @Entity Verify "" $
             functionToShim "maybeEntityConvert" maybeEntityConvert
           , hasSubtypeRelationEntry @(Maybe Showable) @Showable Verify "" $ functionToShim "show" textShowable
@@ -582,7 +612,7 @@ baseLibEntries =
     , docTreeEntry
           "*:"
           ""
-          [ mkTypeEntry "*:" "" $ MkSomeGroundType pairGroundType
+          [ mkTypeEntry "*:" "" (MkSomeGroundType pairGroundType) []
           , hasSubtypeRelationEntry @(Entity, Entity) @Entity Verify "" $
             functionToShim "pairEntityConvert" pairEntityConvert
           , hasSubtypeRelationEntry @(Showable, Showable) @Showable Verify "" $ functionToShim "show" textShowable
@@ -594,17 +624,21 @@ baseLibEntries =
     , docTreeEntry
           "+:"
           ""
-          [ mkTypeEntry "+:" "" $ MkSomeGroundType eitherGroundType
-          , mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $
-            ImpureFunction $ \(v :: Either A B) ->
-                case v of
-                    Left a -> Just (a, ())
-                    _ -> Nothing
-          , mkValPatEntry "Right" "Construct an Either from the right." (Right @A @B) $
-            ImpureFunction $ \(v :: Either A B) ->
-                case v of
-                    Right a -> Just (a, ())
-                    _ -> Nothing
+          [ mkTypeEntry
+                "+:"
+                ""
+                (MkSomeGroundType eitherGroundType)
+                [ mkValPatBDT "Left" "Construct an Either from the left." (Left @A @B) $
+                  ImpureFunction $ \(v :: Either A B) ->
+                      case v of
+                          Left a -> Just (a, ())
+                          _ -> Nothing
+                , mkValPatBDT "Right" "Construct an Either from the right." (Right @A @B) $
+                  ImpureFunction $ \(v :: Either A B) ->
+                      case v of
+                          Right a -> Just (a, ())
+                          _ -> Nothing
+                ]
           , hasSubtypeRelationEntry @(Either Entity Entity) @Entity Verify "" $
             functionToShim "eitherEntityConvert" eitherEntityConvert
           , hasSubtypeRelationEntry @(Either Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
@@ -617,19 +651,23 @@ baseLibEntries =
     , docTreeEntry
           "Lists"
           ""
-          [ mkTypeEntry "List" "A list." $ MkSomeGroundType listGroundType
-          , mkTypeEntry "List1" "A list with at least one element." $ MkSomeGroundType list1GroundType
-          , hasSubtypeRelationEntry @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
-          , mkValPatEntry "[]" "Empty list" ([] @BottomType) $
-            ImpureFunction $ \(v :: [A]) ->
-                case v of
-                    [] -> Just ()
-                    _ -> Nothing
-          , mkValPatEntry "::" "Construct a list" ((:|) @A) $
-            ImpureFunction $ \(v :: [A]) ->
-                case v of
-                    a:b -> Just (a, (b, ()))
-                    _ -> Nothing
+          [ mkTypeEntry
+                "List"
+                "A list."
+                (MkSomeGroundType listGroundType)
+                [ mkTypeBDT "List1" "A list with at least one element." (MkSomeGroundType list1GroundType) []
+                , hasSubtypeRelationBindDoc @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
+                , mkValPatBDT "[]" "Empty list" ([] @BottomType) $
+                  ImpureFunction $ \(v :: [A]) ->
+                      case v of
+                          [] -> Just ()
+                          _ -> Nothing
+                , mkValPatBDT "::" "Construct a list" ((:|) @A) $
+                  ImpureFunction $ \(v :: [A]) ->
+                      case v of
+                          a:b -> Just (a, (b, ()))
+                          _ -> Nothing
+                ]
           , hasSubtypeRelationEntry @[Entity] @Entity Verify "" $ functionToShim "listEntityConvert" listEntityConvert
           , hasSubtypeRelationEntry @[Showable] @Showable Verify "" $ functionToShim "show" textShowable
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
@@ -651,7 +689,7 @@ baseLibEntries =
     , docTreeEntry
           "Functions"
           ""
-          [ mkTypeEntry "->" "A pure function." $ MkSomeGroundType funcGroundType
+          [ mkTypeEntry "->" "A pure function." (MkSomeGroundType funcGroundType) []
           , mkValEntry "id" "The identity function." $ id @(->) @A
           , mkValEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
           , mkValEntry ">-" "Apply a value to a function." revap
@@ -674,6 +712,7 @@ baseLibEntries =
                     MkSomeOf (funcShimWit dtw tpw) $ \case
                         Just t -> t
                         Nothing ->
-                            error $ unpack $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
+                            error $
+                            unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
           ]
     ]

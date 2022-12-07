@@ -2,7 +2,6 @@ module Pinafore.Language.Grammar.Syntax where
 
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Markdown
 import Shapes
@@ -35,9 +34,9 @@ data SyntaxTypeParameter
     deriving (Eq)
 
 instance ExprShow SyntaxTypeParameter where
-    exprShowPrec (PositiveSyntaxTypeParameter v) = ("+" <> exprShow v, 0)
-    exprShowPrec (NegativeSyntaxTypeParameter v) = ("-" <> exprShow v, 0)
-    exprShowPrec (RangeSyntaxTypeParameter vn vp) = ("{-" <> exprShow vn <> ",+" <> exprShow vp <> "}", 0)
+    exprShowPrec (PositiveSyntaxTypeParameter v) = namedTextPrec 0 $ "+" <> exprShow v
+    exprShowPrec (NegativeSyntaxTypeParameter v) = namedTextPrec 0 $ "-" <> exprShow v
+    exprShowPrec (RangeSyntaxTypeParameter vn vp) = namedTextPrec 0 $ "{-" <> exprShow vn <> ",+" <> exprShow vp <> "}"
 
 type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
@@ -109,8 +108,8 @@ data SyntaxVariance
     deriving (Eq)
 
 instance ExprShow SyntaxVariance where
-    exprShowPrec CoSyntaxVariance = ("+", 0)
-    exprShowPrec ContraSyntaxVariance = ("-", 0)
+    exprShowPrec CoSyntaxVariance = "+"
+    exprShowPrec ContraSyntaxVariance = "-"
 
 newtype SyntaxGroundType =
     ConstSyntaxGroundType FullNameRef
@@ -125,7 +124,7 @@ instance ExprShow SyntaxTypeArgument where
     exprShowPrec (SimpleSyntaxTypeArgument t) = exprShowPrec t
     exprShowPrec (RangeSyntaxTypeArgument args) = let
         showArg (mv, t) = exprShow mv <> exprShow t
-        in ("{" <> intercalate "," (fmap showArg args) <> "}", 0)
+        in namedTextPrec 0 $ "{" <> ointercalate "," (fmap showArg args) <> "}"
 
 data SyntaxType'
     = SingleSyntaxType SyntaxGroundType
@@ -141,6 +140,17 @@ data SyntaxType'
                           SyntaxType
     deriving (Eq)
 
+data FixAssoc
+    = AssocNone
+    | AssocLeft
+    | AssocRight
+    deriving (Eq)
+
+data Fixity = MkFixity
+    { fixityAssoc :: FixAssoc
+    , fixityPrec :: Int
+    } deriving (Eq)
+
 typeOperatorFixity :: Name -> Fixity
 typeOperatorFixity "->" = MkFixity AssocRight 0
 typeOperatorFixity "~>" = MkFixity AssocRight 1
@@ -150,23 +160,23 @@ typeOperatorFixity _ = MkFixity AssocLeft 3
 
 instance ExprShow SyntaxType' where
     exprShowPrec (VarSyntaxType v) = exprShowPrec v
-    exprShowPrec (OrSyntaxType ta tb) = (exprPrecShow 6 ta <> " | " <> exprPrecShow 6 tb, 7)
-    exprShowPrec (AndSyntaxType ta tb) = (exprPrecShow 6 ta <> " & " <> exprPrecShow 6 tb, 7)
-    exprShowPrec TopSyntaxType = ("None", 0)
-    exprShowPrec BottomSyntaxType = ("Any", 0)
-    exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
+    exprShowPrec (OrSyntaxType ta tb) = namedTextPrec 7 $ exprPrecShow 6 ta <> " | " <> exprPrecShow 6 tb
+    exprShowPrec (AndSyntaxType ta tb) = namedTextPrec 7 $ exprPrecShow 6 ta <> " & " <> exprPrecShow 6 tb
+    exprShowPrec TopSyntaxType = "None"
+    exprShowPrec BottomSyntaxType = "Any"
+    exprShowPrec (RecursiveSyntaxType n pt) = namedTextPrec 7 $ "rec " <> exprShow n <> ". " <> exprPrecShow 7 pt
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (MkFullNameRef _ n)) [ta, tb])
         | nameIsInfix n = let
             MkFixity assc level = typeOperatorFixity n
             prec = 6 - level
-            in case assc of
-                   AssocRight -> (exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb, prec)
-                   AssocLeft -> (exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb, prec)
-                   AssocNone ->
-                       (exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb, prec)
-    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = (exprShow n, 0)
+            in namedTextPrec prec $
+               case assc of
+                   AssocRight -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb
+                   AssocLeft -> exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
+                   AssocNone -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = namedTextPrec 0 $ exprShow n
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
-        (exprShow n <> mconcat (fmap (\arg -> " " <> exprPrecShow 0 arg) args), 2)
+        namedTextPrec 2 $ exprShow n <> mconcat (fmap (\arg -> " " <> exprPrecShow 0 arg) args)
 
 type SyntaxType = WithSourcePos SyntaxType'
 

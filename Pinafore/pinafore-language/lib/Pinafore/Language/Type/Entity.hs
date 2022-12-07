@@ -14,7 +14,8 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
+import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Entity.Closed
 import Pinafore.Language.Type.Entity.Dynamic
@@ -22,6 +23,7 @@ import Pinafore.Language.Type.Entity.Open
 import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
+import Pinafore.Language.Type.Type
 import Pinafore.Language.Type.Types
 import Shapes
 
@@ -191,8 +193,8 @@ instance CovarySubtype QGroundType EntityGroundType where
                         (NilListType, literalEntityGroundType (MkCodec (shimToFunction from) (shimToFunction to)) agt)
                 _ -> Nothing
 
-getMonoEntityType :: MonadThrow ErrorType m => QNonpolarType t -> m (MonoEntityType t)
+getMonoEntityType :: QNonpolarType t -> QInterpreter (MonoEntityType t)
 getMonoEntityType tm =
     case nonpolarToMonoType tm of
         Just t -> return t
-        Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
+        Nothing -> throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow tm

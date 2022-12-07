@@ -7,6 +7,9 @@ newtype Markdown = RawMarkdown
     { getRawMarkdown :: Text
     } deriving (Eq, Semigroup, Monoid, IsString)
 
+instance Show Markdown where
+    show (RawMarkdown t) = show t
+
 escapeChars :: [Char] -> Text -> Text
 escapeChars badchars t = let
     escapeChar :: Char -> String
@@ -33,3 +36,10 @@ codeMarkdown t = RawMarkdown $ "`" <> escapeChars "`" t <> "`"
 
 titleMarkdown :: Int -> Markdown -> Markdown
 titleMarkdown n m = RawMarkdown (pack $ replicate n '#') <> " " <> m
+
+indentMarkdown :: Markdown -> Markdown
+indentMarkdown (RawMarkdown m) = RawMarkdown $ intercalate "\n" $ fmap (\l -> "> " <> l) $ splitElem '\n' m
+
+indentMarkdownN :: Int -> Markdown -> Markdown
+indentMarkdownN 0 m = m
+indentMarkdownN n m = indentMarkdown $ indentMarkdownN (pred n) m

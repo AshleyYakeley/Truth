@@ -34,9 +34,10 @@ updateMetadata :: Text -> Maybe Literal -> LangHasMetadata -> LangHasMetadata
 updateMetadata key (Just val) (MkLangHasMetadata mp) = MkLangHasMetadata $ insertMap key val mp
 updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMap key mp
 
-textKey :: Text -> DocTreeEntry (BindDoc ())
+textKey :: Text -> DocTreeEntry (BindDocTree ())
 textKey name =
-    mkValPatEntry (RootFullName $ MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
+    EntryDocTreeEntry $
+    mkValPatBDT (UnqualifiedFullNameRef $ MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
     ImpureFunction $ \n ->
         if n == name
             then Just ()
@@ -97,17 +98,21 @@ metadataResolution md = do
     dy <- fromLiteral lity
     return (fromInteger dx, fromInteger dy)
 
-metadataStuff :: DocTreeEntry (BindDoc ())
+metadataStuff :: DocTreeEntry (BindDocTree ())
 metadataStuff =
     docTreeEntry "Metadata" "" $
     namespaceRelative
         "Metadata"
-        [ mkTypeEntry "HasMetadata" "Something that has metadata." $ MkSomeGroundType hasMetadataGroundType
-        , mkValPatEntry
-              "MkHasMetadata"
-              "Construct metadata out of key-value pairs. Duplicates will be removed."
-              mkHasMetadata $
-          PureFunction $ \hm -> (getAllMetadata hm, ())
+        [ mkTypeEntry
+              "HasMetadata"
+              "Something that has metadata."
+              (MkSomeGroundType hasMetadataGroundType)
+              [ mkValPatBDT
+                    "MkHasMetadata"
+                    "Construct metadata out of key-value pairs. Duplicates will be removed."
+                    mkHasMetadata $
+                PureFunction $ \hm -> (getAllMetadata hm, ())
+              ]
         , mkValEntry "lookup" "Look up metadata by name." lookupMetadata
         , mkValEntry "update" "Update metadata item." updateMetadata
         , mkValEntry "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution

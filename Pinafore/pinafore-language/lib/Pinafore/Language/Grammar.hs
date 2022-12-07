@@ -5,7 +5,6 @@ module Pinafore.Language.Grammar
     , module I
     ) where
 
-import Pinafore.Language.ExprShow as I (FixAssoc(..), Fixity(..))
 import Pinafore.Language.Grammar.Interpret as I (interpretImportDeclaration)
 import Pinafore.Language.Grammar.Interpret
 import Pinafore.Language.Grammar.Read as I
@@ -13,7 +12,7 @@ import Pinafore.Language.Grammar.Read.Expression as I (operatorFixity)
 import Pinafore.Language.Grammar.Read.Expression
 import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Type
-import Pinafore.Language.Grammar.Syntax as I (typeOperatorFixity)
+import Pinafore.Language.Grammar.Syntax as I (FixAssoc(..), Fixity(..), typeOperatorFixity)
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes

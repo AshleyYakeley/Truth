@@ -18,7 +18,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
@@ -135,10 +135,10 @@ aDynamicEntityEntityFamily =
         epShowType = exprShowPrec name
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
-getConcreteDynamicEntityType :: MonadThrow ErrorType m => Some (QType 'Positive) -> m (Name, DynamicType)
+getConcreteDynamicEntityType :: Some (QType 'Positive) -> QInterpreter (Name, DynamicType)
 getConcreteDynamicEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkADynamicEntityFamily n (toList -> [dt])) <-
                  matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType gt -> return (n, dt)
-        _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
+        _ -> throwWithName $ \ntt -> InterpretTypeNotConcreteDynamicEntityError $ ntt $ exprShow tm

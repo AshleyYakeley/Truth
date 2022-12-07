@@ -20,24 +20,40 @@ import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Shapes
 
-type Docs = [DocTreeEntry DefDoc]
+popFilterTree :: (a -> Bool) -> Tree a -> [Tree a]
+popFilterTree test (Node a tt) = let
+    tt' = popFilterForest test tt
+    in if test a
+           then [Node a tt']
+           else tt'
+
+popFilterForest :: (a -> Bool) -> [Tree a] -> [Tree a]
+popFilterForest test tt = mconcat $ fmap (popFilterTree test) tt
+
+popFilterDTTEntry :: (a -> Bool) -> DocTreeEntry (Tree a) -> [DocTreeEntry (Tree a)]
+popFilterDTTEntry test (EntryDocTreeEntry ta) = fmap EntryDocTreeEntry $ popFilterTree test ta
+popFilterDTTEntry test (TreeDocTreeEntry dtt) = pure $ TreeDocTreeEntry $ popFilterDTT test dtt
+
+popFilterDTTEntries :: (a -> Bool) -> [DocTreeEntry (Tree a)] -> [DocTreeEntry (Tree a)]
+popFilterDTTEntries test ee = mconcat $ fmap (popFilterDTTEntry test) ee
+
+popFilterDTT :: (a -> Bool) -> DocTree (Tree a) -> DocTree (Tree a)
+popFilterDTT test dt = dt {docTreeEntries = popFilterDTTEntries test $ docTreeEntries dt}
+
+-- double tree!
+type Docs = [DocTreeEntry (Tree DefDoc)]
 
 defDocs :: DefDoc -> Docs
-defDocs doc = [EntryDocTreeEntry doc]
+defDocs doc = pure $ EntryDocTreeEntry $ pure doc
 
-exposeDeclids :: [FullName] -> [DefDoc] -> [DefDoc]
-exposeDeclids names decls = let
-    inDecl :: FullName -> Maybe DefDoc
-    inDecl fn = find (diMatchName fn . docItem) decls
-    isSubtypeDDI :: DefDoc -> Bool
-    isSubtypeDDI doc =
-        case docItem doc of
-            SubtypeRelationDocItem {} -> True
-            _ -> False
-    in mapMaybe inDecl names <> filter isSubtypeDDI decls
+exposeDefDoc :: [FullNameRef] -> DefDoc -> Bool
+exposeDefDoc names dd = any (\name -> diMatchNameOrSubtypeRel name $ docItem dd) names
 
-exposeDocs :: [FullName] -> Docs -> Docs
-exposeDocs names = fmap EntryDocTreeEntry . exposeDeclids names . mconcat . fmap toList
+exposeDocs :: [FullNameRef] -> Docs -> Docs
+exposeDocs names =
+    if True
+        then id
+        else popFilterDTTEntries $ exposeDefDoc names
 
 type ScopeBuilder = TransformT RefNotation
 

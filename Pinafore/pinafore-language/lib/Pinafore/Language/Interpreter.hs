@@ -21,6 +21,9 @@ module Pinafore.Language.Interpreter
     , scopeSourcePos
     , withNamespace
     , usingNamespace
+    , relativiseFullName
+    , getRenderFullName
+    , throwWithName
     , SpecialVals(..)
     , getSpecialVals
     , BoundValue(..)
@@ -59,7 +62,6 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Identified
@@ -118,7 +120,7 @@ data InterpreterBinding (ts :: Type)
 instance HasInterpreter ts => Show (InterpreterBinding ts) where
     show (ValueBinding e Nothing) = "val: " <> show e
     show (ValueBinding e (Just _)) = "val+pat: " <> show e
-    show (TypeBinding t) = "type: " <> unpack (exprShow t)
+    show (TypeBinding t) = "type: " <> unpack (toText $ exprShow t)
     show (RecordConstructorBinding _ _) = "recordpat"
     show (SpecialFormBinding _) = "special"
 
@@ -179,8 +181,12 @@ checkEntryConsistency (MkSubtypeConversionEntry Verify ta tb sconv) entries =
         Just (MkSubtypeConversionEntry _ eta etb esconv) ->
             if isNeutralSubtypeConversion sconv && isNeutralSubtypeConversion esconv
                 then return ()
-                else throw $
-                     InterpretSubtypeInconsistent (exprShow $ MkSomeGroundType eta) (exprShow $ MkSomeGroundType etb)
+                else do
+                    ntt <- getRenderFullName
+                    throw $
+                        InterpretSubtypeInconsistent
+                            (ntt $ exprShow $ MkSomeGroundType eta)
+                            (ntt $ exprShow $ MkSomeGroundType etb)
 
 addSCEntry ::
        forall ts. HasInterpreter ts
@@ -228,7 +234,7 @@ joinAllScopes (a:aa) s = do
 type family EntryDoc (ts :: Type) :: Type
 
 data Module ts = MkModule
-    { moduleDoc :: DocTree (EntryDoc ts)
+    { moduleDoc :: DocTree (Tree (EntryDoc ts))
     , moduleScope :: Scope ts
     }
 
@@ -370,6 +376,22 @@ namespaceCurrent (RelativeNamespaceRef rnn) = do
     curns <- paramAsk namespaceParam
     return $ namespaceConcat curns rnn
 
+-- | For error messages and the like, doesn't need to be perfect.
+relativiseFullName :: Interpreter ts (FullName -> FullNameRef)
+relativiseFullName = do
+    usingnss <- paramAsk usingNamespacesParam
+    return $ relativeFullName usingnss
+
+getRenderFullName :: Interpreter ts (NamedText -> Text)
+getRenderFullName = do
+    fnr <- relativiseFullName
+    return $ runNamedText $ toText . fnr
+
+throwWithName :: ((NamedText -> Text) -> ErrorType) -> Interpreter ts a
+throwWithName err = do
+    ntt <- getRenderFullName
+    throw $ err ntt
+
 getBindingMap :: Interpreter ts (FullNameRef -> Maybe (BindingInfo ts))
 getBindingMap = do
     (scopeBindings -> nspace) <- paramAsk scopeParam
@@ -462,9 +484,9 @@ varIDStateRef = transformParamRef varIDStateParam
 scopeSourcePos :: SourcePos -> ScopeInterpreter ts ()
 scopeSourcePos = refPut (transformParamRef sourcePosParam)
 
-getNameResolver :: ScopeInterpreter ts (FullNameRef -> FullName)
+getNameResolver :: Interpreter ts (FullNameRef -> FullName)
 getNameResolver = do
-    ns <- refGet namespaceRef
+    ns <- paramAsk namespaceParam
     return $ fullNameRefInNamespace ns
 
 allocateVar ::
@@ -473,7 +495,7 @@ allocateVar ::
     -> ScopeInterpreter ts (FullName, VarID)
 allocateVar mnameref = do
     vs <- refGet varIDStateRef
-    nsp <- getNameResolver
+    nsp <- lift getNameResolver
     let
         (vid, biName) =
             case mnameref of
@@ -553,7 +575,7 @@ getSubtypeScope sce = do
 
 registerBindings :: [(FullNameRef, DocInterpreterBinding ts)] -> ScopeInterpreter ts ()
 registerBindings bb = do
-    nsp <- getNameResolver
+    nsp <- lift getNameResolver
     let newBindings = MkNameMap $ mapFromList $ fmap (\(n, b) -> (nsp n, b)) bb
     refModify scopeRef $ \oldScope -> oldScope {scopeBindings = scopeBindings oldScope <> newBindings}
 

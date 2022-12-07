@@ -7,12 +7,12 @@ import Changes.Core
 import Control.Exception (Handler(..), catches)
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Expression
 import Pinafore.Language.Grammar.Read
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
@@ -103,15 +103,16 @@ interactLoop inh outh echo = do
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
                              ShowTypeInteractiveCommand showinfo sexpr -> do
                                  MkSomeOf (MkPosShimWit t shim) _ <- interactEvalExpression sexpr
+                                 ntt <- interactRunQInterpreter getRenderFullName
                                  liftIO $
                                      hPutStrLn outh $
                                      ": " <>
-                                     unpack (exprShow t) <>
+                                     unpack (ntt $ exprShow t) <>
                                      if showinfo
                                          then " # " <> show shim
                                          else ""
                              SimplifyTypeInteractiveCommand polarity stype -> do
-                                 s :: Text <-
+                                 s :: NamedText <-
                                      case polarity of
                                          Positive -> do
                                              MkSome t <- interactRunQInterpreter $ interpretType @'Positive stype
@@ -125,7 +126,8 @@ interactLoop inh outh echo = do
                                                  interactRunQInterpreter $
                                                  runRenamer @QTypeSystem [] [] $ simplify @QTypeSystem $ MkSome t
                                              return $ exprShow t'
-                                 liftIO $ hPutStrLn outh $ unpack s
+                                 ntt <- interactRunQInterpreter getRenderFullName
+                                 liftIO $ hPutStrLn outh $ unpack $ ntt s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
                     [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "! error: " <> ioeGetErrorString err

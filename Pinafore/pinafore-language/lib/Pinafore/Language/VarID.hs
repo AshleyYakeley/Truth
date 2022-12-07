@@ -39,6 +39,10 @@ instance Ord VarID where
     compare (BadVarID _ _) (GoodVarID _ _) = LT
     compare (GoodVarID _ _) (BadVarID _ _) = GT
 
+instance ExprShow VarID where
+    exprShowPrec (GoodVarID _ n) = exprShowPrec n
+    exprShowPrec (BadVarID _ n) = exprShowPrec n
+
 instance Show VarID where
     show (GoodVarID _ n) = show n
     show (BadVarID _ n) = show n

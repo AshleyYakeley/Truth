@@ -123,12 +123,12 @@ fontFace' fname italic bold =
 drawToImage :: (Int, Int) -> LangDrawing a -> LangImage
 drawToImage s (MkLangDrawing d) = MkLangImage $ MkSomeFor RGBA8PixelType $ renderToImage s $ drawingRender d
 
-cairoStuff :: DocTreeEntry (BindDoc ())
+cairoStuff :: DocTreeEntry (BindDocTree ())
 cairoStuff =
     docTreeEntry "Cairo" "" $
     namespaceRelative
         "Cairo"
-        [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkSomeGroundType drawingGroundType
+        [ mkTypeEntry "Drawing" "Something that can be drawn." (MkSomeGroundType drawingGroundType) []
         , mkValEntry "concatDrawing" "Layer drawings." $ mconcat @(LangDrawing A)
         , mkValEntry "pureDrawing" "" $ pure @LangDrawing @A
         , mkValEntry "mapDrawing" "" $ fmap @LangDrawing @A @B
@@ -184,7 +184,7 @@ cairoStuff =
         , docTreeEntry
               "Path"
               ""
-              [ mkTypeEntry "Path" "A path on a drawing." $ MkSomeGroundType pathGroundType
+              [ mkTypeEntry "Path" "A path on a drawing." (MkSomeGroundType pathGroundType) []
               , mkValEntry "concatPath" "Join a list of paths." $ mconcat @LangPath
               , mkValEntry "stroke" "Draw this path" $ lift1Drawing $ stroke @[BottomType]
               , mkValEntry "fill" "Fill this path" $ lift1Drawing $ fill @[BottomType]
@@ -229,7 +229,7 @@ cairoStuff =
         , docTreeEntry
               "Patterns"
               ""
-              [ mkTypeEntry "Pattern" "" $ MkSomeGroundType patternGroundType
+              [ mkTypeEntry "Pattern" "" (MkSomeGroundType patternGroundType) []
               , mkValEntry "patternSource" "" langPatternSource
               , mkValEntry "patternMask" "" langPatternMask
               , mkValEntry "solidPattern" "" solidPattern

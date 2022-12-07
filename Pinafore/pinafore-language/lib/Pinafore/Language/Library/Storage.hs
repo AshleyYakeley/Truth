@@ -24,12 +24,12 @@ storeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[] QStore where
     qGroundType = storeGroundType
 
-storageStuff :: DocTreeEntry (BindDoc context)
+storageStuff :: DocTreeEntry (BindDocTree context)
 storageStuff =
     docTreeEntry "Storage" "" $
     namespaceRelative
         "Storage"
-        [ mkTypeEntry "Store" "Storage of information." $ MkSomeGroundType storeGroundType
+        [ mkTypeEntry "Store" "Storage of information." (MkSomeGroundType storeGroundType) []
         , mkSpecialFormEntry
               "property"
               "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."

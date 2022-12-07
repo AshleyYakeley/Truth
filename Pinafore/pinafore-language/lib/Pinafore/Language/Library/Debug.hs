@@ -21,7 +21,7 @@ debugLiteralLength = olength . unLiteral
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
-debugStuff :: DocTreeEntry (BindDoc context)
+debugStuff :: DocTreeEntry (BindDocTree context)
 debugStuff =
     docTreeEntry "Debug" "Functions for debugging." $
     namespaceRelative

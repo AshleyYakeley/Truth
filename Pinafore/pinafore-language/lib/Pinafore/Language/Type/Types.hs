@@ -3,7 +3,7 @@ module Pinafore.Language.Type.Types where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.ExprShow
+import Pinafore.Language.Name
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -26,7 +26,7 @@ actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamil
 funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
-        (precShow 5 ta <> " -> " <> precShow 6 tb, 6)
+        namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
 maybeGroundType :: QGroundType '[ CoCCRVariance] Maybe
 maybeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe"
@@ -46,12 +46,12 @@ list1GroundType =
 eitherGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] Either
 eitherGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) $ \ta tb ->
-        (precShow 3 ta <> " +: " <> precShow 4 tb, 4)
+        namedTextPrec 4 $ precNamedText 3 ta <> " +: " <> precNamedText 4 tb
 
 pairGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] (,)
 pairGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
-        (precShow 2 ta <> " *: " <> precShow 3 tb, 3)
+        namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
 
 showableGroundType :: QGroundType '[] Showable
 showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"

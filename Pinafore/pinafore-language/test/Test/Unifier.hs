@@ -34,7 +34,7 @@ testUnifyToType ::
     -> (t -> IO ())
     -> TestTree
 testUnifyToType mval bisubs checkVal =
-    testSourceScoped ("unify to " <> qNegativeTypeDescription @t) $ do
+    testSourceScoped (toText $ "unify to " <> qNegativeTypeDescription @t) $ do
         val <- mval
         liftIO $ traceIO $ "original type: " <> showValType val
         val' <- pinaforeBisubstitutes bisubs val

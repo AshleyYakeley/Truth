@@ -96,6 +96,7 @@ import Data.Hashable as I (Hashable)
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
 import Data.Map as I (Map)
 import qualified Data.Map.Lazy
+import Data.Tree as I (Forest, Tree(..))
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)

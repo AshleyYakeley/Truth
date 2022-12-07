@@ -27,6 +27,13 @@ instance Foldable DocTreeEntry where
 instance Foldable DocTree where
     foldMap am dt = mconcat $ fmap (foldMap am) $ docTreeEntries dt
 
+instance Show a => Show (DocTreeEntry a) where
+    show (EntryDocTreeEntry a) = show a
+    show (TreeDocTreeEntry t) = show t
+
+instance Show a => Show (DocTree a) where
+    show (MkDocTree n d e) = "{" <> show n <> "," <> show d <> "," <> show e <> "}"
+
 docTreeEntry :: Text -> Markdown -> [DocTreeEntry a] -> DocTreeEntry a
 docTreeEntry title desc entries = TreeDocTreeEntry $ MkDocTree title desc entries
 

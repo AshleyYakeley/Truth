@@ -4,7 +4,6 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
 
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Syntax
@@ -60,7 +59,7 @@ lookupVar ::
        CovParams dv gt ta
     -> SymbolType name
     -> QInterpreter (Arguments f gt ta -> f (UVarT name))
-lookupVar NilCCRArguments var = throw $ InterpretTypeNotEntityError $ exprShow var
+lookupVar NilCCRArguments var = throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow var
 lookupVar (ConsCCRArguments (MkCovParam var') params) var
     | Just Refl <- testEquality var var' =
         return $ \(ConsArguments ft args) ->
@@ -80,7 +79,7 @@ nonpolarToEntityAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar 
 nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
     (cvt, MkEntityGroundType _ (MkSealedEntityProperties eprops)) <-
         case dolanToMonoGroundType ground of
-            Nothing -> throw $ InterpretTypeNotEntityError $ showGroundType ground
+            Nothing -> throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ showGroundType ground
             Just x -> return x
     aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToEntityAdapter params arg) cvt args
     return $ Compose $ \eargs -> epAdapter eprops $ mapArguments (\(Compose eaf) -> eaf eargs) aargs

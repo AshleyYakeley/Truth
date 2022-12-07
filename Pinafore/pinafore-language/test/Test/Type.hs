@@ -17,11 +17,11 @@ type PExpression = TSSealedExpression TS
 showVars :: NamedExpression VarID (QShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
-    (show name <> " : " <> unpack (exprShow t)) : showVars expr
+    (unpack $ toText $ exprShow name <> " : " <> exprShow t) : showVars expr
 
 showTypes :: PExpression -> String
 showTypes (MkSealedExpression (MkShimWit t _) expr) =
-    "{" <> intercalate ", " (nub $ showVars expr) <> "} -> " <> unpack (exprShow t)
+    "{" <> intercalate ", " (nub $ showVars expr) <> "} -> " <> unpack (toText $ exprShow t)
 
 exprTypeTest :: String -> Maybe String -> QInterpreter PExpression -> TestTree
 exprTypeTest name expected mexpr =
@@ -121,7 +121,7 @@ simplifyTypeTest text e =
                         MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
         liftIO $
             case simpexpr of
-                MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'
+                MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ toText $ exprShow t'
 
 unrollTest :: Text -> Text -> TestTree
 unrollTest rolledTypeText expectedUnrolledTypeText =
@@ -135,7 +135,7 @@ unrollTest rolledTypeText expectedUnrolledTypeText =
                         MkSome (ConsDolanType (RecursiveDolanSingularType var t) NilDolanType) ->
                             case unrollRecursiveType var t of
                                 MkShimWit unrolledType _ ->
-                                    assertEqual "" expectedUnrolledTypeText $ exprShow unrolledType
+                                    assertEqual "" expectedUnrolledTypeText $ toText $ exprShow unrolledType
                         _ -> fail "not a recursive type"
         liftIO $ action
 
@@ -149,12 +149,12 @@ testType =
               , exprTypeTest "boolean" (return "{} -> Boolean") $ return boolExpr
               , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
               , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
-              , exprTypeTest "var" (return "{.v : a} -> a") $ return varExpr
+              , exprTypeTest "var" (return "{v : a} -> a") $ return varExpr
               , exprTypeTest "apply-id-number" (return "{} -> Number") $ apExpr idExpr numExpr
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
-              , exprTypeTest "apply id var" (return "{.v : a} -> a") $ apExpr idExpr varExpr
-              , exprTypeTest "apply nb var" (return "{.v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
+              , exprTypeTest "apply id var" (return "{v : a} -> a") $ apExpr idExpr varExpr
+              , exprTypeTest "apply nb var" (return "{v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
               , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
               , exprTypeTest "list1" (return "{} -> a -> List a") $ return list1Expr
               , exprTypeTest "listNumBool" (return "{} -> List (Boolean | Number)") $ do

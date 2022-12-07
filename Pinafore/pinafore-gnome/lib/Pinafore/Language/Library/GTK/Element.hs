@@ -263,13 +263,16 @@ langImage ref =
         unWModel $
         eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableModelToReadOnlyModel ref
 
-elementStuff :: DocTreeEntry (BindDoc ())
+elementStuff :: DocTreeEntry (BindDocTree ())
 elementStuff =
     docTreeEntry
         "Element"
         ""
-        [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
-          MkSomeGroundType elementGroundType
+        [ mkTypeEntry
+              "Element"
+              "A user interface element is something that goes inside a window."
+              (MkSomeGroundType elementGroundType)
+              []
         , hasSubtypeRelationEntry @LangElement @LangLayoutElement Verify "" $
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "exec" "Element that runs an Action first." uiExec

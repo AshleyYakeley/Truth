@@ -13,44 +13,52 @@ import Shapes
 hPutMarkdownLn :: Handle -> Markdown -> IO ()
 hPutMarkdownLn h m = hPutStrLn h $ unpack $ getRawMarkdown m
 
-showDefEntry :: Handle -> Int -> DefDoc -> IO ()
-showDefEntry h _ MkDefDoc {..} = do
+showDefDoc :: Handle -> Int -> DefDoc -> IO ()
+showDefDoc h i MkDefDoc {..} = do
     let
         title =
             case docItem of
                 ValueDocItem {..} -> let
                     name = boldMarkdown $ codeMarkdown $ toText diName
-                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    nameType = name <> " " <> codeMarkdown (": " <> toText diType)
                     in nameType
                 ValuePatternDocItem {..} -> let
                     name = boldMarkdown $ codeMarkdown $ toText diName
-                    nameType = name <> " " <> codeMarkdown (": " <> diType)
-                    in nameType <> " (also pattern)"
+                    nameType = name <> " " <> codeMarkdown (": " <> toText diType)
+                    in nameType
                 SpecialFormDocItem {..} -> let
                     name = boldMarkdown $ codeMarkdown $ toText diName
-                    params = mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
-                    nameType = name <> params <> " " <> codeMarkdown (": " <> diType)
+                    params = mconcat (fmap (\p -> " " <> codeMarkdown (toText p)) diParams)
+                    nameType = name <> params <> " " <> codeMarkdown (": " <> toText diType)
                     in nameType
                 TypeDocItem {..} -> let
                     name = boldMarkdown $ codeMarkdown $ toText diName
                     in codeMarkdown "type" <>
                        " " <>
-                       case (fmap nameIsInfix $ fullNameToRoot diName, diParams) of
+                       case (fmap nameIsInfix $ fullNameRefToUnqualified diName, diParams) of
                            (Just True, p1:pr) ->
-                               codeMarkdown p1 <> " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) pr)
-                           _ -> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
+                               codeMarkdown (toText p1) <>
+                               " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown (toText p)) pr)
+                           _ -> name <> mconcat (fmap (\p -> " " <> codeMarkdown (toText p)) diParams)
                 SupertypeDocItem {..} -> let
                     name = boldMarkdown $ codeMarkdown $ toText diName
-                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    nameType = name <> " " <> codeMarkdown (": " <> toText diType)
                     in italicMarkdown nameType
                 SubtypeRelationDocItem {..} ->
                     codeMarkdown "subtype" <>
-                    " " <> codeMarkdown diSubtype <> " " <> codeMarkdown "<:" <> " " <> codeMarkdown diSupertype
-    hPutMarkdownLn h $ title <> "  "
+                    " " <>
+                    codeMarkdown (toText diSubtype) <>
+                    " " <> codeMarkdown "<:" <> " " <> codeMarkdown (toText diSupertype)
+    hPutMarkdownLn h $ indentMarkdownN i title <> "  "
     if docDescription == ""
         then return ()
-        else hPutMarkdownLn h docDescription
+        else hPutMarkdownLn h $ indentMarkdownN i docDescription
     hPutMarkdownLn h ""
+
+showDefEntry :: Handle -> Int -> Int -> Tree DefDoc -> IO ()
+showDefEntry h i _ (Node d tt) = do
+    showDefDoc h i d
+    for_ tt $ showDefEntry h (succ i) 0
 
 showDefTitle :: Handle -> Int -> Text -> IO ()
 showDefTitle _ 1 "" = return ()
@@ -69,7 +77,7 @@ printModuleDoc modopts tmodname = do
     let modname = MkModuleName tmodname
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
-    runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout) 1 $ moduleDoc pmodule
+    runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout 0) 1 $ moduleDoc pmodule
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do

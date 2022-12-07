@@ -64,13 +64,16 @@ langDurationTask d = fmap liftTask $ durationTask d
 langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
-taskStuff :: DocTreeEntry (BindDoc context)
+taskStuff :: DocTreeEntry (BindDocTree context)
 taskStuff =
     docTreeEntry "Task" "" $
     namespaceRelative
         "Task"
-        [ mkTypeEntry "Task" "A task is something that can be waited for to give a result." $
-          MkSomeGroundType taskGroundType
+        [ mkTypeEntry
+              "Task"
+              "A task is something that can be waited for to give a result."
+              (MkSomeGroundType taskGroundType)
+              []
         , mkValEntry "mapTask" "" $ fmap @LangTask @A @B
         , mkValEntry "pureTask" "A task that's already completed with this value." $ pure @LangTask @A
         , mkValEntry "pairTask" "Combine two tasks." $ pairTask @A @B

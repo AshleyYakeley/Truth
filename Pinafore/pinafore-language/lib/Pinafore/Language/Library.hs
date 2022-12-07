@@ -42,7 +42,7 @@ library =
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
     getDocName :: forall context. BindDoc context -> Maybe Name
-    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry (RootFullName name) _, bdDoc = dd}
+    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry (UnqualifiedFullNameRef name) _, bdDoc = dd}
         | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing

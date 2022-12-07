@@ -30,7 +30,7 @@ openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
 
-envStuff :: DocTreeEntry (BindDoc InvocationInfo)
+envStuff :: DocTreeEntry (BindDocTree InvocationInfo)
 envStuff =
     docTreeEntry "Env" "The environment in which the script was invoked." $
     namespaceRelative
