@@ -36,9 +36,11 @@ diNameLens f TypeDocItem {..} = fmap (\n -> TypeDocItem {diName = n, ..}) $ f di
 diNameLens f SupertypeDocItem {..} = fmap (\n -> SupertypeDocItem {diName = n, ..}) $ f diName
 diNameLens _ SubtypeRelationDocItem {..} = pure SubtypeRelationDocItem {..}
 
-diMatchNameOrSubtypeRel :: FullNameRef -> DocItem -> Bool
+diMatchNameOrSubtypeRel :: FullName -> DocItem -> Bool
 diMatchNameOrSubtypeRel _ SubtypeRelationDocItem {} = True
-diMatchNameOrSubtypeRel n di = getAll $ execWriter $ diNameLens (\name -> (tell $ All $ n == name) >> return name) di
+diMatchNameOrSubtypeRel n di =
+    getAll $
+    execWriter $ diNameLens (\name -> (tell $ All $ n == fullNameRefInNamespace RootNamespace name) >> return name) di
 
 data DefDoc = MkDefDoc
     { docItem :: DocItem

@@ -303,7 +303,7 @@ interpretExpose (MkSyntaxExposeDeclaration items sdecls) =
     runScopeBuilder (interpretDocDeclarations sdecls) $ \doc -> do
         let (namespaces, names) = mconcat $ fmap partitionItem items
         (bnames, scope) <- liftRefNotation $ exportScope namespaces names
-        return (exposeDocs (fmap fullNameRef bnames) doc, scope)
+        return (exposeDocs bnames doc, scope)
 
 interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do

@@ -42,14 +42,11 @@ popFilterDTT test dt = dt {docTreeEntries = popFilterDTTEntries test $ docTreeEn
 -- double tree!
 type Docs = [DocTreeEntry (Tree DefDoc)]
 
-exposeDefDoc :: [FullNameRef] -> DefDoc -> Bool
+exposeDefDoc :: [FullName] -> DefDoc -> Bool
 exposeDefDoc names dd = any (\name -> diMatchNameOrSubtypeRel name $ docItem dd) names
 
-exposeDocs :: [FullNameRef] -> Docs -> Docs
-exposeDocs names =
-    if True
-        then id
-        else popFilterDTTEntries $ exposeDefDoc names
+exposeDocs :: [FullName] -> Docs -> Docs
+exposeDocs names = popFilterDTTEntries $ exposeDefDoc names
 
 type ScopeBuilder = TransformT RefNotation
 

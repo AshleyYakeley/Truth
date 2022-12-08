@@ -42,7 +42,7 @@ doc:R
 > **`MkR`**`: R`  
 > doc:MkR
 > 
->
+> 
 > > **`rp`**`: Integer -> a -> a`  
 > > doc:rp
 > > 
@@ -50,7 +50,7 @@ doc:R
 > > **`rq`**`: Integer | Text`  
 > > doc:rq
 > > 
-
+> > 
 **`x`**`: Text`  
 doc:x
 
@@ -68,9 +68,9 @@ doc:y
 > 
 > **`xx`**`: Text`  
 > doc:N.xx
-
-
-> `type `**`NmA`**`{-q,+p} +r -s`  
+> 
+> 
+> `type `**`NmA`**` {-q,+p} +r -s`  
 > doc:NmA
 > 
 > 
@@ -82,51 +82,52 @@ doc:y
 > > doc:MkNmA2
 > > 
 > 
+> 
 > `type `**`NmB`**  
 > doc:NmB
 > > 
 > > 
 > > **`MkNmB`**`: Integer -> NmB`  
 > > doc:MkNmB
-> > 
-
+> 
+> 
 > `subtype NmA Integer Unit Unit <: NmB`  
-
+>
 > `subtype NmRecA Integer Unit Unit <: NmRecB`  
-
-> `type `**`NmRecA`**`{-q,+p} +r -s`  
+> 
+> `type `**`NmRecA`**` {-q,+p} +r -s`  
 > doc:NmRecA
-
-
+> 
+> 
 > > **`MkNmRecA1`**`: (q -> s -> p) -> r -> NmRecA`  
 > > doc:MkNmRecA1
 > > 
-
+> > 
 > > **`MkNmRecA2`**`: p -> (s -> r) -> NmRecA`  
 > > doc:MkNmRecA2
-> > 
-
+> 
+> 
 > `type `**`NmRecB`**  
 > doc:NmRecB
-
-
+> 
+> 
 > > **`MkNmRecB`**`: Integer -> NmRecB`  
 > > doc:MkNmRecB
-> > 
-
+> 
+> 
 > `type `**`NmR`**  
 > doc:NmR
-
-
+> 
+> 
 > > **`MkNmR`**`: NmR`  
 > > doc:MkNmR
 > > 
-
+> > 
 > > > **`nmrp`**`: Integer -> a -> a`  
 > > > doc:nmrp
 > > > 
-
+> > > 
 > > > **`nmrq`**`: Integer | Text`  
 > > > doc:nmrq
 > > > 
-
+> > > 
