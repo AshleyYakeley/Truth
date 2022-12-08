@@ -1,18 +1,18 @@
 pinafore> :doc textLength
-#| The length of a piece of text.
+#| The length of a piece of text\.
 pinafore> :doc Time
-#| Absolute time as measured by UTC.
+#| Absolute time as measured by UTC\.
 pinafore> :doc Just
-#| Construct a Maybe from a value.
+#| Construct a Maybe from a value\.
 pinafore> let import "pinafore-gnome"
 pinafore> let import "pinafore-media"
 pinafore> let using Cairo
 pinafore> :doc paintAlpha
 #| Paint everywhere with this alpha (within the clip)
 pinafore> :doc GTK.Element
-#| A user interface element is something that goes inside a window.
+#| A user interface element is something that goes inside a window\.
 pinafore> :doc GTK.textArea
-#| Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference.
+#| Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference\.
 pinafore> :doc notfound
 ! notfound not found
 pinafore> let aa = 8

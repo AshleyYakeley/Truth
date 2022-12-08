@@ -153,12 +153,11 @@ mkNamedColourEntry (name, colour) = let
     tg = pack $ show g
     tb = pack $ show b
     desc =
-        rawMarkdown $
-        "<span style=\"border: 1px solid black; background: rgb(" <>
-        tr <>
-        "," <>
-        tg <>
-        "," <> tb <> ")\">&nbsp;&nbsp;&nbsp;&nbsp;</span> SRGB " <> tr <> "\\/255 " <> tg <> "\\/255 " <> tb <> "\\/255"
+        tagMarkdown
+            "span"
+            [("style", "border: 1px solid black; background: rgb(" <> tr <> "," <> tg <> "," <> tb <> ")")]
+            (rawMarkdown "&nbsp;&nbsp;&nbsp;&nbsp;") <>
+        plainMarkdown tr <> "/255 " <> plainMarkdown tg <> "/255 " <> plainMarkdown tb <> "/255"
     in mkValEntry (fromString name) desc $ fromSVGColor colour
 
 colourStuff :: DocTreeEntry (BindDocTree ())

@@ -16,44 +16,48 @@ hPutMarkdownLn h m = hPutStrLn h $ unpack $ getRawMarkdown m
 showDefDoc :: Handle -> Int -> DefDoc -> IO ()
 showDefDoc h i MkDefDoc {..} = do
     let
+        toMarkdown ::
+               forall a. ToText a
+            => a
+            -> Markdown
+        toMarkdown = plainMarkdown . toText
+        trailingParams ::
+               forall a. ToText a
+            => [a]
+            -> Markdown
+        trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
         title =
+            codeMarkdown $
             case docItem of
                 ValueDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown $ toText diName
-                    nameType = name <> " " <> codeMarkdown (": " <> toText diType)
+                    name = boldMarkdown $ toMarkdown diName
+                    nameType = name <> ": " <> toMarkdown diType
                     in nameType
                 ValuePatternDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown $ toText diName
-                    nameType = name <> " " <> codeMarkdown (": " <> toText diType)
+                    name = boldMarkdown $ toMarkdown diName
+                    nameType = name <> ": " <> toMarkdown diType
                     in nameType
                 SpecialFormDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown $ toText diName
-                    params = mconcat (fmap (\p -> " " <> codeMarkdown (toText p)) diParams)
-                    nameType = name <> params <> " " <> codeMarkdown (": " <> toText diType)
+                    name = boldMarkdown $ toMarkdown diName
+                    params = trailingParams diParams
+                    nameType = name <> params <> ": " <> toMarkdown diType
                     in nameType
                 TypeDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown $ toText diName
-                    in codeMarkdown "type" <>
-                       " " <>
+                    name = boldMarkdown $ toMarkdown diName
+                    in "type " <>
                        case (fmap nameIsInfix $ fullNameRefToUnqualified diName, diParams) of
-                           (Just True, p1:pr) ->
-                               codeMarkdown (toText p1) <>
-                               " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown (toText p)) pr)
-                           _ -> name <> mconcat (fmap (\p -> " " <> codeMarkdown (toText p)) diParams)
+                           (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
+                           _ -> name <> trailingParams diParams
                 SupertypeDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown $ toText diName
-                    nameType = name <> " " <> codeMarkdown (": " <> toText diType)
+                    name = boldMarkdown $ toMarkdown diName
+                    nameType = name <> ": " <> toMarkdown diType
                     in italicMarkdown nameType
-                SubtypeRelationDocItem {..} ->
-                    codeMarkdown "subtype" <>
-                    " " <>
-                    codeMarkdown (toText diSubtype) <>
-                    " " <> codeMarkdown "<:" <> " " <> codeMarkdown (toText diSupertype)
+                SubtypeRelationDocItem {..} -> "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
     hPutMarkdownLn h $ indentMarkdownN i title <> "  "
     if docDescription == ""
         then return ()
         else hPutMarkdownLn h $ indentMarkdownN i docDescription
-    hPutMarkdownLn h ""
+    hPutMarkdownLn h $ indentMarkdownN i ""
 
 showDefEntry :: Handle -> Int -> Int -> Tree DefDoc -> IO ()
 showDefEntry h i _ (Node d tt) = do

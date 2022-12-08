@@ -228,47 +228,57 @@ interpretSequentialLetBinding sbind = do
         bmap <- lift $ qBindingSequentialLetExpr b
         registerLetBindings $ mapVarID bmap $ pure (sbName sbind, sbVarID sbind)
 
+typeDeclDoc :: Name -> SyntaxTypeDeclaration -> Markdown -> Tree DefDoc
+typeDeclDoc = let
+    sigDoc :: SyntaxSignature -> DefDoc
+    sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ (ValueSyntaxSignature name stype))) =
+        MkDefDoc (ValueDocItem (UnqualifiedFullNameRef name) $ exprShow stype) doc
+    funcPNT :: PrecNamedText -> PrecNamedText -> PrecNamedText
+    funcPNT ta tb = namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
+    funcPNTList :: [PrecNamedText] -> PrecNamedText -> PrecNamedText
+    funcPNTList [] t = t
+    funcPNTList (a:aa) t = funcPNT a $ funcPNTList aa t
+    consDoc :: Name -> [NamedText] -> SyntaxConstructorOrSubtype extra -> (DocItem, [Tree DefDoc])
+    consDoc tname _ (ConstructorSyntaxConstructorOrSubtype cname tt _) =
+        ( ValuePatternDocItem (UnqualifiedFullNameRef cname) $
+          toNamedText $ funcPNTList (fmap exprShowPrec tt) (exprShowPrec tname)
+        , [])
+    consDoc _ tparams (SubtypeSyntaxConstructorOrSubtype tname tt) =
+        (TypeDocItem (UnqualifiedFullNameRef tname) tparams, typeConssDoc tname tparams tt)
+    consDoc tname _ (RecordSyntaxConstructorOrSubtype cname sigs) =
+        (ValuePatternDocItem (UnqualifiedFullNameRef cname) (exprShow tname), fmap (pure . sigDoc) sigs)
+    typeConsDoc :: Name -> [NamedText] -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
+    typeConsDoc tname tparams (MkSyntaxWithDoc cdoc scs) = let
+        (item, rest) = consDoc tname tparams scs
+        in Node (MkDefDoc item cdoc) rest
+    typeConssDoc :: Name -> [NamedText] -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> [Tree DefDoc]
+    typeConssDoc tname tparams = fmap $ typeConsDoc tname tparams
+    in \name defn doc -> let
+           diName = UnqualifiedFullNameRef name
+           (diParams, items) =
+               case defn of
+                   ClosedEntitySyntaxTypeDeclaration params conss -> let
+                       tparams = fmap exprShow params
+                       in (tparams, typeConssDoc name tparams conss)
+                   DatatypeSyntaxTypeDeclaration params conss -> let
+                       tparams = fmap exprShow params
+                       in (tparams, typeConssDoc name tparams conss)
+                   _ -> mempty
+           docItem = TypeDocItem {..}
+           docDescription = doc
+           in Node MkDefDoc {..} items
+
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> ScopeBuilder Docs
 interpretRecursiveDocDeclarations ddecls = do
     let
-        sigDoc :: SyntaxSignature -> DefDoc
-        sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ (ValueSyntaxSignature name stype))) =
-            MkDefDoc (ValueDocItem (UnqualifiedFullNameRef name) $ exprShow stype) doc
-        consDoc :: Name -> [NamedText] -> SyntaxConstructorOrSubtype extra -> (DocItem, [Tree DefDoc])
-        consDoc tname _ (ConstructorSyntaxConstructorOrSubtype cname tt _) =
-            ( ValuePatternDocItem (UnqualifiedFullNameRef cname) $
-              intercalate " -> " $ fmap exprShow tt <> [exprShow tname]
-            , [])
-        consDoc _ tparams (SubtypeSyntaxConstructorOrSubtype tname tt) =
-            (TypeDocItem (UnqualifiedFullNameRef tname) tparams, typeConssDoc tname tparams tt)
-        consDoc tname _ (RecordSyntaxConstructorOrSubtype cname sigs) =
-            (ValuePatternDocItem (UnqualifiedFullNameRef cname) (exprShow tname), fmap (pure . sigDoc) sigs)
-        typeConsDoc :: Name -> [NamedText] -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
-        typeConsDoc tname tparams (MkSyntaxWithDoc cdoc scs) = let
-            (item, rest) = consDoc tname tparams scs
-            in Node (MkDefDoc item cdoc) rest
-        typeConssDoc :: Name -> [NamedText] -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> [Tree DefDoc]
-        typeConssDoc tname tparams = fmap $ typeConsDoc tname tparams
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
-                TypeSyntaxDeclaration name defn -> let
-                    diName = UnqualifiedFullNameRef name
-                    (diParams, items) =
-                        case defn of
-                            ClosedEntitySyntaxTypeDeclaration params conss -> let
-                                tparams = fmap exprShow params
-                                in (tparams, typeConssDoc name tparams conss)
-                            DatatypeSyntaxTypeDeclaration params conss -> let
-                                tparams = fmap exprShow params
-                                in (tparams, typeConssDoc name tparams conss)
-                            _ -> mempty
-                    docItem = TypeDocItem {..}
-                    docDescription = doc
-                    in return
-                           ( pure (spos, name, doc, defn)
-                           , mempty
-                           , mempty
-                           , pure $ EntryDocTreeEntry $ Node MkDefDoc {..} items)
+                TypeSyntaxDeclaration name defn ->
+                    return
+                        ( pure (spos, name, doc, defn)
+                        , mempty
+                        , mempty
+                        , pure $ EntryDocTreeEntry $ typeDeclDoc name defn doc)
                 SubtypeSyntaxDeclaration trustme sta stb mbody ->
                     return
                         ( mempty
@@ -314,16 +324,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         ImportSyntaxDeclaration modname -> interpScopeBuilder $ interpretImportDeclaration modname
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
             interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
-            let
-                diName = UnqualifiedFullNameRef name
-                diParams =
-                    case defn of
-                        ClosedEntitySyntaxTypeDeclaration params _ -> fmap exprShow params
-                        DatatypeSyntaxTypeDeclaration params _ -> fmap exprShow params
-                        _ -> []
-                docItem = TypeDocItem {..}
-                docDescription = doc
-            return $ defDocs MkDefDoc {..}
+            return $ pure $ EntryDocTreeEntry $ typeDeclDoc name defn doc
         DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) ->
             interpretSubtypeRelation doc trustme sta stb mbody
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
@@ -619,7 +620,7 @@ interpretSubtypeRelation docDescription trustme sta stb mbody = do
         diSubtype = exprShow sta
         diSupertype = exprShow stb
         docItem = SubtypeRelationDocItem {..}
-    return $ defDocs MkDefDoc {..}
+    return $ pure $ EntryDocTreeEntry $ pure MkDefDoc {..}
 
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do

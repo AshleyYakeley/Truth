@@ -2,7 +2,6 @@ module Pinafore.Language.Grammar.Interpret.ScopeBuilder
     ( ScopeBuilder
     , runScopeBuilder
     , Docs
-    , defDocs
     , exposeDocs
     , sourcePosScopeBuilder
     , interpScopeBuilder
@@ -42,9 +41,6 @@ popFilterDTT test dt = dt {docTreeEntries = popFilterDTTEntries test $ docTreeEn
 
 -- double tree!
 type Docs = [DocTreeEntry (Tree DefDoc)]
-
-defDocs :: DefDoc -> Docs
-defDocs doc = pure $ EntryDocTreeEntry $ pure doc
 
 exposeDefDoc :: [FullNameRef] -> DefDoc -> Bool
 exposeDefDoc names dd = any (\name -> diMatchNameOrSubtypeRel name $ docItem dd) names
