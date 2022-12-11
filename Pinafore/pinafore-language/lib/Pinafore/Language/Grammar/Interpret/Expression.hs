@@ -227,6 +227,13 @@ interpretSequentialLetBinding sbind = do
         bmap <- lift $ qBindingSequentialLetExpr b
         registerLetBindings $ mapVarID bmap $ pure (sbName sbind, sbVarID sbind)
 
+subtypeRelDocs :: SyntaxType -> SyntaxType -> Markdown -> Docs
+subtypeRelDocs sta stb docDescription = let
+    diSubtype = exprShow sta
+    diSupertype = exprShow stb
+    docItem = SubtypeRelationDocItem {..}
+    in pure $ pure MkDefDoc {..}
+
 typeDeclDoc :: Name -> SyntaxTypeDeclaration -> Markdown -> Tree DefDoc
 typeDeclDoc = let
     sigDoc :: SyntaxSignature -> DefDoc
@@ -277,17 +284,17 @@ interpretRecursiveDocDeclarations ddecls = do
                 SubtypeSyntaxDeclaration trustme sta stb mbody ->
                     return
                         ( mempty
-                        , sourcePosScopeBuilder spos >> interpretSubtypeRelation doc trustme sta stb mbody
+                        , sourcePosScopeBuilder spos >> interpretSubtypeRelation trustme sta stb mbody
                         , mempty
-                        , mempty)
+                        , subtypeRelDocs sta stb doc)
                 BindingSyntaxDeclaration sbind -> do
                     binds <- syntaxToSingleBindings sbind doc
                     return (mempty, mempty, binds, fmap (pure . sbDefDoc) binds)
     (typeDecls, subtypeSB, bindingDecls, docDecls) <- fmap mconcat $ for ddecls interp
     interpScopeBuilder $ interpretRecursiveTypeDeclarations typeDecls
-    stDocDecls <- subtypeSB
+    subtypeSB
     interpretRecursiveLetBindings bindingDecls
-    return $ stDocDecls <> docDecls
+    return docDecls
 
 partitionItem :: SyntaxExposeItem -> ([NamespaceRef], [FullNameRef])
 partitionItem (NameSyntaxExposeItem n) = ([], [n])
@@ -320,8 +327,9 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
             interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
             return $ pure $ typeDeclDoc name defn doc
-        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) ->
-            interpretSubtypeRelation doc trustme sta stb mbody
+        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) -> do
+            interpretSubtypeRelation trustme sta stb mbody
+            return $ subtypeRelDocs sta stb doc
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
             binds <- syntaxToSingleBindings sbind doc
             for_ binds interpretSequentialLetBinding
@@ -605,17 +613,11 @@ interpretOpenEntitySubtypeRelation sta stb =
                                  entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
                     Nothing -> lift $ throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tb
 
-interpretSubtypeRelation ::
-       Markdown -> TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder Docs
-interpretSubtypeRelation docDescription trustme sta stb mbody = do
+interpretSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder ()
+interpretSubtypeRelation trustme sta stb mbody =
     case mbody of
         Just body -> interpretGeneralSubtypeRelation trustme sta stb body
         Nothing -> interpretOpenEntitySubtypeRelation sta stb
-    let
-        diSubtype = exprShow sta
-        diSupertype = exprShow stb
-        docItem = SubtypeRelationDocItem {..}
-    return $ pure $ pure MkDefDoc {..}
 
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do

@@ -94,8 +94,6 @@ doc:N
 > > 
 > `subtype NmA Integer Unit Unit <: NmB`  
 > 
-> `subtype NmRecA Integer Unit Unit <: NmRecB`  
-> 
 > `type `**`NmRecA`**` {-q,+p} +r -s`  
 > doc:NmRecA
 > 
@@ -116,6 +114,8 @@ doc:N
 > > doc:MkNmRecB
 > > 
 > > 
+> `subtype NmRecA Integer Unit Unit <: NmRecB`  
+> 
 > `type `**`NmR`**  
 > doc:NmR
 > 
