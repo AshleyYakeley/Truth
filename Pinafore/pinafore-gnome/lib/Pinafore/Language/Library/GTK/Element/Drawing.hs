@@ -56,14 +56,14 @@ uiDraw model =
         immutableWholeModelValue mempty $
         fmap (\d p -> fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $ unLangDrawing (d p)) model
 
-drawingStuff :: DocTreeEntry (BindDocTree ())
+drawingStuff :: BindDocTree ()
 drawingStuff =
-    docTreeEntry
+    headingBDT
         "Drawing"
         ""
-        [ mkTypeEntry "Handler" "Response to button-clicked events" (MkSomeGroundType handlerGroundType) []
-        , mkValEntry "concatHandler" "Collect handlers." $ mconcat @LangHandler
-        , mkValEntry "onClick" "Action to perform on click" langOnClick
-        , mkValEntry "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
-        , mkValEntry "draw" "Drawable element" uiDraw
+        [ typeBDT "Handler" "Response to button-clicked events" (MkSomeGroundType handlerGroundType) []
+        , valBDT "concatHandler" "Collect handlers." $ mconcat @LangHandler
+        , valBDT "onClick" "Action to perform on click" langOnClick
+        , valBDT "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
+        , valBDT "draw" "Drawable element" uiDraw
         ]

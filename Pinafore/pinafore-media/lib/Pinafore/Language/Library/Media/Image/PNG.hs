@@ -51,15 +51,15 @@ pngEncode mdata (MkLangImage image) = let
 pngMetadata :: LangPNGImage -> LangHasMetadata
 pngMetadata image = keyMapToMetadata $ fst $ idlData image
 
-pngStuff :: DocTreeEntry (BindDocTree ())
+pngStuff :: BindDocTree ()
 pngStuff =
-    docTreeEntry
+    headingBDT
         "PNG"
         ""
-        [ mkTypeEntry "PNGImage" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
-        , hasSubtypeRelationEntry @LangPNGImage @LangImage Verify "" $
+        [ typeBDT "PNGImage" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
+        , hasSubtypeRelationBDT @LangPNGImage @LangImage Verify "" $
           functionToShim "pngImage" $ MkLangImage . mapSome toPixelType . snd . idlData
-        , hasSubtypeRelationEntry @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
-        , hasSubtypeRelationEntry @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
-        , mkValEntry "pngEncode" "Encode an image as PNG, with given metadata." pngEncode
+        , hasSubtypeRelationBDT @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
+        , hasSubtypeRelationBDT @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
+        , valBDT "pngEncode" "Encode an image as PNG, with given metadata." pngEncode
         ]

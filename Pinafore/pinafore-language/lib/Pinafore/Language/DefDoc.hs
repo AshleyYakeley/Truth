@@ -5,7 +5,9 @@ import Pinafore.Markdown
 import Shapes
 
 data DocItem
-    = ValueDocItem { diName :: FullNameRef
+    = HeadingDocItem { diTitle :: Markdown }
+    | NamespaceDocItem { diNamespace :: NamespaceRef }
+    | ValueDocItem { diName :: FullNameRef
                    , diType :: NamedText }
     | ValuePatternDocItem { diName :: FullNameRef
                           , diType :: NamedText }
@@ -20,6 +22,8 @@ data DocItem
                              , diSupertype :: NamedText }
 
 instance Show DocItem where
+    show (HeadingDocItem t) = "heading " <> show t
+    show (NamespaceDocItem n) = "namespace " <> show n
     show (ValueDocItem n t) = "val " <> show n <> ": " <> unpack (toText t)
     show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
     show (SpecialFormDocItem n pp t) =
@@ -34,13 +38,13 @@ diNameLens f ValuePatternDocItem {..} = fmap (\n -> ValuePatternDocItem {diName 
 diNameLens f SpecialFormDocItem {..} = fmap (\n -> SpecialFormDocItem {diName = n, ..}) $ f diName
 diNameLens f TypeDocItem {..} = fmap (\n -> TypeDocItem {diName = n, ..}) $ f diName
 diNameLens f SupertypeDocItem {..} = fmap (\n -> SupertypeDocItem {diName = n, ..}) $ f diName
-diNameLens _ SubtypeRelationDocItem {..} = pure SubtypeRelationDocItem {..}
+diNameLens _ di = pure di
 
 diMatchNameOrSubtypeRel :: FullName -> DocItem -> Bool
 diMatchNameOrSubtypeRel _ SubtypeRelationDocItem {} = True
 diMatchNameOrSubtypeRel n di =
-    getAll $
-    execWriter $ diNameLens (\name -> (tell $ All $ n == fullNameRefInNamespace RootNamespace name) >> return name) di
+    getAny $
+    execWriter $ diNameLens (\name -> (tell $ Any $ n == fullNameRefInNamespace RootNamespace name) >> return name) di
 
 data DefDoc = MkDefDoc
     { docItem :: DocItem
@@ -51,6 +55,7 @@ instance Show DefDoc where
     show (MkDefDoc i d) = show (i, d)
 
 instance NamespaceRelative DocItem where
+    namespaceRelative nsn (NamespaceDocItem nr) = NamespaceDocItem $ namespaceRelative nsn nr
     namespaceRelative nsn di = runIdentity $ diNameLens (Identity . namespaceRelative nsn) di
 
 instance NamespaceRelative DefDoc where

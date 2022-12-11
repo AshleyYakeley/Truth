@@ -21,7 +21,8 @@ fullNameToRoot _ = Nothing
 instance ToText FullName where
     toText (MkFullName RootNamespace name)
         | nameIsInfix name = toText name
-    toText (MkFullName nsn name) = toText nsn <> toText name
+    toText (MkFullName RootNamespace name) = "." <> toText name
+    toText (MkFullName nsn name) = toText nsn <> "." <> toText name
 
 instance Show FullName where
     show = unpack . toText

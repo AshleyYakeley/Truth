@@ -4,22 +4,22 @@ module Pinafore.Language.Library.Eval
 
 import Pinafore.Base
 import Pinafore.Language.Convert.Types
-import Pinafore.Language.DocTree
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Std.Types
-import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalStuff :: DocTreeEntry (BindDocTree context)
+evalStuff :: BindDocTree context
 evalStuff =
-    docTreeEntry "Eval" "" $
-    namespaceRelative
+    headingBDT "Eval" "" $
+    pure $
+    namespaceBDT
         "Eval"
-        [ mkSpecialFormEntry
+        ""
+        [ specialFormBDT
               "evaluate"
               "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
                 \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\

@@ -10,70 +10,6 @@ import Pinafore.Main
 import Pinafore.Version
 import Shapes
 
-hPutMarkdownLn :: Handle -> Markdown -> IO ()
-hPutMarkdownLn h m = hPutStrLn h $ unpack $ getRawMarkdown m
-
-showDefDoc :: Handle -> Int -> DefDoc -> IO ()
-showDefDoc h i MkDefDoc {..} = do
-    let
-        toMarkdown ::
-               forall a. ToText a
-            => a
-            -> Markdown
-        toMarkdown = plainMarkdown . toText
-        trailingParams ::
-               forall a. ToText a
-            => [a]
-            -> Markdown
-        trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
-        title =
-            codeMarkdown $
-            case docItem of
-                ValueDocItem {..} -> let
-                    name = boldMarkdown $ toMarkdown diName
-                    nameType = name <> ": " <> toMarkdown diType
-                    in nameType
-                ValuePatternDocItem {..} -> let
-                    name = boldMarkdown $ toMarkdown diName
-                    nameType = name <> ": " <> toMarkdown diType
-                    in nameType
-                SpecialFormDocItem {..} -> let
-                    name = boldMarkdown $ toMarkdown diName
-                    params = trailingParams diParams
-                    nameType = name <> params <> ": " <> toMarkdown diType
-                    in nameType
-                TypeDocItem {..} -> let
-                    name = boldMarkdown $ toMarkdown diName
-                    in "type " <>
-                       case (fmap nameIsInfix $ fullNameRefToUnqualified diName, diParams) of
-                           (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
-                           _ -> name <> trailingParams diParams
-                SupertypeDocItem {..} -> let
-                    name = boldMarkdown $ toMarkdown diName
-                    nameType = name <> ": " <> toMarkdown diType
-                    in italicMarkdown nameType
-                SubtypeRelationDocItem {..} -> "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
-    hPutMarkdownLn h $ indentMarkdownN i title <> "  "
-    if docDescription == ""
-        then return ()
-        else hPutMarkdownLn h $ indentMarkdownN i docDescription
-    hPutMarkdownLn h $ indentMarkdownN i ""
-
-showDefEntry :: Handle -> Int -> Int -> Tree DefDoc -> IO ()
-showDefEntry h i _ (Node d tt) = do
-    showDefDoc h i d
-    for_ tt $ showDefEntry h (succ i) 0
-
-showDefTitle :: Handle -> Int -> Text -> IO ()
-showDefTitle _ 1 "" = return ()
-showDefTitle h level title = hPutMarkdownLn h $ titleMarkdown level $ plainMarkdown title
-
-showDefDesc :: Handle -> Int -> Markdown -> IO ()
-showDefDesc _ _ "" = return ()
-showDefDesc h _ desc = do
-    hPutMarkdownLn h desc
-    hPutMarkdownLn h ""
-
 printModuleDoc :: ModuleOptions -> Text -> IO ()
 printModuleDoc modopts tmodname = do
     let fmodule = standardFetchModule modopts
@@ -81,7 +17,73 @@ printModuleDoc modopts tmodname = do
     let modname = MkModuleName tmodname
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
-    runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout 0) 1 $ moduleDoc pmodule
+    let
+        runDocTree :: Int -> Int -> Tree DefDoc -> IO ()
+        runDocTree hlevel ilevel (Node MkDefDoc {..} children) = do
+            let
+                putMarkdownLn :: Markdown -> IO ()
+                putMarkdownLn m = hPutStrLn stdout $ unpack $ getRawMarkdown m
+                putIndentMarkdownLn :: Markdown -> IO ()
+                putIndentMarkdownLn m = putMarkdownLn $ indentMarkdownN ilevel m
+                toMarkdown ::
+                       forall a. ToText a
+                    => a
+                    -> Markdown
+                toMarkdown = plainMarkdown . toText
+                trailingParams ::
+                       forall a. ToText a
+                    => [a]
+                    -> Markdown
+                trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
+                putBindDoc :: Markdown -> IO ()
+                putBindDoc m = putIndentMarkdownLn $ codeMarkdown m <> "  "
+            case docItem of
+                ValueDocItem {..} ->
+                    putBindDoc $ let
+                        name = boldMarkdown $ toMarkdown diName
+                        nameType = name <> ": " <> toMarkdown diType
+                        in nameType
+                ValuePatternDocItem {..} ->
+                    putBindDoc $ let
+                        name = boldMarkdown $ toMarkdown diName
+                        nameType = name <> ": " <> toMarkdown diType
+                        in nameType
+                SpecialFormDocItem {..} ->
+                    putBindDoc $ let
+                        name = boldMarkdown $ toMarkdown diName
+                        params = trailingParams diParams
+                        nameType = name <> params <> ": " <> toMarkdown diType
+                        in nameType
+                TypeDocItem {..} ->
+                    putBindDoc $ let
+                        name = boldMarkdown $ toMarkdown diName
+                        in "type " <>
+                           case (fmap nameIsInfix $ fullNameRefToUnqualified diName, diParams) of
+                               (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
+                               _ -> name <> trailingParams diParams
+                SupertypeDocItem {..} ->
+                    putBindDoc $ let
+                        name = boldMarkdown $ toMarkdown diName
+                        nameType = name <> ": " <> toMarkdown diType
+                        in italicMarkdown nameType
+                SubtypeRelationDocItem {..} ->
+                    putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
+                NamespaceDocItem {..} ->
+                    putBindDoc $ let
+                        name = boldMarkdown $ toMarkdown diNamespace
+                        in "namespace " <> name
+                HeadingDocItem {..} -> putMarkdownLn $ titleMarkdown hlevel diTitle
+            if docDescription == ""
+                then return ()
+                else putIndentMarkdownLn docDescription
+            putIndentMarkdownLn ""
+            let
+                (hlevel', ilevel') =
+                    case docItem of
+                        HeadingDocItem {} -> (succ hlevel, ilevel)
+                        _ -> (hlevel, succ ilevel)
+            for_ children $ runDocTree hlevel' ilevel'
+    runDocTree 1 0 $ moduleDoc pmodule
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do

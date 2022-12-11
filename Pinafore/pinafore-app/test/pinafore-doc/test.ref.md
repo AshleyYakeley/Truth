@@ -1,4 +1,5 @@
 # test
+
 `type `**`A`**` {-q,+p} +r -s`  
 doc:A
 
@@ -81,18 +82,17 @@ doc:y
 > > **`MkNmA2`**`: p -> (s -> r) -> NmA`  
 > > doc:MkNmA2
 > > 
-> 
-> 
+> > 
 > `type `**`NmB`**  
 > doc:NmB
-> > 
-> > 
+> 
+> 
 > > **`MkNmB`**`: Integer -> NmB`  
 > > doc:MkNmB
-> 
-> 
+> > 
+> > 
 > `subtype NmA Integer Unit Unit <: NmB`  
->
+> 
 > `subtype NmRecA Integer Unit Unit <: NmRecB`  
 > 
 > `type `**`NmRecA`**` {-q,+p} +r -s`  
@@ -105,16 +105,16 @@ doc:y
 > > 
 > > **`MkNmRecA2`**`: p -> (s -> r) -> NmRecA`  
 > > doc:MkNmRecA2
-> 
-> 
+> > 
+> > 
 > `type `**`NmRecB`**  
 > doc:NmRecB
 > 
 > 
 > > **`MkNmRecB`**`: Integer -> NmRecB`  
 > > doc:MkNmRecB
-> 
-> 
+> > 
+> > 
 > `type `**`NmR`**  
 > doc:NmR
 > 
@@ -131,3 +131,9 @@ doc:y
 > > > doc:nmrq
 > > > 
 > > > 
+> `namespace `**`NN`**  
+> 
+> > **`xyz`**`: Unit`  
+> > doc:N.NN.xyz
+> > 
+> > 

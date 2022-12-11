@@ -109,7 +109,6 @@ library:
       - Pinafore.Language.Grammar.Interpret
       - Pinafore.Language.Grammar
       - Pinafore.Language.Expression
-      - Pinafore.Language.DocTree
       - Pinafore.Language.Library.FetchModule
       - Pinafore.Language.Library.Defs
       - Pinafore.Language.Library.Std.Convert

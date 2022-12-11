@@ -51,17 +51,19 @@ fileMakeRef f = do
         actionLiftLifecycle $ makeSharedModel $ reflectingPremodel fref
     return $ wModelToWholeModel $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
 
-gioStuff :: DocTreeEntry (BindDocTree ())
+gioStuff :: BindDocTree ()
 gioStuff =
-    docTreeEntry "GIO" "GNOME file access." $
-    namespaceRelative
+    headingBDT "GIO" "GNOME file access." $
+    pure $
+    namespaceBDT
         "GIO"
-        [ mkTypeEntry
+        ""
+        [ typeBDT
               "File"
               "A file."
               (MkSomeGroundType fileGroundType)
-              [ mkValPatBDT "FileParseName" "Construct a file from its parse name." parseNameToFile $
+              [ valPatBDT "FileParseName" "Construct a file from its parse name." parseNameToFile $
                 PureFunction $ \f -> (fileToParseName f, ())
               ]
-        , mkValEntry "fileMakeRef" "Make a reference from a file." fileMakeRef
+        , valBDT "fileMakeRef" "Make a reference from a file." fileMakeRef
         ]

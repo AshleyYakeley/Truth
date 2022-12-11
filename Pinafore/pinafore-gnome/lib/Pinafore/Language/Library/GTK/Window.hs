@@ -83,34 +83,33 @@ run call =
             unlift $
                 call $ MkLangContext {lcGTKContext = gtkc, lcOtherContext = MkOtherContext {ocClipboard = clipboard}}
 
-windowStuff :: DocTreeEntry (BindDocTree ())
+windowStuff :: BindDocTree ()
 windowStuff =
-    docTreeEntry
+    headingBDT
         "Windows"
         ""
-        [ mkTypeEntry "Context" "Context for GTK" (MkSomeGroundType contextGroundType) []
-        , mkValEntry
+        [ typeBDT "Context" "Context for GTK" (MkSomeGroundType contextGroundType) []
+        , valBDT
               "run"
               "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
           run @A
-        , mkTypeEntry "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
-        , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
-        , mkValEntry "closeWindow" "Close a window." uiWindowClose
-        , mkValEntry "showWindow" "Show a window." showWindow
-        , mkValEntry "hideWindow" "Hide a window." hideWindow
-        , mkValEntry "exit" "Exit the user interface." exitUI
+        , typeBDT "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
+        , valBDT "openWindow" "Open a new window with this size, title and element." openWindow
+        , valBDT "closeWindow" "Close a window." uiWindowClose
+        , valBDT "showWindow" "Show a window." showWindow
+        , valBDT "hideWindow" "Hide a window." hideWindow
+        , valBDT "exit" "Exit the user interface." exitUI
         ]
 
 langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Bool) -> Action File
 langChooseFile action lc test =
     actionLiftViewKnow $ fmap maybeToKnow $ runGView (lcGTKContext lc) $ gvRunLocked $ chooseFile action test
 
-dialogStuff :: DocTreeEntry (BindDocTree ())
+dialogStuff :: BindDocTree ()
 dialogStuff =
-    docTreeEntry
+    headingBDT
         "Dialogs"
         ""
-        [ mkValEntry "chooseExistingFile" "Run a dialog to choose an existing file." $
-          langChooseFile FileChooserActionOpen
-        , mkValEntry "chooseNewFile" "Run a dialog to choose a new file." $ langChooseFile FileChooserActionSave
+        [ valBDT "chooseExistingFile" "Run a dialog to choose an existing file." $ langChooseFile FileChooserActionOpen
+        , valBDT "chooseNewFile" "Run a dialog to choose a new file." $ langChooseFile FileChooserActionSave
         ]

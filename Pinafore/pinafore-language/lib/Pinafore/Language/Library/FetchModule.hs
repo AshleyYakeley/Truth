@@ -78,14 +78,15 @@ getLibraryModuleModule context libmod = do
         seBinding _ = Nothing
         getEntry :: BindDoc context -> Maybe QBindingInfo
         getEntry MkBindDoc {..} = do
-            (biName, biValue) <- seBinding bdScopeEntry
+            se <- bdScopeEntry
+            (biName, biValue) <- seBinding se
             let biDocumentation = docDescription bdDoc
             return MkBindingInfo {..}
         bscope :: QScope
         bscope = bindingInfosToScope $ mapMaybe getEntry bindDocs
     dscopes <-
-        for bindDocs $ \bd ->
-            case bdScopeEntry bd of
+        forf bindDocs $ \bd ->
+            for (bdScopeEntry bd) $ \case
                 BindScopeEntry _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
     let moduleDoc = libraryModuleDocumentation libmod

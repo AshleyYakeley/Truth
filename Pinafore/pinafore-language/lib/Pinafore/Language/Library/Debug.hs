@@ -4,10 +4,8 @@ module Pinafore.Language.Library.Debug
 
 import Pinafore.Base
 import Pinafore.Language.Debug
-import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
-import Pinafore.Language.Name
 import Shapes
 
 debugCheckEntity :: Text -> Entity -> IO ()
@@ -21,13 +19,15 @@ debugLiteralLength = olength . unLiteral
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
-debugStuff :: DocTreeEntry (BindDocTree context)
+debugStuff :: BindDocTree context
 debugStuff =
-    docTreeEntry "Debug" "Functions for debugging." $
-    namespaceRelative
+    headingBDT "Debug" "Functions for debugging." $
+    pure $
+    namespaceBDT
         "Debug"
-        [ mkValEntry "message" "Debug message to std error." debugMessage
-        , mkValEntry "checkEntity" "debugCheckEntity" debugCheckEntity
-        , mkValEntry "literalLength" "Byte length of a Literal" debugLiteralLength
-        , mkValEntry "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
+        ""
+        [ valBDT "message" "Debug message to std error." debugMessage
+        , valBDT "checkEntity" "debugCheckEntity" debugCheckEntity
+        , valBDT "literalLength" "Byte length of a Literal" debugLiteralLength
+        , valBDT "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
         ]

@@ -2,7 +2,6 @@ module Pinafore.Language.Library.Std.File
     ( fileLibEntries
     ) where
 
-import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 
 --import Changes.World.File
@@ -38,14 +37,14 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = unWRaised objRun $ refRead ReadByteStringLength
 -}
-fileLibEntries :: [DocTreeEntry (BindDocTree ())]
+fileLibEntries :: [BindDocTree context]
 fileLibEntries =
-    [ docTreeEntry
+    [ headingBDT
           "File Storage"
           "NYI"
                   {-
-                  mkValEntry "file_import" "Import a file into a set." $ file_import
-              , mkValEntry "file_size" "The size of a file." file_size
+                  valBDT "file_import" "Import a file into a set." $ file_import
+              , valBDT "file_size" "The size of a file." file_size
               -}
           []
     ]

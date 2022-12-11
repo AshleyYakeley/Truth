@@ -4,30 +4,29 @@ module Pinafore.Language.Library.Std.Lifecycle
 
 import Changes.Core
 import Pinafore.Base
-import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Var
 import Shapes
 
-lifecycleLibEntries :: [DocTreeEntry (BindDocTree context)]
+lifecycleLibEntries :: [BindDocTree context]
 lifecycleLibEntries =
-    [ docTreeEntry
+    [ headingBDT
           "Lifecycles"
           "Ways of managing the closing of things that get opened, most notably UI windows."
-          [ mkValEntry
+          [ valBDT
                 "lifecycle"
                 "Close everything that gets opened in the given action.\n\n\
                 \Example: `lifecycle $ do openResource; sleep (Seconds 1) end`  \n\
                 \This opens some resource, sleeps for one second, and then closes it again." $
             (actionHoistView viewSubLifecycle) @A
-          , mkValEntry
+          , valBDT
                 "onClose"
                 "Add this action as to be done when closing.\n\n\
                 \Example: `lifecycle $ do onClose $ Env.outputLn \"hello\"; sleep (Seconds 1) end`  \n\
                 \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
                 actionOnClose
-          , mkValEntry
+          , valBDT
                 "closer"
                 "Get an (idempotent) action that closes what gets opened in the given action.\n\n\
                 \Example: `(cl,r) <- closer openResource`  \n\

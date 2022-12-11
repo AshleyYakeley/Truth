@@ -12,4 +12,4 @@ import Shapes
 
 mediaLibrary :: [LibraryModule ()]
 mediaLibrary =
-    pure $ MkLibraryModule "pinafore-media" $ MkDocTree "pinafore-media" "" [colourStuff, imageStuff, cairoStuff]
+    pure $ MkLibraryModule "pinafore-media" $ headingBDT "pinafore-media" "" [colourStuff, imageStuff, cairoStuff]

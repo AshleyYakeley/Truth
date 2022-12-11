@@ -11,7 +11,6 @@ module Pinafore.Language.Grammar.Interpret.ScopeBuilder
     ) where
 
 import Pinafore.Language.DefDoc
-import Pinafore.Language.DocTree
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
@@ -29,24 +28,13 @@ popFilterTree test (Node a tt) = let
 popFilterForest :: (a -> Bool) -> [Tree a] -> [Tree a]
 popFilterForest test tt = mconcat $ fmap (popFilterTree test) tt
 
-popFilterDTTEntry :: (a -> Bool) -> DocTreeEntry (Tree a) -> [DocTreeEntry (Tree a)]
-popFilterDTTEntry test (EntryDocTreeEntry ta) = fmap EntryDocTreeEntry $ popFilterTree test ta
-popFilterDTTEntry test (TreeDocTreeEntry dtt) = pure $ TreeDocTreeEntry $ popFilterDTT test dtt
-
-popFilterDTTEntries :: (a -> Bool) -> [DocTreeEntry (Tree a)] -> [DocTreeEntry (Tree a)]
-popFilterDTTEntries test ee = mconcat $ fmap (popFilterDTTEntry test) ee
-
-popFilterDTT :: (a -> Bool) -> DocTree (Tree a) -> DocTree (Tree a)
-popFilterDTT test dt = dt {docTreeEntries = popFilterDTTEntries test $ docTreeEntries dt}
-
--- double tree!
-type Docs = [DocTreeEntry (Tree DefDoc)]
+type Docs = [Tree DefDoc]
 
 exposeDefDoc :: [FullName] -> DefDoc -> Bool
 exposeDefDoc names dd = any (\name -> diMatchNameOrSubtypeRel name $ docItem dd) names
 
 exposeDocs :: [FullName] -> Docs -> Docs
-exposeDocs names = popFilterDTTEntries $ exposeDefDoc names
+exposeDocs names = popFilterForest $ exposeDefDoc names
 
 type ScopeBuilder = TransformT RefNotation
 

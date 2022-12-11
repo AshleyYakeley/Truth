@@ -15,7 +15,7 @@ instance Show Name where
     show = unpack
 
 instance IsString Name where
-    fromString s = fromMaybe (error "bad Name (empty)") $ nameFromString s
+    fromString s = fromMaybe (error "bad Name: empty") $ nameFromString s
 
 nameFromString :: String -> Maybe Name
 nameFromString "" = Nothing

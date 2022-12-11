@@ -55,17 +55,14 @@ uiMenuBar lmb =
     MkLangElement $ \MkElementContext {..} ->
         createMenuBar ecAccelGroup $ fmap (\(MkLangMenuItem me) -> me ecUnlift) lmb
 
-menuItemStuff :: DocTreeEntry (BindDocTree ())
+menuItemStuff :: BindDocTree ()
 menuItemStuff =
-    docTreeEntry
+    headingBDT
         "Menu"
         ""
-        [ mkTypeEntry "MenuItem" "A item of a menu." (MkSomeGroundType menuItemGroundType) []
-        , mkValEntry "menuSeparator" "Separator menu item." $ MkLangMenuItem $ \_ -> SeparatorMenuEntry
-        , mkValEntry "menuSubmenu" "Submenu menu item." menuSubmenu
-        , mkValEntry
-              "menuAction"
-              "Action menu item. Item will be disabled if the action reference is unknown."
-              menuAction
-        , mkValEntry "menuBar" "Menu bar element" uiMenuBar
+        [ typeBDT "MenuItem" "A item of a menu." (MkSomeGroundType menuItemGroundType) []
+        , valBDT "menuSeparator" "Separator menu item." $ MkLangMenuItem $ \_ -> SeparatorMenuEntry
+        , valBDT "menuSubmenu" "Submenu menu item." menuSubmenu
+        , valBDT "menuAction" "Action menu item. Item will be disabled if the action reference is unknown." menuAction
+        , valBDT "menuBar" "Menu bar element" uiMenuBar
         ]

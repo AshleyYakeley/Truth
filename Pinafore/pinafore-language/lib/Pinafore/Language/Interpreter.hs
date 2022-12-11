@@ -60,7 +60,6 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.DocTree
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
@@ -234,7 +233,7 @@ joinAllScopes (a:aa) s = do
 type family EntryDoc (ts :: Type) :: Type
 
 data Module ts = MkModule
-    { moduleDoc :: DocTree (Tree (EntryDoc ts))
+    { moduleDoc :: Tree (EntryDoc ts)
     , moduleScope :: Scope ts
     }
 

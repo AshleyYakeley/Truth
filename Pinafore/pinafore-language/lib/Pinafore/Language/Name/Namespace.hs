@@ -9,7 +9,7 @@ newtype Namespace =
     deriving (Eq, Ord)
 
 instance ToText Namespace where
-    toText (MkNamespace nn) = "." <> mconcat (fmap (\t -> toText t <> ".") nn)
+    toText (MkNamespace nn) = "." <> (intercalate "." $ fmap toText nn)
 
 instance Show Namespace where
     show = unpack . toText
@@ -19,6 +19,7 @@ namespaceFromStrings ss = do
     let
         ss1 =
             case ss of
+                ["", ""] -> []
                 "":ssr -> ssr
                 _ -> ss
     ns <-
@@ -30,7 +31,7 @@ namespaceFromStrings ss = do
     return $ MkNamespace ns
 
 instance IsString Namespace where
-    fromString s = fromMaybe (error $ "bad Namespace: " <> s) $ namespaceFromStrings $ splitSeq "." s
+    fromString s = fromMaybe (error $ "bad Namespace: " <> show s) $ namespaceFromStrings $ splitSeq "." s
 
 pattern RootNamespace :: Namespace
 

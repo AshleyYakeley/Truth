@@ -6,12 +6,10 @@ module Pinafore.Language.Library.Storage
 
 import Pinafore.Base
 import Pinafore.Language.Convert
-import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Std.Model
-import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
@@ -24,13 +22,15 @@ storeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[] QStore where
     qGroundType = storeGroundType
 
-storageStuff :: DocTreeEntry (BindDocTree context)
+storageStuff :: BindDocTree context
 storageStuff =
-    docTreeEntry "Storage" "" $
-    namespaceRelative
+    headingBDT "Storage" "" $
+    pure $
+    namespaceBDT
         "Storage"
-        [ mkTypeEntry "Store" "Storage of information." (MkSomeGroundType storeGroundType) []
-        , mkSpecialFormEntry
+        ""
+        [ typeBDT "Store" "Storage of information." (MkSomeGroundType storeGroundType) []
+        , specialFormBDT
               "property"
               "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
               ["@A", "@B", "<anchor>"]

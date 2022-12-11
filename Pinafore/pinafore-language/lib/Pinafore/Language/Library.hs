@@ -1,7 +1,5 @@
 module Pinafore.Language.Library
     ( DefDoc(..)
-    , DocTree
-    , runDocTree
     , LibraryModule
     , FetchModule
     , directoryFetchModule
@@ -15,7 +13,6 @@ module Pinafore.Language.Library
 
 import Pinafore.Context
 import Pinafore.Language.DefDoc
-import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Env
@@ -34,7 +31,7 @@ library :: [LibraryModule InvocationInfo]
 library =
     pure $
     MkLibraryModule builtInModuleName $
-    MkDocTree
+    headingBDT
         "Built-In"
         ""
         [generalStuff, taskStuff, streamStuff, storageStuff, undoStuff, envStuff, evalStuff, debugStuff]
@@ -42,7 +39,7 @@ library =
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
     getDocName :: forall context. BindDoc context -> Maybe Name
-    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry (UnqualifiedFullNameRef name) _, bdDoc = dd}
+    getDocName MkBindDoc {bdScopeEntry = Just (BindScopeEntry (UnqualifiedFullNameRef name) _), bdDoc = dd}
         | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing

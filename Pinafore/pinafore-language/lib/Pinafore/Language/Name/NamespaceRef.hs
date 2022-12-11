@@ -23,13 +23,14 @@ namespaceRefInNamespace _ (AbsoluteNamespaceRef ns) = ns
 namespaceRefInNamespace ns (RelativeNamespaceRef names) = namespaceConcat ns names
 
 instance ToText NamespaceRef where
-    toText (RelativeNamespaceRef nn) = mconcat (fmap (\t -> toText t <> ".") nn)
+    toText (RelativeNamespaceRef nn) = intercalate "." $ fmap toText nn
     toText (AbsoluteNamespaceRef asn) = toText asn
 
 instance Show NamespaceRef where
     show = unpack . toText
 
 namespaceRefFromStrings :: [String] -> Maybe NamespaceRef
+namespaceRefFromStrings [""] = return CurrentNamespaceRef
 namespaceRefFromStrings ("":ss) = do
     ns <-
         for ss $ \s -> do

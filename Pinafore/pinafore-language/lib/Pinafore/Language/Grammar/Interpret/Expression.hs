@@ -11,7 +11,6 @@ import Data.Graph
 import Pinafore.Base
 import Pinafore.Language.Debug
 import Pinafore.Language.DefDoc
-import Pinafore.Language.DocTree
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.FreeVars
@@ -274,11 +273,7 @@ interpretRecursiveDocDeclarations ddecls = do
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
                 TypeSyntaxDeclaration name defn ->
-                    return
-                        ( pure (spos, name, doc, defn)
-                        , mempty
-                        , mempty
-                        , pure $ EntryDocTreeEntry $ typeDeclDoc name defn doc)
+                    return (pure (spos, name, doc, defn), mempty, mempty, pure $ typeDeclDoc name defn doc)
                 SubtypeSyntaxDeclaration trustme sta stb mbody ->
                     return
                         ( mempty
@@ -287,7 +282,7 @@ interpretRecursiveDocDeclarations ddecls = do
                         , mempty)
                 BindingSyntaxDeclaration sbind -> do
                     binds <- syntaxToSingleBindings sbind doc
-                    return (mempty, mempty, binds, fmap (EntryDocTreeEntry . pure . sbDefDoc) binds)
+                    return (mempty, mempty, binds, fmap (pure . sbDefDoc) binds)
     (typeDecls, subtypeSB, bindingDecls, docDecls) <- fmap mconcat $ for ddecls interp
     interpScopeBuilder $ interpretRecursiveTypeDeclarations typeDecls
     stDocDecls <- subtypeSB
@@ -309,7 +304,7 @@ interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
     newmod <- lift $ getModule modname
     registerScope $ moduleScope newmod
-    return [TreeDocTreeEntry $ moduleDoc newmod]
+    return [moduleDoc newmod]
 
 interpretDocDeclaration :: SyntaxDeclaration -> ScopeBuilder Docs
 interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
@@ -324,22 +319,22 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         ImportSyntaxDeclaration modname -> interpScopeBuilder $ interpretImportDeclaration modname
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
             interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
-            return $ pure $ EntryDocTreeEntry $ typeDeclDoc name defn doc
+            return $ pure $ typeDeclDoc name defn doc
         DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) ->
             interpretSubtypeRelation doc trustme sta stb mbody
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
             binds <- syntaxToSingleBindings sbind doc
             for_ binds interpretSequentialLetBinding
-            return $ fmap (EntryDocTreeEntry . pure . sbDefDoc) binds
+            return $ fmap (pure . sbDefDoc) binds
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
         UsingSyntaxDeclaration nsn -> do
             interpScopeBuilder $ usingNamespace nsn
             return mempty
         NamespaceSyntaxDeclaration nsn decls -> do
             close <- interpScopeBuilder $ withNamespace nsn
-            r <- interpretDocDeclarations decls
+            docs <- interpretDocDeclarations decls
             interpScopeBuilder close
-            return r
+            return $ pure $ Node (MkDefDoc (NamespaceDocItem nsn) doc) docs
         DebugSyntaxDeclaration nameref -> do
             (fn, desc) <- interpScopeBuilder $ lift $ lookupDebugBindingInfo nameref
             liftIO $ debugMessage $ toText fn <> ": " <> pack desc
@@ -620,9 +615,9 @@ interpretSubtypeRelation docDescription trustme sta stb mbody = do
         diSubtype = exprShow sta
         diSupertype = exprShow stb
         docItem = SubtypeRelationDocItem {..}
-    return $ pure $ EntryDocTreeEntry $ pure MkDefDoc {..}
+    return $ pure $ pure MkDefDoc {..}
 
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
-    return $ MkModule (MkDocTree (toText moduleName) "" docs) scope
+    return $ MkModule (Node (MkDefDoc (HeadingDocItem (plainMarkdown $ toText moduleName)) "") docs) scope

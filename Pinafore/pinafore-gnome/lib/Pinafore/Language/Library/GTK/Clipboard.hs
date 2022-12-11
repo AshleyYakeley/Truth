@@ -24,6 +24,6 @@ langClipboard :: LangContext -> LangWholeModel '( Literal, Literal)
 langClipboard c =
     wModelToWholeModel $ eaMap (bijectionWholeChangeLens clipBijection) $ MkWModel $ ocClipboard $ lcOtherContext c
 
-clipboardStuff :: DocTreeEntry (BindDocTree ())
+clipboardStuff :: BindDocTree ()
 clipboardStuff =
-    docTreeEntry "Clipboard" "" [mkValEntry "clipboard" "The UI clipboard, for copying and pasting." langClipboard]
+    headingBDT "Clipboard" "" [valBDT "clipboard" "The UI clipboard, for copying and pasting." langClipboard]

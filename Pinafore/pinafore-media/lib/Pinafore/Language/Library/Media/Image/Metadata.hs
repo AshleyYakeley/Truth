@@ -34,10 +34,9 @@ updateMetadata :: Text -> Maybe Literal -> LangHasMetadata -> LangHasMetadata
 updateMetadata key (Just val) (MkLangHasMetadata mp) = MkLangHasMetadata $ insertMap key val mp
 updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMap key mp
 
-textKey :: Text -> DocTreeEntry (BindDocTree ())
+textKey :: Text -> BindDocTree ()
 textKey name =
-    EntryDocTreeEntry $
-    mkValPatBDT (UnqualifiedFullNameRef $ MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
+    valPatBDT (UnqualifiedFullNameRef $ MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
     ImpureFunction $ \n ->
         if n == name
             then Just ()
@@ -98,25 +97,27 @@ metadataResolution md = do
     dy <- fromLiteral lity
     return (fromInteger dx, fromInteger dy)
 
-metadataStuff :: DocTreeEntry (BindDocTree ())
+metadataStuff :: BindDocTree ()
 metadataStuff =
-    docTreeEntry "Metadata" "" $
-    namespaceRelative
+    headingBDT "Metadata" "" $
+    pure $
+    namespaceBDT
         "Metadata"
-        [ mkTypeEntry
+        ""
+        [ typeBDT
               "HasMetadata"
               "Something that has metadata."
               (MkSomeGroundType hasMetadataGroundType)
-              [ mkValPatBDT
+              [ valPatBDT
                     "MkHasMetadata"
                     "Construct metadata out of key-value pairs. Duplicates will be removed."
                     mkHasMetadata $
                 PureFunction $ \hm -> (getAllMetadata hm, ())
               ]
-        , mkValEntry "lookup" "Look up metadata by name." lookupMetadata
-        , mkValEntry "update" "Update metadata item." updateMetadata
-        , mkValEntry "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution
-        , docTreeEntry
+        , valBDT "lookup" "Look up metadata by name." lookupMetadata
+        , valBDT "update" "Update metadata item." updateMetadata
+        , valBDT "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution
+        , headingBDT
               "Keys"
               "Constructors for standard metadata keys"
               [ textKey "Title"

@@ -263,68 +263,68 @@ langImage ref =
         unWModel $
         eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableModelToReadOnlyModel ref
 
-elementStuff :: DocTreeEntry (BindDocTree ())
+elementStuff :: BindDocTree ()
 elementStuff =
-    docTreeEntry
+    headingBDT
         "Element"
         ""
-        [ mkTypeEntry
+        [ typeBDT
               "Element"
               "A user interface element is something that goes inside a window."
               (MkSomeGroundType elementGroundType)
               []
-        , hasSubtypeRelationEntry @LangElement @LangLayoutElement Verify "" $
+        , hasSubtypeRelationBDT @LangElement @LangLayoutElement Verify "" $
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
-        , mkValEntry "exec" "Element that runs an Action first." uiExec
-        , mkValEntry "withContext" "Element that requires a Context." uiWithContext
-        , mkValEntry "notifySelection" "Notify whenever the selection changes." uiNotifySelection
-        , mkValEntry "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
-        , mkValEntry "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
-        , mkValEntry "image" "Blank element" langImage
-        , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
-        , mkValEntry "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
-        , mkValEntry
+        , valBDT "exec" "Element that runs an Action first." uiExec
+        , valBDT "withContext" "Element that requires a Context." uiWithContext
+        , valBDT "notifySelection" "Notify whenever the selection changes." uiNotifySelection
+        , valBDT "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
+        , valBDT "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
+        , valBDT "image" "Blank element" langImage
+        , valBDT "unitCheckBox" "(TBD)" uiUnitCheckBox
+        , valBDT "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
+        , valBDT
               "textEntry"
               "Text entry, unknown reference will be interpreted as empty text, but the element will not delete the reference."
               uiTextEntry
-        , mkValEntry
+        , valBDT
               "textArea"
               "Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference." $
           uiTextArea
-        , mkValEntry "label" "Label." uiLabel
-        , mkValEntry "horizontal" "Items arranged horizontally, each flag is whether to expand into remaining space." $
+        , valBDT "label" "Label." uiLabel
+        , valBDT "horizontal" "Items arranged horizontally, each flag is whether to expand into remaining space." $
           uiLayout OrientationHorizontal
-        , mkValEntry "vertical" "Items arranged vertically, each flag is whether to expand into remaining space." $
+        , valBDT "vertical" "Items arranged vertically, each flag is whether to expand into remaining space." $
           uiLayout OrientationVertical
-        , mkValEntry "layoutGrow" "Grow layout element." layoutGrow
-        , mkValEntry
+        , valBDT "layoutGrow" "Grow layout element." layoutGrow
+        , valBDT
               "notebook"
               "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
               uiNotebook
                 -- drag
                 -- icon
-        , mkValEntry
+        , valBDT
               "button"
               "A button with this text that does this action. Button will be disabled if the action reference is unknown."
               uiButton
-        , mkValEntry "pick" "A drop-down menu." uiPick
-        , mkValEntry "list" "A dynamic list of elements." uiList
-        , mkValEntry
+        , valBDT "pick" "A drop-down menu." uiPick
+        , valBDT "list" "A dynamic list of elements." uiList
+        , valBDT
               "listTable"
               "A list table. First arg is columns (name, property), second is list-reference of items, third is the action for item activation, fourth is an optional reference for the selected row."
               uiListTable
-        , mkValEntry "calendar" "A calendar." uiCalendar
-        , mkValEntry "scrolled" "A scrollable container." uiScrolled
-        , mkValEntry "dynamic" "An element that can be updated to different UIs." uiDynamic
-        , mkValEntry
+        , valBDT "calendar" "A calendar." uiCalendar
+        , valBDT "scrolled" "A scrollable container." uiScrolled
+        , valBDT "dynamic" "An element that can be updated to different UIs." uiDynamic
+        , valBDT
               "name"
               "An element with name set. You can use something like `#text` to refer to it in the CSS style-sheet."
               uiName
-        , mkValEntry
+        , valBDT
               "styleClass"
               "An element with CSS class set. You can use something like `.text` to refer to all elements in this class in the CSS style-sheet."
               uiStyleClass
-        , mkValEntry
+        , valBDT
               "styleSheet"
               "An element with a CSS style-sheet (applied to the whole tree of elements). \
                     \See the GTK+ CSS [overview](https://developer.gnome.org/gtk3/stable/chap-css-overview.html) and [properties](https://developer.gnome.org/gtk3/stable/chap-css-properties.html) for how this works."

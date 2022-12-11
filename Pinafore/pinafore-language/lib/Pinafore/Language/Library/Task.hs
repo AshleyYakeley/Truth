@@ -7,10 +7,8 @@ module Pinafore.Language.Library.Task
 
 import Pinafore.Base
 import Pinafore.Language.Convert
-import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
@@ -64,25 +62,26 @@ langDurationTask d = fmap liftTask $ durationTask d
 langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
-taskStuff :: DocTreeEntry (BindDocTree context)
+taskStuff :: BindDocTree context
 taskStuff =
-    docTreeEntry "Task" "" $
-    namespaceRelative
+    headingBDT "Task" "" $
+    pure $
+    namespaceBDT
         "Task"
-        [ mkTypeEntry
+        ""
+        [ typeBDT
               "Task"
               "A task is something that can be waited for to give a result."
               (MkSomeGroundType taskGroundType)
               []
-        , mkValEntry "mapTask" "" $ fmap @LangTask @A @B
-        , mkValEntry "pureTask" "A task that's already completed with this value." $ pure @LangTask @A
-        , mkValEntry "pairTask" "Combine two tasks." $ pairTask @A @B
-        , mkValEntry "async" "Run an action in another thread. It will complete in the current life cycle." $
-          asyncTask @A
-        , mkValEntry "await" "Wait for a task to complete. This action is idempotent." $ awaitTask @A
-        , mkValEntry "checkTask" "Check to see if a task is done without waiting." $ langCheckTask @A
-        , mkValEntry "isDone" "Check whether a task is done." $ isDone @TopType
-        , mkValEntry "timeTask" "A task that is done at this time." langTimeTask
-        , mkValEntry "durationTask" "A task that will be done after this duration." langDurationTask
-        , mkValEntry "race" "Whichever task is done first." $ langRaceTasks @A
+        , valBDT "mapTask" "" $ fmap @LangTask @A @B
+        , valBDT "pureTask" "A task that's already completed with this value." $ pure @LangTask @A
+        , valBDT "pairTask" "Combine two tasks." $ pairTask @A @B
+        , valBDT "async" "Run an action in another thread. It will complete in the current life cycle." $ asyncTask @A
+        , valBDT "await" "Wait for a task to complete. This action is idempotent." $ awaitTask @A
+        , valBDT "checkTask" "Check to see if a task is done without waiting." $ langCheckTask @A
+        , valBDT "isDone" "Check whether a task is done." $ isDone @TopType
+        , valBDT "timeTask" "A task that is done at this time." langTimeTask
+        , valBDT "durationTask" "A task that will be done after this duration." langDurationTask
+        , valBDT "race" "Whichever task is done first." $ langRaceTasks @A
         ]

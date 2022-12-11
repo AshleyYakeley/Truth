@@ -24,9 +24,9 @@ fullNameRefToUnqualified _ = Nothing
 instance ToText FullNameRef where
     toText (MkFullNameRef RootNamespaceRef name)
         | nameIsInfix name = toText name
-    toText (MkFullNameRef CurrentNamespaceRef name)
-        | nameIsInfix name = toText name
-    toText (MkFullNameRef ns name) = toText ns <> toText name
+    toText (MkFullNameRef CurrentNamespaceRef name) = toText name
+    toText (MkFullNameRef RootNamespaceRef name) = "." <> toText name
+    toText (MkFullNameRef ns name) = toText ns <> "." <> toText name
 
 instance Show FullNameRef where
     show = unpack . toText
