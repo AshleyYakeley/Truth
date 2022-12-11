@@ -37,8 +37,5 @@ pattern RootNamespace :: Namespace
 
 pattern RootNamespace = MkNamespace []
 
-namespaceConcat :: Namespace -> [Name] -> Namespace
-namespaceConcat (MkNamespace na) nb = MkNamespace $ na <> nb
-
 namespaceStartsWith :: Namespace -> Namespace -> Maybe [Name]
 namespaceStartsWith (MkNamespace na) (MkNamespace nb) = startsWith na nb

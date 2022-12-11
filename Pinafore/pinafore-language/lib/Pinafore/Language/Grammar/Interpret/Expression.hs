@@ -231,7 +231,7 @@ typeDeclDoc :: Name -> SyntaxTypeDeclaration -> Markdown -> Tree DefDoc
 typeDeclDoc = let
     sigDoc :: SyntaxSignature -> DefDoc
     sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ (ValueSyntaxSignature name stype))) =
-        MkDefDoc (ValueDocItem (UnqualifiedFullNameRef name) $ exprShow stype) doc
+        MkDefDoc (SignatureDocItem name $ exprShow stype) doc
     funcPNT :: PrecNamedText -> PrecNamedText -> PrecNamedText
     funcPNT ta tb = namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
     funcPNTList :: [PrecNamedText] -> PrecNamedText -> PrecNamedText
@@ -334,7 +334,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             close <- interpScopeBuilder $ withNamespace nsn
             docs <- interpretDocDeclarations decls
             interpScopeBuilder close
-            return $ pure $ Node (MkDefDoc (NamespaceDocItem nsn) doc) docs
+            return $ pure $ Node (MkDefDoc (NamespaceDocItem nsn) doc) $ namespaceConcat nsn docs
         DebugSyntaxDeclaration nameref -> do
             (fn, desc) <- interpScopeBuilder $ lift $ lookupDebugBindingInfo nameref
             liftIO $ debugMessage $ toText fn <> ": " <> pack desc

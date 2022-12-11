@@ -365,15 +365,10 @@ namespacePriority :: Interpreter ts (NamespaceRef -> [Namespace])
 namespacePriority = do
     curns <- paramAsk namespaceParam
     usingnss <- paramAsk usingNamespacesParam
-    return $ \case
-        AbsoluteNamespaceRef ann -> [ann]
-        RelativeNamespaceRef rnn -> fmap (\ns -> namespaceConcat ns rnn) $ nsAndParents curns <> usingnss
+    return $ namespaceConcatRefM (nsAndParents curns <> usingnss)
 
 namespaceCurrent :: NamespaceRef -> Interpreter ts Namespace
-namespaceCurrent (AbsoluteNamespaceRef ann) = return ann
-namespaceCurrent (RelativeNamespaceRef rnn) = do
-    curns <- paramAsk namespaceParam
-    return $ namespaceConcat curns rnn
+namespaceCurrent = namespaceConcatRefM $ paramAsk namespaceParam
 
 -- | For error messages and the like, doesn't need to be perfect.
 relativiseFullName :: Interpreter ts (FullName -> FullNameRef)
@@ -486,7 +481,7 @@ scopeSourcePos = refPut (transformParamRef sourcePosParam)
 getNameResolver :: Interpreter ts (FullNameRef -> FullName)
 getNameResolver = do
     ns <- paramAsk namespaceParam
-    return $ fullNameRefInNamespace ns
+    return $ namespaceConcatFullName ns
 
 allocateVar ::
        forall ts. HasInterpreter ts

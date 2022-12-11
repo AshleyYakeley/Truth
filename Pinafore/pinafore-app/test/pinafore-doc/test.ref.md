@@ -60,7 +60,8 @@ doc:x
 doc:y
 
 
-`namespace `**`N`**
+`namespace `**`N`**  
+doc:N
 
 
 > **`q`**`: Integer`  

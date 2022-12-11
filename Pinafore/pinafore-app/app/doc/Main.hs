@@ -18,13 +18,17 @@ printModuleDoc modopts tmodname = do
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
     let
-        runDocTree :: Int -> Int -> Tree DefDoc -> IO ()
-        runDocTree hlevel ilevel (Node MkDefDoc {..} children) = do
+        runDocTree :: Int -> Int -> Namespace -> Tree DefDoc -> IO ()
+        runDocTree hlevel ilevel curns (Node MkDefDoc {..} children) = do
             let
                 putMarkdownLn :: Markdown -> IO ()
                 putMarkdownLn m = hPutStrLn stdout $ unpack $ getRawMarkdown m
                 putIndentMarkdownLn :: Markdown -> IO ()
                 putIndentMarkdownLn m = putMarkdownLn $ indentMarkdownN ilevel m
+                mapNamespaceRef :: NamespaceRef -> NamespaceRef
+                mapNamespaceRef fn = namespaceRelative curns $ namespaceConcatRef RootNamespace fn
+                mapFullNameRef :: FullNameRef -> FullNameRef
+                mapFullNameRef fn = namespaceRelativeFullName curns $ namespaceConcatFullName RootNamespace fn
                 toMarkdown ::
                        forall a. ToText a
                     => a
@@ -40,37 +44,42 @@ printModuleDoc modopts tmodname = do
             case docItem of
                 ValueDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown diName
+                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
+                        nameType = name <> ": " <> toMarkdown diType
+                        in nameType
+                SignatureDocItem {..} ->
+                    putBindDoc $ let
+                        name = boldMarkdown $ toMarkdown diSigName
                         nameType = name <> ": " <> toMarkdown diType
                         in nameType
                 ValuePatternDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown diName
+                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
                         nameType = name <> ": " <> toMarkdown diType
                         in nameType
                 SpecialFormDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown diName
+                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
                         params = trailingParams diParams
                         nameType = name <> params <> ": " <> toMarkdown diType
                         in nameType
                 TypeDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown diName
+                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
                         in "type " <>
                            case (fmap nameIsInfix $ fullNameRefToUnqualified diName, diParams) of
                                (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
                                _ -> name <> trailingParams diParams
                 SupertypeDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown diName
+                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
                         nameType = name <> ": " <> toMarkdown diType
                         in italicMarkdown nameType
                 SubtypeRelationDocItem {..} ->
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
                 NamespaceDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown diNamespace
+                        name = boldMarkdown $ toMarkdown $ mapNamespaceRef diNamespace
                         in "namespace " <> name
                 HeadingDocItem {..} -> putMarkdownLn $ titleMarkdown hlevel diTitle
             if docDescription == ""
@@ -82,8 +91,12 @@ printModuleDoc modopts tmodname = do
                     case docItem of
                         HeadingDocItem {} -> (succ hlevel, ilevel)
                         _ -> (hlevel, succ ilevel)
-            for_ children $ runDocTree hlevel' ilevel'
-    runDocTree 1 0 $ moduleDoc pmodule
+                curns' =
+                    case docItem of
+                        NamespaceDocItem {..} -> namespaceConcatRef RootNamespace diNamespace
+                        _ -> curns
+            for_ children $ runDocTree hlevel' ilevel' curns'
+    runDocTree 1 0 RootNamespace $ moduleDoc pmodule
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do

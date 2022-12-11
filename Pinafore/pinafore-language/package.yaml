@@ -50,7 +50,7 @@ library:
       - Pinafore.Language.Name.FullName
       - Pinafore.Language.Name.NamespaceRef
       - Pinafore.Language.Name.FullNameRef
-      - Pinafore.Language.Name.NamespaceRelative
+      - Pinafore.Language.Name.NamespaceConcat
       - Pinafore.Language.Name.ModuleName
       - Pinafore.Language.Name.NamedText
       - Pinafore.Language.Name.PrecNamedText

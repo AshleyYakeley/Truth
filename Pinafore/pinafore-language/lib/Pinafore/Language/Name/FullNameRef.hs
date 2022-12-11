@@ -37,19 +37,23 @@ instance IsString FullNameRef where
         case fromString s of
             MkFullName (MkNamespace ns) n -> MkFullNameRef (RelativeNamespaceRef ns) n
 
-fullNameRefInNamespace :: Namespace -> FullNameRef -> FullName
-fullNameRefInNamespace ns (MkFullNameRef nref name) = MkFullName (namespaceRefInNamespace ns nref) name
+namespaceConcatFullName :: Namespace -> FullNameRef -> FullName
+namespaceConcatFullName ns (MkFullNameRef nref name) = MkFullName (namespaceConcatRef ns nref) name
 
 fullNameRef :: FullName -> FullNameRef
 fullNameRef (MkFullName ns name) = MkFullNameRef (AbsoluteNamespaceRef ns) name
 
-fullNameRelFromRoot :: FullName -> FullNameRef
-fullNameRelFromRoot (MkFullName ns n) = MkFullNameRef (namespaceRelFromRoot ns) n
+fullNameRootRelative :: FullName -> FullNameRef
+fullNameRootRelative (MkFullName ns n) = MkFullNameRef (namespaceRootRelative ns) n
 
 -- | All the ways a 'FullName' can be split into a 'Namespace' and 'FullNameRef', starting with the longest 'Namespace' and shortest 'FullNameRef'.
 fullNameSplits :: FullName -> [(Namespace, FullNameRef)]
 fullNameSplits (MkFullName ns name) = fmap (fmap $ \nsr -> MkFullNameRef nsr name) $ namespaceSplits ns
 
+namespaceRelativeFullName :: Namespace -> FullName -> FullNameRef
+namespaceRelativeFullName na (MkFullName nb n) = MkFullNameRef (namespaceRelative na nb) n
+
 relativeFullName :: [Namespace] -> FullName -> FullNameRef
 relativeFullName basens fn =
-    fromMaybe (fullNameRelFromRoot fn) $ choice $ fmap (\(ns, fref) -> ifpure (elem ns basens) fref) $ fullNameSplits fn
+    fromMaybe (fullNameRootRelative fn) $
+    choice $ fmap (\(ns, fref) -> ifpure (elem ns basens) fref) $ fullNameSplits fn

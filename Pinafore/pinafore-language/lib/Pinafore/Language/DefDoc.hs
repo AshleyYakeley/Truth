@@ -9,6 +9,8 @@ data DocItem
     | NamespaceDocItem { diNamespace :: NamespaceRef }
     | ValueDocItem { diName :: FullNameRef
                    , diType :: NamedText }
+    | SignatureDocItem { diSigName :: Name
+                       , diType :: NamedText }
     | ValuePatternDocItem { diName :: FullNameRef
                           , diType :: NamedText }
     | SpecialFormDocItem { diName :: FullNameRef
@@ -25,6 +27,7 @@ instance Show DocItem where
     show (HeadingDocItem t) = "heading " <> show t
     show (NamespaceDocItem n) = "namespace " <> show n
     show (ValueDocItem n t) = "val " <> show n <> ": " <> unpack (toText t)
+    show (SignatureDocItem n t) = "sig " <> show n <> ": " <> unpack (toText t)
     show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
     show (SpecialFormDocItem n pp t) =
         "spform " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <> ": " <> unpack (toText t)
@@ -41,10 +44,9 @@ diNameLens f SupertypeDocItem {..} = fmap (\n -> SupertypeDocItem {diName = n, .
 diNameLens _ di = pure di
 
 diMatchNameOrSubtypeRel :: FullName -> DocItem -> Bool
-diMatchNameOrSubtypeRel _ SubtypeRelationDocItem {} = True
 diMatchNameOrSubtypeRel n di =
-    getAny $
-    execWriter $ diNameLens (\name -> (tell $ Any $ n == fullNameRefInNamespace RootNamespace name) >> return name) di
+    getAll $
+    execWriter $ diNameLens (\name -> (tell $ All $ n == namespaceConcatFullName RootNamespace name) >> return name) di
 
 data DefDoc = MkDefDoc
     { docItem :: DocItem
@@ -54,9 +56,9 @@ data DefDoc = MkDefDoc
 instance Show DefDoc where
     show (MkDefDoc i d) = show (i, d)
 
-instance NamespaceRelative DocItem where
-    namespaceRelative nsn (NamespaceDocItem nr) = NamespaceDocItem $ namespaceRelative nsn nr
-    namespaceRelative nsn di = runIdentity $ diNameLens (Identity . namespaceRelative nsn) di
+instance NamespaceConcat DocItem where
+    namespaceConcat nsn (NamespaceDocItem nr) = NamespaceDocItem $ namespaceConcat nsn nr
+    namespaceConcat nsn di = runIdentity $ diNameLens (Identity . namespaceConcat nsn) di
 
-instance NamespaceRelative DefDoc where
-    namespaceRelative nsn MkDefDoc {..} = MkDefDoc {docItem = namespaceRelative nsn docItem, ..}
+instance NamespaceConcat DefDoc where
+    namespaceConcat nsn MkDefDoc {..} = MkDefDoc {docItem = namespaceConcat nsn docItem, ..}

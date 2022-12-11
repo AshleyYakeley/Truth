@@ -64,20 +64,20 @@ qNegativeTypeDescription =
     case fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
-instance NamespaceRelative (ScopeEntry context) where
-    namespaceRelative nsn (BindScopeEntry fn b) = BindScopeEntry (namespaceRelative nsn fn) b
-    namespaceRelative _ se = se
+instance NamespaceConcat (ScopeEntry context) where
+    namespaceConcat nsn (BindScopeEntry fn b) = BindScopeEntry (namespaceConcat nsn fn) b
+    namespaceConcat _ se = se
 
-instance NamespaceRelative (BindDoc context) where
-    namespaceRelative nsn bd =
-        bd {bdScopeEntry = namespaceRelative nsn $ bdScopeEntry bd, bdDoc = namespaceRelative nsn $ bdDoc bd}
+instance NamespaceConcat (BindDoc context) where
+    namespaceConcat nsn bd =
+        bd {bdScopeEntry = namespaceConcat nsn $ bdScopeEntry bd, bdDoc = namespaceConcat nsn $ bdDoc bd}
 
 headingBDT :: Markdown -> Markdown -> [BindDocTree context] -> BindDocTree context
 headingBDT name desc = Node $ MkBindDoc Nothing $ MkDefDoc (HeadingDocItem name) desc
 
 namespaceBDT :: NamespaceRef -> Markdown -> [BindDocTree context] -> BindDocTree context
 namespaceBDT name desc tree =
-    Node (MkBindDoc Nothing $ MkDefDoc (NamespaceDocItem name) desc) $ namespaceRelative name tree
+    Node (MkBindDoc Nothing $ MkDefDoc (NamespaceDocItem name) desc) $ namespaceConcat name tree
 
 valBDT ::
        forall context t. HasQType 'Positive t

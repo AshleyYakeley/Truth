@@ -18,9 +18,13 @@ pattern RootNamespaceRef :: NamespaceRef
 
 pattern RootNamespaceRef = AbsoluteNamespaceRef RootNamespace
 
-namespaceRefInNamespace :: Namespace -> NamespaceRef -> Namespace
-namespaceRefInNamespace _ (AbsoluteNamespaceRef ns) = ns
-namespaceRefInNamespace ns (RelativeNamespaceRef names) = namespaceConcat ns names
+namespaceConcatRefM :: Applicative m => m Namespace -> NamespaceRef -> m Namespace
+namespaceConcatRefM _ (AbsoluteNamespaceRef nsb) = pure nsb
+namespaceConcatRefM mnsa (RelativeNamespaceRef namesb) =
+    fmap (\(MkNamespace namesa) -> MkNamespace $ namesa <> namesb) mnsa
+
+namespaceConcatRef :: Namespace -> NamespaceRef -> Namespace
+namespaceConcatRef nsa nsb = runIdentity $ namespaceConcatRefM (Identity nsa) nsb
 
 instance ToText NamespaceRef where
     toText (RelativeNamespaceRef nn) = intercalate "." $ fmap toText nn
@@ -51,8 +55,8 @@ namespaceRefFromStrings ss = do
 instance IsString NamespaceRef where
     fromString s = fromMaybe (error $ "bad NamespaceRef: " <> s) $ namespaceRefFromStrings $ splitSeq "." s
 
-namespaceRelFromRoot :: Namespace -> NamespaceRef
-namespaceRelFromRoot (MkNamespace nn) = RelativeNamespaceRef nn
+namespaceRootRelative :: Namespace -> NamespaceRef
+namespaceRootRelative (MkNamespace nn) = RelativeNamespaceRef nn
 
 -- | All the ways a 'Namespace' can be split into a 'Namespace' and relative 'NamespaceRef', starting with the longest 'Namespace' and shortest 'NamespaceRef'.
 namespaceSplits :: Namespace -> [(Namespace, NamespaceRef)]
@@ -63,3 +67,6 @@ namespaceSplits (MkNamespace ns) = fmap (\(s1, s2) -> (MkNamespace s1, RelativeN
     splits (a:aa) = let
         ss = splits aa
         in fmap (\(s1, s2) -> (a : s1, s2)) ss <> [([], a : aa)]
+
+namespaceRelative :: Namespace -> Namespace -> NamespaceRef
+namespaceRelative na nb = fromMaybe (AbsoluteNamespaceRef nb) $ fmap RelativeNamespaceRef $ namespaceStartsWith na nb

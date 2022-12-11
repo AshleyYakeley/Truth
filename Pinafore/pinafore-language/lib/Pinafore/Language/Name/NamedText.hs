@@ -39,4 +39,4 @@ instance IsString NamedText where
     fromString s = toNamedText (pack s :: Text)
 
 instance ToText NamedText where
-    toText = runNamedText $ toText . fullNameRelFromRoot
+    toText = runNamedText $ toText . fullNameRootRelative
