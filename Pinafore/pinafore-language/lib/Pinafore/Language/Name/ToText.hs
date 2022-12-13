@@ -9,5 +9,8 @@ class ToText t where
 instance ToText Text where
     toText t = t
 
+instance {-# OVERLAPPABLE #-} ToText t => ToText [t] where
+    toText ft = mconcat $ fmap toText ft
+
 instance ToText (SymbolType name) where
     toText n = pack $ uVarName n

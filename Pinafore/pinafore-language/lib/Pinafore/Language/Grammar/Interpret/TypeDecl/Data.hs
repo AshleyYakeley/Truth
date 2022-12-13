@@ -203,7 +203,7 @@ data TypeData dv t = MkTypeData
     , tdSupertype :: Maybe (TypeData dv t)
     , tdSubtypes :: [MatchingTypeID dv t] -- includes self
     , tdName :: Name
-    , tdDoc :: Markdown
+    , tdDoc :: RawMarkdown
     }
 
 getConsSubtypeData ::
@@ -233,7 +233,7 @@ getConssSubtypeData superTD conss = do
 
 data Constructor dv t extra = MkConstructor
     { ctName :: Name
-    , ctDoc :: Markdown
+    , ctDoc :: RawMarkdown
     , ctOuterType :: TypeData dv t
     , ctContents :: Either (Vector SyntaxType) (Vector SyntaxSignature)
     , ctExtra :: extra
@@ -290,7 +290,7 @@ makeBox ::
        forall extra (dv :: DolanVariance).
        GroundTypeMaker extra
     -> Name
-    -> Markdown
+    -> RawMarkdown
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> GenCCRTypeParams dv
     -> QInterpreter (QFixBox () ())
@@ -510,7 +510,7 @@ makeDeclTypeBox ::
        forall extra.
        GroundTypeMaker extra
     -> Name
-    -> Markdown
+    -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> QInterpreter (QFixBox () ())
@@ -547,7 +547,7 @@ makeDataGroundType _ tparams = let
 
 makeDataTypeBox ::
        Name
-    -> Markdown
+    -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())

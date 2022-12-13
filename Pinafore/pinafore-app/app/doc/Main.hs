@@ -10,6 +10,19 @@ import Pinafore.Main
 import Pinafore.Version
 import Shapes
 
+trimDocL :: Tree DefDoc -> [Tree DefDoc]
+trimDocL (Node n children) =
+    case (docItem n, trimDocChildren children) of
+        (HeadingDocItem {}, []) -> []
+        (NamespaceDocItem {}, []) -> []
+        (_, children') -> [Node n children']
+
+trimDocChildren :: [Tree DefDoc] -> [Tree DefDoc]
+trimDocChildren children = children >>= trimDocL
+
+trimDoc :: Tree DefDoc -> Tree DefDoc
+trimDoc (Node n children) = Node n $ trimDocChildren children
+
 printModuleDoc :: ModuleOptions -> Text -> IO ()
 printModuleDoc modopts tmodname = do
     let fmodule = standardFetchModule modopts
@@ -21,10 +34,10 @@ printModuleDoc modopts tmodname = do
         runDocTree :: Int -> Int -> Namespace -> Tree DefDoc -> IO ()
         runDocTree hlevel ilevel curns (Node MkDefDoc {..} children) = do
             let
-                putMarkdownLn :: Markdown -> IO ()
-                putMarkdownLn m = hPutStrLn stdout $ unpack $ getRawMarkdown m
-                putIndentMarkdownLn :: Markdown -> IO ()
-                putIndentMarkdownLn m = putMarkdownLn $ indentMarkdownN ilevel m
+                putMarkdown :: Markdown -> IO ()
+                putMarkdown m = hPutStr stdout $ unpack $ toText m
+                putIndentMarkdown :: Markdown -> IO ()
+                putIndentMarkdown m = putMarkdown $ indentMarkdownN ilevel m
                 mapNamespaceRef :: NamespaceRef -> NamespaceRef
                 mapNamespaceRef fn = namespaceRelative curns $ namespaceConcatRef RootNamespace fn
                 mapFullNameRef :: FullNameRef -> FullNameRef
@@ -32,30 +45,30 @@ printModuleDoc modopts tmodname = do
                 toMarkdown ::
                        forall a. ToText a
                     => a
-                    -> Markdown
-                toMarkdown = plainMarkdown . toText
+                    -> MarkdownText
+                toMarkdown = plainText . toText
                 trailingParams ::
                        forall a. ToText a
                     => [a]
-                    -> Markdown
+                    -> MarkdownText
                 trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
-                putBindDoc :: Markdown -> IO ()
-                putBindDoc m = putIndentMarkdownLn $ codeMarkdown m <> "  "
+                putBindDoc :: MarkdownText -> IO ()
+                putBindDoc m = putIndentMarkdown $ paragraphMarkdown $ codeMarkdown m
             case docItem of
                 ValueDocItem {..} ->
                     putBindDoc $ let
                         name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
-                        nameType = name <> ": " <> toMarkdown diType
+                        nameType = name <> " : " <> toMarkdown diType
                         in nameType
                 SignatureDocItem {..} ->
                     putBindDoc $ let
                         name = boldMarkdown $ toMarkdown diSigName
-                        nameType = name <> ": " <> toMarkdown diType
+                        nameType = name <> " : " <> toMarkdown diType
                         in nameType
                 ValuePatternDocItem {..} ->
                     putBindDoc $ let
                         name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
-                        nameType = name <> ": " <> toMarkdown diType
+                        nameType = name <> " : " <> toMarkdown diType
                         in nameType
                 SpecialFormDocItem {..} ->
                     putBindDoc $ let
@@ -73,7 +86,7 @@ printModuleDoc modopts tmodname = do
                 SupertypeDocItem {..} ->
                     putBindDoc $ let
                         name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
-                        nameType = name <> ": " <> toMarkdown diType
+                        nameType = name <> " : " <> toMarkdown diType
                         in italicMarkdown nameType
                 SubtypeRelationDocItem {..} ->
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
@@ -81,11 +94,10 @@ printModuleDoc modopts tmodname = do
                     putBindDoc $ let
                         name = boldMarkdown $ toMarkdown $ mapNamespaceRef diNamespace
                         in "namespace " <> name
-                HeadingDocItem {..} -> putMarkdownLn $ titleMarkdown hlevel diTitle
+                HeadingDocItem {..} -> putIndentMarkdown $ titleMarkdown hlevel diTitle
             if docDescription == ""
                 then return ()
-                else putIndentMarkdownLn docDescription
-            putIndentMarkdownLn ""
+                else putIndentMarkdown $ paragraphMarkdown $ rawMarkdown docDescription
             let
                 (hlevel', ilevel') =
                     case docItem of
@@ -96,7 +108,7 @@ printModuleDoc modopts tmodname = do
                         NamespaceDocItem {..} -> namespaceConcatRef RootNamespace diNamespace
                         _ -> curns
             for_ children $ runDocTree hlevel' ilevel' curns'
-    runDocTree 1 0 RootNamespace $ moduleDoc pmodule
+    runDocTree 1 0 RootNamespace $ trimDoc $ moduleDoc pmodule
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do

@@ -1,13 +1,12 @@
 site_name: Pinafore
+plugins:
+  - commonmark
 markdown_extensions:
   - toc:
       baselevel: 4
   - codehilite
   - markdown_include.include:
       base_path: generated
-  - pymdownx.escapeall:
-      hardbreak: True
-      nbsp: True
 repo_url: https://github.com/AshleyYakeley/Truth
 theme:
   name: readthedocs

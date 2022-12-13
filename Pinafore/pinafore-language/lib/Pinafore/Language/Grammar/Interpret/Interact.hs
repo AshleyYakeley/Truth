@@ -14,7 +14,6 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Markdown
 import Shapes
 import System.IO.Error
 
@@ -100,7 +99,7 @@ interactLoop inh outh echo = do
                                      case fmap biDocumentation $ bmap rname of
                                          Nothing -> hPutStrLn outh $ "! " <> show rname <> " not found"
                                          Just "" -> return ()
-                                         Just doc -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
+                                         Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)
                              ShowTypeInteractiveCommand showinfo sexpr -> do
                                  MkSomeOf (MkPosShimWit t shim) _ <- interactEvalExpression sexpr
                                  ntt <- interactRunQInterpreter getRenderFullName

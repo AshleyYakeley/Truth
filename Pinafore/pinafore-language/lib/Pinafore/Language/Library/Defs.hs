@@ -72,17 +72,17 @@ instance NamespaceConcat (BindDoc context) where
     namespaceConcat nsn bd =
         bd {bdScopeEntry = namespaceConcat nsn $ bdScopeEntry bd, bdDoc = namespaceConcat nsn $ bdDoc bd}
 
-headingBDT :: Markdown -> Markdown -> [BindDocTree context] -> BindDocTree context
+headingBDT :: MarkdownText -> RawMarkdown -> [BindDocTree context] -> BindDocTree context
 headingBDT name desc = Node $ MkBindDoc Nothing $ MkDefDoc (HeadingDocItem name) desc
 
-namespaceBDT :: NamespaceRef -> Markdown -> [BindDocTree context] -> BindDocTree context
+namespaceBDT :: NamespaceRef -> RawMarkdown -> [BindDocTree context] -> BindDocTree context
 namespaceBDT name desc tree =
     Node (MkBindDoc Nothing $ MkDefDoc (NamespaceDocItem name) desc) $ namespaceConcat name tree
 
 valBDT ::
        forall context t. HasQType 'Positive t
     => FullNameRef
-    -> Markdown
+    -> RawMarkdown
     -> ((?qcontext :: context) => t)
     -> BindDocTree context
 valBDT name docDescription val = let
@@ -101,7 +101,7 @@ valBDT name docDescription val = let
 valSupertypeBDT ::
        forall context t. HasQType 'Positive t
     => FullNameRef
-    -> Markdown
+    -> RawMarkdown
     -> ((?qcontext :: context) => t)
     -> BindDocTree context
 valSupertypeBDT name docDescription _val = let
@@ -139,7 +139,7 @@ getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeForList dvt ge
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-mkTypeBDT :: forall context. FullNameRef -> Markdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
+mkTypeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
 mkTypeBDT name docDescription t bdChildren = let
     bdScopeEntry = Just $ BindScopeEntry name $ Just $ \_ -> TypeBinding t
     diName = name
@@ -150,13 +150,13 @@ mkTypeBDT name docDescription t bdChildren = let
     bdDoc = MkDefDoc {..}
     in Node MkBindDoc {..} bdChildren
 
-typeBDT :: forall context. FullNameRef -> Markdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
+typeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
 typeBDT name docDescription t bdChildren = mkTypeBDT name docDescription t bdChildren
 
 subtypeRelationBDT ::
        forall context a b.
        TrustOrVerify
-    -> Markdown
+    -> RawMarkdown
     -> QGroundedShimWit 'Negative a
     -> QGroundedShimWit 'Positive b
     -> QPolyShim Type a b
@@ -172,7 +172,7 @@ subtypeRelationBDT trustme docDescription ta tb conv = let
 hasSubtypeRelationBDT ::
        forall a b context. (HasQType 'Negative a, HasQType 'Positive b)
     => TrustOrVerify
-    -> Markdown
+    -> RawMarkdown
     -> QPolyShim Type a b
     -> BindDocTree context
 hasSubtypeRelationBDT trustme doc conv = let
@@ -184,7 +184,7 @@ valPatBDT ::
        forall context t v lt.
        (HasQType 'Positive t, HasQType 'Negative v, ToListShimWit (QPolyShim Type) (QType 'Positive) lt)
     => FullNameRef
-    -> Markdown
+    -> RawMarkdown
     -> t
     -> PurityFunction Maybe v (ListProduct lt)
     -> BindDocTree context
@@ -202,7 +202,7 @@ valPatBDT name docDescription val pat = let
 specialFormBDT ::
        forall context.
        FullNameRef
-    -> Markdown
+    -> RawMarkdown
     -> [NamedText]
     -> NamedText
     -> ((?qcontext :: context) => QSpecialForm)

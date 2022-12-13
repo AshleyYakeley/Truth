@@ -126,7 +126,7 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-qBindExpr :: VarID -> Markdown -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
+qBindExpr :: VarID -> RawMarkdown -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
 qBindExpr = tsSingleBinding @QTypeSystem
 
 qSubsumeExpr :: Some (QType 'Positive) -> QExpression -> QInterpreter QExpression
@@ -135,10 +135,10 @@ qSubsumeExpr = tsSubsumeExpression @QTypeSystem
 qLetExpr :: VarID -> QExpression -> QExpression -> QInterpreter QExpression
 qLetExpr name exp body = tsLet @QTypeSystem name exp body
 
-qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> QInterpreter (Map VarID (Markdown, QExpression))
+qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> QInterpreter (Map VarID (RawMarkdown, QExpression))
 qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @QTypeSystem
 
-qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (Markdown, QExpression))
+qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (RawMarkdown, QExpression))
 qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
 
 qEvalExpr ::

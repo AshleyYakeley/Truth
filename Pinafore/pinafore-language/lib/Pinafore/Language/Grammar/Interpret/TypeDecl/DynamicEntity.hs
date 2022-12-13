@@ -18,7 +18,8 @@ interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name
         Just (MkADynamicEntityFamily _ det) -> return det
         Nothing -> throwWithName $ \ntt -> InterpretTypeNotDynamicEntityError $ ntt $ exprShow name
 
-makeDynamicEntityTypeBox :: Name -> Markdown -> NonEmpty SyntaxDynamicEntityConstructor -> QInterpreter (QFixBox () ())
+makeDynamicEntityTypeBox ::
+       Name -> RawMarkdown -> NonEmpty SyntaxDynamicEntityConstructor -> QInterpreter (QFixBox () ())
 makeDynamicEntityTypeBox name doc stcons =
     return $ let
         register :: DynamicEntityType -> QScopeInterpreter ()

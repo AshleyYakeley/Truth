@@ -36,7 +36,7 @@ updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMa
 
 textKey :: Text -> BindDocTree ()
 textKey name =
-    valPatBDT (UnqualifiedFullNameRef $ MkName name) (plainMarkdown $ "Standard metadata key \"" <> name <> "\"") name $
+    valPatBDT (UnqualifiedFullNameRef $ MkName name) (plainText $ "Standard metadata key \"" <> name <> "\"") name $
     ImpureFunction $ \n ->
         if n == name
             then Just ()

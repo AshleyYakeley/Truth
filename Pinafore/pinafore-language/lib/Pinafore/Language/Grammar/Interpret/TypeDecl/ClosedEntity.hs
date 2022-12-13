@@ -161,7 +161,7 @@ makeClosedEntityGroundType mainTypeName tparams = let
 
 makeClosedEntityTypeBox ::
        Name
-    -> Markdown
+    -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxClosedEntityConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())

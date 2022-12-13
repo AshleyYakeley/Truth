@@ -114,7 +114,7 @@ import Data.Vector as I (Vector, zipWith, zipWithM)
 import Data.Serialize as I (Serialize)
 
 -- text
-import Data.Text as I (Text, strip)
+import Data.Text as I (Text)
 import Data.Text.Encoding as I (decodeUtf8')
 import Data.Text.Encoding
 import Data.Text.Encoding.Error as I (UnicodeException(..))
@@ -277,6 +277,23 @@ endsWith :: Eq a => [a] -> [a] -> Maybe [a]
 endsWith e s = do
     a <- startsWith (reverse e) (reverse s)
     return $ reverse a
+
+replaceListFirst :: Eq a => [a] -> [a] -> [a] -> Maybe [a]
+replaceListFirst needle replacement haystack
+    | Just hh <- startsWith needle haystack = Just $ replacement <> hh
+replaceListFirst _ _ [] = Nothing
+replaceListFirst needle replacement (h:hh) = do
+    hh' <- replaceListFirst needle replacement hh
+    return $ h : hh'
+
+replaceListAll :: Eq a => [a] -> [a] -> [a] -> [a]
+replaceListAll needle replacement haystack
+    | Just hh <- startsWith needle haystack = replacement <> replaceListAll needle replacement hh
+replaceListAll _ _ [] = []
+replaceListAll needle replacement (h:hh) = h : replaceListAll needle replacement hh
+
+trimSpace :: (IsSequence seq, Element seq ~ Char) => seq -> seq
+trimSpace = reverse . dropWhile isSpace . reverse . dropWhile isSpace
 
 lifecycleOnAllDone ::
        forall m. MonadAskUnliftIO m

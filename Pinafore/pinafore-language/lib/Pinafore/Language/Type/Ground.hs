@@ -76,7 +76,7 @@ stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @
 
 type QTypeSystem = DolanTypeSystem QGroundType
 
-type instance TSBindingData QTypeSystem = Markdown
+type instance TSBindingData QTypeSystem = RawMarkdown
 
 type instance DolanPolyShim QGroundType = QPolyShim
 

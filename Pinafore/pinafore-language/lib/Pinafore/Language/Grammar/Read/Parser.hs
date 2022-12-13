@@ -73,22 +73,22 @@ readComments = many $ readToken TokComment
 ignoreComments :: Parser ()
 ignoreComments = void readComments
 
-lineMarkdown :: [Comment] -> Maybe Markdown
+lineMarkdown :: [Comment] -> Maybe RawMarkdown
 lineMarkdown [] = Just ""
 lineMarkdown (LineComment ('|':s):cc) = do
     ss <- lineMarkdown cc
-    return $ (rawMarkdown $ strip $ pack s) <> "\n" <> ss
+    return $ (fromString $ trimSpace s) <> "\n" <> ss
 lineMarkdown _ = Nothing
 
-getMarkdown :: [Comment] -> Maybe Markdown
+getMarkdown :: [Comment] -> Maybe RawMarkdown
 getMarkdown [] = Nothing
-getMarkdown [BlockComment ('|':s)] = Just $ rawMarkdown $ strip $ pack s
+getMarkdown [BlockComment ('|':s)] = Just $ fromString $ trimSpace s
 getMarkdown (LineComment ('|':s):cc) = do
     ss <- lineMarkdown cc
-    return $ (rawMarkdown $ strip $ pack s) <> "\n" <> ss
+    return $ (fromString $ trimSpace s) <> "\n" <> ss
 getMarkdown (_:cc) = getMarkdown cc
 
-readDocComment :: Parser Markdown
+readDocComment :: Parser RawMarkdown
 readDocComment = do
     comments <- readComments
     return $

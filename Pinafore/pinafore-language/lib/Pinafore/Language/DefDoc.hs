@@ -5,7 +5,7 @@ import Pinafore.Markdown
 import Shapes
 
 data DocItem
-    = HeadingDocItem { diTitle :: Markdown }
+    = HeadingDocItem { diTitle :: MarkdownText }
     | NamespaceDocItem { diNamespace :: NamespaceRef }
     | ValueDocItem { diName :: FullNameRef
                    , diType :: NamedText }
@@ -50,7 +50,7 @@ diMatchNameOrSubtypeRel n di =
 
 data DefDoc = MkDefDoc
     { docItem :: DocItem
-    , docDescription :: Markdown
+    , docDescription :: RawMarkdown
     }
 
 instance Show DefDoc where

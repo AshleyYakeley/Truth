@@ -147,7 +147,7 @@ data SingleBinding = MkSingleBinding
     , sbType :: Maybe SyntaxType
     , sbBody :: SyntaxExpression
     , sbRefVars :: [FullName]
-    , sbDoc :: Markdown
+    , sbDoc :: RawMarkdown
     }
 
 sbDefDoc :: SingleBinding -> DefDoc
@@ -159,7 +159,11 @@ sbDefDoc MkSingleBinding {..} = let
     in MkDefDoc {..}
 
 buildSingleBinding ::
-       Maybe FullNameRef -> Maybe SyntaxType -> SyntaxExpression -> Markdown -> ScopeBuilder (FullName, SingleBinding)
+       Maybe FullNameRef
+    -> Maybe SyntaxType
+    -> SyntaxExpression
+    -> RawMarkdown
+    -> ScopeBuilder (FullName, SingleBinding)
 buildSingleBinding mname sbType sbBody sbDoc = do
     (sbName, sbVarID) <- allocateVarScopeBuilder mname
     nameResolve <- interpScopeBuilder $ lift getNameResolver
@@ -167,7 +171,7 @@ buildSingleBinding mname sbType sbBody sbDoc = do
     return (sbName, MkSingleBinding {..})
 
 typedSyntaxToSingleBindings ::
-       SyntaxPattern -> Maybe SyntaxType -> SyntaxExpression -> Markdown -> ScopeBuilder [SingleBinding]
+       SyntaxPattern -> Maybe SyntaxType -> SyntaxExpression -> RawMarkdown -> ScopeBuilder [SingleBinding]
 typedSyntaxToSingleBindings spat@(MkWithSourcePos spos pat) mstype sbody doc =
     case pat of
         VarSyntaxPattern name -> do
@@ -184,7 +188,7 @@ typedSyntaxToSingleBindings spat@(MkWithSourcePos spos pat) mstype sbody doc =
                     in fmap snd $ buildSingleBinding (Just pref) Nothing valsexpr doc
             return $ sb : sbs
 
-syntaxToSingleBindings :: SyntaxBinding -> Markdown -> ScopeBuilder [SingleBinding]
+syntaxToSingleBindings :: SyntaxBinding -> RawMarkdown -> ScopeBuilder [SingleBinding]
 syntaxToSingleBindings (MkSyntaxBinding (MkWithSourcePos _ (TypedSyntaxPattern spat stype)) sbody) doc =
     typedSyntaxToSingleBindings spat (Just stype) sbody doc
 syntaxToSingleBindings (MkSyntaxBinding spat sbody) doc = typedSyntaxToSingleBindings spat Nothing sbody doc
@@ -196,7 +200,7 @@ sbNode sb = (sb, sbName sb, sbRefVars sb)
 clumpBindings :: [SingleBinding] -> [[SingleBinding]]
 clumpBindings sbb = fmap flattenSCC $ stronglyConnComp $ fmap sbNode sbb
 
-mapVarID :: Map VarID (Markdown, expr) -> [(FullName, VarID)] -> [(FullNameRef, Markdown, expr)]
+mapVarID :: Map VarID (RawMarkdown, expr) -> [(FullName, VarID)] -> [(FullNameRef, RawMarkdown, expr)]
 mapVarID mm =
     mapMaybe $ \(n, v) -> do
         (d, e) <- lookup v mm
@@ -227,14 +231,14 @@ interpretSequentialLetBinding sbind = do
         bmap <- lift $ qBindingSequentialLetExpr b
         registerLetBindings $ mapVarID bmap $ pure (sbName sbind, sbVarID sbind)
 
-subtypeRelDocs :: SyntaxType -> SyntaxType -> Markdown -> Docs
+subtypeRelDocs :: SyntaxType -> SyntaxType -> RawMarkdown -> Docs
 subtypeRelDocs sta stb docDescription = let
     diSubtype = exprShow sta
     diSupertype = exprShow stb
     docItem = SubtypeRelationDocItem {..}
     in pure $ pure MkDefDoc {..}
 
-typeDeclDoc :: Name -> SyntaxTypeDeclaration -> Markdown -> Tree DefDoc
+typeDeclDoc :: Name -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc = let
     sigDoc :: SyntaxSignature -> DefDoc
     sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ (ValueSyntaxSignature name stype))) =
@@ -622,4 +626,4 @@ interpretSubtypeRelation trustme sta stb mbody =
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
-    return $ MkModule (Node (MkDefDoc (HeadingDocItem (plainMarkdown $ toText moduleName)) "") docs) scope
+    return $ MkModule (Node (MkDefDoc (HeadingDocItem (plainText $ toText moduleName)) "") docs) scope

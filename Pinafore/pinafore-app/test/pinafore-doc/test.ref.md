@@ -1,140 +1,140 @@
 # test
 
-`type `**`A`**` {-q,+p} +r -s`  
+<code>type </code>**<code>A</code>**<code> {-q,+p} +r -s</code>
+
 doc:A
 
-
-> **`MkA1`**`: (q -> s -> p) -> r -> A`  
+> **<code>MkA1</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; A</code>
+> 
 > doc:MkA1
 > 
+> **<code>MkA2</code>**<code> : p -&gt; (s -&gt; r) -&gt; A</code>
 > 
-> **`MkA2`**`: p -> (s -> r) -> A`  
 > doc:MkA2
 > 
-> 
-`type `**`B`**  
+<code>type </code>**<code>B</code>**
+
 doc:B
 
+<code>subtype A Integer Unit Unit &lt;: B</code>
 
-`subtype A Integer Unit Unit <: B`  
+<code>type </code>**<code>RecA</code>**<code> {-q,+p} +r -s</code>
 
-`type `**`RecA`**` {-q,+p} +r -s`  
 doc:RecA
 
-
-> **`MkRecA1`**`: (q -> s -> p) -> r -> RecA`  
+> **<code>MkRecA1</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; RecA</code>
+> 
 > doc:MkRecA1
 > 
+> **<code>MkRecA2</code>**<code> : p -&gt; (s -&gt; r) -&gt; RecA</code>
 > 
-> **`MkRecA2`**`: p -> (s -> r) -> RecA`  
 > doc:MkRecA2
 > 
-> 
-`type `**`RecB`**  
+<code>type </code>**<code>RecB</code>**
+
 doc:RecB
 
+<code>subtype RecA Integer Unit Unit &lt;: RecB</code>
 
-`subtype RecA Integer Unit Unit <: RecB`  
+<code>type </code>**<code>R</code>**
 
-`type `**`R`**  
 doc:R
 
-
-> **`MkR`**`: R`  
+> **<code>MkR</code>**<code> : R</code>
+> 
 > doc:MkR
 > 
-> 
-> > **`rp`**`: Integer -> a -> a`  
+> > **<code>rp</code>**<code> : Integer -&gt; a -&gt; a</code>
+> > 
 > > doc:rp
 > > 
+> > **<code>rq</code>**<code> : Integer | Text</code>
 > > 
-> > **`rq`**`: Integer | Text`  
 > > doc:rq
 > > 
-> > 
-**`x`**`: Text`  
+**<code>x</code>**<code> : Text</code>
+
 doc:x
 
+**<code>y</code>**<code> : Text -&gt; Text</code>
 
-**`y`**`: Text -> Text`  
 doc:y
 
+<code>namespace </code>**<code>N</code>**
 
-`namespace `**`N`**  
 doc:N
 
-
-> **`q`**`: Integer`  
+> **<code>q</code>**<code> : Integer</code>
+> 
 > doc:N.q
 > 
+> **<code>xx</code>**<code> : Text</code>
 > 
-> **`xx`**`: Text`  
 > doc:N.xx
 > 
+> <code>type </code>**<code>NmA</code>**<code> {-q,+p} +r -s</code>
 > 
-> `type `**`NmA`**` {-q,+p} +r -s`  
 > doc:NmA
 > 
-> 
-> > **`MkNmA1`**`: (q -> s -> p) -> r -> NmA`  
+> > **<code>MkNmA1</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; NmA</code>
+> > 
 > > doc:MkNmA1
 > > 
+> > **<code>MkNmA2</code>**<code> : p -&gt; (s -&gt; r) -&gt; NmA</code>
 > > 
-> > **`MkNmA2`**`: p -> (s -> r) -> NmA`  
 > > doc:MkNmA2
 > > 
-> > 
-> `type `**`NmB`**  
+> <code>type </code>**<code>NmB</code>**
+> 
 > doc:NmB
 > 
-> 
-> > **`MkNmB`**`: Integer -> NmB`  
+> > **<code>MkNmB</code>**<code> : Integer -&gt; NmB</code>
+> > 
 > > doc:MkNmB
 > > 
-> > 
-> `subtype NmA Integer Unit Unit <: NmB`  
+> <code>subtype NmA Integer Unit Unit &lt;: NmB</code>
 > 
-> `type `**`NmRecA`**` {-q,+p} +r -s`  
+> <code>type </code>**<code>NmRecA</code>**<code> {-q,+p} +r -s</code>
+> 
 > doc:NmRecA
 > 
-> 
-> > **`MkNmRecA1`**`: (q -> s -> p) -> r -> NmRecA`  
+> > **<code>MkNmRecA1</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; NmRecA</code>
+> > 
 > > doc:MkNmRecA1
 > > 
+> > **<code>MkNmRecA2</code>**<code> : p -&gt; (s -&gt; r) -&gt; NmRecA</code>
 > > 
-> > **`MkNmRecA2`**`: p -> (s -> r) -> NmRecA`  
 > > doc:MkNmRecA2
 > > 
-> > 
-> `type `**`NmRecB`**  
+> <code>type </code>**<code>NmRecB</code>**
+> 
 > doc:NmRecB
 > 
-> 
-> > **`MkNmRecB`**`: Integer -> NmRecB`  
+> > **<code>MkNmRecB</code>**<code> : Integer -&gt; NmRecB</code>
+> > 
 > > doc:MkNmRecB
 > > 
-> > 
-> `subtype NmRecA Integer Unit Unit <: NmRecB`  
+> <code>subtype NmRecA Integer Unit Unit &lt;: NmRecB</code>
 > 
-> `type `**`NmR`**  
+> <code>type </code>**<code>NmR</code>**
+> 
 > doc:NmR
 > 
-> 
-> > **`MkNmR`**`: NmR`  
+> > **<code>MkNmR</code>**<code> : NmR</code>
+> > 
 > > doc:MkNmR
 > > 
-> > 
-> > > **`nmrp`**`: Integer -> a -> a`  
+> > > **<code>nmrp</code>**<code> : Integer -&gt; a -&gt; a</code>
+> > > 
 > > > doc:nmrp
 > > > 
+> > > **<code>nmrq</code>**<code> : Integer | Text</code>
 > > > 
-> > > **`nmrq`**`: Integer | Text`  
 > > > doc:nmrq
 > > > 
-> > > 
-> `namespace `**`NN`**  
+> <code>namespace </code>**<code>NN</code>**
 > 
-> > **`xyz`**`: Unit`  
-> > doc:N.NN.xyz
+> > **<code>xyz</code>**<code> : Unit</code>
 > > 
+> > doc:N.NN.xyz
 > > 

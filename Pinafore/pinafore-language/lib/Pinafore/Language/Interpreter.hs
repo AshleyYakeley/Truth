@@ -123,7 +123,7 @@ instance HasInterpreter ts => Show (InterpreterBinding ts) where
     show (RecordConstructorBinding _ _) = "recordpat"
     show (SpecialFormBinding _) = "special"
 
-type DocInterpreterBinding ts = (Markdown, InterpreterBinding ts)
+type DocInterpreterBinding ts = (RawMarkdown, InterpreterBinding ts)
 
 newtype NameMap ts =
     MkNameMap (Map FullName (DocInterpreterBinding ts))
@@ -141,7 +141,7 @@ instance HasInterpreter ts => Show (NameMap ts) where
 
 data BindingInfo ts = MkBindingInfo
     { biName :: FullName
-    , biDocumentation :: Markdown
+    , biDocumentation :: RawMarkdown
     , biValue :: InterpreterBinding ts
     }
 
@@ -442,7 +442,7 @@ exportNamespace nsns = do
     cnss <- for nsns namespaceCurrent
     (scopeBindings -> MkNameMap nspace) <- paramAsk scopeParam
     let
-        toBI :: (FullName, (Markdown, InterpreterBinding ts)) -> Maybe (BindingInfo ts)
+        toBI :: (FullName, (RawMarkdown, InterpreterBinding ts)) -> Maybe (BindingInfo ts)
         toBI (biName@(MkFullName ns _), (biDocumentation, biValue)) = do
             _ <- choice $ fmap (\cns -> namespaceStartsWith cns ns) cnss
             return MkBindingInfo {..}
@@ -497,7 +497,7 @@ allocateVar mnameref = do
                     name = nsp nameref
                     in (mkVarID vs name, name)
                 Nothing -> mkUniqueVarID vs
-        biDocumentation = plainMarkdown "variable"
+        biDocumentation = fromString "variable"
         biValue = ValueBinding (tsVar @ts vid) Nothing
         insertScope = MkScope (bindingInfoToNameMap MkBindingInfo {..}) mempty
     refPut varIDStateRef $ nextVarIDState vs
@@ -593,14 +593,14 @@ lookupLetBinding name = do
 
 registerLetBindings ::
        forall ts. HasInterpreter ts
-    => [(FullNameRef, Markdown, TSSealedExpression ts)]
+    => [(FullNameRef, RawMarkdown, TSSealedExpression ts)]
     -> ScopeInterpreter ts ()
 registerLetBindings bb = registerBindings $ fmap (\(name, doc, exp) -> (name, (doc, ValueBinding exp Nothing))) bb
 
 registerLetBinding ::
        forall ts. HasInterpreter ts
     => FullNameRef
-    -> Markdown
+    -> RawMarkdown
     -> TSSealedExpression ts
     -> ScopeInterpreter ts ()
 registerLetBinding name doc expr = registerLetBindings $ pure (name, doc, expr)
@@ -671,12 +671,12 @@ checkName name = do
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
         Nothing -> return ()
 
-registerBoundType :: FullNameRef -> Markdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
+registerBoundType :: FullNameRef -> RawMarkdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
 registerBoundType name doc t = do
     checkName name
     registerBinding name (doc, TypeBinding t)
 
-registerType :: FullNameRef -> Markdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
+registerType :: FullNameRef -> RawMarkdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
 registerType name doc t = do
     checkName name
     registerBoundType name doc $ MkSomeGroundType t
@@ -684,12 +684,16 @@ registerType name doc t = do
 type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 
 registerPatternConstructor ::
-       FullNameRef -> Markdown -> TSSealedExpression ts -> TSExpressionPatternConstructor ts -> ScopeInterpreter ts ()
+       FullNameRef
+    -> RawMarkdown
+    -> TSSealedExpression ts
+    -> TSExpressionPatternConstructor ts
+    -> ScopeInterpreter ts ()
 registerPatternConstructor name doc exp pc = do
     checkName name
     registerBinding name $ (doc, ValueBinding exp $ Just pc)
 
-registerRecord :: FullNameRef -> Markdown -> RecordConstructor ts -> RecordPattern ts -> ScopeInterpreter ts ()
+registerRecord :: FullNameRef -> RawMarkdown -> RecordConstructor ts -> RecordPattern ts -> ScopeInterpreter ts ()
 registerRecord name doc rc rp = do
     checkName name
     registerBinding name $ (doc, RecordConstructorBinding rc rp)

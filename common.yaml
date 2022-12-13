@@ -16,6 +16,7 @@
       - ConstraintKinds
       - DataKinds
       - DefaultSignatures
+      - DerivingStrategies
       - EmptyCase
       - EmptyDataDecls
       - ExistentialQuantification

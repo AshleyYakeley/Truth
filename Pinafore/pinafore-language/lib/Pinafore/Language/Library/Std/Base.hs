@@ -80,11 +80,11 @@ plainFormattingDefs ::
 plainFormattingDefs uname lname =
     [ valBDT
           (UnqualifiedFullNameRef $ MkName $ "parse" <> uname)
-          ("Parse text as " <> plainMarkdown lname <> ". Inverse of `show`.") $
+          ("Parse text as " <> plainText lname <> ". Inverse of `show`.") $
       textReadMaybe @t
     , valBDT
           (UnqualifiedFullNameRef $ MkName $ "interpret" <> uname <> "AsText")
-          ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainText lname <> " model as text, interpreting deleted values as empty text.") $
       interpretAsText @t
     ]
 
@@ -125,15 +125,15 @@ unixFormattingDefs ::
 unixFormattingDefs uname lname =
     [ valBDT
           (UnqualifiedFullNameRef $ MkName $ "unixFormat" <> uname)
-          ("Format " <> plainMarkdown lname <> " as text, using a UNIX-style formatting string.") $
+          ("Format " <> plainText lname <> " as text, using a UNIX-style formatting string.") $
       unixFormat @t
     , valBDT
           (UnqualifiedFullNameRef $ MkName $ "unixParse" <> uname)
-          ("Parse text as " <> plainMarkdown lname <> ", using a UNIX-style formatting string.") $
+          ("Parse text as " <> plainText lname <> ", using a UNIX-style formatting string.") $
       unixParse @t
     , valBDT
           (UnqualifiedFullNameRef $ MkName $ "unixInterpret" <> uname <> "AsText")
-          ("Interpret " <> plainMarkdown lname <> " model as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainText lname <> " model as text, interpreting deleted values as empty text.") $
       unixInterpretAsText @t
     ]
 

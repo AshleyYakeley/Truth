@@ -67,7 +67,7 @@ data SyntaxRecursiveDeclaration'
 type SyntaxRecursiveDeclaration = SyntaxWithDoc (WithSourcePos SyntaxRecursiveDeclaration')
 
 data SyntaxWithDoc t =
-    MkSyntaxWithDoc Markdown
+    MkSyntaxWithDoc RawMarkdown
                     t
     deriving (Eq)
 
