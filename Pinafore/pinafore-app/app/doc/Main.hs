@@ -10,11 +10,15 @@ import Pinafore.Main
 import Pinafore.Version
 import Shapes
 
+isSubtypeRel :: Tree DefDoc -> Bool
+isSubtypeRel (Node (MkDefDoc SubtypeRelationDocItem{} _) _) = True
+isSubtypeRel _ = False
+
 trimDocL :: Tree DefDoc -> [Tree DefDoc]
 trimDocL (Node n children) =
     case (docItem n, trimDocChildren children) of
-        (HeadingDocItem {}, []) -> []
-        (NamespaceDocItem {}, []) -> []
+        (HeadingDocItem {}, children') | all isSubtypeRel children' -> children'
+        (NamespaceDocItem {}, children') | all isSubtypeRel children' -> children'
         (_, children') -> [Node n children']
 
 trimDocChildren :: [Tree DefDoc] -> [Tree DefDoc]
@@ -97,7 +101,7 @@ printModuleDoc modopts tmodname = do
                 HeadingDocItem {..} -> putIndentMarkdown $ titleMarkdown hlevel diTitle
             if docDescription == ""
                 then return ()
-                else putIndentMarkdown $ paragraphMarkdown $ rawMarkdown docDescription
+                else putIndentMarkdown $ indentMarkdown $ paragraphMarkdown $ rawMarkdown docDescription
             let
                 (hlevel', ilevel') =
                     case docItem of
