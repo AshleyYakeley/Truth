@@ -7,14 +7,14 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes
 
-syntaxExpressionFreeVariables :: SyntaxExpression -> [FullNameRef]
+syntaxExpressionFreeVariables :: SyntaxExpression -> [FullName]
 syntaxExpressionFreeVariables expr = toList $ syntaxFreeVariables expr
 
-syntaxPatternBindingVariables :: SyntaxPattern -> [FullNameRef]
+syntaxPatternBindingVariables :: SyntaxPattern -> [FullName]
 syntaxPatternBindingVariables pat = toList $ syntaxBindingVariables pat
 
 class SyntaxFreeVariables t where
-    syntaxFreeVariables :: t -> FiniteSet FullNameRef
+    syntaxFreeVariables :: t -> FiniteSet FullName
 
 instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
     syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
@@ -44,7 +44,7 @@ instance SyntaxFreeVariables SyntaxMulticaseList where
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
     syntaxFreeVariables (SEConst _) = mempty
-    syntaxFreeVariables (SEVar name) = opoint name
+    syntaxFreeVariables (SEVar ns name) = opoint $ namespaceConcatFullName ns name
     syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
     syntaxFreeVariables (SEAbstract match) = syntaxFreeVariables match
@@ -74,7 +74,7 @@ instance SyntaxFreeVariables SyntaxDeclaration' where
     syntaxFreeVariables _ = mempty
 
 class SyntaxBindingVariables t where
-    syntaxBindingVariables :: t -> FiniteSet FullNameRef
+    syntaxBindingVariables :: t -> FiniteSet FullName
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
@@ -90,10 +90,10 @@ instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) 
 
 instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables AnySyntaxPattern = mempty
-    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet $ UnqualifiedFullNameRef name
+    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet name
     syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
-    syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
+    syntaxBindingVariables (ConstructorSyntaxPattern _ _ pats) = syntaxBindingVariables pats
     syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
     syntaxBindingVariables (DynamicTypedSyntaxPattern pat _) = syntaxBindingVariables pat
     syntaxBindingVariables (NamespaceSyntaxPattern _ _) = mempty

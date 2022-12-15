@@ -31,7 +31,7 @@ interpretOpenEntityType st = do
     case mpol of
         BothMPolarW atm -> getOpenEntityType $ atm @'Positive
 
-interpretConcreteDynamicEntityType :: SyntaxType -> QInterpreter (Name, DynamicType)
+interpretConcreteDynamicEntityType :: SyntaxType -> QInterpreter (FullName, DynamicType)
 interpretConcreteDynamicEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of

@@ -3,16 +3,27 @@ module Pinafore.Language.Name.NamedText where
 import Pinafore.Language.Name.FullName
 import Pinafore.Language.Name.FullNameRef
 import Pinafore.Language.Name.Name
+import Pinafore.Language.Name.Namespace
 import Pinafore.Language.Name.NamespaceRef
 import Pinafore.Language.Name.ToText
 import Shapes
 
+data NamedTextItem
+    = FullNameNTI FullName
+    | NamespaceNTI Namespace
+
 newtype NamedText =
-    MkNamedText ((FullName -> Text) -> Text)
+    MkNamedText ((NamedTextItem -> Text) -> Text)
     deriving (Semigroup, Monoid)
 
-runNamedText :: (FullName -> Text) -> NamedText -> Text
+runNamedText :: (NamedTextItem -> Text) -> NamedText -> Text
 runNamedText ft (MkNamedText ftt) = ftt ft
+
+runRelativeNamedText :: [Namespace] -> NamedText -> Text
+runRelativeNamedText basenss =
+    runNamedText $ \case
+        FullNameNTI fn -> toText $ relativeFullName basenss fn
+        NamespaceNTI ns -> toText $ relativeNamespace basenss ns
 
 class ToNamedText t where
     toNamedText :: t -> NamedText
@@ -29,14 +40,24 @@ instance ToNamedText Name
 instance ToNamedText (SymbolType name)
 
 instance ToNamedText FullName where
-    toNamedText fn = MkNamedText $ \fnt -> fnt fn
+    toNamedText fn = MkNamedText $ \fnt -> fnt $ FullNameNTI fn
 
 instance ToNamedText FullNameRef where
     toNamedText (MkFullNameRef (AbsoluteNamespaceRef ns) n) = toNamedText $ MkFullName ns n
+    toNamedText r = toNamedText $ toText r
+
+instance ToNamedText Namespace where
+    toNamedText ns = MkNamedText $ \fnt -> fnt $ NamespaceNTI ns
+
+instance ToNamedText NamespaceRef where
+    toNamedText (AbsoluteNamespaceRef ns) = toNamedText ns
     toNamedText r = toNamedText $ toText r
 
 instance IsString NamedText where
     fromString s = toNamedText (pack s :: Text)
 
 instance ToText NamedText where
-    toText = runNamedText $ toText . fullNameRootRelative
+    toText =
+        runNamedText $ \case
+            FullNameNTI fn -> toText $ fullNameRootRelative fn
+            NamespaceNTI ns -> toText $ namespaceRootRelative ns

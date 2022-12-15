@@ -11,14 +11,16 @@ import Pinafore.Version
 import Shapes
 
 isSubtypeRel :: Tree DefDoc -> Bool
-isSubtypeRel (Node (MkDefDoc SubtypeRelationDocItem{} _) _) = True
+isSubtypeRel (Node (MkDefDoc SubtypeRelationDocItem {} _) _) = True
 isSubtypeRel _ = False
 
 trimDocL :: Tree DefDoc -> [Tree DefDoc]
 trimDocL (Node n children) =
     case (docItem n, trimDocChildren children) of
-        (HeadingDocItem {}, children') | all isSubtypeRel children' -> children'
-        (NamespaceDocItem {}, children') | all isSubtypeRel children' -> children'
+        (HeadingDocItem {}, children')
+            | all isSubtypeRel children' -> children'
+        (NamespaceDocItem {}, children')
+            | all isSubtypeRel children' -> children'
         (_, children') -> [Node n children']
 
 trimDocChildren :: [Tree DefDoc] -> [Tree DefDoc]
@@ -42,17 +44,17 @@ printModuleDoc modopts tmodname = do
                 putMarkdown m = hPutStr stdout $ unpack $ toText m
                 putIndentMarkdown :: Markdown -> IO ()
                 putIndentMarkdown m = putMarkdown $ indentMarkdownN ilevel m
-                mapNamespaceRef :: NamespaceRef -> NamespaceRef
-                mapNamespaceRef fn = namespaceRelative curns $ namespaceConcatRef RootNamespace fn
-                mapFullNameRef :: FullNameRef -> FullNameRef
-                mapFullNameRef fn = namespaceRelativeFullName curns $ namespaceConcatFullName RootNamespace fn
+                mapNamespaceRef :: NamespaceRef -> Namespace
+                mapNamespaceRef fn = namespaceConcatRef RootNamespace fn
+                mapFullNameRef :: FullNameRef -> FullName
+                mapFullNameRef fn = namespaceConcatFullName RootNamespace fn
                 toMarkdown ::
-                       forall a. ToText a
+                       forall a. ToNamedText a
                     => a
                     -> MarkdownText
-                toMarkdown = plainText . toText
+                toMarkdown = plainText . runRelativeNamedText (namespaceAncestry curns) . toNamedText
                 trailingParams ::
-                       forall a. ToText a
+                       forall a. ToNamedText a
                     => [a]
                     -> MarkdownText
                 trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp

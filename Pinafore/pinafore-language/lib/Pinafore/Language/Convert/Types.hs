@@ -86,7 +86,7 @@ instance HasQGroundType '[] Literal where
 
 unitGroundType :: QGroundType '[] ()
 unitGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) ".Unit")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] () where
@@ -94,7 +94,7 @@ instance HasQGroundType '[] () where
 
 textGroundType :: QGroundType '[] Text
 textGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) ".Text")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 textShimWit ::
@@ -107,7 +107,7 @@ instance HasQGroundType '[] Text where
 
 numberGroundType :: QGroundType '[] Number
 numberGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) ".Number")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] Number where
@@ -115,7 +115,7 @@ instance HasQGroundType '[] Number where
 
 rationalGroundType :: QGroundType '[] SafeRational
 rationalGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) ".Rational")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] SafeRational where
@@ -123,7 +123,7 @@ instance HasQGroundType '[] SafeRational where
 
 integerGroundType :: QGroundType '[] Integer
 integerGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) ".Integer")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] Integer where
@@ -131,7 +131,7 @@ instance HasQGroundType '[] Integer where
 
 booleanGroundType :: QGroundType '[] Bool
 booleanGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) ".Boolean")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] Bool where
@@ -139,7 +139,7 @@ instance HasQGroundType '[] Bool where
 
 orderingGroundType :: QGroundType '[] Ordering
 orderingGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) ".Ordering")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] Ordering where
@@ -147,7 +147,7 @@ instance HasQGroundType '[] Ordering where
 
 timeGroundType :: QGroundType '[] UTCTime
 timeGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) ".Time")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] UTCTime where
@@ -155,7 +155,7 @@ instance HasQGroundType '[] UTCTime where
 
 durationGroundType :: QGroundType '[] NominalDiffTime
 durationGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) ".Duration")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] NominalDiffTime where
@@ -163,7 +163,7 @@ instance HasQGroundType '[] NominalDiffTime where
 
 dateGroundType :: QGroundType '[] Day
 dateGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) ".Date")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] Day where
@@ -171,7 +171,7 @@ instance HasQGroundType '[] Day where
 
 timeOfDayGroundType :: QGroundType '[] TimeOfDay
 timeOfDayGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) ".TimeOfDay")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] TimeOfDay where
@@ -179,7 +179,7 @@ instance HasQGroundType '[] TimeOfDay where
 
 localTimeGroundType :: QGroundType '[] LocalTime
 localTimeGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) ".LocalTime")
         {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasQGroundType '[] LocalTime where

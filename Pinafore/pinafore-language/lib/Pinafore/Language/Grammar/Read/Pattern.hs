@@ -1,6 +1,6 @@
 module Pinafore.Language.Grammar.Read.Pattern
     ( readPatterns
-    , readPattern1
+    , readPattern
     ) where
 
 import Pinafore.Language.Grammar.Read.Constructor
@@ -11,56 +11,74 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes hiding (try)
 
+readPatterns4 :: Parser [Namespace -> SyntaxPattern]
+readPatterns4 = many readPattern4
+
 readPatterns :: Parser [SyntaxPattern]
-readPatterns = many readPattern4
+readPatterns = do
+    ns <- readAskNamespace
+    nspats <- readPatterns4
+    return $ fmap (\pat -> pat ns) nspats
 
 nilPattern :: SyntaxPattern'
-nilPattern = ConstructorSyntaxPattern (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "[]") []
+nilPattern = ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "[]") []
 
 consPattern :: SyntaxPattern -> SyntaxPattern -> SyntaxPattern'
-consPattern pat1 pat2 = ConstructorSyntaxPattern (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "::") [pat1, pat2]
+consPattern pat1 pat2 =
+    ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "::") [pat1, pat2]
 
-modifyPattern1 :: SyntaxPattern -> Parser SyntaxPattern
-modifyPattern1 pat =
+readWithSourcePos1 :: Parser (a -> t) -> Parser (a -> WithSourcePos t)
+readWithSourcePos1 p = do
+    MkWithSourcePos spos at <- readWithSourcePos p
+    return $ \a -> MkWithSourcePos spos $ at a
+
+modifyPattern1 :: (Namespace -> SyntaxPattern) -> Parser (Namespace -> SyntaxPattern)
+modifyPattern1 patn =
     (do
          readThis TokTypeJudge
          t <- readType
-         readSourcePos $ return $ TypedSyntaxPattern pat t) <|>
+         readWithSourcePos1 $ return $ \ns -> TypedSyntaxPattern (patn ns) t) <|>
     (do
          readThis TokTypeDynamic
          t <- readType
-         readSourcePos $ return $ DynamicTypedSyntaxPattern pat t) <|>
+         readWithSourcePos1 $ return $ \ns -> DynamicTypedSyntaxPattern (patn ns) t) <|>
     (do
          readThis TokAs
          nn <- readNamespaceRef
-         readSourcePos $ return $ NamespaceSyntaxPattern pat nn)
+         readWithSourcePos1 $ return $ \ns -> NamespaceSyntaxPattern (patn $ namespaceConcatRef ns nn) nn)
 
-readPattern1 :: Parser SyntaxPattern
+readPattern1 :: Parser (Namespace -> SyntaxPattern)
 readPattern1 = do
     pat <- readPattern2
     chainModify modifyPattern1 pat
 
-readPattern2 :: Parser SyntaxPattern
+readPattern :: Parser SyntaxPattern
+readPattern = do
+    ns <- readAskNamespace
+    nspat <- readPattern1
+    return $ nspat ns
+
+readPattern2 :: Parser (Namespace -> SyntaxPattern)
 readPattern2 = do
-    pat1 <- readPattern3
-    mpat2 <-
+    pat1n <- readPattern3
+    mpat2n <-
         optional $ do
             readExactlyThis TokOperator "::"
             readPattern2
-    case mpat2 of
-        Nothing -> return pat1
-        Just pat2 -> readSourcePos $ return $ consPattern pat1 pat2
+    case mpat2n of
+        Nothing -> return pat1n
+        Just pat2n -> readWithSourcePos1 $ return $ \ns -> consPattern (pat1n ns) (pat2n ns)
 
-readPattern3 :: Parser SyntaxPattern
+readPattern3 :: Parser (Namespace -> SyntaxPattern)
 readPattern3 =
-    readSourcePos
+    readWithSourcePos1
         (do
              c <- readConstructor
-             args <- readPatterns
-             return $ ConstructorSyntaxPattern c args) <|>
+             args <- readPatterns4
+             return $ \ns -> ConstructorSyntaxPattern ns c $ fmap (\pat -> pat ns) args) <|>
     readPattern4
 
-readPattern4 :: Parser SyntaxPattern
+readPattern4 :: Parser (Namespace -> SyntaxPattern)
 readPattern4 = do
     pat1 <- readPattern5
     mpat2 <-
@@ -69,35 +87,35 @@ readPattern4 = do
             readPattern4
     case mpat2 of
         Nothing -> return pat1
-        Just pat2 -> readSourcePos $ return $ BothSyntaxPattern pat1 pat2
+        Just pat2 -> readWithSourcePos1 $ return $ \ns -> BothSyntaxPattern (pat1 ns) (pat2 ns)
 
 listPattern :: [SyntaxPattern] -> SyntaxPattern'
 listPattern [] = nilPattern
 listPattern (p:pp) = consPattern p $ MkWithSourcePos (getSourcePos p) $ listPattern pp
 
-readPattern5 :: Parser SyntaxPattern
+readPattern5 :: Parser (Namespace -> SyntaxPattern)
 readPattern5 =
-    readSourcePos
+    readWithSourcePos1
         (do
              c <- readConstructor
-             return $ ConstructorSyntaxPattern c []) <|>
-    readSourcePos
+             return $ \ns -> ConstructorSyntaxPattern ns c []) <|>
+    readWithSourcePos1
         (do
              name <- readLName
-             return $ VarSyntaxPattern name) <|>
-    readSourcePos
+             return $ \ns -> VarSyntaxPattern $ MkFullName ns name) <|>
+    readWithSourcePos1
         (do
              readThis TokUnderscore
-             return AnySyntaxPattern) <|>
+             return $ \_ -> AnySyntaxPattern) <|>
     (do
          pats <- readBracket $ readCommaList readPattern1
-         readSourcePos $ return $ listPattern pats) <|>
+         readWithSourcePos1 $ return $ \ns -> listPattern $ fmap (\pat -> pat ns) pats) <|>
     readParen
         (do
              spos <- getPosition
              mpat1 <- optional readPattern1
              case mpat1 of
-                 Nothing -> readSourcePos $ return $ ConstructorSyntaxPattern SLUnit []
+                 Nothing -> readWithSourcePos1 $ return $ \_ -> ConstructorSyntaxPattern RootNamespace SLUnit []
                  Just pat1 -> do
                      lpat2 <-
                          many $ do
@@ -108,9 +126,10 @@ readPattern5 =
                              [] -> pat1
                              pat2:patr -> let
                                  appair :: SyntaxPattern -> SyntaxPattern -> SyntaxPattern
-                                 appair p1 p2 = MkWithSourcePos spos $ ConstructorSyntaxPattern SLPair [p1, p2]
+                                 appair p1 p2 =
+                                     MkWithSourcePos spos $ ConstructorSyntaxPattern RootNamespace SLPair [p1, p2]
                                  aptuple :: SyntaxPattern -> SyntaxPattern -> [SyntaxPattern] -> SyntaxPattern
                                  aptuple p1 p2 [] = appair p1 p2
                                  aptuple p1 p2 (p3:pr) = appair p1 $ aptuple p2 p3 pr
-                                 in aptuple pat1 pat2 patr) <?>
+                                 in \ns -> aptuple (pat1 ns) (pat2 ns) $ fmap (\pat -> pat ns) patr) <?>
     "pattern"

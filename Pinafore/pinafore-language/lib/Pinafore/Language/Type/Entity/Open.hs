@@ -17,7 +17,7 @@ import Shapes
 
 type OpenEntityType :: Nat -> Type
 data OpenEntityType tid =
-    MkOpenEntityType Name
+    MkOpenEntityType FullName
                      (TypeIDType tid)
 
 instance TestEquality OpenEntityType where

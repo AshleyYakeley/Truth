@@ -142,6 +142,7 @@ tests:
           - pinafore-language
         main: Main.hs
         other-modules:
+          - Test.Name
           - Test.Token
           - Test.RunScript
           - Test.Language

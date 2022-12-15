@@ -127,7 +127,7 @@ eitherEntityFamily =
         in MkEntityProperties {..}
 
 entityGroundType :: QGroundType '[] Entity
-entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Entity)|]) "Entity"
+entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Entity)|]) ".Entity"
 
 entityEntityFamily :: EntityFamily
 entityEntityFamily = simplePinaforeEntityFamily entityGroundType plainEntityAdapter

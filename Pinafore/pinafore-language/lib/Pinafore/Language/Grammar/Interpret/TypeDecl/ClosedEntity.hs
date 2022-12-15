@@ -114,7 +114,7 @@ closedEntityTypeAdapter params conss = do
 
 makeClosedEntityGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
-    => Name
+    => FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, Anchor)]
 makeClosedEntityGroundType mainTypeName tparams = let
@@ -160,7 +160,7 @@ makeClosedEntityGroundType mainTypeName tparams = let
     in MkTypeConstruction mkx mkgt postregister
 
 makeClosedEntityTypeBox ::
-       Name
+       FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxClosedEntityConstructorOrSubtype]

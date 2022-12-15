@@ -15,7 +15,7 @@ instance Show Name where
     show = unpack
 
 instance IsString Name where
-    fromString s = fromMaybe (error "bad Name: empty") $ nameFromString s
+    fromString s = fromMaybe (error $ "bad Name: " <> show s) $ nameFromString s
 
 nameFromString :: String -> Maybe Name
 nameFromString "" = Nothing
@@ -28,10 +28,8 @@ nameIsUpper (MkName n) =
         Nothing -> False
 
 nameIsInfix :: Name -> Bool
-nameIsInfix (MkName n) =
-    case headMay n of
-        Just c -> not $ isAlpha c
-        Nothing -> False
+nameIsInfix (MkName "") = False
+nameIsInfix (MkName n) = not $ any isAlpha $ unpack n
 
 infixNameFromString :: String -> Maybe Name
 infixNameFromString s = do

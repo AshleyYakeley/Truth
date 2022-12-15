@@ -16,24 +16,25 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-typeDeclarationTypeBox :: Name -> RawMarkdown -> SyntaxTypeDeclaration -> QInterpreter (QFixBox () ())
+typeDeclarationTypeBox :: FullName -> RawMarkdown -> SyntaxTypeDeclaration -> QInterpreter (QFixBox () ())
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
 typeDeclarationTypeBox name doc (ClosedEntitySyntaxTypeDeclaration params sconss) =
     makeClosedEntityTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (DatatypeSyntaxTypeDeclaration params sconss) = makeDataTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (DynamicEntitySyntaxTypeDeclaration stcons) = makeDynamicEntityTypeBox name doc stcons
 
-checkDynamicTypeCycles :: [(SourcePos, Name, RawMarkdown, SyntaxTypeDeclaration)] -> QInterpreter ()
+checkDynamicTypeCycles :: [(SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)] -> QInterpreter ()
 checkDynamicTypeCycles decls = let
-    constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
-    constructorName (NameSyntaxDynamicEntityConstructor (UnqualifiedFullNameRef n)) = Just n
+    constructorName :: SyntaxDynamicEntityConstructor -> Maybe FullName
+    constructorName (NameSyntaxDynamicEntityConstructor ns nref) = Just $ namespaceConcatFullName ns nref
     constructorName _ = Nothing
     getDynamicTypeReferences ::
-           (SourcePos, Name, RawMarkdown, SyntaxTypeDeclaration) -> Maybe ((SourcePos, Name), Name, [Name])
+           (SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)
+        -> Maybe ((SourcePos, FullName), FullName, [FullName])
     getDynamicTypeReferences (spos, n, _, DynamicEntitySyntaxTypeDeclaration cs) =
         Just $ ((spos, n), n, mapMaybe constructorName $ toList cs)
     getDynamicTypeReferences _ = Nothing
-    sccs :: [SCC (SourcePos, Name)]
+    sccs :: [SCC (SourcePos, FullName)]
     sccs = stronglyConnComp $ mapMaybe getDynamicTypeReferences decls
     sccNames :: forall a. SCC a -> Maybe (NonEmpty a)
     sccNames (CyclicSCC (n:nn)) = Just $ n :| nn
@@ -42,12 +43,13 @@ checkDynamicTypeCycles decls = let
            [] -> return ()
            (nn@((spos, _) :| _):_) -> paramWith sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
-interpretSequentialTypeDeclaration :: Name -> RawMarkdown -> SyntaxTypeDeclaration -> QScopeInterpreter ()
+interpretSequentialTypeDeclaration :: FullName -> RawMarkdown -> SyntaxTypeDeclaration -> QScopeInterpreter ()
 interpretSequentialTypeDeclaration name doc tdecl = do
     tbox <- lift $ typeDeclarationTypeBox name doc tdecl
     boxSequential tbox ()
 
-interpretRecursiveTypeDeclarations :: [(SourcePos, Name, RawMarkdown, SyntaxTypeDeclaration)] -> QScopeInterpreter ()
+interpretRecursiveTypeDeclarations ::
+       [(SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)] -> QScopeInterpreter ()
 interpretRecursiveTypeDeclarations decls = do
     lift $ checkDynamicTypeCycles decls
     wfs <-

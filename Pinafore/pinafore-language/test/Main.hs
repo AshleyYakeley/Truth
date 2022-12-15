@@ -8,6 +8,7 @@ import Test.Entity
 import Test.Interactive
 import Test.Language
 import Test.Module
+import Test.Name
 import Test.Namespace
 import Test.Output
 import Test.ReadType
@@ -25,7 +26,8 @@ main = do
         tests =
             testTree
                 "pinafore"
-                [ testToken
+                [ testNames
+                , testToken
                 , testType
                 , testLanguage
                 , testReadTypes

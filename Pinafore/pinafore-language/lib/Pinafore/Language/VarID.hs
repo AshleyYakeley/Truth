@@ -47,9 +47,9 @@ instance Show VarID where
     show (GoodVarID _ n) = show n
     show (BadVarID _ n) = show n
 
-varIdNameRef :: VarID -> FullNameRef
-varIdNameRef (GoodVarID _ n) = fullNameRef n
-varIdNameRef (BadVarID _ n) = n
+varIdNameRef :: VarID -> Result FullNameRef FullName
+varIdNameRef (GoodVarID _ n) = SuccessResult n
+varIdNameRef (BadVarID _ n) = FailureResult n
 
 mkVarID :: VarIDState -> FullName -> VarID
 mkVarID (MkVarIDState s) = GoodVarID s

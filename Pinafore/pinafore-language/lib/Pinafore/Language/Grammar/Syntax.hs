@@ -8,12 +8,12 @@ import Shapes
 import Text.Parsec (SourcePos)
 
 data SyntaxConstructorOrSubtype extra
-    = ConstructorSyntaxConstructorOrSubtype Name
+    = ConstructorSyntaxConstructorOrSubtype FullName
                                             [SyntaxType]
                                             extra
-    | SubtypeSyntaxConstructorOrSubtype Name
+    | SubtypeSyntaxConstructorOrSubtype FullName
                                         [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
-    | RecordSyntaxConstructorOrSubtype Name
+    | RecordSyntaxConstructorOrSubtype FullName
                                        [SyntaxSignature]
     deriving (Eq)
 
@@ -42,7 +42,8 @@ type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
-    | NameSyntaxDynamicEntityConstructor FullNameRef
+    | NameSyntaxDynamicEntityConstructor Namespace
+                                         FullNameRef
     deriving (Eq)
 
 data SyntaxTypeDeclaration
@@ -55,7 +56,7 @@ data SyntaxTypeDeclaration
     deriving (Eq)
 
 data SyntaxRecursiveDeclaration'
-    = TypeSyntaxDeclaration Name
+    = TypeSyntaxDeclaration FullName
                             SyntaxTypeDeclaration
     | SubtypeSyntaxDeclaration TrustOrVerify
                                SyntaxType
@@ -73,7 +74,7 @@ data SyntaxWithDoc t =
 
 data SyntaxExposeItem
     = NameSyntaxExposeItem FullNameRef
-    | NamespaceSyntaxExposeItem NamespaceRef
+    | NamespaceSyntaxExposeItem Namespace
     deriving (Eq)
 
 data SyntaxExposeDeclaration =
@@ -86,8 +87,8 @@ data SyntaxDeclaration'
     | ImportSyntaxDeclaration ModuleName
     | ExposeSyntaxDeclaration SyntaxExposeDeclaration
     | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
-    | UsingSyntaxDeclaration NamespaceRef
-    | NamespaceSyntaxDeclaration NamespaceRef
+    | UsingSyntaxDeclaration Namespace
+    | NamespaceSyntaxDeclaration Namespace
                                  [SyntaxDeclaration]
     | DebugSyntaxDeclaration FullNameRef
     deriving (Eq)
@@ -195,10 +196,11 @@ data SyntaxConstructor
 
 data SyntaxPattern'
     = AnySyntaxPattern
-    | VarSyntaxPattern Name
+    | VarSyntaxPattern FullName
     | BothSyntaxPattern SyntaxPattern
                         SyntaxPattern
-    | ConstructorSyntaxPattern SyntaxConstructor
+    | ConstructorSyntaxPattern Namespace
+                               SyntaxConstructor
                                [SyntaxPattern]
     | TypedSyntaxPattern SyntaxPattern
                          SyntaxType
@@ -258,7 +260,8 @@ data SyntaxExpression'
     = SESubsume SyntaxExpression
                 SyntaxType
     | SEConst SyntaxConstant
-    | SEVar FullNameRef
+    | SEVar Namespace
+            FullNameRef
     | SESpecialForm FullNameRef
                     (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression

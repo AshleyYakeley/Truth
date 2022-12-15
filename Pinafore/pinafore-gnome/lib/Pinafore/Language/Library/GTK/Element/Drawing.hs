@@ -27,7 +27,7 @@ instance Monoid LangHandler where
     mempty = MkLangHandler $ \_ -> return False
 
 handlerGroundType :: QGroundType '[] LangHandler
-handlerGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHandler)|]) "Handler"
+handlerGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHandler)|]) ".GTK.Handler"
 
 instance HasQGroundType '[] LangHandler where
     qGroundType = handlerGroundType

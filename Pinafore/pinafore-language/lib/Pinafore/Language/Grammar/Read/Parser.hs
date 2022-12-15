@@ -1,12 +1,38 @@
-{-# OPTIONS -fno-warn-orphans #-}
-
 module Pinafore.Language.Grammar.Read.Parser
-    ( module Pinafore.Language.Grammar.Read.Parser
+    ( Parser
+    , readEnd
     , SourcePos
     , initialPos
     , getPosition
     , try
     , (<?>)
+    , parseReader
+    , readAskNamespace
+    , readWithNamespace
+    , parseScopedReaderWhole
+    , readThis
+    , readExactly
+    , readExactlyThis
+    , readBracketed
+    , readParen
+    , readBracket
+    , readSeparated1
+    , readCommaM
+    , readCommaList
+    , readWithSourcePos
+    , readFullUName
+    , readFullLName
+    , readFullNameRef
+    , readUName
+    , readLName
+    , readNewUName
+    , readNewLName
+    , readNamespaceRef
+    , readModuleName
+    , readLines1
+    , readLines
+    , readWithDoc
+    , chainModify
     ) where
 
 import Pinafore.Language.Error
@@ -17,28 +43,45 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes hiding (try)
-import Text.Parsec hiding ((<|>), many, optional)
+import qualified Text.Parsec as P
 
-type Parser = ParsecT [(SourcePos, SomeOf Token)] () (Result PinaforeError)
+newtype Parser a =
+    MkParser (ReaderT Namespace (P.ParsecT [(SourcePos, SomeOf Token)] () (Result PinaforeError)) a)
+    deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFail)
+
+getPosition :: Parser SourcePos
+getPosition = MkParser $ lift P.getPosition
 
 readEnd :: Parser ()
 readEnd = do
     ignoreComments
-    eof
+    MkParser $ lift P.eof
+
+try :: Parser --> Parser
+try (MkParser p) = MkParser $ hoist P.try p
+
+(<?>) :: Parser a -> String -> Parser a
+MkParser p <?> t = MkParser $ hoist (\pp -> pp P.<?> t) p
 
 parseReader :: Parser a -> Text -> StateT SourcePos InterpretResult a
 parseReader r text = let
-    r' = do
+    MkParser r' = do
         a <- r
         readEnd
         return a
     in do
            spos <- get
            toks <- parseTokens text
-           case runParserT r' () (sourceName spos) toks of
+           case P.runParserT (runReaderT r' RootNamespace) () (P.sourceName spos) toks of
                SuccessResult (Right a) -> return a
                SuccessResult (Left e) -> throw $ parseErrorMessage e
                FailureResult e -> throw e
+
+readAskNamespace :: Parser Namespace
+readAskNamespace = MkParser ask
+
+readWithNamespace :: NamespaceRef -> Parser --> Parser
+readWithNamespace nr (MkParser p) = MkParser $ local (\n -> namespaceConcatRef n nr) p
 
 parseScopedReaderWhole :: Parser (QInterpreter t) -> Text -> QInterpreter t
 parseScopedReaderWhole parser text = do
@@ -53,19 +96,19 @@ readToken stok = let
     showToken :: (SourcePos, SomeOf Token) -> String
     showToken (_, MkSomeOf tok _) = show tok
     nextpos _ tok ts =
-        case runIdentity (Text.Parsec.uncons ts) of
+        case runIdentity (P.uncons ts) of
             Nothing -> fst tok
             Just (tok', _) -> fst tok'
     test (_, MkSomeOf tok t) =
         case testEquality stok tok of
             Just Refl -> Just t
             Nothing -> Nothing
-    in tokenPrim showToken nextpos test
+    in MkParser $ lift $ P.tokenPrim showToken nextpos test
 
 instance MonadThrow ErrorType Parser where
     throw err = do
         spos <- getPosition
-        lift $ throwExc $ MkPinaforeError $ pure $ MkErrorMessage spos err mempty
+        MkParser $ lift $ lift $ throwExc $ MkPinaforeError $ pure $ MkErrorMessage spos err mempty
 
 readComments :: Parser [Comment]
 readComments = many $ readToken TokComment
@@ -144,8 +187,8 @@ readCommaM = readSeparated $ readThis TokComma
 readCommaList :: Parser t -> Parser [t]
 readCommaList p = readCommaM $ fmap pure p
 
-readSourcePos :: Parser t -> Parser (WithSourcePos t)
-readSourcePos p = do
+readWithSourcePos :: Parser t -> Parser (WithSourcePos t)
+readWithSourcePos p = do
     spos <- getPosition
     t <- p
     return $ MkWithSourcePos spos t
@@ -191,6 +234,18 @@ readLName = do
         [] -> return tnName
         _ -> empty
 
+readNewUName :: Parser FullName
+readNewUName = do
+    name <- readUName
+    ns <- readAskNamespace
+    return $ MkFullName ns name
+
+readNewLName :: Parser FullName
+readNewLName = do
+    name <- readLName
+    ns <- readAskNamespace
+    return $ MkFullName ns name
+
 readNamespaceRef :: Parser NamespaceRef
 readNamespaceRef = do
     MkTokenNames {..} <- readThis TokNamesUpper
@@ -199,10 +254,6 @@ readNamespaceRef = do
              then AbsoluteNamespaceRef . MkNamespace
              else RelativeNamespaceRef) $
         tnSpace <> [tnName]
-
-neList :: [a] -> a -> NonEmpty a
-neList [] b = b :| []
-neList (a:aa) b = a :| (aa <> [b])
 
 readModuleName :: Parser ModuleName
 readModuleName = do

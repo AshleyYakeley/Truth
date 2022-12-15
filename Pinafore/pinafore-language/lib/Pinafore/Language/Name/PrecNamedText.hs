@@ -1,11 +1,10 @@
 module Pinafore.Language.Name.PrecNamedText where
 
-import Pinafore.Language.Name.FullName
 import Pinafore.Language.Name.NamedText
 import Shapes
 
 newtype PrecNamedText =
-    MkPrecNamedText ((FullName -> Text) -> (Text, Int))
+    MkPrecNamedText ((NamedTextItem -> Text) -> (Text, Int))
 
 namedTextPrec :: Int -> NamedText -> PrecNamedText
 namedTextPrec c (MkNamedText ftt) = MkPrecNamedText $ \ft -> (ftt ft, c)

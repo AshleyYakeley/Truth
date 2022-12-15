@@ -11,7 +11,7 @@ import Pinafore.Language.Value ()
 import Shapes
 
 literalGroundType :: QGroundType '[] Literal
-literalGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
+literalGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) ".Literal"
 
 literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
 literalGreatestDynamicSupertype =
@@ -21,7 +21,7 @@ literalGreatestDynamicSupertype =
         (functionToShim "toLiteral" toLiteral)
 
 actionGroundType :: QGroundType '[ CoCCRVariance] Action
-actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Action)|]) "Action"
+actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Action)|]) ".Action"
 
 funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
@@ -29,14 +29,14 @@ funcGroundType =
         namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
 maybeGroundType :: QGroundType '[ CoCCRVariance] Maybe
-maybeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe"
+maybeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) ".Maybe"
 
 listGroundType :: QGroundType '[ CoCCRVariance] []
-listGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List"
+listGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) ".List"
 
 list1GroundType :: IsDolanSubtypeGroundType QGroundType => QGroundType '[ CoCCRVariance] NonEmpty
 list1GroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) ".List1")
         { pgtGreatestDynamicSupertype =
               GeneralPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
                   tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
@@ -54,4 +54,4 @@ pairGroundType =
         namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
 
 showableGroundType :: QGroundType '[] Showable
-showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"
+showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) ".Showable"

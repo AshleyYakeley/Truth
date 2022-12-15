@@ -22,9 +22,9 @@ data ErrorType
                                        [Text]
                                        [Text]
     | LookupConstructorUnknownError FullNameRef
-    | DeclareTypeDuplicateError FullNameRef
+    | DeclareTypeDuplicateError FullName
     | DeclareConstructorDuplicateError FullNameRef
-    | DeclareDynamicTypeCycleError (NonEmpty Name)
+    | DeclareDynamicTypeCycleError (NonEmpty FullName)
     | TypeConvertError Text
                        Polarity
                        Text
@@ -54,13 +54,13 @@ data ErrorType
     | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError FullNameRef
     | InterpretBindingsDuplicateError (NonEmpty FullName)
-    | InterpretTypeDeclDuplicateTypeVariablesError Name
+    | InterpretTypeDeclDuplicateTypeVariablesError FullName
                                                    (NonEmpty Name)
-    | InterpretTypeDeclUnboundTypeVariablesError Name
+    | InterpretTypeDeclUnboundTypeVariablesError FullName
                                                  (NonEmpty Name)
-    | InterpretTypeDeclTypeVariableWrongPolarityError Name
+    | InterpretTypeDeclTypeVariableWrongPolarityError FullName
                                                       Name
-    | InterpretTypeDeclTypeVariableNotCovariantError Name
+    | InterpretTypeDeclTypeVariableNotCovariantError FullName
     | InterpretTypeDeclTypeClosedEntityRecord
     | InterpretSubtypeInconsistent Text
                                    Text

@@ -9,7 +9,7 @@ import Shapes
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openEntityGroundType tp) NilCCRArguments
 
-dynamicEntityShimWit :: Name -> DynamicType -> QShimWit 'Positive DynamicEntity
+dynamicEntityShimWit :: FullName -> DynamicType -> QShimWit 'Positive DynamicEntity
 dynamicEntityShimWit n dt =
     typeToDolan $ MkDolanGroundedType (aDynamicEntityGroundType n $ singletonSet dt) NilCCRArguments
 

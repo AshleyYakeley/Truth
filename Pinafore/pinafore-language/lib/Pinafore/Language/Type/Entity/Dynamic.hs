@@ -101,7 +101,7 @@ dynamicEntityFamily :: EntityFamily
 dynamicEntityFamily = simplePinaforeEntityFamily dynamicEntityGroundType $ dynamicEntityAdapter Nothing
 
 data ADynamicEntityFamily :: FamilyKind where
-    MkADynamicEntityFamily :: Name -> DynamicEntityType -> ADynamicEntityFamily DynamicEntity
+    MkADynamicEntityFamily :: FullName -> DynamicEntityType -> ADynamicEntityFamily DynamicEntity
 
 instance TestHetEquality ADynamicEntityFamily where
     testHetEquality (MkADynamicEntityFamily _ dt1) (MkADynamicEntityFamily _ dt2) =
@@ -112,7 +112,7 @@ instance TestHetEquality ADynamicEntityFamily where
 aDynamicEntityFamilyWitness :: IOWitness ('MkWitKind ADynamicEntityFamily)
 aDynamicEntityFamilyWitness = $(iowitness [t|'MkWitKind ADynamicEntityFamily|])
 
-aDynamicEntityGroundType :: Name -> DynamicEntityType -> QGroundType '[] DynamicEntity
+aDynamicEntityGroundType :: FullName -> DynamicEntityType -> QGroundType '[] DynamicEntity
 aDynamicEntityGroundType name dts =
     (singleGroundType' (MkFamilialType aDynamicEntityFamilyWitness $ MkADynamicEntityFamily name dts) $
      exprShowPrec name)
@@ -135,7 +135,7 @@ aDynamicEntityEntityFamily =
         epShowType = exprShowPrec name
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
-getConcreteDynamicEntityType :: Some (QType 'Positive) -> QInterpreter (Name, DynamicType)
+getConcreteDynamicEntityType :: Some (QType 'Positive) -> QInterpreter (FullName, DynamicType)
 getConcreteDynamicEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)

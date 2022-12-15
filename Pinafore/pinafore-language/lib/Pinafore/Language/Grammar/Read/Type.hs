@@ -75,8 +75,8 @@ readType1 = do
 readTypeFullNameRef :: Parser FullNameRef
 readTypeFullNameRef = readFullUName
 
-readTypeNewName :: Parser Name
-readTypeNewName = readUName
+readTypeNewName :: Parser FullName
+readTypeNewName = readNewUName
 
 readTypeConstant :: Parser SyntaxGroundType
 readTypeConstant = do
@@ -98,7 +98,7 @@ readTypeArgument r =
 readType2 :: Parser SyntaxType
 readType2 =
     (try $
-     readSourcePos $ do
+     readWithSourcePos $ do
          tc <- readTypeConstant
          tt <- some $ readTypeArgument readType3
          return $ SingleSyntaxType tc tt) <|>
@@ -106,11 +106,11 @@ readType2 =
 
 readType3 :: Parser SyntaxType
 readType3 =
-    (readSourcePos $ do
+    (readWithSourcePos $ do
          name <- readTypeVar
          return $ VarSyntaxType name) <|>
     readTypeLimit <|>
-    (readSourcePos $ do
+    (readWithSourcePos $ do
          tc <- readTypeConstant
          return $ SingleSyntaxType tc []) <|>
     (readParen readType)
@@ -140,7 +140,7 @@ readTypeVar = readLName
 
 readTypeLimit :: Parser SyntaxType
 readTypeLimit =
-    readSourcePos $
+    readWithSourcePos $
     (do
          readExactly readUName "Any"
          return TopSyntaxType) <|>

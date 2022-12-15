@@ -25,7 +25,7 @@ data LangLayoutElement =
 
 layoutElementGroundType :: QGroundType '[] LangLayoutElement
 layoutElementGroundType =
-    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangLayoutElement)|]) "LayoutElement"
+    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangLayoutElement)|]) ".GTK.LayoutElement"
 
 instance HasQGroundType '[] LangLayoutElement where
     qGroundType = layoutElementGroundType

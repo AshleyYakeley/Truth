@@ -12,20 +12,20 @@ import Shapes
 
 interpretSyntaxDynamicEntityConstructor :: SyntaxDynamicEntityConstructor -> QInterpreter DynamicEntityType
 interpretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ opoint $ mkDynamicType a
-interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
+interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor _ name) = do
     MkSomeGroundType t <- lookupBoundType name
     case matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType t of
         Just (MkADynamicEntityFamily _ det) -> return det
         Nothing -> throwWithName $ \ntt -> InterpretTypeNotDynamicEntityError $ ntt $ exprShow name
 
 makeDynamicEntityTypeBox ::
-       Name -> RawMarkdown -> NonEmpty SyntaxDynamicEntityConstructor -> QInterpreter (QFixBox () ())
+       FullName -> RawMarkdown -> NonEmpty SyntaxDynamicEntityConstructor -> QInterpreter (QFixBox () ())
 makeDynamicEntityTypeBox name doc stcons =
     return $ let
         register :: DynamicEntityType -> QScopeInterpreter ()
         register det = do
             let tp = aDynamicEntityGroundType name det
-            registerType (UnqualifiedFullNameRef name) doc tp
+            registerType name doc tp
         construct :: () -> QScopeInterpreter (DynamicEntityType, ())
         construct _ = do
             dts <- lift $ for stcons interpretSyntaxDynamicEntityConstructor

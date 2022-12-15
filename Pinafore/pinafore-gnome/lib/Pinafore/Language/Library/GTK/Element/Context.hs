@@ -22,7 +22,7 @@ newtype LangElement = MkLangElement
     }
 
 elementGroundType :: QGroundType '[] LangElement
-elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangElement)|]) "Element"
+elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangElement)|]) ".GTK.Element"
 
 instance HasQGroundType '[] LangElement where
     qGroundType = elementGroundType

@@ -47,7 +47,7 @@ readSubtypeDeclaration = do
 readSignature :: Parser SyntaxSignature
 readSignature =
     readWithDoc $
-    readSourcePos $ do
+    readWithSourcePos $ do
         name <- readLName
         readThis TokTypeJudge
         t <- readType
@@ -64,7 +64,7 @@ readDataTypeConstructor =
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
-         consName <- readUName
+         consName <- readNewUName
          (do
               readThis TokOf
               sigs <- readLines readSignature
@@ -85,7 +85,7 @@ readClosedTypeConstructor =
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
-         consName <- readUName
+         consName <- readNewUName
          mtypes <- many readType3
          anchor <- readThis TokAnchor
          return $ ConstructorSyntaxConstructorOrSubtype consName mtypes anchor)
@@ -137,8 +137,10 @@ readClosedTypeDeclaration = do
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =
-    fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|>
-    fmap NameSyntaxDynamicEntityConstructor readTypeFullNameRef
+    fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|> do
+        ns <- readAskNamespace
+        nref <- readTypeFullNameRef
+        return $ NameSyntaxDynamicEntityConstructor ns nref
 
 readDynamicTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDynamicTypeDeclaration = do
@@ -155,7 +157,7 @@ readTypeDeclaration =
 
 readBinding :: Parser SyntaxBinding
 readBinding = do
-    pat <- readPattern1
+    pat <- readPattern
     readThis TokAssign
     defn <- readExpression
     return $ MkSyntaxBinding pat defn
@@ -169,24 +171,27 @@ readImport = do
 readUsing :: Parser SyntaxDeclaration'
 readUsing = do
     readThis TokUsing
-    mname <- readNamespaceRef
-    return $ UsingSyntaxDeclaration mname
+    nref <- readNamespaceRef
+    ns <- readAskNamespace
+    return $ UsingSyntaxDeclaration $ namespaceConcatRef ns nref
 
 readNamespace :: Parser SyntaxDeclaration'
 readNamespace = do
     readThis TokNamespace
-    nspace <- readNamespaceRef
+    nref <- readNamespaceRef
     readThis TokOf
-    decls <- readDeclarations
+    decls <- readWithNamespace nref readDeclarations
     readThis TokEnd
-    return $ NamespaceSyntaxDeclaration nspace decls
+    ns <- readAskNamespace
+    return $ NamespaceSyntaxDeclaration (namespaceConcatRef ns nref) decls
 
 readExposeItem :: Parser SyntaxExposeItem
 readExposeItem =
     (do
          readThis TokNamespace
          name <- readNamespaceRef
-         return $ NamespaceSyntaxExposeItem name) <|>
+         ns <- readAskNamespace
+         return $ NamespaceSyntaxExposeItem $ namespaceConcatRef ns name) <|>
     fmap NameSyntaxExposeItem readFullNameRef
 
 readExpose :: Parser SyntaxExposeDeclaration
@@ -204,7 +209,7 @@ readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration re
 readRecursiveDeclaration :: Parser SyntaxDeclaration'
 readRecursiveDeclaration = do
     readThis TokRec
-    decls <- readLines $ readWithDoc $ readSourcePos readDirectDeclaration
+    decls <- readLines $ readWithDoc $ readWithSourcePos readDirectDeclaration
     readThis TokEnd
     return $ RecursiveSyntaxDeclaration decls
 
@@ -221,7 +226,7 @@ readDebugDeclaration = do
 readDeclaration :: Parser SyntaxDeclaration
 readDeclaration =
     readWithDoc $
-    readSourcePos $
+    readWithSourcePos $
     readDebugDeclaration <|> fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readUsing <|>
     readNamespace <|>
     readRecursiveDeclaration <|>
@@ -322,10 +327,11 @@ expressionFixityReader =
               do
                   spos <- getPosition
                   name <- readThis TokOperator
+                  ns <- readAskNamespace
                   return
                       ( name
                       , operatorFixity name
-                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar $ UnqualifiedFullNameRef name) [e1, e2])
+                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar ns $ UnqualifiedFullNameRef name) [e1, e2])
         , efrMaxPrecedence = 10
         }
 
@@ -342,7 +348,7 @@ readModule = readExpose
 
 readMatch :: Parser SyntaxCase
 readMatch = do
-    pat <- readPattern1
+    pat <- readPattern
     readThis TokMap
     expr <- readExpression
     return $ MkSyntaxCase pat expr
@@ -355,7 +361,7 @@ data DoLine
 readDoLine :: Parser DoLine
 readDoLine =
     (try $ do
-         pat <- readPattern1
+         pat <- readPattern
          readThis TokBackMap
          expr <- readExpression
          return $ BindDoLine pat expr) <|>
@@ -409,13 +415,13 @@ readExpression1 =
          readThis TokFns
          mmatch <- readMulticase
          return $ MkWithSourcePos spos $ SEAbstracts mmatch) <|>
-    readSourcePos
+    readWithSourcePos
         (do
              readThis TokMatch
              smatches <- readLines readMatch
              readThis TokEnd
              return $ SEMatch smatches) <|>
-    readSourcePos
+    readWithSourcePos
         (do
              readThis TokMatches
              smultimatches <- readLines1 readMulticase
@@ -425,7 +431,7 @@ readExpression1 =
                      let n = syntaxMulticaseLength m
                      smm <- for (toList smultimatches) $ getMulticase n
                      return $ SEMatches $ MkSyntaxMulticaseList n smm) <|>
-    readSourcePos
+    readWithSourcePos
         (do
              sdecls <- readLetBindings
              readThis TokIn
@@ -468,32 +474,34 @@ readAnnotation =
 
 readExpression3 :: Parser SyntaxExpression
 readExpression3 =
-    readSourcePos
+    readWithSourcePos
         (do
              name <- readFullLName
              annotations <- many readAnnotation
+             ns <- readAskNamespace
              return $
                  case annotations of
-                     [] -> SEVar name
+                     [] -> SEVar ns name
                      (a:aa) -> SESpecialForm name $ a :| aa) <|>
-    readSourcePos
+    readWithSourcePos
         (do
              c <- readConstructor
              return $ SEConst $ SCConstructor c) <|>
-    readSourcePos
+    readWithSourcePos
         (do
              rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
              return $ SERef rexpr) <|>
-    readSourcePos
+    readWithSourcePos
         (do
              readThis TokUnquote
              rexpr <- readExpression3
              return $ SEUnref rexpr) <|>
     (readParen $
-     readSourcePos
+     readWithSourcePos
          (do
               name <- readThis TokOperator
-              return $ SEVar $ UnqualifiedFullNameRef name) <|>
+              ns <- readAskNamespace
+              return $ SEVar ns $ UnqualifiedFullNameRef name) <|>
      (do
           spos <- getPosition
           msexpr1 <- optional readExpression
@@ -514,7 +522,7 @@ readExpression3 =
                               aptuple e1 e2 [] = appair e1 e2
                               aptuple e1 e2 (e3:er) = appair e1 $ aptuple e2 e3 er
                               in aptuple sexpr1 sexpr2 sexprs)) <|>
-    readSourcePos
+    readWithSourcePos
         (do
              sexprs <-
                  readBracketed TokOpenBracket TokCloseBracket $

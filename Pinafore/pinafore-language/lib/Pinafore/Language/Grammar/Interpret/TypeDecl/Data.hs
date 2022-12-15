@@ -126,14 +126,17 @@ paramsUnEndo (ConsCCRArguments p pp) tt = let
     in MkNestedMorphism ff
 
 getDataTypeMappingOrError ::
-       forall v n t. Name -> VarianceType v -> SymbolType n -> VarMapping t -> QInterpreter (Mapping n t)
+       forall v n t. FullName -> VarianceType v -> SymbolType n -> VarMapping t -> QInterpreter (Mapping n t)
 getDataTypeMappingOrError tname vt var vm =
     case runVarMapping vm vt var of
         Nothing -> throw $ InterpretTypeDeclTypeVariableWrongPolarityError tname $ symbolTypeToName var
         Just vmap -> return vmap
 
 getCCRVariation ::
-       Name -> CCRTypeParam sv a -> VarMapping t -> QInterpreter (CCRVarianceCategory KindFunction sv a a -> (t -> t))
+       FullName
+    -> CCRTypeParam sv a
+    -> VarMapping t
+    -> QInterpreter (CCRVarianceCategory KindFunction sv a a -> (t -> t))
 getCCRVariation tname (CoCCRTypeParam v) vm = do
     f <- getDataTypeMappingOrError tname CoVarianceType v vm
     return $ runMapping f
@@ -157,7 +160,7 @@ paramsCCRVMap p ff pp ab = assignCCRTypeParam @sv @a p $ assignCCRTypeParam @sv 
 assignDolanArgVars :: forall sv dv gt t a. CCRTypeParam sv t -> DolanVarianceMap dv (gt t) -> DolanVarianceMap dv (gt a)
 assignDolanArgVars p dvm = assignCCRTypeParam @sv @a p dvm
 
-getDolanVarianceMap :: Name -> CCRTypeParams dv gt t -> VarMapping t -> QInterpreter (DolanVarianceMap dv gt)
+getDolanVarianceMap :: FullName -> CCRTypeParams dv gt t -> VarMapping t -> QInterpreter (DolanVarianceMap dv gt)
 getDolanVarianceMap _ NilCCRArguments _ = return NilDolanVarianceMap
 getDolanVarianceMap tname (ConsCCRArguments p pp) vm = do
     ff <- getCCRVariation tname p vm
@@ -173,13 +176,14 @@ type GroundTypeFromTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind d
 newtype GroundTypeFromTypeID dv gt y = MkGroundTypeFromTypeID
     { unGroundTypeFromTypeID :: forall (tid :: Nat).
                                     (IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid) =>
-                                            Name -> TypeIDType tid -> (QGroundType dv gt, y)
+                                            FullName -> TypeIDType tid -> (QGroundType dv gt, y)
     }
 
 type GroundTypeMaker extra
      = forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type).
            Is DolanVarianceType dv =>
-                   Name -> CCRTypeParams dv gt decltype -> TypeConstruction dv gt [(ConstructorCodec decltype, extra)]
+                   FullName -> CCRTypeParams dv gt decltype -> TypeConstruction dv gt [( ConstructorCodec decltype
+                                                                                       , extra)]
 
 type MatchingTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 data MatchingTypeID dv t where
@@ -202,7 +206,7 @@ data TypeData dv t = MkTypeData
     { tdID :: MatchingTypeID dv t
     , tdSupertype :: Maybe (TypeData dv t)
     , tdSubtypes :: [MatchingTypeID dv t] -- includes self
-    , tdName :: Name
+    , tdName :: FullName
     , tdDoc :: RawMarkdown
     }
 
@@ -232,14 +236,14 @@ getConssSubtypeData superTD conss = do
     return $ mconcat tdatas
 
 data Constructor dv t extra = MkConstructor
-    { ctName :: Name
+    { ctName :: FullName
     , ctDoc :: RawMarkdown
     , ctOuterType :: TypeData dv t
     , ctContents :: Either (Vector SyntaxType) (Vector SyntaxSignature)
     , ctExtra :: extra
     }
 
-typeDataLookup :: [TypeData dv t] -> Name -> QInterpreter (TypeData dv t)
+typeDataLookup :: [TypeData dv t] -> FullName -> QInterpreter (TypeData dv t)
 typeDataLookup [] _ = liftIO $ fail "type name not found"
 typeDataLookup (t:_) name
     | tdName t == name = return t
@@ -289,7 +293,7 @@ interpretConstructorTypes c =
 makeBox ::
        forall extra (dv :: DolanVariance).
        GroundTypeMaker extra
-    -> Name
+    -> FullName
     -> RawMarkdown
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> GenCCRTypeParams dv
@@ -322,7 +326,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                 mainRegister x = do
                                     MkGroundTypeFromTypeID gttid <- lift $ mkgt x
                                     let (gt, y) = gttid mainTypeName mainTypeID
-                                    registerType (UnqualifiedFullNameRef mainTypeName) mainTypeDoc gt
+                                    registerType mainTypeName mainTypeDoc gt
                                     postregister gt y
                                 mainConstruct ::
                                        ()
@@ -432,7 +436,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 tparams
                                     case (getargs @'Positive, getargs @'Negative) of
                                         (MkShimWit posargs posconv, MkShimWit negargs negconv) -> let
-                                            ctnameref = UnqualifiedFullNameRef $ ctName constructor
+                                            ctfullname = ctName constructor
                                             ctfpos :: QShimWit 'Positive decltype
                                             ctfpos =
                                                 mapShimWit posconv $
@@ -456,14 +460,14 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                        pc =
                                                            toPatternConstructor ctfneg ltp $
                                                            ImpureFunction $ fmap listVProductToProduct . decode codec
-                                                       in registerPatternConstructor ctnameref (ctDoc constructor) expr $
+                                                       in registerPatternConstructor ctfullname (ctDoc constructor) expr $
                                                           toExpressionPatternConstructor pc
                                                    MkConstructorType RecordCF lt -> let
                                                        ltp = listVTypeToType lt
                                                        recordcons = MkRecordConstructor ltp ctfpos $ encode codec
                                                        recordpat = MkRecordPattern ltp ctfneg $ decode codec
                                                        in registerRecord
-                                                              ctnameref
+                                                              ctfullname
                                                               (ctDoc constructor)
                                                               recordcons
                                                               recordpat
@@ -484,7 +488,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     let
                                         subGroundType :: QGroundType dv maintype
                                         subGroundType = getGroundType mainGroundType picktype gttid tdata
-                                    registerType (UnqualifiedFullNameRef $ tdName tdata) (tdDoc tdata) subGroundType
+                                    registerType (tdName tdata) (tdDoc tdata) subGroundType
                                     for_ (tdSupertype tdata) $ \supertdata -> let
                                         superGroundType :: QGroundType dv maintype
                                         superGroundType = getGroundType mainGroundType picktype gttid supertdata
@@ -509,7 +513,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
 makeDeclTypeBox ::
        forall extra.
        GroundTypeMaker extra
-    -> Name
+    -> FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
@@ -520,7 +524,7 @@ makeDeclTypeBox gmaker name doc params syntaxConstructorList =
 
 makeDataGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
-    => Name
+    => FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, ())]
 makeDataGroundType _ tparams = let
@@ -529,24 +533,23 @@ makeDataGroundType _ tparams = let
     mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (DolanVarianceMap dv gt)
     mkx dvm _ = return dvm
     mkgt :: DolanVarianceMap dv gt -> QInterpreter (GroundTypeFromTypeID dv gt ())
-    mkgt dvm = do
-        nsp <- getNameResolver
+    mkgt dvm =
         return $
-            MkGroundTypeFromTypeID $ \name mainTypeID -> let
-                gt =
-                    MkPinaforeGroundType
-                        { pgtVarianceType = dvt
-                        , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
-                        , pgtShowType = standardListTypeExprShow @dv $ toNamedText $ nsp $ UnqualifiedFullNameRef name
-                        , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
-                        , pgtSubtypeGroup = Nothing
-                        , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
-                        }
-                in (gt, ())
+        MkGroundTypeFromTypeID $ \name mainTypeID -> let
+            gt =
+                MkPinaforeGroundType
+                    { pgtVarianceType = dvt
+                    , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
+                    , pgtShowType = standardListTypeExprShow @dv $ toNamedText name
+                    , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
+                    , pgtSubtypeGroup = Nothing
+                    , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+                    }
+            in (gt, ())
     in MkTypeConstruction mkx mkgt $ \_ _ -> return ()
 
 makeDataTypeBox ::
-       Name
+       FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxDatatypeConstructorOrSubtype]

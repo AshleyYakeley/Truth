@@ -13,7 +13,6 @@ module Pinafore.Language.Grammar.Interpret.ScopeBuilder
 import Pinafore.Language.DefDoc
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Shapes
@@ -53,5 +52,5 @@ refScopeBuilder = execMapTransformT
 pureScopeBuilder :: QScope -> ScopeBuilder ()
 pureScopeBuilder scope = interpScopeBuilder $ registerScope scope
 
-allocateVarScopeBuilder :: Maybe FullNameRef -> ScopeBuilder (FullName, VarID)
+allocateVarScopeBuilder :: Maybe FullName -> ScopeBuilder (FullName, VarID)
 allocateVarScopeBuilder n = interpScopeBuilder $ allocateVar n

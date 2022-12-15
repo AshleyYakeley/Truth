@@ -16,7 +16,7 @@ import Shapes.Unsafe
 
 -- File
 fileGroundType :: QGroundType '[] File
-fileGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily File)|]) "File"
+fileGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily File)|]) ".GIO.File"
 
 instance HasQGroundType '[] File where
     qGroundType = fileGroundType

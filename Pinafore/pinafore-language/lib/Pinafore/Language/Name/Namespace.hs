@@ -39,3 +39,10 @@ pattern RootNamespace = MkNamespace []
 
 namespaceStartsWith :: Namespace -> Namespace -> Maybe [Name]
 namespaceStartsWith (MkNamespace na) (MkNamespace nb) = startsWith na nb
+
+namespaceAncestry :: Namespace -> [Namespace]
+namespaceAncestry a@(MkNamespace nn) =
+    a :
+    case nonEmpty nn of
+        Nothing -> []
+        Just na -> namespaceAncestry $ MkNamespace $ init na

@@ -19,7 +19,7 @@ newtype LangMenuItem =
     MkLangMenuItem ((View --> IO) -> MenuEntry)
 
 menuItemGroundType :: QGroundType '[] LangMenuItem
-menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuItem)|]) "MenuItem"
+menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuItem)|]) ".GTK.MenuItem"
 
 instance HasQGroundType '[] LangMenuItem where
     qGroundType = menuItemGroundType

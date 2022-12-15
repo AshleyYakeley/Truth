@@ -53,6 +53,11 @@ fullNameSplits (MkFullName ns name) = fmap (fmap $ \nsr -> MkFullNameRef nsr nam
 namespaceRelativeFullName :: Namespace -> FullName -> FullNameRef
 namespaceRelativeFullName na (MkFullName nb n) = MkFullNameRef (namespaceRelative na nb) n
 
+relativeNamespace :: [Namespace] -> Namespace -> NamespaceRef
+relativeNamespace basens fn =
+    fromMaybe (namespaceRootRelative fn) $
+    choice $ fmap (\(ns, fref) -> ifpure (elem ns basens) fref) $ namespaceSplits fn
+
 relativeFullName :: [Namespace] -> FullName -> FullNameRef
 relativeFullName basens fn =
     fromMaybe (fullNameRootRelative fn) $
