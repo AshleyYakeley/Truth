@@ -25,7 +25,7 @@ main = do
         tests :: TestTree
         tests =
             testTree
-                "pinafore"
+                "pinafore-language"
                 [ testNames
                 , testToken
                 , testType

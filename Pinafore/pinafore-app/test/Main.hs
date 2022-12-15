@@ -13,5 +13,5 @@ main = do
     testInteractive <- getTestInteractive
     let
         tests :: TestTree
-        tests = testTree "pinafore" [testLibraries, testInteractive, testScripts]
+        tests = testTree "pinafore-app" [testLibraries, testInteractive, testScripts]
     testMainNoSignalHandler tests
