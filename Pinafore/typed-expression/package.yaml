@@ -39,6 +39,7 @@ library:
       - Language.Expression.Common.NonpolarTypeSystem
       - Language.Expression.Common.TypeFunction
       - Language.Expression.Common.TypeVariable
+      - Language.Expression.Common.VarMapping
       - Language.Expression.Common.Rename.RenameTypeSystem
       - Language.Expression.Common.Rename.Rigidity
       - Language.Expression.Common.Rename.VarNamespaceT

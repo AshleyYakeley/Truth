@@ -13,6 +13,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . can now have parameters
       . can now have subtypes
       . record constructors/patterns for datatypes
+      . allow recursive types in datatypes
     - can declare arbitrary subtype relations
     - import lists
     - syntax

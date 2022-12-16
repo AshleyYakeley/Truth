@@ -12,7 +12,6 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
 import Pinafore.Language.Grammar.Syntax

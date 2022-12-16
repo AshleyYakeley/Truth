@@ -851,6 +851,39 @@ testEntity =
                           "let datatype P of P1 Integer end; datatype Q of Q1 Integer end; f : P -> Q = fn x => x in pass"
                     ]
               , tGroup
+                    "contain-recursive"
+                    [ tDecls
+                          [ "datatype P of MkP (rec a. Maybe a) end"
+                          , "rec fromR: (rec a. Maybe a) -> Integer = match Nothing => 0; Just a => 1 + fromR a end end"
+                          , "rec toR: Integer -> (rec a. Maybe a) = match 0 => Nothing; i => Just $ toR (i - 1) end end"
+                          , "rec fromP: P -> Integer = match MkP Nothing => 0; MkP (Just a) => 1 + fromP (MkP a) end end"
+                          , "rec toP: Integer -> P = match 0 => MkP Nothing; i => toP (i - 1) >- fn MkP a => MkP $ Just a end end"
+                          ] $
+                      tGroup
+                          "Maybe"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "testeqval 5 $ fromP $ MkP $ Just $ Just $ Just $ Just $ Just Nothing"
+                          , testExpectSuccess "testeqval 17 $ fromP $ toP 17"
+                          , testExpectSuccess "testeqval 17 $ fromP $ MkP $ toR 17"
+                          , testExpectSuccess "testeqval 17 $ fromR $ toP 17 >- fn MkP a => a"
+                          ]
+                    , tDecls
+                          [ "datatype Q +t of MkQ (rec a. Maybe (t *: a)) end"
+                          , "rec fromR: (rec a. Maybe (t *: a)) -> List t = match Nothing => []; Just (t,a) => t :: fromR a end end"
+                          , "rec toR: List t -> (rec a. Maybe (t *: a)) = match [] => Nothing; t :: tt => Just (t, toR tt) end end"
+                          , "rec fromQ: Q t -> List t = match MkQ Nothing => []; MkQ (Just (t,a)) => t :: fromQ (MkQ a) end end"
+                          , "rec toQ: List t -> Q t = match [] => MkQ Nothing; t :: tt => MkQ $ Just (t, toQ tt >- fn MkQ a => a) end end"
+                          ] $
+                      tGroup
+                          "Pair"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "testeqval [5,3,1] $ fromQ $ MkQ $ Just (5,Just (3,Just (1,Nothing)))"
+                          , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ toQ [8,12,27,45]"
+                          , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ MkQ $ toR [8,12,27,45]"
+                          , testExpectSuccess "testeqval [8,12,27,45] $ fromR $ toQ [8,12,27,45] >- fn MkQ a => a"
+                          ]
+                    ]
+              , tGroup
                     "recursive"
                     [ testExpectSuccess "let datatype P of P1 end in let datatype Q of Q1 P end in pass"
                     , testExpectSuccess "let datatype P of P1 end; datatype Q of Q1 P end in pass"

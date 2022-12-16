@@ -96,7 +96,6 @@ library:
       - Pinafore.Language.Grammar.Interpret.RefNotation
       - Pinafore.Language.Grammar.Interpret.ScopeBuilder
       - Pinafore.Language.Grammar.Interpret.Type
-      - Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Data

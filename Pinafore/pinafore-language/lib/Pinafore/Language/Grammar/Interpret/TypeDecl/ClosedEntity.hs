@@ -83,6 +83,8 @@ nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
             Just x -> return x
     aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToEntityAdapter params arg) cvt args
     return $ Compose $ \eargs -> epAdapter eprops $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
+nonpolarToEntityAdapter _ t@(RecursiveNonpolarType {}) =
+    throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow t
 
 closedEntityConstructorAdapter ::
        CovParams dv gt decltype
