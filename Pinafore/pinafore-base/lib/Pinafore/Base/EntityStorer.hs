@@ -71,7 +71,7 @@ constructorStorerToEntity (ConstructorConstructorStorer anchor facts) hl =
   where
     hashList ::
            forall tt r.
-           (forall a. Serialize a => a -> r)
+           (forall a. HasSerializer a => a -> r)
         -> ListType (FieldStorer 'SingleMode) tt
         -> ListProduct tt
         -> [r]

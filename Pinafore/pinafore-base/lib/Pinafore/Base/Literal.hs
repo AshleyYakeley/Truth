@@ -22,7 +22,7 @@ import Shapes.Numeric
 
 newtype Literal = MkLiteral
     { unLiteral :: StrictByteString
-    } deriving (Eq, Serialize)
+    } deriving newtype (Eq, HasSerializer)
 
 instance Show Literal where
     show (MkLiteral t) = show t
@@ -58,10 +58,10 @@ addSerializer (t, bcode) s = let
     toE t'
         | t' == t = Left ()
     toE t' = Right t'
-    in invmap fromE toE (pLiteralBytes bcode <+++> s)
+    in invmap fromE toE (rLiteralBytes bcode <+++> s)
 
 rawMIMETypeSerializer :: Serializer MIMEContentType
-rawMIMETypeSerializer = pLiteralBytes [0x6D] ***> serializer
+rawMIMETypeSerializer = rLiteralBytes [0x6D] ***> serializer
 
 headerSerializer :: Serializer MIMEContentType
 headerSerializer = foldr addSerializer rawMIMETypeSerializer mimeCompress
@@ -69,7 +69,7 @@ headerSerializer = foldr addSerializer rawMIMETypeSerializer mimeCompress
 givenMIMETypeSerializer :: MIMEContentType -> Serializer ()
 givenMIMETypeSerializer t =
     case lookup t mimeCompress of
-        Just bcode -> pLiteralBytes bcode
+        Just bcode -> rLiteralBytes bcode
         Nothing -> rExact t rawMIMETypeSerializer
 
 mimeToLiteralRaw :: MIMEContentType -> StrictByteString -> Literal

@@ -9,10 +9,9 @@ module Pinafore.Base.Anchor
     , anchorToByteString
     ) where
 
-import BLAKE3
+import qualified BLAKE3
 import Control.DeepSeq
 import Data.ByteArray (convert)
-import qualified Data.Serialize as Serialize (Serialize(..), encode)
 import Shapes
 
 newtype Anchor =
@@ -24,12 +23,15 @@ class IsHash h where
     hashByteStrings :: [StrictByteString] -> h
 
 instance IsHash Anchor where
-    hashSize = fromIntegral $ typeValue @_ @NaturalType @DEFAULT_DIGEST_LEN -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
-    hashByteStrings f = MkAnchor $ convert $ hash @DEFAULT_DIGEST_LEN f
+    hashSize = fromIntegral $ typeValue @_ @NaturalType @BLAKE3.DEFAULT_DIGEST_LEN -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
+    hashByteStrings f = MkAnchor $ convert $ BLAKE3.hash @BLAKE3.DEFAULT_DIGEST_LEN f
+
+anchorSize :: Int
+anchorSize = hashSize @Anchor
 
 checkAnchor :: String -> Anchor -> Anchor
 checkAnchor s anchor@(MkAnchor bs) =
-    if olength bs == hashSize @Anchor
+    if olength bs == anchorSize
         then anchor
         else error $ s <> ": broken anchor (" <> show (olength bs) <> ")"
 
@@ -39,7 +41,7 @@ anchorCodec ::
 anchorCodec = let
     decode :: StrictByteString -> m Anchor
     decode bs =
-        if olength bs == hashSize @Anchor
+        if olength bs == anchorSize
             then return $ MkAnchor bs
             else fail $ "deserialize: bad anchor (" <> show (olength bs) <> ")"
     encode :: Anchor -> StrictByteString
@@ -60,8 +62,8 @@ randomN n g = let
 instance Random Anchor where
     randomR _ = random
     random g0 = let
-        (ww, g) = randomN @Word64 (div (hashSize @Anchor) 8) g0
-        in (MkAnchor $ mconcat $ fmap Serialize.encode ww, g)
+        (ww, g) = randomN @Word8 anchorSize g0
+        in (MkAnchor $ pack ww, g)
 
 showHexChar :: Word8 -> Char
 showHexChar w
@@ -83,14 +85,11 @@ showBSHex bs = mconcat $ fmap showWord8Hex $ otoList bs
 instance Show Anchor where
     show (MkAnchor bs) = '!' : (intercalate "-" $ groupList 8 $ showBSHex bs)
 
-instance Serialize Anchor where
-    put = Serialize.put . encodeM anchorCodec
-    get = do
-        bs <- Serialize.get
-        decode anchorCodec bs
+instance HasSerializer Anchor where
+    serializer = isoCoerce $ serializer @StrictByteString
 
-hashToAnchor :: (forall r. (forall t. Serialize t => t -> r) -> [r]) -> Anchor
-hashToAnchor f = hashByteStrings $ f Serialize.encode
+hashToAnchor :: (forall r. (forall t. HasSerializer t => t -> r) -> [r]) -> Anchor
+hashToAnchor f = hashByteStrings $ f $ encode $ serializeStrictCodec @Maybe
 
 codeAnchor :: Text -> Anchor
 codeAnchor text = hashToAnchor $ \call -> [call @Text "anchor:", call text]
@@ -98,15 +97,17 @@ codeAnchor text = hashToAnchor $ \call -> [call @Text "anchor:", call text]
 byteStringToAnchor :: StrictByteString -> Anchor
 byteStringToAnchor bs =
     MkAnchor $ let
+        maxlength = pred anchorSize
         len = olength bs
-        in if len <= 31
-               then cons (fromIntegral len) bs <> replicate (31 - len) 0
+        in if len <= maxlength
+               then cons (fromIntegral len) bs <> replicate (maxlength - len) 0
                else case hashToAnchor $ \call -> [call @Text "literal:", call bs] of
                         MkAnchor bs' -> cons 255 $ drop 1 bs'
 
 anchorToByteString :: Anchor -> Maybe StrictByteString
 anchorToByteString (MkAnchor bs) = let
+    maxlength = pred anchorSize
     len = fromIntegral $ headEx bs
-    in if len <= 31
+    in if len <= maxlength
            then Just $ take len $ tailEx bs
            else Nothing

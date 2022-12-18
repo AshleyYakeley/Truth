@@ -110,18 +110,12 @@ import qualified Data.ByteString.Lazy
 -- vector
 import Data.Vector as I (Vector, zipWith, zipWithM)
 
--- cereal
-import Data.Serialize as I (Serialize)
-
 -- text
 import Data.Text as I (Text)
 import Data.Text.Encoding as I (decodeUtf8')
 import Data.Text.Encoding
 import Data.Text.Encoding.Error as I (UnicodeException(..))
 import Data.Text.Encoding.Error
-
--- cereal-text
-import Data.Serialize.Text as I ()
 
 -- time
 import Data.Time as I

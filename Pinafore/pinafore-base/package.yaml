@@ -12,7 +12,6 @@ library:
       - shapes
       - deepseq
       - time
-      - cereal
       - memory
       - blake3
       - changes-core

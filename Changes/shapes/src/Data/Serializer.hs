@@ -1,9 +1,22 @@
-module Data.Serializer where
+module Data.Serializer
+    ( Serializer
+    , rLiteralBytes
+    , fixedByteStringSerializer
+    , serializerLazyCodec
+    , serializerStrictEncode
+    , serializerStrictDecode
+    , serializerStrictCodec
+    , HasSerializer(..)
+    , serializeLazyCodec
+    , serializeStrictCodec
+    ) where
 
 import Data.Codec
 import qualified Data.Serialize as Serialize
+import qualified Data.Serialize.Text as Serialize ()
 import Data.Streamable
 import Shapes.Import
+import Shapes.Numeric
 
 data Serializer a = MkSerializer
     { serialize :: Serialize.Putter a
@@ -96,11 +109,17 @@ instance CodecMap Serializer where
             a <- d
             mpure $ decode a
 
-serializer :: Serialize a => Serializer a
-serializer = MkSerializer Serialize.put Serialize.get
+defaultSerializer :: Serialize.Serialize a => Serializer a
+defaultSerializer = MkSerializer Serialize.put Serialize.get
 
-pLiteralBytes :: [Word8] -> Serializer ()
-pLiteralBytes ws = rLiterals $ pack ws
+rLiteralBytes :: [Word8] -> Serializer ()
+rLiteralBytes ws = rLiterals $ pack ws
+
+fixedByteStringSerializer :: Int -> Serializer StrictByteString
+fixedByteStringSerializer i = let
+    serialize = Serialize.putByteString
+    deserialize = Serialize.getByteString i
+    in MkSerializer {..}
 
 serializerLazyCodec ::
        forall m a. MonadFail m
@@ -126,12 +145,45 @@ serializerStrictCodec sr = let
     decode = serializerStrictDecode sr
     in MkCodec {..}
 
+class HasSerializer a where
+    serializer :: Serializer a
+
 serializeLazyCodec ::
-       forall m t. (MonadFail m, Serialize t)
+       forall m t. (MonadFail m, HasSerializer t)
     => Codec' m LazyByteString t
 serializeLazyCodec = serializerLazyCodec serializer
 
 serializeStrictCodec ::
-       forall m t. (MonadFail m, Serialize t)
+       forall m t. (MonadFail m, HasSerializer t)
     => Codec' m StrictByteString t
 serializeStrictCodec = serializerStrictCodec serializer
+
+instance HasSerializer Bool where
+    serializer = defaultSerializer
+
+instance HasSerializer Word8 where
+    serializer = defaultSerializer
+
+instance HasSerializer Word16 where
+    serializer = defaultSerializer
+
+instance HasSerializer Word64 where
+    serializer = defaultSerializer
+
+instance HasSerializer Integer where
+    serializer = defaultSerializer
+
+instance HasSerializer Rational where
+    serializer = defaultSerializer
+
+instance HasSerializer Double where
+    serializer = defaultSerializer
+
+instance HasSerializer StrictByteString where
+    serializer = defaultSerializer
+
+instance HasSerializer String where
+    serializer = defaultSerializer
+
+instance HasSerializer Text where
+    serializer = defaultSerializer

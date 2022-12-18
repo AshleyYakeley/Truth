@@ -9,7 +9,6 @@ module Changes.World.MIME.ContentType
     , pattern ApplicationMimeType
     ) where
 
-import Data.Serialize
 import Shapes
 
 data MIMEContentType = MkMIMEContentType_
@@ -26,17 +25,13 @@ pattern MkMIMEContentType t s p <- MkMIMEContentType_ t s p
           = MkMIMEContentType_ (toLower t) (toLower s)
               (fmap (\ (n, v) -> (toLower n, v)) p)
 
-mimeSerializer :: Serializer MIMEContentType
-mimeSerializer = let
-    toMCT :: (Text, (Text, [(Text, Text)])) -> MIMEContentType
-    toMCT (t, (s, p)) = MkMIMEContentType_ t s p
-    fromMCT :: MIMEContentType -> (Text, (Text, [(Text, Text)]))
-    fromMCT (MkMIMEContentType_ t s p) = (t, (s, p))
-    in invmap toMCT fromMCT $ serializer <***> serializer <***> rList (serializer <***> serializer)
-
-instance Serialize MIMEContentType where
-    put = serialize mimeSerializer
-    get = deserialize mimeSerializer
+instance HasSerializer MIMEContentType where
+    serializer = let
+        toMCT :: (Text, (Text, [(Text, Text)])) -> MIMEContentType
+        toMCT (t, (s, p)) = MkMIMEContentType_ t s p
+        fromMCT :: MIMEContentType -> (Text, (Text, [(Text, Text)]))
+        fromMCT (MkMIMEContentType_ t s p) = (t, (s, p))
+        in invmap toMCT fromMCT $ serializer <***> serializer <***> rList (serializer <***> serializer)
 
 goodchar :: Char -> Bool
 goodchar c

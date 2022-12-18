@@ -15,7 +15,6 @@ library:
       - directory
       - aeson
       - sqlite-simple
-      - cereal
       - changes-core
     exposed-modules:
       - Changes.World.Clock
