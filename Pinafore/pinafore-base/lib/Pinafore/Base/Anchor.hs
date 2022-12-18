@@ -86,7 +86,7 @@ instance Show Anchor where
     show (MkAnchor bs) = '!' : (intercalate "-" $ groupList 8 $ showBSHex bs)
 
 instance HasSerializer Anchor where
-    serializer = isoCoerce $ serializer @StrictByteString
+    serializer = isoCoerce $ fixedByteStringSerializer anchorSize
 
 hashToAnchor :: (forall r. (forall t. HasSerializer t => t -> r) -> [r]) -> Anchor
 hashToAnchor f = hashByteStrings $ f $ encode $ serializeStrictCodec @Maybe
