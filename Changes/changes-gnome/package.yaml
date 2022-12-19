@@ -14,7 +14,7 @@ flags:
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.12
+      - base >= 4.16
       - time
       - vector
       - haskell-gi-base
@@ -78,7 +78,7 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - shapes
           - changes-core
           - changes-gnome
@@ -93,7 +93,7 @@ executables:
             buildable: False
         source-dirs: examples/text
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - filepath
           - bytestring
           - shapes
@@ -109,7 +109,7 @@ executables:
             buildable: False
         source-dirs: examples/soup
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - filepath
           - bytestring
           - uuid
@@ -132,7 +132,7 @@ executables:
             buildable: False
         source-dirs: examples/showImages
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - filepath
           - directory
           - shapes
@@ -148,7 +148,7 @@ executables:
             buildable: False
         source-dirs: examples/cairo
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - shapes
           - time
           - cairo-functional

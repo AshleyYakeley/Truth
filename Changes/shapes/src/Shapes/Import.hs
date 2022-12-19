@@ -103,9 +103,17 @@ import Data.HashMap.Lazy as I (HashMap)
 import Data.HashSet as I (HashSet)
 
 -- bytestring
-import qualified Data.ByteString
-import Data.ByteString.Lazy as I (appendFile, getContents, hGet, hGetContents, hPut, readFile, writeFile)
-import qualified Data.ByteString.Lazy
+import Data.ByteString as I (StrictByteString)
+import Data.ByteString.Lazy as I
+    ( LazyByteString
+    , appendFile
+    , getContents
+    , hGet
+    , hGetContents
+    , hPut
+    , readFile
+    , writeFile
+    )
 
 -- vector
 import Data.Vector as I (Vector, zipWith, zipWithM)
@@ -141,10 +149,6 @@ import Data.Type.Witness as I
 -- open-witness
 import Data.Type.OpenWitness as I
 import Data.Type.OpenWitness.Witnessed as I
-
-type LazyByteString = Data.ByteString.Lazy.ByteString
-
-type StrictByteString = Data.ByteString.ByteString
 
 decodeUtf8Lenient :: StrictByteString -> Text
 decodeUtf8Lenient = decodeUtf8With lenientDecode

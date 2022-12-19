@@ -38,7 +38,7 @@ mergeDuplicateTypeVarsInType (ConsDolanType t1 tr) =
     case mergeInSingularType t1 of
         MkShimWit t1' conv1 ->
             case mergeDuplicateTypeVarsInType tr of
-                MkShimWit tr' convr -> ccontramap (iPolarPair conv1 convr) $ mergeIn1SingularType t1' tr'
+                MkShimWit tr' convr -> mapPolarShimWit (iPolarPair conv1 convr) $ mergeIn1SingularType t1' tr'
 
 mergeDuplicateTypeVars ::
        forall (ground :: GroundTypeKind) a.
