@@ -9,7 +9,7 @@ library:
     source-dirs: lib
     dependencies:
       - shapes
-      - base >= 4.12
+      - base >= 4.16
       - time
       - filepath
       - directory

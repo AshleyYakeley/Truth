@@ -9,7 +9,7 @@ library:
     source-dirs: src
     dependencies:
       # core
-      - base >= 4.12
+      - base >= 4.16
       - time
       - containers
       - stm
@@ -100,7 +100,7 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - time
           - shapes
         main: Main.hs

@@ -216,12 +216,12 @@ getConsSubtypeData ::
     -> QInterpreter [TypeData dv t]
 getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
     ssubtid <- newMatchingTypeID @dv
-    case (tdID superTD, ssubtid) of
-        (superMTID :: _ supertype, MkSome subMTID@(MkMatchingTypeID subTypeID)) -> do
-            Refl <- unsafeIdentify @_ @supertype subTypeID
+    case ssubtid of
+        MkSome subMTID@(MkMatchingTypeID subTypeID) -> do
+            Refl <- unsafeIdentify @_ @t subTypeID
             rec
                 let
-                    subtypes = superMTID : mconcat (fmap tdSubtypes subtdata)
+                    subtypes = tdID superTD : mconcat (fmap tdSubtypes subtdata)
                     subTD :: TypeData dv t
                     subTD = MkTypeData subMTID (Just superTD) subtypes tname doc
                 subtdata <- getConssSubtypeData subTD conss

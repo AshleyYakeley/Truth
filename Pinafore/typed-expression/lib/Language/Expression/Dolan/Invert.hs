@@ -38,7 +38,7 @@ invertPositiveType ::
     -> Maybe (DolanShimWit ground 'Positive a)
 invertPositiveType (ConsDolanType t NilDolanType) = do
     tf <- invertPositiveSingular t
-    return $ ccontramap @_ @_ @(DolanShim ground) meet1 tf
+    return $ mapPosShimWit meet1 tf
 invertPositiveType _ = Nothing
 
 invertNegativeGrounded ::
@@ -68,7 +68,7 @@ invertNegativeType ::
     -> Maybe (DolanShimWit ground 'Negative a)
 invertNegativeType (ConsDolanType t NilDolanType) = do
     tf <- invertNegativeSingular t
-    return $ cfmap @_ @_ @(DolanShim ground) join1 tf
+    return $ mapNegShimWit join1 tf
 invertNegativeType _ = Nothing
 
 invertPolarType ::

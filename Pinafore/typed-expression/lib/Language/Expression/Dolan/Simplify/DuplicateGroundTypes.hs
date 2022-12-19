@@ -82,7 +82,7 @@ mergeInType (ConsDolanType t1 tr) = do
     MkShimWit t1' conv1 <- mergeInSingularType t1
     MkShimWit tr' convr <- mergeInType tr
     t'' <- mergeSingularType t1' tr'
-    return $ ccontramap (iPolarPair conv1 convr) t''
+    return $ mapShimWit (iPolarPair conv1 convr) t''
 
 mergeDuplicateGroundTypes ::
        forall (ground :: GroundTypeKind) a.

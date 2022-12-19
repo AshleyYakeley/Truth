@@ -10,7 +10,7 @@ extra-doc-files: examples/*
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.12
+      - base >= 4.16
       - shapes
       - time
       - directory
@@ -29,7 +29,7 @@ executables:
     pinafore:
         source-dirs: app/main
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - shapes
           - optparse-applicative
           - changes-core
@@ -43,7 +43,7 @@ executables:
     pinafore-doc:
         source-dirs: app/doc
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - shapes
           - filepath
           - optparse-applicative
@@ -58,7 +58,7 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - filepath
           - directory
           - shapes
@@ -73,7 +73,7 @@ tests:
     app:
         source-dirs: app/main
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - shapes
           - optparse-applicative
           - pinafore-app
@@ -86,7 +86,7 @@ benchmarks:
     benchmark:
         source-dirs: benchmark
         dependencies:
-          - base >= 4.12
+          - base >= 4.16
           - shapes
           - changes-core
           - pinafore-language
