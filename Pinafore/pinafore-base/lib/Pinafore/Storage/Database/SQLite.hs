@@ -19,7 +19,7 @@ instance FieldType Anchor where
 instance FromField Anchor where
     fromField f = do
         bs <- fromField f
-        decode serializeStrictCodec bs
+        maybeToOk $ decode serializeStrictCodec bs
 
 instance ToField Anchor where
     toField = toField . encodeM serializeStrictCodec
@@ -44,7 +44,7 @@ instance FieldType Literal where
 instance FromField Literal where
     fromField f = do
         bs <- fromField f
-        decode serializeStrictCodec bs
+        maybeToOk $ decode serializeStrictCodec bs
 
 instance ToField Literal where
     toField = toField . encodeM serializeStrictCodec

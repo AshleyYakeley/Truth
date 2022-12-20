@@ -24,7 +24,7 @@ testEncodeDecode =
 testShow :: TestTree
 testShow =
     testTree "show" $
-    assertEqual "show" "!1E900FD8-BDE7A133-A047B86B-C8C74129-8B69FD90-6E097C9B-9A579187-8A3830C8" $
+    assertEqual "show" "!16E443B7-24DCA0C9-553E2859-DFCBB0C1-6BE36683-48C4DB84-B26029C6-529A9E02" $
     show $ hashToAnchor $ \call -> [call @Text "anchor test"]
 
 testAnchor :: TestTree

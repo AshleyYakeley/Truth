@@ -32,6 +32,7 @@ allow-newer: true
 
 extra-deps:
 - blake3-0.2
+- leb128-0.1.0.0
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: d1a86659a8c5d9526b9b23b6ba9538f5aed2e4a7
 - git: https://github.com/AshleyYakeley/hindent.git

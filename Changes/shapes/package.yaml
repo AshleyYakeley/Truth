@@ -25,10 +25,9 @@ library:
       - unordered-containers
       - bytestring
       - vector
-      - cereal
       - text
-      - cereal-text
       - random
+      - leb128
       # test
       - directory
       - filepath
@@ -44,6 +43,7 @@ library:
       - open-witness
       - type-rig
       - monadology
+      - primitive-serial
       - thread-trace
     exposed-modules:
       - Data.Words

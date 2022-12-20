@@ -242,7 +242,7 @@ testQueries =
               , testQuery ".textLength" $ LRSuccess "<?>"
               , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
               , testQuery "let opentype T in entityAnchor $ openEntity @T !\"example\"" $
-                LRSuccess "\"!61604E6E-5CD45F24-A9CEB59A-3FE58A09-5242FF8A-D0C603D0-8734E583-DC034C5F\""
+                LRSuccess "\"!F332D47A-3C96F533-854E5116-EC65D65E-5279826F-25EE1F57-E925B6C3-076D3BEC\""
               ]
         , testTree
               "list construction"
@@ -995,8 +995,8 @@ testQueries =
                      , testLiteral 1 True "()"
                      , testLiteral 2 True "True"
                      , testLiteral 2 True "False"
-                     , testLiteral 11 True "34"
-                     , testLiteral 11 True "34.5"
+                     , testLiteral 3 True "34"
+                     , testLiteral 4 True "34.5"
                      , testLiteral 9 True "~34"
                      ]
         ]

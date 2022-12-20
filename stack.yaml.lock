@@ -12,6 +12,13 @@ packages:
   original:
     hackage: blake3-0.2
 - completed:
+    hackage: leb128-0.1.0.0@sha256:f07e491e34bcac09bd816daefe1b9cfba163249a776b5c669821ebd0f7a5118b,1854
+    pantry-tree:
+      sha256: f604a03c6366251ffca268b94026f7a1032f319327f1f1877a274c2f59ef735f
+      size: 758
+  original:
+    hackage: leb128-0.1.0.0
+- completed:
     commit: d1a86659a8c5d9526b9b23b6ba9538f5aed2e4a7
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts

@@ -89,7 +89,7 @@ instance HasSerializer Anchor where
     serializer = isoCoerce $ fixedByteStringSerializer anchorSize
 
 hashToAnchor :: (forall r. (forall t. HasSerializer t => t -> r) -> [r]) -> Anchor
-hashToAnchor f = hashByteStrings $ f $ encode $ serializeStrictCodec @Maybe
+hashToAnchor f = hashByteStrings $ f $ encode serializeStrictCodec
 
 codeAnchor :: Text -> Anchor
 codeAnchor text = hashToAnchor $ \call -> [call @Text "anchor:", call text]
