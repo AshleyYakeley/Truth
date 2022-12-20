@@ -16,3 +16,6 @@
 [submodule "external/type-rig"]
 	path = external/type-rig
 	url = ../type-rig.git
+[submodule "external/primitive-serial"]
+	path = external/primitive-serial
+	url = ../primitive-serial.git

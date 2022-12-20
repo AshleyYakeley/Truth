@@ -6,6 +6,7 @@ packages:
 #- external/open-witness
 #- external/type-rig
 #- external/monadology
+- external/primitive-serial
 
 # Changes
 - Changes/thread-trace
