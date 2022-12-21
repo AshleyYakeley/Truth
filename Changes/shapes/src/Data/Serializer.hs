@@ -1,5 +1,5 @@
 module Data.Serializer
-    ( Serializer
+    ( Serializer(..), sleb128Serializer
     , rLiteralBytes
     , fixedByteStringSerializer
     , serializerLazyCodec
