@@ -1,6 +1,6 @@
 name: thread-trace
 version: "0.1"
-_common: !include "../../common.yaml"
+_common: !include "common.yaml"
 <<: *author
 
 <<: *language

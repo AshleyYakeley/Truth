@@ -1,0 +1,48 @@
+- &changes_version "0.4"
+
+- &pinafore_version "0.4"
+
+- &author
+    author: Ashley Yakeley
+    copyright: (c) 2017-2022 Ashley Yakeley
+    license: GPL-2.0-only
+    license-file: LICENSE
+    maintainer: <ashley@semantic.org>
+
+- &language
+    language: GHC2021
+    default-extensions:
+      - AllowAmbiguousTypes
+      - Arrows
+      - ConstraintKinds
+      - DataKinds
+      - DefaultSignatures
+      - DerivingStrategies
+      - FunctionalDependencies
+      - GADTs
+      - ImplicitParams
+      - NoImplicitPrelude
+      - LambdaCase
+      - OverloadedLabels
+      - OverloadedStrings
+      - PartialTypeSignatures
+      - PatternSynonyms
+      - QuantifiedConstraints
+      - RecordWildCards
+      - RecursiveDo
+      - RoleAnnotations
+      - NoStarIsType
+      - TemplateHaskell
+      - TypeFamilies
+      - TypeFamilyDependencies
+      - TypeInType
+      - UndecidableInstances
+      - UndecidableSuperClasses
+      - ViewPatterns
+    ghc-options:
+      - -Wall
+      - -Wincomplete-uni-patterns
+      - -Wincomplete-record-updates
+      - -Wcompat
+      - -Wnoncanonical-monad-instances
+      - -Wno-partial-type-signatures
