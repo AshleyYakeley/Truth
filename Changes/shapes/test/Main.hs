@@ -4,6 +4,7 @@ module Main
 
 import Data.IORef
 import Data.Time
+import Serializer
 import Shapes
 import Shapes.Test
 
@@ -100,4 +101,4 @@ testFixBox =
         [testTree "IO" (runBoxes :: IO ()), testTree "TransformT IO" (unTransformT runBoxes return :: IO ())]
 
 main :: IO ()
-main = testMain $ testTree "shapes" [testClock, testFix, testFixBox]
+main = testMain $ testTree "shapes" [testClock, testFix, testFixBox, testSerializer]

@@ -223,9 +223,3 @@ instance HasSerializer StrictByteString where
             len <- deserialize lengthSerializer
             bsReadN len
         in MkSerializer s d
-
-instance HasSerializer Text where
-    serializer = invmap decodeUtf8 encodeUtf8 $ serializer @StrictByteString
-
-instance HasSerializer String where
-    serializer = invmap unpack pack $ serializer @Text

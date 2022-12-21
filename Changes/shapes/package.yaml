@@ -104,4 +104,6 @@ tests:
           - time
           - shapes
         main: Main.hs
+        other-modules:
+          - Serializer
         ghc-options: -threaded

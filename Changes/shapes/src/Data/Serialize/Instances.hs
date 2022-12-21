@@ -16,6 +16,12 @@ instance HasSerializer Void where
 instance HasSerializer () where
     serializer = rUnit
 
+instance HasSerializer Text where
+    serializer = invmap decodeUtf8 encodeUtf8 $ serializer @StrictByteString
+
+instance HasSerializer String where
+    serializer = invmap unpack pack $ serializer @Text
+
 instance HasSerializer (Fixed a) where
     serializer = isoCoerce $ serializer @Integer
 
