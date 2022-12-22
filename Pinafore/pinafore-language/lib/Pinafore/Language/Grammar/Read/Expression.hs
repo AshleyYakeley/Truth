@@ -53,14 +53,14 @@ readSignature =
         t <- readType
         return $ ValueSyntaxSignature name t
 
-readDataTypeConstructor :: Parser SyntaxDatatypeConstructorOrSubtype
-readDataTypeConstructor =
+readPlainDataTypeConstructor :: Parser SyntaxPlainDatatypeConstructorOrSubtype
+readPlainDataTypeConstructor =
     (do
          readThis TokSubtype
          readThis TokDataType
          name <- readTypeNewName
          readThis TokOf
-         constructors <- readLines $ readWithDoc readDataTypeConstructor
+         constructors <- readLines $ readWithDoc readPlainDataTypeConstructor
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
@@ -74,15 +74,15 @@ readDataTypeConstructor =
                   mtypes <- many readType3
                   return $ ConstructorSyntaxConstructorOrSubtype consName mtypes ()))
 
-readClosedTypeConstructor :: Parser SyntaxClosedEntityConstructorOrSubtype
-readClosedTypeConstructor =
+readStorableDataTypeConstructor :: Parser SyntaxStorableDatatypeConstructorOrSubtype
+readStorableDataTypeConstructor =
     (do
          readThis TokSubtype
          readThis TokDataType
          readThis TokStorable
          name <- readTypeNewName
          readThis TokOf
-         constructors <- readLines $ readWithDoc readClosedTypeConstructor
+         constructors <- readLines $ readWithDoc readStorableDataTypeConstructor
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
@@ -125,13 +125,13 @@ readDataTypeDeclaration = do
     readThis TokOf
     case storable of
         Just () -> do
-            constructors <- readLines $ readWithDoc readClosedTypeConstructor
+            constructors <- readLines $ readWithDoc readStorableDataTypeConstructor
             readThis TokEnd
-            return $ TypeSyntaxDeclaration name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
+            return $ TypeSyntaxDeclaration name $ StorableDatatypeSyntaxTypeDeclaration parameters constructors
         Nothing -> do
-            constructors <- readLines $ readWithDoc readDataTypeConstructor
+            constructors <- readLines $ readWithDoc readPlainDataTypeConstructor
             readThis TokEnd
-            return $ TypeSyntaxDeclaration name $ DatatypeSyntaxTypeDeclaration parameters constructors
+            return $ TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =

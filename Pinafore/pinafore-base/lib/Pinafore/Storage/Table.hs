@@ -281,9 +281,9 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                         for_ css $ \(MkKnowShim def _) -> releaseByConstructor esrc def entity
                                     Just oldrc -> tablePush esrc $ QTableEditEntityRefCount entity $ Just $ pred oldrc
                                     Nothing -> return ()
-                            releaseByAdapter :: forall t. EditSource -> EntityAdapter t -> Entity -> ApplyStack tt IO ()
+                            releaseByAdapter :: forall t. EditSource -> StoreAdapter t -> Entity -> ApplyStack tt IO ()
                             releaseByAdapter esrc vtype entity =
-                                releaseByEntity esrc (entityAdapterDefinitions vtype) entity
+                                releaseByEntity esrc (storeAdapterDefinitions vtype) entity
                             setFact ::
                                    forall (t :: Type).
                                    EditSource
@@ -332,15 +332,15 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                 -> t
                                 -> ApplyStack tt IO ()
                             setEntity esrc (MkEntityStorer cs) e t = setConstructor esrc cs e t
-                            setEntityFromAdapter :: EditSource -> Entity -> EntityAdapter t -> t -> ApplyStack tt IO ()
+                            setEntityFromAdapter :: EditSource -> Entity -> StoreAdapter t -> t -> ApplyStack tt IO ()
                             setEntityFromAdapter esrc entity ea t = do
-                                case entityAdapterToDefinition ea t of
+                                case storeAdapterToDefinition ea t of
                                     MkSomeOf def tt -> setEntity esrc def entity tt
                             doEntityEdit :: EditSource -> QStorageEdit -> ApplyStack tt IO ()
                             doEntityEdit esrc (MkQStorageEdit stype vtype p s (Known v)) = do
                                 let
-                                    se = entityAdapterConvert stype s
-                                    ve = entityAdapterConvert vtype v
+                                    se = storeAdapterConvert stype s
+                                    ve = storeAdapterConvert vtype v
                                 mroldv <- tableRead $ QTableReadPropertyGet p se
                                 case mroldv of
                                     Just oldv
@@ -356,7 +356,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                         releaseByAdapter esrc vtype oldv
                                 tablePush esrc $ QTableEditPropertySet p se $ Just ve
                             doEntityEdit esrc (MkQStorageEdit stype vtype p s Unknown) = do
-                                let se = entityAdapterConvert stype s
+                                let se = storeAdapterConvert stype s
                                 mroldv <- tableRead $ QTableReadPropertyGet p se
                                 case mroldv of
                                     Nothing -> return ()
@@ -407,17 +407,17 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                     liftInner $ f dt
                             refRead :: Readable (ApplyStack tt IO) QStorageRead
                             refRead (QStorageReadGet stype prd subj) = do
-                                mval <- tableRead $ QTableReadPropertyGet prd $ entityAdapterConvert stype subj
+                                mval <- tableRead $ QTableReadPropertyGet prd $ storeAdapterConvert stype subj
                                 case mval of
                                     Just val -> return val
                                     Nothing -> do
                                         val <- newEntity
                                         doEntityEdit noEditSource $
-                                            MkQStorageEdit stype plainEntityAdapter prd subj (Known val)
+                                            MkQStorageEdit stype plainStoreAdapter prd subj (Known val)
                                         return val
                             refRead (QStorageReadLookup prd val) = tableRead $ QTableReadPropertyLookup prd val
                             refRead (QStorageReadEntity ea entity) =
-                                unComposeInner $ readEntity (entityAdapterDefinitions ea) entity
+                                unComposeInner $ readEntity (storeAdapterDefinitions ea) entity
                             refEdit ::
                                    NonEmpty QStorageEdit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                             refEdit = singleAlwaysEdit $ \edit esrc -> doEntityEdit esrc edit

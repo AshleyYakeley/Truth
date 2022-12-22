@@ -1,10 +1,10 @@
-module Pinafore.Base.ImmutableWholeModel where
+module Pinafore.Base.Model.ImmutableWholeModel where
 
 import Changes.Core
 import Pinafore.Base.Action
-import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
-import Pinafore.Base.Ref
+import Pinafore.Base.Model.FunctionMorphism
+import Pinafore.Base.Model.Model
 import Shapes
 
 newtype ImmutableWholeModel a =

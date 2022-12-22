@@ -52,7 +52,7 @@ storageStuff =
                              typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
                              typef = qFunctionPosWitness typeStorage typem
                              morphism =
-                                 propertyMorphism (monoEntityAdapter eta) (monoEntityAdapter etb) (MkPredicate anchor)
+                                 propertyMorphism (monoStoreAdapter eta) (monoStoreAdapter etb) (MkPredicate anchor)
                              pinamorphism =
                                  \qstore ->
                                      MkLangMorphism $

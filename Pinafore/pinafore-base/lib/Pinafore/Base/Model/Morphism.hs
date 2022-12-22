@@ -1,4 +1,4 @@
-module Pinafore.Base.Morphism
+module Pinafore.Base.Model.Morphism
     ( StorageLensMorphism(..)
     , identityStorageLensMorphism
     , composeStorageLensMorphism
@@ -15,8 +15,8 @@ module Pinafore.Base.Morphism
 
 import Changes.Core
 import qualified Data.List as List
-import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
+import Pinafore.Base.Model.FunctionMorphism
 import Shapes
 
 data StorageLensMorphism ap aq bp bq baseupdate = MkStorageLensMorphism

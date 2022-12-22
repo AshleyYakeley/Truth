@@ -1,20 +1,20 @@
-module Pinafore.Base.PredicateMorphism
+module Pinafore.Base.Model.PredicateMorphism
     ( propertyMorphism
     ) where
 
 import Changes.Core
 import Pinafore.Base.Edit
-import Pinafore.Base.EntityAdapter
-import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
-import Pinafore.Base.Morphism
+import Pinafore.Base.Model.Morphism
+import Pinafore.Base.Storable.EntityStorer
+import Pinafore.Base.Storable.StoreAdapter
 import Shapes
 
 propertyMorphism ::
-       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> StorageLensMorphism a a b b QStorageUpdate
+       forall a b. StoreAdapter a -> StoreAdapter b -> Predicate -> StorageLensMorphism a a b b QStorageUpdate
 propertyMorphism eaa eab prd = let
-    ap = entityAdapterConvert eaa
-    bp = entityAdapterConvert eab
+    ap = storeAdapterConvert eaa
+    bp = storeAdapterConvert eab
     pmGet :: a -> ReadM QStorageRead (Know b)
     pmGet a = do
         valp <- readM $ QStorageReadGet eaa prd a

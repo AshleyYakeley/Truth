@@ -1,4 +1,4 @@
-module Pinafore.Base.ModelBased
+module Pinafore.Base.Model.ModelBased
     ( ModelBased
     , QStore
     , qStoreGetModel

@@ -1,4 +1,4 @@
-module Pinafore.Base.FunctionMorphism
+module Pinafore.Base.Model.FunctionMorphism
     ( StorageFunctionMorphism(..)
     , storageFunctionMorphismContextChangeLens
     , mapStorageFunctionMorphismBase

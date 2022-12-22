@@ -1,5 +1,5 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
-    ( makeClosedEntityTypeBox
+module Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
+    ( makeStorableDataTypeBox
     ) where
 
 import Pinafore.Base
@@ -27,7 +27,7 @@ paramsToCovParams (ConsListType Refl ct) (ConsCCRArguments (CoCCRTypeParam n) ar
 
 type WithArgs :: forall k. (Type -> Type) -> k -> Type
 newtype WithArgs f gt =
-    MkWithArgs (forall (ta :: Type). Arguments EntityAdapter gt ta -> f ta)
+    MkWithArgs (forall (ta :: Type). Arguments StoreAdapter gt ta -> f ta)
 
 assignArgumentParams ::
        forall (f :: Type -> Type) dv (gt :: DolanVarianceKind dv) (decltype :: Type) (ta :: Type).
@@ -71,70 +71,69 @@ lookupVar (ConsCCRArguments _ params) var = do
         case matchParamArgs params args of
             Refl -> f args
 
-nonpolarToEntityAdapter ::
+nonpolarToStoreAdapter ::
        CovParams dv gt ta
     -> QNonpolarType t
-    -> QInterpreter (Compose ((->) (Arguments EntityAdapter gt ta)) EntityAdapter t)
-nonpolarToEntityAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
-nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
-    (cvt, MkEntityGroundType _ (MkSealedEntityProperties eprops)) <-
+    -> QInterpreter (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t)
+nonpolarToStoreAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
+nonpolarToStoreAdapter params (GroundedNonpolarType ground args) = do
+    (cvt, MkEntityGroundType _ (MkSealedStorability eprops)) <-
         case dolanToMonoGroundType ground of
             Nothing -> throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ showGroundType ground
             Just x -> return x
-    aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToEntityAdapter params arg) cvt args
+    aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToStoreAdapter params arg) cvt args
     return $ Compose $ \eargs -> epAdapter eprops $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
-nonpolarToEntityAdapter _ t@(RecursiveNonpolarType {}) =
+nonpolarToStoreAdapter _ t@(RecursiveNonpolarType {}) =
     throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow t
 
-closedEntityConstructorAdapter ::
+makeConstructorAdapter ::
        CovParams dv gt decltype
     -> ListType QNonpolarType lt
-    -> QInterpreter (WithArgs (Thing (ListType EntityAdapter lt) decltype) gt)
-closedEntityConstructorAdapter params pts = do
-    ets <- mapMListType (nonpolarToEntityAdapter params) pts
+    -> QInterpreter (WithArgs (Thing (ListType StoreAdapter lt) decltype) gt)
+makeConstructorAdapter params pts = do
+    ets <- mapMListType (nonpolarToStoreAdapter params) pts
     return $
         MkWithArgs $ \args ->
             case assignArgumentParams params args of
                 Refl -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl
 
-closedEntityTypeAdapter ::
-       CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs EntityAdapter gt)
-closedEntityTypeAdapter params conss = do
+makeTypeAdapter ::
+       CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs StoreAdapter gt)
+makeTypeAdapter params conss = do
     ff <-
         for conss $ \case
             (MkSomeFor (MkConstructorType PositionalCF cc) codec, anchor) -> do
-                MkWithArgs wa <- closedEntityConstructorAdapter params $ listVTypeToType cc
+                MkWithArgs wa <- makeConstructorAdapter params $ listVTypeToType cc
                 return $
                     MkWithArgs $ \args ->
                         case wa args of
                             MkThing tt Refl -> let
                                 vcodec = invmap listVProductToProduct (listProductToVProduct $ listTypeToVType tt) codec
-                                in Compose $ Endo $ codecSum vcodec $ constructorEntityAdapter anchor tt
-            (MkSomeFor (MkConstructorType RecordCF _) _, _) -> throw InterpretTypeDeclTypeClosedEntityRecord
-    return $
-        MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullEntityAdapter
+                                in Compose $ Endo $ codecSum vcodec $ constructorStoreAdapter anchor tt
+            (MkSomeFor (MkConstructorType RecordCF _) _, _) -> throw InterpretTypeDeclTypeStorableRecord
+    return $ MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullStoreAdapter
 
-makeClosedEntityGroundType ::
+makeStorableGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
     => FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, Anchor)]
-makeClosedEntityGroundType mainTypeName tparams = let
+makeStorableGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
     mkx :: DolanVarianceMap dv gt
         -> [(ConstructorCodec decltype, Anchor)]
-        -> QInterpreter (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
+        -> QInterpreter (DolanVarianceMap dv gt, WithArgs StoreAdapter gt)
     mkx dvm conss = do
         cvt <-
             case dolanVarianceToCovaryType dvt of
                 Just cvt -> return cvt
                 Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError mainTypeName
         let cparams = paramsToCovParams cvt tparams
-        adapter <- closedEntityTypeAdapter cparams conss
+        adapter <- makeTypeAdapter cparams conss
         return (dvm, adapter)
     mkgt ::
-           (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
-        -> QInterpreter (GroundTypeFromTypeID dv gt (EntityProperties dv gt))
+           (DolanVarianceMap dv gt, WithArgs StoreAdapter gt)
+        -> QInterpreter (GroundTypeFromTypeID dv gt (Storability dv gt))
     mkgt ~(dvm, ~(MkWithArgs epAdapter)) = do
         cvt <-
             case dolanVarianceToCovaryType dvt of
@@ -146,25 +145,25 @@ makeClosedEntityGroundType mainTypeName tparams = let
                 epKind = cvt
                 epCovaryMap = dolanVarianceMapToCovary cvt $ lazyDolanVarianceMap dvt dvm
                 epShowType = standardListTypeExprShow @dv $ exprShow subTypeName
-                eprops :: EntityProperties dv gt
-                eprops = MkEntityProperties {..}
-                in (closedEntityGroundType tidsym eprops, eprops)
-    postregister :: QGroundType dv gt -> EntityProperties dv gt -> QScopeInterpreter ()
+                eprops :: Storability dv gt
+                eprops = MkStorability {..}
+                in (storableDataGroundType tidsym eprops, eprops)
+    postregister :: QGroundType dv gt -> Storability dv gt -> QScopeInterpreter ()
     postregister gt eprops =
         registerSubtypeConversion $
         MkSubtypeConversionEntry TrustMe gt entityGroundType $
-        entityPropertiesSaturatedAdapter
+        storabilitySaturatedAdapter
             (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
-            plainEntityAdapter
+            plainStoreAdapter
             eprops $ \args eat ->
             subtypeConversion gt args entityGroundType nilDolanArgumentsShimWit $
-            pure $ functionToShim "ClosedEntity" $ entityAdapterConvert eat
+            pure $ functionToShim "datatype-storable" $ storeAdapterConvert eat
     in MkTypeConstruction mkx mkgt postregister
 
-makeClosedEntityTypeBox ::
+makeStorableDataTypeBox ::
        FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
-    -> [SyntaxWithDoc SyntaxClosedEntityConstructorOrSubtype]
+    -> [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())
-makeClosedEntityTypeBox = makeDeclTypeBox makeClosedEntityGroundType
+makeStorableDataTypeBox = makeDataTypeBox makeStorableGroundType

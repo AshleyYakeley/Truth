@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Type.Entity
+module Pinafore.Language.Type.Storable
     ( entityGroundType
     , getMonoEntityType
     , maybeEntityConvert
@@ -17,22 +17,22 @@ import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type.DynamicSupertype
-import Pinafore.Language.Type.Entity.Closed
-import Pinafore.Language.Type.Entity.Dynamic
-import Pinafore.Language.Type.Entity.Open
-import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
+import Pinafore.Language.Type.Storable.Data
+import Pinafore.Language.Type.Storable.Dynamic
+import Pinafore.Language.Type.Storable.Open
+import Pinafore.Language.Type.Storable.Type
 import Pinafore.Language.Type.Type
 import Pinafore.Language.Type.Types
 import Shapes
 
-maybeEntityAdapter :: EntityAdapter t -> EntityAdapter (Maybe t)
-maybeEntityAdapter et = let
+maybeStoreAdapter :: StoreAdapter t -> StoreAdapter (Maybe t)
+maybeStoreAdapter et = let
     justAnchor = codeAnchor "pinafore-base:Just"
-    justAdapter = constructorEntityAdapter justAnchor $ ConsListType et NilListType
+    justAdapter = constructorStoreAdapter justAnchor $ ConsListType et NilListType
     nothingAnchor = codeAnchor "pinafore-base:Nothing"
-    nothingAdapter = constructorEntityAdapter nothingAnchor NilListType
+    nothingAdapter = constructorStoreAdapter nothingAnchor NilListType
     from :: Either (a, ()) () -> Maybe a
     from (Left (a, ())) = Just a
     from (Right ()) = Nothing
@@ -42,23 +42,23 @@ maybeEntityAdapter et = let
     in invmap from to $ justAdapter <+++> nothingAdapter
 
 maybeEntityConvert :: Maybe Entity -> Entity
-maybeEntityConvert = entityAdapterConvert $ maybeEntityAdapter plainEntityAdapter
+maybeEntityConvert = storeAdapterConvert $ maybeStoreAdapter plainStoreAdapter
 
-maybeEntityFamily :: EntityFamily
-maybeEntityFamily =
-    qEntityFamily maybeGroundType $ \epShowType -> let
+maybeStorableFamily :: StorableFamily
+maybeStorableFamily =
+    qStorableFamily maybeGroundType $ \epShowType -> let
         epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments EntityAdapter Maybe t -> EntityAdapter t
-        epAdapter (ConsArguments t NilArguments) = maybeEntityAdapter t
-        in MkEntityProperties {..}
+        epAdapter :: forall t. Arguments StoreAdapter Maybe t -> StoreAdapter t
+        epAdapter (ConsArguments t NilArguments) = maybeStoreAdapter t
+        in MkStorability {..}
 
-listEntityAdapter :: EntityAdapter t -> EntityAdapter [t]
-listEntityAdapter et = let
+listStoreAdapter :: StoreAdapter t -> StoreAdapter [t]
+listStoreAdapter et = let
     nilAnchor = codeAnchor "pinafore-base:Nil"
-    nilAdapter = constructorEntityAdapter nilAnchor NilListType
+    nilAdapter = constructorStoreAdapter nilAnchor NilListType
     consAnchor = codeAnchor "pinafore-base:Cons"
-    consAdapter = constructorEntityAdapter consAnchor $ ConsListType et $ ConsListType listAdapter NilListType
+    consAdapter = constructorStoreAdapter consAnchor $ ConsListType et $ ConsListType listAdapter NilListType
     listAdapter = invmap from to $ nilAdapter <+++> consAdapter
     from :: Either () (a, ([a], ())) -> [a]
     from (Left ()) = []
@@ -69,21 +69,21 @@ listEntityAdapter et = let
     in listAdapter
 
 listEntityConvert :: [Entity] -> Entity
-listEntityConvert = entityAdapterConvert $ listEntityAdapter plainEntityAdapter
+listEntityConvert = storeAdapterConvert $ listStoreAdapter plainStoreAdapter
 
-listEntityFamily :: EntityFamily
-listEntityFamily =
-    qEntityFamily listGroundType $ \epShowType -> let
+listStorableFamily :: StorableFamily
+listStorableFamily =
+    qStorableFamily listGroundType $ \epShowType -> let
         epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments EntityAdapter [] t -> EntityAdapter t
-        epAdapter (ConsArguments t NilArguments) = listEntityAdapter t
-        in MkEntityProperties {..}
+        epAdapter :: forall t. Arguments StoreAdapter [] t -> StoreAdapter t
+        epAdapter (ConsArguments t NilArguments) = listStoreAdapter t
+        in MkStorability {..}
 
-pairEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (ta, tb)
-pairEntityAdapter eta etb = let
+pairStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (ta, tb)
+pairStoreAdapter eta etb = let
     pairAnchor = codeAnchor "pinafore-base:Pair"
-    pairAdapter = constructorEntityAdapter pairAnchor $ ConsListType eta $ ConsListType etb NilListType
+    pairAdapter = constructorStoreAdapter pairAnchor $ ConsListType eta $ ConsListType etb NilListType
     from :: (a, (b, ())) -> (a, b)
     from (a, (b, ())) = (a, b)
     to :: (a, b) -> (a, (b, ()))
@@ -91,65 +91,65 @@ pairEntityAdapter eta etb = let
     in invmap from to pairAdapter
 
 pairEntityConvert :: (Entity, Entity) -> Entity
-pairEntityConvert = entityAdapterConvert $ pairEntityAdapter plainEntityAdapter plainEntityAdapter
+pairEntityConvert = storeAdapterConvert $ pairStoreAdapter plainStoreAdapter plainStoreAdapter
 
-pairEntityFamily :: EntityFamily
-pairEntityFamily =
-    qEntityFamily pairGroundType $ \epShowType -> let
+pairStorableFamily :: StorableFamily
+pairStorableFamily =
+    qStorableFamily pairGroundType $ \epShowType -> let
         epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments EntityAdapter (,) t -> EntityAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = pairEntityAdapter ta tb
-        in MkEntityProperties {..}
+        epAdapter :: forall t. Arguments StoreAdapter (,) t -> StoreAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = pairStoreAdapter ta tb
+        in MkStorability {..}
 
-eitherEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (Either ta tb)
-eitherEntityAdapter eta etb = let
+eitherStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Either ta tb)
+eitherStoreAdapter eta etb = let
     from :: (a, ()) -> a
     from (a, ()) = a
     to :: a -> (a, ())
     to a = (a, ())
     leftAnchor = codeAnchor "pinafore-base:Left"
-    leftAdapter = invmap from to $ constructorEntityAdapter leftAnchor $ ConsListType eta NilListType
+    leftAdapter = invmap from to $ constructorStoreAdapter leftAnchor $ ConsListType eta NilListType
     rightAnchor = codeAnchor "pinafore-base:Right"
-    rightAdapter = invmap from to $ constructorEntityAdapter rightAnchor $ ConsListType etb NilListType
+    rightAdapter = invmap from to $ constructorStoreAdapter rightAnchor $ ConsListType etb NilListType
     in leftAdapter <+++> rightAdapter
 
 eitherEntityConvert :: Either Entity Entity -> Entity
-eitherEntityConvert = entityAdapterConvert $ eitherEntityAdapter plainEntityAdapter plainEntityAdapter
+eitherEntityConvert = storeAdapterConvert $ eitherStoreAdapter plainStoreAdapter plainStoreAdapter
 
-eitherEntityFamily :: EntityFamily
-eitherEntityFamily =
-    qEntityFamily eitherGroundType $ \epShowType -> let
+eitherStorableFamily :: StorableFamily
+eitherStorableFamily =
+    qStorableFamily eitherGroundType $ \epShowType -> let
         epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments EntityAdapter Either t -> EntityAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherEntityAdapter ta tb
-        in MkEntityProperties {..}
+        epAdapter :: forall t. Arguments StoreAdapter Either t -> StoreAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherStoreAdapter ta tb
+        in MkStorability {..}
 
 entityGroundType :: QGroundType '[] Entity
 entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Entity)|]) ".Entity"
 
-entityEntityFamily :: EntityFamily
-entityEntityFamily = simplePinaforeEntityFamily entityGroundType plainEntityAdapter
+entityStorableFamily :: StorableFamily
+entityStorableFamily = simplePinaforeStorableFamily entityGroundType plainStoreAdapter
 
-literalEntityFamily :: EntityFamily
-literalEntityFamily =
-    qEntityFamily literalGroundType $ \showtype ->
-        MkEntityProperties
+literalStorableFamily :: StorableFamily
+literalStorableFamily =
+    qStorableFamily literalGroundType $ \showtype ->
+        MkStorability
             { epKind = NilListType
             , epCovaryMap = covarymap
-            , epAdapter = \NilArguments -> literalEntityAdapter id
+            , epAdapter = \NilArguments -> literalStoreAdapter id
             , epShowType = showtype
             }
 
 literalEntityGroundType :: Codec Literal t -> QGroundType '[] t -> EntityGroundType t
 literalEntityGroundType codec MkPinaforeGroundType {..} =
     MkEntityGroundType pgtFamilyType $
-    MkSealedEntityProperties $
-    MkEntityProperties
+    MkSealedStorability $
+    MkStorability
         { epKind = NilListType
         , epCovaryMap = covarymap
-        , epAdapter = \NilArguments -> literalEntityAdapter codec
+        , epAdapter = \NilArguments -> literalStoreAdapter codec
         , epShowType = pgtShowType
         }
 
@@ -160,18 +160,18 @@ findmap (x:xs) f =
         Nothing -> findmap xs f
         Just y -> Just y
 
-allEntityFamilies :: [EntityFamily]
-allEntityFamilies =
-    [ maybeEntityFamily
-    , listEntityFamily
-    , pairEntityFamily
-    , eitherEntityFamily
-    , entityEntityFamily
-    , dynamicEntityFamily
-    , aDynamicEntityEntityFamily
-    , closedEntityFamily
-    , openEntityFamily
-    , literalEntityFamily
+allStorableFamilies :: [StorableFamily]
+allStorableFamilies =
+    [ maybeStorableFamily
+    , listStorableFamily
+    , pairStorableFamily
+    , eitherStorableFamily
+    , entityStorableFamily
+    , dynamicStorableFamily
+    , aDynamicEntityStorableFamily
+    , dataStorableFamily
+    , openStorableFamily
+    , literalStorableFamily
     ]
 
 instance CovarySubtype QGroundType EntityGroundType where
@@ -180,7 +180,7 @@ instance CovarySubtype QGroundType EntityGroundType where
            QGroundType dv t
         -> Maybe (CovaryType dv, EntityGroundType t)
     dolanToMonoGroundType agt@MkPinaforeGroundType {..} =
-        (findmap allEntityFamilies $ \(MkEntityFamily wit ff) -> do
+        (findmap allStorableFamilies $ \(MkStorableFamily wit ff) -> do
              tt <- matchFamilyType wit pgtFamilyType
              seprops <- ff tt
              covaryType <- dolanVarianceToCovaryType pgtVarianceType

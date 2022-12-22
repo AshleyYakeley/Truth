@@ -549,7 +549,7 @@ baseLibEntries =
                 ""
                 [ typeBDT "DynamicEntity" "" (MkSomeGroundType dynamicEntityGroundType) []
                 , hasSubtypeRelationBDT @DynamicEntity @Entity Verify "" $
-                  functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
+                  functionToShim "dynamicStoreAdapter" $ storeAdapterConvert $ dynamicStoreAdapter Nothing
                 , specialFormBDT
                       "dynamicEntity"
                       "A dynamic entity for this anchor. `A` is a concrete dynamic entity type."

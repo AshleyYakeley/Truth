@@ -26,22 +26,22 @@ library:
       - Pinafore.Base.Number
       - Pinafore.Base.Order
       - Pinafore.Base.Literal
-      - Pinafore.Base.FunctionMorphism
-      - Pinafore.Base.Morphism
-      - Pinafore.Base.ModelBased
-      - Pinafore.Base.ModelMorphism
-      - Pinafore.Base.ModelOrder
-      - Pinafore.Base.Ref
+      - Pinafore.Base.Model.FunctionMorphism
+      - Pinafore.Base.Model.Morphism
+      - Pinafore.Base.Model.ModelBased
+      - Pinafore.Base.Model.ModelMorphism
+      - Pinafore.Base.Model.ModelOrder
+      - Pinafore.Base.Model.Model
       - Pinafore.Base.Anchor
       - Pinafore.Base.Entity
       - Pinafore.Base.Lens
       - Pinafore.Base.KnowShim
-      - Pinafore.Base.EntityStorer
+      - Pinafore.Base.Storable.EntityStorer
       - Pinafore.Base.Edit
-      - Pinafore.Base.EntityAdapter
-      - Pinafore.Base.PredicateMorphism
+      - Pinafore.Base.Storable.StoreAdapter
+      - Pinafore.Base.Model.PredicateMorphism
       - Pinafore.Base.Action
-      - Pinafore.Base.ImmutableWholeModel
+      - Pinafore.Base.Model.ImmutableWholeModel
       - Pinafore.Base.File
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database

@@ -74,11 +74,11 @@ library:
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.GetDynamicSupertype
       - Pinafore.Language.Type.Subtype
-      - Pinafore.Language.Type.Entity.Type
-      - Pinafore.Language.Type.Entity.Dynamic
-      - Pinafore.Language.Type.Entity.Closed
-      - Pinafore.Language.Type.Entity.Open
-      - Pinafore.Language.Type.Entity
+      - Pinafore.Language.Type.Storable.Type
+      - Pinafore.Language.Type.Storable.Dynamic
+      - Pinafore.Language.Type.Storable.Data
+      - Pinafore.Language.Type.Storable.Open
+      - Pinafore.Language.Type.Storable
       - Pinafore.Language.Type.DynamicSupertype
       - Pinafore.Language.Type
       - Pinafore.Language.DefDoc
@@ -99,7 +99,7 @@ library:
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Data
-      - Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
       - Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl

@@ -1,14 +1,14 @@
-module Pinafore.Base.ModelOrder where
+module Pinafore.Base.Model.ModelOrder where
 
 import Changes.Core
-import Pinafore.Base.FunctionMorphism
-import Pinafore.Base.ImmutableWholeModel
 import Pinafore.Base.Know
-import Pinafore.Base.ModelBased
-import Pinafore.Base.ModelMorphism
-import Pinafore.Base.Morphism
+import Pinafore.Base.Model.FunctionMorphism
+import Pinafore.Base.Model.ImmutableWholeModel
+import Pinafore.Base.Model.Model
+import Pinafore.Base.Model.ModelBased
+import Pinafore.Base.Model.ModelMorphism
+import Pinafore.Base.Model.Morphism
 import Pinafore.Base.Order
-import Pinafore.Base.Ref
 import Shapes
 
 data ModelOrder a update =

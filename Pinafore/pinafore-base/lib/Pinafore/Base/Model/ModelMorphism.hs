@@ -1,10 +1,10 @@
-module Pinafore.Base.ModelMorphism where
+module Pinafore.Base.Model.ModelMorphism where
 
 import Changes.Core
 import Pinafore.Base.Know
-import Pinafore.Base.ModelBased
-import Pinafore.Base.Morphism
-import Pinafore.Base.Ref
+import Pinafore.Base.Model.Model
+import Pinafore.Base.Model.ModelBased
+import Pinafore.Base.Model.Morphism
 import Shapes
 
 type ModelMorphism ap aq bp bq = ModelBased (StorageLensMorphism ap aq bp bq)

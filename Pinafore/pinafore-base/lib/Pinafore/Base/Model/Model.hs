@@ -1,9 +1,9 @@
-module Pinafore.Base.Ref where
+module Pinafore.Base.Model.Model where
 
 import Changes.Core
-import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
-import Pinafore.Base.Morphism
+import Pinafore.Base.Model.FunctionMorphism
+import Pinafore.Base.Model.Morphism
 import Shapes
 
 contextualiseModels :: Model baseupdate -> Model update -> Model (ContextUpdate baseupdate update)

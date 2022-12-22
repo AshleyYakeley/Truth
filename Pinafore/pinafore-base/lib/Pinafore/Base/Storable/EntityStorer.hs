@@ -1,4 +1,4 @@
-module Pinafore.Base.EntityStorer
+module Pinafore.Base.Storable.EntityStorer
     ( Predicate(..)
     , FieldStorer(..)
     , ConstructorStorer(..)

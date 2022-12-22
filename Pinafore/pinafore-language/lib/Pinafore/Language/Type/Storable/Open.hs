@@ -1,4 +1,4 @@
-module Pinafore.Language.Type.Entity.Open where
+module Pinafore.Language.Type.Storable.Open where
 
 import Data.Shim
 import Language.Expression.Common
@@ -8,10 +8,10 @@ import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
-import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Identified
+import Pinafore.Language.Type.Storable.Type
 import Pinafore.Language.Type.Type
 import Shapes
 
@@ -33,26 +33,27 @@ newtype OpenEntity tid = MkOpenEntity
     { unOpenEntity :: Entity
     } deriving (Eq, Random)
 
-openEntityFamilyWitness :: IOWitness ('MkWitKind (LiftedFamily OpenEntityType OpenEntity))
-openEntityFamilyWitness = $(iowitness [t|'MkWitKind (LiftedFamily OpenEntityType OpenEntity)|])
+openStorableFamilyWitness :: IOWitness ('MkWitKind (LiftedFamily OpenEntityType OpenEntity))
+openStorableFamilyWitness = $(iowitness [t|'MkWitKind (LiftedFamily OpenEntityType OpenEntity)|])
 
 openEntityGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
 openEntityGroundType oet =
-    singleGroundType' (MkFamilialType openEntityFamilyWitness $ MkLiftedFamily oet) $ exprShowPrec oet
+    singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkLiftedFamily oet) $ exprShowPrec oet
 
-openEntityFamily :: EntityFamily
-openEntityFamily =
-    MkEntityFamily openEntityFamilyWitness $ \(MkLiftedFamily oet :: _ t) -> let
+openStorableFamily :: StorableFamily
+openStorableFamily =
+    MkStorableFamily openStorableFamilyWitness $ \(MkLiftedFamily oet :: _ t) -> let
         epKind = NilListType
         epCovaryMap = covarymap
-        epAdapter :: forall ta. Arguments EntityAdapter t ta -> EntityAdapter ta
-        epAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainEntityAdapter
+        epAdapter :: forall ta. Arguments StoreAdapter t ta -> StoreAdapter ta
+        epAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainStoreAdapter
         epShowType = exprShowPrec oet
-        in Just $ MkSealedEntityProperties MkEntityProperties {..}
+        in Just $ MkSealedStorability MkStorability {..}
 
 getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
-            | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkSome t
+            | Just (MkLiftedFamily t) <- matchFamilyType openStorableFamilyWitness $ pgtFamilyType gt ->
+                return $ MkSome t
         _ -> throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tm

@@ -259,10 +259,10 @@ typeDeclDoc = let
            diName = fullNameRef name
            (diParams, items) =
                case defn of
-                   ClosedEntitySyntaxTypeDeclaration params conss -> let
+                   StorableDatatypeSyntaxTypeDeclaration params conss -> let
                        tparams = fmap exprShow params
                        in (tparams, typeConssDoc name tparams conss)
-                   DatatypeSyntaxTypeDeclaration params conss -> let
+                   PlainDatatypeSyntaxTypeDeclaration params conss -> let
                        tparams = fmap exprShow params
                        in (tparams, typeConssDoc name tparams conss)
                    _ -> mempty
@@ -596,17 +596,17 @@ interpretOpenEntitySubtypeRelation sta stb =
             (MkSome ta, MkSome tb) -> do
                 (gta, tea@(MkEntityGroundType tfa _)) <- lift $ nonpolarSimpleEntityType ta
                 (gtb, MkEntityGroundType tfb _) <- lift $ nonpolarSimpleEntityType tb
-                case matchFamilyType openEntityFamilyWitness tfb of
+                case matchFamilyType openStorableFamilyWitness tfb of
                     Just (MkLiftedFamily _) ->
                         registerSubtypeConversion $
-                        case matchFamilyType openEntityFamilyWitness tfa of
+                        case matchFamilyType openStorableFamilyWitness tfa of
                             Just (MkLiftedFamily _) -> MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                             Nothing ->
                                 MkSubtypeConversionEntry TrustMe gta gtb $
                                 nilSubtypeConversion $
                                 coerceShim "open entity" .
                                 (functionToShim "entityConvert" $
-                                 entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
+                                 storeAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
                     Nothing -> lift $ throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tb
 
 interpretSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder ()

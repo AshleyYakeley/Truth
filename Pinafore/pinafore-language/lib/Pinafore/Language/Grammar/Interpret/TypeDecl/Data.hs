@@ -5,8 +5,8 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     , TypeConstruction(..)
     , GroundTypeFromTypeID(..)
     , GroundTypeMaker
-    , makeDeclTypeBox
     , makeDataTypeBox
+    , makePlainDataTypeBox
     ) where
 
 import Pinafore.Language.Error
@@ -509,7 +509,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                        fixedListArrowSequence_ (fmap constructorBox constructorFixedList) -<
                                            fmap (\codec -> (mainGroundType, picktype, x, dvm, codec)) codecs
 
-makeDeclTypeBox ::
+makeDataTypeBox ::
        forall extra.
        GroundTypeMaker extra
     -> FullName
@@ -517,16 +517,16 @@ makeDeclTypeBox ::
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> QInterpreter (QFixBox () ())
-makeDeclTypeBox gmaker name doc params syntaxConstructorList =
+makeDataTypeBox gmaker name doc params syntaxConstructorList =
     case getAnyCCRTypeParams params of
         MkAnyCCRTypeParams gtparams -> makeBox gmaker name doc syntaxConstructorList gtparams
 
-makeDataGroundType ::
+makePlainGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
     => FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, ())]
-makeDataGroundType _ tparams = let
+makePlainGroundType _ tparams = let
     dvt :: DolanVarianceType dv
     dvt = ccrArgumentsType tparams
     mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (DolanVarianceMap dv gt)
@@ -547,10 +547,10 @@ makeDataGroundType _ tparams = let
             in (gt, ())
     in MkTypeConstruction mkx mkgt $ \_ _ -> return ()
 
-makeDataTypeBox ::
+makePlainDataTypeBox ::
        FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
-    -> [SyntaxWithDoc SyntaxDatatypeConstructorOrSubtype]
+    -> [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())
-makeDataTypeBox = makeDeclTypeBox makeDataGroundType
+makePlainDataTypeBox = makeDataTypeBox makePlainGroundType

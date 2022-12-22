@@ -5,10 +5,10 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl
 
 import Data.Graph
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
+import Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
@@ -18,9 +18,10 @@ import Shapes
 
 typeDeclarationTypeBox :: FullName -> RawMarkdown -> SyntaxTypeDeclaration -> QInterpreter (QFixBox () ())
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
-typeDeclarationTypeBox name doc (ClosedEntitySyntaxTypeDeclaration params sconss) =
-    makeClosedEntityTypeBox name doc params sconss
-typeDeclarationTypeBox name doc (DatatypeSyntaxTypeDeclaration params sconss) = makeDataTypeBox name doc params sconss
+typeDeclarationTypeBox name doc (StorableDatatypeSyntaxTypeDeclaration params sconss) =
+    makeStorableDataTypeBox name doc params sconss
+typeDeclarationTypeBox name doc (PlainDatatypeSyntaxTypeDeclaration params sconss) =
+    makePlainDataTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (DynamicEntitySyntaxTypeDeclaration stcons) = makeDynamicEntityTypeBox name doc stcons
 
 checkDynamicTypeCycles :: [(SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)] -> QInterpreter ()

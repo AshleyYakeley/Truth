@@ -17,7 +17,7 @@ data SyntaxConstructorOrSubtype extra
                                        [SyntaxSignature]
     deriving (Eq)
 
-type SyntaxClosedEntityConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
+type SyntaxStorableDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
 
 data SyntaxSignature' =
     ValueSyntaxSignature Name
@@ -38,7 +38,7 @@ instance ExprShow SyntaxTypeParameter where
     exprShowPrec (NegativeSyntaxTypeParameter v) = namedTextPrec 0 $ "-" <> exprShow v
     exprShowPrec (RangeSyntaxTypeParameter vn vp) = namedTextPrec 0 $ "{-" <> exprShow vn <> ",+" <> exprShow vp <> "}"
 
-type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
+type SyntaxPlainDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
@@ -47,10 +47,10 @@ data SyntaxDynamicEntityConstructor
     deriving (Eq)
 
 data SyntaxTypeDeclaration
-    = ClosedEntitySyntaxTypeDeclaration [SyntaxTypeParameter]
-                                        [SyntaxWithDoc SyntaxClosedEntityConstructorOrSubtype]
-    | DatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
-                                    [SyntaxWithDoc SyntaxDatatypeConstructorOrSubtype]
+    = StorableDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
+                                            [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
+    | PlainDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
+                                         [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
     deriving (Eq)

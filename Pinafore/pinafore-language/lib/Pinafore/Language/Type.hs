@@ -8,16 +8,16 @@ import Data.Shim as I
 import Language.Expression.Common as I
 import Language.Expression.Dolan as I
 import Pinafore.Language.Type.DynamicSupertype as I
-import Pinafore.Language.Type.Entity as I
-import Pinafore.Language.Type.Entity.Closed as I
-import Pinafore.Language.Type.Entity.Dynamic as I
-import Pinafore.Language.Type.Entity.Open as I
-import Pinafore.Language.Type.Entity.Type as I
 import Pinafore.Language.Type.Family as I
 import Pinafore.Language.Type.GetDynamicSupertype as I
 import Pinafore.Language.Type.Ground as I
 import Pinafore.Language.Type.Identified as I
 import Pinafore.Language.Type.Show as I
+import Pinafore.Language.Type.Storable as I
+import Pinafore.Language.Type.Storable.Data as I
+import Pinafore.Language.Type.Storable.Dynamic as I
+import Pinafore.Language.Type.Storable.Open as I
+import Pinafore.Language.Type.Storable.Type as I
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.Type.Type as I
 import Pinafore.Language.Type.Types as I
