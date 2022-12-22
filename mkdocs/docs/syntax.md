@@ -172,8 +172,8 @@ All declarations, including type declarations, are local to a `let` block.
     "rec" <semicolon-separated(<direct-declaration>)> "end"
 
 <direct-declaration> ::=
-    "datatype" <type-const> <datatype-parameters> <of(<datatype-constructor>)> |
-    "datatype" "storable" <type-const> <datatype-storable-parameters> <of(<datatype-storable-constructor>)> |
+    "datatype" <type-const> <plain-datatype-parameters> <of(<plain-datatype-constructor>)> |
+    "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
     "opentype" <type-const> |
     "subtype" <opt-trustme> <type> "<:" <type> <subtype-body> |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
@@ -193,28 +193,28 @@ All declarations, including type declarations, are local to a `let` block.
 
 <binding> ::= <pattern-1> "=" <expression>
 
-<datatype-parameters> ::=  | <datatype-parameter> <datatype-parameters>
+<plain-datatype-parameters> ::=  | <plain-datatype-parameter> <plain-datatype-parameters>
 
-<datatype-parameter> ::=
+<plain-datatype-parameter> ::=
     "+" lname |
     "-" lname |
     "{" "+" lname "," "-" lname "}" |
     "{" "-" lname "," "+" lname "}" |
 
-<datatype-constructor> ::=
+<plain-datatype-constructor> ::=
     uname <types> |
     uname <of(<signature>)> |
-    "subtype" "datatype" <type-const> <of(<datatype-constructor>)>
+    "subtype" "datatype" <type-const> <of(<plain-datatype-constructor>)>
 
 <signature> ::= lname ":" <type>
 
-<datatype-storable-parameters> ::=  | <datatype-storable-parameter> <datatype-storable-parameters>
+<storable-datatype-parameters> ::=  | <storable-datatype-parameter> <storable-datatype-parameters>
 
-<datatype-storable-parameter> ::= "+" lname
+<storable-datatype-parameter> ::= "+" lname
 
-<datatype-storable-constructor> ::=
+<storable-datatype-constructor> ::=
     uname <types> anchor |
-    "subtype" "datatype" "storable" <type-const> <of(<datatype-storable-constructor>)>
+    "subtype" "datatype" "storable" <type-const> <of(<storable-datatype-constructor>)>
 
 <dynamictype-constructors> ::=
     <dynamictype-constructor> |

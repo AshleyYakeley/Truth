@@ -18,8 +18,7 @@ datatype T of
 end;
 ```
 
-Data types are not subtypes of `Entity` and are not storable.
-You can use closed entity types (below) for that.
+Data types are not subtypes of `Entity` and are not storable, except with the `storable` keyword (see below).
 
 Datatypes can take parameters. The variance of each parameter is specified like this:
 
@@ -36,14 +35,39 @@ datatype D +a -b {-p,+q} of
 end;
 ```
 
-## Entity types
+### Subtypes
 
-Entities are the things that can be represented as subjects and values in the triple-store.
-They are of type `Entity`.
-Entities include literals, open entity types, and closed entity types.
-Closed entity types include lists, maybes, pairs, and eithers of entities, as well as declared closed entity types.
+It is possible to declare subtypes within a datatype declaration.
+For example:
+
+```pinafore
+datatype P -x +y of
+    MkP (x -> y);
+    subtype datatype Q of
+        MkQ (x -> Integer) y;
+    end;
+end;
+```
+
+This will give `Q <: P` as well as `D(Q) = D(P)`.
+
+## Storable types
+
+Certain types can be represented as subjects and values in the triple-store.
+These types are called _storable_.
+All storable types are subtypes of `Entity`.
+
+Storable types include literal types, open entity types, and storable data types.
+Storable data types include lists, maybes, products, and sums of storable types, as well as declared storable data types.
+
+### Entity
+
+The `Entity` type represents a 256-bit hash (using the BLAKE3 hashing algorithm).
 
 ### Literals
+
+The `Literal` type represents a byte-array in which MIME-type and contents are encoded.
+Thus, at run-time ("dynamically") it is possible to enquire into the subtype of a `Literal`, using the greatest-dynamic-supertype mechanism.
 
 `Literal <: Entity`
 
@@ -114,12 +138,12 @@ There are no higher-arity tuples than pair.
 `Left: a -> a +: None`  
 `Right: b -> None +: b`
 
-### Declared Closed Entity Types
+### Storable Data Types
 
-Closed entity types can be declared with the `datatype storable` keywords.
+Storable data types can be declared with the `datatype storable` keywords.
 The declaration specifies the constructors of the type.
-They are similar to data types, but each constructor has an anchor, and field types are all subtypes of `Entity`.
-Like data types, closed entity types can have type parameters, but they must all be covariant.
+They are similar to plain data types, but each constructor has an anchor, and field types are all subtypes of `Entity`.
+Like plain data types, storable data types can have type parameters, but they must all be covariant.
 
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
@@ -138,7 +162,20 @@ patientPerson patient =
 ```
 
 Each constructor is anchored by its anchor and its count of types.
-Constructors can be added or removed from a closed type without affecting the anchoring of existing constructors in the type.
+Constructors can be added or removed from a storable data type without affecting the anchoring of existing constructors in the type.
+
+Like plain datatypes, storable datatypes permit subtypes in their definitions:
+
+```pinafore
+rec
+    datatype storable L +x of
+        Nil !"L.Nil";
+        subtype datatype storable L1 of
+            Cons x (L x) !"L.Cons";
+        end;
+    end;
+end;
+```
 
 ### Dynamic Entity Types
 
