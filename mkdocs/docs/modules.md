@@ -29,7 +29,7 @@ somenumber: Integer
 
 opentype X;
 
-closedtype T of
+datatype storable T of
     T1 Integer Boolean;
     T2;
 end;

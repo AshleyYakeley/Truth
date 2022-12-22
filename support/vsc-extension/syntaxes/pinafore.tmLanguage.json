@@ -52,7 +52,7 @@
 				},
 				{
 					"name": "keyword.declaration.pinafore",
-					"match": "\\b(datatype|opentype|subtype|closedtype|dynamictype)\\b"
+					"match": "\\b(datatype|opentype|subtype|storable|dynamictype)\\b"
 				},
 				{
 					"name": "constant.other.predefined.pinafore",

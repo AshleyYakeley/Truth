@@ -689,12 +689,12 @@ testEntity =
                     "non-simple" -- not allowed, per issue #28
                     [testExpectReject "pass"]
               , tDecls ["opentype Q", "subtype Integer <: Q"] $ tGroup "literal" $ strictSubtypeTests "Integer" "Q"
-              , tDecls ["opentype Q", "closedtype P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
+              , tDecls ["opentype Q", "datatype storable P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
                 tGroup "closed" $ strictSubtypeTests "P" "Q"
               , tDecls
                     [ "opentype Q"
                     , "opentype R"
-                    , "closedtype P of P1 Text Number !\"P.P1\" end"
+                    , "datatype storable P of P1 Text Number !\"P.P1\" end"
                     , "subtype P <: Q"
                     , "subtype P <: R"
                     ] $
@@ -892,8 +892,10 @@ testEntity =
                     , testExpectSuccess "let rec datatype P of P1 P end end in pass"
                     , testExpectSuccess
                           "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = match P1 q => q >- match Q1 p => p end end end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 Q end; closedtype Q of Q1 !\"Q1\" end end in pass"
-                    , testExpectReject "let rec closedtype P of P1 Q end; datatype Q of Q1 !\"Q1\" end end in pass"
+                    , testExpectSuccess
+                          "let rec datatype P of P1 Q end; datatype storable Q of Q1 !\"Q1\" end end in pass"
+                    , testExpectReject
+                          "let rec datatype storable P of P1 Q end; datatype Q of Q1 !\"Q1\" end end in pass"
                     , testExpectSuccess
                           "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1 (Q1 pass) end in pqpass >- match P1 (Q1 p) => p end"
                     ]
@@ -1183,9 +1185,9 @@ testEntity =
                       "let f = fn x => let y = x; subtype Unit <: T Integer = fn () => T1 (Just y) in unT1 () in testeq {Just 17} {f 17}"
                     ]
               ]
-        , tDecls ["closedtype T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
+        , tDecls ["datatype storable T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
           tGroup
-              "closedtype"
+              "datatype-storable"
               [ testExpectSuccess "pass"
               , testExpectSuccess "let f: T -> Entity = fn x => x in pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
@@ -1193,58 +1195,61 @@ testEntity =
               , testExpectSuccess "T1 \"hello\" 3 >- match T1 \"hello\" 3 => pass end"
               , testExpectSuccess
                     "T1 \"hello\" 3 >- match T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
-              , testExpectSuccess "let closedtype P of end in pass"
-              , testExpectSuccess "let closedtype P of P1 !\"P1\" end in pass"
-              , testExpectSuccess "let closedtype P of P1 !\"P1\"; end in pass"
-              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\" end in pass"
-              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\"; end in pass"
-              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\"; P2 Text !\"P2\" end in pass"
-              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\"; P2 Text !\"P2\"; end in pass"
+              , testExpectSuccess "let datatype storable P of end in pass"
+              , testExpectSuccess "let datatype storable P of P1 !\"P1\" end in pass"
+              , testExpectSuccess "let datatype storable P of P1 !\"P1\"; end in pass"
+              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\" end in pass"
+              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\"; end in pass"
+              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\"; P2 Text !\"P2\" end in pass"
+              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\"; P2 Text !\"P2\"; end in pass"
               , tGroup
                     "nominal"
-                    [ testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> P = fn x => x in pass"
+                    [ testExpectSuccess "let datatype storable P of P1 !\"P1\" end; f : P -> P = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of P1 !\"P1\" end; closedtype Q of end; f : P -> Q = fn x => x in pass"
+                          "let datatype storable P of P1 !\"P1\" end; datatype storable Q of end; f : P -> Q = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
-                    , testExpectReject "let closedtype P of end; closedtype Q of end; f : P -> Q = fn x => x in pass"
+                          "let datatype storable P of end; datatype storable Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of P1 !\"P1\" end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
+                          "let datatype storable P of end; datatype storable Q of end; f : P -> Q = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P of P1 Integer !\"P1\" end; closedtype Q of Q1 Integer !\"Q1\" end; f : P -> Q = fn x => x in pass"
+                          "let datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
+                    , testExpectReject
+                          "let datatype storable P of P1 Integer !\"P1\" end; datatype storable Q of Q1 Integer !\"Q1\" end; f : P -> Q = fn x => x in pass"
                     ]
               , tGroup
                     "parameters"
                     [ testExpectSuccess
-                          "let closedtype P +a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let datatype storable P +a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P -a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let datatype storable P -a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectReject
-                          "let closedtype P a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let datatype storable P a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> Integer= fn P1 x => x in pass"
-                    , testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> Entity = fn x => x in pass"
+                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Integer -> Integer= fn P1 x => x in pass"
+                    , testExpectSuccess "let datatype storable P of P1 !\"P1\" end; f : P -> Entity = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a of P1 a !\"P1\" end; f : P Entity -> Entity = fn x => x in pass"
+                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Entity -> Entity = fn x => x in pass"
                     , testExpectSuccess
-                          "let closedtype P +a +b of P1 a b !\"P1\" end; f : P Entity Entity -> Entity = fn x => x in pass"
+                          "let datatype storable P +a +b of P1 a b !\"P1\" end; f : P Entity Entity -> Entity = fn x => x in pass"
                     ]
               , tGroup
                     "recursive"
                     [ testExpectSuccess
-                          "let closedtype P of P1 !\"P1\" end in let closedtype Q of Q1 P !\"Q1\" end in pass"
-                    , testExpectSuccess "let closedtype P of P1 !\"P1\" end; closedtype Q of Q1 P !\"Q1\" end in pass"
+                          "let datatype storable P of P1 !\"P1\" end in let datatype storable Q of Q1 P !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let rec closedtype P of P1 !\"P1\" end; closedtype Q of Q1 P !\"Q1\" end end in pass"
-                    , testExpectSuccess "let rec closedtype P of P1 Q !\"P1\" end; closedtype Q of end end in pass"
+                          "let datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let rec closedtype P of P1 Q !\"P1\" end; closedtype Q of Q1 P !\"Q1\" end end in pass"
-                    , testExpectSuccess "let rec closedtype P of P1 P !\"P1\" end end in pass"
-                    , testExpectSuccess "let rec closedtype P +a of P1 (P (a *: a)) !\"P1\" end end in pass"
+                          "let rec datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end end in pass"
+                    , testExpectSuccess
+                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of end end in pass"
+                    , testExpectSuccess
+                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end end in pass"
+                    , testExpectSuccess "let rec datatype storable P of P1 P !\"P1\" end end in pass"
+                    , testExpectSuccess "let rec datatype storable P +a of P1 (P (a *: a)) !\"P1\" end end in pass"
                     , tDecls
-                          [ "rec closedtype L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
+                          [ "rec datatype storable L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
                           , "rec listToL: List a -> L a = match [] => Nil; x::xs => Cons x (listToL xs) end end"
                           , "rec lToList: L a -> List a = match Nil => []; Cons x xs => x :: lToList xs end end"
                           ] $

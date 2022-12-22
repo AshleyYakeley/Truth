@@ -116,7 +116,7 @@ There are no higher-arity tuples than pair.
 
 ### Declared Closed Entity Types
 
-Closed entity types can be declared with the `closedtype` keyword.
+Closed entity types can be declared with the `datatype storable` keywords.
 The declaration specifies the constructors of the type.
 They are similar to data types, but each constructor has an anchor, and field types are all subtypes of `Entity`.
 Like data types, closed entity types can have type parameters, but they must all be covariant.
@@ -124,7 +124,7 @@ Like data types, closed entity types can have type parameters, but they must all
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
 ```pinafore
-closedtype Patient of
+datatype storable Patient of
     LivingPatient Person Date !"Patient.LivingPatient";
     DeadPatient Person Date Date !"Patient.DeadPatient";
 end;

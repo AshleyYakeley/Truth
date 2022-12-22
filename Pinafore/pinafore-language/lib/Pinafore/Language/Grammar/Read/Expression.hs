@@ -78,7 +78,8 @@ readClosedTypeConstructor :: Parser SyntaxClosedEntityConstructorOrSubtype
 readClosedTypeConstructor =
     (do
          readThis TokSubtype
-         readThis TokClosedType
+         readThis TokDataType
+         readThis TokStorable
          name <- readTypeNewName
          readThis TokOf
          constructors <- readLines $ readWithDoc readClosedTypeConstructor
@@ -118,22 +119,19 @@ readTypeParameter =
 readDataTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDataTypeDeclaration = do
     readThis TokDataType
+    storable <- optional $ readThis TokStorable
     name <- readTypeNewName
     parameters <- many readTypeParameter
     readThis TokOf
-    constructors <- readLines $ readWithDoc readDataTypeConstructor
-    readThis TokEnd
-    return $ TypeSyntaxDeclaration name $ DatatypeSyntaxTypeDeclaration parameters constructors
-
-readClosedTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
-readClosedTypeDeclaration = do
-    readThis TokClosedType
-    name <- readTypeNewName
-    parameters <- many readTypeParameter
-    readThis TokOf
-    constructors <- readLines $ readWithDoc readClosedTypeConstructor
-    readThis TokEnd
-    return $ TypeSyntaxDeclaration name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
+    case storable of
+        Just () -> do
+            constructors <- readLines $ readWithDoc readClosedTypeConstructor
+            readThis TokEnd
+            return $ TypeSyntaxDeclaration name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
+        Nothing -> do
+            constructors <- readLines $ readWithDoc readDataTypeConstructor
+            readThis TokEnd
+            return $ TypeSyntaxDeclaration name $ DatatypeSyntaxTypeDeclaration parameters constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =
@@ -152,8 +150,7 @@ readDynamicTypeDeclaration = do
 
 readTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readTypeDeclaration =
-    readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readClosedTypeDeclaration <|>
-    readDynamicTypeDeclaration
+    readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readDynamicTypeDeclaration
 
 readBinding :: Parser SyntaxBinding
 readBinding = do

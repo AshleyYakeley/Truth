@@ -21,7 +21,7 @@ class PinaforeLexer(RegexLexer):
             (r'{\#', Comment.Multiline, 'comment'),
             (r'"(\\\\|\\"|[^"])*"', String),
             (words(('fn', 'fns', 'match', 'rec', 'if', 'then', 'else', 'let', 'import', 'expose', 'namespace', 'using', 'as', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
-            (words(('datatype', 'opentype', 'subtype', 'closedtype', 'dynamictype'), suffix=r'\b'), Keyword.Declaration),
+            (words(('datatype', 'opentype', 'subtype', 'storable', 'dynamictype'), suffix=r'\b'), Keyword.Declaration),
             (words(('property', 'openEntity', 'newOpenEntity', 'evaluate'), suffix=r'\b'), Keyword.Pseudo),
             (words((
                 'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Ordering', 'Time', 'Duration', 'Date', 'TimeOfDay', 'LocalTime',

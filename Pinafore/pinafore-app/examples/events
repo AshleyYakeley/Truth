@@ -11,7 +11,7 @@ using Storage;
 ### EventTime
 
 # An event can either be at a particular time, or a whole-day event.
-closedtype EventTime of
+datatype storable EventTime of
     EventTimeDate Date !"Date"; # all-day event
     EventTimeTime LocalTime !"Time"; # event at a time
 end;

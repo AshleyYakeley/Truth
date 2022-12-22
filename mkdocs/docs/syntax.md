@@ -173,9 +173,9 @@ All declarations, including type declarations, are local to a `let` block.
 
 <direct-declaration> ::=
     "datatype" <type-const> <datatype-parameters> <of(<datatype-constructor>)> |
+    "datatype" "storable" <type-const> <datatype-storable-parameters> <of(<datatype-storable-constructor>)> |
     "opentype" <type-const> |
     "subtype" <opt-trustme> <type> "<:" <type> <subtype-body> |
-    "closedtype" <type-const> <closedtype-parameters> <of(<closedtype-constructor>)> |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
@@ -208,13 +208,13 @@ All declarations, including type declarations, are local to a `let` block.
 
 <signature> ::= lname ":" <type>
 
-<closedtype-parameters> ::=  | <closedtype-parameter> <closedtype-parameters>
+<datatype-storable-parameters> ::=  | <datatype-storable-parameter> <datatype-storable-parameters>
 
-<closedtype-parameter> ::= "+" lname
+<datatype-storable-parameter> ::= "+" lname
 
-<closedtype-constructor> ::=
+<datatype-storable-constructor> ::=
     uname <types> anchor |
-    "subtype" "closedtype" <type-const> <of(<closedtype-constructor>)>
+    "subtype" "datatype" "storable" <type-const> <of(<datatype-storable-constructor>)>
 
 <dynamictype-constructors> ::=
     <dynamictype-constructor> |

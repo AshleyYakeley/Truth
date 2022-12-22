@@ -9,7 +9,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . declarations now non-recursive, with recursive rec-blocks
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments
-    - datatype and closedtype declarations
+    - datatype declarations
+      . "closedtype" now "datatype storable"
       . can now have parameters
       . can now have subtypes
       . record constructors/patterns for datatypes
@@ -22,7 +23,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . type signatures now attach to bindings, not stand-alone
       . separate syntax for static ":" and dynamic ":?" pattern typing
       . new syntax for function expressions: fn, fns, match, matches, =>
-      . new syntax for datatype and closedtype definitions
+      . new syntax for datatype definitions
     - reject rather than mutate uninvertible type signatures
   * Interactive
     - :doc to retrieve name documentation
