@@ -10,14 +10,8 @@ import Shapes
 
 type QFileUpdate = ReferenceStoreUpdate FileEntity ByteStringEdit
 
-instance BaseChangeLens QFileUpdate QFileUpdate where
-    baseChangeLens = id
-
-storageFileItemLens ::
-       BaseChangeLens QFileUpdate baseupdate
-    => FileEntity
-    -> ChangeLens baseupdate (SingleReferenceUpdate ByteStringEdit)
-storageFileItemLens entity = tupleChangeLens (MkFunctionSelector entity) . baseChangeLens
+storageFileItemLens :: FileEntity -> ChangeLens QFileUpdate (SingleReferenceUpdate ByteStringEdit)
+storageFileItemLens entity = tupleChangeLens (MkFunctionSelector entity)
 
 directoryStorageFileReference :: FilePath -> Reference (UpdateEdit QFileUpdate)
 directoryStorageFileReference path =

@@ -9,7 +9,6 @@ import Pinafore.Base.Entity as I
 import Pinafore.Base.File as I
 import Pinafore.Base.Know as I
 import Pinafore.Base.KnowShim as I
-import Pinafore.Base.Lens as I
 import Pinafore.Base.Literal as I
 import Pinafore.Base.Model.FunctionMorphism as I
 import Pinafore.Base.Model.ImmutableWholeModel as I

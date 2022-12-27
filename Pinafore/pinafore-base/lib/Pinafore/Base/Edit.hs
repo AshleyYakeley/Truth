@@ -7,7 +7,6 @@ module Pinafore.Base.Edit
 import Changes.Core
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Pinafore.Base.Storable.EntityStorer
 import Pinafore.Base.Storable.StoreAdapter
 import Shapes
@@ -76,6 +75,3 @@ type instance UpdateEdit QStorageUpdate = QStorageEdit
 instance IsUpdate QStorageUpdate where
     editUpdate (MkQStorageEdit st vt p s kv) =
         MkQStorageUpdate p (storeAdapterConvert st s) (fmap (storeAdapterConvert vt) kv)
-
-instance BaseChangeLens QStorageUpdate QStorageUpdate where
-    baseChangeLens = id
