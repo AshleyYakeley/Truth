@@ -50,7 +50,7 @@ All declarations, including type declarations, are local to a `let` block.
     <type-1> "&" <type> |
     <type-1>
 
-<type-infix> ::= "->" | "~>"
+<type-infix> ::= "->"
 
 <type-1> ::= <type-infix[0]> |
 

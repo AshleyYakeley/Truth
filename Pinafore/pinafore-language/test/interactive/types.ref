@@ -8,7 +8,7 @@ pinafore> store <- Env.openDefaultStore
 pinafore> let pp = property @P @P !"pp" store
 pinafore> let qp = property @Q @P !"qp" store
 pinafore> :t pp
-: P ~> P
+: Property P P
 pinafore> :t pp !$ {p}
 : WholeModel P
 pinafore> :t pp !$ {q}

@@ -16,7 +16,7 @@ opentype Named;
 datatype NamedStuff of
     MkNamedStuff of
         #| A name is a text that identifies (in some sense) an entity.
-        name: Named ~> Text;
+        name: Property Named Text;
         #| Order alphabetically (case-insensitive) by name
         nameOrder: ModelOrder Named;
         #| Order a set of entities by their names.

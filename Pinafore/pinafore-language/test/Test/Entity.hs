@@ -424,7 +424,7 @@ testEntity =
                           "eta !$ {e1} := \"hello\" >> eta !$ {e2} := \"hello\" >> testeq (eta !$ {e1}) (eta !$ {e2})"
                     ]
               , tGroup
-                    "identity morphism"
+                    "identity property"
                     [ testExpectSuccess "(identity !$ eea !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
                     , testExpectSuccess "(eea !$ identity !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
                     , testExpectSuccess "((identity !. eea) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
@@ -436,7 +436,7 @@ testEntity =
                     , testExpectSuccess "(identity !$ eea !$ {e1}) := e2 >> testeq {e2} (identity !$ eea !$ {e1})"
                     ]
               , tGroup
-                    "identity inverse morphism"
+                    "identity inverse property"
                     [ testExpectSuccess "(identity !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , testExpectSuccess "(eea !@@ identity !@ {e2}) += e1 >> testneq {e2} (eea !$ {e1})"
                     , testExpectSuccess "(eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
@@ -455,7 +455,7 @@ testEntity =
                           "eta !@ {\"hello\"} += e1 >> ((eta !. identity) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
                     ]
               , tGroup
-                    "composed morphisms"
+                    "composed properties"
                     [ testExpectSuccess "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
                     , testExpectSuccess "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
                     , testExpectSuccess "(eea !. eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
@@ -465,7 +465,7 @@ testEntity =
                     , testExpectSuccess "(eeb !. eea) !$ {e2} := e1 >> testeq {e1} (eeb !$ eea !$ {e2})"
                     ]
               , tGroup
-                    "composed inverse morphisms"
+                    "composed inverse properties"
                     [ testExpectSuccess "(eeb !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
                     , testExpectSuccess "((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
                     , testExpectSuccess "((eta !. eeb) !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"

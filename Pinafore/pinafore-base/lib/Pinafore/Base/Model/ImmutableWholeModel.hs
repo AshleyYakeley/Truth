@@ -3,7 +3,7 @@ module Pinafore.Base.Model.ImmutableWholeModel where
 import Changes.Core
 import Pinafore.Base.Action
 import Pinafore.Base.Know
-import Pinafore.Base.Model.FunctionMorphism
+import Pinafore.Base.Model.FunctionAttribute
 import Pinafore.Base.Model.Model
 import Shapes
 
@@ -44,7 +44,7 @@ immutableWholeModelValue def model = eaMapReadOnlyWhole (fromKnow def) $ immutab
 
 applyImmutableModel ::
        Model baseupdate
-    -> StorageFunctionMorphism baseupdate (Know a) (Know b)
+    -> StorageFunctionAttribute baseupdate (Know a) (Know b)
     -> ImmutableWholeModel a
     -> ImmutableWholeModel b
 applyImmutableModel basesub m (MkImmutableWholeModel v) = MkImmutableWholeModel $ applyStorageFunction basesub m v

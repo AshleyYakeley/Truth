@@ -3,7 +3,7 @@
 
 module Pinafore.Language.Library.Std.Model
     ( modelLibEntries
-    , morphismGroundType
+    , propertyGroundType
     ) where
 
 import Changes.Core
@@ -12,7 +12,6 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -75,14 +74,12 @@ modelOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonF
 instance HasQGroundType '[ ContraCCRVariance] LangModelOrder where
     qGroundType = modelOrderGroundType
 
--- LangMorphism
-morphismGroundType :: QGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
-morphismGroundType =
-    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMorphism)|]) $ \ta tb ->
-        namedTextPrec 2 $ precNamedText 1 ta <> " ~> " <> precNamedText 2 tb
+-- LangProperty
+propertyGroundType :: QGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangProperty
+propertyGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangProperty)|]) "Property"
 
-instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism where
-    qGroundType = morphismGroundType
+instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangProperty where
+    qGroundType = propertyGroundType
 
 getFiniteSetModelList :: LangModelOrder A -> LangFiniteSetModel '( A, EnA) -> View (LangListModel '( TopType, A))
 getFiniteSetModelList order val =
@@ -320,33 +317,33 @@ modelLibEntries =
                 ]
           ]
     , headingBDT
-          "Morphisms"
-          "Morphisms relate entities."
-          [ typeBDT "~>" "" (MkSomeGroundType morphismGroundType) []
-          , valBDT "identity" "The identity morphism." $ identityLangMorphism @X @Y
-          , valBDT "!." "Compose morphisms." $ composeLangMorphism @AP @AQ @BX @BY @CP @CQ
-          , valSupertypeBDT "!." "Compose morphisms." $ composeLangMorphism @A @A @B @B @C @C
-          , valBDT "!**" "Pair morphisms. Models from these morphisms are undeleteable." $
-            pairLangMorphism @AP @AQ @BP @BQ @CP @CQ
-          , valSupertypeBDT "!**" "Pair morphisms. Models from these morphisms are undeleteable." $
-            pairLangMorphism @A @A @B @B @C @C
-          , valBDT "!++" "Either morphisms. Models from these morphisms are undeleteable." $
-            eitherLangMorphism @AP @AQ @BP @BQ @CP @CQ
-          , valSupertypeBDT "!++" "Either morphisms. Models from these morphisms are undeleteable." $
-            eitherLangMorphism @A @A @B @B @C @C
-          , valBDT "!$" "Apply a morphism to a model." $ applyLangMorphismModel @AP @AQ @BP @BQ
-          , valSupertypeBDT "!$" "Apply a morphism to a model." $ applyLangMorphismModel @A @A @B @B
-          , valBDT "!$%" "Apply a morphism to an immutable model.\n`m !$% r = m !$ immutWholeModel r`" $
-            applyLangMorphismImmutModel @A @BP @BQ
-          , valSupertypeBDT "!$%" "Apply a morphism to an immutable model.\n`m !$% r = m !$ immutWholeModel r`" $
-            applyLangMorphismImmutModel @A @B @B
-          , valBDT "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @A @B
-          , valBDT "!@" "Co-apply a morphism to a model." $ inverseApplyLangMorphismModel @A @BX @BY
-          , valSupertypeBDT "!@" "Co-apply a morphism to a model." $ inverseApplyLangMorphismModel @A @B @B
-          , valBDT "!@%" "Co-apply a morphism to an immutable model.\n`m !@% r = m !@ immutWholeModel r`" $
-            inverseApplyLangMorphismImmutModel @A @B
-          , valBDT "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @BX @BY
-          , valSupertypeBDT "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B
+          "Properties"
+          "Properties relate entities."
+          [ typeBDT "Property" "" (MkSomeGroundType propertyGroundType) []
+          , valBDT "identity" "The identity property." $ identityLangProperty @X @Y
+          , valBDT "!." "Compose properties." $ composeLangProperty @AP @AQ @BX @BY @CP @CQ
+          , valSupertypeBDT "!." "Compose properties." $ composeLangProperty @A @A @B @B @C @C
+          , valBDT "!**" "Pair properties. Models from these properties are undeleteable." $
+            pairLangProperty @AP @AQ @BP @BQ @CP @CQ
+          , valSupertypeBDT "!**" "Pair properties. Models from these properties are undeleteable." $
+            pairLangProperty @A @A @B @B @C @C
+          , valBDT "!++" "Either properties. Models from these properties are undeleteable." $
+            eitherLangProperty @AP @AQ @BP @BQ @CP @CQ
+          , valSupertypeBDT "!++" "Either properties. Models from these properties are undeleteable." $
+            eitherLangProperty @A @A @B @B @C @C
+          , valBDT "!$" "Apply a property to a model." $ applyLangPropertyModel @AP @AQ @BP @BQ
+          , valSupertypeBDT "!$" "Apply a property to a model." $ applyLangPropertyModel @A @A @B @B
+          , valBDT "!$%" "Apply a property to an immutable model.\n`m !$% r = m !$ immutWholeModel r`" $
+            applyLangPropertyImmutModel @A @BP @BQ
+          , valSupertypeBDT "!$%" "Apply a property to an immutable model.\n`m !$% r = m !$ immutWholeModel r`" $
+            applyLangPropertyImmutModel @A @B @B
+          , valBDT "!$$" "Apply a property to a set." $ applyLangPropertySet @A @B
+          , valBDT "!@" "Co-apply a property to a model." $ inverseApplyLangPropertyModel @A @BX @BY
+          , valSupertypeBDT "!@" "Co-apply a property to a model." $ inverseApplyLangPropertyModel @A @B @B
+          , valBDT "!@%" "Co-apply a property to an immutable model.\n`m !@% r = m !@ immutWholeModel r`" $
+            inverseApplyLangPropertyImmutModel @A @B
+          , valBDT "!@@" "Co-apply a property to a set." $ inverseApplyLangPropertySet @A @BX @BY
+          , valSupertypeBDT "!@@" "Co-apply a property to a set." $ inverseApplyLangPropertySet @A @B @B
           ]
     , headingBDT
           "ModelOrders"
@@ -358,7 +355,7 @@ modelLibEntries =
                 "mapOrder"
                 "Map a function on a `ModelOrder`."
                 (contramap :: (B -> A) -> LangModelOrder A -> LangModelOrder B)
-          , valBDT "orderOn" "Order by a `ModelOrder` on a particular morphism." $ langModelOrderOn @B @A
+          , valBDT "orderOn" "Order by a `ModelOrder` on a particular property." $ langModelOrderOn @B @A
           , valBDT "reverseOrder" "Reverse a `ModelOrder`." $ reverseLangModelOrder @A
           , valBDT "orderWhole" "Order two whole models." $ langModelOrderCompare @A
           ]

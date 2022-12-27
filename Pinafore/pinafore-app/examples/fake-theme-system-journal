@@ -11,7 +11,7 @@ using Storage;
 years: FiniteSetModel Integer
 = property @Integer @Unit !"FTSJ.years" store !@ {()};
 
-yearTheme: Integer ~> Text
+yearTheme: Property Integer Text
 = property @Integer @Text !"FTSJ.yearTheme" store;
 
 using GTK;

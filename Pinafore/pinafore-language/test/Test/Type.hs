@@ -416,10 +416,10 @@ testType =
               , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeModel +Integer"
               , textTypeTest
                     "Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store"
-                    "{store : Store} -> {-Integer,+Number} ~> (Text *: Text)"
+                    "{store : Store} -> Property {-Integer,+Number} (Text *: Text)"
               , textTypeTest
                     "Storage.property @Text @Integer !\"a\" store !++ Storage.property @Text @Number !\"b\" store"
-                    "{store : Store} -> (Text +: Text) ~> {-Integer,+Number}"
+                    "{store : Store} -> Property (Text +: Text) {-Integer,+Number}"
               , textTypeTest
                     "(Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store) !$% {3}"
                     "{store : Store} -> WholeModel (Text *: Text)"

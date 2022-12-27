@@ -26,10 +26,10 @@ library:
       - Pinafore.Base.Number
       - Pinafore.Base.Order
       - Pinafore.Base.Literal
-      - Pinafore.Base.Model.FunctionMorphism
-      - Pinafore.Base.Model.Morphism
+      - Pinafore.Base.Model.FunctionAttribute
+      - Pinafore.Base.Model.Property
       - Pinafore.Base.Model.ModelBased
-      - Pinafore.Base.Model.ModelMorphism
+      - Pinafore.Base.Model.ModelProperty
       - Pinafore.Base.Model.ModelOrder
       - Pinafore.Base.Model.Model
       - Pinafore.Base.Anchor
@@ -38,7 +38,7 @@ library:
       - Pinafore.Base.Storable.EntityStorer
       - Pinafore.Base.Edit
       - Pinafore.Base.Storable.StoreAdapter
-      - Pinafore.Base.Model.PredicateMorphism
+      - Pinafore.Base.Model.PredicateProperty
       - Pinafore.Base.Action
       - Pinafore.Base.Model.ImmutableWholeModel
       - Pinafore.Base.File

@@ -26,10 +26,10 @@ Hindley-Milner is the type system that languages such as ML and Haskell are base
 ## Storage
 
 Pinafore stores relationships between typed entities, known as properties, in a database on your computer.
-These properties are composable as "morphisms", and can be used to retrieve and update information.
+These properties are composable, and can be used to retrieve and update information.
 
-For example, one can compose properties "mother" and "name" into a morphism "mother's name".
-Then one can use that morphism to look up or update the mother's name of a given person,
+For example, one can compose properties "mother" and "name" into a property "mother's name".
+Then one can use that property to look up or update the mother's name of a given person,
 or alternatively, retrieve the set of people whose mother's name is a given name.
 
 ## User Interface

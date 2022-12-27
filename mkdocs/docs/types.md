@@ -262,7 +262,7 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 `ModelOrder -a`  
 
-An order on a type. Can order by morphisms.
+An order on a type. Can order by properties.
 
 Every order (comparison function) is a `ModelOrder`:
 
@@ -296,6 +296,6 @@ Finite set models are set models:
 
 Finite set models contain a finite number of members, which can be retrieved.
 
-## Morphisms
+## Properties
 
-`{-ap,+aq} ~> {-bp,+bq}`
+`Property {-ap,+aq} {-bp,+bq}`

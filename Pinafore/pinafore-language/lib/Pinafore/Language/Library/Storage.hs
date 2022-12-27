@@ -34,7 +34,7 @@ storageStuff =
               "property"
               "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
               ["@A", "@B", "<anchor>"]
-              "Store -> A ~> B" $
+              "Store -> Property A B" $
           MkSpecialForm
               (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
               eta <- getMonoEntityType ta
@@ -46,21 +46,21 @@ storageStuff =
                          (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
                              typem =
                                  typeToDolan $
-                                 MkDolanGroundedType morphismGroundType $
+                                 MkDolanGroundedType propertyGroundType $
                                  ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
                                  ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
                              typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
                              typef = qFunctionPosWitness typeStorage typem
-                             morphism =
-                                 propertyMorphism (monoStoreAdapter eta) (monoStoreAdapter etb) (MkPredicate anchor)
-                             pinamorphism =
+                             property =
+                                 predicateProperty (monoStoreAdapter eta) (monoStoreAdapter etb) (MkPredicate anchor)
+                             pinaproperty =
                                  \qstore ->
-                                     MkLangMorphism $
+                                     MkLangProperty $
                                      storageModelBased qstore $
                                      cfmap4 (MkCatDual $ shimToFunction praContra) $
                                      cfmap3 (shimToFunction praCo) $
                                      cfmap2 (MkCatDual $ shimToFunction prbContra) $
-                                     cfmap1 (shimToFunction prbCo) morphism
-                             anyval = MkSomeOf typef pinamorphism
+                                     cfmap1 (shimToFunction prbCo) property
+                             anyval = MkSomeOf typef pinaproperty
                              in return anyval
         ]

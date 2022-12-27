@@ -1,25 +1,25 @@
-module Pinafore.Base.Model.Morphism
-    ( StorageLensMorphism(..)
-    , identityStorageLensMorphism
-    , composeStorageLensMorphism
-    , funcStorageLensMorphism
-    , nullStorageLensMorphism
-    , bijectionStorageLensMorphism
-    , pairStorageLensMorphism
-    , eitherStorageLensMorphism
-    , lensFunctionMorphism
-    , storageLensMorphismChangeLens
-    , storageLensMorphismInverseChangeLens
-    , storageLensMorphismInverseChangeLensSet
+module Pinafore.Base.Model.Property
+    ( StorageLensProperty(..)
+    , identityStorageLensProperty
+    , composeStorageLensProperty
+    , funcStorageLensProperty
+    , nullStorageLensProperty
+    , bijectionStorageLensProperty
+    , pairStorageLensProperty
+    , eitherStorageLensProperty
+    , lensFunctionAttribute
+    , storageLensPropertyChangeLens
+    , storageLensPropertyInverseChangeLens
+    , storageLensPropertyInverseChangeLensSet
     ) where
 
 import Changes.Core
 import qualified Data.List as List
 import Pinafore.Base.Know
-import Pinafore.Base.Model.FunctionMorphism
+import Pinafore.Base.Model.FunctionAttribute
 import Shapes
 
-data StorageLensMorphism ap aq bp bq baseupdate = MkStorageLensMorphism
+data StorageLensProperty ap aq bp bq baseupdate = MkStorageLensProperty
     { pmGet :: ap -> ReadM (UpdateReader baseupdate) (Know bq)
     , pmBaseUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (ap -> ReadM (UpdateReader baseupdate) (Maybe (Know bq))))
     , pmPut :: Know ap -> Know bp -> ReadM (UpdateReader baseupdate) (Maybe ([UpdateEdit baseupdate], Maybe (Know aq)))
@@ -28,67 +28,67 @@ data StorageLensMorphism ap aq bp bq baseupdate = MkStorageLensMorphism
                                                                                                                       , aq)]))
     }
 
-instance CatFunctor (->) (NestedMorphism (->)) (StorageLensMorphism ap aq bp) where
+instance CatFunctor (->) (NestedMorphism (->)) (StorageLensProperty ap aq bp) where
     cfmap f =
-        MkNestedMorphism $ \(MkStorageLensMorphism g bu p i ibu) -> let
+        MkNestedMorphism $ \(MkStorageLensProperty g bu p i ibu) -> let
             g' = (fmap $ fmap $ fmap f) g
             bu' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) bu
-            in MkStorageLensMorphism g' bu' p i ibu
+            in MkStorageLensProperty g' bu' p i ibu
 
-instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensMorphism ap aq) where
+instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensProperty ap aq) where
     cfmap f =
         MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensMorphism g bu p i ibu) -> let
+        MkNestedMorphism $ \(MkStorageLensProperty g bu p i ibu) -> let
             p' = (fmap $ cfmap1 $ endocfmap f) p
             i' = (cfmap1 f) i
             ibu' = (fmap $ fmap $ fmap $ cfmap1 f) ibu
-            in MkStorageLensMorphism g bu p' i' ibu'
+            in MkStorageLensProperty g bu p' i' ibu'
 
-instance CatFunctor (->) (NestedMorphism (->)) (StorageLensMorphism ap) where
+instance CatFunctor (->) (NestedMorphism (->)) (StorageLensProperty ap) where
     cfmap f =
         MkNestedMorphism $
         MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensMorphism g bu p i ibu) -> let
+        MkNestedMorphism $ \(MkStorageLensProperty g bu p i ibu) -> let
             p' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) p
             i' = (fmap $ fmap $ fmap f) i
             ibu' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) ibu
-            in MkStorageLensMorphism g bu p' i' ibu'
+            in MkStorageLensProperty g bu p' i' ibu'
 
-instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensMorphism) where
+instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensProperty) where
     cfmap f =
         MkNestedMorphism $
         MkNestedMorphism $
         MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensMorphism g bu p i ibu) -> let
+        MkNestedMorphism $ \(MkStorageLensProperty g bu p i ibu) -> let
             g' = (cfmap1 f) g
             bu' = (fmap $ fmap $ fmap $ cfmap1 f) bu
             p' = (cfmap1 $ endocfmap f) p
-            in MkStorageLensMorphism g' bu' p' i ibu
+            in MkStorageLensProperty g' bu' p' i ibu
 
-pmKGet :: StorageLensMorphism ap aq bp bq baseupdate -> Know ap -> ReadM (UpdateReader baseupdate) (Know bq)
+pmKGet :: StorageLensProperty ap aq bp bq baseupdate -> Know ap -> ReadM (UpdateReader baseupdate) (Know bq)
 pmKGet plm (Known a) = pmGet plm a
 pmKGet _ Unknown = return Unknown
 
 pmGetPointPreimage ::
-       Eq aq => StorageLensMorphism ap aq bp bq baseupdate -> bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
-pmGetPointPreimage MkStorageLensMorphism {..} b = fmap setFromList $ pmInvGet b
+       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
+pmGetPointPreimage MkStorageLensProperty {..} b = fmap setFromList $ pmInvGet b
 
 pmGetKnowPointPreimage ::
-       Eq aq => StorageLensMorphism ap aq bp bq baseupdate -> Know bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
+       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> Know bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
 pmGetKnowPointPreimage plm (Known b) = pmGetPointPreimage plm b
 pmGetKnowPointPreimage _ Unknown = return mempty
 
 pmGetSetPreimage ::
        Eq aq
-    => StorageLensMorphism ap aq bp bq baseupdate
+    => StorageLensProperty ap aq bp bq baseupdate
     -> FiniteSet bp
     -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
 pmGetSetPreimage plm bs = do
     as <- for bs $ pmGetPointPreimage plm
     return $ mconcat $ toList as
 
-identityStorageLensMorphism :: forall baseupdate x y. StorageLensMorphism x y y x baseupdate
-identityStorageLensMorphism = let
+identityStorageLensProperty :: forall baseupdate x y. StorageLensProperty x y y x baseupdate
+identityStorageLensProperty = let
     pmGet a = return $ Known a
     pmBaseUpdate ::
            baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (x -> ReadM (UpdateReader baseupdate) (Maybe (Know x))))
@@ -98,14 +98,14 @@ identityStorageLensMorphism = let
     pmInvBaseUpdate ::
            baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (y -> ReadM (UpdateReader baseupdate) [(Bool, y)]))
     pmInvBaseUpdate _ = return Nothing
-    in MkStorageLensMorphism {..}
+    in MkStorageLensProperty {..}
 
-composeStorageLensMorphism ::
+composeStorageLensProperty ::
        forall baseupdate ap aq bx by cp cq.
-       StorageLensMorphism bx by cp cq baseupdate
-    -> StorageLensMorphism ap aq by bx baseupdate
-    -> StorageLensMorphism ap aq cp cq baseupdate
-composeStorageLensMorphism (MkStorageLensMorphism getBC buBC putBC invBC invbuBC) ab@(MkStorageLensMorphism getAB buAB putAB invAB invbuAB) = let
+       StorageLensProperty bx by cp cq baseupdate
+    -> StorageLensProperty ap aq by bx baseupdate
+    -> StorageLensProperty ap aq cp cq baseupdate
+composeStorageLensProperty (MkStorageLensProperty getBC buBC putBC invBC invbuBC) ab@(MkStorageLensProperty getAB buAB putAB invAB invbuAB) = let
     pmGet a =
         unComposeInner $ do
             b <- MkComposeInner $ getAB a
@@ -175,7 +175,7 @@ composeStorageLensMorphism (MkStorageLensMorphism getBC buBC putBC invBC invbuBC
                                     Nothing -> return []
                                     Just brlba -> brlba b
                         return $ mconcat aa1 <> mconcat aa2
-    in MkStorageLensMorphism {..}
+    in MkStorageLensProperty {..}
 
 partitionBPairs :: forall a. [(Bool, a)] -> ([a], [a]) -- False, True
 partitionBPairs [] = ([], [])
@@ -185,12 +185,12 @@ partitionBPairs ((t, a):aa) = let
            then (af, a : at)
            else (a : af, at)
 
-pairStorageLensMorphism ::
+pairStorageLensProperty ::
        forall baseupdate ap aq bp bq cp cq. Eq aq
-    => StorageLensMorphism ap aq bp bq baseupdate
-    -> StorageLensMorphism ap aq cp cq baseupdate
-    -> StorageLensMorphism ap aq (bp, cp) (bq, cq) baseupdate
-pairStorageLensMorphism (MkStorageLensMorphism getB buB putB invB invbuB) (MkStorageLensMorphism getC buC putC invC invbuC) = let
+    => StorageLensProperty ap aq bp bq baseupdate
+    -> StorageLensProperty ap aq cp cq baseupdate
+    -> StorageLensProperty ap aq (bp, cp) (bq, cq) baseupdate
+pairStorageLensProperty (MkStorageLensProperty getB buB putB invB invbuB) (MkStorageLensProperty getC buC putC invC invbuC) = let
     pmGet a =
         unComposeInner $ do
             b <- MkComposeInner $ getB a
@@ -278,14 +278,14 @@ pairStorageLensMorphism (MkStorageLensMorphism getB buB putB invB invbuB) (MkSto
                                     return $ List.intersect a2t aa1
                         let additions = fmap (\a -> (True, a)) $ a1tt <> a2tt
                         return $ additions <> removals
-    in MkStorageLensMorphism {..}
+    in MkStorageLensProperty {..}
 
-eitherStorageLensMorphism ::
+eitherStorageLensProperty ::
        forall baseupdate ap aq bp bq cp cq.
-       StorageLensMorphism ap aq cp cq baseupdate
-    -> StorageLensMorphism bp bq cp cq baseupdate
-    -> StorageLensMorphism (Either ap bp) (Either aq bq) cp cq baseupdate
-eitherStorageLensMorphism (MkStorageLensMorphism getA buA putA invA invbuA) (MkStorageLensMorphism getB buB putB invB invbuB) = let
+       StorageLensProperty ap aq cp cq baseupdate
+    -> StorageLensProperty bp bq cp cq baseupdate
+    -> StorageLensProperty (Either ap bp) (Either aq bq) cp cq baseupdate
+eitherStorageLensProperty (MkStorageLensProperty getA buA putA invA invbuA) (MkStorageLensProperty getB buB putB invB invbuB) = let
     pmGet (Left a) = getA a
     pmGet (Right b) = getB b
     pmBaseUpdate ::
@@ -340,15 +340,15 @@ eitherStorageLensMorphism (MkStorageLensMorphism getA buA putA invA invbuA) (MkS
                                 Nothing -> return []
                                 Just crlbb -> crlbb c
                         return $ fmap (fmap Left) tas <> fmap (fmap Right) tbs
-    in MkStorageLensMorphism {..}
+    in MkStorageLensProperty {..}
 
-funcStorageLensMorphism ::
+funcStorageLensProperty ::
        forall baseupdate ap aq bp bq.
        (ap -> Know bq)
     -> (bp -> [aq])
     -> (Know bp -> Maybe (Know aq))
-    -> StorageLensMorphism ap aq bp bq baseupdate
-funcStorageLensMorphism ab bsa bma = let
+    -> StorageLensProperty ap aq bp bq baseupdate
+funcStorageLensProperty ab bsa bma = let
     pmGet :: ap -> ReadM (UpdateReader baseupdate) (Know bq)
     pmGet a = return $ ab a
     pmBaseUpdate ::
@@ -365,25 +365,25 @@ funcStorageLensMorphism ab bsa bma = let
     pmInvBaseUpdate ::
            baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (bp -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
     pmInvBaseUpdate _ = return Nothing
-    in MkStorageLensMorphism {..}
+    in MkStorageLensProperty {..}
 
-nullStorageLensMorphism :: forall baseupdate ap aq bp bq. StorageLensMorphism ap aq bp bq baseupdate
-nullStorageLensMorphism = funcStorageLensMorphism (\_ -> Unknown) (\_ -> mempty) (\_ -> Nothing)
+nullStorageLensProperty :: forall baseupdate ap aq bp bq. StorageLensProperty ap aq bp bq baseupdate
+nullStorageLensProperty = funcStorageLensProperty (\_ -> Unknown) (\_ -> mempty) (\_ -> Nothing)
 
-bijectionStorageLensMorphism :: Bijection a b -> StorageLensMorphism a a b b baseupdate
-bijectionStorageLensMorphism (MkIsomorphism ab ba) =
-    funcStorageLensMorphism (Known . ab) (\b -> opoint $ ba b) (\kb -> Just $ fmap ba kb)
+bijectionStorageLensProperty :: Bijection a b -> StorageLensProperty a a b b baseupdate
+bijectionStorageLensProperty (MkIsomorphism ab ba) =
+    funcStorageLensProperty (Known . ab) (\b -> opoint $ ba b) (\kb -> Just $ fmap ba kb)
 
-lensFunctionMorphism ::
+lensFunctionAttribute ::
        forall baseupdate ap aq bp bq.
-       StorageLensMorphism ap aq bp bq baseupdate
-    -> StorageFunctionMorphism baseupdate (Know ap) (Know bq)
-lensFunctionMorphism plm = let
+       StorageLensProperty ap aq bp bq baseupdate
+    -> StorageFunctionAttribute baseupdate (Know ap) (Know bq)
+lensFunctionAttribute plm = let
     pfFuncRead = pmKGet plm
     convUpdate armkb (Known a) = armkb a
     convUpdate _ Unknown = return $ Just Unknown
     pfUpdate baseupdate = fmap (fmap convUpdate) $ pmBaseUpdate plm baseupdate
-    in MkStorageFunctionMorphism {..}
+    in MkStorageFunctionAttribute {..}
 
 runContextReadM ::
        forall m baseupdate update t. MonadIO m
@@ -394,7 +394,7 @@ runContextReadM rd rmt = unReadM rmt $ tupleReadFunction SelectContext rd
 
 putEditBA ::
        forall m baseupdate ap aq bp bq. MonadIO m
-    => StorageLensMorphism ap aq bp bq baseupdate
+    => StorageLensProperty ap aq bp bq baseupdate
     -> [BiWholeEdit (Know bp) (Know bq)]
     -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap)))
     -> m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))])
@@ -418,7 +418,7 @@ putEditBA plm editsB mr =
 
 putEditAB ::
        forall m baseupdate ap aq bp bq. MonadIO m
-    => StorageLensMorphism ap aq bp bq baseupdate
+    => StorageLensProperty ap aq bp bq baseupdate
     -> ap
     -> Know bp
     -> Readable m (UpdateReader baseupdate)
@@ -438,11 +438,11 @@ putEditAB plm a kb mr = do
                      edits)
             medits
 
-storageLensMorphismChangeLens ::
+storageLensPropertyChangeLens ::
        forall baseupdate ap aq bp bq.
-       StorageLensMorphism ap aq bp bq baseupdate
+       StorageLensProperty ap aq bp bq baseupdate
     -> ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know aq) (Know ap))) (BiWholeUpdate (Know bp) (Know bq))
-storageLensMorphismChangeLens plm = let
+storageLensPropertyChangeLens plm = let
     clRead ::
            forall .
            ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap))) (WholeReader (Know bq))
@@ -482,11 +482,11 @@ bpairToFiniteSetUpdate :: forall a. (Bool, a) -> FiniteSetUpdate a
 bpairToFiniteSetUpdate (False, a) = KeyUpdateDelete a
 bpairToFiniteSetUpdate (True, a) = KeyUpdateInsertReplace a
 
-storageLensMorphismInverseChangeLens ::
+storageLensPropertyInverseChangeLens ::
        forall baseupdate a bp bq. Eq a
-    => StorageLensMorphism a a bq bp baseupdate
+    => StorageLensProperty a a bq bp baseupdate
     -> ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetUpdate a)
-storageLensMorphismInverseChangeLens plm@MkStorageLensMorphism {..} = let
+storageLensPropertyInverseChangeLens plm@MkStorageLensProperty {..} = let
     fsetReadFunction ::
            ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (WholeReader (FiniteSet a))
     fsetReadFunction (mr :: Readable m _) ReadWhole = do
@@ -540,11 +540,11 @@ storageLensMorphismInverseChangeLens plm@MkStorageLensMorphism {..} = let
             return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat baseedits
     in MkChangeLens {..}
 
-storageLensMorphismInverseChangeLensSet ::
+storageLensPropertyInverseChangeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
-    => StorageLensMorphism a a b b baseupdate
+    => StorageLensProperty a a b b baseupdate
     -> ChangeLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
-storageLensMorphismInverseChangeLensSet plm@MkStorageLensMorphism {..} = let
+storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty {..} = let
     clRead' :: ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (FiniteSetReader a)
     clRead' (mr :: Readable m _) KeyReadKeys = do
         bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
@@ -630,13 +630,13 @@ storageLensMorphismInverseChangeLensSet plm@MkStorageLensMorphism {..} = let
             return $ ea ++ eea
     in MkChangeLens clRead' clUpdate' clPutEdits'
 
-instance EditContraFunctor (StorageLensMorphism ap aq bp bq) where
+instance EditContraFunctor (StorageLensProperty ap aq bp bq) where
     eaContraMap ::
            forall update1 update2.
            ChangeLens update2 update1
-        -> StorageLensMorphism ap aq bp bq update1
-        -> StorageLensMorphism ap aq bp bq update2
-    eaContraMap MkChangeLens {..} (MkStorageLensMorphism get1 bu1 put1 inv1 invbu1) = let
+        -> StorageLensProperty ap aq bp bq update1
+        -> StorageLensProperty ap aq bp bq update2
+    eaContraMap MkChangeLens {..} (MkStorageLensProperty get1 bu1 put1 inv1 invbu1) = let
         get2 :: ap -> ReadM (UpdateReader update2) (Know bq)
         get2 a = mapReadM clRead $ get1 a
         bu2 :: update2 -> ReadM (UpdateReader update2) (Maybe (ap -> ReadM (UpdateReader update2) (Maybe (Know bq))))
@@ -671,4 +671,4 @@ instance EditContraFunctor (StorageLensMorphism ap aq bp bq) where
                             mapReadM clRead $ do
                                 las <- for fs $ \f -> f b
                                 return $ mconcat las
-        in MkStorageLensMorphism get2 bu2 put2 inv2 invbu2
+        in MkStorageLensProperty get2 bu2 put2 inv2 invbu2

@@ -1,18 +1,18 @@
-module Pinafore.Base.Model.PredicateMorphism
-    ( propertyMorphism
+module Pinafore.Base.Model.PredicateProperty
+    ( predicateProperty
     ) where
 
 import Changes.Core
 import Pinafore.Base.Edit
 import Pinafore.Base.Know
-import Pinafore.Base.Model.Morphism
+import Pinafore.Base.Model.Property
 import Pinafore.Base.Storable.EntityStorer
 import Pinafore.Base.Storable.StoreAdapter
 import Shapes
 
-propertyMorphism ::
-       forall a b. StoreAdapter a -> StoreAdapter b -> Predicate -> StorageLensMorphism a a b b QStorageUpdate
-propertyMorphism eaa eab prd = let
+predicateProperty ::
+       forall a b. StoreAdapter a -> StoreAdapter b -> Predicate -> StorageLensProperty a a b b QStorageUpdate
+predicateProperty eaa eab prd = let
     ap = storeAdapterConvert eaa
     bp = storeAdapterConvert eab
     pmGet :: a -> ReadM QStorageRead (Know b)
@@ -49,4 +49,4 @@ propertyMorphism eaa eab prd = let
                         Known a -> [(kv == Known (bp b), a)]
                         Unknown -> []
     pmInvBaseUpdate _ = return Nothing
-    in MkStorageLensMorphism {..}
+    in MkStorageLensProperty {..}
