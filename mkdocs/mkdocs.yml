@@ -3,7 +3,7 @@ plugins:
   - commonmark
 markdown_extensions:
   - toc:
-      baselevel: 4
+      baselevel: 3
   - codehilite
   - markdown_include.include:
       base_path: generated
