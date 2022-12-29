@@ -65,7 +65,7 @@ eitherLangProperty = combineLangPropertys eitherStorageLensProperty
 applyLangPropertyModel ::
        forall ap aq bp bq. LangProperty '( ap, aq) '( bp, bq) -> LangWholeModel '( aq, ap) -> LangWholeModel '( bp, bq)
 applyLangPropertyModel (MkLangProperty m) model =
-    MutableLangWholeModel $ applyModelProperty m $ langWholeModelToBiWholeModel model
+    MutableLangWholeModel $ applyModelAttribute (modelPropertyAttribute m) $ langWholeModelToBiWholeModel model
 
 applyLangPropertyImmutModel ::
        forall a bp bq. LangProperty '( a, TopType) '( bp, bq) -> ImmutableWholeModel a -> LangWholeModel '( bp, bq)
@@ -79,7 +79,7 @@ applyLangPropertySet ::
 applyLangPropertySet (MkLangProperty m) (MkLangFiniteSetModel (tr :: Range _ t _) ss) =
     modelBasedModel m $ \model (pm :: _ update) -> let
         tbkm :: StorageFunctionAttribute update (Know t) (Know (MeetType Entity b))
-        tbkm = ccontramap1 (fmap $ shimToFunction $ rangeCo tr) $ lensFunctionAttribute pm
+        tbkm = ccontramap1 (fmap $ shimToFunction $ rangeCo tr) $ lensFunctionAttribute $ slpAttribute pm
         tbskm :: StorageFunctionAttribute update (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
         tbskm = cfmap tbkm
         tbsm :: StorageFunctionAttribute update (FiniteSet t) (FiniteSet (MeetType Entity b))

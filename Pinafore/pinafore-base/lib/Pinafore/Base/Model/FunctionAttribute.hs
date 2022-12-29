@@ -8,8 +8,8 @@ import Changes.Core
 import Shapes
 
 data StorageFunctionAttribute baseupdate a b = MkStorageFunctionAttribute
-    { pfFuncRead :: a -> ReadM (UpdateReader baseupdate) b
-    , pfUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe b)))
+    { sfaRead :: a -> ReadM (UpdateReader baseupdate) b
+    , sfaUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe b)))
     }
 
 instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageFunctionAttribute baseupdate) where
@@ -36,18 +36,18 @@ instance Applicative (StorageFunctionAttribute baseupdate a) where
 
 instance Category (StorageFunctionAttribute baseupdate) where
     id = let
-        pfFuncRead = return
-        pfUpdate _ = return Nothing
+        sfaRead = return
+        sfaUpdate _ = return Nothing
         in MkStorageFunctionAttribute {..}
     (.) :: forall a b c.
            StorageFunctionAttribute baseupdate b c
         -> StorageFunctionAttribute baseupdate a b
         -> StorageFunctionAttribute baseupdate a c
     MkStorageFunctionAttribute getBC buBC . MkStorageFunctionAttribute getAB buAB = let
-        pfFuncRead a = getAB a >>= getBC
-        pfUpdate ::
+        sfaRead a = getAB a >>= getBC
+        sfaUpdate ::
                baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe c)))
-        pfUpdate update = do
+        sfaUpdate update = do
             mfAB <- buAB update
             mfBC <- buBC update
             return $
@@ -73,19 +73,19 @@ instance Category (StorageFunctionAttribute baseupdate) where
 
 instance Arrow (StorageFunctionAttribute baseupdate) where
     arr ab = let
-        pfFuncRead a = return $ ab a
-        pfUpdate _ = return Nothing
+        sfaRead a = return $ ab a
+        sfaUpdate _ = return Nothing
         in MkStorageFunctionAttribute {..}
     first :: forall b c d. StorageFunctionAttribute baseupdate b c -> StorageFunctionAttribute baseupdate (b, d) (c, d)
     first (MkStorageFunctionAttribute bmc umbmc) = let
-        pfFuncRead :: (b, d) -> ReadM (UpdateReader baseupdate) (c, d)
-        pfFuncRead (b, d) = do
+        sfaRead :: (b, d) -> ReadM (UpdateReader baseupdate) (c, d)
+        sfaRead (b, d) = do
             c <- bmc b
             return (c, d)
-        pfUpdate ::
+        sfaUpdate ::
                baseupdate
             -> ReadM (UpdateReader baseupdate) (Maybe ((b, d) -> ReadM (UpdateReader baseupdate) (Maybe (c, d))))
-        pfUpdate update = do
+        sfaUpdate update = do
             mf <- umbmc update
             return $
                 case mf of
@@ -103,12 +103,12 @@ instance ArrowChoice (StorageFunctionAttribute baseupdate) where
            StorageFunctionAttribute baseupdate b c
         -> StorageFunctionAttribute baseupdate (Either b d) (Either c d)
     left (MkStorageFunctionAttribute fr upd) = let
-        pfFuncRead (Left b) = fmap Left $ fr b
-        pfFuncRead (Right d) = return $ Right d
-        pfUpdate ::
+        sfaRead (Left b) = fmap Left $ fr b
+        sfaRead (Right d) = return $ Right d
+        sfaUpdate ::
                baseupdate
             -> ReadM (UpdateReader baseupdate) (Maybe (Either b d -> ReadM (UpdateReader baseupdate) (Maybe (Either c d))))
-        pfUpdate update = do
+        sfaUpdate update = do
             mf <- upd update
             return $
                 case mf of
@@ -125,12 +125,12 @@ instance ArrowChoice (StorageFunctionAttribute baseupdate) where
            StorageFunctionAttribute baseupdate b c
         -> StorageFunctionAttribute baseupdate (Either d b) (Either d c)
     right (MkStorageFunctionAttribute fr upd) = let
-        pfFuncRead (Left d) = return $ Left d
-        pfFuncRead (Right b) = fmap Right $ fr b
-        pfUpdate ::
+        sfaRead (Left d) = return $ Left d
+        sfaRead (Right b) = fmap Right $ fr b
+        sfaUpdate ::
                baseupdate
             -> ReadM (UpdateReader baseupdate) (Maybe (Either d b -> ReadM (UpdateReader baseupdate) (Maybe (Either d c))))
-        pfUpdate update = do
+        sfaUpdate update = do
             mf <- upd update
             return $
                 case mf of
@@ -146,11 +146,11 @@ instance ArrowChoice (StorageFunctionAttribute baseupdate) where
 instance Traversable f => CatFunctor (StorageFunctionAttribute baseupdate) (StorageFunctionAttribute baseupdate) f where
     cfmap :: forall a b. StorageFunctionAttribute baseupdate a b -> StorageFunctionAttribute baseupdate (f a) (f b)
     cfmap (MkStorageFunctionAttribute f upd) = let
-        pfFuncRead fa = for fa f
-        pfUpdate ::
+        sfaRead fa = for fa f
+        sfaUpdate ::
                baseupdate
             -> ReadM (UpdateReader baseupdate) (Maybe (f a -> ReadM (UpdateReader baseupdate) (Maybe (f b))))
-        pfUpdate update = do
+        sfaUpdate update = do
             mf <- upd update
             return $
                 case mf of
@@ -182,7 +182,7 @@ storageFunctionAttributeContextChangeLens MkStorageFunctionAttribute {..} = let
         -> m b
     getB mr = do
         a <- mr $ MkTupleUpdateReader SelectContent ReadWhole
-        unReadM (pfFuncRead a) (tupleReadFunction SelectContext mr)
+        unReadM (sfaRead a) (tupleReadFunction SelectContext mr)
     clRead :: ReadFunction (ContextUpdateReader baseupdate (WholeUpdate a)) (WholeReader b)
     clRead mr ReadWhole = getB mr
     clUpdate ::
@@ -191,7 +191,7 @@ storageFunctionAttributeContextChangeLens MkStorageFunctionAttribute {..} = let
         -> Readable m (ContextUpdateReader baseupdate (WholeUpdate a))
         -> m [ROWUpdate b]
     clUpdate (MkTupleUpdate SelectContext pinupdate) mr = do
-        mf <- unReadM (pfUpdate pinupdate) $ tupleReadFunction SelectContext mr
+        mf <- unReadM (sfaUpdate pinupdate) $ tupleReadFunction SelectContext mr
         case mf of
             Nothing -> return []
             Just armb -> do
@@ -201,7 +201,7 @@ storageFunctionAttributeContextChangeLens MkStorageFunctionAttribute {..} = let
                     Nothing -> return []
                     Just b -> return [MkReadOnlyUpdate $ MkWholeReaderUpdate b]
     clUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate a)) mr = do
-        b <- unReadM (pfFuncRead a) (tupleReadFunction SelectContext mr)
+        b <- unReadM (sfaRead a) (tupleReadFunction SelectContext mr)
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate b]
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 

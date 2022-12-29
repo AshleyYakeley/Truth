@@ -25,7 +25,8 @@ pureLangModelOrder :: forall a. Order a -> LangModelOrder a
 pureLangModelOrder cmp = MkLangModelOrder $ pureModelModelOrder cmp
 
 langModelOrderOn :: forall a b. LangProperty '( a, TopType) '( BottomType, b) -> LangModelOrder b -> LangModelOrder a
-langModelOrderOn (MkLangProperty m) (MkLangModelOrder o) = MkLangModelOrder $ modelModelOrderOn m o
+langModelOrderOn (MkLangProperty m) (MkLangModelOrder o) =
+    MkLangModelOrder $ modelModelOrderOn (modelPropertyAttribute m) o
 
 modelOrders :: forall a. [LangModelOrder a] -> LangModelOrder a
 modelOrders = mconcat

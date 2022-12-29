@@ -27,7 +27,8 @@ library:
       - Pinafore.Base.Order
       - Pinafore.Base.Literal
       - Pinafore.Base.Model.FunctionAttribute
-      - Pinafore.Base.Model.Property
+      - Pinafore.Base.Model.LensAttribute
+      - Pinafore.Base.Model.LensProperty
       - Pinafore.Base.Model.ModelBased
       - Pinafore.Base.Model.ModelProperty
       - Pinafore.Base.Model.ModelOrder

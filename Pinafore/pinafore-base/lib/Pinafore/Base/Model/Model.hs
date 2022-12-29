@@ -3,7 +3,8 @@ module Pinafore.Base.Model.Model where
 import Changes.Core
 import Pinafore.Base.Know
 import Pinafore.Base.Model.FunctionAttribute
-import Pinafore.Base.Model.Property
+import Pinafore.Base.Model.LensAttribute
+import Pinafore.Base.Model.LensProperty
 import Shapes
 
 contextualiseModels :: Model baseupdate -> Model update -> Model (ContextUpdate baseupdate update)
@@ -26,10 +27,10 @@ applyStorageFunction basesub m val =
 applyStorageLens ::
        forall baseupdate ap aq bp bq.
        Model baseupdate
-    -> StorageLensProperty ap aq bp bq baseupdate
+    -> StorageLensAttribute ap aq bp bq baseupdate
     -> WModel (BiWholeUpdate (Know aq) (Know ap))
     -> WModel (BiWholeUpdate (Know bp) (Know bq))
-applyStorageLens basesub pm val = eaMap (storageLensPropertyChangeLens pm) $ contextualisePinaforeModel basesub val
+applyStorageLens basesub pm val = eaMap (storageLensAttributeChangeLens pm) $ contextualisePinaforeModel basesub val
 
 applyInverseStorageLens ::
        forall baseupdate a bp bq. (Eq a)

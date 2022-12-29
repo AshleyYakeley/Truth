@@ -4,10 +4,10 @@ import Changes.Core
 import Pinafore.Base.Know
 import Pinafore.Base.Model.FunctionAttribute
 import Pinafore.Base.Model.ImmutableWholeModel
+import Pinafore.Base.Model.LensAttribute
 import Pinafore.Base.Model.Model
 import Pinafore.Base.Model.ModelBased
 import Pinafore.Base.Model.ModelProperty
-import Pinafore.Base.Model.Property
 import Pinafore.Base.Order
 import Shapes
 
@@ -32,7 +32,7 @@ instance CatFunctor (CatDual (->)) (NestedMorphism (->)) ModelOrder where
 reverseModelOrder :: ModelOrder a update -> ModelOrder a update
 reverseModelOrder (MkModelOrder ef o) = MkModelOrder ef $ reverseOrder o
 
-modelOrderOn :: StorageLensProperty ap aq bp bq update -> ModelOrder bq update -> ModelOrder ap update
+modelOrderOn :: StorageLensAttribute ap aq bp bq update -> ModelOrder bq update -> ModelOrder ap update
 modelOrderOn pm (MkModelOrder ef o) = MkModelOrder (ef . lensFunctionAttribute pm) o
 
 type ModelModelOrder a = ModelBased (ModelOrder a)
@@ -46,7 +46,7 @@ mapModelModelOrder f = mapModelBased $ ccontramap1 f
 reverseModelModelOrder :: ModelModelOrder a -> ModelModelOrder a
 reverseModelModelOrder = mapModelBased reverseModelOrder
 
-modelModelOrderOn :: ModelProperty ap aq bp bq -> ModelModelOrder bq -> ModelModelOrder ap
+modelModelOrderOn :: ModelAttribute ap aq bp bq -> ModelModelOrder bq -> ModelModelOrder ap
 modelModelOrderOn = combineModelBased modelOrderOn
 
 modelModelOrderSet :: ModelModelOrder a -> WROWModel (FiniteSet a) -> WROWModel (Know [a])

@@ -2,19 +2,25 @@ module Pinafore.Base.Model.ModelProperty where
 
 import Changes.Core
 import Pinafore.Base.Know
+import Pinafore.Base.Model.LensAttribute
+import Pinafore.Base.Model.LensProperty
 import Pinafore.Base.Model.Model
 import Pinafore.Base.Model.ModelBased
-import Pinafore.Base.Model.Property
 import Shapes
+
+type ModelAttribute ap aq bp bq = ModelBased (StorageLensAttribute ap aq bp bq)
 
 type ModelProperty ap aq bp bq = ModelBased (StorageLensProperty ap aq bp bq)
 
-applyModelProperty ::
+modelPropertyAttribute :: ModelProperty ap aq bp bq -> ModelAttribute ap aq bp bq
+modelPropertyAttribute = mapModelBased slpAttribute
+
+applyModelAttribute ::
        forall ap aq bp bq.
-       ModelProperty ap aq bp bq
+       ModelAttribute ap aq bp bq
     -> WModel (BiWholeUpdate (Know aq) (Know ap))
     -> WModel (BiWholeUpdate (Know bp) (Know bq))
-applyModelProperty mmod = modelBasedModel mmod $ applyStorageLens
+applyModelAttribute mmod = modelBasedModel mmod $ applyStorageLens
 
 applyInverseModelProperty ::
        forall a bp bq. (Eq a)
