@@ -2,6 +2,7 @@ module Pinafore.Language.Value
     ( module I
     ) where
 
+import Pinafore.Language.Value.Attribute as I
 import Pinafore.Language.Value.FiniteSetModel as I
 import Pinafore.Language.Value.Instances as I ()
 import Pinafore.Language.Value.ListModel as I

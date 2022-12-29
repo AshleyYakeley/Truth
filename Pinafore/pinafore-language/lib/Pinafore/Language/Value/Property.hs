@@ -3,12 +3,16 @@ module Pinafore.Language.Value.Property where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Value.Attribute
 import Pinafore.Language.Value.FiniteSetModel
 import Pinafore.Language.Value.WholeModel
 import Shapes
 
 newtype LangProperty (a :: (Type, Type)) (b :: (Type, Type)) =
     MkLangProperty (ModelProperty (Contra a) (Co a) (Contra b) (Co b))
+
+langPropertyAttribute :: LangProperty a b -> LangAttribute a b
+langPropertyAttribute (MkLangProperty prop) = MkLangAttribute $ modelPropertyAttribute prop
 
 combineLangPropertys ::
        (forall update.
@@ -61,34 +65,6 @@ eitherLangProperty ::
     -> LangProperty '( bp, bq) '( cp, cq)
     -> LangProperty '( Either ap bp, Either aq bq) '( cp, cq)
 eitherLangProperty = combineLangPropertys eitherStorageLensProperty
-
-applyLangPropertyModel ::
-       forall ap aq bp bq. LangProperty '( ap, aq) '( bp, bq) -> LangWholeModel '( aq, ap) -> LangWholeModel '( bp, bq)
-applyLangPropertyModel (MkLangProperty m) model =
-    MutableLangWholeModel $ applyModelAttribute (modelPropertyAttribute m) $ langWholeModelToBiWholeModel model
-
-applyLangPropertyImmutModel ::
-       forall a bp bq. LangProperty '( a, TopType) '( bp, bq) -> ImmutableWholeModel a -> LangWholeModel '( bp, bq)
-applyLangPropertyImmutModel m r = applyLangPropertyModel m $ immutableToWholeModel r
-
-applyLangPropertySet ::
-       forall a b.
-       LangProperty '( a, TopType) '( BottomType, MeetType Entity b)
-    -> LangFiniteSetModel '( BottomType, a)
-    -> LangFiniteSetModel '( MeetType Entity b, b)
-applyLangPropertySet (MkLangProperty m) (MkLangFiniteSetModel (tr :: Range _ t _) ss) =
-    modelBasedModel m $ \model (pm :: _ update) -> let
-        tbkm :: StorageFunctionAttribute update (Know t) (Know (MeetType Entity b))
-        tbkm = ccontramap1 (fmap $ shimToFunction $ rangeCo tr) $ lensFunctionAttribute $ slpAttribute pm
-        tbskm :: StorageFunctionAttribute update (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
-        tbskm = cfmap tbkm
-        tbsm :: StorageFunctionAttribute update (FiniteSet t) (FiniteSet (MeetType Entity b))
-        tbsm = ccontramap1 (fmap Known) $ fmap (mapMaybe knowToMaybe) tbskm
-        tsetref :: WROWModel (FiniteSet t)
-        tsetref = eaToReadOnlyWhole ss
-        bsetref :: WROWModel (FiniteSet (MeetType Entity b))
-        bsetref = applyStorageFunction model tbsm tsetref
-        in MkLangFiniteSetModel (MkRange id meet2) $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
 
 inverseApplyLangPropertyModel ::
        forall a bx by.
