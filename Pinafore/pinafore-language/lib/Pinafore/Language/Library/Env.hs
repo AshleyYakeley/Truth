@@ -5,8 +5,8 @@ module Pinafore.Language.Library.Env
 import Changes.Core
 import Pinafore.Base
 import Pinafore.Context
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Library.Storage ()
 import Pinafore.Language.Library.Stream
 import Shapes

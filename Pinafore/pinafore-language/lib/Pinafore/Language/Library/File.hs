@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.Std.File
+module Pinafore.Language.Library.File
     ( fileLibEntries
     ) where
 

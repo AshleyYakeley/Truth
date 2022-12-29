@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Std.Base
+module Pinafore.Language.Library.Base
     ( baseLibEntries
     , showableSubtypeRelationEntry
     , literalSubtypeRelationEntry
@@ -13,9 +13,9 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.Library.Std.Types
+import Pinafore.Language.Library.Types
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type

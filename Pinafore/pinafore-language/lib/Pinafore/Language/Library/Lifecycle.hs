@@ -1,11 +1,11 @@
-module Pinafore.Language.Library.Std.Lifecycle
+module Pinafore.Language.Library.Lifecycle
     ( lifecycleLibEntries
     ) where
 
 import Changes.Core
 import Pinafore.Base
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Var
 import Shapes
 

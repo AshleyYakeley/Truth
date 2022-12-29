@@ -111,14 +111,13 @@ library:
       - Pinafore.Language.Expression
       - Pinafore.Language.Library.FetchModule
       - Pinafore.Language.Library.Defs
-      - Pinafore.Language.Library.Std.Convert
-      - Pinafore.Language.Library.Std.Types
-      - Pinafore.Language.Library.Std.Base
-      - Pinafore.Language.Library.Std.Actions
-      - Pinafore.Language.Library.Std.Lifecycle
-      - Pinafore.Language.Library.Std.Model
-      - Pinafore.Language.Library.Std.File
-      - Pinafore.Language.Library.Std
+      - Pinafore.Language.Library.Convert
+      - Pinafore.Language.Library.Types
+      - Pinafore.Language.Library.Base
+      - Pinafore.Language.Library.Actions
+      - Pinafore.Language.Library.Lifecycle
+      - Pinafore.Language.Library.Model
+      - Pinafore.Language.Library.File
       - Pinafore.Language.Library.Task
       - Pinafore.Language.Library.Stream
       - Pinafore.Language.Library.Storage

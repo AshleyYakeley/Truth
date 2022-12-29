@@ -1,7 +1,7 @@
-module Pinafore.Language.Library.Std.Types where
+module Pinafore.Language.Library.Types where
 
 import Pinafore.Base
-import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes

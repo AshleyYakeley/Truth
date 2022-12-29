@@ -21,7 +21,7 @@ import Pinafore.Language.Grammar.Interpret.TypeDecl
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.If
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Library.Std.Types
+import Pinafore.Language.Library.Types
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type

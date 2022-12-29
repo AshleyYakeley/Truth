@@ -1,14 +1,14 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Std.Actions
+module Pinafore.Language.Library.Actions
     ( actionsLibEntries
     ) where
 
 import Pinafore.Base
 import Pinafore.Language.If
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes

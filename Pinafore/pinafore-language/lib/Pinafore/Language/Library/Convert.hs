@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Std.Convert
+module Pinafore.Language.Library.Convert
     (
     ) where
 

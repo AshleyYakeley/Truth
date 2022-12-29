@@ -7,9 +7,9 @@ module Pinafore.Language.Library.Storage
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.Library.Std.Model
+import Pinafore.Language.Library.Model
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value

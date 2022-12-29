@@ -37,9 +37,9 @@ module Pinafore.Language.API
 
 import Pinafore.Context
 import Pinafore.Language.Convert
+import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std ()
-import Pinafore.Language.Library.Std.Base
+import Pinafore.Language.Library.Model ()
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type

@@ -13,12 +13,15 @@ module Pinafore.Language.Library
 
 import Pinafore.Context
 import Pinafore.Language.DefDoc
+import Pinafore.Language.Library.Actions
+import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Env
 import Pinafore.Language.Library.Eval
 import Pinafore.Language.Library.FetchModule
-import Pinafore.Language.Library.Std
+import Pinafore.Language.Library.Lifecycle
+import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.Storage
 import Pinafore.Language.Library.Stream
 import Pinafore.Language.Library.Task
@@ -31,10 +34,11 @@ library :: [LibraryModule InvocationInfo]
 library =
     pure $
     MkLibraryModule builtInModuleName $
-    headingBDT
-        "Built-In"
-        ""
-        [generalStuff, taskStuff, streamStuff, storageStuff, undoStuff, envStuff, evalStuff, debugStuff]
+    headingBDT "Built-In" "" $
+    baseLibEntries <>
+    actionsLibEntries <>
+    lifecycleLibEntries <>
+    modelLibEntries <> [taskStuff, streamStuff, storageStuff, undoStuff, envStuff, evalStuff, debugStuff]
 
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let

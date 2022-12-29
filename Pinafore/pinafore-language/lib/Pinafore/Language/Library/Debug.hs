@@ -4,8 +4,8 @@ module Pinafore.Language.Library.Debug
 
 import Pinafore.Base
 import Pinafore.Language.Debug
+import Pinafore.Language.Library.Base ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std ()
 import Shapes
 
 debugCheckEntity :: Text -> Entity -> IO ()

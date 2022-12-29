@@ -5,9 +5,9 @@ module Pinafore.Language.Library.Eval
 import Pinafore.Base
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.Library.Std.Types
+import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes

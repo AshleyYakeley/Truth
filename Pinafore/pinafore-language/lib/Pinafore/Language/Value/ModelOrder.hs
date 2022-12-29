@@ -3,8 +3,8 @@ module Pinafore.Language.Value.ModelOrder where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Value.Attribute
 import Pinafore.Language.Value.FiniteSetModel
-import Pinafore.Language.Value.Property
 import Pinafore.Language.Value.WholeModel
 import Shapes
 
@@ -24,9 +24,8 @@ instance HasVariance LangModelOrder where
 pureLangModelOrder :: forall a. Order a -> LangModelOrder a
 pureLangModelOrder cmp = MkLangModelOrder $ pureModelModelOrder cmp
 
-langModelOrderOn :: forall a b. LangProperty '( a, TopType) '( BottomType, b) -> LangModelOrder b -> LangModelOrder a
-langModelOrderOn (MkLangProperty m) (MkLangModelOrder o) =
-    MkLangModelOrder $ modelModelOrderOn (modelPropertyAttribute m) o
+langModelOrderOn :: forall a b. LangAttribute '( a, TopType) '( BottomType, b) -> LangModelOrder b -> LangModelOrder a
+langModelOrderOn (MkLangAttribute m) (MkLangModelOrder o) = MkLangModelOrder $ modelModelOrderOn m o
 
 modelOrders :: forall a. [LangModelOrder a] -> LangModelOrder a
 modelOrders = mconcat

@@ -9,8 +9,8 @@ module Pinafore.Language.Library.Stream
 
 import Pinafore.Base
 import Pinafore.Language.Convert
+import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
