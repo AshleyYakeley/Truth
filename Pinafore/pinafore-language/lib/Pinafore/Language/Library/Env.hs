@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Env
-    ( envStuff
+    ( envLibSection
     ) where
 
 import Changes.Core
@@ -28,8 +28,8 @@ openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
 
-envStuff :: BindDocTree InvocationInfo
-envStuff =
+envLibSection :: BindDocTree InvocationInfo
+envLibSection =
     headingBDT "Env" "The environment in which the script was invoked." $
     pure $
     namespaceBDT

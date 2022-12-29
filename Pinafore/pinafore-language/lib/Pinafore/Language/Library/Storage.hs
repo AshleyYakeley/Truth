@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Storage
-    ( storageStuff
+    ( storageLibSection
     ) where
 
 import Pinafore.Base
@@ -9,7 +9,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Model
+import Pinafore.Language.Library.Optics
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
@@ -22,8 +22,8 @@ storeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[] QStore where
     qGroundType = storeGroundType
 
-storageStuff :: BindDocTree context
-storageStuff =
+storageLibSection :: BindDocTree context
+storageLibSection =
     headingBDT "Storage" "" $
     pure $
     namespaceBDT

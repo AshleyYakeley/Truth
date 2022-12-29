@@ -114,9 +114,11 @@ library:
       - Pinafore.Language.Library.Convert
       - Pinafore.Language.Library.Types
       - Pinafore.Language.Library.Base
-      - Pinafore.Language.Library.Actions
+      - Pinafore.Language.Library.Action
       - Pinafore.Language.Library.Lifecycle
       - Pinafore.Language.Library.Model
+      - Pinafore.Language.Library.Optics
+      - Pinafore.Language.Library.ModelOrder
       - Pinafore.Language.Library.File
       - Pinafore.Language.Library.Task
       - Pinafore.Language.Library.Stream

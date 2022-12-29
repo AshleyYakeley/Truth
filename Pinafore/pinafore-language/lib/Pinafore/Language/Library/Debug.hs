@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Debug
-    ( debugStuff
+    ( debugLibSection
     ) where
 
 import Pinafore.Base
@@ -19,8 +19,8 @@ debugLiteralLength = olength . unLiteral
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
-debugStuff :: BindDocTree context
-debugStuff =
+debugLibSection :: BindDocTree context
+debugLibSection =
     headingBDT "Debug" "Functions for debugging." $
     pure $
     namespaceBDT

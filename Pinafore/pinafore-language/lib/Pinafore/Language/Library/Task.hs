@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Task
-    ( taskStuff
+    ( taskLibSection
     , LangTask(..)
     , liftTask
     , awaitTask
@@ -62,8 +62,8 @@ langDurationTask d = fmap liftTask $ durationTask d
 langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
-taskStuff :: BindDocTree context
-taskStuff =
+taskLibSection :: BindDocTree context
+taskLibSection =
     headingBDT "Task" "" $
     pure $
     namespaceBDT

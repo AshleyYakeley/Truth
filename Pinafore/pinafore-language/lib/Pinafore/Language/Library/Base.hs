@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Base
-    ( baseLibEntries
+    ( baseLibSections
     , showableSubtypeRelationEntry
     , literalSubtypeRelationEntry
     ) where
@@ -155,8 +155,8 @@ greater f a b =
 revap :: A -> (A -> B) -> B
 revap x f = f x
 
-baseLibEntries :: [BindDocTree context]
-baseLibEntries =
+baseLibSections :: [BindDocTree context]
+baseLibSections =
     [ headingBDT
           "Literals & Entities"
           ""
@@ -602,7 +602,7 @@ baseLibEntries =
           , hasSubtypeRelationBDT @(Maybe Showable) @Showable Verify "" $ functionToShim "show" textShowable
           ]
     , headingBDT
-          "*:"
+          "Type Product"
           ""
           [ typeBDT "*:" "" (MkSomeGroundType pairGroundType) []
           , hasSubtypeRelationBDT @(Entity, Entity) @Entity Verify "" $
@@ -614,7 +614,7 @@ baseLibEntries =
           , valBDT "pair" "Construct a pair." $ \(a :: A) -> (a, a)
           ]
     , headingBDT
-          "+:"
+          "Type Sum"
           ""
           [ typeBDT
                 "+:"
@@ -641,7 +641,7 @@ baseLibEntries =
                     Right a -> a
           ]
     , headingBDT
-          "Lists"
+          "List"
           ""
           [ typeBDT
                 "List"
@@ -679,7 +679,7 @@ baseLibEntries =
           , valBDT "zip" "Zip two lists." $ zip @A @B
           ]
     , headingBDT
-          "Functions"
+          "Function"
           ""
           [ typeBDT "->" "A pure function." (MkSomeGroundType funcGroundType) []
           , valBDT "id" "The identity function." $ id @(->) @A

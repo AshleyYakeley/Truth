@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Eval
-    ( evalStuff
+    ( evalLibSection
     ) where
 
 import Pinafore.Base
@@ -12,8 +12,8 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalStuff :: BindDocTree context
-evalStuff =
+evalLibSection :: BindDocTree context
+evalLibSection =
     headingBDT "Eval" "" $
     pure $
     namespaceBDT

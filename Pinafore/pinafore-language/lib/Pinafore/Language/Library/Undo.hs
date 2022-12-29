@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Undo
-    ( undoStuff
+    ( undoLibSection
     ) where
 
 import Changes.Core
@@ -42,8 +42,8 @@ handleSetModel uh model = handleModel uh $ contramap meet2 model
 handleStore :: UndoHandler -> QStore -> IO QStore
 handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreGetModel store
 
-undoStuff :: BindDocTree context
-undoStuff =
+undoLibSection :: BindDocTree context
+undoLibSection =
     headingBDT "Undo" "Undo and redo changes to models." $
     pure $
     namespaceBDT
