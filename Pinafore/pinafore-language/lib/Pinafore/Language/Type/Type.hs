@@ -11,6 +11,9 @@ import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Shapes
 
+type QSomeGroundType :: Type
+type QSomeGroundType = SomeGroundType QGroundType
+
 type QSingularType :: Polarity -> Type -> Type
 type QSingularType = DolanSingularType QGroundType
 

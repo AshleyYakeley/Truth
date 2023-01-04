@@ -28,12 +28,66 @@ propertyGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFam
 instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangProperty where
     qGroundType = propertyGroundType
 
+-- LangLens
+lensGroundType :: QGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangLens
+lensGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangLens)|]) "Lens"
+
+instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangLens where
+    qGroundType = lensGroundType
+
+-- LangPrism
+prismGroundType :: QGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangPrism
+prismGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPrism)|]) "Prism"
+
+instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangPrism where
+    qGroundType = prismGroundType
+
 opticsLibSection :: BindDocTree context
 opticsLibSection =
     headingBDT
         "Optics & Properties"
         ""
         [ headingBDT
+              "Lens"
+              ""
+              [ typeBDT "Lens" "" (MkSomeGroundType lensGroundType) []
+              , hasSubtypeRelationBDT @(LangLens '( AP, AQ) '( BP, BQ)) @(LangAttribute '( AP, AQ) '( BP, BQ)) Verify "" $
+                functionToShim "langLensAttribute" $ langLensAttribute @AP @AQ @BP @BQ
+              , valPatBDT "MkLens" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
+                PureFunction $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
+              , namespaceBDT
+                    "Lens"
+                    ""
+                    [ valBDT "get" "" $ langLensGet @'( AP, AQ) @'( BP, BQ)
+                    , valBDT "putback" "" $ langLensPutback @'( AP, AQ) @'( BP, BQ)
+                    , valBDT "identity" "Identity lens." $ identityLangLens @X @Y
+                    , valBDT "compose" "Compose lenses." $ composeLangLens @AP @AQ @BX @BY @CP @CQ
+                    , valBDT "product" "Product of lenses." $ pairLangLens @A @BP @BQ @CP @CQ
+                    , valBDT "sum" "Sum of lenses." $ eitherLangLens @AP @AQ @BP @BQ @CP @CQ
+                    ]
+              ]
+        , headingBDT
+              "Prism"
+              ""
+              [ typeBDT "Prism" "" (MkSomeGroundType prismGroundType) []
+              , hasSubtypeRelationBDT
+                    @(LangPrism '( AP, AQ) '( BP, BQ))
+                    @(LangAttribute '( AP, AQ) '( BP, BQ))
+                    Verify
+                    "" $
+                functionToShim "langPrismAttribute" $ langPrismAttribute @AP @AQ @BP @BQ
+              , valPatBDT "MkPrism" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
+                PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
+              , namespaceBDT
+                    "Prism"
+                    ""
+                    [ valBDT "decode" "" $ prismDecode @AP @AQ @BP @BQ
+                    , valBDT "encode" "" $ prismEncode @AP @AQ @BP @BQ
+                    , valBDT "identity" "Identity prism." $ identityLangPrism @X @Y
+                    , valBDT "compose" "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
+                    ]
+              ]
+        , headingBDT
               "Attribute"
               "Attributes relate entities."
               [ typeBDT "Attribute" "" (MkSomeGroundType attributeGroundType) []

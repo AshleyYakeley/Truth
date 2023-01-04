@@ -220,10 +220,10 @@ funcStorageLensProperty ::
        forall baseupdate ap aq bp bq.
        (ap -> Know bq)
     -> (bp -> [aq])
-    -> (Know bp -> Maybe (Know aq))
+    -> (Know ap -> Know bp -> Maybe (Know aq))
     -> StorageLensProperty ap aq bp bq baseupdate
-funcStorageLensProperty ab bsa bma = let
-    slpAttribute = funcStorageLensAttribute ab bma
+funcStorageLensProperty ab bsa abma = let
+    slpAttribute = funcStorageLensAttribute ab abma
     slpInvGet :: bp -> ReadM (UpdateReader baseupdate) [aq] -- not guaranteed to be unique
     slpInvGet b = return $ bsa b
     slpInvBaseUpdate ::
@@ -232,11 +232,11 @@ funcStorageLensProperty ab bsa bma = let
     in MkStorageLensProperty {..}
 
 nullStorageLensProperty :: forall baseupdate ap aq bp bq. StorageLensProperty ap aq bp bq baseupdate
-nullStorageLensProperty = funcStorageLensProperty (\_ -> Unknown) (\_ -> mempty) (\_ -> Nothing)
+nullStorageLensProperty = funcStorageLensProperty (\_ -> Unknown) (\_ -> mempty) (\_ _ -> Nothing)
 
 bijectionStorageLensProperty :: Bijection a b -> StorageLensProperty a a b b baseupdate
 bijectionStorageLensProperty (MkIsomorphism ab ba) =
-    funcStorageLensProperty (Known . ab) (\b -> opoint $ ba b) (\kb -> Just $ fmap ba kb)
+    funcStorageLensProperty (Known . ab) (\b -> opoint $ ba b) (\_ kb -> Just $ fmap ba kb)
 
 runContextReadM ::
        forall m baseupdate update t. MonadIO m

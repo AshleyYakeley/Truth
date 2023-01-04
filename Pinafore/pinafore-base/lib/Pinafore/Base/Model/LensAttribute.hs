@@ -157,15 +157,15 @@ eitherStorageLensAttribute (MkStorageLensAttribute funcA putA) (MkStorageLensAtt
 funcStorageLensAttribute ::
        forall baseupdate ap aq bp bq.
        (ap -> Know bq)
-    -> (Know bp -> Maybe (Know aq))
+    -> (Know ap -> Know bp -> Maybe (Know aq))
     -> StorageLensAttribute ap aq bp bq baseupdate
 funcStorageLensAttribute ab bma = let
     slaFunction = arr ab
     slaPut :: Know ap -> Know bp -> ReadM (UpdateReader baseupdate) (Maybe ([UpdateEdit baseupdate], Maybe (Know aq)))
-    slaPut _ kb =
+    slaPut ka kb =
         return $ do
-            ka <- bma kb
-            return ([], Just ka)
+            ka' <- bma ka kb
+            return ([], Just ka')
     in MkStorageLensAttribute {..}
 
 lensFunctionAttribute ::

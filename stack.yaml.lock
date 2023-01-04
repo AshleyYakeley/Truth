@@ -19,26 +19,26 @@ packages:
   original:
     hackage: leb128-0.1.0.0
 - completed:
-    commit: d1a86659a8c5d9526b9b23b6ba9538f5aed2e4a7
+    commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
     pantry-tree:
-      sha256: c06acb38a6de423dfd52ffd5ad88e6ddccdb76ae860947110e7c180ec45ef0fa
+      sha256: 590d3653d8ba4ab807b6dee03face2b39809efe4a4441d9276b80bceb73f2720
       size: 98740
     version: 1.23.1
   original:
-    commit: d1a86659a8c5d9526b9b23b6ba9538f5aed2e4a7
+    commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
 - completed:
-    commit: 1a12acd42e1da0a419d47225581a179b3a24f53b
+    commit: 7faad14a228fb5b52e233ebd23ea92beafe2cd8d
     git: https://github.com/AshleyYakeley/hindent.git
     name: hindent
     pantry-tree:
-      sha256: 60565cc52c43a0925c261231eb0cbe4c434458074b182fe595a7e3300e2f0c76
+      sha256: 5d6d8d4e21d2f07e85787c8c78b1efabab02d12c8c282046a9a0b9c4ad8cba1b
       size: 2019
     version: 5.3.1
   original:
-    commit: 1a12acd42e1da0a419d47225581a179b3a24f53b
+    commit: 7faad14a228fb5b52e233ebd23ea92beafe2cd8d
     git: https://github.com/AshleyYakeley/hindent.git
 - completed:
     commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2

@@ -4,6 +4,8 @@ import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.FiniteSetModel
+import Pinafore.Language.Value.Lens
+import Pinafore.Language.Value.Prism
 import Pinafore.Language.Value.WholeModel
 import Shapes
 
@@ -89,3 +91,11 @@ applyLangAttributeSet (MkLangAttribute m) (MkLangFiniteSetModel (tr :: Range _ t
         bsetref :: WROWModel (FiniteSet (MeetType Entity b))
         bsetref = applyStorageFunction model tbsm tsetref
         in MkLangFiniteSetModel (MkRange id meet2) $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
+
+langLensAttribute :: forall ap aq bp bq. LangLens '( ap, aq) '( bp, bq) -> LangAttribute '( ap, aq) '( bp, bq)
+langLensAttribute (MkLangLens g pb) =
+    MkLangAttribute $ pureModelBased $ funcStorageLensAttribute (Known . g) $ \ka kb -> Just $ liftA2 pb ka kb
+
+langPrismAttribute :: forall ap aq bp bq. LangPrism '( ap, aq) '( bp, bq) -> LangAttribute '( ap, aq) '( bp, bq)
+langPrismAttribute (MkLangPrism d e) =
+    MkLangAttribute $ pureModelBased $ funcStorageLensAttribute (maybeToKnow . mToMaybe . d) (\_ -> Just . fmap e)

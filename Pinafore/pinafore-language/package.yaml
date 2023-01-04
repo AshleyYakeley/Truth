@@ -35,6 +35,8 @@ library:
       - Pinafore.Context
       - Pinafore.Language.Debug
       - Pinafore.Language.Value.Instances
+      - Pinafore.Language.Value.Lens
+      - Pinafore.Language.Value.Prism
       - Pinafore.Language.Value.Model
       - Pinafore.Language.Value.WholeModel
       - Pinafore.Language.Value.SetModel
