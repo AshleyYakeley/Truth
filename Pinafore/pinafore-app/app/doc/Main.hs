@@ -89,11 +89,6 @@ printModuleDoc modopts tmodname = do
                            case (fmap nameIsInfix $ fullNameRefToUnqualified diName, diParams) of
                                (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
                                _ -> name <> trailingParams diParams
-                SupertypeDocItem {..} ->
-                    putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
-                        nameType = name <> " : " <> toMarkdown diType
-                        in italicMarkdown nameType
                 SubtypeRelationDocItem {..} ->
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
                 NamespaceDocItem {..} ->

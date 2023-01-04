@@ -205,11 +205,8 @@ modelLibSection =
               , valBDT "<:|:>" "Union of finite sets. The resulting finite set can be deleted from, but not added to." $
                 langFiniteSetModelJoin @A
               , valBDT "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetModelCartesianSum @AP @AQ @BP @BQ
-              , valSupertypeBDT "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetModelCartesianSum @A @A @B @B
               , valBDT "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
                 langFiniteSetModelCartesianProduct @AP @AQ @BP @BQ
-              , valSupertypeBDT "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
-                langFiniteSetModelCartesianProduct @A @A @B @B
               , valBDT
                     "listFiniteSetModel"
                     "Represent a model of a list as a finite set. Changing the set may scramble the order of the list." $

@@ -18,8 +18,6 @@ data DocItem
                          , diType :: NamedText }
     | TypeDocItem { diName :: FullNameRef
                   , diParams :: [NamedText] }
-    | SupertypeDocItem { diName :: FullNameRef
-                       , diType :: NamedText }
     | SubtypeRelationDocItem { diSubtype :: NamedText
                              , diSupertype :: NamedText }
 
@@ -32,7 +30,6 @@ instance Show DocItem where
     show (SpecialFormDocItem n pp t) =
         "spform " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <> ": " <> unpack (toText t)
     show (TypeDocItem n pp) = "type " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp)
-    show (SupertypeDocItem n t) = "sval " <> show n <> ": " <> unpack (toText t)
     show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
 
 diNameLens :: Applicative m => (FullNameRef -> m FullNameRef) -> DocItem -> m DocItem
@@ -40,7 +37,6 @@ diNameLens f ValueDocItem {..} = fmap (\n -> ValueDocItem {diName = n, ..}) $ f 
 diNameLens f ValuePatternDocItem {..} = fmap (\n -> ValuePatternDocItem {diName = n, ..}) $ f diName
 diNameLens f SpecialFormDocItem {..} = fmap (\n -> SpecialFormDocItem {diName = n, ..}) $ f diName
 diNameLens f TypeDocItem {..} = fmap (\n -> TypeDocItem {diName = n, ..}) $ f diName
-diNameLens f SupertypeDocItem {..} = fmap (\n -> SupertypeDocItem {diName = n, ..}) $ f diName
 diNameLens _ di = pure di
 
 diMatchNameOrSubtypeRel :: FullName -> DocItem -> Bool

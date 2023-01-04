@@ -98,20 +98,6 @@ valBDT name docDescription val = let
     bdDoc = MkDefDoc {..}
     in pure MkBindDoc {..}
 
-valSupertypeBDT ::
-       forall context t. HasQType 'Positive t
-    => FullNameRef
-    -> RawMarkdown
-    -> ((?qcontext :: context) => t)
-    -> BindDocTree context
-valSupertypeBDT name docDescription _val = let
-    bdScopeEntry = Just $ BindScopeEntry name Nothing
-    diName = name
-    diType = qPositiveTypeDescription @t
-    docItem = SupertypeDocItem {..}
-    bdDoc = MkDefDoc {..}
-    in pure MkBindDoc {..}
-
 newTypeParameter :: State [Name] Name
 newTypeParameter = do
     nn <- get
