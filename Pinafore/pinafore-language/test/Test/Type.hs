@@ -296,21 +296,21 @@ testType =
               , textTypeTest "fn x => if odd x then x else (x:Number)" "{} -> Integer -> Number"
               , testTree
                     "recursive"
-                    [ textTypeTest "let x : rec a. Maybe a = Nothing in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let rec x : rec a. Maybe a = Just x end in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let rec x = Just x end in x" "{} -> rec a. Maybe a"
+                    [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe a"
+                    , textTypeTest "let rec x : rec a, Maybe a = Just x end in x" "{} -> rec a, Maybe a"
+                    , textTypeTest "let rec x = Just x end in x" "{} -> rec a, Maybe a"
                     , textTypeTest "let rec x : Entity = Just x end in x" "{} -> Entity"
                     , textTypeTest "let rec x : Maybe Entity = Just x end in x" "{} -> Maybe Entity"
                     , textTypeTest
                           "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end in rcount"
-                          "{} -> (rec a. Maybe a) -> Integer"
+                          "{} -> (rec a, Maybe a) -> Integer"
                     , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
                           "let rec rcount = match Nothing => 0; Just y => 1 + r1count y end; r1count = match Nothing => 0; Just y => 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
                     , textTypeTest
                           "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
-                          "{} -> ((rec a. Maybe a) -> Integer) *: (rec b. Maybe b) *: Integer"
+                          "{} -> ((rec a, Maybe a) -> Integer) *: (rec b, Maybe b) *: Integer"
                     ]
               , testTree
                     "tuple"
@@ -374,34 +374,34 @@ testType =
                     ]
               , testTree
                     "recursive"
-                    [ simplifyTypeTest "rec a. a" "None"
-                    , simplifyTypeTest "rec a. (a | Maybe a)" "rec a. Maybe a"
-                    , simplifyTypeTest "rec a. (a | Integer)" "Integer"
-                    , simplifyTypeTest "rec a. Maybe a" "rec a. Maybe a"
-                    , simplifyTypeTest "rec a. Integer" "Integer"
-                    , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
-                    , simplifyTypeTest "Maybe (rec a. List a)" "Maybe (rec a. List a)"
-                    , simplifyTypeTest "Maybe (rec a. Integer)" "Maybe Integer"
-                    , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a. rec b. a *: b" "rec b. b *: b"
+                    [ simplifyTypeTest "rec a, a" "None"
+                    , simplifyTypeTest "rec a, (a | Maybe a)" "rec a, Maybe a"
+                    , simplifyTypeTest "rec a, (a | Integer)" "Integer"
+                    , simplifyTypeTest "rec a, Maybe a" "rec a, Maybe a"
+                    , simplifyTypeTest "rec a, Integer" "Integer"
+                    , simplifyTypeTest "Maybe (rec a, a)" "Maybe None"
+                    , simplifyTypeTest "Maybe (rec a, List a)" "Maybe (rec a, List a)"
+                    , simplifyTypeTest "Maybe (rec a, Integer)" "Maybe Integer"
+                    , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a, rec b, a *: b" "rec b, b *: b"
                     , expectFailBecause "ISSUE #61" $
-                      simplifyTypeTest "(rec a. Maybe a) | (rec b. List b)" "rec a. Maybe a | List a"
+                      simplifyTypeTest "(rec a, Maybe a) | (rec b, List b)" "rec a, Maybe a | List a"
                     , expectFailBecause "ISSUE #61" $
-                      simplifyTypeTest "(rec a. Maybe a) | (rec a. List a)" "rec a. Maybe a | List a"
+                      simplifyTypeTest "(rec a, Maybe a) | (rec a, List a)" "rec a, Maybe a | List a"
                     , testTree
                           "roll"
-                          [ simplifyTypeTest "Maybe (rec a. Maybe a)" "rec a. Maybe a"
-                          , simplifyTypeTest "Maybe (Maybe (rec a. Maybe a))" "rec a. Maybe a"
-                          , simplifyTypeTest "Any -> Maybe (rec a. Maybe a)" "Any -> (rec a. Maybe a)"
-                          , unrollTest "rec a. Maybe a" "Maybe (rec a. Maybe a)"
+                          [ simplifyTypeTest "Maybe (rec a, Maybe a)" "rec a, Maybe a"
+                          , simplifyTypeTest "Maybe (Maybe (rec a, Maybe a))" "rec a, Maybe a"
+                          , simplifyTypeTest "Any -> Maybe (rec a, Maybe a)" "Any -> (rec a, Maybe a)"
+                          , unrollTest "rec a, Maybe a" "Maybe (rec a, Maybe a)"
                           ]
                     ]
               , testTree
                     "fullconstraint"
                     [ simplifyTypeTest "Integer | d" "Integer"
-                    , simplifyTypeTest "(rec a. Maybe a) | d" "rec a. Maybe a"
-                    , simplifyTypeTest "rec a. (Maybe a | d)" "rec a. Maybe a"
-                    , simplifyTypeTest "Maybe (rec a. Maybe a | d)" "rec a. Maybe a"
-                    , simplifyTypeTest "d -> Maybe (rec a. Maybe a | d)" "d -> Maybe (rec a. Maybe a | d)"
+                    , simplifyTypeTest "(rec a, Maybe a) | d" "rec a, Maybe a"
+                    , simplifyTypeTest "rec a, (Maybe a | d)" "rec a, Maybe a"
+                    , simplifyTypeTest "Maybe (rec a, Maybe a | d)" "rec a, Maybe a"
+                    , simplifyTypeTest "d -> Maybe (rec a, Maybe a | d)" "d -> Maybe (rec a, Maybe a | d)"
                     , simplifyTypeTest "(a -> Literal) | ((Text & b) -> a)" "Text -> Literal"
                     , simplifyTypeTest "(a & Text) -> (Literal | a)" "Text -> Literal"
                     ]
@@ -415,25 +415,25 @@ testType =
               , textTypeTest "(identity !. identity) !$% {3}" "{} -> WholeModel +Integer"
               , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeModel +Integer"
               , textTypeTest
-                    "Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store"
+                    "property.Storage @Integer @Text !\"a\" store !** property.Storage @Number @Text !\"b\" store"
                     "{store : Store} -> Property {-Integer,+Number} (Text *: Text)"
               , textTypeTest
-                    "Storage.property @Text @Integer !\"a\" store !++ Storage.property @Text @Number !\"b\" store"
+                    "property.Storage @Text @Integer !\"a\" store !++ property.Storage @Text @Number !\"b\" store"
                     "{store : Store} -> Property (Text +: Text) {-Integer,+Number}"
               , textTypeTest
-                    "(Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store) !$% {3}"
+                    "(property.Storage @Integer @Text !\"a\" store !** property.Storage @Number @Text !\"b\" store) !$% {3}"
                     "{store : Store} -> WholeModel (Text *: Text)"
               , textTypeTest
-                    "(Storage.property @Integer @Text !\"a\" store !** Storage.property @Number @Text !\"b\" store) !$ {3}"
+                    "(property.Storage @Integer @Text !\"a\" store !** property.Storage @Number @Text !\"b\" store) !$ {3}"
                     "{store : Store} -> WholeModel (Text *: Text)"
               , textTypeTest
-                    "Storage.property @Integer @Text !\"a\" store !@% {\"x\"}"
+                    "property.Storage @Integer @Text !\"a\" store !@% {\"x\"}"
                     "{store : Store} -> FiniteSetModel Integer"
               , textTypeTest
-                    "Storage.property @Integer @Text !\"a\" store !@ {\"x\"}"
+                    "property.Storage @Integer @Text !\"a\" store !@ {\"x\"}"
                     "{store : Store} -> FiniteSetModel Integer"
               , textTypeTest
-                    "(Storage.property @Integer @Text !\"a\" store !@% {\"x\"}) <:*:> (Storage.property @Number @Text !\"b\" store !@% {\"y\"})"
+                    "(property.Storage @Integer @Text !\"a\" store !@% {\"x\"}) <:*:> (property.Storage @Number @Text !\"b\" store !@% {\"y\"})"
                     "{store : Store} -> FiniteSetModel (Integer *: Number)"
               , textTypeTest "pairWholeModel {3} {\"x\"}" "{} -> WholeModel {-(Any *: Any),+(Integer *: Text)}"
               , textTypeTest "immutWholeModel $ pairWholeModel {3} {\"x\"}" "{} -> WholeModel +(Integer *: Text)"

@@ -3,25 +3,25 @@ let
 import "pinafore-media";
 import "pinafore-gnome";
 in
-GTK.run $ fn gtk => let
+run.GTK $ fn gtk => let
 
 rec
     showFile: Action Unit
     = do
-        file <- GTK.chooseExistingFile gtk $ match
+        file <- chooseExistingFile.GTK gtk $ match
             Just ("image",_) => True;
             _ => False;
             end;
-        ref <- GIO.fileMakeRef file;
+        ref <- fileMakeRef.GIO file;
         lit <- get ref;
         let
         path = file >- match
-                GIO.FileParseName path => path;
+                FileParseName.GIO path => path;
                 _ => "unknown";
             end;
         in lit >- match
-            image :? Image.JPEGImage => GTK.openWindow gtk (Image.imageSize image) {path} $ GTK.image {image};
-            _ => Env.outputLn "not a JPEG image";
+            image :? JPEGImage.Image => openWindow.GTK gtk (imageSize.Image image) {path} $ image.GTK {image};
+            _ => outputLn.Env "not a JPEG image";
         end;
         showFile;
     end;

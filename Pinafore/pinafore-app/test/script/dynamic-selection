@@ -11,22 +11,22 @@ dynamictype Person = !"type.person";
 testpt = dynamicEntity @Person !"testpt";
 
 inform: Text -> Maybe Entity -> Action Unit;
-inform t mv = Debug.message $ t <> ": " <> case mv of
+inform t mv = message.Debug $ t <> ": " <> case mv of
     Just v -> "changed: " <> entityAnchor v;
     Nothing -> "deleted";
     end;
 
-debugWindow: GTK.Window -> Action Unit;
+debugWindow: Window.GTK -> Action Unit;
 debugWindow window = do
-    t <- Debug.GTK.windowInfo window;
-    Debug.message t;
+    t <- Debug.windowInfo.GTK window;
+    message.Debug t;
     end;
 
 debugThing: Text -> Action a -> Action a;
 debugThing t action = do
-    Debug.message $ t <> ": [";
+    message.Debug $ t <> ": [";
     a <- action;
-    Debug.message $ t <> ": ]";
+    message.Debug $ t <> ": ]";
     return a;
     end;
 
@@ -34,17 +34,17 @@ in debugThing "SCRIPT" $ do
     selection <- newMemWholeModel;
     onWholeModelUpdate selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- fixAction $ \w -> GTK.openWindow (300,400) {"Test"} $
-        GTK.dynamic $ coMapWholeModel (\e -> GTK.run $ debugThing "DYNAMIC" $ do
+    window <- fixAction $ \w -> openWindow.GTK (300,400) {"Test"} $
+        dynamic.GTK $ coMapWholeModel (\e -> run.GTK $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
-            return $ GTK.vertical [(True,GTK.label {"Set Text"})];
+            return $ vertical.GTK [(True,label.GTK {"Set Text"})];
             end) selection
         ;
     debugWindow window;
     selection := testpt;
     debugWindow window;
-    GTK.openWindow (300,400) {"Check"} $ GTK.button {"Check"} $ {debugThing "CHECK" $ do
+    openWindow.GTK (300,400) {"Check"} $ button.GTK {"Check"} $ {debugThing "CHECK" $ do
         debugWindow window;
         selection := testpt;
         debugWindow window;

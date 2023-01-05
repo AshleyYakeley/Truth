@@ -6,10 +6,13 @@ import Shapes
 
 newtype Namespace =
     MkNamespace [Name]
-    deriving (Eq, Ord)
+    deriving (Eq)
+
+instance Ord Namespace where
+    compare (MkNamespace a) (MkNamespace b) = compare (reverse a) (reverse b)
 
 instance ToText Namespace where
-    toText (MkNamespace nn) = "." <> (intercalate "." $ fmap toText nn)
+    toText (MkNamespace nn) = (intercalate "." $ fmap toText nn) <> "."
 
 instance Show Namespace where
     show = unpack . toText
@@ -18,16 +21,12 @@ namespaceFromStrings :: [String] -> Maybe Namespace
 namespaceFromStrings ss = do
     let
         ss1 =
-            case ss of
-                ["", ""] -> []
-                "":ssr -> ssr
+            case nonEmpty ss of
+                Just ("" :| [""]) -> []
+                Just ssn
+                    | "" <- last ssn -> init ssn
                 _ -> ss
-    ns <-
-        for ss1 $ \s -> do
-            n <- nameFromString s
-            if nameIsUpper n
-                then return n
-                else Nothing
+    ns <- for ss1 upperNameFromString
     return $ MkNamespace ns
 
 instance IsString Namespace where
@@ -37,12 +36,18 @@ pattern RootNamespace :: Namespace
 
 pattern RootNamespace = MkNamespace []
 
-namespaceStartsWith :: Namespace -> Namespace -> Maybe [Name]
-namespaceStartsWith (MkNamespace na) (MkNamespace nb) = startsWith na nb
+namespaceWithin :: Namespace -> Namespace -> Maybe [Name]
+namespaceWithin (MkNamespace na) (MkNamespace nb) = endsWith na nb
 
-namespaceAncestry :: Namespace -> [Namespace]
-namespaceAncestry a@(MkNamespace nn) =
-    a :
-    case nonEmpty nn of
+namespaceParent :: Namespace -> Maybe (Namespace, Name)
+namespaceParent (MkNamespace nn) =
+    case nn of
+        [] -> Nothing
+        n:nr -> Just (MkNamespace nr, n)
+
+namespaceAncestry :: Namespace -> NonEmpty Namespace
+namespaceAncestry ns =
+    ns :|
+    case namespaceParent ns of
         Nothing -> []
-        Just na -> namespaceAncestry $ MkNamespace $ init na
+        Just (nn, _) -> toList $ namespaceAncestry nn

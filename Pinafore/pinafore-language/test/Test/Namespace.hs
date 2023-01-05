@@ -27,12 +27,12 @@ testNamespace =
                     [ testExpectSuccess "pass"
                     , testExpectReject "test $ a == 4"
                     , testExpectSuccess "let using M in test $ a == 4"
-                    , testExpectSuccess "test $ .M.a == 4"
-                    , testExpectSuccess "test $ M.a == 4"
-                    , testExpectSuccess "let a = 3 in test $ M.a == 4"
+                    , testExpectSuccess "test $ a.M. == 4"
+                    , testExpectSuccess "test $ a.M == 4"
+                    , testExpectSuccess "let a = 3 in test $ a.M == 4"
                     , testExpectSuccess "let using M; b = a in test $ b == 4"
-                    , testExpectSuccess "let b = M.a in test $ b == 4"
-                    , testExpectSuccess "let a = 3; b = M.a in test $ b == 4"
+                    , testExpectSuccess "let b = a.M in test $ b == 4"
+                    , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
               , tDecls ["expose a of a=4 end"] $
                 tGroup
@@ -48,23 +48,23 @@ testNamespace =
                     [ testExpectSuccess "pass"
                     , testExpectReject "test $ a == 4"
                     , testExpectSuccess "let using M in test $ a == 4"
-                    , testExpectSuccess "test $ M.a == 4"
-                    , testExpectSuccess "let a = 3 in test $ M.a == 4"
+                    , testExpectSuccess "test $ a.M == 4"
+                    , testExpectSuccess "let a = 3 in test $ a.M == 4"
                     , testExpectSuccess "let using M; b = a in test $ b == 4"
-                    , testExpectSuccess "let b = M.a in test $ b == 4"
-                    , testExpectSuccess "let a = 3; b = M.a in test $ b == 4"
+                    , testExpectSuccess "let b = a.M in test $ b == 4"
+                    , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
-              , tDecls ["expose M.a of namespace M of a=4 end end"] $
+              , tDecls ["expose a.M of namespace M of a=4 end end"] $
                 tGroup
                     "expose-namespace"
                     [ testExpectSuccess "pass"
                     , testExpectReject "test $ a == 4"
                     , testExpectSuccess "let using M in test $ a == 4"
-                    , testExpectSuccess "test $ M.a == 4"
-                    , testExpectSuccess "let a = 3 in test $ M.a == 4"
+                    , testExpectSuccess "test $ a.M == 4"
+                    , testExpectSuccess "let a = 3 in test $ a.M == 4"
                     , testExpectSuccess "let using M; b = a in test $ b == 4"
-                    , testExpectSuccess "let b = M.a in test $ b == 4"
-                    , testExpectSuccess "let a = 3; b = M.a in test $ b == 4"
+                    , testExpectSuccess "let b = a.M in test $ b == 4"
+                    , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
               , tDecls ["expose namespace M of namespace M of a=4 end end"] $
                 tGroup
@@ -72,11 +72,11 @@ testNamespace =
                     [ testExpectSuccess "pass"
                     , testExpectReject "test $ a == 4"
                     , testExpectSuccess "let using M in test $ a == 4"
-                    , testExpectSuccess "test $ M.a == 4"
-                    , testExpectSuccess "let a = 3 in test $ M.a == 4"
+                    , testExpectSuccess "test $ a.M == 4"
+                    , testExpectSuccess "let a = 3 in test $ a.M == 4"
                     , testExpectSuccess "let using M; b = a in test $ b == 4"
-                    , testExpectSuccess "let b = M.a in test $ b == 4"
-                    , testExpectSuccess "let a = 3; b = M.a in test $ b == 4"
+                    , testExpectSuccess "let b = a.M in test $ b == 4"
+                    , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
               ]
         , tDecls ["namespace M of expose T, T1, T2 of datatype T of T1; T2 end end end"] $
@@ -84,30 +84,30 @@ testNamespace =
               "type"
               [ testExpectSuccess "pass"
               , testExpectSuccess "let using M in T1 >- match T1 => pass; T2 => fail \"wrong\" end"
-              , testExpectSuccess "M.T1 >- match M.T1 => pass; M.T2 => fail \"wrong\" end"
+              , testExpectSuccess "T1.M >- match T1.M => pass; T2.M => fail \"wrong\" end"
               , testExpectSuccess "let using M in let t: T = T1 in t >- match T1 => pass; T2 => fail \"wrong\" end"
               , testExpectSuccess "let using M; t: T = T1 in t >- match T1 => pass; T2 => fail \"wrong\" end"
-              , testExpectSuccess "let t: M.T = M.T1 in t >- match M.T1 => pass; M.T2 => fail \"wrong\" end"
+              , testExpectSuccess "let t: T.M = T1.M in t >- match T1.M => pass; T2.M => fail \"wrong\" end"
               , testExpectSuccess "let using M; f: T -> T = fn x => x in pass"
               , testExpectSuccess "let using M in let f: T -> T = fn x => x in pass"
-              , testExpectSuccess "let f: M.T -> M.T = fn x => x in pass"
+              , testExpectSuccess "let f: T.M -> T.M = fn x => x in pass"
               ]
         , tDecls ["namespace M of expose a of a = b end end"] $ testExpectReject "let using M in pass"
         , tDecls ["namespace M of expose T of opentype T end end"] $
           tGroup
               "opentype"
               [ testExpectSuccess "let using M; datatype D of MkD T end; in pass"
-              , testExpectSuccess "let datatype D of MkD M.T end; in pass"
+              , testExpectSuccess "let datatype D of MkD T.M end; in pass"
               ]
         , tGroup
               "subtype"
-              [ tDecls ["namespace M of opentype P; opentype Q end", "namespace N of using .M; subtype P <: Q end"] $
+              [ tDecls ["namespace M of opentype P; opentype Q end", "namespace N of using M.; subtype P <: Q end"] $
                 tGroup
                     "namespace"
                     [testExpectSuccess "pass", testExpectSuccess "let using M; f: P -> Q = fn x => x in pass"]
               , tDecls
                     [ "namespace M of expose P, Q of opentype P; opentype Q end end"
-                    , "namespace N of expose of using .M; subtype P <: Q end end"
+                    , "namespace N of expose of using M.; subtype P <: Q end end"
                     ] $
                 tGroup
                     "expose"
@@ -115,17 +115,17 @@ testNamespace =
               ]
         , tGroup
               "names"
-              [ testExpectSuccess "let namespace M of a = 6; b = a end; in test $ M.b == 6"
+              [ testExpectSuccess "let namespace M of a = 6; b = a end; in test $ b.M == 6"
               , testExpectSuccess "let namespace M of a = 6; b = a end; using M; in test $ b == 6"
-              , testExpectSuccess "let namespace P of a = 6; namespace Q of b = a end end; in test $ P.Q.b == 6"
-              , testExpectSuccess "let namespace P of a = 6 end; namespace P.Q of b = a end; in test $ P.Q.b == 6"
+              , testExpectSuccess "let namespace P of a = 6; namespace Q of b = a end end; in test $ b.Q.P == 6"
+              , testExpectSuccess "let namespace P of a = 6 end; namespace P.Q of b = a end; in test $ b.Q.P == 6"
               ]
         , tGroup
               "decl"
-              [ testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ M.nna == 2"
+              [ testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna.M == 2"
               , testExpectSuccess "let nna=1; namespace M of nnb=2 end in test $ nna == 1"
               , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna == 1"
-              , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ .nna == 1"
+              , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna. == 1"
               ]
         , tDecls ["testeq = fns e f => if e == f then pass else fail $ \"found: \" <> show f"] $
           tDecls
@@ -157,10 +157,10 @@ testNamespace =
         , tGroup
               "pattern"
               [ testExpectSuccess "test $ 3 >- fn x => x == 3"
-              , testExpectSuccess "test $ 3 >- fn x as M => M.x == 3"
-              , testExpectSuccess "test $ 3 >- fn x as M as N => N.M.x == 3"
+              , testExpectSuccess "test $ 3 >- fn x as M => x.M == 3"
+              , testExpectSuccess "test $ 3 >- fn x as M as N => x.M.N == 3"
               , testExpectReject "test $ 3 >- fn x as M => x == 3"
-              , testExpectSuccess "test $ Just 3 >- match (Just x) as M => M.x == 3; Nothing => False; end"
-              , testExpectSuccess "test $ Just 3 >- match Just (x as M) => M.x == 3; Nothing => False; end"
+              , testExpectSuccess "test $ Just 3 >- match (Just x) as M => x.M == 3; Nothing => False; end"
+              , testExpectSuccess "test $ Just 3 >- match Just (x as M) => x.M == 3; Nothing => False; end"
               ]
         ]

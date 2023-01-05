@@ -48,12 +48,12 @@ tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
 tPrefix t = tContext $ \sc -> sc {scPrefix = scPrefix sc <> t <> "\n"}
 
 tOpenDefaultStore :: ScriptTestTree -> ScriptTestTree
-tOpenDefaultStore = tPrefix "Env.openDefaultStore >>= fn store =>"
+tOpenDefaultStore = tPrefix "openDefaultStore.Env >>= fn store =>"
 
 testOpenUHStore :: ScriptTestTree -> ScriptTestTree
 testOpenUHStore =
-    tPrefix "Env.openDefaultStore >>= fn dstore =>" .
-    tPrefix "Undo.newUndoHandler >>= fn undoHandler =>" . tPrefix "Undo.handleStore undoHandler dstore >>= fn store =>"
+    tPrefix "openDefaultStore.Env >>= fn dstore =>" .
+    tPrefix "newUndoHandler.Undo >>= fn undoHandler =>" . tPrefix "handleStore.Undo undoHandler dstore >>= fn store =>"
 
 tModule :: Text -> Text -> ScriptTestTree -> ScriptTestTree
 tModule name script =

@@ -12,7 +12,7 @@ in do
     (model,_) <- newMemWholeModel >>= fn model => return (model, f model);
     model := e1;
     e2 <- get model;
-    Debug.checkEntity "CHECK e1" e1;
-    Debug.checkEntity "CHECK e2" e2;
-    Env.outputLn "LAST";
+    checkEntity.Debug "CHECK e1" e1;
+    checkEntity.Debug "CHECK e2" e2;
+    outputLn.Env "LAST";
     end

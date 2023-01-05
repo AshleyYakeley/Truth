@@ -19,7 +19,7 @@ readType = do
     (do
          readThis TokRec
          n <- readTypeVar
-         readExactlyThis TokOperator "."
+         readThis TokComma
          t <- readType
          return $ MkWithSourcePos spos $ RecursiveSyntaxType n t) <|>
         readType0

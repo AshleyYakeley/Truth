@@ -18,6 +18,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - can declare arbitrary subtype relations
     - import lists
     - syntax
+      . changed recursive type syntax from "rec v. T" to "rec v, T"
       . type names (+:), (*:), List, Unit
       . tuple constructor/pattern (,,) etc.
       . type signatures now attach to bindings, not stand-alone

@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 let
 import "pinafore-gnome";
-in GTK.run $ \gtk => do
+in run.GTK $ \gtk => do
     tref1 <- newMemWholeModel;
     tref1 := "111";
     tref2 <- newMemWholeModel;
@@ -9,11 +9,11 @@ in GTK.run $ \gtk => do
     tref3 <- newMemWholeModel;
     tref3 := "333";
     sel <- newMemWholeModel;
-    GTK.openWindow gtk (400,500) {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
+    openWindow.GTK gtk (400,500) {"Text Selection"} $ styleSheet.GTK {"* {padding: 2pt;}"} $ vertical.GTK
     [
-        GTK.textArea tref1 sel,
-        GTK.textArea tref2 sel,
-        GTK.textArea tref3 sel,
-        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea tref unknown) %sel}
+        textArea.GTK tref1 sel,
+        textArea.GTK tref2 sel,
+        textArea.GTK tref3 sel,
+        dynamic.GTK {exec.GTK $ mapAction (\tref => textArea.GTK tref unknown) %sel}
     ];
     end

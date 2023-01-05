@@ -80,7 +80,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
              ExprShow (DolanSingularType ground polarity t) where
     exprShowPrec (VarDolanSingularType namewit) = exprShowPrec namewit
     exprShowPrec (GroundedDolanSingularType t) = exprShowPrec t
-    exprShowPrec (RecursiveDolanSingularType n pt) = namedTextPrec 7 $ "rec " <> exprShow n <> ". " <> exprPrecShow 7 pt
+    exprShowPrec (RecursiveDolanSingularType n pt) = namedTextPrec 7 $ "rec " <> exprShow n <> ", " <> exprPrecShow 7 pt
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (GroundExprShow ground, Is PolarityType polarity) =>
              AllConstraint ExprShow (DolanGroundedType ground polarity) where

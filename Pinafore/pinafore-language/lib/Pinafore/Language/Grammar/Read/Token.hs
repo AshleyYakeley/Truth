@@ -23,8 +23,8 @@ instance Show Comment where
 
 data TokenNames = MkTokenNames
     { tnAbsolute :: Bool
-    , tnSpace :: [Name] -- always upper
     , tnName :: Name
+    , tnSpace :: [Name] -- always upper
     }
 
 data Token t where
@@ -282,21 +282,17 @@ readName = do
 readTokenNames :: Parser (Bool, TokenNames)
 readTokenNames =
     try $ do
-        mabs <- optional $ readChar '.'
-        bn <- readName
-        bns <-
+        (u, name) <- readName
+        ns <-
             many $
             try $ do
                 readChar '.'
                 readName
-        let
-            nbns = bn :| bns
-            bspace = init nbns
-            (u, name) = last nbns
         nspace <-
-            for bspace $ \(b, nspace) -> do
+            for ns $ \(b, nsn) -> do
                 altIf b
-                return nspace
+                return nsn
+        mabs <- optional $ readChar '.'
         return (u, MkTokenNames {tnAbsolute = isJust mabs, tnSpace = nspace, tnName = name})
 
 checkKeyword :: Text -> Maybe (SomeOf Token)
@@ -333,7 +329,7 @@ readTextToken = do
     case checkKeyword $ toText $ tnName tns of
         Just stok ->
             case tns of
-                MkTokenNames False [] _ -> return stok
+                MkTokenNames False _ [] -> return stok
                 _ -> empty
         Nothing ->
             return $

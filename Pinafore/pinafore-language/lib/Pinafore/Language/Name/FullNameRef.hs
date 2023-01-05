@@ -8,25 +8,25 @@ import Pinafore.Language.Name.ToText
 import Shapes
 
 data FullNameRef = MkFullNameRef
-    { fnSpace :: NamespaceRef
-    , fnName :: Name
+    { fnName :: Name
+    , fnSpace :: NamespaceRef
     } deriving (Eq, Ord)
 
 pattern UnqualifiedFullNameRef :: Name -> FullNameRef
 
 pattern UnqualifiedFullNameRef n =
-        MkFullNameRef CurrentNamespaceRef n
+        MkFullNameRef n CurrentNamespaceRef
 
 fullNameRefToUnqualified :: FullNameRef -> Maybe Name
 fullNameRefToUnqualified (UnqualifiedFullNameRef n) = Just n
 fullNameRefToUnqualified _ = Nothing
 
 instance ToText FullNameRef where
-    toText (MkFullNameRef RootNamespaceRef name)
+    toText (MkFullNameRef name RootNamespaceRef)
         | nameIsInfix name = toText name
-    toText (MkFullNameRef CurrentNamespaceRef name) = toText name
-    toText (MkFullNameRef RootNamespaceRef name) = "." <> toText name
-    toText (MkFullNameRef ns name) = toText ns <> "." <> toText name
+    toText (MkFullNameRef name CurrentNamespaceRef) = toText name
+    toText (MkFullNameRef name RootNamespaceRef) = toText name <> "."
+    toText (MkFullNameRef name ns) = toText name <> "." <> toText ns
 
 instance Show FullNameRef where
     show = unpack . toText
@@ -35,23 +35,23 @@ instance IsString FullNameRef where
     fromString s@('.':_) = fullNameRef $ fromString s
     fromString s =
         case fromString s of
-            MkFullName (MkNamespace ns) n -> MkFullNameRef (RelativeNamespaceRef ns) n
+            MkFullName n (MkNamespace ns) -> MkFullNameRef n (RelativeNamespaceRef ns)
 
 namespaceConcatFullName :: Namespace -> FullNameRef -> FullName
-namespaceConcatFullName ns (MkFullNameRef nref name) = MkFullName (namespaceConcatRef ns nref) name
+namespaceConcatFullName ns (MkFullNameRef name nref) = MkFullName name (namespaceConcatRef ns nref)
 
 fullNameRef :: FullName -> FullNameRef
-fullNameRef (MkFullName ns name) = MkFullNameRef (AbsoluteNamespaceRef ns) name
+fullNameRef (MkFullName name ns) = MkFullNameRef name (AbsoluteNamespaceRef ns)
 
 fullNameRootRelative :: FullName -> FullNameRef
-fullNameRootRelative (MkFullName ns n) = MkFullNameRef (namespaceRootRelative ns) n
+fullNameRootRelative (MkFullName n ns) = MkFullNameRef n (namespaceRootRelative ns)
 
 -- | All the ways a 'FullName' can be split into a 'Namespace' and 'FullNameRef', starting with the longest 'Namespace' and shortest 'FullNameRef'.
 fullNameSplits :: FullName -> [(Namespace, FullNameRef)]
-fullNameSplits (MkFullName ns name) = fmap (fmap $ \nsr -> MkFullNameRef nsr name) $ namespaceSplits ns
+fullNameSplits (MkFullName name ns) = fmap (fmap $ \nsr -> MkFullNameRef name nsr) $ namespaceSplits ns
 
 namespaceRelativeFullName :: Namespace -> FullName -> FullNameRef
-namespaceRelativeFullName na (MkFullName nb n) = MkFullNameRef (namespaceRelative na nb) n
+namespaceRelativeFullName na (MkFullName n nb) = MkFullNameRef n (namespaceRelative na nb)
 
 relativeNamespace :: [Namespace] -> Namespace -> NamespaceRef
 relativeNamespace basens fn =

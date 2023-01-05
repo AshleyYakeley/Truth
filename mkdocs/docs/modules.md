@@ -7,7 +7,7 @@ Like this:
 ```pinafore
 let
 import "my/stuff";
-in Env.outputLn sometext
+in outputLn.Env sometext
 ```
 
 To import the module `my/stuff`, Pinafore will look for a file in these paths in this order:

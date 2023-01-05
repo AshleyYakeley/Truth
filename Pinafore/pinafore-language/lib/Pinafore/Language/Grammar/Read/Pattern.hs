@@ -21,11 +21,11 @@ readPatterns = do
     return $ fmap (\pat -> pat ns) nspats
 
 nilPattern :: SyntaxPattern'
-nilPattern = ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "[]") []
+nilPattern = ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef "[]" RootNamespaceRef) []
 
 consPattern :: SyntaxPattern -> SyntaxPattern -> SyntaxPattern'
 consPattern pat1 pat2 =
-    ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef RootNamespaceRef "::") [pat1, pat2]
+    ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef "::" RootNamespaceRef) [pat1, pat2]
 
 readWithSourcePos1 :: Parser (a -> t) -> Parser (a -> WithSourcePos t)
 readWithSourcePos1 p = do
@@ -102,7 +102,7 @@ readPattern5 =
     readWithSourcePos1
         (do
              name <- readLName
-             return $ \ns -> VarSyntaxPattern $ MkFullName ns name) <|>
+             return $ \ns -> VarSyntaxPattern $ MkFullName name ns) <|>
     readWithSourcePos1
         (do
              readThis TokUnderscore

@@ -23,7 +23,7 @@ lifecycleLibSection =
         , valBDT
               "onClose"
               "Add this action as to be done when closing.\n\n\
-                \Example: `lifecycle $ do onClose $ Env.outputLn \"hello\"; sleep (Seconds 1) end`  \n\
+                \Example: `lifecycle $ do onClose $ outputLn.Env \"hello\"; sleep (Seconds 1) end`  \n\
                 \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
               actionOnClose
         , valBDT

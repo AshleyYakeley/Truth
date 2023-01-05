@@ -6,32 +6,32 @@ import Pinafore.Language.Name.ToText
 import Shapes
 
 data FullName =
-    MkFullName Namespace
-               Name
+    MkFullName Name
+               Namespace
     deriving (Eq, Ord)
 
 pattern RootFullName :: Name -> FullName
 
-pattern RootFullName n = MkFullName RootNamespace n
+pattern RootFullName n = MkFullName n RootNamespace
 
 fullNameToRoot :: FullName -> Maybe Name
 fullNameToRoot (RootFullName n) = Just n
 fullNameToRoot _ = Nothing
 
 instance ToText FullName where
-    toText (MkFullName RootNamespace name)
+    toText (MkFullName name RootNamespace)
         | nameIsInfix name = toText name
-    toText (MkFullName RootNamespace name) = "." <> toText name
-    toText (MkFullName nsn name) = toText nsn <> "." <> toText name
+    toText (MkFullName name RootNamespace) = toText name <> "."
+    toText (MkFullName name nsn) = toText name <> "." <> toText nsn
 
 instance Show FullName where
     show = unpack . toText
 
 instance IsString FullName where
     fromString s =
-        fromMaybe (error $ "bad FullName: " <> s) $
+        fromMaybe (error $ "bad FullName: " <> show s) $
         fmap RootFullName (infixNameFromString s) <|> do
             nt <- nonEmpty $ splitSeq "." s
-            nspace <- namespaceFromStrings $ init nt
-            name <- nameFromString $ last nt
-            return $ MkFullName nspace name
+            name <- nameFromString $ head nt
+            nspace <- namespaceFromStrings $ tail nt
+            return $ MkFullName name nspace

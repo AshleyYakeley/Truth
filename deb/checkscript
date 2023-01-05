@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 let import "pinafore-gnome" in
-GTK.run $ fn gtk => do
-w <- GTK.openWindow gtk (300,400) {"Test"} $ GTK.label {"Hello"};
-GTK.closeWindow w;
+run.GTK $ fn gtk => do
+w <- openWindow.GTK gtk (300,400) {"Test"} $ label.GTK {"Hello"};
+closeWindow.GTK w;
 end

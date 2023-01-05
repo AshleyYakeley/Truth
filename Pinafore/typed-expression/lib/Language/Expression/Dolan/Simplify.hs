@@ -42,8 +42,8 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 -- Simplification:
 --
 -- eliminateUnusedRecursion: remove unused recursion & eliminate immediate recursion
--- e.g. "rec a. Integer" => "Integer"
--- e.g. "rec a. a" => "Any"/"None"
+-- e.g. "rec a, Integer" => "Integer"
+-- e.g. "rec a, a" => "Any"/"None"
 --
 -- mergeDuplicateGroundTypes: merge duplicate ground types in join/meet (on each type)
 -- e.g. "[a]|[b]" => "[a|b]"
@@ -65,7 +65,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 -- e.g. "a|a" => "a"
 --
 -- rollUpRecursiveTypes: roll up recursive types
--- e.g. "F (rec a. F a)" => "rec a. F a"
+-- e.g. "F (rec a, F a)" => "rec a, F a"
 dolanSimplifyTypes ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)

@@ -106,9 +106,9 @@ newItemMenuAction: Text -> Maybe Text -> Action a -> SetModel a -> (a -> Action 
 
 datatype UIStuff of
     MkUIStuff of
-        gtk: .GTK.Context;
-        undoHandler: .Undo.UndoHandler;
-        store: .Storage.Store;
+        gtk: Context.GTK.;
+        undoHandler: UndoHandler.Undo.;
+        store: Store.Storage.;
         #| A window that comes with some menus.
         stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window;
         paneWindow: Pane -> Action Window;
@@ -132,10 +132,10 @@ end;
 
 runUIStuff: (UIStuff -> Action a) -> Action a
 = fn call => do
-    dstore <- Env.openDefaultStore;
-    undoHandler <- Undo.newUndoHandler;
-    store <- Undo.handleStore undoHandler dstore;
-    GTK.run $ fn gtk => let
+    dstore <- openDefaultStore.Env;
+    undoHandler <- newUndoHandler.Undo;
+    store <- handleStore.Undo undoHandler dstore;
+    run.GTK $ fn gtk => let
         stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
         = fns title moremenus contents => fixAction $ fn window => do
             textsel <- newMemWholeModel;
@@ -180,8 +180,8 @@ runUIStuff: (UIStuff -> Action a) -> Action a
                         ],
                         menuSubmenu "Edit"
                         [
-                            menuAction "Undo" (Just "Ctrl+Z") {Undo.queueUndo undoHandler},
-                            menuAction "Redo" (Just "Ctrl+Y") {Undo.queueRedo undoHandler},
+                            menuAction "Undo" (Just "Ctrl+Z") {queueUndo.Undo undoHandler},
+                            menuAction "Redo" (Just "Ctrl+Y") {queueRedo.Undo undoHandler},
                             menuSeparator,
                             menuAction "Cut" (Just "Ctrl+X") {selCut},
                             menuAction "Copy" (Just "Ctrl+C") {selCopy},

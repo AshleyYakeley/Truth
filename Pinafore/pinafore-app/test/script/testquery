@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-Env.openDefaultStore >>= fn store =>
+openDefaultStore.Env >>= fn store =>
 let
 using Storage;
 
@@ -19,4 +19,4 @@ root = openEntity @Root !"example:root";
 people = property @Person @Root !"example:people" store !@ {root};
 
 in
-get (finiteSetModelList (reverse alphabetical) (name !$$ people)) >>= fn l => for_ l Env.outputLn
+get (finiteSetModelList (reverse alphabetical) (name !$$ people)) >>= fn l => for_ l outputLn.Env

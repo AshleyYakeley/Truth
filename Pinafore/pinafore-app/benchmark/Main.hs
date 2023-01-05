@@ -61,7 +61,7 @@ benchScripts =
         , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=return () end in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
         , benchScript
-              "let import \"pinafore-gnome\"; using GTK; const = fns a b => a; ui_labelled = fns n ui => horizontal [label n, layoutGrow ui] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} GTK.blank"
+              "let import \"pinafore-gnome\"; using GTK; const = fns a b => a; ui_labelled = fns n ui => horizontal [label n, layoutGrow ui] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.GTK"
         , benchScript "let const = fns a b => a; rec r = 3::r end in const (return ()) r"
         , benchScript
               "let cpass = fn x => return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"

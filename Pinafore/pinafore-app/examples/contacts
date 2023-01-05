@@ -23,15 +23,15 @@ postcode = property @Location @Text !"location.address.postcode" store;
 province = property @Location @Text !"location.address.province" store;
 country = property @Location @Text !"location.address.country" store;
 
-locationUI: WholeModel +Location -> GTK.Element
-= fn loc => GTK.vertical
+locationUI: WholeModel +Location -> Element.GTK
+= fn loc => vertical.GTK
 [
-    GTK.layoutGrow $ uiLabelled {"Address: "} $ GTK.textArea (wholeModelText $ address !$% loc),
-    uiLabelled {"City: "} $ GTK.textEntry $ city !$% loc,
-    uiLabelled {"Postcode/ZIP: "} $ GTK.textEntry $ postcode !$% loc,
-    uiLabelled {"State/Province: "} $ GTK.textEntry $ province !$% loc,
-    uiLabelled {"Country: "} $ GTK.textEntry $ country !$% loc,
-    uiLabelled {"Phone: "} $ GTK.textEntry $ locphone !$% loc
+    layoutGrow.GTK $ uiLabelled {"Address: "} $ textArea.GTK (wholeModelText $ address !$% loc),
+    uiLabelled {"City: "} $ textEntry.GTK $ city !$% loc,
+    uiLabelled {"Postcode/ZIP: "} $ textEntry.GTK $ postcode !$% loc,
+    uiLabelled {"State/Province: "} $ textEntry.GTK $ province !$% loc,
+    uiLabelled {"Country: "} $ textEntry.GTK $ country !$% loc,
+    uiLabelled {"Phone: "} $ textEntry.GTK $ locphone !$% loc
 ];
 
 rec
@@ -70,60 +70,60 @@ end;
 ### User Interface
 
     rec
-    contactPages: WholeModel +LegalEntity -> List (GTK.Element *: GTK.Element)
+    contactPages: WholeModel +LegalEntity -> List (Element.GTK *: Element.GTK)
     = fn er =>
     [
-        uiPage {"Social"} $ GTK.vertical
+        uiPage {"Social"} $ vertical.GTK
         [
-            uiLabelled {"Email: "} $ GTK.textEntry $ email !$% er,
-            uiLabelled {"Phone: "} $ GTK.textEntry $ phone !$% er
+            uiLabelled {"Email: "} $ textEntry.GTK $ email !$% er,
+            uiLabelled {"Phone: "} $ textEntry.GTK $ phone !$% er
         ],
         uiPage {"Home"} $ locationUI $ home !$% er
     ];
 
-    personPages: WholeModel +Person -> List (GTK.Element *: GTK.Element)
+    personPages: WholeModel +Person -> List (Element.GTK *: Element.GTK)
     = fn p =>
     [
-        uiPage {"Work"} $ GTK.vertical
+        uiPage {"Work"} $ vertical.GTK
         [
-            uiLabelled {"Employer: "} $ GTK.pick (byName legalentities) $ employer !$% p
+            uiLabelled {"Employer: "} $ pick.GTK (byName legalentities) $ employer !$% p
         ],
         uiPage {"Family"} $ familyUI p
     ];
 
-    familyUI: WholeModel +Person -> GTK.Element
-    = fn p => GTK.vertical
+    familyUI: WholeModel +Person -> Element.GTK
+    = fn p => vertical.GTK
     [
-        uiLabelled {"Birth: "} $ GTK.textEntry $ interpretDateAsText $ birthdate !$% p,
-        uiLabelled {"Death: "} $ GTK.textEntry $ interpretDateAsText $ deathdate !$% p,
-        GTK.checkBox {"Married"} $ married !$% p,
-        uiLabelled {"Mother: "} $ GTK.pick (byName people) $ mother !$% p,
-        uiLabelled {"Father: "} $ GTK.pick (byName people) $ father !$% p,
-        GTK.label {"Children:"},
-        GTK.layoutGrow $ namedItemTable (children p) contactModelUI Nothing
+        uiLabelled {"Birth: "} $ textEntry.GTK $ interpretDateAsText $ birthdate !$% p,
+        uiLabelled {"Death: "} $ textEntry.GTK $ interpretDateAsText $ deathdate !$% p,
+        checkBox.GTK {"Married"} $ married !$% p,
+        uiLabelled {"Mother: "} $ pick.GTK (byName people) $ mother !$% p,
+        uiLabelled {"Father: "} $ pick.GTK (byName people) $ father !$% p,
+        label.GTK {"Children:"},
+        layoutGrow.GTK $ namedItemTable (children p) contactModelUI Nothing
     ];
 
-    organisationPages: WholeModel +Organisation -> List (GTK.Element *: GTK.Element)
+    organisationPages: WholeModel +Organisation -> List (Element.GTK *: Element.GTK)
     = fn subj =>
     [
         uiPage {"Employees"} $ namedItemTable (employees subj) contactModelUI Nothing
     ];
 
-    contactUI: LegalEntity -> GTK.Element
+    contactUI: LegalEntity -> Element.GTK
     = fn e => let
-        pages: List (GTK.Element *: GTK.Element)
+        pages: List (Element.GTK *: Element.GTK)
         = contactPages {e} ++ (e >- match
             p:? Person => personPages {p};
             o:? Organisation => organisationPages {o};
             end);
-        in GTK.vertical
+        in vertical.GTK
         [
-            uiLabelled {"Name: "} $ GTK.textEntry $ name !$% {e},
-            GTK.layoutGrow $ GTK.notebook unknown pages
+            uiLabelled {"Name: "} $ textEntry.GTK $ name !$% {e},
+            layoutGrow.GTK $ notebook.GTK unknown pages
         ];
 
-    contactModelUI: WholeModel +LegalEntity -> GTK.Element
-    = fn model => GTK.dynamic $ coMapWholeModel contactUI model;
+    contactModelUI: WholeModel +LegalEntity -> Element.GTK
+    = fn model => dynamic.GTK $ coMapWholeModel contactUI model;
     end;
 
 contactsPane: Action Pane
@@ -135,7 +135,7 @@ contactsPane: Action Pane
     ];
     in namedPairPane "Contacts" legalentities menuItems contactModelUI;
 
-contactsWindow: Action GTK.Window
+contactsWindow: Action Window.GTK
 = do
     p <- contactsPane;
     paneWindow p;

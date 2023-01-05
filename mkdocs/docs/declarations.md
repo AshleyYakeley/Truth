@@ -51,7 +51,7 @@ This name starts with an upper-case letter.
 Thus, each namespace can be identified by a list of zero or more names.
 
 In a given scope, all declaration names are in some namespace.
-The full name of a declaration consists of the namespace and the name.
+The full name of a declaration consists of the name and the namespace.
 Full names are unique in the scope.
 
 ### Referring to declarations
@@ -59,7 +59,7 @@ Full names are unique in the scope.
 In a given scope, there is a current namespace and a list of search namespaces.
 
 References to namespaces are either relative or absolute.
-Absolute namespace references consist of names separated by dots, with a leading dot.
+Absolute namespace references consist of names separated by dots, with a trailing dot.
 These names specify the namespace directly.
 
 Relative namespace references consist of names separated by dots.
@@ -67,11 +67,11 @@ These names specify the namespace made by concatenating with the current namespa
 
 For example,
 
-* `namespace .Image.Metadata` refers to the namespace `Metadata` within the namespace `Image` within the root namespace
-* `namespace Image.Metadata` refers to the namespace `Metadata` within the namespace `Image` within the current namespace
+* `namespace Metadata.Image.` refers to the namespace `Metadata` within the namespace `Image` within the root namespace
+* `namespace Metadata.Image` refers to the namespace `Metadata` within the namespace `Image` within the current namespace
 
 Likewise, references to full names are either relative or absolute.
-Absolute full name references consist of names separated by dots, with a leading dot.
+Absolute full name references consist of names separated by dots, with a trailing dot.
 These names specify the namespace directly, and then the name within the namespace.
 
 Relative full name references consist of names separated by dots.
@@ -82,8 +82,8 @@ These names are searched in the following namespaces:
 
 For example,
 
-* `.Task.async` refers to the declaration `async` within the namespace `Task` within the root namespace
-* `Task.async` refers to the first declaration of `async` within the namespace `Task` within the current namespace, followed by all ancestor namespaces, followed by the search namespaces.
+* `async.Task.` refers to the declaration `async` within the namespace `Task` within the root namespace
+* `async.Task` refers to the first declaration of `async` within the namespace `Task` within the current namespace, followed by all ancestor namespaces, followed by the search namespaces.
 
 ### Current namespace
 
@@ -112,20 +112,20 @@ p = 3;
     q = 4;
     end;
 
-    namespace .B of
+    namespace B. of
     r = 5;
     end;
 end;
 
-namespace .A.B.C of
+namespace C.B.A. of
 s = 6;
-using .B;
+using B.;
 t = r;
 end;
 
 using A;
 
-s = p + B.q + B.C.s;
+s = p + q.B + s.C.B;
 
 in body
 ```
@@ -133,21 +133,21 @@ in body
 In this example, the scope for `body` contains declarations with these full names:
 
 ```
-.A.p
-.A.B.q
-.B.r
-.A.B.C.s
-.A.B.C.t
-.s
+p.A.
+q.B.A.
+r.B.
+s.C.B.A.
+t.C.B.A.
+s.
 ```
 
-At the point at which `.A.B.C.t` is declared, references such as `r` will be searched in these namespaces in this order:
+At the point at which `t.C.B.A.` is declared, references such as `r` will be searched in these namespaces in this order:
 
-* `.A.B.C` (the current namespace)
-* `.A.B` (parent of the above)
-* `.A` (parent of the above)
+* `C.B.A.` (the current namespace)
+* `B.A.` (parent of the above)
+* `A.` (parent of the above)
 * root namespace (parent of the above)
-* `.B` (search namespace)
+* `B.` (search namespace)
 
 ## Expose Declarations
 

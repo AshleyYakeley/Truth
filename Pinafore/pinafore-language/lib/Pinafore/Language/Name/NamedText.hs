@@ -43,7 +43,7 @@ instance ToNamedText FullName where
     toNamedText fn = MkNamedText $ \fnt -> fnt $ FullNameNTI fn
 
 instance ToNamedText FullNameRef where
-    toNamedText (MkFullNameRef (AbsoluteNamespaceRef ns) n) = toNamedText $ MkFullName ns n
+    toNamedText (MkFullNameRef n (AbsoluteNamespaceRef ns)) = toNamedText $ MkFullName n ns
     toNamedText r = toNamedText $ toText r
 
 instance ToNamedText Namespace where

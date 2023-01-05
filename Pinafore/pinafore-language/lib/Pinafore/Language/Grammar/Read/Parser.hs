@@ -197,23 +197,21 @@ readFullUName :: Parser FullNameRef
 readFullUName = do
     MkTokenNames {..} <- readThis TokNamesUpper
     return $
-        MkFullNameRef
-            ((if tnAbsolute
-                  then AbsoluteNamespaceRef . MkNamespace
-                  else RelativeNamespaceRef)
-                 tnSpace)
-            tnName
+        MkFullNameRef tnName $
+        (if tnAbsolute
+             then AbsoluteNamespaceRef . MkNamespace
+             else RelativeNamespaceRef)
+            tnSpace
 
 readFullLName :: Parser FullNameRef
 readFullLName = do
     MkTokenNames {..} <- readThis TokNamesLower
     return $
-        MkFullNameRef
-            ((if tnAbsolute
-                  then AbsoluteNamespaceRef . MkNamespace
-                  else RelativeNamespaceRef)
-                 tnSpace)
-            tnName
+        MkFullNameRef tnName $
+        (if tnAbsolute
+             then AbsoluteNamespaceRef . MkNamespace
+             else RelativeNamespaceRef)
+            tnSpace
 
 readFullNameRef :: Parser FullNameRef
 readFullNameRef = readFullUName <|> readFullLName
@@ -238,13 +236,13 @@ readNewUName :: Parser FullName
 readNewUName = do
     name <- readUName
     ns <- readAskNamespace
-    return $ MkFullName ns name
+    return $ MkFullName name ns
 
 readNewLName :: Parser FullName
 readNewLName = do
     name <- readLName
     ns <- readAskNamespace
-    return $ MkFullName ns name
+    return $ MkFullName name ns
 
 readNamespaceRef :: Parser NamespaceRef
 readNamespaceRef = do

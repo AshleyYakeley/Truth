@@ -18,7 +18,7 @@ data LangContext = MkLangContext
     }
 
 contextGroundType :: QGroundType '[] LangContext
-contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangContext)|]) ".GTK.Context"
+contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangContext)|]) "Context.GTK."
 
 instance HasQGroundType '[] LangContext where
     qGroundType = contextGroundType

@@ -27,6 +27,13 @@ nameIsUpper (MkName n) =
         Just c -> isUpper c
         Nothing -> False
 
+upperNameFromString :: String -> Maybe Name
+upperNameFromString s = do
+    name <- nameFromString s
+    if nameIsUpper name
+        then Just name
+        else Nothing
+
 nameIsInfix :: Name -> Bool
 nameIsInfix (MkName "") = False
 nameIsInfix (MkName n) = not $ any isAlpha $ unpack n

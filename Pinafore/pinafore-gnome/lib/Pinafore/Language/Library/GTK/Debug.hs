@@ -25,10 +25,10 @@ debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeModelMapModel (Identi
 
 gtkDebugStuff :: BindDocTree ()
 gtkDebugStuff =
-    headingBDT "Debug.GTK" "Functions for GTK debugging." $
+    headingBDT "GTK.Debug" "Functions for GTK debugging." $
     pure $
     namespaceBDT
-        "Debug.GTK"
+        "GTK.Debug"
         ""
         [ valBDT "ignoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
         , valBDT "windowInfo" "Get window contents information" uiWindowDebugDescribe

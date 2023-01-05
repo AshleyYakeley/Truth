@@ -104,34 +104,34 @@ overviewModel: WholeModel +Date -> WholeModel +Text
 
 # Overview tab GTK
 overviewPane: Pane
-= pane "Overview" $ GTK.exec $ do
+= pane "Overview" $ exec.GTK $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneModel now;
-    return $ GTK.label $ overviewModel {timeToLocal %tz %now >- match DateAndTime d _ => d end};
+    return $ label.GTK $ overviewModel {timeToLocal %tz %now >- match DateAndTime d _ => d end};
     end;
 
-calendarWindow: WholeModel +Event -> Action GTK.Window
+calendarWindow: WholeModel +Event -> Action Window.GTK
 = fn evt => fixAction $ fn window =>
-    GTK.openWindow gtk (200,200) {"date of " <> %(name !$% evt)} $ GTK.vertical
+    openWindow.GTK gtk (200,200) {"date of " <> %(name !$% evt)} $ vertical.GTK
     [
-        GTK.calendar $ eventModelTimeDate $ eventTime !$% evt,
-        GTK.button {"Done: " <> show %(eventModelTimeDate $ eventTime !$% evt)} {GTK.closeWindow window}
+        calendar.GTK $ eventModelTimeDate $ eventTime !$% evt,
+        button.GTK {"Done: " <> show %(eventModelTimeDate $ eventTime !$% evt)} {closeWindow.GTK window}
     ];
 
-eventUI: WholeModel +Event -> GTK.Element
-= fn evt => GTK.vertical
+eventUI: WholeModel +Event -> Element.GTK
+= fn evt => vertical.GTK
 [
-    GTK.textEntry $ name !$% evt,
-    GTK.horizontal
+    textEntry.GTK $ name !$% evt,
+    horizontal.GTK
     [
-        GTK.button {"cal"} {calendarWindow evt},
-        GTK.textEntry $ interpretDateAsText $ eventModelTimeDate $ eventTime !$% evt,
-        GTK.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventModelTimeTimeOfDay $ eventTime !$% evt
+        button.GTK {"cal"} {calendarWindow evt},
+        textEntry.GTK $ interpretDateAsText $ eventModelTimeDate $ eventTime !$% evt,
+        textEntry.GTK $ unixInterpretTimeOfDayAsText "%H:%M" $ eventModelTimeTimeOfDay $ eventTime !$% evt
     ],
-    GTK.layoutGrow $ GTK.textArea (wholeModelText $ eventNotes !$% evt)
+    layoutGrow.GTK $ textArea.GTK (wholeModelText $ eventNotes !$% evt)
 ];
 
-eventWindow: Event -> Action GTK.Window
+eventWindow: Event -> Action Window.GTK
 = fn evt => paneWindow $ namedPane eventUI {evt};
 
 newEvent: Action Event
@@ -143,7 +143,7 @@ newEvent: Action Event
     return item;
     end;
 
-eventsTableUI: WholeModel Event -> GTK.Element
+eventsTableUI: WholeModel Event -> Element.GTK
 = fn selection => let
     columns: List (WholeModel +Text *: (Event -> WholeModel Text))
     = let
@@ -152,9 +152,9 @@ eventsTableUI: WholeModel Event -> GTK.Element
         nameColumn: WholeModel +Text *: (Event -> WholeModel Text)
         = ({"What"},fn e => name !$ {e});
         in [timeColumn,nameColumn];
-    in GTK.exec $ do
+    in exec.GTK $ do
         lm <- getFiniteSetModelList eventOrder events;
-        return $ GTK.listTable columns lm eventWindow (Just selection);
+        return $ listTable.GTK columns lm eventWindow (Just selection);
         end;
 
 in do

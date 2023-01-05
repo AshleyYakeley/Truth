@@ -359,7 +359,7 @@ namespacePriority :: Interpreter ts (NamespaceRef -> [Namespace])
 namespacePriority = do
     curns <- paramAsk namespaceParam
     usingnss <- paramAsk usingNamespacesParam
-    return $ namespaceConcatRefM (namespaceAncestry curns <> usingnss)
+    return $ namespaceConcatRefM (toList (namespaceAncestry curns) <> usingnss)
 
 -- | For error messages and the like, doesn't need to be perfect.
 getRenderFullName :: Interpreter ts (NamedText -> Text)
@@ -376,8 +376,8 @@ getBindingMap :: Interpreter ts (FullNameRef -> Maybe (BindingInfo ts))
 getBindingMap = do
     (scopeBindings -> nspace) <- paramAsk scopeParam
     nsp <- namespacePriority
-    return $ \(MkFullNameRef nsn name) ->
-        firstOf (nsp nsn) $ \ns -> nameMapLookupBindingInfo nspace $ MkFullName ns name
+    return $ \(MkFullNameRef name nsn) ->
+        firstOf (nsp nsn) $ \ns -> nameMapLookupBindingInfo nspace $ MkFullName name ns
 
 lookupBinding :: Interpreter ts (FullNameRef -> Maybe (InterpreterBinding ts))
 lookupBinding = do
@@ -428,8 +428,8 @@ exportNamespace cnss = do
     (scopeBindings -> MkNameMap nspace) <- paramAsk scopeParam
     let
         toBI :: (FullName, (RawMarkdown, InterpreterBinding ts)) -> Maybe (BindingInfo ts)
-        toBI (biName@(MkFullName ns _), (biDocumentation, biValue)) = do
-            _ <- choice $ fmap (\cns -> namespaceStartsWith cns ns) cnss
+        toBI (biName@(MkFullName _ ns), (biDocumentation, biValue)) = do
+            _ <- choice $ fmap (\cns -> namespaceWithin cns ns) cnss
             return MkBindingInfo {..}
     return $ mapMaybe toBI $ mapToList nspace
 

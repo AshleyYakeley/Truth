@@ -63,16 +63,16 @@ Type variables on only one side can be eliminated.
 
 Equirecursive types are not much used in Pinafore, however, they are necesssary as principal types for certain expressions.
 
-If `a` is a type variable, and `F a` is a type with only covariant use of `a`, then `rec a. F a` is a type with the same polarity as `F a`.
+If `a` is a type variable, and `F a` is a type with only covariant use of `a`, then `rec a, F a` is a type with the same polarity as `F a`.
 
-The essential fact of recursive types is that `rec a. F a` and `F (rec a. F a)` are equivalent.
+The essential fact of recursive types is that `rec a, F a` and `F (rec a, F a)` are equivalent.
 
 ## Type Simplification
 
 1. Unused recursion is eliminated.  
-`rec a. (a | T)` &rarr; `rec a. T`  
-`rec a. a` &rarr; `Any` or `None`  
-`rec a. T` &rarr; `T` (if `a` does not appear in `T`)
+`rec a, (a | T)` &rarr; `rec a, T`  
+`rec a, a` &rarr; `Any` or `None`  
+`rec a, T` &rarr; `T` (if `a` does not appear in `T`)
 
 1. Any type variables that are "fully constrained" are eliminated (i.e., replaced with `None` or `Any`).  
 `(a & Text) -> a | Literal` &rarr; `Text -> Literal` (because `Text <: Literal`)  
@@ -97,7 +97,7 @@ More generally, if `P <: Q` then
 `a -> b -> (a | b)` &rarr; `a -> a -> a` (`a` and `b` appear in the same set of positive positions)
 
 1. Recursive types are rolled up.  
-`F (rec a. F a)` &rarr; `rec a. F a`
+`F (rec a, F a)` &rarr; `rec a, F a`
 
 ## Type Ranges
 

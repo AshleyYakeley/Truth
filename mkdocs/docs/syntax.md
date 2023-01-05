@@ -42,7 +42,7 @@ All declarations, including type declarations, are local to a `let` block.
     "simplify" "-" <type>
 
 <type> :: =
-    "rec" <type-var> "." <type>
+    "rec" <type-var> "," <type>
     <type-0>
 
 <type-0> :: =
@@ -274,11 +274,11 @@ ignored ::=
 
 uname ::= upper ("-" | "_" | alnum)*
 
-quname ::= (uname ".")* uname
+quname ::= uname ("." uname)*
 
 lname ::= lower ("-" | "_" | alnum)*
 
-qlname ::= (uname ".")* lname
+qlname ::= lname ("." uname)*
 
 literal-number ::=
     "-"? digit+ ("." digit* ("_" digit*)?)? |

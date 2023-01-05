@@ -61,7 +61,7 @@ recordNameWitnesses ::
 recordNameWitnesses ns lt =
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
         MkPairType (ValueSignature name t) f -> do
-            (_, vid) <- allocateVar $ Just $ MkFullName ns name
+            (_, vid) <- allocateVar $ Just $ MkFullName name ns
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
 
 mkRecordPattern ::

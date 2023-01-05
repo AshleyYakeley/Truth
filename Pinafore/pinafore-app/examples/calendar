@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-Env.openDefaultStore >>= fn store =>
+openDefaultStore.Env >>= fn store =>
 let
 import "pinafore-gnome";
 using Storage;
@@ -7,21 +7,21 @@ using Storage;
 dateText: Property Date Text
 = property @Date @Text !"example.calendar:dateText" store;
 
-ui: WholeModel Date -> GTK.Element
-= fn r => GTK.vertical
+ui: WholeModel Date -> Element.GTK
+= fn r => vertical.GTK
     [
-    GTK.horizontal
+    horizontal.GTK
         [
-        GTK.button {"<"} {do d <- get r; r := addDays (-1) d; end},
-        GTK.layoutGrow $ GTK.label {unixFormatDate "%A, %B %e, %Y" %r},
-        GTK.button {">"} {do d <- get r; r := addDays 1 d; end}
+        button.GTK {"<"} {do d <- get r; r := addDays (-1) d; end},
+        layoutGrow.GTK $ label.GTK {unixFormatDate "%A, %B %e, %Y" %r},
+        button.GTK {">"} {do d <- get r; r := addDays 1 d; end}
         ],
-    GTK.layoutGrow $ GTK.textArea (wholeModelText $ dateText !$ r)
+    layoutGrow.GTK $ textArea.GTK (wholeModelText $ dateText !$ r)
     ];
 
 in do
     r <- newMemWholeModel;
     d <- getDate;
     r := d;
-    GTK.run $ fn gtk => GTK.openWindow gtk (300,400) {show %r} $ ui r;
+    run.GTK $ fn gtk => openWindow.GTK gtk (300,400) {show %r} $ ui r;
     end

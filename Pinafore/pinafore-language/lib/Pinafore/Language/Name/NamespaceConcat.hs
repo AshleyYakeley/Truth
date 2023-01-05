@@ -13,7 +13,7 @@ instance NamespaceConcat NamespaceRef where
     namespaceConcat (RelativeNamespaceRef ns1) (RelativeNamespaceRef ns2) = RelativeNamespaceRef $ ns1 <> ns2
 
 instance NamespaceConcat FullNameRef where
-    namespaceConcat ns (MkFullNameRef nns nn) = MkFullNameRef (namespaceConcat ns nns) nn
+    namespaceConcat ns (MkFullNameRef nn nns) = MkFullNameRef nn (namespaceConcat ns nns)
 
 instance {-# OVERLAPPABLE #-} (Functor f, NamespaceConcat t) => NamespaceConcat (f t) where
     namespaceConcat nsn = fmap $ namespaceConcat nsn

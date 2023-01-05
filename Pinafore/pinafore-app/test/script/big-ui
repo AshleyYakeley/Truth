@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-Env.openDefaultStore >>= fn store =>
+openDefaultStore.Env >>= fn store =>
 let
 import "pinafore-gnome";
 using Storage;
@@ -7,7 +7,7 @@ using Storage;
 opentype T;
 me = openEntity @T !"T";
 
-func20 = fns n a b c d e f => GTK.label n;
+func20 = fns n a b c d e f => label.GTK n;
 func19 = fns n a b c d e f => func20 n a b c d e f;
 func18 = fns n a b c d e f => func19 n a b c d e f;
 func17 = fns n a b c d e f => func18 n a b c d e f;
@@ -29,24 +29,24 @@ func2 = fns n a b c d e f => func3 n a b c d e f;
 func1 = fns n a b c d e f => func2 n a b c d e f;
 func0 = fns n a b c d e f => func1 n a b c d e f;
 
-w : GTK.Context -> Action GTK.Window
-= fn gtk => GTK.openWindow gtk (300,400) {"Test"} $ func0 (pureWholeModel "Text") False False False False False False;
+w : Context.GTK -> Action Window.GTK
+= fn gtk => openWindow.GTK gtk (300,400) {"Test"} $ func0 (pureWholeModel "Text") False False False False False False;
 
 prop0 = property @T @Text !"000" store;
 
 act : Action Unit
 = do
-    Debug.message "ACTION: start";
+    message.Debug "ACTION: start";
     tstart <- getTime;
     prop0 !$ {me} := "Example";
     tend <- getTime;
-    Env.outputLn $ "Time: " <> show (diffTime tend tstart >- fn Seconds s => round (s .* 1000));
-    Debug.message "ACTION: end";
+    outputLn.Env $ "Time: " <> show (diffTime tend tstart >- fn Seconds s => round (s .* 1000));
+    message.Debug "ACTION: end";
     end
 
-in GTK.run $ fn gtk => do
+in run.GTK $ fn gtk => do
     w1 <- w gtk;
     act;
     act;
-    GTK.closeWindow w1;
+    closeWindow.GTK w1;
     end

@@ -5,8 +5,8 @@ let import "pinafore-gnome"
 let import "pinafore-media"
 let using Cairo
 :doc paintAlpha
-:doc GTK.Element
-:doc GTK.textArea
+:doc Element.GTK
+:doc textArea.GTK
 :doc notfound
 let aa = 8
 :doc aa

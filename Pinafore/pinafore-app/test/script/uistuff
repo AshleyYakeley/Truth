@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 
-GTK.run $ \gtk => let
+run.GTK $ \gtk => let
 import "pinafore-gnome";
 import "uistuff/selection";
 in do

@@ -6,25 +6,39 @@ import Pinafore
 import Shapes
 import Shapes.Test
 
+throwPureError :: a -> IO ()
+throwPureError x = do
+    me <- catchPureError x
+    case me of
+        Just e -> throwExc e
+        Nothing -> return ()
+
 testName ::
        forall (a :: Type). (Eq a, Show a, IsString a, ToText a)
     => String
     -> Text
     -> TestTree
 testName input expected =
-    testTree (unpack input) $ do
-        assertEqual "text" expected $ toText $ fromString @a input
-        assertEqual "name" (fromString @a $ unpack expected) $ fromString @a input
+    testTree input $ do
+        let
+            found :: a
+            found = fromString @a input
+        throwPureError found
+        assertEqual "text" expected $ toText found
+        assertEqual "name" (fromString @a $ unpack expected) found
 
 testEqual ::
        forall (a :: Type). (Eq a, Show a)
     => a
     -> a
     -> TestTree
-testEqual input expected = testTree (show input) $ assertEqual "" expected input
+testEqual input expected =
+    testTree (show expected) $ do
+        throwPureError input
+        assertEqual "" expected input
 
 fullNamePair :: FullName -> (Namespace, Name)
-fullNamePair (MkFullName ns n) = (ns, n)
+fullNamePair (MkFullName ns n) = (n, ns)
 
 testNames :: TestTree
 testNames =
@@ -35,21 +49,21 @@ testNames =
               [ testEqual "." RootNamespace
               , testEqual "" RootNamespace
               , testEqual "N" (MkNamespace ["N"])
-              , testEqual ".N" (MkNamespace ["N"])
+              , testEqual "N." (MkNamespace ["N"])
               , testEqual (fullNamePair "A") (RootNamespace, "A")
-              , testEqual (fullNamePair ".A") (RootNamespace, "A")
-              , testEqual (fullNamePair "N.A") (MkNamespace ["N"], "A")
-              , testEqual (fullNamePair ".N.A") (MkNamespace ["N"], "A")
-              , testEqual "A" (RootFullName "A")
-              , testEqual ".A" (RootFullName "A")
-              , testEqual "N.A" (MkFullName ".N" "A")
-              , testEqual ".N.A" (MkFullName ".N" "A")
+              , testEqual (fullNamePair "B.") (RootNamespace, "B")
+              , testEqual (fullNamePair "C.N") (MkNamespace ["N"], "C")
+              , testEqual (fullNamePair "D.N.") (MkNamespace ["N"], "D")
+              , testEqual "E" (RootFullName "E")
+              , testEqual "F." (RootFullName "F")
+              , testEqual "G.N" (MkFullName "G" "N.")
+              , testEqual "H.N." (MkFullName "H" "N.")
               ]
         , testTree
               "text"
-              [ testName @FullName ".A" ".A"
-              , testName @FullName "A" ".A"
-              , testName @FullName "N.A" ".N.A"
-              , testName @FullName ".N.A" ".N.A"
+              [ testName @FullName "A." "A."
+              , testName @FullName "B" "B."
+              , testName @FullName "C.N" "C.N."
+              , testName @FullName "D.N." "D.N."
               ]
         ]

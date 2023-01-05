@@ -200,8 +200,8 @@ testEntity =
                     , testExpectSuccess "expectStop $ do r <- newMemWholeModel; immutWholeModel r := 5; end"
                     ]
               , tDecls
-                    [ "showVal: Showable -> Action Unit = fn v => Debug.message $ show v"
-                    , "showList: List Showable -> Action Unit = fn l => do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
+                    [ "showVal: Showable -> Action Unit = fn v => message.Debug $ show v"
+                    , "showList: List Showable -> Action Unit = fn l => do message.Debug \"[[[\"; for_ l showVal;  message.Debug \"]]]\"; end"
                     , "testImmutList = fns present n call => do lr <- newMemListModel; lr := [10,20,30]; r <- listModelItem present n lr; ir <- listModelItem present n $ immutListModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
                     ] $
                 tGroup
@@ -328,7 +328,8 @@ testEntity =
               ] $
           tGroup
               "storage"
-              [ tGroup
+              [ testExpectSuccess "pass"
+              , tGroup
                     "unknown & known"
                     [ testExpectSuccess "testisunknown {% (eta !$ {e1}) == % (eta !$ {e1})}"
                     , testExpectSuccess "runreforfail {if %(known unknown) then fail \"failed\" else pass}"
@@ -617,14 +618,14 @@ testEntity =
                           ]
                     , tGroup
                           "recursive"
-                          [ subtypeTest False SRSingle "rec a. Maybe a" "rec a. Maybe a"
-                          , subtypeTest False SRSingle "rec a. Maybe a" "rec b. Maybe b"
-                          , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec a. Maybe a)"
-                          , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec b. Maybe b)"
-                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec a. Maybe a"
-                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec b. Maybe b"
-                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec a. Maybe a)"
-                          , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec b. Maybe b)"
+                          [ subtypeTest False SRSingle "rec a, Maybe a" "rec a, Maybe a"
+                          , subtypeTest False SRSingle "rec a, Maybe a" "rec b, Maybe b"
+                          , subtypeTest False SRSingle "rec a, Maybe a" "Maybe (rec a, Maybe a)"
+                          , subtypeTest False SRSingle "rec a, Maybe a" "Maybe (rec b, Maybe b)"
+                          , subtypeTest False SRSingle "Maybe (rec a, Maybe a)" "rec a, Maybe a"
+                          , subtypeTest False SRSingle "Maybe (rec a, Maybe a)" "rec b, Maybe b"
+                          , subtypeTest False SRSingle "Maybe (rec a, Maybe a)" "Maybe (rec a, Maybe a)"
+                          , subtypeTest False SRSingle "Maybe (rec a, Maybe a)" "Maybe (rec b, Maybe b)"
                           ]
                     ]
               , tGroup
@@ -853,9 +854,9 @@ testEntity =
               , tGroup
                     "contain-recursive"
                     [ tDecls
-                          [ "datatype P of MkP (rec a. Maybe a) end"
-                          , "rec fromR: (rec a. Maybe a) -> Integer = match Nothing => 0; Just a => 1 + fromR a end end"
-                          , "rec toR: Integer -> (rec a. Maybe a) = match 0 => Nothing; i => Just $ toR (i - 1) end end"
+                          [ "datatype P of MkP (rec a, Maybe a) end"
+                          , "rec fromR: (rec a, Maybe a) -> Integer = match Nothing => 0; Just a => 1 + fromR a end end"
+                          , "rec toR: Integer -> (rec a, Maybe a) = match 0 => Nothing; i => Just $ toR (i - 1) end end"
                           , "rec fromP: P -> Integer = match MkP Nothing => 0; MkP (Just a) => 1 + fromP (MkP a) end end"
                           , "rec toP: Integer -> P = match 0 => MkP Nothing; i => toP (i - 1) >- fn MkP a => MkP $ Just a end end"
                           ] $
@@ -868,9 +869,9 @@ testEntity =
                           , testExpectSuccess "testeqval 17 $ fromR $ toP 17 >- fn MkP a => a"
                           ]
                     , tDecls
-                          [ "datatype Q +t of MkQ (rec a. Maybe (t *: a)) end"
-                          , "rec fromR: (rec a. Maybe (t *: a)) -> List t = match Nothing => []; Just (t,a) => t :: fromR a end end"
-                          , "rec toR: List t -> (rec a. Maybe (t *: a)) = match [] => Nothing; t :: tt => Just (t, toR tt) end end"
+                          [ "datatype Q +t of MkQ (rec a, Maybe (t *: a)) end"
+                          , "rec fromR: (rec a, Maybe (t *: a)) -> List t = match Nothing => []; Just (t,a) => t :: fromR a end end"
+                          , "rec toR: List t -> (rec a, Maybe (t *: a)) = match [] => Nothing; t :: tt => Just (t, toR tt) end end"
                           , "rec fromQ: Q t -> List t = match MkQ Nothing => []; MkQ (Just (t,a)) => t :: fromQ (MkQ a) end end"
                           , "rec toQ: List t -> Q t = match [] => MkQ Nothing; t :: tt => MkQ $ Just (t, toQ tt >- fn MkQ a => a) end end"
                           ] $
@@ -1115,11 +1116,11 @@ testEntity =
                                 "let r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1 in testeq {\"[12, 10, 57]\"} {rShow r2}"
                           ]
                     , tDecls
-                          [ "datatype Rec +a of MkRec of rval: rec r. Maybe (a *: r) end end"
+                          [ "datatype Rec +a of MkRec of rval: rec r, Maybe (a *: r) end end"
                           , "rec0: Rec a = let rval = Nothing in MkRec"
                           , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"
                           , "rec3: a -> a -> a -> Rec a = fns x0 x1 x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
-                          , "rec rShow: (rec r. Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <> \",\" <> rShow r end end"
+                          , "rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <> \",\" <> rShow r end end"
                           , "recShow: Rec Showable -> Text = fn MkRec => rShow rval"
                           ] $
                       tGroup
@@ -1497,12 +1498,12 @@ testEntity =
         , tGroup
               "task"
               [ testExpectSuccess
-                    "do t <- Task.async $ do sleep $ Seconds 0.01; return True end; v <- Task.await t; if v then pass else fail \"\" end"
+                    "do t <- async.Task $ do sleep $ Seconds 0.01; return True end; v <- await.Task t; if v then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- Task.async $ do sleep $ Seconds 0.01; r := 1; end; Task.await t; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.01; r := 1; end; await.Task t; v <- get r; if v == 1 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- Task.async $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- lifecycle $ Task.async $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMemWholeModel; r := 0; t <- lifecycle $ async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
               ]
         ]

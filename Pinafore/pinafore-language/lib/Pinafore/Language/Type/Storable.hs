@@ -127,7 +127,7 @@ eitherStorableFamily =
         in MkStorability {..}
 
 entityGroundType :: QGroundType '[] Entity
-entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Entity)|]) ".Entity"
+entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Entity)|]) "Entity"
 
 entityStorableFamily :: StorableFamily
 entityStorableFamily = simplePinaforeStorableFamily entityGroundType plainStoreAdapter

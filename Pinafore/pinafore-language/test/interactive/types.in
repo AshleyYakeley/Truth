@@ -4,7 +4,7 @@ let subtype P <: Q
 let p = openEntity @P !"p"
 let q = openEntity @Q !"q"
 let using Storage
-store <- Env.openDefaultStore
+store <- openDefaultStore.Env
 let pp = property @P @P !"pp" store
 let qp = property @Q @P !"qp" store
 :t pp

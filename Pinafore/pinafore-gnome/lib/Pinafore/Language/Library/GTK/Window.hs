@@ -24,7 +24,7 @@ data LangWindow = MkLangWindow
     }
 
 windowGroundType :: QGroundType '[] LangWindow
-windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWindow)|]) ".GTK.Window"
+windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWindow)|]) "Window.GTK."
 
 instance HasQGroundType '[] LangWindow where
     qGroundType = windowGroundType

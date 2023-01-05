@@ -1,15 +1,15 @@
 #!/usr/bin/pinafore
 let import "pinafore-gnome" in
 do
-Env.outputLn "BEGIN";
-GTK.run $
+outputLn.Env "BEGIN";
+run.GTK $
 fn gtk =>
 do
-Env.outputLn "begin";
-w <- GTK.openWindow gtk (600,800) {"Window"} GTK.blank;
-Env.outputLn "open";
-GTK.closeWindow w;
-Env.outputLn "end";
+outputLn.Env "begin";
+w <- openWindow.GTK gtk (600,800) {"Window"} blank.GTK;
+outputLn.Env "open";
+closeWindow.GTK w;
+outputLn.Env "end";
 end;
-Env.outputLn "END";
+outputLn.Env "END";
 end

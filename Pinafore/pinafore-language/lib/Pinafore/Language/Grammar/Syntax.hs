@@ -165,7 +165,7 @@ instance ExprShow SyntaxType' where
     exprShowPrec TopSyntaxType = "None"
     exprShowPrec BottomSyntaxType = "Any"
     exprShowPrec (RecursiveSyntaxType n pt) = namedTextPrec 7 $ "rec " <> exprShow n <> ". " <> exprPrecShow 7 pt
-    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (MkFullNameRef _ n)) [ta, tb])
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (MkFullNameRef n _)) [ta, tb])
         | nameIsInfix n = let
             MkFixity assc level = typeOperatorFixity n
             prec = 6 - level

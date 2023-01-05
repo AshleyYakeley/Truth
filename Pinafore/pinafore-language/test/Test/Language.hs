@@ -239,7 +239,7 @@ testQueries =
               , testQuery "True" $ LRSuccess "True"
               , testQuery "False" $ LRSuccess "False"
               , testQuery "\"1\"" $ LRSuccess "\"1\""
-              , testQuery ".textLength" $ LRSuccess "<?>"
+              , testQuery "textLength." $ LRSuccess "<?>"
               , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
               , testQuery "let opentype T in entityAnchor $ openEntity @T !\"example\"" $
                 LRSuccess "\"!F332D47A-3C96F533-854E5116-EC65D65E-5279826F-25EE1F57-E925B6C3-076D3BEC\""
@@ -627,9 +627,9 @@ testQueries =
               , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
               , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]
               , testQuery "let a: Integer|Text = 3; b: List Integer | List Text = [a] in b" $ LRSuccess "[3]"
-              , testQuery "newMemWholeModel >>= fn m => m := 1 >> get m >>= Env.outputLn" LRCheckFail
+              , testQuery "newMemWholeModel >>= fn m => m := 1 >> get m >>= outputLn.Env" LRCheckFail
               , testQuery
-                    "newMemWholeModel >>= fn m => let n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text in n1 := 1 >> get n2 >>= Env.outputLn"
+                    "newMemWholeModel >>= fn m => let n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text in n1 := 1 >> get n2 >>= outputLn.Env"
                     LRCheckFail
               ]
         , testTree
@@ -640,69 +640,69 @@ testQueries =
               ]
         , testTree
               "recursive"
-              [ testQuery "let x : rec a. List a = [] in x" $ LRSuccess "[]"
+              [ testQuery "let x : rec a, List a = [] in x" $ LRSuccess "[]"
               , let
                     atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
                     in testTree
                            "equivalence"
                            [ testSameType True "Integer" "Integer" ["0"]
-                           , testSameType True "Integer" "rec a. Integer" ["0"]
-                           , testSameType True "List Integer" "List (rec a. Integer)" ["[0]"]
-                           , testSameType True "rec a. List a" "rec a. List a" atree
-                           , testSameType True "rec a. List a" "rec a. List (List a)" atree
+                           , testSameType True "Integer" "rec a, Integer" ["0"]
+                           , testSameType True "List Integer" "List (rec a, Integer)" ["[0]"]
+                           , testSameType True "rec a, List a" "rec a, List a" atree
+                           , testSameType True "rec a, List a" "rec a, List (List a)" atree
                            , ignoreTestBecause "ISSUE #61" $
                              testSameType
                                  False
-                                 "rec a. (Maybe a | List a)"
-                                 "(rec a. Maybe a) | (rec b. List b)"
+                                 "rec a, (Maybe a | List a)"
+                                 "(rec a, Maybe a) | (rec b, List b)"
                                  ["[]", "Nothing", "Just []", "[[]]"]
                            , ignoreTestBecause "ISSUE #61" $
                              testSameType
                                  False
-                                 "rec a. (Maybe a | List a)"
-                                 "(rec a. Maybe a) | (rec a. List a)"
+                                 "rec a, (Maybe a | List a)"
+                                 "(rec a, Maybe a) | (rec a, List a)"
                                  ["[]", "Nothing", "Just []", "[[]]"]
-                           , testSubtype True "rec a. List a" "Showable" []
-                           , testSubtype True "List (rec a. List a)" "Showable" []
-                           , testSubtype True "rec a. List a" "List Showable" ["[]"]
-                           , testSubtype True "List (rec a. List a)" "List Showable" ["[]"]
+                           , testSubtype True "rec a, List a" "Showable" []
+                           , testSubtype True "List (rec a, List a)" "Showable" []
+                           , testSubtype True "rec a, List a" "List Showable" ["[]"]
+                           , testSubtype True "List (rec a, List a)" "List Showable" ["[]"]
                            , testSameType False "None" "None" []
-                           , testSameType False "rec a. a" "None" []
-                           , testSameType False "List (rec a. a)" "List None" ["[]"]
-                           , testSameType True "rec a. Integer" "Integer" ["0"]
-                           , testSameType True "List (rec a. Integer)" "List Integer" ["[0]"]
+                           , testSameType False "rec a, a" "None" []
+                           , testSameType False "List (rec a, a)" "List None" ["[]"]
+                           , testSameType True "rec a, Integer" "Integer" ["0"]
+                           , testSameType True "List (rec a, Integer)" "List Integer" ["[0]"]
                            , testTree
                                  "unroll"
-                                 [ testSameType True "rec a. List a" "List (rec a. List a)" atree
+                                 [ testSameType True "rec a, List a" "List (rec a, List a)" atree
                                  , testSameType
                                        False
-                                       "rec a. (List a|Integer)"
-                                       "List (rec a. (List a|Integer))|Integer"
+                                       "rec a, (List a|Integer)"
+                                       "List (rec a, (List a|Integer))|Integer"
                                        ["[]"]
                                  , testSameType
                                        False
-                                       "rec a. (List a|Integer)"
-                                       "List (rec a. (List a|Integer))|Integer"
+                                       "rec a, (List a|Integer)"
+                                       "List (rec a, (List a|Integer))|Integer"
                                        ["2"]
                                  , testSameType
                                        False
-                                       "rec a. List (a|Integer)"
-                                       "List ((rec a. List (a|Integer))|Integer)"
+                                       "rec a, List (a|Integer)"
+                                       "List ((rec a, List (a|Integer))|Integer)"
                                        ["[]"]
                                  , testSameType
                                        False
-                                       "rec a. List (a|Integer)"
-                                       "List ((rec a. List (a|Integer))|Integer)"
+                                       "rec a, List (a|Integer)"
+                                       "List ((rec a, List (a|Integer))|Integer)"
                                        ["[3]"]
                                  , testSameType
                                        False
-                                       "rec a. List (a|Integer)"
-                                       "List (rec a. (List (a|Integer)|Integer))"
+                                       "rec a, List (a|Integer)"
+                                       "List (rec a, (List (a|Integer)|Integer))"
                                        ["[]"]
                                  , testSameType
                                        False
-                                       "rec a. List (a|Integer)"
-                                       "List (rec a. (List (a|Integer)|Integer))"
+                                       "rec a, List (a|Integer)"
+                                       "List (rec a, (List (a|Integer)|Integer))"
                                        ["[3]"]
                                  ]
                            ]
@@ -724,16 +724,16 @@ testQueries =
                     ]
               , testTree
                     "subsume"
-                    [ testQuery "let rec rval: rec a. Maybe a = rval end in ()" $ LRSuccess "()"
-                    , testQuery "let rec rval: rec a. Maybe a = Just rval end in ()" $ LRSuccess "()"
+                    [ testQuery "let rec rval: rec a, Maybe a = rval end in ()" $ LRSuccess "()"
+                    , testQuery "let rec rval: rec a, Maybe a = Just rval end in ()" $ LRSuccess "()"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount" $
+                          "let rec rcount: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount" $
                       LRSuccess "<?>"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount Nothing" $
+                          "let rec rcount: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount Nothing" $
                       LRSuccess "0"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount" $
+                          "let rec rcount: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount" $
                       LRSuccess "<?>"
                     , testQuery
                           "let rec rcount = match Nothing => 0; Just y => 1 + rcount1 y end; rcount1 = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
@@ -742,39 +742,39 @@ testQueries =
                           "let rec rcount = rcount1; rcount1 = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec a. Maybe a) -> Integer = rcount1; rcount1 = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
+                          "let rec rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1 = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec xb. Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
+                          "let rec rcount = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec xa. Maybe xa) -> Integer = rcount1; rcount1: (rec xb. Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
+                          "let rec rcount: (rec xa, Maybe xa) -> Integer = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec x. Maybe x) -> Integer = rcount1; rcount1: (rec x. Maybe x) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in ()" $
+                          "let rec rcount: (rec x, Maybe x) -> Integer = rcount1; rcount1: (rec x, Maybe x) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in ()" $
                       LRSuccess "()"
                     , testQuery
                           "let rec rcount = rcount1; rcount1 = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                          "let rec rcount = rcount1; rcount1: (rec x, Maybe x) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rec rcount: (rec xa. Maybe xa) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount: (rec xa, Maybe xa) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
-                          "let rec rcount: (rec xc. Maybe xc) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end; rcount1 = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount: (rec xc, Maybe xc) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end; rcount1 = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testTree
                           "lazy"
                           [ testQuery
-                                "let f: (x -> Integer) -> Maybe x -> Integer = fn rc => match Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z. Maybe z) -> Integer = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
+                                "let f: (x -> Integer) -> Maybe x -> Integer = fn rc => match Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z, Maybe z) -> Integer = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "let f: ((rec x. Maybe x) -> Integer) -> (rec x. Maybe x) -> Integer = fn rc => match Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z. Maybe z) -> Integer = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
+                                "let f: ((rec x, Maybe x) -> Integer) -> (rec x, Maybe x) -> Integer = fn rc => match Nothing => 0; Just y => 1 + rc y end in let rec rcount: (rec z, Maybe z) -> Integer = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
                                 "let f: (Integer -> Integer) -> Integer -> Integer = fns rc x => if x == 0 then 0 else 1 + rc (x - 1) in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
@@ -797,13 +797,13 @@ testQueries =
                                 "let f: (Integer -> Integer) -> Integer -> Integer = fns _ x => x in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let rec rcount: (rec a. Maybe a) -> Integer = rcount1; rcount1 = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                                "let rec rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1 = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "let rec rcount: (rec a. Maybe a) -> Integer = rcount1; rcount1: (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                                "let rec rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "let rec rcount: (rec xa. Maybe xa) -> Integer = rcount1; rcount1: (rec xb. Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
+                                "let rec rcount: (rec xa, Maybe xa) -> Integer = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => 1 + rcount y end end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           ]
                     ]
@@ -848,22 +848,22 @@ testQueries =
                           "let rec rcount1 = match Nothing => 0; Just z => 1 + rcount z end; rcount = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "12"
                     , testQuery
-                          "let rec rcount1 = match Nothing => 0; Just z => 1 + rcount z end; rcount : (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let rec rcount1 = match Nothing => 0; Just z => 1 + rcount z end; rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount1 y end end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "12"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end; rval : rec a. Maybe a = Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end; rval : rec a, Maybe a = Just $ Just Nothing end in rcount rval" $
                       LRSuccess "2"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a. Maybe a = Just $ Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a, Maybe a = Just $ Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "4"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a. Maybe a = Just rval end in rcount rval" $
+                          "let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a, Maybe a = Just rval end in rcount rval" $
                       LRSuccess "5"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end; rval : rec a. Maybe a = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end; rval : rec a, Maybe a = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "10"
                     , testQuery
-                          "let rec rcount : (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
+                          "let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "10"
                     , testQuery
                           "let fix: (a -> a) -> a = fn f => let rec x = f x end in x; rc: (a -> Integer) -> Maybe a -> Integer = fn r => match Nothing => 0; Just y => 1 + r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
@@ -912,19 +912,19 @@ testQueries =
                           "let rec rcount = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount : (rec a . Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount : (rec a , Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount : (rec a . Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just y))) => 4 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount : (rec a , Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just y))) => 4 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "let rec rcount : (rec a . Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
+                          "let rec rcount : (rec a , Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y end end in rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     ]
               , testTree
                     "contra-var"
-                    [ testQuery "let f: rec r. (r -> Integer) = fn _ => 3 in 0" LRCheckFail
-                    , testQuery "let f: rec r. (r -> r) = fn x => x in 0" LRCheckFail
+                    [ testQuery "let f: rec r, (r -> Integer) = fn _ => 3 in 0" LRCheckFail
+                    , testQuery "let f: rec r, (r -> r) = fn x => x in 0" LRCheckFail
                     ]
               ]
         , let
@@ -982,8 +982,8 @@ testQueries =
               testLiteral len embedded val =
                   testTree
                       (unpack val)
-                      [ testQuery ("Debug.literalLength " <> val) $ LRSuccess $ show len
-                      , testQuery ("Debug.literalIsEmbedded " <> val) $ LRSuccess $ show embedded
+                      [ testQuery ("literalLength.Debug " <> val) $ LRSuccess $ show len
+                      , testQuery ("literalIsEmbedded.Debug " <> val) $ LRSuccess $ show embedded
                       ]
               in testTree
                      "literal"
@@ -1030,12 +1030,12 @@ testShims =
         , expectFailBecause "ISSUE #63" $
           testShim
               "let rcount = match Nothing => 0; Just y => 1 + rcount y end in rcount"
-              "(rec c. Maybe c) -> Integer"
+              "(rec c, Maybe c) -> Integer"
               "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
-              "let rcount : (rec a. Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end in rcount"
-              "(rec a. Maybe a) -> Integer"
+              "let rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => 1 + rcount y end in rcount"
+              "(rec a, Maybe a) -> Integer"
               "(join1 id)"
         ]
 

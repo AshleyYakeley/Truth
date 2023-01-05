@@ -9,7 +9,7 @@ datatype R of
     end;
 end;
 
-r: R = let f = fn _ => Env.outputLn "Done." in MkR;
+r: R = let f = fn _ => outputLn.Env "Done." in MkR;
 
 in r >- fn MkR =>
     let
