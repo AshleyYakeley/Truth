@@ -1,10 +1,11 @@
 #!/usr/bin/pinafore
 let
+using Integer;
 fix: (a -> a) -> a
 = fn f => let rec x = f x end in x;
 
 recf: (Integer -> b -> b) -> Integer -> b -> b
-= fns s a b => if a <= 0 then b else s (a - 1) b;
+= fns s a b => if a <= 0 then b else s (pred a) b;
 
 f: Integer -> Integer -> Integer
 = fix recf;

@@ -3,11 +3,11 @@ let
 
 emptywindow :: Action Unit;
 emptywindow = do
-    openWindow.GTK (300,400) {"Empty"} blank.GTK;
+    open.Window.GTK (300,400) {"Empty"} blank.GTK;
     return ();
     end;
 
 newpoint :: Action Unit;
-newpoint = do s <- newMemFiniteSetModel; newEntity s; return (); end;
+newpoint = do s <- newMem.FiniteSetModel; newEntity s; return (); end;
 
-in openWindow.GTK (300,400) {"Test"} $ button.GTK {"Button"} {newpoint >> emptywindow};
+in open.Window.GTK (300,400) {"Test"} $ button.GTK {"Button"} {newpoint >> emptywindow};

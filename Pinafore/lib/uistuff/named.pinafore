@@ -7,8 +7,11 @@ of
 import "pinafore-gnome";
 import "uistuff/selection";
 
+using Function;
 using GTK;
-using Storage;
+using Store;
+using Attribute;
+using Property;
 
 #| An open entity type; something with a name
 opentype Named;
@@ -37,14 +40,14 @@ end;
 mkNamed: UIStuff -> NamedStuff
 = fn MkUIStuff => let
     name = property @Named @Text !"identify.name" store;
-    nameOrder = orderOn name alphabetical;
-    byName = fn model => finiteSetModelList (mapOrder fst nameOrder) $ (identity !** name) !$$ model;
-    namedPane = fns iui e => MkPane (name !$% e) (iui $ immutWholeModel e) {[]};
+    nameOrder = on.ModelOrder name alphabetical.Order;
+    byName = fn model => list.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property ** name) !$$ model;
+    namedPane = fns iui e => MkPane (name !$% e) (iui $ immut.WholeModel e) {[]};
     nameColumn = ({"Name"},fn p => name !$ {p});
 
     namedTable = fns sm onActivate msel => exec $ do
-        lm <- getFiniteSetModelList nameOrder sm;
-        return $ listTable [nameColumn] lm onActivate msel;
+        lm <- getList.FiniteSetModel nameOrder sm;
+        return.Action $ listTable [nameColumn] lm onActivate msel;
         end;
 
     namedItemTable = fns set iui msel =>
@@ -52,7 +55,7 @@ mkNamed: UIStuff -> NamedStuff
     namedPairPane = fns name set mitems getSelectedUI => let
         getSelectorUI = fn sel => namedItemTable set getSelectedUI (Just sel);
         iopen = fn e => paneWindow $ namedPane getSelectedUI {e};
-        in selectionPairPane name set (mapList (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
+        in selectionPair.Pane name set (map.List (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
 in MkNamedStuff;
 
 end

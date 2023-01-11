@@ -8,6 +8,7 @@ import Test.RunScript
 testModule :: TestTree
 testModule =
     runScriptTestTree $
+    tDecls ["using Function", "using Action", "using Entity"] $
     tGroup
         "module"
         [ tGroup

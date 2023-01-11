@@ -4,6 +4,15 @@ import Language.Expression.Common
 import Pinafore.Language.Name.ToText
 import Shapes
 
+allowedAlphaNameFirstChar :: Char -> Bool
+allowedAlphaNameFirstChar '_' = True
+allowedAlphaNameFirstChar c = isAlpha c
+
+allowedAlphaNameChar :: Char -> Bool
+allowedAlphaNameChar '-' = True
+allowedAlphaNameChar '_' = True
+allowedAlphaNameChar c = isAlphaNum c
+
 newtype Name =
     MkName Text
     deriving (Eq, Ord, MonoFoldable)
@@ -23,6 +32,7 @@ nameFromString s = Just $ MkName $ fromString s
 
 nameIsUpper :: Name -> Bool
 nameIsUpper (MkName n) =
+    oall allowedAlphaNameChar n &&
     case headMay n of
         Just c -> isUpper c
         Nothing -> False

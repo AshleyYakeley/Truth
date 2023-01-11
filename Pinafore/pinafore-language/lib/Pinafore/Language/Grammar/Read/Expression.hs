@@ -1,6 +1,5 @@
 module Pinafore.Language.Grammar.Read.Expression
-    ( readName
-    , readExpression
+    ( readExpression
     , readModule
     , readTopDeclarations
     , operatorFixity
@@ -259,20 +258,11 @@ readSubsumedExpression expr = do
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
 operatorFixity :: Name -> Fixity
 operatorFixity "." = MkFixity AssocRight 10
-operatorFixity "!." = MkFixity AssocRight 10
-operatorFixity "!$." = MkFixity AssocRight 10
 operatorFixity "^" = MkFixity AssocRight 9
-operatorFixity "^^" = MkFixity AssocRight 9
-operatorFixity "**" = MkFixity AssocRight 9
-operatorFixity "!**" = MkFixity AssocLeft 9
-operatorFixity "!$**" = MkFixity AssocLeft 9
-operatorFixity "!++" = MkFixity AssocLeft 9
-operatorFixity "!$++" = MkFixity AssocLeft 9
+operatorFixity "**" = MkFixity AssocLeft 9
+operatorFixity "++" = MkFixity AssocLeft 9
 operatorFixity "*" = MkFixity AssocLeft 8
-operatorFixity ".*" = MkFixity AssocLeft 8
-operatorFixity "~*" = MkFixity AssocLeft 8
 operatorFixity "/" = MkFixity AssocLeft 8
-operatorFixity "~/" = MkFixity AssocLeft 8
 operatorFixity "<*>" = MkFixity AssocLeft 8
 operatorFixity "<:*:>" = MkFixity AssocLeft 8
 operatorFixity "!$" = MkFixity AssocRight 8
@@ -282,16 +272,11 @@ operatorFixity "!@" = MkFixity AssocRight 8
 operatorFixity "!@%" = MkFixity AssocRight 8
 operatorFixity "!@@" = MkFixity AssocRight 8
 operatorFixity "+" = MkFixity AssocLeft 7
-operatorFixity ".+" = MkFixity AssocLeft 7
-operatorFixity "~+" = MkFixity AssocLeft 7
 operatorFixity "-" = MkFixity AssocLeft 7
-operatorFixity ".-" = MkFixity AssocLeft 7
-operatorFixity "~-" = MkFixity AssocLeft 7
 operatorFixity "??" = MkFixity AssocLeft 7
 operatorFixity "<+>" = MkFixity AssocLeft 7
 operatorFixity "<:+:>" = MkFixity AssocLeft 7
 operatorFixity "::" = MkFixity AssocRight 6
-operatorFixity "++" = MkFixity AssocRight 6
 operatorFixity "<>" = MkFixity AssocRight 6
 operatorFixity "==" = MkFixity AssocNone 5
 operatorFixity "/=" = MkFixity AssocNone 5
@@ -326,12 +311,13 @@ expressionFixityReader =
         { efrReadInfix =
               do
                   spos <- getPosition
-                  name <- readThis TokOperator
+                  tnames <- readThis TokOperator
+                  let name = tokenNamesToFullNameRef tnames
                   ns <- readAskNamespace
                   return
                       ( name
-                      , operatorFixity name
-                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar ns $ UnqualifiedFullNameRef name) [e1, e2])
+                      , operatorFixity $ tnName tnames
+                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar ns name) [e1, e2])
         , efrMaxPrecedence = 10
         }
 
@@ -339,9 +325,6 @@ readExpression :: Parser SyntaxExpression
 readExpression = do
     expr <- readInfixed expressionFixityReader readExpression1
     readSubsumedExpression expr
-
-readName :: Parser Name
-readName = readUName <|> readLName <|> (readParen $ readThis TokOperator)
 
 readModule :: Parser SyntaxExposeDeclaration
 readModule = readExpose
@@ -499,9 +482,9 @@ readExpression3 =
     (readParen $
      readWithSourcePos
          (do
-              name <- readThis TokOperator
+              tnames <- readThis TokOperator
               ns <- readAskNamespace
-              return $ SEVar ns $ UnqualifiedFullNameRef name) <|>
+              return $ SEVar ns $ tokenNamesToFullNameRef tnames) <|>
      (do
           spos <- getPosition
           msexpr1 <- optional readExpression

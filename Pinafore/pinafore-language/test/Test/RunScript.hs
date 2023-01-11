@@ -48,12 +48,13 @@ tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
 tPrefix t = tContext $ \sc -> sc {scPrefix = scPrefix sc <> t <> "\n"}
 
 tOpenDefaultStore :: ScriptTestTree -> ScriptTestTree
-tOpenDefaultStore = tPrefix "openDefaultStore.Env >>= fn store =>"
+tOpenDefaultStore = tPrefix "openDefaultStore.Env >>=.Action fn store =>"
 
 testOpenUHStore :: ScriptTestTree -> ScriptTestTree
 testOpenUHStore =
-    tPrefix "openDefaultStore.Env >>= fn dstore =>" .
-    tPrefix "newUndoHandler.Undo >>= fn undoHandler =>" . tPrefix "handleStore.Undo undoHandler dstore >>= fn store =>"
+    tPrefix "openDefaultStore.Env >>=.Action fn dstore =>" .
+    tPrefix "new.UndoHandler >>=.Action fn undoHandler =>" .
+    tPrefix "handleStore.UndoHandler undoHandler dstore >>=.Action fn store =>"
 
 tModule :: Text -> Text -> ScriptTestTree -> ScriptTestTree
 tModule name script =
@@ -95,7 +96,7 @@ testScript :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> ScriptTestTre
 testScript = testExpression @(Action ())
 
 testScriptCatchStop :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> ScriptTestTree
-testScriptCatchStop name script = testScript name $ "onStop (" <> script <> ") (fail \"stopped\")"
+testScriptCatchStop name script = testScript name $ "onStop.Action. (" <> script <> ") (fail.Action. \"stopped\")"
 
 data ScriptExpectation
     = ScriptExpectRejection (PinaforeError -> Bool)

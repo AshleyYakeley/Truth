@@ -6,9 +6,9 @@ run.GTK $
 fn gtk =>
 do
 outputLn.Env "begin";
-w <- openWindow.GTK gtk (600,800) {"Window"} blank.GTK;
+w <- open.Window.GTK gtk (600,800) {"Window"} blank.GTK;
 outputLn.Env "open";
-closeWindow.GTK w;
+close.Window.GTK w;
 outputLn.Env "end";
 end;
 outputLn.Env "END";

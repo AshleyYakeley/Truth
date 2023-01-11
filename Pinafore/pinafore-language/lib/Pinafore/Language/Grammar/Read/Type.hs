@@ -45,22 +45,22 @@ allowedTypeOperatorName "|" = False
 allowedTypeOperatorName "&" = False
 allowedTypeOperatorName _ = True
 
-readTypeOperatorName :: Parser Name
+readTypeOperatorName :: Parser (FullNameRef, Fixity)
 readTypeOperatorName = do
-    n <- readThis TokOperator
-    altIf $ allowedTypeOperatorName n
-    return n
+    names <- readThis TokOperator
+    let name = tnName names
+    altIf $ allowedTypeOperatorName name
+    return (tokenNamesToFullNameRef names, typeOperatorFixity name)
 
-readInfix :: Parser (Name, Fixity, SyntaxTypeArgument -> SyntaxTypeArgument -> SyntaxTypeArgument)
+readInfix :: Parser (FullNameRef, Fixity, SyntaxTypeArgument -> SyntaxTypeArgument -> SyntaxTypeArgument)
 readInfix = do
     spos <- getPosition
-    name <- readTypeOperatorName
+    (name, fixity) <- readTypeOperatorName
     return
         ( name
-        , typeOperatorFixity name
+        , fixity
         , \t1 t2 ->
-              SimpleSyntaxTypeArgument $
-              MkWithSourcePos spos $ SingleSyntaxType (ConstSyntaxGroundType $ UnqualifiedFullNameRef name) [t1, t2])
+              SimpleSyntaxTypeArgument $ MkWithSourcePos spos $ SingleSyntaxType (ConstSyntaxGroundType name) [t1, t2])
 
 typeFixityReader :: FixityReader SyntaxTypeArgument
 typeFixityReader = MkFixityReader {efrReadInfix = readInfix, efrMaxPrecedence = 3}

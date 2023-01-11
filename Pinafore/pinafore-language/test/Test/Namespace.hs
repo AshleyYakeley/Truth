@@ -8,7 +8,14 @@ import Test.RunScript
 testNamespace :: TestTree
 testNamespace =
     runScriptTestTree $
-    tDecls ["pass = return ()", "test = fn b => if b then pass else fail \"wrong\""] $
+    tDecls
+        [ "using Function"
+        , "using Action"
+        , "using Entity"
+        , "using Showable"
+        , "pass = return ()"
+        , "test = fn b => if b then pass else fail \"wrong\""
+        ] $
     tGroup
         "namespace"
         [ tGroup
@@ -118,7 +125,7 @@ testNamespace =
               [ testExpectSuccess "let namespace M of a = 6; b = a end; in test $ b.M == 6"
               , testExpectSuccess "let namespace M of a = 6; b = a end; using M; in test $ b == 6"
               , testExpectSuccess "let namespace P of a = 6; namespace Q of b = a end end; in test $ b.Q.P == 6"
-              , testExpectSuccess "let namespace P of a = 6 end; namespace P.Q of b = a end; in test $ b.Q.P == 6"
+              , testExpectSuccess "let namespace P of a = 6 end; namespace Q.P of b = a end; in test $ b.Q.P == 6"
               ]
         , tGroup
               "decl"
@@ -127,7 +134,7 @@ testNamespace =
               , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna == 1"
               , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna. == 1"
               ]
-        , tDecls ["testeq = fns e f => if e == f then pass else fail $ \"found: \" <> show f"] $
+        , tDecls ["testeq = fns e f => if e == f then pass else fail $ \"found: \" <>.Text show f"] $
           tDecls
               [ "a = 1"
               , "a0 = a"
@@ -162,5 +169,16 @@ testNamespace =
               , testExpectReject "test $ 3 >- fn x as M => x == 3"
               , testExpectSuccess "test $ Just 3 >- match (Just x) as M => x.M == 3; Nothing => False; end"
               , testExpectSuccess "test $ Just 3 >- match Just (x as M) => x.M == 3; Nothing => False; end"
+              ]
+        , tGroup
+              "qualified"
+              [ testExpectSuccess "let x = fns a b => a ++.Property b in pass"
+              , testExpectSuccess "let x = (++.Property) in pass"
+              , testExpectSuccess "let x = fns a b => a ++.Property. b in pass"
+              , testExpectSuccess "let x = (++.Property.) in pass"
+              , testExpectSuccess "let x = fns a b => a ..Property b in pass"
+              , testExpectSuccess "let x = (..Property) in pass"
+              , testExpectSuccess "let x = fns a b => a ..Property. b in pass"
+              , testExpectSuccess "let x = (..Property.) in pass"
               ]
         ]

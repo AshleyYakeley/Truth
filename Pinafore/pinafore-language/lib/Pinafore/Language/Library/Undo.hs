@@ -45,22 +45,23 @@ handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreGetModel store
 undoLibSection :: BindDocTree context
 undoLibSection =
     headingBDT "Undo" "Undo and redo changes to models." $
-    pure $
-    namespaceBDT
-        "Undo"
-        ""
-        [ typeBDT "UndoHandler" "A queue of undo (and redo) actions." (MkSomeGroundType undoHandlerGroundType) []
-        , valBDT "newUndoHandler" "Create a new `UndoHandler`." newUndoHandler
-        , valBDT "queueUndo" "Undo an action." $ \uh -> do
-              rc <- actionResourceContext
-              liftIO $ undoHandlerUndo uh rc noEditSource
-        , valBDT "queueRedo" "Redo an action." $ \uh -> do
-              rc <- actionResourceContext
-              liftIO $ undoHandlerRedo uh rc noEditSource
-        , valBDT "handleStore" "Handle undo/redo for this model." handleStore
-        , valBDT "handleWholeModel" "Handle undo/redo for this model." $ handleModel @(LangWholeModel '( A, A))
-        , valBDT "handleTextModel" "Handle undo/redo for this model." $ handleModel @LangTextModel
-        , valBDT "handleListModel" "Handle undo/redo for this model." $ handleModel @(LangListModel '( A, A))
-        , valBDT "handleFiniteSetModel" "Handle undo/redo for this model." $ handleModel @(LangFiniteSetModel '( P, Q))
-        , valBDT "handleSetModel" "Handle undo/redo for this model." handleSetModel
-        ]
+    [ typeBDT "UndoHandler" "A queue of undo (and redo) actions." (MkSomeGroundType undoHandlerGroundType) []
+    , namespaceBDT
+          "UndoHandler"
+          ""
+          [ valBDT "new" "Create a new `UndoHandler`." newUndoHandler
+          , valBDT "queueUndo" "Undo an action." $ \uh -> do
+                rc <- actionResourceContext
+                liftIO $ undoHandlerUndo uh rc noEditSource
+          , valBDT "queueRedo" "Redo an action." $ \uh -> do
+                rc <- actionResourceContext
+                liftIO $ undoHandlerRedo uh rc noEditSource
+          , valBDT "handleStore" "Handle undo/redo for this model." handleStore
+          , valBDT "handleWholeModel" "Handle undo/redo for this model." $ handleModel @(LangWholeModel '( A, A))
+          , valBDT "handleTextModel" "Handle undo/redo for this model." $ handleModel @LangTextModel
+          , valBDT "handleListModel" "Handle undo/redo for this model." $ handleModel @(LangListModel '( A, A))
+          , valBDT "handleFiniteSetModel" "Handle undo/redo for this model." $
+            handleModel @(LangFiniteSetModel '( P, Q))
+          , valBDT "handleSetModel" "Handle undo/redo for this model." handleSetModel
+          ]
+    ]

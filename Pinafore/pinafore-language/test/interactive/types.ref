@@ -3,7 +3,7 @@ pinafore> let opentype Q
 pinafore> let subtype P <: Q
 pinafore> let p = openEntity @P !"p"
 pinafore> let q = openEntity @Q !"q"
-pinafore> let using Storage
+pinafore> let using Store
 pinafore> store <- openDefaultStore.Env
 pinafore> let pp = property @P @P !"pp" store
 pinafore> let qp = property @Q @P !"qp" store

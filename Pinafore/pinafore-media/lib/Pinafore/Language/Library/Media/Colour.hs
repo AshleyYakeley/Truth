@@ -164,49 +164,48 @@ mkNamedColourEntry (name, colour) = let
 colourStuff :: BindDocTree ()
 colourStuff =
     headingBDT "Colour" "" $
-    pure $
-    namespaceBDT
-        "Colour"
-        ""
-        [ typeBDT
-              "Colour"
-              "A human-perceivable colour."
-              (MkSomeGroundType colourGroundType)
-              [ valPatBDT
-                    "SRGB16"
-                    "Construct a Colour from sRGB (perceptual) red, green, blue, integers in range 0 to 65535. (This is what it actually stored.)"
-                    MkPerceptualSRGB16 $
-                PureFunction $ \(MkPerceptualSRGB16 r g b) -> (r, (g, (b, ())))
-              , valPatBDT
-                    "SRGB"
-                    "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
-                    MkPerceptualSRGBFraction $
-                PureFunction $ \(MkPerceptualSRGBFraction r g b) -> (r, (g, (b, ())))
-              , valPatBDT
-                    "LinearRGB"
-                    "Construct a Colour from linear red, green, blue, in range 0 to 1."
-                    MkLinearRGBFraction $
-                PureFunction $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
-              ]
-        , typeBDT
-              "AlphaColour"
-              "A human-perceivable colour, with opacity."
-              (MkSomeGroundType alphaColourGroundType)
-              [ valPatBDT
-                    "MkAlphaColour16"
-                    "Construct an AlphaColour from an opacity in range 0 to 65535 and a Colour."
-                    MkAlphaColour16 $
-                PureFunction $ \(MkAlphaColour16 op col) -> (op, (col, ()))
-              , valPatBDT
-                    "MkAlphaColourFraction"
-                    "Construct an AlphaColour from an opacity in range 0 to 1 and a Colour."
-                    MkAlphaColourFraction $
-                PureFunction $ \(MkAlphaColourFraction op col) -> (op, (col, ()))
-              ]
-        , literalSubtypeRelationEntry @LangAlphaColour
-        , hasSubtypeRelationBDT @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $
-          functionToShim "opaque" opaque
-        , valBDT "transparent" "The zero-opacity AlphaColour" transparent
+    [ typeBDT
+          "Colour"
+          "A human-perceivable colour."
+          (MkSomeGroundType colourGroundType)
+          [ valPatBDT
+                "SRGB16"
+                "Construct a Colour from sRGB (perceptual) red, green, blue, integers in range 0 to 65535. (This is what it actually stored.)"
+                MkPerceptualSRGB16 $
+            PureFunction $ \(MkPerceptualSRGB16 r g b) -> (r, (g, (b, ())))
+          , valPatBDT
+                "SRGB"
+                "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
+                MkPerceptualSRGBFraction $
+            PureFunction $ \(MkPerceptualSRGBFraction r g b) -> (r, (g, (b, ())))
+          , valPatBDT
+                "LinearRGB"
+                "Construct a Colour from linear red, green, blue, in range 0 to 1."
+                MkLinearRGBFraction $
+            PureFunction $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
+          ]
+    , typeBDT
+          "AlphaColour"
+          "A human-perceivable colour, with opacity."
+          (MkSomeGroundType alphaColourGroundType)
+          [ valPatBDT
+                "MkAlphaColour16"
+                "Construct an AlphaColour from an opacity in range 0 to 65535 and a Colour."
+                MkAlphaColour16 $
+            PureFunction $ \(MkAlphaColour16 op col) -> (op, (col, ()))
+          , valPatBDT
+                "MkAlphaColourFraction"
+                "Construct an AlphaColour from an opacity in range 0 to 1 and a Colour."
+                MkAlphaColourFraction $
+            PureFunction $ \(MkAlphaColourFraction op col) -> (op, (col, ()))
+          ]
+    , literalSubtypeRelationEntry @LangAlphaColour
+    , hasSubtypeRelationBDT @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $
+      functionToShim "opaque" opaque
+    , namespaceBDT
+          "Colour"
+          ""
+          [ valBDT "transparent" "The zero-opacity AlphaColour" transparent
         {- https://github.com/lehins/Color/issues/9
         , valBDT "over" "An AlphaColour over a Colour" $ over @Colour @Word16
         , valBDT "overA" "An AlphaColour over an AlphaColour" $ over @AlphaColour @Word16
@@ -215,8 +214,9 @@ colourStuff =
         , valBDT "darken" "Darken a Colour" $ darken @Colour @Word16
         , valBDT "darkenA" "Darken an AlphaColour" $ darken @AlphaColour @Word16
         -}
-        , headingBDT
-              "Named Colours"
-              "SVG named colours, also used in CSS, from [SVG 1.1](https://www.w3.org/TR/SVG11/types.html#ColorKeywords)" $
-          fmap mkNamedColourEntry allSVGColors
-        ]
+          , headingBDT
+                "Named Colours"
+                "SVG named colours, also used in CSS, from [SVG 1.1](https://www.w3.org/TR/SVG11/types.html#ColorKeywords)" $
+            fmap mkNamedColourEntry allSVGColors
+          ]
+    ]

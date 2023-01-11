@@ -4,10 +4,10 @@ import "pinafore-media";
 import "pinafore-gnome";
 in
 openDefaultStore.Env >>= fn dstore =>
-newUndoHandler.Undo >>= fn uh =>
-handleStore.Undo uh dstore >>= fn store =>
+newUndoHandler.UndoHandler >>= fn uh =>
+handleStore.UndoHandler uh dstore >>= fn store =>
 run.GTK $ fn gtk => let
-using Storage;
+using Store;
 
 ### Useful
 ui_page = fns n ui => (label.GTK n,ui);
@@ -20,17 +20,17 @@ std_window: WholeModel +Text -> Element.GTK -> Action Window.GTK
         [
             menuSubmenu.GTK "File"
             [
-                menuAction.GTK "Close" (Just "Ctrl+W") {closeWindow.GTK window},
+                menuAction.GTK "Close" (Just "Ctrl+W") {close.Window.GTK window},
                 menuSeparator.GTK,
                 menuAction.GTK "Exit" (Just "Ctrl+Q") {exit.GTK gtk}
             ],
             menuSubmenu.GTK "Edit"
             [
-                menuAction.GTK "Undo" (Just "Ctrl+Z") {queueUndo.Undo uh},
-                menuAction.GTK "Redo" (Just "Ctrl+Y") {queueRedo.Undo uh}
+                menuAction.GTK "Undo" (Just "Ctrl+Z") {queueUndo.UndoHandler uh},
+                menuAction.GTK "Redo" (Just "Ctrl+Y") {queueRedo.UndoHandler uh}
             ]
         ]
-    in openWindow.GTK gtk (400,600) title $ vertical.GTK [mbar, layoutGrow.GTK $ scrolled.GTK contents];
+    in open.Window.GTK gtk (400,600) title $ vertical.GTK [mbar, layoutGrow.GTK $ scrolled.GTK contents];
 
 ### People
 
@@ -73,8 +73,8 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22" stor
 rec
 ui_people : FiniteSetModel Person -> Element.GTK
 = fn pp => exec.GTK $ do
-    selectedperson <- newMemWholeModel;
-    pplist <- getFiniteSetModelList noOrder pp;
+    selectedperson <- newMem.WholeModel;
+    pplist <- getList.FiniteSetModel empty.Order pp;
     return $ vertical.GTK
     [
         button.GTK {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
@@ -85,7 +85,7 @@ ui_people : FiniteSetModel Person -> Element.GTK
     end;
 
 peopleByName : WholeModel +(List (Person *: Text))
-= finiteSetModelList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
+= list.FiniteSetModel (mapOrder fst $ on.ModelOrder name alphabetical) $ (identity **.Property name) !$$ people;
 
 ui_person : WholeModel Person -> Element.GTK
 = fn p => vertical.GTK
@@ -109,7 +109,7 @@ ui_person : WholeModel Person -> Element.GTK
         ],
         ui_page {"Work"} $ vertical.GTK
         [
-            ui_labelled {"Employer: "} $ textEntry.GTK $ (name !. employer) !$ p
+            ui_labelled {"Employer: "} $ textEntry.GTK $ (..Property name employer) !$ p
         ],
         ui_page {"Family"} $ vertical.GTK
         [
@@ -192,9 +192,9 @@ window_constant : Action Window.GTK
 ### CSS
 window_css: Action Window.GTK
 = do
-    cssref <- newMemTextModel;
+    cssref <- newMem.TextModel;
     cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
-    sometext <- newMemWholeModel;
+    sometext <- newMem.WholeModel;
     sometext := "whatever";
     std_window {"CSS"} $ styleSheet.GTK (ignoreUpdateUIExceptions.GTK.Debug cssref) $ name.GTK "root" $ vertical.GTK
         [
@@ -228,20 +228,20 @@ window_drawing: WholeModel +Time -> Action Window.GTK
 
 window_list: Action Window.GTK
 = do
-    peopleList <- getFiniteSetModelList (orderOn name alphabetical) people;
+    peopleList <- getList.FiniteSetModel (on.ModelOrder name alphabetical) people;
     std_window {"List"} $ list.GTK ui_person peopleList;
     end;
 
 ### Text Selection
 window_textselection: Action Window.GTK
 = do
-    tref1 <- newMemTextModel;
+    tref1 <- newMem.TextModel;
     tref1 := "111";
-    tref2 <- newMemTextModel;
+    tref2 <- newMem.TextModel;
     tref2 := "222";
-    tref3 <- newMemTextModel;
+    tref3 <- newMem.TextModel;
     tref3 := "333";
-    sel <- newMemWholeModel;
+    sel <- newMem.WholeModel;
     let
         notify: Action TextModel -> Action Unit
         = fn atref => sel := atref;

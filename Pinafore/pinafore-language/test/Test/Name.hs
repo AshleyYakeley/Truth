@@ -58,6 +58,15 @@ testNames =
               , testEqual "F." (RootFullName "F")
               , testEqual "G.N" (MkFullName "G" "N.")
               , testEqual "H.N." (MkFullName "H" "N.")
+              , testEqual "%%.N" (MkFullName "%%" "N.")
+              , testEqual "%%.N." (MkFullName "%%" "N.")
+              , testEqual "..N" (MkFullName "." "N.")
+              , testEqual "..N." (MkFullName "." "N.")
+              , testEqual "A.N" (MkFullNameRef "A" "N")
+              , testEqual "B.N." (MkFullNameRef "B" "N.")
+              , testEqual "..N" (MkFullNameRef "." "N")
+              , testEqual "..N." (MkFullNameRef "." "N.")
+              , testEqual "." (MkFullNameRef "." CurrentNamespaceRef)
               ]
         , testTree
               "text"

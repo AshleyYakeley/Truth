@@ -238,8 +238,8 @@ testType =
                     "{v : Integer -> a, v : Boolean -> b, v : Integer -> c} -> (a *: b) *: c"
               , testTree
                     "function"
-                    [ textTypeTest "let i: tvar -> tvar = id in i" "{} -> a -> a"
-                    , textTypeTest "id: tvar -> tvar" "{} -> tvar -> tvar"
+                    [ textTypeTest "let i: tvar -> tvar = id.Function in i" "{} -> a -> a"
+                    , textTypeTest "id.Function: tvar -> tvar" "{} -> tvar -> tvar"
                     , textTypeTest "let i = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : a -> a = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : tvar -> tvar = fn x => x in i" "{} -> a -> a"
@@ -267,22 +267,24 @@ testType =
                     , textTypeTest
                           "let rec g : a -> a = f; f : a -> a = fn x => x end in (f 3, g \"t\")"
                           "{} -> Integer *: Text"
-                    , textTypeTest "do i1 <- return $ fn x => x; return i1; end" "{} -> Action (a -> a)"
                     , textTypeTest
-                          "do i1 <- return $ fn x => x; i2 <- return i1; return i2; end"
+                          "do i1 <- return.Action. $.Function fn x => x; return.Action. i1; end"
                           "{} -> Action (a -> a)"
-                    , rejectionTest "do i1 <- return $ fn x => x; return (i1 : a -> a); end"
                     , textTypeTest
-                          "do i1 <- return $ fn x => x; return (i1 : Text -> Text); end"
+                          "do i1 <- return.Action. $.Function fn x => x; i2 <- return.Action. i1; return.Action. i2; end"
+                          "{} -> Action (a -> a)"
+                    , rejectionTest "do i1 <- return.Action. $.Function fn x => x; return.Action. (i1 : a -> a); end"
+                    , textTypeTest
+                          "do i1 <- return.Action. $.Function fn x => x; return.Action. (i1 : Text -> Text); end"
                           "{} -> Action (Text -> Text)"
                     , textTypeTest "fn x => let y = x in y" "{} -> a -> a"
                     , rejectionTest "fn x => let y : a -> a = x in y"
                     , rejectionTest
-                          "do r <- newMemWholeModel; (r: WholeModel a) := 3; t <- get (r: WholeModel a); return $ textLength t end"
+                          "do r <- newMem.WholeModel; (r: WholeModel a) := 3; t <- get (r: WholeModel a); return.Action. $.Function textLength t end"
                     , rejectionTest
-                          "do r <- newMemWholeModel; let r1: WholeModel a = r in r1 := 3; t <- let r1: WholeModel a = r in get r1; return $ textLength t end"
+                          "do r <- newMem.WholeModel; let r1: WholeModel a = r in r1 := 3; t <- let r1: WholeModel a = r in get r1; return.Action. $.Function textLength t end"
                     , rejectionTest
-                          "do r <- newMemWholeModel; (r1: WholeModel a) <- return r; r1 := 3; t <- get r1; return $ textLength t end"
+                          "do r <- newMem.WholeModel; (r1: WholeModel a) <- return.Action. r; r1 := 3; t <- get r1; return.Action. $.Function textLength t end"
                     ]
               , textTypeTest "let f : Entity = Nothing in f" "{} -> Entity"
               , textTypeTest "let f : Entity -> Entity = Just in f" "{} -> Entity -> Entity"
@@ -293,7 +295,7 @@ testType =
                     "{} -> Entity -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity = Left in f" "{} -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity = Right in f" "{} -> Entity -> Entity"
-              , textTypeTest "fn x => if odd x then x else (x:Number)" "{} -> Integer -> Number"
+              , textTypeTest "fn x => if odd.Integer x then x else (x:Number)" "{} -> Integer -> Number"
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe a"
@@ -302,14 +304,16 @@ testType =
                     , textTypeTest "let rec x : Entity = Just x end in x" "{} -> Entity"
                     , textTypeTest "let rec x : Maybe Entity = Just x end in x" "{} -> Maybe Entity"
                     , textTypeTest
-                          "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end in rcount"
+                          "let using Function; rec rcount = match Nothing => 0; Just y => succ.Integer $ rcount y end end in rcount"
                           "{} -> (rec a, Maybe a) -> Integer"
-                    , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
-                          "let rec rcount = match Nothing => 0; Just y => 1 + r1count y end; r1count = match Nothing => 0; Just y => 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing"
+                          "Just $.Function Just $.Function Just Nothing"
+                          "{} -> Maybe (Maybe (Maybe (Maybe None)))"
+                    , textTypeTest
+                          "let using Function; rec rcount = match Nothing => 0; Just y => succ.Integer $ r1count y end; r1count = match Nothing => 0; Just y => succ.Integer $ r1count y end end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
                     , textTypeTest
-                          "let rec rcount = match Nothing => 0; Just y => 1 + rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
+                          "let using Function; rec rcount = match Nothing => 0; Just y => succ.Integer $ rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
                           "{} -> ((rec a, Maybe a) -> Integer) *: (rec b, Maybe b) *: Integer"
                     ]
               , testTree
@@ -330,16 +334,18 @@ testType =
                     [ textTypeTest "fn x => let in ()" "{} -> Any -> Unit"
                     , textTypeTest "fn x => let y = x in ()" "{} -> Any -> Unit"
                     , textTypeTest "fn x => let y = x in y" "{} -> a -> a"
-                    , textTypeTest "fn x => let y = x + x in y" "{} -> Integer -> Integer"
-                    , textTypeTest "fn x => let y = x + x in ()" "{} -> Any -> Unit"
+                    , textTypeTest "fn x => let y = x +.Integer x in y" "{} -> Integer -> Integer"
+                    , textTypeTest "fn x => let y = x +.Integer x in ()" "{} -> Any -> Unit"
+                    , textTypeTest "fn x => let using Integer; y = x + x in y" "{} -> Integer -> Integer"
+                    , textTypeTest "fn x => let using Integer; y = x + x in ()" "{} -> Any -> Unit"
                     , textTypeTest
-                          "fn x => let subtype Unit <: Action Integer = fn () => return x in ()"
+                          "fn x => let subtype Unit <: Action Integer = fn () => return.Action. x in ()"
                           "{} -> Any -> Unit"
                     , textTypeTest
-                          "fn x => let subtype Unit <: Action Integer = fn () => return x in ((): Action Integer)"
+                          "fn x => let subtype Unit <: Action Integer = fn () => return.Action. x in ((): Action Integer)"
                           "{} -> Integer -> Action Integer"
                     , textTypeTest
-                          "let subtype Unit <: Action Integer = fn () => return x in ((): Action Integer)"
+                          "let subtype Unit <: Action Integer = fn () => return.Action. x in ((): Action Integer)"
                           "{x : b & Integer} -> Action Integer"
                     ]
               ]
@@ -410,32 +416,34 @@ testType =
               "library"
               [ textTypeTest "()" "{} -> Unit"
               , textTypeTest "{3}" "{} -> WholeModel +Integer"
-              , textTypeTest "identity !$% {3}" "{} -> WholeModel +Integer"
-              , textTypeTest "identity !$ {3}" "{} -> WholeModel +Integer"
-              , textTypeTest "(identity !. identity) !$% {3}" "{} -> WholeModel +Integer"
-              , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeModel +Integer"
+              , textTypeTest "id.Property !$%.Attribute {3}" "{} -> WholeModel +Integer"
+              , textTypeTest "id.Property !$.Attribute {3}" "{} -> WholeModel +Integer"
+              , textTypeTest "(id.Property ..Property id.Property) !$%.Attribute {3}" "{} -> WholeModel +Integer"
+              , textTypeTest "(id.Property ..Property id.Property) !$.Attribute {3}" "{} -> WholeModel +Integer"
               , textTypeTest
-                    "property.Storage @Integer @Text !\"a\" store !** property.Storage @Number @Text !\"b\" store"
+                    "property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store"
                     "{store : Store} -> Property {-Integer,+Number} (Text *: Text)"
               , textTypeTest
-                    "property.Storage @Text @Integer !\"a\" store !++ property.Storage @Text @Number !\"b\" store"
+                    "property.Store @Text @Integer !\"a\" store ++.Property property.Store @Text @Number !\"b\" store"
                     "{store : Store} -> Property (Text +: Text) {-Integer,+Number}"
               , textTypeTest
-                    "(property.Storage @Integer @Text !\"a\" store !** property.Storage @Number @Text !\"b\" store) !$% {3}"
+                    "(property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store) !$%.Attribute {3}"
                     "{store : Store} -> WholeModel (Text *: Text)"
               , textTypeTest
-                    "(property.Storage @Integer @Text !\"a\" store !** property.Storage @Number @Text !\"b\" store) !$ {3}"
+                    "(property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store) !$.Attribute {3}"
                     "{store : Store} -> WholeModel (Text *: Text)"
               , textTypeTest
-                    "property.Storage @Integer @Text !\"a\" store !@% {\"x\"}"
+                    "property.Store @Integer @Text !\"a\" store !@%.Property {\"x\"}"
                     "{store : Store} -> FiniteSetModel Integer"
               , textTypeTest
-                    "property.Storage @Integer @Text !\"a\" store !@ {\"x\"}"
+                    "property.Store @Integer @Text !\"a\" store !@.Property {\"x\"}"
                     "{store : Store} -> FiniteSetModel Integer"
               , textTypeTest
-                    "(property.Storage @Integer @Text !\"a\" store !@% {\"x\"}) <:*:> (property.Storage @Number @Text !\"b\" store !@% {\"y\"})"
+                    "(property.Store @Integer @Text !\"a\" store !@%.Property {\"x\"}) <:*:>.FiniteSetModel (property.Store @Number @Text !\"b\" store !@%.Property {\"y\"})"
                     "{store : Store} -> FiniteSetModel (Integer *: Number)"
-              , textTypeTest "pairWholeModel {3} {\"x\"}" "{} -> WholeModel {-(Any *: Any),+(Integer *: Text)}"
-              , textTypeTest "immutWholeModel $ pairWholeModel {3} {\"x\"}" "{} -> WholeModel +(Integer *: Text)"
+              , textTypeTest "product.WholeModel {3} {\"x\"}" "{} -> WholeModel {-(Any *: Any),+(Integer *: Text)}"
+              , textTypeTest
+                    "immut.WholeModel $.Function product.WholeModel {3} {\"x\"}"
+                    "{} -> WholeModel +(Integer *: Text)"
               ]
         ]

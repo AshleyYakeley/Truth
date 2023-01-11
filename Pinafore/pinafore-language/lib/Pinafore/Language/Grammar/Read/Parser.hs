@@ -194,43 +194,23 @@ readWithSourcePos p = do
     return $ MkWithSourcePos spos t
 
 readFullUName :: Parser FullNameRef
-readFullUName = do
-    MkTokenNames {..} <- readThis TokNamesUpper
-    return $
-        MkFullNameRef tnName $
-        (if tnAbsolute
-             then AbsoluteNamespaceRef . MkNamespace
-             else RelativeNamespaceRef)
-            tnSpace
+readFullUName = fmap tokenNamesToFullNameRef $ readThis TokNamesUpper
 
 readFullLName :: Parser FullNameRef
-readFullLName = do
-    MkTokenNames {..} <- readThis TokNamesLower
-    return $
-        MkFullNameRef tnName $
-        (if tnAbsolute
-             then AbsoluteNamespaceRef . MkNamespace
-             else RelativeNamespaceRef)
-            tnSpace
+readFullLName = fmap tokenNamesToFullNameRef $ readThis TokNamesLower
 
 readFullNameRef :: Parser FullNameRef
 readFullNameRef = readFullUName <|> readFullLName
 
 readUName :: Parser Name
 readUName = do
-    MkTokenNames {..} <- readThis TokNamesUpper
-    altIf $ not tnAbsolute
-    case tnSpace of
-        [] -> return tnName
-        _ -> empty
+    tns <- readThis TokNamesUpper
+    mpure $ tokenNamesToSingleName tns
 
 readLName :: Parser Name
 readLName = do
-    MkTokenNames {..} <- readThis TokNamesLower
-    altIf $ not tnAbsolute
-    case tnSpace of
-        [] -> return tnName
-        _ -> empty
+    tns <- readThis TokNamesLower
+    mpure $ tokenNamesToSingleName tns
 
 readNewUName :: Parser FullName
 readNewUName = do
@@ -245,13 +225,7 @@ readNewLName = do
     return $ MkFullName name ns
 
 readNamespaceRef :: Parser NamespaceRef
-readNamespaceRef = do
-    MkTokenNames {..} <- readThis TokNamesUpper
-    return $
-        (if tnAbsolute
-             then AbsoluteNamespaceRef . MkNamespace
-             else RelativeNamespaceRef) $
-        tnSpace <> [tnName]
+readNamespaceRef = fmap tokenNamesToNamespaceRef $ readThis TokNamesUpper
 
 readModuleName :: Parser ModuleName
 readModuleName = do

@@ -20,7 +20,7 @@ newtype LangJPEGImage =
 
 jpegImageGroundType :: QGroundType '[] LangJPEGImage
 jpegImageGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangJPEGImage)|]) "JPEGImage")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangJPEGImage)|]) "JPEG.Image.")
         { pgtGreatestDynamicSupertype =
               SimplePolyGreatestDynamicSupertype
                   qGroundType
@@ -56,10 +56,13 @@ jpegStuff =
     headingBDT
         "JPEG"
         ""
-        [ typeBDT "JPEGImage" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
+        [ typeBDT "JPEG" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
         , hasSubtypeRelationBDT @LangJPEGImage @LangImage Verify "" $
           functionToShim "jpegImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationBDT @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral
         , hasSubtypeRelationBDT @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
-        , valBDT "jpegEncode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
+        , namespaceBDT
+              "JPEG"
+              ""
+              [valBDT "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode]
         ]

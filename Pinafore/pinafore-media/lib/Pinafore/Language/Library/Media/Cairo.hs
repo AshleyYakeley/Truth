@@ -130,118 +130,140 @@ cairoStuff =
     namespaceBDT
         "Cairo"
         ""
-        [ typeBDT "Drawing" "Something that can be drawn." (MkSomeGroundType drawingGroundType) []
-        , valBDT "concatDrawing" "Layer drawings." $ mconcat @(LangDrawing A)
-        , valBDT "pureDrawing" "" $ pure @LangDrawing @A
-        , valBDT "mapDrawing" "" $ fmap @LangDrawing @A @B
-        , valBDT "apDrawing" "" $ (<*>) @LangDrawing @A @B
-        , valBDT "drawToImage" "" $ drawToImage @TopType
-        , valBDT "position" "" langPointDrawing
-        , valBDT "ifPoint" "Restrict actions based on point" langIfPoint
-        , valBDT "ifInRect" "Restrict actions to within a rectangle, as ((left,top),(width,height))" langIfInRect
-        , headingBDT
-              "Transformation"
+        [ headingBDT
+              "Drawing"
               ""
-              [ valBDT "translate" "Translate a drawing" $ hoist1Drawing @A translate
-              , valBDT "rotate" "Rotate a drawing" $ hoist1Drawing @A rotate
-              , valBDT "scale" "Scale a drawing" $ hoist1Drawing @A scale
-              ]
-        , headingBDT
-              "Painting"
-              ""
-              [ valBDT "paint" "Paint everywhere (within the clip)" $ liftDrawing $ paint @[BottomType]
-              , valBDT "paintAlpha" "Paint everywhere with this alpha (within the clip)" $
-                lift1Drawing $ paintWithAlpha @[BottomType]
-              , valBDT "source" "Set the source colour" langSource
-              , valBDT "operatorClear" "" $ hoistDrawing @A operatorClear
-              , valBDT "operatorSource" "" $ hoistDrawing @A operatorSource
-              , valBDT "operatorOver" "" $ hoistDrawing @A operatorOver
-              , valBDT "operatorIn" "" $ hoistDrawing @A operatorIn
-              , valBDT "operatorOut" "" $ hoistDrawing @A operatorOut
-              , valBDT "operatorAtop" "" $ hoistDrawing @A operatorAtop
-              , valBDT "operatorDest" "" $ hoistDrawing @A operatorDest
-              , valBDT "operatorDestOver" "" $ hoistDrawing @A operatorDestOver
-              , valBDT "operatorDestIn" "" $ hoistDrawing @A operatorDestIn
-              , valBDT "operatorDestOut" "" $ hoistDrawing @A operatorDestOut
-              , valBDT "operatorDestAtop" "" $ hoistDrawing @A operatorDestAtop
-              , valBDT "operatorXor" "" $ hoistDrawing @A operatorXor
-              , valBDT "operatorAdd" "" $ hoistDrawing @A operatorAdd
-              , valBDT "operatorSaturate" "" $ hoistDrawing @A operatorSaturate
-              , valBDT "operatorMultiply" "" $ hoistDrawing @A operatorMultiply
-              , valBDT "operatorScreen" "" $ hoistDrawing @A operatorScreen
-              , valBDT "operatorOverlay" "" $ hoistDrawing @A operatorOverlay
-              , valBDT "operatorDarken" "" $ hoistDrawing @A operatorDarken
-              , valBDT "operatorLighten" "" $ hoistDrawing @A operatorLighten
-              , valBDT "operatorColorDodge" "" $ hoistDrawing @A operatorColorDodge
-              , valBDT "operatorColorBurn" "" $ hoistDrawing @A operatorColorBurn
-              , valBDT "operatorHardLight" "" $ hoistDrawing @A operatorHardLight
-              , valBDT "operatorSoftLight" "" $ hoistDrawing @A operatorSoftLight
-              , valBDT "operatorDifference" "" $ hoistDrawing @A operatorDifference
-              , valBDT "operatorExclusion" "" $ hoistDrawing @A operatorExclusion
-              , valBDT "operatorHslHue" "" $ hoistDrawing @A operatorHslHue
-              , valBDT "operatorHslSaturation" "" $ hoistDrawing @A operatorHslSaturation
-              , valBDT "operatorHslColor" "" $ hoistDrawing @A operatorHslColor
-              , valBDT "operatorHslLuminosity" "" $ hoistDrawing @A operatorHslLuminosity
+              [ typeBDT "Drawing" "Something that can be drawn." (MkSomeGroundType drawingGroundType) []
+              , namespaceBDT "Drawing" "" $
+                monoidEntries @_ @(LangDrawing A) <>
+                applicativeEntries @_ @LangDrawing <>
+                [ valBDT "map" "" $ fmap @LangDrawing @A @B
+                , valBDT "toImage" "" $ drawToImage @TopType
+                , headingBDT
+                      "Position"
+                      ""
+                      [ valBDT "position" "" langPointDrawing
+                      , valBDT "ifPoint" "Restrict actions based on point" langIfPoint
+                      , valBDT
+                            "ifInRect"
+                            "Restrict actions to within a rectangle, as ((left,top),(width,height))"
+                            langIfInRect
+                      ]
+                , headingBDT
+                      "Transformation"
+                      ""
+                      [ valBDT "translate" "Translate a drawing" $ hoist1Drawing @A translate
+                      , valBDT "rotate" "Rotate a drawing" $ hoist1Drawing @A rotate
+                      , valBDT "scale" "Scale a drawing" $ hoist1Drawing @A scale
+                      ]
+                , headingBDT
+                      "Properties"
+                      ""
+                      [ valBDT "source" "Set the source colour" langSource
+                      , valBDT "width" "Use this width for line" $ hoist1Drawing @A $ lineWidth
+                      , valBDT "joinMitre" "Use a mitred line join, with limit" $ hoist1Drawing @A $ lineJoinMitre
+                      , valBDT "joinRound" "Use a round line join" $ hoistDrawing @A $ lineJoinRound
+                      , valBDT "joinBevel" "Use a bevel line join" $ hoistDrawing @A $ lineJoinBevel
+                      , valBDT "capButt" "Use a butt line cap" $ hoistDrawing @A $ lineCapButt
+                      , valBDT "capRound" "Use a round line cap" $ hoistDrawing @A $ lineCapRound
+                      , valBDT "capSquare" "Use a square line cap" $ hoistDrawing @A $ lineCapSquare
+                      , valBDT "dash" "Use a dash pattern for line" $ hoist2Drawing @A $ dash
+                      , valBDT "fillRuleNonZero" "fill for non-zero winding number" $ hoistDrawing @A $ fillRuleWinding
+                      , valBDT "fillRuleOdd" "fill for odd winding number" $ hoistDrawing @A $ fillRuleEvenOdd
+                      , valBDT "fontFace" "" $ hoist3Drawing @A fontFace'
+                      , valBDT "fontSize" "" $ hoist1Drawing @A fontSize
+                      , namespaceBDT
+                            "Operator"
+                            ""
+                            [ valBDT "clear" "" $ hoistDrawing @A operatorClear
+                            , valBDT "source" "" $ hoistDrawing @A operatorSource
+                            , valBDT "over" "" $ hoistDrawing @A operatorOver
+                            , valBDT "in" "" $ hoistDrawing @A operatorIn
+                            , valBDT "out" "" $ hoistDrawing @A operatorOut
+                            , valBDT "atop" "" $ hoistDrawing @A operatorAtop
+                            , valBDT "dest" "" $ hoistDrawing @A operatorDest
+                            , valBDT "destOver" "" $ hoistDrawing @A operatorDestOver
+                            , valBDT "destIn" "" $ hoistDrawing @A operatorDestIn
+                            , valBDT "destOut" "" $ hoistDrawing @A operatorDestOut
+                            , valBDT "destAtop" "" $ hoistDrawing @A operatorDestAtop
+                            , valBDT "xor" "" $ hoistDrawing @A operatorXor
+                            , valBDT "add" "" $ hoistDrawing @A operatorAdd
+                            , valBDT "saturate" "" $ hoistDrawing @A operatorSaturate
+                            , valBDT "multiply" "" $ hoistDrawing @A operatorMultiply
+                            , valBDT "screen" "" $ hoistDrawing @A operatorScreen
+                            , valBDT "overlay" "" $ hoistDrawing @A operatorOverlay
+                            , valBDT "darken" "" $ hoistDrawing @A operatorDarken
+                            , valBDT "lighten" "" $ hoistDrawing @A operatorLighten
+                            , valBDT "colorDodge" "" $ hoistDrawing @A operatorColorDodge
+                            , valBDT "colorBurn" "" $ hoistDrawing @A operatorColorBurn
+                            , valBDT "hardLight" "" $ hoistDrawing @A operatorHardLight
+                            , valBDT "softLight" "" $ hoistDrawing @A operatorSoftLight
+                            , valBDT "difference" "" $ hoistDrawing @A operatorDifference
+                            , valBDT "exclusion" "" $ hoistDrawing @A operatorExclusion
+                            , valBDT "hslHue" "" $ hoistDrawing @A operatorHslHue
+                            , valBDT "hslSaturation" "" $ hoistDrawing @A operatorHslSaturation
+                            , valBDT "hslColor" "" $ hoistDrawing @A operatorHslColor
+                            , valBDT "hslLuminosity" "" $ hoistDrawing @A operatorHslLuminosity
+                            ]
+                      ]
+                , headingBDT
+                      "Painting"
+                      ""
+                      [ valBDT "paint" "Paint everywhere (within the clip)" $ liftDrawing $ paint @[BottomType]
+                      , valBDT "paintAlpha" "Paint everywhere with this alpha (within the clip)" $
+                        lift1Drawing $ paintWithAlpha @[BottomType]
+                      ]
+                ]
               ]
         , headingBDT
               "Path"
               ""
               [ typeBDT "Path" "A path on a drawing." (MkSomeGroundType pathGroundType) []
-              , valBDT "concatPath" "Join a list of paths." $ mconcat @LangPath
-              , valBDT "stroke" "Draw this path" $ lift1Drawing $ stroke @[BottomType]
-              , valBDT "fill" "Fill this path" $ lift1Drawing $ fill @[BottomType]
-              , valBDT "clip" "Clip drawing to this path" $ hoist1Drawing @A clip
-              , headingBDT
-                    "Construction"
-                    ""
-                    [ valBDT "closePath" "close the path into a loop" closePath
-                    , valBDT "moveTo" "move to this point" moveTo
-                    , valBDT "lineTo" "draw a line to this point" lineTo
-                    , valBDT "curveTo" "draw a curve to this point" curveTo
-                    , valBDT "relMoveTo" "move by this displacement" relMoveTo
-                    , valBDT "relLineTo" "draw a line by this displacement" relLineTo
-                    , valBDT "relCurveTo" "draw a curve by this displacement" relCurveTo
-                    , valBDT "rectangle" "draw a rectangle" rectangle
-                    , valBDT "arc" "`arc center radius angle1 angle2`" arc
-                    , valBDT "arcNegative" "`arcNegative center radius angle1 angle2`" arcNegative
-                    ]
-              , headingBDT
-                    "Properties"
-                    ""
-                    [ valBDT "lineWidth" "Use this width for line" $ hoist1Drawing @A $ lineWidth
-                    , valBDT "lineJoinMitre" "Use a mitred line join, with limit" $ hoist1Drawing @A $ lineJoinMitre
-                    , valBDT "lineJoinRound" "Use a round line join" $ hoistDrawing @A $ lineJoinRound
-                    , valBDT "lineJoinBevel" "Use a bevel line join" $ hoistDrawing @A $ lineJoinBevel
-                    , valBDT "lineCapButt" "Use a butt line cap" $ hoistDrawing @A $ lineCapButt
-                    , valBDT "lineCapRound" "Use a round line cap" $ hoistDrawing @A $ lineCapRound
-                    , valBDT "lineCapSquare" "Use a square line cap" $ hoistDrawing @A $ lineCapSquare
-                    , valBDT "dash" "Use a dash pattern for line" $ hoist2Drawing @A $ dash
-                    , valBDT "fillRuleNonZero" "fill for non-zero winding number" $ hoistDrawing @A $ fillRuleWinding
-                    , valBDT "fillRuleOdd" "fill for odd winding number" $ hoistDrawing @A $ fillRuleEvenOdd
-                    ]
-              ]
-        , headingBDT
-              "Text"
-              ""
-              [ valBDT "textPath" "" $ textPath
-              , valBDT "fontFace" "" $ hoist3Drawing @A fontFace'
-              , valBDT "fontSize" "" $ hoist1Drawing @A fontSize
+              , namespaceBDT "Path" "" $
+                monoidEntries @_ @LangPath <>
+                [ headingBDT
+                      "Construction"
+                      ""
+                      [ valBDT "close" "close the path into a loop" closePath
+                      , valBDT "moveTo" "move to this point" moveTo
+                      , valBDT "lineTo" "draw a line to this point" lineTo
+                      , valBDT "curveTo" "draw a curve to this point" curveTo
+                      , valBDT "relMoveTo" "move by this displacement" relMoveTo
+                      , valBDT "relLineTo" "draw a line by this displacement" relLineTo
+                      , valBDT "relCurveTo" "draw a curve by this displacement" relCurveTo
+                      , valBDT "rectangle" "draw a rectangle" rectangle
+                      , valBDT "arc" "`arc center radius angle1 angle2`" arc
+                      , valBDT "arcNegative" "`arcNegative center radius angle1 angle2`" arcNegative
+                      , valBDT "text" "" $ textPath
+                      ]
+                , headingBDT
+                      "Drawing"
+                      ""
+                      [ valBDT "stroke" "Draw this path" $ lift1Drawing $ stroke @[BottomType]
+                      , valBDT "fill" "Fill this path" $ lift1Drawing $ fill @[BottomType]
+                      , valBDT "clip" "Clip drawing to this path" $ hoist1Drawing @A clip
+                      ]
+                ]
               ]
         , headingBDT
               "Patterns"
               ""
               [ typeBDT "Pattern" "" (MkSomeGroundType patternGroundType) []
-              , valBDT "patternSource" "" langPatternSource
-              , valBDT "patternMask" "" langPatternMask
-              , valBDT "solidPattern" "" solidPattern
-              , valBDT "linearPattern" "" $ \a b c -> liftPattern $ linearPattern a b c
-              , valBDT "radialPattern" "" $ \a b c d e -> liftPattern $ radialPattern a b c d e
-              , headingBDT
-                    "From Drawings"
+              , namespaceBDT
+                    "Pattern"
                     ""
-                    [ valBDT "colorDrawingPattern" "" langColorDrawingPattern
-                    , valBDT "alphaDrawingPattern" "" langAlphaDrawingPattern
-                    , valBDT "colorAlphaDrawingPattern" "" langColorAlphaDrawingPattern
+                    [ valBDT "source" "" langPatternSource
+                    , valBDT "mask" "" langPatternMask
+                    , valBDT "solid" "" solidPattern
+                    , valBDT "linear" "" $ \a b c -> liftPattern $ linearPattern a b c
+                    , valBDT "radial" "" $ \a b c d e -> liftPattern $ radialPattern a b c d e
+                    , headingBDT
+                          "From Drawings"
+                          ""
+                          [ valBDT "colorDrawing" "" langColorDrawingPattern
+                          , valBDT "alphaDrawing" "" langAlphaDrawingPattern
+                          , valBDT "colorAlphaDrawing" "" langColorAlphaDrawingPattern
+                          ]
                     ]
               ]
         ]

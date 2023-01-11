@@ -94,10 +94,14 @@ windowStuff =
               "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
           run @A
         , typeBDT "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
-        , valBDT "openWindow" "Open a new window with this size, title and element." openWindow
-        , valBDT "closeWindow" "Close a window." uiWindowClose
-        , valBDT "showWindow" "Show a window." showWindow
-        , valBDT "hideWindow" "Hide a window." hideWindow
+        , namespaceBDT
+              "Window"
+              ""
+              [ valBDT "open" "Open a new window with this size, title and element." openWindow
+              , valBDT "close" "Close a window." uiWindowClose
+              , valBDT "show" "Show a window." showWindow
+              , valBDT "hide" "Hide a window." hideWindow
+              ]
         , valBDT "exit" "Exit the user interface." exitUI
         ]
 

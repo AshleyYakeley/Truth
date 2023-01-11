@@ -9,7 +9,7 @@ import Pinafore.Language.Name
 import Shapes hiding (try)
 
 data FixityReader e = MkFixityReader
-    { efrReadInfix :: Parser (Name, Fixity, e -> e -> e)
+    { efrReadInfix :: Parser (FullNameRef, Fixity, e -> e -> e)
     , efrMaxPrecedence :: Int
     }
 

@@ -39,7 +39,7 @@ secondHand: Drawing None
 in do
     now <- newClock $ Seconds 0.1;
     tz <- getCurrentTimeZone;
-    run.GTK $ fn gtk => openWindow gtk (300,400) {"Clock"} $ draw
+    run.GTK $ fn gtk => open.Window gtk (300,400) {"Clock"} $ draw
     {
         scaleDrawing $
             timeToLocal tz %now >- match

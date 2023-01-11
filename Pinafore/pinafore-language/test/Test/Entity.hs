@@ -20,7 +20,8 @@ testUpdate text =
 
 testUpdates :: TestTree
 testUpdates =
-    runScriptTestTree $ tGroup "update" [testUpdate "do model <- newMemWholeModel; return (model := 1, model) end"]
+    runScriptTestTree $
+    tGroup "update" [testUpdate "do model <- newMem.WholeModel; return.Action (model :=.WholeModel 1, model) end"]
 
 data SubtypeResult
     = SRNot
@@ -73,7 +74,18 @@ testEntity :: TestTree
 testEntity =
     runScriptTestTree $
     tDecls
-        [ "pass = return ()"
+        [ "using Order"
+        , "using Entity"
+        , "using Attribute"
+        , "using Property"
+        , "using SetModel"
+        , "using WholeModel"
+        , "using Showable"
+        , "using Store"
+        , "using Function"
+        , "using Action"
+        , "using Ordering"
+        , "pass = return ()"
         , "undefined = error \"undefined\""
         , "runWholeModel = fn r => do a <- get r; a end"
         , "runreforfail = fn r => runWholeModel (r ?? {fail \"unknown model\"})"
@@ -124,9 +136,9 @@ testEntity =
               , testExpectSuccess "do return (); end"
               , testExpectSuccess "do testeqval 3 3 end"
               , testExpectSuccess "do a <- return 3; testeqval 3 a end"
-              , testExpectSuccess "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
+              , testExpectSuccess "do a <- return 3; b <- return $ a +.Integer a; testeqval 6 b end"
               ]
-        , tDecls ["flagRef = do r <- newMemWholeModel; r := False; return r; end"] $
+        , tDecls ["flagRef = do r <- newMem.WholeModel; r := False; return r; end"] $
           tGroup
               "stop"
               [ testExpectSuccess "return ()"
@@ -174,73 +186,73 @@ testEntity =
                     ]
               , tGroup
                     "memory"
-                    [ testExpectSuccess "expectStop $ do r <- newMemWholeModel; get r; end"
-                    , testExpectSuccess "do r <- newMemWholeModel; r := 45; a <- get r; testeqval 45 a; end"
-                    , testExpectSuccess "do r <- newMemWholeModel; r := 3; r := 4; a <- get r; testeqval 4 a; end"
+                    [ testExpectSuccess "expectStop $ do r <- newMem.WholeModel; get r; end"
+                    , testExpectSuccess "do r <- newMem.WholeModel; r := 45; a <- get r; testeqval 45 a; end"
+                    , testExpectSuccess "do r <- newMem.WholeModel; r := 3; r := 4; a <- get r; testeqval 4 a; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; n <- get $ finiteSetModelCount s; testeqval 0 n; end"
+                          "do s <- newMem.FiniteSetModel; n <- get $ count.FiniteSetModel s; testeqval 0 n; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; s += 57; n <- get $ finiteSetModelCount s; testeqval 1 n; end"
+                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; n <- get $ count.FiniteSetModel s; testeqval 1 n; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; s -= 57; n <- get $ finiteSetModelCount s; testeqval 0 n; end"
+                          "do s <- newMem.FiniteSetModel; s -=.SetModel 57; n <- get $ count.FiniteSetModel s; testeqval 0 n; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; s += 57; s -= 57; n <- get $ finiteSetModelCount s; testeqval 0 n; end"
+                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; s -=.SetModel 57; n <- get $ count.FiniteSetModel s; testeqval 0 n; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; s += 57; m54 <- get $ member s {54}; m57 <- get $ member s {57}; testeqval False m54; testeqval True m57; end"
+                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; m54 <- get $ member.SetModel s {54}; m57 <- get $ member.SetModel s {57}; testeqval False m54; testeqval True m57; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; s -= 57; m57 <- get $ member s {57}; testeqval False m57; end"
+                          "do s <- newMem.FiniteSetModel; s -=.SetModel 57; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; s += 57; s -= 57; m57 <- get $ member s {57}; testeqval False m57; end"
+                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; s -=.SetModel 57; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; member s {57} := True; m54 <- get $ member s {54}; m57 <- get $ member s {57}; testeqval False m54; testeqval True m57; end"
+                          "do s <- newMem.FiniteSetModel; member.SetModel s {57} := True; m54 <- get $ member.SetModel s {54}; m57 <- get $ member.SetModel s {57}; testeqval False m54; testeqval True m57; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
+                          "do s <- newMem.FiniteSetModel; member.SetModel s {57} := False; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
                     , testExpectSuccess
-                          "do s <- newMemFiniteSetModel; member s {57} := True; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
-                    , testExpectSuccess "expectStop $ do r <- newMemWholeModel; immutWholeModel r := 5; end"
+                          "do s <- newMem.FiniteSetModel; member.SetModel s {57} := True; member.SetModel s {57} := False; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
+                    , testExpectSuccess "expectStop $ do r <- newMem.WholeModel; immut.WholeModel r := 5; end"
                     ]
               , tDecls
                     [ "showVal: Showable -> Action Unit = fn v => message.Debug $ show v"
                     , "showList: List Showable -> Action Unit = fn l => do message.Debug \"[[[\"; for_ l showVal;  message.Debug \"]]]\"; end"
-                    , "testImmutList = fns present n call => do lr <- newMemListModel; lr := [10,20,30]; r <- listModelItem present n lr; ir <- listModelItem present n $ immutListModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
+                    , "testImmutList = fns present n call => do lr <- newMem.ListModel; lr := [10,20,30]; r <- item.ListModel present n lr; ir <- item.ListModel present n $ immut.ListModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
                     ] $
                 tGroup
                     "list"
                     [ testExpectSuccess "pass"
-                    , testExpectSuccess "do r <- newMemListModel; n <- listModelGetCount r; testeqval 0 n; end"
+                    , testExpectSuccess "do r <- newMem.ListModel; n <- getCount.ListModel r; testeqval 0 n; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; n <- listModelGetCount r; testeqval 3 n; end"
-                    , testExpectSuccess "do r <- newMemListModel; n <- get $ listModelCount r; testeqval 0 n; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; n <- getCount.ListModel r; testeqval 3 n; end"
+                    , testExpectSuccess "do r <- newMem.ListModel; n <- get $ count.ListModel r; testeqval 0 n; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; n <- get $ listModelCount r; testeqval 3 n; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; n <- get $ count.ListModel r; testeqval 3 n; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; i <- get ir; testeqval 20 i; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; i <- get ir; testeqval 20 i; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; l <- get r; testeqval [10,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; delete ir; l <- get r; testeqval [10,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; i <- expectStop $ get ir; return (); end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; i <- expectStop $ get ir; return (); end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; ir := 25; l <- get r; testeqval [10,25,20,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; ir := 25; l <- get r; testeqval [10,25,20,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; i <- get ir; testeqval 20 i; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; i <- get ir; testeqval 20 i; end"
                     , testExpectSuccess
-                          "do r <- newMemListModel; r := [10,20,30]; ir <- listModelItem True 1 r; listModelInsert 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
                     , testExpectSuccess "testImmutList True 1 $ fn _ => return ()"
                     ]
               ]
@@ -282,7 +294,7 @@ testEntity =
                         , ("Text", "\"()\"")
                         , ("Duration", "Seconds 3600")
                         , ( "Time"
-                          , "localToTime -480 $ DateAndTime (YearMonthDay 2022 01 16) (HourMinuteSecond 19 07 22)")
+                          , "toTime.LocalTime -480 $ DateAndTime (YearMonthDay 2022 01 16) (HourMinuteSecond 19 07 22)")
                         , ("Date", "YearMonthDay 2022 01 16")
                         , ("TimeOfDay", "HourMinuteSecond 19 07 22")
                         , ("LocalTime", "DateAndTime (YearMonthDay 2022 01 16) (HourMinuteSecond 19 07 22)")
@@ -306,7 +318,7 @@ testEntity =
               ]
         , tOpenDefaultStore $
           tDecls
-              [ "using Storage"
+              [ "using Store"
               , "opentype E"
               , "eea = property @E @E !\"eea\" store"
               , "eeb = property @E @E !\"eeb\" store"
@@ -354,13 +366,13 @@ testEntity =
                     , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (eea !$ {e1})"
                     , testExpectSuccess "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
                     , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (finiteSetModelCount (tea !@ {e1}))"
-                    , testExpectSuccess "(eea !. eea) !$ {e1} := e2"
+                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
+                    , testExpectSuccess "(eea ..Property eea) !$ {e1} := e2"
                     , testExpectSuccess
-                          "do (eea !. eea) !$ {e1} := e2; testeq {e2} ((eea !. eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
+                          "do (eea ..Property eea) !$ {e1} := e2; testeq {e2} ((eea ..Property eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
                     , testExpectSuccess
-                          "do eea !$ (eea !$ {e1}) := e2; testeq {e2} ((eea !. eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
-                    , testExpectSuccess "expectStop $ do r <- newMemWholeModel; eia !$ r := 4; end"
+                          "do eea !$ (eea !$ {e1}) := e2; testeq {e2} ((eea ..Property eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
+                    , testExpectSuccess "expectStop $ do r <- newMem.WholeModel; eia !$ r := 4; end"
                     ]
               , tGroup
                     "+="
@@ -374,9 +386,9 @@ testEntity =
                           "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"
                     ]
               , tGroup
-                    "finiteSetModelClear"
+                    "clear.FiniteSetModel"
                     [ testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> finiteSetModelClear (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
+                          "eta !@ {\"hello\"} += e1 >> clear.FiniteSetModel (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
                     ]
               , tGroup
                     "literal storage"
@@ -414,9 +426,9 @@ testEntity =
                           , testExpectSuccess "ena !$ {e1} := ~36.4 >> testeq {~36.4} (ena !$ {e1})"
                           , testExpectSuccess "ena !$ {e1} := ~-22.1 >> testeq {~-22.1} (ena !$ {e1})"
                           , testExpectSuccess "ena !$ {e1} := ~-0 >> testeq {~-0} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := (0 ~/ 0) >> testeq {0 ~/ 0} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := (1 ~/ 0) >> testeq {1 ~/ 0} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := (-1 ~/ 0) >> testeq {-1 ~/ 0} (ena !$ {e1})"
+                          , testExpectSuccess "ena !$ {e1} := (0 /.Number 0) >> testeq {0 /.Number 0} (ena !$ {e1})"
+                          , testExpectSuccess "ena !$ {e1} := (1 /.Number 0) >> testeq {1 /.Number 0} (ena !$ {e1})"
+                          , testExpectSuccess "ena !$ {e1} := (-1 /.Number 0) >> testeq {-1 /.Number 0} (ena !$ {e1})"
                           ]
                     ]
               , tGroup
@@ -426,105 +438,110 @@ testEntity =
                     ]
               , tGroup
                     "identity property"
-                    [ testExpectSuccess "(identity !$ eea !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "(eea !$ identity !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "((identity !. eea) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "((eea !. identity) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (identity !$ eea !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (eea !$ identity !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} ((identity !. eea) !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} ((eea !. identity) !$ {e1})"
-                    , testExpectSuccess "(identity !$ eea !$ {e1}) := e2 >> testeq {e2} (identity !$ eea !$ {e1})"
+                    [ testExpectSuccess "(id.Property !$ eea !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+                    , testExpectSuccess "(eea !$ id.Property !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+                    , testExpectSuccess "((id.Property ..Property eea) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+                    , testExpectSuccess "((eea ..Property id.Property) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (id.Property !$ eea !$ {e1})"
+                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (eea !$ id.Property !$ {e1})"
+                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} ((id.Property ..Property eea) !$ {e1})"
+                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} ((eea ..Property id.Property) !$ {e1})"
+                    , testExpectSuccess "(id.Property !$ eea !$ {e1}) := e2 >> testeq {e2} (id.Property !$ eea !$ {e1})"
                     ]
               , tGroup
                     "identity inverse property"
-                    [ testExpectSuccess "(identity !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
-                    , testExpectSuccess "(eea !@@ identity !@ {e2}) += e1 >> testneq {e2} (eea !$ {e1})"
+                    [ testExpectSuccess "(id.Property !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                    , testExpectSuccess "(eea !@@ id.Property !@ {e2}) += e1 >> testneq {e2} (eea !$ {e1})"
                     , testExpectSuccess "(eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
-                    , testExpectSuccess "((identity !. eta) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
-                    , testExpectSuccess "((eta !. identity) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                    , testExpectSuccess
+                          "((id.Property ..Property eta) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                    , testExpectSuccess
+                          "((eta ..Property id.Property) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , testExpectSuccess
                           "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"
                     , testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> (identity !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                          "eta !@ {\"hello\"} += e1 >> (id.Property !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , testExpectSuccess "eea !@ {e2} += e1 >> testeq {e2} (eea !$ {e1})"
                     , testExpectSuccess
-                          "eea !@ {e2} += e1 >> (eea !@@ identity !@ {e2}) -= e1 >> testneq {e2} (eea !$ {e1})"
+                          "eea !@ {e2} += e1 >> (eea !@@ id.Property !@ {e2}) -= e1 >> testneq {e2} (eea !$ {e1})"
                     , testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> ((identity !. eta) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
+                          "eta !@ {\"hello\"} += e1 >> ((id.Property ..Property eta) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
                     , testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> ((eta !. identity) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
+                          "eta !@ {\"hello\"} += e1 >> ((eta ..Property id.Property) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
                     ]
               , tGroup
                     "composed properties"
                     [ testExpectSuccess "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
                     , testExpectSuccess "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-                    , testExpectSuccess "(eea !. eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
-                    , testExpectSuccess "(eta !. eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-                    , testExpectSuccess "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea !. eeb !$ {e1})"
-                    , testExpectSuccess "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !. eeb !$ {e1})"
-                    , testExpectSuccess "(eeb !. eea) !$ {e2} := e1 >> testeq {e1} (eeb !$ eea !$ {e2})"
+                    , testExpectSuccess "(eea ..Property eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
+                    , testExpectSuccess
+                          "(eta ..Property eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+                    , testExpectSuccess "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea ..Property eeb !$ {e1})"
+                    , testExpectSuccess
+                          "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta ..Property eeb !$ {e1})"
+                    , testExpectSuccess "(eeb ..Property eea) !$ {e2} := e1 >> testeq {e1} (eeb !$ eea !$ {e2})"
                     ]
               , tGroup
                     "composed inverse properties"
                     [ testExpectSuccess "(eeb !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-                    , testExpectSuccess "((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-                    , testExpectSuccess "((eta !. eeb) !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> ((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
+                          "((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+                    , testExpectSuccess "((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> ((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> ((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
+                    , testExpectSuccess
+                          "eeb !$ {e1} := e2 >> ((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
                     , testExpectSuccess
                           "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
                     , testExpectSuccess
                           "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta !. eeb) !@ {\"hello\"}) -= e1 >> testeq {e2} (eeb !$ {e1})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta ..Property eeb) !@ {\"hello\"}) -= e1 >> testeq {e2} (eeb !$ {e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta !. eeb) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta ..Property eeb) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e2})"
                     , testExpectSuccess
                           "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testneq {e2} (eeb !$ {e1})"
                     , testExpectSuccess
                           "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> finiteSetModelClear ((eta !. eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel ((eta ..Property eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> finiteSetModelClear ((eta !. eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel ((eta ..Property eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> finiteSetModelClear (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> finiteSetModelClear (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
                     ]
               , tGroup
-                    "finiteSetModelSingle"
-                    [ testExpectSuccess "testisunknown (finiteSetModelSingle $ eib !$$ eia !@ {0})"
+                    "single.FiniteSetModel"
+                    [ testExpectSuccess "testisunknown (single.FiniteSetModel $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> testeq {1} (finiteSetModelSingle $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eic !$ {e1} := 0 >> testeq {1} (finiteSetModelSingle $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eic !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eia !$ {e1} := 0 >> testeq {1} (finiteSetModelSingle $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 2 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testisunknown (finiteSetModelSingle $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eib !$ {e2} := 2 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testisunknown (single.FiniteSetModel $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 1 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testeq {1} (finiteSetModelSingle $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eib !$ {e2} := 1 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
                     ]
               , tGroup
                     "multiple set member"
-                    [ testExpectSuccess "testeq {0} (finiteSetModelCount (tea !@ {e1}))"
-                    , testExpectSuccess "eea !$ {e2} := e1 >> testeq {1} (finiteSetModelCount (eea !@ {e1}))"
-                    , testExpectSuccess "eea !@ {e1} += e2 >> testeq {1} (finiteSetModelCount (eea !@ {e1}))"
+                    [ testExpectSuccess "testeq {0} (count.FiniteSetModel (tea !@ {e1}))"
+                    , testExpectSuccess "eea !$ {e2} := e1 >> testeq {1} (count.FiniteSetModel (eea !@ {e1}))"
+                    , testExpectSuccess "eea !@ {e1} += e2 >> testeq {1} (count.FiniteSetModel (eea !@ {e1}))"
                     , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
                     , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (finiteSetModelCount (tea !@ {e1}))"
-                    , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {1} (finiteSetModelCount (tea !@ {e1}))"
+                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
+                    , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
                     , testExpectSuccess
-                          "tea !@ {e1} += \"hello\" >> tea !@ {e1} += \"hello\" >> testeq {1} (finiteSetModelCount (tea !@ {e1}))"
+                          "tea !@ {e1} += \"hello\" >> tea !@ {e1} += \"hello\" >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
                     , testExpectSuccess
-                          "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (finiteSetModelCount (tea !@ {e1}))"
+                          "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (count.FiniteSetModel (tea !@ {e1}))"
                     , testExpectSuccess $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (finiteSetModelList noOrder someset) >>= fn pp => for pp $ fn p => runWholeModel {counter := %counter + 1}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (list.FiniteSetModel empty.Order someset) >>= fn pp => for pp $ fn p => runWholeModel {counter := succ.Integer %counter}) >> testeq {1} counter"
                     ]
               , tGroup
                     "types"
@@ -819,7 +836,8 @@ testEntity =
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
               ]
         , tDecls
-              [ "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeModel {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
+              [ "using Integer"
+              , "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeModel {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
               ] $
           tGroup
               "datatype"
@@ -935,7 +953,7 @@ testEntity =
                             testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
                           , tDecls
                                 [ "datatype D -a of Mk1D (a -> Integer); Mk2D (a -> a -> Text) end"
-                                , "dShow: D Number = Mk2D $ fns a b => show a <> \",\" <> show b"
+                                , "dShow: D Number = Mk2D $ fns a b => show a <>.Text \",\" <>.Text show b"
                                 , "di: D Integer = dShow"
                                 , "showD: a -> D a -> Text = fn a => match Mk1D ai => show $ ai a; Mk2D aat => aat a a end"
                                 , "sd: Text = showD 356 di"
@@ -943,7 +961,7 @@ testEntity =
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
                                 [ "rec datatype RList +a of MkRList (Maybe (a *: RList a)) end end"
-                                , "rec showRList: RList Showable -> Text = fn MkRList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end end"
+                                , "rec showRList: RList Showable -> Text = fn MkRList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <>.Text \";\" <>.Text showRList rla end end"
                                 , "rlisti: RList Integer = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"
                                 , "rlists: RList Showable = rlisti"
                                 , "sd: Text = showRList rlists"
@@ -1120,7 +1138,7 @@ testEntity =
                           , "rec0: Rec a = let rval = Nothing in MkRec"
                           , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"
                           , "rec3: a -> a -> a -> Rec a = fns x0 x1 x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
-                          , "rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <> \",\" <> rShow r end end"
+                          , "rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <>.Text \",\" <>.Text rShow r end end"
                           , "recShow: Rec Showable -> Text = fn MkRec => rShow rval"
                           ] $
                       tGroup
@@ -1435,7 +1453,7 @@ testEntity =
                                   subtypeTest False SRSingle "C" "B Integer"
                                 ]
                           ]
-                    , tDecls ["subtype List (A a) <: A (List a) = fn aa => MkA $ mapList (fn MkA a => a) aa"] $
+                    , tDecls ["subtype List (A a) <: A (List a) = fn aa => MkA $ map.List (fn MkA a => a) aa"] $
                       tGroup
                           "monoid"
                           [ testExpectSuccess "pass"
@@ -1446,8 +1464,8 @@ testEntity =
               ]
         , testOpenUHStore $
           tDecls
-              [ "using Storage"
-              , "using Undo"
+              [ "using Store"
+              , "using UndoHandler"
               , "opentype E"
               , "eta = property @E @Text !\"eta\" store"
               , "e1 = openEntity @E !\"e1\""
@@ -1463,9 +1481,10 @@ testEntity =
               ]
         , tGroup
               "interpret"
-              [ testExpectSuccess "do r <- newMemWholeModel; interpretIntegerAsText r := \"37\"; testeq {37} r; end"
+              [ testExpectSuccess
+                    "do r <- newMem.WholeModel; reverse.Prism asText.Integer !$ r := \"37\"; testeq {37} r; end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; interpretDateAsText r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
+                    "do r <- newMem.WholeModel; reverse.Prism asText.Date !$ r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
               ]
         , tDecls
               [ "runresult = fns ar arg => ar >- match Left err => fail err; Right f => f arg end"
@@ -1479,12 +1498,12 @@ testEntity =
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"5\""
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"let x = 5 in x\""
               , testExpectSuccess
-                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x + 1\"; ar >- match Left err => fail err; Right f => testeqval 8 $ f 7 end end"
+                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x +.Integer 1\"; ar >- match Left err => fail err; Right f => testeqval 8 $ f 7 end end"
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
-                    "do r <- newMemWholeModel; ar <- evaluate @(WholeModel Integer -> Action Unit) \"fn r => r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+                    "do r <- newMem.WholeModel; ar <- evaluate @(WholeModel Integer -> Action Unit) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]
         , tGroup
               "text-sort"
@@ -1500,10 +1519,10 @@ testEntity =
               [ testExpectSuccess
                     "do t <- async.Task $ do sleep $ Seconds 0.01; return True end; v <- await.Task t; if v then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.01; r := 1; end; await.Task t; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.01; r := 1; end; await.Task t; v <- get r; if v == 1 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
+                    "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMemWholeModel; r := 0; t <- lifecycle $ async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMem.WholeModel; r := 0; t <- run.LifeCycle $ async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
               ]
         ]

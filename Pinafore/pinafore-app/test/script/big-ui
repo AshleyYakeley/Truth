@@ -2,7 +2,7 @@
 openDefaultStore.Env >>= fn store =>
 let
 import "pinafore-gnome";
-using Storage;
+using Store;
 
 opentype T;
 me = openEntity @T !"T";
@@ -30,7 +30,7 @@ func1 = fns n a b c d e f => func2 n a b c d e f;
 func0 = fns n a b c d e f => func1 n a b c d e f;
 
 w : Context.GTK -> Action Window.GTK
-= fn gtk => openWindow.GTK gtk (300,400) {"Test"} $ func0 (pureWholeModel "Text") False False False False False False;
+= fn gtk => open.Window.GTK gtk (300,400) {"Test"} $ func0 (return.WholeModel "Text") False False False False False False;
 
 prop0 = property @T @Text !"000" store;
 
@@ -48,5 +48,5 @@ in run.GTK $ fn gtk => do
     w1 <- w gtk;
     act;
     act;
-    closeWindow.GTK w1;
+    close.Window.GTK w1;
     end

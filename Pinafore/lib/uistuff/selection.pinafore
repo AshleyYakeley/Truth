@@ -3,17 +3,17 @@ expose
     uiLabelled,
     Pane,
     MkPane,
-    pane,
-    notebookPane,
-    selectionPane,
-    selectionPairPane,
+    namespace Pane,
     newItemMenuAction,
     UIStuff, MkUIStuff,
     runUIStuff
 of
 
 import "pinafore-gnome";
+using Function;
 using GTK;
+using Action;
+using UndoHandler;
 
 ### Useful GTK stuff
 
@@ -28,87 +28,92 @@ datatype Pane of
     MkPane (WholeModel Text) Element (WholeModel (List MenuItem))
 end;
 
-pane: Text -> Element -> Pane
-= fns title ui => MkPane {title} ui {[]};
+namespace Pane of
 
-#| A notebook from a list of panes
-notebookPane: WholeModel +Text -> List Pane -> Action Pane
-= fns title panes => do
-    tabModel <- newMemWholeModel;
-    return $ let
-        makePage: Pane -> Element *: Element
-        = fn MkPane rname ui _ => uiPage rname ui;
-        nui: Element = notebook tabModel $ mapList makePage panes;
-        itemsModel = forWholeModel panes $ fn MkPane _ _ rmenus => rmenus;
-        in MkPane (immutWholeModel title) nui $ fromMaybeWholeModel {index %itemsModel %tabModel};
-    end;
+    simple: Text -> Element -> Pane
+    = fns title ui => MkPane {title} ui {[]};
 
-selectionPane:
-    Text -> # window title
-    SetModel item -> # the set of items
-    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
-    (item -> Action Any) -> # what to do when an item is activated
-    (WholeModel item -> Element) ->
-    Action Pane
-= fns title iset createMenuItems iopen iui => do
-    selection <- newMemWholeModel;
-    return $ let
-        viewItem: Action Unit
-        = do
-            item <- get selection;
-            iopen item;
-            return ();
-            end;
+    #| A notebook from a list of panes
+    notebook: WholeModel +Text -> List Pane -> Action Pane
+    = fns title panes => do
+        tabModel <- newMem.WholeModel;
+        return $ let
+            makePage: Pane -> Element *: Element
+            = fn MkPane rname ui _ => uiPage rname ui;
+            nui: Element = notebook.GTK tabModel $ map.List makePage panes;
+            using WholeModel;
+            itemsModel = for.WholeModel panes $ fn MkPane _ _ rmenus => rmenus;
+            in MkPane (immut.WholeModel title) nui $ fromMaybe.WholeModel {index.List %itemsModel %tabModel};
+        end;
 
-        deleteItem: Action Unit
-        = do
-            item <- get selection;
-            iset -= item;
-            end;
+    selection:
+        Text -> # window title
+        SetModel item -> # the set of items
+        List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+        (item -> Action Any) -> # what to do when an item is activated
+        (WholeModel item -> Element) ->
+        Action Pane
+    = fns title iset createMenuItems iopen iui => do
+        selection <- newMem.WholeModel;
+        return $ let
+            viewItem: Action Unit
+            = do
+                item <- get.WholeModel selection;
+                iopen item;
+                return ();
+                end;
 
-        moremenus: List MenuItem
-        =
-            [
-                menuSubmenu "Selection" $ mapList (fn mi => mi $ fn i => selection := i) createMenuItems ++
+            deleteItem: Action Unit
+            = do
+                item <- get.WholeModel selection;
+                iset -=.SetModel item;
+                end;
+
+            moremenus: List MenuItem
+            =
                 [
-                    menuAction "View" Nothing {viewItem},
-                    menuAction "Delete" Nothing {deleteItem}
-                ]
-            ];
-        in MkPane {title} (iui selection) {moremenus};
-    end;
+                    menuSubmenu "Selection" $ map.List (fn mi => mi $ fn i => selection :=.WholeModel i) createMenuItems <>.List
+                    [
+                        menuAction "View" Nothing {viewItem},
+                        menuAction "Delete" Nothing {deleteItem}
+                    ]
+                ];
+            in MkPane {title} (iui selection) {moremenus};
+        end;
 
-selectionPairPane:
-    Text -> # pane title
-    SetModel item -> # the set of items
-    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
-    (item -> Action Any) -> # what to do when an item is activated
-    (WholeModel item -> Element) -> # Element for the item selector
-    (WholeModel +item -> Element) -> # Element for the selected item
-    Action Pane
-= fns title iset createMenuItems iopen getSelectorUI getSelectedUI =>
-    selectionPane title iset createMenuItems iopen $ fn selection => let
-        sidebarUI: Element
-        = getSelectorUI selection;
+    selectionPair:
+        Text -> # pane title
+        SetModel item -> # the set of items
+        List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
+        (item -> Action Any) -> # what to do when an item is activated
+        (WholeModel item -> Element) -> # Element for the item selector
+        (WholeModel +item -> Element) -> # Element for the selected item
+        Action Pane
+    = fns title iset createMenuItems iopen getSelectorUI getSelectedUI =>
+        selection title iset createMenuItems iopen $ fn selection => let
+            sidebarUI: Element
+            = getSelectorUI selection;
 
-        selectedUI: Element
-        = getSelectedUI $ immutWholeModel selection;
+            selectedUI: Element
+            = getSelectedUI $ immut.WholeModel selection;
 
-        in horizontal [sidebarUI, layoutGrow selectedUI];
+            in horizontal [sidebarUI, layoutGrow selectedUI];
+
+end;
 
 newItemMenuAction: Text -> Maybe Text -> Action a -> SetModel a -> (a -> Action Unit) -> MenuItem
 = fns name mkey newItem set setsel => menuAction name mkey
     {do
     item <- newItem;
-    set += item;
+    set +=.SetModel item;
     setsel item;
     end};
 
 datatype UIStuff of
     MkUIStuff of
-        gtk: Context.GTK.;
-        undoHandler: UndoHandler.Undo.;
-        store: Store.Storage.;
+        gtk: Context.GTK;
+        undoHandler: UndoHandler;
+        store: Store;
         #| A window that comes with some menus.
         stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window;
         paneWindow: Pane -> Action Window;
@@ -133,39 +138,39 @@ end;
 runUIStuff: (UIStuff -> Action a) -> Action a
 = fn call => do
     dstore <- openDefaultStore.Env;
-    undoHandler <- newUndoHandler.Undo;
-    store <- handleStore.Undo undoHandler dstore;
+    undoHandler <- new.UndoHandler;
+    store <- handleStore undoHandler dstore;
     run.GTK $ fn gtk => let
         stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
-        = fns title moremenus contents => fixAction $ fn window => do
-            textsel <- newMemWholeModel;
+        = fns title moremenus contents => fix.Action $ fn window => do
+            textsel <- newMem.WholeModel;
             let
                 notify: Action TextModel -> Action Unit
-                = fn atmodel => textsel := atmodel;
+                = fn atmodel => textsel :=.WholeModel atmodel;
                 getTextModel: Action (WholeModel Text)
                 = do
-                    atmodel <- get textsel;
+                    atmodel <- get.WholeModel textsel;
                     atmodel;
                 end;
                 selCopy: Action Unit
                 = do
                     tmodel <- getTextModel;
-                    text <- get tmodel;
-                    clipboard gtk := text;
+                    text <- get.WholeModel tmodel;
+                    clipboard gtk :=.WholeModel text;
                 end;
                 selCut: Action Unit
                 = do
                     tmodel <- getTextModel;
-                    text <- get tmodel;
-                    clipboard gtk := text;
-                    tmodel := "";
+                    text <- get.WholeModel tmodel;
+                    clipboard gtk :=.WholeModel text;
+                    tmodel :=.WholeModel "";
                 end;
                 selPaste: Action Unit
                 = do
                     tmodel <- getTextModel;
-                    clip <- get $ clipboard gtk;
+                    clip <- get.WholeModel $ clipboard gtk;
                     clip >- match
-                        text:? Text => tmodel := text;
+                        text:? Text => tmodel :=.WholeModel text;
                         _ => return ();
                     end;
                 end;
@@ -174,21 +179,21 @@ runUIStuff: (UIStuff -> Action a) -> Action a
                     {menuBar $ [
                         menuSubmenu "File"
                         [
-                            menuAction "Close" (Just "Ctrl+W") {closeWindow window},
+                            menuAction "Close" (Just "Ctrl+W") {close.Window window},
                             menuSeparator,
                             menuAction "Exit" (Just "Ctrl+Q") {exit gtk}
                         ],
                         menuSubmenu "Edit"
                         [
-                            menuAction "Undo" (Just "Ctrl+Z") {queueUndo.Undo undoHandler},
-                            menuAction "Redo" (Just "Ctrl+Y") {queueRedo.Undo undoHandler},
+                            menuAction "Undo" (Just "Ctrl+Z") {queueUndo undoHandler},
+                            menuAction "Redo" (Just "Ctrl+Y") {queueRedo undoHandler},
                             menuSeparator,
                             menuAction "Cut" (Just "Ctrl+X") {selCut},
                             menuAction "Copy" (Just "Ctrl+C") {selCopy},
                             menuAction "Paste" (Just "Ctrl+V") {selPaste}
                         ]
-                    ] ++ %moremenus};
-                in openWindow gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled $ notifySelection notify contents];
+                    ] <>.List %moremenus};
+                in open.Window gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled $ notifySelection notify contents];
             end;
 
         paneWindow: Pane -> Action Window
@@ -202,7 +207,7 @@ runUIStuff: (UIStuff -> Action a) -> Action a
             (WholeModel item -> Element) ->
             Action Window
         = fns wtitle iset createMenuItems iopen iui => do
-            mui <- selectionPane wtitle iset createMenuItems iopen iui;
+            mui <- selection.Pane wtitle iset createMenuItems iopen iui;
             paneWindow mui;
             end;
 
@@ -216,7 +221,7 @@ runUIStuff: (UIStuff -> Action a) -> Action a
             (WholeModel +item -> Element) -> # Element for the selected item
             Action Window
         = fns wtitle iset createMenuItems iopen getSelectorUI getSelectedUI => do
-            mui <- selectionPairPane wtitle iset createMenuItems iopen getSelectorUI getSelectedUI;
+            mui <- selectionPair.Pane wtitle iset createMenuItems iopen getSelectorUI getSelectedUI;
             paneWindow mui;
             end;
 

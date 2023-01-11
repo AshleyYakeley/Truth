@@ -29,14 +29,14 @@ langBlankImage acol size = MkLangImage $ MkSomeFor RGBA16PixelType $ blankImage 
 imageStuff :: BindDocTree ()
 imageStuff =
     headingBDT "Image" "" $
-    pure $
-    namespaceBDT
-        "Image"
-        ""
-        [ typeBDT "Image" "An image." (MkSomeGroundType imageGroundType) []
-        , valBDT "imageSize" "The size of an image" langImageSize
-        , valBDT "blankImage" "An image of one colour" langBlankImage
-        , metadataStuff
-        , pngStuff
-        , jpegStuff
-        ]
+    [ typeBDT "Image" "An image." (MkSomeGroundType imageGroundType) []
+    , namespaceBDT
+          "Image"
+          ""
+          [ valBDT "size" "The size of an image" langImageSize
+          , valBDT "blank" "An image of one colour" langBlankImage
+          , metadataStuff
+          , pngStuff
+          , jpegStuff
+          ]
+    ]

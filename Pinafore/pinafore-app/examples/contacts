@@ -6,7 +6,7 @@ import "uistuff/named";
 in runUIStuff $ fn uistuff@MkUIStuff =>
 mkNamed uistuff >- fn MkNamedStuff =>
 let
-using Storage;
+using Store;
 
 # something with a lifespan
 opentype Lifespanned;

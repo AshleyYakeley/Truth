@@ -39,7 +39,8 @@ noTestAction = return ()
 
 testUIAction :: Text -> GView 'Unlocked () -> ScriptTestTree
 testUIAction text testaction =
-    scriptTestCase text ("fn call => run.GTK $ fn gtk => do " <> text <> "; call gtk; end") $ runUIAction testaction
+    scriptTestCase text ("fn call => run.GTK $ fn gtk => let in do " <> text <> "; call gtk; end") $
+    runUIAction testaction
 
 testActions :: ScriptTestTree
 testActions =
@@ -50,7 +51,7 @@ testActions =
         , testUIAction "emptywindow gtk" noTestAction
         , testUIAction "buttonwindow gtk $ return ()" noTestAction
         , testUIAction "buttonwindow gtk $ return ()" runClickButton
-        , testUIAction "buttonwindow gtk $ newMemFiniteSetModel" runClickButton
+        , testUIAction "buttonwindow gtk $ newMem.FiniteSetModel" runClickButton
         , testUIAction "buttonwindow gtk $ newpoint" runClickButton
         , testUIAction "buttonwindow gtk $ emptywindow gtk" runClickButton
         , testUIAction "buttonwindow gtk $ newpoint >> newpoint" runClickButton
@@ -63,10 +64,13 @@ testUI :: TestTree
 testUI =
     runScriptTestTree $
     tDecls
-        [ "import \"pinafore-gnome\""
-        , "emptywindow: Context.GTK -> Action Unit = fn gtk => do openWindow.GTK gtk (300,400) {\"Empty\"} blank.GTK; return (); end"
+        [ "using Function"
+        , "using Action"
+        , "using SetModel"
+        , "import \"pinafore-gnome\""
+        , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.GTK; return (); end"
         , "opentype T"
-        , "newpoint: Action Unit = do s <- newMemFiniteSetModel; p <- newOpenEntity @T; s += p; return (); end"
-        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fns gtk action => do openWindow.GTK gtk (300,400) {\"Test\"} (button.GTK {\"Button\"} {action}); return (); end"
+        , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- newOpenEntity @T; s += p; return (); end"
+        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fns gtk action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.GTK {\"Button\"} {action}); return (); end"
         ]
         testActions

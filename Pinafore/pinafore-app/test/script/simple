@@ -2,7 +2,7 @@
 openDefaultStore.Env >>= fn store =>
 let
 import "pinafore-gnome";
-using Storage;
+using Store;
 
 # Ontology
 # Define a type of entity for people
@@ -19,7 +19,7 @@ ui_person : Person -> Element.GTK
 = fn p => textEntry.GTK $ name !$ {p};
 
 window_person : Context.GTK -> Person -> Action Window.GTK
-= fns gtk p => openWindow.GTK gtk (300,400) {"Name"} (ui_person p);
+= fns gtk p => open.Window.GTK gtk (300,400) {"Name"} (ui_person p);
 
 in run.GTK $ fn gtk => do
     window_person gtk me;

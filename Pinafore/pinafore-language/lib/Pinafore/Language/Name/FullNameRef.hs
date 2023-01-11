@@ -32,10 +32,14 @@ instance Show FullNameRef where
     show = unpack . toText
 
 instance IsString FullNameRef where
-    fromString s@('.':_) = fullNameRef $ fromString s
+    fromString "." = MkFullNameRef "." CurrentNamespaceRef
     fromString s =
-        case fromString s of
-            MkFullName n (MkNamespace ns) -> MkFullNameRef n (RelativeNamespaceRef ns)
+        case nonEmpty s of
+            Just ns
+                | '.' <- last ns -> fullNameRef $ fromString s
+            _ ->
+                case fromString s of
+                    MkFullName n (MkNamespace ns) -> MkFullNameRef n (RelativeNamespaceRef ns)
 
 namespaceConcatFullName :: Namespace -> FullNameRef -> FullName
 namespaceConcatFullName ns (MkFullNameRef name nref) = MkFullName name (namespaceConcatRef ns nref)

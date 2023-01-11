@@ -218,10 +218,10 @@ testScript =
         "script"
         [ tDecls ["datatype T of MkT Integer end", "unT = fn (MkT x) => x"] $
           testExpectSuccess $
-          "let f = fn x => let subtype Unit <: T = fn () => MkT x in unT () in if f 17 == 17 then return () else fail \"FAILED\""
+          "let f = fn x => let subtype Unit <: T = fn () => MkT x in unT () in if f 17 ==.Entity 17 then return.Action () else fail.Action \"FAILED\""
         , tDecls ["datatype T1 +a of MkT1 a end", "unT1 = fn MkT1 x => x"] $
           testExpectSuccess $
-          "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in unT1 () in if f 17 == 17 then return () else fail \"FAILED\""
+          "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in unT1 () in if f 17 ==.Entity 17 then return.Action () else fail.Action \"FAILED\""
         ]
 
 testSubtype :: TestTree

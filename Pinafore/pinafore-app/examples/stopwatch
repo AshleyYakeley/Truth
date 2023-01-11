@@ -29,7 +29,7 @@ ui: WholeModel +Time -> WholeModel StopwatchState -> Element.GTK
 
 in do
     now <- newClock $ Seconds 0.001;
-    r <- newMemWholeModel;
+    r <- newMem.WholeModel;
     r := StoppedState zeroDuration;
-    run.GTK $ fn gtk => openWindow.GTK gtk (150,40) {"Stopwatch"} $ ui now r;
+    run.GTK $ fn gtk => open.Window.GTK gtk (150,40) {"Stopwatch"} $ ui now r;
     end

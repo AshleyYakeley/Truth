@@ -124,9 +124,10 @@ testUnifier =
                                 liftIO $ assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
                           , testInterpret @((Text -> Text) -> Text) "op1 \"PQPQPQ\"" $ \found ->
                                 liftIO $ assertEqual "" "PQPQPQ" $ found id
-                          , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> liftIO $ assertEqual "" "PQPQPQ" found
-                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" idText"
-                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" id"
+                          , testInterpret @Text "op1 \"PQPQPQ\" id.Function" $ \found ->
+                                liftIO $ assertEqual "" "PQPQPQ" found
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $.Function op1 \"PQPQPQ\" idText"
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $.Function op1 \"PQPQPQ\" id.Function"
                           ]
                     ]
               , testTree
@@ -187,14 +188,14 @@ testUnifier =
                                 liftIO $ assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
                           , testInterpret @((Text -> Text) -> (Text -> Text) -> Text) "op2 \"PQPQPQ\"" $ \found ->
                                 liftIO $ assertEqual "" "PQPQPQ" $ found id id
-                          , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" id" $ \found ->
+                          , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" id.Function" $ \found ->
                                 liftIO $ assertEqual "" "PQPQPQ" $ found id
                           , testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" idText" $ \found ->
                                 liftIO $ assertEqual "" "PQPQPQ" $ found id
-                          , testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found ->
+                          , testInterpret @Text "op2 \"PQPQPQ\" id.Function idText" $ \found ->
                                 liftIO $ assertEqual "" "PQPQPQ" found
-                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id idText"
-                          , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id id"
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $.Function op2 \"PQPQPQ\" id.Function idText"
+                          , testExpectSuccess "testSameT \"PQPQPQ\" $.Function op2 \"PQPQPQ\" id.Function id.Function"
                           ]
                     ]
               , testTree
@@ -207,8 +208,8 @@ testUnifier =
                           "interpret"
                           [ testExpectSuccess "testSameT \"PQPQPQ\" \"PQPQPQ\""
                           , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") idText"
-                          , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") id"
-                          , testExpectSuccess "op3 10 (testSameI 10) id"
+                          , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") id.Function"
+                          , testExpectSuccess "op3 10 (testSameI 10) id.Function"
                           ]
                     ]
               , testTree
@@ -283,7 +284,9 @@ testUnifier =
                     r <- testerLiftAction $ newMemListModel @A
                     action <-
                         testerLiftInterpreter $ do
-                            bodyExpr <- parseTopExpression "fn r => do r := [10,20]; listModelSet 0 25 r; get r end"
+                            bodyExpr <-
+                                parseTopExpression
+                                    "fn r => do r :=.WholeModel [10,20]; set.ListModel 0 25 r; get.WholeModel r end"
                             bodyVal <- qEvalExpr bodyExpr
                             body <- qUnifyValueToFree bodyVal
                             return $ body r
@@ -296,7 +299,9 @@ testUnifier =
                     r <- testerLiftAction $ newMemListModel @A
                     action <-
                         testerLiftInterpreter $ do
-                            bodyExpr <- parseTopExpression "fn r => do r := [10,20]; listModelSet 0 25 r; get r end"
+                            bodyExpr <-
+                                parseTopExpression
+                                    "fn r => do r :=.WholeModel [10,20]; set.ListModel 0 25 r; get.WholeModel r end"
                             actionExpr <- qApplyExpr bodyExpr (qConstExpr r)
                             actionVal <- qEvalExpr actionExpr
                             qUnifyValue actionVal
@@ -310,7 +315,7 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression
-                                    "do r <- newMemListModel: Action (ListModel a); r := [10,20]; ir <- listModelItem True 0 r; ir := 25; get r end"
+                                    "do r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; get.WholeModel r end"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     l :: [Integer] <- testerLiftAction action
@@ -323,12 +328,12 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression
-                                    "do r <- newMemListModel: Action (ListModel a); r := [10,20]; ir <- listModelItem True 0 r; ir := 25; l <- get r; if l == [25,20] then return () else fail \"different\"; end"
+                                    "do r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then return.Action () else fail.Action \"different\"; end"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     testerLiftAction action
               , runScriptTestTree $
                 testExpectSuccess
-                    "do r <- newMemListModel; r := [10,20]; ir <- listModelItem True 0 r; ir := 25; l <- get r; if l == [25,20] then return () else fail \"different\"; end"
+                    "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then return.Action () else fail.Action \"different\"; end"
               ]
         ]

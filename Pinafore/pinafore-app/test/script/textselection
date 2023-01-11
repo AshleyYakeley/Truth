@@ -2,14 +2,14 @@
 let
 import "pinafore-gnome";
 in run.GTK $ \gtk => do
-    tref1 <- newMemWholeModel;
+    tref1 <- newMem.WholeModel;
     tref1 := "111";
-    tref2 <- newMemWholeModel;
+    tref2 <- newMem.WholeModel;
     tref2 := "222";
-    tref3 <- newMemWholeModel;
+    tref3 <- newMem.WholeModel;
     tref3 := "333";
-    sel <- newMemWholeModel;
-    openWindow.GTK gtk (400,500) {"Text Selection"} $ styleSheet.GTK {"* {padding: 2pt;}"} $ vertical.GTK
+    sel <- newMem.WholeModel;
+    open.Window.GTK gtk (400,500) {"Text Selection"} $ styleSheet.GTK {"* {padding: 2pt;}"} $ vertical.GTK
     [
         textArea.GTK tref1 sel,
         textArea.GTK tref2 sel,

@@ -22,9 +22,9 @@ pinafore> let y = openEntity @Y !"y"
 <input>:1:21: unknown type: Y
 pinafore> 35
 35
-pinafore> x + 1
+pinafore> x +.Integer 1
 <input>:3:1: undefined: x: Integer
-pinafore> x + y
+pinafore> x +.Integer y
 <input>:3:1: undefined: x: Integer, y: Integer
 pinafore> let datatype D1 +a of MkD1 b end
 <input>:2:5: unbound type variables in declaration of D1.: b

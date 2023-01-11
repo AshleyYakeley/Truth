@@ -10,7 +10,7 @@ class NamespaceConcat t where
 instance NamespaceConcat NamespaceRef where
     namespaceConcat (AbsoluteNamespaceRef ns1) ns2 = AbsoluteNamespaceRef $ namespaceConcatRef ns1 ns2
     namespaceConcat _ (AbsoluteNamespaceRef ns) = AbsoluteNamespaceRef ns
-    namespaceConcat (RelativeNamespaceRef ns1) (RelativeNamespaceRef ns2) = RelativeNamespaceRef $ ns1 <> ns2
+    namespaceConcat (RelativeNamespaceRef ns1) (RelativeNamespaceRef ns2) = RelativeNamespaceRef $ ns2 <> ns1
 
 instance NamespaceConcat FullNameRef where
     namespaceConcat ns (MkFullNameRef nn nns) = MkFullNameRef nn (namespaceConcat ns nns)

@@ -52,7 +52,7 @@ printModuleDoc modopts tmodname = do
                        forall a. ToNamedText a
                     => a
                     -> MarkdownText
-                toMarkdown = plainText . runRelativeNamedText (toList $ namespaceAncestry curns) . toNamedText
+                toMarkdown = plainText . runRelativeNamedText [] . toNamedText
                 trailingParams ::
                        forall a. ToNamedText a
                     => [a]

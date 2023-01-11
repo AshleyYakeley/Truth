@@ -32,6 +32,11 @@ instance IsString FullName where
         fromMaybe (error $ "bad FullName: " <> show s) $
         fmap RootFullName (infixNameFromString s) <|> do
             nt <- nonEmpty $ splitSeq "." s
-            name <- nameFromString $ head nt
-            nspace <- namespaceFromStrings $ tail nt
-            return $ MkFullName name nspace
+            case nt of
+                "" :| "":nss -> do
+                    nspace <- namespaceFromStrings nss
+                    return $ MkFullName "." nspace
+                _ -> do
+                    name <- nameFromString $ head nt
+                    nspace <- namespaceFromStrings $ tail nt
+                    return $ MkFullName name nspace

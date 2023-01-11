@@ -1,6 +1,9 @@
 module Pinafore.Language.Grammar.Read.Token
     ( Comment(..)
     , TokenNames(..)
+    , tokenNamesToFullNameRef
+    , tokenNamesToSingleName
+    , tokenNamesToNamespaceRef
     , Token(..)
     , parseTokens
     ) where
@@ -25,7 +28,35 @@ data TokenNames = MkTokenNames
     { tnAbsolute :: Bool
     , tnName :: Name
     , tnSpace :: [Name] -- always upper
-    }
+    } deriving (Eq)
+
+instance IsString TokenNames where
+    fromString s = let
+        tnAbsolute = False
+        tnName = fromString s
+        tnSpace = []
+        in MkTokenNames {..}
+
+tokenNamesToFullNameRef :: TokenNames -> FullNameRef
+tokenNamesToFullNameRef MkTokenNames {..} =
+    MkFullNameRef tnName $
+    (if tnAbsolute
+         then AbsoluteNamespaceRef . MkNamespace
+         else RelativeNamespaceRef)
+        tnSpace
+
+tokenNamesToSingleName :: TokenNames -> Maybe Name
+tokenNamesToSingleName MkTokenNames {..} = do
+    altIf $ not tnAbsolute
+    altIf $ null tnSpace
+    return tnName
+
+tokenNamesToNamespaceRef :: TokenNames -> NamespaceRef
+tokenNamesToNamespaceRef MkTokenNames {..} =
+    (if tnAbsolute
+         then AbsoluteNamespaceRef . MkNamespace
+         else RelativeNamespaceRef) $
+    [tnName] <> tnSpace
 
 data Token t where
     TokComment :: Token Comment
@@ -73,7 +104,7 @@ data Token t where
     TokBackMap :: Token ()
     TokAnchor :: Token Anchor
     TokAt :: Token ()
-    TokOperator :: Token Name
+    TokOperator :: Token TokenNames
     TokSubtypeOf :: Token ()
     TokOr :: Token ()
     TokAnd :: Token ()
@@ -248,15 +279,6 @@ readQuotedString = do
     readQuotedChar :: Parser Char
     readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
 
-identifierFirstChar :: Char -> Bool
-identifierFirstChar '_' = True
-identifierFirstChar c = isAlpha c
-
-identifierChar :: Char -> Bool
-identifierChar '-' = True
-identifierChar '_' = True
-identifierChar c = isAlphaNum c
-
 readNumber :: Parser (SomeOf Token)
 readNumber =
     fmap (MkSomeOf TokNumber) $
@@ -275,8 +297,8 @@ readNumber =
 
 readName :: Parser (Bool, Name)
 readName = do
-    firstC <- satisfy identifierFirstChar
-    rest <- many $ satisfy identifierChar
+    firstC <- satisfy allowedAlphaNameFirstChar
+    rest <- many $ satisfy allowedAlphaNameChar
     return (isUpper firstC, MkName $ pack $ firstC : rest)
 
 readTokenNames :: Parser (Bool, TokenNames)
@@ -389,7 +411,30 @@ readOpToken = do
         "|" -> return $ MkSomeOf TokOr ()
         "&" -> return $ MkSomeOf TokAnd ()
         "<:" -> return $ MkSomeOf TokSubtypeOf ()
-        _ -> return $ MkSomeOf TokOperator $ MkName $ pack name
+        "." -> return $ MkSomeOf TokOperator $ fromString name
+        _ ->
+            case nonEmpty name of
+                Just nname
+                    | '.' <- last nname -> do
+                        nsfirst <-
+                            many $
+                            try $ do
+                                n <- readName
+                                readChar '.'
+                                return n
+                        mnslast <- optional readName
+                        let
+                            tnName = MkName $ pack $ init nname
+                            (ns, tnAbsolute) =
+                                case mnslast of
+                                    Just nslast -> (nsfirst <> [nslast], False)
+                                    Nothing -> (nsfirst, True)
+                        tnSpace <-
+                            for ns $ \(b, nsn) -> do
+                                altIf b
+                                return nsn
+                        return $ MkSomeOf TokOperator MkTokenNames {..}
+                _ -> return $ MkSomeOf TokOperator $ fromString name
 
 readCharTok :: Char -> Token () -> Parser (SomeOf Token)
 readCharTok c tok = do

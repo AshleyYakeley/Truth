@@ -6,7 +6,7 @@ import "uistuff/named";
 in runUIStuff $ fn uistuff@MkUIStuff =>
 mkNamed uistuff >- fn MkNamedStuff =>
 let
-using Storage;
+using Store;
 
 years: FiniteSetModel Integer
 = property @Integer @Unit !"FTSJ.years" store !@ {()};
@@ -17,18 +17,18 @@ yearTheme: Property Integer Text
 using GTK;
 
 frontCoverPane: Pane
-= pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+= simple.Pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
 getThemesPane: Action Pane
-= return $ pane "Themes" $ blank;
+= return $ simple.Pane "Themes" $ blank;
 
 daysPane: Pane
-= pane "Days" $ blank;
+= simple.Pane "Days" $ blank;
 
 createMainPane: Action Pane
 = do
     themesPane <- getThemesPane;
-    notebookPane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
+    notebook.Pane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
     end;
 
 in do

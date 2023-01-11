@@ -10,8 +10,8 @@ p
 openEntity @X !"x"
 let y = openEntity @Y !"y"
 35
-x + 1
-x + y
+x +.Integer 1
+x +.Integer y
 let datatype D1 +a of MkD1 b end
 let datatype D2 +a +a of MkD2 end
 let datatype D3 +a -a of MkD3 end

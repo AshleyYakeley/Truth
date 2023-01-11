@@ -56,7 +56,7 @@ refNotationUnquote rexpr = do
 aplist :: QExpression -> [QExpression] -> QInterpreter QExpression
 aplist expr [] = return expr
 aplist expr (arg:args) = do
-    aprefExpr <- qName $ MkFullNameRef "applyWholeModel" RootNamespaceRef
+    aprefExpr <- qName "ap.WholeModel."
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args
 
@@ -65,7 +65,7 @@ refNotationQuote rexpr =
     lift $ do
         (expr, binds) <- runWriterT rexpr
         lift $ do
-            purerefExpr <- qName $ MkFullNameRef "pureWholeModel" RootNamespaceRef
+            purerefExpr <- qName "return.WholeModel."
             aexpr <- qAbstractsExpr (fmap fst binds) expr
             raexpr <- qApplyExpr purerefExpr aexpr
             aplist raexpr $ fmap snd binds

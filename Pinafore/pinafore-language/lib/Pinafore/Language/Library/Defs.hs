@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# OPTIONS -fconstraint-solver-iterations=20  #-}
 
 module Pinafore.Language.Library.Defs where
 
@@ -205,3 +206,56 @@ specialFormBDT name docDescription params diType sf = let
     docItem = SpecialFormDocItem {..}
     bdDoc = MkDefDoc {..}
     in pure MkBindDoc {..}
+
+eqEntries ::
+       forall context (a :: Type). (Eq a, HasQType 'Positive a, HasQType 'Negative a)
+    => [BindDocTree context]
+eqEntries = [valBDT "==" "Equal." $ (==) @a, valBDT "/=" "Not equal." $ (/=) @a]
+
+applicativeEntries ::
+       forall context (f :: Type -> Type).
+       ( Applicative f
+       , HasQType 'Negative (f TopType)
+       , HasQType 'Positive (f A)
+       , HasQType 'Negative (f A)
+       , HasQType 'Positive (f B)
+       , HasQType 'Negative (f B)
+       , HasQType 'Positive (f C)
+       , HasQType 'Negative (f C)
+       , HasQType 'Positive (f (A, B))
+       , HasQType 'Negative (f (A -> B))
+       )
+    => [BindDocTree context]
+applicativeEntries =
+    [ valBDT "return" "" (pure :: A -> f A)
+    , valBDT "ap" "" ((<*>) :: f (A -> B) -> f A -> f B)
+    , valBDT "liftA2" "" (liftA2 :: (A -> B -> C) -> f A -> f B -> f C)
+    , valBDT "**" "" (liftA2 (,) :: f A -> f B -> f (A, B))
+    , valBDT ">>" "" ((*>) :: f TopType -> f A -> f A)
+    ]
+
+monadEntries ::
+       forall context (f :: Type -> Type).
+       ( Monad f
+       , HasQType 'Negative (f TopType)
+       , HasQType 'Positive (f A)
+       , HasQType 'Negative (f A)
+       , HasQType 'Positive (f B)
+       , HasQType 'Negative (f B)
+       , HasQType 'Positive (f C)
+       , HasQType 'Negative (f C)
+       , HasQType 'Positive (f (A, B))
+       , HasQType 'Negative (f (A -> B))
+       )
+    => [BindDocTree context]
+monadEntries = applicativeEntries @context @f <> [valBDT ">>=" "" ((>>=) :: f A -> (A -> f B) -> f B)]
+
+semigroupEntries ::
+       forall context (a :: Type). (Semigroup a, HasQType 'Positive a, HasQType 'Negative a)
+    => [BindDocTree context]
+semigroupEntries = [valBDT "<>" "" $ (<>) @a, valBDT "concat1" "" $ sconcat @a]
+
+monoidEntries ::
+       forall context (a :: Type). (Monoid a, HasQType 'Positive a, HasQType 'Negative a)
+    => [BindDocTree context]
+monoidEntries = semigroupEntries @context @a <> [valBDT "empty" "" $ mempty @a, valBDT "concat" "" $ mconcat @a]

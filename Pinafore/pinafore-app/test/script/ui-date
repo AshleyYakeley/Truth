@@ -1,9 +1,9 @@
 #!/usr/bin/pinafore
 do
-dref <- newMemWholeModel;
-tref <- newMemWholeModel;
-iref <- newMemWholeModel;
-openWindow.GTK (300,400) {"Date"} $ vertical.GTK
+dref <- newMem.WholeModel;
+tref <- newMem.WholeModel;
+iref <- newMem.WholeModel;
+open.Window.GTK (300,400) {"Date"} $ vertical.GTK
     [
         (textEntry.GTK tref, False),
         (textEntry.GTK tref, False),

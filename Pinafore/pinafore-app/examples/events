@@ -6,7 +6,7 @@ import "uistuff/named";
 in runUIStuff $ fn uistuff@MkUIStuff =>
 mkNamed uistuff >- fn MkNamedStuff =>
 let
-using Storage;
+using Store;
 
 ### EventTime
 
@@ -77,10 +77,10 @@ eventTime = property @Event @EventTime !"event.time" store;
 eventNotes = property @Event @Text !"item.description" store;
 
 eventOrder: ModelOrder Event
-= orderOn eventTime eventTimeOrder;
+= on.ModelOrder eventTime eventTimeOrder;
 
 eventData: FiniteSetModel (EventTime *: Text)
-= (eventTime !** name) !$$ events;
+= (eventTime **.Property name) !$$ events;
 
 eventDataOrder: ModelOrder (EventTime *: Text)
 = mapOrder fst eventTimeOrder;
@@ -92,7 +92,7 @@ eventList: WholeModel +Date -> WholeModel +(List (EventTime *: Text))
 
         pickCurrent: EventTime *: Text -> Boolean
         = fn (t,_) => ge $ calendrical (eventTimeDate t) today;
-    in (EventTimeDate today,"Today") :: filter pickCurrent %(finiteSetModelList eventDataOrder eventData)
+    in (EventTimeDate today,"Today") :: filter pickCurrent %(list.FiniteSetModel eventDataOrder eventData)
     };
 
 
@@ -104,7 +104,7 @@ overviewModel: WholeModel +Date -> WholeModel +Text
 
 # Overview tab GTK
 overviewPane: Pane
-= pane "Overview" $ exec.GTK $ do
+= simple.Pane "Overview" $ exec.GTK $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneModel now;
     return $ label.GTK $ overviewModel {timeToLocal %tz %now >- match DateAndTime d _ => d end};
@@ -112,10 +112,10 @@ overviewPane: Pane
 
 calendarWindow: WholeModel +Event -> Action Window.GTK
 = fn evt => fixAction $ fn window =>
-    openWindow.GTK gtk (200,200) {"date of " <> %(name !$% evt)} $ vertical.GTK
+    open.Window.GTK gtk (200,200) {"date of " <> %(name !$% evt)} $ vertical.GTK
     [
         calendar.GTK $ eventModelTimeDate $ eventTime !$% evt,
-        button.GTK {"Done: " <> show %(eventModelTimeDate $ eventTime !$% evt)} {closeWindow.GTK window}
+        button.GTK {"Done: " <> show %(eventModelTimeDate $ eventTime !$% evt)} {close.Window.GTK window}
     ];
 
 eventUI: WholeModel +Event -> Element.GTK
@@ -153,12 +153,12 @@ eventsTableUI: WholeModel Event -> Element.GTK
         = ({"What"},fn e => name !$ {e});
         in [timeColumn,nameColumn];
     in exec.GTK $ do
-        lm <- getFiniteSetModelList eventOrder events;
+        lm <- getList.FiniteSetModel eventOrder events;
         return $ listTable.GTK columns lm eventWindow (Just selection);
         end;
 
 in do
-    eventsPane <- selectionPairPane "Events" events [newItemMenuAction ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
-    p <- notebookPane {"Events"} [overviewPane,eventsPane];
+    eventsPane <- selectionPair.Pane "Events" events [newItemMenuAction ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
+    p <- notebook.Pane {"Events"} [overviewPane,eventsPane];
     paneWindow p
     end

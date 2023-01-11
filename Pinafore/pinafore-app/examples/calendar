@@ -2,7 +2,7 @@
 openDefaultStore.Env >>= fn store =>
 let
 import "pinafore-gnome";
-using Storage;
+using Store;
 
 dateText: Property Date Text
 = property @Date @Text !"example.calendar:dateText" store;
@@ -20,8 +20,8 @@ ui: WholeModel Date -> Element.GTK
     ];
 
 in do
-    r <- newMemWholeModel;
+    r <- newMem.WholeModel;
     d <- getDate;
     r := d;
-    run.GTK $ fn gtk => openWindow.GTK gtk (300,400) {show %r} $ ui r;
+    run.GTK $ fn gtk => open.Window.GTK gtk (300,400) {show %r} $ ui r;
     end

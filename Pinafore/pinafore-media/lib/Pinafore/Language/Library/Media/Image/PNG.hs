@@ -20,7 +20,7 @@ newtype LangPNGImage =
 
 pngImageGroundType :: QGroundType '[] LangPNGImage
 pngImageGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPNGImage)|]) "PNGImage")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPNGImage)|]) "PNG.Image.")
         { pgtGreatestDynamicSupertype =
               SimplePolyGreatestDynamicSupertype
                   qGroundType
@@ -56,10 +56,10 @@ pngStuff =
     headingBDT
         "PNG"
         ""
-        [ typeBDT "PNGImage" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
+        [ typeBDT "PNG" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
         , hasSubtypeRelationBDT @LangPNGImage @LangImage Verify "" $
           functionToShim "pngImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationBDT @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
         , hasSubtypeRelationBDT @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
-        , valBDT "pngEncode" "Encode an image as PNG, with given metadata." pngEncode
+        , namespaceBDT "PNG" "" [valBDT "encode" "Encode an image as PNG, with given metadata." pngEncode]
         ]

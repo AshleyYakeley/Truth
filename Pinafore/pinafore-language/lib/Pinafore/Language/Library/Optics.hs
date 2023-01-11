@@ -60,8 +60,8 @@ opticsLibSection =
                     ""
                     [ valBDT "get" "" $ langLensGet @'( AP, AQ) @'( BP, BQ)
                     , valBDT "putback" "" $ langLensPutback @'( AP, AQ) @'( BP, BQ)
-                    , valBDT "identity" "Identity lens." $ identityLangLens @X @Y
-                    , valBDT "compose" "Compose lenses." $ composeLangLens @AP @AQ @BX @BY @CP @CQ
+                    , valBDT "id" "Identity lens." $ identityLangLens @X @Y
+                    , valBDT "." "Compose lenses." $ composeLangLens @AP @AQ @BX @BY @CP @CQ
                     , valBDT "product" "Product of lenses." $ pairLangLens @A @BP @BQ @CP @CQ
                     , valBDT "sum" "Sum of lenses." $ eitherLangLens @AP @AQ @BP @BQ @CP @CQ
                     ]
@@ -83,23 +83,29 @@ opticsLibSection =
                     ""
                     [ valBDT "decode" "" $ prismDecode @AP @AQ @BP @BQ
                     , valBDT "encode" "" $ prismEncode @AP @AQ @BP @BQ
-                    , valBDT "identity" "Identity prism." $ identityLangPrism @X @Y
-                    , valBDT "compose" "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
+                    , valBDT "id" "Identity prism." $ identityLangPrism @X @Y
+                    , valBDT "." "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
+                    , valBDT "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
                     ]
               ]
         , headingBDT
               "Attribute"
               "Attributes relate entities."
               [ typeBDT "Attribute" "" (MkSomeGroundType attributeGroundType) []
-              , valBDT "!$" "Apply an attribute to a model." $ applyLangAttributeModel @AP @AQ @BP @BQ
-              , valBDT "!$%" "Apply an attribute to an immutable model.\n`m !$% r = m !$ immutWholeModel r`" $
-                applyLangAttributeImmutModel @A @BP @BQ
-              , valBDT "!$$" "Apply an attribute to a set." $ applyLangAttributeSet @A @B
-              , valBDT "!$." "Compose attributes." $ composeLangAttribute @AP @AQ @BX @BY @CP @CQ
-              , valBDT "!$**" "Pair attributes. Models from these attributes are undeleteable." $
-                pairLangAttribute @AP @AQ @BP @BQ @CP @CQ
-              , valBDT "!$++" "Either attributes. Models from these attributes are undeleteable." $
-                eitherLangAttribute @AP @AQ @BP @BQ @CP @CQ
+              , namespaceBDT
+                    "Attribute"
+                    ""
+                    [ valBDT "id" "The identity attribute." $ identityLangAttribute @X @Y
+                    , valBDT "." "Compose attributes." $ composeLangAttribute @AP @AQ @BX @BY @CP @CQ
+                    , valBDT "**" "Type product of attributes. Models from these attributes are undeleteable." $
+                      pairLangAttribute @AP @AQ @BP @BQ @CP @CQ
+                    , valBDT "++" "Type sum of attributes. Models from these attributes are undeleteable." $
+                      eitherLangAttribute @AP @AQ @BP @BQ @CP @CQ
+                    , valBDT "!$" "Apply an attribute to a model." $ applyLangAttributeModel @AP @AQ @BP @BQ
+                    , valBDT "!$%" "Apply an attribute to an immutable model.\n`m !$% r = m !$ immut.WholeModel r`" $
+                      applyLangAttributeImmutModel @A @BP @BQ
+                    , valBDT "!$$" "Apply an attribute to a set." $ applyLangAttributeSet @A @B
+                    ]
               ]
         , headingBDT
               "Property"
@@ -111,15 +117,19 @@ opticsLibSection =
                     Verify
                     "" $
                 functionToShim "langPropertyAttribute" langPropertyAttribute
-              , valBDT "identity" "The identity property." $ identityLangProperty @X @Y
-              , valBDT "!." "Compose properties." $ composeLangProperty @AP @AQ @BX @BY @CP @CQ
-              , valBDT "!**" "Pair properties. Models from these properties are undeleteable." $
-                pairLangProperty @AP @AQ @BP @BQ @CP @CQ
-              , valBDT "!++" "Either properties. Models from these properties are undeleteable." $
-                eitherLangProperty @AP @AQ @BP @BQ @CP @CQ
-              , valBDT "!@" "Co-apply a property to a model." $ inverseApplyLangPropertyModel @A @BX @BY
-              , valBDT "!@%" "Co-apply a property to an immutable model.\n`m !@% r = m !@ immutWholeModel r`" $
-                inverseApplyLangPropertyImmutModel @A @B
-              , valBDT "!@@" "Co-apply a property to a set." $ inverseApplyLangPropertySet @A @BX @BY
+              , namespaceBDT
+                    "Property"
+                    ""
+                    [ valBDT "id" "The identity property." $ identityLangProperty @X @Y
+                    , valBDT "." "Compose properties." $ composeLangProperty @AP @AQ @BX @BY @CP @CQ
+                    , valBDT "**" "Type product of properties. Models from these properties are undeleteable." $
+                      pairLangProperty @AP @AQ @BP @BQ @CP @CQ
+                    , valBDT "++" "Type sum of properties. Models from these properties are undeleteable." $
+                      eitherLangProperty @AP @AQ @BP @BQ @CP @CQ
+                    , valBDT "!@" "Co-apply a property to a model." $ inverseApplyLangPropertyModel @A @BX @BY
+                    , valBDT "!@%" "Co-apply a property to an immutable model.\n`m !@% r = m !@ immut.WholeModel r`" $
+                      inverseApplyLangPropertyImmutModel @A @B
+                    , valBDT "!@@" "Co-apply a property to a set." $ inverseApplyLangPropertySet @A @BX @BY
+                    ]
               ]
         ]

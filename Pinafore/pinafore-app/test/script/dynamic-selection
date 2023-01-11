@@ -5,14 +5,14 @@ let
 opentype Named;
 name = property @Named @Text !"identify.name";
 byName: FiniteSetModel {+a,+Named} -> WholeModel +[(a,Text)];
-byName ref = finiteSetModelList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ ref;
+byName ref = list.FiniteSetModel (mapOrder fst $ on.ModelOrder name alphabetical) $ (identity **.Property name) !$$ ref;
 
 dynamictype Person = !"type.person";
 testpt = dynamicEntity @Person !"testpt";
 
 inform: Text -> Maybe Entity -> Action Unit;
 inform t mv = message.Debug $ t <> ": " <> case mv of
-    Just v -> "changed: " <> entityAnchor v;
+    Just v -> "changed: " <> anchor.Entity v;
     Nothing -> "deleted";
     end;
 
@@ -31,10 +31,10 @@ debugThing t action = do
     end;
 
 in debugThing "SCRIPT" $ do
-    selection <- newMemWholeModel;
+    selection <- newMem.WholeModel;
     onWholeModelUpdate selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- fixAction $ \w -> openWindow.GTK (300,400) {"Test"} $
+    window <- fixAction $ \w -> open.Window.GTK (300,400) {"Test"} $
         dynamic.GTK $ coMapWholeModel (\e -> run.GTK $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
@@ -44,7 +44,7 @@ in debugThing "SCRIPT" $ do
     debugWindow window;
     selection := testpt;
     debugWindow window;
-    openWindow.GTK (300,400) {"Check"} $ button.GTK {"Check"} $ {debugThing "CHECK" $ do
+    open.Window.GTK (300,400) {"Check"} $ button.GTK {"Check"} $ {debugThing "CHECK" $ do
         debugWindow window;
         selection := testpt;
         debugWindow window;
