@@ -1,6 +1,10 @@
 #!/usr/bin/pinafore
 let
+using Function($,>-);
+using Showable;
+using Number;
 using Integer;
+
 fix: (a -> a) -> a
 = fn f => let rec x = f x end in x;
 

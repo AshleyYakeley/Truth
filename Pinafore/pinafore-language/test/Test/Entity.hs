@@ -1523,6 +1523,6 @@ testEntity =
               , testExpectSuccess
                     "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; r := 0; t <- run.LifeCycle $ async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMem.WholeModel; r := 0; t <- run.Lifecycle $ async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
               ]
         ]

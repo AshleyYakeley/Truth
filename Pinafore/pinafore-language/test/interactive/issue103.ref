@@ -6,13 +6,14 @@ pinafore> :type i
 : a -> a
 pinafore> :type f i
 : Maybe (a -> a)
-pinafore>
+pinafore> 
 pinafore> let g: ((a -> a) & b) -> b = fn x => x
 pinafore> :type g
 : (a -> a & b) -> b
 pinafore> :type g i
 : a -> a
-pinafore>
+pinafore> 
+pinafore> let using Action
 pinafore> let ur: WholeModel a -> Unit = fn _ => ()
 pinafore> :type ur
 : WholeModel a -> Unit

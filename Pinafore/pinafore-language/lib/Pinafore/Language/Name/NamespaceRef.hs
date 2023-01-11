@@ -63,5 +63,8 @@ namespaceSplits (MkNamespace ns) = fmap (\(s1, s2) -> (MkNamespace s1, RelativeN
     splits :: forall a. [a] -> [([a], [a])]
     splits aa = (aa, []) : splits1 aa
 
+namespaceWithinRef :: Namespace -> Namespace -> Maybe NamespaceRef
+namespaceWithinRef na nb = fmap RelativeNamespaceRef $ namespaceWithin na nb
+
 namespaceRelative :: Namespace -> Namespace -> NamespaceRef
-namespaceRelative na nb = fromMaybe (AbsoluteNamespaceRef nb) $ fmap RelativeNamespaceRef $ namespaceWithin na nb
+namespaceRelative na nb = fromMaybe (AbsoluteNamespaceRef nb) $ namespaceWithinRef na nb

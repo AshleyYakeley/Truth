@@ -54,8 +54,11 @@ fullNameRootRelative (MkFullName n ns) = MkFullNameRef n (namespaceRootRelative 
 fullNameSplits :: FullName -> [(Namespace, FullNameRef)]
 fullNameSplits (MkFullName name ns) = fmap (fmap $ \nsr -> MkFullNameRef name nsr) $ namespaceSplits ns
 
+namespaceWithinFullNameRef :: Namespace -> FullName -> Maybe FullNameRef
+namespaceWithinFullNameRef na (MkFullName n nb) = fmap (MkFullNameRef n) $ namespaceWithinRef na nb
+
 namespaceRelativeFullName :: Namespace -> FullName -> FullNameRef
-namespaceRelativeFullName na (MkFullName n nb) = MkFullNameRef n (namespaceRelative na nb)
+namespaceRelativeFullName na (MkFullName n nb) = MkFullNameRef n $ namespaceRelative na nb
 
 relativeNamespace :: [Namespace] -> Namespace -> NamespaceRef
 relativeNamespace basens fn =

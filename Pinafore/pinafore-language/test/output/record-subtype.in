@@ -1,5 +1,7 @@
 #!/usr/bin/pinafore
 let
+using Function (>-,$,error);
+
 opentype A;
 opentype B;
 

@@ -169,7 +169,16 @@ readUsing = do
     readThis TokUsing
     nref <- readNamespaceRef
     ns <- readAskNamespace
-    return $ UsingSyntaxDeclaration $ namespaceConcatRef ns nref
+    mnritems <- optional $ readParen $ readCommaList readNameRefItem
+    masnref <-
+        optional $ do
+            readThis TokAs
+            readNamespaceRef
+    return $
+        UsingSyntaxDeclaration
+            (namespaceConcatRef ns nref)
+            mnritems
+            (namespaceConcatRef ns $ fromMaybe CurrentNamespaceRef masnref)
 
 readNamespace :: Parser SyntaxDeclaration'
 readNamespace = do
@@ -181,19 +190,19 @@ readNamespace = do
     ns <- readAskNamespace
     return $ NamespaceSyntaxDeclaration (namespaceConcatRef ns nref) decls
 
-readExposeItem :: Parser SyntaxExposeItem
-readExposeItem =
+readNameRefItem :: Parser SyntaxNameRefItem
+readNameRefItem =
     (do
          readThis TokNamespace
          name <- readNamespaceRef
          ns <- readAskNamespace
-         return $ NamespaceSyntaxExposeItem $ namespaceConcatRef ns name) <|>
-    fmap NameSyntaxExposeItem readFullNameRef
+         return $ NamespaceSyntaxNameRefItem $ namespaceConcatRef ns name) <|>
+    fmap NameSyntaxNameRefItem readFullNameRef
 
 readExpose :: Parser SyntaxExposeDeclaration
 readExpose = do
     readThis TokExpose
-    items <- readCommaList readExposeItem
+    items <- readCommaList readNameRefItem
     readThis TokOf
     decls <- readDeclarations
     readThis TokEnd

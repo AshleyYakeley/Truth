@@ -292,9 +292,9 @@ interpretRecursiveDocDeclarations ddecls = do
     interpretRecursiveLetBindings bindingDecls
     return docDecls
 
-partitionItem :: SyntaxExposeItem -> ([Namespace], [FullNameRef])
-partitionItem (NameSyntaxExposeItem n) = ([], [n])
-partitionItem (NamespaceSyntaxExposeItem n) = ([n], [])
+partitionItem :: SyntaxNameRefItem -> ([Namespace], [FullNameRef])
+partitionItem (NameSyntaxNameRefItem n) = ([], [n])
+partitionItem (NamespaceSyntaxNameRefItem n) = ([n], [])
 
 interpretExpose :: SyntaxExposeDeclaration -> RefNotation (Docs, QScope)
 interpretExpose (MkSyntaxExposeDeclaration items sdecls) =
@@ -331,8 +331,17 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             for_ binds interpretSequentialLetBinding
             return $ fmap (pure . sbDefDoc) binds
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
-        UsingSyntaxDeclaration nsn -> do
-            interpScopeBuilder $ usingNamespace nsn
+        UsingSyntaxDeclaration sourcens mitems destns -> do
+            let
+                matchItem :: FullNameRef -> SyntaxNameRefItem -> Bool
+                matchItem name (NameSyntaxNameRefItem name') = name == name'
+                -- matchItem (MkFullNameRef _ ns') (NamespaceSyntaxNameRefItem ns) = foo ns ns'
+                matchItem _ (NamespaceSyntaxNameRefItem _) = False
+            interpScopeBuilder $
+                usingNamespace sourcens destns $
+                case mitems of
+                    Nothing -> \_ -> True
+                    Just items -> \name -> any (matchItem name) items
             return mempty
         NamespaceSyntaxDeclaration nsn decls -> do
             close <- interpScopeBuilder $ withNamespace nsn

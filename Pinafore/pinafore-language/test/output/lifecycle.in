@@ -1,10 +1,10 @@
 #!/usr/bin/pinafore
-let using Env in
+let using Function($); using Lifecycle(onClose,closer); using Env in
 do
     outputLn "A";
     onClose $ outputLn "B";
     outputLn "C";
-    lifecycle $ do
+    run.Lifecycle $ do
         outputLn "1";
         onClose $ outputLn "2";
         outputLn "3";

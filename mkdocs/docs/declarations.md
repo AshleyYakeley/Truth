@@ -56,34 +56,30 @@ Full names are unique in the scope.
 
 ### Referring to declarations
 
-In a given scope, there is a current namespace and a list of search namespaces.
+In a given scope, there is a current namespace.
 
 References to namespaces are either relative or absolute.
 Absolute namespace references consist of names separated by dots, with a trailing dot.
 These names specify the namespace directly.
 
 Relative namespace references consist of names separated by dots.
-These names specify the namespace made by concatenating with the current namespace.
 
 For example,
 
-* `namespace Metadata.Image.` refers to the namespace `Metadata` within the namespace `Image` within the root namespace
-* `namespace Metadata.Image` refers to the namespace `Metadata` within the namespace `Image` within the current namespace
+* `namespace Metadata.Image.` refers to the namespace `Metadata` within the namespace `Image` within the root namespace.
+* `namespace Metadata.Image` refers to the namespace `Metadata` within the namespace `Image` within searched namespaces.
 
 Likewise, references to full names are either relative or absolute.
 Absolute full name references consist of names separated by dots, with a trailing dot.
 These names specify the namespace directly, and then the name within the namespace.
 
 Relative full name references consist of names separated by dots.
-These names are searched in the following namespaces:
+These names are searched in the current namespace, followed by all ancestor namespaces.
 
-* the current namespace, followed by all ancestor namespaces
-* the search namespaces in reverse order of introduction
+For example, if the current namespaces is `B.A.`:
 
-For example,
-
-* `async.Task.` refers to the declaration `async` within the namespace `Task` within the root namespace
-* `async.Task` refers to the first declaration of `async` within the namespace `Task` within the current namespace, followed by all ancestor namespaces, followed by the search namespaces.
+* `async.Task.` is always `async.Task.`, that is, it refers to the declaration `async` within the namespace `Task` within the root namespace.
+* `async.Task` refers to the first found of these: `async.Task.B.A.`, `async.Task.A.`, `async.Task.`.
 
 ### Current namespace
 
@@ -91,15 +87,21 @@ All declarations are placed within the current namespace.
 
 A `namespace` declaration specifies the current namespace for the declarations it contains.
 
-### Search namespaces
+### Mapping namespaces
 
-A `using` declaration appends the specified namespace to the list of search namespaces.
+A `using` declaration aliases names into different namespaces.
+For example:
+
+* `using P` maps the contents of namespace `P` into the current namespace.
+* `using P (a,b)` maps `a.P` and `b.P` into the current namespace
+* `using Q.P` maps the contents of namespace `Q.P` into the current namespace.
+* `using P (namespace Q)` maps namespace `Q.P` into the current namespace as `Q`.
+* `using P (a,b) as N` maps `a.P` and `b.P` into namespace `N`, so they can be referred to as `a.N` and `b.N`.
 
 ### Infix operators
 
-Built-in operators are all in the root namespace.
+Built-in operators are all predefined (in various namespaces).
 New operators cannot be declared.
-No namespace qualification can be given for references to operators.
 
 ### Example
 
@@ -138,16 +140,19 @@ q.B.A.
 r.B.
 s.C.B.A.
 t.C.B.A.
+p.
+q.B.
+s.C.B.
+t.C.B.
 s.
 ```
 
-At the point at which `t.C.B.A.` is declared, references such as `r` will be searched in these namespaces in this order:
+At the point at which `t.C.B.A.` is declared, references such as `r` will be searched in this order:
 
-* `C.B.A.` (the current namespace)
-* `B.A.` (parent of the above)
-* `A.` (parent of the above)
-* root namespace (parent of the above)
-* `B.` (search namespace)
+* `r.C.B.A.` (the current namespace)
+* `r.B.A.` (parent of the above)
+* `r.A.` (parent of the above)
+* `r.` (parent of the above)
 
 ## Expose Declarations
 

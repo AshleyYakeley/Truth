@@ -166,7 +166,7 @@ All declarations, including type declarations, are local to a `let` block.
 <declaration> ::=
     direct-declaration |
     "import" <module-name> |
-    "using" <namespace> |
+    "using" <namespace> <using-names> <using-target> |
     "namespace" <namepace> <of(<declaration>)> |
     <expose-declaration> |
     "rec" <semicolon-separated(<direct-declaration>)> "end"
@@ -179,11 +179,17 @@ All declarations, including type declarations, are local to a `let` block.
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
-<expose-item> ::= <name> | "namespace" <name>
+<name-item> ::= <name> | "namespace" <name>
 
-<expose-declaration> ::= "expose" <comma-separated(<expose-item>)> <of(<declaration>)>
+<name-list> ::= <comma-separated(<name-item>)>
 
-<namespace> ::= uname | uname "." <namespace>
+<expose-declaration> ::= "expose" <name-list> <of(<declaration>)>
+
+<using-names> ::=  | "(" <name-list> ")"
+
+<using-target> :=  | "as" <namespace>
+
+<namespace> ::= uname | uname "." <namespace> | "."
 
 <module-name> ::= literal-text
 

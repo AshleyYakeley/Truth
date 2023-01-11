@@ -151,7 +151,7 @@ testNamespace =
               [ testExpectSuccess "testeq 0 0"
               , testExpectSuccess "testeq 1 a0"
               , testExpectSuccess "testeq 1 a1"
-              , testExpectSuccess "testeq 1 a2"
+              , testExpectSuccess "testeq 2 a2"
               , testExpectSuccess "testeq 3 a"
               , testExpectSuccess "testeq 4 $ i 4"
               , testExpectSuccess "t 4"

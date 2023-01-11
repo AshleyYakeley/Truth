@@ -200,7 +200,8 @@ readFullLName :: Parser FullNameRef
 readFullLName = fmap tokenNamesToFullNameRef $ readThis TokNamesLower
 
 readFullNameRef :: Parser FullNameRef
-readFullNameRef = readFullUName <|> readFullLName
+readFullNameRef =
+    fmap tokenNamesToFullNameRef $ readThis TokNamesUpper <|> readThis TokNamesLower <|> readThis TokOperator
 
 readUName :: Parser Name
 readUName = do

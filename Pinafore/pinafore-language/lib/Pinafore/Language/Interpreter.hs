@@ -140,6 +140,16 @@ instance Monoid (NameMap ts) where
 instance HasInterpreter ts => Show (NameMap ts) where
     show (MkNameMap m) = "{" <> intercalate "," (fmap (\(n, (_, b)) -> show n <> "=" <> show b) $ mapToList m) <> "}"
 
+nameMapLookupNamespace :: Namespace -> Namespace -> (FullNameRef -> Bool) -> NameMap ts -> NameMap ts
+nameMapLookupNamespace sourcens destns ff (MkNameMap nm) = let
+    matchNS :: forall a. (FullName, a) -> Maybe (FullName, a)
+    matchNS (fn, a) = do
+        fnr <- namespaceWithinFullNameRef sourcens fn
+        altIf $ ff fnr
+        return (namespaceConcatFullName destns fnr, a)
+    newEntries = mapMaybe matchNS $ mapToList nm
+    in MkNameMap $ mapFromList newEntries <> nm
+
 data BindingInfo ts = MkBindingInfo
     { biName :: FullName
     , biDocumentation :: RawMarkdown
@@ -244,7 +254,6 @@ data InterpretContext ts = MkInterpretContext
     , icVarIDState :: VarIDState
     , icScope :: Scope ts
     , icNamespace :: Namespace
-    , icUsingNamespaces :: [Namespace]
     , icSpecialVals :: SpecialVals ts
     , icModulePath :: [ModuleName]
     , icLoadModule :: ModuleName -> Interpreter ts (Maybe (Module ts))
@@ -307,12 +316,11 @@ varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bf
 scopeParam :: Param (Interpreter ts) (Scope ts)
 scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) contextParam
 
+bindingsParam :: Param (Interpreter ts) (NameMap ts)
+bindingsParam = lensMapParam (\bfb a -> fmap (\b -> a {scopeBindings = b}) $ bfb $ scopeBindings a) scopeParam
+
 namespaceParam :: Param (Interpreter ts) Namespace
 namespaceParam = lensMapParam (\bfb a -> fmap (\b -> a {icNamespace = b}) $ bfb $ icNamespace a) contextParam
-
-usingNamespacesParam :: Param (Interpreter ts) [Namespace]
-usingNamespacesParam =
-    lensMapParam (\bfb a -> fmap (\b -> a {icUsingNamespaces = b}) $ bfb $ icUsingNamespaces a) contextParam
 
 specialValsParam :: Param (Interpreter ts) (SpecialVals ts)
 specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ bfb $ icSpecialVals a) contextParam
@@ -345,7 +353,6 @@ runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
     icScope = emptyScope
     icModulePath = []
     icNamespace = RootNamespace
-    icUsingNamespaces = []
     in evalStateT (runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
 firstOf :: [a] -> (a -> Maybe b) -> Maybe b
@@ -358,14 +365,13 @@ firstOf (a:aa) amb =
 namespacePriority :: Interpreter ts (NamespaceRef -> [Namespace])
 namespacePriority = do
     curns <- paramAsk namespaceParam
-    usingnss <- paramAsk usingNamespacesParam
-    return $ namespaceConcatRefM (toList (namespaceAncestry curns) <> usingnss)
+    return $ namespaceConcatRefM $ toList $ namespaceAncestry curns
 
 -- | For error messages and the like, doesn't need to be perfect.
 getRenderFullName :: Interpreter ts (NamedText -> Text)
 getRenderFullName = do
-    usingnss <- paramAsk usingNamespacesParam
-    return $ runRelativeNamedText usingnss
+    curns <- paramAsk namespaceParam
+    return $ runRelativeNamedText $ toList $ namespaceAncestry curns
 
 throwWithName :: ((NamedText -> Text) -> ErrorType) -> Interpreter ts a
 throwWithName err = do
@@ -374,7 +380,7 @@ throwWithName err = do
 
 getBindingMap :: Interpreter ts (FullNameRef -> Maybe (BindingInfo ts))
 getBindingMap = do
-    (scopeBindings -> nspace) <- paramAsk scopeParam
+    nspace <- paramAsk bindingsParam
     nsp <- namespacePriority
     return $ \(MkFullNameRef name nsn) ->
         firstOf (nsp nsn) $ \ns -> nameMapLookupBindingInfo nspace $ MkFullName name ns
@@ -425,7 +431,7 @@ exportNames names = do
 
 exportNamespace :: [Namespace] -> Interpreter ts [BindingInfo ts]
 exportNamespace cnss = do
-    (scopeBindings -> MkNameMap nspace) <- paramAsk scopeParam
+    MkNameMap nspace <- paramAsk bindingsParam
     let
         toBI :: (FullName, (RawMarkdown, InterpreterBinding ts)) -> Maybe (BindingInfo ts)
         toBI (biName@(MkFullName _ ns), (biDocumentation, biValue)) = do
@@ -451,11 +457,11 @@ type ScopeInterpreter ts = TransformT (Interpreter ts)
 scopeRef :: Ref (ScopeInterpreter ts) (Scope ts)
 scopeRef = transformParamRef scopeParam
 
+bindingsRef :: Ref (ScopeInterpreter ts) (NameMap ts)
+bindingsRef = transformParamRef bindingsParam
+
 namespaceRef :: Ref (ScopeInterpreter ts) Namespace
 namespaceRef = transformParamRef namespaceParam
-
-usingNamespacesRef :: Ref (ScopeInterpreter ts) [Namespace]
-usingNamespacesRef = transformParamRef usingNamespacesParam
 
 varIDStateRef :: Ref (ScopeInterpreter ts) VarIDState
 varIDStateRef = transformParamRef varIDStateParam
@@ -489,12 +495,11 @@ getRestore r = do
 withNamespace :: Namespace -> ScopeInterpreter ts (ScopeInterpreter ts ())
 withNamespace ns = do
     nrestore <- getRestore namespaceRef
-    urestore <- getRestore usingNamespacesRef
     refPut namespaceRef ns
-    return $ urestore >> nrestore
+    return nrestore
 
-usingNamespace :: Namespace -> ScopeInterpreter ts ()
-usingNamespace ns = refModify usingNamespacesRef $ \uns -> ns : uns
+usingNamespace :: Namespace -> Namespace -> (FullNameRef -> Bool) -> ScopeInterpreter ts ()
+usingNamespace sourcens destns ff = refModify bindingsRef $ nameMapLookupNamespace sourcens destns ff
 
 registerScope ::
        forall ts. HasInterpreter ts
@@ -544,7 +549,7 @@ getSubtypeScope sce = do
 registerBindings :: [(FullName, DocInterpreterBinding ts)] -> ScopeInterpreter ts ()
 registerBindings bb = do
     let newBindings = MkNameMap $ mapFromList bb
-    refModify scopeRef $ \oldScope -> oldScope {scopeBindings = scopeBindings oldScope <> newBindings}
+    refModify bindingsRef $ \oldBindings -> oldBindings <> newBindings
 
 getSpecialVals :: Interpreter ts (SpecialVals ts)
 getSpecialVals = paramAsk specialValsParam

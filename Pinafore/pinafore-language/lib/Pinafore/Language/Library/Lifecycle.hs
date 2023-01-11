@@ -15,7 +15,7 @@ lifecycleLibSection =
         "Lifecycles"
         "Ways of managing the closing of things that get opened, most notably UI windows."
         [ namespaceBDT
-              "LifeCycle"
+              "Lifecycle"
               ""
               [ valBDT
                     "run"

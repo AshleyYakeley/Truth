@@ -1,7 +1,7 @@
 pinafore> 3 +.Integer 4
 7
-pinafore> let p = [5,6,7] ++ [1,1,1]
-pinafore> let f = fn x => x ++ x
+pinafore> let p = [5,6,7] <>.List [1,1,1]
+pinafore> let f = fn x => x <>.List x
 pinafore> :type f
 : List a -> List a
 pinafore> f p

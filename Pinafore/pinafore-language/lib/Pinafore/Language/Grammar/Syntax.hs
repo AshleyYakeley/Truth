@@ -72,13 +72,13 @@ data SyntaxWithDoc t =
                     t
     deriving (Eq)
 
-data SyntaxExposeItem
-    = NameSyntaxExposeItem FullNameRef
-    | NamespaceSyntaxExposeItem Namespace
+data SyntaxNameRefItem
+    = NameSyntaxNameRefItem FullNameRef
+    | NamespaceSyntaxNameRefItem Namespace
     deriving (Eq)
 
 data SyntaxExposeDeclaration =
-    MkSyntaxExposeDeclaration [SyntaxExposeItem]
+    MkSyntaxExposeDeclaration [SyntaxNameRefItem]
                               [SyntaxDeclaration]
     deriving (Eq)
 
@@ -88,6 +88,8 @@ data SyntaxDeclaration'
     | ExposeSyntaxDeclaration SyntaxExposeDeclaration
     | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
     | UsingSyntaxDeclaration Namespace
+                             (Maybe [SyntaxNameRefItem])
+                             Namespace
     | NamespaceSyntaxDeclaration Namespace
                                  [SyntaxDeclaration]
     | DebugSyntaxDeclaration FullNameRef
