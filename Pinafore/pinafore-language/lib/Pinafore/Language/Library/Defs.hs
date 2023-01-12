@@ -18,11 +18,11 @@ import Shapes
 
 data ScopeEntry context
     = BindScopeEntry FullNameRef
-                     (Maybe (context -> QInterpreterBinding))
+                     (context -> QInterpreterBinding)
     | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
 
 instance Contravariant ScopeEntry where
-    contramap ab (BindScopeEntry name f) = BindScopeEntry name $ fmap (\cb -> cb . ab) f
+    contramap ab (BindScopeEntry name f) = BindScopeEntry name $ \c -> f $ ab c
     contramap _ (SubtypeScopeEntry entry) = SubtypeScopeEntry entry
 
 data BindDoc context = MkBindDoc
@@ -89,8 +89,7 @@ valBDT ::
 valBDT name docDescription val = let
     bdScopeEntry =
         Just $
-        BindScopeEntry name $
-        Just $ \context -> let
+        BindScopeEntry name $ \context -> let
             ?qcontext = context
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
     diName = name
@@ -128,7 +127,7 @@ nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
 mkTypeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
 mkTypeBDT name docDescription t bdChildren = let
-    bdScopeEntry = Just $ BindScopeEntry name $ Just $ \_ -> TypeBinding t
+    bdScopeEntry = Just $ BindScopeEntry name $ \_ -> TypeBinding t
     diName = name
     diParams =
         case t of
@@ -178,8 +177,7 @@ valPatBDT ::
 valPatBDT name docDescription val pat = let
     bdScopeEntry =
         Just $
-        BindScopeEntry name $
-        Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
+        BindScopeEntry name $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
     diName = name
     diType = qPositiveTypeDescription @t
     docItem = ValuePatternDocItem {..}
@@ -197,8 +195,7 @@ specialFormBDT ::
 specialFormBDT name docDescription params diType sf = let
     bdScopeEntry =
         Just $
-        BindScopeEntry name $
-        Just $ \pc -> let
+        BindScopeEntry name $ \pc -> let
             ?qcontext = pc
             in SpecialFormBinding sf
     diName = name

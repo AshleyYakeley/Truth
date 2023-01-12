@@ -72,9 +72,7 @@ getLibraryModuleModule context libmod = do
         bindDocs :: [BindDoc context]
         bindDocs = libraryModuleEntries libmod
         seBinding :: ScopeEntry context -> Maybe (FullName, QInterpreterBinding)
-        seBinding (BindScopeEntry name mb) = do
-            b <- mb
-            return (namespaceConcatFullName RootNamespace name, b context)
+        seBinding (BindScopeEntry name b) = return (namespaceConcatFullName RootNamespace name, b context)
         seBinding _ = Nothing
         getEntry :: BindDoc context -> Maybe QBindingInfo
         getEntry MkBindDoc {..} = do
