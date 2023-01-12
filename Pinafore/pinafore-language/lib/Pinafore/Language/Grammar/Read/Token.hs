@@ -90,6 +90,7 @@ data Token t where
     TokExpose :: Token ()
     TokImport :: Token ()
     TokAs :: Token ()
+    TokExcept :: Token ()
     TokNamespace :: Token ()
     TokUsing :: Token ()
     TokNamesUpper :: Token TokenNames
@@ -142,6 +143,7 @@ instance TestEquality Token where
     testEquality TokExpose TokExpose = Just Refl
     testEquality TokImport TokImport = Just Refl
     testEquality TokAs TokAs = Just Refl
+    testEquality TokExcept TokExcept = Just Refl
     testEquality TokNamespace TokNamespace = Just Refl
     testEquality TokUsing TokUsing = Just Refl
     testEquality TokNamesUpper TokNamesUpper = Just Refl
@@ -195,6 +197,7 @@ instance Show (Token t) where
     show TokExpose = show ("expose" :: String)
     show TokImport = show ("import" :: String)
     show TokAs = show ("as" :: String)
+    show TokExcept = show ("except" :: String)
     show TokNamespace = show ("namespace" :: String)
     show TokUsing = show ("using" :: String)
     show TokNamesUpper = "unames"
@@ -341,6 +344,7 @@ checkKeyword "dynamictype" = return $ MkSomeOf TokDynamicType ()
 checkKeyword "expose" = return $ MkSomeOf TokExpose ()
 checkKeyword "import" = return $ MkSomeOf TokImport ()
 checkKeyword "as" = return $ MkSomeOf TokAs ()
+checkKeyword "except" = return $ MkSomeOf TokExcept ()
 checkKeyword "namespace" = return $ MkSomeOf TokNamespace ()
 checkKeyword "using" = return $ MkSomeOf TokUsing ()
 checkKeyword _ = Nothing

@@ -341,7 +341,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 usingNamespace sourcens destns $
                 case mitems of
                     Nothing -> \_ -> True
-                    Just items -> \name -> any (matchItem name) items
+                    Just (b, items) -> \name -> any (matchItem name) items == b
             return mempty
         NamespaceSyntaxDeclaration nsn decls -> do
             close <- interpScopeBuilder $ withNamespace nsn

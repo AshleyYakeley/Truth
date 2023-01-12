@@ -185,7 +185,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <expose-declaration> ::= "expose" <name-list> <of(<declaration>)>
 
-<using-names> ::=  | "(" <name-list> ")"
+<using-names> ::=  | "(" <name-list> ")" | "except" "(" <name-list> ")"
 
 <using-target> :=  | "as" <namespace>
 

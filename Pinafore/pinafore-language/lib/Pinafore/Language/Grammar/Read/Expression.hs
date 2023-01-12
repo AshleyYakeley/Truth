@@ -169,7 +169,11 @@ readUsing = do
     readThis TokUsing
     nref <- readNamespaceRef
     ns <- readAskNamespace
-    mnritems <- optional $ readParen $ readCommaList readNameRefItem
+    mnritems <-
+        optional $ do
+            neg <- optional $ readThis TokExcept
+            ritems <- readParen $ readCommaList readNameRefItem
+            return (not $ isJust neg, ritems)
     masnref <-
         optional $ do
             readThis TokAs

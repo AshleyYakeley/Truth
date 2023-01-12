@@ -88,7 +88,7 @@ data SyntaxDeclaration'
     | ExposeSyntaxDeclaration SyntaxExposeDeclaration
     | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
     | UsingSyntaxDeclaration Namespace
-                             (Maybe [SyntaxNameRefItem])
+                             (Maybe (Bool, [SyntaxNameRefItem]))
                              Namespace
     | NamespaceSyntaxDeclaration Namespace
                                  [SyntaxDeclaration]

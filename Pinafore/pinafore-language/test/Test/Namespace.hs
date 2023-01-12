@@ -166,10 +166,10 @@ testNamespace =
                     , testExpectSuccess "let using M(a) in testeq 2 a"
                     , testExpectSuccess "let using M(b) in testeq 1 a"
                     , testExpectSuccess "let using M(a,b) in testeq 2 a"
-                    , testExpectSuccess "let using M hiding () in testeq 2 a"
-                    , testExpectSuccess "let using M hiding (a) in testeq 1 a"
-                    , testExpectSuccess "let using M hiding (b) in testeq 2 a"
-                    , testExpectSuccess "let using M hiding (a,b) in testeq 1 a"
+                    , testExpectSuccess "let using M except () in testeq 2 a"
+                    , testExpectSuccess "let using M except (a) in testeq 1 a"
+                    , testExpectSuccess "let using M except (b) in testeq 2 a"
+                    , testExpectSuccess "let using M except (a,b) in testeq 1 a"
                     ]
               , tDecls ["namespace D of a=1 end", "namespace M of a=2; b=3 end"] $
                 tGroup
@@ -179,10 +179,10 @@ testNamespace =
                     , testExpectSuccess "let using M(a) as D in testeq 2 a.D"
                     , testExpectSuccess "let using M(b) as D in testeq 1 a.D"
                     , testExpectSuccess "let using M(a,b) as D in testeq 2 a.D"
-                    , testExpectSuccess "let using M hiding () as D in testeq 2 a.D"
-                    , testExpectSuccess "let using M hiding (a) as D in testeq 1 a.D"
-                    , testExpectSuccess "let using M hiding (b) as D in testeq 2 a.D"
-                    , testExpectSuccess "let using M hiding (a,b) as D in testeq 1 a.D"
+                    , testExpectSuccess "let using M except () as D in testeq 2 a.D"
+                    , testExpectSuccess "let using M except (a) as D in testeq 1 a.D"
+                    , testExpectSuccess "let using M except (b) as D in testeq 2 a.D"
+                    , testExpectSuccess "let using M except (a,b) as D in testeq 1 a.D"
                     ]
               , tDecls
                     [ "namespace D of a=4 end"
@@ -196,7 +196,7 @@ testNamespace =
                     , testExpectSuccess "let using M(a.N) in testeq 2 a.N"
                     , testExpectSuccess "let using M in testeq 2 a.N"
                     , testExpectSuccess "let using M (namespace N) in testeq 2 a.N"
-                    , testExpectSuccess "let using M hiding (namespace N) in testeq 1 a.N"
+                    , testExpectSuccess "let using M except (namespace N) in testeq 1 a.N"
                     , testExpectSuccess "testeq 4 a.D"
                     , testExpectSuccess "let using M as D in testeq 3 a.D"
                     , testExpectSuccess "let using M(namespace N) as D in testeq 2 a.N.D"
