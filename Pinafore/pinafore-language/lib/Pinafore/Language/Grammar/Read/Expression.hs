@@ -199,8 +199,7 @@ readNameRefItem =
     (do
          readThis TokNamespace
          name <- readNamespaceRef
-         ns <- readAskNamespace
-         return $ NamespaceSyntaxNameRefItem $ namespaceConcatRef ns name) <|>
+         return $ NamespaceSyntaxNameRefItem name) <|>
     fmap NameSyntaxNameRefItem readFullNameRef
 
 readExpose :: Parser SyntaxExposeDeclaration

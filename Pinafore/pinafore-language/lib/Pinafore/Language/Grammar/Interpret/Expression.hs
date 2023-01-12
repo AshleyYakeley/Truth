@@ -292,16 +292,18 @@ interpretRecursiveDocDeclarations ddecls = do
     interpretRecursiveLetBindings bindingDecls
     return docDecls
 
-partitionItem :: SyntaxNameRefItem -> ([Namespace], [FullNameRef])
-partitionItem (NameSyntaxNameRefItem n) = ([], [n])
-partitionItem (NamespaceSyntaxNameRefItem n) = ([n], [])
+partitionItem :: Namespace -> SyntaxNameRefItem -> ([Namespace], [FullNameRef])
+partitionItem _ (NameSyntaxNameRefItem n) = ([], [n])
+partitionItem curns (NamespaceSyntaxNameRefItem n) = ([namespaceConcatRef curns n], [])
 
 interpretExpose :: SyntaxExposeDeclaration -> RefNotation (Docs, QScope)
 interpretExpose (MkSyntaxExposeDeclaration items sdecls) =
-    runScopeBuilder (interpretDocDeclarations sdecls) $ \doc -> do
-        let (namespaces, names) = mconcat $ fmap partitionItem items
-        (bnames, scope) <- liftRefNotation $ exportScope namespaces names
-        return (exposeDocs bnames doc, scope)
+    runScopeBuilder (interpretDocDeclarations sdecls) $ \doc ->
+        liftRefNotation $ do
+            curns <- getCurrentNamespace
+            let (namespaces, names) = mconcat $ fmap (partitionItem curns) items
+            (bnames, scope) <- exportScope namespaces names
+            return (exposeDocs bnames doc, scope)
 
 interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
@@ -335,8 +337,10 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             let
                 matchItem :: FullNameRef -> SyntaxNameRefItem -> Bool
                 matchItem name (NameSyntaxNameRefItem name') = name == name'
-                -- matchItem (MkFullNameRef _ ns') (NamespaceSyntaxNameRefItem ns) = foo ns ns'
-                matchItem _ (NamespaceSyntaxNameRefItem _) = False
+                matchItem (MkFullNameRef _ nsr') (NamespaceSyntaxNameRefItem nsr) = let
+                    ns = namespaceConcatRef sourcens nsr
+                    ns' = namespaceConcatRef sourcens nsr'
+                    in isJust $ namespaceWithinRef ns ns'
             interpScopeBuilder $
                 usingNamespace sourcens destns $
                 case mitems of

@@ -74,7 +74,7 @@ data SyntaxWithDoc t =
 
 data SyntaxNameRefItem
     = NameSyntaxNameRefItem FullNameRef
-    | NamespaceSyntaxNameRefItem Namespace
+    | NamespaceSyntaxNameRefItem NamespaceRef
     deriving (Eq)
 
 data SyntaxExposeDeclaration =

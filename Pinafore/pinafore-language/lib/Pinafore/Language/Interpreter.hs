@@ -19,6 +19,7 @@ module Pinafore.Language.Interpreter
     , ScopeInterpreter
     , sourcePosParam
     , scopeSourcePos
+    , getCurrentNamespace
     , withNamespace
     , usingNamespace
     , getRenderFullName
@@ -362,15 +363,18 @@ firstOf (a:aa) amb =
         Just b -> Just b
         Nothing -> firstOf aa amb
 
+getCurrentNamespace :: Interpreter ts Namespace
+getCurrentNamespace = paramAsk namespaceParam
+
 namespacePriority :: Interpreter ts (NamespaceRef -> [Namespace])
 namespacePriority = do
-    curns <- paramAsk namespaceParam
+    curns <- getCurrentNamespace
     return $ namespaceConcatRefM $ toList $ namespaceAncestry curns
 
 -- | For error messages and the like, doesn't need to be perfect.
 getRenderFullName :: Interpreter ts (NamedText -> Text)
 getRenderFullName = do
-    curns <- paramAsk namespaceParam
+    curns <- getCurrentNamespace
     return $ runRelativeNamedText $ toList $ namespaceAncestry curns
 
 throwWithName :: ((NamedText -> Text) -> ErrorType) -> Interpreter ts a
