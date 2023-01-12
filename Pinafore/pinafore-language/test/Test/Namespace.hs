@@ -135,26 +135,72 @@ testNamespace =
               , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna. == 1"
               ]
         , tDecls ["testeq = fns e f => if e == f then pass else fail $ \"found: \" <>.Text show f"] $
-          tDecls
-              [ "a = 1"
-              , "a0 = a"
-              , "namespace M of a=2 end"
-              , "a1 = a"
-              , "using M"
-              , "a2 = a"
-              , "a = 3"
-              , "i = fn a => a"
-              , "t = fn a => testeq 4 a"
-              ] $
           tGroup
-              "scope"
-              [ testExpectSuccess "testeq 0 0"
-              , testExpectSuccess "testeq 1 a0"
-              , testExpectSuccess "testeq 1 a1"
-              , testExpectSuccess "testeq 2 a2"
-              , testExpectSuccess "testeq 3 a"
-              , testExpectSuccess "testeq 4 $ i 4"
-              , testExpectSuccess "t 4"
+              "using"
+              [ tDecls
+                    [ "a = 1"
+                    , "a0 = a"
+                    , "namespace M of a=2 end"
+                    , "a1 = a"
+                    , "using M"
+                    , "a2 = a"
+                    , "a = 3"
+                    , "i = fn a => a"
+                    , "t = fn a => testeq 4 a"
+                    ] $
+                tGroup
+                    "scope"
+                    [ testExpectSuccess "testeq 0 0"
+                    , testExpectSuccess "testeq 1 a0"
+                    , testExpectSuccess "testeq 1 a1"
+                    , testExpectSuccess "testeq 2 a2"
+                    , testExpectSuccess "testeq 3 a"
+                    , testExpectSuccess "testeq 4 $ i 4"
+                    , testExpectSuccess "t 4"
+                    ]
+              , tDecls ["a = 1", "namespace M of a=2; b=3 end"] $
+                tGroup
+                    "scope"
+                    [ testExpectSuccess "let using M in testeq 2 a"
+                    , testExpectSuccess "let using M() in testeq 1 a"
+                    , testExpectSuccess "let using M(a) in testeq 2 a"
+                    , testExpectSuccess "let using M(b) in testeq 1 a"
+                    , testExpectSuccess "let using M(a,b) in testeq 2 a"
+                    , testExpectSuccess "let using M hiding () in testeq 2 a"
+                    , testExpectSuccess "let using M hiding (a) in testeq 1 a"
+                    , testExpectSuccess "let using M hiding (b) in testeq 2 a"
+                    , testExpectSuccess "let using M hiding (a,b) in testeq 1 a"
+                    ]
+              , tDecls ["namespace D of a=1 end", "namespace M of a=2; b=3 end"] $
+                tGroup
+                    "as"
+                    [ testExpectSuccess "let using M as D in testeq 2 a.D"
+                    , testExpectSuccess "let using M() as D in testeq 1 a.D"
+                    , testExpectSuccess "let using M(a) as D in testeq 2 a.D"
+                    , testExpectSuccess "let using M(b) as D in testeq 1 a.D"
+                    , testExpectSuccess "let using M(a,b) as D in testeq 2 a.D"
+                    , testExpectSuccess "let using M hiding () as D in testeq 2 a.D"
+                    , testExpectSuccess "let using M hiding (a) as D in testeq 1 a.D"
+                    , testExpectSuccess "let using M hiding (b) as D in testeq 2 a.D"
+                    , testExpectSuccess "let using M hiding (a,b) as D in testeq 1 a.D"
+                    ]
+              , tDecls
+                    [ "namespace D of a=4 end"
+                    , "namespace N of a=1 end"
+                    , "namespace M of a=3; namespace N of a=2 end end"
+                    ] $
+                tGroup
+                    "namespace"
+                    [ testExpectSuccess "testeq 1 a.N"
+                    , testExpectSuccess "let using M() in testeq 1 a.N"
+                    , testExpectSuccess "let using M(a.N) in testeq 2 a.N"
+                    , testExpectSuccess "let using M in testeq 2 a.N"
+                    , testExpectSuccess "let using M (namespace N) in testeq 2 a.N"
+                    , testExpectSuccess "let using M hiding (namespace N) in testeq 1 a.N"
+                    , testExpectSuccess "testeq 4 a.D"
+                    , testExpectSuccess "let using M as D in testeq 3 a.D"
+                    , testExpectSuccess "let using M(namespace N) as D in testeq 2 a.N.D"
+                    ]
               ]
         , tGroup
               "clash"
