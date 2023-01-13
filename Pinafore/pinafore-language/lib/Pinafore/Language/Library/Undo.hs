@@ -50,10 +50,12 @@ undoLibSection =
           "UndoHandler"
           ""
           [ valBDT "new" "Create a new `UndoHandler`." newUndoHandler
-          , valBDT "queueUndo" "Undo an action." $ \uh -> do
+          , nameInRootBDT $
+            valBDT "queueUndo" "Undo an action." $ \uh -> do
                 rc <- actionResourceContext
                 liftIO $ undoHandlerUndo uh rc noEditSource
-          , valBDT "queueRedo" "Redo an action." $ \uh -> do
+          , nameInRootBDT $
+            valBDT "queueRedo" "Redo an action." $ \uh -> do
                 rc <- actionResourceContext
                 liftIO $ undoHandlerRedo uh rc noEditSource
           , valBDT "handleStore" "Handle undo/redo for this model." handleStore

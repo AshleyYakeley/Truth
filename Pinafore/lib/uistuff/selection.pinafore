@@ -10,10 +10,7 @@ expose
 of
 
 import "pinafore-gnome";
-using Function;
 using GTK;
-using Action;
-using UndoHandler;
 
 ### Useful GTK stuff
 
@@ -139,7 +136,7 @@ runUIStuff: (UIStuff -> Action a) -> Action a
 = fn call => do
     dstore <- openDefaultStore.Env;
     undoHandler <- new.UndoHandler;
-    store <- handleStore undoHandler dstore;
+    store <- handleStore.UndoHandler undoHandler dstore;
     run.GTK $ fn gtk => let
         stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
         = fns title moremenus contents => fix.Action $ fn window => do

@@ -9,6 +9,7 @@ using Cairo;
 # transform from (-1 .. +1,-1 .. +1)
 scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a)
 = fn rd => {fn (w,h) => let
+    using Drawing;
     size = min w h;
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
 
@@ -19,27 +20,27 @@ datatype Progress of
 end;
 
 drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
-= fn ref =>
+= fn ref => let using Drawing in
 {
-    scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1 $ concatDrawing
+    scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat
     [
-        source navy $ %(toMaybeWholeModel ref) >- match
-            Nothing => pureDrawing $ onClick $ ref := ProgressPartial;
-            Just ProgressNone => pureDrawing $ onClick $ ref := ProgressPartial;
-            Just ProgressPartial => concatDrawing
+        source navy $ %(toMaybe.WholeModel ref) >- match
+            Nothing => return $ onClick $ ref := ProgressPartial;
+            Just ProgressNone => return $ onClick $ ref := ProgressPartial;
+            Just ProgressPartial => concat
                 [
-                    fill $ concatPath [arc (0,0) 1 0 pi, closePath],
-                    pureDrawing $ onClick $ ref := ProgressDone
+                    let using Path in fill $ concat [arc (0,0) 1 0 pi, close],
+                    return $ onClick $ ref := ProgressDone
                 ];
-            Just ProgressDone => concatDrawing
+            Just ProgressDone => concat
                 [
-                    fill $ concatPath [arc (0,0) 1 0 (2 ~* pi)],
-                    pureDrawing $ onClick $ ref := ProgressNone
+                    let using Path in fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
+                    return $ onClick $ ref := ProgressNone
                 ];
         end,
-        stroke $ concatPath
+        let using Path in stroke $ concat
         [
-            arc (0,0) 1 0 (2 ~* pi),
+            arc (0,0) 1 0 (2 *.Number pi),
             moveTo (-1,0),
             lineTo (1,0)
         ]

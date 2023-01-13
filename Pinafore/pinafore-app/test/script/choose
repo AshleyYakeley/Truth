@@ -20,7 +20,7 @@ rec
                 _ => "unknown";
             end;
         in lit >- match
-            image :? JPEGImage.Image => open.Window.GTK gtk (imageSize.Image image) {path} $ image.GTK {image};
+            image :? JPEG.Image => open.Window.GTK gtk (size.Image image) {path} $ image.GTK {image};
             _ => outputLn.Env "not a JPEG image";
         end;
         showFile;

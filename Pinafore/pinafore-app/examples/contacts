@@ -6,7 +6,6 @@ import "uistuff/named";
 in runUIStuff $ fn uistuff@MkUIStuff =>
 mkNamed uistuff >- fn MkNamedStuff =>
 let
-using Store;
 
 # something with a lifespan
 opentype Lifespanned;
@@ -26,7 +25,7 @@ country = property @Location @Text !"location.address.country" store;
 locationUI: WholeModel +Location -> Element.GTK
 = fn loc => vertical.GTK
 [
-    layoutGrow.GTK $ uiLabelled {"Address: "} $ textArea.GTK (wholeModelText $ address !$% loc),
+    layoutGrow.GTK $ uiLabelled {"Address: "} $ textArea.GTK (fromWhole.TextModel $ address !$% loc),
     uiLabelled {"City: "} $ textEntry.GTK $ city !$% loc,
     uiLabelled {"Postcode/ZIP: "} $ textEntry.GTK $ postcode !$% loc,
     uiLabelled {"State/Province: "} $ textEntry.GTK $ province !$% loc,
@@ -48,7 +47,7 @@ legalentities: FiniteSetModel LegalEntity
 # a person
 dynamictype Person = !"type.person";
 people: FiniteSetModel Person
-= maybeMapFiniteSetModel (check @Person) legalentities;
+= maybeMap.FiniteSetModel (check @Person) legalentities;
 # family relationships between people
 mother = property @Person @Person !"relation.family.mother" store;
 father = property @Person @Person !"relation.family.father" store;
@@ -94,8 +93,8 @@ end;
     familyUI: WholeModel +Person -> Element.GTK
     = fn p => vertical.GTK
     [
-        uiLabelled {"Birth: "} $ textEntry.GTK $ interpretDateAsText $ birthdate !$% p,
-        uiLabelled {"Death: "} $ textEntry.GTK $ interpretDateAsText $ deathdate !$% p,
+        uiLabelled {"Birth: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ birthdate !$% p,
+        uiLabelled {"Death: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ deathdate !$% p,
         checkBox.GTK {"Married"} $ married !$% p,
         uiLabelled {"Mother: "} $ pick.GTK (byName people) $ mother !$% p,
         uiLabelled {"Father: "} $ pick.GTK (byName people) $ father !$% p,
@@ -112,7 +111,7 @@ end;
     contactUI: LegalEntity -> Element.GTK
     = fn e => let
         pages: List (Element.GTK *: Element.GTK)
-        = contactPages {e} ++ (e >- match
+        = contactPages {e} <>.List (e >- match
             p:? Person => personPages {p};
             o:? Organisation => organisationPages {o};
             end);
@@ -123,7 +122,7 @@ end;
         ];
 
     contactModelUI: WholeModel +LegalEntity -> Element.GTK
-    = fn model => dynamic.GTK $ coMapWholeModel contactUI model;
+    = fn model => dynamic.GTK $ coMap.WholeModel contactUI model;
     end;
 
 contactsPane: Action Pane

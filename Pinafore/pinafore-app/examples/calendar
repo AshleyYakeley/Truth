@@ -2,7 +2,6 @@
 openDefaultStore.Env >>= fn store =>
 let
 import "pinafore-gnome";
-using Store;
 
 dateText: Property Date Text
 = property @Date @Text !"example.calendar:dateText" store;
@@ -12,16 +11,16 @@ ui: WholeModel Date -> Element.GTK
     [
     horizontal.GTK
         [
-        button.GTK {"<"} {do d <- get r; r := addDays (-1) d; end},
-        layoutGrow.GTK $ label.GTK {unixFormatDate "%A, %B %e, %Y" %r},
-        button.GTK {">"} {do d <- get r; r := addDays 1 d; end}
+        button.GTK {"<"} {do d <- get r; r := pred.Date d; end},
+        layoutGrow.GTK $ label.GTK {encode (unixAsText.Date "%A, %B %e, %Y") %r},
+        button.GTK {">"} {do d <- get r; r := succ.Date d; end}
         ],
-    layoutGrow.GTK $ textArea.GTK (wholeModelText $ dateText !$ r)
+    layoutGrow.GTK $ textArea.GTK (fromWhole.TextModel $ dateText !$ r)
     ];
 
 in do
     r <- newMem.WholeModel;
-    d <- getDate;
+    d <- getNowLocal.Date;
     r := d;
     run.GTK $ fn gtk => open.Window.GTK gtk (300,400) {show %r} $ ui r;
     end

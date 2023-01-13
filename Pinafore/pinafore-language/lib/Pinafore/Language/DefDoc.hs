@@ -1,4 +1,9 @@
-module Pinafore.Language.DefDoc where
+module Pinafore.Language.DefDoc
+    ( DocItem(..)
+    , diNamesTraversal
+    , diMatchNameOrSubtypeRel
+    , DefDoc(..)
+    ) where
 
 import Pinafore.Language.Name
 import Pinafore.Markdown
@@ -7,16 +12,16 @@ import Shapes
 data DocItem
     = HeadingDocItem { diTitle :: MarkdownText }
     | NamespaceDocItem { diNamespace :: NamespaceRef }
-    | ValueDocItem { diName :: FullNameRef
+    | ValueDocItem { diNames :: NonEmpty FullNameRef
                    , diType :: NamedText }
     | SignatureDocItem { diSigName :: Name
                        , diType :: NamedText }
-    | ValuePatternDocItem { diName :: FullNameRef
+    | ValuePatternDocItem { diNames :: NonEmpty FullNameRef
                           , diType :: NamedText }
-    | SpecialFormDocItem { diName :: FullNameRef
+    | SpecialFormDocItem { diNames :: NonEmpty FullNameRef
                          , diParams :: [NamedText]
                          , diType :: NamedText }
-    | TypeDocItem { diName :: FullNameRef
+    | TypeDocItem { diNames :: NonEmpty FullNameRef
                   , diParams :: [NamedText] }
     | SubtypeRelationDocItem { diSubtype :: NamedText
                              , diSupertype :: NamedText }
@@ -32,17 +37,21 @@ instance Show DocItem where
     show (TypeDocItem n pp) = "type " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp)
     show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
 
-diNameLens :: Applicative m => (FullNameRef -> m FullNameRef) -> DocItem -> m DocItem
-diNameLens f ValueDocItem {..} = fmap (\n -> ValueDocItem {diName = n, ..}) $ f diName
-diNameLens f ValuePatternDocItem {..} = fmap (\n -> ValuePatternDocItem {diName = n, ..}) $ f diName
-diNameLens f SpecialFormDocItem {..} = fmap (\n -> SpecialFormDocItem {diName = n, ..}) $ f diName
-diNameLens f TypeDocItem {..} = fmap (\n -> TypeDocItem {diName = n, ..}) $ f diName
-diNameLens _ di = pure di
+diNamesTraversal :: Applicative m => (NonEmpty FullNameRef -> m (NonEmpty FullNameRef)) -> DocItem -> m DocItem
+diNamesTraversal f ValueDocItem {..} = fmap (\n -> ValueDocItem {diNames = n, ..}) $ f diNames
+diNamesTraversal f ValuePatternDocItem {..} = fmap (\n -> ValuePatternDocItem {diNames = n, ..}) $ f diNames
+diNamesTraversal f SpecialFormDocItem {..} = fmap (\n -> SpecialFormDocItem {diNames = n, ..}) $ f diNames
+diNamesTraversal f TypeDocItem {..} = fmap (\n -> TypeDocItem {diNames = n, ..}) $ f diNames
+diNamesTraversal _ di = pure di
+
+diNameTraversal :: Applicative m => (FullNameRef -> m FullNameRef) -> DocItem -> m DocItem
+diNameTraversal = diNamesTraversal . traverse
 
 diMatchNameOrSubtypeRel :: FullName -> DocItem -> Bool
 diMatchNameOrSubtypeRel n di =
     getAll $
-    execWriter $ diNameLens (\name -> (tell $ All $ n == namespaceConcatFullName RootNamespace name) >> return name) di
+    execWriter $
+    diNameTraversal (\name -> (tell $ All $ n == namespaceConcatFullName RootNamespace name) >> return name) di
 
 data DefDoc = MkDefDoc
     { docItem :: DocItem
@@ -54,7 +63,7 @@ instance Show DefDoc where
 
 instance NamespaceConcat DocItem where
     namespaceConcat nsn (NamespaceDocItem nr) = NamespaceDocItem $ namespaceConcat nsn nr
-    namespaceConcat nsn di = runIdentity $ diNameLens (Identity . namespaceConcat nsn) di
+    namespaceConcat nsn di = runIdentity $ diNameTraversal (Identity . namespaceConcat nsn) di
 
 instance NamespaceConcat DefDoc where
     namespaceConcat nsn MkDefDoc {..} = MkDefDoc {docItem = namespaceConcat nsn docItem, ..}

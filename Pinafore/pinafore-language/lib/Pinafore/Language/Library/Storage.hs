@@ -29,7 +29,8 @@ storageLibSection =
     , namespaceBDT
           "Store"
           ""
-          [ specialFormBDT
+          [ nameInRootBDT $
+            specialFormBDT
                 "property"
                 "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
                 ["@A", "@B", "<anchor>"]

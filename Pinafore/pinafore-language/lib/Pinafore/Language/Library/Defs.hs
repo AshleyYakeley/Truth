@@ -1,7 +1,35 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# OPTIONS -fconstraint-solver-iterations=20  #-}
 
-module Pinafore.Language.Library.Defs where
+module Pinafore.Language.Library.Defs
+    ( ScopeEntry(..)
+    , BindDoc(..)
+    , BindDocTree
+    , LibraryModule(..)
+    , libraryModuleEntries
+    , libraryModuleDocumentation
+    , EnA
+    , qPositiveTypeDescription
+    , qNegativeTypeDescription
+    , headingBDT
+    , namespaceBDT
+    , valBDT
+    , mkTypeBDT
+    , typeBDT
+    , subtypeRelationBDT
+    , hasSubtypeRelationBDT
+    , valPatBDT
+    , specialFormBDT
+    , nameInRootBDT
+    , pickNamesInRootBDT
+    , eqEntries
+    , ordEntries
+    , enumEntries
+    , applicativeEntries
+    , monadEntries
+    , semigroupEntries
+    , monoidEntries
+    ) where
 
 import Pinafore.Base
 import Pinafore.Language.Convert
@@ -25,10 +53,17 @@ instance Contravariant ScopeEntry where
     contramap ab (BindScopeEntry name f) = BindScopeEntry name $ \c -> f $ ab c
     contramap _ (SubtypeScopeEntry entry) = SubtypeScopeEntry entry
 
+scopeEntryName :: ScopeEntry context -> Maybe FullNameRef
+scopeEntryName (BindScopeEntry name _) = Just name
+scopeEntryName (SubtypeScopeEntry _) = Nothing
+
 data BindDoc context = MkBindDoc
-    { bdScopeEntry :: Maybe (ScopeEntry context)
+    { bdScopeEntries :: [ScopeEntry context]
     , bdDoc :: DefDoc
     }
+
+bindDocNames :: BindDoc context -> [FullNameRef]
+bindDocNames bd = mapMaybe scopeEntryName $ bdScopeEntries bd
 
 instance Contravariant BindDoc where
     contramap ab (MkBindDoc se d) = MkBindDoc (fmap (contramap ab) $ se) d
@@ -71,14 +106,53 @@ instance NamespaceConcat (ScopeEntry context) where
 
 instance NamespaceConcat (BindDoc context) where
     namespaceConcat nsn bd =
-        bd {bdScopeEntry = namespaceConcat nsn $ bdScopeEntry bd, bdDoc = namespaceConcat nsn $ bdDoc bd}
+        bd {bdScopeEntries = namespaceConcat nsn $ bdScopeEntries bd, bdDoc = namespaceConcat nsn $ bdDoc bd}
+
+class AddNameInRoot t where
+    addNameInRoot :: t -> t
+
+instance AddNameInRoot t => AddNameInRoot [t] where
+    addNameInRoot [] = []
+    addNameInRoot ee@(e:_) = addNameInRoot e : ee
+
+instance AddNameInRoot t => AddNameInRoot (NonEmpty t) where
+    addNameInRoot aa@(a :| _) = addNameInRoot a :| toList aa
+
+instance AddNameInRoot t => AddNameInRoot (Tree t) where
+    addNameInRoot (Node n children) = Node (addNameInRoot n) children
+
+instance AddNameInRoot FullNameRef where
+    addNameInRoot x = x {fnSpace = RootNamespaceRef}
+
+instance AddNameInRoot DocItem where
+    addNameInRoot x = runIdentity $ diNamesTraversal (Identity . addNameInRoot) x
+
+instance AddNameInRoot DefDoc where
+    addNameInRoot x = x {docItem = addNameInRoot $ docItem x}
+
+instance AddNameInRoot (ScopeEntry context) where
+    addNameInRoot (BindScopeEntry n f) = BindScopeEntry (addNameInRoot n) f
+    addNameInRoot e = e
+
+instance AddNameInRoot (BindDoc context) where
+    addNameInRoot (MkBindDoc entries doc) = MkBindDoc (addNameInRoot entries) (addNameInRoot doc)
+
+nameInRootBDT :: BindDocTree context -> BindDocTree context
+nameInRootBDT = addNameInRoot
+
+pickNamesInRootBDT :: [FullNameRef] -> [BindDocTree context] -> [BindDocTree context]
+pickNamesInRootBDT names =
+    fmap $
+    fmap $ \d ->
+        if (any (\name -> elem name $ bindDocNames d) names)
+            then addNameInRoot d
+            else d
 
 headingBDT :: MarkdownText -> RawMarkdown -> [BindDocTree context] -> BindDocTree context
-headingBDT name desc = Node $ MkBindDoc Nothing $ MkDefDoc (HeadingDocItem name) desc
+headingBDT name desc = Node $ MkBindDoc [] $ MkDefDoc (HeadingDocItem name) desc
 
 namespaceBDT :: NamespaceRef -> RawMarkdown -> [BindDocTree context] -> BindDocTree context
-namespaceBDT name desc tree =
-    Node (MkBindDoc Nothing $ MkDefDoc (NamespaceDocItem name) desc) $ namespaceConcat name tree
+namespaceBDT name desc tree = Node (MkBindDoc [] $ MkDefDoc (NamespaceDocItem name) desc) $ namespaceConcat name tree
 
 valBDT ::
        forall context t. HasQType 'Positive t
@@ -87,12 +161,12 @@ valBDT ::
     -> ((?qcontext :: context) => t)
     -> BindDocTree context
 valBDT name docDescription val = let
-    bdScopeEntry =
-        Just $
+    bdScopeEntries =
+        pure $
         BindScopeEntry name $ \context -> let
             ?qcontext = context
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
-    diName = name
+    diNames = pure name
     diType = qPositiveTypeDescription @t
     docItem = ValueDocItem {..}
     bdDoc = MkDefDoc {..}
@@ -127,8 +201,8 @@ nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
 mkTypeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
 mkTypeBDT name docDescription t bdChildren = let
-    bdScopeEntry = Just $ BindScopeEntry name $ \_ -> TypeBinding t
-    diName = name
+    bdScopeEntries = pure $ BindScopeEntry name $ \_ -> TypeBinding t
+    diNames = pure name
     diParams =
         case t of
             MkSomeGroundType pt -> getTypeParameters nameSupply $ pgtVarianceType pt
@@ -150,7 +224,7 @@ subtypeRelationBDT ::
 subtypeRelationBDT trustme docDescription ta tb conv = let
     diSubtype = exprShow ta
     diSupertype = exprShow tb
-    bdScopeEntry = Just $ SubtypeScopeEntry $ subtypeConversionEntry trustme ta tb $ pure conv
+    bdScopeEntries = pure $ SubtypeScopeEntry $ subtypeConversionEntry trustme ta tb $ pure conv
     docItem = SubtypeRelationDocItem {..}
     bdDoc = MkDefDoc {..}
     in pure MkBindDoc {..}
@@ -175,10 +249,10 @@ valPatBDT ::
     -> PurityFunction Maybe v (ListProduct lt)
     -> BindDocTree context
 valPatBDT name docDescription val pat = let
-    bdScopeEntry =
-        Just $
+    bdScopeEntries =
+        pure $
         BindScopeEntry name $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
-    diName = name
+    diNames = pure name
     diType = qPositiveTypeDescription @t
     docItem = ValuePatternDocItem {..}
     bdDoc = MkDefDoc {..}
@@ -193,12 +267,12 @@ specialFormBDT ::
     -> ((?qcontext :: context) => QSpecialForm)
     -> BindDocTree context
 specialFormBDT name docDescription params diType sf = let
-    bdScopeEntry =
-        Just $
+    bdScopeEntries =
+        pure $
         BindScopeEntry name $ \pc -> let
             ?qcontext = pc
             in SpecialFormBinding sf
-    diName = name
+    diNames = pure name
     diParams = params
     docItem = SpecialFormDocItem {..}
     bdDoc = MkDefDoc {..}
@@ -208,6 +282,24 @@ eqEntries ::
        forall context (a :: Type). (Eq a, HasQType 'Positive a, HasQType 'Negative a)
     => [BindDocTree context]
 eqEntries = [valBDT "==" "Equal." $ (==) @a, valBDT "/=" "Not equal." $ (/=) @a]
+
+ordEntries ::
+       forall context (a :: Type). (Ord a, HasQType 'Positive a, HasQType 'Negative a)
+    => [BindDocTree context]
+ordEntries =
+    eqEntries @context @a <>
+    [ valBDT "<" "Strictly less." $ (<) @a
+    , valBDT "<=" "Less or equal." $ (<=) @a
+    , valBDT ">" "Strictly greater." $ (>) @a
+    , valBDT ">=" "Greater or equal." $ (>=) @a
+    , valBDT "min" "Lesser of two" $ min @a
+    , valBDT "max" "Greater of two" $ max @a
+    ]
+
+enumEntries ::
+       forall context (a :: Type). (Enum a, HasQType 'Positive a, HasQType 'Negative a)
+    => [BindDocTree context]
+enumEntries = [valBDT "pred" "Previous value." $ pred @a, valBDT "succ" "Next value." $ succ @a]
 
 applicativeEntries ::
        forall context (f :: Type -> Type).

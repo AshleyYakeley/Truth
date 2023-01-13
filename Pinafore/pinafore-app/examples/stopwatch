@@ -12,24 +12,24 @@ toggleStopwatch: WholeModel +Time -> WholeModel StopwatchState -> Action Unit
     n <- get now;
     oldstate <- get r;
     newstate <- return $ oldstate >- match
-        StoppedState d => RunningState $ addTime (negateDuration d) n;
-        RunningState t => StoppedState $ diffTime n t
+        StoppedState d => RunningState $ negate.Duration d +.Time n;
+        RunningState t => StoppedState $ n -.Time t
         end;
     r := newstate;
     end;
 
 showStopwatch: StopwatchState -> Time -> Text
 = fns state n => state >- match
-    StoppedState d => "[" <> show d <> "]";
-    RunningState t => show $ diffTime n t
+    StoppedState d => "[" <>.Text show d <>.Text "]";
+    RunningState t => show $ n -.Time t
     end;
 
 ui: WholeModel +Time -> WholeModel StopwatchState -> Element.GTK
 = fns now r => button.GTK {showStopwatch %r %now} {toggleStopwatch now r};
 
 in do
-    now <- newClock $ Seconds 0.001;
+    now <- newClock.Time $ Seconds 0.001;
     r <- newMem.WholeModel;
-    r := StoppedState zeroDuration;
+    r := StoppedState zero.Duration;
     run.GTK $ fn gtk => open.Window.GTK gtk (150,40) {"Stopwatch"} $ ui now r;
     end

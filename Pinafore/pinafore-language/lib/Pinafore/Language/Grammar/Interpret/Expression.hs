@@ -150,7 +150,7 @@ data SingleBinding = MkSingleBinding
 
 sbDefDoc :: SingleBinding -> DefDoc
 sbDefDoc MkSingleBinding {..} = let
-    diName = fullNameRef sbName
+    diNames = pure $ fullNameRef sbName
     diType = fromMaybe "" $ fmap exprShow sbType
     docItem = ValueDocItem {..}
     docDescription = sbDoc
@@ -242,13 +242,13 @@ typeDeclDoc = let
     funcPNTList (a:aa) t = funcPNT a $ funcPNTList aa t
     consDoc :: FullName -> [NamedText] -> SyntaxConstructorOrSubtype extra -> (DocItem, [Tree DefDoc])
     consDoc tname _ (ConstructorSyntaxConstructorOrSubtype cname tt _) =
-        ( ValuePatternDocItem (fullNameRef cname) $
+        ( ValuePatternDocItem (pure $ fullNameRef cname) $
           toNamedText $ funcPNTList (fmap exprShowPrec tt) (exprShowPrec tname)
         , [])
     consDoc _ tparams (SubtypeSyntaxConstructorOrSubtype tname tt) =
-        (TypeDocItem (fullNameRef tname) tparams, typeConssDoc tname tparams tt)
+        (TypeDocItem (pure $ fullNameRef tname) tparams, typeConssDoc tname tparams tt)
     consDoc tname _ (RecordSyntaxConstructorOrSubtype cname sigs) =
-        (ValuePatternDocItem (fullNameRef cname) (exprShow tname), fmap (pure . sigDoc) sigs)
+        (ValuePatternDocItem (pure $ fullNameRef cname) (exprShow tname), fmap (pure . sigDoc) sigs)
     typeConsDoc :: FullName -> [NamedText] -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
     typeConsDoc tname tparams (MkSyntaxWithDoc cdoc scs) = let
         (item, rest) = consDoc tname tparams scs
@@ -256,7 +256,7 @@ typeDeclDoc = let
     typeConssDoc :: FullName -> [NamedText] -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> [Tree DefDoc]
     typeConssDoc tname tparams = fmap $ typeConsDoc tname tparams
     in \name defn doc -> let
-           diName = fullNameRef name
+           diNames = pure $ fullNameRef name
            (diParams, items) =
                case defn of
                    StorableDatatypeSyntaxTypeDeclaration params conss -> let

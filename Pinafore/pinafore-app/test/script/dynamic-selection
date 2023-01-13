@@ -5,7 +5,7 @@ let
 opentype Named;
 name = property @Named @Text !"identify.name";
 byName: FiniteSetModel {+a,+Named} -> WholeModel +[(a,Text)];
-byName ref = list.FiniteSetModel (mapOrder fst $ on.ModelOrder name alphabetical) $ (identity **.Property name) !$$ ref;
+byName ref = list.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name alphabetical) $ (identity **.Property name) !$$ ref;
 
 dynamictype Person = !"type.person";
 testpt = dynamicEntity @Person !"testpt";

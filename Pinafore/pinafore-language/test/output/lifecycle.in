@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-let using Function($); using Lifecycle(onClose,closer); using Env in
+let using Env in
 do
     outputLn "A";
     onClose $ outputLn "B";

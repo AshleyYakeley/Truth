@@ -4,7 +4,7 @@ import "pinafore-media";
 import "pinafore-gnome";
 in
 openDefaultStore.Env >>= fn dstore =>
-newUndoHandler.UndoHandler >>= fn uh =>
+new.UndoHandler >>= fn uh =>
 handleStore.UndoHandler uh dstore >>= fn store =>
 run.GTK $ fn gtk => let
 using Store;
@@ -14,7 +14,7 @@ ui_page = fns n ui => (label.GTK n,ui);
 ui_labelled = fns n ui => horizontal.GTK [label.GTK n, layoutGrow.GTK  ui];
 
 std_window: WholeModel +Text -> Element.GTK -> Action Window.GTK
-= fns title contents => fixAction $ fn window => let
+= fns title contents => fix.Action $ fn window => let
     mbar: Element.GTK
     = menuBar.GTK
         [
@@ -85,7 +85,7 @@ ui_people : FiniteSetModel Person -> Element.GTK
     end;
 
 peopleByName : WholeModel +(List (Person *: Text))
-= list.FiniteSetModel (mapOrder fst $ on.ModelOrder name alphabetical) $ (identity **.Property name) !$$ people;
+= toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name alphabetical) $ (id.Property **.Property name) !$$ people;
 
 ui_person : WholeModel Person -> Element.GTK
 = fn p => vertical.GTK
@@ -100,7 +100,7 @@ ui_person : WholeModel Person -> Element.GTK
         ],
         ui_page {"Home"} $ let homep = home !$ p in vertical.GTK
         [
-            ui_labelled {"Address: "} $ textArea.GTK (wholeModelText $ address !$ homep),
+            ui_labelled {"Address: "} $ textArea.GTK (fromWhole.TextModel $ address !$ homep),
             ui_labelled {"City: "} $ textEntry.GTK $ city !$ homep,
             ui_labelled {"Postcode/ZIP: "} $ textEntry.GTK $ postcode !$ homep,
             ui_labelled {"State/Province: "} $ textEntry.GTK $ province !$ homep,
@@ -109,7 +109,7 @@ ui_person : WholeModel Person -> Element.GTK
         ],
         ui_page {"Work"} $ vertical.GTK
         [
-            ui_labelled {"Employer: "} $ textEntry.GTK $ (..Property name employer) !$ p
+            ui_labelled {"Employer: "} $ textEntry.GTK $ (name ..Property employer) !$ p
         ],
         ui_page {"Family"} $ vertical.GTK
         [
@@ -159,7 +159,7 @@ window_switch : Action Window.GTK
     [
         #textEntry.GTK sw_pick),
         checkBox.GTK {"pick"} sw_pick,
-        layoutGrow.GTK $ dynamic.GTK {if %sw_pick then textArea.GTK (wholeModelText sw_val1) else textArea.GTK (wholeModelText sw_val2)}
+        layoutGrow.GTK $ dynamic.GTK {if %sw_pick then textArea.GTK (fromWhole.TextModel sw_val1) else textArea.GTK (fromWhole.TextModel sw_val2)}
     ];
 
 ### Imported Files
@@ -186,7 +186,7 @@ window_constant : Action Window.GTK
     checkBox.GTK {"off"} {False},
     checkBox.GTK {"on"} {True},
     textEntry.GTK {"constant"},
-    layoutGrow.GTK $ textArea.GTK (wholeModelText $ {"constant"})
+    layoutGrow.GTK $ textArea.GTK (fromWhole.TextModel $ {"constant"})
 ];
 
 ### CSS
@@ -208,22 +208,28 @@ window_css: Action Window.GTK
 
 ### Drawing
 window_drawing: WholeModel +Time -> Action Window.GTK
-= fn now => let using Colour; using Cairo in do
-    tzref <- newTimeZoneModel now;
-    std_window {"Drawing"} $ draw.GTK {fn (w,h) => let
-        size = min w h;
-        in timeToLocal %tzref %now >- match
-            DateAndTime _ (HourMinuteSecond _ _ s) =>
-                translate (w / 2, h / 2) $
-                scale (size, size) $
-                scale (-0.5, -0.5) $
-                rotate (s ~* pi ~/ 30) $
-                operatorOver $
-                source purple $
-                lineCapSquare $
-                lineWidth 0.01 $
-                stroke $ concatPath [moveTo (0, 0), lineTo (0, 1)];
-            end};
+= fn now => let
+    using Colour;
+    using Cairo;
+    using Drawing;
+    using Path;
+    using Number;
+    in do
+        tzref <- newTimeZoneModel.LocalTime now;
+        std_window {"Drawing"} $ draw.GTK {fn (w,h) => let
+            size = min w h;
+            in fromTime.LocalTime %tzref %now >- match
+                DateAndTime _ (HourMinuteSecond _ _ s) =>
+                    translate (w / 2, h / 2) $
+                    scale (size, size) $
+                    scale (-0.5, -0.5) $
+                    rotate (s * pi / 30) $
+                    over.Operator $
+                    source purple $
+                    capSquare $
+                    width 0.01 $
+                    stroke $ concat.Path [moveTo (0, 0), lineTo (0, 1)];
+                end};
     end;
 
 window_list: Action Window.GTK
@@ -250,7 +256,7 @@ window_textselection: Action Window.GTK
         notifySelection.GTK notify $ textArea.GTK tref1,
         notifySelection.GTK notify $ textArea.GTK tref2,
         notifySelection.GTK notify $ textArea.GTK tref3,
-        dynamic.GTK {exec.GTK $ mapAction (fn tref => textArea.GTK (wholeModelText tref)) %sel}
+        dynamic.GTK {exec.GTK $ map.Action (fn tref => textArea.GTK (fromWhole.TextModel tref)) %sel}
     ];
     end;
 
@@ -259,6 +265,9 @@ window_cairoimage: Action Window.GTK
 = let
     using Colour;
     using Cairo;
+    using Drawing;
+    using Path;
+    using Number;
     using GTK;
     dimensions: Integer *: Integer
     = (400,400);
@@ -266,7 +275,7 @@ window_cairoimage: Action Window.GTK
     = fn (w,h) => let
         size = min w h;
         square: Drawing Handler
-        = fill $ concatPath [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
+        = fill $ concat.Path [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
         squares: List ((Integer *: Integer) *: Colour)
         =
         [
@@ -287,15 +296,15 @@ window_cairoimage: Action Window.GTK
             ((2,3), midnightblue)
         ];
         block: Number -> Drawing Handler
-        = fn a => concatDrawing
+        = fn a => concat.Drawing
         [
-            concatDrawing $ mapList (fn (s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
-            lineWidth 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 ~* pi)
+            concat.Drawing $ map.List (fn (s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
+            width 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 * pi)
         ];
         in
             scale (size, size) $
             scale (0.125, 0.125) $
-            operatorOver $ concatDrawing
+            over.Operator $ concat.Drawing
             [
                 translate (0,0) $ block 1,
                 translate (0,4) $ block (2/3),
@@ -305,7 +314,7 @@ window_cairoimage: Action Window.GTK
     in std_window {"Cairo Image"} $ vertical
     [
         layoutGrow $ draw {drawing},
-        layoutGrow $ styleSheet {"* {border: solid 5px black;padding: 5px;}"} $ image {drawToImage dimensions $ drawing dimensions}
+        layoutGrow $ styleSheet {"* {border: solid 5px black;padding: 5px;}"} $ image {toImage dimensions $ drawing dimensions}
     ];
 
 ### Start Window
@@ -314,19 +323,19 @@ rec
 window_start : Action Window.GTK
 = do
     now <- newClock $ Seconds 1;
-    timeZone <- newTimeZoneModel now;
+    timeZone <- newTimeZoneModel.LocalTime now;
     let
         utcDate = {%now};
-        localNow = {timeToLocal %timeZone %now};
+        localNow = {fromTime.LocalTime %timeZone %now};
         today = {%localNow >- match DateAndTime day _ => day end};
         in do
         std_window {"Pinafore"} $ vertical.GTK
         [
-            label.GTK {"UTC time: " <> show %now},
-            label.GTK {"UTC date: " <> show %utcDate},
-            label.GTK {"Local time: " <> show %localNow},
-            label.GTK {"Local date: " <> show %today},
-            label.GTK {"Time zone offset minutes: " <> show %timeZone},
+            label.GTK {"UTC time: " <>.Text show %now},
+            label.GTK {"UTC date: " <>.Text show %utcDate},
+            label.GTK {"Local time: " <>.Text show %localNow},
+            label.GTK {"Local date: " <>.Text show %today},
+            label.GTK {"Time zone offset minutes: " <>.Text show %timeZone},
             button.GTK {"Calculated Form"} {window_calc},
             button.GTK {"Switch"} {window_switch},
             button.GTK {"Files"} {window_files},

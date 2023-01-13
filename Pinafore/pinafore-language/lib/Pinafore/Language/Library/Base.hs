@@ -126,14 +126,14 @@ baseLibSections =
     [ headingBDT "Literals & Entities" "" $
       [ typeBDT "Entity" "" (MkSomeGroundType entityGroundType) []
       , namespaceBDT "Entity" "" $
-        eqEntries @_ @Entity <> [valBDT "anchor" "The anchor of an entity, as text." entityAnchor]
+        fmap nameInRootBDT (eqEntries @_ @Entity) <> [valBDT "anchor" "The anchor of an entity, as text." entityAnchor]
       , typeBDT "Literal" "" (MkSomeGroundType literalGroundType) []
       , hasSubtypeRelationBDT @Literal @Entity Verify "" $ functionToShim "literalToEntity" literalToEntity
       , headingBDT
             "Showable"
             ""
             [ typeBDT "Showable" "Something that can be represented as `Text`." (MkSomeGroundType showableGroundType) []
-            , namespaceBDT "Showable" "" [valBDT "show" "Show something as `Text`" $ textShow @Showable]
+            , namespaceBDT "Showable" "" [nameInRootBDT $ valBDT "show" "Show something as `Text`" $ textShow @Showable]
             ]
       , headingBDT
             "Unit"
@@ -163,9 +163,13 @@ baseLibSections =
                   ]
             , literalSubtypeRelationEntry @Bool
             , showableSubtypeRelationEntry @Bool
-            , valBDT "&&" "Boolean AND." (&&)
-            , valBDT "||" "Boolean OR." (||)
-            , valBDT "not" "Boolean NOT." not
+            , namespaceBDT
+                  "Boolean"
+                  ""
+                  [ nameInRootBDT $ valBDT "&&" "Boolean AND." (&&)
+                  , nameInRootBDT $ valBDT "||" "Boolean OR." (||)
+                  , nameInRootBDT $ valBDT "not" "Boolean NOT." not
+                  ]
             ]
       , headingBDT
             "Ordering"
@@ -194,26 +198,27 @@ baseLibSections =
             , showableSubtypeRelationEntry @Ordering
             , namespaceBDT "Ordering" "" $
               monoidEntries @_ @Ordering <>
-              [ valBDT "eq" "Equal." $ (==) EQ
-              , valBDT "ne" "Not equal." $ (/=) EQ
-              , valBDT "lt" "Less than." $ (==) LT
-              , valBDT "le" "Less than or equal to." $ (/=) GT
-              , valBDT "gt" "Greater than." $ (==) GT
-              , valBDT "ge" "Greater than or equal to." $ (/=) LT
+              [ nameInRootBDT $ valBDT "eq" "Equal." $ (==) EQ
+              , nameInRootBDT $ valBDT "ne" "Not equal." $ (/=) EQ
+              , nameInRootBDT $ valBDT "lt" "Less than." $ (==) LT
+              , nameInRootBDT $ valBDT "le" "Less than or equal to." $ (/=) GT
+              , nameInRootBDT $ valBDT "gt" "Greater than." $ (==) GT
+              , nameInRootBDT $ valBDT "ge" "Greater than or equal to." $ (/=) LT
               ]
             , namespaceBDT "Order" "" $
               monoidEntries @_ @(A -> A -> Ordering) <>
               [ valBDT "reverse" "Reverse an order." $ reverseOrder @A
-              , valBDT "lesser" "The lesser of two items." lesser
-              , valBDT "greater" "The greater of two items." greater
-              , valBDT "alphabetical" "Alphabetical first, then lower case before upper, per Unicode normalisation." $
+              , nameInRootBDT $ valBDT "lesser" "The lesser of two items." lesser
+              , nameInRootBDT $ valBDT "greater" "The greater of two items." greater
+              , nameInRootBDT $
+                valBDT "alphabetical" "Alphabetical first, then lower case before upper, per Unicode normalisation." $
                 Text.Collate.collate Text.Collate.rootCollator
-              , valBDT "numerical" "Numercal order." $ compare @Number
-              , valBDT "chronological" "Chronological order." $ compare @UTCTime
-              , valBDT "durational" "Durational order." $ compare @NominalDiffTime
-              , valBDT "calendrical" "Date order." $ compare @Day
-              , valBDT "horological" "Time of day order." $ compare @TimeOfDay
-              , valBDT "localChronological" "Local time order." $ compare @LocalTime
+              , nameInRootBDT $ valBDT "numerical" "Numercal order." $ compare @Number
+              , nameInRootBDT $ valBDT "chronological" "Chronological order." $ compare @UTCTime
+              , nameInRootBDT $ valBDT "durational" "Durational order." $ compare @NominalDiffTime
+              , nameInRootBDT $ valBDT "calendrical" "Date order." $ compare @Day
+              , nameInRootBDT $ valBDT "horological" "Time of day order." $ compare @TimeOfDay
+              , nameInRootBDT $ valBDT "localChronological" "Local time order." $ compare @LocalTime
               ]
             ]
       , headingBDT
@@ -254,38 +259,36 @@ baseLibSections =
                      [ typeBDT "Integer" "" (MkSomeGroundType integerGroundType) []
                      , hasSubtypeRelationBDT @Integer @SafeRational Verify "" $
                        functionToShim "integerSafeRational" $ encode integerSafeRational
-                     , namespaceBDT
-                           "Integer"
-                           ""
-                           [ plainFormattingDef @Integer "an integer"
-                           , valBDT "min" "Lesser of two Integers" $ min @Integer
-                           , valBDT "max" "Greater of two Integers" $ max @Integer
-                           , valBDT "succ" "Add one." $ succ @Integer
-                           , valBDT "pred" "Subtract one." $ pred @Integer
-                           , valBDT "+" "Add." $ (+) @Integer
-                           , valBDT "-" "Subtract." $ (-) @Integer
-                           , valBDT "*" "Multiply." $ (*) @Integer
-                           , valBDT "negate" "Negate." $ negate @Integer
-                           , valBDT "abs" "Absolute value." $ abs @Integer
-                           , valBDT "signum" "Sign." $ signum @Integer
-                           , valBDT "mod" "Modulus, leftover from `div`" $ mod' @Integer
-                           , valBDT "even" "Is even?" $ even @Integer
-                           , valBDT "odd" "Is odd?" $ odd @Integer
-                           , valBDT "gcd" "Greatest common divisor." $ gcd @Integer
-                           , valBDT "lcm" "Least common multiple." $ lcm @Integer
-                           , valBDT "^" "Raise to non-negative power." $ (^) @Integer @Integer
-                           , valBDT "sum" "Sum." $ sum @[] @Integer
-                           , valBDT "product" "Product." $ product @[] @Integer
-                           , valBDT
-                                 "range"
-                                 "`range a b` is an arithmetic sequence starting from `a`, with all numbers `<= b`. Step is +1." $
-                             range @Integer
-                           , valBDT
-                                 "arithList"
-                                 "`arithList step a (Just b)` is an arithmetic sequence starting from `a`, with all numbers `<= b` (for positive step) or `>= b` (for negative step).\n\n\
+                     , namespaceBDT "Integer" "" $
+                       pickNamesInRootBDT ["min", "max"] (ordEntries @_ @Integer) <>
+                       pickNamesInRootBDT ["succ", "pred"] (enumEntries @_ @Integer) <>
+                       [ plainFormattingDef @Integer "an integer"
+                       , nameInRootBDT $ valBDT "+" "Add." $ (+) @Integer
+                       , nameInRootBDT $ valBDT "-" "Subtract." $ (-) @Integer
+                       , nameInRootBDT $ valBDT "*" "Multiply." $ (*) @Integer
+                       , nameInRootBDT $ valBDT "negate" "Negate." $ negate @Integer
+                       , nameInRootBDT $ valBDT "abs" "Absolute value." $ abs @Integer
+                       , nameInRootBDT $ valBDT "signum" "Sign." $ signum @Integer
+                       , nameInRootBDT $ valBDT "mod" "Modulus, leftover from `div`" $ mod' @Integer
+                       , nameInRootBDT $ valBDT "even" "Is even?" $ even @Integer
+                       , nameInRootBDT $ valBDT "odd" "Is odd?" $ odd @Integer
+                       , nameInRootBDT $ valBDT "gcd" "Greatest common divisor." $ gcd @Integer
+                       , nameInRootBDT $ valBDT "lcm" "Least common multiple." $ lcm @Integer
+                       , nameInRootBDT $ valBDT "^" "Raise to non-negative power." $ (^) @Integer @Integer
+                       , nameInRootBDT $ valBDT "sum" "Sum." $ sum @[] @Integer
+                       , nameInRootBDT $ valBDT "product" "Product." $ product @[] @Integer
+                       , nameInRootBDT $
+                         valBDT
+                             "range"
+                             "`range a b` is an arithmetic sequence starting from `a`, with all numbers `<= b`. Step is +1." $
+                         range @Integer
+                       , nameInRootBDT $
+                         valBDT
+                             "arithList"
+                             "`arithList step a (Just b)` is an arithmetic sequence starting from `a`, with all numbers `<= b` (for positive step) or `>= b` (for negative step).\n\n\
                                 \`arithList step a Nothing` is an infinite arithmetic sequence starting from `a`." $
-                             arithList @Integer
-                           ]
+                         arithList @Integer
+                       ]
                      ]
                    , headingBDT "Rational" "" $
                      [ typeBDT "Rational" "" (MkSomeGroundType rationalGroundType) []
@@ -300,7 +303,7 @@ baseLibSections =
                            , valBDT "+" "Add." $ (+) @SafeRational
                            , valBDT "-" "Subtract." $ (-) @SafeRational
                            , valBDT "*" "Multiply." $ (*) @SafeRational
-                           , valBDT "/" "Divide." $ (/) @SafeRational
+                           , nameInRootBDT $ valBDT "/" "Divide." $ (/) @SafeRational
                            , valBDT "negate" "Negate." $ negate @SafeRational
                            , valBDT "recip" "Reciprocal." $ recip @SafeRational
                            , valBDT "abs" "Absolute value." $ abs @SafeRational
@@ -317,64 +320,64 @@ baseLibSections =
                      , literalSubtypeRelationEntry @Number
                      , showableSubtypeRelationEntry @Number
                      , namespaceBDT "Number" "" $
-                       eqEntries @_ @Number <>
+                       pickNamesInRootBDT ["<", "<=", ">", ">="] (ordEntries @_ @Number) <>
                        [ plainFormattingDef @Number "a number"
-                       , valBDT "<" "Numeric strictly less." $ (<) @Number
-                       , valBDT "<=" "Numeric less or equal." $ (<=) @Number
-                       , valBDT ">" "Numeric strictly greater." $ (>) @Number
-                       , valBDT ">=" "Numeric greater or equal." $ (>=) @Number
-                       , valBDT "min" "Lesser of two Numbers" $ min @Number
-                       , valBDT "max" "Greater of two Numbers" $ max @Number
                        , valBDT "+" "Add." $ (+) @Number
                        , valBDT "-" "Subtract." $ (-) @Number
                        , valBDT "*" "Multiply." $ (*) @Number
                        , valBDT "/" "Divide." $ (/) @Number
                        , valBDT "negate" "Negate." $ negate @Number
                        , valBDT "recip" "Reciprocal." $ recip @Number
-                       , valBDT "pi" "Half the radians in a circle." $ pi @Number
-                       , valBDT "exp" "Exponent" $ exp @Number
-                       , valBDT "log" "Natural logarithm" $ log @Number
-                       , valBDT "sqrt" "Square root." $ sqrt @Number
+                       , nameInRootBDT $ valBDT "pi" "Half the radians in a circle." $ pi @Number
+                       , nameInRootBDT $ valBDT "exp" "Exponent" $ exp @Number
+                       , nameInRootBDT $ valBDT "log" "Natural logarithm" $ log @Number
+                       , nameInRootBDT $ valBDT "sqrt" "Square root." $ sqrt @Number
                        , valBDT "^" "Raise to power." $ (**) @Number
-                       , valBDT "logBase" "" $ logBase @Number
-                       , valBDT "sin" "Sine of an angle in radians." $ sin @Number
-                       , valBDT "cos" "Cosine of an angle in radians." $ cos @Number
-                       , valBDT "tan" "Tangent of an angle in radians." $ tan @Number
-                       , valBDT "asin" "Radian angle of a sine." $ asin @Number
-                       , valBDT "acos" "Radian angle of a cosine." $ acos @Number
-                       , valBDT "atan" "Radian angle of a tangent." $ atan @Number
-                       , valBDT "sinh" "Hyperbolic sine." $ sinh @Number
-                       , valBDT "cosh" "Hyperbolic cosine." $ cosh @Number
-                       , valBDT "tanh" "Hyperbolic tangent." $ tanh @Number
-                       , valBDT "asinh" "Inverse hyperbolic sine." $ asinh @Number
-                       , valBDT "acosh" "Inverse hyperbolic cosine." $ acosh @Number
-                       , valBDT "atanh" "Inverse hyperbolic tangent." $ atanh @Number
-                       , valBDT "nabs" "Absolute value." $ abs @Number
+                       , nameInRootBDT $ valBDT "logBase" "" $ logBase @Number
+                       , nameInRootBDT $ valBDT "sin" "Sine of an angle in radians." $ sin @Number
+                       , nameInRootBDT $ valBDT "cos" "Cosine of an angle in radians." $ cos @Number
+                       , nameInRootBDT $ valBDT "tan" "Tangent of an angle in radians." $ tan @Number
+                       , nameInRootBDT $ valBDT "asin" "Radian angle of a sine." $ asin @Number
+                       , nameInRootBDT $ valBDT "acos" "Radian angle of a cosine." $ acos @Number
+                       , nameInRootBDT $ valBDT "atan" "Radian angle of a tangent." $ atan @Number
+                       , nameInRootBDT $ valBDT "sinh" "Hyperbolic sine." $ sinh @Number
+                       , nameInRootBDT $ valBDT "cosh" "Hyperbolic cosine." $ cosh @Number
+                       , nameInRootBDT $ valBDT "tanh" "Hyperbolic tangent." $ tanh @Number
+                       , nameInRootBDT $ valBDT "asinh" "Inverse hyperbolic sine." $ asinh @Number
+                       , nameInRootBDT $ valBDT "acosh" "Inverse hyperbolic cosine." $ acosh @Number
+                       , nameInRootBDT $ valBDT "atanh" "Inverse hyperbolic tangent." $ atanh @Number
+                       , valBDT "abs" "Absolute value." $ abs @Number
                        , valBDT "signum" "Sign. Note this will be the same exact or inexact as the number." $
                          signum @Number
-                       , valBDT "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
-                       , valBDT "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
-                       , valBDT "round" "Closest Integer." (round :: Number -> Integer)
-                       , valBDT "inexact" "Convert a number to inexact." numberToDouble
-                       , valBDT
+                       , nameInRootBDT $
+                         valBDT "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
+                       , nameInRootBDT $
+                         valBDT "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
+                       , nameInRootBDT $ valBDT "round" "Closest Integer." (round :: Number -> Integer)
+                       , nameInRootBDT $ valBDT "inexact" "Convert a number to inexact." numberToDouble
+                       , nameInRootBDT $
+                         valBDT
                              "approximate"
                              "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
                              approximate
-                       , valBDT
+                       , nameInRootBDT $
+                         valBDT
                              "div"
                              "Division to Integer, towards negative infinity."
                              (div' :: Number -> Number -> Integer)
-                       , valBDT "mod" "Modulus, leftover from `div`" $ mod' @Number
-                       , valBDT "isNaN" "Is not a number?" numberIsNaN
-                       , valBDT "isInfinite" "Is infinite?" numberIsInfinite
-                       , valBDT "isNegativeZero" "Is negative zero?" numberIsNegativeZero
-                       , valBDT "isExact" "Is exact?" numberIsExact
+                       , nameInRootBDT $ valBDT "mod" "Modulus, leftover from `div`" $ mod' @Number
+                       , nameInRootBDT $ valBDT "isNaN" "Is not a number?" numberIsNaN
+                       , nameInRootBDT $ valBDT "isInfinite" "Is infinite?" numberIsInfinite
+                       , nameInRootBDT $ valBDT "isNegativeZero" "Is negative zero?" numberIsNegativeZero
+                       , nameInRootBDT $ valBDT "isExact" "Is exact?" numberIsExact
                        , valBDT "sum" "Sum." $ sum @[] @Number
                        , valBDT "mean" "Mean." $ \(vv :: [Number]) -> sum vv / (ExactNumber $ toRational $ length vv)
                        , valBDT "product" "Product." $ product @[] @Number
-                       , valBDT "checkSafeRational" "Get the exact value of a Number, if it is one." $
+                       , nameInRootBDT $
+                         valBDT "checkSafeRational" "Get the exact value of a Number, if it is one." $
                          decode safeRationalNumber
-                       , valBDT
+                       , nameInRootBDT $
+                         valBDT
                              "checkExactInteger"
                              "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $
                          decode $ integerSafeRational . safeRationalNumber
@@ -421,10 +424,11 @@ baseLibSections =
                     , valBDT "+" "Add duration to time." addUTCTime
                     , valBDT "-" "Difference of times." diffUTCTime
                     , valBDT "getNow" "Get the current time." $ getCurrentTime
-                    , valBDT "newClock" "Make a model of the current time that updates per the given duration." newClock
+                    , nameInRootBDT $
+                      valBDT "newClock" "Make a model of the current time that updates per the given duration." newClock
                     ]
               ]
-            , headingBDT "Calendar" "" $
+            , headingBDT "Date" "" $
               [ typeBDT
                     "Date"
                     ""
@@ -438,16 +442,15 @@ baseLibSections =
                     ]
               , literalSubtypeRelationEntry @Day
               , showableSubtypeRelationEntry @Day
-              , namespaceBDT
-                    "Date"
-                    ""
-                    [ plainFormattingDef @Day "a date"
-                    , unixFormattingDef @Day "a date"
-                    , valBDT "add" "Add count to days to date." addDays
-                    , valBDT "diff" "Difference of days between dates." diffDays
-                    , valBDT "getNowUTC" "Get the current UTC date." $ fmap utctDay getCurrentTime
-                    , valBDT "getNowLocal" "Get the current local date." $ fmap localDay getLocalTime
-                    ]
+              , namespaceBDT "Date" "" $
+                enumEntries @_ @Day <>
+                [ plainFormattingDef @Day "a date"
+                , unixFormattingDef @Day "a date"
+                , valBDT "+" "Add count to days to date." addDays
+                , valBDT "-" "Difference of days between dates." diffDays
+                , valBDT "getNowUTC" "Get the current UTC date." $ fmap utctDay getCurrentTime
+                , valBDT "getNowLocal" "Get the current local date." $ fmap localDay getLocalTime
+                ]
               ]
             , headingBDT "Time of Day" "" $
               [ typeBDT
@@ -469,8 +472,8 @@ baseLibSections =
                     ""
                     [ plainFormattingDef @TimeOfDay "a time of day"
                     , unixFormattingDef @TimeOfDay "a time of day"
-                    , valBDT "midnight" "Midnight." midnight
-                    , valBDT "midday" "Midday." midday
+                    , nameInRootBDT $ valBDT "midnight" "Midnight." midnight
+                    , nameInRootBDT $ valBDT "midday" "Midday." midday
                     ]
               ]
             , headingBDT "Local Time" "" $
@@ -597,10 +600,10 @@ baseLibSections =
           , namespaceBDT
                 "Product"
                 ""
-                [ valBDT "fst" "Get the first member of a pair." $ fst @A @B
-                , valBDT "snd" "Get the second member of a pair." $ snd @A @B
+                [ nameInRootBDT $ valBDT "fst" "Get the first member of a pair." $ fst @A @B
+                , nameInRootBDT $ valBDT "snd" "Get the second member of a pair." $ snd @A @B
                 , valBDT "to" "Construct a pair." $ (,) @A @B
-                , valBDT "both" "Construct a pair." $ \(a :: A) -> (a, a)
+                , nameInRootBDT $ valBDT "both" "Construct a pair." $ \(a :: A) -> (a, a)
                 ]
           ]
     , headingBDT
@@ -627,7 +630,8 @@ baseLibSections =
           , namespaceBDT "Sum" "" $
             monadEntries @_ @(Either P) <>
             [ valBDT "from" "Eliminate a sum" $ either @A @C @B
-            , valBDT "either" "Eliminate a sum" $ \(v :: Either A A) ->
+            , nameInRootBDT $
+              valBDT "either" "Eliminate a sum" $ \(v :: Either A A) ->
                   case v of
                       Left a -> a
                       Right a -> a
@@ -662,24 +666,27 @@ baseLibSections =
                   case l of
                       [] -> fnil
                       (a:aa) -> fcons a aa
-            , valBDT "length" "Number of items in a list" (length :: [TopType] -> Int)
-            , valBDT "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
+            , nameInRootBDT $ valBDT "length" "Number of items in a list" (length :: [TopType] -> Int)
+            , nameInRootBDT $ valBDT "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
             , valBDT "map" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
-            , valBDT "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
-            , valBDT "maybeMap" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
-            , valBDT "take" "Take the first n elements." (take :: Int -> [A] -> [A])
-            , valBDT "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
-            , valBDT "takeWhile" "Take while the condition holds." (takeWhile :: (A -> Bool) -> [A] -> [A])
-            , valBDT "dropWhile" "Drop while the condition holds." (dropWhile :: (A -> Bool) -> [A] -> [A])
-            , valBDT "zip" "Zip two lists." $ zip @A @B
-            , valBDT "sort" "Sort list by an order." (sortBy :: (A -> A -> Ordering) -> [A] -> [A])
+            , nameInRootBDT $ valBDT "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
+            , nameInRootBDT $ valBDT "maybeMap" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
+            , nameInRootBDT $ valBDT "take" "Take the first n elements." (take :: Int -> [A] -> [A])
+            , nameInRootBDT $ valBDT "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
+            , nameInRootBDT $
+              valBDT "takeWhile" "Take while the condition holds." (takeWhile :: (A -> Bool) -> [A] -> [A])
+            , nameInRootBDT $
+              valBDT "dropWhile" "Drop while the condition holds." (dropWhile :: (A -> Bool) -> [A] -> [A])
+            , nameInRootBDT $ valBDT "zip" "Zip two lists." $ zip @A @B
+            , nameInRootBDT $ valBDT "sort" "Sort list by an order." (sortBy :: (A -> A -> Ordering) -> [A] -> [A])
             ]
           , namespaceBDT "List1" "" $
             applicativeEntries @_ @NonEmpty <>
             [ valBDT "map" "Map the items of a non-empty list." (fmap :: (A -> B) -> NonEmpty A -> NonEmpty B)
-            , valBDT "<>" "Concatentate a non-empty list with a list." append
-            , valBDT "concat1" "Concatentate a non-empty list of non-empty lists." mconcat1
-            , valBDT
+            , nameInRootBDT $ valBDT "<>" "Concatentate a non-empty list with a list." append
+            , nameInRootBDT $ valBDT "concat1" "Concatentate a non-empty list of non-empty lists." mconcat1
+            , nameInRootBDT $
+              valBDT
                   "sort"
                   "Sort non-empty list by an order."
                   (sortBy :: (A -> A -> Ordering) -> NonEmpty A -> NonEmpty A)
@@ -691,21 +698,24 @@ baseLibSections =
           [ typeBDT "->" "A pure function." (MkSomeGroundType funcGroundType) []
           , namespaceBDT "Function" "" $
             monadEntries @_ @((->) P) <>
-            [ valBDT "$" "Apply a function to a value." $ id @(->) @(A -> B)
-            , valBDT ">-" "Apply a value to a function." revap
-            , valBDT "id" "The identity function." $ id @(->) @A
-            , valBDT "." "Compose functions." $ (.) @(->) @A @B @C
-            , valBDT "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
-            , valBDT
+            [ nameInRootBDT $ valBDT "$" "Apply a function to a value." $ id @(->) @(A -> B)
+            , nameInRootBDT $ valBDT ">-" "Apply a value to a function." revap
+            , nameInRootBDT $ valBDT "id" "The identity function." $ id @(->) @A
+            , nameInRootBDT $ valBDT "." "Compose functions." $ (.) @(->) @A @B @C
+            , nameInRootBDT $ valBDT "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
+            , nameInRootBDT $
+              valBDT
                   "seq"
                   "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
                   (seq :: TopType -> A -> A)
-            , specialFormBDT "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
+            , nameInRootBDT $
+              specialFormBDT "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
               MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                   let dtw = getGreatestDynamicSupertype tn
                   tpw <- invertType tn
                   return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
-            , specialFormBDT "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
+            , nameInRootBDT $
+              specialFormBDT "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
               MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                   let dtw = getGreatestDynamicSupertype tn
                   tpw <- invertType tn

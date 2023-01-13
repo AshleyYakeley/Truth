@@ -60,10 +60,12 @@ printModuleDoc modopts tmodname = do
                 trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
                 putBindDoc :: MarkdownText -> IO ()
                 putBindDoc m = putIndentMarkdown $ paragraphMarkdown $ codeMarkdown m
+                showNames :: NonEmpty FullNameRef -> MarkdownText
+                showNames names = intercalate ", " $ toList $ fmap (boldMarkdown . toMarkdown . mapFullNameRef) names
             case docItem of
                 ValueDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
+                        name = showNames diNames
                         nameType = name <> " : " <> toMarkdown diType
                         in nameType
                 SignatureDocItem {..} ->
@@ -73,20 +75,20 @@ printModuleDoc modopts tmodname = do
                         in nameType
                 ValuePatternDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
+                        name = showNames diNames
                         nameType = name <> " : " <> toMarkdown diType
                         in nameType
                 SpecialFormDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
+                        name = showNames diNames
                         params = trailingParams diParams
                         nameType = name <> params <> ": " <> toMarkdown diType
                         in nameType
                 TypeDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown $ mapFullNameRef diName
+                        name = showNames diNames
                         in "type " <>
-                           case (fmap nameIsInfix $ fullNameRefToUnqualified diName, diParams) of
+                           case (fmap nameIsInfix $ fullNameRefToUnqualified $ head diNames, diParams) of
                                (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
                                _ -> name <> trailingParams diParams
                 SubtypeRelationDocItem {..} ->

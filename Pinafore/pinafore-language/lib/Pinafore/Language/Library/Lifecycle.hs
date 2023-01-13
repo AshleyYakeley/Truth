@@ -23,13 +23,15 @@ lifecycleLibSection =
                             \Example: `run $ do openResource; sleep (Seconds 1) end`  \n\
                             \This opens some resource, sleeps for one second, and then closes it again." $
                 (actionHoistView viewSubLifecycle) @A
-              , valBDT
+              , nameInRootBDT $
+                valBDT
                     "onClose"
                     "Add this action as to be done when closing.\n\n\
                             \Example: `run $ do onClose $ outputLn.Env \"hello\"; sleep (Seconds 1) end`  \n\
                             \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
                     actionOnClose
-              , valBDT
+              , nameInRootBDT $
+                valBDT
                     "closer"
                     "Get an (idempotent) action that closes what gets opened in the given action.\n\n\
                             \Example: `(cl,r) <- closer openResource`  \n\

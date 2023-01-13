@@ -1,7 +1,6 @@
 #!/usr/bin/pinafore
 openDefaultStore.Env >>= fn store =>
 let
-using Store;
 
 pdate = property @Unit @Date !"calendar-test" store;
 rdate = pdate !$ {()};

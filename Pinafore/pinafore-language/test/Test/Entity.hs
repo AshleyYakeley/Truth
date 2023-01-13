@@ -74,18 +74,7 @@ testEntity :: TestTree
 testEntity =
     runScriptTestTree $
     tDecls
-        [ "using Order"
-        , "using Entity"
-        , "using Attribute"
-        , "using Property"
-        , "using SetModel"
-        , "using WholeModel"
-        , "using Showable"
-        , "using Store"
-        , "using Function"
-        , "using Action"
-        , "using Ordering"
-        , "pass = return ()"
+        [ "pass = return ()"
         , "undefined = error \"undefined\""
         , "runWholeModel = fn r => do a <- get r; a end"
         , "runreforfail = fn r => runWholeModel (r ?? {fail \"unknown model\"})"
@@ -541,7 +530,7 @@ testEntity =
                           "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (count.FiniteSetModel (tea !@ {e1}))"
                     , testExpectSuccess $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (list.FiniteSetModel empty.Order someset) >>= fn pp => for pp $ fn p => runWholeModel {counter := succ.Integer %counter}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (toList.FiniteSetModel empty.Order someset) >>= fn pp => for pp $ fn p => runWholeModel {counter := succ.Integer %counter}) >> testeq {1} counter"
                     ]
               , tGroup
                     "types"
@@ -836,8 +825,7 @@ testEntity =
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
               ]
         , tDecls
-              [ "using Integer"
-              , "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeModel {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
+              [ "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeModel {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
               ] $
           tGroup
               "datatype"

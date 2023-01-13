@@ -1,5 +1,5 @@
-pinafore> :doc textLength
-#| The length of a piece of text.
+pinafore> :doc length.Text
+#| The length of a text.
 pinafore> :doc Time
 #| Absolute time as measured by UTC.
 pinafore> :doc Just
@@ -7,7 +7,7 @@ pinafore> :doc Just
 pinafore> let import "pinafore-gnome"
 pinafore> let import "pinafore-media"
 pinafore> let using Cairo
-pinafore> :doc paintAlpha
+pinafore> :doc paintAlpha.Drawing
 #| Paint everywhere with this alpha (within the clip)
 pinafore> :doc Element.GTK
 #| A user interface element is something that goes inside a window.

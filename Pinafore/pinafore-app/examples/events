@@ -6,7 +6,6 @@ import "uistuff/named";
 in runUIStuff $ fn uistuff@MkUIStuff =>
 mkNamed uistuff >- fn MkNamedStuff =>
 let
-using Store;
 
 ### EventTime
 
@@ -18,8 +17,8 @@ end;
 
 showEventTime: EventTime -> Text
 = match
-    EventTimeDate d => unixFormatDate "%F" d;
-    EventTimeTime t => unixFormatLocalTime "%F %R" t;
+    EventTimeDate d => encode (unixAsText.Date "%F") d;
+    EventTimeTime t => encode (unixAsText.LocalTime "%F %R") t;
     end;
 
 eventTimeDate: EventTime -> Date
@@ -35,7 +34,7 @@ setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime
     end;
 
 eventModelTimeDate: WholeModel EventTime -> WholeModel Date
-= fn r => lensMapWholeModel eventTimeDate setEventTimeDate r;
+= fn r => lensMap.WholeModel eventTimeDate setEventTimeDate r;
 
 eventModelTimeTimeOfDay: WholeModel EventTime -> WholeModel TimeOfDay
 = fn r => let
@@ -53,7 +52,7 @@ setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventT
         Just tod => EventTimeTime $ DateAndTime (eventTimeDate et) tod;
         end;
     end;
-in maybeLensMapWholeModel eventTimeTimeOfDay setEventTimeTimeOfDay r;
+in maybeLensMap.WholeModel eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
 # for ordering
 eventTimeTime: EventTime -> LocalTime
@@ -63,7 +62,7 @@ eventTimeTime: EventTime -> LocalTime
     end;
 
 eventTimeOrder: ModelOrder EventTime
-= mapOrder eventTimeTime localChronological;
+= map.ModelOrder eventTimeTime localChronological;
 
 
 ### Event
@@ -83,7 +82,7 @@ eventData: FiniteSetModel (EventTime *: Text)
 = (eventTime **.Property name) !$$ events;
 
 eventDataOrder: ModelOrder (EventTime *: Text)
-= mapOrder fst eventTimeOrder;
+= map.ModelOrder fst eventTimeOrder;
 
 eventList: WholeModel +Date -> WholeModel +(List (EventTime *: Text))
 = fn todaymodel => {
@@ -92,7 +91,7 @@ eventList: WholeModel +Date -> WholeModel +(List (EventTime *: Text))
 
         pickCurrent: EventTime *: Text -> Boolean
         = fn (t,_) => ge $ calendrical (eventTimeDate t) today;
-    in (EventTimeDate today,"Today") :: filter pickCurrent %(list.FiniteSetModel eventDataOrder eventData)
+    in (EventTimeDate today,"Today") :: filter pickCurrent %(toList.FiniteSetModel eventDataOrder eventData)
     };
 
 
@@ -100,22 +99,22 @@ eventList: WholeModel +Date -> WholeModel +(List (EventTime *: Text))
 
 # Text for the overview tab.
 overviewModel: WholeModel +Date -> WholeModel +Text
-= fn todaymodel => {textConcat $ mapList (fn (t,n) => showEventTime t <> ": " <> n <> "\n") %(eventList todaymodel)};
+= fn todaymodel => {concat.Text $ map.List (fn (t,n) => showEventTime t <>.Text ": " <>.Text n <>.Text "\n") %(eventList todaymodel)};
 
 # Overview tab GTK
 overviewPane: Pane
 = simple.Pane "Overview" $ exec.GTK $ do
     now <- newClock $ Seconds 60; # update every minute
-    tz <- newTimeZoneModel now;
-    return $ label.GTK $ overviewModel {timeToLocal %tz %now >- match DateAndTime d _ => d end};
+    tz <- newTimeZoneModel.LocalTime now;
+    return $ label.GTK $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
     end;
 
 calendarWindow: WholeModel +Event -> Action Window.GTK
-= fn evt => fixAction $ fn window =>
-    open.Window.GTK gtk (200,200) {"date of " <> %(name !$% evt)} $ vertical.GTK
+= fn evt => fix $ fn window =>
+    open.Window.GTK gtk (200,200) {"date of " <>.Text %(name !$% evt)} $ vertical.GTK
     [
         calendar.GTK $ eventModelTimeDate $ eventTime !$% evt,
-        button.GTK {"Done: " <> show %(eventModelTimeDate $ eventTime !$% evt)} {close.Window.GTK window}
+        button.GTK {"Done: " <>.Text show %(eventModelTimeDate $ eventTime !$% evt)} {close.Window.GTK window}
     ];
 
 eventUI: WholeModel +Event -> Element.GTK
@@ -125,10 +124,10 @@ eventUI: WholeModel +Event -> Element.GTK
     horizontal.GTK
     [
         button.GTK {"cal"} {calendarWindow evt},
-        textEntry.GTK $ interpretDateAsText $ eventModelTimeDate $ eventTime !$% evt,
-        textEntry.GTK $ unixInterpretTimeOfDayAsText "%H:%M" $ eventModelTimeTimeOfDay $ eventTime !$% evt
+        textEntry.GTK $ reverse.Prism asText.Date !$ (eventModelTimeDate $ eventTime !$% evt),
+        textEntry.GTK $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (eventModelTimeTimeOfDay $ eventTime !$% evt)
     ],
-    layoutGrow.GTK $ textArea.GTK (wholeModelText $ eventNotes !$% evt)
+    layoutGrow.GTK $ textArea.GTK (fromWhole.TextModel $ eventNotes !$% evt)
 ];
 
 eventWindow: Event -> Action Window.GTK
@@ -137,7 +136,7 @@ eventWindow: Event -> Action Window.GTK
 newEvent: Action Event
 = do
     item <- newOpenEntity @Event;
-    day <- getDate;
+    day <- getNowLocal.Date;
     eventTime !$ {item} := EventTimeDate day;
     name !$ {item} := "";
     return item;

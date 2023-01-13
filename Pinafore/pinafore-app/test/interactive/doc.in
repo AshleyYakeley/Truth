@@ -1,10 +1,10 @@
-:doc textLength
+:doc length.Text
 :doc Time
 :doc Just
 let import "pinafore-gnome"
 let import "pinafore-media"
 let using Cairo
-:doc paintAlpha
+:doc paintAlpha.Drawing
 :doc Element.GTK
 :doc textArea.GTK
 :doc notfound

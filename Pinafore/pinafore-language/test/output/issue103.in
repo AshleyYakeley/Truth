@@ -8,9 +8,6 @@ e1: Entity
 f: WholeModel a -> Unit
 = fn _ => ();
 
-using Action (>>=,>>,return);
-using WholeModel (get,:=);
-
 in do
     (model,_) <- newMem.WholeModel >>= fn model => return (model, f model);
     model := e1;

@@ -6,12 +6,7 @@ expose
 of
 import "pinafore-gnome";
 import "uistuff/selection";
-
-using Function;
 using GTK;
-using Store;
-using Attribute;
-using Property;
 
 #| An open entity type; something with a name
 opentype Named;
@@ -41,7 +36,7 @@ mkNamed: UIStuff -> NamedStuff
 = fn MkUIStuff => let
     name = property @Named @Text !"identify.name" store;
     nameOrder = on.ModelOrder name alphabetical.Order;
-    byName = fn model => list.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property ** name) !$$ model;
+    byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property name) !$$ model;
     namedPane = fns iui e => MkPane (name !$% e) (iui $ immut.WholeModel e) {[]};
     nameColumn = ({"Name"},fn p => name !$ {p});
 

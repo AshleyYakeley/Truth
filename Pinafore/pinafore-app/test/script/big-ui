@@ -37,10 +37,10 @@ prop0 = property @T @Text !"000" store;
 act : Action Unit
 = do
     message.Debug "ACTION: start";
-    tstart <- getTime;
+    tstart <- getNow.Time;
     prop0 !$ {me} := "Example";
-    tend <- getTime;
-    outputLn.Env $ "Time: " <> show (diffTime tend tstart >- fn Seconds s => round (s .* 1000));
+    tend <- getNow.Time;
+    outputLn.Env $ "Time: " <>.Text show (tend -.Time tstart >- fn Seconds s => round (s *.Rational 1000));
     message.Debug "ACTION: end";
     end
 
