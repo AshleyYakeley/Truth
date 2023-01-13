@@ -94,7 +94,7 @@ benchScripts =
           intercalate "," (replicate 50 "get (return.WholeModel 1) >>= fn x => return ()") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => list (return ()) (fns x y => return ()) r; q = [" <>
+          "let g = fn r => from.List (return ()) (fns x y => return ()) r; q = [" <>
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
