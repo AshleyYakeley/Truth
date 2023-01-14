@@ -33,12 +33,14 @@ module Pinafore.Language.API
     , rangeCCRArgument
     , TrustOrVerify(..)
     , module Pinafore.Language.Value
+    , Interpret(..)
     ) where
 
 import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.Model ()
 import Pinafore.Language.Name
 import Pinafore.Language.Shim

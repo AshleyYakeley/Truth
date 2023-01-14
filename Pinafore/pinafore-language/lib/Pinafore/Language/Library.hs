@@ -20,6 +20,7 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Env
 import Pinafore.Language.Library.Eval
 import Pinafore.Language.Library.FetchModule
+import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.Lifecycle
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.ModelOrder
@@ -40,6 +41,7 @@ library =
     baseLibSections <>
     [ actionLibSection
     , lifecycleLibSection
+    , interpretLibSection
     , modelLibSection
     , opticsLibSection
     , modelOrderLibSection
