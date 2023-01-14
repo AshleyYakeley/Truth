@@ -57,8 +57,8 @@ jpegStuff =
         "JPEG"
         ""
         [ typeBDT "JPEG" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
-        , hasSubtypeRelationBDT @LangJPEGImage @LangImage Verify "" $
-          functionToShim "jpegImage" $ MkLangImage . mapSome toPixelType . snd . idlData
+        , hasSubtypeRelationBDT @LangJPEGImage @(Interpret LangImage) Verify "" $
+          functionToShim "jpegImage" $ MkInterpret . MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationBDT @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral
         , hasSubtypeRelationBDT @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
         , namespaceBDT

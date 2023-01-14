@@ -57,8 +57,8 @@ pngStuff =
         "PNG"
         ""
         [ typeBDT "PNG" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
-        , hasSubtypeRelationBDT @LangPNGImage @LangImage Verify "" $
-          functionToShim "pngImage" $ MkLangImage . mapSome toPixelType . snd . idlData
+        , hasSubtypeRelationBDT @LangPNGImage @(Interpret LangImage) Verify "" $
+          functionToShim "pngImage" $ MkInterpret . MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationBDT @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
         , hasSubtypeRelationBDT @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
         , namespaceBDT "PNG" "" [valBDT "encode" "Encode an image as PNG, with given metadata." pngEncode]
