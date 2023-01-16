@@ -6,12 +6,12 @@ These are the main differences:
 * Line comments start with `#`, not `--`.
 * Block comments start with `{#` and end with `#}` (and may be nested).
 * Layout is not significant.
-Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `case` statement, are separated by `;`.
-Also, `case` and `do` statements are terminated with `end`.
+Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `match` statement, are separated by `;`.
+Also, `match` and `do` statements are terminated with `end`.
 * `:` is used for type signatures, while `::` is used for list construction.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
-* Only one equation is allowed for a function definition. Use `case` to match argument patterns.
+* Only one equation is allowed for a function definition. Use `match` to match argument patterns.
 * Haskell's type constructors `Either`, `(,)`, `[]` and `()` become `+:`, `*:`, `List` and `Unit`.
 * There's no tuple type bigger than two. The tuple `(a,b,c)` is equivalent to `(a,(b,c))`, etc.
 * Lambda-expressions and case-expressions use `=>` instead of `->`.

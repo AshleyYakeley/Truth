@@ -153,12 +153,11 @@ datatype storable Patient of
     DeadPatient Person Date Date !"Patient.DeadPatient";
 end;
 
-patientPerson: Patient -> Person;
-patientPerson patient =
-    case patient of
-        LivingPatient p _ => p;
-        DeadPatient p _ _ => p;
-    end;
+patientPerson: Patient -> Person
+= match
+    LivingPatient p _ => p;
+    DeadPatient p _ _ => p;
+end;
 ```
 
 Each constructor is anchored by its anchor and its count of types.
@@ -205,12 +204,12 @@ The [greatest dynamic supertype](dynamic-supertypes.md) of all dynamic entity ty
 So you can use `check`, `coerce`, and pattern-matching to convert between them.
 
 ```pinafore
-describeAnimalType :: Animal -> Text;
-describeAnimalType a = case a of
+describeAnimalType :: Animal -> Text
+= match
     h: Human => "Human";
     c: Cat => "Cat";
     d: Dog => "Dog";
-    end;
+end;
 ```
 
 To create new values of a concrete dynamic entity type at runtime, you can use `newDynamicEntity`.
