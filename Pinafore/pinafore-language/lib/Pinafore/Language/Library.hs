@@ -22,6 +22,7 @@ import Pinafore.Language.Library.Eval
 import Pinafore.Language.Library.FetchModule
 import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.Lifecycle
+import Pinafore.Language.Library.MIME
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.ModelOrder
 import Pinafore.Language.Library.Optics
@@ -42,6 +43,7 @@ library =
     [ actionLibSection
     , lifecycleLibSection
     , interpretLibSection
+    , mimeLibSection
     , modelLibSection
     , opticsLibSection
     , modelOrderLibSection

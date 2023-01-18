@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Library.Media.Image.JPEG
     ( jpegStuff
     ) where
@@ -16,7 +18,7 @@ type JPEGData = (WitnessMapOf ImageDataKey, SomeFor Image JPEGPixelType)
 -- LangJPEGImage
 newtype LangJPEGImage =
     MkLangJPEGImage (DataLiteral JPEGData)
-    deriving (IsDataLiteral JPEGData)
+    deriving (IsDataLiteral)
 
 jpegImageGroundType :: QGroundType '[] LangJPEGImage
 jpegImageGroundType =
@@ -24,29 +26,26 @@ jpegImageGroundType =
         { pgtGreatestDynamicSupertype =
               SimplePolyGreatestDynamicSupertype
                   qGroundType
-                  (functionToShim "fromLiteral" jpegFromLiteral)
+                  (functionToShim "fromLiteral" literalToDataLiteral)
                   (functionToShim "jpegLiteral" idlLiteral)
         }
 
 instance HasQGroundType '[] LangJPEGImage where
     qGroundType = jpegImageGroundType
 
-jpegDataFromLiteral :: Literal -> Maybe JPEGData
-jpegDataFromLiteral (MkMIMELiteral (MkMIMEContentType "image" "jpeg" _) bs) = do
-    resultToMaybe $ decode (jpegFormat 0) $ fromStrict bs
-jpegDataFromLiteral _ = Nothing
+instance DecodeMIME JPEGData where
+    dmMatchContentType :: MIMEContentType -> Bool
+    dmMatchContentType (MkMIMEContentType "image" "jpeg" _) = True
+    dmMatchContentType _ = False
+    dmDecode bs = resultToMaybe $ decode (jpegFormat 0) $ fromStrict bs
+    dmLiteralContentType = MkMIMEContentType "image" "jpeg" []
 
-jpegFromLiteral :: Literal -> Maybe LangJPEGImage
-jpegFromLiteral lit = do
-    idata <- jpegDataFromLiteral lit
-    return $ mkDataLiteral lit idata
+jpegEncodeToBytes :: Integer -> [(Text, Literal)] -> LangImage -> StrictByteString
+jpegEncodeToBytes q mdata (MkLangImage image) =
+    toStrict $ encode (jpegFormat $ fromInteger q) (metadataToKeyMap mdata, someConvertImage image)
 
 jpegEncode :: Integer -> [(Text, Literal)] -> LangImage -> LangJPEGImage
-jpegEncode q mdata (MkLangImage image) = let
-    bs = encode (jpegFormat $ fromInteger q) (metadataToKeyMap mdata, someConvertImage image)
-    lit = MkMIMELiteral (MkMIMEContentType "image" "jpeg" []) $ toStrict bs
-    idata = fromJust $ jpegDataFromLiteral lit
-    in mkDataLiteral lit idata
+jpegEncode q mdata image = bytesToDataLiteral $ jpegEncodeToBytes q mdata image
 
 jpegMetadata :: LangJPEGImage -> LangHasMetadata
 jpegMetadata image = keyMapToMetadata $ fst $ idlData image
@@ -64,5 +63,7 @@ jpegStuff =
         , namespaceBDT
               "JPEG"
               ""
-              [valBDT "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode]
+              [ valBDT "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
+              , valBDT "jpegMIME" "" $ dataLiteralMIMEPrism @LangJPEGImage
+              ]
         ]

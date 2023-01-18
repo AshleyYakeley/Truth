@@ -13,16 +13,14 @@ rec
             _ => False;
             end;
         ref <- fileMakeRef.GIO file;
-        lit <- get ref;
+        jpeg <- get $ jpegMIME.JPEG.Image !$ ref;
         let
         path = file >- match
                 FileParseName.GIO path => path;
                 _ => "unknown";
             end;
-        in lit >- match
-            imagelit :? JPEG.Image => let image = interpret imagelit in open.Window.GTK gtk (size.Image image) {path} $ image.GTK {image};
-            _ => outputLn.Env "not a JPEG image";
-        end;
+        image = interpret jpeg;
+        in open.Window.GTK gtk (size.Image image) {path} $ image.GTK {image};
         showFile;
     end;
 end;

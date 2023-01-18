@@ -7,7 +7,9 @@ data LangPrism (a :: (Type, Type)) (b :: (Type, Type)) =
     MkLangPrism (Contra a -> Either (Co a) (Co b))
                 (Contra b -> Co a)
 
-prism :: (a -> Maybe b) -> (b -> a) -> LangPrism '( a, a) '( b, b)
+type LangPrism' a b = LangPrism '( a, a) '( b, b)
+
+prism :: (a -> Maybe b) -> (b -> a) -> LangPrism' a b
 prism amb ba =
     MkLangPrism
         (\a ->
@@ -57,10 +59,10 @@ composeLangPrism (MkLangPrism dBC eBC) (MkLangPrism dAB eAB) = let
     eAC = eAB . eBC
     in MkLangPrism dAC eAC
 
-codecToPrism :: Codec a b -> LangPrism '( a, a) '( b, b)
+codecToPrism :: Codec a b -> LangPrism' a b
 codecToPrism MkCodec {..} = prism decode encode
 
-prismToCodec :: LangPrism '( a, a) '( b, b) -> Codec a b
+prismToCodec :: LangPrism' a b -> Codec a b
 prismToCodec p = let
     decode = prismDecode p
     encode = prismEncode p

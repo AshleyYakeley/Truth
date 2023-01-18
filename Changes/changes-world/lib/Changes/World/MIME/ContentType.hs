@@ -25,6 +25,8 @@ pattern MkMIMEContentType t s p <- MkMIMEContentType_ t s p
           = MkMIMEContentType_ (toLower t) (toLower s)
               (fmap (\ (n, v) -> (toLower n, v)) p)
 
+{-# COMPLETE MkMIMEContentType #-}
+
 instance HasSerializer MIMEContentType where
     serializer = let
         toMCT :: (Text, (Text, [(Text, Text)])) -> MIMEContentType

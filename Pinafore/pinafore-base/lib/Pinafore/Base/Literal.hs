@@ -1,9 +1,9 @@
 module Pinafore.Base.Literal
     ( Literal(..)
     , AsLiteral(..)
+    , literalToMIME
+    , mimeToLiteral
     , pattern MkMIMELiteral
-    , plainTextMIMEType
-    , vndMIMEType
     , toLiteral
     , fromLiteral
     , literalToEntity
@@ -15,6 +15,7 @@ import Changes.World.MIME
 import Data.Time
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
+import Pinafore.Base.MIME
 import Pinafore.Base.Number
 import Pinafore.Base.SafeRational
 import Shapes
@@ -26,12 +27,6 @@ newtype Literal = MkLiteral
 
 instance Show Literal where
     show (MkLiteral t) = show t
-
-plainTextMIMEType :: MIMEContentType
-plainTextMIMEType = MkMIMEContentType TextMimeType "plain" [("charset", "utf-8")]
-
-vndMIMEType :: Text -> MIMEContentType
-vndMIMEType t = MkMIMEContentType ApplicationMimeType ("vnd.pinafore." <> t) []
 
 mimeCompress :: [(MIMEContentType, [Word8])]
 mimeCompress =
@@ -75,18 +70,21 @@ givenMIMETypeSerializer t =
 mimeToLiteralRaw :: MIMEContentType -> StrictByteString -> Literal
 mimeToLiteralRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> rWhole) (t, b)
 
-mimeToLiteral :: MIMEContentType -> StrictByteString -> Literal
-mimeToLiteral (MkMIMEContentType TextMimeType "plain" []) = mimeToLiteralRaw plainTextMIMEType
-mimeToLiteral t = mimeToLiteralRaw t
+mimeToLiteral :: MIME -> Literal
+mimeToLiteral (MkMIME t b) =
+    case t of
+        MkMIMEContentType TextMimeType "plain" [] -> mimeToLiteralRaw plainTextMIMEType b
+        _ -> mimeToLiteralRaw t b
 
-literalToMIME :: Literal -> Maybe (MIMEContentType, StrictByteString)
-literalToMIME (MkLiteral bs) = serializerStrictDecode (headerSerializer <***> rWhole) bs
+literalToMIME :: Literal -> Maybe MIME
+literalToMIME (MkLiteral bs) = do
+    (t, b) <- serializerStrictDecode (headerSerializer <***> rWhole) bs
+    return $ MkMIME t b
 
-pattern MkMIMELiteral ::
-        MIMEContentType -> StrictByteString -> Literal
+pattern MkMIMELiteral :: MIME -> Literal
 
-pattern MkMIMELiteral t b <- (literalToMIME -> Just (t, b))
-  where MkMIMELiteral t b = mimeToLiteral t b
+pattern MkMIMELiteral m <- (literalToMIME -> Just m)
+  where MkMIMELiteral m = mimeToLiteral m
 
 class Eq t => AsLiteral t where
     literalCodec :: Codec Literal t

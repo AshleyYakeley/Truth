@@ -27,24 +27,22 @@ fileToParseName f = unsafePerformIO $ fileGetParseName f
 parseNameToFile :: Text -> File
 parseNameToFile t = unsafePerformIO $ fileParseName t
 
-literalConv :: Bijection (Maybe (Text, LazyByteString)) (Maybe Literal)
+literalConv :: Bijection (Maybe (Text, LazyByteString)) (Maybe MIME)
 literalConv =
     MkIsomorphism
         { isoForwards =
               \mtb -> do
                   (mimetype, b) <- mtb
                   case splitWhen ((==) '/') mimetype of
-                      [t, s] -> return $ MkMIMELiteral (MkMIMEContentType t s []) $ toStrict b
+                      [t, s] -> return $ MkMIME (MkMIMEContentType t s []) $ toStrict b
                       _ -> Nothing
         , isoBackwards =
               \ml -> do
-                  l <- ml
-                  case l of
-                      MkMIMELiteral (MkMIMEContentType t s _) b -> return (t <> "/" <> s, fromStrict b)
-                      _ -> Nothing
+                  MkMIME (MkMIMEContentType t s _) b <- ml
+                  return (t <> "/" <> s, fromStrict b)
         }
 
-fileMakeRef :: File -> Action (LangWholeModel '( Literal, Literal))
+fileMakeRef :: File -> Action (LangWholeModel '( MIME, MIME))
 fileMakeRef f = do
     fref <- liftIO $ giFileReference f
     (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-

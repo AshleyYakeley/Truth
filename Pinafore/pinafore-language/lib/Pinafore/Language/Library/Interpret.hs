@@ -40,8 +40,10 @@ interpretLibSection =
         ""
         [ typeBDT "Interpret" "" (MkSomeGroundType interpretGroundType) []
         , valPatBDT "MkInterpret" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())
-        , namespaceBDT "Interpret" "" $
-          [ valBDT "map" "" (fmap :: (A -> B) -> Interpret A -> Interpret B)
-          , nameInRootBDT $ valBDT "interpret" "" $ interpret @A
-          ]
+        , namespaceBDT
+              "Interpret"
+              ""
+              [ valBDT "map" "" (fmap :: (A -> B) -> Interpret A -> Interpret B)
+              , nameInRootBDT $ valBDT "interpret" "" $ interpret @A
+              ]
         ]

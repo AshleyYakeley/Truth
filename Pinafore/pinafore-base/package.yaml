@@ -25,6 +25,7 @@ library:
       - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
       - Pinafore.Base.Order
+      - Pinafore.Base.MIME
       - Pinafore.Base.Literal
       - Pinafore.Base.Model.FunctionAttribute
       - Pinafore.Base.Model.LensAttribute

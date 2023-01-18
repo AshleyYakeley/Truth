@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Library.Media.Image.PNG
     ( pngStuff
     ) where
@@ -16,7 +18,7 @@ type PNGData = (WitnessMapOf ImageDataKey, SomeFor Image PNGPixelType)
 -- LangPNGImage
 newtype LangPNGImage =
     MkLangPNGImage (DataLiteral PNGData)
-    deriving (IsDataLiteral PNGData)
+    deriving (IsDataLiteral)
 
 pngImageGroundType :: QGroundType '[] LangPNGImage
 pngImageGroundType =
@@ -24,29 +26,26 @@ pngImageGroundType =
         { pgtGreatestDynamicSupertype =
               SimplePolyGreatestDynamicSupertype
                   qGroundType
-                  (functionToShim "fromLiteral" pngFromLiteral)
+                  (functionToShim "fromLiteral" literalToDataLiteral)
                   (functionToShim "pngLiteral" idlLiteral)
         }
 
 instance HasQGroundType '[] LangPNGImage where
     qGroundType = pngImageGroundType
 
-pngDataFromLiteral :: Literal -> Maybe PNGData
-pngDataFromLiteral (MkMIMELiteral (MkMIMEContentType "image" "png" _) bs) = do
-    resultToMaybe $ decode pngFormat $ fromStrict bs
-pngDataFromLiteral _ = Nothing
+instance DecodeMIME PNGData where
+    dmMatchContentType :: MIMEContentType -> Bool
+    dmMatchContentType (MkMIMEContentType "image" "png" _) = True
+    dmMatchContentType _ = False
+    dmDecode bs = resultToMaybe $ decode pngFormat $ fromStrict bs
+    dmLiteralContentType = MkMIMEContentType "image" "png" []
 
-pngFromLiteral :: Literal -> Maybe LangPNGImage
-pngFromLiteral lit = do
-    idata <- pngDataFromLiteral lit
-    return $ mkDataLiteral lit idata
+pngEncodeToBytes :: [(Text, Literal)] -> LangImage -> StrictByteString
+pngEncodeToBytes mdata (MkLangImage image) =
+    toStrict $ encode pngFormat (metadataToKeyMap mdata, someConvertImage image)
 
 pngEncode :: [(Text, Literal)] -> LangImage -> LangPNGImage
-pngEncode mdata (MkLangImage image) = let
-    bs = encode pngFormat (metadataToKeyMap mdata, someConvertImage image)
-    lit = MkMIMELiteral (MkMIMEContentType "image" "png" []) $ toStrict bs
-    idata = fromJust $ pngDataFromLiteral lit
-    in mkDataLiteral lit idata
+pngEncode mdata image = bytesToDataLiteral $ pngEncodeToBytes mdata image
 
 pngMetadata :: LangPNGImage -> LangHasMetadata
 pngMetadata image = keyMapToMetadata $ fst $ idlData image
@@ -61,5 +60,10 @@ pngStuff =
           functionToShim "pngImage" $ MkInterpret . MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationBDT @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
         , hasSubtypeRelationBDT @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
-        , namespaceBDT "PNG" "" [valBDT "encode" "Encode an image as PNG, with given metadata." pngEncode]
+        , namespaceBDT
+              "PNG"
+              ""
+              [ valBDT "encode" "Encode an image as PNG, with given metadata." pngEncode
+              , valBDT "pngMIME" "" $ dataLiteralMIMEPrism @LangPNGImage
+              ]
         ]
