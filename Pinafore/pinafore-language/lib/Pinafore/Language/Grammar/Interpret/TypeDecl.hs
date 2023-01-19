@@ -18,7 +18,8 @@ import Pinafore.Markdown
 import Shapes
 
 typeDeclarationTypeBox :: FullName -> RawMarkdown -> SyntaxTypeDeclaration -> QInterpreter (QFixBox () ())
-typeDeclarationTypeBox name doc (SynonymSyntaxTypeDeclaration mpol bodytype) = makeSynonymTypeBox name doc mpol bodytype
+typeDeclarationTypeBox name doc (SynonymSyntaxTypeDeclaration storable params bodytype) =
+    makeSynonymTypeBox name doc storable params bodytype
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
 typeDeclarationTypeBox name doc (StorableDatatypeSyntaxTypeDeclaration params sconss) =
     makeStorableDataTypeBox name doc params sconss

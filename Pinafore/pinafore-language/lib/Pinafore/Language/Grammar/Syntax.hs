@@ -1,6 +1,5 @@
 module Pinafore.Language.Grammar.Syntax where
 
-import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name
@@ -48,7 +47,8 @@ data SyntaxDynamicEntityConstructor
     deriving (Eq)
 
 data SyntaxTypeDeclaration
-    = SynonymSyntaxTypeDeclaration (Maybe Polarity)
+    = SynonymSyntaxTypeDeclaration Bool
+                                   [SyntaxTypeParameter]
                                    SyntaxType
     | StorableDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
                                             [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
