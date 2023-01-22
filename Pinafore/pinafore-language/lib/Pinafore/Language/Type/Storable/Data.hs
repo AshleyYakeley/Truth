@@ -4,6 +4,7 @@ module Pinafore.Language.Type.Storable.Data
     ) where
 
 import Language.Expression.Dolan
+import Pinafore.Language.Name
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -29,16 +30,19 @@ dataStorableFamilyWitness = $(iowitness [t|'MkWitKind DataStorableFamily|])
 storableDataGroundType ::
        forall tid dv (gt :: DolanVarianceKind dv). (IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid)
     => TypeIDType tid
+    -> ListTypeExprShow dv
     -> Storability dv gt
     -> QGroundType dv gt
-storableDataGroundType tidsym props@MkStorability {..} =
+storableDataGroundType tidsym showType storability@MkStorability {..} =
     MkQGroundType
         { qgtVarianceType = covaryToDolanVarianceType stbKind
         , qgtVarianceMap = covaryToDolanVarianceMap stbKind stbCovaryMap
-        , qgtShowType = stbShowType
+        , qgtShowType = showType
         , qgtFamilyType =
-              MkFamilialType dataStorableFamilyWitness $ MkDataStorableFamily tidsym $ MkSealedStorability props
+              MkFamilialType dataStorableFamilyWitness $
+              MkDataStorableFamily tidsym $ MkSealedStorability showType storability
         , qgtSubtypeGroup = Nothing
+        , qgtProperties = singleGroundProperty storabilityProperty storability
         , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 

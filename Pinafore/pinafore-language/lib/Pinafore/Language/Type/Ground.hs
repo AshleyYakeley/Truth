@@ -13,15 +13,45 @@ import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
+type GroundProperties :: GroundTypeKind
+newtype GroundProperties dv gt =
+    MkGroundProperties (forall (prop :: GroundTypeKind). IOWitness (prop '[] ()) -> Maybe (prop dv gt))
+
+instance forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). Semigroup (GroundProperties dv gt) where
+    MkGroundProperties a <> MkGroundProperties b = MkGroundProperties $ \k -> a k <|> b k
+
+instance forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). Monoid (GroundProperties dv gt) where
+    mempty = MkGroundProperties $ \_ -> Nothing
+
+singleGroundProperty ::
+       forall (prop :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+       IOWitness (prop '[] ())
+    -> prop dv gt
+    -> GroundProperties dv gt
+singleGroundProperty k v =
+    MkGroundProperties $ \k' -> do
+        Refl <- testEquality k k'
+        return v
+
 type QGroundType :: GroundTypeKind
 data QGroundType dv gt = MkQGroundType
     { qgtVarianceType :: DolanVarianceType dv
     , qgtVarianceMap :: DolanVarianceMap dv gt
     , qgtShowType :: ListTypeExprShow dv
     , qgtFamilyType :: FamilialType gt
+    , qgtProperties :: GroundProperties dv gt
     , qgtSubtypeGroup :: Maybe (SubtypeGroup QGroundType)
     , qgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
+
+getGroundProperty ::
+       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (prop :: GroundTypeKind).
+       QGroundType dv gt
+    -> IOWitness (prop '[] ())
+    -> Maybe (prop dv gt)
+getGroundProperty gt k =
+    case qgtProperties gt of
+        MkGroundProperties f -> f k
 
 instance ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType
@@ -38,15 +68,17 @@ type QNonpolarType = NonpolarDolanType QGroundType
 singleGroundType' ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
     => FamilialType t
+    -> GroundProperties dv t
     -> ListTypeExprShow dv
     -> QGroundType dv t
-singleGroundType' ft showexp =
+singleGroundType' ft props showexp =
     MkQGroundType
         { qgtVarianceType = representative
         , qgtVarianceMap = dolanVarianceMap
         , qgtShowType = showexp
         , qgtFamilyType = ft
         , qgtSubtypeGroup = Nothing
+        , qgtProperties = props
         , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 
@@ -55,7 +87,7 @@ singleGroundType ::
     => IOWitness ('MkWitKind (SingletonFamily t))
     -> ListTypeExprShow dv
     -> QGroundType dv t
-singleGroundType wit = singleGroundType' $ MkFamilialType wit HetRefl
+singleGroundType wit = singleGroundType' (MkFamilialType wit HetRefl) mempty
 
 standardListTypeExprShow ::
        forall (dv :: [CCRVariance]). Is DolanVarianceType dv

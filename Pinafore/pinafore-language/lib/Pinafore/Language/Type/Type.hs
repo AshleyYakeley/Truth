@@ -8,7 +8,6 @@ import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Subtype ()
 import Shapes
 
 type QSomeGroundType :: Type

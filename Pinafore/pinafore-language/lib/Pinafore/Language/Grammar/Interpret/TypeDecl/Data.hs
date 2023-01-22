@@ -542,6 +542,7 @@ makePlainGroundType _ tparams = let
                     , qgtShowType = standardListTypeExprShow @dv $ toNamedText name
                     , qgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
                     , qgtSubtypeGroup = Nothing
+                    , qgtProperties = mempty
                     , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
                     }
             in (gt, ())

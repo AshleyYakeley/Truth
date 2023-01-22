@@ -14,7 +14,7 @@ module Pinafore.Language.API
     , QGroundType(..)
     , PolyGreatestDynamicSupertype(..)
     , literalSubtypeRelationEntry
-    , literalGreatestDynamicSupertype
+    , mkLiteralGroundType
     , showableSubtypeRelationEntry
     , stdSingleGroundType
     , QSingularType

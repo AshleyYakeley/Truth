@@ -2,7 +2,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 
 module Pinafore.Language.Type.Subtype
-    (
+    ( funcGroundType
     ) where
 
 import Data.Shim
@@ -12,8 +12,15 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Show
-import Pinafore.Language.Type.Types
+
+import Pinafore.Language.Type.Family
+-- import Pinafore.Language.Type.Types
 import Shapes
+
+funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
+funcGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
+        namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
 instance IsDolanSubtypeGroundType QGroundType where
     subtypeGroundedTypes = entries_subtypeGroundedTypes

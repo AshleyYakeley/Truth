@@ -3,4 +3,4 @@ module Pinafore.Language.Convert
     ) where
 
 import Pinafore.Language.Convert.HasType as I
-import Pinafore.Language.Convert.Types ()
+import Pinafore.Language.Convert.Types as I (mkLiteralGroundType)

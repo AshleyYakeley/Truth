@@ -6,6 +6,7 @@ import Changes.Core
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert.HasType
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -81,21 +82,44 @@ instance (HasQType 'Positive a) => HasQType 'Positive (ImmutableWholeModel a) wh
     qType = mapPosShimWit (functionToShim "immutableToWholeModel" immutableToWholeModel) qType
 
 -- Literal types
+mkLiteralGroundType ::
+       forall (t :: Type). AsLiteral t
+    => IOWitness ('MkWitKind (SingletonFamily t))
+    -> FullName
+    -> QGroundType '[] t
+mkLiteralGroundType wit name = let
+    storability :: Storability '[] t
+    storability =
+        MkStorability
+            { stbKind = NilListType
+            , stbCovaryMap = covarymap
+            , stbAdapter = \NilArguments -> literalStoreAdapter literalCodec
+            }
+    props = singleGroundProperty storabilityProperty storability
+    in (stdSingleGroundType wit name)
+           {qgtProperties = props, qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
+literalGroundType :: QGroundType '[] Literal
+literalGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
+
+literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
+literalGreatestDynamicSupertype =
+    SimplePolyGreatestDynamicSupertype
+        literalGroundType
+        (functionToShim "fromLiteral" fromLiteral)
+        (functionToShim "toLiteral" toLiteral)
+
 instance HasQGroundType '[] Literal where
     qGroundType = literalGroundType
 
 unitGroundType :: QGroundType '[] ()
-unitGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+unitGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit"
 
 instance HasQGroundType '[] () where
     qGroundType = unitGroundType
 
 textGroundType :: QGroundType '[] Text
-textGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+textGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text"
 
 textShimWit ::
        forall polarity. Is PolarityType polarity
@@ -106,81 +130,61 @@ instance HasQGroundType '[] Text where
     qGroundType = textGroundType
 
 numberGroundType :: QGroundType '[] Number
-numberGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+numberGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number"
 
 instance HasQGroundType '[] Number where
     qGroundType = numberGroundType
 
 rationalGroundType :: QGroundType '[] SafeRational
-rationalGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+rationalGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational"
 
 instance HasQGroundType '[] SafeRational where
     qGroundType = rationalGroundType
 
 integerGroundType :: QGroundType '[] Integer
-integerGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+integerGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer"
 
 instance HasQGroundType '[] Integer where
     qGroundType = integerGroundType
 
 booleanGroundType :: QGroundType '[] Bool
-booleanGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+booleanGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean"
 
 instance HasQGroundType '[] Bool where
     qGroundType = booleanGroundType
 
 orderingGroundType :: QGroundType '[] Ordering
-orderingGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+orderingGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering"
 
 instance HasQGroundType '[] Ordering where
     qGroundType = orderingGroundType
 
 timeGroundType :: QGroundType '[] UTCTime
-timeGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+timeGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time"
 
 instance HasQGroundType '[] UTCTime where
     qGroundType = timeGroundType
 
 durationGroundType :: QGroundType '[] NominalDiffTime
-durationGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+durationGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration"
 
 instance HasQGroundType '[] NominalDiffTime where
     qGroundType = durationGroundType
 
 dateGroundType :: QGroundType '[] Day
-dateGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+dateGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date"
 
 instance HasQGroundType '[] Day where
     qGroundType = dateGroundType
 
 timeOfDayGroundType :: QGroundType '[] TimeOfDay
-timeOfDayGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+timeOfDayGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay"
 
 instance HasQGroundType '[] TimeOfDay where
     qGroundType = timeOfDayGroundType
 
 localTimeGroundType :: QGroundType '[] LocalTime
-localTimeGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+localTimeGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime"
 
 instance HasQGroundType '[] LocalTime where
     qGroundType = localTimeGroundType

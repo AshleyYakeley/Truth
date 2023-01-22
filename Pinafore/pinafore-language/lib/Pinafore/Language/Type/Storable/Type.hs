@@ -13,10 +13,12 @@ import Shapes
 type Storability :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 data Storability dv gt = MkStorability
     { stbKind :: CovaryType dv
-    , stbShowType :: ListTypeExprShow dv
     , stbCovaryMap :: CovaryMap gt
     , stbAdapter :: forall t. Arguments StoreAdapter gt t -> StoreAdapter t
     }
+
+storabilityProperty :: IOWitness (Storability '[] ())
+storabilityProperty = $(iowitness [t|Storability '[] ()|])
 
 saturateStoreAdapter ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) a r.
@@ -49,7 +51,10 @@ storabilitySaturatedAdapter tt adapter MkStorability {..} call =
 type SealedStorability :: forall k. k -> Type
 data SealedStorability gt where
     MkSealedStorability
-        :: forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). Storability dv gt -> SealedStorability gt
+        :: forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+           ListTypeExprShow dv
+        -> Storability dv gt
+        -> SealedStorability gt
 
 data StorableGroundType :: forall k. k -> Type where
     MkStorableGroundType :: forall k (gt :: k). FamilialType gt -> SealedStorability gt -> StorableGroundType gt
@@ -73,13 +78,13 @@ instance IsCovaryGroundType StorableGroundType where
            StorableGroundType t
         -> (forall (dv :: DolanVariance). k ~ DolanVarianceKind dv => CovaryType dv -> r)
         -> r
-    groundTypeCovaryType (MkStorableGroundType _ (MkSealedStorability eprops)) cont = cont $ stbKind eprops
+    groundTypeCovaryType (MkStorableGroundType _ (MkSealedStorability _ storability)) cont = cont $ stbKind storability
     groundTypeCovaryMap :: forall k (t :: k). StorableGroundType t -> CovaryMap t
-    groundTypeCovaryMap (MkStorableGroundType _ (MkSealedStorability eprops)) = stbCovaryMap eprops
+    groundTypeCovaryMap (MkStorableGroundType _ (MkSealedStorability _ storability)) = stbCovaryMap storability
 
 storableGroundTypeAdapter :: forall f t. StorableGroundType f -> Arguments MonoStorableType f t -> StoreAdapter t
-storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability eprops)) args =
-    stbAdapter eprops $ mapArguments monoStoreAdapter args
+storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storability)) args =
+    stbAdapter storability $ mapArguments monoStoreAdapter args
 
 data StorableFamily where
     MkStorableFamily
@@ -89,31 +94,31 @@ data StorableFamily where
         -> StorableFamily
 
 singleStorableFamily ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). FamilialType t -> Storability dv t -> StorableFamily
-singleStorableFamily (MkFamilialType wit t) eprops =
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+       FamilialType t
+    -> ListTypeExprShow dv
+    -> Storability dv t
+    -> StorableFamily
+singleStorableFamily (MkFamilialType wit t) showType storability =
     MkStorableFamily wit $ \t' -> do
         HRefl <- testHetEquality t t'
-        return $ MkSealedStorability eprops
+        return $ MkSealedStorability showType storability
 
 qStorableFamily ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-       QGroundType dv t
-    -> (ListTypeExprShow dv -> Storability dv t)
-    -> StorableFamily
-qStorableFamily MkQGroundType {..} eprops = singleStorableFamily qgtFamilyType $ eprops qgtShowType
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). QGroundType dv t -> Storability dv t -> StorableFamily
+qStorableFamily MkQGroundType {..} storability = singleStorableFamily qgtFamilyType qgtShowType storability
 
 simplePinaforeStorableFamily ::
        forall (gt :: Type). Eq gt
     => QGroundType '[] gt
     -> StoreAdapter gt
     -> StorableFamily
-simplePinaforeStorableFamily gt adapter =
-    qStorableFamily gt $ \stbShowType -> let
-        stbKind = NilListType
-        stbCovaryMap = covarymap
-        stbAdapter :: forall t. Arguments StoreAdapter gt t -> StoreAdapter t
-        stbAdapter NilArguments = adapter
-        in MkStorability {..}
+simplePinaforeStorableFamily gt adapter = let
+    stbKind = NilListType
+    stbCovaryMap = covarymap
+    stbAdapter :: forall t. Arguments StoreAdapter gt t -> StoreAdapter t
+    stbAdapter NilArguments = adapter
+    in qStorableFamily gt MkStorability {..}
 
 type MonoStorableType = MonoType StorableGroundType
 
@@ -121,14 +126,14 @@ showEntityType ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv) a.
        CovaryType dv
     -> ListTypeExprShow dv
-    -> Arguments (MonoType StorableGroundType) t a
+    -> Arguments MonoStorableType t a
     -> PrecNamedText
 showEntityType NilListType sh NilArguments = sh
 showEntityType (ConsListType _ cv) sh (ConsArguments ta tr) = showEntityType cv (sh $ exprShowPrec ta) tr
 
 instance ExprShow (MonoStorableType t) where
-    exprShowPrec (MkMonoType (MkStorableGroundType _ (MkSealedStorability eprops)) args) =
-        showEntityType (stbKind eprops) (stbShowType eprops) args
+    exprShowPrec (MkMonoType (MkStorableGroundType _ (MkSealedStorability showType storability)) args) =
+        showEntityType (stbKind storability) showType args
 
 instance Show (MonoStorableType t) where
     show t = unpack $ toText $ exprShow t

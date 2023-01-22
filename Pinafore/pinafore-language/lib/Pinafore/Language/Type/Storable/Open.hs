@@ -36,19 +36,18 @@ newtype OpenEntity tid = MkOpenEntity
 openStorableFamilyWitness :: IOWitness ('MkWitKind (LiftedFamily OpenEntityType OpenEntity))
 openStorableFamilyWitness = $(iowitness [t|'MkWitKind (LiftedFamily OpenEntityType OpenEntity)|])
 
-openStorableGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
-openStorableGroundType oet =
-    singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkLiftedFamily oet) $ exprShowPrec oet
+openStorability :: forall tid. Storability '[] (OpenEntity tid)
+openStorability = let
+    stbKind = NilListType
+    stbCovaryMap = covarymap
+    stbAdapter :: forall ta. Arguments StoreAdapter (OpenEntity tid) ta -> StoreAdapter ta
+    stbAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainStoreAdapter
+    in MkStorability {..}
 
-openStorableFamily :: StorableFamily
-openStorableFamily =
-    MkStorableFamily openStorableFamilyWitness $ \(MkLiftedFamily oet :: _ t) -> let
-        stbKind = NilListType
-        stbCovaryMap = covarymap
-        stbAdapter :: forall ta. Arguments StoreAdapter t ta -> StoreAdapter ta
-        stbAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainStoreAdapter
-        stbShowType = exprShowPrec oet
-        in Just $ MkSealedStorability MkStorability {..}
+openStorableGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
+openStorableGroundType oet = let
+    props = singleGroundProperty storabilityProperty openStorability
+    in singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkLiftedFamily oet) props $ exprShowPrec oet
 
 getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =

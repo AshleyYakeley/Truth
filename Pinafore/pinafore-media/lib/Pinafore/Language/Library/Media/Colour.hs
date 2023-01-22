@@ -28,9 +28,7 @@ instance AsLiteral LangColour where
     literalCodec = alphaCodec . literalCodec
 
 colourGroundType :: QGroundType '[] LangColour
-colourGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+colourGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour"
 
 instance Is PolarityType polarity => HasQType polarity LangColour where
     qType = groundQType
@@ -59,9 +57,7 @@ instance AsMIMELiteral LangAlphaColour where
         in invmap fromT toT $ serializer <***> serializer <***> serializer <***> serializer
 
 alphaColourGroundType :: QGroundType '[] LangAlphaColour
-alphaColourGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour")
-        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+alphaColourGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour"
 
 instance Is PolarityType polarity => HasQType polarity LangAlphaColour where
     qType = groundQType
