@@ -535,7 +535,7 @@ baseLibSections =
       , headingBDT
             "Dynamic Entity Types"
             ""
-            [ typeBDT "DynamicEntity" "" (MkSomeGroundType dynamicEntityGroundType) []
+            [ typeBDT "DynamicEntity" "" (MkSomeGroundType dynamicStorableGroundType) []
             , hasSubtypeRelationBDT @DynamicEntity @Entity Verify "" $
               functionToShim "dynamicStoreAdapter" $ storeAdapterConvert $ dynamicStoreAdapter Nothing
             , specialFormBDT

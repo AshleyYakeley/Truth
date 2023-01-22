@@ -8,7 +8,7 @@ module Pinafore.Language.API
     , FamilialType(..)
     , SomeGroundType(..)
     , QPolyShim
-    , EntityGroundType(..)
+    , StorableGroundType(..)
     , FamilyKind
     , SingletonFamily
     , QGroundType(..)

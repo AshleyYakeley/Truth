@@ -24,7 +24,7 @@ zip2 = MkPolarMap $ functionToShim "zip2" $ \(BothMeetType a b) -> liftA2 BothMe
 
 getOptSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Maybe (QShimWit 'Negative (Maybe t))
 getOptSingleGreatestDynamicSupertype (GroundedDolanSingularType (MkDolanGroundedType gt args)) = do
-    dt <- getPolyGreatestDynamicSupertype (pgtGreatestDynamicSupertype gt) args
+    dt <- getPolyGreatestDynamicSupertype (qgtGreatestDynamicSupertype gt) args
     return $ shimWitToDolan dt
 getOptSingleGreatestDynamicSupertype (RecursiveDolanSingularType var t) =
     case unrollRecursiveType var t of

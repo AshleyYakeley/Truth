@@ -595,7 +595,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                     _ -> lift $ throwWithName $ \ntt -> InterpretTypeNotGroundedError $ ntt $ exprShow atb
             _ -> lift $ throwWithName $ \ntt -> InterpretTypeNotGroundedError $ ntt $ exprShow ata
 
-nonpolarSimpleEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, EntityGroundType t)
+nonpolarSimpleEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, StorableGroundType t)
 nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleEntityType t = throwWithName $ \ntt -> InterpretTypeNotSimpleEntityError $ ntt $ exprShow t
@@ -607,8 +607,8 @@ interpretOpenEntitySubtypeRelation sta stb =
         atb <- lift $ interpretNonpolarType stb
         case (ata, atb) of
             (MkSome ta, MkSome tb) -> do
-                (gta, tea@(MkEntityGroundType tfa _)) <- lift $ nonpolarSimpleEntityType ta
-                (gtb, MkEntityGroundType tfb _) <- lift $ nonpolarSimpleEntityType tb
+                (gta, tea@(MkStorableGroundType tfa _)) <- lift $ nonpolarSimpleEntityType ta
+                (gtb, MkStorableGroundType tfb _) <- lift $ nonpolarSimpleEntityType tb
                 case matchFamilyType openStorableFamilyWitness tfb of
                     Just (MkLiftedFamily _) ->
                         registerSubtypeConversion $
@@ -619,7 +619,7 @@ interpretOpenEntitySubtypeRelation sta stb =
                                 nilSubtypeConversion $
                                 coerceShim "open entity" .
                                 (functionToShim "entityConvert" $
-                                 storeAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
+                                 storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)
                     Nothing -> lift $ throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tb
 
 interpretSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder ()

@@ -37,8 +37,8 @@ storageLibSection =
                 "Store -> Property A B" $
             MkSpecialForm
                 (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
-                eta <- getMonoEntityType ta
-                etb <- getMonoEntityType tb
+                eta <- getMonoStorableType ta
+                etb <- getMonoStorableType tb
                 let
                     bta = biRangeSomeFor (nonpolarToNegative @QTypeSystem ta, nonpolarToPositive @QTypeSystem ta)
                     btb = biRangeSomeFor (nonpolarToNegative @QTypeSystem tb, nonpolarToPositive @QTypeSystem tb)

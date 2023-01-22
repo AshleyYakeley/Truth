@@ -12,7 +12,7 @@ makeOpenEntityTypeBox name doc =
     withNewTypeID $ \tidsym -> let
         register :: () -> QScopeInterpreter ()
         register _ = do
-            let t = openEntityGroundType $ MkOpenEntityType name tidsym
+            let t = openStorableGroundType $ MkOpenEntityType name tidsym
             registerType name doc t
             registerSubtypeConversion $ MkSubtypeConversionEntry Verify t entityGroundType coerceSubtypeConversion
         in return $ mkRegisterFixBox register

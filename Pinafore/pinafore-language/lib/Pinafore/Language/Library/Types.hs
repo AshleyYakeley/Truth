@@ -7,11 +7,11 @@ import Pinafore.Language.Type
 import Shapes
 
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)
-openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openEntityGroundType tp) NilCCRArguments
+openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openStorableGroundType tp) NilCCRArguments
 
 dynamicEntityShimWit :: FullName -> DynamicType -> QShimWit 'Positive DynamicEntity
 dynamicEntityShimWit n dt =
-    typeToDolan $ MkDolanGroundedType (aDynamicEntityGroundType n $ singletonSet dt) NilCCRArguments
+    typeToDolan $ MkDolanGroundedType (aDynamicStorableGroundType n $ singletonSet dt) NilCCRArguments
 
 maybeShimWit :: forall a. QShimWit 'Positive a -> QShimWit 'Positive (Maybe a)
 maybeShimWit swa =

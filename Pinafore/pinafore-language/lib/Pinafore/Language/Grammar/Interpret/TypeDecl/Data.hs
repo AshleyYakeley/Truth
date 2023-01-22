@@ -400,7 +400,7 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                                     then Just t
                                                                     else Nothing
                                             in baseGroundType
-                                                   { pgtGreatestDynamicSupertype =
+                                                   { qgtGreatestDynamicSupertype =
                                                          if tdID tdata == mainMTID
                                                              then nullPolyGreatestDynamicSupertype
                                                              else gds
@@ -536,13 +536,13 @@ makePlainGroundType _ tparams = let
         return $
         MkGroundTypeFromTypeID $ \name mainTypeID -> let
             gt =
-                MkPinaforeGroundType
-                    { pgtVarianceType = dvt
-                    , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
-                    , pgtShowType = standardListTypeExprShow @dv $ toNamedText name
-                    , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
-                    , pgtSubtypeGroup = Nothing
-                    , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+                MkQGroundType
+                    { qgtVarianceType = dvt
+                    , qgtVarianceMap = lazyDolanVarianceMap dvt dvm
+                    , qgtShowType = standardListTypeExprShow @dv $ toNamedText name
+                    , qgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
+                    , qgtSubtypeGroup = Nothing
+                    , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
                     }
             in (gt, ())
     in MkTypeConstruction mkx mkgt $ \_ _ -> return ()

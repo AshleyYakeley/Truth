@@ -77,12 +77,12 @@ nonpolarToStoreAdapter ::
     -> QInterpreter (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t)
 nonpolarToStoreAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
 nonpolarToStoreAdapter params (GroundedNonpolarType ground args) = do
-    (cvt, MkEntityGroundType _ (MkSealedStorability eprops)) <-
+    (cvt, MkStorableGroundType _ (MkSealedStorability eprops)) <-
         case dolanToMonoGroundType ground of
             Nothing -> throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ showGroundType ground
             Just x -> return x
     aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToStoreAdapter params arg) cvt args
-    return $ Compose $ \eargs -> epAdapter eprops $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
+    return $ Compose $ \eargs -> stbAdapter eprops $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
 nonpolarToStoreAdapter _ t@(RecursiveNonpolarType {}) =
     throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow t
 
@@ -134,17 +134,17 @@ makeStorableGroundType mainTypeName tparams = let
     mkgt ::
            (DolanVarianceMap dv gt, WithArgs StoreAdapter gt)
         -> QInterpreter (GroundTypeFromTypeID dv gt (Storability dv gt))
-    mkgt ~(dvm, ~(MkWithArgs epAdapter)) = do
+    mkgt ~(dvm, ~(MkWithArgs stbAdapter)) = do
         cvt <-
             case dolanVarianceToCovaryType dvt of
                 Just cvt -> return cvt
                 Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError mainTypeName
         return $
             MkGroundTypeFromTypeID $ \subTypeName tidsym -> let
-                epKind :: CovaryType dv
-                epKind = cvt
-                epCovaryMap = dolanVarianceMapToCovary cvt $ lazyDolanVarianceMap dvt dvm
-                epShowType = standardListTypeExprShow @dv $ exprShow subTypeName
+                stbKind :: CovaryType dv
+                stbKind = cvt
+                stbCovaryMap = dolanVarianceMapToCovary cvt $ lazyDolanVarianceMap dvt dvm
+                stbShowType = standardListTypeExprShow @dv $ exprShow subTypeName
                 eprops :: Storability dv gt
                 eprops = MkStorability {..}
                 in (storableDataGroundType tidsym eprops, eprops)

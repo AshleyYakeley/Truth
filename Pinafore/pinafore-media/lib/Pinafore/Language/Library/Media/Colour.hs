@@ -30,7 +30,7 @@ instance AsLiteral LangColour where
 colourGroundType :: QGroundType '[] LangColour
 colourGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance Is PolarityType polarity => HasQType polarity LangColour where
     qType = groundQType
@@ -61,7 +61,7 @@ instance AsMIMELiteral LangAlphaColour where
 alphaColourGroundType :: QGroundType '[] LangAlphaColour
 alphaColourGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+        {qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance Is PolarityType polarity => HasQType polarity LangAlphaColour where
     qType = groundQType

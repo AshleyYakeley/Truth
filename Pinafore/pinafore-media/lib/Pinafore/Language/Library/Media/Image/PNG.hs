@@ -23,7 +23,7 @@ newtype LangPNGImage =
 pngImageGroundType :: QGroundType '[] LangPNGImage
 pngImageGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPNGImage)|]) "PNG.Image.")
-        { pgtGreatestDynamicSupertype =
+        { qgtGreatestDynamicSupertype =
               SimplePolyGreatestDynamicSupertype
                   qGroundType
                   (functionToShim "fromLiteral" literalToDataLiteral)

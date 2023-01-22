@@ -14,13 +14,13 @@ import Pinafore.Markdown
 import Shapes
 
 type QGroundType :: GroundTypeKind
-data QGroundType dv gt = MkPinaforeGroundType
-    { pgtVarianceType :: DolanVarianceType dv
-    , pgtVarianceMap :: DolanVarianceMap dv gt
-    , pgtShowType :: ListTypeExprShow dv
-    , pgtFamilyType :: FamilialType gt
-    , pgtSubtypeGroup :: Maybe (SubtypeGroup QGroundType)
-    , pgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
+data QGroundType dv gt = MkQGroundType
+    { qgtVarianceType :: DolanVarianceType dv
+    , qgtVarianceMap :: DolanVarianceMap dv gt
+    , qgtShowType :: ListTypeExprShow dv
+    , qgtFamilyType :: FamilialType gt
+    , qgtSubtypeGroup :: Maybe (SubtypeGroup QGroundType)
+    , qgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
 
 instance ExprShow (QGroundType dv gt) where
@@ -41,13 +41,13 @@ singleGroundType' ::
     -> ListTypeExprShow dv
     -> QGroundType dv t
 singleGroundType' ft showexp =
-    MkPinaforeGroundType
-        { pgtVarianceType = representative
-        , pgtVarianceMap = dolanVarianceMap
-        , pgtShowType = showexp
-        , pgtFamilyType = ft
-        , pgtSubtypeGroup = Nothing
-        , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+    MkQGroundType
+        { qgtVarianceType = representative
+        , qgtVarianceMap = dolanVarianceMap
+        , qgtShowType = showexp
+        , qgtFamilyType = ft
+        , qgtSubtypeGroup = Nothing
+        , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 
 singleGroundType ::
@@ -85,13 +85,13 @@ instance IsDolanGroundType QGroundType where
     type DolanM QGroundType = Interpreter QTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). QGroundType dv f -> DolanVarianceMap dv f
-    groundTypeVarianceMap = pgtVarianceMap
+    groundTypeVarianceMap = qgtVarianceMap
     groundTypeVarianceType :: QGroundType dv t -> DolanVarianceType dv
-    groundTypeVarianceType = pgtVarianceType
+    groundTypeVarianceType = qgtVarianceType
     groundTypeTestEquality :: QGroundType dka ta -> QGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
     groundTypeTestEquality ta tb = do
-        Refl <- testEquality (pgtVarianceType ta) (pgtVarianceType tb)
-        HRefl <- testHetEquality (pgtFamilyType ta) (pgtFamilyType tb)
+        Refl <- testEquality (qgtVarianceType ta) (qgtVarianceType tb)
+        HRefl <- testHetEquality (qgtFamilyType ta) (qgtFamilyType tb)
         Just (Refl, HRefl)
 
 instance ExprShow (SomeGroundType QGroundType) where
@@ -131,7 +131,7 @@ instance GroundExprShow QGroundType where
         => QGroundType dv f
         -> DolanArguments dv w f polarity t
         -> PrecNamedText
-    groundTypeShowPrec t args = showPrecDolanVariance (pgtShowType t) args
+    groundTypeShowPrec t args = showPrecDolanVariance (qgtShowType t) args
 
 instance Is PolarityType polarity => Show (DolanType QGroundType polarity a) where
     show t = unpack $ toText $ exprShow t

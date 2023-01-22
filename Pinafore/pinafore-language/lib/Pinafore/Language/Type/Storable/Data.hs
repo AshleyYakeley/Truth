@@ -32,14 +32,14 @@ storableDataGroundType ::
     -> Storability dv gt
     -> QGroundType dv gt
 storableDataGroundType tidsym props@MkStorability {..} =
-    MkPinaforeGroundType
-        { pgtVarianceType = covaryToDolanVarianceType epKind
-        , pgtVarianceMap = covaryToDolanVarianceMap epKind epCovaryMap
-        , pgtShowType = epShowType
-        , pgtFamilyType =
+    MkQGroundType
+        { qgtVarianceType = covaryToDolanVarianceType stbKind
+        , qgtVarianceMap = covaryToDolanVarianceMap stbKind stbCovaryMap
+        , qgtShowType = stbShowType
+        , qgtFamilyType =
               MkFamilialType dataStorableFamilyWitness $ MkDataStorableFamily tidsym $ MkSealedStorability props
-        , pgtSubtypeGroup = Nothing
-        , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+        , qgtSubtypeGroup = Nothing
+        , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 
 dataStorableFamily :: StorableFamily

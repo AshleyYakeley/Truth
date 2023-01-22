@@ -205,7 +205,7 @@ mkTypeBDT name docDescription t bdChildren = let
     diNames = pure name
     diParams =
         case t of
-            MkSomeGroundType pt -> getTypeParameters nameSupply $ pgtVarianceType pt
+            MkSomeGroundType pt -> getTypeParameters nameSupply $ qgtVarianceType pt
     docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in Node MkBindDoc {..} bdChildren

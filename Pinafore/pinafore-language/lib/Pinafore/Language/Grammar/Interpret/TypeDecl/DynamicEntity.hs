@@ -14,7 +14,7 @@ interpretSyntaxDynamicEntityConstructor :: SyntaxDynamicEntityConstructor -> QIn
 interpretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ opoint $ mkDynamicType a
 interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor _ name) = do
     MkSomeGroundType t <- lookupBoundType name
-    case matchFamilyType aDynamicStorableFamilyWitness $ pgtFamilyType t of
+    case matchFamilyType aDynamicStorableFamilyWitness $ qgtFamilyType t of
         Just (MkADynamicStorableFamily _ det) -> return det
         Nothing -> throwWithName $ \ntt -> InterpretTypeNotDynamicEntityError $ ntt $ exprShow name
 
@@ -24,7 +24,7 @@ makeDynamicEntityTypeBox name doc stcons =
     return $ let
         register :: DynamicEntityType -> QScopeInterpreter ()
         register det = do
-            let tp = aDynamicEntityGroundType name det
+            let tp = aDynamicStorableGroundType name det
             registerType name doc tp
         construct :: () -> QScopeInterpreter (DynamicEntityType, ())
         construct _ = do

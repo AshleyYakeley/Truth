@@ -33,7 +33,7 @@ instance IsDolanSubtypeGroundType QGroundType where
 instance IsDolanSubtypeEntriesGroundType QGroundType where
     subtypeConversionEntries = getSubtypeConversions
     getSubtypeGroup t =
-        case pgtSubtypeGroup t of
+        case qgtSubtypeGroup t of
             Just sg -> sg
             Nothing -> singletonSubtypeGroup t
     throwNoGroundTypeConversionError ta tb =

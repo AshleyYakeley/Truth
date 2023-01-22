@@ -2,7 +2,7 @@
 
 module Pinafore.Language.Type.Storable
     ( entityGroundType
-    , getMonoEntityType
+    , getMonoStorableType
     , maybeEntityConvert
     , listEntityConvert
     , pairEntityConvert
@@ -46,11 +46,11 @@ maybeEntityConvert = storeAdapterConvert $ maybeStoreAdapter plainStoreAdapter
 
 maybeStorableFamily :: StorableFamily
 maybeStorableFamily =
-    qStorableFamily maybeGroundType $ \epShowType -> let
-        epKind = ConsListType Refl NilListType
-        epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments StoreAdapter Maybe t -> StoreAdapter t
-        epAdapter (ConsArguments t NilArguments) = maybeStoreAdapter t
+    qStorableFamily maybeGroundType $ \stbShowType -> let
+        stbKind = ConsListType Refl NilListType
+        stbCovaryMap = covarymap
+        stbAdapter :: forall t. Arguments StoreAdapter Maybe t -> StoreAdapter t
+        stbAdapter (ConsArguments t NilArguments) = maybeStoreAdapter t
         in MkStorability {..}
 
 listStoreAdapter :: StoreAdapter t -> StoreAdapter [t]
@@ -73,11 +73,11 @@ listEntityConvert = storeAdapterConvert $ listStoreAdapter plainStoreAdapter
 
 listStorableFamily :: StorableFamily
 listStorableFamily =
-    qStorableFamily listGroundType $ \epShowType -> let
-        epKind = ConsListType Refl NilListType
-        epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments StoreAdapter [] t -> StoreAdapter t
-        epAdapter (ConsArguments t NilArguments) = listStoreAdapter t
+    qStorableFamily listGroundType $ \stbShowType -> let
+        stbKind = ConsListType Refl NilListType
+        stbCovaryMap = covarymap
+        stbAdapter :: forall t. Arguments StoreAdapter [] t -> StoreAdapter t
+        stbAdapter (ConsArguments t NilArguments) = listStoreAdapter t
         in MkStorability {..}
 
 pairStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (ta, tb)
@@ -95,11 +95,11 @@ pairEntityConvert = storeAdapterConvert $ pairStoreAdapter plainStoreAdapter pla
 
 pairStorableFamily :: StorableFamily
 pairStorableFamily =
-    qStorableFamily pairGroundType $ \epShowType -> let
-        epKind = ConsListType Refl $ ConsListType Refl NilListType
-        epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments StoreAdapter (,) t -> StoreAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = pairStoreAdapter ta tb
+    qStorableFamily pairGroundType $ \stbShowType -> let
+        stbKind = ConsListType Refl $ ConsListType Refl NilListType
+        stbCovaryMap = covarymap
+        stbAdapter :: forall t. Arguments StoreAdapter (,) t -> StoreAdapter t
+        stbAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = pairStoreAdapter ta tb
         in MkStorability {..}
 
 eitherStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Either ta tb)
@@ -119,11 +119,11 @@ eitherEntityConvert = storeAdapterConvert $ eitherStoreAdapter plainStoreAdapter
 
 eitherStorableFamily :: StorableFamily
 eitherStorableFamily =
-    qStorableFamily eitherGroundType $ \epShowType -> let
-        epKind = ConsListType Refl $ ConsListType Refl NilListType
-        epCovaryMap = covarymap
-        epAdapter :: forall t. Arguments StoreAdapter Either t -> StoreAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherStoreAdapter ta tb
+    qStorableFamily eitherGroundType $ \stbShowType -> let
+        stbKind = ConsListType Refl $ ConsListType Refl NilListType
+        stbCovaryMap = covarymap
+        stbAdapter :: forall t. Arguments StoreAdapter Either t -> StoreAdapter t
+        stbAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherStoreAdapter ta tb
         in MkStorability {..}
 
 entityGroundType :: QGroundType '[] Entity
@@ -136,21 +136,21 @@ literalStorableFamily :: StorableFamily
 literalStorableFamily =
     qStorableFamily literalGroundType $ \showtype ->
         MkStorability
-            { epKind = NilListType
-            , epCovaryMap = covarymap
-            , epAdapter = \NilArguments -> literalStoreAdapter id
-            , epShowType = showtype
+            { stbKind = NilListType
+            , stbCovaryMap = covarymap
+            , stbAdapter = \NilArguments -> literalStoreAdapter id
+            , stbShowType = showtype
             }
 
-literalEntityGroundType :: Codec Literal t -> QGroundType '[] t -> EntityGroundType t
-literalEntityGroundType codec MkPinaforeGroundType {..} =
-    MkEntityGroundType pgtFamilyType $
+literalStorableGroundType :: Codec Literal t -> QGroundType '[] t -> StorableGroundType t
+literalStorableGroundType codec MkQGroundType {..} =
+    MkStorableGroundType qgtFamilyType $
     MkSealedStorability $
     MkStorability
-        { epKind = NilListType
-        , epCovaryMap = covarymap
-        , epAdapter = \NilArguments -> literalStoreAdapter codec
-        , epShowType = pgtShowType
+        { stbKind = NilListType
+        , stbCovaryMap = covarymap
+        , stbAdapter = \NilArguments -> literalStoreAdapter codec
+        , stbShowType = qgtShowType
         }
 
 findmap :: [a] -> (a -> Maybe b) -> Maybe b
@@ -174,27 +174,27 @@ allStorableFamilies =
     , literalStorableFamily
     ]
 
-instance CovarySubtype QGroundType EntityGroundType where
+instance CovarySubtype QGroundType StorableGroundType where
     dolanToMonoGroundType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            QGroundType dv t
-        -> Maybe (CovaryType dv, EntityGroundType t)
-    dolanToMonoGroundType agt@MkPinaforeGroundType {..} =
+        -> Maybe (CovaryType dv, StorableGroundType t)
+    dolanToMonoGroundType agt@MkQGroundType {..} =
         (findmap allStorableFamilies $ \(MkStorableFamily wit ff) -> do
-             tt <- matchFamilyType wit pgtFamilyType
+             tt <- matchFamilyType wit qgtFamilyType
              seprops <- ff tt
-             covaryType <- dolanVarianceToCovaryType pgtVarianceType
-             return (covaryType, MkEntityGroundType pgtFamilyType seprops)) <|> do
-            Refl <- testEquality NilListType pgtVarianceType
-            case pgtGreatestDynamicSupertype of
+             covaryType <- dolanVarianceToCovaryType qgtVarianceType
+             return (covaryType, MkStorableGroundType qgtFamilyType seprops)) <|> do
+            Refl <- testEquality NilListType qgtVarianceType
+            case qgtGreatestDynamicSupertype of
                 SimplePolyGreatestDynamicSupertype gt from to -> do
                     (Refl, HRefl) <- groundTypeTestEquality gt literalGroundType
                     return
-                        (NilListType, literalEntityGroundType (MkCodec (shimToFunction from) (shimToFunction to)) agt)
+                        (NilListType, literalStorableGroundType (MkCodec (shimToFunction from) (shimToFunction to)) agt)
                 _ -> Nothing
 
-getMonoEntityType :: QNonpolarType t -> QInterpreter (MonoEntityType t)
-getMonoEntityType tm =
+getMonoStorableType :: QNonpolarType t -> QInterpreter (MonoStorableType t)
+getMonoStorableType tm =
     case nonpolarToMonoType tm of
         Just t -> return t
         Nothing -> throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow tm

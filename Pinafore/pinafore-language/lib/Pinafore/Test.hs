@@ -10,7 +10,7 @@ module Pinafore.Test
     , UVar
     , Var(..)
     , QGroundType(..)
-    , EntityGroundType(..)
+    , StorableGroundType(..)
     , QValue
     , QType
     , QPolyShim

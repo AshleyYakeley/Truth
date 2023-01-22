@@ -36,24 +36,24 @@ newtype OpenEntity tid = MkOpenEntity
 openStorableFamilyWitness :: IOWitness ('MkWitKind (LiftedFamily OpenEntityType OpenEntity))
 openStorableFamilyWitness = $(iowitness [t|'MkWitKind (LiftedFamily OpenEntityType OpenEntity)|])
 
-openEntityGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
-openEntityGroundType oet =
+openStorableGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
+openStorableGroundType oet =
     singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkLiftedFamily oet) $ exprShowPrec oet
 
 openStorableFamily :: StorableFamily
 openStorableFamily =
     MkStorableFamily openStorableFamilyWitness $ \(MkLiftedFamily oet :: _ t) -> let
-        epKind = NilListType
-        epCovaryMap = covarymap
-        epAdapter :: forall ta. Arguments StoreAdapter t ta -> StoreAdapter ta
-        epAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainStoreAdapter
-        epShowType = exprShowPrec oet
+        stbKind = NilListType
+        stbCovaryMap = covarymap
+        stbAdapter :: forall ta. Arguments StoreAdapter t ta -> StoreAdapter ta
+        stbAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainStoreAdapter
+        stbShowType = exprShowPrec oet
         in Just $ MkSealedStorability MkStorability {..}
 
 getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
-            | Just (MkLiftedFamily t) <- matchFamilyType openStorableFamilyWitness $ pgtFamilyType gt ->
+            | Just (MkLiftedFamily t) <- matchFamilyType openStorableFamilyWitness $ qgtFamilyType gt ->
                 return $ MkSome t
         _ -> throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tm

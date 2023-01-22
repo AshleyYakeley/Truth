@@ -37,7 +37,7 @@ listGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily 
 list1GroundType :: IsDolanSubtypeGroundType QGroundType => QGroundType '[ CoCCRVariance] NonEmpty
 list1GroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
-        { pgtGreatestDynamicSupertype =
+        { qgtGreatestDynamicSupertype =
               GeneralPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
                   tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
                   in Just $ MkShimWit tt (MkPolarMap $ functionToShim "nonEmpty" nonEmpty)

@@ -4,11 +4,11 @@ module Pinafore.Language.Type.Storable.Dynamic
     , DynamicEntityType
     , DynamicEntity(..)
     , dynamicStoreAdapter
-    , dynamicEntityGroundType
+    , dynamicStorableGroundType
     , dynamicStorableFamily
     , ADynamicStorableFamily(..)
     , aDynamicStorableFamilyWitness
-    , aDynamicEntityGroundType
+    , aDynamicStorableGroundType
     , aDynamicEntityStorableFamily
     , getConcreteDynamicEntityType
     ) where
@@ -66,39 +66,39 @@ dynamicStoreAdapter mdt =
         dynamicAnchor
         (ConsListType (typeStoreAdapter mdt) $ ConsListType plainStoreAdapter NilListType)
 
-dynamicEntityGroundType :: QGroundType '[] DynamicEntity
-dynamicEntityGroundType =
+dynamicStorableGroundType :: QGroundType '[] DynamicEntity
+dynamicStorableGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily DynamicEntity)|]) "DynamicEntity")
-        {pgtSubtypeGroup = Just dynamicEntitySubtypeGroup}
+        {qgtSubtypeGroup = Just dynamicEntitySubtypeGroup}
 
 -- P <: DynamicEntity
 dynamicTest :: SubtypeGroupTest QGroundType
 dynamicTest =
     MkSubtypeGroupTest $ \ta tb -> do
-        (Refl, HRefl) <- groundTypeTestEquality dynamicEntityGroundType tb
-        Refl <- testEquality (pgtVarianceType ta) NilListType
-        MkADynamicStorableFamily _ _ <- matchFamilyType aDynamicStorableFamilyWitness $ pgtFamilyType ta
-    --Refl <- testEquality (pgtVarianceType tb) NilListType
-    --MkADynamicStorableFamily _ detb <- matchFamilyType aDynamicStorableFamilyWitness $ pgtFamilyType tb
+        (Refl, HRefl) <- groundTypeTestEquality dynamicStorableGroundType tb
+        Refl <- testEquality (qgtVarianceType ta) NilListType
+        MkADynamicStorableFamily _ _ <- matchFamilyType aDynamicStorableFamilyWitness $ qgtFamilyType ta
+    --Refl <- testEquality (qgtVarianceType tb) NilListType
+    --MkADynamicStorableFamily _ detb <- matchFamilyType aDynamicStorableFamilyWitness $ qgtFamilyType tb
         return identitySubtypeConversion
 
 -- P <: Q
 aDynamicTest :: SubtypeGroupTest QGroundType
 aDynamicTest =
     MkSubtypeGroupTest $ \ta tb -> do
-        Refl <- testEquality (pgtVarianceType ta) NilListType
-        MkADynamicStorableFamily _ deta <- matchFamilyType aDynamicStorableFamilyWitness $ pgtFamilyType ta
-        Refl <- testEquality (pgtVarianceType tb) NilListType
-        MkADynamicStorableFamily _ detb <- matchFamilyType aDynamicStorableFamilyWitness $ pgtFamilyType tb
+        Refl <- testEquality (qgtVarianceType ta) NilListType
+        MkADynamicStorableFamily _ deta <- matchFamilyType aDynamicStorableFamilyWitness $ qgtFamilyType ta
+        Refl <- testEquality (qgtVarianceType tb) NilListType
+        MkADynamicStorableFamily _ detb <- matchFamilyType aDynamicStorableFamilyWitness $ qgtFamilyType tb
         ifpure (isSubsetOf deta detb) identitySubtypeConversion
 
 dynamicEntitySubtypeGroup :: SubtypeGroup QGroundType
 dynamicEntitySubtypeGroup =
-    MkSubtypeGroup (MkSomeGroundType dynamicEntityGroundType) $
+    MkSubtypeGroup (MkSomeGroundType dynamicStorableGroundType) $
     testEqualitySubtypeGroupTest <> dynamicTest <> aDynamicTest
 
 dynamicStorableFamily :: StorableFamily
-dynamicStorableFamily = simplePinaforeStorableFamily dynamicEntityGroundType $ dynamicStoreAdapter Nothing
+dynamicStorableFamily = simplePinaforeStorableFamily dynamicStorableGroundType $ dynamicStoreAdapter Nothing
 
 data ADynamicStorableFamily :: FamilyKind where
     MkADynamicStorableFamily :: FullName -> DynamicEntityType -> ADynamicStorableFamily DynamicEntity
@@ -112,27 +112,27 @@ instance TestHetEquality ADynamicStorableFamily where
 aDynamicStorableFamilyWitness :: IOWitness ('MkWitKind ADynamicStorableFamily)
 aDynamicStorableFamilyWitness = $(iowitness [t|'MkWitKind ADynamicStorableFamily|])
 
-aDynamicEntityGroundType :: FullName -> DynamicEntityType -> QGroundType '[] DynamicEntity
-aDynamicEntityGroundType name dts =
+aDynamicStorableGroundType :: FullName -> DynamicEntityType -> QGroundType '[] DynamicEntity
+aDynamicStorableGroundType name dts =
     (singleGroundType' (MkFamilialType aDynamicStorableFamilyWitness $ MkADynamicStorableFamily name dts) $
      exprShowPrec name)
-        { pgtGreatestDynamicSupertype =
+        { qgtGreatestDynamicSupertype =
               SimplePolyGreatestDynamicSupertype
-                  dynamicEntityGroundType
+                  dynamicStorableGroundType
                   (functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de)
                   id
-        , pgtSubtypeGroup = Just dynamicEntitySubtypeGroup
+        , qgtSubtypeGroup = Just dynamicEntitySubtypeGroup
         }
 
 aDynamicEntityStorableFamily :: StorableFamily
 aDynamicEntityStorableFamily =
     MkStorableFamily aDynamicStorableFamilyWitness $ \(MkADynamicStorableFamily name dt) -> let
-        epKind = NilListType
-        epCovaryMap :: CovaryMap DynamicEntity
-        epCovaryMap = covarymap
-        epAdapter :: forall ta. Arguments StoreAdapter DynamicEntity ta -> StoreAdapter ta
-        epAdapter NilArguments = dynamicStoreAdapter $ Just dt
-        epShowType = exprShowPrec name
+        stbKind = NilListType
+        stbCovaryMap :: CovaryMap DynamicEntity
+        stbCovaryMap = covarymap
+        stbAdapter :: forall ta. Arguments StoreAdapter DynamicEntity ta -> StoreAdapter ta
+        stbAdapter NilArguments = dynamicStoreAdapter $ Just dt
+        stbShowType = exprShowPrec name
         in Just $ MkSealedStorability MkStorability {..}
 
 getConcreteDynamicEntityType :: Some (QType 'Positive) -> QInterpreter (FullName, DynamicType)
@@ -140,5 +140,5 @@ getConcreteDynamicEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkADynamicStorableFamily n (toList -> [dt])) <-
-                 matchFamilyType aDynamicStorableFamilyWitness $ pgtFamilyType gt -> return (n, dt)
+                 matchFamilyType aDynamicStorableFamilyWitness $ qgtFamilyType gt -> return (n, dt)
         _ -> throwWithName $ \ntt -> InterpretTypeNotConcreteDynamicEntityError $ ntt $ exprShow tm
