@@ -6,7 +6,6 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
-import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Type
 import Shapes
 
@@ -85,40 +84,6 @@ instance IsCovaryGroundType StorableGroundType where
 storableGroundTypeAdapter :: forall f t. StorableGroundType f -> Arguments MonoStorableType f t -> StoreAdapter t
 storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storability)) args =
     stbAdapter storability $ mapArguments monoStoreAdapter args
-
-data StorableFamily where
-    MkStorableFamily
-        :: forall (fam :: FamilyKind).
-           IOWitness ('MkWitKind fam)
-        -> (forall k (gt :: k). fam gt -> Maybe (SealedStorability gt))
-        -> StorableFamily
-
-singleStorableFamily ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-       FamilialType t
-    -> ListTypeExprShow dv
-    -> Storability dv t
-    -> StorableFamily
-singleStorableFamily (MkFamilialType wit t) showType storability =
-    MkStorableFamily wit $ \t' -> do
-        HRefl <- testHetEquality t t'
-        return $ MkSealedStorability showType storability
-
-qStorableFamily ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). QGroundType dv t -> Storability dv t -> StorableFamily
-qStorableFamily MkQGroundType {..} storability = singleStorableFamily qgtFamilyType qgtShowType storability
-
-simplePinaforeStorableFamily ::
-       forall (gt :: Type). Eq gt
-    => QGroundType '[] gt
-    -> StoreAdapter gt
-    -> StorableFamily
-simplePinaforeStorableFamily gt adapter = let
-    stbKind = NilListType
-    stbCovaryMap = covarymap
-    stbAdapter :: forall t. Arguments StoreAdapter gt t -> StoreAdapter t
-    stbAdapter NilArguments = adapter
-    in qStorableFamily gt MkStorability {..}
 
 type MonoStorableType = MonoType StorableGroundType
 

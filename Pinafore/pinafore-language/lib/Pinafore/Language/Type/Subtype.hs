@@ -10,11 +10,9 @@ import Language.Expression.Dolan
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
+import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Show
-
-import Pinafore.Language.Type.Family
--- import Pinafore.Language.Type.Types
 import Shapes
 
 funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)

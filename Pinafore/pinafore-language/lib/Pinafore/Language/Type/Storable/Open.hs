@@ -1,4 +1,11 @@
-module Pinafore.Language.Type.Storable.Open where
+module Pinafore.Language.Type.Storable.Open
+    ( OpenEntityType(..)
+    , OpenEntity(..)
+    , OpenEntityFamily(..)
+    , openStorableFamilyWitness
+    , openStorableGroundType
+    , getOpenEntityType
+    ) where
 
 import Data.Shim
 import Language.Expression.Common
@@ -33,26 +40,32 @@ newtype OpenEntity tid = MkOpenEntity
     { unOpenEntity :: Entity
     } deriving (Eq, Random)
 
-openStorableFamilyWitness :: IOWitness ('MkWitKind (LiftedFamily OpenEntityType OpenEntity))
-openStorableFamilyWitness = $(iowitness [t|'MkWitKind (LiftedFamily OpenEntityType OpenEntity)|])
+data OpenEntityFamily :: FamilyKind where
+    MkOpenEntityFamily :: OpenEntityType tid -> OpenEntityFamily (OpenEntity tid)
 
-openStorability :: forall tid. Storability '[] (OpenEntity tid)
-openStorability = let
-    stbKind = NilListType
-    stbCovaryMap = covarymap
-    stbAdapter :: forall ta. Arguments StoreAdapter (OpenEntity tid) ta -> StoreAdapter ta
-    stbAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainStoreAdapter
-    in MkStorability {..}
+instance TestHetEquality OpenEntityFamily where
+    testHetEquality (MkOpenEntityFamily t1) (MkOpenEntityFamily t2) = do
+        Refl <- testEquality t1 t2
+        return HRefl
+
+openStorableFamilyWitness :: IOWitness ('MkWitKind OpenEntityFamily)
+openStorableFamilyWitness = $(iowitness [t|'MkWitKind OpenEntityFamily|])
 
 openStorableGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
 openStorableGroundType oet = let
-    props = singleGroundProperty storabilityProperty openStorability
-    in singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkLiftedFamily oet) props $ exprShowPrec oet
+    storability :: Storability '[] (OpenEntity tid)
+    storability = let
+        stbKind = NilListType
+        stbCovaryMap = covarymap
+        stbAdapter :: forall ta. Arguments StoreAdapter (OpenEntity tid) ta -> StoreAdapter ta
+        stbAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainStoreAdapter
+        in MkStorability {..}
+    props = singleGroundProperty storabilityProperty storability
+    in singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet
 
 getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
-            | Just (MkLiftedFamily t) <- matchFamilyType openStorableFamilyWitness $ qgtFamilyType gt ->
-                return $ MkSome t
+            | Just (MkOpenEntityFamily oet) <- getGroundFamily openStorableFamilyWitness gt -> return $ MkSome oet
         _ -> throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tm

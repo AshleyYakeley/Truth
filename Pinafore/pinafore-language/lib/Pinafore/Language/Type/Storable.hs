@@ -27,7 +27,7 @@ instance CovarySubtype QGroundType StorableGroundType where
            QGroundType dv t
         -> Maybe (CovaryType dv, StorableGroundType t)
     dolanToMonoGroundType agt = do
-        storability <- getGroundProperty agt storabilityProperty
+        storability <- getGroundProperty storabilityProperty agt
         return $
             ( stbKind storability
             , MkStorableGroundType (qgtFamilyType agt) $ MkSealedStorability (qgtShowType agt) storability)

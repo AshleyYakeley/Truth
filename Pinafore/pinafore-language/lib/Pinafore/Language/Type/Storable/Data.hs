@@ -1,6 +1,5 @@
 module Pinafore.Language.Type.Storable.Data
     ( storableDataGroundType
-    , dataStorableFamily
     ) where
 
 import Language.Expression.Dolan
@@ -45,6 +44,3 @@ storableDataGroundType tidsym showType storability@MkStorability {..} =
         , qgtProperties = singleGroundProperty storabilityProperty storability
         , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
-
-dataStorableFamily :: StorableFamily
-dataStorableFamily = MkStorableFamily dataStorableFamilyWitness $ \(MkDataStorableFamily _ eprops) -> Just eprops

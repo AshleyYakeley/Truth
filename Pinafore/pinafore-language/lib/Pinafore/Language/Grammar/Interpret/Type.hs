@@ -1,6 +1,5 @@
 module Pinafore.Language.Grammar.Interpret.Type
     ( interpretType
-    , interpretOpenEntityType
     , interpretConcreteDynamicEntityType
     , interpretNonpolarType
     ) where
@@ -24,12 +23,6 @@ interpretType st = do
     mpol <- isMPolarity @polarity $ interpretTypeM @('Just polarity) st
     case mpol of
         SingleMPolarW atw -> return atw
-
-interpretOpenEntityType :: SyntaxType -> QInterpreter (Some OpenEntityType)
-interpretOpenEntityType st = do
-    mpol <- interpretTypeM @'Nothing st
-    case mpol of
-        BothMPolarW atm -> getOpenEntityType $ atm @'Positive
 
 interpretConcreteDynamicEntityType :: SyntaxType -> QInterpreter (FullName, DynamicType)
 interpretConcreteDynamicEntityType st = do

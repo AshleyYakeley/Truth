@@ -14,8 +14,8 @@ interpretSyntaxDynamicEntityConstructor :: SyntaxDynamicEntityConstructor -> QIn
 interpretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ opoint $ mkDynamicType a
 interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor _ name) = do
     MkSomeGroundType t <- lookupBoundType name
-    case matchFamilyType aDynamicStorableFamilyWitness $ qgtFamilyType t of
-        Just (MkADynamicStorableFamily _ det) -> return det
+    case getGroundFamily aDynamicStorableFamilyWitness t of
+        Just (MkADynamicEntityFamily _ det) -> return det
         Nothing -> throwWithName $ \ntt -> InterpretTypeNotDynamicEntityError $ ntt $ exprShow name
 
 makeDynamicEntityTypeBox ::

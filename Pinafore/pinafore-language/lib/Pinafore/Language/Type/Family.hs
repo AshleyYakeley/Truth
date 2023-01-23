@@ -7,15 +7,6 @@ type FamilyKind = forall (k :: Type). k -> Type
 type SingletonFamily :: forall k. k -> FamilyKind
 type SingletonFamily = HetEqual
 
-type LiftedFamily :: forall ki. (ki -> Type) -> forall k. (ki -> k) -> FamilyKind
-data LiftedFamily w f t where
-    MkLiftedFamily :: forall ki (w :: ki -> Type) k (f :: ki -> k) (i :: ki). w i -> LiftedFamily w f (f i)
-
-instance forall kw (w :: kw -> Type) (f :: kw -> Type). TestEquality w => TestHetEquality (LiftedFamily w f) where
-    testHetEquality (MkLiftedFamily ia) (MkLiftedFamily ib) = do
-        Refl <- testEquality ia ib
-        return HRefl
-
 newtype WitKind =
     MkWitKind FamilyKind
 

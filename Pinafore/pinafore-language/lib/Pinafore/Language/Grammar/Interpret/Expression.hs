@@ -607,13 +607,14 @@ interpretOpenEntitySubtypeRelation sta stb =
         atb <- lift $ interpretNonpolarType stb
         case (ata, atb) of
             (MkSome ta, MkSome tb) -> do
-                (gta, tea@(MkStorableGroundType tfa _)) <- lift $ nonpolarSimpleEntityType ta
-                (gtb, MkStorableGroundType tfb _) <- lift $ nonpolarSimpleEntityType tb
-                case matchFamilyType openStorableFamilyWitness tfb of
-                    Just (MkLiftedFamily _) ->
+                (gta, tea) <- lift $ nonpolarSimpleEntityType ta
+                (gtb, _) <- lift $ nonpolarSimpleEntityType tb
+                case getGroundFamily openStorableFamilyWitness gtb of
+                    Just (MkOpenEntityFamily _) ->
                         registerSubtypeConversion $
-                        case matchFamilyType openStorableFamilyWitness tfa of
-                            Just (MkLiftedFamily _) -> MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
+                        case getGroundFamily openStorableFamilyWitness gta of
+                            Just (MkOpenEntityFamily _) ->
+                                MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                             Nothing ->
                                 MkSubtypeConversionEntry TrustMe gta gtb $
                                 nilSubtypeConversion $

@@ -44,14 +44,21 @@ data QGroundType dv gt = MkQGroundType
     , qgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
 
+getGroundFamily ::
+       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (fam :: FamilyKind).
+       IOWitness ('MkWitKind fam)
+    -> QGroundType dv gt
+    -> Maybe (fam gt)
+getGroundFamily wit gt = matchFamilyType wit $ qgtFamilyType gt
+
 getGroundProperty ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (prop :: GroundTypeKind).
-       QGroundType dv gt
-    -> IOWitness (prop '[] ())
+       IOWitness (prop '[] ())
+    -> QGroundType dv gt
     -> Maybe (prop dv gt)
-getGroundProperty gt k =
+getGroundProperty prop gt =
     case qgtProperties gt of
-        MkGroundProperties f -> f k
+        MkGroundProperties f -> f prop
 
 instance ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType
