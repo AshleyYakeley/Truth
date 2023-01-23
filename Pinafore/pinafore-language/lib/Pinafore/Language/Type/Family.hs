@@ -1,5 +1,6 @@
 module Pinafore.Language.Type.Family where
 
+import Pinafore.Language.Type.Identified
 import Shapes
 
 type FamilyKind = forall (k :: Type). k -> Type
@@ -28,3 +29,14 @@ instance TestHetEquality FamilialType where
         Refl <- testEquality wa wb
         HRefl <- testHetEquality ta tb
         return HRefl
+
+data IdentifiedTypeFamily :: FamilyKind where
+    MkIdentifiedTypeFamily :: forall (tid :: Nat). TypeIDType tid -> IdentifiedTypeFamily (Identified tid)
+
+instance TestHetEquality IdentifiedTypeFamily where
+    testHetEquality (MkIdentifiedTypeFamily ia) (MkIdentifiedTypeFamily ib) = do
+        Refl <- testEquality ia ib
+        return HRefl
+
+identifiedFamilyWitness :: IOWitness ('MkWitKind IdentifiedTypeFamily)
+identifiedFamilyWitness = $(iowitness [t|'MkWitKind IdentifiedTypeFamily|])

@@ -62,17 +62,6 @@ assembleDataType tconss call =
             conss = listTypeToFixedList getConst $ joinListType (\codec el -> Const $ MkSomeFor el codec) ccons lcons
             in call conss vmap $ \t -> fixedListElement $ listElementTypeIndex $ someForToSome $ pickcons t
 
-data DataTypeFamily :: FamilyKind where
-    MkDataTypeFamily :: forall (tid :: Nat). TypeIDType tid -> DataTypeFamily (Identified tid)
-
-instance TestHetEquality DataTypeFamily where
-    testHetEquality (MkDataTypeFamily ia) (MkDataTypeFamily ib) = do
-        Refl <- testEquality ia ib
-        return HRefl
-
-datatypeIOWitness :: IOWitness ('MkWitKind DataTypeFamily)
-datatypeIOWitness = $(iowitness [t|'MkWitKind DataTypeFamily|])
-
 withCCRTypeParam :: SyntaxTypeParameter -> (forall sv t. CCRTypeParam sv t -> r) -> r
 withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToSymbolType n $ \v -> cont $ CoCCRTypeParam v
 withCCRTypeParam (NegativeSyntaxTypeParameter n) cont = nameToSymbolType n $ \v -> cont $ ContraCCRTypeParam v
@@ -540,7 +529,7 @@ makePlainGroundType _ tparams = let
                     { qgtVarianceType = dvt
                     , qgtVarianceMap = lazyDolanVarianceMap dvt dvm
                     , qgtShowType = standardListTypeExprShow @dv $ toNamedText name
-                    , qgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily mainTypeID
+                    , qgtFamilyType = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily mainTypeID
                     , qgtSubtypeGroup = Nothing
                     , qgtProperties = mempty
                     , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype

@@ -79,7 +79,6 @@ library:
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Storable.Type
       - Pinafore.Language.Type.Storable.Dynamic
-      - Pinafore.Language.Type.Storable.Data
       - Pinafore.Language.Type.Storable.Open
       - Pinafore.Language.Type.Storable
       - Pinafore.Language.Type.DynamicSupertype

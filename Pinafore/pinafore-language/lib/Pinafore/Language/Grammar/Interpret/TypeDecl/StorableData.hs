@@ -147,7 +147,18 @@ makeStorableGroundType mainTypeName tparams = let
                 showType = standardListTypeExprShow @dv $ exprShow subTypeName
                 storability :: Storability dv gt
                 storability = MkStorability {..}
-                in (storableDataGroundType tidsym showType storability, storability)
+                gt :: QGroundType dv gt
+                gt =
+                    MkQGroundType
+                        { qgtVarianceType = covaryToDolanVarianceType stbKind
+                        , qgtVarianceMap = covaryToDolanVarianceMap stbKind stbCovaryMap
+                        , qgtShowType = showType
+                        , qgtFamilyType = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily tidsym
+                        , qgtSubtypeGroup = Nothing
+                        , qgtProperties = singleGroundProperty storabilityProperty storability
+                        , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+                        }
+                in (gt, storability)
     postregister :: QGroundType dv gt -> Storability dv gt -> QScopeInterpreter ()
     postregister gt storability =
         registerSubtypeConversion $
