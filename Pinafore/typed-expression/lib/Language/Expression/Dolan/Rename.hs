@@ -8,29 +8,38 @@ module Language.Expression.Dolan.Rename
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
 import Shapes
 
+pureMapDolanArgumentM ::
+       forall m fta ftb sv polarity t. (Applicative m, Is PolarityType polarity)
+    => (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> m (ftb polarity' t'))
+    -> CCRPolarArgument fta polarity sv t
+    -> m (CCRPolarArgument ftb polarity sv t)
+pureMapDolanArgumentM f (CoCCRPolarArgument q) = fmap CoCCRPolarArgument $ f q
+pureMapDolanArgumentM f (ContraCCRPolarArgument p) = invertPolarity @polarity $ fmap ContraCCRPolarArgument $ f p
+pureMapDolanArgumentM f (RangeCCRPolarArgument p q) =
+    invertPolarity @polarity $ liftA2 RangeCCRPolarArgument (f p) (f q)
+
+pureMapDolanArgumentsM ::
+       forall m fta ftb dv polarity gt t. (Applicative m, Is PolarityType polarity)
+    => (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> m (ftb polarity' t'))
+    -> DolanArguments dv fta gt polarity t
+    -> m (DolanArguments dv ftb gt polarity t)
+pureMapDolanArgumentsM _ NilCCRArguments = pure NilCCRArguments
+pureMapDolanArgumentsM f (ConsCCRArguments arg args) =
+    liftA2 ConsCCRArguments (pureMapDolanArgumentM f arg) (pureMapDolanArgumentsM f args)
+
 dolanNamespaceRenameArguments ::
        forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv) polarity m t.
        (IsDolanGroundType ground, Monad m, Is PolarityType polarity)
-    => DolanVarianceMap dv gt
-    -> DolanArguments dv (DolanType ground) gt polarity t
+    => DolanArguments dv (DolanType ground) gt polarity t
     -> VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m) (DolanArguments dv (DolanType ground) gt polarity t)
-dolanNamespaceRenameArguments dvm args = do
-    MkShimWit args' (MkPolarMap conv) <-
-        mapDolanArgumentsM @_ @PEqual (\t -> fmap mkPolarShimWit $ dolanNamespaceRename t) dvm args
-    return $
-        case polarityType @polarity of
-            PositiveType ->
-                case conv of
-                    MkPEqual -> args'
-            NegativeType ->
-                case conv of
-                    MkPEqual -> args'
+dolanNamespaceRenameArguments = pureMapDolanArgumentsM dolanNamespaceRename
 
 dolanNamespaceRename ::
        forall (ground :: GroundTypeKind) m t. (NamespaceRenamable (DolanTypeSystem ground) t, Monad m)
@@ -46,20 +55,17 @@ dolanNamespaceTypeNames = namespaceTypeNames @(DolanTypeSystem ground)
 
 typeNamesArguments ::
        forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanVarianceMap dv gt
-    -> DolanArguments dv (DolanType ground) gt polarity t
+    => DolanArguments dv (DolanType ground) gt polarity t
     -> [String]
-typeNamesArguments dvm args =
-    runIdentity $
-    execWriterT $
-    mapDolanArgumentsM @_ @PEqual (\t -> tell (dolanNamespaceTypeNames @ground t) >> return (mkShimWit t)) dvm args
+typeNamesArguments args =
+    runIdentity $ execWriterT $ pureMapDolanArgumentsM (\t -> tell (dolanNamespaceTypeNames @ground t) >> return t) args
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanGroundedType ground polarity t) where
     namespaceRename (MkDolanGroundedType gt args) = do
-        args' <- dolanNamespaceRenameArguments (groundTypeVarianceMap gt) args
+        args' <- dolanNamespaceRenameArguments args
         return $ MkDolanGroundedType gt args'
-    namespaceTypeNames (MkDolanGroundedType gt args) = typeNamesArguments (groundTypeVarianceMap gt) args
+    namespaceTypeNames (MkDolanGroundedType _ args) = typeNamesArguments args
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanSingularType ground polarity t) where
