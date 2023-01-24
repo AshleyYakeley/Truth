@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE ApplicativeDo #-}
 
 module Language.Expression.Dolan.Type
     ( BisubstitutablePolyShim(..)
@@ -84,7 +85,9 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
     groundTypeVarianceType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceType dv
     groundTypeVarianceMap ::
-           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceMap dv t
+           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+           ground dv t
+        -> TSOpenExpression (DolanTypeSystem ground) (DolanVarianceMap dv t)
     groundTypeTestEquality ::
            forall (dva :: DolanVariance) (ta :: DolanVarianceKind dva) (dvb :: DolanVariance) (tb :: DolanVarianceKind dvb).
            ground dva ta
@@ -393,56 +396,66 @@ showDolanType =
 getCCRArgumentMapping ::
        forall (ground :: GroundTypeKind) (t :: Type) polarity (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv).
        (IsDolanGroundType ground, Is PolarityType polarity)
-    => CCRVariation sv f
+    => TSOpenExpression (DolanTypeSystem ground) (CCRVariation sv f)
     -> CCRPolarArgument (DolanType ground) polarity sv a
     -> DolanArguments dv (DolanType ground) (f a) polarity t
-    -> VarMapping t
-getCCRArgumentMapping svm (CoCCRPolarArgument t) args =
-    mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) $ getVarMapping t
-getCCRArgumentMapping svm (ContraCCRPolarArgument t) args =
+    -> VarMapping (TSOpenExpression (DolanTypeSystem ground)) t
+getCCRArgumentMapping esvm (CoCCRPolarArgument t) args =
+    mapVarMapping (fmap (\svm aa -> ccrArgumentsEndo args $ ccrvMap svm aa) esvm) $ getVarMapping t
+getCCRArgumentMapping esvm (ContraCCRPolarArgument t) args =
     invertPolarity @polarity $
-    mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa)) $ invertVarMapping $ getVarMapping t
-getCCRArgumentMapping svm (RangeCCRPolarArgument tp tq) args =
+    mapVarMapping (fmap (\svm aa -> ccrArgumentsEndo args $ ccrvMap svm $ MkCatDual aa) esvm) $
+    invertVarMapping $ getVarMapping t
+getCCRArgumentMapping esvm (RangeCCRPolarArgument tp tq) args =
     invertPolarity @polarity $
     joinVarMapping
-        (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq))
+        (fmap (\svm pp qq -> ccrArgumentsEndo args $ ccrvMap svm $ MkCatRange pp qq) esvm)
         (invertVarMapping $ getVarMapping tp)
         (getVarMapping tq)
 
 getCCRArgumentsMapping ::
        forall (ground :: GroundTypeKind) (t :: Type) polarity dv gt.
        (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanVarianceMap dv gt
+    => TSOpenExpression (DolanTypeSystem ground) (DolanVarianceMap dv gt)
     -> DolanArguments dv (DolanType ground) gt polarity t
-    -> VarMapping t
-getCCRArgumentsMapping NilDolanVarianceMap NilCCRArguments = mempty
-getCCRArgumentsMapping (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) =
-    getCCRArgumentMapping ccrv arg args <> getCCRArgumentsMapping dvm args
+    -> VarMapping (TSOpenExpression (DolanTypeSystem ground)) t
+getCCRArgumentsMapping _ NilCCRArguments = mempty
+getCCRArgumentsMapping edvm (ConsCCRArguments arg args) =
+    getCCRArgumentMapping (fmap (\(ConsDolanVarianceMap ccrv _dvm) -> ccrv) edvm) arg args <>
+    getCCRArgumentsMapping (fmap (\(ConsDolanVarianceMap _ccrv dvm) -> dvm) edvm) args
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             HasVarMapping (DolanGroundedType ground polarity) where
+instance forall (ground :: GroundTypeKind) expr polarity. ( IsDolanGroundType ground
+         , Is PolarityType polarity
+         , expr ~ TSOpenExpression (DolanTypeSystem ground)
+         ) => HasVarMapping expr (DolanGroundedType ground polarity) where
     getVarMapping (MkDolanGroundedType gt args) = getCCRArgumentsMapping (groundTypeVarianceMap gt) args
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             HasVarMapping (DolanSingularType ground polarity) where
+instance forall (ground :: GroundTypeKind) expr polarity. ( IsDolanGroundType ground
+         , Is PolarityType polarity
+         , expr ~ TSOpenExpression (DolanTypeSystem ground)
+         ) => HasVarMapping expr (DolanSingularType ground polarity) where
     getVarMapping (VarDolanSingularType var) = varVarMapping var
     getVarMapping (GroundedDolanSingularType t) = getVarMapping t
     getVarMapping (RecursiveDolanSingularType nr t) = let
         vm = getVarMapping t
         in case runVarMapping vm CoVarianceType nr of
-               Just mr ->
-                   MkVarMapping $ \v na -> do
-                       ma <- runVarMapping vm v na
-                       return $
-                           mkMapping $ \vv -> let
-                               tt = runMapping ma vv . runMapping mr tt
-                               in tt
+               Just emr ->
+                   MkVarMapping $ \v na ->
+                       getCompose $ do
+                           ma <- Compose $ runVarMapping vm v na
+                           mr <- Compose $ Just emr
+                           return $
+                               mkMapping $ \vv -> let
+                                   tt = runMapping ma vv . runMapping mr tt
+                                   in tt
                Nothing -> vm
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             HasVarMapping (DolanType ground polarity) where
+instance forall (ground :: GroundTypeKind) expr polarity. ( IsDolanGroundType ground
+         , Is PolarityType polarity
+         , expr ~ TSOpenExpression (DolanTypeSystem ground)
+         ) => HasVarMapping expr (DolanType ground polarity) where
     getVarMapping NilDolanType = mempty
     getVarMapping (ConsDolanType t tt) =
         case polarityType @polarity of
-            PositiveType -> joinVarMapping iJoinPair (getVarMapping t) (getVarMapping tt)
-            NegativeType -> joinVarMapping iMeetPair (getVarMapping t) (getVarMapping tt)
+            PositiveType -> joinVarMapping (pure iJoinPair) (getVarMapping t) (getVarMapping tt)
+            NegativeType -> joinVarMapping (pure iMeetPair) (getVarMapping t) (getVarMapping tt)

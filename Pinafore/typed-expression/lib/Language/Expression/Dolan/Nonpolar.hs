@@ -167,42 +167,48 @@ dolanGroundedTypeToNonpolar (MkDolanGroundedType ground args) = do
 getArgumentMapping ::
        forall (ground :: GroundTypeKind) (t :: Type) (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv).
        IsDolanGroundType ground
-    => CCRVariation sv f
+    => TSOpenExpression (DolanTypeSystem ground) (CCRVariation sv f)
     -> NonpolarArgument ground sv a
     -> NonpolarArguments ground dv (f a) t
-    -> VarMapping t
-getArgumentMapping svm (CoNonpolarArgument t) args =
-    mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) $ getVarMapping t
-getArgumentMapping svm (ContraNonpolarArgument t) args =
-    mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa)) $ invertVarMapping $ getVarMapping t
-getArgumentMapping svm (RangeNonpolarArgument tp tq) args =
+    -> VarMapping (TSOpenExpression (DolanTypeSystem ground)) t
+getArgumentMapping esvm (CoNonpolarArgument t) args =
+    mapVarMapping (fmap (\svm aa -> ccrArgumentsEndo args $ ccrvMap svm aa) esvm) $ getVarMapping t
+getArgumentMapping esvm (ContraNonpolarArgument t) args =
+    mapVarMapping (fmap (\svm aa -> ccrArgumentsEndo args $ ccrvMap svm $ MkCatDual aa) esvm) $
+    invertVarMapping $ getVarMapping t
+getArgumentMapping esvm (RangeNonpolarArgument tp tq) args =
     joinVarMapping
-        (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq))
+        (fmap (\svm pp qq -> ccrArgumentsEndo args $ ccrvMap svm $ MkCatRange pp qq) esvm)
         (invertVarMapping $ getVarMapping tp)
         (getVarMapping tq)
 
 getArgumentsMapping ::
        forall (ground :: GroundTypeKind) (t :: Type) dv gt. IsDolanGroundType ground
-    => DolanVarianceMap dv gt
+    => TSOpenExpression (DolanTypeSystem ground) (DolanVarianceMap dv gt)
     -> NonpolarArguments ground dv gt t
-    -> VarMapping t
-getArgumentsMapping NilDolanVarianceMap NilCCRArguments = mempty
-getArgumentsMapping (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) =
-    getArgumentMapping ccrv arg args <> getArgumentsMapping dvm args
+    -> VarMapping (TSOpenExpression (DolanTypeSystem ground)) t
+getArgumentsMapping _ NilCCRArguments = mempty
+getArgumentsMapping edvm (ConsCCRArguments arg args) =
+    getArgumentMapping (fmap (\(ConsDolanVarianceMap ccrv _dvm) -> ccrv) edvm) arg args <>
+    getArgumentsMapping (fmap (\(ConsDolanVarianceMap _ccrv dvm) -> dvm) edvm) args
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => HasVarMapping (NonpolarDolanType ground) where
+instance forall (ground :: GroundTypeKind) expr. ( IsDolanGroundType ground
+         , expr ~ TSOpenExpression (DolanTypeSystem ground)
+         ) => HasVarMapping expr (NonpolarDolanType ground) where
     getVarMapping (VarNonpolarType var) = varVarMapping var
     getVarMapping (GroundedNonpolarType gt args) = getArgumentsMapping (groundTypeVarianceMap gt) args
     getVarMapping (RecursiveNonpolarType nr t) = let
         vm = getVarMapping t
         in case runVarMapping vm CoVarianceType nr of
-               Just mr ->
-                   MkVarMapping $ \v na -> do
-                       ma <- runVarMapping vm v na
-                       return $
-                           mkMapping $ \vv -> let
-                               tt = runMapping ma vv . runMapping mr tt
-                               in tt
+               Just emr ->
+                   MkVarMapping $ \v na ->
+                       getCompose $ do
+                           ma <- Compose $ runVarMapping vm v na
+                           mr <- Compose $ Just emr
+                           return $
+                               mkMapping $ \vv -> let
+                                   tt = runMapping ma vv . runMapping mr tt
+                                   in tt
                Nothing -> vm
 
 mapNonpolarType ::

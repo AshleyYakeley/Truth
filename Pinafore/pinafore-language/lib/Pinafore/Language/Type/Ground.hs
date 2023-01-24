@@ -36,7 +36,7 @@ singleGroundProperty k v =
 type QGroundType :: GroundTypeKind
 data QGroundType dv gt = MkQGroundType
     { qgtVarianceType :: DolanVarianceType dv
-    , qgtVarianceMap :: DolanVarianceMap dv gt
+    , qgtVarianceMap :: TSOpenExpression QTypeSystem (DolanVarianceMap dv gt)
     , qgtShowType :: ListTypeExprShow dv
     , qgtFamilyType :: FamilialType gt
     , qgtProperties :: GroundProperties dv gt
@@ -81,7 +81,7 @@ singleGroundType' ::
 singleGroundType' ft props showexp =
     MkQGroundType
         { qgtVarianceType = representative
-        , qgtVarianceMap = dolanVarianceMap
+        , qgtVarianceMap = pure dolanVarianceMap
         , qgtShowType = showexp
         , qgtFamilyType = ft
         , qgtSubtypeGroup = Nothing

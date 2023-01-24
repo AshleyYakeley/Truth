@@ -97,7 +97,7 @@ data Signature (ts :: Type) (polarity :: Polarity) (t :: Type) =
     ValueSignature Name
                    (InterpreterType ts polarity t)
 
-instance (HasInterpreter ts, Is PolarityType polarity) => HasVarMapping (Signature ts polarity) where
+instance (HasInterpreter ts, Is PolarityType polarity) => HasVarMapping expr (Signature ts polarity) where
     getVarMapping (ValueSignature _ t) = getVarMapping t
 
 data RecordConstructor (ts :: Type) =

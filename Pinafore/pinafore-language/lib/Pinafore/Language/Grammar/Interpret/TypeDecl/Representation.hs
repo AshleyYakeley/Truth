@@ -77,7 +77,7 @@ witnessRepCodec :: TestEquality w => w a -> Codec (SomeOf w) a
 witnessRepCodec wit = MkCodec (matchSomeOf wit) (MkSomeOf wit)
 
 witnessTypeRepresentation ::
-       forall w lt (ow :: Type -> Type) m. (HasVarMapping w, TestOrder ow, Monad m)
+       forall w lt (ow :: Type -> Type) m. (HasVarMapping expr w, TestOrder ow, Monad m)
     => (forall a. w a -> m (ow a))
     -> ListType w lt
     -> m (TypeRepresentation lt (SomeOf ow), WRaised ow (ListElementType lt))
@@ -100,21 +100,21 @@ witnessTypeRepresentation newWit ltw = do
     return (tr, MkWRaised tw)
 
 naturalWitnessTypeRepresentation ::
-       forall w lt. HasVarMapping w
+       forall w lt. HasVarMapping expr w
     => ListType w lt
     -> TypeRepresentation lt (SomeOf (ListElementType lt))
 naturalWitnessTypeRepresentation lt =
     fst $ runIdentity $ witnessTypeRepresentation (\(MkPairType _ n) -> Identity n) $ pairListType lt $ countListType lt
 
 getNaturalWitnessTypeRepresentation ::
-       forall w lt r. HasVarMapping w
+       forall w lt r. HasVarMapping expr w
     => ListType w lt
     -> (forall w' t. TestEquality w' => TypeRepresentation lt t -> (t -> SomeOf w') -> r)
     -> r
 getNaturalWitnessTypeRepresentation lt call = call (naturalWitnessTypeRepresentation lt) id
 
 getOpenWitnessTypeRepresentation ::
-       forall w lt r. HasVarMapping w
+       forall w lt r. HasVarMapping expr w
     => ListType w lt
     -> (forall t. TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r
@@ -124,7 +124,7 @@ getOpenWitnessTypeRepresentation lt call =
         return $ call tr $ mapSome tf
 
 getOpenWitnessTypeRepresentationEq ::
-       forall w lt r. (WitnessConstraint Eq w, HasVarMapping w)
+       forall w lt r. (WitnessConstraint Eq w, HasVarMapping expr w)
     => ListType w lt
     -> (forall t. Eq t => TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r
@@ -144,7 +144,7 @@ leftCodec = MkCodec eitherLeft Left
 extendRightCodec :: Codec a b -> Codec (Either x a) b
 extendRightCodec (MkCodec d e) = MkCodec (\xa -> eitherRight xa >>= d) (Right . e)
 
-eitherTypeRepresentation :: HasVarMapping w => ListType w lt -> TypeRepresentation lt (ListSum lt)
+eitherTypeRepresentation :: HasVarMapping expr w => ListType w lt -> TypeRepresentation lt (ListSum lt)
 eitherTypeRepresentation NilListType = MkTypeRepresentation NilListType rVoid
 eitherTypeRepresentation (ConsListType a1 ar) =
     case eitherTypeRepresentation ar of
@@ -154,11 +154,11 @@ eitherTypeRepresentation (ConsListType a1 ar) =
 
 type EqWitness = Compose Dict Eq
 
-getEitherTypeRepresentation :: HasVarMapping w => ListType w lt -> (forall t. TypeRepresentation lt t -> r) -> r
+getEitherTypeRepresentation :: HasVarMapping expr w => ListType w lt -> (forall t. TypeRepresentation lt t -> r) -> r
 getEitherTypeRepresentation lt call = call $ eitherTypeRepresentation lt
 
 getEitherTypeRepresentationEq ::
-       (WitnessConstraint Eq w, HasVarMapping w)
+       (WitnessConstraint Eq w, HasVarMapping expr w)
     => ListType w lt
     -> (forall t. Eq t => TypeRepresentation lt t -> r)
     -> r
@@ -167,7 +167,7 @@ getEitherTypeRepresentationEq lt call =
         Dict -> call $ eitherTypeRepresentation lt
 
 getPreferredTypeRepresentation ::
-       forall w lt r. (MaybeUnitWitness w, HasVarMapping w)
+       forall w lt r. (MaybeUnitWitness w, HasVarMapping expr w)
     => ListType w lt
     -> (forall t. TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r
@@ -177,7 +177,7 @@ getPreferredTypeRepresentation lt call =
         Just rt -> rt
 
 getPreferredTypeRepresentationEq ::
-       forall w lt r. (MaybeUnitWitness w, WitnessConstraint Eq w, HasVarMapping w)
+       forall w lt r. (MaybeUnitWitness w, WitnessConstraint Eq w, HasVarMapping expr w)
     => ListType w lt
     -> (forall t. Eq t => TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r

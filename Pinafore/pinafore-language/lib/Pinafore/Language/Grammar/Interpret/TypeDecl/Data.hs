@@ -36,7 +36,7 @@ instance MaybeUnitWitness ConstructorType where
         case emptyMapTypeRefl @Type @Type @w @tt of
             Refl -> return Dict
 
-instance HasVarMapping ConstructorType where
+instance HasVarMapping expr ConstructorType where
     getVarMapping (MkConstructorType PositionalCF tt) = getVarMapping $ MkListVProductType tt
     getVarMapping (MkConstructorType RecordCF tt) = getVarMapping $ MkListVProductType tt
 
