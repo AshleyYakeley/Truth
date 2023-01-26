@@ -50,23 +50,7 @@ type TSSealedPartialExpression ts = SealedPartialExpression (TSVarID ts) (TSNegS
 
 type TSSealedExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
 
-type TSMatch ts = Match (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
-type TSOpenPattern :: Type -> Type -> Type -> Type
-type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
-
 type TSOpenSolverExpression ts typeexpr
      = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenExpression ts)
 
-type TSOpenSolverPattern ts typeexpr
-     = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenPattern ts ())
-
 type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)
-
-type TSSealedPattern ts = SealedPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
-type TSPatternConstructor ts = PatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
-type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
-type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)

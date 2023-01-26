@@ -2,6 +2,10 @@
 
 module Language.Expression.Common.Abstract
     ( AbstractTypeSystem(..)
+    , TSOpenPattern
+    , TSMatch
+    , TSSealedExpressionPattern
+    , TSExpressionPatternConstructor
     , unifierSubstituteSimplifyFinalRename
     , unifierSolve
     , abstractExpression
@@ -44,6 +48,15 @@ class ( RenameTypeSystem ts
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type
     bottomShimWit :: Some (TSPosShimWit ts)
+
+type TSOpenPattern :: Type -> Type -> Type -> Type
+type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
+
+type TSMatch ts = Match (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+
+type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+
+type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
 unifierSubstituteSimplifyFinalRename ::
        forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
