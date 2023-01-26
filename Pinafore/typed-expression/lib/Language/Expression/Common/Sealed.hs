@@ -49,10 +49,11 @@ instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
         MkSealedExpression Refl $ fmap conv $ sequenceA $ fmap (\(MkSealedExpression Refl expr) -> expr) exprs
 
 instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) where
-    mapWitnessesM mapPos mapNeg (MkSealedExpression tt expr) = do
-        tt' <- mapPos tt
-        expr' <- mapWitnessesM mapPos mapNeg expr
-        pure $ MkSealedExpression tt' expr'
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \(MkSealedExpression tt expr) -> do
+            tt' <- unEndoM mapPos tt
+            expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
+            pure $ MkSealedExpression tt' expr'
 
 instance (Show name, AllConstraint Show negwit, AllConstraint Show poswit) => Show (SealedExpression name negwit poswit) where
     show (MkSealedExpression t expr) = show expr <> " => " <> allShow t

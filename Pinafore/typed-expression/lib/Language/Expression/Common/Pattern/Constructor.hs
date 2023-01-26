@@ -24,20 +24,21 @@ toPatternConstructor nwt tlt f = MkPatternConstructor nwt tlt $ purityFunctionPa
 
 liftListProductPolwit ::
        forall m wit. Applicative m
-    => (forall t. wit t -> m (wit t))
-    -> forall t'. ListProductType wit t' -> m (ListProductType wit t')
-liftListProductPolwit ff (MkListProductType lwt) = fmap MkListProductType $ mapMListType ff lwt
+    => EndoM' m wit
+    -> EndoM' m (ListProductType wit)
+liftListProductPolwit ff = MkEndoM $ \(MkListProductType lwt) -> fmap MkListProductType $ mapMListType (unEndoM ff) lwt
 
 instance WitnessMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
-    mapWitnessesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) (lvw :: ListType wit lt) pat) = do
-        tt' <- mapNeg tt
-        pat' <- mapWitnessesM @Type @poswit @negwit mapPos mapNeg pat
-        hwit <- mapWitnessesM @Type (liftListProductPolwit mapPos) mapNeg $ MkListProductType lvw
-        pure $
-            case hwit of
-                MkListProductType (lvw' :: ListType wit lt') ->
-                    case injectiveListProduct @lt @lt' of
-                        Refl -> MkPatternConstructor tt' lvw' pat'
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \(MkPatternConstructor (tt :: negwit t) (lvw :: ListType wit lt) pat) -> do
+            tt' <- unEndoM mapNeg tt
+            pat' <- unEndoM (mapWitnessesM @Type @poswit @negwit mapPos mapNeg) pat
+            hwit <- unEndoM (mapWitnessesM @Type (liftListProductPolwit mapPos) mapNeg) $ MkListProductType lvw
+            pure $
+                case hwit of
+                    MkListProductType (lvw' :: ListType wit lt') ->
+                        case injectiveListProduct @lt @lt' of
+                            Refl -> MkPatternConstructor tt' lvw' pat'
 
 sealedPatternConstructor ::
        MonadThrow ExpressionError m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)

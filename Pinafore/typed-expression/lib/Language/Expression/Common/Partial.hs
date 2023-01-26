@@ -13,10 +13,11 @@ type SealedPartialExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> 
      = SealedExpression name vw (PartialWit tw)
 
 instance WitnessMappable poswit negwit (SealedPartialExpression name negwit poswit) where
-    mapWitnessesM mapPos mapNeg (MkSealedExpression (MkPartialWit purity tt) expr) = do
-        tt' <- mapPos tt
-        expr' <- mapWitnessesM mapPos mapNeg expr
-        pure $ MkSealedExpression (MkPartialWit purity tt') expr'
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \(MkSealedExpression (MkPartialWit purity tt) expr) -> do
+            tt' <- unEndoM mapPos tt
+            expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
+            pure $ MkSealedExpression (MkPartialWit purity tt') expr'
 
 sealedToPartialExpression :: SealedExpression name vw tw -> SealedPartialExpression name vw tw
 sealedToPartialExpression (MkSealedExpression twt expr) =

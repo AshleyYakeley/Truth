@@ -12,10 +12,11 @@ data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
                               (NamedPattern name vw t ())
 
 instance WitnessMappable poswit negwit (SealedPattern name poswit negwit) where
-    mapWitnessesM mapPos mapNeg (MkSealedPattern tt pat) = do
-        tt' <- mapNeg tt
-        pat' <- mapWitnessesM mapPos mapNeg pat
-        pure $ MkSealedPattern tt' $ pat'
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \(MkSealedPattern tt pat) -> do
+            tt' <- unEndoM mapNeg tt
+            pat' <- unEndoM (mapWitnessesM mapPos mapNeg) pat
+            pure $ MkSealedPattern tt' $ pat'
 
 varSealedPattern :: name -> tw t -> vw t -> SealedPattern name vw tw
 varSealedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt

@@ -3,9 +3,9 @@ module Language.Expression.Common.Simplifier
     ) where
 
 import Language.Expression.Common.TypeSystem
+import Shapes
 
 class TypeSystem ts => SimplifyTypeSystem ts where
     simplify ::
            forall a. TSMappable ts a
-        => a
-        -> TSOuter ts a
+        => EndoM (TSOuter ts) a

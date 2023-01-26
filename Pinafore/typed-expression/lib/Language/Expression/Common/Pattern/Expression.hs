@@ -23,18 +23,15 @@ liftExpressionShimWit (MkShimWit wtt conv) = MkShimWit (MkExpressionWitness wtt 
 instance WitnessMappable poswit negwit (SealedExpressionPattern name poswit negwit) where
     mapWitnessesM ::
            forall m. Applicative m
-        => (forall t. poswit t -> m (poswit t))
-        -> (forall t. negwit t -> m (negwit t))
-        -> SealedExpressionPattern name poswit negwit
-        -> m (SealedExpressionPattern name poswit negwit)
-    mapWitnessesM mapPos mapNeg spat = let
-        mapNeg' ::
-               forall t.
-               ExpressionWitness negwit (NamedExpression name negwit) t
-            -> m (ExpressionWitness negwit (NamedExpression name negwit) t)
-        mapNeg' (MkExpressionWitness witt exprr) =
-            MkExpressionWitness <$> mapNeg witt <*> mapWitnessesM mapPos mapNeg exprr
-        in mapWitnessesM @Type @poswit @(ExpressionWitness negwit (NamedExpression name negwit)) mapPos mapNeg' spat
+        => EndoM' m poswit
+        -> EndoM' m negwit
+        -> EndoM m (SealedExpressionPattern name poswit negwit)
+    mapWitnessesM mapPos mapNeg = let
+        mapNeg' :: EndoM' m (ExpressionWitness negwit (NamedExpression name negwit))
+        mapNeg' =
+            MkEndoM $ \(MkExpressionWitness witt exprr) ->
+                MkExpressionWitness <$> unEndoM mapNeg witt <*> unEndoM (mapWitnessesM mapPos mapNeg) exprr
+        in mapWitnessesM @Type @poswit @(ExpressionWitness negwit (NamedExpression name negwit)) mapPos mapNeg'
 
 varSealedExpressionPattern :: name -> tw t -> vw (MeetType t ()) -> SealedExpressionPattern name vw tw
 varSealedExpressionPattern n twt vwt = varSealedPattern n (MkExpressionWitness twt $ pure ()) vwt
@@ -52,15 +49,12 @@ toExpressionPatternConstructor (MkPatternConstructor twt lt pat) =
 instance WitnessMappable poswit negwit (ExpressionPatternConstructor name poswit negwit) where
     mapWitnessesM ::
            forall m. Applicative m
-        => (forall t. poswit t -> m (poswit t))
-        -> (forall t. negwit t -> m (negwit t))
-        -> ExpressionPatternConstructor name poswit negwit
-        -> m (ExpressionPatternConstructor name poswit negwit)
-    mapWitnessesM mapPos mapNeg spat = let
-        mapNeg' ::
-               forall t.
-               ExpressionWitness negwit (NamedExpression name negwit) t
-            -> m (ExpressionWitness negwit (NamedExpression name negwit) t)
-        mapNeg' (MkExpressionWitness witt exprr) =
-            MkExpressionWitness <$> mapNeg witt <*> mapWitnessesM mapPos mapNeg exprr
-        in mapWitnessesM @Type @poswit @(ExpressionWitness negwit (NamedExpression name negwit)) mapPos mapNeg' spat
+        => EndoM' m poswit
+        -> EndoM' m negwit
+        -> EndoM m (ExpressionPatternConstructor name poswit negwit)
+    mapWitnessesM mapPos mapNeg = let
+        mapNeg' :: EndoM' m (ExpressionWitness negwit (NamedExpression name negwit))
+        mapNeg' =
+            MkEndoM $ \(MkExpressionWitness witt exprr) ->
+                MkExpressionWitness <$> unEndoM mapNeg witt <*> unEndoM (mapWitnessesM mapPos mapNeg) exprr
+        in mapWitnessesM @Type @poswit @(ExpressionWitness negwit (NamedExpression name negwit)) mapPos mapNeg'

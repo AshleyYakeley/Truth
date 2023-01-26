@@ -44,10 +44,11 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m oldname new
          , Traversable m
          ) =>
              NamespaceRenamable (DolanTypeSystem ground) (DeferredBisubstitution m ground shim oldname newtypepos newtypeneg) where
-    namespaceRename (MkDeferredBisubstitution isRecursive var mpos mneg) = do
-        mpos' <- for mpos $ dolanNamespaceRename @ground
-        mneg' <- for mneg $ dolanNamespaceRename @ground
-        return $ MkDeferredBisubstitution isRecursive var mpos' mneg'
+    namespaceRename =
+        MkEndoM $ \(MkDeferredBisubstitution isRecursive var mpos mneg) -> do
+            mpos' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mpos
+            mneg' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mneg
+            return $ MkDeferredBisubstitution isRecursive var mpos' mneg'
     namespaceTypeNames (MkDeferredBisubstitution _ _ mpos mneg) =
         mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mpos)) <>
         mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mneg))
@@ -88,10 +89,11 @@ deferredBisubstitution (MkBisubstitution isRecursive var mpos mneg) call =
 
 instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. (IsDolanGroundType ground, Traversable m) =>
              NamespaceRenamable (DolanTypeSystem ground) (Bisubstitution ground shim m) where
-    namespaceRename (MkBisubstitution isRecursive var mpos mneg) = do
-        mpos' <- for mpos $ dolanNamespaceRename @ground
-        mneg' <- for mneg $ dolanNamespaceRename @ground
-        return $ MkBisubstitution isRecursive var mpos' mneg'
+    namespaceRename =
+        MkEndoM $ \(MkBisubstitution isRecursive var mpos mneg) -> do
+            mpos' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mpos
+            mneg' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mneg
+            return $ MkBisubstitution isRecursive var mpos' mneg'
     namespaceTypeNames (MkBisubstitution _ _ mpos mneg) =
         mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mpos)) <>
         mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mneg))
@@ -195,9 +197,8 @@ bisubstitute ::
        , PShimWitMappable (pshim Type) (DolanType ground) a
        )
     => Bisubstitution ground (pshim Type) m
-    -> a
-    -> m a
-bisubstitute sub expr = mapPShimWitsM @_ @(pshim Type) (bisubstituteType sub) (bisubstituteType sub) expr
+    -> EndoM m a
+bisubstitute sub = mapPShimWitsM @_ @(pshim Type) (bisubstituteType sub) (bisubstituteType sub)
 
 bisubstitutes ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m a.
@@ -207,12 +208,8 @@ bisubstitutes ::
        , PShimWitMappable (pshim Type) (DolanType ground) a
        )
     => [Bisubstitution ground (pshim Type) m]
-    -> a
-    -> m a
-bisubstitutes [] expr = return $ expr
-bisubstitutes (sub:subs) expr = do
-    expr' <- bisubstitute sub expr
-    bisubstitutes subs expr'
+    -> EndoM m a
+bisubstitutes subs = mconcat $ fmap bisubstitute subs
 
 reducePolarMap ::
        forall (pshim :: PolyShimKind) polarity a b c d. (ReduciblePolyShim pshim, Is PolarityType polarity)

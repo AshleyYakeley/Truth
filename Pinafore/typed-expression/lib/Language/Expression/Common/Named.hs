@@ -52,11 +52,13 @@ type NamedExpression :: Type -> (Type -> Type) -> Type -> Type
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)
 
 instance WitnessMappable poswit negwit (NamedExpression name negwit a) where
-    mapWitnessesM _ _ (ClosedExpression a) = pure $ ClosedExpression a
-    mapWitnessesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
-        tt' <- mapNeg tt
-        expr' <- mapWitnessesM mapPos mapNeg expr
-        pure $ OpenExpression (MkNameWitness name tt') expr'
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \case
+            ClosedExpression a -> pure $ ClosedExpression a
+            OpenExpression (MkNameWitness name tt) expr -> do
+                tt' <- unEndoM mapNeg tt
+                expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
+                pure $ OpenExpression (MkNameWitness name tt') expr'
 
 namedExpressionFreeNames :: NamedExpression name vw a -> [name]
 namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) -> n) expr

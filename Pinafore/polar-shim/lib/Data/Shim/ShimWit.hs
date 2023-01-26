@@ -33,6 +33,12 @@ mapShimWit ::
     -> ShimWit shim wit b
 mapShimWit ab (MkShimWit t conv) = MkShimWit t $ conv . ab
 
+endoShimWit ::
+       forall m k (shim :: ShimKind k) (w :: k -> Type). Functor m
+    => EndoM' m w
+    -> EndoM' m (ShimWit shim w)
+endoShimWit emw = MkEndoM $ \(MkShimWit wa conv) -> fmap (\wa' -> MkShimWit wa' conv) $ unEndoM emw wa
+
 chainShimWitM ::
        forall m (k :: Type) (shim :: ShimKind k) (wita :: k -> Type) (witb :: k -> Type) (t' :: k).
        (Functor m, Category shim)

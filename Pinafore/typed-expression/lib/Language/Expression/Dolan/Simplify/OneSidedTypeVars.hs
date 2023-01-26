@@ -28,19 +28,18 @@ eliminateVars ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
     => (FiniteSet (Some SymbolType), FiniteSet (Some SymbolType))
-    -> a
-    -> a
-eliminateVars vars expr = runIdentity $ bisubstitutes @ground (eliminationBisubs vars) expr
+    -> Endo a
+eliminateVars vars = endoMToEndo $ bisubstitutes @ground (eliminationBisubs vars)
 
 eliminateOneSidedTypeVars ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => a
-    -> a
-eliminateOneSidedTypeVars expr = let
-    (setFromList -> posvars, setFromList -> negvars) = mappableGetVars @ground expr
-    posonlyvars :: FiniteSet _
-    posonlyvars = difference posvars negvars
-    negonlyvars :: FiniteSet _
-    negonlyvars = difference negvars posvars
-    in eliminateVars @ground (posonlyvars, negonlyvars) expr
+    => Endo a
+eliminateOneSidedTypeVars =
+    Endo $ \expr -> let
+        (setFromList -> posvars, setFromList -> negvars) = mappableGetVars @ground expr
+        posonlyvars :: FiniteSet _
+        posonlyvars = difference posvars negvars
+        negonlyvars :: FiniteSet _
+        negonlyvars = difference negvars posvars
+        in appEndo (eliminateVars @ground (posonlyvars, negonlyvars)) expr

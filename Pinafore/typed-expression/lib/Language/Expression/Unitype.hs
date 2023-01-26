@@ -21,8 +21,8 @@ unitypeShimWit = mkPolarShimWit Refl
 
 instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) where
     type RenamerT (Unitype m name val) = IdentityT
-    renameNegWitness Refl = return Refl
-    renamePosWitness Refl = return Refl
+    renameNegWitness = mempty
+    renamePosWitness = mempty
     typeNamesNegWitness Refl = []
     typeNamesPosWitness Refl = []
     type RenamerNamespaceT (Unitype m name val) = IdentityT
@@ -42,7 +42,7 @@ instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) w
     unifierNegSubstitute () Refl = return unitypeShimWit
 
 instance (Monad m, Eq name, Show name) => SimplifyTypeSystem (Unitype m name val) where
-    simplify = return
+    simplify = mempty
 
 instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val) where
     type Subsumer (Unitype m name val) = Identity

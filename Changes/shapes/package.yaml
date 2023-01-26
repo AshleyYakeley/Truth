@@ -50,6 +50,7 @@ library:
       - Control.Category.Groupoid
       - Control.FixIO
       - Data.CatEndo
+      - Data.EndoM
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor

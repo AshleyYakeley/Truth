@@ -8,48 +8,37 @@ import Shapes
 class WitnessMappable (poswit :: k -> Type) (negwit :: k -> Type) (a :: Type) where
     mapWitnessesM ::
            forall m. Applicative m
-        => (forall (t :: k). poswit t -> m (poswit t))
-        -> (forall (t :: k). negwit t -> m (negwit t))
-        -> a
-        -> m a
+        => EndoM' m poswit
+        -> EndoM' m negwit
+        -> EndoM m a
 
 mapWitnesses ::
        forall k (poswit :: k -> Type) (negwit :: k -> Type) (a :: Type). WitnessMappable poswit negwit a
-    => (forall (t :: k). poswit t -> poswit t)
-    -> (forall (t :: k). negwit t -> negwit t)
-    -> a
-    -> a
-mapWitnesses mapPos mapNeg a = runIdentity $ mapWitnessesM (\t -> Identity $ mapPos t) (\t -> Identity $ mapNeg t) a
+    => Endo' poswit
+    -> Endo' negwit
+    -> Endo a
+mapWitnesses mapPos mapNeg = endoMToEndo $ mapWitnessesM (endoToEndoM mapPos) (endoToEndoM mapNeg)
 
 mappableGetWitnesses ::
        forall k (poswit :: k -> Type) (negwit :: k -> Type) a. (WitnessMappable poswit negwit a)
     => a
     -> [Either (Some poswit) (Some negwit)]
-mappableGetWitnesses a =
-    execWriter $
-    mapWitnessesM
-        @k
-        (\t -> do
-             tell $ pure $ Left $ MkSome t
-             return t)
-        (\t -> do
-             tell $ pure $ Right $ MkSome t
-             return t)
-        a
+mappableGetWitnesses =
+    execEndoMWriter $
+    mapWitnessesM @k (tellEndoM $ \t -> pure $ Left $ MkSome t) (tellEndoM $ \t -> pure $ Right $ MkSome t)
 
 instance WitnessMappable poswit negwit () where
-    mapWitnessesM _ _ = pure
+    mapWitnessesM _ _ = rUnit
 
 instance WitnessMappable poswit negwit Void where
-    mapWitnessesM _ _ = absurd
+    mapWitnessesM _ _ = rVoid
 
 instance (WitnessMappable poswit negwit p, WitnessMappable poswit negwit q) => WitnessMappable poswit negwit (p, q) where
-    mapWitnessesM mapPos mapNeg (p, q) = (,) <$> mapWitnessesM mapPos mapNeg p <*> mapWitnessesM mapPos mapNeg q
+    mapWitnessesM mapPos mapNeg = mapWitnessesM mapPos mapNeg <***> mapWitnessesM mapPos mapNeg
 
 instance (WitnessMappable poswit negwit p, WitnessMappable poswit negwit q) =>
              WitnessMappable poswit negwit (Either p q) where
-    mapWitnessesM mapPos mapNeg (Left p) = Left <$> mapWitnessesM mapPos mapNeg p
-    mapWitnessesM mapPos mapNeg (Right q) = Right <$> mapWitnessesM mapPos mapNeg q
+    mapWitnessesM mapPos mapNeg = mapWitnessesM mapPos mapNeg <+++> mapWitnessesM mapPos mapNeg
 
 instance WitnessMappable (poswit :: k -> Type) negwit (poswit t) where
     mapWitnessesM mapPos _ = mapPos
@@ -58,24 +47,21 @@ instance WitnessMappable poswit (negwit :: k -> Type) (negwit t) where
     mapWitnessesM _ mapNeg = mapNeg
 
 instance WitnessMappable poswit negwit (SomeOf poswit) where
-    mapWitnessesM mapPos _ (MkSomeOf tw val) = do
-        tw' <- mapPos tw
-        pure $ MkSomeOf tw' val
+    mapWitnessesM mapPos _ = endoSomeFor mapPos
 
 instance WitnessMappable poswit negwit (Some poswit) where
-    mapWitnessesM mapPos _ (MkSome pa) = do
-        pa' <- mapPos pa
-        pure $ MkSome pa'
+    mapWitnessesM mapPos _ = endoSomeFor mapPos
 
 instance WitnessMappable poswit negwit (Some negwit) where
-    mapWitnessesM _ mapNeg (MkSome pa) = do
-        pa' <- mapNeg pa
-        pure $ MkSome pa'
+    mapWitnessesM _ mapNeg = endoSomeFor mapNeg
+
+endoExtractShimWit :: (Functor m, Category shim) => EndoM' m (ShimWit shim w) -> EndoM m (Some w)
+endoExtractShimWit ems = MkEndoM $ \(MkSome w) -> fmap (\(MkShimWit w' _) -> MkSome w') $ unEndoM ems $ mkShimWit w
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). Category shim =>
              WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (Some poswit) where
-    mapWitnessesM mapPos _ (MkSome w) = fmap (\(MkShimWit w' _) -> MkSome w') $ mapPos $ mkPolarShimWit w
+    mapWitnessesM mapPos _ = endoExtractShimWit mapPos
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). Category shim =>
              WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (Some negwit) where
-    mapWitnessesM _ mapNeg (MkSome w) = fmap (\(MkShimWit w' _) -> MkSome w') $ mapNeg $ mkPolarShimWit w
+    mapWitnessesM _ mapNeg = endoExtractShimWit mapNeg

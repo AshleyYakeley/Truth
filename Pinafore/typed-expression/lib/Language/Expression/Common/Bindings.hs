@@ -81,8 +81,8 @@ singleBound (MkTSBinding name bd mexpr) = do
             -> TSOpenExpression ts tdecl
             -> TSOuter ts (BindMap ts)
         getbinds usubs ssubs fexpr = do
-            fexpr' <- subsumerSubstitute @ts ssubs fexpr
-            expr <- unifierSubstituteSimplifyFinalRename @ts usubs $ MkSealedExpression decltype fexpr'
+            fexpr' <- unEndoM (subsumerSubstitute @ts ssubs) fexpr
+            expr <- unEndoM (unifierSubstituteSimplifyFinalRename @ts usubs) $ MkSealedExpression decltype fexpr'
             return $ singletonMap name (bd, expr)
     return $ MkBound abstractNames subsexpr getbinds
 
@@ -114,7 +114,7 @@ bindingSequentialLetSealedExpression (MkTSBinding name bd mexpr) =
     runRenamer @ts [] [] $ do
         MkSealedSubsumerExpression tdecl (MkSolverExpression subsumer expr) <- mexpr
         (ssexpr, ssubs) <- solveSubsumer @ts subsumer
-        expr' <- subsumerSubstitute @ts ssubs expr
+        expr' <- unEndoM (subsumerSubstitute @ts ssubs) expr
         return $ singletonMap name (bd, MkSealedExpression tdecl $ expr' <*> ssexpr)
 
 bindingsNames :: [TSBinding ts] -> [TSVarID ts]

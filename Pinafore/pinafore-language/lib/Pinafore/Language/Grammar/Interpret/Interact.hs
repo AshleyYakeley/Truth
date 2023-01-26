@@ -114,16 +114,16 @@ interactLoop inh outh echo = do
                                  s :: NamedText <-
                                      case polarity of
                                          Positive -> do
-                                             MkSome t <- interactRunQInterpreter $ interpretType @'Positive stype
+                                             t <- interactRunQInterpreter $ interpretType @'Positive stype
                                              t' <-
                                                  interactRunQInterpreter $
-                                                 runRenamer @QTypeSystem [] [] $ simplify @QTypeSystem $ MkSome t
+                                                 runRenamer @QTypeSystem [] [] $ unEndoM (simplify @QTypeSystem) t
                                              return $ exprShow t'
                                          Negative -> do
-                                             MkSome t <- interactRunQInterpreter $ interpretType @'Negative stype
+                                             t <- interactRunQInterpreter $ interpretType @'Negative stype
                                              t' <-
                                                  interactRunQInterpreter $
-                                                 runRenamer @QTypeSystem [] [] $ simplify @QTypeSystem $ MkSome t
+                                                 runRenamer @QTypeSystem [] [] $ unEndoM (simplify @QTypeSystem) t
                                              return $ exprShow t'
                                  ntt <- interactRunQInterpreter getRenderFullName
                                  liftIO $ hPutStrLn outh $ unpack $ ntt s

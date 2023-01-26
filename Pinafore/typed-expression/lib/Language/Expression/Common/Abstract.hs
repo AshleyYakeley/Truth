@@ -48,13 +48,8 @@ class ( RenameTypeSystem ts
 unifierSubstituteSimplifyFinalRename ::
        forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
     => UnifierSubstitutions ts
-    -> a
-    -> TSOuter ts a
-unifierSubstituteSimplifyFinalRename subs a = do
-    a' <- unifierSubstitute @ts subs a
-    a'' <- simplify @ts a'
-    -- finalRenamer only needed to "clean up" type variable names
-    finalRenamer @ts $ rename @ts FreeName a''
+    -> EndoM (TSOuter ts) a
+unifierSubstituteSimplifyFinalRename subs = mconcat [unifierSubstitute @ts subs, simplify @ts, finalRename @ts]
 
 unifierSolve ::
        forall ts a b. (AbstractTypeSystem ts, TSMappable ts b)
@@ -64,7 +59,7 @@ unifierSolve ::
 unifierSolve uexpr mab = do
     (expr, subs) <- solveUnifierExpression @ts uexpr
     b <- mab expr
-    unifierSubstituteSimplifyFinalRename @ts subs b
+    unEndoM (unifierSubstituteSimplifyFinalRename @ts subs) b
 
 abstractNamedExpressionUnifier ::
        forall ts t a r. UnifyTypeSystem ts

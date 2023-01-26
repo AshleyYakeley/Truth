@@ -20,12 +20,12 @@ type NamedPattern :: Type -> (Type -> Type) -> Type -> Type -> Type
 type NamedPattern name w = NameTypePattern (UnitType name) (UnitType' w)
 
 instance WitnessMappable poswit negwit (NamedPattern name poswit a b) where
-    mapWitnessesM mapPos _ (MkPattern ww pf) = do
-        ww' <-
-            for ww $ \(MkSomeFor (MkNameWitness name tt) conv) -> do
-                tt' <- mapPos tt
-                return $ MkSomeFor (MkNameWitness name tt') conv
-        return $ MkPattern ww' pf
+    mapWitnessesM mapPos _ = let
+        mapNW :: EndoM' _ (NameTypeWitness (UnitType name) (UnitType' poswit))
+        mapNW = MkEndoM $ \(MkNameWitness name tt) -> fmap (MkNameWitness name) $ unEndoM mapPos tt
+        in MkEndoM $ \(MkPattern ww pf) -> do
+               ww' <- unEndoM (endoFor $ endoSomeFor mapNW) ww
+               pure $ MkPattern ww' pf
 
 patternNames :: NamedPattern name vw q a -> [name]
 patternNames = patternFreeWitnesses $ \(MkNameWitness name _) -> name

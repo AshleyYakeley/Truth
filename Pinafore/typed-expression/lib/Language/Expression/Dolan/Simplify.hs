@@ -18,27 +18,6 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-type Simplifier :: GroundTypeKind -> Type
-newtype Simplifier ground = MkSimplifier
-    { runSimplifier :: forall a.
-                           PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> DolanTypeCheckM ground a
-    }
-
-pureSimplifier ::
-       forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
-    => (forall a. PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> a)
-    -> Simplifier ground
-pureSimplifier aa = MkSimplifier $ \a -> return $ aa a
-
-instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Semigroup (Simplifier ground) where
-    MkSimplifier p <> MkSimplifier q =
-        MkSimplifier $ \a -> do
-            a' <- p a
-            q a'
-
-instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Monoid (Simplifier ground) where
-    mempty = MkSimplifier return
-
 -- Simplification:
 --
 -- eliminateUnusedRecursion: remove unused recursion & eliminate immediate recursion
@@ -69,19 +48,17 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 dolanSimplifyTypes ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => a
-    -> DolanTypeCheckM ground a
+    => EndoM (DolanTypeCheckM ground) a
 dolanSimplifyTypes =
-    runSimplifier $
     mif True $
     mconcat
-        [ mif True $ pureSimplifier $ eliminateUnusedRecursion @ground
-        , mif True $ MkSimplifier $ mergeDuplicateGroundTypes @ground
-        , mif False $ pureSimplifier $ eliminateOneSidedTypeVars @ground
-        , mif True $ MkSimplifier $ fullyConstrainedTypeVars @ground
-        , mif True $ pureSimplifier $ mergeSharedTypeVars @ground
-        , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
-        , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
+        [ mif True $ endoToEndoM $ eliminateUnusedRecursion @ground
+        , mif True $ mergeDuplicateGroundTypes @ground
+        , mif False $ endoToEndoM $ eliminateOneSidedTypeVars @ground
+        , mif True $ fullyConstrainedTypeVars @ground
+        , mif True $ endoToEndoM $ mergeSharedTypeVars @ground
+        , mif True $ endoToEndoM $ mergeDuplicateTypeVars @ground
+        , mif True $ endoToEndoM $ rollUpRecursiveTypes @ground
         ]
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>

@@ -181,7 +181,7 @@ tsSingleBinding ::
     -> TSBinding ts
 tsSingleBinding name bd madecltype expr =
     singleBinding name bd $ do
-        madecltype' <- for madecltype $ renameTypeSignature @ts
+        madecltype' <- unEndoM (endoFor $ renameTypeSignature @ts) madecltype
         expr' <- rename @ts FreeName expr
         subsumerExpression madecltype' expr'
 

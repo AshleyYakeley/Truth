@@ -31,18 +31,16 @@ type TSMappable ts = WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts)
 
 tsMapWitnessesM ::
        forall ts m a. (TSMappable ts a, Applicative m)
-    => (forall t. TSPosShimWit ts t -> m (TSPosShimWit ts t))
-    -> (forall t. TSNegShimWit ts t -> m (TSNegShimWit ts t))
-    -> a
-    -> m a
+    => EndoM' m (TSPosShimWit ts)
+    -> EndoM' m (TSNegShimWit ts)
+    -> EndoM m a
 tsMapWitnessesM = mapWitnessesM
 
 tsMapWitnesses ::
        forall ts a. TSMappable ts a
-    => (forall t. TSPosShimWit ts t -> TSPosShimWit ts t)
-    -> (forall t. TSNegShimWit ts t -> TSNegShimWit ts t)
-    -> a
-    -> a
+    => Endo' (TSPosShimWit ts)
+    -> Endo' (TSNegShimWit ts)
+    -> Endo a
 tsMapWitnesses = mapWitnesses
 
 type TSOpenExpression :: Type -> Type -> Type

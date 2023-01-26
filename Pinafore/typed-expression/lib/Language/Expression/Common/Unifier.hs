@@ -92,9 +92,8 @@ solveUnifierExpression (MkSolverExpression ut eta) = do
 unifierSubstitute ::
        forall ts a. (UnifyTypeSystem ts, TSMappable ts a)
     => UnifierSubstitutions ts
-    -> a
-    -> TSOuter ts a
+    -> EndoM (TSOuter ts) a
 unifierSubstitute subs =
     mapWitnessesM
-        (chainPolarShimWitM $ unifierPosSubstitute @ts subs)
-        (chainPolarShimWitM $ unifierNegSubstitute @ts subs)
+        (MkEndoM $ chainPolarShimWitM $ unifierPosSubstitute @ts subs)
+        (MkEndoM $ chainPolarShimWitM $ unifierNegSubstitute @ts subs)

@@ -89,13 +89,12 @@ solveSubsumeShimWit winf tdecl = do
 subsumerSubstitute ::
        forall ts a. (SubsumeTypeSystem ts, TSMappable ts a)
     => SubsumerSubstitutions ts
-    -> a
-    -> TSOuter ts a
+    -> EndoM (TSOuter ts) a
 subsumerSubstitute subs =
     tsMapWitnessesM
         @ts
-        (chainPolarShimWitM $ subsumerPosSubstitute @ts subs)
-        (chainPolarShimWitM $ subsumerNegSubstitute @ts subs)
+        (MkEndoM $ chainPolarShimWitM $ subsumerPosSubstitute @ts subs)
+        (MkEndoM $ chainPolarShimWitM $ subsumerNegSubstitute @ts subs)
 
 data SealedSubsumerExpression ts =
     forall tdecl. MkSealedSubsumerExpression (TSPosShimWit ts tdecl)
@@ -127,11 +126,11 @@ subsumerExpression ::
     -> TSSealedExpression ts
     -> TSOuter ts (SealedSubsumerExpression ts)
 subsumerExpression marawdecltype rawinfexpr = do
-    expr <- simplify @ts rawinfexpr
+    expr <- unEndoM (simplify @ts) rawinfexpr
     case marawdecltype of
         Nothing -> return $ expressionSubsumption expr
         Just (MkSome rawdecltype) -> do
-            MkShimWit tdecl _ <- simplify @ts $ mkPolarShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
+            MkShimWit tdecl _ <- unEndoM (simplify @ts) $ mkPolarShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
             sexpr <- subsumerExpressionTo @ts tdecl expr
             return $ MkSealedSubsumerExpression (mkPolarShimWit tdecl) sexpr
 
@@ -143,7 +142,7 @@ subsumeExpression ::
 subsumeExpression t expr = do
     MkSealedSubsumerExpression tp sexpr <- subsumerExpression @ts (Just t) expr
     (oexpr, ssubs) <- solveSubsumerExpression @ts sexpr
-    oexpr' <- subsumerSubstitute @ts ssubs oexpr
+    oexpr' <- unEndoM (subsumerSubstitute @ts ssubs) oexpr
     return $ MkSealedExpression tp oexpr'
 
 subsumeExpressionTo ::
@@ -154,4 +153,4 @@ subsumeExpressionTo ::
 subsumeExpressionTo tdecl expr = do
     sexpr <- subsumerExpressionTo @ts tdecl expr
     (oexpr, ssubs) <- solveSubsumerExpression @ts sexpr
-    subsumerSubstitute @ts ssubs oexpr
+    unEndoM (subsumerSubstitute @ts ssubs) oexpr

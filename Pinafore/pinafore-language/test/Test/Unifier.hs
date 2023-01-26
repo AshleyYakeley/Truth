@@ -17,7 +17,7 @@ type PinaforeBisubstitution = Bisubstitution QGroundType (QPolyShim Type) (Unifi
 pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> QInterpreter QValue
 pinaforeBisubstitutes bisubs val = do
     liftIO $ traceIO $ "bisubstitute: before: " <> showValType val
-    val' <- runUnifierM @QGroundType $ bisubstitutes @QGroundType bisubs val
+    val' <- runUnifierM @QGroundType $ unEndoM (bisubstitutes @QGroundType bisubs) val
     liftIO $ traceIO $ "bisubstitute: after: " <> showValType val'
     return val'
 

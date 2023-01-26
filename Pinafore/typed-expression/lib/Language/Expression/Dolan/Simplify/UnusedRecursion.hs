@@ -42,6 +42,5 @@ elimInType mn (ConsDolanType t1 tr) = joinMeetShimWit (elimInSingularType t1) (e
 eliminateUnusedRecursion ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => a
-    -> a
+    => Endo a
 eliminateUnusedRecursion = mapPShimWits @_ @(DolanType ground) (elimInType Nothing) (elimInType Nothing)

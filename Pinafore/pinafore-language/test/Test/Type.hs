@@ -107,6 +107,12 @@ rejectionTest text =
                 FailureResult _ -> return ()
                 SuccessResult _ -> assertFailure "no exception"
 
+runSimplify ::
+       forall a. TSMappable TS a
+    => a
+    -> TSOuter TS a
+runSimplify = unEndoM $ simplify @TS
+
 simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
     testTree (unpack text) $
@@ -116,9 +122,8 @@ simplifyTypeTest text e =
                 mt <- parseType @'Positive text
                 case mt of
                     MkSome t ->
-                        runRenamer @QTypeSystem [] [] $
-                        simplify @QTypeSystem @PExpression $
-                        MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
+                        runRenamer @TS [] [] $
+                        runSimplify @PExpression $ MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
         liftIO $
             case simpexpr of
                 MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ toText $ exprShow t'
@@ -192,32 +197,32 @@ testType =
               , exprTypeTest "simplify $ thing $ twice number" (return "{} -> Number *: Number") $ do
                     e1 <- apExpr twiceExpr numExpr
                     r <- apExpr thingExpr e1
-                    runRenamer @TS [] [] $ simplify @TS r
+                    runRenamer @TS [] [] $ runSimplify r
               , exprTypeTest "simplify duplicate" (return "{} -> Number") $
                 runRenamer @TS [] [] $
-                simplify @TS $ typeFConstExpression toJMShimWit (MkJoinType (Right 3) :: JoinType Number Number)
+                runSimplify $ typeFConstExpression toJMShimWit (MkJoinType (Right 3) :: JoinType Number Number)
               , exprTypeTest "simplify duplicate list" (return "{} -> List Number") $
                 runRenamer @TS [] [] $
-                simplify @TS $ typeFConstExpression toJMShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
+                runSimplify $ typeFConstExpression toJMShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
               , exprTypeTest "simplify duplicate pair" (return "{} -> Number *: Number") $
                 runRenamer @TS [] [] $
-                simplify @TS $
+                runSimplify $
                 typeFConstExpression
                     toJMShimWit
                     (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
                 runRenamer @TS [] [] $
-                simplify @TS $
+                runSimplify $
                 typeFConstExpression toJMShimWit ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
                 runRenamer @TS [] [] $
-                simplify @TS $
+                runSimplify $
                 typeFConstExpression
                     toJMShimWit
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in list" (return "{} -> List Number") $
                 runRenamer @TS [] [] $
-                simplify @TS $ typeFConstExpression toJMShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
+                runSimplify $ typeFConstExpression toJMShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
         , testTree
               "read"

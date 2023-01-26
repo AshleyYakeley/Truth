@@ -2,6 +2,7 @@ module Language.Expression.Common.Rename.RenameTypeSystem
     ( RenameTypeSystem(..)
     , rename
     , renameTypeSignature
+    , finalRename
     , NewVar(..)
     , typeNamesWM
     , typeSignatureNames
@@ -24,8 +25,8 @@ class ( TypeSystem ts
       ) => RenameTypeSystem (ts :: Type) where
     type RenamerT ts :: (Type -> Type) -> (Type -> Type)
     type RenamerNamespaceT ts :: (Type -> Type) -> (Type -> Type)
-    renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegWitness ts t)
-    renamePosWitness :: Monad m => TSPosWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSPosWitness ts t)
+    renameNegWitness :: Monad m => EndoM (RenamerNamespaceT ts (RenamerT ts m)) (TSNegWitness ts t)
+    renamePosWitness :: Monad m => EndoM (RenamerNamespaceT ts (RenamerT ts m)) (TSPosWitness ts t)
     typeNamesNegWitness :: TSNegWitness ts t -> [String]
     typeNamesPosWitness :: TSPosWitness ts t -> [String]
     renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
@@ -33,31 +34,28 @@ class ( TypeSystem ts
     runRenamer :: Monad m => [String] -> [String] -> RenamerT ts m --> m
     finalRenamer :: Monad m => RenamerT ts m --> RenamerT ts m
 
+finalRename ::
+       forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
+    => EndoM (RenamerT ts m) a
+finalRename = MkEndoM $ \a -> finalRenamer @ts $ rename @ts FreeName a
+
 renameNegShimWit ::
-       forall ts m t. (RenameTypeSystem ts, Monad m)
-    => TSNegShimWit ts t
-    -> RenamerNamespaceT ts (RenamerT ts m) (TSNegShimWit ts t)
+       forall ts m. (RenameTypeSystem ts, Monad m)
+    => EndoM' (RenamerNamespaceT ts (RenamerT ts m)) (TSNegShimWit ts)
 renameNegShimWit =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
-                Dict ->
-                    \(MkShimWit t conv) -> do
-                        t' <- renameNegWitness @ts t
-                        return $ MkShimWit t' conv
+                Dict -> endoShimWit $ renameNegWitness @ts
 
 renamePosShimWit ::
-       forall ts m t. (RenameTypeSystem ts, Monad m)
-    => TSPosShimWit ts t
-    -> RenamerNamespaceT ts (RenamerT ts m) (TSPosShimWit ts t)
+       forall ts m. (RenameTypeSystem ts, Monad m)
+    => EndoM' (RenamerNamespaceT ts (RenamerT ts m)) (TSPosShimWit ts)
 renamePosShimWit =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
-                Dict ->
-                    \(MkShimWit t conv) -> do
-                        t' <- renamePosWitness @ts t
-                        return $ MkShimWit t' conv
+                Dict -> endoShimWit $ renamePosWitness @ts
 
 rename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
@@ -66,18 +64,18 @@ rename ::
     -> RenamerT ts m a
 rename rigid a =
     withTransConstraintTM @Monad $
-    namespace @ts rigid $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
+    namespace @ts rigid $
+    withTransConstraintTM @Monad $ unEndoM (mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts)) a
 
 typeNamesWM ::
        forall ts a. (RenameTypeSystem ts, TSMappable ts a)
     => a
     -> [String]
-typeNamesWM a = let
-    tellPos :: forall t. TSPosShimWit ts t -> _ (TSPosShimWit ts t)
-    tellPos w@(MkShimWit t _) = tell (typeNamesPosWitness @ts t) >> return w
-    tellNeg :: forall t. TSNegShimWit ts t -> _ (TSNegShimWit ts t)
-    tellNeg w@(MkShimWit t _) = tell (typeNamesNegWitness @ts t) >> return w
-    in runIdentity $ execWriterT $ mapWitnessesM tellPos tellNeg a
+typeNamesWM a = do
+    espsn <- mappableGetWitnesses @Type @(TSPosShimWit ts) @(TSNegShimWit ts) a
+    case espsn of
+        Left (MkSome (MkShimWit w _)) -> typeNamesPosWitness @ts w
+        Right (MkSome (MkShimWit w _)) -> typeNamesNegWitness @ts w
 
 typeSignatureNames ::
        forall ts. RenameTypeSystem ts
@@ -87,9 +85,7 @@ typeSignatureNames (MkSome t) = typeNamesPosWitness @ts t
 
 renameTypeSignature ::
        forall ts m. (RenameTypeSystem ts, Monad m)
-    => Some (TSPosWitness ts)
-    -> RenamerT ts m (Some (TSPosWitness ts))
-renameTypeSignature (MkSome t) =
-    withTransConstraintTM @Monad $ do
-        t' <- namespace @ts RigidName $ renamePosWitness @ts t
-        return $ MkSome t'
+    => EndoM (RenamerT ts m) (Some (TSPosWitness ts))
+renameTypeSignature =
+    case hasTransConstraint @Monad @(RenamerT ts) @m of
+        Dict -> endoSomeFor $ hoistEndoM (namespace @ts RigidName) $ renamePosWitness @ts

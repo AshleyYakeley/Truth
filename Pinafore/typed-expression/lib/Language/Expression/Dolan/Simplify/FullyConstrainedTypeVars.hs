@@ -186,7 +186,9 @@ eliminateVariable ::
     -> a
     -> DolanM ground (a, Bool)
 eliminateVariable (MkSome var) a = do
-    ma' <- reduceUsageSolution var $ mapPShimWitsM (getUsageSolution @ground var) (getUsageSolution @ground var) a
+    ma' <-
+        reduceUsageSolution var $
+        unEndoM (mapPShimWitsM (getUsageSolution @ground var) (getUsageSolution @ground var)) a
     return $
         case ma' of
             Just a' -> (a', True)
@@ -222,6 +224,5 @@ keepEliminatingVariables a = do
 fullyConstrainedTypeVars ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => a
-    -> DolanTypeCheckM ground a
-fullyConstrainedTypeVars expr = lift $ keepEliminatingVariables @ground expr
+    => EndoM (DolanTypeCheckM ground) a
+fullyConstrainedTypeVars = liftEndoM $ MkEndoM $ keepEliminatingVariables @ground

@@ -217,10 +217,8 @@ subtypeConversion gta (MkShimWit rawargsa (MkPolarMap conva)) gtb (MkShimWit raw
             vma = groundTypeVarianceMap gta
             vmb = groundTypeVarianceMap gtb
         (argsa, argsb) <-
-            namespace @(DolanTypeSystem ground) FreeName $ do
-                argsa <- dolanNamespaceRenameArguments rawargsa
-                argsb <- dolanNamespaceRenameArguments rawargsb
-                return (argsa, argsb)
+            namespace @(DolanTypeSystem ground) FreeName $
+            unEndoM (dolanNamespaceRenameArguments <***> dolanNamespaceRenameArguments) (rawargsa, rawargsb)
         return $
             MkSubtypeArguments vma argsa vmb argsb $
             fmap (\conv -> convb . conv . conva) (subtypeLiftExpression sc convexpr)
@@ -280,10 +278,8 @@ subtypeConversionAsGeneralAs runSolver sc (GeneralSubtypeConversion cs1) (Genera
         MkSubtypeArguments _ args1a _ args1b _ <- cs1 sc
         MkSubtypeArguments vma rawargs2a vmb rawargs2b _ <- cs2 sc
         (args2a, args2b) <-
-            namespace @(DolanTypeSystem ground) RigidName $ do
-                args2a <- dolanNamespaceRenameArguments rawargs2a
-                args2b <- dolanNamespaceRenameArguments rawargs2b
-                return (args2a, args2b)
+            namespace @(DolanTypeSystem ground) RigidName $
+            unEndoM (dolanNamespaceRenameArguments <***> dolanNamespaceRenameArguments) (rawargs2a, rawargs2b)
         let
             sconva = subtypeDolanArguments sc vma args2a args1a
             sconvb = subtypeDolanArguments sc vmb args1b args2b
