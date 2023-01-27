@@ -43,14 +43,21 @@ readSubtypeDeclaration = do
             readExpression
     return $ SubtypeSyntaxDeclaration trustme sta stb mbody
 
+readValueSignature :: Parser SyntaxSignature'
+readValueSignature = do
+    name <- readLName
+    readThis TokTypeJudge
+    t <- readType
+    return $ ValueSyntaxSignature name t
+
+readTypeSignature :: Parser SyntaxSignature'
+readTypeSignature = do
+    readThis TokType
+    name <- readUName
+    return $ TypeSyntaxSignature name
+
 readSignature :: Parser SyntaxSignature
-readSignature =
-    readWithDoc $
-    readWithSourcePos $ do
-        name <- readLName
-        readThis TokTypeJudge
-        t <- readType
-        return $ ValueSyntaxSignature name t
+readSignature = readWithDoc $ readWithSourcePos $ readTypeSignature <|> readValueSignature
 
 readPlainDataTypeConstructor :: Parser SyntaxPlainDatatypeConstructorOrSubtype
 readPlainDataTypeConstructor =

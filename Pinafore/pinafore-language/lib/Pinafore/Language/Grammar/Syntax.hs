@@ -19,9 +19,10 @@ data SyntaxConstructorOrSubtype extra
 
 type SyntaxStorableDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
 
-data SyntaxSignature' =
-    ValueSyntaxSignature Name
-                         SyntaxType
+data SyntaxSignature'
+    = ValueSyntaxSignature Name
+                           SyntaxType
+    | TypeSyntaxSignature Name
     deriving (Eq)
 
 type SyntaxSignature = SyntaxWithDoc (WithSourcePos SyntaxSignature')

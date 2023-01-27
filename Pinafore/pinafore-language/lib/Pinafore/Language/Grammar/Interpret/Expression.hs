@@ -59,10 +59,12 @@ recordNameWitnesses ::
     -> ListType (QSignature 'Positive) tt
     -> QScopeInterpreter [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
 recordNameWitnesses ns lt =
+    fmap catMaybes $
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
         MkPairType (ValueSignature name t) f -> do
             (_, vid) <- allocateVar $ Just $ MkFullName name ns
-            return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
+            return $ Just $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
+        MkPairType (TypeSignature name) _ -> lift $ throw $ KnownIssueError 172 $ toText name
 
 mkRecordPattern ::
        Namespace -> ListType (QSignature 'Positive) tt -> QScopeInterpreter (QOpenPattern (Maybe (ListVProduct tt)) ())
@@ -233,8 +235,12 @@ subtypeRelDocs sta stb docDescription = let
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc = let
     sigDoc :: SyntaxSignature -> DefDoc
-    sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ (ValueSyntaxSignature name stype))) =
-        MkDefDoc (SignatureDocItem name $ exprShow stype) doc
+    sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ sig)) = let
+        item =
+            case sig of
+                ValueSyntaxSignature name stype -> SignatureValueDocItem name $ exprShow stype
+                TypeSyntaxSignature name -> SignatureTypeDocItem name
+        in MkDefDoc item doc
     funcPNT :: PrecNamedText -> PrecNamedText -> PrecNamedText
     funcPNT ta tb = namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
     funcPNTList :: [PrecNamedText] -> PrecNamedText -> PrecNamedText
@@ -371,6 +377,7 @@ interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
             ValueSignature iname itype -> do
                 iexpr <- qName $ UnqualifiedFullNameRef iname
                 typedSubsumeExpressionToOpen (freeTypeVariables vtype) itype iexpr
+            TypeSignature name -> throw $ KnownIssueError 172 $ toText name
     return $ MkSealedExpression vtype $ fmap conv $ listVProductSequence $ listTypeToVType expr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression

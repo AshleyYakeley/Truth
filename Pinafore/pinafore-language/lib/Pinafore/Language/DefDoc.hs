@@ -14,8 +14,9 @@ data DocItem
     | NamespaceDocItem { diNamespace :: NamespaceRef }
     | ValueDocItem { diNames :: NonEmpty FullNameRef
                    , diType :: NamedText }
-    | SignatureDocItem { diSigName :: Name
-                       , diType :: NamedText }
+    | SignatureTypeDocItem { diSigName :: Name }
+    | SignatureValueDocItem { diSigName :: Name
+                            , diType :: NamedText }
     | ValuePatternDocItem { diNames :: NonEmpty FullNameRef
                           , diType :: NamedText }
     | SpecialFormDocItem { diNames :: NonEmpty FullNameRef
@@ -30,7 +31,8 @@ instance Show DocItem where
     show (HeadingDocItem t) = "heading " <> show t
     show (NamespaceDocItem n) = "namespace " <> show n
     show (ValueDocItem n t) = "val " <> show n <> ": " <> unpack (toText t)
-    show (SignatureDocItem n t) = "sig " <> show n <> ": " <> unpack (toText t)
+    show (SignatureTypeDocItem n) = "sig type " <> show n
+    show (SignatureValueDocItem n t) = "sig " <> show n <> ": " <> unpack (toText t)
     show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
     show (SpecialFormDocItem n pp t) =
         "spform " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <> ": " <> unpack (toText t)

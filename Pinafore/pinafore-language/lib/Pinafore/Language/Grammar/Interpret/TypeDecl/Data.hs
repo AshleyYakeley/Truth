@@ -259,6 +259,7 @@ getConstructors tdata typeNM syntaxConstructorList =
     fmap mconcat $ for syntaxConstructorList $ getConstructor tdata typeNM
 
 interpretSignature' :: SyntaxSignature' -> QInterpreter (Some (QSignature 'Positive))
+interpretSignature' (TypeSyntaxSignature name) = return $ MkSome $ TypeSignature name
 interpretSignature' (ValueSyntaxSignature name stype) = do
     qtype <- interpretType stype
     return $ mapSome (ValueSignature name) qtype

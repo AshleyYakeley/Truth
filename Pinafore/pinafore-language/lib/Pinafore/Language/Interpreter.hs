@@ -93,11 +93,13 @@ newtype SpecialVals (ts :: Type) = MkSpecialVals
         -- ^ in Action because this can do things like import files
     }
 
-data Signature (ts :: Type) (polarity :: Polarity) (t :: Type) =
-    ValueSignature Name
-                   (InterpreterType ts polarity t)
+data Signature (ts :: Type) (polarity :: Polarity) (t :: Type)
+    = TypeSignature Name
+    | ValueSignature Name
+                     (InterpreterType ts polarity t)
 
 instance (HasInterpreter ts, Is PolarityType polarity) => HasVarMapping (Signature ts polarity) where
+    getVarMapping (TypeSignature _) = mempty
     getVarMapping (ValueSignature _ t) = getVarMapping t
 
 data RecordConstructor (ts :: Type) =

@@ -212,7 +212,9 @@ All declarations, including type declarations, are local to a `let` block.
     uname <of(<signature>)> |
     "subtype" "datatype" <type-const> <of(<plain-datatype-constructor>)>
 
-<signature> ::= lname ":" <type>
+<signature> ::=
+    lname ":" <type> |
+    "type" uname
 
 <storable-datatype-parameters> ::=  | <storable-datatype-parameter> <storable-datatype-parameters>
 

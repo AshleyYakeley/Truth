@@ -81,6 +81,7 @@ data Token t where
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
+    TokType :: Token ()
     TokDataType :: Token ()
     TokOpenType :: Token ()
     TokSubtype :: Token ()
@@ -134,6 +135,7 @@ instance TestEquality Token where
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
+    testEquality TokType TokType = Just Refl
     testEquality TokDataType TokDataType = Just Refl
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
@@ -188,6 +190,7 @@ instance Show (Token t) where
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
+    show TokType = show ("type" :: String)
     show TokDataType = show ("datatype" :: String)
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
@@ -335,6 +338,7 @@ checkKeyword "end" = return $ MkSomeOf TokEnd ()
 checkKeyword "if" = return $ MkSomeOf TokIf ()
 checkKeyword "then" = return $ MkSomeOf TokThen ()
 checkKeyword "else" = return $ MkSomeOf TokElse ()
+checkKeyword "type" = return $ MkSomeOf TokType ()
 checkKeyword "datatype" = return $ MkSomeOf TokDataType ()
 checkKeyword "opentype" = return $ MkSomeOf TokOpenType ()
 checkKeyword "subtype" = return $ MkSomeOf TokSubtype ()
