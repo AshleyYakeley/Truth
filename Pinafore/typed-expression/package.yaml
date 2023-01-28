@@ -21,11 +21,10 @@ library:
     other-modules:
       - Control.Applicative.Wrapped
       - Language.Expression.Common.Error
-      - Language.Expression.Common.WitnessMappable
+      - Language.Expression.Common.WitnessTraversable
       - Language.Expression.Common.Witness
       - Language.Expression.Common.Expression
       - Language.Expression.Common.Pattern.Pattern
-      - Language.Expression.Common.Pattern.Named
       - Language.Expression.Common.Pattern.Sealed
       - Language.Expression.Common.Pattern.Constructor
       - Language.Expression.Common.Pattern.Expression

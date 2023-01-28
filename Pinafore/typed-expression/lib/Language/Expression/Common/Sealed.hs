@@ -5,7 +5,7 @@ module Language.Expression.Common.Sealed where
 import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
 data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
@@ -48,11 +48,11 @@ instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
     osequenceA conv exprs =
         MkSealedExpression Refl $ fmap conv $ sequenceA $ fmap (\(MkSealedExpression Refl expr) -> expr) exprs
 
-instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) where
-    mapWitnessesM mapPos mapNeg =
+instance WitnessTraversable poswit negwit (SealedExpression name negwit poswit) where
+    traverseWitnessesM mapPos mapNeg =
         MkEndoM $ \(MkSealedExpression tt expr) -> do
             tt' <- unEndoM mapPos tt
-            expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
+            expr' <- unEndoM (traverseWitnessesM mapPos mapNeg) expr
             pure $ MkSealedExpression tt' expr'
 
 instance (Show name, AllConstraint Show negwit, AllConstraint Show poswit) => Show (SealedExpression name negwit poswit) where

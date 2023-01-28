@@ -4,15 +4,17 @@
 module Language.Expression.Common.Pattern.Match where
 
 import Language.Expression.Common.Named
+import Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.Pattern.Sealed
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
-type Match (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) = SealedPattern name vw (NamedExpression name tw)
+type Match (name :: Type) (patwit :: Type -> Type) (negwit :: Type -> Type)
+     = SealedPattern patwit (NamedExpression name negwit)
 
-instance WitnessMappable poswit negwit (Match name poswit negwit) where
-    mapWitnessesM mapPos mapNeg =
+instance IsPatternWitness poswit patwit => WitnessTraversable poswit negwit (Match name patwit negwit) where
+    traverseWitnessesM mapPos mapNeg =
         MkEndoM $ \(MkSealedPattern tt pat) -> do
-            tt' <- unEndoM (mapWitnessesM mapPos mapNeg) tt
-            pat' <- unEndoM (mapWitnessesM mapPos mapNeg) pat
+            tt' <- unEndoM (traverseWitnessesM mapPos mapNeg) tt
+            pat' <- unEndoM (traverseWitnessesM mapPos mapNeg) pat
             pure $ MkSealedPattern tt' $ pat'

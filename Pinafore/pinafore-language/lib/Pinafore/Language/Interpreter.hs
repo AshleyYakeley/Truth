@@ -1,10 +1,9 @@
 module Pinafore.Language.Interpreter
-    ( InterpreterGroundType
-    , InterpreterFamilyType
-    , InterpreterBoundType
+    ( IsInterpreterGroundType(..)
+    , PatternWitness(..)
+    , SomeGroundType
     , runInterpreter
     , allocateVar
-    , EntryDoc
     , Module(..)
     , Scope
     , emptyScope
@@ -68,82 +67,91 @@ import Pinafore.Markdown
 import Shapes
 import Text.Parsec.Pos (SourcePos, initialPos)
 
-type family InterpreterGroundType (ts :: Type) :: GroundTypeKind
+class ( IsDolanFunctionGroundType ground
+      , IsDolanSubtypeEntriesGroundType ground
+      , DolanPatternWitness ground ~ PatternWitness ground
+      , DolanVarID ground ~ VarID
+      , ExprShow (SomeGroundType ground)
+      , Show (TSSealedExpression (DolanTypeSystem ground))
+      ) => IsInterpreterGroundType (ground :: GroundTypeKind) where
+    type EntryDoc ground :: Type
+    createGroundType :: FullName -> Interpreter ground (SomeGroundType ground)
 
-type instance forall (gt :: GroundTypeKind). InterpreterGroundType (DolanTypeSystem gt) = gt
+data PatternWitness (ground :: GroundTypeKind) t
+    = ValuePatternWitness VarID
+                          (DolanShimWit ground 'Positive t)
+    | TypePatternWitness FullName
 
-type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
+instance forall (ground :: GroundTypeKind) poswit. (poswit ~ DolanShimWit ground 'Positive) =>
+             IsPatternWitness poswit (PatternWitness ground) where
+    traversePatternWitness (MkEndoM f) =
+        MkEndoM $ \case
+            ValuePatternWitness vid w -> fmap (ValuePatternWitness vid) $ f w
+            TypePatternWitness fn -> pure $ TypePatternWitness fn
 
-type InterpreterType (ts :: Type) = DolanType (InterpreterGroundType ts)
-
-type InterpreterShimWit (ts :: Type) (polarity :: Polarity) = DolanShimWit (InterpreterGroundType ts) polarity
-
-type InterpreterBoundType (ts :: Type) = SomeGroundType (InterpreterGroundType ts)
-
-type HasInterpreter ts
-     = ( ts ~ DolanTypeSystem (InterpreterGroundType ts)
-       , IsDolanFunctionGroundType (InterpreterGroundType ts)
-       , IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts)
-       , TSVarID ts ~ VarID
-       , ExprShow (InterpreterBoundType ts)
-       , Show (TSSealedExpression ts))
-
-newtype SpecialVals (ts :: Type) = MkSpecialVals
-    { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> Action (Either Text t)
+newtype SpecialVals (ground :: GroundTypeKind) = MkSpecialVals
+    { specialEvaluate :: forall t. DolanType ground 'Positive t -> Text -> Action (Either Text t)
         -- ^ in Action because this can do things like import files
     }
 
-data Signature (ts :: Type) (polarity :: Polarity) (t :: Type)
+data Signature (ground :: GroundTypeKind) (polarity :: Polarity) (t :: Type)
     = TypeSignature Name
     | ValueSignature Name
-                     (InterpreterType ts polarity t)
+                     (DolanType ground polarity t)
 
-instance (HasInterpreter ts, Is PolarityType polarity) => HasVarMapping (Signature ts polarity) where
+instance forall (ground :: GroundTypeKind) polarity. (IsInterpreterGroundType ground, Is PolarityType polarity) =>
+             HasVarMapping (Signature ground polarity) where
     getVarMapping (TypeSignature _) = mempty
     getVarMapping (ValueSignature _ t) = getVarMapping t
 
-data RecordConstructor (ts :: Type) =
-    forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListType (Signature ts 'Positive) tt)
-                                                           (InterpreterShimWit ts 'Positive t)
+data RecordConstructor (ground :: GroundTypeKind) =
+    forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListType (Signature ground 'Positive) tt)
+                                                           (DolanShimWit ground 'Positive t)
                                                            (ListVProduct tt -> t)
 
-data RecordPattern (ts :: Type) =
-    forall (t :: Type) (tt :: [Type]). MkRecordPattern (ListType (Signature ts 'Positive) tt)
-                                                       (InterpreterShimWit ts 'Negative t)
+data RecordPattern (ground :: GroundTypeKind) =
+    forall (t :: Type) (tt :: [Type]). MkRecordPattern (ListType (Signature ground 'Positive) tt)
+                                                       (DolanShimWit ground 'Negative t)
                                                        (t -> Maybe (ListVProduct tt))
 
-data InterpreterBinding (ts :: Type)
-    = ValueBinding (TSSealedExpression ts)
-                   (Maybe (TSExpressionPatternConstructor ts))
-    | TypeBinding (InterpreterBoundType ts)
-    | RecordConstructorBinding (RecordConstructor ts)
-                               (RecordPattern ts)
-    | SpecialFormBinding (SpecialForm ts (Interpreter ts))
+data InterpreterBinding (ground :: GroundTypeKind)
+    = ValueBinding (TSSealedExpression (DolanTypeSystem ground))
+                   (Maybe (TSExpressionPatternConstructor (DolanTypeSystem ground)))
+    | TypeBinding (SomeGroundType ground)
+    | RecordConstructorBinding (RecordConstructor ground)
+                               (RecordPattern ground)
+    | SpecialFormBinding (SpecialForm (DolanTypeSystem ground) (Interpreter ground))
 
-instance HasInterpreter ts => Show (InterpreterBinding ts) where
+instance forall (ground :: GroundTypeKind). IsInterpreterGroundType ground => Show (InterpreterBinding ground) where
     show (ValueBinding e Nothing) = "val: " <> show e
     show (ValueBinding e (Just _)) = "val+pat: " <> show e
     show (TypeBinding t) = "type: " <> unpack (toText $ exprShow t)
     show (RecordConstructorBinding _ _) = "recordpat"
     show (SpecialFormBinding _) = "special"
 
-type DocInterpreterBinding ts = (RawMarkdown, InterpreterBinding ts)
+type DocInterpreterBinding (ground :: GroundTypeKind) = (RawMarkdown, InterpreterBinding ground)
 
-newtype NameMap ts =
-    MkNameMap (Map FullName (DocInterpreterBinding ts))
+newtype NameMap (ground :: GroundTypeKind) =
+    MkNameMap (Map FullName (DocInterpreterBinding ground))
 
-instance Semigroup (NameMap ts) where
+instance forall (ground :: GroundTypeKind). Semigroup (NameMap ground) where
     MkNameMap nsa <> MkNameMap nsb = let
         joinBindings _ bb = bb
         in MkNameMap $ unionWith joinBindings nsa nsb
 
-instance Monoid (NameMap ts) where
+instance forall (ground :: GroundTypeKind). Monoid (NameMap ground) where
     mempty = MkNameMap mempty
 
-instance HasInterpreter ts => Show (NameMap ts) where
+instance forall (ground :: GroundTypeKind). IsInterpreterGroundType ground => Show (NameMap ground) where
     show (MkNameMap m) = "{" <> intercalate "," (fmap (\(n, (_, b)) -> show n <> "=" <> show b) $ mapToList m) <> "}"
 
-nameMapLookupNamespace :: Namespace -> Namespace -> (FullNameRef -> Bool) -> NameMap ts -> NameMap ts
+nameMapLookupNamespace ::
+       forall (ground :: GroundTypeKind).
+       Namespace
+    -> Namespace
+    -> (FullNameRef -> Bool)
+    -> NameMap ground
+    -> NameMap ground
 nameMapLookupNamespace sourcens destns ff (MkNameMap nm) = let
     matchNS :: forall a. (FullName, a) -> Maybe (FullName, a)
     matchNS (fn, a) = do
@@ -153,40 +161,40 @@ nameMapLookupNamespace sourcens destns ff (MkNameMap nm) = let
     newEntries = mapMaybe matchNS $ mapToList nm
     in MkNameMap $ mapFromList newEntries <> nm
 
-data BindingInfo ts = MkBindingInfo
+data BindingInfo (ground :: GroundTypeKind) = MkBindingInfo
     { biName :: FullName
     , biDocumentation :: RawMarkdown
-    , biValue :: InterpreterBinding ts
+    , biValue :: InterpreterBinding ground
     }
 
-bindingInfoToNameMap :: BindingInfo ts -> NameMap ts
+bindingInfoToNameMap :: forall (ground :: GroundTypeKind). BindingInfo ground -> NameMap ground
 bindingInfoToNameMap MkBindingInfo {..} = MkNameMap $ singletonMap biName (biDocumentation, biValue)
 
-bindingInfosToNameMap :: [BindingInfo ts] -> NameMap ts
+bindingInfosToNameMap :: forall (ground :: GroundTypeKind). [BindingInfo ground] -> NameMap ground
 bindingInfosToNameMap bis = mconcat $ fmap bindingInfoToNameMap bis
 
-bindingInfosToScope :: [BindingInfo ts] -> Scope ts
+bindingInfosToScope :: forall (ground :: GroundTypeKind). [BindingInfo ground] -> Scope ground
 bindingInfosToScope bis = emptyScope {scopeBindings = bindingInfosToNameMap bis}
 
-nameMapLookupBindingInfo :: NameMap ts -> FullName -> Maybe (BindingInfo ts)
+nameMapLookupBindingInfo :: forall (ground :: GroundTypeKind). NameMap ground -> FullName -> Maybe (BindingInfo ground)
 nameMapLookupBindingInfo (MkNameMap nspace) name = do
     (biDocumentation, biValue) <- lookup name nspace
     let biName = name
     return MkBindingInfo {..}
 
-data Scope (ts :: Type) = MkScope
-    { scopeBindings :: NameMap ts
-    , scopeSubtypes :: HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
+data Scope (ground :: GroundTypeKind) = MkScope
+    { scopeBindings :: NameMap ground
+    , scopeSubtypes :: HashMap Unique (SubtypeConversionEntry ground)
     }
 
-emptyScope :: Scope ts
+emptyScope :: forall (ground :: GroundTypeKind). Scope ground
 emptyScope = MkScope mempty mempty
 
 checkEntryConsistency ::
-       forall ts. HasInterpreter ts
-    => SubtypeConversionEntry (InterpreterGroundType ts)
-    -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
-    -> Interpreter ts ()
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => SubtypeConversionEntry ground
+    -> HashMap Unique (SubtypeConversionEntry ground)
+    -> Interpreter ground ()
 checkEntryConsistency (MkSubtypeConversionEntry TrustMe _ _ _) _ = return ()
 checkEntryConsistency (MkSubtypeConversionEntry Verify ta tb sconv) entries =
     case checkSubtypeConsistency (toList entries) (MkSomeGroundType ta) (MkSomeGroundType tb) of
@@ -202,10 +210,10 @@ checkEntryConsistency (MkSubtypeConversionEntry Verify ta tb sconv) entries =
                             (ntt $ exprShow $ MkSomeGroundType etb)
 
 addSCEntry ::
-       forall ts. HasInterpreter ts
-    => (Unique, SubtypeConversionEntry (InterpreterGroundType ts))
-    -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
-    -> Interpreter ts (HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts)))
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => (Unique, SubtypeConversionEntry ground)
+    -> HashMap Unique (SubtypeConversionEntry ground)
+    -> Interpreter ground (HashMap Unique (SubtypeConversionEntry ground))
 addSCEntry (key, _) entries
     | member key entries = return entries
 addSCEntry (key, entry) entries = do
@@ -213,20 +221,20 @@ addSCEntry (key, entry) entries = do
     return $ insertMap key entry entries
 
 addSCEntries ::
-       forall ts. HasInterpreter ts
-    => [(Unique, SubtypeConversionEntry (InterpreterGroundType ts))]
-    -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
-    -> Interpreter ts (HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts)))
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => [(Unique, SubtypeConversionEntry ground)]
+    -> HashMap Unique (SubtypeConversionEntry ground)
+    -> Interpreter ground (HashMap Unique (SubtypeConversionEntry ground))
 addSCEntries [] entries = return entries
 addSCEntries (a:aa) entries = do
     entries' <- addSCEntry a entries
     addSCEntries aa entries'
 
 joinScopes ::
-       forall ts. HasInterpreter ts
-    => Scope ts
-    -> Scope ts
-    -> Interpreter ts (Scope ts)
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => Scope ground
+    -> Scope ground
+    -> Interpreter ground (Scope ground)
 joinScopes a b = do
     let
         bb = scopeBindings b <> scopeBindings a
@@ -235,48 +243,46 @@ joinScopes a b = do
     return MkScope {scopeBindings = bb, scopeSubtypes = st}
 
 joinAllScopes ::
-       forall ts. HasInterpreter ts
-    => [Scope ts]
-    -> Scope ts
-    -> Interpreter ts (Scope ts)
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => [Scope ground]
+    -> Scope ground
+    -> Interpreter ground (Scope ground)
 joinAllScopes [] s = return s
 joinAllScopes (a:aa) s = do
     s' <- joinScopes a s
     joinAllScopes aa s'
 
-type family EntryDoc (ts :: Type) :: Type
-
-data Module ts = MkModule
-    { moduleDoc :: Tree (EntryDoc ts)
-    , moduleScope :: Scope ts
+data Module (ground :: GroundTypeKind) = MkModule
+    { moduleDoc :: Tree (EntryDoc ground)
+    , moduleScope :: Scope ground
     }
 
-type InterpretContext :: Type -> Type
-data InterpretContext ts = MkInterpretContext
+type InterpretContext :: GroundTypeKind -> Type
+data InterpretContext ground = MkInterpretContext
     { icSourcePos :: SourcePos
     , icVarIDState :: VarIDState
-    , icScope :: Scope ts
+    , icScope :: Scope ground
     , icNamespace :: Namespace
-    , icSpecialVals :: SpecialVals ts
+    , icSpecialVals :: SpecialVals ground
     , icModulePath :: [ModuleName]
-    , icLoadModule :: ModuleName -> Interpreter ts (Maybe (Module ts))
+    , icLoadModule :: ModuleName -> Interpreter ground (Maybe (Module ground))
     }
 
-type InterpretState :: Type -> Type
-data InterpretState ts = MkInterpretState
+type InterpretState :: GroundTypeKind -> Type
+data InterpretState ground = MkInterpretState
     { isTypeID :: TypeID
-    , isModules :: Map ModuleName (Module ts)
+    , isModules :: Map ModuleName (Module ground)
     }
 
-emptyInterpretState :: InterpretState ts
+emptyInterpretState :: forall (ground :: GroundTypeKind). InterpretState ground
 emptyInterpretState = let
     isTypeID = zeroTypeID
     isModules = mempty
     in MkInterpretState {..}
 
-type Interpreter :: Type -> Type -> Type
-newtype Interpreter ts a = MkInterpreter
-    { unInterpreter :: ReaderT (InterpretContext ts) (StateT (InterpretState ts) InterpretResult) a
+type Interpreter :: GroundTypeKind -> Type -> Type
+newtype Interpreter ground a = MkInterpreter
+    { unInterpreter :: ReaderT (InterpretContext ground) (StateT (InterpretState ground) InterpretResult) a
     } deriving ( Functor
                , Applicative
                , Alternative
@@ -292,64 +298,67 @@ newtype Interpreter ts a = MkInterpreter
                , MonadTunnelIO
                )
 
-instance MonadThrow ErrorType (Interpreter ts) where
+instance forall (ground :: GroundTypeKind). MonadThrow ErrorType (Interpreter ground) where
     throw err = do
         spos <- paramAsk sourcePosParam
         throw $ MkErrorMessage spos err mempty
 
-instance MonadThrow ExpressionError (Interpreter ts) where
+instance forall (ground :: GroundTypeKind). MonadThrow ExpressionError (Interpreter ground) where
     throw err = throw $ ExpressionErrorError err
 
-instance Semigroup a => Semigroup (Interpreter ts a) where
+instance forall (ground :: GroundTypeKind) a. Semigroup a => Semigroup (Interpreter ground a) where
     (<>) = liftA2 (<>)
 
-instance Monoid a => Monoid (Interpreter ts a) where
+instance forall (ground :: GroundTypeKind) a. Monoid a => Monoid (Interpreter ground a) where
     mappend = (<>)
     mempty = pure mempty
 
-contextParam :: Param (Interpreter ts) (InterpretContext ts)
+contextParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) (InterpretContext ground)
 contextParam = MkParam (MkInterpreter ask) $ \a (MkInterpreter m) -> MkInterpreter $ with a m
 
-sourcePosParam :: Param (Interpreter ts) SourcePos
+sourcePosParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) SourcePos
 sourcePosParam = lensMapParam (\bfb a -> fmap (\b -> a {icSourcePos = b}) $ bfb $ icSourcePos a) contextParam
 
-varIDStateParam :: Param (Interpreter ts) VarIDState
+varIDStateParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) VarIDState
 varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bfb $ icVarIDState a) contextParam
 
-scopeParam :: Param (Interpreter ts) (Scope ts)
+scopeParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) (Scope ground)
 scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) contextParam
 
-bindingsParam :: Param (Interpreter ts) (NameMap ts)
+bindingsParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) (NameMap ground)
 bindingsParam = lensMapParam (\bfb a -> fmap (\b -> a {scopeBindings = b}) $ bfb $ scopeBindings a) scopeParam
 
-namespaceParam :: Param (Interpreter ts) Namespace
+namespaceParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) Namespace
 namespaceParam = lensMapParam (\bfb a -> fmap (\b -> a {icNamespace = b}) $ bfb $ icNamespace a) contextParam
 
-specialValsParam :: Param (Interpreter ts) (SpecialVals ts)
+specialValsParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) (SpecialVals ground)
 specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ bfb $ icSpecialVals a) contextParam
 
-modulePathParam :: Param (Interpreter ts) [ModuleName]
+modulePathParam :: forall (ground :: GroundTypeKind). Param (Interpreter ground) [ModuleName]
 modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
 
-loadModuleParam :: Param (Interpreter ts) (ModuleName -> Interpreter ts (Maybe (Module ts)))
+loadModuleParam ::
+       forall (ground :: GroundTypeKind).
+       Param (Interpreter ground) (ModuleName -> Interpreter ground (Maybe (Module ground)))
 loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
 
-interpretStateRef :: Ref (Interpreter ts) (InterpretState ts)
+interpretStateRef :: forall (ground :: GroundTypeKind). Ref (Interpreter ground) (InterpretState ground)
 interpretStateRef = let
     ref = liftRef stateRef
     in MkRef (MkInterpreter $ refGet ref) $ \a -> MkInterpreter $ refPut ref a
 
-typeIDRef :: Ref (Interpreter ts) TypeID
+typeIDRef :: forall (ground :: GroundTypeKind). Ref (Interpreter ground) TypeID
 typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
 
-modulesRef :: Ref (Interpreter ts) (Map ModuleName (Module ts))
+modulesRef :: forall (ground :: GroundTypeKind). Ref (Interpreter ground) (Map ModuleName (Module ground))
 modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) interpretStateRef
 
 runInterpreter ::
+       forall (ground :: GroundTypeKind) a.
        SourcePos
-    -> (ModuleName -> Interpreter ts (Maybe (Module ts)))
-    -> SpecialVals ts
-    -> Interpreter ts a
+    -> (ModuleName -> Interpreter ground (Maybe (Module ground)))
+    -> SpecialVals ground
+    -> Interpreter ground a
     -> InterpretResult a
 runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
     icVarIDState = firstVarIDState
@@ -365,38 +374,42 @@ firstOf (a:aa) amb =
         Just b -> Just b
         Nothing -> firstOf aa amb
 
-getCurrentNamespace :: Interpreter ts Namespace
+getCurrentNamespace :: forall (ground :: GroundTypeKind). Interpreter ground Namespace
 getCurrentNamespace = paramAsk namespaceParam
 
-namespacePriority :: Interpreter ts (NamespaceRef -> [Namespace])
+namespacePriority :: forall (ground :: GroundTypeKind). Interpreter ground (NamespaceRef -> [Namespace])
 namespacePriority = do
     curns <- getCurrentNamespace
     return $ namespaceConcatRefM $ toList $ namespaceAncestry curns
 
 -- | For error messages and the like, doesn't need to be perfect.
-getRenderFullName :: Interpreter ts (NamedText -> Text)
+getRenderFullName :: forall (ground :: GroundTypeKind). Interpreter ground (NamedText -> Text)
 getRenderFullName = do
     curns <- getCurrentNamespace
     return $ runRelativeNamedText $ toList $ namespaceAncestry curns
 
-throwWithName :: ((NamedText -> Text) -> ErrorType) -> Interpreter ts a
+throwWithName :: forall (ground :: GroundTypeKind) a. ((NamedText -> Text) -> ErrorType) -> Interpreter ground a
 throwWithName err = do
     ntt <- getRenderFullName
     throw $ err ntt
 
-getBindingMap :: Interpreter ts (FullNameRef -> Maybe (BindingInfo ts))
+getBindingMap :: forall (ground :: GroundTypeKind). Interpreter ground (FullNameRef -> Maybe (BindingInfo ground))
 getBindingMap = do
     nspace <- paramAsk bindingsParam
     nsp <- namespacePriority
     return $ \(MkFullNameRef name nsn) ->
         firstOf (nsp nsn) $ \ns -> nameMapLookupBindingInfo nspace $ MkFullName name ns
 
-lookupBinding :: Interpreter ts (FullNameRef -> Maybe (InterpreterBinding ts))
+lookupBinding ::
+       forall (ground :: GroundTypeKind). Interpreter ground (FullNameRef -> Maybe (InterpreterBinding ground))
 lookupBinding = do
     bindmap <- getBindingMap
     return $ \rname -> fmap biValue $ bindmap rname
 
-lookupDebugBindingInfo :: HasInterpreter ts => FullNameRef -> Interpreter ts (FullName, String)
+lookupDebugBindingInfo ::
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => FullNameRef
+    -> Interpreter ground (FullName, String)
 lookupDebugBindingInfo name = do
     bindmap <- getBindingMap
     case bindmap name of
@@ -404,22 +417,26 @@ lookupDebugBindingInfo name = do
         Just b -> return $ (biName b, show $ biValue b)
 
 checkPureExpression ::
-       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
-    => TSSealedExpression ts
-    -> Interpreter ts ()
+       forall (ground :: GroundTypeKind).
+       (IsInterpreterGroundType ground, Show VarID, AllConstraint Show (DolanType ground 'Negative))
+    => TSSealedExpression (DolanTypeSystem ground)
+    -> Interpreter ground ()
 checkPureExpression expr = do
-    _ <- tsEval @ts expr
+    _ <- tsEval @(DolanTypeSystem ground) expr
     return ()
 
 checkPureBinding ::
-       (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts)) => InterpreterBinding ts -> Interpreter ts ()
+       forall (ground :: GroundTypeKind).
+       (IsInterpreterGroundType ground, Show VarID, AllConstraint Show (DolanType ground 'Negative))
+    => InterpreterBinding ground
+    -> Interpreter ground ()
 checkPureBinding (ValueBinding expr _) = checkPureExpression expr
 checkPureBinding _ = return ()
 
 exportNames ::
-       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
+       forall (ground :: GroundTypeKind). (Show VarID, AllConstraint Show (DolanType ground 'Negative))
     => [FullNameRef]
-    -> Interpreter ts [BindingInfo ts]
+    -> Interpreter ground [BindingInfo ground]
 exportNames names = do
     bindmap <- getBindingMap
     let
@@ -435,21 +452,22 @@ exportNames names = do
         Just badnames -> throw $ LookupNamesUnknownError badnames
         Nothing -> return bis
 
-exportNamespace :: [Namespace] -> Interpreter ts [BindingInfo ts]
+exportNamespace :: forall (ground :: GroundTypeKind). [Namespace] -> Interpreter ground [BindingInfo ground]
 exportNamespace cnss = do
     MkNameMap nspace <- paramAsk bindingsParam
     let
-        toBI :: (FullName, (RawMarkdown, InterpreterBinding ts)) -> Maybe (BindingInfo ts)
+        toBI :: (FullName, (RawMarkdown, InterpreterBinding ground)) -> Maybe (BindingInfo ground)
         toBI (biName@(MkFullName _ ns), (biDocumentation, biValue)) = do
             _ <- choice $ fmap (\cns -> namespaceWithin cns ns) cnss
             return MkBindingInfo {..}
     return $ mapMaybe toBI $ mapToList nspace
 
 exportScope ::
-       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
+       forall (ground :: GroundTypeKind).
+       (IsInterpreterGroundType ground, Show VarID, AllConstraint Show (DolanType ground 'Negative))
     => [Namespace]
     -> [FullNameRef]
-    -> Interpreter ts ([FullName], Scope ts)
+    -> Interpreter ground ([FullName], Scope ground)
 exportScope nsns names = do
     MkScope _ subtypes <- paramAsk scopeParam
     nsbindss <- exportNamespace nsns
@@ -458,27 +476,27 @@ exportScope nsns names = do
     for_ binds $ \bi -> checkPureBinding $ biValue bi
     return $ (fmap biName binds, MkScope (bindingInfosToNameMap binds) subtypes)
 
-type ScopeInterpreter ts = TransformT (Interpreter ts)
+type ScopeInterpreter (ground :: GroundTypeKind) = TransformT (Interpreter ground)
 
-scopeRef :: Ref (ScopeInterpreter ts) (Scope ts)
+scopeRef :: forall (ground :: GroundTypeKind). Ref (ScopeInterpreter ground) (Scope ground)
 scopeRef = transformParamRef scopeParam
 
-bindingsRef :: Ref (ScopeInterpreter ts) (NameMap ts)
+bindingsRef :: forall (ground :: GroundTypeKind). Ref (ScopeInterpreter ground) (NameMap ground)
 bindingsRef = transformParamRef bindingsParam
 
-namespaceRef :: Ref (ScopeInterpreter ts) Namespace
+namespaceRef :: forall (ground :: GroundTypeKind). Ref (ScopeInterpreter ground) Namespace
 namespaceRef = transformParamRef namespaceParam
 
-varIDStateRef :: Ref (ScopeInterpreter ts) VarIDState
+varIDStateRef :: forall (ground :: GroundTypeKind). Ref (ScopeInterpreter ground) VarIDState
 varIDStateRef = transformParamRef varIDStateParam
 
-scopeSourcePos :: SourcePos -> ScopeInterpreter ts ()
+scopeSourcePos :: forall (ground :: GroundTypeKind). SourcePos -> ScopeInterpreter ground ()
 scopeSourcePos = refPut (transformParamRef sourcePosParam)
 
 allocateVar ::
-       forall ts. HasInterpreter ts
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
     => Maybe FullName
-    -> ScopeInterpreter ts (FullName, VarID)
+    -> ScopeInterpreter ground (FullName, VarID)
 allocateVar mname = do
     vs <- refGet varIDStateRef
     let
@@ -487,7 +505,7 @@ allocateVar mname = do
                 Just name -> (mkVarID vs name, name)
                 Nothing -> mkUniqueVarID vs
         biDocumentation = fromString "variable"
-        biValue = ValueBinding (tsVar @ts vid) Nothing
+        biValue = ValueBinding (tsVar @(DolanTypeSystem ground) vid) Nothing
         insertScope = MkScope (bindingInfoToNameMap MkBindingInfo {..}) mempty
     refPut varIDStateRef $ nextVarIDState vs
     refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
@@ -498,19 +516,20 @@ getRestore r = do
     old <- refGet r
     return $ refPut r old
 
-withNamespace :: Namespace -> ScopeInterpreter ts (ScopeInterpreter ts ())
+withNamespace :: forall (ground :: GroundTypeKind). Namespace -> ScopeInterpreter ground (ScopeInterpreter ground ())
 withNamespace ns = do
     nrestore <- getRestore namespaceRef
     refPut namespaceRef ns
     return nrestore
 
-usingNamespace :: Namespace -> Namespace -> (FullNameRef -> Bool) -> ScopeInterpreter ts ()
+usingNamespace ::
+       forall (ground :: GroundTypeKind). Namespace -> Namespace -> (FullNameRef -> Bool) -> ScopeInterpreter ground ()
 usingNamespace sourcens destns ff = refModify bindingsRef $ nameMapLookupNamespace sourcens destns ff
 
 registerScope ::
-       forall ts. HasInterpreter ts
-    => Scope ts
-    -> ScopeInterpreter ts ()
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => Scope ground
+    -> ScopeInterpreter ground ()
 registerScope insertScope = refModifyM scopeRef $ \oldScope -> lift $ joinScopes insertScope oldScope
 
 getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
@@ -519,7 +538,7 @@ getCycle mn (n:nn)
     | mn == n = Just $ n :| nn
 getCycle mn (_:nn) = getCycle mn nn
 
-loadModuleInScope :: forall ts. ModuleName -> Interpreter ts (Maybe (Module ts))
+loadModuleInScope :: forall (ground :: GroundTypeKind). ModuleName -> Interpreter ground (Maybe (Module ground))
 loadModuleInScope mname =
     paramWith sourcePosParam (initialPos "<unknown>") $
     paramWith scopeParam emptyScope $
@@ -527,7 +546,7 @@ loadModuleInScope mname =
         loadModule <- paramAsk loadModuleParam
         loadModule mname
 
-getModule :: ModuleName -> Interpreter ts (Module ts)
+getModule :: forall (ground :: GroundTypeKind). ModuleName -> Interpreter ground (Module ground)
 getModule mname = do
     mods <- refGet modulesRef
     case lookup mname mods of
@@ -544,29 +563,31 @@ getModule mname = do
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
 
-registerBinding :: FullName -> DocInterpreterBinding ts -> ScopeInterpreter ts ()
+registerBinding ::
+       forall (ground :: GroundTypeKind). FullName -> DocInterpreterBinding ground -> ScopeInterpreter ground ()
 registerBinding name db = registerBindings $ singletonMap name db
 
-getSubtypeScope :: SubtypeConversionEntry (InterpreterGroundType ts) -> Interpreter ts (Scope ts)
+getSubtypeScope :: forall (ground :: GroundTypeKind). SubtypeConversionEntry ground -> Interpreter ground (Scope ground)
 getSubtypeScope sce = do
     key <- liftIO newUnique
     return $ emptyScope {scopeSubtypes = singletonMap key sce}
 
-registerBindings :: [(FullName, DocInterpreterBinding ts)] -> ScopeInterpreter ts ()
+registerBindings ::
+       forall (ground :: GroundTypeKind). [(FullName, DocInterpreterBinding ground)] -> ScopeInterpreter ground ()
 registerBindings bb = do
     let newBindings = MkNameMap $ mapFromList bb
     refModify bindingsRef $ \oldBindings -> oldBindings <> newBindings
 
-getSpecialVals :: Interpreter ts (SpecialVals ts)
+getSpecialVals :: forall (ground :: GroundTypeKind). Interpreter ground (SpecialVals ground)
 getSpecialVals = paramAsk specialValsParam
 
-data BoundValue ts
-    = ValueBoundValue (TSSealedExpression ts)
-    | RecordBoundValue (RecordConstructor ts)
+data BoundValue (ground :: GroundTypeKind)
+    = ValueBoundValue (TSSealedExpression (DolanTypeSystem ground))
+    | RecordBoundValue (RecordConstructor ground)
 
 lookupLetBinding ::
-       forall ts. HasInterpreter ts
-    => Interpreter ts (FullNameRef -> Maybe (BoundValue ts))
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => Interpreter ground (FullNameRef -> Maybe (BoundValue ground))
 lookupLetBinding = do
     mb <- lookupBinding
     return $ \name ->
@@ -576,41 +597,49 @@ lookupLetBinding = do
             _ -> Nothing
 
 registerLetBindings ::
-       forall ts. HasInterpreter ts
-    => [(FullName, RawMarkdown, TSSealedExpression ts)]
-    -> ScopeInterpreter ts ()
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => [(FullName, RawMarkdown, TSSealedExpression (DolanTypeSystem ground))]
+    -> ScopeInterpreter ground ()
 registerLetBindings bb = registerBindings $ fmap (\(nref, doc, exp) -> (nref, (doc, ValueBinding exp Nothing))) bb
 
 registerLetBinding ::
-       forall ts. HasInterpreter ts
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
     => FullName
     -> RawMarkdown
-    -> TSSealedExpression ts
-    -> ScopeInterpreter ts ()
+    -> TSSealedExpression (DolanTypeSystem ground)
+    -> ScopeInterpreter ground ()
 registerLetBinding name doc expr = registerLetBindings $ pure (name, doc, expr)
 
 registerMatchBindings ::
-       forall ts. HasInterpreter ts
-    => TSMatch ts
-    -> ScopeInterpreter ts ()
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => TSMatch (DolanTypeSystem ground)
+    -> ScopeInterpreter ground ()
 registerMatchBindings match = do
-    let
-        rbb =
-            for (tsMatchBindings @ts match) $ \(wvar, expr) -> do
-                vn <- varIdNameRef wvar
-                return (vn, "lambda", expr)
-    case rbb of
-        SuccessResult bb -> registerLetBindings bb
-        FailureResult fn -> lift $ throw $ KnownIssueError 0 $ "bad match var: " <> toText fn
+    bb <-
+        for (tsMatchBindings @(DolanTypeSystem ground) match) $ \(MkSealedExpression pw expr) ->
+            case pw of
+                ValuePatternWitness wvar tw -> do
+                    fn <-
+                        case varIdNameRef wvar of
+                            SuccessResult fn -> return fn
+                            FailureResult fn -> lift $ throw $ KnownIssueError 0 $ "bad match var: " <> toText fn
+                    return (fn, ("match", ValueBinding (MkSealedExpression tw expr) Nothing))
+                TypePatternWitness fn -> do
+                    sgt <- lift $ createGroundType fn
+                    return (fn, ("match", TypeBinding sgt))
+    registerBindings bb
 
-lookupSpecialForm :: FullNameRef -> Interpreter ts (SpecialForm ts (Interpreter ts))
+lookupSpecialForm ::
+       forall (ground :: GroundTypeKind).
+       FullNameRef
+    -> Interpreter ground (SpecialForm (DolanTypeSystem ground) (Interpreter ground))
 lookupSpecialForm name = do
     mb <- lookupBinding
     case mb name of
         Just (SpecialFormBinding sf) -> return sf
         _ -> throw $ LookupSpecialFormUnknownError name
 
-lookupBoundTypeM :: Interpreter ts (FullNameRef -> Maybe (InterpreterBoundType ts))
+lookupBoundTypeM :: forall (ground :: GroundTypeKind). Interpreter ground (FullNameRef -> Maybe (SomeGroundType ground))
 lookupBoundTypeM = do
     mb <- lookupBinding
     return $ \name ->
@@ -618,7 +647,7 @@ lookupBoundTypeM = do
             Just (TypeBinding t) -> Just t
             _ -> Nothing
 
-lookupBoundType :: FullNameRef -> Interpreter ts (InterpreterBoundType ts)
+lookupBoundType :: forall (ground :: GroundTypeKind). FullNameRef -> Interpreter ground (SomeGroundType ground)
 lookupBoundType name = do
     mnt <- lookupBoundTypeM
     case mnt name of
@@ -626,7 +655,8 @@ lookupBoundType name = do
         Nothing -> throw $ LookupTypeUnknownError name
 
 lookupPatternConstructorM ::
-       Interpreter ts (FullNameRef -> Maybe (Either (TSExpressionPatternConstructor ts) (RecordPattern ts)))
+       forall (ground :: GroundTypeKind).
+       Interpreter ground (FullNameRef -> Maybe (Either (TSExpressionPatternConstructor (DolanTypeSystem ground)) (RecordPattern ground)))
 lookupPatternConstructorM = do
     mb <- lookupBinding
     return $ \name ->
@@ -636,62 +666,78 @@ lookupPatternConstructorM = do
             _ -> Nothing
 
 lookupPatternConstructor ::
-       FullNameRef -> Interpreter ts (Either (TSExpressionPatternConstructor ts) (RecordPattern ts))
+       forall (ground :: GroundTypeKind).
+       FullNameRef
+    -> Interpreter ground (Either (TSExpressionPatternConstructor (DolanTypeSystem ground)) (RecordPattern ground))
 lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM
     case ma name of
         Just a -> return a
         Nothing -> throw $ LookupConstructorUnknownError name
 
-newTypeID :: Interpreter ts (Some TypeIDType)
+newTypeID :: forall (ground :: GroundTypeKind). Interpreter ground (Some TypeIDType)
 newTypeID = do
     tid <- refGet typeIDRef
     refPut typeIDRef $ succTypeID tid
     return $ valueToSome tid
 
-withNewTypeID :: (forall tid. TypeIDType tid -> Interpreter ts a) -> Interpreter ts a
+withNewTypeID ::
+       forall (ground :: GroundTypeKind) a. (forall tid. TypeIDType tid -> Interpreter ground a) -> Interpreter ground a
 withNewTypeID call = do
     stid <- newTypeID
     case stid of
         MkSome tid -> call tid
 
-checkName :: FullName -> ScopeInterpreter ts ()
+checkName :: forall (ground :: GroundTypeKind). FullName -> ScopeInterpreter ground ()
 checkName name = do
     mnt <- lift lookupBinding
     case mnt $ fullNameRef name of
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
         Nothing -> return ()
 
-registerBoundType :: FullName -> RawMarkdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
+registerBoundType ::
+       forall (ground :: GroundTypeKind). FullName -> RawMarkdown -> SomeGroundType ground -> ScopeInterpreter ground ()
 registerBoundType name doc t = do
     checkName name
     registerBinding name (doc, TypeBinding t)
 
-registerType :: FullName -> RawMarkdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
+registerType ::
+       forall (ground :: GroundTypeKind) dv t. FullName -> RawMarkdown -> ground dv t -> ScopeInterpreter ground ()
 registerType name doc t = do
     checkName name
     registerBoundType name doc $ MkSomeGroundType t
 
-type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
+type ScopeFixBox (ground :: GroundTypeKind) = FixBox (ScopeInterpreter ground)
 
 registerPatternConstructor ::
-       FullName -> RawMarkdown -> TSSealedExpression ts -> TSExpressionPatternConstructor ts -> ScopeInterpreter ts ()
+       forall (ground :: GroundTypeKind).
+       FullName
+    -> RawMarkdown
+    -> TSSealedExpression (DolanTypeSystem ground)
+    -> TSExpressionPatternConstructor (DolanTypeSystem ground)
+    -> ScopeInterpreter ground ()
 registerPatternConstructor name doc exp pc = do
     checkName name
     registerBinding name $ (doc, ValueBinding exp $ Just pc)
 
-registerRecord :: FullName -> RawMarkdown -> RecordConstructor ts -> RecordPattern ts -> ScopeInterpreter ts ()
+registerRecord ::
+       forall (ground :: GroundTypeKind).
+       FullName
+    -> RawMarkdown
+    -> RecordConstructor ground
+    -> RecordPattern ground
+    -> ScopeInterpreter ground ()
 registerRecord name doc rc rp = do
     checkName name
     registerBinding name $ (doc, RecordConstructorBinding rc rp)
 
 registerSubtypeConversion ::
-       forall ts. HasInterpreter ts
-    => SubtypeConversionEntry (InterpreterGroundType ts)
-    -> ScopeInterpreter ts ()
+       forall (ground :: GroundTypeKind). IsInterpreterGroundType ground
+    => SubtypeConversionEntry ground
+    -> ScopeInterpreter ground ()
 registerSubtypeConversion sce = do
     newscope <- lift $ getSubtypeScope sce
     registerScope newscope
 
-getSubtypeConversions :: Interpreter ts [SubtypeConversionEntry (InterpreterGroundType ts)]
+getSubtypeConversions :: forall (ground :: GroundTypeKind). Interpreter ground [SubtypeConversionEntry ground]
 getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) $ paramAsk scopeParam

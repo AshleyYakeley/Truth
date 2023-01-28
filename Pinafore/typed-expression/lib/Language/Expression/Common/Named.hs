@@ -5,7 +5,7 @@ module Language.Expression.Common.Named where
 import Language.Expression.Common.Expression
 import Language.Expression.Common.NameWit
 import Language.Expression.Common.Witness
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
 type UnitType :: Type -> Type -> Type
@@ -51,13 +51,13 @@ pattern MkNameWitness name wit =
 type NamedExpression :: Type -> (Type -> Type) -> Type -> Type
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)
 
-instance WitnessMappable poswit negwit (NamedExpression name negwit a) where
-    mapWitnessesM mapPos mapNeg =
+instance WitnessTraversable poswit negwit (NamedExpression name negwit a) where
+    traverseWitnessesM mapPos mapNeg =
         MkEndoM $ \case
             ClosedExpression a -> pure $ ClosedExpression a
             OpenExpression (MkNameWitness name tt) expr -> do
                 tt' <- unEndoM mapNeg tt
-                expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
+                expr' <- unEndoM (traverseWitnessesM mapPos mapNeg) expr
                 pure $ OpenExpression (MkNameWitness name tt') expr'
 
 namedExpressionFreeNames :: NamedExpression name vw a -> [name]

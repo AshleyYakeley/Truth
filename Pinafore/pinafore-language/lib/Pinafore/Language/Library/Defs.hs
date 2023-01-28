@@ -199,7 +199,8 @@ getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeForList dvt ge
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-mkTypeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
+mkTypeBDT ::
+       forall context. FullNameRef -> RawMarkdown -> QSomeGroundType -> [BindDocTree context] -> BindDocTree context
 mkTypeBDT name docDescription t bdChildren = let
     bdScopeEntries = pure $ BindScopeEntry name $ \_ -> TypeBinding t
     diNames = pure name
@@ -210,7 +211,7 @@ mkTypeBDT name docDescription t bdChildren = let
     bdDoc = MkDefDoc {..}
     in Node MkBindDoc {..} bdChildren
 
-typeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
+typeBDT :: forall context. FullNameRef -> RawMarkdown -> QSomeGroundType -> [BindDocTree context] -> BindDocTree context
 typeBDT name docDescription t bdChildren = mkTypeBDT name docDescription t bdChildren
 
 subtypeRelationBDT ::

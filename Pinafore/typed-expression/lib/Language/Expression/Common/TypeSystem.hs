@@ -6,7 +6,7 @@ import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
 class (Monad (TSOuter ts), Category (TSShim ts), Eq (TSVarID ts), Show (TSVarID ts)) => TypeSystem (ts :: Type) where
@@ -27,21 +27,21 @@ type TSNegShimWit ts = TSShimWit ts 'Negative
 
 type TSPosShimWit ts = TSShimWit ts 'Positive
 
-type TSMappable ts = WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts)
+type TSMappable ts = WitnessTraversable (TSPosShimWit ts) (TSNegShimWit ts)
 
 tsMapWitnessesM ::
        forall ts m a. (TSMappable ts a, Applicative m)
     => EndoM' m (TSPosShimWit ts)
     -> EndoM' m (TSNegShimWit ts)
     -> EndoM m a
-tsMapWitnessesM = mapWitnessesM
+tsMapWitnessesM = traverseWitnessesM
 
 tsMapWitnesses ::
        forall ts a. TSMappable ts a
     => Endo' (TSPosShimWit ts)
     -> Endo' (TSNegShimWit ts)
     -> Endo a
-tsMapWitnesses = mapWitnesses
+tsMapWitnesses = traverseWitnesses
 
 type TSOpenExpression :: Type -> Type -> Type
 type TSOpenExpression ts = NamedExpression (TSVarID ts) (TSNegShimWit ts)

@@ -30,8 +30,6 @@ import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
-type instance EntryDoc QTypeSystem = DefDoc
-
 interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordPattern)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
@@ -57,14 +55,13 @@ interpretPatternConstructor SLPair =
 recordNameWitnesses ::
        Namespace
     -> ListType (QSignature 'Positive) tt
-    -> QScopeInterpreter [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
+    -> QScopeInterpreter [SomeFor ((->) (ListVProduct tt)) QPatternWitness]
 recordNameWitnesses ns lt =
-    fmap catMaybes $
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
         MkPairType (ValueSignature name t) f -> do
             (_, vid) <- allocateVar $ Just $ MkFullName name ns
-            return $ Just $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
-        MkPairType (TypeSignature name) _ -> lift $ throw $ KnownIssueError 172 $ toText name
+            return $ MkSomeFor (ValuePatternWitness vid $ mkShimWit t) f
+        MkPairType (TypeSignature name) f -> return $ MkSomeFor (TypePatternWitness $ MkFullName name ns) f
 
 mkRecordPattern ::
        Namespace -> ListType (QSignature 'Positive) tt -> QScopeInterpreter (QOpenPattern (Maybe (ListVProduct tt)) ())

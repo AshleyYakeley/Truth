@@ -5,7 +5,6 @@ import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
 import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
-import Language.Expression.Common.Pattern
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
@@ -221,44 +220,3 @@ tsSequentialLet ::
     => TSBinding ts
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 tsSequentialLet = bindingSequentialLetSealedExpression @ts
-
-tsVarPattern ::
-       forall ts. CompleteTypeSystem ts
-    => TSVarID ts
-    -> TSSealedExpressionPattern ts
-tsVarPattern name =
-    runIdentity $
-    runRenamer @ts [] [] $
-    withTransConstraintTM @Monad $ do
-        MkNewVar vwt twt <- renameNewFreeVar @ts
-        return $ varSealedExpressionPattern name vwt $ mapShimWit (MkPolarMap meet1) twt
-
-tsAnyPattern ::
-       forall ts. CompleteTypeSystem ts
-    => TSSealedExpressionPattern ts
-tsAnyPattern =
-    runIdentity $
-    runRenamer @ts [] [] $
-    withTransConstraintTM @Monad $ do
-        MkNewVar twt _ <- renameNewFreeVar @ts
-        return $ anySealedExpressionPattern twt
-
-tsBothPattern ::
-       forall ts. CompleteTypeSystem ts
-    => TSSealedExpressionPattern ts
-    -> TSSealedExpressionPattern ts
-    -> TSInner ts (TSSealedExpressionPattern ts)
-tsBothPattern = bothSealedPattern @ts
-
-tsSealPatternConstructor ::
-       forall ts m. MonadThrow ExpressionError m
-    => TSExpressionPatternConstructor ts
-    -> m (TSSealedExpressionPattern ts)
-tsSealPatternConstructor = sealedPatternConstructor
-
-tsApplyPatternConstructor ::
-       forall ts. CompleteTypeSystem ts
-    => TSExpressionPatternConstructor ts
-    -> TSSealedExpressionPattern ts
-    -> TSInner ts (TSExpressionPatternConstructor ts)
-tsApplyPatternConstructor = applyPatternConstructor @ts

@@ -2,27 +2,26 @@
 
 module Language.Expression.Common.Pattern.Sealed where
 
-import Language.Expression.Common.Pattern.Named
 import Language.Expression.Common.Pattern.Pattern
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
-data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
-    forall t. MkSealedPattern (tw t)
-                              (NamedPattern name vw t ())
+data SealedPattern (patwit :: Type -> Type) (negwit :: Type -> Type) =
+    forall t. MkSealedPattern (negwit t)
+                              (Pattern patwit t ())
 
-instance WitnessMappable poswit negwit (SealedPattern name poswit negwit) where
-    mapWitnessesM mapPos mapNeg =
+instance IsPatternWitness poswit patwit => WitnessTraversable poswit negwit (SealedPattern patwit negwit) where
+    traverseWitnessesM mapPos mapNeg =
         MkEndoM $ \(MkSealedPattern tt pat) -> do
             tt' <- unEndoM mapNeg tt
-            pat' <- unEndoM (mapWitnessesM mapPos mapNeg) pat
+            pat' <- unEndoM (traverseWitnessesM mapPos mapNeg) pat
             pure $ MkSealedPattern tt' $ pat'
 
-varSealedPattern :: name -> tw t -> vw t -> SealedPattern name vw tw
-varSealedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt
+varSealedPattern :: negwit t -> patwit t -> SealedPattern patwit negwit
+varSealedPattern twt vwt = MkSealedPattern twt $ varPattern vwt
 
-anySealedPattern :: tw t -> SealedPattern name vw tw
+anySealedPattern :: negwit t -> SealedPattern patwit negwit
 anySealedPattern twt = MkSealedPattern twt anyPattern
 
-sealedPatternNames :: SealedPattern name vw tw -> [name]
-sealedPatternNames (MkSealedPattern _ pat) = patternNames pat
+sealedPatternFreeWitnesses :: (forall t. patwit t -> r) -> SealedPattern patwit negwit -> [r]
+sealedPatternFreeWitnesses f (MkSealedPattern _ pat) = patternFreeWitnesses f pat

@@ -108,7 +108,10 @@ type DolanSubtypeContext :: GroundTypeKind -> (Type -> Type) -> Type
 type DolanSubtypeContext ground = SubtypeContext (DolanVarID ground) (DolanType ground) (DolanShim ground)
 
 type IsDolanSubtypeGroundType :: GroundTypeKind -> Constraint
-class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
+class (IsDolanGroundType ground, IsPatternWitness (DolanShimWit ground 'Positive) (DolanPatternWitness ground)) =>
+          IsDolanSubtypeGroundType ground where
+    type DolanPatternWitness ground :: Type -> Type
+    dolanMakePatternWitness :: DolanVarID ground -> DolanShimWit ground 'Positive --> DolanPatternWitness ground
     subtypeGroundedTypes ::
            forall solver pola polb a b.
            ( WrappedApplicative solver

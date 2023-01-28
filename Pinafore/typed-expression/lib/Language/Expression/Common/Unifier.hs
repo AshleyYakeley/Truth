@@ -4,7 +4,7 @@ import Data.Shim
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.TypeSystem
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
 type UUShim (ts :: Type) = ComposeShim (UnifierExpression ts) (TSShim ts)
@@ -94,6 +94,6 @@ unifierSubstitute ::
     => UnifierSubstitutions ts
     -> EndoM (TSOuter ts) a
 unifierSubstitute subs =
-    mapWitnessesM
+    traverseWitnessesM
         (MkEndoM $ chainPolarShimWitM $ unifierPosSubstitute @ts subs)
         (MkEndoM $ chainPolarShimWitM $ unifierNegSubstitute @ts subs)

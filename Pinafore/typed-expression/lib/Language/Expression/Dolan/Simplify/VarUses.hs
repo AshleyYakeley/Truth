@@ -180,7 +180,7 @@ mappableGetAppearances a =
         (\case
              Left (MkSome t) -> getVarAppearances t
              Right (MkSome t) -> getVarAppearances t) $
-    mappableGetWitnesses @_ @(DolanShimWit ground 'Positive) @(DolanShimWit ground 'Negative) a
+    traversableGetWitnesses @_ @(DolanShimWit ground 'Positive) @(DolanShimWit ground 'Negative) a
 
 -- | (positive, negative)
 -- to be used after merging duplicate ground types
@@ -254,4 +254,4 @@ mappableGetVars a =
         (\case
              Left (MkSome t) -> getExpressionVars t
              Right (MkSome t) -> getExpressionVars t) $
-    mappableGetWitnesses @_ @(DolanShimWit ground 'Positive) @(DolanShimWit ground 'Negative) a
+    traversableGetWitnesses @_ @(DolanShimWit ground 'Positive) @(DolanShimWit ground 'Negative) a

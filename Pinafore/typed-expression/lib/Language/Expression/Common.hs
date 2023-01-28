@@ -24,4 +24,4 @@ import Language.Expression.Common.TypeVariable as I
 import Language.Expression.Common.Unifier as I
 import Language.Expression.Common.VarMapping as I
 import Language.Expression.Common.Witness as I
-import Language.Expression.Common.WitnessMappable as I
+import Language.Expression.Common.WitnessTraversable as I

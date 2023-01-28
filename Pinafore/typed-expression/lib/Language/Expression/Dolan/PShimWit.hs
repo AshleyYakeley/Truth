@@ -8,21 +8,22 @@ type PShimWit :: forall k. ShimKind k -> (Polarity -> k -> Type) -> Polarity -> 
 type PShimWit shim wit polarity = PolarShimWit shim (wit polarity) polarity
 
 type PShimWitMappable (shim :: ShimKind k) (wit :: Polarity -> k -> Type)
-     = WitnessMappable (PShimWit shim wit 'Positive) (PShimWit shim wit 'Negative)
+     = WitnessTraversable (PShimWit shim wit 'Positive) (PShimWit shim wit 'Negative)
 
 mapPShimWitsM ::
        forall m shim wit a. (Category shim, Applicative m, PShimWitMappable shim wit a)
     => (forall t. wit 'Positive t -> m (PShimWit shim wit 'Positive t))
     -> (forall t. wit 'Negative t -> m (PShimWit shim wit 'Negative t))
     -> EndoM m a
-mapPShimWitsM mapPos mapNeg = mapWitnessesM (MkEndoM $ chainPolarShimWitM mapPos) (MkEndoM $ chainPolarShimWitM mapNeg)
+mapPShimWitsM mapPos mapNeg =
+    traverseWitnessesM (MkEndoM $ chainPolarShimWitM mapPos) (MkEndoM $ chainPolarShimWitM mapNeg)
 
 mapPShimWits ::
        forall shim wit a. (Category shim, PShimWitMappable shim wit a)
     => (forall t. wit 'Positive t -> PShimWit shim wit 'Positive t)
     -> (forall t. wit 'Negative t -> PShimWit shim wit 'Negative t)
     -> Endo a
-mapPShimWits mapPos mapNeg = mapWitnesses (Endo $ chainPolarShimWit mapPos) (Endo $ chainPolarShimWit mapNeg)
+mapPShimWits mapPos mapNeg = traverseWitnesses (Endo $ chainPolarShimWit mapPos) (Endo $ chainPolarShimWit mapNeg)
 
 chainPShimWit2 ::
        forall (shim :: ShimKind Type) (w :: Polarity -> Type -> Type) (polarity :: Polarity) (a :: Type) (b :: Type).

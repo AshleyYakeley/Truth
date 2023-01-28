@@ -3,7 +3,7 @@
 module Language.Expression.Common.Partial where
 
 import Language.Expression.Common.Sealed
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
 data PartialWit (w :: Type -> Type) (t :: Type) where
@@ -12,11 +12,11 @@ data PartialWit (w :: Type -> Type) (t :: Type) where
 type SealedPartialExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type)
      = SealedExpression name vw (PartialWit tw)
 
-instance WitnessMappable poswit negwit (SealedPartialExpression name negwit poswit) where
-    mapWitnessesM mapPos mapNeg =
+instance WitnessTraversable poswit negwit (SealedPartialExpression name negwit poswit) where
+    traverseWitnessesM mapPos mapNeg =
         MkEndoM $ \(MkSealedExpression (MkPartialWit purity tt) expr) -> do
             tt' <- unEndoM mapPos tt
-            expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
+            expr' <- unEndoM (traverseWitnessesM mapPos mapNeg) expr
             pure $ MkSealedExpression (MkPartialWit purity tt') expr'
 
 sealedToPartialExpression :: SealedExpression name vw tw -> SealedPartialExpression name vw tw

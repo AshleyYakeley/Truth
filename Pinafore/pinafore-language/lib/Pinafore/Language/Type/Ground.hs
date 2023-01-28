@@ -121,7 +121,7 @@ type instance DolanPolyShim QGroundType = QPolyShim
 
 instance IsDolanGroundType QGroundType where
     type DolanVarID QGroundType = VarID
-    type DolanM QGroundType = Interpreter QTypeSystem
+    type DolanM QGroundType = Interpreter QGroundType
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). QGroundType dv f -> DolanVarianceMap dv f
     groundTypeVarianceMap = qgtVarianceMap

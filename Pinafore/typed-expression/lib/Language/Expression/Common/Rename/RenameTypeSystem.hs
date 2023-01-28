@@ -11,7 +11,7 @@ module Language.Expression.Common.Rename.RenameTypeSystem
 import Data.Shim
 import Language.Expression.Common.Rename.Rigidity
 import Language.Expression.Common.TypeSystem
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.WitnessTraversable
 import Shapes
 
 data NewVar ts =
@@ -65,14 +65,14 @@ rename ::
 rename rigid a =
     withTransConstraintTM @Monad $
     namespace @ts rigid $
-    withTransConstraintTM @Monad $ unEndoM (mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts)) a
+    withTransConstraintTM @Monad $ unEndoM (traverseWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts)) a
 
 typeNamesWM ::
        forall ts a. (RenameTypeSystem ts, TSMappable ts a)
     => a
     -> [String]
 typeNamesWM a = do
-    espsn <- mappableGetWitnesses @Type @(TSPosShimWit ts) @(TSNegShimWit ts) a
+    espsn <- traversableGetWitnesses @Type @(TSPosShimWit ts) @(TSNegShimWit ts) a
     case espsn of
         Left (MkSome (MkShimWit w _)) -> typeNamesPosWitness @ts w
         Right (MkSome (MkShimWit w _)) -> typeNamesNegWitness @ts w

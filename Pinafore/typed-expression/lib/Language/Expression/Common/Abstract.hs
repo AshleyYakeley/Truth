@@ -5,6 +5,7 @@ module Language.Expression.Common.Abstract
     , TSOpenPattern
     , TSMatch
     , TSSealedExpressionPattern
+    , TSSealedMatchExpression
     , TSExpressionPatternConstructor
     , unifierSubstituteSimplifyFinalRename
     , unifierSolve
@@ -22,6 +23,11 @@ module Language.Expression.Common.Abstract
     , tsExpressionPatternMatch
     , tsMatchGate
     , tsMatchBindings
+    , tsVarPattern
+    , tsAnyPattern
+    , tsBothPattern
+    , tsSealPatternConstructor
+    , tsApplyPatternConstructor
     ) where
 
 import Data.Shim
@@ -45,18 +51,29 @@ class ( RenameTypeSystem ts
       , MonadThrow ExpressionError (TSInner ts)
       , Ord (TSVarID ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
+      , IsPatternWitness (TSPosShimWit ts) (TSPatWitness ts)
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type
     bottomShimWit :: Some (TSPosShimWit ts)
+    type TSPatWitness ts :: Type -> Type
+    type TSPatWitness ts = NameWitness (TSVarID ts) (TSPosShimWit ts)
+    makePatternWitness :: TSVarID ts -> TSPosShimWit ts --> TSPatWitness ts
+    default makePatternWitness ::
+        (TSPatWitness ts ~ NameWitness (TSVarID ts) (TSPosShimWit ts)) =>
+                TSVarID ts -> TSPosShimWit ts --> TSPatWitness ts
+    makePatternWitness v w = MkNameWitness v w
 
 type TSOpenPattern :: Type -> Type -> Type -> Type
-type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
+type TSOpenPattern ts = Pattern (TSPatWitness ts)
 
-type TSMatch ts = Match (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+type TSMatch ts = Match (TSVarID ts) (TSPatWitness ts) (TSNegShimWit ts)
 
-type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPatWitness ts) (TSNegShimWit ts)
 
-type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+type TSSealedMatchExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPatWitness ts)
+
+type TSExpressionPatternConstructor ts
+     = ExpressionPatternConstructor (TSVarID ts) (TSPatWitness ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
 unifierSubstituteSimplifyFinalRename ::
        forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
@@ -298,13 +315,52 @@ tsMatchGate rawmatch rawexpr =
                 purityIs @Monad purity $
                 MkSealedExpression (MkPartialWit purity etype) $ liftA2 (\t ft -> (pconv $ pf t) >> econv ft) pexpr expr
 
-tsMatchBindings :: forall ts. TSMatch ts -> [(TSVarID ts, TSSealedExpression ts)]
+tsMatchBindings :: forall ts. TSMatch ts -> [TSSealedMatchExpression ts]
 tsMatchBindings (MkSealedPattern pexpr (MkPattern ww (MkPurityFunction purity (Kleisli pf)))) =
     purityIs @Functor purity $ let
-        mkBinding ::
-               SomeFor ((->) _) (NameWitness (TSVarID ts) (TSPosShimWit ts)) -> (TSVarID ts, TSSealedExpression ts)
-        mkBinding (MkSomeFor (MkNameWitness wvar wtype) f) =
-            ( wvar
-            , partialToSealedExpression $
-              MkSealedExpression (MkPartialWit purity wtype) $ fmap (fmap (\(tt, ()) -> f tt) . pf) pexpr)
+        mkBinding :: SomeFor ((->) _) (TSPatWitness ts) -> TSSealedMatchExpression ts
+        mkBinding (MkSomeFor wtype f) =
+            partialToSealedExpression $
+            MkSealedExpression (MkPartialWit purity wtype) $ fmap (fmap (\(tt, ()) -> f tt) . pf) pexpr
         in fmap mkBinding ww
+
+tsVarPattern ::
+       forall ts. AbstractTypeSystem ts
+    => TSVarID ts
+    -> TSSealedExpressionPattern ts
+tsVarPattern name =
+    runIdentity $
+    runRenamer @ts [] [] $
+    withTransConstraintTM @Monad $ do
+        MkNewVar vwt twt <- renameNewFreeVar @ts
+        return $ varSealedExpressionPattern vwt $ makePatternWitness @ts name $ mapShimWit (MkPolarMap meet1) twt
+
+tsAnyPattern ::
+       forall ts. AbstractTypeSystem ts
+    => TSSealedExpressionPattern ts
+tsAnyPattern =
+    runIdentity $
+    runRenamer @ts [] [] $
+    withTransConstraintTM @Monad $ do
+        MkNewVar twt _ <- renameNewFreeVar @ts
+        return $ anySealedExpressionPattern twt
+
+tsBothPattern ::
+       forall ts. AbstractTypeSystem ts
+    => TSSealedExpressionPattern ts
+    -> TSSealedExpressionPattern ts
+    -> TSInner ts (TSSealedExpressionPattern ts)
+tsBothPattern = bothSealedPattern @ts
+
+tsSealPatternConstructor ::
+       forall ts m. MonadThrow ExpressionError m
+    => TSExpressionPatternConstructor ts
+    -> m (TSSealedExpressionPattern ts)
+tsSealPatternConstructor = sealedPatternConstructor
+
+tsApplyPatternConstructor ::
+       forall ts. AbstractTypeSystem ts
+    => TSExpressionPatternConstructor ts
+    -> TSSealedExpressionPattern ts
+    -> TSInner ts (TSExpressionPatternConstructor ts)
+tsApplyPatternConstructor = applyPatternConstructor @ts

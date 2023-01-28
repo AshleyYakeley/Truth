@@ -6,7 +6,6 @@ import Language.Expression.Dolan
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
-import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Shapes
 
@@ -51,38 +50,36 @@ type QMatch = TSMatch QTypeSystem
 
 type QPatternConstructor = TSExpressionPatternConstructor QTypeSystem
 
-type QRecordConstructor = RecordConstructor QTypeSystem
+type QRecordConstructor = RecordConstructor QGroundType
 
-type QSignature = Signature QTypeSystem
+type QSignature = Signature QGroundType
 
-type QRecordPattern = RecordPattern QTypeSystem
+type QRecordPattern = RecordPattern QGroundType
 
 type QOpenPattern = TSOpenPattern QTypeSystem
 
 type QPattern = TSSealedExpressionPattern QTypeSystem
 
-type instance InterpreterFamilyType QTypeSystem = FamilialType
+type QPatternWitness = PatternWitness QGroundType
 
-type QSpecialVals = SpecialVals QTypeSystem
+type QSpecialVals = SpecialVals QGroundType
 
-type QBoundType = InterpreterBoundType QTypeSystem
+type QScope = Scope QGroundType
 
-type QScope = Scope QTypeSystem
-
-type QModule = Module QTypeSystem
+type QModule = Module QGroundType
 
 type QBinding = TSBinding QTypeSystem
 
-type QInterpreterBinding = InterpreterBinding QTypeSystem
+type QInterpreterBinding = InterpreterBinding QGroundType
 
-type QBindingInfo = BindingInfo QTypeSystem
+type QBindingInfo = BindingInfo QGroundType
 
-type QInterpreter = Interpreter QTypeSystem
+type QInterpreter = Interpreter QGroundType
 
-type QScopeInterpreter = ScopeInterpreter QTypeSystem
+type QScopeInterpreter = ScopeInterpreter QGroundType
 
 type QAnnotation = Annotation QTypeSystem
 
 type QSpecialForm = SpecialForm QTypeSystem QInterpreter
 
-type QFixBox = ScopeFixBox QTypeSystem
+type QFixBox = ScopeFixBox QGroundType

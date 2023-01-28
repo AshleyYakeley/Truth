@@ -77,6 +77,8 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              AbstractTypeSystem (DolanTypeSystem ground) where
     type TSInner (DolanTypeSystem ground) = DolanM ground
     bottomShimWit = MkSome $ mkShimWit NilDolanType
+    type TSPatWitness (DolanTypeSystem ground) = DolanPatternWitness ground
+    makePatternWitness = dolanMakePatternWitness
 
 class (Eq (DolanVarID ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
     functionGroundType :: ground '[ ContraCCRVariance, CoCCRVariance] (->)
