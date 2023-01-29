@@ -1139,6 +1139,9 @@ testEntity =
                           , testExpectSuccess
                                 "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57,\"} {recShow r2}"
                           ]
+                    , tDecls
+                          ["datatype Machine -a +b of MkMachine of type S; initial: S; step: a -> S -> S *: b end end"] $
+                      tGroup "existential" [testExpectSuccess "pass"]
                     ]
               ]
         , tGroup
