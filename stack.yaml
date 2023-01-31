@@ -50,5 +50,8 @@ docker:
     enable: true
     image: "local-build"
 
+nix:
+    enable: false
+
 ghc-options:
     "$locals": -Werror
