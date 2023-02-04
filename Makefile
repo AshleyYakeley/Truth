@@ -76,9 +76,10 @@ ifeq ($(haddock),1)
 	rm -rf out/haddock
 endif
 endif
+	xhost +si:localuser:$${USER}
 	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
 ifeq ($(test),1)
-	${BINPATH}/pinafore-doc --include Pinafore/pinafore-app/test/pinafore-doc --module test > Pinafore/pinafore-app/test/pinafore-doc/test.out.md
+	stack $(STACKFLAGS) exec -- ${BINPATH}/pinafore-doc --include Pinafore/pinafore-app/test/pinafore-doc --module test > Pinafore/pinafore-app/test/pinafore-doc/test.out.md
 	diff -u Pinafore/pinafore-app/test/pinafore-doc/test.ref.md Pinafore/pinafore-app/test/pinafore-doc/test.out.md
 endif
 ifeq ($(nodocker),1)
@@ -126,7 +127,7 @@ DEBIANREL := buster
 		-D RELEASEDATE="$$(date -R)" \
 		deb/changelog.m4 | gzip -9 > $(PACKAGEDIR)/usr/share/doc/pinafore/changelog.Debian.gz
 	mkdir -p $(PACKAGEDIR)/usr/share/bash-completion/completions/
-	$< --bash-completion-script /usr/bin/pinafore > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
+	stack $(STACKFLAGS) exec -- $< --bash-completion-script /usr/bin/pinafore > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
 	mkdir -p $(PACKAGEDIR)/DEBIAN
 	stack $(STACKFLAGS) exec -- \
 		m4 \

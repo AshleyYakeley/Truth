@@ -1,0 +1,9 @@
+#!/usr/bin/env -S bash -e
+for path in ${XDG_DATA_DIRS//:/ }; do
+    if test -e "$path/$1"
+    then
+        echo "$path/$1"
+        exit 0
+    fi
+done
+exit 1
