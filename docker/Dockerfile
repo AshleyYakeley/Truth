@@ -5,7 +5,7 @@ RUN apt-get update
 RUN apt-get upgrade -y
 RUN apt-get install -y sudo curl gnome-platform-devel libgirepository1.0-dev lintian python3-pip imagemagick moreutils
 RUN pip3 install --upgrade pip
-RUN pip3 install mkdocs markdown-include Pygments scour
+RUN pip3 install yq mkdocs markdown-include Pygments scour
 RUN mkdir /extra
 WORKDIR /extra
 RUN git clone -n https://github.com/AshleyYakeley/mkdocs-plugin-commonmark.git

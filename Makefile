@@ -53,7 +53,7 @@ hindent: ${BINPATH}/hindent
 .PHONY: format
 
 format: ${BINPATH}/hindent
-	for f in `find -name '*.hs' -not -path '*.stack-work/*' | grep -v -e -- -f .hindent.ignore`; do ${BINPATH}/hindent $$f || exit; done
+	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/hindent-all
 
 ${BINPATH}/licensor: docker-image
 	stack $(STACKFLAGS) install licensor
