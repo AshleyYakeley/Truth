@@ -41,17 +41,6 @@ packages:
     commit: 7faad14a228fb5b52e233ebd23ea92beafe2cd8d
     git: https://github.com/AshleyYakeley/hindent.git
 - completed:
-    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
-    git: https://github.com/AshleyYakeley/licensor.git
-    name: licensor
-    pantry-tree:
-      sha256: c037a42f539d085a28d79da36453275e7c6135df5c49d323762e2df77f0eafec
-      size: 729
-    version: 0.4.0
-  original:
-    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
-    git: https://github.com/AshleyYakeley/licensor.git
-- completed:
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
     git: https://github.com/fpco/ghc-prof-flamegraph.git
     name: ghc-prof-flamegraph

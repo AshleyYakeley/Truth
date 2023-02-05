@@ -55,14 +55,11 @@ hindent: ${BINPATH}/hindent
 format: ${BINPATH}/hindent
 	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/hindent-all
 
-${BINPATH}/licensor: docker-image
-	stack $(STACKFLAGS) install licensor
-
 out:
 	mkdir -p out
 
-out/licensing: ${BINPATH}/licensor out
-	$< --quiet > $@
+out/licensing: out
+	stack ls dependencies --license | awk '{t=$$1;$$1=$$2;$$2=t;print}' | sort > $@
 
 .PHONY: licensing
 
@@ -167,15 +164,15 @@ LIBMODULES := \
 
 mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library
-	$< --module $(subst .,/,$*) --include Pinafore/lib > $@
+	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/lib > $@
 
 mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
-	$< --infix > $@
+	stack $(STACKFLAGS) exec -- $< --infix > $@
 
 mkdocs/generated/type-infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
-	$< --infix-type > $@
+	stack $(STACKFLAGS) exec -- $< --infix-type > $@
 
 .PHONY: scour
 
