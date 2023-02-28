@@ -50,6 +50,16 @@ docker:
 
 nix:
     enable: false
+    packages:
+    - zlib
+    - pkg-config
+    - gobject-introspection
+    - cairo
+    - gdk-pixbuf
+    - harfbuzz
+    - atkmm
+    - pango
+    - gtk3
 
 ghc-options:
     "$locals": -Werror
