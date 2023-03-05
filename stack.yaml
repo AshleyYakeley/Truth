@@ -50,6 +50,8 @@ docker:
 
 nix:
     enable: false
+    path:
+    - nixpkgs=https://github.com/nixos/nixpkgs/tarball/22.11
     packages:
     - zlib
     - pkg-config
