@@ -89,6 +89,14 @@ ifeq ($(bench),1)
 	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh Pinafore/pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
 
+nix-docker-image:
+	docker build -t nix-build nix/docker
+
+nixos: nix-docker-image
+	mkdir -p nix/home
+	docker run --rm -v `pwd`:/workspace -ti nix-build nix/session
+	# docker run --rm -v `pwd`:/workspace -ti nix-build bash
+
 .PHONY: exe
 
 exe: ${BINPATH}/pinafore

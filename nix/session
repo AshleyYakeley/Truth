@@ -1,0 +1,9 @@
+#!/usr/bin/env -S bash -e
+USERID=`stat -c %u stack.yaml`
+echo $USERID
+
+# nix-build nix/setup.nix
+
+bash
+# sudo -s $USER
+# stack --no-docker --nix build
