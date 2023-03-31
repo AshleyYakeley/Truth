@@ -145,8 +145,8 @@ instance Show ErrorType where
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show (InterpretTypeNotConcreteDynamicEntityError t) = unpack t <> " is not a concrete dynamic entity type"
     show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
-    show (InterpretTypeUnderApplyError t) = "underapplied type constuctor: " <> unpack t
-    show (InterpretTypeOverApplyError t) = "overapplied type constuctor: " <> unpack t
+    show (InterpretTypeUnderApplyError t) = "underapplied type constructor: " <> unpack t
+    show (InterpretTypeOverApplyError t) = "overapplied type constructor: " <> unpack t
     show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
     show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show $ toList nn)

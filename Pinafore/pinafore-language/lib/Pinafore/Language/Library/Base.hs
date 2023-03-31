@@ -683,8 +683,8 @@ baseLibSections =
           , namespaceBDT "List1" "" $
             applicativeEntries @_ @NonEmpty <>
             [ valBDT "map" "Map the items of a non-empty list." (fmap :: (A -> B) -> NonEmpty A -> NonEmpty B)
-            , nameInRootBDT $ valBDT "<>" "Concatentate a non-empty list with a list." append
-            , nameInRootBDT $ valBDT "concat1" "Concatentate a non-empty list of non-empty lists." mconcat1
+            , nameInRootBDT $ valBDT "<>" "Concatenate a non-empty list with a list." append
+            , nameInRootBDT $ valBDT "concat1" "Concatenate a non-empty list of non-empty lists." mconcat1
             , nameInRootBDT $
               valBDT
                   "sort"

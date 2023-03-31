@@ -75,6 +75,7 @@ endif
 endif
 	xhost +si:localuser:$${USER}
 	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
+	strip --remove-section=.comment ${BINPATH}/pinafore
 ifeq ($(test),1)
 	stack $(STACKFLAGS) exec -- ${BINPATH}/pinafore-doc --include Pinafore/pinafore-app/test/pinafore-doc --module test > Pinafore/pinafore-app/test/pinafore-doc/test.out.md
 	diff -u Pinafore/pinafore-app/test/pinafore-doc/test.ref.md Pinafore/pinafore-app/test/pinafore-doc/test.out.md
@@ -132,9 +133,16 @@ DEBIANREL := buster
 		-D PACKAGEVERSION="$(PACKAGEVERSION)" \
 		-D PACKAGEREVISION="$(PACKAGEREVISION)" \
 		deb/control.m4 > $(PACKAGEDIR)/DEBIAN/control
+	stack $(STACKFLAGS) exec --cwd $(PACKAGEDIR) -- md5sum $$(cd $(PACKAGEDIR) && find * -type f -not -path 'DEBIAN/*') > $(PACKAGEDIR)/DEBIAN/md5sums
 	chmod -R g-w $(PACKAGEDIR)
 	stack $(STACKFLAGS) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build $(PACKAGEFULLNAME)
-	stack $(STACKFLAGS) exec -- lintian --fail-on-warnings --suppress-tags-from-file deb/lintian-ignore .build/deb/$(PACKAGEFULLNAME).deb
+	stack $(STACKFLAGS) exec -- \
+		lintian \
+		--no-tag-display-limit \
+		--display-info \
+		--fail-on info \
+		--suppress-tags-from-file deb/lintian-ignore \
+		.build/deb/$(PACKAGEFULLNAME).deb
 
 TESTDISTROS := ubuntu:18.04 ubuntu:21.04 bitnami/minideb:$(DEBIANREL)
 

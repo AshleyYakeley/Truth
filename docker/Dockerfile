@@ -1,12 +1,12 @@
 FROM fpco/stack-build-small:lts-20.11
-RUN echo 2023-03-05 > /container.date
+RUN echo 2023-03-31 > /container.date
 ENV DEBIAN_FRONTEND noninteractive
 COPY sources.list /etc/apt/sources.list
 RUN apt-get update
 RUN apt-get purge -y --allow-remove-essential login
 RUN apt-get full-upgrade -y
 RUN apt autoremove --purge -y
-RUN apt-get install -y login sudo curl gnome-platform-devel libgtk-3-dev libgirepository1.0-dev lintian python3-pip imagemagick moreutils
+RUN apt-get install -y login sudo curl m4 gnome-platform-devel libgtk-3-dev libgirepository1.0-dev lintian python3-pip imagemagick moreutils
 RUN pip3 install --upgrade pip
 RUN pip3 install yq mkdocs markdown-include Pygments scour
 RUN mkdir /extra
