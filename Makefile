@@ -144,7 +144,7 @@ DEBIANREL := buster
 		--suppress-tags-from-file deb/lintian-ignore \
 		.build/deb/$(PACKAGEFULLNAME).deb
 
-TESTDISTROS := ubuntu:18.04 ubuntu:21.04 bitnami/minideb:$(DEBIANREL)
+TESTDISTROS := ubuntu:18.04 ubuntu:22.04 bitnami/minideb:$(DEBIANREL)
 
 out/pinafore.deps: ${BINPATH}/pinafore out
 	ldd $< > $@
@@ -156,7 +156,7 @@ deps: out/pinafore.deps
 out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest out
 	install -m 755 deb/installtest .build/deb/
 	install -m 755 deb/checkscript .build/deb/
-	for distro in $(TESTDISTROS); do docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it $$distro /home/installtest $(PACKAGEFULLNAME).deb `id -u`; done
+	for distro in $(TESTDISTROS); do docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it $$distro /home/installtest $(PACKAGEFULLNAME).deb `id -u` || break; done
 	cp $< $@
 
 .PHONY: deb
