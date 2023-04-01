@@ -1,5 +1,8 @@
 packages:
 
+# Examination
+- Examine/gnome-bindings
+
 # separate (submodule) dependencies
 #- external/countable
 - external/witness
@@ -9,7 +12,6 @@ packages:
 - external/primitive-serial
 
 # Changes
-- Changes/gnome-bindings
 - Changes/thread-trace
 - Changes/shapes
 - Changes/cairo-functional
