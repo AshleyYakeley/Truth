@@ -11,9 +11,7 @@ executables:
         dependencies:
           - base >= 4.16
           - Cabal
-          - bytestring
-          - text
-          - containers
+          - shapes
           - haskell-gi
           - gi-glib
         main: Main.hs

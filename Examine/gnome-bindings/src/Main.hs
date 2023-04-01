@@ -1,3 +1,4 @@
+{-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main
@@ -13,12 +14,11 @@ import Data.GI.CodeGen.LibGIRepository
 import Data.GI.CodeGen.ModulePath
 import Data.GI.CodeGen.Overrides
 import Data.GI.CodeGen.Util
-import qualified Data.Map as M
-import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Traversable
 import qualified GI.GLib.Config as GLib
-import Prelude
+import Shapes
+
+instance Show TaggedOverride where
+    show tov = unpack (overrideTag tov) <> ": " <> unpack (overrideText tov)
 
 -- | Generate the code for the given module.
 genModuleCode ::
@@ -34,13 +34,11 @@ genModuleCode name version pkgName pkgVersion verbosity overrides = do
     parsed <-
         forM overrides $ \(TaggedOverride tag ovText) -> do
             parseOverrides ovText >>= \case
-                Left err -> error $ "Error when parsing overrides file \"" <> T.unpack tag <> "\":" <> T.unpack err
+                Left err -> error $ "Error when parsing overrides file \"" <> unpack tag <> "\":" <> unpack err
                 Right ovs -> return ovs
-    let ovs = mconcat parsed
-    (gir, girDeps) <- loadGIRInfo verbosity name (Just version) [] (girFixups ovs)
     let
-        (apis, deps) = filterAPIsAndDeps ovs gir girDeps
-        allAPIs = M.union apis deps
+        ovs = mconcat parsed
+        cfg :: Config
         cfg =
             Config
                 { modName = name
@@ -50,11 +48,26 @@ genModuleCode name version pkgName pkgVersion verbosity overrides = do
                 , verbose = verbosity
                 , overrides = ovs
                 }
-    return $ genCode cfg allAPIs (toModulePath name) (genModule apis)
+    (gir, girDeps) <- loadGIRInfo verbosity name (Just version) ["Examine/gnome-bindings/new"] (girFixups ovs)
+    let
+        (apis, deps) = filterAPIsAndDeps ovs gir girDeps
+        allAPIs :: Map Name API
+        allAPIs = union apis deps
+        cg :: CodeGen e ()
+        cg = genModule apis
+        mi :: ModuleInfo
+        mi = genCode cfg allAPIs (toModulePath name) cg
+    for_ (mapToList allAPIs) $ \case
+        (n, APIFunction f) ->
+            case fnSymbol f of
+                "g_signal_add_emission_hook" -> putStrLn $ show (n, f)
+                _ -> return ()
+        _ -> return ()
+    return mi
 
 main :: IO ()
 main = do
-    givenOvs <- traverse (\fname -> TaggedOverride (T.pack fname) <$> utf8ReadFile fname) overridesFile
+    givenOvs <- traverse (\fname -> TaggedOverride (pack fname) <$> utf8ReadFile fname) overridesFile
     let ovs = maybe inheritedOverrides (: inheritedOverrides) givenOvs
     m <- genModuleCode name version pkgName pkgVersion verbose ovs
     _t <- writeModuleTree verbose outputDir m
@@ -65,6 +78,6 @@ main = do
     pkgName = "gi-gobject"
     pkgVersion = "2.0.28"
     overridesFile = Just "Examine/gnome-bindings/GObject.overrides"
-    verbose = False
+    verbose = True
     outputDir = Just "Examine/gnome-bindings/result"
     inheritedOverrides = [TaggedOverride "inherited:GLib" GLib.overrides]
