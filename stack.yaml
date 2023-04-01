@@ -9,6 +9,7 @@ packages:
 - external/primitive-serial
 
 # Changes
+- Changes/gnome-bindings
 - Changes/thread-trace
 - Changes/shapes
 - Changes/cairo-functional
