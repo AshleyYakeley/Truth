@@ -78,11 +78,11 @@ testEntity =
         , "undefined = error \"undefined\""
         , "runWholeModel = fn r => do a <- get r; a end"
         , "runreforfail = fn r => runWholeModel (r ?? {fail \"unknown model\"})"
-        , "testeq = fns expected found => runreforfail {if %expected == %found then pass else fail \"not equal\"}"
-        , "testneq = fns expected found => runreforfail {if %expected /= %found then pass else fail \"equal\"}"
+        , "testeq = fn expected, found => runreforfail {if %expected == %found then pass else fail \"not equal\"}"
+        , "testneq = fn expected, found => runreforfail {if %expected /= %found then pass else fail \"equal\"}"
         , "testisknown = fn t => runWholeModel {if %(known t) then pass else fail \"known\"}"
         , "testisunknown = fn t => runWholeModel {if %(known t) then fail \"known\" else pass}"
-        , "testeqval = fns e f => testeq {e} {f}"
+        , "testeqval = fn e, f => testeq {e} {f}"
         , "expectStop = fn p => onStop (p >> fail \"no stop\") pass"
         ] $
     tGroup
@@ -203,7 +203,7 @@ testEntity =
               , tDecls
                     [ "showVal: Showable -> Action Unit = fn v => message.Debug $ show v"
                     , "showList: List Showable -> Action Unit = fn l => do message.Debug \"[[[\"; for_ l showVal;  message.Debug \"]]]\"; end"
-                    , "testImmutList = fns present n call => do lr <- newMem.ListModel; lr := [10,20,30]; r <- item.ListModel present n lr; ir <- item.ListModel present n $ immut.ListModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
+                    , "testImmutList = fn present, n, call => do lr <- newMem.ListModel; lr := [10,20,30]; r <- item.ListModel present n lr; ir <- item.ListModel present n $ immut.ListModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
                     ] $
                 tGroup
                     "list"
@@ -941,7 +941,7 @@ testEntity =
                             testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
                           , tDecls
                                 [ "datatype D -a of Mk1D (a -> Integer); Mk2D (a -> a -> Text) end"
-                                , "dShow: D Number = Mk2D $ fns a b => show a <>.Text \",\" <>.Text show b"
+                                , "dShow: D Number = Mk2D $ fn a, b => show a <>.Text \",\" <>.Text show b"
                                 , "di: D Integer = dShow"
                                 , "showD: a -> D a -> Text = fn a => match Mk1D ai => show $ ai a; Mk2D aat => aat a a end"
                                 , "sd: Text = showD 356 di"
@@ -1039,7 +1039,7 @@ testEntity =
                           ]
                     , tDecls
                           [ "datatype R of MkR of df: (a -> a) -> a -> a end end"
-                          , "twice = fns f x => f (f x)"
+                          , "twice = fn f, x => f (f x)"
                           , "addone: Integer -> Integer = fn x => x + 1"
                           ] $
                       tGroup
@@ -1125,7 +1125,7 @@ testEntity =
                           [ "datatype Rec +a of MkRec of rval: rec r, Maybe (a *: r) end end"
                           , "rec0: Rec a = let rval = Nothing in MkRec"
                           , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"
-                          , "rec3: a -> a -> a -> Rec a = fns x0 x1 x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
+                          , "rec3: a -> a -> a -> Rec a = fn x0, x1, x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
                           , "rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <>.Text \",\" <>.Text rShow r end end"
                           , "recShow: Rec Showable -> Text = fn MkRec => rShow rval"
                           ] $
@@ -1475,8 +1475,8 @@ testEntity =
                     "do r <- newMem.WholeModel; reverse.Prism asText.Date !$ r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
               ]
         , tDecls
-              [ "runresult = fns ar arg => ar >- match Left err => fail err; Right f => f arg end"
-              , "testaction = fns expected action => do found <- action; testeqval expected found end"
+              [ "runresult = fn ar, arg => ar >- match Left err => fail err; Right f => f arg end"
+              , "testaction = fn expected, action => do found <- action; testeqval expected found end"
               , "testleft = fn action => do found <- action; found >- match Left _ => pass; Right _ => fail \"not Left\" end end"
               , "using Eval"
               ] $

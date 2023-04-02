@@ -28,7 +28,7 @@ eventTimeDate: EventTime -> Date
     end;
 
 setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime
-= fns d et => Just $ et >- match
+= fn d, et => Just $ et >- match
     Just (EventTimeTime (DateAndTime _ t)) => EventTimeTime (DateAndTime d t);
     _ => EventTimeDate d;
     end;
@@ -45,7 +45,7 @@ eventModelTimeTimeOfDay: WholeModel EventTime -> WholeModel TimeOfDay
         end;
 
 setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime)
-= fns mtod met => Just $ met >- match
+= fn mtod, met => Just $ met >- match
     Nothing => Nothing;
     Just et => Just $ mtod >- match
         Nothing => EventTimeDate $ eventTimeDate et;

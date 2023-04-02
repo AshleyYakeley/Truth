@@ -130,7 +130,7 @@ instance Show ErrorType where
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside WholeModel quote"
     show (MatchesDifferentCount expected found) =
-        "different number of patterns in matches, expected " <> show expected <> ", found " <> show found
+        "different number of patterns in match, expected " <> show expected <> ", found " <> show found
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"

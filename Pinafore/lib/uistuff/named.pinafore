@@ -37,17 +37,17 @@ mkNamed: UIStuff -> NamedStuff
     name = property @Named @Text !"identify.name" store;
     nameOrder = on.ModelOrder name alphabetical.Order;
     byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property name) !$$ model;
-    namedPane = fns iui e => MkPane (name !$% e) (iui $ immut.WholeModel e) {[]};
+    namedPane = fn iui, e => MkPane (name !$% e) (iui $ immut.WholeModel e) {[]};
     nameColumn = ({"Name"},fn p => name !$ {p});
 
-    namedTable = fns sm onActivate msel => exec $ do
+    namedTable = fn sm, onActivate, msel => exec $ do
         lm <- getList.FiniteSetModel nameOrder sm;
         return.Action $ listTable [nameColumn] lm onActivate msel;
         end;
 
-    namedItemTable = fns set iui msel =>
+    namedItemTable = fn set, iui, msel =>
         namedTable set (fn e => paneWindow $ namedPane iui {e}) msel;
-    namedPairPane = fns name set mitems getSelectedUI => let
+    namedPairPane = fn name, set, mitems, getSelectedUI => let
         getSelectorUI = fn sel => namedItemTable set getSelectedUI (Just sel);
         iopen = fn e => paneWindow $ namedPane getSelectedUI {e};
         in selectionPair.Pane name set (map.List (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;

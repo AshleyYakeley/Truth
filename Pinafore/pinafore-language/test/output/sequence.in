@@ -5,7 +5,7 @@ fix: (a -> a) -> a
 = fn f => let rec x = f x end in x;
 
 rrange
-= fns s a b => if a > b then [] else a :: s (succ a) b;
+= fn s, a, b => if a > b then [] else a :: s (succ a) b;
 
 range: Integer -> Number -> List Integer
 = fix rrange;

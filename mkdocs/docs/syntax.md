@@ -112,9 +112,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <expression-1> ::=
     "fn" <match> |
-    "fns" <multimatch> |
     "match" <semicolon-separated(<match>)> "end" |
-    "matches" <semicolon-separated-1(<multimatch>)> "end" |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "do" <semicolon-separated(<do-line>)> <expression> "end" |
@@ -155,9 +153,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <of(n)> ::= "of" <semicolon-separated(n)> "end"
 
-<match> ::= <pattern-1> "=>" <expression>
-
-<multimatch> ::= <patterns> "=>" <expression>
+<match> ::= <comma-separated(<pattern>)> "=>" <expression>
 
 <do-line> = <expression> | <pattern-1> "<-" <expression>
 

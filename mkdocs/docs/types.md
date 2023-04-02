@@ -113,7 +113,7 @@ Thus, at run-time ("dynamically") it is possible to enquire into the subtype of 
 
 #### Constructors & Functions
 `[]: List None`  
-`fns x y => x::y: a -> List a -> List1 a`
+`fn x, y => x::y: a -> List a -> List1 a`
 
 ### Cartesian Products
 
@@ -124,7 +124,7 @@ Thus, at run-time ("dynamically") it is possible to enquire into the subtype of 
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`fns x y => (x, y): a -> b -> a *: b`  
+`fn x, y => (x, y): a -> b -> a *: b`  
 `fst: a *: Any -> a`  
 `snd: Any *: b -> b`
 
