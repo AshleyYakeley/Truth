@@ -1,7 +1,7 @@
 packages:
 
 # Examination
-- Examine/gnome-bindings
+#- examine/gnome-bindings
 
 # separate (submodule) dependencies
 #- external/countable

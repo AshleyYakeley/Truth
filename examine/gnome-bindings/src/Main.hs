@@ -48,7 +48,7 @@ genModuleCode name version pkgName pkgVersion verbosity overrides = do
                 , verbose = verbosity
                 , overrides = ovs
                 }
-    (gir, girDeps) <- loadGIRInfo verbosity name (Just version) ["Examine/gnome-bindings/new"] (girFixups ovs)
+    (gir, girDeps) <- loadGIRInfo verbosity name (Just version) ["examine/gnome-bindings/new"] (girFixups ovs)
     let
         (apis, deps) = filterAPIsAndDeps ovs gir girDeps
         allAPIs :: Map Name API
@@ -77,7 +77,7 @@ main = do
     version = "2.0"
     pkgName = "gi-gobject"
     pkgVersion = "2.0.28"
-    overridesFile = Just "Examine/gnome-bindings/GObject.overrides"
+    overridesFile = Just "examine/gnome-bindings/GObject.overrides"
     verbose = True
-    outputDir = Just "Examine/gnome-bindings/result"
+    outputDir = Just "examine/gnome-bindings/result"
     inheritedOverrides = [TaggedOverride "inherited:GLib" GLib.overrides]
