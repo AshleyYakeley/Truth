@@ -19,5 +19,5 @@ RUN pip3 install ./mkdocs-plugin-commonmark
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 RUN apt-get install -y nodejs
 RUN npm --global install npm
-RUN npm --global install vsce
+RUN npm --global install @vscode/vsce
 #RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
