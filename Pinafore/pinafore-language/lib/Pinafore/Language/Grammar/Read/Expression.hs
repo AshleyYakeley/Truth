@@ -341,13 +341,6 @@ readExpression = do
 readModule :: Parser SyntaxExposeDeclaration
 readModule = readExpose
 
-readMatch :: Parser SyntaxCase
-readMatch = do
-    pat <- readPattern
-    readThis TokMap
-    expr <- readExpression
-    return $ MkSyntaxCase pat expr
-
 data DoLine
     = ExpressionDoLine SyntaxExpression
     | BindDoLine SyntaxPattern
@@ -384,7 +377,7 @@ doLines (BindDoLine pat expra) (l:ll) = do
 
 readMulticase :: Parser (Some SyntaxMulticase)
 readMulticase = do
-    patlist <- readPatterns
+    patlist <- readCommaList readPattern
     readThis TokMap
     expr <- readExpression
     return $ fixedFromList patlist $ \_ pats -> MkSome $ MkSyntaxMulticase pats expr
@@ -400,31 +393,21 @@ getMulticase expected (MkSome mm) = let
 
 readExpression1 :: Parser SyntaxExpression
 readExpression1 =
-    (do
-         spos <- getPosition
-         readThis TokFn
-         match <- readMatch
-         return $ MkWithSourcePos spos $ SEAbstract match) <|>
-    (do
-         spos <- getPosition
-         readThis TokFns
-         mmatch <- readMulticase
-         return $ MkWithSourcePos spos $ SEAbstracts mmatch) <|>
+    readWithSourcePos
+        (do
+             readThis TokFn
+             mmatch <- readMulticase
+             return $ SEAbstracts mmatch) <|>
     readWithSourcePos
         (do
              readThis TokMatch
-             smatches <- readLines readMatch
+             multimatches <- readLines readMulticase
              readThis TokEnd
-             return $ SEMatch smatches) <|>
-    readWithSourcePos
-        (do
-             readThis TokMatches
-             smultimatches <- readLines1 readMulticase
-             readThis TokEnd
-             case head smultimatches of
-                 MkSome m -> do
+             case multimatches of
+                 [] -> return $ SEMatch []
+                 MkSome m:_ -> do
                      let n = syntaxMulticaseLength m
-                     smm <- for (toList smultimatches) $ getMulticase n
+                     smm <- for multimatches $ getMulticase n
                      return $ SEMatches $ MkSyntaxMulticaseList n smm) <|>
     readWithSourcePos
         (do

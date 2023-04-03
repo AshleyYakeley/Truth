@@ -134,7 +134,7 @@ testNamespace =
               , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna == 1"
               , testExpectSuccess "let nna=1; namespace M of nna=2 end in test $ nna. == 1"
               ]
-        , tDecls ["testeq = fns e f => if e == f then pass else fail $ \"found: \" <>.Text show f"] $
+        , tDecls ["testeq = fn e, f => if e == f then pass else fail $ \"found: \" <>.Text show f"] $
           tGroup
               "using"
               [ tDecls
@@ -218,13 +218,13 @@ testNamespace =
               ]
         , tGroup
               "qualified"
-              [ testExpectSuccess "let x = fns a b => a ++.Property b in pass"
+              [ testExpectSuccess "let x = fn a, b => a ++.Property b in pass"
               , testExpectSuccess "let x = (++.Property) in pass"
-              , testExpectSuccess "let x = fns a b => a ++.Property. b in pass"
+              , testExpectSuccess "let x = fn a, b => a ++.Property. b in pass"
               , testExpectSuccess "let x = (++.Property.) in pass"
-              , testExpectSuccess "let x = fns a b => a ..Property b in pass"
+              , testExpectSuccess "let x = fn a, b => a ..Property b in pass"
               , testExpectSuccess "let x = (..Property) in pass"
-              , testExpectSuccess "let x = fns a b => a ..Property. b in pass"
+              , testExpectSuccess "let x = fn a, b => a ..Property. b in pass"
               , testExpectSuccess "let x = (..Property.) in pass"
               ]
         ]

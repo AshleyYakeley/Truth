@@ -1,2 +1,4 @@
-binary-without-manpage
+no-manual-page
 hardening-no-pie
+hardening-no-bindnow
+spelling-error-in-binary

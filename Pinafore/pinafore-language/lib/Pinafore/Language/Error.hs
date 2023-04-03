@@ -130,7 +130,7 @@ instance Show ErrorType where
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside WholeModel quote"
     show (MatchesDifferentCount expected found) =
-        "different number of patterns in matches, expected " <> show expected <> ", found " <> show found
+        "different number of patterns in match, expected " <> show expected <> ", found " <> show found
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
@@ -145,8 +145,8 @@ instance Show ErrorType where
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show (InterpretTypeNotConcreteDynamicEntityError t) = unpack t <> " is not a concrete dynamic entity type"
     show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
-    show (InterpretTypeUnderApplyError t) = "underapplied type constuctor: " <> unpack t
-    show (InterpretTypeOverApplyError t) = "overapplied type constuctor: " <> unpack t
+    show (InterpretTypeUnderApplyError t) = "underapplied type constructor: " <> unpack t
+    show (InterpretTypeOverApplyError t) = "overapplied type constructor: " <> unpack t
     show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
     show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show $ toList nn)

@@ -71,6 +71,6 @@ testUI =
         , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.GTK; return (); end"
         , "opentype T"
         , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- newOpenEntity @T; s += p; return (); end"
-        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fns gtk action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.GTK {\"Button\"} {action}); return (); end"
+        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.GTK {\"Button\"} {action}); return (); end"
         ]
         testActions

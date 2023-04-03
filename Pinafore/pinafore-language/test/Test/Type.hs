@@ -251,10 +251,10 @@ testType =
                     , textTypeTest "let i : a -> a = fn x => x in i 3" "{} -> Integer"
                     ]
               , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1 a"
-              , textTypeTest "fns v1 v2 => [v1,v2]" "{} -> a -> a -> List1 a"
-              , textTypeTest "fns v1 v2 v3 => ([v1,v2],[v2,v3])" "{} -> a -> (a & b) -> b -> List1 a *: List1 b"
+              , textTypeTest "fn v1, v2 => [v1,v2]" "{} -> a -> a -> List1 a"
+              , textTypeTest "fn v1, v2, v3 => ([v1,v2],[v2,v3])" "{} -> a -> (a & b) -> b -> List1 a *: List1 b"
               , textTypeTest
-                    "fns v1 v2 v3 => (([v1,v2],[v2,v3]),[v3,v1])"
+                    "fn v1, v2, v3 => (([v1,v2],[v2,v3]),[v3,v1])"
                     "{} -> (a & b) -> (a & c) -> (c & b) -> (List1 a *: List1 c) *: List1 b"
               , testTree
                     "inversion"
@@ -296,7 +296,7 @@ testType =
               , textTypeTest "let f : Entity = [] in f" "{} -> Entity"
               , textTypeTest "let f : Entity -> Entity = fn x => [x] in f" "{} -> Entity -> Entity"
               , textTypeTest
-                    "let f : Entity -> Entity -> Entity = fns a b => (a,b) in f"
+                    "let f : Entity -> Entity -> Entity = fn a, b => (a,b) in f"
                     "{} -> Entity -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity = Left in f" "{} -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity = Right in f" "{} -> Entity -> Entity"

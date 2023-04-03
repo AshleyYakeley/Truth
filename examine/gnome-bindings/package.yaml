@@ -1,0 +1,18 @@
+_common: !include "../../common.yaml"
+name: gnome-bindings
+version: *changes_version
+<<: *author
+
+<<: *language
+
+executables:
+    gnome-bindings:
+        source-dirs: src
+        dependencies:
+          - base >= 4.16
+          - Cabal
+          - shapes
+          - haskell-gi
+          - gi-glib
+        main: Main.hs
+        ghc-options: -threaded

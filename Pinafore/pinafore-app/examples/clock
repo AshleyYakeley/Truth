@@ -9,12 +9,12 @@ using Colour;
 using Number;
 
 scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a
-= fns d (w,h) => let
+= fn d, (w,h) => let
     size = min w h;
     in translate (w/2,h/2) $ scale (size/2,size/2) d;
 
 circle: Number *: Number -> Number -> Path
-= fns centre radius => arc.Path centre radius 0 (2 * pi);
+= fn centre, radius => arc.Path centre radius 0 (2 * pi);
 
 tickMark: Integer -> Drawing None
 = fn m => let

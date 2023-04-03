@@ -35,7 +35,8 @@ seek h i = GI.seekableSeek h i GI.SeekTypeSet noCancellable
 getMIMEType :: MonadIO m => GI.FileIOStream -> GI.File -> m Text
 getMIMEType _h path = do
     info <- GI.fileQueryInfo path GI.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE [GI.FileQueryInfoFlagsNone] noCancellable
-    GI.fileInfoGetContentType info
+    mtype <- GI.fileInfoGetContentType info
+    return $ fromMaybe "" mtype
 
 setMIMEType :: MonadIO m => GI.FileIOStream -> GI.File -> Text -> m ()
 setMIMEType _h path val =

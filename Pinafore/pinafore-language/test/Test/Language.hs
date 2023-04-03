@@ -254,19 +254,17 @@ testQueries =
               "functions"
               [ testQuery "fn x => x" $ LRSuccess "<?>"
               , testQuery "fn x => 1" $ LRSuccess "<?>"
-              , testQuery "fns x => x" $ LRSuccess "<?>"
-              , testQuery "fns x => 1" $ LRSuccess "<?>"
-              , testQuery "fns x y => y" $ LRSuccess "<?>"
-              , testQuery "fns x y z => [x,y,z]" $ LRSuccess "<?>"
+              , testQuery "fn x, y => y" $ LRSuccess "<?>"
+              , testQuery "fn x, y, z => [x,y,z]" $ LRSuccess "<?>"
               ]
         , testTree
               "predefined"
               [ testQuery "abs.Integer" $ LRSuccess "<?>"
               , testQuery "fst.Product" $ LRSuccess "<?>"
               , testQuery "(+.Integer)" $ LRSuccess "<?>"
-              , testQuery "fns a b => a +.Integer b" $ LRSuccess "<?>"
+              , testQuery "fn a, b => a +.Integer b" $ LRSuccess "<?>"
               , testQuery "(==.Entity)" $ LRSuccess "<?>"
-              , testQuery "fns a b => a ==.Entity b" $ LRSuccess "<?>"
+              , testQuery "fn a, b => a ==.Entity b" $ LRSuccess "<?>"
               ]
         , testTree
               "let-binding"
@@ -583,16 +581,16 @@ testQueries =
               ]
         , testTree
               "matches"
-              [ testQuery "(matches a => 5 end) 2" $ LRSuccess "5"
-              , testQuery "(matches a b => a +.Integer b end) 2 3" $ LRSuccess "5"
+              [ testQuery "(match a => 5 end) 2" $ LRSuccess "5"
+              , testQuery "(match a, b => a +.Integer b end) 2 3" $ LRSuccess "5"
               , testQuery
-                    "(matches Nothing Nothing => 1; Nothing (Just a) => a +.Integer 10; (Just a) _ => a +.Integer 20; end) (Just 1) (Just 2)" $
+                    "(match Nothing, Nothing => 1; Nothing, Just a => a +.Integer 10; Just a, _ => a +.Integer 20; end) (Just 1) (Just 2)" $
                 LRSuccess "21"
               , testQuery
-                    "(matches Nothing Nothing => 1; (Just a) Nothing => a +.Integer 10; _ (Just a) => a +.Integer 20; end) (Just 1) (Just 2)" $
+                    "(match Nothing, Nothing => 1; Just a, Nothing => a +.Integer 10; _, Just a => a +.Integer 20; end) (Just 1) (Just 2)" $
                 LRSuccess "22"
               , testQuery
-                    "(matches Nothing Nothing => 1; (Just a) Nothing => a +.Integer 10; Nothing (Just a) => a +.Integer 20; (Just a) (Just b) => a +.Integer b +.Integer 30; end) (Just 1) (Just 2)" $
+                    "(match Nothing, Nothing => 1; Just a, Nothing => a +.Integer 10; Nothing, Just a => a +.Integer 20; Just a, Just b => a +.Integer b +.Integer 30; end) (Just 1) (Just 2)" $
                 LRSuccess "33"
               ]
         , testTree
@@ -721,17 +719,17 @@ testQueries =
               , testTree
                     "lazy"
                     [ testQuery
-                          "let lazy: Any -> Integer -> Integer = fns _ x => x in (fn x => lazy x 1) (error.Function \"strict\")" $
+                          "let lazy: Any -> Integer -> Integer = fn _, x => x in (fn x => lazy x 1) (error.Function \"strict\")" $
                       LRSuccess "1"
-                    , testQuery "let lazy: Any -> Integer -> Integer = fns _ x => x in let rec x = lazy x 1 end in x" $
-                      LRSuccess "1"
-                    , testQuery
-                          "let lazy: Any -> Integer -> Integer = fns _ x => x in let x = lazy (error.Function \"strict\") 1 in x" $
-                      LRSuccess "1"
-                    , testQuery "let lazy: Any -> Integer -> Integer = fns _ x => x in let rec f = lazy f end in f 1" $
+                    , testQuery "let lazy: Any -> Integer -> Integer = fn _, x => x in let rec x = lazy x 1 end in x" $
                       LRSuccess "1"
                     , testQuery
-                          "let lazy: Any -> Integer -> Integer = fns _ x => x in let f = lazy (error.Function \"strict\") in f 1" $
+                          "let lazy: Any -> Integer -> Integer = fn _, x => x in let x = lazy (error.Function \"strict\") 1 in x" $
+                      LRSuccess "1"
+                    , testQuery "let lazy: Any -> Integer -> Integer = fn _, x => x in let rec f = lazy f end in f 1" $
+                      LRSuccess "1"
+                    , testQuery
+                          "let lazy: Any -> Integer -> Integer = fn _, x => x in let f = lazy (error.Function \"strict\") in f 1" $
                       LRSuccess "1"
                     ]
               , testTree
@@ -789,25 +787,25 @@ testQueries =
                                 "let using Function; using Integer; f: ((rec x, Maybe x) -> Integer) -> (rec x, Maybe x) -> Integer = fn rc => match Nothing => 0; Just y => succ $ rc y end in let rec rcount: (rec z, Maybe z) -> Integer = rcount1; rcount1 = f rcount end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "let using Function; using Integer; f: (Integer -> Integer) -> Integer -> Integer = fns rc x => if x ==.Entity 0 then 0 else succ $ rc (x - 1) in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
+                                "let using Function; using Integer; f: (Integer -> Integer) -> Integer -> Integer = fn rc, x => if x ==.Entity 0 then 0 else succ $ rc (x - 1) in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let using Function; f = fns _ x => x in let rec rcount = f rcount end in rcount 1" $
+                                "let using Function; f = fn _, x => x in let rec rcount = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let using Function; f: Any -> Integer -> Integer = fns _ x => x in let rec rcount = f (seq (error \"strict\") rcount) end in rcount 1" $
+                                "let using Function; f: Any -> Integer -> Integer = fn _, x => x in let rec rcount = f (seq (error \"strict\") rcount) end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let using Function; f: Any -> Integer -> Integer = fns _ x => x in let rec rcount = f (seq rcount (error \"strict\")) end in rcount 1" $
+                                "let using Function; f: Any -> Integer -> Integer = fn _, x => x in let rec rcount = f (seq rcount (error \"strict\")) end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let using Function; f: (Integer -> Integer) -> Integer -> Integer = fns _ x => x in let rec rcount = f rcount end in rcount 1" $
+                                "let using Function; f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x in let rec rcount = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let using Function; f: (Integer -> Integer) -> Integer -> Integer = fns _ x => x in let rec rcount = rcount1; rcount1 = f rcount end in rcount 1" $
+                                "let using Function; f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x in let rec rcount = rcount1; rcount1 = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "let using Function; f: (Integer -> Integer) -> Integer -> Integer = fns _ x => x in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
+                                "let using Function; f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount end in rcount 1" $
                             LRSuccess "1"
                           , testQuery
                                 "let using Function; using Integer; rec rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1 = match Nothing => 0; Just y => succ $ rcount y end end in rcount $ Just Nothing" $

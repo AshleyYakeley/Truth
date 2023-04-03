@@ -1,5 +1,8 @@
 packages:
 
+# Examination
+#- examine/gnome-bindings
+
 # separate (submodule) dependencies
 #- external/countable
 - external/witness
@@ -7,6 +10,8 @@ packages:
 #- external/type-rig
 #- external/monadology
 - external/primitive-serial
+
+- fixup/gi-gobject
 
 # Changes
 - Changes/thread-trace
@@ -33,6 +38,8 @@ allow-newer: true
 extra-deps:
 - blake3-0.2
 - leb128-0.1.0.0
+- git: https://github.com/AshleyYakeley/haskell-gi.git
+  commit: db5ec051116579c33472a0193251a3333f3f336f
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
 - git: https://github.com/AshleyYakeley/hindent.git

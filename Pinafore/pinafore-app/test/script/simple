@@ -19,7 +19,7 @@ ui_person : Person -> Element.GTK
 = fn p => textEntry.GTK $ name !$ {p};
 
 window_person : Context.GTK -> Person -> Action Window.GTK
-= fns gtk p => open.Window.GTK gtk (300,400) {"Name"} (ui_person p);
+= fn gtk, p => open.Window.GTK gtk (300,400) {"Name"} (ui_person p);
 
 in run.GTK $ fn gtk => do
     window_person gtk me;

@@ -112,12 +112,13 @@ gvObjectTraceAllSignals obj call = do
     t <- getObjectType obj
     sigids <- getTypeSignalIDs t
     for_ sigids $ \sigid -> do
-        signame <- signalName sigid
-        case signame of
-            --"event" -> return ()
-            --"event-after" -> return ()
-            "motion-notify-event" -> return ()
-            _ -> gvObjectTraceSignal obj sigid $ call signame
+        msigname <- signalName sigid
+        case msigname of
+            --Just "event" -> return ()
+            --Just "event-after" -> return ()
+            Just "motion-notify-event" -> return ()
+            Just signame -> gvObjectTraceSignal obj sigid $ call signame
+            Nothing -> return ()
 
 gvObjectReportAllSignals :: IsObject t => Text -> t -> GView 'Locked ()
 gvObjectReportAllSignals name obj =
