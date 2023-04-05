@@ -1,5 +1,5 @@
-FROM fpco/stack-build-small:lts-20.11
-RUN echo 2023-03-31 > /container.date
+FROM fpco/stack-build-small:lts-20.17
+RUN echo 2023-04-05 > /container.date
 ENV DEBIAN_FRONTEND noninteractive
 COPY sources.list /etc/apt/sources.list
 RUN apt-get update
