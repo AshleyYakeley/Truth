@@ -1,6 +1,6 @@
 packages:
 
-# Examination
+# examination
 #- examine/gnome-bindings
 
 # separate (submodule) dependencies
@@ -10,8 +10,6 @@ packages:
 #- external/type-rig
 #- external/monadology
 - external/primitive-serial
-
-- fixup/gi-gobject
 
 # Changes
 - Changes/thread-trace
@@ -31,7 +29,7 @@ packages:
 - Pinafore/pinafore-gnome
 - Pinafore/pinafore-app
 
-resolver: lts-20.11
+resolver: lts-20.17
 
 allow-newer: true
 
