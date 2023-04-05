@@ -16,8 +16,7 @@ RUN cd mkdocs-plugin-commonmark && git fetch && git checkout 1033d5dfc0223fd499e
 RUN pip3 install ./mkdocs-plugin-commonmark
 #RUN apt-get install -y r-base-core
 #RUN R -e "install.packages(c('shiny','ggplot2','plotly','optparse','shinyWidgets'),dependencies=TRUE, repos='http://cran.rstudio.com/')"
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-RUN apt-get install -y nodejs
+RUN apt-get install -y npm
 RUN npm --global install npm
 RUN npm --global install @vscode/vsce
 #RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
