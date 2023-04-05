@@ -1,13 +1,8 @@
 #!/usr/bin/env -S bash -e
 USERID=`stat -c %u stack.yaml`
-echo $USERID
-
 # nix-build nix/setup.nix
-
 USER=user
-#useradd -d /home/user --uid $USERID $USER
-HOME=/home/user
-
-bash
-# sudo -s $USER
+HOME=/home/$USER
+chown $USERID:$USERID $HOME
+setpriv --reuid $USERID bash
 # stack --no-docker --nix build

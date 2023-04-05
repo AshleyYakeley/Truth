@@ -96,7 +96,6 @@ nix-docker-image:
 nixos: nix-docker-image
 	mkdir -p nix/home
 	docker run --rm -v `pwd`:/workspace -ti nix-build nix/session
-	# docker run --rm -v `pwd`:/workspace -ti nix-build bash
 
 .PHONY: exe
 
