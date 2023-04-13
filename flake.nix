@@ -1,8 +1,14 @@
+# nix build .?submodules=1
+# https://input-output-hk.github.io/haskell.nix/
+# source: https://github.com/input-output-hk/haskell.nix
 {
     description = "Pinafore";
-    inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
-    inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-    inputs.flake-utils.url = "github:numtide/flake-utils";
+    inputs =
+    {
+        haskellNix.url = "github:AshleyYakeley/haskell.nix?rev=ebdf467c74ce0fc9e43568fd27489ac67d0f9dc8";
+        nixpkgs.follows = "haskellNix/nixpkgs-unstable";
+        flake-utils.url = "github:numtide/flake-utils";
+    };
     outputs = { self, nixpkgs, flake-utils, haskellNix }:
         flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ]
         (system:
@@ -38,9 +44,9 @@
                     # crossPlatforms = p: [p.ghcjs];
                 };
             in flake //
-                {
+            {
                 # Built by `nix build .`
-                packages.default = flake.packages."pinafore:exe:pinafore";
-                }
+                packages.default = flake.packages."pinafore-app:exe:pinafore";
+            }
         );
 }
