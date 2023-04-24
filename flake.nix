@@ -25,7 +25,17 @@
                         {
                             src = ./.;
                             evalSystem = "x86_64-linux";
-                            modules = [{packages."pinafore-app".configureFlags = ["-f" "-gitversion"];}];
+                            modules =
+                            [
+                                {
+                                    packages."pinafore-app" =
+                                    {
+                                        configureFlags = ["-f" "-gitversion"];
+                                        dontStrip = false;
+                                        dontPatchELF = false;
+                                    };
+                                }
+                            ];
 
                             # For `nix develop .?submodules=1`
                             shell =
