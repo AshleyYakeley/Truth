@@ -335,17 +335,17 @@
         "tullia": "tullia"
       },
       "locked": {
-        "lastModified": 1681364604,
-        "narHash": "sha256-EG1DmeJk2g9D0jRN+ZzpJ6xnveRz9NiDLZymskpaTbE=",
+        "lastModified": 1682487042,
+        "narHash": "sha256-hoirs5hkAc7V+9gclZwWbXGHVcPjkNs1hgSnPtJfxao=",
         "owner": "AshleyYakeley",
         "repo": "haskell.nix",
-        "rev": "ebdf467c74ce0fc9e43568fd27489ac67d0f9dc8",
+        "rev": "7a3a5bd6e7848471b4143c49575c713118a75b9b",
         "type": "github"
       },
       "original": {
         "owner": "AshleyYakeley",
         "repo": "haskell.nix",
-        "rev": "ebdf467c74ce0fc9e43568fd27489ac67d0f9dc8",
+        "rev": "7a3a5bd6e7848471b4143c49575c713118a75b9b",
         "type": "github"
       }
     },

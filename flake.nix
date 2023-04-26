@@ -2,7 +2,7 @@
     description = "Pinafore";
     inputs =
     {
-        haskellNix.url = "github:AshleyYakeley/haskell.nix?rev=ebdf467c74ce0fc9e43568fd27489ac67d0f9dc8";
+        haskellNix.url = "github:AshleyYakeley/haskell.nix?rev=7a3a5bd6e7848471b4143c49575c713118a75b9b";
         nixpkgs.follows = "haskellNix/nixpkgs-unstable";
         flake-utils.url = "github:numtide/flake-utils";
     };
