@@ -163,6 +163,9 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 
 deb: out/$(PACKAGEFULLNAME).deb
 
+nix-flake: out
+	nix build -o out/nix-flake .?submodules=1
+
 LIBMODULES := \
     pinafore \
     pinafore-media \
