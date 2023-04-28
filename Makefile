@@ -12,7 +12,7 @@ else
 JOBFLAGS := --keep-going
 endif
 
-STACKFLAGS := $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
+STACKFLAGS := --stack-root $$PWD/.stack-root $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
 ifeq ($(test),1)
 TESTFLAGS :=
@@ -244,4 +244,7 @@ clean:
 	rm -rf mkdocs/generated
 	rm -rf mkdocs/docs/library
 	rm -rf Changes/changes-gnome/examples/showImages/images
-	stack $(STACKFLAGS) clean
+	rm -rf .stack-work
+
+full-clean: clean
+	rm -rf .stack-root
