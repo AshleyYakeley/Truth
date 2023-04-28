@@ -58,10 +58,25 @@
                     ];
                 pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
                 flake = pkgs.pinaforeProject.flake {};
+                exePackage = flake.packages."pinafore-app:exe:pinafore";
+                stdLibPackage = pkgs.runCommand "pinafore-stdlib" {libdir = ./Pinafore/lib;}
+                    ''
+                    mkdir -p $out/share/pinafore/lib
+                    cp -r $libdir/* $out/share/pinafore/lib/
+                    '';
+                pinaforePackage = pkgs.symlinkJoin
+                {
+                    name = "pinafore";
+                    paths =
+                    [
+                        exePackage
+                        stdLibPackage
+                    ];
+                };
             in flake //
             {
                 # Built by `nix build .?submodules=1`
-                packages.default = flake.packages."pinafore-app:exe:pinafore";
+                packages.default = pinaforePackage;
             }
         );
 
