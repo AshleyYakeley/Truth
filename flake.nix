@@ -28,6 +28,10 @@
                             modules =
                             [
                                 {
+                                    packages."changes-gnome" =
+                                    {
+                                        configureFlags = ["-f" "-trace"];
+                                    };
                                     packages."pinafore-app" =
                                     {
                                         configureFlags = ["-f" "-gitversion"];

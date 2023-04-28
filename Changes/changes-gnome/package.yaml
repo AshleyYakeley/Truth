@@ -8,8 +8,12 @@ version: *changes_version
 flags:
     build-examples:
         description: Build examples
-        default: False
-        manual: False
+        default: false
+        manual: false
+    trace:
+        description: Trace functions
+        default: true
+        manual: false
 
 library:
     source-dirs: lib
@@ -36,6 +40,10 @@ library:
       - Changes.World.GNOME.GIO
       - Changes.World.GNOME.GTK
       - Changes.World.GNOME.GTK.Test
+    when:
+      - condition: flag(trace)
+        exposed-modules:
+          - Changes.World.GNOME.GI.Trace
     other-modules:
       - Changes.World.GNOME.GI.Error
       - Changes.World.GNOME.GI.Type
