@@ -292,11 +292,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1682036591,
-        "narHash": "sha256-QPrmInnsudgOP+bpJKzosItR0H1C5F54SmPLV8AlFPg=",
+        "lastModified": 1681259105,
+        "narHash": "sha256-dxyauxwCwA8ZNyRSRx2J9X44hPNXy9Rf0Nogqtohkag=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "9d83fdf40d77bc15719c6e498da98dbd0714dfa4",
+        "rev": "c23bc9ea5ec54b17357671bef540b45cea978cdb",
         "type": "github"
       },
       "original": {
@@ -335,17 +335,17 @@
         "tullia": "tullia"
       },
       "locked": {
-        "lastModified": 1682487042,
-        "narHash": "sha256-hoirs5hkAc7V+9gclZwWbXGHVcPjkNs1hgSnPtJfxao=",
+        "lastModified": 1682836768,
+        "narHash": "sha256-G7DN1fEszobZ7D+WK6srTxyU3rUGLJQNGN4VoFUB/ew=",
         "owner": "AshleyYakeley",
         "repo": "haskell.nix",
-        "rev": "7a3a5bd6e7848471b4143c49575c713118a75b9b",
+        "rev": "7b4f74d8db5866c447caf7868bebbab37349e370",
         "type": "github"
       },
       "original": {
         "owner": "AshleyYakeley",
         "repo": "haskell.nix",
-        "rev": "7a3a5bd6e7848471b4143c49575c713118a75b9b",
+        "rev": "7b4f74d8db5866c447caf7868bebbab37349e370",
         "type": "github"
       }
     },
@@ -820,11 +820,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1682035745,
-        "narHash": "sha256-sQqPKXGi5vpLGEF1hAdvr2YJNXzqRVBpyqeVGJrNsV8=",
+        "lastModified": 1681085376,
+        "narHash": "sha256-kSg4N5g9Jj8u+G7HdMZR5IIvm40s9EBmkD0pMDTJTLc=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "2863ba40a0be8ba0229cf99b0f309ada740d54af",
+        "rev": "2f9242acfd8fbbc4bbdc5e5504ac8e5b36839b7f",
         "type": "github"
       },
       "original": {
