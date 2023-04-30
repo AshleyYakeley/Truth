@@ -5,6 +5,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . Ubuntu 20.04 LTS "focal"
       . Ubuntu 22.04 LTS "jammy"
       . Debian 11 "bullseye"
+    - add Nix flake
   * Language
     - overhaul of declarations
       . separate namespaces from modules,
