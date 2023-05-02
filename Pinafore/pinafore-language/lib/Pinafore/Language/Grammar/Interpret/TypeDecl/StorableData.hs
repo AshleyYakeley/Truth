@@ -10,7 +10,7 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 
 type CovParam :: CCRArgumentKind

@@ -1,7 +1,7 @@
 module Pinafore.Language.Name.Namespace where
 
 import Pinafore.Language.Name.Name
-import Pinafore.Language.Name.ToText
+import Pinafore.Text
 import Shapes
 
 newtype Namespace =

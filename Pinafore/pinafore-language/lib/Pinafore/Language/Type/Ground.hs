@@ -10,7 +10,7 @@ import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Show
 import Pinafore.Language.VarID
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 
 type GroundProperties :: GroundTypeKind

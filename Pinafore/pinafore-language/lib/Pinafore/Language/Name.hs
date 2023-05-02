@@ -12,4 +12,3 @@ import Pinafore.Language.Name.Namespace as I
 import Pinafore.Language.Name.NamespaceConcat as I
 import Pinafore.Language.Name.NamespaceRef as I
 import Pinafore.Language.Name.PrecNamedText as I
-import Pinafore.Language.Name.ToText as I

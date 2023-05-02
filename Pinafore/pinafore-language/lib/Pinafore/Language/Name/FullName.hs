@@ -2,7 +2,7 @@ module Pinafore.Language.Name.FullName where
 
 import Pinafore.Language.Name.Name
 import Pinafore.Language.Name.Namespace
-import Pinafore.Language.Name.ToText
+import Pinafore.Text
 import Shapes
 
 data FullName =

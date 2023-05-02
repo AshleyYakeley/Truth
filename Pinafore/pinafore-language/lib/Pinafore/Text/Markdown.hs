@@ -1,4 +1,4 @@
-module Pinafore.Markdown
+module Pinafore.Text.Markdown
     ( PlainText(..)
     , RawMarkdown
     , asRawMarkdown
@@ -15,7 +15,7 @@ module Pinafore.Markdown
     , indentMarkdownN
     ) where
 
-import Pinafore.Language.Name
+import Pinafore.Text.ToText
 import Shapes
 
 class PlainText t where

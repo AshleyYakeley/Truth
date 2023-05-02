@@ -11,6 +11,7 @@ module Pinafore.Language.Grammar.Read.Token
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
+import Pinafore.Text
 import Shapes hiding (try)
 import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)

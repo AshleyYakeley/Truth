@@ -41,7 +41,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 
 data ScopeEntry context

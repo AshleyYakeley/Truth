@@ -22,7 +22,7 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 import Shapes.Numeric
 import qualified Text.Collate

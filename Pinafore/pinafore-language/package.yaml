@@ -31,7 +31,9 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
-      - Pinafore.Markdown
+      - Pinafore.Text.ToText
+      - Pinafore.Text.Markdown
+      - Pinafore.Text
       - Pinafore.Context
       - Pinafore.Language.Debug
       - Pinafore.Language.Value.Instances
@@ -47,7 +49,6 @@ library:
       - Pinafore.Language.Value.Property
       - Pinafore.Language.Value.ModelOrder
       - Pinafore.Language.Value
-      - Pinafore.Language.Name.ToText
       - Pinafore.Language.Name.Name
       - Pinafore.Language.Name.Namespace
       - Pinafore.Language.Name.FullName

@@ -6,7 +6,7 @@ module Pinafore.Language.DefDoc
     ) where
 
 import Pinafore.Language.Name
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 
 data DocItem

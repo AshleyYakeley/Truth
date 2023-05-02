@@ -3,7 +3,7 @@ module Pinafore.Language.Grammar.Syntax where
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 import Text.Parsec (SourcePos)
 
