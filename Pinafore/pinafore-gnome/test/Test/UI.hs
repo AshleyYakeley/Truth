@@ -46,11 +46,11 @@ testActions :: ScriptTestTree
 testActions =
     tGroup
         "GTK"
-        [ testUIAction "return ()" noTestAction
+        [ testUIAction "pure ()" noTestAction
         , testUIAction "newpoint" noTestAction
         , testUIAction "emptywindow gtk" noTestAction
-        , testUIAction "buttonwindow gtk $ return ()" noTestAction
-        , testUIAction "buttonwindow gtk $ return ()" runClickButton
+        , testUIAction "buttonwindow gtk $ pure ()" noTestAction
+        , testUIAction "buttonwindow gtk $ pure ()" runClickButton
         , testUIAction "buttonwindow gtk $ newMem.FiniteSetModel" runClickButton
         , testUIAction "buttonwindow gtk $ newpoint" runClickButton
         , testUIAction "buttonwindow gtk $ emptywindow gtk" runClickButton
@@ -65,12 +65,12 @@ testUI =
     runScriptTestTree $
     tDecls
         [ "using Function"
-        , "using Action"
         , "using SetModel"
+        , "using Action"
         , "import \"pinafore-gnome\""
-        , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.GTK; return (); end"
+        , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.GTK; pure (); end"
         , "opentype T"
-        , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- newOpenEntity @T; s += p; return (); end"
-        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.GTK {\"Button\"} {action}); return (); end"
+        , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- newOpenEntity @T; s += p; pure (); end"
+        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.GTK {\"Button\"} {action}); pure (); end"
         ]
         testActions

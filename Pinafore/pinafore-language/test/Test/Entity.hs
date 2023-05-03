@@ -21,7 +21,7 @@ testUpdate text =
 testUpdates :: TestTree
 testUpdates =
     runScriptTestTree $
-    tGroup "update" [testUpdate "do model <- newMem.WholeModel; return.Action (model :=.WholeModel 1, model) end"]
+    tGroup "update" [testUpdate "do model <- newMem.WholeModel; pure.Action (model :=.WholeModel 1, model) end"]
 
 data SubtypeResult
     = SRNot
@@ -74,7 +74,7 @@ testEntity :: TestTree
 testEntity =
     runScriptTestTree $
     tDecls
-        [ "pass = return ()"
+        [ "pass = pure ()"
         , "undefined = error \"undefined\""
         , "runWholeModel = fn r => do a <- get r; a end"
         , "runreforfail = fn r => runWholeModel (r ?? {fail \"unknown model\"})"
@@ -121,24 +121,24 @@ testEntity =
               ]
         , tGroup
               "do"
-              [ testExpectSuccess "do return () end"
-              , testExpectSuccess "do return (); end"
+              [ testExpectSuccess "do pure () end"
+              , testExpectSuccess "do pure (); end"
               , testExpectSuccess "do testeqval 3 3 end"
-              , testExpectSuccess "do a <- return 3; testeqval 3 a end"
-              , testExpectSuccess "do a <- return 3; b <- return $ a +.Integer a; testeqval 6 b end"
+              , testExpectSuccess "do a <- pure 3; testeqval 3 a end"
+              , testExpectSuccess "do a <- pure 3; b <- pure $ a +.Integer a; testeqval 6 b end"
               ]
-        , tDecls ["flagRef = do r <- newMem.WholeModel; r := False; return r; end"] $
+        , tDecls ["flagRef = do r <- newMem.WholeModel; r := False; pure r; end"] $
           tGroup
               "stop"
-              [ testExpectSuccess "return ()"
+              [ testExpectSuccess "pure ()"
               , testExpectThrow "fail \"failure\""
               , testExpectSuccess "expectStop stop"
               , testExpectSuccess "expectStop $ do stop; fail \"unstopped\"; end"
-              , testExpectSuccess "do a <- onStop (return 1) (return 2); testeqval 1 a; end"
-              , testExpectSuccess "do a <- onStop (return 1) stop; testeqval 1 a; end"
-              , testExpectThrow "do a <- onStop (return 1) stop; fail \"unstopped\"; end"
-              , testExpectSuccess "do a <- onStop stop (return 2); testeqval 2 a; end"
-              , testExpectThrow "do a <- onStop stop (return 2); fail \"unstopped\"; end"
+              , testExpectSuccess "do a <- onStop (pure 1) (pure 2); testeqval 1 a; end"
+              , testExpectSuccess "do a <- onStop (pure 1) stop; testeqval 1 a; end"
+              , testExpectThrow "do a <- onStop (pure 1) stop; fail \"unstopped\"; end"
+              , testExpectSuccess "do a <- onStop stop (pure 2); testeqval 2 a; end"
+              , testExpectThrow "do a <- onStop stop (pure 2); fail \"unstopped\"; end"
               , testExpectSuccess
                     "do r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (r2 := True); testeq {True} r1; testeq {False} r2; end"
               , testExpectSuccess
@@ -225,7 +225,7 @@ testEntity =
                     , testExpectSuccess
                           "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; i <- expectStop $ get ir; return (); end"
+                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; i <- expectStop $ get ir; pure (); end"
                     , testExpectSuccess
                           "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
                     , testExpectSuccess
@@ -242,7 +242,7 @@ testEntity =
                           "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; i <- get ir; testeqval 20 i; end"
                     , testExpectSuccess
                           "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
-                    , testExpectSuccess "testImmutList True 1 $ fn _ => return ()"
+                    , testExpectSuccess "testImmutList True 1 $ fn _ => pure ()"
                     ]
               ]
         , tDecls
@@ -1505,7 +1505,7 @@ testEntity =
         , tGroup
               "task"
               [ testExpectSuccess
-                    "do t <- async.Task $ do sleep $ Seconds 0.01; return True end; v <- await.Task t; if v then pass else fail \"\" end"
+                    "do t <- async.Task $ do sleep $ Seconds 0.01; pure True end; v <- await.Task t; if v then pass else fail \"\" end"
               , testExpectSuccess
                     "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.01; r := 1; end; await.Task t; v <- get r; if v == 1 then pass else fail \"\" end"
               , testExpectSuccess

@@ -17,12 +17,12 @@ pinafore> let using Action
 pinafore> let ur: WholeModel a -> Unit = fn _ => ()
 pinafore> :type ur
 : WholeModel a -> Unit
-pinafore> :type newMem.WholeModel >>= fn model => return (model, ())
+pinafore> :type newMem.WholeModel >>= fn model => pure (model, ())
 : Action (WholeModel a *: Unit)
-pinafore> :type newMem.WholeModel >>= fn model => return (model, ((fn _ => ()) : WholeModel a -> Unit) model)
+pinafore> :type newMem.WholeModel >>= fn model => pure (model, ((fn _ => ()) : WholeModel a -> Unit) model)
 : Action (WholeModel a *: Unit)
-pinafore> :type fn model => return (model, ur model)
+pinafore> :type fn model => pure (model, ur model)
 : (a & WholeModel b) -> Action (a *: Unit)
-pinafore> :type newMem.WholeModel >>= fn model => return (model, ur model)
+pinafore> :type newMem.WholeModel >>= fn model => pure (model, ur model)
 : Action (WholeModel a *: Unit)
 pinafore> <END>

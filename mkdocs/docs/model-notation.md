@@ -5,7 +5,7 @@ Model notation is indicated by braces (`{}`).
 Within model notation, "unmodels" are indicated with percent (`%`).
 For example:
 
-`{"example"}` is the same as `return.WholeModel "example"`  
+`{"example"}` is the same as `pure.WholeModel "example"`  
 `{"answer: " ++ %r}` is the same as `coMap.WholeModel (fn v1 => "answer: " ++ v1) r`  
 `{%x + %(y ?? z)}` is the same as `ap.WholeModel (coMap.WholeModel (fn v1, v2 => v1 + v2) x) (y ?? z)`
 

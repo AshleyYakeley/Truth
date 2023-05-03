@@ -30,7 +30,7 @@ func1 = fn n, a, b, c, d, e, f => func2 n a b c d e f;
 func0 = fn n, a, b, c, d, e, f => func1 n a b c d e f;
 
 w : Context.GTK -> Action Window.GTK
-= fn gtk => open.Window.GTK gtk (300,400) {"Test"} $ func0 (return.WholeModel "Text") False False False False False False;
+= fn gtk => open.Window.GTK gtk (300,400) {"Test"} $ func0 (pure.WholeModel "Text") False False False False False False;
 
 prop0 = property @T @Text !"000" store;
 

@@ -316,7 +316,7 @@ applicativeEntries ::
        )
     => [BindDocTree context]
 applicativeEntries =
-    [ valBDT "return" "" (pure :: A -> f A)
+    [ valBDT "pure" "" (pure :: A -> f A)
     , valBDT "ap" "" ((<*>) :: f (A -> B) -> f A -> f B)
     , valBDT "liftA2" "" (liftA2 :: (A -> B -> C) -> f A -> f B -> f C)
     , valBDT "**" "" (liftA2 (,) :: f A -> f B -> f (A, B))

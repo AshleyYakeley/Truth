@@ -106,7 +106,7 @@ overviewPane: Pane
 = simple.Pane "Overview" $ exec.GTK $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneModel.LocalTime now;
-    return $ label.GTK $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
+    pure $ label.GTK $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
     end;
 
 calendarWindow: WholeModel +Event -> Action Window.GTK
@@ -139,7 +139,7 @@ newEvent: Action Event
     day <- getNowLocal.Date;
     eventTime !$ {item} := EventTimeDate day;
     name !$ {item} := "";
-    return item;
+    pure item;
     end;
 
 eventsTableUI: WholeModel Event -> Element.GTK
@@ -153,7 +153,7 @@ eventsTableUI: WholeModel Event -> Element.GTK
         in [timeColumn,nameColumn];
     in exec.GTK $ do
         lm <- getList.FiniteSetModel eventOrder events;
-        return $ listTable.GTK columns lm eventWindow (Just selection);
+        pure $ listTable.GTK columns lm eventWindow (Just selection);
         end;
 
 in do

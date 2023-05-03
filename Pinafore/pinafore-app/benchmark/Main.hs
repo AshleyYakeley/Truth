@@ -53,10 +53,10 @@ benchScripts =
         "script"
         [ benchScript "do a <- return $ return (); a end"
         , benchScript "do a <- get {return ()}; a end"
-        , benchScript "do a <- get $ return.WholeModel $ return (); a end"
+        , benchScript "do a <- get $ pure.WholeModel $ return (); a end"
         , benchScript "get {return ()} >>= fn v => v"
         , benchScript "get {False} >>= fn v => return ()"
-        , benchScript "get (return.WholeModel False) >>= fn v => return ()"
+        , benchScript "get (pure.WholeModel False) >>= fn v => return ()"
         , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => return ()"
         , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=return () end in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
@@ -74,24 +74,24 @@ benchScripts =
         , benchScript $
           pack $
           "let g = fn r => get r >>= fn x => return (); q = [" <>
-          intercalate "," (replicate 50 "g (return.WholeModel 1)") <> "] in for_ q id"
+          intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "] in for_ q id"
         , benchScript $
           pack $
           "let g1 = fn r => get r >>= fn x => return (); g2 = fn r => get r >>= fn x => return (); q = [" <>
-          intercalate "," (replicate 25 "g1 (return.WholeModel 1)" <> replicate 25 "g2 (return.WholeModel 1)") <>
+          intercalate "," (replicate 25 "g1 (pure.WholeModel 1)" <> replicate 25 "g2 (pure.WholeModel 1)") <>
           "] in for_ q id"
         , benchScript $
           pack $
           "let g = fn r => get r >>= fn x => return () in let q = [" <>
-          intercalate "," (replicate 50 "g (return.WholeModel 1)") <> "] in for_ q id"
+          intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "] in for_ q id"
         , benchScript $
           pack $
           "let g = fn r => get r >>= fn x => return () in let q = [" <>
-          intercalate "," (fmap (\(i :: Int) -> "g (return.WholeModel " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
+          intercalate "," (fmap (\(i :: Int) -> "g (pure.WholeModel " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
         , benchScript $
           pack $
           "let g = fn r => get r >>= fn x => return (); q = [" <>
-          intercalate "," (replicate 50 "get (return.WholeModel 1) >>= fn x => return ()") <> "] in for_ q id"
+          intercalate "," (replicate 50 "get (pure.WholeModel 1) >>= fn x => return ()") <> "] in for_ q id"
         , benchScript $
           pack $
           "let g = fn r => from.List (return ()) (fn x, y => return ()) r; q = [" <>

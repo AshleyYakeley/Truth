@@ -4,10 +4,10 @@ let
 emptywindow :: Action Unit;
 emptywindow = do
     open.Window.GTK (300,400) {"Empty"} blank.GTK;
-    return ();
+    pure ();
     end;
 
 newpoint :: Action Unit;
-newpoint = do s <- newMem.FiniteSetModel; newEntity s; return (); end;
+newpoint = do s <- newMem.FiniteSetModel; newEntity s; pure (); end;
 
 in open.Window.GTK (300,400) {"Test"} $ button.GTK {"Button"} {newpoint >> emptywindow};

@@ -11,7 +11,7 @@ let g: ((a -> a) & b) -> b = fn x => x
 let using Action
 let ur: WholeModel a -> Unit = fn _ => ()
 :type ur
-:type newMem.WholeModel >>= fn model => return (model, ())
-:type newMem.WholeModel >>= fn model => return (model, ((fn _ => ()) : WholeModel a -> Unit) model)
-:type fn model => return (model, ur model)
-:type newMem.WholeModel >>= fn model => return (model, ur model)
+:type newMem.WholeModel >>= fn model => pure (model, ())
+:type newMem.WholeModel >>= fn model => pure (model, ((fn _ => ()) : WholeModel a -> Unit) model)
+:type fn model => pure (model, ur model)
+:type newMem.WholeModel >>= fn model => pure (model, ur model)

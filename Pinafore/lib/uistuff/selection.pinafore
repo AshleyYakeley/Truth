@@ -34,7 +34,7 @@ namespace Pane of
     notebook: WholeModel +Text -> List Pane -> Action Pane
     = fn title, panes => do
         tabModel <- newMem.WholeModel;
-        return $ let
+        pure $ let
             makePage: Pane -> Element *: Element
             = fn MkPane rname ui _ => uiPage rname ui;
             nui: Element = notebook.GTK tabModel $ map.List makePage panes;
@@ -52,12 +52,12 @@ namespace Pane of
         Action Pane
     = fn title, iset, createMenuItems, iopen, iui => do
         selection <- newMem.WholeModel;
-        return $ let
+        pure $ let
             viewItem: Action Unit
             = do
                 item <- get.WholeModel selection;
                 iopen item;
-                return ();
+                pure ();
                 end;
 
             deleteItem: Action Unit
@@ -168,7 +168,7 @@ runUIStuff: (UIStuff -> Action a) -> Action a
                     clip <- get.WholeModel $ clipboard gtk;
                     clip >- match
                         text:? Text => tmodel :=.WholeModel text;
-                        _ => return ();
+                        _ => pure ();
                     end;
                 end;
                 mbar: Element
