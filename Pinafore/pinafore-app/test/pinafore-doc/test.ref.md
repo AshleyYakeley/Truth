@@ -1,14 +1,14 @@
 # test
 
-<code>type </code>**<code>A</code>**<code> {-q,+p} +r -s</code>
+<code>type </code>**<code>A</code>**<code> {\-q,\+p} \+r \-s</code>
 
 > doc:A
 > 
-> **<code>MkA1</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; A</code>
+> **<code>MkA1</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> A</code>
 > 
 > > doc:MkA1
 > > 
-> **<code>MkA2</code>**<code> : p -&gt; (s -&gt; r) -&gt; A</code>
+> **<code>MkA2</code>**<code> : p \-\> (s \-\> r) \-\> A</code>
 > 
 > > doc:MkA2
 > > 
@@ -16,17 +16,17 @@
 
 > doc:B
 > 
-<code>subtype A Integer Unit Unit &lt;: B</code>
+<code>subtype A Integer Unit Unit \<: B</code>
 
-<code>type </code>**<code>RecA</code>**<code> {-q,+p} +r -s</code>
+<code>type </code>**<code>RecA</code>**<code> {\-q,\+p} \+r \-s</code>
 
 > doc:RecA
 > 
-> **<code>MkRecA1</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; RecA</code>
+> **<code>MkRecA1</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> RecA</code>
 > 
 > > doc:MkRecA1
 > > 
-> **<code>MkRecA2</code>**<code> : p -&gt; (s -&gt; r) -&gt; RecA</code>
+> **<code>MkRecA2</code>**<code> : p \-\> (s \-\> r) \-\> RecA</code>
 > 
 > > doc:MkRecA2
 > > 
@@ -34,7 +34,7 @@
 
 > doc:RecB
 > 
-<code>subtype RecA Integer Unit Unit &lt;: RecB</code>
+<code>subtype RecA Integer Unit Unit \<: RecB</code>
 
 <code>type </code>**<code>R</code>**
 
@@ -44,7 +44,7 @@
 > 
 > > doc:MkR
 > > 
-> > **<code>rp</code>**<code> : Integer -&gt; a -&gt; a</code>
+> > **<code>rp</code>**<code> : Integer \-\> a \-\> a</code>
 > > 
 > > > doc:rp
 > > > 
@@ -56,7 +56,7 @@
 
 > doc:x
 > 
-**<code>y</code>**<code> : Text -&gt; Text</code>
+**<code>y</code>**<code> : Text \-\> Text</code>
 
 > doc:y
 > 
@@ -64,67 +64,67 @@
 
 > doc:N
 > 
-> **<code>q.N</code>**<code> : Integer</code>
+> **<code>q\.N</code>**<code> : Integer</code>
 > 
 > > doc:N.q
 > > 
-> **<code>xx.N</code>**<code> : Text</code>
+> **<code>xx\.N</code>**<code> : Text</code>
 > 
 > > doc:N.xx
 > > 
-> <code>type </code>**<code>NmA.N</code>**<code> {-q,+p} +r -s</code>
+> <code>type </code>**<code>NmA\.N</code>**<code> {\-q,\+p} \+r \-s</code>
 > 
 > > doc:NmA
 > > 
-> > **<code>MkNmA1.N</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; NmA.N</code>
+> > **<code>MkNmA1\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmA\.N</code>
 > > 
 > > > doc:MkNmA1
 > > > 
-> > **<code>MkNmA2.N</code>**<code> : p -&gt; (s -&gt; r) -&gt; NmA.N</code>
+> > **<code>MkNmA2\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmA\.N</code>
 > > 
 > > > doc:MkNmA2
 > > > 
-> <code>type </code>**<code>NmB.N</code>**
+> <code>type </code>**<code>NmB\.N</code>**
 > 
 > > doc:NmB
 > > 
-> > **<code>MkNmB.N</code>**<code> : Integer -&gt; NmB.N</code>
+> > **<code>MkNmB\.N</code>**<code> : Integer \-\> NmB\.N</code>
 > > 
 > > > doc:MkNmB
 > > > 
-> <code>subtype NmA Integer Unit Unit &lt;: NmB</code>
+> <code>subtype NmA Integer Unit Unit \<: NmB</code>
 > 
-> <code>type </code>**<code>NmRecA.N</code>**<code> {-q,+p} +r -s</code>
+> <code>type </code>**<code>NmRecA\.N</code>**<code> {\-q,\+p} \+r \-s</code>
 > 
 > > doc:NmRecA
 > > 
-> > **<code>MkNmRecA1.N</code>**<code> : (q -&gt; s -&gt; p) -&gt; r -&gt; NmRecA.N</code>
+> > **<code>MkNmRecA1\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmRecA\.N</code>
 > > 
 > > > doc:MkNmRecA1
 > > > 
-> > **<code>MkNmRecA2.N</code>**<code> : p -&gt; (s -&gt; r) -&gt; NmRecA.N</code>
+> > **<code>MkNmRecA2\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmRecA\.N</code>
 > > 
 > > > doc:MkNmRecA2
 > > > 
-> <code>type </code>**<code>NmRecB.N</code>**
+> <code>type </code>**<code>NmRecB\.N</code>**
 > 
 > > doc:NmRecB
 > > 
-> > **<code>MkNmRecB.N</code>**<code> : Integer -&gt; NmRecB.N</code>
+> > **<code>MkNmRecB\.N</code>**<code> : Integer \-\> NmRecB\.N</code>
 > > 
 > > > doc:MkNmRecB
 > > > 
-> <code>subtype NmRecA Integer Unit Unit &lt;: NmRecB</code>
+> <code>subtype NmRecA Integer Unit Unit \<: NmRecB</code>
 > 
-> <code>type </code>**<code>NmR.N</code>**
+> <code>type </code>**<code>NmR\.N</code>**
 > 
 > > doc:NmR
 > > 
-> > **<code>MkNmR.N</code>**<code> : NmR.N</code>
+> > **<code>MkNmR\.N</code>**<code> : NmR\.N</code>
 > > 
 > > > doc:MkNmR
 > > > 
-> > > **<code>nmrp</code>**<code> : Integer -&gt; a -&gt; a</code>
+> > > **<code>nmrp</code>**<code> : Integer \-\> a \-\> a</code>
 > > > 
 > > > > doc:nmrp
 > > > > 
@@ -132,9 +132,9 @@
 > > > 
 > > > > doc:nmrq
 > > > > 
-> <code>namespace </code>**<code>NN.N</code>**
+> <code>namespace </code>**<code>NN\.N</code>**
 > 
-> > **<code>xyz.NN.N</code>**<code> : Unit</code>
+> > **<code>xyz\.NN\.N</code>**<code> : Unit</code>
 > > 
 > > > doc:N.NN.xyz
 > > > 
