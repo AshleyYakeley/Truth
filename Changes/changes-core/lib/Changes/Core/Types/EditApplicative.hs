@@ -6,6 +6,7 @@ import Changes.Core.Lens
 import Changes.Core.Read
 import Changes.Core.Resource
 import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Reject
 import Changes.Core.Types.Tuple.Pair
 import Changes.Core.Types.Whole
 
@@ -26,6 +27,12 @@ instance EditApplicative (FloatingChangeLens update) where
     eaPure a = changeLensToFloating $ constChangeLens a
     eaMap lens = (.) $ changeLensToFloating lens
     eaPair = pairCombineFloatingChangeLenses
+
+eaPureRejecting ::
+       forall f update. (EditApplicative f, SubjectReader (UpdateReader update))
+    => UpdateSubject update
+    -> f update
+eaPureRejecting subj = eaMap fromReadOnlyRejectingChangeLens $ eaPure subj
 
 eaMapSemiReadOnly ::
        forall f updateA updateB. EditApplicative f
