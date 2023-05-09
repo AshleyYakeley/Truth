@@ -132,7 +132,11 @@ baseLibSections =
       , headingBDT
             "Showable"
             ""
-            [ typeBDT "Showable" "Something that can be represented as `Text`." (MkSomeGroundType showableGroundType) []
+            [ typeBDT
+                  "Showable"
+                  "Something that can be represented as `Text`."
+                  (MkSomeGroundType showableGroundType)
+                  [valPatBDT "MkShowable" "" MkShowable $ PureFunction $ \(MkShowable t) -> (t, ())]
             , namespaceBDT "Showable" "" [nameInRootBDT $ valBDT "show" "Show something as `Text`" $ textShow @Showable]
             ]
       , headingBDT
