@@ -1,8 +1,9 @@
 #!/usr/bin/env -S bash -e
+nix daemon 2> /dev/null &
+sleep 1
 USERID=`stat -c %u stack.yaml`
-# nix-build nix/setup.nix
 USER=user
 HOME=/home/$USER
+mkdir -p $HOME
 chown $USERID:$USERID $HOME
-setpriv --reuid $USERID bash
-# stack --no-docker --nix build
+setpriv --reuid $USERID $*
