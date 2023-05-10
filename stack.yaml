@@ -29,7 +29,7 @@ packages:
 - Pinafore/pinafore-gnome
 - Pinafore/pinafore-app
 
-resolver: lts-20.17
+resolver: nightly-2023-05-10
 
 allow-newer: true
 

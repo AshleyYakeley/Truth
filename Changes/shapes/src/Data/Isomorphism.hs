@@ -80,10 +80,6 @@ instance HasKindMorphism kq => HasKindMorphism (kp -> kq) where
                    KindMorphism cat a b -> KindMorphism cat b a -> KindIsomorphism cat a b
     mkKindIsomorphism (MkNestedMorphism ab) (MkNestedMorphism ba) = MkNestedMorphism $ mkKindIsomorphism @_ @cat ab ba
 
-instance HasKindMorphism Constraint where
-    kindMorphismMapCat ab (MkConstraintMorphism a) = MkConstraintMorphism $ ab a
-    mkKindIsomorphism (MkConstraintMorphism ab) (MkConstraintMorphism ba) = MkConstraintMorphism $ MkIsomorphism ab ba
-
 instance (HasKindMorphism kp, HasKindMorphism kq) => HasKindMorphism (kp, kq) where
     kindMorphismMapCat ab (MkPairMorphism pa qa) = MkPairMorphism (kindMorphismMapCat ab pa) (kindMorphismMapCat ab qa)
     mkKindIsomorphism ::

@@ -20,15 +20,6 @@ instance Category (KindMorphism cat :: kq -> kq -> Type) =>
 
 type instance KindMorphism cat = NestedMorphism cat
 
-newtype ConstraintMorphism (cat :: Type -> Type -> Type) (a :: Constraint) (b :: Constraint) =
-    MkConstraintMorphism (cat (Dict a) (Dict b))
-
-type instance KindMorphism cat = ConstraintMorphism cat
-
-instance Category cat => Category (ConstraintMorphism cat) where
-    id = MkConstraintMorphism id
-    (MkConstraintMorphism f) . (MkConstraintMorphism g) = MkConstraintMorphism $ f . g
-
 type family Fst (a :: (kp, kq)) :: kp where
     Fst '( p, q) = p
 
