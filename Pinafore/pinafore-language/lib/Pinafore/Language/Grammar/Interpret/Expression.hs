@@ -27,7 +27,7 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 
 type instance EntryDoc QTypeSystem = DefDoc

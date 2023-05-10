@@ -9,7 +9,7 @@ f: WholeModel a -> Unit
 = fn _ => ();
 
 in do
-    (model,_) <- newMem.WholeModel >>= fn model => return (model, f model);
+    (model,_) <- newMem.WholeModel >>= fn model => pure (model, f model);
     model := e1;
     e2 <- get model;
     checkEntity.Debug "CHECK e1" e1;

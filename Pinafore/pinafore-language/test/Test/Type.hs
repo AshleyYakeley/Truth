@@ -273,23 +273,23 @@ testType =
                           "let rec g : a -> a = f; f : a -> a = fn x => x end in (f 3, g \"t\")"
                           "{} -> Integer *: Text"
                     , textTypeTest
-                          "do i1 <- return.Action. $.Function fn x => x; return.Action. i1; end"
+                          "do i1 <- pure.Action. $.Function fn x => x; pure.Action. i1; end"
                           "{} -> Action (a -> a)"
                     , textTypeTest
-                          "do i1 <- return.Action. $.Function fn x => x; i2 <- return.Action. i1; return.Action. i2; end"
+                          "do i1 <- pure.Action. $.Function fn x => x; i2 <- pure.Action. i1; pure.Action. i2; end"
                           "{} -> Action (a -> a)"
-                    , rejectionTest "do i1 <- return.Action. $.Function fn x => x; return.Action. (i1 : a -> a); end"
+                    , rejectionTest "do i1 <- pure.Action. $.Function fn x => x; pure.Action. (i1 : a -> a); end"
                     , textTypeTest
-                          "do i1 <- return.Action. $.Function fn x => x; return.Action. (i1 : Text -> Text); end"
+                          "do i1 <- pure.Action. $.Function fn x => x; pure.Action. (i1 : Text -> Text); end"
                           "{} -> Action (Text -> Text)"
                     , textTypeTest "fn x => let y = x in y" "{} -> a -> a"
                     , rejectionTest "fn x => let y : a -> a = x in y"
                     , rejectionTest
-                          "do r <- newMem.WholeModel; (r: WholeModel a) := 3; t <- get (r: WholeModel a); return.Action. $.Function textLength t end"
+                          "do r <- newMem.WholeModel; (r: WholeModel a) := 3; t <- get (r: WholeModel a); pure.Action. $.Function textLength t end"
                     , rejectionTest
-                          "do r <- newMem.WholeModel; let r1: WholeModel a = r in r1 := 3; t <- let r1: WholeModel a = r in get r1; return.Action. $.Function textLength t end"
+                          "do r <- newMem.WholeModel; let r1: WholeModel a = r in r1 := 3; t <- let r1: WholeModel a = r in get r1; pure.Action. $.Function textLength t end"
                     , rejectionTest
-                          "do r <- newMem.WholeModel; (r1: WholeModel a) <- return.Action. r; r1 := 3; t <- get r1; return.Action. $.Function textLength t end"
+                          "do r <- newMem.WholeModel; (r1: WholeModel a) <- pure.Action. r; r1 := 3; t <- get r1; pure.Action. $.Function textLength t end"
                     ]
               , textTypeTest "let f : Entity = Nothing in f" "{} -> Entity"
               , textTypeTest "let f : Entity -> Entity = Just in f" "{} -> Entity -> Entity"
@@ -344,13 +344,13 @@ testType =
                     , textTypeTest "fn x => let using Integer; y = x + x in y" "{} -> Integer -> Integer"
                     , textTypeTest "fn x => let using Integer; y = x + x in ()" "{} -> Any -> Unit"
                     , textTypeTest
-                          "fn x => let subtype Unit <: Action Integer = fn () => return.Action. x in ()"
+                          "fn x => let subtype Unit <: Action Integer = fn () => pure.Action. x in ()"
                           "{} -> Any -> Unit"
                     , textTypeTest
-                          "fn x => let subtype Unit <: Action Integer = fn () => return.Action. x in ((): Action Integer)"
+                          "fn x => let subtype Unit <: Action Integer = fn () => pure.Action. x in ((): Action Integer)"
                           "{} -> Integer -> Action Integer"
                     , textTypeTest
-                          "let subtype Unit <: Action Integer = fn () => return.Action. x in ((): Action Integer)"
+                          "let subtype Unit <: Action Integer = fn () => pure.Action. x in ((): Action Integer)"
                           "{x : b & Integer} -> Action Integer"
                     ]
               ]

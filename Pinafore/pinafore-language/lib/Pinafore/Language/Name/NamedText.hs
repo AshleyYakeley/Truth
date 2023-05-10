@@ -5,7 +5,7 @@ import Pinafore.Language.Name.FullNameRef
 import Pinafore.Language.Name.Name
 import Pinafore.Language.Name.Namespace
 import Pinafore.Language.Name.NamespaceRef
-import Pinafore.Language.Name.ToText
+import Pinafore.Text
 import Shapes
 
 data NamedTextItem

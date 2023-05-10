@@ -7,6 +7,7 @@ import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Type
+import Pinafore.Text
 import Shapes
 
 type Storability :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type

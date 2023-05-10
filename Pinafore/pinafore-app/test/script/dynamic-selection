@@ -27,7 +27,7 @@ debugThing t action = do
     message.Debug $ t <> ": [";
     a <- action;
     message.Debug $ t <> ": ]";
-    return a;
+    pure a;
     end;
 
 in debugThing "SCRIPT" $ do
@@ -38,7 +38,7 @@ in debugThing "SCRIPT" $ do
         dynamic.GTK $ coMapWholeModel (\e -> run.GTK $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
-            return $ vertical.GTK [(True,label.GTK {"Set Text"})];
+            pure $ vertical.GTK [(True,label.GTK {"Set Text"})];
             end) selection
         ;
     debugWindow window;

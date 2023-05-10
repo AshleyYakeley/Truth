@@ -273,6 +273,7 @@ elementStuff =
               "A user interface element is something that goes inside a window."
               (MkSomeGroundType elementGroundType)
               []
+        , typeBDT "LayoutElement" "An Element in the context of a layout." (MkSomeGroundType layoutElementGroundType) []
         , hasSubtypeRelationBDT @LangElement @LangLayoutElement Verify "" $
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , valBDT "exec" "Element that runs an Action first." uiExec
@@ -292,11 +293,9 @@ elementStuff =
               "Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference." $
           uiTextArea
         , valBDT "label" "Label." uiLabel
-        , valBDT "horizontal" "Items arranged horizontally, each flag is whether to expand into remaining space." $
-          uiLayout OrientationHorizontal
-        , valBDT "vertical" "Items arranged vertically, each flag is whether to expand into remaining space." $
-          uiLayout OrientationVertical
-        , valBDT "layoutGrow" "Grow layout element." layoutGrow
+        , valBDT "horizontal" "Elements laid out horizontally." $ uiLayout OrientationHorizontal
+        , valBDT "vertical" "Elements laid out vertically." $ uiLayout OrientationVertical
+        , valBDT "layoutGrow" "Allow the element to expand into remaining space within the layout." layoutGrow
         , valBDT
               "notebook"
               "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."

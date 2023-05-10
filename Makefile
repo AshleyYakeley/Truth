@@ -12,7 +12,7 @@ else
 JOBFLAGS := --keep-going
 endif
 
-STACKFLAGS := $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
+STACKFLAGS := --stack-root $$PWD/.stack-root $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
 ifeq ($(test),1)
 TESTFLAGS :=
@@ -106,7 +106,7 @@ PACKAGEVERSION := 0.4
 PACKAGEREVISION := 1
 PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
-DEBIANREL := buster
+DEBIANREL := bullseye
 
 .build/deb/$(PACKAGEFULLNAME).deb: \
 		${BINPATH}/pinafore \
@@ -142,16 +142,16 @@ DEBIANREL := buster
 		deb/control.m4 > $(PACKAGEDIR)/DEBIAN/control
 	stack $(STACKFLAGS) exec --cwd $(PACKAGEDIR) -- md5sum $$(cd $(PACKAGEDIR) && find * -type f -not -path 'DEBIAN/*') > $(PACKAGEDIR)/DEBIAN/md5sums
 	chmod -R g-w $(PACKAGEDIR)
-	stack $(STACKFLAGS) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build $(PACKAGEFULLNAME)
+	stack $(STACKFLAGS) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build -Zxz $(PACKAGEFULLNAME)
 	stack $(STACKFLAGS) exec -- \
 		lintian \
-		--no-tag-display-limit \
+		--tag-display-limit 0 \
 		--display-info \
 		--fail-on info \
 		--suppress-tags-from-file deb/lintian-ignore \
 		.build/deb/$(PACKAGEFULLNAME).deb
 
-TESTDISTROS := ubuntu:18.04 ubuntu:22.04 bitnami/minideb:$(DEBIANREL)
+TESTDISTROS := ubuntu:20.04 ubuntu:22.04 bitnami/minideb:$(DEBIANREL)
 
 out/pinafore.deps: ${BINPATH}/pinafore out
 	ldd $< > $@
@@ -163,12 +163,15 @@ deps: out/pinafore.deps
 out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest out
 	install -m 755 deb/installtest .build/deb/
 	install -m 755 deb/checkscript .build/deb/
-	for distro in $(TESTDISTROS); do docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it $$distro /home/installtest $(PACKAGEFULLNAME).deb `id -u` || break; done
+	for distro in $(TESTDISTROS); do echo DISTRO: $$distro; docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it $$distro /home/installtest $(PACKAGEFULLNAME).deb `id -u` || exit $$?; done
 	cp $< $@
 
 .PHONY: deb
 
 deb: out/$(PACKAGEFULLNAME).deb
+
+nix-flake: out
+	nix build -o out/nix-flake .?submodules=1
 
 LIBMODULES := \
     pinafore \
@@ -248,4 +251,7 @@ clean:
 	rm -rf mkdocs/generated
 	rm -rf mkdocs/docs/library
 	rm -rf Changes/changes-gnome/examples/showImages/images
-	stack $(STACKFLAGS) clean
+	rm -rf .stack-work
+
+full-clean: clean
+	rm -rf .stack-root

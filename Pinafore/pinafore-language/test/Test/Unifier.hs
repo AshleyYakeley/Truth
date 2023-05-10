@@ -328,12 +328,12 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression
-                                    "do r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then return.Action () else fail.Action \"different\"; end"
+                                    "do r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     testerLiftAction action
               , runScriptTestTree $
                 testExpectSuccess
-                    "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then return.Action () else fail.Action \"different\"; end"
+                    "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
               ]
         ]

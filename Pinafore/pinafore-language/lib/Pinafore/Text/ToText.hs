@@ -1,4 +1,4 @@
-module Pinafore.Language.Name.ToText where
+module Pinafore.Text.ToText where
 
 import Language.Expression.Common
 import Shapes

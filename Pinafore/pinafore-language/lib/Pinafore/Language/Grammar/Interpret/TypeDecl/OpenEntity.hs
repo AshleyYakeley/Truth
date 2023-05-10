@@ -4,7 +4,7 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
 
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 
 makeOpenEntityTypeBox :: FullName -> RawMarkdown -> QInterpreter (QFixBox () ())

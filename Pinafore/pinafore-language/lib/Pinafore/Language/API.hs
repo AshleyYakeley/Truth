@@ -1,5 +1,5 @@
 module Pinafore.Language.API
-    ( module Pinafore.Markdown
+    ( module Pinafore.Text
     , module Pinafore.Language.Name
     , module Pinafore.Language.Var
     , module Pinafore.Language.Library.Defs
@@ -48,4 +48,4 @@ import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Markdown
+import Pinafore.Text

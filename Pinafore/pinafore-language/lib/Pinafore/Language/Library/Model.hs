@@ -191,6 +191,8 @@ modelLibSection =
                     , nameInRootBDT $ valBDT "-=" "Remove an entity from a set." $ langSetModelRemove @A
                     , nameInRootBDT $
                       valBDT "member" "A model of the membership of a value in a set." $ langSetModelMember @A
+                    , valBDT "empty" "The immutable empty set." $ langSetModelEmpty @Entity
+                    , valBDT "full" "The immutable full set." $ langSetModelFull @Entity
                     , valBDT
                           "not"
                           "Complement of a set. The resulting set can be added to (deleting from the original set) and deleted from (adding to the original set)." $

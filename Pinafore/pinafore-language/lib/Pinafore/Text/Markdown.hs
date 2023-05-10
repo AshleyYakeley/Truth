@@ -1,4 +1,4 @@
-module Pinafore.Markdown
+module Pinafore.Text.Markdown
     ( PlainText(..)
     , RawMarkdown
     , asRawMarkdown
@@ -15,7 +15,7 @@ module Pinafore.Markdown
     , indentMarkdownN
     ) where
 
-import Pinafore.Language.Name
+import Pinafore.Text.ToText
 import Shapes
 
 class PlainText t where
@@ -84,29 +84,20 @@ instance Show MarkdownText where
 mItem :: MItem -> MarkdownText
 mItem = MkMarkdownText . pure
 
-escapeChars :: [Char] -> Text -> Text
-escapeChars badchars t = let
+escapeChars :: Text -> Text
+escapeChars t = let
     escapeChar :: Char -> String
     escapeChar '\n' = "  \n"
     escapeChar c =
-        if elem c badchars
+        if elem c ("\\+*&<>_`#.-[]" :: [Char])
             then ['\\', c]
             else [c]
     in pack $ mconcat $ fmap escapeChar $ unpack t
 
-htmlChar :: Char -> String
-htmlChar '&' = "&amp;"
-htmlChar '<' = "&lt;"
-htmlChar '>' = "&gt;"
-htmlChar c = [c]
-
-htmlEscape :: Text -> Text
-htmlEscape t = pack $ mconcat $ fmap htmlChar $ unpack t
-
 instance ToText MItem where
     toText (RawMI t) = toText t
-    toText (PlainMI t) = escapeChars "\\+*<>_`#.-[]" t
-    toText (CodeMI t) = "<code>" <> htmlEscape t <> "</code>"
+    toText (PlainMI t) = escapeChars t
+    toText (CodeMI t) = "<code>" <> escapeChars t <> "</code>"
     toText (BoldMI m) = "**" <> toText m <> "**"
     toText (ItalicMI m) = "_" <> toText m <> "_"
     toText (TagMI tagname params m) =

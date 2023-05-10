@@ -19,7 +19,7 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 import Shapes.Unsafe (unsafeGetRefl, unsafeRefl)
 

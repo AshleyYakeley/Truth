@@ -13,7 +13,7 @@ testNamespace =
         , "using Action"
         , "using Entity"
         , "using Showable"
-        , "pass = return ()"
+        , "pass = pure ()"
         , "test = fn b => if b then pass else fail \"wrong\""
         ] $
     tGroup

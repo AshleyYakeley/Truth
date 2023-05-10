@@ -5,6 +5,11 @@ version: *pinafore_version
 
 <<: *language
 
+flags:
+    gitversion:
+        manual: true
+        default: true
+
 extra-doc-files: examples/*
 
 library:
@@ -16,10 +21,14 @@ library:
       - directory
       - filepath
       - xdg-basedir
-      - githash
       - pinafore-language
       - pinafore-media
       - pinafore-gnome
+    when:
+      - condition: flag(gitversion)
+        dependencies:
+          - githash
+        cpp-options: -DFLAG_GITVERSION
     exposed-modules:
       - Pinafore.Version
       - Pinafore.Options

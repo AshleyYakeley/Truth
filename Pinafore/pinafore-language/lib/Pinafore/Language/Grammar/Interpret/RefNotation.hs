@@ -65,7 +65,7 @@ refNotationQuote rexpr =
     lift $ do
         (expr, binds) <- runWriterT rexpr
         lift $ do
-            purerefExpr <- qName "return.WholeModel."
+            purerefExpr <- qName "pure.WholeModel."
             aexpr <- qAbstractsExpr (fmap fst binds) expr
             raexpr <- qApplyExpr purerefExpr aexpr
             aplist raexpr $ fmap snd binds

@@ -42,7 +42,7 @@ mkNamed: UIStuff -> NamedStuff
 
     namedTable = fn sm, onActivate, msel => exec $ do
         lm <- getList.FiniteSetModel nameOrder sm;
-        return.Action $ listTable [nameColumn] lm onActivate msel;
+        pure.Action $ listTable [nameColumn] lm onActivate msel;
         end;
 
     namedItemTable = fn set, iui, msel =>

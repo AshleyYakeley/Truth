@@ -64,7 +64,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.VarID
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 import Text.Parsec.Pos (SourcePos, initialPos)
 

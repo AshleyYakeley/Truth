@@ -1,7 +1,11 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Install
-    - install on Ubuntu 18.04, 21.04, Debian buster
+    - Debian package works on:
+      . Ubuntu 20.04 LTS "focal"
+      . Ubuntu 22.04 LTS "jammy"
+      . Debian 11 "bullseye"
+    - add Nix flake
   * Language
     - overhaul of declarations
       . separate namespaces from modules,

@@ -43,6 +43,16 @@ langSetModelImmutable :: forall a. LangSetModel a -> LangSetModel a
 langSetModelImmutable (MkLangSetModel eq sv) =
     MkLangSetModel eq $ eaMap (fromReadOnlyRejectingChangeLens . toReadOnlyChangeLens) sv
 
+langSetModelEmpty ::
+       forall a. Eq a
+    => LangSetModel a
+langSetModelEmpty = MkLangSetModel (==) $ eaPureRejecting $ \_ -> False
+
+langSetModelFull ::
+       forall a. Eq a
+    => LangSetModel a
+langSetModelFull = MkLangSetModel (==) $ eaPureRejecting $ \_ -> True
+
 langSetModelComplement :: forall a. LangSetModel a -> LangSetModel a
 langSetModelComplement (MkLangSetModel eq sv) = let
     mapset :: ReaderSet (UpdateReader (SetUpdate a)) -> ReaderSet (UpdateReader (SetUpdate a))

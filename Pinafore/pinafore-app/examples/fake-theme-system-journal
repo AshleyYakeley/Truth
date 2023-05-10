@@ -20,7 +20,7 @@ frontCoverPane: Pane
 = simple.Pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
 getThemesPane: Action Pane
-= return $ simple.Pane "Themes" $ blank;
+= pure $ simple.Pane "Themes" $ blank;
 
 daysPane: Pane
 = simple.Pane "Days" $ blank;

@@ -25,17 +25,17 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
     scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat
     [
         source navy $ %(toMaybe.WholeModel ref) >- match
-            Nothing => return $ onClick $ ref := ProgressPartial;
-            Just ProgressNone => return $ onClick $ ref := ProgressPartial;
+            Nothing => pure $ onClick $ ref := ProgressPartial;
+            Just ProgressNone => pure $ onClick $ ref := ProgressPartial;
             Just ProgressPartial => concat
                 [
                     let using Path in fill $ concat [arc (0,0) 1 0 pi, close],
-                    return $ onClick $ ref := ProgressDone
+                    pure $ onClick $ ref := ProgressDone
                 ];
             Just ProgressDone => concat
                 [
                     let using Path in fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
-                    return $ onClick $ ref := ProgressNone
+                    pure $ onClick $ ref := ProgressNone
                 ];
         end,
         let using Path in stroke $ concat

@@ -11,7 +11,7 @@ toggleStopwatch: WholeModel +Time -> WholeModel StopwatchState -> Action Unit
 = fn now, r => do
     n <- get now;
     oldstate <- get r;
-    newstate <- return $ oldstate >- match
+    newstate <- pure $ oldstate >- match
         StoppedState d => RunningState $ negate.Duration d +.Time n;
         RunningState t => StoppedState $ n -.Time t
         end;

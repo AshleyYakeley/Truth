@@ -7,6 +7,7 @@ import Shapes.Test
 import Test.Entity
 import Test.Interactive
 import Test.Language
+import Test.Markdown
 import Test.Module
 import Test.Name
 import Test.Namespace
@@ -26,7 +27,8 @@ main = do
         tests =
             testTree
                 "pinafore-language"
-                [ testNames
+                [ testMarkdown
+                , testNames
                 , testToken
                 , testType
                 , testLanguage

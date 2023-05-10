@@ -6,6 +6,7 @@ module Pinafore.Options
 import Pinafore
 import Pinafore.Libs
 import Shapes
+import System.Environment.XDG.BaseDir
 import System.FilePath
 
 data RunOptions = MkRunOptions
@@ -14,14 +15,12 @@ data RunOptions = MkRunOptions
     , roDataDir :: Maybe FilePath
     } deriving (Eq, Show)
 
-stdIncludeDirs :: FilePath -> [FilePath]
-stdIncludeDirs pinaforedir = [pinaforedir </> "lib", "/usr/local/share/pinafore/lib", "/usr/share/pinafore/lib"]
-
 getStorageModelOptions :: MonadIO m => RunOptions -> m (StorageModelOptions, ModuleOptions)
 getStorageModelOptions MkRunOptions {..} = do
     smoDataDir <- getPinaforeDir roDataDir
+    sysIncludeDirs <- liftIO $ getSystemDataDirs "pinafore/lib"
     let
         smoCache = roCache
         moExtraLibrary = extraLibrary
-        moModuleDirs = roIncludeDirs <> stdIncludeDirs smoDataDir
+        moModuleDirs = roIncludeDirs <> [smoDataDir </> "lib"] <> sysIncludeDirs
     return (MkStorageModelOptions {..}, MkModuleOptions {..})

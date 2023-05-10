@@ -22,7 +22,7 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Markdown
+import Pinafore.Text
 import Shapes
 import Shapes.Numeric
 import qualified Text.Collate
@@ -132,7 +132,11 @@ baseLibSections =
       , headingBDT
             "Showable"
             ""
-            [ typeBDT "Showable" "Something that can be represented as `Text`." (MkSomeGroundType showableGroundType) []
+            [ typeBDT
+                  "Showable"
+                  "Something that can be represented as `Text`."
+                  (MkSomeGroundType showableGroundType)
+                  [valPatBDT "MkShowable" "" MkShowable $ PureFunction $ \(MkShowable t) -> (t, ())]
             , namespaceBDT "Showable" "" [nameInRootBDT $ valBDT "show" "Show something as `Text`" $ textShow @Showable]
             ]
       , headingBDT

@@ -1,5 +1,5 @@
 module Pinafore.Documentation
-    ( module Pinafore.Markdown
+    ( module Pinafore.Text
     , DefDoc(..)
     , DocItem(..)
     , operatorFixity
@@ -16,4 +16,4 @@ import Pinafore.Language.DefDoc
 import Pinafore.Language.Grammar
 import Pinafore.Language.Library
 import Pinafore.Language.Name
-import Pinafore.Markdown
+import Pinafore.Text
