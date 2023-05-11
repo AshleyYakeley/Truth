@@ -6,6 +6,16 @@ import Data.GI.Base.GType
 import GI.GObject
 import Shapes
 
+-- workaround for GNOME version hell
+class GIToText a where
+    giToText :: a -> Text
+
+instance GIToText Text where
+    giToText t = t
+
+instance GIToText (Maybe Text) where
+    giToText mt = fromMaybe "" mt
+
 getObjectType :: (MonadIO m, GObject a) => a -> m GType
 getObjectType v = liftIO $ gtypeFromInstance v
 
@@ -18,7 +28,7 @@ getTypeParent t = do
             else Just p
 
 getTypeName :: MonadIO m => GType -> m Text
-getTypeName t = typeName t
+getTypeName t = fmap giToText $ typeName t
 
 getTypeAncestry :: MonadIO m => GType -> m [GType]
 getTypeAncestry t = do

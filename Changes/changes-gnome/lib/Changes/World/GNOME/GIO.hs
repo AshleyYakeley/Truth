@@ -3,6 +3,7 @@ module Changes.World.GNOME.GIO
     ) where
 
 import Changes.Core
+import Changes.World.GNOME.GI
 import qualified GI.GLib as GI
 import qualified GI.GObject as GI
 import qualified GI.Gio as GI
@@ -31,16 +32,6 @@ setLength h len = GI.seekableTruncate h len noCancellable
 
 seek :: MonadIO m => GI.FileIOStream -> Int64 -> m ()
 seek h i = GI.seekableSeek h i GI.SeekTypeSet noCancellable
-
--- workaround for GNOME version hell
-class GIToText a where
-    giToText :: a -> Text
-
-instance GIToText Text where
-    giToText t = t
-
-instance GIToText (Maybe Text) where
-    giToText mt = fromMaybe "" mt
 
 getMIMEType :: MonadIO m => GI.FileIOStream -> GI.File -> m Text
 getMIMEType _h path = do
