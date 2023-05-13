@@ -1038,6 +1038,16 @@ testEntity =
                                 ]
                           ]
                     , tDecls
+                          [ "datatype UU of MkUU of r1: Unit; r2: Unit; end end"
+                          , "testf = fn f1, a1, f2, a2 => let r1 = f1 a1; r2 = f2 a2; in MkUU"
+                          ] $
+                      tGroup
+                          "issue-192"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess $ isOfType "testf" "(a -> Unit) -> a -> (a -> Unit) -> a -> UU"
+                          , testExpectSuccess $ isOfType "testf" "(a -> Unit) -> a -> (b -> Unit) -> b -> UU"
+                          ]
+                    , tDecls
                           [ "datatype R of MkR of df: (a -> a) -> a -> a end end"
                           , "twice = fn f, x => f (f x)"
                           , "addone: Integer -> Integer = fn x => x + 1"
