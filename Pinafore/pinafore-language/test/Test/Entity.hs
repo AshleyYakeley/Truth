@@ -1039,13 +1039,19 @@ testEntity =
                           ]
                     , tDecls
                           [ "datatype UU of MkUU of r1: Unit; r2: Unit; end end"
-                          , "testf = fn f1, a1, f2, a2 => let r1 = f1 a1; r2 = f2 a2; in MkUU"
+                          , "testr = fn f1, a1, f2, a2 => let r1 = f1 a1; r2 = f2 a2; in MkUU"
+                          , "testrs = fn f1, a1, f2, a2 => let r1:Unit = f1 a1; r2:Unit = f2 a2; in MkUU"
+                          , "testps = fn f1, a1, f2, a2 => let r1:Unit = f1 a1; r2:Unit = f2 a2; in (r1,r2)"
                           ] $
                       tGroup
                           "issue-192"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess $ isOfType "testf" "(a -> Unit) -> a -> (a -> Unit) -> a -> UU"
-                          , testExpectSuccess $ isOfType "testf" "(a -> Unit) -> a -> (b -> Unit) -> b -> UU"
+                          , testExpectSuccess $ isOfType "testr" "(a -> Unit) -> a -> (a -> Unit) -> a -> UU"
+                          , testExpectSuccess $ isOfType "testr" "(a -> Unit) -> a -> (b -> Unit) -> b -> UU"
+                          , testExpectSuccess $ isOfType "testrs" "(a -> Unit) -> a -> (a -> Unit) -> a -> UU"
+                          , testExpectSuccess $ isOfType "testrs" "(a -> Unit) -> a -> (b -> Unit) -> b -> UU"
+                          , testExpectSuccess $ isOfType "testps" "(a -> Unit) -> a -> (a -> Unit) -> a -> Unit *: Unit"
+                          , testExpectSuccess $ isOfType "testps" "(a -> Unit) -> a -> (b -> Unit) -> b -> Unit *: Unit"
                           ]
                     , tDecls
                           [ "datatype R of MkR of df: (a -> a) -> a -> a end end"
