@@ -8,32 +8,31 @@ import Language.Expression.Common.Rename.VarNamespaceT
 import Shapes
 
 {-
-The renamer renames names in types.
+The renamer renames variables in types.
 
-By names, we mean type variables.
 Renaming type variables involves unsafe coercions.
 Getting renaming wrong can break these coercions.
 If you're seeing broken anchors, this is one place to check.
 
-All names come from namespaces.
-All the names in a type are in the same namespace.
+The renamer maps variables from source namespaces into a destination namespace.
+All the variables in a type are in the same namespace.
 Sometimes more than one type is in one namespace.
 (Don't confuse type variable namespaces with declaration namespaces.)
 
-Namespaces are of three kinds:
-* fixed
-* renameable rigid
-* renameable free
+The destination namespace may already have variables in it, known as fixed variables.
+These are not renamed.
+Variables in source namespaces are "renameable".
 
-Fixed names are not renamed, while renameable names are.
-At most one namespace can be fixed (otherwise names in them would clash).
-Names in the fixed namespace may be rigid or free.
-The lists of fixed rigid names and fixed free names are passed to runRenamer (and don't change).
-
-The renamer keeps track of which names are free and which are rigid for the benefit of the unifier (renamerGetNameRigidity),
+Each variable is either either rigid or free.
+The renamer keeps track of which for the benefit of the unifier (renamerGetNameRigidity),
 but otherwise doesn't care about the difference.
-In the unifier, free names (from inferred types) can be assigned to types and can be inverted,
-while rigid names (forall-quantified from type signatures) cannot be.
+
+Each source namespace is either rigid or free, so all the variables from it are too.
+
+The lists of fixed rigid variables and fixed free variables are passed to runRenamer (and don't change).
+
+In the unifier, free variables (from inferred types) can be assigned to types and can be inverted,
+while rigid variables (forall-quantified from type signatures) cannot be.
 -}
 data RenamerState = MkRenamerState
     { rsRigidNames :: [String]
