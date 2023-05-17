@@ -1,9 +1,10 @@
 module Language.Expression.Common.Rename.RenameTypeSystem
     ( RenameTypeSystem(..)
-    , rename
-    , renameSimple
+    , renameMappable
+    , renameMappableSimple
+    , renameType
     , renameTypeSignature
-    , finalRename
+    , finalRenameMappable
     , NewVar(..)
     , namespaceRenameType
     , typeSignatureNames
@@ -59,10 +60,10 @@ namespaceRenameType =
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
                 Dict -> varRename $ namespaceRenameTypeVar @ts
 
-finalRename ::
+finalRenameMappable ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
     => EndoM (RenamerT ts m) a
-finalRename = MkEndoM $ \a -> finalRenamer @ts $ renameSimple @ts a
+finalRenameMappable = MkEndoM $ \a -> finalRenamer @ts $ renameMappableSimple @ts a
 
 renameNegShimWit ::
        forall ts m. (RenameTypeSystem ts, Monad m)
@@ -82,28 +83,37 @@ renamePosShimWit =
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
                 Dict -> endoShimWit $ namespaceRenameType @ts
 
-rename ::
+renameMappable ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
     => [String]
     -> NameRigidity
     -> a
     -> RenamerT ts m a
-rename fixedNames rigid a =
+renameMappable fixedNames rigid a =
     withTransConstraintTM @Monad $
     namespace @ts fixedNames rigid $
     withTransConstraintTM @Monad $ unEndoM (mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts)) a
 
-renameSimple ::
+renameMappableSimple ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
     => a
     -> RenamerT ts m a
-renameSimple = rename @ts [] FreeName
+renameMappableSimple = renameMappable @ts [] FreeName
 
 typeSignatureNames ::
        forall ts. RenameTypeSystem ts
     => Some (TSPosWitness ts)
     -> [String]
 typeSignatureNames (MkSome t) = renameableVars t
+
+renameType ::
+       forall ts m a. (RenameTypeSystem ts, Monad m, VarRenameable a)
+    => [String]
+    -> NameRigidity
+    -> EndoM (RenamerT ts m) a
+renameType fixedNames rigid =
+    case hasTransConstraint @Monad @(RenamerT ts) @m of
+        Dict -> hoistEndoM (namespace @ts fixedNames rigid) $ namespaceRenameType @ts
 
 renameTypeSignature ::
        forall ts m. (RenameTypeSystem ts, Monad m)

@@ -62,7 +62,7 @@ unifierSubstituteSimplifyFinalRename ::
        forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
     => UnifierSubstitutions ts
     -> EndoM (TSOuter ts) a
-unifierSubstituteSimplifyFinalRename subs = mconcat [unifierSubstitute @ts subs, simplify @ts, finalRename @ts]
+unifierSubstituteSimplifyFinalRename subs = mconcat [unifierSubstitute @ts subs, simplify @ts, finalRenameMappable @ts]
 
 unifierSolve ::
        forall ts a b. (AbstractTypeSystem ts, TSMappable ts b)
@@ -134,7 +134,7 @@ abstractSealedExpression ::
 abstractSealedExpression absw name sexpr =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression twt expr <- renameSimple @ts sexpr
+        MkSealedExpression twt expr <- renameMappableSimple @ts sexpr
         MkAbstractResult vwt uexpr' <- abstractResult @ts name expr
         unifierSolve @ts uexpr' $ \rexpr -> return $ MkSealedExpression (absw (mkShimWit vwt) twt) rexpr
 
@@ -147,8 +147,8 @@ applySealedExpression ::
 applySealedExpression appw sexprf sexpra =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression tf exprf <- renameSimple @ts sexprf
-        MkSealedExpression ta expra <- renameSimple @ts sexpra
+        MkSealedExpression tf exprf <- renameMappableSimple @ts sexprf
+        MkSealedExpression ta expra <- renameMappableSimple @ts sexpra
         MkNewVar vx tx <- renameNewFreeVar @ts
         let vax = appw ta vx
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts tf) (uuLiftNegShimWit @ts vax)
@@ -170,8 +170,8 @@ letSealedExpression ::
 letSealedExpression name sexpre sexprb =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression te expre <- renameSimple @ts sexpre
-        MkSealedExpression tb exprb <- renameSimple @ts sexprb
+        MkSealedExpression te expre <- renameMappableSimple @ts sexpre
+        MkSealedExpression tb exprb <- renameMappableSimple @ts sexprb
         MkSolverExpression uconv exprf <- abstractExpression @ts name te exprb
         unifierSolve @ts (solverExpressionLiftType uconv) $ \convexpr ->
             return $ MkSealedExpression tb $ exprf <*> convexpr <*> expre
@@ -184,8 +184,8 @@ bothSealedPattern ::
 bothSealedPattern spat1 spat2 =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
-        MkSealedPattern tw1 pat1 <- renameSimple @ts spat1
-        MkSealedPattern tw2 pat2 <- renameSimple @ts spat2
+        MkSealedPattern tw1 pat1 <- renameMappableSimple @ts spat1
+        MkSealedPattern tw2 pat2 <- renameMappableSimple @ts spat2
         MkShimWit tr (MkPolarMap uconv) <-
             unifyUUNegShimWit @ts (uuLiftNegExpressionShimWit @ts tw1) (uuLiftNegExpressionShimWit @ts tw2)
         unifierSolve @ts (uuGetShim @ts uconv) $ \convexpr ->
@@ -204,11 +204,11 @@ applyPatternConstructor ::
 applyPatternConstructor patcon patarg =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
-        MkPatternConstructor (MkExpressionWitness pcw pcconvexpr) pclt pcpat <- renameSimple @ts patcon
+        MkPatternConstructor (MkExpressionWitness pcw pcconvexpr) pclt pcpat <- renameMappableSimple @ts patcon
         case pclt of
             NilListType -> lift $ throw PatternTooManyConsArgsError
             ConsListType pca pcla -> do
-                MkSealedPattern (MkExpressionWitness ta tconvexpr) pata <- renameSimple @ts patarg
+                MkSealedPattern (MkExpressionWitness ta tconvexpr) pata <- renameMappableSimple @ts patarg
                 uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts pca) (uuLiftNegShimWit @ts ta)
                 unifierSolve @ts uconv $ \convexpr ->
                     return $
@@ -263,7 +263,7 @@ tsPartialExpressionSumList [] = return $ partialExpressionZero @ts
 tsPartialExpressionSumList [e] = return e
 tsPartialExpressionSumList rawee =
     runRenamer @ts [] [] $ do
-        ee <- for rawee $ renameSimple @ts
+        ee <- for rawee $ renameMappableSimple @ts
         partialExpressionSumList @ts ee
 
 tsLambdaPatternMatch :: forall ts. TSVarID ts -> TSSealedExpressionPattern ts -> TSMatch ts
@@ -277,8 +277,8 @@ tsExpressionPatternMatch ::
     -> TSInner ts (TSMatch ts)
 tsExpressionPatternMatch rawexpr rawpat =
     runRenamer @ts [] [] $ do
-        MkSealedExpression etw expr <- renameSimple @ts rawexpr
-        MkSealedPattern (MkExpressionWitness ptw pexpr) opat <- renameSimple @ts rawpat
+        MkSealedExpression etw expr <- renameMappableSimple @ts rawexpr
+        MkSealedPattern (MkExpressionWitness ptw pexpr) opat <- renameMappableSimple @ts rawpat
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts etw) (uuLiftNegShimWit @ts ptw)
         unifierSolve @ts uconv $ \convexpr ->
             return $
@@ -291,8 +291,8 @@ tsMatchGate ::
     -> TSInner ts (TSSealedPartialExpression ts)
 tsMatchGate rawmatch rawexpr =
     runRenamer @ts [] [] $ do
-        MkSealedPattern pexpr (MkPattern _ (MkPurityFunction ppurity (Kleisli pf))) <- renameSimple @ts rawmatch
-        MkSealedExpression (MkPartialWit epurity etype) expr <- renameSimple @ts rawexpr
+        MkSealedPattern pexpr (MkPattern _ (MkPurityFunction ppurity (Kleisli pf))) <- renameMappableSimple @ts rawmatch
+        MkSealedExpression (MkPartialWit epurity etype) expr <- renameMappableSimple @ts rawexpr
         return $
             purityTypeProduct ppurity epurity $ \purity pconv econv ->
                 purityIs @Monad purity $

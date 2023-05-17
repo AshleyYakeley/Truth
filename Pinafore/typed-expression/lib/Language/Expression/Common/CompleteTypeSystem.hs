@@ -62,7 +62,7 @@ tsUnifyExpressionTo ::
     -> TSInner ts (TSOpenExpression ts t)
 tsUnifyExpressionTo witn (MkSealedExpression witp expr) =
     runRenamer @ts (renameableVars witn) [] $ do
-        witp' <- renameSimple @ts witp
+        witp' <- renameMappableSimple @ts witp
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
         unifierSolve @ts uconv $ \convexpr -> return $ liftA2 shimToFunction convexpr expr
 
@@ -73,7 +73,7 @@ tsUnifyValueTo ::
     -> TSInner ts t
 tsUnifyValueTo witn (MkSomeOf witp val) =
     runRenamer @ts (renameableVars witn) [] $ do
-        witp' <- renameSimple @ts witp
+        witp' <- renameMappableSimple @ts witp
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
         convexpr <- unifierSolve @ts uconv return
         conv <- lift $ evalExpression convexpr
@@ -87,8 +87,8 @@ tsUnifyValueToFree ::
 tsUnifyValueToFree (MkSomeOf witp val) = let
     witn = fromPolarShimWit
     in runRenamer @ts [] [] $ do
-           witp' <- renameSimple @ts witp
-           witn' <- renameSimple @ts witn
+           witp' <- renameMappableSimple @ts witp
+           witn' <- renameMappableSimple @ts witn
            uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn')
            convexpr <- unifierSolve @ts uconv return
            conv <- lift $ evalExpression convexpr
@@ -107,7 +107,7 @@ tsUnifyF ::
     -> TSInner ts (TSValueF ts f)
 tsUnifyF mapwit (MkSomeOf witp val) =
     runRenamer @ts [] [] $ do
-        witp' <- renameSimple @ts witp
+        witp' <- renameMappableSimple @ts witp
         MkNewVar varn varp <- renameNewFreeVar @ts
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts (mapwit varn))
         convexpr <- unifierSolve @ts uconv return
@@ -182,7 +182,7 @@ tsSingleBinding ::
 tsSingleBinding name bd madecltype expr =
     singleBinding name bd $ do
         madecltype' <- unEndoM (endoFor $ renameTypeSignature @ts) madecltype
-        expr' <- renameSimple @ts expr
+        expr' <- renameMappableSimple @ts expr
         subsumerExpression madecltype' expr'
 
 tsSubsumeExpressionTo ::
@@ -196,7 +196,7 @@ tsSubsumeExpressionTo freevars tdecl expr = let
     freenames = fmap someTypeVarName $ toList freevars
     rigidnames = fixednames \\ freenames
     in runRenamer @ts rigidnames freenames $ do
-           expr' <- renameSimple @ts expr
+           expr' <- renameMappableSimple @ts expr
            subsumeExpressionTo @ts tdecl expr'
 
 tsSubsumeExpression ::
@@ -207,7 +207,7 @@ tsSubsumeExpression ::
 tsSubsumeExpression tdecl expr =
     runRenamer @ts (typeSignatureNames @ts tdecl) [] $
     withTransConstraintTM @Monad $ do
-        expr' <- renameSimple @ts expr
+        expr' <- renameMappableSimple @ts expr
         subsumeExpression @ts tdecl expr'
 
 tsUncheckedRecursiveLet ::
