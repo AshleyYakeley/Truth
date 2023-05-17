@@ -6,9 +6,7 @@ module Language.Expression.Common.Rename.VarNamespaceT
     , VarNamespaceT
     , runVarNamespaceT
     , varNamespaceTRename
-    , varNamespaceTLocal
     , varNamespaceTRenameUVar
-    , varNamespaceTLocalUVar
     ) where
 
 import Language.Expression.Common.Rename.Rigidity
@@ -27,13 +25,18 @@ renamerGenerateFree = renamerGenerate FreeName
 
 renamerGenerateFreeUVar ::
        forall m. RenamerMonad m
-    => m AnyVar
+    => m SomeTypeVarT
 renamerGenerateFreeUVar = do
     newname <- renamerGenerateFree
-    return $ newUVarAny newname
+    return $ newTypeVar newname MkSomeTypeVarT
+
+data VNContext = MkVNContext
+    { vncFixedNames :: [String]
+    , vncRigidity :: NameRigidity
+    }
 
 newtype VarNamespaceT (ts :: Type) m a =
-    MkVarNamespaceT (ReaderT NameRigidity (StateT [(String, String)] m) a)
+    MkVarNamespaceT (ReaderT VNContext (StateT [(String, String)] m) a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail)
 
 instance MonadTrans (VarNamespaceT ts) where
@@ -48,12 +51,12 @@ instance TransConstraint MonadIO (VarNamespaceT ts) where
 instance TransConstraint MonadFail (VarNamespaceT ts) where
     hasTransConstraint = Dict
 
-runVarNamespaceT :: RenamerMonad m => NameRigidity -> VarNamespaceT ts m a -> m a
-runVarNamespaceT rigid (MkVarNamespaceT ma) = evalStateT (runReaderT ma rigid) []
+runVarNamespaceT :: RenamerMonad m => [String] -> NameRigidity -> VarNamespaceT ts m a -> m a
+runVarNamespaceT fixedNames rigid (MkVarNamespaceT ma) = evalStateT (runReaderT ma (MkVNContext fixedNames rigid)) []
 
 varNamespaceTAddName :: RenamerMonad m => String -> VarNamespaceT ts m String
 varNamespaceTAddName oldname = do
-    rigid <- MkVarNamespaceT ask
+    rigid <- MkVarNamespaceT $ asks vncRigidity
     pairs <- MkVarNamespaceT $ lift get
     newname <- lift $ renamerGenerate rigid
     MkVarNamespaceT $ lift $ put $ (oldname, newname) : pairs
@@ -62,47 +65,17 @@ varNamespaceTAddName oldname = do
 varNamespaceTRename :: RenamerMonad m => String -> VarNamespaceT ts m String
 varNamespaceTRename oldname = do
     pairs <- MkVarNamespaceT $ lift get
-    case lookup oldname pairs of
-        Just newname -> return newname
-        Nothing -> varNamespaceTAddName oldname
-
--- | add a new mapping, even if one already exists for the old name
-varNamespaceTAddMapping :: Monad m => String -> String -> VarNamespaceT ts m ()
-varNamespaceTAddMapping oldname newname = do
-    pairs <- MkVarNamespaceT $ lift get
-    MkVarNamespaceT $ lift $ put $ (oldname, newname) : pairs
-
--- | remove a mapping (just one) for an old name
-varNamespaceTRemoveMapping :: Monad m => String -> VarNamespaceT ts m ()
-varNamespaceTRemoveMapping oldname =
-    MkVarNamespaceT $
-    lift $ do
-        oldmaps <- get
-        let newmaps = deleteFirstMatching (\(n, _) -> oldname == n) oldmaps
-        put newmaps
-
--- | Use this for variable quantifiers (e.g. rec, forall)
-varNamespaceTLocal :: RenamerMonad m => String -> (String -> VarNamespaceT ts m a) -> VarNamespaceT ts m a
-varNamespaceTLocal oldname call = do
-    newname <- lift $ renamerGenerate FreeName
-    varNamespaceTAddMapping oldname newname
-    a <- call newname
-    varNamespaceTRemoveMapping oldname
-    lift $ renamerRemoveName newname
-    return a
+    fixedNames <- MkVarNamespaceT $ asks vncFixedNames
+    if elem oldname fixedNames
+        then return oldname
+        else case lookup oldname pairs of
+                 Just newname -> return newname
+                 Nothing -> varNamespaceTAddName oldname
 
 varNamespaceTRenameUVar ::
        forall k name ts m. RenamerMonad m
     => SymbolType name
-    -> VarNamespaceT ts m (VarType (UVar k name))
+    -> VarNamespaceT ts m (TypeVar (UVar k name))
 varNamespaceTRenameUVar oldvar = do
     newname <- varNamespaceTRename $ uVarName oldvar
-    return $ newAssignUVar newname
-
--- | Use this for variable quantifiers (e.g. rec, forall)
-varNamespaceTLocalUVar ::
-       forall k name ts m a. RenamerMonad m
-    => SymbolType name
-    -> (VarType (UVar k name) -> VarNamespaceT ts m a)
-    -> VarNamespaceT ts m a
-varNamespaceTLocalUVar oldvar call = varNamespaceTLocal (uVarName oldvar) $ \newname -> call $ newAssignUVar newname
+    return $ newAssignTypeVar newname

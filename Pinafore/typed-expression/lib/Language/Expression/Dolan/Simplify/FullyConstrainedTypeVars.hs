@@ -15,45 +15,44 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier
 import Shapes
 
-type UsageWitness :: GroundTypeKind -> Symbol -> Type -> Type
-data UsageWitness ground name a where
+type UsageWitness :: GroundTypeKind -> Type -> Type -> Type
+data UsageWitness ground tv a where
     MkUsageWitness
-        :: forall (ground :: GroundTypeKind) polarity name a.
+        :: forall (ground :: GroundTypeKind) polarity tv a.
            PolarityType polarity
         -> DolanType ground polarity a
-        -> UsageWitness ground name (DolanPolarMap ground polarity (UVarT name) a)
+        -> UsageWitness ground tv (DolanPolarMap ground polarity tv a)
 
-instance forall (ground :: GroundTypeKind) name a. IsDolanGroundType ground => Show (UsageWitness ground name a) where
+instance forall (ground :: GroundTypeKind) tv a. IsDolanGroundType ground => Show (UsageWitness ground tv a) where
     show (MkUsageWitness p t) = show p <> withDict (getRepWitness p) (showDolanType t)
 
-instance forall (ground :: GroundTypeKind) name. IsDolanGroundType ground =>
-             AllConstraint Show (UsageWitness ground name) where
+instance forall (ground :: GroundTypeKind) tv. IsDolanGroundType ground => AllConstraint Show (UsageWitness ground tv) where
     allConstraint = Dict
 
 type ExpressionPolyShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
 type ExpressionPolyShim w = PolyComposeShim (Expression w)
 
-type ExpressionShimWit :: (GroundTypeKind -> Polarity -> Type -> Type) -> GroundTypeKind -> Polarity -> Symbol -> Type -> Type
-type ExpressionShimWit w ground polarity name
-     = PShimWit (ExpressionPolyShim (UsageWitness ground name) (DolanPolyShim ground) Type) (w ground) polarity
+type ExpressionShimWit :: (GroundTypeKind -> Polarity -> Type -> Type) -> GroundTypeKind -> Polarity -> Type -> Type -> Type
+type ExpressionShimWit w ground polarity tv
+     = PShimWit (ExpressionPolyShim (UsageWitness ground tv) (DolanPolyShim ground) Type) (w ground) polarity
 
 nilUsageBox ::
-       forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
-    => ExpressionShimWit DolanType ground polarity name (LimitType polarity)
+       forall (ground :: GroundTypeKind) polarity tv. (IsDolanGroundType ground, Is PolarityType polarity)
+    => ExpressionShimWit DolanType ground polarity tv (LimitType polarity)
 nilUsageBox = nilDolanShimWit
 
 consMeetUsageBox ::
-       forall (ground :: GroundTypeKind) polarity name a b. (IsDolanGroundType ground, Is PolarityType polarity)
-    => ExpressionShimWit DolanSingularType ground polarity name a
-    -> ExpressionShimWit DolanType ground polarity name b
-    -> ExpressionShimWit DolanType ground polarity name (JoinMeetType polarity a b)
+       forall (ground :: GroundTypeKind) polarity tv a b. (IsDolanGroundType ground, Is PolarityType polarity)
+    => ExpressionShimWit DolanSingularType ground polarity tv a
+    -> ExpressionShimWit DolanType ground polarity tv b
+    -> ExpressionShimWit DolanType ground polarity tv (JoinMeetType polarity a b)
 consMeetUsageBox (MkShimWit ta expra) (MkShimWit tb exprb) = MkShimWit (ConsDolanType ta tb) $ iPolarPair expra exprb
 
 buildUsageThis ::
-       forall (ground :: GroundTypeKind) polarity name a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
     -> DolanType ground polarity a
-    -> ExpressionShimWit DolanType ground polarity name a
+    -> ExpressionShimWit DolanType ground polarity tv a
 buildUsageThis n t =
     case getTVarUsage n t of
         Just (MkTVarUsage (MkShimWit tw convw) convr) ->
@@ -65,39 +64,39 @@ buildUsageThis n t =
         Nothing -> mkPolarShimWit t
 
 buildUsageSingular ::
-       forall (ground :: GroundTypeKind) polarity name a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
     -> DolanSingularType ground polarity a
-    -> ExpressionShimWit DolanSingularType ground polarity name a
+    -> ExpressionShimWit DolanSingularType ground polarity tv a
 buildUsageSingular n t@(RecursiveDolanSingularType n' _)
     | Just Refl <- testEquality n n' = mkPolarShimWit t
 buildUsageSingular n t = mapDolanSingularType (buildUsage n) t
 
 buildUsageInside ::
-       forall (ground :: GroundTypeKind) polarity name a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
     -> DolanType ground polarity a
-    -> ExpressionShimWit DolanType ground polarity name a
+    -> ExpressionShimWit DolanType ground polarity tv a
 buildUsageInside _ NilDolanType = nilUsageBox
 buildUsageInside n (ConsDolanType t1 tr) = consMeetUsageBox (buildUsageSingular n t1) (buildUsageInside n tr)
 
 buildUsage ::
-       forall (ground :: GroundTypeKind) polarity name a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
     -> DolanType ground polarity a
-    -> ExpressionShimWit DolanType ground polarity name a
+    -> ExpressionShimWit DolanType ground polarity tv a
 buildUsage n t = chainPolarShimWit (buildUsageInside n) $ buildUsageThis n t
 
-type UsageSolution :: GroundTypeKind -> Symbol -> Type -> Type
-data UsageSolution ground name t =
+type UsageSolution :: GroundTypeKind -> Type -> Type -> Type
+data UsageSolution ground tv t =
     forall a b. MkUsageSolution (InvertedCombinedDolanType ground 'Negative a)
                                 (InvertedCombinedDolanType ground 'Positive b)
-                                (DolanShim ground a (UVarT name) -> DolanShim ground (UVarT name) b -> t)
+                                (DolanShim ground a tv -> DolanShim ground tv b -> t)
 
-instance forall (ground :: GroundTypeKind) name. Functor (UsageSolution ground name) where
+instance forall (ground :: GroundTypeKind) tv. Functor (UsageSolution ground tv) where
     fmap c (MkUsageSolution n p f) = MkUsageSolution n p $ \nconv pconv -> c $ f nconv pconv
 
-instance forall (ground :: GroundTypeKind) name. IsDolanGroundType ground => Applicative (UsageSolution ground name) where
+instance forall (ground :: GroundTypeKind) tv. IsDolanGroundType ground => Applicative (UsageSolution ground tv) where
     pure a = MkUsageSolution NilInvertedCombinedDolanType NilInvertedCombinedDolanType $ \_ _ -> a
     liftA2 c (MkUsageSolution na pa fa) (MkUsageSolution nb pb fb) =
         case joinMeetInvertedCombinedType na nb of
@@ -110,9 +109,9 @@ instance forall (ground :: GroundTypeKind) name. IsDolanGroundType ground => App
                                 (fb (nconv . convn . join2) (meet2 . convp . pconv))
 
 solveUsageWitness ::
-       forall (ground :: GroundTypeKind) name t. IsDolanGroundType ground
-    => UsageWitness ground name t
-    -> UsageSolution ground name t
+       forall (ground :: GroundTypeKind) tv t. IsDolanGroundType ground
+    => UsageWitness ground tv t
+    -> UsageSolution ground tv t
 solveUsageWitness (MkUsageWitness PositiveType tw) =
     MkUsageSolution NilInvertedCombinedDolanType (ConsInvertedCombinedDolanType tw NilInvertedCombinedDolanType) $ \_ conv ->
         MkPolarMap $ meet1 . conv
@@ -121,16 +120,16 @@ solveUsageWitness (MkUsageWitness NegativeType tw) =
         MkPolarMap $ conv . join1
 
 solveUsageExpression ::
-       forall (ground :: GroundTypeKind) name t. IsDolanGroundType ground
-    => Expression (UsageWitness ground name) t
-    -> UsageSolution ground name t
+       forall (ground :: GroundTypeKind) tv t. IsDolanGroundType ground
+    => Expression (UsageWitness ground tv) t
+    -> UsageSolution ground tv t
 solveUsageExpression expr = solveExpression solveUsageWitness expr
 
 getUsageSolution ::
-       forall (ground :: GroundTypeKind) polarity name a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
     -> DolanType ground polarity a
-    -> UsageSolution ground name (DolanShimWit ground polarity a)
+    -> UsageSolution ground tv (DolanShimWit ground polarity a)
 getUsageSolution var t =
     case buildUsage var t of
         MkShimWit t' expr -> fmap (MkShimWit t') $ solveUsageExpression @ground $ polarUnPolyComposeShim expr
@@ -171,21 +170,21 @@ testInvertedCombinedSubtype negtype postype =
         evalExpression expr
 
 reduceUsageSolution ::
-       forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
-    => SymbolType name
-    -> UsageSolution ground name t
+       forall (ground :: GroundTypeKind) tv t. IsDolanSubtypeGroundType ground
+    => TypeVarT tv
+    -> UsageSolution ground tv t
     -> DolanM ground (Maybe t)
 reduceUsageSolution var (MkUsageSolution (n :: _ a) p f) = do
     mconv <- testInvertedCombinedSubtype n p
-    return $ fmap (\conv -> assignUVarT @a var $ f id conv) mconv
+    return $ fmap (\conv -> assignTypeVarT @a var $ f id conv) mconv
 
 eliminateVariable ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => Some SymbolType
+    => SomeTypeVarT
     -> a
     -> DolanM ground (a, Bool)
-eliminateVariable (MkSome var) a = do
+eliminateVariable (MkSomeTypeVarT var) a = do
     ma' <-
         reduceUsageSolution var $
         unEndoM (mapPShimWitsM (getUsageSolution @ground var) (getUsageSolution @ground var)) a
@@ -197,7 +196,7 @@ eliminateVariable (MkSome var) a = do
 eliminateVariables ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => [Some SymbolType]
+    => [SomeTypeVarT]
     -> a
     -> DolanM ground (a, Bool)
 eliminateVariables [] t = return (t, False)
@@ -214,7 +213,7 @@ keepEliminatingVariables ::
     -> DolanM ground a
 keepEliminatingVariables a = do
     let
-        (setFromList @(FiniteSet (Some SymbolType)) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
+        (setFromList @(FiniteSet SomeTypeVarT) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
         allvars = toList $ union posvars negvars
     (a', elimflag) <- eliminateVariables @ground allvars a
     if elimflag

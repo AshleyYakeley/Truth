@@ -33,8 +33,8 @@ mergeSharedTypeVars =
     Endo $ \expr -> let
         (posuses, neguses) = mappableGetVarUses @ground expr
         in case findShare posuses <|> findShare neguses of
-               Just (MkSome (va :: SymbolType na), MkSome (vb :: SymbolType nb)) ->
-                   assignUVarT @(UVarT na) vb $ let
+               Just (MkSomeTypeVarT (va :: TypeVarT tva), MkSomeTypeVarT (vb :: TypeVarT tvb)) ->
+                   assignTypeVarT @tva vb $ let
                        bisub :: Bisubstitution ground (DolanShim ground) Identity
                        bisub = MkBisubstitution False vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
                        in appEndo (mergeSharedTypeVars @ground <> endoMToEndo (bisubstitutes @ground [bisub])) expr

@@ -1,9 +1,10 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE ApplicativeDo #-}
 
 module Language.Expression.Dolan.Rename
-    ( dolanNamespaceRename
+    ( dolanArgumentsVarRename
     , dolanNamespaceRenameArguments
-    , dolanNamespaceTypeNames
+    , renameableVars
     ) where
 
 import Data.Shim
@@ -42,70 +43,66 @@ dolanNamespaceRenameArguments ::
 dolanNamespaceRenameArguments = pureMapDolanArgumentsM dolanNamespaceRename
 
 dolanNamespaceRename ::
-       forall (ground :: GroundTypeKind) m t. (NamespaceRenamable (DolanTypeSystem ground) t, Monad m)
+       forall (ground :: GroundTypeKind) m t. (IsDolanGroundType ground, VarRenameable t, Monad m)
     => EndoM (VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m)) t
 dolanNamespaceRename = namespaceRename @(DolanTypeSystem ground)
 
-dolanNamespaceTypeNames ::
-       forall (ground :: GroundTypeKind) t. (NamespaceRenamable (DolanTypeSystem ground) t)
-    => t
-    -> [String]
-dolanNamespaceTypeNames = namespaceTypeNames @(DolanTypeSystem ground)
-
-typeNamesArguments ::
-       forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanArguments dv (DolanType ground) gt polarity t
-    -> [String]
-typeNamesArguments = execEndoMWriter $ pureMapDolanArgumentsM $ tellEndoM $ dolanNamespaceTypeNames @ground
+dolanArgumentsVarRename ::
+       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv) polarity m.
+       (IsDolanGroundType ground, Monad m, Is PolarityType polarity)
+    => EndoM' m TypeVarT
+    -> EndoM' m (DolanArguments dv (DolanType ground) gt polarity)
+dolanArgumentsVarRename ev = pureMapDolanArgumentsM $ varRename ev
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             NamespaceRenamable (DolanTypeSystem ground) (DolanGroundedType ground polarity t) where
-    namespaceRename =
+             VarRenameable (DolanGroundedType ground polarity t) where
+    varRename ev =
         MkEndoM $ \(MkDolanGroundedType gt args) -> do
-            args' <- unEndoM dolanNamespaceRenameArguments args
+            args' <- unEndoM (dolanArgumentsVarRename ev) args
             return $ MkDolanGroundedType gt args'
-    namespaceTypeNames (MkDolanGroundedType _ args) = typeNamesArguments args
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             NamespaceRenamable (DolanTypeSystem ground) (DolanSingularType ground polarity t) where
-    namespaceRename =
+             VarRenameable (DolanSingularType ground polarity t) where
+    varRename ev =
         MkEndoM $ \case
             GroundedDolanSingularType t -> do
-                t' <- unEndoM dolanNamespaceRename t
+                t' <- unEndoM (varRename ev) t
                 return $ GroundedDolanSingularType t'
             VarDolanSingularType oldvar -> do
-                MkVarType newvar <- varNamespaceTRenameUVar @Type oldvar
+                newvar <- unEndoM (varRename ev) oldvar
                 return $ VarDolanSingularType newvar
-            RecursiveDolanSingularType oldvar st -> do
-                varNamespaceTLocalUVar @Type oldvar $ \(MkVarType newvar) -> do
-                    st' <- unEndoM (dolanNamespaceRename @ground) st
-                    return $ RecursiveDolanSingularType newvar st'
-    namespaceTypeNames (GroundedDolanSingularType t) = dolanNamespaceTypeNames @ground t
-    namespaceTypeNames (VarDolanSingularType var) = [uVarName var]
-    namespaceTypeNames (RecursiveDolanSingularType var t) = uVarName var : dolanNamespaceTypeNames @ground t
+            RecursiveDolanSingularType var st -> do
+                var' <- unEndoM (varRename ev) var
+                let
+                    ev' :: EndoM' _ TypeVarT
+                    ev' =
+                        MkEndoM $ \v ->
+                            case testEquality v var of
+                                Just Refl -> pure var'
+                                Nothing -> unEndoM ev v
+                st' <- unEndoM (varRename ev') st
+                return $ RecursiveDolanSingularType var' st'
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             NamespaceRenamable (DolanTypeSystem ground) (DolanType ground polarity t) where
-    namespaceRename =
+             VarRenameable (DolanType ground polarity t) where
+    varRename ev =
         MkEndoM $ \case
-            NilDolanType -> return NilDolanType
+            NilDolanType -> pure NilDolanType
             ConsDolanType ta tb -> do
-                ta' <- unEndoM (dolanNamespaceRename @ground) ta
-                tb' <- unEndoM (dolanNamespaceRename @ground) tb
+                ta' <- unEndoM (varRename ev) ta
+                tb' <- unEndoM (varRename ev) tb
                 return $ ConsDolanType ta' tb'
-    namespaceTypeNames NilDolanType = []
-    namespaceTypeNames (ConsDolanType t1 tr) = dolanNamespaceTypeNames @ground t1 <> dolanNamespaceTypeNames @ground tr
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
     type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
     type RenamerNamespaceT (DolanTypeSystem ground) = VarNamespaceT (DolanTypeSystem ground)
     renameNegWitness = dolanNamespaceRename @ground
     renamePosWitness = dolanNamespaceRename @ground
-    typeNamesNegWitness = dolanNamespaceTypeNames @ground
-    typeNamesPosWitness = dolanNamespaceTypeNames @ground
+    typeNamesNegWitness = renameableVars
+    typeNamesPosWitness = renameableVars
     renameNewFreeVar = do
         n <- renamerGenerateFree
-        newUVar n $ \wit -> return $ MkNewVar (varDolanShimWit wit) (varDolanShimWit wit)
-    namespace nr = runVarNamespaceT nr
+        newTypeVar n $ \v -> return $ MkNewVar (varDolanShimWit v) (varDolanShimWit v)
+    namespace fn rgd = runVarNamespaceT fn rgd
     runRenamer = runVarRenamerT
     finalRenamer = finalVarRenamerT

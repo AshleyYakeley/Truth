@@ -24,7 +24,7 @@ invertPositiveSingular ::
     => DolanSingularType ground 'Negative a
     -> Maybe (DolanShimWit ground 'Positive a)
 invertPositiveSingular (VarDolanSingularType v) =
-    case ?rigidity $ witnessToValue v of
+    case ?rigidity $ typeVarName v of
         FreeName -> Just $ varDolanShimWit v
         RigidName -> Nothing
 invertPositiveSingular (GroundedDolanSingularType t) = invertPositiveGrounded t
@@ -54,7 +54,7 @@ invertNegativeSingular ::
     => DolanSingularType ground 'Positive a
     -> Maybe (DolanShimWit ground 'Negative a)
 invertNegativeSingular (VarDolanSingularType v) =
-    case ?rigidity $ witnessToValue v of
+    case ?rigidity $ typeVarName v of
         FreeName -> Just $ varDolanShimWit v
         RigidName -> Nothing
 invertNegativeSingular (GroundedDolanSingularType t) = invertNegativeGrounded t

@@ -16,10 +16,10 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 unrollRecursiveType ::
-       forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
-    -> DolanType ground polarity (UVarT name)
-    -> DolanIsoShimWit ground polarity (UVarT name)
+       forall (ground :: GroundTypeKind) polarity tv. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
+    -> DolanType ground polarity tv
+    -> DolanIsoShimWit ground polarity tv
 unrollRecursiveType var pt =
     invertPolarity @polarity $ let
         rt = RecursiveDolanSingularType var pt
@@ -48,10 +48,10 @@ data RecursiveOrPlainType ground polarity t where
            DolanType ground polarity t
         -> RecursiveOrPlainType ground polarity t
     RecursiveType
-        :: forall (ground :: GroundTypeKind) polarity name.
-           SymbolType name
-        -> DolanType ground polarity (UVarT name)
-        -> RecursiveOrPlainType ground polarity (UVarT name)
+        :: forall (ground :: GroundTypeKind) polarity tv.
+           TypeVarT tv
+        -> DolanType ground polarity tv
+        -> RecursiveOrPlainType ground polarity tv
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              TestEquality (RecursiveOrPlainType ground polarity) where

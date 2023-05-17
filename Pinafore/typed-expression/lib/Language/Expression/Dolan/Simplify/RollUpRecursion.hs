@@ -22,10 +22,9 @@ data RollUp ground where
         -> RollUp ground
 
 mkRollUp ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity) name.
-       (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
-    -> DolanType ground polarity (UVarT name)
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) tv. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
+    -> DolanType ground polarity tv
     -> RollUp ground
 mkRollUp var rolled =
     case unrollRecursiveType var rolled of

@@ -4,18 +4,18 @@ import Data.Shim
 import Language.Expression.Common.TypeVariable
 import Shapes
 
-type Mapping :: Symbol -> Type -> Type
-newtype Mapping n t =
-    MkMapping (Kleisli Endo (UVarT n -> UVarT n) t)
+type Mapping :: Type -> Type -> Type
+newtype Mapping tv t =
+    MkMapping (Kleisli Endo (tv -> tv) t)
     deriving (Semigroup, Monoid, Invariant, Summable, Productable)
 
-mkMapping :: ((UVarT n -> UVarT n) -> t -> t) -> Mapping n t
+mkMapping :: ((tv -> tv) -> t -> t) -> Mapping tv t
 mkMapping f = MkMapping $ Kleisli $ \vv -> Endo $ f vv
 
-runMapping :: Mapping n t -> (UVarT n -> UVarT n) -> t -> t
+runMapping :: Mapping tv t -> (tv -> tv) -> t -> t
 runMapping (MkMapping (Kleisli f)) ab = appEndo $ f ab
 
-varMapping :: forall (n :: Symbol). Mapping n (UVarT n)
+varMapping :: Mapping tv tv
 varMapping = mkMapping id
 
 mapMapping :: ((p -> p) -> (q -> q)) -> Mapping n p -> Mapping n q
@@ -25,7 +25,7 @@ joinMapping :: ((p -> p) -> (q -> q) -> (t -> t)) -> Mapping n p -> Mapping n q 
 joinMapping ff mp mq = mkMapping $ \tt -> ff (runMapping mp tt) (runMapping mq tt)
 
 newtype VarMapping t = MkVarMapping
-    { runVarMapping :: forall v n. VarianceType v -> SymbolType n -> Maybe (Mapping n t)
+    { runVarMapping :: forall v tv. VarianceType v -> TypeVarT tv -> Maybe (Mapping tv t)
     }
 
 liftVarMapping0 :: (forall n. Mapping n a) -> VarMapping a
@@ -44,7 +44,7 @@ liftVarMapping2 f (MkVarMapping f1) (MkVarMapping f2) =
         m2 <- f2 v n
         return $ f m1 m2
 
-varVarMapping :: SymbolType n -> VarMapping (UVarT n)
+varVarMapping :: TypeVarT tv -> VarMapping tv
 varVarMapping var' =
     MkVarMapping $ \v var ->
         case testEquality var var' of

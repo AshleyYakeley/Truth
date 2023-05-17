@@ -13,21 +13,22 @@ import Shapes
 
 eliminationBisubs ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
-    => (FiniteSet (Some SymbolType), FiniteSet (Some SymbolType))
+    => (FiniteSet SomeTypeVarT, FiniteSet SomeTypeVarT)
     -> [Bisubstitution ground (DolanShim ground) Identity]
 eliminationBisubs (posvars, negvars) = let
-    posbisub :: Some SymbolType -> Bisubstitution ground (DolanShim ground) Identity
-    posbisub (MkSome var) =
-        assignUVarT @BottomType var $ MkBisubstitution False var (return nilDolanShimWit) (return $ varDolanShimWit var)
-    negbisub :: Some SymbolType -> Bisubstitution ground (DolanShim ground) Identity
-    negbisub (MkSome var) =
-        assignUVarT @TopType var $ MkBisubstitution False var (return $ varDolanShimWit var) (return nilDolanShimWit)
+    posbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
+    posbisub (MkSomeTypeVarT var) =
+        assignTypeVarT @BottomType var $
+        MkBisubstitution False var (return nilDolanShimWit) (return $ varDolanShimWit var)
+    negbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
+    negbisub (MkSomeTypeVarT var) =
+        assignTypeVarT @TopType var $ MkBisubstitution False var (return $ varDolanShimWit var) (return nilDolanShimWit)
     in (fmap posbisub $ toList posvars) <> (fmap negbisub $ toList negvars)
 
 eliminateVars ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => (FiniteSet (Some SymbolType), FiniteSet (Some SymbolType))
+    => (FiniteSet SomeTypeVarT, FiniteSet SomeTypeVarT)
     -> Endo a
 eliminateVars vars = endoMToEndo $ bisubstitutes @ground (eliminationBisubs vars)
 

@@ -32,20 +32,20 @@ type UnifierBisubstitution :: GroundTypeKind -> Type
 type UnifierBisubstitution ground = Bisubstitution ground (DolanShim ground) (UnifierM ground)
 
 bisubstitutePositiveVar ::
-       forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
-    => SymbolType name
+       forall (ground :: GroundTypeKind) tv t. IsDolanSubtypeGroundType ground
+    => TypeVarT tv
     -> DolanType ground 'Positive t
-    -> DolanUnifier ground (DolanShim ground t (UVarT name))
+    -> DolanUnifier ground (DolanShim ground t tv)
 bisubstitutePositiveVar _ NilDolanType = pure initf
 bisubstitutePositiveVar vn (ConsDolanType t1 tr) =
     OpenExpression (geSingleUnifierConstraint vn t1) $
     fmap (\fr f1 -> joinf (f1 . join1) fr) $ bisubstitutePositiveVar vn tr
 
 bisubstituteNegativeVar ::
-       forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
-    => SymbolType name
+       forall (ground :: GroundTypeKind) tv t. IsDolanSubtypeGroundType ground
+    => TypeVarT tv
     -> DolanType ground 'Negative t
-    -> DolanUnifier ground (DolanShim ground (UVarT name) t)
+    -> DolanUnifier ground (DolanShim ground tv t)
 bisubstituteNegativeVar _ NilDolanType = pure termf
 bisubstituteNegativeVar vn (ConsDolanType t1 tr) =
     OpenExpression (leSingleUnifierConstraint vn t1) $
@@ -115,11 +115,10 @@ bisubstituteUnifier bisub (OpenExpression subwit expr) = solverOpenExpression su
 type InvertSubstitution :: GroundTypeKind -> Type
 data InvertSubstitution ground where
     MkInvertSubstitution
-        :: forall (ground :: GroundTypeKind) polarity name name' t.
-           (JoinMeetType (InvertPolarity polarity) (UVarT name') t ~ UVarT name)
-        => SymbolType name
+        :: forall (ground :: GroundTypeKind) polarity tv tv' t. (JoinMeetType (InvertPolarity polarity) tv' t ~ tv)
+        => TypeVarT tv
         -> PolarityType polarity
-        -> SymbolType name'
+        -> TypeVarT tv'
         -> DolanType ground polarity t
         -> InvertSubstitution ground
 
@@ -175,11 +174,11 @@ runUnifier ::
     -> WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground) (TSOpenExpression (DolanTypeSystem ground) a)
 runUnifier (ClosedExpression a) = return $ pure a
 runUnifier (OpenExpression (LEUnifierConstraint oldvar NegativeType (ptw :: _ pt) False) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNamePlain
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(MeetType newtv pt) oldvar $ do
         let
             bisub =
                 mkPolarBisubstitution
@@ -192,11 +191,11 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar NegativeType (ptw :: _ pt
         tell [bisub]
         return $ fmap (\sa -> sa meet2) $ expr''
 runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt) False) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNamePlain
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(MeetType newtv pt) oldvar $ do
         rigidity <- lift renamerGetNameRigidity
         let
             bisub =
@@ -212,11 +211,11 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt
         tell [bisub]
         return $ fmap (\sa -> sa meet2) $ expr''
 runUnifier (OpenExpression (GEUnifierConstraint oldvar PositiveType (ptw :: _ pt) False) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNamePlain
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(JoinType newtv pt) oldvar $ do
         let
             bisub =
                 mkPolarBisubstitution
@@ -229,11 +228,11 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar PositiveType (ptw :: _ pt
         tell [bisub]
         return $ fmap (\sa -> sa join2) $ expr''
 runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt) False) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNamePlain
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(JoinType newtv pt) oldvar $ do
         rigidity <- lift renamerGetNameRigidity
         let
             bisub =
@@ -248,12 +247,12 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt
         expr'' <- runUnifierExpression expr'
         tell [bisub]
         return $ fmap (\sa -> sa join2) $ expr''
-runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) NegativeType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: TypeVarT oldtv) NegativeType (ptw :: _ pt) True) expr) = do
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNameRec
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(MeetType newtv pt) oldvar $ do
         recvarname <- lift renamerGenerateFree
         let
             bisub =
@@ -269,12 +268,12 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) N
         expr'' <- runUnifierExpression expr'
         tell [bisub]
         return $ fmap (\sa -> sa meet2) $ expr''
-runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) PositiveType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: TypeVarT oldtv) PositiveType (ptw :: _ pt) True) expr) = do
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNameRec
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(MeetType newtv pt) oldvar $ do
         recvarname <- lift renamerGenerateFree
         rigidity <- lift renamerGetNameRigidity
         let
@@ -292,12 +291,12 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) P
         expr'' <- runUnifierExpression expr'
         tell [bisub]
         return $ fmap (\sa -> sa meet2) $ expr''
-runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) PositiveType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: TypeVarT oldtv) PositiveType (ptw :: _ pt) True) expr) = do
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNameRec
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(JoinType newtv pt) oldvar $ do
         recvarname <- lift renamerGenerateFree
         let
             bisub =
@@ -313,12 +312,12 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) P
         expr'' <- runUnifierExpression expr'
         tell [bisub]
         return $ fmap (\sa -> sa join2) $ expr''
-runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) NegativeType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <-
+runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: TypeVarT oldtv) NegativeType (ptw :: _ pt) True) expr) = do
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
         if genNewNameRec
             then lift renamerGenerateFreeUVar
-            else return $ MkAnyVar oldvar
-    assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
+            else return $ MkSomeTypeVarT oldvar
+    assignTypeVarT @(JoinType newtv pt) oldvar $ do
         recvarname <- lift renamerGenerateFree
         rigidity <- lift renamerGetNameRigidity
         let

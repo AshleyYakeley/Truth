@@ -1,6 +1,7 @@
 module Pinafore.Language.Name.ExprShow where
 
 import Data.Shim
+import Language.Expression.Common
 import Pinafore.Language.Name.FullName
 import Pinafore.Language.Name.FullNameRef
 import Pinafore.Language.Name.Name
@@ -44,3 +45,6 @@ instance AllConstraint ExprShow w => ExprShow (ShimWit shim w a) where
 type family ListTypeExprShow (dv :: [k]) :: Type where
     ListTypeExprShow '[] = PrecNamedText
     ListTypeExprShow (t ': tt) = PrecNamedText -> ListTypeExprShow tt
+
+instance ExprShow (TypeVar tv) where
+    exprShowPrec (MkTypeVar v) = exprShowPrec v

@@ -54,9 +54,9 @@ toJoinMeetLimit =
         PositiveType -> iJoinR1
         NegativeType -> iMeetR1
 
-isFreeVar :: (?rigidity :: String -> NameRigidity) => SymbolType var -> Bool
+isFreeVar :: (?rigidity :: String -> NameRigidity) => TypeVarT tv -> Bool
 isFreeVar n =
-    case ?rigidity $ witnessToValue n of
+    case ?rigidity $ typeVarName n of
         FreeName -> True
         RigidName -> False
 

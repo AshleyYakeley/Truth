@@ -219,16 +219,14 @@ data DolanSingularType ground polarity t where
            DolanGroundedType ground polarity t
         -> DolanSingularType ground polarity t
     VarDolanSingularType
-        :: forall (ground :: GroundTypeKind) polarity name.
-           SymbolType name
-        -> DolanSingularType ground polarity (UVarT name)
+        :: forall (ground :: GroundTypeKind) polarity t. TypeVarT t -> DolanSingularType ground polarity t
     -- RecursiveDolanSingularType represents equirecursive type using type families,
     -- similar to https://semantic.org/post/forbidden-haskell-types/
     RecursiveDolanSingularType
-        :: forall (ground :: GroundTypeKind) polarity name.
-           SymbolType name
-        -> DolanType ground polarity (UVarT name)
-        -> DolanSingularType ground polarity (UVarT name)
+        :: forall (ground :: GroundTypeKind) polarity t.
+           TypeVarT t
+        -> DolanType ground polarity t
+        -> DolanSingularType ground polarity t
 
 instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanSingularType ground polarity t) where
     freeTypeVariables (GroundedDolanSingularType t) = freeTypeVariables t
@@ -264,32 +262,32 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
 
 -- | OK if there are no contravariant uses
 safeRecursiveDolanSingularType ::
-       forall (ground :: GroundTypeKind) polarity name. IsDolanGroundType ground
-    => SymbolType name
-    -> DolanType ground polarity (UVarT name)
-    -> Maybe (DolanSingularType ground polarity (UVarT name))
+       forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
+    => TypeVarT t
+    -> DolanType ground polarity t
+    -> Maybe (DolanSingularType ground polarity t)
 safeRecursiveDolanSingularType var tt = do
     let
         checkArgument ::
-               forall sv pol t. Bool -> CCRVarianceType sv -> CCRPolarArgument (DolanType ground) pol sv t -> Maybe ()
+               forall sv pol a. Bool -> CCRVarianceType sv -> CCRPolarArgument (DolanType ground) pol sv a -> Maybe ()
         checkArgument contrv CoCCRVarianceType (CoCCRPolarArgument t) = checkType contrv t
         checkArgument contrv ContraCCRVarianceType (ContraCCRPolarArgument t) = checkType (not contrv) t
         checkArgument contrv RangeCCRVarianceType (RangeCCRPolarArgument p q) = do
             checkType (not contrv) p
             checkType contrv q
         checkArguments ::
-               forall dv gt pol t.
+               forall dv gt pol a.
                Bool
             -> DolanVarianceType dv
-            -> DolanArguments dv (DolanType ground) gt pol t
+            -> DolanArguments dv (DolanType ground) gt pol a
             -> Maybe ()
         checkArguments _ NilListType NilCCRArguments = return ()
         checkArguments contrv (ConsListType svt dvt) (ConsCCRArguments arg args) = do
             checkArgument contrv svt arg
             checkArguments contrv dvt args
-        checkGroundedType :: forall pol t. Bool -> DolanGroundedType ground pol t -> Maybe ()
+        checkGroundedType :: forall pol a. Bool -> DolanGroundedType ground pol a -> Maybe ()
         checkGroundedType contrv (MkDolanGroundedType gt args) = checkArguments contrv (groundTypeVarianceType gt) args
-        checkSingularType :: forall pol t. Bool -> DolanSingularType ground pol t -> Maybe ()
+        checkSingularType :: forall pol a. Bool -> DolanSingularType ground pol a -> Maybe ()
         checkSingularType contrv (VarDolanSingularType v)
             | contrv
             , MkSome v == MkSome var = Nothing
@@ -298,7 +296,7 @@ safeRecursiveDolanSingularType var tt = do
             | MkSome v == MkSome var = return ()
         checkSingularType contrv (RecursiveDolanSingularType _ t) = checkType contrv t
         checkSingularType contrv (GroundedDolanSingularType t) = checkGroundedType contrv t
-        checkType :: forall pol t. Bool -> DolanType ground pol t -> Maybe ()
+        checkType :: forall pol a. Bool -> DolanType ground pol a -> Maybe ()
         checkType _ NilDolanType = return ()
         checkType contrv (ConsDolanType t1 tr) = do
             checkSingularType contrv t1
@@ -326,10 +324,10 @@ type DolanSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanSingularShimWit ground polarity = PShimWit (DolanShim ground) (DolanSingularType ground) polarity
 
 varDolanShimWit ::
-       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) name.
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) t.
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
-    => SymbolType name
-    -> PShimWit shim (DolanType ground) polarity (UVarT name)
+    => TypeVarT t
+    -> PShimWit shim (DolanType ground) polarity t
 varDolanShimWit var = typeToDolan $ VarDolanSingularType var
 
 nilDolanShimWit ::
@@ -347,11 +345,11 @@ consDolanShimWit ::
 consDolanShimWit (MkShimWit t1 conv1) (MkShimWit tr convr) = MkShimWit (ConsDolanType t1 tr) (iPolarPair conv1 convr)
 
 unsafeDeleteVarShimWit ::
-       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) name.
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) t.
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
-    => SymbolType name
-    -> PShimWit shim (DolanType ground) polarity (UVarT name)
-unsafeDeleteVarShimWit n = assignUVarT @(LimitType polarity) n nilDolanShimWit
+    => TypeVarT t
+    -> PShimWit shim (DolanType ground) polarity t
+unsafeDeleteVarShimWit n = assignTypeVarT @(LimitType polarity) n nilDolanShimWit
 
 singleDolanType ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) (t :: Type).

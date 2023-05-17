@@ -27,12 +27,12 @@ data NonpolarDolanType ground t where
            ground dv gt
         -> NonpolarArguments ground dv gt t
         -> NonpolarDolanType ground t
-    VarNonpolarType :: forall (ground :: GroundTypeKind) name. SymbolType name -> NonpolarDolanType ground (UVarT name)
+    VarNonpolarType :: forall (ground :: GroundTypeKind) tv. TypeVarT tv -> NonpolarDolanType ground tv
     RecursiveNonpolarType
-        :: forall (ground :: GroundTypeKind) name.
-           SymbolType name
-        -> NonpolarDolanType ground (UVarT name)
-        -> NonpolarDolanType ground (UVarT name)
+        :: forall (ground :: GroundTypeKind) tv.
+           TypeVarT tv
+        -> NonpolarDolanType ground tv
+        -> NonpolarDolanType ground tv
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEquality (NonpolarDolanType ground) where
     testEquality (GroundedNonpolarType gta argsa) (GroundedNonpolarType gtb argsb) = do
@@ -206,10 +206,10 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => HasVarMa
                Nothing -> vm
 
 mapNonpolarType ::
-       forall (ground :: GroundTypeKind) n t. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) tv t. IsDolanGroundType ground
     => NonpolarDolanType ground t
-    -> SymbolType n
-    -> (UVarT n -> UVarT n)
+    -> TypeVarT tv
+    -> (tv -> tv)
     -> t
     -> t
 mapNonpolarType wt n =
@@ -218,58 +218,58 @@ mapNonpolarType wt n =
 type F :: Type -> Type
 type family F a
 
-withEqualVar :: SymbolType na -> SymbolType nb -> (na ~ nb => r) -> r
+withEqualVar :: TypeVarT tva -> TypeVarT tvb -> (tva ~ tvb => r) -> r
 withEqualVar va vb call =
     case testEquality va vb of
         Just Refl -> call
         Nothing -> error "withEqualVar"
 
 mapNonpolarType1 ::
-       forall (ground :: GroundTypeKind) na nb. IsDolanGroundType ground
-    => NonpolarDolanType ground (F (UVarT na))
-    -> SymbolType na
-    -> SymbolType nb
-    -> (UVarT na -> UVarT nb)
-    -> F (UVarT na)
-    -> F (UVarT nb)
+       forall (ground :: GroundTypeKind) tva tvb. IsDolanGroundType ground
+    => NonpolarDolanType ground (F tva)
+    -> TypeVarT tva
+    -> TypeVarT tvb
+    -> (tva -> tvb)
+    -> F tva
+    -> F tvb
 mapNonpolarType1 tw va vb = withEqualVar va vb $ mapNonpolarType @ground tw va
 
 mapNonpolarType2 ::
-       forall (ground :: GroundTypeKind) na nb. IsDolanGroundType ground
-    => NonpolarDolanType ground (F (UVarT na))
-    -> SymbolType na
-    -> SymbolType nb
-    -> (UVarT nb -> UVarT na)
-    -> F (UVarT nb)
-    -> F (UVarT na)
+       forall (ground :: GroundTypeKind) tva tvb. IsDolanGroundType ground
+    => NonpolarDolanType ground (F tva)
+    -> TypeVarT tva
+    -> TypeVarT tvb
+    -> (tvb -> tva)
+    -> F tvb
+    -> F tva
 mapNonpolarType2 tw va vb = withEqualVar va vb $ mapNonpolarType @ground tw va
 
 remapWit ::
-       forall (ground :: GroundTypeKind) na nb.
-       SymbolType na
-    -> SymbolType nb
-    -> NonpolarDolanType ground (F (UVarT na))
-    -> NonpolarDolanType ground (F (UVarT nb))
+       forall (ground :: GroundTypeKind) tva tvb.
+       TypeVarT tva
+    -> TypeVarT tvb
+    -> NonpolarDolanType ground (F tva)
+    -> NonpolarDolanType ground (F tvb)
 remapWit va vb = withEqualVar va vb id
 
 recursiveNonpolarShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name.
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
        (IsDolanGroundType ground, FunctionShim (pshim Type), Is PolarityType polarity)
-    => SymbolType name
-    -> PolarShimWit (pshim Type) (NonpolarDolanType ground) polarity (UVarT name)
-    -> PolarShimWit (pshim Type) (NonpolarDolanType ground) polarity (UVarT name)
+    => TypeVarT tv
+    -> PolarShimWit (pshim Type) (NonpolarDolanType ground) polarity tv
+    -> PolarShimWit (pshim Type) (NonpolarDolanType ground) polarity tv
 recursiveNonpolarShimWit oldvar (MkShimWit tw (MkPolarMap conv)) =
-    unsafeAssignWitT @(F (UVarT name)) tw $
-    newUVar (uVarName oldvar) $ \(newvar :: SymbolType newname) ->
-        unsafeAssign @Type @(UVarT newname) @(F (UVarT newname)) $
+    unsafeAssignWitT @(F tv) tw $
+    newTypeVar (typeVarName oldvar) $ \(newvar :: TypeVarT newtv) ->
+        unsafeAssign @Type @newtv @(F newtv) $
         case polarityType @polarity of
             PositiveType -> let
-                rconv :: UVarT name -> UVarT newname
+                rconv :: tv -> newtv
                 rconv = mapNonpolarType1 tw oldvar newvar rconv . shimToFunction conv
                 in MkShimWit (RecursiveNonpolarType newvar $ remapWit oldvar newvar tw) $
                    MkPolarMap $ functionToShim "recursive" rconv
             NegativeType -> let
-                rconv :: UVarT newname -> UVarT name
+                rconv :: newtv -> tv
                 rconv = shimToFunction conv . mapNonpolarType2 tw oldvar newvar rconv
                 in MkShimWit (RecursiveNonpolarType newvar $ remapWit oldvar newvar tw) $
                    MkPolarMap $ functionToShim "recursive" rconv
@@ -286,11 +286,11 @@ dolanSingularTypeToNonpolar (RecursiveDolanSingularType v t) = do
 
 {-
 recursiveDolanShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name.
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
-    => SymbolType name
-    -> PShimWit (pshim Type) (DolanType ground) polarity (UVarT name)
-    -> PShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name)
+    => TypeVarT tv
+    -> PShimWit (pshim Type) (DolanType ground) polarity tv
+    -> PShimWit (pshim Type) (DolanSingularType ground) polarity tv
 -}
 dolanTypeToNonpolar ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

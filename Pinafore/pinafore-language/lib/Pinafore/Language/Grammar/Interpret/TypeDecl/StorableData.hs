@@ -15,7 +15,7 @@ import Shapes
 
 type CovParam :: CCRArgumentKind
 data CovParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
-    MkCovParam :: SymbolType n -> CovParam CoCCRVariance (UVarT n)
+    MkCovParam :: TypeVarT tv -> CovParam CoCCRVariance tv
 
 type CovParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 type CovParams = CCRArguments CovParam
@@ -36,7 +36,7 @@ assignArgumentParams ::
     -> decltype :~: ta
 assignArgumentParams NilCCRArguments NilArguments = Refl
 assignArgumentParams (ConsCCRArguments (MkCovParam var) args) (ConsArguments arg args') =
-    assignUVarWit var arg $
+    assignTypeVarWit var arg $
     case assignArgumentParams args args' of
         Refl -> Refl
 
@@ -55,10 +55,10 @@ matchParamArgs (ConsCCRArguments _ args) (ConsArguments _ args') =
         Refl -> Refl
 
 lookupVar ::
-       forall f dv (gt :: DolanVarianceKind dv) name ta.
+       forall f dv (gt :: DolanVarianceKind dv) tv ta.
        CovParams dv gt ta
-    -> SymbolType name
-    -> QInterpreter (Arguments f gt ta -> f (UVarT name))
+    -> TypeVarT tv
+    -> QInterpreter (Arguments f gt ta -> f tv)
 lookupVar NilCCRArguments var = throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow var
 lookupVar (ConsCCRArguments (MkCovParam var') params) var
     | Just Refl <- testEquality var var' =

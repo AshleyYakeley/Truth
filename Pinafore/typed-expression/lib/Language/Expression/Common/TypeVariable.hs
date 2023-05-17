@@ -3,15 +3,16 @@ module Language.Expression.Common.TypeVariable
     ( UVar
     , UVarT
     , uVarName
-    , newUVar
-    , AnyVar(..)
-    , newUVarAny
-    , assignUVar
     , assignUVarT
-    , assignUVarWit
-    , VarType(..)
-    , varTypeName
-    , newAssignUVar
+    , TypeVar(..)
+    , TypeVarT
+    , typeVarName
+    , newTypeVar
+    , assignTypeVarT
+    , assignTypeVarWit
+    , newAssignTypeVar
+    , SomeTypeVarT(..)
+    , someTypeVarName
     ) where
 
 import Shapes
@@ -29,12 +30,6 @@ uVarName = witnessToValue
 newUVar :: forall r. String -> (forall (newname :: Symbol). SymbolType newname -> r) -> r
 newUVar = valueToWitness
 
-data AnyVar =
-    forall name. MkAnyVar (SymbolType name)
-
-newUVarAny :: String -> AnyVar
-newUVarAny nstr = newUVar nstr MkAnyVar
-
 -- | The key to using this safely is not to assign the same name more than once.
 -- If you're seeing what looks like bad unsafe coercions, this is probably the problem.
 assignUVar :: forall (k :: Type) (t :: k) (name :: Symbol) r. SymbolType name -> (UVar k name ~ t => r) -> r
@@ -51,15 +46,41 @@ assignUVarWit ::
     -> r
 assignUVarWit name _ = assignUVar @k @t name
 
-type VarType :: forall k. k -> Type
-data VarType t where
-    MkVarType :: forall k (name :: Symbol). SymbolType name -> VarType (UVar k name)
+type TypeVar :: forall k. k -> Type
+data TypeVar tv where
+    MkTypeVar :: forall k (name :: Symbol). SymbolType name -> TypeVar (UVar k name)
 
-instance Show (VarType t) where
-    show (MkVarType t) = show t
+type TypeVarT :: Type -> Type
+type TypeVarT = TypeVar
 
-varTypeName :: VarType t -> String
-varTypeName (MkVarType var) = uVarName var
+instance Show (TypeVar tv) where
+    show (MkTypeVar t) = show t
 
-newAssignUVar :: forall (k :: Type) (t :: k). String -> VarType t
-newAssignUVar nstr = newUVar nstr $ \nsym -> assignUVar @k @t nsym $ MkVarType nsym
+instance TestEquality TypeVar where
+    testEquality (MkTypeVar a) (MkTypeVar b) = do
+        Refl <- testEquality a b
+        return Refl
+
+typeVarName :: TypeVar tv -> String
+typeVarName (MkTypeVar vsym) = uVarName vsym
+
+newTypeVar :: forall r. String -> (forall tv. TypeVar tv -> r) -> r
+newTypeVar name call = newUVar name $ \vsym -> call $ MkTypeVar vsym
+
+assignTypeVarT :: forall (ta :: Type) tv r. TypeVarT tv -> (tv ~ ta => r) -> r
+assignTypeVarT (MkTypeVar vsym) call = assignUVarT @ta vsym call
+
+assignTypeVarWit :: forall (k :: Type) (t :: k) (tv :: k) (w :: k -> Type) r. TypeVar tv -> w t -> (tv ~ t => r) -> r
+assignTypeVarWit (MkTypeVar vsym) w call = assignUVarWit vsym w call
+
+newAssignTypeVar :: forall (k :: Type) (tv :: k). String -> TypeVar tv
+newAssignTypeVar nstr = newUVar nstr $ \vsym -> assignUVar @k @tv vsym $ MkTypeVar vsym
+
+data SomeTypeVarT =
+    forall tv. MkSomeTypeVarT (TypeVarT tv)
+
+instance Eq SomeTypeVarT where
+    MkSomeTypeVarT a == MkSomeTypeVarT b = isJust $ testEquality a b
+
+someTypeVarName :: SomeTypeVarT -> String
+someTypeVarName (MkSomeTypeVarT v) = typeVarName v

@@ -10,10 +10,10 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-type TVarUsage :: GroundTypeKind -> Polarity -> Symbol -> Type -> Type
-data TVarUsage ground polarity name a =
+type TVarUsage :: GroundTypeKind -> Polarity -> Type -> Type -> Type
+data TVarUsage ground polarity tv a =
     forall b. MkTVarUsage (DolanShimWit ground polarity b)
-                          (DolanPolarMap ground polarity a (JoinMeetType polarity (UVarT name) b))
+                          (DolanPolarMap ground polarity a (JoinMeetType polarity tv b))
 
 swapC ::
        forall shim polarity a b c. (JoinMeetIsoCategory shim, Is PolarityType polarity)
@@ -26,11 +26,11 @@ swapAB ::
 swapAB = iPolarSwapL . swapC
 
 getTVarUsage' ::
-       forall (ground :: GroundTypeKind) polarity name a b. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a b. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
     -> DolanType ground polarity a
     -> DolanType ground polarity b
-    -> Maybe (TVarUsage ground polarity name (JoinMeetType polarity a b))
+    -> Maybe (TVarUsage ground polarity tv (JoinMeetType polarity a b))
 getTVarUsage' _ _ NilDolanType = Nothing
 getTVarUsage' v ta (ConsDolanType (VarDolanSingularType v') tb)
     | Just Refl <- testEquality v v' =
@@ -44,10 +44,10 @@ getTVarUsage' v ta (ConsDolanType ts tb) = do
     return $ MkTVarUsage tu $ conv . swapC
 
 getTVarUsage ::
-       forall (ground :: GroundTypeKind) polarity name a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
     -> DolanType ground polarity a
-    -> Maybe (TVarUsage ground polarity name a)
+    -> Maybe (TVarUsage ground polarity tv a)
 getTVarUsage v t = do
     MkTVarUsage tu conv <- getTVarUsage' v NilDolanType t
     return $ MkTVarUsage tu $ conv . iPolarR2

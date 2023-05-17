@@ -42,7 +42,7 @@ instance HasVarMapping ConstructorType where
 
 type ConstructorCodec t = SomeFor (Codec t) ConstructorType
 
-constructorTypeFreeVariables :: ConstructorFlavour w -> w t -> FiniteSet (Some SymbolType)
+constructorTypeFreeVariables :: ConstructorFlavour w -> w t -> FiniteSet SomeTypeVarT
 constructorTypeFreeVariables PositionalCF wt = freeTypeVariables wt
 constructorTypeFreeVariables RecordCF _ = mempty
 
@@ -63,10 +63,10 @@ assembleDataType tconss call =
             in call conss vmap $ \t -> fixedListElement $ listElementTypeIndex $ someForToSome $ pickcons t
 
 withCCRTypeParam :: SyntaxTypeParameter -> (forall sv t. CCRTypeParam sv t -> r) -> r
-withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToSymbolType n $ \v -> cont $ CoCCRTypeParam v
-withCCRTypeParam (NegativeSyntaxTypeParameter n) cont = nameToSymbolType n $ \v -> cont $ ContraCCRTypeParam v
+withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v -> cont $ CoCCRTypeParam v
+withCCRTypeParam (NegativeSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v -> cont $ ContraCCRTypeParam v
 withCCRTypeParam (RangeSyntaxTypeParameter np nq) cont =
-    nameToSymbolType np $ \vp -> nameToSymbolType nq $ \vq -> cont $ RangeCCRTypeParam vp vq
+    nameToTypeVarT np $ \vp -> nameToTypeVarT nq $ \vq -> cont $ RangeCCRTypeParam vp vq
 
 tParamToPolarArgument ::
        forall sv (t :: CCRVarianceKind sv) polarity. Is PolarityType polarity
@@ -91,7 +91,7 @@ type GenCCRTypeParams dv = forall (gt :: DolanVarianceKind dv). Some (CCRTypePar
 data AnyCCRTypeParams where
     MkAnyCCRTypeParams :: forall (dv :: DolanVariance). GenCCRTypeParams dv -> AnyCCRTypeParams
 
-tParamsVars :: CCRTypeParams dv gt t -> [Some SymbolType]
+tParamsVars :: CCRTypeParams dv gt t -> [SomeTypeVarT]
 tParamsVars NilCCRArguments = []
 tParamsVars (ConsCCRArguments tp tps) = tParamVars tp ++ tParamsVars tps
 
@@ -114,10 +114,10 @@ paramsUnEndo (ConsCCRArguments p pp) tt = let
     in MkNestedMorphism ff
 
 getDataTypeMappingOrError ::
-       forall v n t. FullName -> VarianceType v -> SymbolType n -> VarMapping t -> QInterpreter (Mapping n t)
+       forall v tv t. FullName -> VarianceType v -> TypeVarT tv -> VarMapping t -> QInterpreter (Mapping tv t)
 getDataTypeMappingOrError tname vt var vm =
     case runVarMapping vm vt var of
-        Nothing -> throw $ InterpretTypeDeclTypeVariableWrongPolarityError tname $ symbolTypeToName var
+        Nothing -> throw $ InterpretTypeDeclTypeVariableWrongPolarityError tname $ typeVarToName var
         Just vmap -> return vmap
 
 getCCRVariation ::
@@ -327,11 +327,11 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                     constructorInnerTypes <- lift $ for constructorFixedList interpretConstructorTypes
                                     assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                         let
-                                            freevars :: FiniteSet (Some SymbolType)
+                                            freevars :: FiniteSet SomeTypeVarT
                                             freevars = mconcat $ fmap freeTypeVariables $ toList codecs
-                                            declaredvars :: [Some SymbolType]
+                                            declaredvars :: [SomeTypeVarT]
                                             declaredvars = tParamsVars tparams
-                                            unboundvars :: [Some SymbolType]
+                                            unboundvars :: [SomeTypeVarT]
                                             unboundvars = toList freevars \\ declaredvars
                                         case nonEmpty $ duplicates declaredvars of
                                             Nothing -> return ()
@@ -339,14 +339,14 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                 lift $
                                                 throw $
                                                 InterpretTypeDeclDuplicateTypeVariablesError mainTypeName $
-                                                fmap (\(MkSome s) -> symbolTypeToName s) vv
+                                                fmap someTypeVarToName vv
                                         case nonEmpty unboundvars of
                                             Nothing -> return ()
                                             Just vv ->
                                                 lift $
                                                 throw $
                                                 InterpretTypeDeclUnboundTypeVariablesError mainTypeName $
-                                                fmap (\(MkSome s) -> symbolTypeToName s) vv
+                                                fmap someTypeVarToName vv
                                         Refl <- unsafeGetRefl @Type @structtype @decltype
                                         dvm :: DolanVarianceMap dv maintype <-
                                             lift $ getDolanVarianceMap @dv mainTypeName tparams vmap

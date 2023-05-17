@@ -5,9 +5,9 @@ import Shapes
 
 type CCRTypeParam :: CCRArgumentKind
 data CCRTypeParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
-    CoCCRTypeParam :: SymbolType n -> CCRTypeParam CoCCRVariance (UVarT n)
-    ContraCCRTypeParam :: SymbolType n -> CCRTypeParam ContraCCRVariance (UVarT n)
-    RangeCCRTypeParam :: SymbolType np -> SymbolType nq -> CCRTypeParam 'RangeCCRVariance '( UVarT np, UVarT nq) -- contra, co
+    CoCCRTypeParam :: TypeVarT tv -> CCRTypeParam CoCCRVariance tv
+    ContraCCRTypeParam :: TypeVarT tv -> CCRTypeParam ContraCCRVariance tv
+    RangeCCRTypeParam :: TypeVarT tvp -> TypeVarT tvq -> CCRTypeParam 'RangeCCRVariance '( tvp, tvq) -- contra, co
 
 instance IsCCRArg CCRTypeParam where
     ccrArgumentType (CoCCRTypeParam _) = CoCCRVarianceType
@@ -29,16 +29,16 @@ assignCCRTypeParam ::
        CCRTypeParam sv t
     -> (t ~ a => r)
     -> r
-assignCCRTypeParam (CoCCRTypeParam v) call = assignUVarT @a v call
-assignCCRTypeParam (ContraCCRTypeParam v) call = assignUVarT @a v call
+assignCCRTypeParam (CoCCRTypeParam v) call = assignTypeVarT @a v call
+assignCCRTypeParam (ContraCCRTypeParam v) call = assignTypeVarT @a v call
 assignCCRTypeParam (RangeCCRTypeParam vp vq) call =
     case unsafeTypeIsPair @_ @_ @a of
-        Refl -> assignUVarT @(Contra a) vp $ assignUVarT @(Co a) vq call
+        Refl -> assignTypeVarT @(Contra a) vp $ assignTypeVarT @(Co a) vq call
 
-tParamVars :: CCRTypeParam sv t -> [Some SymbolType]
-tParamVars (CoCCRTypeParam t) = [MkSome t]
-tParamVars (ContraCCRTypeParam t) = [MkSome t]
-tParamVars (RangeCCRTypeParam p q) = [MkSome p, MkSome q]
+tParamVars :: CCRTypeParam sv t -> [SomeTypeVarT]
+tParamVars (CoCCRTypeParam t) = [MkSomeTypeVarT t]
+tParamVars (ContraCCRTypeParam t) = [MkSomeTypeVarT t]
+tParamVars (RangeCCRTypeParam p q) = [MkSomeTypeVarT p, MkSomeTypeVarT q]
 
 type CCRTypeParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 type CCRTypeParams = CCRArguments CCRTypeParam

@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Language.Expression.Dolan.Bisubstitute
     ( DeferredBisubstitution(..)
     , Bisubstitution(..)
@@ -20,7 +22,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
-import Language.Expression.Dolan.Rename
+import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
@@ -30,35 +32,31 @@ type DeferredShim pshim oldtype newtypepos newtypeneg
      = PolyFuncShim ( PolarMap (pshim Type) 'Positive oldtype newtypepos
                     , PolarMap (pshim Type) 'Negative oldtype newtypeneg) pshim Type
 
-type DeferredBisubstitution :: (Type -> Type) -> GroundTypeKind -> ShimKind Type -> Symbol -> Type -> Type -> Type
-data DeferredBisubstitution m ground shim oldname newtypepos newtypeneg where
+type DeferredBisubstitution :: (Type -> Type) -> GroundTypeKind -> ShimKind Type -> Type -> Type -> Type -> Type
+data DeferredBisubstitution m ground shim tv newtypepos newtypeneg where
     MkDeferredBisubstitution
-        :: forall m (ground :: GroundTypeKind) (shim :: ShimKind Type) oldname newtypepos newtypeneg.
+        :: forall m (ground :: GroundTypeKind) (shim :: ShimKind Type) tv newtypepos newtypeneg.
            Bool
-        -> SymbolType oldname
+        -> TypeVarT tv
         -> m (PShimWit shim (DolanType ground) 'Positive newtypepos)
         -> m (PShimWit shim (DolanType ground) 'Negative newtypeneg)
-        -> DeferredBisubstitution m ground shim oldname newtypepos newtypeneg
+        -> DeferredBisubstitution m ground shim tv newtypepos newtypeneg
 
 instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m oldname newtypepos newtypeneg. ( IsDolanGroundType ground
          , Traversable m
-         ) =>
-             NamespaceRenamable (DolanTypeSystem ground) (DeferredBisubstitution m ground shim oldname newtypepos newtypeneg) where
-    namespaceRename =
+         ) => VarRenameable (DeferredBisubstitution m ground shim oldname newtypepos newtypeneg) where
+    varRename ev =
         MkEndoM $ \(MkDeferredBisubstitution isRecursive var mpos mneg) -> do
-            mpos' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mpos
-            mneg' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mneg
+            mpos' <- unEndoM (endoFor $ varRename ev) mpos
+            mneg' <- unEndoM (endoFor $ varRename ev) mneg
             return $ MkDeferredBisubstitution isRecursive var mpos' mneg'
-    namespaceTypeNames (MkDeferredBisubstitution _ _ mpos mneg) =
-        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mpos)) <>
-        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mneg))
 
 type Bisubstitution :: GroundTypeKind -> ShimKind Type -> (Type -> Type) -> Type
 data Bisubstitution ground shim m =
-    forall name. MkBisubstitution Bool
-                                  (SymbolType name)
-                                  (m (PShimWit shim (DolanType ground) 'Positive (UVarT name)))
-                                  (m (PShimWit shim (DolanType ground) 'Negative (UVarT name)))
+    forall tv. MkBisubstitution Bool
+                                (TypeVarT tv)
+                                (m (PShimWit shim (DolanType ground) 'Positive tv))
+                                (m (PShimWit shim (DolanType ground) 'Negative tv))
 
 instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadInner m
          , AllConstraint Show (DolanType ground 'Positive)
@@ -82,28 +80,25 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadInn
 deferredBisubstitution ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m r.
        Bisubstitution ground shim m
-    -> (forall name. DeferredBisubstitution m ground shim name (UVarT name) (UVarT name) -> r)
+    -> (forall tv. DeferredBisubstitution m ground shim tv tv tv -> r)
     -> r
 deferredBisubstitution (MkBisubstitution isRecursive var mpos mneg) call =
     call $ MkDeferredBisubstitution isRecursive var mpos mneg
 
 instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. (IsDolanGroundType ground, Traversable m) =>
-             NamespaceRenamable (DolanTypeSystem ground) (Bisubstitution ground shim m) where
-    namespaceRename =
+             VarRenameable (Bisubstitution ground shim m) where
+    varRename ev =
         MkEndoM $ \(MkBisubstitution isRecursive var mpos mneg) -> do
-            mpos' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mpos
-            mneg' <- unEndoM (endoFor $ dolanNamespaceRename @ground) mneg
+            mpos' <- unEndoM (endoFor $ varRename ev) mpos
+            mneg' <- unEndoM (endoFor $ varRename ev) mneg
             return $ MkBisubstitution isRecursive var mpos' mneg'
-    namespaceTypeNames (MkBisubstitution _ _ mpos mneg) =
-        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mpos)) <>
-        mconcat (fmap (dolanNamespaceTypeNames @ground) (toList mneg))
 
 mkPolarBisubstitution ::
-       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity m name. Is PolarityType polarity
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity m tv. Is PolarityType polarity
     => Bool
-    -> SymbolType name
-    -> m (PShimWit shim (DolanType ground) polarity (UVarT name))
-    -> m (PShimWit shim (DolanType ground) (InvertPolarity polarity) (UVarT name))
+    -> TypeVarT tv
+    -> m (PShimWit shim (DolanType ground) polarity tv)
+    -> m (PShimWit shim (DolanType ground) (InvertPolarity polarity) tv)
     -> Bisubstitution ground shim m
 mkPolarBisubstitution isRecursive n a b =
     case polarityType @polarity of
@@ -111,11 +106,11 @@ mkPolarBisubstitution isRecursive n a b =
         NegativeType -> MkBisubstitution isRecursive n b a
 
 mkSingleBisubstitution ::
-       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity m name.
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity m tv.
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity, Applicative m)
     => Bool
-    -> SymbolType name
-    -> m (PShimWit shim (DolanType ground) polarity (UVarT name))
+    -> TypeVarT tv
+    -> m (PShimWit shim (DolanType ground) polarity tv)
     -> Bisubstitution ground shim m
 mkSingleBisubstitution isRecursive var mw =
     invertPolarity @polarity $ mkPolarBisubstitution isRecursive var mw $ pure $ varDolanShimWit var
@@ -124,10 +119,10 @@ class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polari
     | w -> ground polarity
     where
     deferBisubstituteType ::
-           forall m oldname newtypepos newtypeneg t. MonadInner m
-        => DeferredBisubstitution m ground (pshim Type) oldname newtypepos newtypeneg
+           forall m oldtv newtypepos newtypeneg t. MonadInner m
+        => DeferredBisubstitution m ground (pshim Type) oldtv newtypepos newtypeneg
         -> w t
-        -> m (PShimWit (DeferredShim pshim (UVarT oldname) newtypepos newtypeneg) (DolanType ground) polarity t)
+        -> m (PShimWit (DeferredShim pshim oldtv newtypepos newtypeneg) (DolanType ground) polarity t)
 
 bisubstituteType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type) m t.
@@ -158,10 +153,10 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
     deferBisubstituteType sub@(MkDeferredBisubstitution isRecursive _ _ _) t@(RecursiveDolanSingularType oldvar pt) = do
         newvar <-
             if isRecursive
-                then return $ uVarName oldvar
+                then return $ typeVarName oldvar
                             -- find a name that isn't free in either sub or t,
-                else runVarRenamerT (dolanNamespaceTypeNames @ground t <> dolanNamespaceTypeNames @ground sub) [] $ do
-                         runVarNamespaceT FreeName $ varNamespaceTRename $ uVarName oldvar
+                else runVarRenamerT (renameableVars t <> renameableVars sub) [] $ do
+                         runVarNamespaceT [] FreeName $ varNamespaceTRename $ typeVarName oldvar
         pts <- deferBisubstituteType sub pt
         return $ shimWitToDolan $ recursiveRenameDolanShimWit oldvar newvar pts
     deferBisubstituteType sub t = do
@@ -223,20 +218,19 @@ reducePolarMap f (MkPolarMap conv) =
         NegativeType -> reduceShim (unPolarMap . f . MkPolarMap) conv
 
 recursiveBisubstitute ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name a.
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv a.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
-    => SymbolType name
+    => TypeVarT tv
     -> String
     -> DolanType ground polarity a
-    -> FuncShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name) a
+    -> FuncShimWit (pshim Type) (DolanSingularType ground) polarity tv a
 recursiveBisubstitute oldvar recvarname t =
     invertPolarity @polarity $
     withDict (reducedBisubstitutablePolyShim @pshim) $
-    newUVar recvarname $ \(newvar :: SymbolType newname) ->
+    newTypeVar recvarname $ \(newvar :: TypeVarT newtv) ->
         case polarityType @polarity of
             PositiveType -> let
-                dbisub ::
-                       DeferredBisubstitution Identity ground (ReducedPolyShim pshim Type) name (UVarT newname) (UVarT name)
+                dbisub :: DeferredBisubstitution Identity ground (ReducedPolyShim pshim Type) tv newtv tv
                 dbisub =
                     MkDeferredBisubstitution
                         False
@@ -245,14 +239,13 @@ recursiveBisubstitute oldvar recvarname t =
                         (pure $ varDolanShimWit oldvar)
                 in case runIdentity $ deferBisubstituteType dbisub t of
                        MkShimWit t' rconv ->
-                           assignUVarWit newvar t' $
+                           assignTypeVarWit newvar t' $
                            MkFuncShimWit (RecursiveDolanSingularType newvar t') $
                            reducePolarMap $ \sconv -> let
                                conv = lazyPolarMap $ (applyPolarPolyFuncShim rconv (conv, id)) . sconv
                                in conv
             NegativeType -> let
-                dbisub ::
-                       DeferredBisubstitution Identity ground (ReducedPolyShim pshim Type) name (UVarT name) (UVarT newname)
+                dbisub :: DeferredBisubstitution Identity ground (ReducedPolyShim pshim Type) tv tv newtv
                 dbisub =
                     MkDeferredBisubstitution
                         False
@@ -261,29 +254,29 @@ recursiveBisubstitute oldvar recvarname t =
                         (pure $ varDolanShimWit newvar)
                 in case runIdentity $ deferBisubstituteType dbisub t of
                        MkShimWit t' rconv ->
-                           assignUVarWit newvar t' $
+                           assignTypeVarWit newvar t' $
                            MkFuncShimWit (RecursiveDolanSingularType newvar t') $
                            reducePolarMap $ \sconv -> let
                                conv = lazyPolarMap $ (applyPolarPolyFuncShim rconv (id, conv)) . sconv
                                in conv
 
 recursiveRenameDolanShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name.
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
-    => SymbolType name
+    => TypeVarT tv
     -> String
-    -> PShimWit (pshim Type) (DolanType ground) polarity (UVarT name)
-    -> PShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name)
+    -> PShimWit (pshim Type) (DolanType ground) polarity tv
+    -> PShimWit (pshim Type) (DolanSingularType ground) polarity tv
 recursiveRenameDolanShimWit oldvar recvarname (MkShimWit t sconv) =
     mapFuncShimWit (recursiveBisubstitute oldvar recvarname t) sconv
 
 recursiveDolanShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name.
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
-    => SymbolType name
-    -> PShimWit (pshim Type) (DolanType ground) polarity (UVarT name)
-    -> PShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name)
-recursiveDolanShimWit oldvar = recursiveRenameDolanShimWit oldvar (uVarName oldvar)
+    => TypeVarT tv
+    -> PShimWit (pshim Type) (DolanType ground) polarity tv
+    -> PShimWit (pshim Type) (DolanSingularType ground) polarity tv
+recursiveDolanShimWit oldvar = recursiveRenameDolanShimWit oldvar (typeVarName oldvar)
 
 mapDolanSingularType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.

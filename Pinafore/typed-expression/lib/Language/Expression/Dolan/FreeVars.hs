@@ -1,16 +1,17 @@
 module Language.Expression.Dolan.FreeVars where
 
 import Data.Shim
+import Language.Expression.Common
 import Shapes
 
 class FreeTypeVariables t where
-    freeTypeVariables :: t -> FiniteSet (Some SymbolType)
+    freeTypeVariables :: t -> FiniteSet SomeTypeVarT
 
-instance FreeTypeVariables (Some SymbolType) where
+instance FreeTypeVariables SomeTypeVarT where
     freeTypeVariables x = pure x
 
-instance FreeTypeVariables (SymbolType n) where
-    freeTypeVariables x = freeTypeVariables $ MkSome x
+instance FreeTypeVariables (TypeVarT t) where
+    freeTypeVariables x = freeTypeVariables $ MkSomeTypeVarT x
 
 instance FreeTypeVariables t => FreeTypeVariables [t] where
     freeTypeVariables x = mconcat $ fmap freeTypeVariables x

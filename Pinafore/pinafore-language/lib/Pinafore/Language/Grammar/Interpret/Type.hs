@@ -87,13 +87,13 @@ interpretTypeM' (SingleSyntaxType sgt sargs) = do
                 case aargs of
                     MkSome args -> return $ typeToSomeDolan $ MkDolanGroundedType gt args
 interpretTypeM' (VarSyntaxType name) =
-    nameToSymbolType name $ \t -> return $ toMPolar $ MkSome $ singleDolanType $ VarDolanSingularType t
+    nameToTypeVarT name $ \t -> return $ toMPolar $ MkSome $ singleDolanType $ VarDolanSingularType t
 interpretTypeM' (RecursiveSyntaxType name st) = do
     mt <- interpretTypeM st
-    nameToSymbolType name $ \var ->
+    nameToTypeVarT name $ \var ->
         mapMPolarWM
             (\(MkSome t) ->
-                 assignUVarWit var t $
+                 assignTypeVarWit var t $
                  case safeRecursiveDolanSingularType var t of
                      Just rt -> return $ MkSome $ singleDolanType rt
                      Nothing -> throwWithName $ \ntt -> InterpretTypeRecursionNotCovariant name $ ntt $ exprShow t)

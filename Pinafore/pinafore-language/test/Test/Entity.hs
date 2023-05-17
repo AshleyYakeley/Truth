@@ -1066,6 +1066,17 @@ testEntity =
                           , testExpectReject
                                 "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
                           ]
+                    , tDecls
+                          [ "datatype R +v of MkR of df: a -> Maybe (a *: v) end end"
+                          , "ff: a -> Maybe (a *: Integer) = fn x => Just (x,45)"
+                          , "r = let df = ff in MkR"
+                          ] $
+                      tGroup
+                          "sub-var"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess $ isOfType "r" "R Integer"
+                          , testExpectReject $ isOfType "r" "R Text"
+                          ]
                     , tGroup
                           "inversion"
                           [ tDecls

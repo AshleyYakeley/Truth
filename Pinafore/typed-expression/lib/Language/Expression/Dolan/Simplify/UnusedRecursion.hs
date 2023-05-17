@@ -13,10 +13,10 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 elimUnusuedInShimWit ::
-       forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
-    -> DolanShimWit ground polarity (UVarT name)
-    -> DolanShimWit ground polarity (UVarT name)
+       forall (ground :: GroundTypeKind) polarity tv. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT tv
+    -> DolanShimWit ground polarity tv
+    -> DolanShimWit ground polarity tv
 elimUnusuedInShimWit var tw@(MkShimWit t _) =
     if occursInType var t
         then shimWitToDolan $ recursiveDolanShimWit var tw
@@ -30,8 +30,8 @@ elimInSingularType (RecursiveDolanSingularType var pt) = elimUnusuedInShimWit va
 elimInSingularType t = shimWitToDolan $ mapDolanSingularType (elimInType Nothing) t
 
 elimInType ::
-       forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => Maybe (SymbolType name)
+       forall (ground :: GroundTypeKind) polarity tv t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => Maybe (TypeVarT tv)
     -> DolanType ground polarity t
     -> DolanShimWit ground polarity t
 elimInType _ NilDolanType = nilDolanShimWit

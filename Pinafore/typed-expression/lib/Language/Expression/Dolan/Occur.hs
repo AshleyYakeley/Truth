@@ -3,6 +3,7 @@ module Language.Expression.Dolan.Occur
     , occursInSingularType
     ) where
 
+import Language.Expression.Common
 import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Type
@@ -10,8 +11,8 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 occursInArg ::
-       forall (ground :: GroundTypeKind) polarity n sv a. IsDolanGroundType ground
-    => SymbolType n
+       forall (ground :: GroundTypeKind) polarity tv sv a. IsDolanGroundType ground
+    => TypeVarT tv
     -> CCRPolarArgument (DolanType ground) polarity sv a
     -> Bool
 occursInArg n (CoCCRPolarArgument t) = occursInType n t
@@ -19,16 +20,16 @@ occursInArg n (ContraCCRPolarArgument t) = occursInType n t
 occursInArg n (RangeCCRPolarArgument tp tq) = occursInType n tp || occursInType n tq
 
 occursInArgs ::
-       forall (ground :: GroundTypeKind) polarity n dv t a. IsDolanGroundType ground
-    => SymbolType n
+       forall (ground :: GroundTypeKind) polarity tv dv t a. IsDolanGroundType ground
+    => TypeVarT tv
     -> DolanArguments dv (DolanType ground) t polarity a
     -> Bool
 occursInArgs _ NilCCRArguments = False
 occursInArgs n (ConsCCRArguments arg args) = occursInArg @ground @polarity n arg || occursInArgs n args
 
 occursInSingularType ::
-       forall (ground :: GroundTypeKind) polarity name a. IsDolanGroundType ground
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. IsDolanGroundType ground
+    => TypeVarT tv
     -> DolanSingularType ground polarity a
     -> Bool
 occursInSingularType n (VarDolanSingularType nt)
@@ -40,8 +41,8 @@ occursInSingularType n (RecursiveDolanSingularType n' _)
 occursInSingularType n (RecursiveDolanSingularType _ pt) = occursInType n pt
 
 occursInType ::
-       forall (ground :: GroundTypeKind) polarity name a. IsDolanGroundType ground
-    => SymbolType name
+       forall (ground :: GroundTypeKind) polarity tv a. IsDolanGroundType ground
+    => TypeVarT tv
     -> DolanType ground polarity a
     -> Bool
 occursInType _ NilDolanType = False

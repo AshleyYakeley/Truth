@@ -57,8 +57,11 @@ infixNameFromString s = do
 
 type instance Element Name = Char
 
-nameToSymbolType :: Name -> (forall (symbol :: Symbol). SymbolType symbol -> r) -> r
-nameToSymbolType n = newUVar $ unpack n
+nameToTypeVarT :: Name -> (forall tv. TypeVarT tv -> r) -> r
+nameToTypeVarT n = newTypeVar $ unpack n
 
-symbolTypeToName :: SymbolType symbol -> Name
-symbolTypeToName = MkName . pack . uVarName
+typeVarToName :: TypeVar tv -> Name
+typeVarToName = MkName . pack . typeVarName
+
+someTypeVarToName :: SomeTypeVarT -> Name
+someTypeVarToName (MkSomeTypeVarT v) = typeVarToName v

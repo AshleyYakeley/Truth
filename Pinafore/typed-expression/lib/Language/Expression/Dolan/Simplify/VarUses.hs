@@ -22,10 +22,10 @@ newtype Appearance ground polarity =
 
 appearanceMatchingType ::
        forall (ground :: GroundTypeKind) polarity.
-       Some SymbolType
+       SomeTypeVarT
     -> Appearance ground polarity
     -> Maybe (Some (DolanType ground polarity))
-appearanceMatchingType (MkSome var) (MkAppearance appr) = let
+appearanceMatchingType (MkSomeTypeVarT var) (MkAppearance appr) = let
     matchRemove :: [Some (DolanSingularType ground polarity)] -> (Bool, [Some (DolanSingularType ground polarity)])
     matchRemove [] = (False, [])
     matchRemove (MkSome (VarDolanSingularType var'):rr)
@@ -42,17 +42,17 @@ appearanceMatchingType (MkSome var) (MkAppearance appr) = let
 
 appearanceMatchingTypes ::
        forall (ground :: GroundTypeKind) polarity.
-       Some SymbolType
+       SomeTypeVarT
     -> [Appearance ground polarity]
     -> [Some (DolanType ground polarity)]
 appearanceMatchingTypes var = mapMaybe (appearanceMatchingType var)
 
 removeAppearanceVar ::
        forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground
-    => Some SymbolType
+    => SomeTypeVarT
     -> Appearance ground polarity
     -> Appearance ground polarity
-removeAppearanceVar (MkSome var) (MkAppearance appr) = let
+removeAppearanceVar (MkSomeTypeVarT var) (MkAppearance appr) = let
     notVar :: Some (DolanSingularType ground polarity) -> Bool
     notVar (MkSome t) = not $ occursInSingularType var t
     in MkAppearance $ filter notVar appr
@@ -63,12 +63,11 @@ typeToAppearance ::
     -> Appearance ground polarity
 typeToAppearance t = MkAppearance $ typeToAnySingulars t
 
-checkVar ::
-       forall (ground :: GroundTypeKind) polarity. Some (DolanSingularType ground polarity) -> Maybe (Some SymbolType)
-checkVar (MkSome (VarDolanSingularType var)) = Just (MkSome var)
+checkVar :: forall (ground :: GroundTypeKind) polarity. Some (DolanSingularType ground polarity) -> Maybe (SomeTypeVarT)
+checkVar (MkSome (VarDolanSingularType var)) = Just (MkSomeTypeVarT var)
 checkVar _ = Nothing
 
-appearanceVars :: forall (ground :: GroundTypeKind) polarity. Appearance ground polarity -> [Some SymbolType]
+appearanceVars :: forall (ground :: GroundTypeKind) polarity. Appearance ground polarity -> [SomeTypeVarT]
 appearanceVars (MkAppearance appr) = mapMaybe checkVar appr
 
 type GetVarUses :: GroundTypeKind -> (k -> Type) -> Constraint
@@ -111,7 +110,7 @@ type ReplaceVarUses :: GroundTypeKind -> (Polarity -> Type -> Type) -> Constrain
 class ReplaceVarUses ground f | f -> ground where
     replaceVarByUses ::
         forall polarity name t. PolarityType polarity ->
-            SymbolType name -> f polarity t -> State (VarReplacements ground name) (DolanShimWit ground polarity t)
+            TypeVarT name -> f polarity t -> State (VarReplacements ground name) (DolanShimWit ground polarity t)
 -}
 getCCRVarAppearances ::
        forall (ground :: GroundTypeKind) polarity sv t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -143,8 +142,8 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
     getVarAppearances (RecursiveDolanSingularType vn st) = let
         (pvarss, nvarss) = getVarAppearances st
         in case polarityType @polarity of
-               PositiveType -> (fmap (removeAppearanceVar $ MkSome vn) pvarss, nvarss)
-               NegativeType -> (pvarss, fmap (removeAppearanceVar $ MkSome vn) nvarss)
+               PositiveType -> (fmap (removeAppearanceVar $ MkSomeTypeVarT vn) pvarss, nvarss)
+               NegativeType -> (pvarss, fmap (removeAppearanceVar $ MkSomeTypeVarT vn) nvarss)
 
 {-
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
@@ -188,14 +187,14 @@ mappableGetAppearances a =
 -- example: "a -> (b|c,d)" ==> ([[b,c],[d]],[[a]])
 mappableGetVarUses ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> ([[Some SymbolType]], [[Some SymbolType]])
+    => PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> ([[SomeTypeVarT]], [[SomeTypeVarT]])
 mappableGetVarUses a = let
     (posapprs, negapprs) = mappableGetAppearances @ground a
     in (fmap appearanceVars posapprs, fmap appearanceVars negapprs)
 
 class GetExpressionVars f where
     -- | (positive, negative)
-    getExpressionVars :: forall t. f t -> ([Some SymbolType], [Some SymbolType])
+    getExpressionVars :: forall t. f t -> ([SomeTypeVarT], [SomeTypeVarT])
 
 instance GetExpressionVars wit => GetExpressionVars (PolarShimWit cat wit polarity) where
     getExpressionVars (MkShimWit w _) = getExpressionVars w
@@ -203,7 +202,7 @@ instance GetExpressionVars wit => GetExpressionVars (PolarShimWit cat wit polari
 getArgExpressionVars ::
        forall (ground :: GroundTypeKind) polarity sv a. (IsDolanGroundType ground, Is PolarityType polarity)
     => CCRPolarArgument (DolanType ground) polarity sv a
-    -> ([Some SymbolType], [Some SymbolType])
+    -> ([SomeTypeVarT], [SomeTypeVarT])
 getArgExpressionVars (CoCCRPolarArgument t) = getExpressionVars t
 getArgExpressionVars (ContraCCRPolarArgument t) = invertPolarity @polarity $ getExpressionVars t
 getArgExpressionVars (RangeCCRPolarArgument tp tq) =
@@ -212,7 +211,7 @@ getArgExpressionVars (RangeCCRPolarArgument tp tq) =
 getArgsExpressionVars ::
        forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanArguments dv (DolanType ground) gt polarity t
-    -> ([Some SymbolType], [Some SymbolType])
+    -> ([SomeTypeVarT], [SomeTypeVarT])
 getArgsExpressionVars NilCCRArguments = mempty
 getArgsExpressionVars (ConsCCRArguments arg args) =
     getArgExpressionVars @ground @polarity arg <> getArgsExpressionVars args
@@ -226,12 +225,12 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
     getExpressionVars (GroundedDolanSingularType t) = getExpressionVars t
     getExpressionVars (VarDolanSingularType vn) =
         case polarityType @polarity of
-            PositiveType -> ([MkSome vn], [])
-            NegativeType -> ([], [MkSome vn])
+            PositiveType -> ([MkSomeTypeVarT vn], [])
+            NegativeType -> ([], [MkSomeTypeVarT vn])
     getExpressionVars (RecursiveDolanSingularType vn st) = let
         (pvars, nvars) = getExpressionVars st
-        removeVar :: [Some SymbolType] -> [Some SymbolType]
-        removeVar = filter $ (/=) $ MkSome vn
+        removeVar :: [SomeTypeVarT] -> [SomeTypeVarT]
+        removeVar = filter $ (/=) $ MkSomeTypeVarT vn
         in case polarityType @polarity of
                PositiveType -> (removeVar pvars, nvars)
                NegativeType -> (pvars, removeVar nvars)
@@ -247,7 +246,7 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
 -- example: "a -> (b|c,d)" ==> ([b,c,d]],[a])
 mappableGetVars ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> ([Some SymbolType], [Some SymbolType])
+    => PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> ([SomeTypeVarT], [SomeTypeVarT])
 mappableGetVars a =
     mconcat $
     fmap

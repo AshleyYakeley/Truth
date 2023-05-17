@@ -1,6 +1,7 @@
 module Language.Expression.Common.Rename.RenameTypeSystem
     ( RenameTypeSystem(..)
     , rename
+    , renameSimple
     , renameTypeSignature
     , finalRename
     , NewVar(..)
@@ -30,14 +31,14 @@ class ( TypeSystem ts
     typeNamesNegWitness :: TSNegWitness ts t -> [String]
     typeNamesPosWitness :: TSPosWitness ts t -> [String]
     renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
-    namespace :: Monad m => NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
+    namespace :: Monad m => [String] -> NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
     runRenamer :: Monad m => [String] -> [String] -> RenamerT ts m --> m
     finalRenamer :: Monad m => RenamerT ts m --> RenamerT ts m
 
 finalRename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
     => EndoM (RenamerT ts m) a
-finalRename = MkEndoM $ \a -> finalRenamer @ts $ rename @ts FreeName a
+finalRename = MkEndoM $ \a -> finalRenamer @ts $ renameSimple @ts a
 
 renameNegShimWit ::
        forall ts m. (RenameTypeSystem ts, Monad m)
@@ -59,13 +60,20 @@ renamePosShimWit =
 
 rename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
-    => NameRigidity
+    => [String]
+    -> NameRigidity
     -> a
     -> RenamerT ts m a
-rename rigid a =
+rename fixedNames rigid a =
     withTransConstraintTM @Monad $
-    namespace @ts rigid $
+    namespace @ts fixedNames rigid $
     withTransConstraintTM @Monad $ unEndoM (mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts)) a
+
+renameSimple ::
+       forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
+    => a
+    -> RenamerT ts m a
+renameSimple = rename @ts [] FreeName
 
 typeNamesWM ::
        forall ts a. (RenameTypeSystem ts, TSMappable ts a)
@@ -88,4 +96,4 @@ renameTypeSignature ::
     => EndoM (RenamerT ts m) (Some (TSPosWitness ts))
 renameTypeSignature =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
-        Dict -> endoSomeFor $ hoistEndoM (namespace @ts RigidName) $ renamePosWitness @ts
+        Dict -> endoSomeFor $ hoistEndoM (namespace @ts [] RigidName) $ renamePosWitness @ts

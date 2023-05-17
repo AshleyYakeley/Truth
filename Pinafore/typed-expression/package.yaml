@@ -44,7 +44,7 @@ library:
       - Language.Expression.Common.Rename.Rigidity
       - Language.Expression.Common.Rename.VarNamespaceT
       - Language.Expression.Common.Rename.VarRenamerT
-      - Language.Expression.Common.Rename.NamespaceRenamable
+      - Language.Expression.Common.Rename.VarRenameable
       - Language.Expression.Common.Rename
       - Language.Expression.Common.Simplifier
       - Language.Expression.Common.SolverExpression

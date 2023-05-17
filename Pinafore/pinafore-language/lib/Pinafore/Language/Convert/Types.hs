@@ -30,7 +30,7 @@ instance (HasQType 'Negative a, HasQType 'Negative b) => HasQType 'Negative (Mee
 instance (Is PolarityType polarity, KnownSymbol name) => HasQType polarity (Var name) where
     qType =
         shimWitToDolan $
-        MkShimWit (VarDolanSingularType $ MkSymbolType @name) $
+        MkShimWit (VarDolanSingularType $ MkTypeVar $ MkSymbolType @name) $
         case polarityType @polarity of
             PositiveType -> MkPolarMap $ coerceShim "var"
             NegativeType -> MkPolarMap $ coerceShim "var"

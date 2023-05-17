@@ -63,7 +63,7 @@ exprShowPrecGroundType ::
     => ground dv gt
     -> PrecNamedText
 exprShowPrecGroundType t =
-    newUVar "_" $ \var ->
+    newTypeVar "_" $ \var ->
         saturatedGroundTypeShowPrec @ground (MkSome $ singleDolanType @ground $ VarDolanSingularType var) t
 
 showGroundType ::
