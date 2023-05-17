@@ -365,12 +365,18 @@ interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls
 
 interpretRecordConstructor :: QRecordConstructor -> RefExpression
 interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
+    let
+        freeFixedVars = freeTypeVariables vtype
+        freeFixedNames = fmap someTypeVarName $ toList freeFixedVars
     expr <-
         liftRefNotation $
+        runRenamer @QTypeSystem [] freeFixedNames $
         listTypeFor items $ \case
             ValueSignature iname itype -> do
-                iexpr <- qName $ UnqualifiedFullNameRef iname
-                typedSubsumeExpressionToOpen (freeTypeVariables vtype) itype iexpr
+                iexpr <- lift $ qName $ UnqualifiedFullNameRef iname
+                itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
+                iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
+                subsumeExpressionTo @QTypeSystem itype' iexpr'
     return $ MkSealedExpression vtype $ fmap conv $ listVProductSequence $ listTypeToVType expr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression
