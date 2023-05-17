@@ -5,13 +5,15 @@ module Language.Expression.Common.Rename.RenameTypeSystem
     , renameTypeSignature
     , finalRename
     , NewVar(..)
-    , typeNamesWM
+    , namespaceRenameType
     , typeSignatureNames
     ) where
 
 import Data.Shim
 import Language.Expression.Common.Rename.Rigidity
+import Language.Expression.Common.Rename.VarRenameable
 import Language.Expression.Common.TypeSystem
+import Language.Expression.Common.TypeVariable
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -22,18 +24,40 @@ data NewVar ts =
 class ( TypeSystem ts
       , TransConstraint Monad (RenamerT ts)
       , MonadTrans (RenamerT ts)
+      , VarRenameable1 (TSPosWitness ts)
+      , VarRenameable1 (TSNegWitness ts)
       , TransConstraint Monad (RenamerNamespaceT ts)
       ) => RenameTypeSystem (ts :: Type) where
     type RenamerT ts :: (Type -> Type) -> (Type -> Type)
     type RenamerNamespaceT ts :: (Type -> Type) -> (Type -> Type)
-    renameNegWitness :: Monad m => EndoM (RenamerNamespaceT ts (RenamerT ts m)) (TSNegWitness ts t)
-    renamePosWitness :: Monad m => EndoM (RenamerNamespaceT ts (RenamerT ts m)) (TSPosWitness ts t)
-    typeNamesNegWitness :: TSNegWitness ts t -> [String]
-    typeNamesPosWitness :: TSPosWitness ts t -> [String]
-    renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
-    namespace :: Monad m => [String] -> NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
-    runRenamer :: Monad m => [String] -> [String] -> RenamerT ts m --> m
-    finalRenamer :: Monad m => RenamerT ts m --> RenamerT ts m
+    namespaceRenameTypeVar ::
+           forall m. Monad m
+        => EndoM' (RenamerNamespaceT ts (RenamerT ts m)) TypeVarT
+    renameNewFreeVar ::
+           forall m. Monad m
+        => RenamerT ts m (NewVar ts)
+    namespace ::
+           forall m. Monad m
+        => [String]
+        -> NameRigidity
+        -> RenamerNamespaceT ts (RenamerT ts m) --> RenamerT ts m
+    runRenamer ::
+           forall m. Monad m
+        => [String]
+        -> [String]
+        -> RenamerT ts m --> m
+    finalRenamer ::
+           forall m. Monad m
+        => RenamerT ts m --> RenamerT ts m
+
+namespaceRenameType ::
+       forall ts m a. (RenameTypeSystem ts, Monad m, VarRenameable a)
+    => EndoM (RenamerNamespaceT ts (RenamerT ts m)) a
+namespaceRenameType =
+    case hasTransConstraint @Monad @(RenamerT ts) @m of
+        Dict ->
+            case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
+                Dict -> varRename $ namespaceRenameTypeVar @ts
 
 finalRename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
@@ -47,7 +71,7 @@ renameNegShimWit =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
-                Dict -> endoShimWit $ renameNegWitness @ts
+                Dict -> endoShimWit $ namespaceRenameType @ts
 
 renamePosShimWit ::
        forall ts m. (RenameTypeSystem ts, Monad m)
@@ -56,7 +80,7 @@ renamePosShimWit =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
-                Dict -> endoShimWit $ renamePosWitness @ts
+                Dict -> endoShimWit $ namespaceRenameType @ts
 
 rename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)
@@ -75,25 +99,15 @@ renameSimple ::
     -> RenamerT ts m a
 renameSimple = rename @ts [] FreeName
 
-typeNamesWM ::
-       forall ts a. (RenameTypeSystem ts, TSMappable ts a)
-    => a
-    -> [String]
-typeNamesWM a = do
-    espsn <- mappableGetWitnesses @Type @(TSPosShimWit ts) @(TSNegShimWit ts) a
-    case espsn of
-        Left (MkSome (MkShimWit w _)) -> typeNamesPosWitness @ts w
-        Right (MkSome (MkShimWit w _)) -> typeNamesNegWitness @ts w
-
 typeSignatureNames ::
        forall ts. RenameTypeSystem ts
     => Some (TSPosWitness ts)
     -> [String]
-typeSignatureNames (MkSome t) = typeNamesPosWitness @ts t
+typeSignatureNames (MkSome t) = renameableVars t
 
 renameTypeSignature ::
        forall ts m. (RenameTypeSystem ts, Monad m)
     => EndoM (RenamerT ts m) (Some (TSPosWitness ts))
 renameTypeSignature =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
-        Dict -> endoSomeFor $ hoistEndoM (namespace @ts [] RigidName) $ renamePosWitness @ts
+        Dict -> endoSomeFor $ hoistEndoM (namespace @ts [] RigidName) $ namespaceRenameType @ts

@@ -49,7 +49,7 @@ tsUnifyRigidValue ::
     -> TSInner ts t
 tsUnifyRigidValue (MkSomeOf witp val) = let
     witn = fromPolarShimWit
-    in runRenamer @ts (typeNamesWM @ts witp <> typeNamesWM @ts witn) [] $ do
+    in runRenamer @ts (renameableVars witp <> renameableVars witn) [] $ do
            uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp) (uuLiftNegShimWit @ts witn)
            convexpr <- unifierSolve @ts uconv return
            conv <- lift $ evalExpression convexpr
@@ -61,7 +61,7 @@ tsUnifyExpressionTo ::
     -> TSSealedExpression ts
     -> TSInner ts (TSOpenExpression ts t)
 tsUnifyExpressionTo witn (MkSealedExpression witp expr) =
-    runRenamer @ts (typeNamesWM @ts witn) [] $ do
+    runRenamer @ts (renameableVars witn) [] $ do
         witp' <- renameSimple @ts witp
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
         unifierSolve @ts uconv $ \convexpr -> return $ liftA2 shimToFunction convexpr expr
@@ -72,7 +72,7 @@ tsUnifyValueTo ::
     -> TSValue ts
     -> TSInner ts t
 tsUnifyValueTo witn (MkSomeOf witp val) =
-    runRenamer @ts (typeNamesWM @ts witn) [] $ do
+    runRenamer @ts (renameableVars witn) [] $ do
         witp' <- renameSimple @ts witp
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts witn)
         convexpr <- unifierSolve @ts uconv return
@@ -120,7 +120,7 @@ tsSubsume ::
     -> TSPosWitness ts decl
     -> TSInner ts (TSOpenExpression ts (TSShim ts inf decl))
 tsSubsume winf tdecl =
-    runRenamer @ts (typeSignatureNames @ts (MkSome tdecl) <> typeNamesWM @ts winf) [] $
+    runRenamer @ts (typeSignatureNames @ts (MkSome tdecl) <> renameableVars winf) [] $
     solveSubsumeShimWit @ts winf tdecl
 
 tsSubsumeValue ::

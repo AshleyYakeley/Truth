@@ -21,10 +21,7 @@ unitypeShimWit = mkPolarShimWit Refl
 
 instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) where
     type RenamerT (Unitype m name val) = IdentityT
-    renameNegWitness = mempty
-    renamePosWitness = mempty
-    typeNamesNegWitness Refl = []
-    typeNamesPosWitness Refl = []
+    namespaceRenameTypeVar = mempty
     type RenamerNamespaceT (Unitype m name val) = IdentityT
     renameNewFreeVar = return $ MkNewVar unitypeShimWit unitypeShimWit
     namespace _ _ = runIdentityT
