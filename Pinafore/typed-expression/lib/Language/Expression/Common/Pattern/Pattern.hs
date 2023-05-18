@@ -43,6 +43,12 @@ instance Arrow (Pattern w) where
     arr ab = MkPattern [] $ arr $ \a -> ((), ab a)
     first (MkPattern ww pf) = MkPattern ww $ fmap (\((t, c), d) -> (t, (c, d))) $ first pf
 
+showPatWit :: AllConstraint Show w => SomeFor ((->) t) w -> String
+showPatWit (MkSomeFor wa _) = allShow wa
+
+instance AllConstraint Show w => Show (Pattern w q a) where
+    show (MkPattern ww pf) = "{" <> intercalate "," (fmap showPatWit ww) <> "} " <> show pf
+
 patternFreeWitnesses :: (forall t. w t -> r) -> Pattern w q a -> [r]
 patternFreeWitnesses wr (MkPattern ww _) = fmap (\(MkSomeFor wt _) -> wr wt) ww
 

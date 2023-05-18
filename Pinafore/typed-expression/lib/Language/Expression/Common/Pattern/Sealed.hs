@@ -7,9 +7,9 @@ import Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
-    forall t. MkSealedPattern (tw t)
-                              (NamedPattern name vw t ())
+data SealedPattern (name :: Type) (poswit :: Type -> Type) (negwit :: Type -> Type) =
+    forall t. MkSealedPattern (negwit t)
+                              (NamedPattern name poswit t ())
 
 instance WitnessMappable poswit negwit (SealedPattern name poswit negwit) where
     mapWitnessesM mapPos mapNeg =
@@ -17,6 +17,9 @@ instance WitnessMappable poswit negwit (SealedPattern name poswit negwit) where
             tt' <- unEndoM mapNeg tt
             pat' <- unEndoM (mapWitnessesM mapPos mapNeg) pat
             pure $ MkSealedPattern tt' $ pat'
+
+instance (Show name, AllConstraint Show poswit, AllConstraint Show negwit) => Show (SealedPattern name poswit negwit) where
+    show (MkSealedPattern t expr) = show expr <> " => " <> allShow t
 
 varSealedPattern :: name -> tw t -> vw t -> SealedPattern name vw tw
 varSealedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt

@@ -6,6 +6,10 @@ data PurityType (m :: Type -> Type) (f :: Type -> Type) where
     PureType :: PurityType m Identity
     ImpureType :: PurityType m m
 
+instance Show (PurityType m f) where
+    show PureType = "pure"
+    show ImpureType = "impure"
+
 purityIs ::
        forall (c :: (Type -> Type) -> Constraint) (m :: Type -> Type) (f :: Type -> Type) (r :: Type). (c m, c Identity)
     => PurityType m f
@@ -103,3 +107,6 @@ instance Monad m => Arrow (PurityFunction m) where
     arr f = MkPurityFunction PureType $ arr f
     first (MkPurityFunction purity ab) = purityIs @Monad purity $ MkPurityFunction purity $ first ab
     second (MkPurityFunction purity ab) = purityIs @Monad purity $ MkPurityFunction purity $ second ab
+
+instance Show (PurityFunction m a b) where
+    show (MkPurityFunction purity _) = show purity
