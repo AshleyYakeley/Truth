@@ -2,7 +2,7 @@
 
 module Language.Expression.Common.WitnessMappable where
 
-import Data.Shim
+--import Data.Shim
 import Shapes
 
 class WitnessMappable (poswit :: k -> Type) (negwit :: k -> Type) (a :: Type) where
@@ -46,25 +46,8 @@ instance WitnessMappable (poswit :: k -> Type) negwit (poswit t) where
 instance WitnessMappable poswit (negwit :: k -> Type) (negwit t) where
     mapWitnessesM _ mapNeg = mapNeg
 
-instance WitnessMappable poswit negwit (SomeOf poswit) where
-    mapWitnessesM mapPos _ = endoSomeFor mapPos
-
-instance WitnessMappable poswit negwit (Some poswit) where
-    mapWitnessesM mapPos _ = endoSomeFor mapPos
-
-instance WitnessMappable poswit negwit (Some negwit) where
-    mapWitnessesM _ mapNeg = endoSomeFor mapNeg
-
-endoExtractShimWit :: (Functor m, Category shim) => EndoM' m (ShimWit shim w) -> EndoM m (Some w)
-endoExtractShimWit ems = MkEndoM $ \(MkSome w) -> fmap (\(MkShimWit w' _) -> MkSome w') $ unEndoM ems $ mkShimWit w
-
-instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). Category shim =>
-             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (Some poswit) where
-    mapWitnessesM mapPos _ = endoExtractShimWit mapPos
-
-instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). Category shim =>
-             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (Some negwit) where
-    mapWitnessesM _ mapNeg = endoExtractShimWit mapNeg
+instance (forall a. WitnessMappable poswit negwit (w a)) => WitnessMappable poswit negwit (SomeFor f w) where
+    mapWitnessesM mapPos mapNeg = endoSomeFor $ mapWitnessesM mapPos mapNeg
 
 instance (forall a. WitnessMappable poswit negwit (w a)) => WitnessMappable poswit negwit (ListType w tt) where
     mapWitnessesM mapPos mapNeg =

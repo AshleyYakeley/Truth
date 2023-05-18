@@ -110,9 +110,9 @@ tsUnifyF mapwit (MkSomeOf witp val) =
         witp' <- renameMappableSimple @ts witp
         MkNewVar varn varp <- renameNewFreeVar @ts
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts (mapwit varn))
-        convexpr <- unifierSolve @ts uconv return
-        conv <- lift $ evalExpression convexpr
-        return $ MkSomeFor varp (shimToFunction conv val)
+        unifierSolve @ts uconv $ \convexpr -> do
+            conv <- lift $ evalExpression convexpr
+            return $ MkSomeFor varp (shimToFunction conv val)
 
 tsSubsume ::
        forall ts inf decl. CompleteTypeSystem ts
