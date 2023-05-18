@@ -11,6 +11,12 @@ type ExpressionWitness :: (Type -> Type) -> (Type -> Type) -> Type -> Type
 data ExpressionWitness wit expr t where
     MkExpressionWitness :: wit t -> expr r -> ExpressionWitness wit expr (MeetType t r)
 
+instance (AllConstraint Show wit, AllConstraint Show expr) => Show (ExpressionWitness wit expr t) where
+    show (MkExpressionWitness w expr) = allShow w <> " " <> allShow expr
+
+instance (AllConstraint Show wit, AllConstraint Show expr) => AllConstraint Show (ExpressionWitness wit expr) where
+    allConstraint = Dict
+
 type NamedExpressionWitness name tw = ExpressionWitness tw (NamedExpression name tw)
 
 type SealedExpressionPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type)
