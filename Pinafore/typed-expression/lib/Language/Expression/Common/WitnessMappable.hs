@@ -65,3 +65,10 @@ instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Typ
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). Category shim =>
              WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (Some negwit) where
     mapWitnessesM _ mapNeg = endoExtractShimWit mapNeg
+
+instance (forall a. WitnessMappable poswit negwit (w a)) => WitnessMappable poswit negwit (ListType w tt) where
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \case
+            NilListType -> pure NilListType
+            ConsListType wa la ->
+                ConsListType <$> unEndoM (mapWitnessesM mapPos mapNeg) wa <*> unEndoM (mapWitnessesM mapPos mapNeg) la

@@ -70,11 +70,11 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadInn
         spos =
             case mToMaybe mtpos of
                 Just (MkShimWit t _) -> allShow t
-                Nothing -> "fails"
+                Nothing -> "FAILS"
         sneg =
             case mToMaybe mtneg of
                 Just (MkShimWit t _) -> allShow t
-                Nothing -> "fails"
+                Nothing -> "FAILS"
         in show var <> srec <> " => " <> "(" <> spos <> "," <> sneg <> ")"
 
 deferredBisubstitution ::

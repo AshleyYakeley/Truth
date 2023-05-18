@@ -1,5 +1,6 @@
 module Language.Expression.Common.Subsumer
     ( SubsumeTypeSystem(..)
+    , solveSubsumerExpression
     , usubSubsumerExpression
     , usubSolveSubsumer
     , subsumePosShimWit
@@ -8,6 +9,7 @@ module Language.Expression.Common.Subsumer
     , OpenSubsumerExpression
     , SealedSubsumerExpression(..)
     , subsumerExpression
+    , subsumerExpressionTo
     , subsumeExpression
     , subsumeExpressionTo
     ) where

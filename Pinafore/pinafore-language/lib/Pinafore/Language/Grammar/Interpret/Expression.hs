@@ -368,16 +368,17 @@ interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
     let
         freeFixedVars = freeTypeVariables vtype
         freeFixedNames = fmap someTypeVarName $ toList freeFixedVars
-    expr <-
-        liftRefNotation $
-        runRenamer @QTypeSystem [] freeFixedNames $
-        listTypeFor items $ \case
-            ValueSignature iname itype -> do
-                iexpr <- lift $ qName $ UnqualifiedFullNameRef iname
-                itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
-                iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
-                subsumeExpressionTo @QTypeSystem itype' iexpr'
-    return $ MkSealedExpression vtype $ fmap conv $ listVProductSequence $ listTypeToVType expr
+    liftRefNotation $
+        runRenamer @QTypeSystem [] freeFixedNames $ do
+            sexpr <-
+                listTypeFor items $ \case
+                    ValueSignature iname itype -> do
+                        iexpr <- lift $ qName $ UnqualifiedFullNameRef iname
+                        itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
+                        iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
+                        subsumerExpressionTo @QTypeSystem itype' iexpr'
+            (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listVProductSequence $ listTypeToVType sexpr
+            unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ fmap conv resultExpr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression
 interpretNamedConstructor n = do
