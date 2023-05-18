@@ -304,6 +304,12 @@ testEntity =
                            | casttype <- testTypes
                            , (valtype, val) <- testPairs
                            ]
+              , tGroup
+                    "show"
+                    [ testExpectSuccess "testeq {\"False\"} {show False}"
+                    , testExpectSuccess "testeq {\"34\"} {show 34}"
+                    , testExpectSuccess "testeq {\"\\\"hello\\\"\"} {show \"hello\"}"
+                    ]
               ]
         , tOpenDefaultStore $
           tDecls

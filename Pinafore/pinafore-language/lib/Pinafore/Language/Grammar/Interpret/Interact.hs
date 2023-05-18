@@ -37,7 +37,7 @@ interactEvalExpression sexpr =
 runValue :: Handle -> QValue -> Interact (Action ())
 runValue outh val =
     interactRunQInterpreter $
-    (qUnifyValue val) <|> (fmap (\(text :: Text) -> liftIO $ hPutStrLn outh $ unpack text) $ qUnifyValue val) <|>
+    (qUnifyValue val) <|>
     (do
          s <- showPinaforeModel val
          return $ liftIO $ hPutStrLn outh s)

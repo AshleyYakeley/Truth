@@ -4,4 +4,6 @@ pinafore> 3
 3
 pinafore> 4 *.Integer 2
 8
+pinafore> "hello"
+"hello"
 pinafore> <END>
