@@ -1,0 +1,7 @@
+pinafore> let x = 34
+pinafore> x
+34
+pinafore> y <- pure 75
+pinafore> y
+75
+pinafore> <END>
