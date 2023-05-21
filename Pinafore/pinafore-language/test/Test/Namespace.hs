@@ -40,6 +40,16 @@ testNamespace =
                     , testExpectSuccess "let using M; b = a in test $ b == 4"
                     , testExpectSuccess "let b = a.M in test $ b == 4"
                     , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
+                    , testExpectSuccess "let a = 3; using M; b = a in test $ b == 4"
+                    , testExpectSuccess "let a = 3 in let using M; b = a in test $ b == 4"
+                    ]
+              , tDecls ["namespace M of not = fn x => x end"] $
+                tGroup
+                    "library"
+                    [ testExpectSuccess "pass"
+                    , testExpectSuccess "test $ not False"
+                    , testExpectSuccess "let not = fn x => x in test $ not True"
+                    , testExpectSuccess "let using M in test $ not True"
                     ]
               , tDecls ["expose a of a=4 end"] $
                 tGroup
