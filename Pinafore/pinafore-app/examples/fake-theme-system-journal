@@ -3,8 +3,9 @@ let
 import "pinafore-gnome";
 import "uistuff/selection";
 import "uistuff/named";
-in runUIStuff $ fn uistuff@MkUIStuff =>
-mkNamed uistuff >- fn MkNamedStuff =>
+in run.UIContext $ fn uicontext@MkUIContext =>
+mkProps.Named store >- fn MkProps.Named =>
+mkUI.Named uicontext >- fn MkUI.Named =>
 let
 using Store;
 

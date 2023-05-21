@@ -1,143 +1,144 @@
 #!/usr/bin/pinafore
 let
-import "pinafore-gnome";
-import "uistuff/selection";
-import "uistuff/named";
-in runUIStuff $ fn uistuff@MkUIStuff =>
-mkNamed uistuff >- fn MkNamedStuff =>
+    import "pinafore-gnome";
+    import "uistuff/selection";
+    import "uistuff/named";
+in run.UIContext $ fn uicontext@MkUIContext =>
+mkProps.Named store >- fn MkProps.Named =>
+mkUI.Named uicontext >- fn MkUI.Named =>
 let
 
-# something with a lifespan
-opentype Lifespanned;
-# birth and death dates
-birthdate = property @Lifespanned @Date !"lifespan.start.date" store;
-deathdate = property @Lifespanned @Date !"lifespan.end.date" store;
+    # something with a lifespan
+    opentype Lifespanned;
+    # birth and death dates
+    birthdate = property @Lifespanned @Date !"lifespan.start.date" store;
+    deathdate = property @Lifespanned @Date !"lifespan.end.date" store;
 
-# physical locations, that have addresses
-opentype Location;
-address = property @Location @Text !"location.address.withincity" store;
-locphone = property @Location @Text !"location.telephone" store;
-city = property @Location @Text !"location.address.city" store;
-postcode = property @Location @Text !"location.address.postcode" store;
-province = property @Location @Text !"location.address.province" store;
-country = property @Location @Text !"location.address.country" store;
+    # physical locations, that have addresses
+    opentype Location;
+    address = property @Location @Text !"location.address.withincity" store;
+    locphone = property @Location @Text !"location.telephone" store;
+    city = property @Location @Text !"location.address.city" store;
+    postcode = property @Location @Text !"location.address.postcode" store;
+    province = property @Location @Text !"location.address.province" store;
+    country = property @Location @Text !"location.address.country" store;
 
-locationUI: WholeModel +Location -> Element.GTK
-= fn loc => vertical.GTK
-[
-    layoutGrow.GTK $ uiLabelled {"Address: "} $ textArea.GTK (fromWhole.TextModel $ address !$% loc),
-    uiLabelled {"City: "} $ textEntry.GTK $ city !$% loc,
-    uiLabelled {"Postcode/ZIP: "} $ textEntry.GTK $ postcode !$% loc,
-    uiLabelled {"State/Province: "} $ textEntry.GTK $ province !$% loc,
-    uiLabelled {"Country: "} $ textEntry.GTK $ country !$% loc,
-    uiLabelled {"Phone: "} $ textEntry.GTK $ locphone !$% loc
-];
-
-rec
-# a person or organisation
-dynamictype LegalEntity = Person | Organisation;
-subtype LegalEntity <: Named;
-subtype LegalEntity <: Lifespanned;
-email = property @LegalEntity @Text !"contact.email" store;
-phone = property @LegalEntity @Text !"contact.telephone" store;
-home = property @LegalEntity @Location !"being.location" store;
-legalentities: FiniteSetModel LegalEntity
-= property @LegalEntity @Unit !"type.legalentity" store !@ {()};
-
-# a person
-dynamictype Person = !"type.person";
-people: FiniteSetModel Person
-= maybeMap.FiniteSetModel (check @Person) legalentities;
-# family relationships between people
-mother = property @Person @Person !"relation.family.mother" store;
-father = property @Person @Person !"relation.family.father" store;
-children: WholeModel +Person -> FiniteSetModel Person
-= fn p => (mother !@% p) <:|:> (father !@% p);
-married = property @Person @Boolean !"relation.family.spouse.exist" store;
-
-# employment relationship
-employer = property @Person @LegalEntity !"relation.employer" store;
-employees: WholeModel +LegalEntity -> FiniteSetModel Person
-= fn p => employer !@% p;
-
-# an organisation
-dynamictype Organisation = !"type.organisation";
-organisations: FiniteSetModel Organisation
-= property @Organisation @Unit !"type.organisation" store !@ {()};
-end;
-
-### User Interface
+    locationUI: WholeModel +Location -> Element.GTK
+    = fn loc => vertical.GTK
+    [
+        layoutGrow.GTK $ labelled.GTK {"Address: "} $ textArea.GTK (fromWhole.TextModel $ address !$% loc),
+        labelled.GTK {"City: "} $ textEntry.GTK $ city !$% loc,
+        labelled.GTK {"Postcode/ZIP: "} $ textEntry.GTK $ postcode !$% loc,
+        labelled.GTK {"State/Province: "} $ textEntry.GTK $ province !$% loc,
+        labelled.GTK {"Country: "} $ textEntry.GTK $ country !$% loc,
+        labelled.GTK {"Phone: "} $ textEntry.GTK $ locphone !$% loc
+    ];
 
     rec
-    contactPages: WholeModel +LegalEntity -> List (Element.GTK *: Element.GTK)
-    = fn er =>
-    [
-        uiPage {"Social"} $ vertical.GTK
+        # a person or organisation
+        dynamictype LegalEntity = Person | Organisation;
+        subtype LegalEntity <: Named;
+        subtype LegalEntity <: Lifespanned;
+        email = property @LegalEntity @Text !"contact.email" store;
+        phone = property @LegalEntity @Text !"contact.telephone" store;
+        home = property @LegalEntity @Location !"being.location" store;
+        legalentities: FiniteSetModel LegalEntity
+        = property @LegalEntity @Unit !"type.legalentity" store !@ {()};
+
+        # a person
+        dynamictype Person = !"type.person";
+        people: FiniteSetModel Person
+        = maybeMap.FiniteSetModel (check @Person) legalentities;
+        # family relationships between people
+        mother = property @Person @Person !"relation.family.mother" store;
+        father = property @Person @Person !"relation.family.father" store;
+        children: WholeModel +Person -> FiniteSetModel Person
+        = fn p => (mother !@% p) <:|:> (father !@% p);
+        married = property @Person @Boolean !"relation.family.spouse.exist" store;
+
+        # employment relationship
+        employer = property @Person @LegalEntity !"relation.employer" store;
+        employees: WholeModel +LegalEntity -> FiniteSetModel Person
+        = fn p => employer !@% p;
+
+        # an organisation
+        dynamictype Organisation = !"type.organisation";
+        organisations: FiniteSetModel Organisation
+        = property @Organisation @Unit !"type.organisation" store !@ {()};
+    end;
+
+    ### User Interface
+
+    rec
+        contactPages: WholeModel +LegalEntity -> List (Element.GTK *: Element.GTK)
+        = fn er =>
         [
-            uiLabelled {"Email: "} $ textEntry.GTK $ email !$% er,
-            uiLabelled {"Phone: "} $ textEntry.GTK $ phone !$% er
-        ],
-        uiPage {"Home"} $ locationUI $ home !$% er
-    ];
-
-    personPages: WholeModel +Person -> List (Element.GTK *: Element.GTK)
-    = fn p =>
-    [
-        uiPage {"Work"} $ vertical.GTK
-        [
-            uiLabelled {"Employer: "} $ pick.GTK (byName legalentities) $ employer !$% p
-        ],
-        uiPage {"Family"} $ familyUI p
-    ];
-
-    familyUI: WholeModel +Person -> Element.GTK
-    = fn p => vertical.GTK
-    [
-        uiLabelled {"Birth: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ birthdate !$% p,
-        uiLabelled {"Death: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ deathdate !$% p,
-        checkBox.GTK {"Married"} $ married !$% p,
-        uiLabelled {"Mother: "} $ pick.GTK (byName people) $ mother !$% p,
-        uiLabelled {"Father: "} $ pick.GTK (byName people) $ father !$% p,
-        label.GTK {"Children:"},
-        layoutGrow.GTK $ namedItemTable (children p) contactModelUI Nothing
-    ];
-
-    organisationPages: WholeModel +Organisation -> List (Element.GTK *: Element.GTK)
-    = fn subj =>
-    [
-        uiPage {"Employees"} $ namedItemTable (employees subj) contactModelUI Nothing
-    ];
-
-    contactUI: LegalEntity -> Element.GTK
-    = fn e => let
-        pages: List (Element.GTK *: Element.GTK)
-        = contactPages {e} <>.List (e >- match
-            p:? Person => personPages {p};
-            o:? Organisation => organisationPages {o};
-            end);
-        in vertical.GTK
-        [
-            uiLabelled {"Name: "} $ textEntry.GTK $ name !$% {e},
-            layoutGrow.GTK $ notebook.GTK unknown pages
+            page.GTK {"Social"} $ vertical.GTK
+            [
+                labelled.GTK {"Email: "} $ textEntry.GTK $ email !$% er,
+                labelled.GTK {"Phone: "} $ textEntry.GTK $ phone !$% er
+            ],
+            page.GTK {"Home"} $ locationUI $ home !$% er
         ];
 
-    contactModelUI: WholeModel +LegalEntity -> Element.GTK
-    = fn model => dynamic.GTK $ coMap.WholeModel contactUI model;
+        personPages: WholeModel +Person -> List (Element.GTK *: Element.GTK)
+        = fn p =>
+        [
+            page.GTK {"Work"} $ vertical.GTK
+            [
+                labelled.GTK {"Employer: "} $ pick.GTK (byName legalentities) $ employer !$% p
+            ],
+            page.GTK {"Family"} $ familyUI p
+        ];
+
+        familyUI: WholeModel +Person -> Element.GTK
+        = fn p => vertical.GTK
+        [
+            labelled.GTK {"Birth: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ birthdate !$% p,
+            labelled.GTK {"Death: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ deathdate !$% p,
+            checkBox.GTK {"Married"} $ married !$% p,
+            labelled.GTK {"Mother: "} $ pick.GTK (byName people) $ mother !$% p,
+            labelled.GTK {"Father: "} $ pick.GTK (byName people) $ father !$% p,
+            label.GTK {"Children:"},
+            layoutGrow.GTK $ namedItemTable (children p) contactModelUI Nothing
+        ];
+
+        organisationPages: WholeModel +Organisation -> List (Element.GTK *: Element.GTK)
+        = fn subj =>
+        [
+            page.GTK {"Employees"} $ namedItemTable (employees subj) contactModelUI Nothing
+        ];
+
+        contactUI: LegalEntity -> Element.GTK
+        = fn e => let
+            pages: List (Element.GTK *: Element.GTK)
+            = contactPages {e} <>.List (e >- match
+                p:? Person => personPages {p};
+                o:? Organisation => organisationPages {o};
+                end);
+            in vertical.GTK
+            [
+                labelled.GTK {"Name: "} $ textEntry.GTK $ name !$% {e},
+                layoutGrow.GTK $ notebook.GTK unknown pages
+            ];
+
+        contactModelUI: WholeModel +LegalEntity -> Element.GTK
+        = fn model => dynamic.GTK $ coMap.WholeModel contactUI model;
     end;
 
-contactsPane: Action Pane
-= let
-    menuItems =
-    [
-        newItemMenuAction "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
-        newItemMenuAction "New Organisation" Nothing $ newDynamicEntity @Organisation
-    ];
-    in namedPairPane "Contacts" legalentities menuItems contactModelUI;
+    contactsPane: Action Pane
+    = let
+        menuItems =
+        [
+            newItemMenuAction "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
+            newItemMenuAction "New Organisation" Nothing $ newDynamicEntity @Organisation
+        ];
+        in namedPairPane "Contacts" legalentities menuItems contactModelUI;
 
-contactsWindow: Action Window.GTK
-= do
-    p <- contactsPane;
-    paneWindow p;
-    end;
+    contactsWindow: Action Window.GTK
+    = do
+        p <- contactsPane;
+        paneWindow p;
+        end;
 
 in contactsWindow
