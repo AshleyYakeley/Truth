@@ -1,12 +1,14 @@
 #!/usr/bin/pinafore
 let
-import "pinafore-gnome";
-import "uistuff/selection";
-import "uistuff/named";
+    import "uistuff/selection";
 in run.UIContext $ fn uicontext@MkUIContext =>
-mkProps.Named store >- fn MkProps.Named =>
-mkUI.Named uicontext >- fn MkUI.Named =>
 let
+
+    import "uistuff/named";
+    MkProps.Named = mkProps.Named store;
+    MkUI.Named = mkUI.Named uicontext;
+
+    import "pinafore-gnome";
 
 ### EventTime
 
