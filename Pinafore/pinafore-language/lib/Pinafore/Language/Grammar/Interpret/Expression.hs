@@ -139,6 +139,20 @@ interpretPattern (MkWithSourcePos spos pat) = do
 interpretExpression :: SyntaxExpression -> RefExpression
 interpretExpression (MkWithSourcePos spos sexpr) = sourcePosRefNotation spos $ interpretExpression' sexpr
 
+getPatternBindingVariables :: SyntaxPattern -> QInterpreter [FullName]
+getPatternBindingVariables spat = do
+    let
+        (names, cs) = syntaxPatternBindingVariables spat
+        signatureName :: forall a. Namespace -> QSignature 'Positive a -> FullName
+        signatureName ns (ValueSignature name _) = MkFullName name ns
+    namess <-
+        for cs $ \(cns, cref) -> do
+            pres <- lookupPatternConstructor cref
+            case pres of
+                Left _ -> return []
+                Right (MkRecordPattern lt _ _) -> return $ listTypeToList (signatureName cns) lt
+    return $ names <> mconcat namess
+
 data SingleBinding = MkSingleBinding
     { sbName :: FullName
     , sbVarID :: VarID
@@ -172,8 +186,9 @@ typedSyntaxToSingleBindings spat@(MkWithSourcePos spos pat) mstype sbody doc =
             return $ pure sb
         _ -> do
             (pvname, sb) <- buildSingleBinding Nothing mstype sbody doc
+            bvars <- interpScopeBuilder $ lift $ getPatternBindingVariables spat
             sbs <-
-                for (syntaxPatternBindingVariables spat) $ \pname -> let
+                for bvars $ \pname -> let
                     wspos = MkWithSourcePos spos
                     funcsexpr = wspos $ SEAbstract $ MkSyntaxCase spat $ wspos $ SEVar RootNamespace $ fullNameRef pname
                     valsexpr = wspos $ SEApply funcsexpr $ wspos $ SEVar RootNamespace $ fullNameRef pvname

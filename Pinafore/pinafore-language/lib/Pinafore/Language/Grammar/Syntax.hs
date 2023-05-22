@@ -195,6 +195,13 @@ data SyntaxConstructor
     | SLUnit
     deriving (Eq)
 
+instance ExprShow SyntaxConstructor where
+    exprShowPrec (SLNumber x) = identifierPrecNamedText $ pack $ show x
+    exprShowPrec (SLString x) = identifierPrecNamedText x
+    exprShowPrec (SLNamedConstructor x) = exprShowPrec x
+    exprShowPrec SLPair = "(,)"
+    exprShowPrec SLUnit = "()"
+
 data SyntaxPattern'
     = AnySyntaxPattern
     | VarSyntaxPattern FullName
@@ -210,6 +217,17 @@ data SyntaxPattern'
     | NamespaceSyntaxPattern SyntaxPattern
                              NamespaceRef
     deriving (Eq)
+
+instance ExprShow SyntaxPattern' where
+    exprShowPrec AnySyntaxPattern = "_"
+    exprShowPrec (VarSyntaxPattern v) = exprShowPrec v
+    exprShowPrec (BothSyntaxPattern a b) = namedTextPrec 6 $ exprPrecShow 5 a <> "@" <> exprPrecShow 5 b
+    exprShowPrec (ConstructorSyntaxPattern ns c pp) =
+        namedTextPrec 7 $
+        exprPrecShow 6 ns <> " " <> exprPrecShow 6 c <> mconcat (fmap (\p -> " " <> exprPrecShow 6 p) pp)
+    exprShowPrec (TypedSyntaxPattern p t) = namedTextPrec 7 $ exprPrecShow 6 p <> ": " <> exprPrecShow 6 t
+    exprShowPrec (DynamicTypedSyntaxPattern p t) = namedTextPrec 7 $ exprPrecShow 6 p <> ":? " <> exprPrecShow 6 t
+    exprShowPrec (NamespaceSyntaxPattern p n) = namedTextPrec 7 $ exprPrecShow 6 p <> " as " <> exprPrecShow 6 n
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 

@@ -6,6 +6,8 @@ import Pinafore.Language.Name.FullName
 import Pinafore.Language.Name.FullNameRef
 import Pinafore.Language.Name.Name
 import Pinafore.Language.Name.NamedText
+import Pinafore.Language.Name.Namespace
+import Pinafore.Language.Name.NamespaceRef
 import Pinafore.Language.Name.PrecNamedText
 import Shapes
 
@@ -25,6 +27,10 @@ instance ExprShow t => ExprShow (Maybe t) where
     exprShowPrec (Just t) = exprShowPrec t
 
 instance ExprShow Name
+
+instance ExprShow Namespace
+
+instance ExprShow NamespaceRef
 
 instance ExprShow FullName
 

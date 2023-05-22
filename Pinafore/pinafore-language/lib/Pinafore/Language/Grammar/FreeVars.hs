@@ -7,11 +7,28 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes
 
+-- | Actually a superset, some of these might not be free.
 syntaxExpressionFreeVariables :: SyntaxExpression -> [FullName]
 syntaxExpressionFreeVariables expr = toList $ syntaxFreeVariables expr
 
-syntaxPatternBindingVariables :: SyntaxPattern -> [FullName]
-syntaxPatternBindingVariables pat = toList $ syntaxBindingVariables pat
+data BindingThing
+    = VarBindingThing FullName
+    | ConsBindingThing Namespace
+                       FullNameRef
+    deriving (Eq)
+
+btGetVar :: BindingThing -> Maybe FullName
+btGetVar (VarBindingThing x) = Just x
+btGetVar _ = Nothing
+
+btGetCons :: BindingThing -> Maybe (Namespace, FullNameRef)
+btGetCons (ConsBindingThing ns x) = Just (ns, x)
+btGetCons _ = Nothing
+
+syntaxPatternBindingVariables :: SyntaxPattern -> ([FullName], [(Namespace, FullNameRef)])
+syntaxPatternBindingVariables pat = let
+    bts = toList $ syntaxBindingVariables pat
+    in (mapMaybe btGetVar bts, mapMaybe btGetCons bts)
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet FullName
@@ -29,11 +46,12 @@ instance SyntaxFreeVariables st => SyntaxFreeVariables (WithSourcePos st) where
     syntaxFreeVariables (MkWithSourcePos _ e) = syntaxFreeVariables e
 
 instance SyntaxFreeVariables SyntaxCase where
-    syntaxFreeVariables (MkSyntaxCase pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
+    syntaxFreeVariables (MkSyntaxCase pat expr) =
+        difference (syntaxFreeVariables expr) (mapMaybe btGetVar $ syntaxBindingVariables pat)
 
 instance SyntaxFreeVariables (SyntaxMulticase n) where
     syntaxFreeVariables (MkSyntaxMulticase pats expr) =
-        difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
+        difference (syntaxFreeVariables expr) (mapMaybe btGetVar $ syntaxBindingVariables pats)
 
 instance SyntaxFreeVariables (Some SyntaxMulticase) where
     syntaxFreeVariables (MkSome m) = syntaxFreeVariables m
@@ -54,7 +72,9 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SELet binds expr) =
-        difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
+        difference
+            (syntaxFreeVariables binds <> syntaxFreeVariables expr)
+            (mapMaybe btGetVar $ syntaxBindingVariables binds)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
 
 instance SyntaxFreeVariables SyntaxBinding where
@@ -74,7 +94,7 @@ instance SyntaxFreeVariables SyntaxDeclaration' where
     syntaxFreeVariables _ = mempty
 
 class SyntaxBindingVariables t where
-    syntaxBindingVariables :: t -> FiniteSet FullName
+    syntaxBindingVariables :: t -> FiniteSet BindingThing
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
@@ -88,15 +108,20 @@ instance SyntaxBindingVariables t => SyntaxBindingVariables (FixedList n t) wher
 instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) where
     syntaxBindingVariables (MkWithSourcePos _ pat) = syntaxBindingVariables pat
 
+constructorBindingVariables :: Namespace -> SyntaxConstructor -> FiniteSet BindingThing
+constructorBindingVariables ns (SLNamedConstructor name) = singletonSet $ ConsBindingThing ns name
+constructorBindingVariables _ _ = mempty
+
 instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables AnySyntaxPattern = mempty
-    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet name
+    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet $ VarBindingThing name
     syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
-    syntaxBindingVariables (ConstructorSyntaxPattern _ _ pats) = syntaxBindingVariables pats
+    syntaxBindingVariables (ConstructorSyntaxPattern ns c pats) =
+        constructorBindingVariables ns c <> syntaxBindingVariables pats
     syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
     syntaxBindingVariables (DynamicTypedSyntaxPattern pat _) = syntaxBindingVariables pat
-    syntaxBindingVariables (NamespaceSyntaxPattern _ _) = mempty
+    syntaxBindingVariables (NamespaceSyntaxPattern pat _) = syntaxBindingVariables pat
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) where
     syntaxBindingVariables (MkSyntaxWithDoc _ decl) = syntaxBindingVariables decl

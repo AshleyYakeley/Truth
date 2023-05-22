@@ -580,6 +580,12 @@ testQueries =
               , testQuery "(match a@b => (a,b) end) 2" $ LRSuccess "(2, 2)"
               ]
         , testTree
+              "pattern"
+              [ testQuery "(fn Just a => a) (Just 71)" $ LRSuccess "71"
+              , testQuery "(match Just a => a end) (Just 72)" $ LRSuccess "72"
+              , testQuery "let Just a = Just 73 in a" $ LRSuccess "73"
+              ]
+        , testTree
               "matches"
               [ testQuery "(match a => 5 end) 2" $ LRSuccess "5"
               , testQuery "(match a, b => a +.Integer b end) 2 3" $ LRSuccess "5"

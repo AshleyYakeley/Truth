@@ -1025,13 +1025,18 @@ testEntity =
                     "record-constructor"
                     [ tGroup
                           "rank-1"
-                          [ tDecls ["datatype R of MkR of di: Integer end end"] $
+                          [ tDecls ["datatype R of MkR of di: Integer end end", "mkR: Integer -> R = fn di => MkR"] $
                             tGroup
                                 "one"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {22} {(let di = 22 in MkR) >- fn MkR => di}"
-                                , testExpectSuccess
-                                      "let f: Integer -> R = fn di => MkR; g: R -> Integer = fn MkR => di; in testeq {17} {g $ f 17}"
+                                , testExpectSuccess "testeq {21} {(fn MkR => di) (mkR 21)}"
+                                , testExpectSuccess "testeq {22} {(match MkR => di end) (mkR 22)}"
+                                , testExpectSuccess "testeq {23} {let MkR = mkR 23 in 23}"
+                                , testExpectSuccess "testeq {24} {let MkR = mkR 24 in di}"
+                                , testExpectSuccess "testeq {25} {let Just di = Just 25 in di}"
+                                , testExpectSuccess "let g: R -> Integer = fn MkR => di; in testeq {26} {g $ mkR 26}"
+                                , testExpectReject "testeq {27} {let MkR as A = mkR 27 in di}"
+                                , testExpectSuccess "testeq {28} {let MkR as A = mkR 28 in di.A}"
                                 ]
                           , tDecls ["datatype R of MkR of di: Integer; dt: Text end end"] $
                             tGroup
