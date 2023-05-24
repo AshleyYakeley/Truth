@@ -51,50 +51,50 @@ benchScripts :: Benchmark
 benchScripts =
     bgroup
         "script"
-        [ benchScript "do a <- return $ return (); a end"
-        , benchScript "do a <- get {return ()}; a end"
-        , benchScript "do a <- get $ pure.WholeModel $ return (); a end"
-        , benchScript "get {return ()} >>= fn v => v"
-        , benchScript "get {False} >>= fn v => return ()"
-        , benchScript "get (pure.WholeModel False) >>= fn v => return ()"
-        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => return ()"
-        , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=return () end in a"
-        , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
+        [ benchScript "do a <- pure $ pure (); a end"
+        , benchScript "do a <- get {pure ()}; a end"
+        , benchScript "do a <- get $ pure.WholeModel $ pure (); a end"
+        , benchScript "get {pure ()} >>= fn v => v"
+        , benchScript "get {False} >>= fn v => pure ()"
+        , benchScript "get (pure.WholeModel False) >>= fn v => pure ()"
+        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => pure ()"
+        , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=pure () end in a"
+        , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ pure ()"
         , benchScript
-              "let import \"pinafore-gnome\"; using GTK; const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, layoutGrow ui] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.GTK"
-        , benchScript "let const = fn a, b => a; rec r = 3::r end in const (return ()) r"
+              "let import \"pinafore-gnome\"; using GTK; const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, layoutGrow ui] in const (pure ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.GTK"
+        , benchScript "let const = fn a, b => a; rec r = 3::r end in const (pure ()) r"
         , benchScript
-              "let cpass = fn x => return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let cpass = fn x => pure (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass = fn x => return (); rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
+              "let cpass = fn x => pure (); rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
         , benchScript
-              "let cpass = fn x => return () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let cpass = fn x => pure () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass = fn x => return () in let f = fn a => let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
+              "let cpass = fn x => pure () in let f = fn a => let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => return (); q = [" <>
+          "let g = fn r => get r >>= fn x => pure (); q = [" <>
           intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g1 = fn r => get r >>= fn x => return (); g2 = fn r => get r >>= fn x => return (); q = [" <>
+          "let g1 = fn r => get r >>= fn x => pure (); g2 = fn r => get r >>= fn x => pure (); q = [" <>
           intercalate "," (replicate 25 "g1 (pure.WholeModel 1)" <> replicate 25 "g2 (pure.WholeModel 1)") <>
           "] in for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => return () in let q = [" <>
+          "let g = fn r => get r >>= fn x => pure () in let q = [" <>
           intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => return () in let q = [" <>
+          "let g = fn r => get r >>= fn x => pure () in let q = [" <>
           intercalate "," (fmap (\(i :: Int) -> "g (pure.WholeModel " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => return (); q = [" <>
-          intercalate "," (replicate 50 "get (pure.WholeModel 1) >>= fn x => return ()") <> "] in for_ q id"
+          "let g = fn r => get r >>= fn x => pure (); q = [" <>
+          intercalate "," (replicate 50 "get (pure.WholeModel 1) >>= fn x => pure ()") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => from.List (return ()) (fn x, y => return ()) r; q = [" <>
+          "let g = fn r => from.List (pure ()) (fn x, y => pure ()) r; q = [" <>
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
@@ -119,11 +119,11 @@ benchUpdates :: Benchmark
 benchUpdates =
     bgroup
         "update"
-        [ benchUpdate "do ref <- newMem.WholeModel; return (ref := 1, ref) end"
+        [ benchUpdate "do ref <- newMem.WholeModel; pure (ref := 1, ref) end"
         , benchUpdate
-              "let id = fn x => x in do ref <- newMem.WholeModel; return (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
+              "let id = fn x => x in do ref <- newMem.WholeModel; pure (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
         , benchUpdate
-              "let id = fn x => x in do ref <- newMem.WholeModel; return (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
+              "let id = fn x => x in do ref <- newMem.WholeModel; pure (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
         ]
 
 main :: IO ()
