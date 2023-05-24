@@ -1,0 +1,29 @@
+expose namespace UILib. of
+
+    import "pinafore-gnome";
+
+    namespace UILib of
+
+        datatype Context of
+            MkContext of
+                gtk: Context.GTK.;
+                undoHandler: UndoHandler;
+                store: Store;
+            end;
+        end;
+
+        namespace Context of
+
+            run: (Context.UILib. -> Action a) -> Action a
+            = fn call => do
+                dstore <- openDefaultStore.Env;
+                undoHandler <- new.UndoHandler;
+                store <- handleStore.UndoHandler undoHandler dstore;
+                run.GTK $ fn gtk => call MkContext;
+            end;
+
+        end;
+
+    end;
+
+end

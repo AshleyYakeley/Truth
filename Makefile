@@ -101,19 +101,23 @@ PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
 DEBIANREL := bullseye
 
+LIBMODULEFILES := \
+	UILib/Context \
+	UILib/Pane \
+	UILib/Named \
+	UILib
+
 .build/deb/$(PACKAGEFULLNAME).deb: \
 		${BINPATH}/pinafore \
-		Pinafore/lib/uistuff/selection.pinafore \
-		Pinafore/lib/uistuff/named.pinafore \
+		$(foreach I,$(LIBMODULEFILES),Pinafore/lib/$(I).pinafore) \
 		deb/copyright \
 		deb/control.m4 \
 		deb/changelog.m4
 	rm -rf $(PACKAGEDIR)
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
-	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/uistuff
-	cp Pinafore/lib/uistuff/selection.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/uistuff/
-	cp Pinafore/lib/uistuff/named.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/uistuff/
+	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UILib
+	for i in $(LIBMODULEFILES); do cp Pinafore/lib/$$i.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/$$i.pinafore; done
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
 	stack $(STACKFLAGS) exec -- \
@@ -173,12 +177,11 @@ nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
 	docker run --rm -v `pwd`:/workspace -ti nix-build nix build -o out/nix-flake .?submodules=1
 
-LIBMODULES := \
+LIBMODULEDOCS := \
     pinafore \
     pinafore-media \
     pinafore-gnome \
-	uistuff.selection \
-	uistuff.named
+	UILib
 
 mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library
@@ -203,7 +206,7 @@ mkdocs/generated/img/information.png: mkdocs/docs/img/information.png
 
 .PHONY: docs
 
-docs: $(foreach f,$(LIBMODULES),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md mkdocs/generated/type-infix.md mkdocs/generated/img/information.png docker-image
+docs: $(foreach f,$(LIBMODULEDOCS),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md mkdocs/generated/type-infix.md mkdocs/generated/img/information.png docker-image
 	mkdir -p mkdocs/generated/examples
 	cp Pinafore/pinafore-app/examples/* mkdocs/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/

@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 let
-import "uistuff/named"; # test finding modules
+import "UILib/Named"; # test finding modules
 import "pinafore-gnome";
 in
 run.GTK $ fn gtk => do

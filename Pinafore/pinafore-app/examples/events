@@ -1,14 +1,14 @@
 #!/usr/bin/pinafore
 let
-    import "uistuff/selection";
-in run.UIContext $ fn uicontext@MkUIContext =>
+    import "pinafore-gnome";
+    import "UILib";
+    using UILib.;
+in run.Context $ fn context@MkContext =>
 let
 
-    import "uistuff/named";
+    MkContext.Pane = mkContext.Pane context;
     MkProps.Named = mkProps.Named store;
-    MkUI.Named = mkUI.Named uicontext;
-
-    import "pinafore-gnome";
+    MkContext.Named = mkContext.Named context;
 
 ### EventTime
 
@@ -160,7 +160,7 @@ eventsTableUI: WholeModel Event -> Element.GTK
         end;
 
 in do
-    eventsPane <- selectionPair.Pane "Events" events [newItemMenuAction ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
+    eventsPane <- selectionPair.Pane "Events" events [newItemMenuAction.Pane ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
     p <- notebook.Pane {"Events"} [overviewPane,eventsPane];
     paneWindow p
     end

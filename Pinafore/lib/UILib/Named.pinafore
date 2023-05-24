@@ -1,0 +1,79 @@
+expose namespace UILib of
+
+    import "pinafore-gnome";
+    import "UILib/Pane";
+
+    namespace UILib of
+
+        using GTK;
+
+        #| An open entity type; something with a name
+        opentype Named;
+
+        namespace Named of
+
+            datatype Props of
+                MkProps of
+                    #| A name is a text that identifies (in some sense) an entity.
+                    name: Property Named Text;
+                    #| Order alphabetically (case-insensitive) by name
+                    nameOrder: ModelOrder Named;
+                    #| Order a set of entities by their names.
+                    byName: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text));
+                end;
+            end;
+
+            mkProps: Store -> Props
+            = fn store => let
+                name = property @Named @Text !"identify.name" store;
+                nameOrder = on.ModelOrder name alphabetical.Order;
+                byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property name) !$$ model;
+                in MkProps;
+
+            datatype Context of
+                MkContext of
+                    namedPane: (WholeModel +a -> Element) -> WholeModel +(a & Named) -> Pane;
+                    nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
+                    namedTable: FiniteSetModel {a,+Named} -> (a -> Action Any) -> Maybe (WholeModel {a,+Named}) -> Element;
+                    namedItemTable: FiniteSetModel {a,+Named} -> (WholeModel +a -> Element) -> Maybe (WholeModel {a,+Named}) -> Element;
+                    namedPairPane:
+                        Text ->
+                        FiniteSetModel {a,+Named} ->
+                        List (SetModel a -> ((a & Named) -> Action Unit) -> MenuItem) ->
+                        (WholeModel +a -> Element) ->
+                        Action Pane;
+                end;
+            end;
+
+            mkContext # : Context.UILib. -> Context.Named.UILib.
+            = fn MkContext.UILib. => let
+                MkContext.Pane.UILib. = mkContext.Pane MkContext.UILib.;
+
+                MkProps = mkProps store;
+
+                namedPane = fn iui, e => let
+                    titleModel= name !$% e;
+                    extraMenusModel = {[]};
+                    element = iui $ immut.WholeModel e;
+                    in MkPane;
+
+                nameColumn = ({"Name"},fn p => name !$ {p});
+
+                namedTable = fn sm, onActivate, msel => exec $ do
+                    lm <- getList.FiniteSetModel nameOrder sm;
+                    pure.Action $ listTable [nameColumn] lm onActivate msel;
+                    end;
+
+                namedItemTable = fn set, iui, msel =>
+                    namedTable set (fn e => paneWindow $ namedPane iui {e}) msel;
+                namedPairPane = fn name, set, mitems, getSelectedUI => let
+                    getSelectorUI = fn sel => namedItemTable set getSelectedUI (Just sel);
+                    iopen = fn e => paneWindow $ namedPane getSelectedUI {e};
+                    in selectionPair.Pane name set (map.List (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
+            in MkContext.Named.UILib.;
+
+        end
+
+    end
+
+end
