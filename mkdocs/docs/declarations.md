@@ -76,7 +76,7 @@ These names specify the namespace directly, and then the name within the namespa
 Relative full name references consist of names separated by dots.
 These names are searched in the current namespace, followed by all ancestor namespaces.
 
-For example, if the current namespaces is `B.A.`:
+For example, if the current namespace is `B.A.`:
 
 * `async.Task.` is always `async.Task.`, that is, it refers to the declaration `async` within the namespace `Task` within the root namespace.
 * `async.Task` refers to the first found of these: `async.Task.B.A.`, `async.Task.A.`, `async.Task.`.
@@ -202,5 +202,5 @@ An import declaration brings declarations from a module into scope.
 ```pinafore
 let
 import "pinafore-media";
-in Image.blankImage Colour.honeydew (512,512)
+in blank.Image honeydew.Colour (512,512)
 ```

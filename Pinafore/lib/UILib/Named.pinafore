@@ -1,11 +1,11 @@
 expose namespace UILib of
 
     import "pinafore-gnome";
+    using GTK;
+
     import "UILib/Pane";
 
     namespace UILib of
-
-        using GTK;
 
         #| An open entity type; something with a name
         opentype Named;
@@ -45,7 +45,7 @@ expose namespace UILib of
                 end;
             end;
 
-            mkContext # : Context.UILib. -> Context.Named.UILib.
+            mkContext: Context.UILib. -> Context.Named.UILib.
             = fn MkContext.UILib. => let
                 MkContext.Pane.UILib. = mkContext.Pane MkContext.UILib.;
 
