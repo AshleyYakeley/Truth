@@ -17,9 +17,9 @@ pinafore> a
 pinafore> p
 <input>:2:1: undefined: p: a
 pinafore> openEntity @X !"x"
-<input>:1:13: unknown type: X
+<input>:1:13: undefined: X
 pinafore> let y = openEntity @Y !"y"
-<input>:1:21: unknown type: Y
+<input>:1:21: undefined: Y
 pinafore> 35
 35
 pinafore> x +.Integer 1

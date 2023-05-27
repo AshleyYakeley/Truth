@@ -20,19 +20,22 @@ module Pinafore.Language.Interpreter
     , sourcePosParam
     , scopeSourcePos
     , getCurrentNamespace
-    , withNamespace
+    , withCurrentNamespace
     , usingNamespace
     , getRenderFullName
     , throwWithName
     , SpecialVals(..)
     , getSpecialVals
+    , getBindingInfoMap
+    , lookupMaybeValue
+    , lookupBoundType
+    , lookupPatternConstructor
+    , lookupSpecialForm
     , BoundValue(..)
-    , lookupLetBinding
+    , lookupBoundValue
     , registerLetBindings
     , registerLetBinding
     , getSubtypeScope
-    , lookupSpecialForm
-    , lookupBoundType
     , newTypeID
     , withNewTypeID
     , registerBoundType
@@ -43,11 +46,9 @@ module Pinafore.Language.Interpreter
     , RecordConstructor(..)
     , RecordPattern(..)
     , BindingInfo(..)
-    , getBindingMap
     , bindingInfosToScope
     , InterpreterBinding(..)
     , registerMatchBindings
-    , lookupPatternConstructor
     , registerPatternConstructor
     , registerRecord
     , registerSubtypeConversion
@@ -166,12 +167,6 @@ bindingInfosToNameMap bis = mconcat $ fmap bindingInfoToNameMap bis
 bindingInfosToScope :: [BindingInfo ts] -> Scope ts
 bindingInfosToScope bis = emptyScope {scopeBindings = bindingInfosToNameMap bis}
 
-nameMapLookupBindingInfo :: NameMap ts -> FullName -> Maybe (BindingInfo ts)
-nameMapLookupBindingInfo (MkNameMap nspace) name = do
-    (biDocumentation, biValue) <- lookup name nspace
-    let biName = name
-    return MkBindingInfo {..}
-
 data Scope (ts :: Type) = MkScope
     { scopeBindings :: NameMap ts
     , scopeSubtypes :: HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
@@ -254,7 +249,7 @@ data InterpretContext ts = MkInterpretContext
     { icSourcePos :: SourcePos
     , icVarIDState :: VarIDState
     , icScope :: Scope ts
-    , icNamespace :: Namespace
+    , icCurrentNamespace :: Namespace
     , icSpecialVals :: SpecialVals ts
     , icModulePath :: [ModuleName]
     , icLoadModule :: ModuleName -> Interpreter ts (Maybe (Module ts))
@@ -320,8 +315,9 @@ scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScop
 bindingsParam :: Param (Interpreter ts) (NameMap ts)
 bindingsParam = lensMapParam (\bfb a -> fmap (\b -> a {scopeBindings = b}) $ bfb $ scopeBindings a) scopeParam
 
-namespaceParam :: Param (Interpreter ts) Namespace
-namespaceParam = lensMapParam (\bfb a -> fmap (\b -> a {icNamespace = b}) $ bfb $ icNamespace a) contextParam
+currentNamespaceParam :: Param (Interpreter ts) Namespace
+currentNamespaceParam =
+    lensMapParam (\bfb a -> fmap (\b -> a {icCurrentNamespace = b}) $ bfb $ icCurrentNamespace a) contextParam
 
 specialValsParam :: Param (Interpreter ts) (SpecialVals ts)
 specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ bfb $ icSpecialVals a) contextParam
@@ -353,7 +349,7 @@ runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
     icVarIDState = firstVarIDState
     icScope = emptyScope
     icModulePath = []
-    icNamespace = RootNamespace
+    icCurrentNamespace = RootNamespace
     in evalStateT (runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
 firstOf :: [a] -> (a -> Maybe b) -> Maybe b
@@ -364,7 +360,7 @@ firstOf (a:aa) amb =
         Nothing -> firstOf aa amb
 
 getCurrentNamespace :: Interpreter ts Namespace
-getCurrentNamespace = paramAsk namespaceParam
+getCurrentNamespace = paramAsk currentNamespaceParam
 
 namespacePriority :: Interpreter ts (NamespaceRef -> [Namespace])
 namespacePriority = do
@@ -382,24 +378,98 @@ throwWithName err = do
     ntt <- getRenderFullName
     throw $ err ntt
 
-getBindingMap :: Interpreter ts (FullNameRef -> Maybe (BindingInfo ts))
-getBindingMap = do
+nameMapLookupBindingInfo :: NameMap ts -> FullName -> Maybe (BindingInfo ts)
+nameMapLookupBindingInfo (MkNameMap nspace) name = do
+    (biDocumentation, biValue) <- lookup name nspace
+    let biName = name
+    return MkBindingInfo {..}
+
+getBindingInfoMap :: Interpreter ts (FullNameRef -> Maybe (BindingInfo ts))
+getBindingInfoMap = do
     nspace <- paramAsk bindingsParam
     nsp <- namespacePriority
     return $ \(MkFullNameRef name nsn) ->
         firstOf (nsp nsn) $ \ns -> nameMapLookupBindingInfo nspace $ MkFullName name ns
 
-lookupBinding :: Interpreter ts (FullNameRef -> Maybe (InterpreterBinding ts))
-lookupBinding = do
-    bindmap <- getBindingMap
+getBindingMap :: Interpreter ts (FullNameRef -> Maybe (InterpreterBinding ts))
+getBindingMap = do
+    bindmap <- getBindingInfoMap
     return $ \rname -> fmap biValue $ bindmap rname
+
+rnuToInterpreter :: FullNameRef -> Maybe a -> Interpreter ts a
+rnuToInterpreter _ (Just a) = return a
+rnuToInterpreter name Nothing = throw $ LookupNotDefinedError name
+
+lookupBinding ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (InterpreterBinding ts)
+lookupBinding name = do
+    bindmap <- getBindingMap
+    rnuToInterpreter name $ bindmap name
 
 lookupDebugBindingInfo :: HasInterpreter ts => FullNameRef -> Interpreter ts (FullName, String)
 lookupDebugBindingInfo name = do
-    bindmap <- getBindingMap
-    case bindmap name of
-        Nothing -> throw $ LookupRefNameUnknownError name
-        Just b -> return $ (biName b, show $ biValue b)
+    bindmap <- getBindingInfoMap
+    b <- rnuToInterpreter name $ bindmap name
+    return $ (biName b, show $ biValue b)
+
+lookupBoundType ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (InterpreterBoundType ts)
+lookupBoundType name = do
+    b <- lookupBinding name
+    case b of
+        TypeBinding t -> return t
+        _ -> throw $ LookupNotTypeError name
+
+lookupPatternConstructor ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (Either (TSExpressionPatternConstructor ts) (RecordPattern ts))
+lookupPatternConstructor name = do
+    b <- lookupBinding name
+    case b of
+        ValueBinding _ (Just pc) -> return $ Left pc
+        RecordConstructorBinding _ rp -> return $ Right rp
+        _ -> throw $ LookupNotConstructorError name
+
+lookupSpecialForm ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (SpecialForm ts (Interpreter ts))
+lookupSpecialForm name = do
+    b <- lookupBinding name
+    case b of
+        SpecialFormBinding sf -> return sf
+        _ -> throw $ LookupNotSpecialFormError name
+
+data BoundValue ts
+    = ValueBoundValue (TSSealedExpression ts)
+    | RecordBoundValue (RecordConstructor ts)
+
+lookupBoundValue ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (BoundValue ts)
+lookupBoundValue name = do
+    b <- lookupBinding name
+    case b of
+        ValueBinding exp _ -> return $ ValueBoundValue exp
+        RecordConstructorBinding rc _ -> return $ RecordBoundValue rc
+        _ -> throw $ LookupNotConstructorError name
+
+lookupMaybeValue ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (Maybe (TSSealedExpression ts))
+lookupMaybeValue name = do
+    mb <- getBindingMap
+    return $
+        case mb name of
+            Just (ValueBinding exp _) -> Just exp
+            _ -> Nothing
 
 checkPureExpression ::
        forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
@@ -419,7 +489,7 @@ exportNames ::
     => [FullNameRef]
     -> Interpreter ts [BindingInfo ts]
 exportNames names = do
-    bindmap <- getBindingMap
+    bindmap <- getBindingInfoMap
     let
         (badnamesl, bis) =
             partitionEithers $
@@ -430,7 +500,7 @@ exportNames names = do
                          Nothing -> Left name)
                 names
     case nonEmpty badnamesl of
-        Just badnames -> throw $ LookupNamesUnknownError badnames
+        Just badnames -> throw $ LookupNamesUndefinedError badnames
         Nothing -> return bis
 
 exportNamespace :: [Namespace] -> Interpreter ts [BindingInfo ts]
@@ -464,8 +534,8 @@ scopeRef = transformParamRef scopeParam
 bindingsRef :: Ref (ScopeInterpreter ts) (NameMap ts)
 bindingsRef = transformParamRef bindingsParam
 
-namespaceRef :: Ref (ScopeInterpreter ts) Namespace
-namespaceRef = transformParamRef namespaceParam
+currentNamespaceRef :: Ref (ScopeInterpreter ts) Namespace
+currentNamespaceRef = transformParamRef currentNamespaceParam
 
 varIDStateRef :: Ref (ScopeInterpreter ts) VarIDState
 varIDStateRef = transformParamRef varIDStateParam
@@ -496,10 +566,10 @@ getRestore r = do
     old <- refGet r
     return $ refPut r old
 
-withNamespace :: Namespace -> ScopeInterpreter ts (ScopeInterpreter ts ())
-withNamespace ns = do
-    nrestore <- getRestore namespaceRef
-    refPut namespaceRef ns
+withCurrentNamespace :: Namespace -> ScopeInterpreter ts (ScopeInterpreter ts ())
+withCurrentNamespace ns = do
+    nrestore <- getRestore currentNamespaceRef
+    refPut currentNamespaceRef ns
     return nrestore
 
 usingNamespace :: Namespace -> Namespace -> (FullNameRef -> Bool) -> ScopeInterpreter ts ()
@@ -558,21 +628,6 @@ registerBindings bb = do
 getSpecialVals :: Interpreter ts (SpecialVals ts)
 getSpecialVals = paramAsk specialValsParam
 
-data BoundValue ts
-    = ValueBoundValue (TSSealedExpression ts)
-    | RecordBoundValue (RecordConstructor ts)
-
-lookupLetBinding ::
-       forall ts. HasInterpreter ts
-    => Interpreter ts (FullNameRef -> Maybe (BoundValue ts))
-lookupLetBinding = do
-    mb <- lookupBinding
-    return $ \name ->
-        case mb name of
-            Just (ValueBinding exp _) -> Just $ ValueBoundValue exp
-            Just (RecordConstructorBinding rc _) -> Just $ RecordBoundValue rc
-            _ -> Nothing
-
 registerLetBindings ::
        forall ts. HasInterpreter ts
     => [(FullName, RawMarkdown, TSSealedExpression ts)]
@@ -601,46 +656,6 @@ registerMatchBindings match = do
         SuccessResult bb -> registerLetBindings bb
         FailureResult fn -> lift $ throw $ KnownIssueError 0 $ "bad match var: " <> toText fn
 
-lookupSpecialForm :: FullNameRef -> Interpreter ts (SpecialForm ts (Interpreter ts))
-lookupSpecialForm name = do
-    mb <- lookupBinding
-    case mb name of
-        Just (SpecialFormBinding sf) -> return sf
-        _ -> throw $ LookupSpecialFormUnknownError name
-
-lookupBoundTypeM :: Interpreter ts (FullNameRef -> Maybe (InterpreterBoundType ts))
-lookupBoundTypeM = do
-    mb <- lookupBinding
-    return $ \name ->
-        case mb name of
-            Just (TypeBinding t) -> Just t
-            _ -> Nothing
-
-lookupBoundType :: FullNameRef -> Interpreter ts (InterpreterBoundType ts)
-lookupBoundType name = do
-    mnt <- lookupBoundTypeM
-    case mnt name of
-        Just nt -> return nt
-        Nothing -> throw $ LookupTypeUnknownError name
-
-lookupPatternConstructorM ::
-       Interpreter ts (FullNameRef -> Maybe (Either (TSExpressionPatternConstructor ts) (RecordPattern ts)))
-lookupPatternConstructorM = do
-    mb <- lookupBinding
-    return $ \name ->
-        case mb name of
-            Just (ValueBinding _ (Just pc)) -> Just $ Left pc
-            Just (RecordConstructorBinding _ rp) -> Just $ Right rp
-            _ -> Nothing
-
-lookupPatternConstructor ::
-       FullNameRef -> Interpreter ts (Either (TSExpressionPatternConstructor ts) (RecordPattern ts))
-lookupPatternConstructor name = do
-    ma <- lookupPatternConstructorM
-    case ma name of
-        Just a -> return a
-        Nothing -> throw $ LookupConstructorUnknownError name
-
 newTypeID :: Interpreter ts (Some TypeIDType)
 newTypeID = do
     tid <- refGet typeIDRef
@@ -655,7 +670,7 @@ withNewTypeID call = do
 
 checkName :: FullName -> ScopeInterpreter ts ()
 checkName name = do
-    mnt <- lift lookupBinding
+    mnt <- lift getBindingMap
     case mnt $ fullNameRef name of
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
         Nothing -> return ()

@@ -363,7 +363,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                     Just (b, items) -> \name -> any (matchItem name) items == b
             return mempty
         NamespaceSyntaxDeclaration nsn decls -> do
-            close <- interpScopeBuilder $ withNamespace nsn
+            close <- interpScopeBuilder $ withCurrentNamespace nsn
             docs <- interpretDocDeclarations decls
             interpScopeBuilder close
             return $ pure $ Node (MkDefDoc (NamespaceDocItem $ AbsoluteNamespaceRef nsn) doc) docs
@@ -396,12 +396,11 @@ interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
             unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ fmap conv resultExpr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression
-interpretNamedConstructor n = do
-    me <- liftRefNotation lookupLetBinding
-    case me n of
-        Just (ValueBoundValue e) -> return e
-        Just (RecordBoundValue rc) -> interpretRecordConstructor rc
-        _ -> throw $ InterpretConstructorUnknownError n
+interpretNamedConstructor name = do
+    bv <- liftRefNotation $ lookupBoundValue name
+    case bv of
+        ValueBoundValue e -> return e
+        RecordBoundValue rc -> interpretRecordConstructor rc
 
 interpretConstructor :: SyntaxConstructor -> RefExpression
 interpretConstructor (SLNumber n) =

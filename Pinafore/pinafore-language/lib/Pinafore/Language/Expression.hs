@@ -26,9 +26,9 @@ qVarExpr name = tsVar @QTypeSystem name
 
 qName :: FullNameRef -> QInterpreter QExpression
 qName name = do
-    mexpr <- lookupLetBinding
-    case mexpr name of
-        Just (ValueBoundValue expr) -> return expr
+    mexpr <- lookupMaybeValue name
+    case mexpr of
+        Just expr -> return expr
         _ -> do
             spos <- paramAsk sourcePosParam
             return $ qVarExpr $ mkBadVarID spos name

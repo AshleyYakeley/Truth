@@ -14,7 +14,7 @@ pinafore> :doc Element.GTK
 pinafore> :doc textArea.GTK
 #| Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference.
 pinafore> :doc notfound
-! notfound not found
+! notfound undefined
 pinafore> let aa = 8
 pinafore> :doc aa
 pinafore> let {#| doc 1 xx #} xx: Integer = 45

@@ -95,10 +95,10 @@ interactLoop inh outh echo = do
                                  interactRunQInterpreter $ bind $ return () -- check errors
                                  lift $ readerStateUpdate bind
                              ShowDocInteractiveCommand rname -> do
-                                 bmap <- interactRunQInterpreter $ getBindingMap
+                                 bmap <- interactRunQInterpreter $ getBindingInfoMap
                                  liftIO $
                                      case fmap biDocumentation $ bmap rname of
-                                         Nothing -> hPutStrLn outh $ "! " <> show rname <> " not found"
+                                         Nothing -> hPutStrLn outh $ "! " <> show rname <> " undefined"
                                          Just "" -> return ()
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)
                              ShowTypeInteractiveCommand showinfo sexpr -> do

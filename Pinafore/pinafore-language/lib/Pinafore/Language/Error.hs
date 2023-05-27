@@ -14,14 +14,14 @@ data ErrorType
     | UnicodeDecodeError Text
     | ParserError [Message]
     | ExpressionErrorError ExpressionError
-    | LookupNamesUnknownError (NonEmpty FullNameRef)
-    | LookupRefNameUnknownError FullNameRef
-    | LookupTypeUnknownError FullNameRef
-    | LookupSpecialFormUnknownError FullNameRef
+    | LookupNamesUndefinedError (NonEmpty FullNameRef)
+    | LookupNotDefinedError FullNameRef
+    | LookupNotTypeError FullNameRef
+    | LookupNotSpecialFormError FullNameRef
+    | LookupNotConstructorError FullNameRef
     | SpecialFormWrongAnnotationsError FullNameRef
                                        [Text]
                                        [Text]
-    | LookupConstructorUnknownError FullNameRef
     | DeclareTypeDuplicateError FullName
     | DeclareConstructorDuplicateError FullNameRef
     | DeclareDynamicTypeCycleError (NonEmpty FullName)
@@ -52,7 +52,6 @@ data ErrorType
     | InterpretTypeUnderApplyError Text
     | InterpretTypeOverApplyError Text
     | InterpretTypeRangeApplyError Text
-    | InterpretConstructorUnknownError FullNameRef
     | InterpretBindingsDuplicateError (NonEmpty FullName)
     | InterpretTypeDeclDuplicateTypeVariablesError FullName
                                                    (NonEmpty Name)
@@ -109,15 +108,15 @@ instance Show ErrorType where
         strMessage = intercalate "; " msgsMessage
         in strUnexpected `semicolon` strExpecting `semicolon` strMessage
     show (ExpressionErrorError e) = show e
-    show (LookupNamesUnknownError nn) = "unknown names: " <> (intercalate ", " $ fmap show $ toList nn)
-    show (LookupRefNameUnknownError n) = "undefined: " <> show n
-    show (LookupTypeUnknownError n) = "unknown type: " <> show n
-    show (LookupSpecialFormUnknownError n) = "unknown special form: " <> show n
+    show (LookupNamesUndefinedError nn) = "undefined names: " <> (intercalate ", " $ fmap show $ toList nn)
+    show (LookupNotDefinedError n) = "undefined: " <> show n
+    show (LookupNotTypeError n) = "name not type: " <> show n
+    show (LookupNotSpecialFormError n) = "name not special form: " <> show n
+    show (LookupNotConstructorError n) = "name not constructor: " <> show n
     show (SpecialFormWrongAnnotationsError n expected found) =
         "wrong annotations for special form " <>
         show n <>
         ": expecting " <> intercalate " " (fmap unpack expected) <> ", found " <> intercalate " " (fmap unpack found)
-    show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
     show (DeclareDynamicTypeCycleError nn) =
@@ -148,7 +147,6 @@ instance Show ErrorType where
     show (InterpretTypeUnderApplyError t) = "underapplied type constructor: " <> unpack t
     show (InterpretTypeOverApplyError t) = "overapplied type constructor: " <> unpack t
     show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
-    show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
     show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show $ toList nn)
     show (InterpretTypeDeclDuplicateTypeVariablesError n vv) =
         "duplicate type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
