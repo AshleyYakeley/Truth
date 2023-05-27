@@ -440,16 +440,16 @@ testQueries =
               ]
         , testTree
               "boolean"
-              [ testQuery "True && True" $ LRSuccess "True"
-              , testQuery "True && False" $ LRSuccess "False"
-              , testQuery "False && True" $ LRSuccess "False"
-              , testQuery "False && False" $ LRSuccess "False"
-              , testQuery "True || True" $ LRSuccess "True"
-              , testQuery "True || False" $ LRSuccess "True"
-              , testQuery "False || True" $ LRSuccess "True"
-              , testQuery "False || False" $ LRSuccess "False"
-              , testQuery "not True" $ LRSuccess "False"
-              , testQuery "not False" $ LRSuccess "True"
+              [ testQuery "True &&.Boolean True" $ LRSuccess "True"
+              , testQuery "True &&.Boolean False" $ LRSuccess "False"
+              , testQuery "False &&.Boolean True" $ LRSuccess "False"
+              , testQuery "False &&.Boolean False" $ LRSuccess "False"
+              , testQuery "True ||.Boolean True" $ LRSuccess "True"
+              , testQuery "True ||.Boolean False" $ LRSuccess "True"
+              , testQuery "False ||.Boolean True" $ LRSuccess "True"
+              , testQuery "False ||.Boolean False" $ LRSuccess "False"
+              , testQuery "not.Boolean True" $ LRSuccess "False"
+              , testQuery "not.Boolean False" $ LRSuccess "True"
               ]
         , testTree
               "text"

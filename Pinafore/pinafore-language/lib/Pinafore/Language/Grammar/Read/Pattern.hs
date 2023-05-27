@@ -44,8 +44,8 @@ modifyPattern1 patn =
          readWithSourcePos1 $ return $ \ns -> DynamicTypedSyntaxPattern (patn ns) t) <|>
     (do
          readThis TokAs
-         nn <- readNamespaceRef
-         readWithSourcePos1 $ return $ \ns -> NamespaceSyntaxPattern (patn $ namespaceConcatRef ns nn) nn)
+         name <- readUName
+         readWithSourcePos1 $ return $ \ns -> NamespaceSyntaxPattern (patn $ namespaceAppend ns [name]) name)
 
 readPattern1 :: Parser (Namespace -> SyntaxPattern)
 readPattern1 = do

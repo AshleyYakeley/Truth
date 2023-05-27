@@ -174,25 +174,16 @@ readUsing = do
             neg <- optional $ readThis TokExcept
             ritems <- readParen $ readCommaList readNameRefItem
             return (not $ isJust neg, ritems)
-    masnref <-
-        optional $ do
-            readThis TokAs
-            readNamespaceRef
-    return $
-        UsingSyntaxDeclaration
-            (namespaceConcatRef ns nref)
-            mnritems
-            (namespaceConcatRef ns $ fromMaybe CurrentNamespaceRef masnref)
+    return $ UsingSyntaxDeclaration (namespaceConcatRef ns nref) mnritems
 
 readNamespace :: Parser SyntaxDeclaration'
 readNamespace = do
     readThis TokNamespace
-    nref <- readNamespaceRef
+    name <- readUName
     readThis TokOf
-    decls <- readWithNamespace nref readDeclarations
+    decls <- readWithNamespace name readDeclarations
     readThis TokEnd
-    ns <- readAskNamespace
-    return $ NamespaceSyntaxDeclaration (namespaceConcatRef ns nref) decls
+    return $ NamespaceSyntaxDeclaration name decls
 
 readNameRefItem :: Parser SyntaxNameRefItem
 readNameRefItem =

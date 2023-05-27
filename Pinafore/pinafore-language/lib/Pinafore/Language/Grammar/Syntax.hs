@@ -89,8 +89,7 @@ data SyntaxDeclaration'
     | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
     | UsingSyntaxDeclaration Namespace
                              (Maybe (Bool, [SyntaxNameRefItem]))
-                             Namespace
-    | NamespaceSyntaxDeclaration Namespace
+    | NamespaceSyntaxDeclaration Name
                                  [SyntaxDeclaration]
     | DebugSyntaxDeclaration FullNameRef
     deriving (Eq)
@@ -215,7 +214,7 @@ data SyntaxPattern'
     | DynamicTypedSyntaxPattern SyntaxPattern
                                 SyntaxType
     | NamespaceSyntaxPattern SyntaxPattern
-                             NamespaceRef
+                             Name
     deriving (Eq)
 
 instance ExprShow SyntaxPattern' where

@@ -700,35 +700,35 @@ baseLibSections =
           "Function"
           ""
           [ typeBDT "->" "A pure function." (MkSomeGroundType funcGroundType) []
+          , valBDT "$" "Apply a function to a value." $ id @(->) @(A -> B)
+          , valBDT ">-" "Apply a value to a function." revap
+          , nameInRootBDT $ valBDT "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
+          , nameInRootBDT $
+            valBDT
+                "seq"
+                "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
+                (seq :: TopType -> A -> A)
+          , nameInRootBDT $
+            specialFormBDT "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
+            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
+                let dtw = getGreatestDynamicSupertype tn
+                tpw <- invertType tn
+                return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
+          , nameInRootBDT $
+            specialFormBDT "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
+            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
+                let dtw = getGreatestDynamicSupertype tn
+                tpw <- invertType tn
+                return $
+                    MkSomeOf (funcShimWit dtw tpw) $ \case
+                        Just t -> t
+                        Nothing ->
+                            error $
+                            unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
           , namespaceBDT "Function" "" $
             monadEntries @_ @((->) P) <>
-            [ nameInRootBDT $ valBDT "$" "Apply a function to a value." $ id @(->) @(A -> B)
-            , nameInRootBDT $ valBDT ">-" "Apply a value to a function." revap
-            , nameInRootBDT $ valBDT "id" "The identity function." $ id @(->) @A
+            [ nameInRootBDT $ valBDT "id" "The identity function." $ id @(->) @A
             , nameInRootBDT $ valBDT "." "Compose functions." $ (.) @(->) @A @B @C
-            , nameInRootBDT $ valBDT "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
-            , nameInRootBDT $
-              valBDT
-                  "seq"
-                  "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
-                  (seq :: TopType -> A -> A)
-            , nameInRootBDT $
-              specialFormBDT "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
-              MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                  let dtw = getGreatestDynamicSupertype tn
-                  tpw <- invertType tn
-                  return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
-            , nameInRootBDT $
-              specialFormBDT "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
-              MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                  let dtw = getGreatestDynamicSupertype tn
-                  tpw <- invertType tn
-                  return $
-                      MkSomeOf (funcShimWit dtw tpw) $ \case
-                          Just t -> t
-                          Nothing ->
-                              error $
-                              unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
             ]
           ]
     ]

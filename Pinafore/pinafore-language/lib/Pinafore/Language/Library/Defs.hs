@@ -138,7 +138,7 @@ instance AddNameInRoot (BindDoc context) where
     addNameInRoot (MkBindDoc entries doc) = MkBindDoc (addNameInRoot entries) (addNameInRoot doc)
 
 nameInRootBDT :: BindDocTree context -> BindDocTree context
-nameInRootBDT = addNameInRoot
+nameInRootBDT t = t
 
 pickNamesInRootBDT :: [FullNameRef] -> [BindDocTree context] -> [BindDocTree context]
 pickNamesInRootBDT names =

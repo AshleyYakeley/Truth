@@ -20,8 +20,7 @@ pattern RootNamespaceRef = AbsoluteNamespaceRef RootNamespace
 
 namespaceConcatRefM :: Applicative m => m Namespace -> NamespaceRef -> m Namespace
 namespaceConcatRefM _ (AbsoluteNamespaceRef nsb) = pure nsb
-namespaceConcatRefM mnsa (RelativeNamespaceRef namesb) =
-    fmap (\(MkNamespace namesa) -> MkNamespace $ namesb <> namesa) mnsa
+namespaceConcatRefM mnsa (RelativeNamespaceRef namesb) = fmap (\ns -> namespaceAppend ns namesb) mnsa
 
 namespaceConcatRef :: Namespace -> NamespaceRef -> Namespace
 namespaceConcatRef nsa nsb = runIdentity $ namespaceConcatRefM (Identity nsa) nsb

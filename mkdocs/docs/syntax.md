@@ -162,8 +162,8 @@ All declarations, including type declarations, are local to a `let` block.
 <declaration> ::=
     direct-declaration |
     "import" <module-name> |
-    "using" <namespace> <using-names> <using-target> |
-    "namespace" <namepace> <of(<declaration>)> |
+    "using" <namespace> <using-names> |
+    "namespace" uname <of(<declaration>)> |
     <expose-declaration> |
     "rec" <semicolon-separated(<direct-declaration>)> "end"
 
@@ -182,8 +182,6 @@ All declarations, including type declarations, are local to a `let` block.
 <expose-declaration> ::= "expose" <name-list> <of(<declaration>)>
 
 <using-names> ::=  | "(" <name-list> ")" | "except" "(" <name-list> ")"
-
-<using-target> :=  | "as" <namespace>
 
 <namespace> ::= uname | uname "." <namespace> | "."
 
@@ -228,7 +226,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <patterns> ::=  | <pattern-4> <patterns>
 
-<pattern-1> ::= <pattern-2> | <pattern-1> ":" <type> | <pattern-1> ":?" <type> | <pattern-1> "as" <namespace>
+<pattern-1> ::= <pattern-2> | <pattern-1> ":" <type> | <pattern-1> ":?" <type> | <pattern-1> "as" uname
 
 <pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
 

@@ -80,8 +80,8 @@ parseReader r text = let
 readAskNamespace :: Parser Namespace
 readAskNamespace = MkParser ask
 
-readWithNamespace :: NamespaceRef -> Parser --> Parser
-readWithNamespace nr (MkParser p) = MkParser $ local (\n -> namespaceConcatRef n nr) p
+readWithNamespace :: Name -> Parser --> Parser
+readWithNamespace name (MkParser p) = MkParser $ local (\n -> namespaceAppend n [name]) p
 
 parseScopedReaderWhole :: Parser (QInterpreter t) -> Text -> QInterpreter t
 parseScopedReaderWhole parser text = do

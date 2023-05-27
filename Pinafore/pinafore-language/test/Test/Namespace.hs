@@ -13,7 +13,7 @@ testNamespace =
         , "using Action"
         , "using Entity"
         , "using Showable"
-        , "pass = pure ()"
+        , "pass = pure.Action. ()"
         , "test = fn b => if b then pass else fail \"wrong\""
         ] $
     tGroup
@@ -135,7 +135,6 @@ testNamespace =
               [ testExpectSuccess "let namespace M of a = 6; b = a end; in test $ b.M == 6"
               , testExpectSuccess "let namespace M of a = 6; b = a end; using M; in test $ b == 6"
               , testExpectSuccess "let namespace P of a = 6; namespace Q of b = a end end; in test $ b.Q.P == 6"
-              , testExpectSuccess "let namespace P of a = 6 end; namespace Q.P of b = a end; in test $ b.Q.P == 6"
               ]
         , tGroup
               "decl"

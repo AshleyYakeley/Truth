@@ -315,7 +315,7 @@ interpretExpose :: SyntaxExposeDeclaration -> RefNotation (Docs, QScope)
 interpretExpose (MkSyntaxExposeDeclaration items sdecls) =
     runScopeBuilder (interpretDocDeclarations sdecls) $ \doc ->
         liftRefNotation $ do
-            curns <- getCurrentNamespace
+            curns <- getBindingNamespace
             let (namespaces, names) = mconcat $ fmap (partitionItem curns) items
             (bnames, scope) <- exportScope namespaces names
             return (exposeDocs bnames doc, scope)
@@ -348,25 +348,27 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             for_ binds interpretSequentialLetBinding
             return $ fmap (pure . sbDefDoc) binds
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
-        UsingSyntaxDeclaration sourcens mitems destns -> do
+        UsingSyntaxDeclaration ns mitems -> do
             let
                 matchItem :: FullNameRef -> SyntaxNameRefItem -> Bool
                 matchItem name (NameSyntaxNameRefItem name') = name == name'
                 matchItem (MkFullNameRef _ nsr') (NamespaceSyntaxNameRefItem nsr) = let
-                    ns = namespaceConcatRef sourcens nsr
-                    ns' = namespaceConcatRef sourcens nsr'
-                    in isJust $ namespaceWithinRef ns ns'
+                    ins = namespaceConcatRef ns nsr
+                    ins' = namespaceConcatRef ns nsr'
+                    in isJust $ namespaceWithinRef ins ins'
             interpScopeBuilder $
-                usingNamespace sourcens destns $
+                usingNamespace ns $
                 case mitems of
                     Nothing -> \_ -> True
                     Just (b, items) -> \name -> any (matchItem name) items == b
             return mempty
-        NamespaceSyntaxDeclaration nsn decls -> do
-            close <- interpScopeBuilder $ withNamespace nsn
+        NamespaceSyntaxDeclaration name decls -> do
+            oldns <- interpScopeBuilder $ lift $ getBindingNamespace
+            let newns = namespaceAppend oldns [name]
+            close <- interpScopeBuilder $ withBindingNamespace newns
             docs <- interpretDocDeclarations decls
             interpScopeBuilder close
-            return $ pure $ Node (MkDefDoc (NamespaceDocItem $ AbsoluteNamespaceRef nsn) doc) docs
+            return $ pure $ Node (MkDefDoc (NamespaceDocItem $ AbsoluteNamespaceRef newns) doc) docs
         DebugSyntaxDeclaration nameref -> do
             (fn, desc) <- interpScopeBuilder $ lift $ lookupDebugBindingInfo nameref
             liftIO $ debugMessage $ toText fn <> ": " <> pack desc
@@ -396,12 +398,11 @@ interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
             unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ fmap conv resultExpr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression
-interpretNamedConstructor n = do
-    me <- liftRefNotation lookupLetBinding
-    case me n of
-        Just (ValueBoundValue e) -> return e
-        Just (RecordBoundValue rc) -> interpretRecordConstructor rc
-        _ -> throw $ InterpretConstructorUnknownError n
+interpretNamedConstructor name = do
+    bv <- liftRefNotation $ lookupBoundValue name
+    case bv of
+        ValueBoundValue e -> return e
+        RecordBoundValue rc -> interpretRecordConstructor rc
 
 interpretConstructor :: SyntaxConstructor -> RefExpression
 interpretConstructor (SLNumber n) =
