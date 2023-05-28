@@ -1194,6 +1194,21 @@ testEntity =
                                 , subtypeTest False SRSingle "R" "S"
                                 , subtypeTest False SRNot "S" "R"
                                 ]
+                          , tDecls
+                                [ "datatype S of MkS of val: Rational end end"
+                                , "mkS: Rational -> S = fn val => MkS"
+                                , "unS: S -> Rational = fn MkS => val"
+                                , "datatype R <: S of MkR of MkS; val: Integer end end"
+                                , "mkR: Integer -> R = fn val => MkR"
+                                , "unR: R -> Integer = fn MkR => val"
+                                ] $
+                            tGroup
+                                "refinement"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq {74}  {uns $ mkR 74}"
+                                , subtypeTest False SRSingle "R" "S"
+                                , subtypeTest False SRNot "S" "R"
+                                ]
                           ]
                     ]
               ]
