@@ -55,8 +55,6 @@ type QRecordConstructor = RecordConstructor QTypeSystem
 
 type QSignature = Signature QTypeSystem
 
-type QRecordPattern = RecordPattern QTypeSystem
-
 type QOpenPattern = TSOpenPattern QTypeSystem
 
 type QPattern = TSSealedExpressionPattern QTypeSystem

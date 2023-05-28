@@ -46,11 +46,15 @@ readSubtypeDeclaration = do
 readSignature :: Parser SyntaxSignature
 readSignature =
     readWithDoc $
-    readWithSourcePos $ do
-        name <- readLName
-        readThis TokTypeJudge
-        t <- readType
-        return $ ValueSyntaxSignature name t
+    readWithSourcePos $
+    (do
+         name <- readLName
+         readThis TokTypeJudge
+         t <- readType
+         return $ ValueSyntaxSignature name t) <|>
+    (do
+         name <- readFullUName
+         return $ SupertypeConstructorSyntaxSignature name)
 
 readPlainDataTypeConstructor :: Parser SyntaxPlainDatatypeConstructorOrSubtype
 readPlainDataTypeConstructor =

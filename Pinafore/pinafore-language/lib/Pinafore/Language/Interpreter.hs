@@ -30,6 +30,7 @@ module Pinafore.Language.Interpreter
     , lookupMaybeValue
     , lookupBoundType
     , lookupPatternConstructor
+    , lookupRecordConstructor
     , lookupSpecialForm
     , BoundValue(..)
     , lookupBoundValue
@@ -44,7 +45,6 @@ module Pinafore.Language.Interpreter
     , FullName(..)
     , Signature(..)
     , RecordConstructor(..)
-    , RecordPattern(..)
     , BindingInfo(..)
     , bindingInfosToScope
     , InterpreterBinding(..)
@@ -104,26 +104,21 @@ instance (HasInterpreter ts, Is PolarityType polarity) => HasVarMapping (Signatu
 data RecordConstructor (ts :: Type) =
     forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListType (Signature ts 'Positive) tt)
                                                            (InterpreterShimWit ts 'Positive t)
-                                                           (ListVProduct tt -> t)
-
-data RecordPattern (ts :: Type) =
-    forall (t :: Type) (tt :: [Type]). MkRecordPattern (ListType (Signature ts 'Positive) tt)
-                                                       (InterpreterShimWit ts 'Negative t)
-                                                       (t -> Maybe (ListVProduct tt))
+                                                           (InterpreterShimWit ts 'Negative t)
+                                                           (Codec t (ListVProduct tt))
 
 data InterpreterBinding (ts :: Type)
     = ValueBinding (TSSealedExpression ts)
                    (Maybe (TSExpressionPatternConstructor ts))
     | TypeBinding (InterpreterBoundType ts)
     | RecordConstructorBinding (RecordConstructor ts)
-                               (RecordPattern ts)
     | SpecialFormBinding (SpecialForm ts (Interpreter ts))
 
 instance HasInterpreter ts => Show (InterpreterBinding ts) where
     show (ValueBinding e Nothing) = "val: " <> show e
     show (ValueBinding e (Just _)) = "val+pat: " <> show e
     show (TypeBinding t) = "type: " <> unpack (toText $ exprShow t)
-    show (RecordConstructorBinding _ _) = "recordpat"
+    show (RecordConstructorBinding _) = "recordcons"
     show (SpecialFormBinding _) = "special"
 
 type DocInterpreterBinding ts = (RawMarkdown, InterpreterBinding ts)
@@ -427,13 +422,23 @@ lookupBoundType name = do
 lookupPatternConstructor ::
        forall ts. HasInterpreter ts
     => FullNameRef
-    -> Interpreter ts (Either (TSExpressionPatternConstructor ts) (RecordPattern ts))
+    -> Interpreter ts (Either (TSExpressionPatternConstructor ts) (RecordConstructor ts))
 lookupPatternConstructor name = do
     b <- lookupBinding name
     case b of
         ValueBinding _ (Just pc) -> return $ Left pc
-        RecordConstructorBinding _ rp -> return $ Right rp
+        RecordConstructorBinding rc -> return $ Right rc
         _ -> throw $ LookupNotConstructorError name
+
+lookupRecordConstructor ::
+       forall ts. HasInterpreter ts
+    => FullNameRef
+    -> Interpreter ts (RecordConstructor ts)
+lookupRecordConstructor name = do
+    b <- lookupBinding name
+    case b of
+        RecordConstructorBinding rc -> return rc
+        _ -> throw $ LookupNotRecordConstructorError name
 
 lookupSpecialForm ::
        forall ts. HasInterpreter ts
@@ -457,7 +462,7 @@ lookupBoundValue name = do
     b <- lookupBinding name
     case b of
         ValueBinding exp _ -> return $ ValueBoundValue exp
-        RecordConstructorBinding rc _ -> return $ RecordBoundValue rc
+        RecordConstructorBinding rc -> return $ RecordBoundValue rc
         _ -> throw $ LookupNotConstructorError name
 
 lookupMaybeValue ::
@@ -693,10 +698,10 @@ registerPatternConstructor name doc exp pc = do
     checkName name
     registerBinding name $ (doc, ValueBinding exp $ Just pc)
 
-registerRecord :: FullName -> RawMarkdown -> RecordConstructor ts -> RecordPattern ts -> ScopeInterpreter ts ()
-registerRecord name doc rc rp = do
+registerRecord :: FullName -> RawMarkdown -> RecordConstructor ts -> ScopeInterpreter ts ()
+registerRecord name doc rc = do
     checkName name
-    registerBinding name $ (doc, RecordConstructorBinding rc rp)
+    registerBinding name $ (doc, RecordConstructorBinding rc)
 
 registerSubtypeConversion ::
        forall ts. HasInterpreter ts

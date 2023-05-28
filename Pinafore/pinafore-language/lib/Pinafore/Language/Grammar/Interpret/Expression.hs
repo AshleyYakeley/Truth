@@ -32,7 +32,7 @@ import Shapes
 
 type instance EntryDoc QTypeSystem = DefDoc
 
-interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordPattern)
+interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
@@ -70,12 +70,13 @@ mkRecordPattern ns ww = do
     sff <- recordNameWitnesses ns ww
     return $ MkPattern sff $ ImpureFunction $ fmap $ \a -> (a, ())
 
-constructPattern :: Namespace -> Either QPatternConstructor QRecordPattern -> [QPattern] -> QScopeInterpreter QPattern
+constructPattern ::
+       Namespace -> Either QPatternConstructor QRecordConstructor -> [QPattern] -> QScopeInterpreter QPattern
 constructPattern _ (Left pc) pats = lift $ qConstructPattern pc pats
 constructPattern _ (Right _) (_:_) = lift $ throw PatternTooManyConsArgsError
-constructPattern ns (Right (MkRecordPattern sigs tt decode)) [] = do
+constructPattern ns (Right (MkRecordConstructor sigs _ tt codec)) [] = do
     pat <- mkRecordPattern ns sigs
-    return $ MkSealedPattern (MkExpressionWitness tt $ pure ()) $ pat . arr (decode . meet1)
+    return $ MkSealedPattern (MkExpressionWitness tt $ pure ()) $ pat . arr (decode codec . meet1)
 
 interpretPattern' :: SyntaxPattern' -> QScopeInterpreter QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
@@ -150,7 +151,7 @@ getPatternBindingVariables spat = do
             pres <- lookupPatternConstructor cref
             case pres of
                 Left _ -> return []
-                Right (MkRecordPattern lt _ _) -> return $ listTypeToList (signatureName cns) lt
+                Right (MkRecordConstructor lt _ _ _) -> return $ listTypeToList (signatureName cns) lt
     return $ names <> mconcat namess
 
 data SingleBinding = MkSingleBinding
@@ -247,9 +248,11 @@ subtypeRelDocs sta stb docDescription = let
 
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc = let
+    sigDoc' :: SyntaxSignature' -> DocItem
+    sigDoc' (ValueSyntaxSignature name stype) = ValueSignatureDocItem name $ exprShow stype
+    sigDoc' (SupertypeConstructorSyntaxSignature name) = SupertypeConstructorSignatureDocItem name
     sigDoc :: SyntaxSignature -> DefDoc
-    sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ (ValueSyntaxSignature name stype))) =
-        MkDefDoc (SignatureDocItem name $ exprShow stype) doc
+    sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ sig)) = MkDefDoc (sigDoc' sig) doc
     funcPNT :: PrecNamedText -> PrecNamedText -> PrecNamedText
     funcPNT ta tb = namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
     funcPNTList :: [PrecNamedText] -> PrecNamedText -> PrecNamedText
@@ -379,7 +382,7 @@ interpretDeclarations :: [SyntaxDeclaration] -> RefNotation --> RefNotation
 interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
 interpretRecordConstructor :: QRecordConstructor -> RefExpression
-interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
+interpretRecordConstructor (MkRecordConstructor items vtype _ codec) = do
     let
         freeFixedVars = freeTypeVariables vtype
         freeFixedNames = fmap someTypeVarName $ toList freeFixedVars
@@ -393,7 +396,7 @@ interpretRecordConstructor (MkRecordConstructor items vtype conv) = do
                         iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
                         subsumerExpressionTo @QTypeSystem itype' iexpr'
             (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listVProductSequence $ listTypeToVType sexpr
-            unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ fmap conv resultExpr
+            unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ fmap (encode codec) resultExpr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression
 interpretNamedConstructor name = do

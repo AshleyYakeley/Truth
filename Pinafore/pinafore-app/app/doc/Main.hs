@@ -68,11 +68,12 @@ printModuleDoc modopts tmodname = do
                         name = showNames diNames
                         nameType = name <> " : " <> toMarkdown diType
                         in nameType
-                SignatureDocItem {..} ->
+                ValueSignatureDocItem {..} ->
                     putBindDoc $ let
                         name = boldMarkdown $ toMarkdown diSigName
                         nameType = name <> " : " <> toMarkdown diType
                         in nameType
+                SupertypeConstructorSignatureDocItem {..} -> putBindDoc $ boldMarkdown $ toMarkdown diName
                 ValuePatternDocItem {..} ->
                     putBindDoc $ let
                         name = showNames diNames

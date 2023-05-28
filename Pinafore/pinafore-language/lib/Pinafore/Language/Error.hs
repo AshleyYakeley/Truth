@@ -19,6 +19,7 @@ data ErrorType
     | LookupNotTypeError FullNameRef
     | LookupNotSpecialFormError FullNameRef
     | LookupNotConstructorError FullNameRef
+    | LookupNotRecordConstructorError FullNameRef
     | SpecialFormWrongAnnotationsError FullNameRef
                                        [Text]
                                        [Text]
@@ -27,6 +28,9 @@ data ErrorType
     | DeclareDynamicTypeCycleError (NonEmpty FullName)
     | DeclareDatatypeStorableSupertypeError FullName
     | DeclareDatatypeBadSupertypeError Text
+    | DeclareDatatypeCannotCombineTypesError Name
+                                             Text
+                                             Text
     | TypeConvertError Text
                        Polarity
                        Text
@@ -115,6 +119,7 @@ instance Show ErrorType where
     show (LookupNotTypeError n) = "name not type: " <> show n
     show (LookupNotSpecialFormError n) = "name not special form: " <> show n
     show (LookupNotConstructorError n) = "name not constructor: " <> show n
+    show (LookupNotRecordConstructorError n) = "name not record constructor: " <> show n
     show (SpecialFormWrongAnnotationsError n expected found) =
         "wrong annotations for special form " <>
         show n <>
@@ -125,6 +130,8 @@ instance Show ErrorType where
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
     show (DeclareDatatypeStorableSupertypeError n) = "datatype storable has supertypes: " <> show n
     show (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> unpack t
+    show (DeclareDatatypeCannotCombineTypesError n ta tb) =
+        "cannot combine types of constructor " <> show n <> ": " <> unpack ta <> " & " <> unpack tb
     show (TypeConvertError ta pa tb pb) =
         unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
     show (NoGroundTypeConversionError ta tb) = unpack $ "no ground conversion for " <> ta <> " <: " <> tb

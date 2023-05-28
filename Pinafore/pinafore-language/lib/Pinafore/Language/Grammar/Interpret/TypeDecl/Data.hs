@@ -227,7 +227,7 @@ data Constructor dv t extra = MkConstructor
     { ctName :: FullName
     , ctDoc :: RawMarkdown
     , ctOuterType :: TypeData dv t
-    , ctContents :: Either (Vector SyntaxType) (Vector SyntaxSignature)
+    , ctContents :: Either [SyntaxType] [SyntaxSignature]
     , ctExtra :: extra
     }
 
@@ -243,9 +243,9 @@ getConstructor ::
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [Constructor dv t extra]
 getConstructor _ typeNM (MkSyntaxWithDoc doc (ConstructorSyntaxConstructorOrSubtype consName stypes extra)) =
-    return $ pure $ MkConstructor consName doc typeNM (Left $ fromList stypes) extra
+    return $ pure $ MkConstructor consName doc typeNM (Left stypes) extra
 getConstructor _ typeNM (MkSyntaxWithDoc doc (RecordSyntaxConstructorOrSubtype consName sigs)) =
-    return $ pure $ MkConstructor consName doc typeNM (Right $ fromList sigs) $ error "record extra data"
+    return $ pure $ MkConstructor consName doc typeNM (Right sigs) $ error "record extra data"
 getConstructor tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes)) = do
     subtypeTD <- typeDataLookup tdata subtypeName
     getConstructors tdata subtypeTD stypes
@@ -258,24 +258,68 @@ getConstructors ::
 getConstructors tdata typeNM syntaxConstructorList =
     fmap mconcat $ for syntaxConstructorList $ getConstructor tdata typeNM
 
-interpretSignature' :: SyntaxSignature' -> QInterpreter (Some (QSignature 'Positive))
+interpretSignature' :: SyntaxSignature' -> QInterpreter [Some (QSignature 'Positive)]
 interpretSignature' (ValueSyntaxSignature name stype) = do
     qtype <- interpretType stype
-    return $ mapSome (ValueSignature name) qtype
+    return $ pure $ mapSome (ValueSignature name) qtype
+interpretSignature' (SupertypeConstructorSyntaxSignature name) = do
+    MkRecordConstructor sigs _ _ _ <- lookupRecordConstructor name
+    return $ listTypeToList MkSome sigs
 
-interpretSignature :: SyntaxSignature -> QInterpreter (Some (QSignature 'Positive))
+interpretSignature :: SyntaxSignature -> QInterpreter [Some (QSignature 'Positive)]
 interpretSignature (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' ssig
+
+nubWithM :: Monad m => (a -> a -> m (Maybe a)) -> [a] -> m [a]
+nubWithM _ [] = return []
+nubWithM f (a:aa) = let
+    filt [] = return Nothing
+    filt (b:bb) = do
+        mc <- f a b
+        case mc of
+            Just c -> return $ Just $ c : bb
+            Nothing -> do
+                mbb' <- filt bb
+                return $ do
+                    bb' <- mbb'
+                    return $ b : bb'
+    in do
+           aa' <- nubWithM f aa
+           maa'' <- filt aa'
+           case maa'' of
+               Just aa'' -> return aa''
+               Nothing -> return $ a : aa'
+
+meetGeneral ::
+       QType 'Positive a
+    -> QType 'Positive b
+    -> (forall ab. QType 'Positive ab -> QPolyShim Type ab a -> QPolyShim Type ab b -> r)
+    -> Maybe r
+meetGeneral _ _ _ = Nothing
+
+combineSigs ::
+       Some (QSignature 'Positive) -> Some (QSignature 'Positive) -> QInterpreter (Maybe (Some (QSignature 'Positive)))
+combineSigs (MkSome (ValueSignature na ta)) (MkSome (ValueSignature nb tb))
+    | na == nb = do
+        sab <-
+            case meetGeneral ta tb $ \tab _ _ -> MkSome $ ValueSignature na tab of
+                Just tab -> return tab
+                Nothing ->
+                    throwWithName $ \ntt ->
+                        DeclareDatatypeCannotCombineTypesError na (ntt $ exprShow ta) (ntt $ exprShow tb)
+        return $ Just sab
+combineSigs _ _ = return Nothing
 
 interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some ConstructorType)
 interpretConstructorTypes c =
     case ctContents c of
         Left innerTypes -> do
             etypes <- for innerTypes interpretNonpolarType
-            case assembleListVType etypes of
+            case assembleListVType $ fromList etypes of
                 MkSome npts -> return $ MkSome $ MkConstructorType PositionalCF npts
         Right sigs -> do
-            qsigs <- for sigs interpretSignature
-            case assembleListVType qsigs of
+            qsigss <- for sigs interpretSignature
+            qsigs <- nubWithM combineSigs $ mconcat qsigss
+            case assembleListVType $ fromList qsigs of
                 MkSome qsiglist -> return $ MkSome $ MkConstructorType RecordCF qsiglist
 
 makeBox ::
@@ -452,13 +496,8 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                           toExpressionPatternConstructor pc
                                                    MkConstructorType RecordCF lt -> let
                                                        ltp = listVTypeToType lt
-                                                       recordcons = MkRecordConstructor ltp ctfpos $ encode codec
-                                                       recordpat = MkRecordPattern ltp ctfneg $ decode codec
-                                                       in registerRecord
-                                                              ctfullname
-                                                              (ctDoc constructor)
-                                                              recordcons
-                                                              recordpat
+                                                       recordcons = MkRecordConstructor ltp ctfpos ctfneg codec
+                                                       in registerRecord ctfullname (ctDoc constructor) recordcons
                                 constructorBox ::
                                        Constructor dv maintype extra
                                     -> QFixBox ( QGroundType dv maintype
@@ -512,11 +551,10 @@ makeDataTypeBox gmaker name doc params syntaxConstructorList =
 
 makePlainGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
-    => [Some (QGroundType '[])]
-    -> FullName
+    => FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, ())]
-makePlainGroundType _ _ tparams = let
+makePlainGroundType _ tparams = let
     dvt :: DolanVarianceType dv
     dvt = ccrArgumentsType tparams
     mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (DolanVarianceMap dv gt)
@@ -545,4 +583,4 @@ makePlainDataTypeBox ::
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())
-makePlainDataTypeBox lst = makeDataTypeBox (makePlainGroundType lst)
+makePlainDataTypeBox _lst = makeDataTypeBox (makePlainGroundType)
