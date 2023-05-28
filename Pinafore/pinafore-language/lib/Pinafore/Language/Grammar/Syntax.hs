@@ -50,6 +50,7 @@ data SyntaxTypeDeclaration
     = StorableDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
                                             [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
     | PlainDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
+                                         (Maybe SyntaxType)
                                          [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)

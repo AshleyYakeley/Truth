@@ -277,7 +277,7 @@ typeDeclDoc = let
                    StorableDatatypeSyntaxTypeDeclaration params conss -> let
                        tparams = fmap exprShow params
                        in (tparams, typeConssDoc name tparams conss)
-                   PlainDatatypeSyntaxTypeDeclaration params conss -> let
+                   PlainDatatypeSyntaxTypeDeclaration params _ conss -> let
                        tparams = fmap exprShow params
                        in (tparams, typeConssDoc name tparams conss)
                    _ -> mempty

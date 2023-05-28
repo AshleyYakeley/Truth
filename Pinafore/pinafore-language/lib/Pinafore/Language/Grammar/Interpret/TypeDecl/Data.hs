@@ -512,10 +512,11 @@ makeDataTypeBox gmaker name doc params syntaxConstructorList =
 
 makePlainGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
-    => FullName
+    => [Some (QGroundType '[])]
+    -> FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, ())]
-makePlainGroundType _ tparams = let
+makePlainGroundType _ _ tparams = let
     dvt :: DolanVarianceType dv
     dvt = ccrArgumentsType tparams
     mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (DolanVarianceMap dv gt)
@@ -538,9 +539,10 @@ makePlainGroundType _ tparams = let
     in MkTypeConstruction mkx mkgt $ \_ _ -> return ()
 
 makePlainDataTypeBox ::
-       FullName
+       [Some (QGroundType '[])]
+    -> FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())
-makePlainDataTypeBox = makeDataTypeBox makePlainGroundType
+makePlainDataTypeBox lst = makeDataTypeBox (makePlainGroundType lst)

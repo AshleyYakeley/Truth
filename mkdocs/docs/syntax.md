@@ -168,7 +168,7 @@ All declarations, including type declarations, are local to a `let` block.
     "rec" <semicolon-separated(<direct-declaration>)> "end"
 
 <direct-declaration> ::=
-    "datatype" <type-const> <plain-datatype-parameters> <of(<plain-datatype-constructor>)> |
+    "datatype" <type-const> <plain-datatype-parameters> <datatype-supertypes> <of(<plain-datatype-constructor>)> |
     "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
     "opentype" <type-const> |
     "subtype" <opt-trustme> <type> "<:" <type> <subtype-body> |
@@ -194,6 +194,8 @@ All declarations, including type declarations, are local to a `let` block.
 <subtype-body> ::=  | "=" <expression>
 
 <binding> ::= <pattern-1> "=" <expression>
+
+<datatype-supertypes> ::=  | "<:" <type>
 
 <plain-datatype-parameters> ::=  | <plain-datatype-parameter> <plain-datatype-parameters>
 

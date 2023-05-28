@@ -121,16 +121,23 @@ readDataTypeDeclaration = do
     storable <- optional $ readThis TokStorable
     name <- readTypeNewName
     parameters <- many readTypeParameter
+    msupertype <-
+        optional $ do
+            readThis TokSubtype
+            readType
     readThis TokOf
     case storable of
         Just () -> do
+            case msupertype of
+                Nothing -> return ()
+                Just _ -> throw $ DeclareDatatypeStorableSupertypeError name
             constructors <- readLines $ readWithDoc readStorableDataTypeConstructor
             readThis TokEnd
             return $ TypeSyntaxDeclaration name $ StorableDatatypeSyntaxTypeDeclaration parameters constructors
         Nothing -> do
             constructors <- readLines $ readWithDoc readPlainDataTypeConstructor
             readThis TokEnd
-            return $ TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters constructors
+            return $ TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters msupertype constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =
