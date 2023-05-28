@@ -1177,6 +1177,24 @@ testEntity =
                           , testExpectSuccess
                                 "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57,\"} {recShow r2}"
                           ]
+                    , tGroup
+                          "supertype"
+                          [ tDecls
+                                [ "datatype S of MkS of sval: Text end end"
+                                , "mkS: Text -> S = fn sval => MkS"
+                                , "unS: S -> Text = fn MkS => sval"
+                                , "datatype R <: S of MkR of MkS; rval: Integer end end"
+                                , "mkR: Text *: Integer -> R = fn (sval,rval) => MkR"
+                                , "unR: R -> Text *: Integer = fn MkR => (sval,rval)"
+                                ] $
+                            tGroup
+                                "simple"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq {(\"textx\", 56)}  {unR $ mkR (\"textx\", 56)}"
+                                , subtypeTest False SRSingle "R" "S"
+                                , subtypeTest False SRNot "S" "R"
+                                ]
+                          ]
                     ]
               ]
         , tGroup

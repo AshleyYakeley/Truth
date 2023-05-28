@@ -127,7 +127,7 @@ readDataTypeDeclaration = do
     parameters <- many readTypeParameter
     msupertype <-
         optional $ do
-            readThis TokSubtype
+            readThis TokSubtypeOf
             readType
     readThis TokOf
     case storable of
