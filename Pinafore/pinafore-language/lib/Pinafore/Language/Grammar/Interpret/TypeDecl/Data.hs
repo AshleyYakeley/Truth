@@ -289,24 +289,36 @@ nubWithM f (a:aa) = let
                Just aa'' -> return aa''
                Nothing -> return $ a : aa'
 
-meetGeneral ::
-       QType 'Positive a
-    -> QType 'Positive b
-    -> (forall ab. QType 'Positive ab -> QPolyShim Type ab a -> QPolyShim Type ab b -> r)
-    -> Maybe r
-meetGeneral _ _ _ = Nothing
+meetGeneralSubsume :: QType 'Positive a -> QType 'Positive b -> QInterpreter (Some (QType 'Positive))
+meetGeneralSubsume ta tb = do
+    _ <- tsSubsume @QTypeSystem (mkShimWit ta) tb
+    return $ MkSome ta
+
+meetGeneralBoth :: QType 'Positive a -> QType 'Positive b -> QInterpreter (Some (QType 'Positive))
+meetGeneralBoth rta rtb =
+    runRenamer @QTypeSystem [] [] $ do
+        ta <- unEndoM (renameType @QTypeSystem [] RigidName) rta
+        tb <- unEndoM (renameType @QTypeSystem [] RigidName) rtb
+        MkNewVar varn varp <- renameNewFreeVar @QTypeSystem
+        ssa <- subsumePosShimWit @QTypeSystem varp ta
+        ssb <- subsumePosShimWit @QTypeSystem varp tb
+        (_, ssubs) <- solveSubsumerExpression @QTypeSystem $ liftA2 (,) ssa ssb
+        MkShimWit tabn _ <- unEndoM (subsumerSubstitute @QTypeSystem ssubs <> simplify @QTypeSystem) varn
+        MkShimWit tab _ <- lift $ invertType tabn
+        return $ MkSome tab
+
+meetGeneral :: QType 'Positive a -> QType 'Positive b -> QInterpreter (Some (QType 'Positive))
+meetGeneral ta tb
+    | Just Refl <- testEquality ta tb = return $ MkSome ta
+meetGeneral ta tb = meetGeneralSubsume ta tb <|> meetGeneralSubsume tb ta <|> meetGeneralBoth ta tb
 
 combineSigs ::
        Some (QSignature 'Positive) -> Some (QSignature 'Positive) -> QInterpreter (Maybe (Some (QSignature 'Positive)))
 combineSigs (MkSome (ValueSignature na ta)) (MkSome (ValueSignature nb tb))
     | na == nb = do
-        sab <-
-            case meetGeneral ta tb $ \tab _ _ -> MkSome $ ValueSignature na tab of
-                Just tab -> return tab
-                Nothing ->
-                    throwWithName $ \ntt ->
-                        DeclareDatatypeCannotCombineTypesError na (ntt $ exprShow ta) (ntt $ exprShow tb)
-        return $ Just sab
+        stab <- meetGeneral ta tb
+        case stab of
+            MkSome tab -> return $ Just $ MkSome $ ValueSignature na tab
 combineSigs _ _ = return Nothing
 
 interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some ConstructorType)

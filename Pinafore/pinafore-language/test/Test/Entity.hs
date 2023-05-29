@@ -1177,6 +1177,19 @@ testEntity =
                           , testExpectSuccess
                                 "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57,\"} {recShow r2}"
                           ]
+                    , tGroup "meet" $ let
+                          testMeet :: Text -> Text -> Text
+                          testMeet ta tb =
+                              "let datatype R of MkR of val: " <> ta <> "; val: " <> tb <> " end end in pass"
+                          in [ testExpectSuccess $ testMeet "Integer" "Integer"
+                             , testExpectSuccess $ testMeet "Rational" "Integer"
+                             , testExpectSuccess $ testMeet "Integer" "Rational"
+                             , testExpectSuccess $ testMeet "Integer *: Rational" "Rational *: Integer"
+                             , testExpectReject $ testMeet "Integer" "Text"
+                             , testExpectSuccess $ testMeet "a -> a" "a -> a"
+                             , testExpectSuccess $ testMeet "a -> a" "b -> b"
+                             , testExpectSuccess $ testMeet "Integer -> Integer" "a -> a"
+                             ]
                     , tGroup
                           "supertype"
                           [ tDecls
@@ -1205,7 +1218,7 @@ testEntity =
                             tGroup
                                 "refinement"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {74}  {uns $ mkR 74}"
+                                , testExpectSuccess "testeq {74}  {unS $ mkR 74}"
                                 , subtypeTest False SRSingle "R" "S"
                                 , subtypeTest False SRNot "S" "R"
                                 ]
@@ -1563,6 +1576,9 @@ testEntity =
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
                     "do r <- newMem.WholeModel; ar <- evaluate @(WholeModel Integer -> Action Unit) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+              , testExpectSuccess "testaction 569 $ evaluate @(a -> a) \"fn x => x\" >>= fn Right f => pure $ f 569"
+              , testExpectSuccess
+                    "testaction 570 $  evaluate @(Integer -> Integer) \"fn x => x\" >>= fn Right f => pure $ f 570"
               ]
         , tGroup
               "text-sort"
