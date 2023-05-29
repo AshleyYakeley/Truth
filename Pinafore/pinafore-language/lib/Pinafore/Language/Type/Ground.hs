@@ -44,6 +44,11 @@ data QGroundType dv gt = MkQGroundType
     , qgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
 
+instance TestEquality (QGroundType '[]) where
+    testEquality gta gtb = do
+        HRefl <- testHetEquality (qgtFamilyType gta) (qgtFamilyType gtb)
+        return Refl
+
 getGroundFamily ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (fam :: FamilyKind).
        IOWitness ('MkWitKind fam)
@@ -62,6 +67,9 @@ getGroundProperty prop gt =
 
 instance ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType
+
+instance AllConstraint ExprShow (QGroundType '[]) where
+    allConstraint = Dict
 
 instance Show (QGroundType dv gt) where
     show t = unpack $ toText $ showGroundType t

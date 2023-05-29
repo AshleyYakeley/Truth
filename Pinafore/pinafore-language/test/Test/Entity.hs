@@ -1222,6 +1222,21 @@ testEntity =
                                 , subtypeTest False SRSingle "R" "S"
                                 , subtypeTest False SRNot "S" "R"
                                 ]
+                          , tDecls
+                                [ "datatype S1 of MkS1 of val: Rational end end"
+                                , "datatype S2 of MkS2 of val: Rational end end"
+                                ] $
+                            tGroup
+                                "match-type"
+                                [ testExpectSuccess "let datatype R <: S1 of MkR of MkS1 end end in pass"
+                                , testExpectReject "let datatype R <: S1 of MkR of MkS2 end end in pass"
+                                , testExpectSuccess "let datatype R of MkR of end end in pass"
+                                , testExpectReject "let datatype R <: S1 of MkR of end end in pass"
+                                , testExpectReject "let datatype R of MkR of MkS1 end end in pass"
+                                , testExpectSuccess "let datatype R <: S1 & S2 of MkR of MkS1; MkS2 end end in pass"
+                                , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS1 end end in pass"
+                                , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS2 end end in pass"
+                                ]
                           ]
                     ]
               ]

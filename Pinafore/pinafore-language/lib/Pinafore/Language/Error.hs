@@ -28,6 +28,9 @@ data ErrorType
     | DeclareDynamicTypeCycleError (NonEmpty FullName)
     | DeclareDatatypeStorableSupertypeError FullName
     | DeclareDatatypeBadSupertypeError Text
+    | DeclareDatatypeConstructorNotSupertypeError FullNameRef
+                                                  Text
+                                                  [Text]
     | TypeConvertError Text
                        Polarity
                        Text
@@ -127,6 +130,8 @@ instance Show ErrorType where
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
     show (DeclareDatatypeStorableSupertypeError n) = "datatype storable has supertypes: " <> show n
     show (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> unpack t
+    show (DeclareDatatypeConstructorNotSupertypeError c t ss) =
+        "constructor " <> show c <> ": " <> unpack t <> " is not from supertypes " <> (unpack $ intercalate " & " ss)
     show (TypeConvertError ta pa tb pb) =
         unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
     show (NoGroundTypeConversionError ta tb) = unpack $ "no ground conversion for " <> ta <> " <: " <> tb

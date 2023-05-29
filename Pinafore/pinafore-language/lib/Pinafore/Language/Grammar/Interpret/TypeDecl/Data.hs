@@ -258,16 +258,24 @@ getConstructors ::
 getConstructors tdata typeNM syntaxConstructorList =
     fmap mconcat $ for syntaxConstructorList $ getConstructor tdata typeNM
 
-interpretSignature' :: SyntaxSignature' -> QInterpreter [Some (QSignature 'Positive)]
-interpretSignature' (ValueSyntaxSignature name stype) = do
+interpretSignature' :: [Some (QGroundType '[])] -> SyntaxSignature' -> QInterpreter [Some (QSignature 'Positive)]
+interpretSignature' _ (ValueSyntaxSignature name stype) = do
     qtype <- interpretType stype
     return $ pure $ mapSome (ValueSignature name) qtype
-interpretSignature' (SupertypeConstructorSyntaxSignature name) = do
-    MkRecordConstructor sigs _ _ _ <- lookupRecordConstructor name
+interpretSignature' supertypes (SupertypeConstructorSyntaxSignature name) = do
+    MkRecordConstructor sigs stpw _ _ <- lookupRecordConstructor name
+    () <-
+        case dolanToMaybeShimWit stpw of
+            Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
+                | elem (MkSome gt) supertypes -> return ()
+            _ ->
+                throwWithName $ \ntt ->
+                    DeclareDatatypeConstructorNotSupertypeError name (ntt $ exprShow stpw) $
+                    fmap (ntt . exprShow) supertypes
     return $ listTypeToList MkSome sigs
 
-interpretSignature :: SyntaxSignature -> QInterpreter [Some (QSignature 'Positive)]
-interpretSignature (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' ssig
+interpretSignature :: [Some (QGroundType '[])] -> SyntaxSignature -> QInterpreter [Some (QSignature 'Positive)]
+interpretSignature supertypes (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' supertypes ssig
 
 nubWithM :: Monad m => (a -> a -> m (Maybe a)) -> [a] -> m [a]
 nubWithM _ [] = return []
@@ -321,15 +329,15 @@ combineSigs (MkSome (ValueSignature na ta)) (MkSome (ValueSignature nb tb))
             MkSome tab -> return $ Just $ MkSome $ ValueSignature na tab
 combineSigs _ _ = return Nothing
 
-interpretConstructorTypes :: Constructor dv t extra -> QInterpreter (Some ConstructorType)
-interpretConstructorTypes c =
+interpretConstructorTypes :: [Some (QGroundType '[])] -> Constructor dv t extra -> QInterpreter (Some ConstructorType)
+interpretConstructorTypes supertypes c =
     case ctContents c of
         Left innerTypes -> do
             etypes <- for innerTypes interpretNonpolarType
             case assembleListVType $ fromList etypes of
                 MkSome npts -> return $ MkSome $ MkConstructorType PositionalCF npts
         Right sigs -> do
-            qsigss <- for sigs interpretSignature
+            qsigss <- for sigs $ interpretSignature supertypes
             qsigs <- nubWithM combineSigs $ mconcat qsigss
             case assembleListVType $ fromList qsigs of
                 MkSome qsiglist -> return $ MkSome $ MkConstructorType RecordCF qsiglist
@@ -337,12 +345,13 @@ interpretConstructorTypes c =
 makeBox ::
        forall extra (dv :: DolanVariance).
        GroundTypeMaker extra
+    -> [Some (QGroundType '[])]
     -> FullName
     -> RawMarkdown
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> GenCCRTypeParams dv
     -> QInterpreter (QFixBox () ())
-makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
+makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
     stid <- newMatchingTypeID @dv
     case stid of
         MkSome (mainMTID@(MkMatchingTypeID mainTypeID) :: _ maintype) -> do
@@ -380,7 +389,8 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                            , FixedList conscount (ConstructorCodec decltype)
                                                            , decltype -> TypeData dv maintype))
                                 mainConstruct () = do
-                                    constructorInnerTypes <- lift $ for constructorFixedList interpretConstructorTypes
+                                    constructorInnerTypes <-
+                                        lift $ for constructorFixedList $ interpretConstructorTypes supertypes
                                     assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                         let
                                             freevars :: FiniteSet SomeTypeVarT
@@ -552,14 +562,15 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
 makeDataTypeBox ::
        forall extra.
        GroundTypeMaker extra
+    -> [Some (QGroundType '[])]
     -> FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> QInterpreter (QFixBox () ())
-makeDataTypeBox gmaker name doc params syntaxConstructorList =
+makeDataTypeBox gmaker supertypes name doc params syntaxConstructorList =
     case getAnyCCRTypeParams params of
-        MkAnyCCRTypeParams gtparams -> makeBox gmaker name doc syntaxConstructorList gtparams
+        MkAnyCCRTypeParams gtparams -> makeBox gmaker supertypes name doc syntaxConstructorList gtparams
 
 makePlainGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
@@ -595,4 +606,4 @@ makePlainDataTypeBox ::
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())
-makePlainDataTypeBox _lst = makeDataTypeBox (makePlainGroundType)
+makePlainDataTypeBox = makeDataTypeBox makePlainGroundType
