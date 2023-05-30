@@ -34,6 +34,7 @@ data ErrorType
     | DeclareDatatypeNoSupertypeConstructorError Text
     | DeclareDatatypeMultipleSupertypeConstructorsError Text
                                                         [Text]
+    | DeclareDatatypePositionalConstructorWithSupertypeError
     | TypeConvertError Text
                        Polarity
                        Text
@@ -138,6 +139,8 @@ instance Show ErrorType where
     show (DeclareDatatypeNoSupertypeConstructorError t) = "no constructor defined for supertype " <> unpack t
     show (DeclareDatatypeMultipleSupertypeConstructorsError t cc) =
         "multiple constructors defined for supertype " <> unpack t <> ": " <> (unpack $ intercalate ", " cc)
+    show DeclareDatatypePositionalConstructorWithSupertypeError =
+        "positional constructor not allowed in datatype with supertype"
     show (TypeConvertError ta pa tb pb) =
         unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
     show (NoGroundTypeConversionError ta tb) = unpack $ "no ground conversion for " <> ta <> " <: " <> tb

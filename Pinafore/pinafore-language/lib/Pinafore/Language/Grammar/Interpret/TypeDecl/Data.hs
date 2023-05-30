@@ -598,22 +598,46 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                     -> QFixBox (QGroundType dv maintype, decltype -> TypeData dv maintype, x) ()
                                 subtypeBox tdata = mkRegisterFixBox $ subtypeRegister tdata
                                 supertypeBox ::
-                                       Some (QGroundType '[])
-                                    -> QFixBox (QGroundType dv maintype, DolanVarianceMap dv maintype) ()
-                                supertypeBox (MkSome supertype) =
-                                    mkRegisterFixBox $ \(~(mainGroundType, dvm)) ->
-                                        registerSubtypeConversion $ let
+                                       forall .
+                                       (Int, Some (QGroundType '[]))
+                                    -> QFixBox ( QGroundType dv maintype
+                                               , DolanVarianceMap dv maintype
+                                               , FixedList conscount (ConstructorCodec decltype)) ()
+                                supertypeBox (i, MkSome (supergroundtype :: QGroundType '[] supertype)) =
+                                    mkRegisterFixBox $ \(~(mainGroundType, dvm, codecs)) -> do
+                                        let
+                                            getConstypeConvert ::
+                                                   forall t. ConstructorType t -> QScopeInterpreter (t -> supertype)
+                                            getConstypeConvert (MkConstructorType PositionalCF _) =
+                                                lift $ throw DeclareDatatypePositionalConstructorWithSupertypeError
+                                            getConstypeConvert (MkConstructorType (RecordCF rcds) sigs) =
+                                                case rcdRecordConstructor $ unsafeIndex rcds i of
+                                                    MkRecordConstructor stmembers stwp stwn stcodec ->
+                                                        return $ error "NYI: supertype" stmembers stwp stwn stcodec sigs
+                                            getCodecConvert ::
+                                                   ConstructorCodec decltype
+                                                -> QScopeInterpreter (decltype -> Maybe supertype)
+                                            getCodecConvert (MkSomeFor constype codec) = do
+                                                conv <- getConstypeConvert constype
+                                                return $ fmap conv . decode codec
+                                        cconvs <- for (toList codecs) getCodecConvert
+                                        let
                                             (_, mainGroundedType) = declTypes mainGroundType dvm
                                             superGroundedType =
-                                                mkShimWit $ MkDolanGroundedType supertype NilCCRArguments
-                                            in subtypeConversionEntry Verify mainGroundedType superGroundedType $
-                                               pure $ functionToShim "supertype" $ error "NYI: supertype"
+                                                mkShimWit $ MkDolanGroundedType supergroundtype NilCCRArguments
+                                            conversion :: decltype -> supertype
+                                            conversion =
+                                                fmap (fromMaybe $ error $ "broken datatype: " <> show mainTypeName) $ \dt ->
+                                                    choice $ fmap (\cconv -> cconv dt) cconvs
+                                        registerSubtypeConversion $
+                                            subtypeConversionEntry Verify mainGroundedType superGroundedType $
+                                            pure $ functionToShim "supertype" conversion
                                 in return $
                                    proc () -> do
                                        (x, dvm, codecs, picktype) <- mainBox -< ()
                                        mainGroundType <- mainTypeBox -< x
                                        mconcat (fmap subtypeBox subtypeDatas) -< (mainGroundType, picktype, x)
-                                       for_ supertypes supertypeBox -< (mainGroundType, dvm)
+                                       for_ (zip [0 ..] supertypes) supertypeBox -< (mainGroundType, dvm, codecs)
                                        fixedListArrowSequence_ (fmap constructorBox constructorFixedList) -<
                                            fmap (\codec -> (mainGroundType, picktype, x, dvm, codec)) codecs
 
