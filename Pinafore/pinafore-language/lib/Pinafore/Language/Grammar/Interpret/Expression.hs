@@ -65,9 +65,9 @@ recordNameWitnesses ns lt =
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
 
 mkRecordPattern ::
-       Namespace -> ListType (QSignature 'Positive) tt -> QScopeInterpreter (QOpenPattern (Maybe (ListVProduct tt)) ())
+       Namespace -> ListVType (QSignature 'Positive) tt -> QScopeInterpreter (QOpenPattern (Maybe (ListVProduct tt)) ())
 mkRecordPattern ns ww = do
-    sff <- recordNameWitnesses ns ww
+    sff <- recordNameWitnesses ns $ listVTypeToType ww
     return $ MkPattern sff $ ImpureFunction $ fmap $ \a -> (a, ())
 
 constructPattern ::
@@ -76,7 +76,7 @@ constructPattern _ (Left pc) pats = lift $ qConstructPattern pc pats
 constructPattern _ (Right _) (_:_) = lift $ throw PatternTooManyConsArgsError
 constructPattern ns (Right (MkRecordConstructor sigs _ tt codec)) [] = do
     pat <- mkRecordPattern ns sigs
-    return $ MkSealedPattern (MkExpressionWitness tt $ pure ()) $ pat . arr (decode codec . meet1)
+    return $ MkSealedPattern (MkExpressionWitness (shimWitToDolan tt) $ pure ()) $ pat . arr (decode codec . meet1)
 
 interpretPattern' :: SyntaxPattern' -> QScopeInterpreter QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
@@ -151,7 +151,7 @@ getPatternBindingVariables spat = do
             pres <- lookupPatternConstructor cref
             case pres of
                 Left _ -> return []
-                Right (MkRecordConstructor lt _ _ _) -> return $ listTypeToList (signatureName cns) lt
+                Right (MkRecordConstructor lt _ _ _) -> return $ listVTypeToList (signatureName cns) lt
     return $ names <> mconcat namess
 
 data SingleBinding = MkSingleBinding
@@ -389,14 +389,15 @@ interpretRecordConstructor (MkRecordConstructor items vtype _ codec) = do
     liftRefNotation $
         runRenamer @QTypeSystem [] freeFixedNames $ do
             sexpr <-
-                listTypeFor items $ \case
+                listVTypeFor items $ \case
                     ValueSignature iname itype -> do
                         iexpr <- lift $ qName $ UnqualifiedFullNameRef iname
                         itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
                         iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
                         subsumerExpressionTo @QTypeSystem itype' iexpr'
-            (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listVProductSequence $ listTypeToVType sexpr
-            unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ fmap (encode codec) resultExpr
+            (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listVProductSequence sexpr
+            unEndoM (subsumerSubstitute @QTypeSystem ssubs) $
+                MkSealedExpression (shimWitToDolan vtype) $ fmap (encode codec) resultExpr
 
 interpretNamedConstructor :: FullNameRef -> RefExpression
 interpretNamedConstructor name = do

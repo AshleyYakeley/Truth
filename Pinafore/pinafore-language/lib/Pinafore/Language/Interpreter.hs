@@ -77,7 +77,8 @@ type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
 
 type InterpreterType (ts :: Type) = DolanType (InterpreterGroundType ts)
 
-type InterpreterShimWit (ts :: Type) (polarity :: Polarity) = DolanShimWit (InterpreterGroundType ts) polarity
+type InterpreterGroundedShimWit (ts :: Type) (polarity :: Polarity)
+     = DolanGroundedShimWit (InterpreterGroundType ts) polarity
 
 type InterpreterBoundType (ts :: Type) = SomeGroundType (InterpreterGroundType ts)
 
@@ -102,9 +103,9 @@ instance (HasInterpreter ts, Is PolarityType polarity) => HasVarMapping (Signatu
     getVarMapping (ValueSignature _ t) = getVarMapping t
 
 data RecordConstructor (ts :: Type) =
-    forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListType (Signature ts 'Positive) tt)
-                                                           (InterpreterShimWit ts 'Positive t)
-                                                           (InterpreterShimWit ts 'Negative t)
+    forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListVType (Signature ts 'Positive) tt)
+                                                           (InterpreterGroundedShimWit ts 'Positive t)
+                                                           (InterpreterGroundedShimWit ts 'Negative t)
                                                            (Codec t (ListVProduct tt))
 
 data InterpreterBinding (ts :: Type)

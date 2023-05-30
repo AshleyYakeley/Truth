@@ -11,7 +11,9 @@ module Data.Witness.ListVProduct
     , listVProductSequence
     , listVTypeToVector
     , assembleListVType
+    , listVTypeFor
     , listVTypeToType
+    , listVTypeToList
     , listTypeToVType
     , listProductToVProduct
     , listVProductToProduct
@@ -174,6 +176,9 @@ listVTypeToType (MkListVType (MkListVProduct lvt)) =
     case mapTypeTypicalRefl @w @tt of
         Refl -> mkTypicalListType @w @tt $ toList lvt
 
+listVTypeToList :: forall (w :: Type -> Type) (tt :: [Type]) r. (forall a. w a -> r) -> ListVType w tt -> [r]
+listVTypeToList f = listTypeToList f . listVTypeToType
+
 listTypeTypical :: forall w tt. ListType w tt -> [w (Typical tt)]
 listTypeTypical NilListType = []
 listTypeTypical (ConsListType (a :: _ t1) (aa :: _ tr)) =
@@ -184,6 +189,13 @@ listTypeToVType :: forall (w :: Type -> Type) (tt :: [Type]). ListType w tt -> L
 listTypeToVType lt =
     case mapTypeTypicalRefl @w @tt of
         Refl -> MkListVType $ MkListVProduct $ fromList $ listTypeTypical lt
+
+listVTypeFor ::
+       forall m (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]). Applicative m
+    => ListVType wa tt
+    -> (forall t. wa t -> m (wb t))
+    -> m (ListVType wb tt)
+listVTypeFor (MkListVType lv) f = fmap MkListVType $ mapListMVProduct @m @wa @wb @tt f lv
 
 listProductToTypicalList :: forall (tt :: [Type]) a. [a] -> ListProduct tt -> [Typical tt]
 listProductToTypicalList [] =
