@@ -460,6 +460,32 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                                              then nullPolyGreatestDynamicSupertype
                                                              else gds
                                                    }
+                                declTypes ::
+                                       QGroundType dv maintype
+                                    -> DolanVarianceMap dv maintype
+                                    -> (QGroundedShimWit 'Positive decltype, QGroundedShimWit 'Negative decltype)
+                                declTypes groundType dvm = let
+                                    getargs ::
+                                           forall polarity. Is PolarityType polarity
+                                        => DolanArgumentsShimWit QPolyShim dv QType maintype polarity decltype
+                                    getargs =
+                                        mapCCRArguments
+                                            @QPolyShim
+                                            @CCRTypeParam
+                                            @(CCRPolarArgument QType polarity)
+                                            @dv
+                                            @polarity
+                                            @maintype
+                                            tParamToPolarArgument
+                                            dvm
+                                            tparams
+                                    in case (getargs @'Positive, getargs @'Negative) of
+                                           (MkShimWit posargs posconv, MkShimWit negargs negconv) -> let
+                                               declpos :: QGroundedShimWit 'Positive decltype
+                                               declpos = MkShimWit (MkDolanGroundedType groundType posargs) posconv
+                                               declneg :: QGroundedShimWit 'Negative decltype
+                                               declneg = MkShimWit (MkDolanGroundedType groundType negargs) negconv
+                                               in (declpos, declneg)
                                 registerConstructor ::
                                        Constructor dv maintype extra
                                     -> ( QGroundType dv maintype
@@ -474,52 +500,33 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                         groundType :: QGroundType dv maintype
                                         groundType =
                                             getGroundType mainGroundType picktype gttid $ ctOuterType constructor
-                                        getargs ::
-                                               forall polarity. Is PolarityType polarity
-                                            => DolanArgumentsShimWit QPolyShim dv QType maintype polarity decltype
-                                        getargs =
-                                            mapCCRArguments
-                                                @QPolyShim
-                                                @CCRTypeParam
-                                                @(CCRPolarArgument QType polarity)
-                                                @dv
-                                                @polarity
-                                                @maintype
-                                                tParamToPolarArgument
-                                                dvm
-                                                tparams
-                                    case (getargs @'Positive, getargs @'Negative) of
-                                        (MkShimWit posargs posconv, MkShimWit negargs negconv) -> let
-                                            ctfullname = ctName constructor
-                                            ctfpos :: QShimWit 'Positive decltype
-                                            ctfpos =
-                                                mapShimWit posconv $
-                                                typeToDolan $ MkDolanGroundedType groundType posargs
-                                            ctfneg :: QShimWit 'Negative decltype
-                                            ctfneg =
-                                                mapShimWit negconv $
-                                                typeToDolan $ MkDolanGroundedType groundType negargs
-                                            in case ctype of
-                                                   MkConstructorType PositionalCF lt -> let
-                                                       ltp =
-                                                           listVTypeToType $
-                                                           mapListVType (nonpolarToPositive @QTypeSystem) lt
-                                                       ltn =
-                                                           listVTypeToType $
-                                                           mapListVType (nonpolarToNegative @QTypeSystem) lt
-                                                       expr =
-                                                           qConstExprAny $
-                                                           MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
-                                                           encode codec . listProductToVProduct lt
-                                                       pc =
-                                                           toPatternConstructor ctfneg ltp $
-                                                           ImpureFunction $ fmap listVProductToProduct . decode codec
-                                                       in registerPatternConstructor ctfullname (ctDoc constructor) expr $
-                                                          toExpressionPatternConstructor pc
-                                                   MkConstructorType RecordCF lt -> let
-                                                       ltp = listVTypeToType lt
-                                                       recordcons = MkRecordConstructor ltp ctfpos ctfneg codec
-                                                       in registerRecord ctfullname (ctDoc constructor) recordcons
+                                        (declpos, declneg) = declTypes groundType dvm
+                                        ctfullname = ctName constructor
+                                        ctfpos :: QShimWit 'Positive decltype
+                                        ctfpos = shimWitToDolan declpos
+                                        ctfneg :: QShimWit 'Negative decltype
+                                        ctfneg = shimWitToDolan declneg
+                                        in case ctype of
+                                               MkConstructorType PositionalCF lt -> let
+                                                   ltp =
+                                                       listVTypeToType $
+                                                       mapListVType (nonpolarToPositive @QTypeSystem) lt
+                                                   ltn =
+                                                       listVTypeToType $
+                                                       mapListVType (nonpolarToNegative @QTypeSystem) lt
+                                                   expr =
+                                                       qConstExprAny $
+                                                       MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
+                                                       encode codec . listProductToVProduct lt
+                                                   pc =
+                                                       toPatternConstructor ctfneg ltp $
+                                                       ImpureFunction $ fmap listVProductToProduct . decode codec
+                                                   in registerPatternConstructor ctfullname (ctDoc constructor) expr $
+                                                      toExpressionPatternConstructor pc
+                                               MkConstructorType RecordCF lt -> let
+                                                   ltp = listVTypeToType lt
+                                                   recordcons = MkRecordConstructor ltp ctfpos ctfneg codec
+                                                   in registerRecord ctfullname (ctDoc constructor) recordcons
                                 constructorBox ::
                                        Constructor dv maintype extra
                                     -> QFixBox ( QGroundType dv maintype
@@ -551,11 +558,24 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                        TypeData dv maintype
                                     -> QFixBox (QGroundType dv maintype, decltype -> TypeData dv maintype, x) ()
                                 subtypeBox tdata = mkRegisterFixBox $ subtypeRegister tdata
+                                supertypeBox ::
+                                       Some (QGroundType '[])
+                                    -> QFixBox (QGroundType dv maintype, DolanVarianceMap dv maintype) ()
+                                supertypeBox (MkSome supertype) =
+                                    mkRegisterFixBox $ \(~(mainGroundType, dvm)) ->
+                                        registerSubtypeConversion $ let
+                                            (_, mainGroundedType) = declTypes mainGroundType dvm
+                                            in subtypeConversionEntry
+                                                   Verify
+                                                   mainGroundedType
+                                                   (mkShimWit $ MkDolanGroundedType supertype NilCCRArguments) $
+                                               error "NYI: supertype"
                                 in return $
                                    proc () -> do
                                        (x, dvm, codecs, picktype) <- mainBox -< ()
                                        mainGroundType <- mainTypeBox -< x
                                        mconcat (fmap subtypeBox subtypeDatas) -< (mainGroundType, picktype, x)
+                                       for_ supertypes supertypeBox -< (mainGroundType, dvm)
                                        fixedListArrowSequence_ (fmap constructorBox constructorFixedList) -<
                                            fmap (\codec -> (mainGroundType, picktype, x, dvm, codec)) codecs
 
