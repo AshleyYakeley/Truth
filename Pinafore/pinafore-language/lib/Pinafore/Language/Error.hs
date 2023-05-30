@@ -31,6 +31,9 @@ data ErrorType
     | DeclareDatatypeConstructorNotSupertypeError FullNameRef
                                                   Text
                                                   [Text]
+    | DeclareDatatypeNoSupertypeConstructorError Text
+    | DeclareDatatypeMultipleSupertypeConstructorsError Text
+                                                        [Text]
     | TypeConvertError Text
                        Polarity
                        Text
@@ -132,6 +135,9 @@ instance Show ErrorType where
     show (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> unpack t
     show (DeclareDatatypeConstructorNotSupertypeError c t ss) =
         "constructor " <> show c <> ": " <> unpack t <> " is not from supertypes " <> (unpack $ intercalate " & " ss)
+    show (DeclareDatatypeNoSupertypeConstructorError t) = "no constructor defined for supertype " <> unpack t
+    show (DeclareDatatypeMultipleSupertypeConstructorsError t cc) =
+        "multiple constructors defined for supertype " <> unpack t <> ": " <> (unpack $ intercalate ", " cc)
     show (TypeConvertError ta pa tb pb) =
         unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
     show (NoGroundTypeConversionError ta tb) = unpack $ "no ground conversion for " <> ta <> " <: " <> tb
