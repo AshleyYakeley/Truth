@@ -5,10 +5,10 @@ import Pinafore.Language.Name.Namespace
 import Pinafore.Text
 import Shapes
 
-data FullName =
-    MkFullName Name
-               Namespace
-    deriving (Eq, Ord)
+data FullName = MkFullName
+    { fnName :: Name
+    , fnSpace :: Namespace
+    } deriving (Eq, Ord)
 
 pattern RootFullName :: Name -> FullName
 

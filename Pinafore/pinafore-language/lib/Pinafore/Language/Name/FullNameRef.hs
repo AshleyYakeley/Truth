@@ -8,8 +8,8 @@ import Pinafore.Text
 import Shapes
 
 data FullNameRef = MkFullNameRef
-    { fnName :: Name
-    , fnSpace :: NamespaceRef
+    { fnrName :: Name
+    , fnrSpace :: NamespaceRef
     } deriving (Eq, Ord)
 
 pattern UnqualifiedFullNameRef :: Name -> FullNameRef

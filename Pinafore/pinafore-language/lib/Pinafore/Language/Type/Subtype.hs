@@ -3,7 +3,7 @@
 
 module Pinafore.Language.Type.Subtype
     ( funcGroundType
-    , QSubtypeHint(..)
+    , module Pinafore.Language.Type.Subtype.Hint
     ) where
 
 import Data.Shim

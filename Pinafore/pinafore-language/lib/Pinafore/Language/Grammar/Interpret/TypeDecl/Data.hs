@@ -28,17 +28,17 @@ data ConstructorFlavour (w :: Type -> Type) where
     RecordCF :: [RecordConstructorData] -> ConstructorFlavour (QSignature 'Positive)
 
 data ConstructorType (t :: Type) where
-    MkConstructorType :: ConstructorFlavour w -> ListVType w tt -> ConstructorType (ListVProduct tt)
+    MkConstructorType :: Name -> ConstructorFlavour w -> ListVType w tt -> ConstructorType (ListVProduct tt)
 
 instance MaybeUnitWitness ConstructorType where
-    maybeUnitWitness (MkConstructorType _ (MkListVType t :: ListVType w tt)) = do
+    maybeUnitWitness (MkConstructorType _ _ (MkListVType t :: ListVType w tt)) = do
         Refl <- listVectorIsEmpty t
         case emptyMapTypeRefl @Type @Type @w @tt of
             Refl -> return Dict
 
 instance HasVarMapping ConstructorType where
-    getVarMapping (MkConstructorType PositionalCF tt) = getVarMapping $ MkListVProductType tt
-    getVarMapping (MkConstructorType (RecordCF _) tt) = getVarMapping $ MkListVProductType tt
+    getVarMapping (MkConstructorType _ PositionalCF tt) = getVarMapping $ MkListVProductType tt
+    getVarMapping (MkConstructorType _ (RecordCF _) tt) = getVarMapping $ MkListVProductType tt
 
 type ConstructorCodec t = SomeFor (Codec t) ConstructorType
 
@@ -47,7 +47,7 @@ constructorTypeFreeVariables PositionalCF wt = freeTypeVariables wt
 constructorTypeFreeVariables (RecordCF _) _ = mempty
 
 instance FreeTypeVariables (ConstructorCodec t) where
-    freeTypeVariables (MkSomeFor (MkConstructorType cf w) _) =
+    freeTypeVariables (MkSomeFor (MkConstructorType _ cf w) _) =
         mconcat $ toList $ listVTypeToVector (constructorTypeFreeVariables cf) w
 
 assembleDataType ::
@@ -355,31 +355,32 @@ combineSigs (MkSome (ValueSignature na ta)) (MkSome (ValueSignature nb tb))
 combineSigs _ _ = return Nothing
 
 interpretConstructorTypes :: [Some (QGroundType '[])] -> Constructor dv t extra -> QInterpreter (Some ConstructorType)
-interpretConstructorTypes supertypes c =
-    case ctContents c of
-        Left innerTypes -> do
-            etypes <- for innerTypes interpretNonpolarType
-            case assembleListVType $ fromList etypes of
-                MkSome npts -> return $ MkSome $ MkConstructorType PositionalCF npts
-        Right sigs -> do
-            rcdsigss <- for sigs $ interpretSignature supertypes
-            let
-                rawqsigs = mconcat $ fmap snd rcdsigss
-                rawrcds = catMaybes $ fmap fst rcdsigss
-            rcds <-
-                for supertypes $ \supertype ->
-                    case filter (\rcd -> rcdType rcd == supertype) rawrcds of
-                        [] ->
-                            throwWithName $ \ntt ->
-                                DeclareDatatypeNoSupertypeConstructorError (ntt $ exprShow supertype)
-                        [rcd] -> return rcd
-                        rcds ->
-                            throwWithName $ \ntt ->
-                                DeclareDatatypeMultipleSupertypeConstructorsError (ntt $ exprShow supertype) $
-                                fmap (ntt . exprShow) rcds
-            qsigs <- nubWithM combineSigs rawqsigs
-            case assembleListVType $ fromList qsigs of
-                MkSome qsiglist -> return $ MkSome $ MkConstructorType (RecordCF rcds) qsiglist
+interpretConstructorTypes supertypes c = let
+    consname = fnName $ ctName c
+    in case ctContents c of
+           Left innerTypes -> do
+               etypes <- for innerTypes interpretNonpolarType
+               case assembleListVType $ fromList etypes of
+                   MkSome npts -> return $ MkSome $ MkConstructorType consname PositionalCF npts
+           Right sigs -> do
+               rcdsigss <- for sigs $ interpretSignature supertypes
+               let
+                   rawqsigs = mconcat $ fmap snd rcdsigss
+                   rawrcds = catMaybes $ fmap fst rcdsigss
+               rcds <-
+                   for supertypes $ \supertype ->
+                       case filter (\rcd -> rcdType rcd == supertype) rawrcds of
+                           [] ->
+                               throwWithName $ \ntt ->
+                                   DeclareDatatypeNoSupertypeConstructorError (ntt $ exprShow supertype)
+                           [rcd] -> return rcd
+                           rcds ->
+                               throwWithName $ \ntt ->
+                                   DeclareDatatypeMultipleSupertypeConstructorsError (ntt $ exprShow supertype) $
+                                   fmap (ntt . exprShow) rcds
+               qsigs <- nubWithM combineSigs rawqsigs
+               case assembleListVType $ fromList qsigs of
+                   MkSome qsiglist -> return $ MkSome $ MkConstructorType consname (RecordCF rcds) qsiglist
 
 pickMember ::
        QSignature 'Positive b
@@ -571,7 +572,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                         ctfneg :: QShimWit 'Negative decltype
                                         ctfneg = shimWitToDolan declneg
                                         in case ctype of
-                                               MkConstructorType PositionalCF lt -> let
+                                               MkConstructorType _ PositionalCF lt -> let
                                                    ltp =
                                                        listVTypeToType $
                                                        mapListVType (nonpolarToPositive @QTypeSystem) lt
@@ -587,7 +588,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                                        ImpureFunction $ fmap listVProductToProduct . decode codec
                                                    in registerPatternConstructor ctfullname (ctDoc constructor) expr $
                                                       toExpressionPatternConstructor pc
-                                               MkConstructorType (RecordCF _) lt -> let
+                                               MkConstructorType _ (RecordCF _) lt -> let
                                                    recordcons = MkRecordConstructor lt declpos declneg codec
                                                    in registerRecord ctfullname (ctDoc constructor) recordcons
                                 constructorBox ::
@@ -633,30 +634,38 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                             getConstypeConvert ::
                                                    forall t.
                                                    ConstructorType t
-                                                -> QScopeInterpreter (QOpenExpression (t -> supertype))
-                                            getConstypeConvert (MkConstructorType PositionalCF _) =
+                                                -> QScopeInterpreter ((Name, Name), QOpenExpression (t -> supertype))
+                                            getConstypeConvert (MkConstructorType _ PositionalCF _) =
                                                 lift $ throw DeclareDatatypePositionalConstructorWithSupertypeError
-                                            getConstypeConvert (MkConstructorType (RecordCF rcds) sigs) =
-                                                case rcdRecordConstructor $ unsafeIndex rcds i of
-                                                    MkRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarMap sgtconv)) _ stcodec
-                                                        | Just Refl <- testEquality supergroundtype sgt -> do
-                                                            memberconvexpr <-
-                                                                lift $ getMatchMemberConvert sigs stmembers
-                                                            return $
-                                                                fmap
-                                                                    (\memberconv ->
-                                                                         shimToFunction sgtconv .
-                                                                         encode stcodec . memberconv)
-                                                                    memberconvexpr
-                                                    _ -> error $ "broken supertype in datatype: " <> show mainTypeName
+                                            getConstypeConvert (MkConstructorType consname (RecordCF rcds) sigs) = let
+                                                rcd = unsafeIndex rcds i
+                                                in case rcdRecordConstructor rcd of
+                                                       MkRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarMap sgtconv)) _ stcodec
+                                                           | Just Refl <- testEquality supergroundtype sgt -> do
+                                                               memberconvexpr <-
+                                                                   lift $ getMatchMemberConvert sigs stmembers
+                                                               let
+                                                                   convexpr =
+                                                                       fmap
+                                                                           (\memberconv ->
+                                                                                shimToFunction sgtconv .
+                                                                                encode stcodec . memberconv)
+                                                                           memberconvexpr
+                                                               return ((consname, fnrName $ rcdName rcd), convexpr)
+                                                       _ ->
+                                                           error $ "broken supertype in datatype: " <> show mainTypeName
                                             getCodecConvert ::
                                                    ConstructorCodec decltype
-                                                -> QScopeInterpreter (QOpenExpression (decltype -> Maybe supertype))
+                                                -> QScopeInterpreter ( (Name, Name)
+                                                                     , QOpenExpression (decltype -> Maybe supertype))
                                             getCodecConvert (MkSomeFor constype codec) = do
-                                                convexpr <- getConstypeConvert constype
-                                                return $ fmap (\conv -> fmap conv . decode codec) convexpr
-                                        cconvexprs <- for (toList codecs) getCodecConvert
+                                                (chint, convexpr) <- getConstypeConvert constype
+                                                return $ (chint, fmap (\conv -> fmap conv . decode codec) convexpr)
+                                        hintcconvexprs <- for (toList codecs) getCodecConvert
                                         let
+                                            hint :: QSubtypeHint
+                                            hint = mkQSubtypeHint $ fmap fst hintcconvexprs
+                                            cconvexprs = fmap snd hintcconvexprs
                                             (_, mainGroundedType) = declTypes mainGroundType dvm
                                             superGroundedType =
                                                 mkShimWit $ MkDolanGroundedType supergroundtype NilCCRArguments
@@ -667,7 +676,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                             conversion :: QOpenExpression (decltype -> supertype)
                                             conversion = fmap joinConvs $ sequenceA cconvexprs
                                         registerSubtypeConversion $
-                                            subtypeConversionEntry Verify Nothing mainGroundedType superGroundedType $
+                                            subtypeConversionEntry Verify (Just hint) mainGroundedType superGroundedType $
                                             fmap (functionToShim "supertype") conversion
                                 in return $
                                    proc () -> do

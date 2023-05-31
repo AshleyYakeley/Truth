@@ -122,7 +122,7 @@ instance AddNameInRoot t => AddNameInRoot (Tree t) where
     addNameInRoot (Node n children) = Node (addNameInRoot n) children
 
 instance AddNameInRoot FullNameRef where
-    addNameInRoot x = x {fnSpace = RootNamespaceRef}
+    addNameInRoot x = x {fnrSpace = RootNamespaceRef}
 
 instance AddNameInRoot DocItem where
     addNameInRoot x = runIdentity $ diNamesTraversal (Identity . addNameInRoot) x

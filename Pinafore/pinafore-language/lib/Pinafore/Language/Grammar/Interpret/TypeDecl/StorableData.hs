@@ -102,7 +102,7 @@ makeTypeAdapter ::
 makeTypeAdapter params conss = do
     ff <-
         for conss $ \case
-            (MkSomeFor (MkConstructorType PositionalCF cc) codec, anchor) -> do
+            (MkSomeFor (MkConstructorType _ PositionalCF cc) codec, anchor) -> do
                 MkWithArgs wa <- makeConstructorAdapter params $ listVTypeToType cc
                 return $
                     MkWithArgs $ \args ->
@@ -110,7 +110,7 @@ makeTypeAdapter params conss = do
                             MkThing tt Refl -> let
                                 vcodec = invmap listVProductToProduct (listProductToVProduct $ listTypeToVType tt) codec
                                 in Compose $ Endo $ codecSum vcodec $ constructorStoreAdapter anchor tt
-            (MkSomeFor (MkConstructorType (RecordCF _) _) _, _) -> throw InterpretTypeDeclTypeStorableRecord
+            (MkSomeFor (MkConstructorType _ (RecordCF _) _) _, _) -> throw InterpretTypeDeclTypeStorableRecord
     return $ MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullStoreAdapter
 
 makeStorableGroundType ::
