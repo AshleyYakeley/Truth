@@ -1237,6 +1237,55 @@ testEntity =
                                 , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS1 end end in pass"
                                 , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS2 end end in pass"
                                 ]
+                          , tGroup
+                                "multiple-supertype"
+                                [ tDecls
+                                      [ "datatype A of MkA of ma: Integer end end"
+                                      , "datatype B of MkB of mb: Text end end"
+                                      , "datatype C <: A & B of MkC of MkA; MkB end end"
+                                      , "c = let ma = 75; mb = \"ttmb\" in MkC"
+                                      ] $
+                                  tGroup
+                                      "single-constructor"
+                                      [ testExpectSuccess "pass"
+                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn MkB@MkA => (mb,ma)}"
+                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn MkC => (mb,ma)}"
+                                      ]
+                                , tDecls
+                                      [ "datatype A of MkA1 of ma1: Integer end; MkA2 of ma2: Text end; end"
+                                      , "datatype B of MkB1 of mb1: Integer end; MkB2 of mb2: Text end; end"
+                                      , "datatype C <: A & B of MkC of MkA2; MkB1 end end"
+                                      , "c = let mb1 = 77; ma2 = \"ttma1\" in MkC"
+                                      ] $
+                                  tGroup
+                                      "multiple-constructor"
+                                      [ testExpectSuccess "pass"
+                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn MkA2@MkB1 => (ma2,mb1)}"
+                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn MkC => (ma2,mb1)}"
+                                      ]
+                                , tDecls
+                                      [ "datatype A of MkA1 of ma1: Integer end; MkA2 of ma2: Text end; end"
+                                      , "datatype B <: A of MkB1 of MkA1; mb1: Integer end; MkB2 of MkA2; mb2: Text end; end"
+                                      , "datatype C <: A of MkC1 of MkA1; mc1: Integer end; MkC2 of MkA2; mc2: Text end; end"
+                                      ] $
+                                  tGroup
+                                      "diamond"
+                                      [ testExpectSuccess "pass"
+                                      , tDecls
+                                            [ "datatype D <: B & C of MkD of MkB1; MkC1; end end"
+                                            , "d = let ma1 = 58; mb1 = 59; mc1 = 60 in MkD"
+                                            ] $
+                                        tGroup
+                                            "consistent"
+                                            [ testExpectSuccess "pass"
+                                            , testExpectSuccess "testeq {(58,59,60)} {d >- fn MkD => (ma1,mb1,mc1)}"
+                                            , testExpectSuccess
+                                                  "testeq {(58,59,60)} {d >- fn MkB1@MkC1 => (ma1,mb1,mc1)}"
+                                            ]
+                                      , tDecls ["datatype D <: B & C of MkD of MkB1; MkC2; end end"] $
+                                        tGroup "inconsistent" [testExpectReject "pass"]
+                                      ]
+                                ]
                           ]
                     ]
               ]
