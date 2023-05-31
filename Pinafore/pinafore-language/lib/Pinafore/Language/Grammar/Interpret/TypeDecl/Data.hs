@@ -667,7 +667,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                             conversion :: QOpenExpression (decltype -> supertype)
                                             conversion = fmap joinConvs $ sequenceA cconvexprs
                                         registerSubtypeConversion $
-                                            subtypeConversionEntry Verify mainGroundedType superGroundedType $
+                                            subtypeConversionEntry Verify Nothing mainGroundedType superGroundedType $
                                             fmap (functionToShim "supertype") conversion
                                 in return $
                                    proc () -> do

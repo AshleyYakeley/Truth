@@ -181,7 +181,7 @@ checkEntryConsistency (MkSubtypeConversionEntry Verify ta tb sconv) entries =
     case checkSubtypeConsistency (toList entries) (MkSomeGroundType ta) (MkSomeGroundType tb) of
         Nothing -> return ()
         Just (MkSubtypeConversionEntry _ eta etb esconv) ->
-            if isNeutralSubtypeConversion sconv && isNeutralSubtypeConversion esconv
+            if equivalentSubtypeConversions sconv esconv
                 then return ()
                 else do
                     ntt <- getRenderFullName

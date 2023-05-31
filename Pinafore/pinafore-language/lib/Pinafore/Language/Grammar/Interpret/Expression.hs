@@ -613,7 +613,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                             MkShimWit funcType iconv -> do
                                 convexpr <- lift $ typedSubsumeExpressionToOpen mempty funcType body
                                 registerSubtypeConversion $
-                                    subtypeConversionEntry trustme gta gtb $
+                                    subtypeConversionEntry trustme Nothing gta gtb $
                                     fmap
                                         (functionToShim "user-subtype" . (shimToFunction $ polarPolyIsoNegative iconv))
                                         convexpr
@@ -642,7 +642,7 @@ interpretOpenEntitySubtypeRelation sta stb =
                                 MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                             Nothing ->
                                 MkSubtypeConversionEntry TrustMe gta gtb $
-                                nilSubtypeConversion $
+                                nilSubtypeConversion Nothing $
                                 coerceShim "open entity" .
                                 (functionToShim "entityConvert" $
                                  storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)

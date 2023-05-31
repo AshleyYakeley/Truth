@@ -27,6 +27,7 @@ module Pinafore.Test
     , registerLetBindings
     , registerLetBinding
     , registerPatternConstructor
+    , QSubtypeHint(..)
     , registerSubtypeConversion
     , module Pinafore.Language.Expression
     , checkUpdateEditor

@@ -68,13 +68,14 @@ instance forall (ground :: GroundTypeKind). DebugIsDolanGroundType ground => Sho
 subtypeConversionEntry ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => TrustOrVerify
+    -> Maybe (DolanSubtypeHint ground)
     -> DolanGroundedShimWit ground 'Negative a
     -> DolanGroundedShimWit ground 'Positive b
     -> TSOpenExpression (DolanTypeSystem ground) (DolanShim ground a b)
     -> SubtypeConversionEntry ground
-subtypeConversionEntry trustme (MkShimWit (MkDolanGroundedType gta argsa) conva) (MkShimWit (MkDolanGroundedType gtb argsb) convb) conv =
+subtypeConversionEntry trustme hint (MkShimWit (MkDolanGroundedType gta argsa) conva) (MkShimWit (MkDolanGroundedType gtb argsb) convb) conv =
     MkSubtypeConversionEntry trustme gta gtb $
-    subtypeConversion gta (MkShimWit argsa conva) gtb (MkShimWit argsb convb) conv
+    subtypeConversion hint gta (MkShimWit argsa conva) gtb (MkShimWit argsb convb) conv
 
 type SubtypeGroupTest :: GroundTypeKind -> Type
 newtype SubtypeGroupTest ground = MkSubtypeGroupTest

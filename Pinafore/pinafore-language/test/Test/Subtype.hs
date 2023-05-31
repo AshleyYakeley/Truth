@@ -32,7 +32,7 @@ subtypeEntry ::
 subtypeEntry convexpr = let
     ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)
-    in subtypeConversionEntry Verify ta tb convexpr
+    in subtypeConversionEntry Verify Nothing ta tb convexpr
 
 simpleConversionExpression :: QOpenExpression (QPolyShim Type () T)
 simpleConversionExpression = pure $ functionToShim "conv" $ \() -> MkT 12

@@ -3,6 +3,7 @@
 
 module Pinafore.Language.Type.Subtype
     ( funcGroundType
+    , QSubtypeHint(..)
     ) where
 
 import Data.Shim
@@ -13,6 +14,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Show
+import Pinafore.Language.Type.Subtype.Hint
 import Shapes
 
 funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
@@ -21,6 +23,7 @@ funcGroundType =
         namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
 instance IsDolanSubtypeGroundType QGroundType where
+    type DolanSubtypeHint QGroundType = QSubtypeHint
     subtypeGroundedTypes = entries_subtypeGroundedTypes
     tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
         spos <- paramAsk sourcePosParam

@@ -224,7 +224,7 @@ subtypeRelationBDT ::
 subtypeRelationBDT trustme docDescription ta tb conv = let
     diSubtype = exprShow ta
     diSupertype = exprShow tb
-    bdScopeEntries = pure $ SubtypeScopeEntry $ subtypeConversionEntry trustme ta tb $ pure conv
+    bdScopeEntries = pure $ SubtypeScopeEntry $ subtypeConversionEntry trustme Nothing ta tb $ pure conv
     docItem = SubtypeRelationDocItem {..}
     bdDoc = MkDefDoc {..}
     in pure MkBindDoc {..}
