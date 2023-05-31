@@ -501,12 +501,21 @@ testQueries =
                     ]
               ]
         , testTree
-              "patterns"
+              "pattern"
               [ testQuery "(fn a => 5) 2" $ LRSuccess "5"
               , testQuery "(fn a => a) 2" $ LRSuccess "2"
               , testQuery "(fn _ => 5) 2" $ LRSuccess "5"
-              , testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "(2, 2)"
               , testQuery "(fn (a,b) => a +.Integer b) (5,6)" $ LRSuccess "11"
+              , testQuery "(fn Just a => a) (Just 71)" $ LRSuccess "71"
+              , testQuery "(match Just a => a end) (Just 72)" $ LRSuccess "72"
+              , testQuery "let Just a = Just 73 in a" $ LRSuccess "73"
+              , testTree
+                    "at"
+                    [ testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "(2, 2)"
+                    , testQuery "(fn (Just a)@(Just b) => (a,b)) (Just 578)" $ LRSuccess "(578, 578)"
+                    , testQuery "(fn (Nothing)@Nothing => 345) Nothing" $ LRSuccess "345"
+                    , testQuery "(fn Nothing@Nothing => 345) Nothing" $ LRSuccess "345"
+                    ]
               ]
         , testTree
               "match-to"
@@ -578,12 +587,6 @@ testQueries =
               , testQuery "(match _ => 5 end) 2" $ LRSuccess "5"
               , testQuery "(match _ => 5; _ => 3 end) 2" $ LRSuccess "5"
               , testQuery "(match a@b => (a,b) end) 2" $ LRSuccess "(2, 2)"
-              ]
-        , testTree
-              "pattern"
-              [ testQuery "(fn Just a => a) (Just 71)" $ LRSuccess "71"
-              , testQuery "(match Just a => a end) (Just 72)" $ LRSuccess "72"
-              , testQuery "let Just a = Just 73 in a" $ LRSuccess "73"
               ]
         , testTree
               "matches"

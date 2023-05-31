@@ -11,13 +11,10 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes hiding (try)
 
-readPatterns4 :: Parser [Namespace -> SyntaxPattern]
-readPatterns4 = many readPattern4
-
 readPatterns :: Parser [SyntaxPattern]
 readPatterns = do
     ns <- readAskNamespace
-    nspats <- readPatterns4
+    nspats <- many readPattern4
     return $ fmap (\pat -> pat ns) nspats
 
 nilPattern :: SyntaxPattern'
@@ -72,9 +69,9 @@ readPattern2 = do
 readPattern3 :: Parser (Namespace -> SyntaxPattern)
 readPattern3 =
     readWithSourcePos1
-        (do
+        (try $ do
              c <- readConstructor
-             args <- readPatterns4
+             args <- some readPattern4
              return $ \ns -> ConstructorSyntaxPattern ns c $ fmap (\pat -> pat ns) args) <|>
     readPattern4
 
