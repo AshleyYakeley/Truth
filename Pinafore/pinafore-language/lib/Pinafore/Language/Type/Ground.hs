@@ -40,7 +40,7 @@ data QGroundType dv gt = MkQGroundType
     , qgtShowType :: ListTypeExprShow dv
     , qgtFamilyType :: FamilialType gt
     , qgtProperties :: GroundProperties dv gt
-    , qgtSubtypeGroup :: Maybe (SubtypeGroup QGroundType)
+    , qgtSubtypeGroup :: Maybe (SubtypeGroup QGroundType dv gt)
     , qgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
 

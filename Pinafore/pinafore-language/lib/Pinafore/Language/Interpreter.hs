@@ -176,19 +176,11 @@ checkEntryConsistency ::
     => SubtypeConversionEntry (InterpreterGroundType ts)
     -> HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
     -> Interpreter ts ()
-checkEntryConsistency (MkSubtypeConversionEntry TrustMe _ _ _) _ = return ()
-checkEntryConsistency (MkSubtypeConversionEntry Verify ta tb sconv) entries =
-    case checkSubtypeConsistency (toList entries) (MkSomeGroundType ta) (MkSomeGroundType tb) of
+checkEntryConsistency sce entries =
+    case checkSubtypeConsistency (toList entries) sce of
         Nothing -> return ()
-        Just (MkSubtypeConversionEntry _ eta etb esconv) ->
-            if equivalentSubtypeConversions sconv esconv
-                then return ()
-                else do
-                    ntt <- getRenderFullName
-                    throw $
-                        InterpretSubtypeInconsistent
-                            (ntt $ exprShow $ MkSomeGroundType eta)
-                            (ntt $ exprShow $ MkSomeGroundType etb)
+        Just (gta, gtb) ->
+            throwWithName $ \ntt -> InterpretSubtypeInconsistent (ntt $ exprShow gta) (ntt $ exprShow gtb)
 
 addSCEntry ::
        forall ts. HasInterpreter ts

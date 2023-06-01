@@ -1277,7 +1277,7 @@ testEntity =
                                             ] $
                                         tGroup
                                             "consistent"
-                                            [ testExpectSuccess "pass"
+                                            [ tModify testMark $ testExpectSuccess "pass"
                                             , testExpectSuccess "testeq {(58,59,60)} {d >- fn MkD => (ma1,mb1,mc1)}"
                                             , testExpectSuccess
                                                   "testeq {(58,59,60)} {d >- fn MkB1@MkC1 => (ma1,mb1,mc1)}"

@@ -8,7 +8,6 @@ module Language.Expression.Dolan.Subtype
     , IsDolanSubtypeGroundType(..)
     , DolanShim
     , SubtypeConversion
-    , equivalentSubtypeConversions
     , identitySubtypeConversion
     , coerceSubtypeConversion
     , runSubtypeConversion
@@ -141,8 +140,9 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => E
     _ == _ = False
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Semigroup (SubtypeKnowledge ground) where
-    NeutralSK <> NeutralSK = NeutralSK
-    (HintSK a) <> (HintSK b) = HintSK $ a <> b
+    NeutralSK <> sk = sk
+    sk <> NeutralSK = sk
+    HintSK a <> HintSK b = HintSK $ a <> b
     _ <> _ = UnknownSK
 
 type SubtypeArguments :: GroundTypeKind -> (Type -> Type) -> forall (dva :: DolanVariance) ->
@@ -187,13 +187,9 @@ subtypeConversionKnowledge (GeneralSubtypeConversion sk _) = sk
 subtypeConversionKnowledge IdentitySubtypeConversion = NeutralSK
 subtypeConversionKnowledge CoerceSubtypeConversion = NeutralSK
 
-equivalentSubtypeConversions ::
-       forall (ground :: GroundTypeKind) (dva1 :: DolanVariance) (gta1 :: DolanVarianceKind dva1) (dvb1 :: DolanVariance) (gtb1 :: DolanVarianceKind dvb1) (dva2 :: DolanVariance) (gta2 :: DolanVarianceKind dva2) (dvb2 :: DolanVariance) (gtb2 :: DolanVarianceKind dvb2).
-       IsDolanSubtypeGroundType ground
-    => SubtypeConversion ground dva1 gta1 dvb1 gtb1
-    -> SubtypeConversion ground dva2 gta2 dvb2 gtb2
-    -> Bool
-equivalentSubtypeConversions sc1 sc2 = subtypeConversionKnowledge sc1 == subtypeConversionKnowledge sc2
+instance forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb). IsDolanSubtypeGroundType ground =>
+             Eq (SubtypeConversion ground dva gta dvb gtb) where
+    sc1 == sc2 = subtypeConversionKnowledge sc1 == subtypeConversionKnowledge sc2
 
 identitySubtypeConversion ::
        forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).

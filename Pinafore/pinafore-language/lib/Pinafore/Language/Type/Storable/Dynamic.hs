@@ -70,28 +70,28 @@ dynamicStorableGroundType =
         {qgtSubtypeGroup = Just dynamicEntitySubtypeGroup}
 
 -- P <: DynamicEntity
-dynamicTest :: SubtypeGroupTest QGroundType
-dynamicTest =
-    MkSubtypeGroupTest $ \ta tb -> do
+dynamicTest :: QGroundType '[] DynamicEntity -> QGroundType '[] DynamicEntity -> Bool
+dynamicTest ta tb =
+    fromMaybe False $ do
         (Refl, HRefl) <- groundTypeTestEquality dynamicStorableGroundType tb
         Refl <- testEquality (qgtVarianceType ta) NilListType
         MkADynamicEntityFamily _ _ <- getGroundFamily aDynamicStorableFamilyWitness ta
-        return identitySubtypeConversion
+        return True
 
 -- P <: Q
-aDynamicTest :: SubtypeGroupTest QGroundType
-aDynamicTest =
-    MkSubtypeGroupTest $ \ta tb -> do
+aDynamicTest :: QGroundType '[] DynamicEntity -> QGroundType '[] DynamicEntity -> Bool
+aDynamicTest ta tb =
+    fromMaybe False $ do
         Refl <- testEquality (qgtVarianceType ta) NilListType
         MkADynamicEntityFamily _ deta <- getGroundFamily aDynamicStorableFamilyWitness ta
         Refl <- testEquality (qgtVarianceType tb) NilListType
         MkADynamicEntityFamily _ detb <- getGroundFamily aDynamicStorableFamilyWitness tb
-        ifpure (isSubsetOf deta detb) identitySubtypeConversion
+        return $ isSubsetOf deta detb
 
-dynamicEntitySubtypeGroup :: SubtypeGroup QGroundType
+dynamicEntitySubtypeGroup :: SubtypeGroup QGroundType '[] DynamicEntity
 dynamicEntitySubtypeGroup =
-    MkSubtypeGroup (MkSomeGroundType dynamicStorableGroundType) $
-    testEqualitySubtypeGroupTest <> dynamicTest <> aDynamicTest
+    MkSubtypeGroup dynamicStorableGroundType $ \ta tb ->
+        or [testEqualitySubtypeGroupTest ta tb, dynamicTest ta tb, aDynamicTest ta tb]
 
 data ADynamicEntityFamily :: FamilyKind where
     MkADynamicEntityFamily :: FullName -> DynamicEntityType -> ADynamicEntityFamily DynamicEntity

@@ -20,8 +20,11 @@ instance Eq QSubtypeHint where
             then dhCodomain hintA == dhCodomain hintB
             else error $ "inconsistent data hints: " <> show (dhDomain hintA, dhDomain hintB)
 
+instance Show QSubtypeHint where
+    show MkQSubtypeHint {..} = "{" <> intercalate "," (fmap (\n -> show n <> "->" <> show (dhMap n)) dhDomain) <> "}"
+
 instance Semigroup QSubtypeHint where
-    MkQSubtypeHint da ma <> MkQSubtypeHint _ mb = MkQSubtypeHint da $ mb . ma
+    hintA <> hintB = MkQSubtypeHint (dhDomain hintA) $ dhMap hintB . dhMap hintA
 
 mkFunc :: [(Name, Name)] -> Name -> Name
 mkFunc [] n = error $ "broken subtype hint: " <> show n
