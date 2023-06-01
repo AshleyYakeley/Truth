@@ -8,17 +8,214 @@ For all types `T`, `None <: T` and `T <: Any`.
 
 Data types can be declared with the `datatype` keyword.
 The declaration specifies the constructors of the type.
+Each constructor has a name, which starts with a capital letter.
+There are two kinds of constructor, _plain_ and _record_.
+A datatype declaration can mix plain and record constructors.
 
-Each constructor has a name, and a list of zero or more ambipolar types.
+Data types are not subtypes of `Entity` and are not storable, except with the `storable` keyword (see below).
+
+### Plain Constructors
+
+A plain constructor consists of its name, and a list of zero or more ambipolar types, with no free type variables besides parameters.
+
+Here's an example of a type with two constructors, `T1` and `T2`:
 
 ```pinafore
 datatype T of
     T1 (Int -> [Int]);
-    T2 Int;
+    T2 Int Text;
+end;
+```
+### Record Constructors
+
+A record constructor consists of its name, and a list of zero or more _signatures_ in an `of`...`end` block.
+
+A signature consists of a name and a positive type (which may have free type variables).
+
+Here's an example of a type with a record constructor with three signatures:
+
+```pinafore
+datatype T of
+    MkT of
+        f: List a -> Maybe a;
+        g: Text -> Action Unit;
+        h: Integer *: Integer;
+    end;
 end;
 ```
 
-Data types are not subtypes of `Entity` and are not storable, except with the `storable` keyword (see below).
+To create a value of the type `T` using its record constructor `MkT`, bring values matching its signatures into scope, like this:
+
+
+```pinafore
+t: T = let
+    f = match [] => Nothing; a :: _ => Just a; end;
+    g = outputLn.Env.;
+    h = (52,1);
+    in MkT;
+```
+
+Values can be retrieved by matching the constructor, like this:
+
+
+```pinafore
+tg: T -> Text -> Action Unit
+= fn MkT => g;
+```
+
+### Record Inheritance
+
+A datatypes `T` can inherit from one or more supertypes `S1`, `S2`, etc. provided that:
+
+* Supertypes `S1`, `S2`, etc. are datatypes without type parameters.
+* All contructors of T are record constructors.
+* Every record constructor of T mentions a record constructor from each supertype `S1`, `S2`, etc.
+
+This will give `T <: S1`, `T <: S2`, etc.
+However, note that unlike classes in languages such as Java, these conversions are not injective,
+the greatest dynamic supertype of `T` is still `T`, and no downcasting is possible.
+
+Here's an example:
+
+```pinafore
+datatype S1 of
+    MkS1 of
+        p: Rational;
+        q: Text -> Text;
+    end;
+end;
+
+datatype S2 of
+    MkS2 of
+        r: Action Unit;
+    end;
+end;
+
+datatype T <: S1 & S2 of
+    MkT of
+        MkS1;
+        MkS2;
+        x: Number;
+    end;
+end;
+```
+
+All members of each mentioned supertype constructor will be in the defined constructor.
+In this case, the constructor `MkT` has members `p`, `q`, `r`, `x`.
+
+#### Member Refinement
+
+It is possible to refine the type of a constructor member,
+with a type that subsumes to previous type.
+For example:
+
+
+```pinafore
+datatype S of
+    MkS of
+        n: Rational;
+        f: Text -> Text;
+    end;
+end;
+
+datatype T <: S of
+    MkT of
+        MkS;
+        n: Integer;
+        f: a -> a;
+    end;
+end;
+```
+
+In this case, constructor `MkT` has two members, `n` and `f`,
+of types that subsume to the corresponding types in `MkS`.
+
+#### Member Combination
+
+If a same member name exists in two or more constructors from supertypes,
+Pinafore will attempt to combine them.
+This will succeed if one subsumes to the other, and may or may not otherwise.
+For example:
+
+```pinafore
+datatype S1 of
+    MkS1 of
+        x: Rational;
+    end;
+end;
+
+datatype S2 of
+    MkS2 of
+        x: Integer;
+    end;
+end;
+
+datatype T <: S1 & S2 of
+    MkT of
+        MkS1;
+        MkS2;
+    end;
+end;
+```
+
+In this case, `MkT` has one member, `x: Integer`.
+
+#### Multiple Inheritance Diamonds
+
+Multiple inheritance "diamonds" are permitted, provided they are consistent.
+
+For example, this is consistent:
+
+
+```pinafore
+datatype A of
+    MkA1 of
+    end;
+    MkA2 of
+    end;
+end;
+
+datatype B <: A of
+    MkB1 of
+        MkA1;
+    end;
+    MkB2 of
+        MkA2;
+    end;
+end;
+
+datatype C <: A of
+    MkC1 of
+        MkC1;
+    end;
+    MkC2 of
+        MkC2;
+    end;
+end;
+
+datatype D <: B & C of
+    MkD of
+        MkB1;
+        MkC1;
+    end;
+end;
+```
+
+However, this would be inconsistent:
+
+
+```pinafore
+datatype D <: B & C of
+    MkD of
+        MkB1;
+        MkC2;
+    end;
+end;
+```
+
+This is because the conversions `D <: B <: A` and `D <: C <: A` would be different.
+
+### Parameters
 
 Datatypes can take parameters. The variance of each parameter is specified like this:
 

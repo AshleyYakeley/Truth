@@ -195,7 +195,9 @@ All declarations, including type declarations, are local to a `let` block.
 
 <binding> ::= <pattern-1> "=" <expression>
 
-<datatype-supertypes> ::=  | "<:" <type>
+<datatype-supertypes> ::=  | "<:" <supertypes>
+
+<supertypes> = <type> | <supertypes> "&" <type>
 
 <plain-datatype-parameters> ::=  | <plain-datatype-parameter> <plain-datatype-parameters>
 
