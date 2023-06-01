@@ -65,11 +65,11 @@ tg: T -> Text -> Action Unit
 
 ### Record Inheritance
 
-A datatypes `T` can inherit from one or more supertypes `S1`, `S2`, etc. provided that:
+A datatype `T` can inherit from one or more supertypes `S1`, `S2`, etc. provided that:
 
 * Supertypes `S1`, `S2`, etc. are datatypes without type parameters.
-* All contructors of T are record constructors.
-* Every record constructor of T mentions a record constructor from each supertype `S1`, `S2`, etc.
+* All contructors of `T` are record constructors.
+* Every record constructor of `T` mentions a record constructor from each supertype `S1`, `S2`, etc.
 
 This will give `T <: S1`, `T <: S2`, etc.
 However, note that unlike classes in languages such as Java, these conversions are not injective,
