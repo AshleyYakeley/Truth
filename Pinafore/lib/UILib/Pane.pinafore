@@ -113,8 +113,9 @@ expose namespace UILib. of
                 setsel item;
                 end};
 
-            datatype Context of
+            datatype Context <: Context.UILib. of
                 MkContext of
+                    MkContext.UILib.;
                     #| A window that comes with some menus.
                     stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window;
                     paneWindow: Pane -> Action Window;

@@ -1190,6 +1190,11 @@ testEntity =
                              , testExpectSuccess $ testMeet "a -> a" "b -> b"
                              , testExpectSuccess $ testMeet "Integer -> Integer" "a -> a"
                              ]
+                    , tDecls
+                          [ "datatype R of MkR of u: Unit end end"
+                          , "namespace N of f = fn MkR. => let MkR. = MkR. in MkR. end"
+                          ] $
+                      tGroup "issue-199" [testExpectSuccess "seq f.N. pass"]
                     , tGroup
                           "supertype"
                           [ tDecls
@@ -1277,7 +1282,7 @@ testEntity =
                                             ] $
                                         tGroup
                                             "consistent"
-                                            [ tModify testMark $ testExpectSuccess "pass"
+                                            [ testExpectSuccess "pass"
                                             , testExpectSuccess "testeq {(58,59,60)} {d >- fn MkD => (ma1,mb1,mc1)}"
                                             , testExpectSuccess
                                                   "testeq {(58,59,60)} {d >- fn MkB1@MkC1 => (ma1,mb1,mc1)}"

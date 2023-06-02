@@ -30,8 +30,10 @@ expose namespace UILib of
                 byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property name) !$$ model;
                 in MkProps;
 
-            datatype Context of
+            datatype Context <: Context.Pane.UILib. & Props of
                 MkContext of
+                    MkContext.Pane.UILib.;
+                    MkProps;
                     namedPane: (WholeModel +a -> Element) -> WholeModel +(a & Named) -> Pane;
                     nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
                     namedTable: FiniteSetModel {a,+Named} -> (a -> Action Any) -> Maybe (WholeModel {a,+Named}) -> Element;
