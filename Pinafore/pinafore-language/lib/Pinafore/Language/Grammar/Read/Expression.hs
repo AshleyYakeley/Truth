@@ -232,13 +232,9 @@ readRecursiveDeclaration = do
     readThis TokEnd
     return $ RecursiveSyntaxDeclaration decls
 
-debugScope :: Bool
-debugScope = False
-
 readDebugDeclaration :: Parser SyntaxDeclaration'
 readDebugDeclaration = do
-    altIf debugScope
-    readThis TokTypeJudge
+    readThis TokDebug
     name <- readFullNameRef
     return $ DebugSyntaxDeclaration name
 
@@ -246,10 +242,15 @@ readDeclaration :: Parser SyntaxDeclaration
 readDeclaration =
     readWithDoc $
     readWithSourcePos $
-    readDebugDeclaration <|> fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readUsing <|>
-    readNamespace <|>
-    readRecursiveDeclaration <|>
-    fmap ExposeSyntaxDeclaration readExpose
+    choice
+        [ readDebugDeclaration
+        , fmap DirectSyntaxDeclaration readDirectDeclaration
+        , readImport
+        , readUsing
+        , readNamespace
+        , readRecursiveDeclaration
+        , fmap ExposeSyntaxDeclaration readExpose
+        ]
 
 readDeclarations :: Parser [SyntaxDeclaration]
 readDeclarations = readLines readDeclaration
@@ -442,6 +443,12 @@ readExpression1 =
          readThis TokElse
          meelse <- readExpression
          return $ seApplys spos (seConst spos SCIfThenElse) [metest, methen, meelse]) <|>
+    readWithSourcePos
+        (do
+             readThis TokDebug
+             text <- readThis TokString
+             expr <- readExpression1
+             return $ SEDebug text expr) <|>
     readExpression2
 
 readExpression2 :: Parser SyntaxExpression

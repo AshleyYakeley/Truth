@@ -17,6 +17,9 @@ import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
 
+debugSyntax :: Bool
+debugSyntax = False
+
 data Comment
     = BlockComment String
     | LineComment String
@@ -109,6 +112,7 @@ data Token t where
     TokOr :: Token ()
     TokAnd :: Token ()
     TokNumber :: Token Number
+    TokDebug :: Token ()
 
 instance TestEquality Token where
     testEquality TokComment TokComment = Just Refl
@@ -160,6 +164,7 @@ instance TestEquality Token where
     testEquality TokOr TokOr = Just Refl
     testEquality TokAnd TokAnd = Just Refl
     testEquality TokNumber TokNumber = Just Refl
+    testEquality TokDebug TokDebug = Just Refl
     testEquality _ _ = Nothing
 
 instance Show (Token t) where
@@ -212,6 +217,7 @@ instance Show (Token t) where
     show TokOr = show ("|" :: String)
     show TokAnd = show ("&" :: String)
     show TokNumber = "number"
+    show TokDebug = "debug"
 
 instance Show (SomeOf Token) where
     show (MkSomeOf t _) = show t
@@ -340,6 +346,8 @@ checkKeyword "as" = return $ MkSomeOf TokAs ()
 checkKeyword "except" = return $ MkSomeOf TokExcept ()
 checkKeyword "namespace" = return $ MkSomeOf TokNamespace ()
 checkKeyword "using" = return $ MkSomeOf TokUsing ()
+checkKeyword "debug"
+    | debugSyntax = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
 
 readTextToken :: Parser (SomeOf Token)

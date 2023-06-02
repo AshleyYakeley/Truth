@@ -296,6 +296,8 @@ data SyntaxExpression'
     | SELet [SyntaxDeclaration]
             SyntaxExpression
     | SEList [SyntaxExpression]
+    | SEDebug Text
+              SyntaxExpression
     deriving (Eq)
 
 seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression

@@ -76,6 +76,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
             (syntaxFreeVariables binds <> syntaxFreeVariables expr)
             (mapMaybe btGetVar $ syntaxBindingVariables binds)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
+    syntaxFreeVariables (SEDebug _ expr) = syntaxFreeVariables expr
 
 instance SyntaxFreeVariables SyntaxBinding where
     syntaxFreeVariables (MkSyntaxBinding _ expr) = syntaxFreeVariables expr

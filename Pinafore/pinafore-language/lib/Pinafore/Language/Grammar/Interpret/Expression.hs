@@ -558,6 +558,10 @@ interpretExpression' (SEUnref sexpr) = refNotationUnquote $ interpretExpression 
 interpretExpression' (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ qSequenceExpr exprs
+interpretExpression' (SEDebug t sexpr) = do
+    expr <- interpretExpression sexpr
+    liftIO $ debugMessage $ t <> ": " <> pack (show expr)
+    return expr
 
 checkExprVars :: MonadThrow PinaforeError m => QExpression -> m ()
 checkExprVars (MkSealedExpression _ expr) = let
