@@ -1190,11 +1190,17 @@ testEntity =
                              , testExpectSuccess $ testMeet "a -> a" "b -> b"
                              , testExpectSuccess $ testMeet "Integer -> Integer" "a -> a"
                              ]
-                    , tDecls
-                          [ "datatype R of MkR of u: Unit end end"
-                          , "namespace N of f = fn MkR. => let MkR. = MkR. in MkR. end"
-                          ] $
-                      tGroup "issue-199" [testExpectSuccess "seq f.N. pass"]
+                    , tDecls ["datatype R of MkR of u: Unit end end"] $ let
+                          testExpr t = testExpectSuccess $ "let f = " <> t <> " in seq f pass"
+                          in tGroup
+                                 "issue-199"
+                                 [ testExpectSuccess "pass"
+                                 , testExpr "fn MkR => u"
+                                 , testExpr "fn a => let MkR = a in u"
+                                 , testExpr "fn MkR => let MkR = MkR in u"
+                                 , testExpr "fn MkR => fn MkR => u"
+                                 , testExpr "fn a => let MkR = a; MkR = a; in u"
+                                 ]
                     , tGroup
                           "supertype"
                           [ tDecls
