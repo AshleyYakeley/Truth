@@ -218,6 +218,8 @@ data SyntaxPattern'
                                 SyntaxType
     | NamespaceSyntaxPattern SyntaxPattern
                              NamespaceRef
+    | DebugSyntaxPattern Text
+                         SyntaxPattern
     deriving (Eq)
 
 instance ExprShow SyntaxPattern' where
@@ -230,6 +232,7 @@ instance ExprShow SyntaxPattern' where
     exprShowPrec (TypedSyntaxPattern p t) = namedTextPrec 7 $ exprPrecShow 6 p <> ": " <> exprPrecShow 6 t
     exprShowPrec (DynamicTypedSyntaxPattern p t) = namedTextPrec 7 $ exprPrecShow 6 p <> ":? " <> exprPrecShow 6 t
     exprShowPrec (NamespaceSyntaxPattern p n) = namedTextPrec 7 $ exprPrecShow 6 p <> " as " <> exprPrecShow 6 n
+    exprShowPrec (DebugSyntaxPattern t p) = namedTextPrec 7 $ "debug " <> fromString (show t) <> " " <> exprPrecShow 6 p
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 

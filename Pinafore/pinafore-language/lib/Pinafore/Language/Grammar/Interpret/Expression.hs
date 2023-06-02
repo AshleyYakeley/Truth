@@ -131,6 +131,10 @@ interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
                                 ImpureFunction $ fmap $ \a -> (a, ())
                         qConstructPattern pc [pat]
 interpretPattern' (NamespaceSyntaxPattern spat _) = interpretPattern spat
+interpretPattern' (DebugSyntaxPattern t spat) = do
+    pat <- interpretPattern spat
+    liftIO $ debugMessage $ t <> ": " <> pack (show pat)
+    return pat
 
 interpretPattern :: SyntaxPattern -> QScopeInterpreter QPattern
 interpretPattern (MkWithSourcePos spos pat) = do
@@ -371,8 +375,12 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             interpScopeBuilder close
             return $ pure $ Node (MkDefDoc (NamespaceDocItem $ AbsoluteNamespaceRef nsn) doc) docs
         DebugSyntaxDeclaration nameref -> do
-            (fn, desc) <- interpScopeBuilder $ lift $ lookupDebugBindingInfo nameref
-            liftIO $ debugMessage $ toText fn <> ": " <> pack desc
+            mfd <- interpScopeBuilder $ lift $ lookupDebugBindingInfo nameref
+            liftIO $
+                debugMessage $
+                case mfd of
+                    Just (fn, desc) -> toText nameref <> " = " <> toText fn <> ": " <> pack desc
+                    Nothing -> toText nameref <> " not found"
             return []
 
 interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs

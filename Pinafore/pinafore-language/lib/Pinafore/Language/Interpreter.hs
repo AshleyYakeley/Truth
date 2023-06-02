@@ -396,11 +396,10 @@ lookupBinding name = do
     bindmap <- getBindingMap
     rnuToInterpreter name $ bindmap name
 
-lookupDebugBindingInfo :: HasInterpreter ts => FullNameRef -> Interpreter ts (FullName, String)
+lookupDebugBindingInfo :: HasInterpreter ts => FullNameRef -> Interpreter ts (Maybe (FullName, String))
 lookupDebugBindingInfo name = do
     bindmap <- getBindingInfoMap
-    b <- rnuToInterpreter name $ bindmap name
-    return $ (biName b, show $ biValue b)
+    return $ fmap (\b -> (biName b, show $ biValue b)) $ bindmap name
 
 lookupBoundType ::
        forall ts. HasInterpreter ts

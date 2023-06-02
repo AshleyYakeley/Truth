@@ -94,6 +94,12 @@ readPattern5 :: Parser (Namespace -> SyntaxPattern)
 readPattern5 =
     readWithSourcePos1
         (do
+             readThis TokDebug
+             text <- readThis TokString
+             pat <- readPattern5
+             return $ \ns -> DebugSyntaxPattern text $ pat ns) <|>
+    readWithSourcePos1
+        (do
              c <- readConstructor
              return $ \ns -> ConstructorSyntaxPattern ns c []) <|>
     readWithSourcePos1

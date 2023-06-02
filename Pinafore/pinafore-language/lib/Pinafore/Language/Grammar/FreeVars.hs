@@ -123,6 +123,7 @@ instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
     syntaxBindingVariables (DynamicTypedSyntaxPattern pat _) = syntaxBindingVariables pat
     syntaxBindingVariables (NamespaceSyntaxPattern pat _) = syntaxBindingVariables pat
+    syntaxBindingVariables (DebugSyntaxPattern _ pat) = syntaxBindingVariables pat
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) where
     syntaxBindingVariables (MkSyntaxWithDoc _ decl) = syntaxBindingVariables decl
