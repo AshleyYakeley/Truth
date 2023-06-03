@@ -3,37 +3,35 @@ let
     import "pinafore-gnome";
     import "UILib";
     using UILib.;
-in run.Context $ fn context@MkContext =>
+in run.Context $ fn context =>
 let
 
-    MkContext.Pane = mkContext.Pane context;
-    MkProps.Named = mkProps.Named store;
     MkContext.Named = mkContext.Named context;
 
-using Store;
+    using Store;
 
-years: FiniteSetModel Integer
-= property @Integer @Unit !"FTSJ.years" store !@ {()};
+    years: FiniteSetModel Integer
+    = property @Integer @Unit !"FTSJ.years" store !@ {()};
 
-yearTheme: Property Integer Text
-= property @Integer @Text !"FTSJ.yearTheme" store;
+    yearTheme: Property Integer Text
+    = property @Integer @Text !"FTSJ.yearTheme" store;
 
-using GTK;
+    using GTK;
 
-frontCoverPane: Pane
-= simple.Pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+    frontCoverPane: Pane
+    = simple.Pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
-getThemesPane: Action Pane
-= pure $ simple.Pane "Themes" $ blank;
+    getThemesPane: Action Pane
+    = pure $ simple.Pane "Themes" $ blank;
 
-daysPane: Pane
-= simple.Pane "Days" $ blank;
+    daysPane: Pane
+    = simple.Pane "Days" $ blank;
 
-createMainPane: Action Pane
-= do
-    themesPane <- getThemesPane;
-    notebook.Pane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
-    end;
+    createMainPane: Action Pane
+    = do
+        themesPane <- getThemesPane;
+        notebook.Pane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
+        end;
 
 in do
     mainPane <- createMainPane;

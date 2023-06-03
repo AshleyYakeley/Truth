@@ -1,31 +1,31 @@
 #!/usr/bin/pinafore
 let
-import "pinafore-gnome";
+    import "pinafore-gnome";
 
-datatype StopwatchState of
-    StoppedState Duration;
-    RunningState Time;
-end;
+    datatype StopwatchState of
+        StoppedState Duration;
+        RunningState Time;
+    end;
 
-toggleStopwatch: WholeModel +Time -> WholeModel StopwatchState -> Action Unit
-= fn now, r => do
-    n <- get now;
-    oldstate <- get r;
-    newstate <- pure $ oldstate >- match
-        StoppedState d => RunningState $ negate.Duration d +.Time n;
-        RunningState t => StoppedState $ n -.Time t
+    toggleStopwatch: WholeModel +Time -> WholeModel StopwatchState -> Action Unit
+    = fn now, r => do
+        n <- get now;
+        oldstate <- get r;
+        newstate <- pure $ oldstate >- match
+            StoppedState d => RunningState $ negate.Duration d +.Time n;
+            RunningState t => StoppedState $ n -.Time t
+            end;
+        r := newstate;
         end;
-    r := newstate;
-    end;
 
-showStopwatch: StopwatchState -> Time -> Text
-= fn state, n => state >- match
-    StoppedState d => "[" <>.Text show d <>.Text "]";
-    RunningState t => show $ n -.Time t
-    end;
+    showStopwatch: StopwatchState -> Time -> Text
+    = fn state, n => state >- match
+        StoppedState d => "[" <>.Text show d <>.Text "]";
+        RunningState t => show $ n -.Time t
+        end;
 
-ui: WholeModel +Time -> WholeModel StopwatchState -> Element.GTK
-= fn now, r => button.GTK {showStopwatch %r %now} {toggleStopwatch now r};
+    ui: WholeModel +Time -> WholeModel StopwatchState -> Element.GTK
+    = fn now, r => button.GTK {showStopwatch %r %now} {toggleStopwatch now r};
 
 in do
     now <- newClock.Time $ Seconds 0.001;

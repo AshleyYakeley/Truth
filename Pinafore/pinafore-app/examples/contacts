@@ -3,11 +3,9 @@ let
     import "pinafore-gnome";
     import "UILib";
     using UILib.;
-in run.Context $ fn context@MkContext =>
+in run.Context $ fn context =>
 let
 
-    MkContext.Pane = mkContext.Pane context;
-    MkProps.Named = mkProps.Named store;
     MkContext.Named = mkContext.Named context;
 
     # something with a lifespan

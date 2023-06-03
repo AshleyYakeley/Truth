@@ -1,43 +1,43 @@
 #!/usr/bin/pinafore
 let
-import "pinafore-media";
-import "pinafore-gnome";
-using GTK;
-using Cairo;
-using Drawing;
-using Colour;
-using Number;
+    import "pinafore-media";
+    import "pinafore-gnome";
+    using GTK;
+    using Cairo;
+    using Drawing;
+    using Colour;
+    using Number;
 
-scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a
-= fn d, (w,h) => let
-    size = min w h;
-    in translate (w/2,h/2) $ scale (size/2,size/2) d;
+    scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a
+    = fn d, (w,h) => let
+        size = min w h;
+        in translate (w/2,h/2) $ scale (size/2,size/2) d;
 
-circle: Number *: Number -> Number -> Path
-= fn centre, radius => arc.Path centre radius 0 (2 * pi);
+    circle: Number *: Number -> Number -> Path
+    = fn centre, radius => arc.Path centre radius 0 (2 * pi);
 
-tickMark: Integer -> Drawing None
-= fn m => let
-    using Path;
-    major = mod m 5 == 0
-    in width (if major then 0.015 else 0.005) $ stroke $ concat [moveTo (0,if major then 0.8 else 0.85), lineTo (0,0.95)];
+    tickMark: Integer -> Drawing None
+    = fn m => let
+        using Path;
+        major = mod m 5 == 0
+        in width (if major then 0.015 else 0.005) $ stroke $ concat [moveTo (0,if major then 0.8 else 0.85), lineTo (0,0.95)];
 
-face: Drawing None
-= concat
-[
-    source antiquewhite $ fill.Path $ circle (0,0) 1,
-    source black $ width 0.01 $ stroke.Path $ circle (0,0) 1,
-    concat $ map.List (fn m => rotate (m * pi / 30) $ tickMark m) $ range 0 59
-];
+    face: Drawing None
+    = concat
+    [
+        source antiquewhite $ fill.Path $ circle (0,0) 1,
+        source black $ width 0.01 $ stroke.Path $ circle (0,0) 1,
+        concat $ map.List (fn m => rotate (m * pi / 30) $ tickMark m) $ range 0 59
+    ];
 
-hourHand: Drawing None
-= let using Path in source navy $ width 0.1 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.5)];
+    hourHand: Drawing None
+    = let using Path in source navy $ width 0.1 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.5)];
 
-minuteHand: Drawing None
-= let using Path in source navy $ width 0.05 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.8)];
+    minuteHand: Drawing None
+    = let using Path in source navy $ width 0.05 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.8)];
 
-secondHand: Drawing None
-= let using Path in source red $ width 0.01 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.9)];
+    secondHand: Drawing None
+    = let using Path in source red $ width 0.01 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.9)];
 
 in do
     now <- newClock $ Seconds 0.1;

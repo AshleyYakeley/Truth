@@ -30,9 +30,9 @@ expose namespace UILib of
                 byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property name) !$$ model;
                 in MkProps;
 
-            datatype Context <: Context.Pane.UILib. & Props of
+            datatype Context <: Context.Pane & Props of
                 MkContext of
-                    MkContext.Pane.UILib.;
+                    MkContext.Pane;
                     MkProps;
                     namedPane: (WholeModel +a -> Element) -> WholeModel +(a & Named) -> Pane;
                     nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
@@ -47,9 +47,9 @@ expose namespace UILib of
                 end;
             end;
 
-            mkContext: Context.UILib. -> Context.Named.UILib.
-            = fn MkContext.UILib. => let
-                MkContext.Pane.UILib. = mkContext.Pane MkContext.UILib.;
+            mkContext: Context.UILib -> Context.Named
+            = fn MkContext.UILib => let
+                MkContext.Pane = mkContext.Pane MkContext.UILib;
 
                 MkProps = mkProps store;
 
@@ -72,7 +72,7 @@ expose namespace UILib of
                     getSelectorUI = fn sel => namedItemTable set getSelectedUI (Just sel);
                     iopen = fn e => paneWindow $ namedPane getSelectedUI {e};
                     in selectionPair.Pane name set (map.List (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
-            in MkContext.Named.UILib.;
+            in MkContext.Named;
 
         end
 
