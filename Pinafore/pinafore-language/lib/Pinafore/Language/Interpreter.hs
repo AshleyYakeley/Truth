@@ -609,7 +609,11 @@ getModule mname = do
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
 
-registerBinding :: FullName -> DocInterpreterBinding ts -> ScopeInterpreter ts ()
+registerBinding ::
+       forall ts. HasInterpreter ts
+    => FullName
+    -> DocInterpreterBinding ts
+    -> ScopeInterpreter ts ()
 registerBinding name db = registerBindings $ singletonMap name db
 
 getSubtypeScope :: SubtypeConversionEntry (InterpreterGroundType ts) -> Interpreter ts (Scope ts)
@@ -617,7 +621,10 @@ getSubtypeScope sce = do
     key <- liftIO newUnique
     return $ emptyScope {scopeSubtypes = singletonMap key sce}
 
-registerBindings :: [(FullName, DocInterpreterBinding ts)] -> ScopeInterpreter ts ()
+registerBindings ::
+       forall ts. HasInterpreter ts
+    => [(FullName, DocInterpreterBinding ts)]
+    -> ScopeInterpreter ts ()
 registerBindings bb = do
     let newBindings = MkNameMap $ mapFromList bb
     refModify bindingsRef $ \oldBindings -> oldBindings <> newBindings
@@ -672,12 +679,22 @@ checkName name = do
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
         Nothing -> return ()
 
-registerBoundType :: FullName -> RawMarkdown -> InterpreterBoundType ts -> ScopeInterpreter ts ()
+registerBoundType ::
+       forall ts. HasInterpreter ts
+    => FullName
+    -> RawMarkdown
+    -> InterpreterBoundType ts
+    -> ScopeInterpreter ts ()
 registerBoundType name doc t = do
     checkName name
     registerBinding name (doc, TypeBinding t)
 
-registerType :: FullName -> RawMarkdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
+registerType ::
+       forall ts dv t. HasInterpreter ts
+    => FullName
+    -> RawMarkdown
+    -> InterpreterGroundType ts dv t
+    -> ScopeInterpreter ts ()
 registerType name doc t = do
     checkName name
     registerBoundType name doc $ MkSomeGroundType t
@@ -685,12 +702,22 @@ registerType name doc t = do
 type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 
 registerPatternConstructor ::
-       FullName -> RawMarkdown -> TSSealedExpression ts -> TSExpressionPatternConstructor ts -> ScopeInterpreter ts ()
+       forall ts. HasInterpreter ts
+    => FullName
+    -> RawMarkdown
+    -> TSSealedExpression ts
+    -> TSExpressionPatternConstructor ts
+    -> ScopeInterpreter ts ()
 registerPatternConstructor name doc exp pc = do
     checkName name
     registerBinding name $ (doc, ValueBinding exp $ Just pc)
 
-registerRecord :: FullName -> RawMarkdown -> RecordConstructor ts -> ScopeInterpreter ts ()
+registerRecord ::
+       forall ts. HasInterpreter ts
+    => FullName
+    -> RawMarkdown
+    -> RecordConstructor ts
+    -> ScopeInterpreter ts ()
 registerRecord name doc rc = do
     checkName name
     registerBinding name $ (doc, RecordConstructorBinding rc)

@@ -339,6 +339,11 @@ testQueries =
                     , testQuery "let f: List a -> Integer *: Integer -> List a = fn x => fn (p,q) => x in 0" $
                       LRSuccess "0"
                     ]
+              , testTree
+                    "issue-199"
+                    [ testQuery "let f = fn x => let y = x in y in f 0" $ LRSuccess "0"
+                    , testQuery "let f = fn x => let x = x in x in f 0" $ LRSuccess "0"
+                    ]
               ]
         , testTree
               "scoping"

@@ -175,19 +175,30 @@ sbDefDoc MkSingleBinding {..} = let
     docDescription = sbDoc
     in MkDefDoc {..}
 
+-- isRecursive flag is to fix issue #199
 buildSingleBinding ::
-       Maybe FullName -> Maybe SyntaxType -> SyntaxExpression -> RawMarkdown -> ScopeBuilder (FullName, SingleBinding)
+       Maybe (FullName, Bool)
+    -> Maybe SyntaxType
+    -> SyntaxExpression
+    -> RawMarkdown
+    -> ScopeBuilder (FullName, SingleBinding)
 buildSingleBinding mname sbType sbBody sbDoc = do
-    (sbName, sbVarID) <- allocateVarScopeBuilder mname
+    (sbName, sbVarID) <-
+        case mname of
+            Nothing -> allocateVarScopeBuilder Nothing
+            Just (name, True) -> allocateVarScopeBuilder $ Just name
+            Just (name, False) -> do
+                (_, varID) <- allocateVarScopeBuilder Nothing
+                return (name, varID)
     let sbRefVars = syntaxExpressionFreeVariables sbBody
     return (sbName, MkSingleBinding {..})
 
 typedSyntaxToSingleBindings ::
-       SyntaxPattern -> Maybe SyntaxType -> SyntaxExpression -> RawMarkdown -> ScopeBuilder [SingleBinding]
-typedSyntaxToSingleBindings spat@(MkWithSourcePos spos pat) mstype sbody doc =
+       Bool -> SyntaxPattern -> Maybe SyntaxType -> SyntaxExpression -> RawMarkdown -> ScopeBuilder [SingleBinding]
+typedSyntaxToSingleBindings isRecursive spat@(MkWithSourcePos spos pat) mstype sbody doc =
     case pat of
         VarSyntaxPattern name -> do
-            (_, sb) <- buildSingleBinding (Just name) mstype sbody doc
+            (_, sb) <- buildSingleBinding (Just (name, isRecursive)) mstype sbody doc
             return $ pure sb
         _ -> do
             (pvname, sb) <- buildSingleBinding Nothing mstype sbody doc
@@ -197,13 +208,14 @@ typedSyntaxToSingleBindings spat@(MkWithSourcePos spos pat) mstype sbody doc =
                     wspos = MkWithSourcePos spos
                     funcsexpr = wspos $ SEAbstract $ MkSyntaxCase spat $ wspos $ SEVar RootNamespace $ fullNameRef pname
                     valsexpr = wspos $ SEApply funcsexpr $ wspos $ SEVar RootNamespace $ fullNameRef pvname
-                    in fmap snd $ buildSingleBinding (Just pname) Nothing valsexpr doc
+                    in fmap snd $ buildSingleBinding (Just (pname, isRecursive)) Nothing valsexpr doc
             return $ sb : sbs
 
-syntaxToSingleBindings :: SyntaxBinding -> RawMarkdown -> ScopeBuilder [SingleBinding]
-syntaxToSingleBindings (MkSyntaxBinding (MkWithSourcePos _ (TypedSyntaxPattern spat stype)) sbody) doc =
-    typedSyntaxToSingleBindings spat (Just stype) sbody doc
-syntaxToSingleBindings (MkSyntaxBinding spat sbody) doc = typedSyntaxToSingleBindings spat Nothing sbody doc
+syntaxToSingleBindings :: Bool -> SyntaxBinding -> RawMarkdown -> ScopeBuilder [SingleBinding]
+syntaxToSingleBindings isRecursive (MkSyntaxBinding (MkWithSourcePos _ (TypedSyntaxPattern spat stype)) sbody) doc =
+    typedSyntaxToSingleBindings isRecursive spat (Just stype) sbody doc
+syntaxToSingleBindings isRecursive (MkSyntaxBinding spat sbody) doc =
+    typedSyntaxToSingleBindings isRecursive spat Nothing sbody doc
 
 sbNode :: SingleBinding -> (SingleBinding, FullName, [FullName])
 sbNode sb = (sb, sbName sb, sbRefVars sb)
@@ -306,7 +318,7 @@ interpretRecursiveDocDeclarations ddecls = do
                         , mempty
                         , subtypeRelDocs sta stb doc)
                 BindingSyntaxDeclaration sbind -> do
-                    binds <- syntaxToSingleBindings sbind doc
+                    binds <- syntaxToSingleBindings True sbind doc
                     return (mempty, mempty, binds, fmap (pure . sbDefDoc) binds)
     (typeDecls, subtypeSB, bindingDecls, docDecls) <- fmap mconcat $ for ddecls interp
     interpScopeBuilder $ interpretRecursiveTypeDeclarations typeDecls
@@ -351,7 +363,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             interpretSubtypeRelation trustme sta stb mbody
             return $ subtypeRelDocs sta stb doc
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
-            binds <- syntaxToSingleBindings sbind doc
+            binds <- syntaxToSingleBindings False sbind doc
             for_ binds interpretSequentialLetBinding
             return $ fmap (pure . sbDefDoc) binds
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
