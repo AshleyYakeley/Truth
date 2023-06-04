@@ -3,8 +3,10 @@ module Main
     ) where
 
 import Changes.Core
+import Changes.World.GNOME.GIO
 import Changes.World.GNOME.GTK
 import qualified GI.Cairo.Render.Matrix as RM
+import qualified GI.Gio as GI
 import Shapes
 import Shapes.Test
 
@@ -128,8 +130,22 @@ matrixTest =
         p2 = RM.transformPoint (RM.invert m) p1
         in assertEqual "" p0 p2
 
+gioTests :: TestTree
+gioTests =
+    testTree
+        "gio"
+        [ testTree "file" $ do
+              f <- GI.fileParseName "test/somefile"
+              ref <- giFileReference f
+              mtbs <- runResource emptyResourceContext ref $ \aref -> readableToSubject $ refRead aref
+              case mtbs of
+                  Nothing -> fail "no read"
+                  Just (_, bs) -> assertEqual "" "AAABBBCD\n" $ decodeUtf8 bs
+              return ()
+        ]
+
 tests :: TestTree
-tests = testTree "changes-gnome" [matrixTest, lockTests]
+tests = testTree "changes-gnome" [matrixTest, lockTests, gioTests]
 
 main :: IO ()
 main = testMain tests

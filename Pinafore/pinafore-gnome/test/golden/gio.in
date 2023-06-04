@@ -1,0 +1,12 @@
+#!/usr/bin/env -S pinafore
+let
+    import "pinafore-gnome";
+    using GIO;
+in do
+    mref <- fileMakeRef $ FileParseName "test/somefile";
+    mf <- get mref;
+    decode textMIME mf >- match
+        Just t => write.Sink stdout.Env t;
+        Nothing => writeLn.Sink stdout.Env "not text";
+        end;
+    end

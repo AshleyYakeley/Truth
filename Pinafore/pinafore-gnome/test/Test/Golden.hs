@@ -20,7 +20,7 @@ testFile inpath = let
                    action
 
 items :: [String]
-items = ["output", "window"]
+items = ["gio", "output", "window"]
 
 testItem :: String -> TestTree
 testItem item = let

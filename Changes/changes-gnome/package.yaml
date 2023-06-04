@@ -90,6 +90,7 @@ tests:
           - shapes
           - changes-core
           - changes-gnome
+          - gi-gio
           - gi-cairo-render
         main: Main.hs
         ghc-options: -threaded
