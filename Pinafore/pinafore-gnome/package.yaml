@@ -58,6 +58,6 @@ tests:
         main: Main.hs
         other-modules:
           - Test.Context
-          - Test.GTK
+          - Test.Golden
           - Test.UI
         ghc-options: -threaded

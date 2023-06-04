@@ -1,5 +1,5 @@
-module Test.GTK
-    ( getTestGTK
+module Test.Golden
+    ( testGolden
     ) where
 
 import Pinafore
@@ -19,6 +19,13 @@ testFile inpath = let
                    action <- qInterpretFile inpath
                    action
 
-getTestGTK :: IO TestTree
-getTestGTK = do
-    return $ testTree "file" [testFile ("test" </> "gtk" </> "output.in"), testFile ("test" </> "gtk" </> "window.in")]
+items :: [String]
+items = ["output", "window"]
+
+testItem :: String -> TestTree
+testItem item = let
+    file = "test" </> "golden" </> (item <> ".in")
+    in testFile file
+
+testGolden :: TestTree
+testGolden = testTree "golden" $ fmap testItem items
