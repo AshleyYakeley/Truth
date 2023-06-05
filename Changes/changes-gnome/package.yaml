@@ -14,6 +14,10 @@ flags:
         description: Trace functions
         default: true
         manual: false
+    test-X11:
+        description: Run tests that require an X11 server
+        default: true
+        manual: false
 
 library:
     source-dirs: lib
@@ -85,6 +89,9 @@ library:
 tests:
     test:
         source-dirs: test
+        when:
+          - condition: flag(test-X11)
+            cpp-options: -DTEST_X11
         dependencies:
           - base >= 4.16
           - shapes
@@ -93,6 +100,11 @@ tests:
           - gi-gio
           - gi-cairo-render
         main: Main.hs
+        other-modules:
+          - Flags
+          - Matrix
+          - Lock
+          - GIO
         ghc-options: -threaded
 
 executables:

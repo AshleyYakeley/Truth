@@ -1,2 +1,3 @@
-fixup/
+Changes/changes-gnome/test/Flags.hs
+Pinafore/pinafore-gnome/test/Flags.hs
 Pinafore/pinafore-app/lib/Pinafore/Version.hs

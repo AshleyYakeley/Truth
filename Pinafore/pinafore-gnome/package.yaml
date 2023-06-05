@@ -5,6 +5,12 @@ version: *pinafore_version
 
 <<: *language
 
+flags:
+    test-X11:
+        description: Run tests that require an X11 server
+        default: true
+        manual: false
+
 library:
     source-dirs: lib
     dependencies:
@@ -43,6 +49,9 @@ library:
 tests:
     test:
         source-dirs: test
+        when:
+          - condition: flag(test-X11)
+            cpp-options: -DTEST_X11
         dependencies:
           - base >= 4.16
           - shapes
@@ -57,6 +66,7 @@ tests:
           - pinafore-gnome
         main: Main.hs
         other-modules:
+          - Flags
           - Test.Context
           - Test.Golden
           - Test.UI

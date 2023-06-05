@@ -2,6 +2,7 @@ module Test.Golden
     ( testGolden
     ) where
 
+import Flags
 import Pinafore
 import Pinafore.Language.Library.GNOME
 import Pinafore.Test
@@ -20,7 +21,7 @@ testFile inpath = let
                    action
 
 items :: [String]
-items = ["gio", "output", "window"]
+items = ["gio", "output"] <> ifpure flag_TestX11 "window"
 
 testItem :: String -> TestTree
 testItem item = let

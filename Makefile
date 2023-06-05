@@ -167,15 +167,16 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 
 deb: out/$(PACKAGEFULLNAME).deb
 
+# Use this on a Nix system
 nix-flake: out
-	nix build -o out/nix-flake .?submodules=1
+	nix flake check .?submodules=1
 
 nix-docker-image:
 	docker build -t nix-build nix/docker
 
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
-	docker run --rm -v `pwd`:/workspace -ti nix-build nix build -o out/nix-flake .?submodules=1
+	docker run --rm -v `pwd`:/workspace -ti nix-build nix flake check .?submodules=1
 
 LIBMODULEDOCS := \
     pinafore \

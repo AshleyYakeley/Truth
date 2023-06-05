@@ -8,13 +8,10 @@
     };
     outputs = { self, nixpkgs, flake-utils, haskellNix }:
         let
-        supportedSystems =
-        [
-            "x86_64-linux"
-            "x86_64-darwin"
-            "aarch64-linux"
-            "aarch64-darwin"
-        ];
+            supportedSystems =
+            [
+                "x86_64-linux"
+            ];
         in flake-utils.lib.eachSystem supportedSystems
         (system:
             let
@@ -30,7 +27,11 @@
                                 {
                                     packages."changes-gnome" =
                                     {
-                                        configureFlags = ["-f" "-trace"];
+                                        configureFlags = ["-f" "-trace" "-f" "-test-X11"];
+                                    };
+                                    packages."pinafore-gnome" =
+                                    {
+                                        configureFlags = ["-f" "-test-X11"];
                                     };
                                     packages."pinafore-app" =
                                     {
@@ -40,19 +41,6 @@
                                     };
                                 }
                             ];
-
-                            # For `nix develop .?submodules=1`
-                            shell =
-                            {
-                                tools =
-                                {
-                                    cabal = {};
-                                    hlint = {};
-                                    haskell-language-server = {};
-                                };
-                                # Non-Haskell shell tools go here
-                                buildInputs = with pkgs; [ nixpkgs-fmt ];
-                            };
                         };
                     })
                     ];
