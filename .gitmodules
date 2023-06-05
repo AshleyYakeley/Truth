@@ -1,21 +1,21 @@
 [submodule "witness"]
 	path = external/witness
-	url = ../witness.git
+	url = https://github.com/AshleyYakeley/witness.git
 [submodule "open-witness"]
 	path = external/open-witness
-	url = ../open-witness.git
+	url = https://github.com/AshleyYakeley/open-witness.git
 [submodule "benchgraph"]
 	path = benchgraph
 	url = https://github.com/novadiscovery/benchgraph.git
 [submodule "external/countable"]
 	path = external/countable
-	url = ../countable.git
+	url = https://github.com/AshleyYakeley/countable.git
 [submodule "external/monadology"]
 	path = external/monadology
-	url = ../monadology.git
+	url = https://github.com/AshleyYakeley/monadology.git
 [submodule "external/type-rig"]
 	path = external/type-rig
-	url = ../type-rig.git
+	url = https://github.com/AshleyYakeley/type-rig.git
 [submodule "external/primitive-serial"]
 	path = external/primitive-serial
-	url = ../primitive-serial.git
+	url = https://github.com/AshleyYakeley/primitive-serial.git
