@@ -25,6 +25,7 @@
                             modules =
                             [
                                 {
+                                    # no X11 server available during testing
                                     packages."changes-gnome" =
                                     {
                                         configureFlags = ["-f" "-trace" "-f" "-test-X11"];
