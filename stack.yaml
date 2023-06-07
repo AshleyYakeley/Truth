@@ -57,7 +57,7 @@ nix:
     enable: false
     path:
     # https://github.com/NixOS/nixpkgs/tags
-    - nixpkgs=https://github.com/nixos/nixpkgs/tarball/22.11
+    - nixpkgs=https://github.com/nixos/nixpkgs/tarball/23.11-pre
     packages:
     - zlib
     - pkg-config
@@ -66,7 +66,18 @@ nix:
     - gdk-pixbuf
     - harfbuzz
     - atkmm
+    - libthai
+    - libdatrie
+    - libxkbcommon
+    - libepoxy
     - pango
+    - pcre
+    - pcre2
+    - xorg.libXdmcp
+    - xorg.libXtst
+    - util-linux
+    - libselinux
+    - libsepol
     - gtk3
 
 ghc-options:
