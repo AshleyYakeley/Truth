@@ -124,6 +124,25 @@ executables:
           - optparse-applicative
         main: Main.hs
         ghc-options: -threaded
+    changes-gio:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: examples/gio
+        dependencies:
+          - base >= 4.16
+          - filepath
+          - bytestring
+          - gi-gio
+          - uuid
+          - aeson
+          - shapes
+          - changes-core
+          - changes-gnome
+          - changes-world
+          - optparse-applicative
+        main: Main.hs
+        ghc-options: -threaded
     changes-soup:
         when:
           - condition: "!flag(build-examples)"
