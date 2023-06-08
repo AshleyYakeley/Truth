@@ -57,7 +57,7 @@ nix:
     enable: false
     path:
     # https://github.com/NixOS/nixpkgs/tags
-    - nixpkgs=https://github.com/nixos/nixpkgs/tarball/23.11-pre
+    - nixpkgs=https://github.com/nixos/nixpkgs/tarball/23.05
     packages:
     - zlib
     - pkg-config
