@@ -1,31 +1,39 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.GIO
-    ( File
+    ( LangFile
     , gioStuff
     ) where
 
 import Changes.Core
 import Changes.World.GNOME.GIO
 import Changes.World.MIME
-import GI.Gio as GI hiding (Action)
+import qualified GI.Gio as GI
 import Pinafore.Base
 import Pinafore.Language.API
 import Shapes
 import Shapes.Unsafe
 
 -- File
-fileGroundType :: QGroundType '[] File
-fileGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily File)|]) "File.GIO."
+type LangFile = GI.File
 
-instance HasQGroundType '[] File where
+fileGroundType :: QGroundType '[] LangFile
+fileGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangFile)|]) "File.GIO."
+
+instance HasQGroundType '[] LangFile where
     qGroundType = fileGroundType
 
-fileToParseName :: File -> Text
-fileToParseName f = unsafePerformIO $ fileGetParseName f
+uriToFile :: Text -> LangFile
+uriToFile t = unsafePerformIO $ GI.fileNewForUri t
 
-parseNameToFile :: Text -> File
-parseNameToFile t = unsafePerformIO $ fileParseName t
+fileToURI :: LangFile -> Text
+fileToURI f = unsafePerformIO $ GI.fileGetUri f
+
+pathToFile :: Text -> LangFile
+pathToFile t = unsafePerformIO $ GI.fileNewForPath $ unpack t
+
+fileToPath :: LangFile -> Maybe Text
+fileToPath f = fmap pack $ unsafePerformIO $ GI.fileGetPath f
 
 literalConv :: Bijection (Maybe (Text, LazyByteString)) (Maybe MIME)
 literalConv =
@@ -42,7 +50,7 @@ literalConv =
                   return (t <> "/" <> s, fromStrict b)
         }
 
-fileMakeRef :: File -> Action (LangWholeModel '( MIME, MIME))
+fileMakeRef :: LangFile -> Action (LangWholeModel '( MIME, MIME))
 fileMakeRef f = do
     fref <- liftIO $ giFileReference f
     (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-
@@ -60,8 +68,11 @@ gioStuff =
               "File"
               "A file."
               (MkSomeGroundType fileGroundType)
-              [ valPatBDT "FileParseName" "Construct a file from its parse name." parseNameToFile $
-                PureFunction $ \f -> (fileToParseName f, ())
+              [ valPatBDT "FileURI" "Construct a file from a URI." uriToFile $ PureFunction $ \f -> (fileToURI f, ())
+              , valPatBDT "FilePath" "Construct a file from a local path." pathToFile $
+                ImpureFunction $ \f -> do
+                    p <- fileToPath f
+                    return (p, ())
               ]
         , valBDT "fileMakeRef" "Make a reference from a file." fileMakeRef
         ]

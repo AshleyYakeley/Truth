@@ -16,7 +16,7 @@ rec
         jpeg <- get $ jpegMIME.JPEG.Image !$ ref;
         let
         path = file >- match
-                FileParseName.GIO path => path;
+                FilePath.GIO path => path;
                 _ => "unknown";
             end;
         image = interpret jpeg;

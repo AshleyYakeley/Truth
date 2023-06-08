@@ -1,6 +1,6 @@
 module Pinafore.Language.Library.GNOME
     ( gnomeLibrary
-    , File
+    , LangFile
     , LangContext(..)
     ) where
 

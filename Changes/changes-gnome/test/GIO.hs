@@ -13,11 +13,10 @@ gioTests =
     testTree
         "gio"
         [ testTree "file" $ do
-              f <- GI.fileParseName "test/somefile"
+              f <- GI.fileNewForPath "test/somefile"
               ref <- giFileReference f
               mtbs <- runResource emptyResourceContext ref $ \aref -> readableToSubject $ refRead aref
               case mtbs of
                   Nothing -> fail "no read"
                   Just (_, bs) -> assertEqual "" "AAABBBCD\n" $ decodeUtf8 bs
-              return ()
         ]

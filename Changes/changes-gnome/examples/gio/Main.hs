@@ -2,13 +2,17 @@ module Main
     ( main
     ) where
 
+import Changes.Core
+import Changes.World.GNOME.GIO
 import qualified GI.Gio as GI
 import Shapes
 
 main :: IO ()
 main = do
-    f <- GI.fileParseName "stack.yaml"
-    mbn <- GI.fileGetBasename f
-    case mbn of
-        Nothing -> fail "no basename"
-        Just _ -> return ()
+    f <- GI.fileNewForPath "stack.yaml"
+    ref <- giFileReference f
+    mtbs <- runResource emptyResourceContext ref $ \aref -> readableToSubject $ refRead aref
+    case mtbs of
+        Nothing -> fail "no read"
+        Just (_, bs) -> putStrLn $ unpack $ decodeUtf8 bs
+    return ()
