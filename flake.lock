@@ -207,8 +207,8 @@
       },
       "original": {
         "owner": "AshleyYakeley",
+        "ref": "Ashley",
         "repo": "haskell.nix",
-        "rev": "c3881fceb3acbc2ea142b62bdf0f34b52fb49c1b",
         "type": "github"
       }
     },
