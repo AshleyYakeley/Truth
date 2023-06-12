@@ -28,7 +28,12 @@ getGroundTypes (ConsDolanType t1 tr) = do
     gtr <- getGroundTypes tr
     return $ gt1 : gtr
 
-typeDeclarationTypeBox :: FullName -> RawMarkdown -> SyntaxTypeDeclaration -> QInterpreter (QFixBox () ())
+typeDeclarationTypeBox ::
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => FullName
+    -> RawMarkdown
+    -> SyntaxTypeDeclaration
+    -> QInterpreter (QFixBox () ())
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
 typeDeclarationTypeBox name doc (StorableDatatypeSyntaxTypeDeclaration params sconss) =
     makeStorableDataTypeBox name doc params sconss
@@ -61,13 +66,20 @@ checkDynamicTypeCycles decls = let
            [] -> return ()
            (nn@((spos, _) :| _):_) -> paramWith sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
-interpretSequentialTypeDeclaration :: FullName -> RawMarkdown -> SyntaxTypeDeclaration -> QScopeInterpreter ()
+interpretSequentialTypeDeclaration ::
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => FullName
+    -> RawMarkdown
+    -> SyntaxTypeDeclaration
+    -> QScopeInterpreter ()
 interpretSequentialTypeDeclaration name doc tdecl = do
     tbox <- lift $ typeDeclarationTypeBox name doc tdecl
     boxSequential tbox ()
 
 interpretRecursiveTypeDeclarations ::
-       [(SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)] -> QScopeInterpreter ()
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => [(SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)]
+    -> QScopeInterpreter ()
 interpretRecursiveTypeDeclarations decls = do
     lift $ checkDynamicTypeCycles decls
     wfs <-

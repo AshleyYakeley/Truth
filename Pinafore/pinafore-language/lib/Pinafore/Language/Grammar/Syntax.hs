@@ -23,6 +23,7 @@ data SyntaxSignature'
     = SupertypeConstructorSyntaxSignature FullNameRef
     | ValueSyntaxSignature Name
                            SyntaxType
+                           (Maybe SyntaxExpression)
     deriving (Eq)
 
 type SyntaxSignature = SyntaxWithDoc (WithSourcePos SyntaxSignature')

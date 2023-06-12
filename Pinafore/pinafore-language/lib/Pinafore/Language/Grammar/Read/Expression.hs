@@ -51,7 +51,11 @@ readSignature =
          name <- readLName
          readThis TokTypeJudge
          t <- readType
-         return $ ValueSyntaxSignature name t) <|>
+         mdefv <-
+             optional $ do
+                 readThis TokAssign
+                 readExpression
+         return $ ValueSyntaxSignature name t mdefv) <|>
     (do
          name <- readFullUName
          return $ SupertypeConstructorSyntaxSignature name)

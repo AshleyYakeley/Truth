@@ -267,10 +267,18 @@ data RecordConstructorData = MkRecordConstructorData
 instance ExprShow RecordConstructorData where
     exprShowPrec rcd = exprShowPrec $ rcdName rcd
 
-rcdSignatures :: RecordConstructorData -> [Some (QSignature 'Positive)]
+type SomeSignature = Some (QSignature 'Positive)
+
+data SignatureOrigin
+    = SOThisType
+    | SOSupertype
+
+type SignatureData = (SignatureOrigin, SomeSignature)
+
+rcdSignatures :: RecordConstructorData -> [SignatureData]
 rcdSignatures MkRecordConstructorData {..} =
     case rcdRecordConstructor of
-        (MkRecordConstructor sigs _ _ _) -> listVTypeToList MkSome sigs
+        (MkRecordConstructor sigs _ _ _) -> listVTypeToList (\sig -> (SOSupertype, MkSome sig)) sigs
 
 lookupRecordConstructorData :: [Some (QGroundType '[])] -> FullNameRef -> QInterpreter RecordConstructorData
 lookupRecordConstructorData supertypes rcdName = do
@@ -286,20 +294,28 @@ lookupRecordConstructorData supertypes rcdName = do
     return MkRecordConstructorData {..}
 
 interpretSignature' ::
-       [Some (QGroundType '[])]
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => [Some (QGroundType '[])]
     -> SyntaxSignature'
-    -> QInterpreter (Maybe RecordConstructorData, [Some (QSignature 'Positive)])
-interpretSignature' _ (ValueSyntaxSignature name stype) = do
-    qtype <- interpretType stype
-    return $ (Nothing, pure $ mapSome (ValueSignature name) qtype)
+    -> QInterpreter (Maybe RecordConstructorData, [SignatureData])
+interpretSignature' _ (ValueSyntaxSignature name stype msdefv) = do
+    aqtype <- interpretType stype
+    case aqtype of
+        MkSome qtype -> do
+            modefv <-
+                for msdefv $ \sdefv -> do
+                    defv <- ?interpretExpression sdefv
+                    typedSubsumeExpressionToOpen mempty qtype defv
+            return $ (Nothing, pure (SOThisType, MkSome $ ValueSignature name qtype modefv))
 interpretSignature' supertypes (SupertypeConstructorSyntaxSignature name) = do
     rcd <- lookupRecordConstructorData supertypes name
     return $ (Just rcd, rcdSignatures rcd)
 
 interpretSignature ::
-       [Some (QGroundType '[])]
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => [Some (QGroundType '[])]
     -> SyntaxSignature
-    -> QInterpreter (Maybe RecordConstructorData, [Some (QSignature 'Positive)])
+    -> QInterpreter (Maybe RecordConstructorData, [SignatureData])
 interpretSignature supertypes (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' supertypes ssig
 
 nubWithM :: Monad m => (a -> a -> m (Maybe a)) -> [a] -> m [a]
@@ -345,16 +361,22 @@ meetGeneral ta tb
     | Just Refl <- testEquality ta tb = return $ MkSome ta
 meetGeneral ta tb = meetGeneralSubsume ta tb <|> meetGeneralSubsume tb ta <|> meetGeneralBoth ta tb
 
-combineSigs ::
-       Some (QSignature 'Positive) -> Some (QSignature 'Positive) -> QInterpreter (Maybe (Some (QSignature 'Positive)))
-combineSigs (MkSome (ValueSignature na ta)) (MkSome (ValueSignature nb tb))
+matchSigName :: SomeSignature -> SomeSignature -> Bool
+matchSigName (MkSome (ValueSignature na _ _)) (MkSome (ValueSignature nb _ _)) = na == nb
+
+combineSigs :: SomeSignature -> SomeSignature -> QInterpreter (Maybe SomeSignature)
+combineSigs (MkSome (ValueSignature na ta _)) (MkSome (ValueSignature nb tb _))
     | na == nb = do
         stab <- meetGeneral ta tb
         case stab of
-            MkSome tab -> return $ Just $ MkSome $ ValueSignature na tab
+            MkSome tab -> return $ Just $ MkSome $ ValueSignature na tab Nothing
 combineSigs _ _ = return Nothing
 
-interpretConstructorTypes :: [Some (QGroundType '[])] -> Constructor dv t extra -> QInterpreter (Some ConstructorType)
+interpretConstructorTypes ::
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => [Some (QGroundType '[])]
+    -> Constructor dv t extra
+    -> QInterpreter (Some ConstructorType)
 interpretConstructorTypes supertypes c = let
     consname = fnName $ ctName c
     in case ctContents c of
@@ -365,7 +387,15 @@ interpretConstructorTypes supertypes c = let
            Right sigs -> do
                rcdsigss <- for sigs $ interpretSignature supertypes
                let
-                   rawqsigs = mconcat $ fmap snd rcdsigss
+                   sigdata :: [SignatureData]
+                   sigdata = mconcat $ fmap snd rcdsigss
+                   splitSigs :: SignatureData -> ([SomeSignature], [SomeSignature])
+                   splitSigs (SOThisType, sig) = ([sig], [])
+                   splitSigs (SOSupertype, sig) = ([], [sig])
+                   (thisQSigs, supertypeQSigs) = mconcat $ fmap splitSigs sigdata
+                   inheritedQSigs :: [SomeSignature]
+                   inheritedQSigs = filter (\isig -> not $ any (matchSigName isig) thisQSigs) supertypeQSigs
+                   rawrcds :: [RecordConstructorData]
                    rawrcds = catMaybes $ fmap fst rcdsigss
                rcds <-
                    for supertypes $ \supertype ->
@@ -378,17 +408,17 @@ interpretConstructorTypes supertypes c = let
                                throwWithName $ \ntt ->
                                    DeclareDatatypeMultipleSupertypeConstructorsError (ntt $ exprShow supertype) $
                                    fmap (ntt . exprShow) rcds
-               qsigs <- nubWithM combineSigs rawqsigs
-               case assembleListVType $ fromList qsigs of
+               inheritedQSigs' <- nubWithM combineSigs inheritedQSigs
+               case assembleListVType $ fromList $ inheritedQSigs' <> thisQSigs of
                    MkSome qsiglist -> return $ MkSome $ MkConstructorType consname (RecordCF rcds) qsiglist
 
 pickMember ::
        QSignature 'Positive b
     -> ListType (QSignature 'Positive) aa
     -> QInterpreter (QOpenExpression (ListVProduct aa -> b))
-pickMember (ValueSignature nb tb) tt =
+pickMember (ValueSignature nb tb _) tt =
     case listTypeFind
-             (\(MkPairType (ValueSignature na ta) f) ->
+             (\(MkPairType (ValueSignature na ta _) f) ->
                   if na == nb
                       then Just $ MkSomeFor ta f
                       else Nothing) $
@@ -408,8 +438,8 @@ getMatchMemberConvert ta tb =
     listVProductSequence $ mapListVType (\sig -> Compose $ Compose $ pickMember sig $ listVTypeToType ta) tb
 
 makeBox ::
-       forall extra (dv :: DolanVariance).
-       GroundTypeMaker extra
+       forall extra (dv :: DolanVariance). (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => GroundTypeMaker extra
     -> [Some (QGroundType '[])]
     -> FullName
     -> RawMarkdown
@@ -688,8 +718,8 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                            fmap (\codec -> (mainGroundType, picktype, x, dvm, codec)) codecs
 
 makeDataTypeBox ::
-       forall extra.
-       GroundTypeMaker extra
+       forall extra. (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => GroundTypeMaker extra
     -> [Some (QGroundType '[])]
     -> FullName
     -> RawMarkdown
@@ -728,7 +758,8 @@ makePlainGroundType _ tparams = let
     in MkTypeConstruction mkx mkgt $ \_ _ -> return ()
 
 makePlainDataTypeBox ::
-       [Some (QGroundType '[])]
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => [Some (QGroundType '[])]
     -> FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]

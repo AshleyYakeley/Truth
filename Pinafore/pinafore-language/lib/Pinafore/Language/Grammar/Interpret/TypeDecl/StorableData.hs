@@ -172,7 +172,8 @@ makeStorableGroundType mainTypeName tparams = let
     in MkTypeConstruction mkx mkgt postregister
 
 makeStorableDataTypeBox ::
-       FullName
+       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+    => FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]

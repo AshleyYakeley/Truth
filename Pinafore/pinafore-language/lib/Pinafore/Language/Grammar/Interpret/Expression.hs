@@ -60,7 +60,7 @@ recordNameWitnesses ::
     -> QScopeInterpreter [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
 recordNameWitnesses ns lt =
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
-        MkPairType (ValueSignature name t) f -> do
+        MkPairType (ValueSignature name t _) f -> do
             (_, vid) <- allocateVar $ Just $ MkFullName name ns
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
 
@@ -149,7 +149,7 @@ getPatternBindingVariables spat = do
     let
         (names, cs) = syntaxPatternBindingVariables spat
         signatureName :: forall a. Namespace -> QSignature 'Positive a -> FullName
-        signatureName ns (ValueSignature name _) = MkFullName name ns
+        signatureName ns (ValueSignature name _ _) = MkFullName name ns
     namess <-
         for cs $ \(cns, cref) -> do
             pres <- lookupPatternConstructor cref
@@ -265,7 +265,7 @@ subtypeRelDocs sta stb docDescription = let
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc = let
     sigDoc' :: SyntaxSignature' -> DocItem
-    sigDoc' (ValueSyntaxSignature name stype) = ValueSignatureDocItem name $ exprShow stype
+    sigDoc' (ValueSyntaxSignature name stype _) = ValueSignatureDocItem name $ exprShow stype
     sigDoc' (SupertypeConstructorSyntaxSignature name) = SupertypeConstructorSignatureDocItem name
     sigDoc :: SyntaxSignature -> DefDoc
     sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ sig)) = MkDefDoc (sigDoc' sig) doc
@@ -321,7 +321,9 @@ interpretRecursiveDocDeclarations ddecls = do
                     binds <- syntaxToSingleBindings True sbind doc
                     return (mempty, mempty, binds, fmap (pure . sbDefDoc) binds)
     (typeDecls, subtypeSB, bindingDecls, docDecls) <- fmap mconcat $ for ddecls interp
-    interpScopeBuilder $ interpretRecursiveTypeDeclarations typeDecls
+    interpScopeBuilder $ let
+        ?interpretExpression = interpretTopExpression
+        in interpretRecursiveTypeDeclarations typeDecls
     subtypeSB
     interpretRecursiveLetBindings bindingDecls
     return docDecls
@@ -357,7 +359,9 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                     return docs
         ImportSyntaxDeclaration modname -> interpScopeBuilder $ interpretImportDeclaration modname
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
-            interpScopeBuilder $ interpretSequentialTypeDeclaration name doc defn
+            interpScopeBuilder $ let
+                ?interpretExpression = interpretTopExpression
+                in interpretSequentialTypeDeclaration name doc defn
             return $ pure $ typeDeclDoc name defn doc
         DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) -> do
             interpretSubtypeRelation trustme sta stb mbody
@@ -410,7 +414,7 @@ interpretRecordConstructor (MkRecordConstructor items vtype _ codec) = do
         runRenamer @QTypeSystem [] freeFixedNames $ do
             sexpr <-
                 listVTypeFor items $ \case
-                    ValueSignature iname itype -> do
+                    ValueSignature iname itype _ -> do
                         iexpr <- lift $ qName $ UnqualifiedFullNameRef iname
                         itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
                         iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr

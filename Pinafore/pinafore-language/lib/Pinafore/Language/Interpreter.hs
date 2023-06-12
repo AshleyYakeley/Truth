@@ -98,9 +98,10 @@ newtype SpecialVals (ts :: Type) = MkSpecialVals
 data Signature (ts :: Type) (polarity :: Polarity) (t :: Type) =
     ValueSignature Name
                    (InterpreterType ts polarity t)
+                   (Maybe (TSOpenExpression ts t))
 
 instance (HasInterpreter ts, Is PolarityType polarity) => HasVarMapping (Signature ts polarity) where
-    getVarMapping (ValueSignature _ t) = getVarMapping t
+    getVarMapping (ValueSignature _ t _) = getVarMapping t
 
 data RecordConstructor (ts :: Type) =
     forall (t :: Type) (tt :: [Type]). MkRecordConstructor (ListVType (Signature ts 'Positive) tt)
