@@ -318,59 +318,22 @@ interpretSignature ::
     -> QInterpreter (Maybe RecordConstructorData, [SignatureData])
 interpretSignature supertypes (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' supertypes ssig
 
-nubWithM :: Monad m => (a -> a -> m (Maybe a)) -> [a] -> m [a]
-nubWithM _ [] = return []
-nubWithM f (a:aa) = let
-    filt [] = return Nothing
-    filt (b:bb) = do
-        mc <- f a b
-        case mc of
-            Just c -> return $ Just $ c : bb
-            Nothing -> do
-                mbb' <- filt bb
-                return $ do
-                    bb' <- mbb'
-                    return $ b : bb'
-    in do
-           aa' <- nubWithM f aa
-           maa'' <- filt aa'
-           case maa'' of
-               Just aa'' -> return aa''
-               Nothing -> return $ a : aa'
-
-meetGeneralSubsume :: QType 'Positive a -> QType 'Positive b -> QInterpreter (Some (QType 'Positive))
-meetGeneralSubsume ta tb = do
-    _ <- tsSubsume @QTypeSystem (mkShimWit ta) tb
-    return $ MkSome ta
-
-meetGeneralBoth :: QType 'Positive a -> QType 'Positive b -> QInterpreter (Some (QType 'Positive))
-meetGeneralBoth rta rtb =
-    runRenamer @QTypeSystem [] [] $ do
-        ta <- unEndoM (renameType @QTypeSystem [] RigidName) rta
-        tb <- unEndoM (renameType @QTypeSystem [] RigidName) rtb
-        MkNewVar varn varp <- renameNewFreeVar @QTypeSystem
-        ssa <- subsumePosShimWit @QTypeSystem varp ta
-        ssb <- subsumePosShimWit @QTypeSystem varp tb
-        (_, ssubs) <- solveSubsumerExpression @QTypeSystem $ liftA2 (,) ssa ssb
-        MkShimWit tabn _ <- unEndoM (subsumerSubstitute @QTypeSystem ssubs <> simplify @QTypeSystem) varn
-        MkShimWit tab _ <- lift $ invertType tabn
-        return $ MkSome tab
-
-meetGeneral :: QType 'Positive a -> QType 'Positive b -> QInterpreter (Some (QType 'Positive))
-meetGeneral ta tb
-    | Just Refl <- testEquality ta tb = return $ MkSome ta
-meetGeneral ta tb = meetGeneralSubsume ta tb <|> meetGeneralSubsume tb ta <|> meetGeneralBoth ta tb
-
 matchSigName :: SomeSignature -> SomeSignature -> Bool
 matchSigName (MkSome (ValueSignature na _ _)) (MkSome (ValueSignature nb _ _)) = na == nb
 
-combineSigs :: SomeSignature -> SomeSignature -> QInterpreter (Maybe SomeSignature)
-combineSigs (MkSome (ValueSignature na ta _)) (MkSome (ValueSignature nb tb _))
-    | na == nb = do
-        stab <- meetGeneral ta tb
-        case stab of
-            MkSome tab -> return $ Just $ MkSome $ ValueSignature na tab Nothing
-combineSigs _ _ = return Nothing
+checkDuplicates :: (Name -> ErrorType) -> [Name] -> QInterpreter ()
+checkDuplicates _ [] = return ()
+checkDuplicates f (a:aa) =
+    if elem a aa
+        then throw $ f a
+        else checkDuplicates f aa
+
+signatureName :: SyntaxSignature -> Maybe Name
+signatureName (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature n _ _))) = Just n
+signatureName _ = Nothing
+
+someSignatureName :: SomeSignature -> Maybe Name
+someSignatureName (MkSome (ValueSignature n _ _)) = Just n
 
 interpretConstructorTypes ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
@@ -385,6 +348,7 @@ interpretConstructorTypes supertypes c = let
                case assembleListVType $ fromList etypes of
                    MkSome npts -> return $ MkSome $ MkConstructorType consname PositionalCF npts
            Right sigs -> do
+               checkDuplicates DeclareDatatypeDuplicateMembers $ mapMaybe signatureName sigs
                rcdsigss <- for sigs $ interpretSignature supertypes
                let
                    sigdata :: [SignatureData]
@@ -408,8 +372,8 @@ interpretConstructorTypes supertypes c = let
                                throwWithName $ \ntt ->
                                    DeclareDatatypeMultipleSupertypeConstructorsError (ntt $ exprShow supertype) $
                                    fmap (ntt . exprShow) rcds
-               inheritedQSigs' <- nubWithM combineSigs inheritedQSigs
-               case assembleListVType $ fromList $ inheritedQSigs' <> thisQSigs of
+               checkDuplicates DeclareDatatypeDuplicateInheritedMembers $ mapMaybe someSignatureName inheritedQSigs
+               case assembleListVType $ fromList $ inheritedQSigs <> thisQSigs of
                    MkSome qsiglist -> return $ MkSome $ MkConstructorType consname (RecordCF rcds) qsiglist
 
 pickMember ::

@@ -1177,19 +1177,37 @@ testEntity =
                           , testExpectSuccess
                                 "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57,\"} {recShow r2}"
                           ]
-                    , tGroup "meet" $ let
-                          testMeet :: Text -> Text -> Text
-                          testMeet ta tb =
-                              "let datatype R of MkR of val: " <> ta <> "; val: " <> tb <> " end end in pass"
-                          in [ testExpectSuccess $ testMeet "Integer" "Integer"
-                             , testExpectSuccess $ testMeet "Rational" "Integer"
-                             , testExpectSuccess $ testMeet "Integer" "Rational"
-                             , testExpectSuccess $ testMeet "Integer *: Rational" "Rational *: Integer"
-                             , testExpectReject $ testMeet "Integer" "Text"
-                             , testExpectSuccess $ testMeet "a -> a" "a -> a"
-                             , testExpectSuccess $ testMeet "a -> a" "b -> b"
-                             , testExpectSuccess $ testMeet "Integer -> Integer" "a -> a"
-                             ]
+                    , tGroup
+                          "override"
+                          [ tGroup "type" $ let
+                                testOverride :: Text -> Text -> Text
+                                testOverride ta tb =
+                                    "let datatype A of MkA of val: " <>
+                                    ta <> " end end; datatype B <: A of MkB of MkA; val: " <> tb <> " end end in pass"
+                                in [ testExpectSuccess $ testOverride "Integer" "Integer"
+                                   , testExpectSuccess $ testOverride "Rational" "Integer"
+                                   , testExpectReject $ testOverride "Integer" "Rational"
+                                   , testExpectReject $ testOverride "Integer *: Rational" "Rational *: Integer"
+                                   , testExpectReject $ testOverride "Integer" "Text"
+                                   , testExpectSuccess $ testOverride "a -> a" "a -> a"
+                                   , testExpectSuccess $ testOverride "a -> a" "b -> b"
+                                   , testExpectSuccess $ testOverride "Integer -> Integer" "a -> a"
+                                   , testExpectReject $ testOverride "a -> a" "Integer -> Integer"
+                                   ]
+                          , tDecls
+                                [ "datatype A of MkA of val: Integer end end"
+                                , "datatype B of MkB of val: Rational end end"
+                                ] $
+                            tGroup
+                                "multiple"
+                                [ testExpectSuccess "pass"
+                                , testExpectReject "let datatype C <: A & B of MkC of MkA; MkB end end in pass"
+                                , testExpectReject
+                                      "let datatype C <: A & B of MkC of MkA; MkB; val: Rational end end in pass"
+                                , testExpectSuccess
+                                      "let datatype C <: A & B of MkC of MkA; MkB; val: Integer end end in pass"
+                                ]
+                          ]
                     , tDecls ["datatype R of MkR of u: Unit end end"] $ let
                           testExpr t = testExpectSuccess $ "let f = " <> t <> " in seq f pass"
                           in tGroup
@@ -1244,7 +1262,10 @@ testEntity =
                                 , testExpectSuccess "let datatype R of MkR of end end in pass"
                                 , testExpectReject "let datatype R <: S1 of MkR of end end in pass"
                                 , testExpectReject "let datatype R of MkR of MkS1 end end in pass"
-                                , testExpectSuccess "let datatype R <: S1 & S2 of MkR of MkS1; MkS2 end end in pass"
+                                , testExpectSuccess
+                                      "let datatype R <: S1 & S2 of MkR of MkS1; MkS2; val: Rational end end in pass"
+                                , testExpectSuccess
+                                      "let datatype R <: S1 & S2 of MkR of MkS1; MkS2; val: Integer end end in pass"
                                 , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS1 end end in pass"
                                 , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS2 end end in pass"
                                 ]
