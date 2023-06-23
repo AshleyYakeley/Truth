@@ -1319,6 +1319,13 @@ testEntity =
                                       ]
                                 ]
                           ]
+                    , tDecls ["datatype A of MkA of ma: Integer = 754 end end"] $
+                      tGroup
+                          "default"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "testeq {42} {(let ma = 42 in MkA) >- fn MkA => ma}"
+                          , testExpectSuccess "testeq {754} {MkA >- fn MkA => ma}"
+                          ]
                     ]
               ]
         , tGroup
