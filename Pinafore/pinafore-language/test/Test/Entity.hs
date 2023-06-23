@@ -1319,12 +1319,28 @@ testEntity =
                                       ]
                                 ]
                           ]
-                    , tDecls ["datatype A of MkA of ma: Integer = 754 end end"] $
-                      tGroup
+                    , tGroup
                           "default"
-                          [ testExpectSuccess "pass"
-                          , testExpectSuccess "testeq {42} {(let ma = 42 in MkA) >- fn MkA => ma}"
-                          , testExpectSuccess "testeq {754} {MkA >- fn MkA => ma}"
+                          [ tDecls ["datatype A of MkA of ma: Integer = 754 end end"] $
+                            tGroup
+                                "simple"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq {42} {(let ma = 42 in MkA) >- fn MkA => ma}"
+                                , testExpectSuccess "testeq {754} {MkA >- fn MkA => ma}"
+                                ]
+                          , tDecls
+                                [ "datatype A of MkA1 of ma1: Integer = 755 end; MkA2 of ma2: Text end; end"
+                                , "datatype B <: A of MkB1 of MkA1; mb1: Integer end; MkB2 of MkA2; mb2: Text end; end"
+                                , "datatype C <: A of MkC1 of MkA1; mc1: Integer end; MkC2 of MkA2; mc2: Text end; end"
+                                , "datatype D <: B & C of MkD of MkB1; MkC1; end end"
+                                ] $
+                            tGroup
+                                "diamond"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess
+                                      "testeq {43} {(let ma1 = 43; mb1 = 44; mc1 = 45 in MkD) >- fn MkD => ma1}"
+                                , testExpectSuccess "testeq {755} {(let mb1 = 46; mc1 = 47 in MkD) >- fn MkD => ma1}"
+                                ]
                           ]
                     ]
               ]
