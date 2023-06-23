@@ -24,14 +24,22 @@ qConstExpr a = qConstExprAny $ jmToValue a
 qVarExpr :: VarID -> QExpression
 qVarExpr name = tsVar @QTypeSystem name
 
-qName :: FullNameRef -> QInterpreter QExpression
-qName name = do
+qNameWith :: FullNameRef -> QInterpreter QExpression -> QInterpreter QExpression
+qNameWith name qidefexpr = do
     mexpr <- lookupMaybeValue name
     case mexpr of
         Just expr -> return expr
-        _ -> do
-            spos <- paramAsk sourcePosParam
-            return $ qVarExpr $ mkBadVarID spos name
+        _ -> qidefexpr
+
+qName :: FullNameRef -> QInterpreter QExpression
+qName name =
+    qNameWith name $ do
+        spos <- paramAsk sourcePosParam
+        return $ qVarExpr $ mkBadVarID spos name
+
+qNameWithDefault :: Maybe QExpression -> FullNameRef -> QInterpreter QExpression
+qNameWithDefault (Just defexpr) name = qNameWith name $ return defexpr
+qNameWithDefault Nothing name = qName name
 
 qAbstractExpr :: VarID -> QExpression -> QInterpreter QExpression
 qAbstractExpr name expr = tsAbstract @QTypeSystem name expr

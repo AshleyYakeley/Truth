@@ -414,8 +414,11 @@ interpretRecordConstructor (MkRecordConstructor items vtype _ codec) = do
         runRenamer @QTypeSystem [] freeFixedNames $ do
             sexpr <-
                 listVTypeFor items $ \case
-                    ValueSignature _ iname itype _ -> do
-                        iexpr <- lift $ qName $ UnqualifiedFullNameRef iname
+                    ValueSignature _ iname itype mdefault -> do
+                        iexpr <-
+                            lift $
+                            qNameWithDefault (fmap (MkSealedExpression (mkShimWit itype)) mdefault) $
+                            UnqualifiedFullNameRef iname
                         itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
                         iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
                         subsumerExpressionTo @QTypeSystem itype' iexpr'
