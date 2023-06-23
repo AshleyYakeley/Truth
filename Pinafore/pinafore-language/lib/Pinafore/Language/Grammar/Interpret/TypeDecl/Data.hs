@@ -269,16 +269,10 @@ instance ExprShow RecordConstructorData where
 
 type SomeSignature = Some (QSignature 'Positive)
 
-data SignatureOrigin
-    = SOThisType
-    | SOSupertype
-
-type SignatureData = (SignatureOrigin, SomeSignature)
-
-rcdSignatures :: RecordConstructorData -> [SignatureData]
+rcdSignatures :: RecordConstructorData -> [SomeSignature]
 rcdSignatures MkRecordConstructorData {..} =
     case rcdRecordConstructor of
-        (MkRecordConstructor sigs _ _ _) -> listVTypeToList (\sig -> (SOSupertype, MkSome sig)) sigs
+        (MkRecordConstructor sigs _ _ _) -> listVTypeToList MkSome sigs
 
 lookupRecordConstructorData :: [Some (QGroundType '[])] -> FullNameRef -> QInterpreter RecordConstructorData
 lookupRecordConstructorData supertypes rcdName = do
@@ -295,10 +289,11 @@ lookupRecordConstructorData supertypes rcdName = do
 
 interpretSignature' ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => [Some (QGroundType '[])]
+    => TypeID
+    -> [Some (QGroundType '[])]
     -> SyntaxSignature'
-    -> QInterpreter (Maybe RecordConstructorData, [SignatureData])
-interpretSignature' _ (ValueSyntaxSignature name stype msdefv) = do
+    -> QInterpreter (Maybe RecordConstructorData, [SomeSignature])
+interpretSignature' tid _ (ValueSyntaxSignature name stype msdefv) = do
     aqtype <- interpretType stype
     case aqtype of
         MkSome qtype -> do
@@ -306,20 +301,21 @@ interpretSignature' _ (ValueSyntaxSignature name stype msdefv) = do
                 for msdefv $ \sdefv -> do
                     defv <- ?interpretExpression sdefv
                     typedSubsumeExpressionToOpen mempty qtype defv
-            return $ (Nothing, pure (SOThisType, MkSome $ ValueSignature name qtype modefv))
-interpretSignature' supertypes (SupertypeConstructorSyntaxSignature name) = do
+            return $ (Nothing, pure $ MkSome $ ValueSignature tid name qtype modefv)
+interpretSignature' _ supertypes (SupertypeConstructorSyntaxSignature name) = do
     rcd <- lookupRecordConstructorData supertypes name
     return $ (Just rcd, rcdSignatures rcd)
 
 interpretSignature ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => [Some (QGroundType '[])]
+    => TypeID
+    -> [Some (QGroundType '[])]
     -> SyntaxSignature
-    -> QInterpreter (Maybe RecordConstructorData, [SignatureData])
-interpretSignature supertypes (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' supertypes ssig
+    -> QInterpreter (Maybe RecordConstructorData, [SomeSignature])
+interpretSignature tid supertypes (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) = interpretSignature' tid supertypes ssig
 
 matchSigName :: SomeSignature -> SomeSignature -> Bool
-matchSigName (MkSome (ValueSignature na _ _)) (MkSome (ValueSignature nb _ _)) = na == nb
+matchSigName (MkSome (ValueSignature _ na _ _)) (MkSome (ValueSignature _ nb _ _)) = na == nb
 
 checkDuplicates :: (Name -> ErrorType) -> [Name] -> QInterpreter ()
 checkDuplicates _ [] = return ()
@@ -333,14 +329,15 @@ signatureName (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature n _ _)
 signatureName _ = Nothing
 
 someSignatureName :: SomeSignature -> Maybe Name
-someSignatureName (MkSome (ValueSignature n _ _)) = Just n
+someSignatureName (MkSome (ValueSignature _ n _ _)) = Just n
 
 interpretConstructorTypes ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => [Some (QGroundType '[])]
+    => TypeID
+    -> [Some (QGroundType '[])]
     -> Constructor dv t extra
     -> QInterpreter (Some ConstructorType)
-interpretConstructorTypes supertypes c = let
+interpretConstructorTypes tid supertypes c = let
     consname = fnName $ ctName c
     in case ctContents c of
            Left innerTypes -> do
@@ -349,18 +346,25 @@ interpretConstructorTypes supertypes c = let
                    MkSome npts -> return $ MkSome $ MkConstructorType consname PositionalCF npts
            Right sigs -> do
                checkDuplicates DeclareDatatypeDuplicateMembers $ mapMaybe signatureName sigs
-               rcdsigss <- for sigs $ interpretSignature supertypes
+               rcdsigss <- for sigs $ interpretSignature tid supertypes
                let
-                   sigdata :: [SignatureData]
-                   sigdata = mconcat $ fmap snd rcdsigss
-                   splitSigs :: SignatureData -> ([SomeSignature], [SomeSignature])
-                   splitSigs (SOThisType, sig) = ([sig], [])
-                   splitSigs (SOSupertype, sig) = ([], [sig])
-                   (thisQSigs, supertypeQSigs) = mconcat $ fmap splitSigs sigdata
-                   inheritedQSigs :: [SomeSignature]
-                   inheritedQSigs = filter (\isig -> not $ any (matchSigName isig) thisQSigs) supertypeQSigs
+                   allSigs :: [SomeSignature]
+                   allSigs = mconcat $ fmap snd rcdsigss
+                   splitSigs :: SomeSignature -> ([SomeSignature], [SomeSignature])
+                   splitSigs sig@(MkSome (ValueSignature sigtid _ _ _)) =
+                       if sigtid == tid
+                           then ([sig], [])
+                           else ([], [sig])
+                   (thisQSigs, supertypeQSigs) = mconcat $ fmap splitSigs allSigs
+                   matchSigs :: SomeSignature -> SomeSignature -> Bool
+                   matchSigs (MkSome (ValueSignature ta na _ _)) (MkSome (ValueSignature tb nb _ _)) =
+                       (ta, na) == (tb, nb)
+                   inheritedQSigs :: [SomeSignature] -- sigs from supertypes that are not overridden
+                   inheritedQSigs =
+                       nubBy matchSigs $ filter (\isig -> not $ any (matchSigName isig) thisQSigs) supertypeQSigs
                    rawrcds :: [RecordConstructorData]
                    rawrcds = catMaybes $ fmap fst rcdsigss
+               checkDuplicates DeclareDatatypeDuplicateInheritedMembers $ mapMaybe someSignatureName inheritedQSigs
                rcds <-
                    for supertypes $ \supertype ->
                        case filter (\rcd -> rcdType rcd == supertype) rawrcds of
@@ -372,7 +376,6 @@ interpretConstructorTypes supertypes c = let
                                throwWithName $ \ntt ->
                                    DeclareDatatypeMultipleSupertypeConstructorsError (ntt $ exprShow supertype) $
                                    fmap (ntt . exprShow) rcds
-               checkDuplicates DeclareDatatypeDuplicateInheritedMembers $ mapMaybe someSignatureName inheritedQSigs
                case assembleListVType $ fromList $ inheritedQSigs <> thisQSigs of
                    MkSome qsiglist -> return $ MkSome $ MkConstructorType consname (RecordCF rcds) qsiglist
 
@@ -380,9 +383,9 @@ pickMember ::
        QSignature 'Positive b
     -> ListType (QSignature 'Positive) aa
     -> QInterpreter (QOpenExpression (ListVProduct aa -> b))
-pickMember (ValueSignature nb tb _) tt =
+pickMember (ValueSignature _ nb tb _) tt =
     case listTypeFind
-             (\(MkPairType (ValueSignature na ta _) f) ->
+             (\(MkPairType (ValueSignature _ na ta _) f) ->
                   if na == nb
                       then Just $ MkSomeFor ta f
                       else Nothing) $
@@ -449,7 +452,9 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                                            , decltype -> TypeData dv maintype))
                                 mainConstruct () = do
                                     constructorInnerTypes <-
-                                        lift $ for constructorFixedList $ interpretConstructorTypes supertypes
+                                        lift $
+                                        for constructorFixedList $
+                                        interpretConstructorTypes (witnessToValue mainTypeID) supertypes
                                     assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                         let
                                             freevars :: FiniteSet SomeTypeVarT

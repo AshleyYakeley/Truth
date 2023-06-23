@@ -60,7 +60,7 @@ recordNameWitnesses ::
     -> QScopeInterpreter [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
 recordNameWitnesses ns lt =
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
-        MkPairType (ValueSignature name t _) f -> do
+        MkPairType (ValueSignature _ name t _) f -> do
             (_, vid) <- allocateVar $ Just $ MkFullName name ns
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
 
@@ -149,7 +149,7 @@ getPatternBindingVariables spat = do
     let
         (names, cs) = syntaxPatternBindingVariables spat
         signatureName :: forall a. Namespace -> QSignature 'Positive a -> FullName
-        signatureName ns (ValueSignature name _ _) = MkFullName name ns
+        signatureName ns (ValueSignature _ name _ _) = MkFullName name ns
     namess <-
         for cs $ \(cns, cref) -> do
             pres <- lookupPatternConstructor cref
@@ -414,7 +414,7 @@ interpretRecordConstructor (MkRecordConstructor items vtype _ codec) = do
         runRenamer @QTypeSystem [] freeFixedNames $ do
             sexpr <-
                 listVTypeFor items $ \case
-                    ValueSignature iname itype _ -> do
+                    ValueSignature _ iname itype _ -> do
                         iexpr <- lift $ qName $ UnqualifiedFullNameRef iname
                         itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
                         iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
