@@ -1,17 +1,15 @@
-FROM fpco/stack-build-small:lts-20.17
-RUN echo 2023-04-27 > /container.date
+FROM fpco/stack-build-small:lts-21.0
+RUN echo 2023-06-23 > /container.date
 ENV DEBIAN_FRONTEND noninteractive
-COPY sources.list /etc/apt/sources.list
 RUN apt-get update
-RUN apt-get purge -y --allow-remove-essential login
 RUN apt-get full-upgrade -y
 RUN apt autoremove --purge -y
-RUN apt-get install -y login sudo curl m4 gnome-platform-devel libgtk-3-dev libgirepository1.0-dev python3-pip imagemagick moreutils
+RUN apt-get install -y sudo git curl m4 libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev python3-pip imagemagick moreutils
 RUN pip3 install --upgrade pip
 RUN pip3 install yq mkdocs markdown-include Pygments scour
 RUN mkdir /extra
 WORKDIR /extra
-RUN wget http://http.us.debian.org/debian/pool/main/l/lintian/lintian_2.116.3_all.deb
+RUN curl -O http://http.us.debian.org/debian/pool/main/l/lintian/lintian_2.116.3_all.deb
 RUN apt install -y /extra/lintian_2.116.3_all.deb
 RUN git clone -n https://github.com/AshleyYakeley/mkdocs-plugin-commonmark.git
 RUN cd mkdocs-plugin-commonmark && git fetch && git checkout 1033d5dfc0223fd499e73adb1aa1be7f99269b4a

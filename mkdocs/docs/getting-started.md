@@ -2,7 +2,7 @@
 
 ## Installation
 
-Pinafore is available as a Debian package for 64-bit Ubuntu 20.04 and later, and Debian 11 and later.
+Pinafore is available as a Debian package for 64-bit Ubuntu 22.04 and later, and Debian 12 and later.
 Install the latest one from [the release page](https://github.com/AshleyYakeley/Truth/releases).
 
 This will put the executable program in `/usr/bin/pinafore`.

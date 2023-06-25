@@ -57,10 +57,11 @@ gvObjectTraceAllSignals obj call = do
     for_ sigids $ \sigid -> do
         msigname <- signalName sigid
         case msigname of
-            --"event" -> return ()
-            --"event-after" -> return ()
-            "motion-notify-event" -> return ()
-            signame -> gvObjectTraceSignal obj sigid $ call signame
+            --Just "event" -> return ()
+            --Just "event-after" -> return ()
+            Just "motion-notify-event" -> return ()
+            Just signame -> gvObjectTraceSignal obj sigid $ call signame
+            Nothing -> return ()
 
 gvObjectReportAllSignals :: IsObject t => Text -> t -> GView 'Locked ()
 gvObjectReportAllSignals name obj =

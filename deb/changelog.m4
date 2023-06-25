@@ -2,9 +2,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Install
     - Debian package works on:
-      . Ubuntu 20.04 LTS "focal"
       . Ubuntu 22.04 LTS "jammy"
-      . Debian 11 "bullseye"
+      . Debian 12 "bookworm"
     - add Nix flake
   * Language
     - overhaul of declarations
