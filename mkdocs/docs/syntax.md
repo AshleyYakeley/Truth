@@ -141,6 +141,8 @@ All declarations, including type declarations, are local to a `let` block.
 
 <expression-specialform> ::= qlname <annotations>
 
+<optional(n)> ::=  | n
+
 <comma-separated(n)> ::=  | <comma-separated-1(n)>
 
 <comma-separated-1(n)> ::=
@@ -162,16 +164,16 @@ All declarations, including type declarations, are local to a `let` block.
 <declaration> ::=
     direct-declaration |
     "import" <module-name> |
-    "using" <namespace> <using-names> <using-target> |
+    "using" <namespace> <using-names> <optional("as" <namespace>)> |
     "namespace" <namepace> <of(<declaration>)> |
     <expose-declaration> |
     "rec" <semicolon-separated(<direct-declaration>)> "end"
 
 <direct-declaration> ::=
-    "datatype" <type-const> <plain-datatype-parameters> <datatype-supertypes> <of(<plain-datatype-constructor>)> |
+    "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <of(<plain-datatype-constructor>)> |
     "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
     "opentype" <type-const> |
-    "subtype" <opt-trustme> <type> "<:" <type> <subtype-body> |
+    "subtype" <optional("trustme")> <type> "<:" <type> <optional("=" <expression>)> |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
@@ -183,19 +185,11 @@ All declarations, including type declarations, are local to a `let` block.
 
 <using-names> ::=  | "(" <name-list> ")" | "except" "(" <name-list> ")"
 
-<using-target> :=  | "as" <namespace>
-
 <namespace> ::= uname | uname "." <namespace> | "."
 
 <module-name> ::= literal-text
 
-<opt-trustme> ::=  | "trustme"
-
-<subtype-body> ::=  | "=" <expression>
-
 <binding> ::= <pattern-1> "=" <expression>
-
-<datatype-supertypes> ::=  | "<:" <supertypes>
 
 <supertypes> = <type> | <supertypes> "&" <type>
 
@@ -209,10 +203,10 @@ All declarations, including type declarations, are local to a `let` block.
 
 <plain-datatype-constructor> ::=
     uname <types> |
-    uname <of(<signature>)> |
+    uname <of(<record-member>)> |
     "subtype" "datatype" <type-const> <of(<plain-datatype-constructor>)>
 
-<signature> ::= lname ":" <type>
+<record-member> ::= lname ":" <type> <optional("=" <expression>)>
 
 <storable-datatype-parameters> ::=  | <storable-datatype-parameter> <storable-datatype-parameters>
 

@@ -28,30 +28,38 @@ end;
 ```
 ### Record Constructors
 
-A record constructor consists of its name, and a list of zero or more _signatures_ in an `of`...`end` block.
+A record constructor consists of its name, and a list of zero or more _members_ in an `of`...`end` block.
 
-A signature consists of a name and a positive type (which may have free type variables).
+A member consists of a name and a positive type (which may have free type variables), and optionally a "default" value.
 
-Here's an example of a type with a record constructor with three signatures:
+Here's an example of a type with a record constructor with three members:
 
 ```pinafore
 datatype T of
     MkT of
         f: List a -> Maybe a;
         g: Text -> Action Unit;
-        h: Integer *: Integer;
+        h: Integer *: Integer = (100, 50);
     end;
 end;
 ```
 
-To create a value of the type `T` using its record constructor `MkT`, bring values matching its signatures into scope, like this:
-
+To create a value of the type `T` using its record constructor `MkT`, bring values matching its members into scope, like this:
 
 ```pinafore
 t: T = let
     f = match [] => Nothing; a :: _ => Just a; end;
     g = outputLn.Env.;
     h = (52,1);
+    in MkT;
+```
+
+If a member has a default value, then you can omit it:
+
+```pinafore
+t: T = let
+    f = match [] => Nothing; a :: _ => Just a; end;
+    g = outputLn.Env.;
     in MkT;
 ```
 
@@ -130,35 +138,8 @@ end;
 In this case, constructor `MkT` has two members, `n` and `f`,
 of types that subsume to the corresponding types in `MkS`.
 
-#### Member Combination
-
-If a same member name exists in two or more constructors from supertypes,
-Pinafore will attempt to combine them.
-This will succeed if one subsumes to the other, and may or may not otherwise.
-For example:
-
-```pinafore
-datatype S1 of
-    MkS1 of
-        x: Rational;
-    end;
-end;
-
-datatype S2 of
-    MkS2 of
-        x: Integer;
-    end;
-end;
-
-datatype T <: S1 & S2 of
-    MkT of
-        MkS1;
-        MkS2;
-    end;
-end;
-```
-
-In this case, `MkT` has one member, `x: Integer`.
+If a same member name is defined in constructors from two different supertypes,
+the member must be defined in the type as well.
 
 #### Multiple Inheritance Diamonds
 
