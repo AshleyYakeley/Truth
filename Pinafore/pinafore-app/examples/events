@@ -157,8 +157,21 @@ let
             pure $ listTable.GTK columns lm eventWindow (Just selection);
             end;
 
+    eventsPresentation: TypePresentation Event
+    = let
+        title = "Events";
+        itemSet = events;
+        newItems =
+        [
+            let name = "New Event"; mkey = Just "Ctrl+K"; newItem = newEvent in MkNewItem
+        ];
+        itemOpenAction = fn evt => eventWindow evt >> pure ();
+        itemElement = eventUI;
+        listElement = eventsTableUI;
+        in MkTypePresentation;
+
 in do
-    eventsPane <- selectionPair.Pane "Events" events [newItemMenuAction.Pane ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
+    eventsPane <- presentList.Pane eventsPresentation;
     p <- notebook.Pane {"Events"} [overviewPane,eventsPane];
     paneWindow p
     end

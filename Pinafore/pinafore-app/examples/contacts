@@ -126,18 +126,21 @@ let
         = fn model => dynamic.GTK $ coMap.WholeModel contactUI model;
     end;
 
-    contactsPane: Action Pane
+    contactsPresentation: TypePresentation LegalEntity
     = let
-        menuItems =
+        title = "Contacts";
+        itemSet = legalentities;
+        newItems =
         [
-            newItemMenuAction.Pane "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
-            newItemMenuAction.Pane "New Organisation" Nothing $ newDynamicEntity @Organisation
+            let name = "New Person"; mkey = Just "Ctrl+K"; newItem = newDynamicEntity @Person in MkNewItem,
+            let name = "New Organisation"; newItem = newDynamicEntity @Organisation in MkNewItem
         ];
-        in namedPairPane "Contacts" legalentities menuItems contactModelUI;
+        itemElement = contactModelUI;
+        in namedToTypePresentation MkNamedTypePresentation;
 
     contactsWindow: Action Window.GTK
     = do
-        p <- contactsPane;
+        p <- presentList.Pane contactsPresentation;
         paneWindow p;
         end;
 

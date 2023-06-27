@@ -10,6 +10,21 @@ expose namespace UILib of
         #| An open entity type; something with a name
         opentype Named;
 
+        datatype NamedTypePresentation {-p,+q} of
+            MkNamedTypePresentation of
+                #| pane title
+                title: Text;
+
+                #| the set of items
+                itemSet: FiniteSetModel {-p,+q};
+
+                #| menu items for creating new items
+                newItems: List (NewItem q) = [];
+
+                itemElement: WholeModel +p -> Element;
+            end;
+        end;
+
         namespace Named of
 
             datatype Props of
@@ -38,12 +53,7 @@ expose namespace UILib of
                     nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
                     namedTable: FiniteSetModel {a,+Named} -> (a -> Action Any) -> Maybe (WholeModel {a,+Named}) -> Element;
                     namedItemTable: FiniteSetModel {a,+Named} -> (WholeModel +a -> Element) -> Maybe (WholeModel {a,+Named}) -> Element;
-                    namedPairPane:
-                        Text ->
-                        FiniteSetModel {a,+Named} ->
-                        List (SetModel a -> ((a & Named) -> Action Unit) -> MenuItem) ->
-                        (WholeModel +a -> Element) ->
-                        Action Pane;
+                    namedToTypePresentation: NamedTypePresentation {item,+Named} -> TypePresentation {item,-Named};
                 end;
             end;
 
@@ -68,10 +78,13 @@ expose namespace UILib of
 
                 namedItemTable = fn set, iui, msel =>
                     namedTable set (fn e => paneWindow $ namedPane iui {e}) msel;
-                namedPairPane = fn name, set, mitems, getSelectedUI => let
-                    getSelectorUI = fn sel => namedItemTable set getSelectedUI (Just sel);
-                    iopen = fn e => paneWindow $ namedPane getSelectedUI {e};
-                    in selectionPair.Pane name set (map.List (fn mitem => mitem set) mitems) iopen getSelectorUI getSelectedUI;
+
+                namedToTypePresentation: NamedTypePresentation {item,+Named} -> TypePresentation {item,-Named}
+                = fn MkNamedTypePresentation => let
+                    itemOpenAction = fn e => (paneWindow $ namedPane itemElement {e}) >> pure ();
+                    listElement = fn sel => namedItemTable itemSet itemElement (Just sel);
+                    in MkTypePresentation;
+
             in MkContext.Named;
 
         end
