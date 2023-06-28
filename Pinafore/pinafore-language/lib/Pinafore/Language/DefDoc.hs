@@ -15,7 +15,8 @@ data DocItem
     | ValueDocItem { diNames :: NonEmpty FullNameRef
                    , diType :: NamedText }
     | ValueSignatureDocItem { diSigName :: Name
-                            , diType :: NamedText }
+                            , diType :: NamedText
+                            , diHasDefault :: Bool }
     | SupertypeConstructorSignatureDocItem { diName :: FullNameRef }
     | ValuePatternDocItem { diNames :: NonEmpty FullNameRef
                           , diType :: NamedText }
@@ -31,7 +32,14 @@ instance Show DocItem where
     show (HeadingDocItem t) = "heading " <> show t
     show (NamespaceDocItem n) = "namespace " <> show n
     show (ValueDocItem n t) = "val " <> show n <> ": " <> unpack (toText t)
-    show (ValueSignatureDocItem n t) = "sig " <> show n <> ": " <> unpack (toText t)
+    show (ValueSignatureDocItem n t hd) =
+        "sig " <>
+        show n <>
+        ": " <>
+        unpack (toText t) <>
+        if hd
+            then " [optional]"
+            else ""
     show (SupertypeConstructorSignatureDocItem n) = "constructor " <> show n
     show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
     show (SpecialFormDocItem n pp t) =

@@ -72,7 +72,10 @@ printModuleDoc modopts tmodname = do
                     putBindDoc $ let
                         name = boldMarkdown $ toMarkdown diSigName
                         nameType = name <> " : " <> toMarkdown diType
-                        in nameType
+                        in nameType <>
+                           if diHasDefault
+                               then " [optional]"
+                               else ""
                 SupertypeConstructorSignatureDocItem {..} -> putBindDoc $ boldMarkdown $ toMarkdown diName
                 ValuePatternDocItem {..} ->
                     putBindDoc $ let

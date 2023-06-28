@@ -265,7 +265,7 @@ subtypeRelDocs sta stb docDescription = let
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc = let
     sigDoc' :: SyntaxSignature' -> DocItem
-    sigDoc' (ValueSyntaxSignature name stype _) = ValueSignatureDocItem name $ exprShow stype
+    sigDoc' (ValueSyntaxSignature name stype msdef) = ValueSignatureDocItem name (exprShow stype) (isJust msdef)
     sigDoc' (SupertypeConstructorSyntaxSignature name) = SupertypeConstructorSignatureDocItem name
     sigDoc :: SyntaxSignature -> DefDoc
     sigDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ sig)) = MkDefDoc (sigDoc' sig) doc
