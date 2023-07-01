@@ -14,7 +14,6 @@ module Pinafore.Language.Library.Defs
     , headingBDT
     , namespaceBDT
     , valBDT
-    , mkTypeBDT
     , typeBDT
     , subtypeRelationBDT
     , hasSubtypeRelationBDT
@@ -46,15 +45,16 @@ import Shapes
 
 data ScopeEntry context
     = BindScopeEntry FullNameRef
+                     FullNameRef
                      (context -> QInterpreterBinding)
     | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
 
 instance Contravariant ScopeEntry where
-    contramap ab (BindScopeEntry name f) = BindScopeEntry name $ \c -> f $ ab c
+    contramap ab (BindScopeEntry name oname f) = BindScopeEntry name oname $ \c -> f $ ab c
     contramap _ (SubtypeScopeEntry entry) = SubtypeScopeEntry entry
 
 scopeEntryName :: ScopeEntry context -> Maybe FullNameRef
-scopeEntryName (BindScopeEntry name _) = Just name
+scopeEntryName (BindScopeEntry name _ _) = Just name
 scopeEntryName (SubtypeScopeEntry _) = Nothing
 
 data BindDoc context = MkBindDoc
@@ -101,7 +101,7 @@ qNegativeTypeDescription =
         MkShimWit w _ -> exprShow w
 
 instance NamespaceConcat (ScopeEntry context) where
-    namespaceConcat nsn (BindScopeEntry fn b) = BindScopeEntry (namespaceConcat nsn fn) b
+    namespaceConcat nsn (BindScopeEntry fn ofn b) = BindScopeEntry (namespaceConcat nsn fn) (namespaceConcat nsn ofn) b
     namespaceConcat _ se = se
 
 instance NamespaceConcat (BindDoc context) where
@@ -131,7 +131,7 @@ instance AddNameInRoot DefDoc where
     addNameInRoot x = x {docItem = addNameInRoot $ docItem x}
 
 instance AddNameInRoot (ScopeEntry context) where
-    addNameInRoot (BindScopeEntry n f) = BindScopeEntry (addNameInRoot n) f
+    addNameInRoot (BindScopeEntry name oname f) = BindScopeEntry (addNameInRoot name) oname f
     addNameInRoot e = e
 
 instance AddNameInRoot (BindDoc context) where
@@ -163,7 +163,7 @@ valBDT ::
 valBDT name docDescription val = let
     bdScopeEntries =
         pure $
-        BindScopeEntry name $ \context -> let
+        BindScopeEntry name name $ \context -> let
             ?qcontext = context
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
     diNames = pure name
@@ -199,19 +199,16 @@ getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeForList dvt ge
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-mkTypeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
-mkTypeBDT name docDescription t bdChildren = let
-    bdScopeEntries = pure $ BindScopeEntry name $ \_ -> TypeBinding t
+typeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
+typeBDT name docDescription t bdChildren = let
+    bdScopeEntries = pure $ BindScopeEntry name name $ \_ -> TypeBinding t
     diNames = pure name
     diParams =
         case t of
             MkSomeGroundType pt -> getTypeParameters nameSupply $ qgtVarianceType pt
     docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
-    in Node MkBindDoc {..} bdChildren
-
-typeBDT :: forall context. FullNameRef -> RawMarkdown -> QBoundType -> [BindDocTree context] -> BindDocTree context
-typeBDT name docDescription t bdChildren = mkTypeBDT name docDescription t bdChildren
+    in Node MkBindDoc {..} $ namespaceConcat (RelativeNamespaceRef [fnrName name]) bdChildren
 
 subtypeRelationBDT ::
        forall context a b.
@@ -251,7 +248,7 @@ valPatBDT ::
 valPatBDT name docDescription val pat = let
     bdScopeEntries =
         pure $
-        BindScopeEntry name $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
+        BindScopeEntry name name $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
     diNames = pure name
     diType = qPositiveTypeDescription @t
     docItem = ValuePatternDocItem {..}
@@ -269,7 +266,7 @@ specialFormBDT ::
 specialFormBDT name docDescription params diType sf = let
     bdScopeEntries =
         pure $
-        BindScopeEntry name $ \pc -> let
+        BindScopeEntry name name $ \pc -> let
             ?qcontext = pc
             in SpecialFormBinding sf
     diNames = pure name

@@ -14,9 +14,9 @@ scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawin
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
 
 datatype Progress of
-    ProgressNone;
-    ProgressPartial;
-    ProgressDone;
+    No;
+    Partial;
+    Done;
 end;
 
 drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
@@ -25,17 +25,17 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
     scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat
     [
         source navy $ %(toMaybe.WholeModel ref) >- match
-            Nothing => pure $ onClick $ ref := ProgressPartial;
-            Just ProgressNone => pure $ onClick $ ref := ProgressPartial;
-            Just ProgressPartial => concat
+            Nothing => pure $ onClick $ ref := Partial.Progress;
+            Just No.Progress => pure $ onClick $ ref := Partial.Progress;
+            Just Partial.Progress => concat
                 [
                     let using Path in fill $ concat [arc (0,0) 1 0 pi, close],
-                    pure $ onClick $ ref := ProgressDone
+                    pure $ onClick $ ref := Done.Progress
                 ];
-            Just ProgressDone => concat
+            Just Done.Progress => concat
                 [
                     let using Path in fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
-                    pure $ onClick $ ref := ProgressNone
+                    pure $ onClick $ ref := No.Progress
                 ];
         end,
         let using Path in stroke $ concat

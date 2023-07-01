@@ -97,7 +97,7 @@ interactLoop inh outh echo = do
                              ShowDocInteractiveCommand rname -> do
                                  bmap <- interactRunQInterpreter $ getBindingInfoMap
                                  liftIO $
-                                     case fmap biDocumentation $ bmap rname of
+                                     case fmap (biDocumentation . snd) $ bmap rname of
                                          Nothing -> hPutStrLn outh $ "! " <> show rname <> " undefined"
                                          Just "" -> return ()
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)

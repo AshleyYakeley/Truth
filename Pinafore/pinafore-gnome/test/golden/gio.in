@@ -3,7 +3,7 @@ let
     import "pinafore-gnome";
     using GIO;
 in do
-    mref <- fileMakeRef $ FilePath "test/somefile";
+    mref <- fileMakeRef $ Path.File "test/somefile";
     mf <- get mref;
     decode textMIME mf >- match
         Just t => write.Sink stdout.Env t;

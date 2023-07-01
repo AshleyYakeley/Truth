@@ -14,6 +14,10 @@ pattern RootFullName :: Name -> FullName
 
 pattern RootFullName n = MkFullName n RootNamespace
 
+-- | The companion namespace of N is a namespace with the same name as N.
+fnCompanion :: FullName -> Namespace
+fnCompanion (MkFullName name ns) = namespaceAppend ns [name]
+
 fullNameToRoot :: FullName -> Maybe Name
 fullNameToRoot (RootFullName n) = Just n
 fullNameToRoot _ = Nothing

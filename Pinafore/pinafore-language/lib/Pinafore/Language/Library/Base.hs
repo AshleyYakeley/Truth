@@ -150,10 +150,9 @@ baseLibSections =
       , headingBDT
             "Boolean"
             ""
-            [ typeBDT
-                  "Boolean"
-                  ""
-                  (MkSomeGroundType booleanGroundType)
+            [ typeBDT "Boolean" "" (MkSomeGroundType booleanGroundType) $
+              fmap
+                  nameInRootBDT
                   [ valPatBDT "True" "Boolean TRUE." True $
                     ImpureFunction $ \v ->
                         if v
@@ -178,10 +177,9 @@ baseLibSections =
       , headingBDT
             "Ordering"
             ""
-            [ typeBDT
-                  "Ordering"
-                  ""
-                  (MkSomeGroundType orderingGroundType)
+            [ typeBDT "Ordering" "" (MkSomeGroundType orderingGroundType) $
+              fmap
+                  nameInRootBDT
                   [ valPatBDT "LT" "Less than." LT $
                     ImpureFunction $ \v ->
                         case v of
@@ -396,7 +394,8 @@ baseLibSections =
                     "Duration"
                     ""
                     (MkSomeGroundType durationGroundType)
-                    [ valPatBDT "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $
+                    [ nameInRootBDT $
+                      valPatBDT "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $
                       PureFunction $ \d -> (nominalDiffTimeToSeconds d, ())
                     ]
               , literalSubtypeRelationEntry @NominalDiffTime
@@ -437,11 +436,13 @@ baseLibSections =
                     "Date"
                     ""
                     (MkSomeGroundType dateGroundType)
-                    [ valPatBDT "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
+                    [ nameInRootBDT $
+                      valPatBDT "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
                       PureFunction $ \day -> let
                           (y, m, d) = toGregorian day
                           in (y, (m, (d, ())))
-                    , valPatBDT "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $
+                    , nameInRootBDT $
+                      valPatBDT "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $
                       PureFunction $ \day -> (toModifiedJulianDay day, ())
                     ]
               , literalSubtypeRelationEntry @Day
@@ -461,9 +462,11 @@ baseLibSections =
                     "TimeOfDay"
                     ""
                     (MkSomeGroundType timeOfDayGroundType)
-                    [ valPatBDT "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
+                    [ nameInRootBDT $
+                      valPatBDT "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
                       PureFunction $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
-                    , valPatBDT
+                    , nameInRootBDT $
+                      valPatBDT
                           "SinceMidnight"
                           "Construct a `TimeOfDay` from duration since midnight (wrapping whole days)."
                           (snd . timeToDaysAndTimeOfDay)
@@ -485,7 +488,8 @@ baseLibSections =
                     "LocalTime"
                     ""
                     (MkSomeGroundType localTimeGroundType)
-                    [ valPatBDT "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $
+                    [ nameInRootBDT $
+                      valPatBDT "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $
                       PureFunction $ \LocalTime {..} -> (localDay, (localTimeOfDay, ()))
                     ]
               , literalSubtypeRelationEntry @LocalTime
@@ -574,10 +578,9 @@ baseLibSections =
     , headingBDT
           "Maybe"
           ""
-          [ typeBDT
-                "Maybe"
-                ""
-                (MkSomeGroundType maybeGroundType)
+          [ typeBDT "Maybe" "" (MkSomeGroundType maybeGroundType) $
+            fmap
+                nameInRootBDT
                 [ valPatBDT "Just" "Construct a Maybe from a value." (Just @A) $
                   ImpureFunction $ \(v :: Maybe A) ->
                       case v of
@@ -613,10 +616,9 @@ baseLibSections =
     , headingBDT
           "Type Sum"
           ""
-          [ typeBDT
-                "+:"
-                ""
-                (MkSomeGroundType eitherGroundType)
+          [ typeBDT "+:" "" (MkSomeGroundType eitherGroundType) $
+            fmap
+                nameInRootBDT
                 [ valPatBDT "Left" "Construct an Either from the left." (Left @A @B) $
                   ImpureFunction $ \(v :: Either A B) ->
                       case v of
@@ -648,14 +650,17 @@ baseLibSections =
                 "List"
                 "A list."
                 (MkSomeGroundType listGroundType)
-                [ mkTypeBDT "List1" "A list with at least one element." (MkSomeGroundType list1GroundType) []
+                [ nameInRootBDT $
+                  typeBDT "List1" "A list with at least one element." (MkSomeGroundType list1GroundType) []
                 , hasSubtypeRelationBDT @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
-                , valPatBDT "[]" "Empty list" ([] @BottomType) $
+                , nameInRootBDT $
+                  valPatBDT "[]" "Empty list" ([] @BottomType) $
                   ImpureFunction $ \(v :: [A]) ->
                       case v of
                           [] -> Just ()
                           _ -> Nothing
-                , valPatBDT "::" "Construct a list" ((:|) @A) $
+                , nameInRootBDT $
+                  valPatBDT "::" "Construct a list" ((:|) @A) $
                   ImpureFunction $ \(v :: [A]) ->
                       case v of
                           a:b -> Just (a, (b, ()))

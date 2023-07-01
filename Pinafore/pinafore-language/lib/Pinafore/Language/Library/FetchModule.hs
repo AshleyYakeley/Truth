@@ -71,20 +71,23 @@ getLibraryModuleModule context libmod = do
     let
         bindDocs :: [BindDoc context]
         bindDocs = libraryModuleEntries libmod
-        seBinding :: ScopeEntry context -> Maybe (FullName, QInterpreterBinding)
-        seBinding (BindScopeEntry name b) = return (namespaceConcatFullName RootNamespace name, b context)
-        seBinding _ = Nothing
         bscope :: QScope
         bscope =
             bindingInfosToScope $ do
                 MkBindDoc {..} <- bindDocs
                 se <- bdScopeEntries
-                (biName, biValue) <- mpure $ seBinding se
-                let biDocumentation = docDescription bdDoc
-                return MkBindingInfo {..}
+                case se of
+                    (BindScopeEntry name oname b) -> do
+                        let
+                            biName = namespaceConcatFullName RootNamespace name
+                            biOriginalName = namespaceConcatFullName RootNamespace oname
+                            biDocumentation = docDescription bdDoc
+                            biValue = b context
+                        return (biName, MkBindingInfo {..})
+                    _ -> []
     dscopes <-
         for (bindDocs >>= bdScopeEntries) $ \case
-            BindScopeEntry _ _ -> return emptyScope
+            BindScopeEntry _ _ _ -> return emptyScope
             SubtypeScopeEntry entry -> getSubtypeScope entry
     let moduleDoc = libraryModuleDocumentation libmod
     moduleScope <- joinAllScopes dscopes bscope

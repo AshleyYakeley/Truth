@@ -23,20 +23,21 @@ testModule =
               [ testExpectSuccess "let import \"m\" in if a == 4 then pure () else fail \"wrong\""
               , testExpectSuccess "let import \"m\"; b = a in if b == 4 then pure () else fail \"wrong\""
               ]
-        , tModule "m" "expose T, T1, T2 of datatype T of T1; T2 end end" $
+        , tModule "m" "expose T, T1.T, T2.T of datatype T of T1; T2 end end" $
           tGroup
               "type"
-              [ testExpectSuccess "let import \"m\" in T1 >- match T1 => pure (); T2 => fail \"wrong\" end"
+              [ testExpectSuccess "let import \"m\" in T1.T >- match T1.T => pure (); T2.T => fail \"wrong\" end"
               , testExpectSuccess
-                    "let import \"m\" in let t: T = T1 in t >- match T1 => pure (); T2 => fail \"wrong\" end"
-              , testExpectSuccess "let import \"m\"; t: T = T1 in t >- match T1 => pure (); T2 => fail \"wrong\" end"
+                    "let import \"m\" in let t: T = T1.T in t >- match T1.T => pure (); T2.T => fail \"wrong\" end"
+              , testExpectSuccess
+                    "let import \"m\"; t: T = T1.T in t >- match T1.T => pure (); T2.T => fail \"wrong\" end"
               , testExpectSuccess "let import \"m\"; f: T -> T = fn x => x in pure ()"
               , testExpectSuccess "let import \"m\" in let f: T -> T = fn x => x in pure ()"
               , testExpectSuccess "let expose T of import \"m\" end; f: T -> T = fn x => x in pure ()"
               , testExpectReject "let expose of import \"m\" end; f: T -> T = fn x => x in pure ()"
-              , testExpectReject "let expose T1, T2 of import \"m\" end; f: T -> T = fn x => x in pure ()"
-              , testExpectSuccess "let expose T1 of import \"m\" end; f = T1 in pure ()"
-              , testExpectReject "let expose T2 of import \"m\" end; f = T1 in pure ()"
+              , testExpectReject "let expose T1.T, T2.T of import \"m\" end; f: T -> T = fn x => x in pure ()"
+              , testExpectSuccess "let expose T1.T of import \"m\" end; f = T1.T in pure ()"
+              , testExpectReject "let expose T2.T of import \"m\" end; f = T1.T in pure ()"
               ]
         , tModule "m" "expose a of a = b end" $ testExpectReject "let import \"m\" in pure ()"
         , tModule "m" "expose T of opentype T end" $

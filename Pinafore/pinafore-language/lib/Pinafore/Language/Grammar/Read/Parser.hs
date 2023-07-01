@@ -9,6 +9,7 @@ module Pinafore.Language.Grammar.Read.Parser
     , parseReader
     , readAskNamespace
     , readWithNamespace
+    , readWithNamespaceName
     , parseScopedReaderWhole
     , readThis
     , readExactly
@@ -82,6 +83,9 @@ readAskNamespace = MkParser ask
 
 readWithNamespace :: NamespaceRef -> Parser --> Parser
 readWithNamespace nr (MkParser p) = MkParser $ local (\n -> namespaceConcatRef n nr) p
+
+readWithNamespaceName :: Name -> Parser --> Parser
+readWithNamespaceName name = readWithNamespace $ RelativeNamespaceRef [name]
 
 parseScopedReaderWhole :: Parser (QInterpreter t) -> Text -> QInterpreter t
 parseScopedReaderWhole parser text = do

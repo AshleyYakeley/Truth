@@ -96,15 +96,16 @@ testNamespace =
                     , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
               ]
-        , tDecls ["namespace M of expose T, T1, T2 of datatype T of T1; T2 end end end"] $
+        , tDecls ["namespace M of expose T, namespace T of datatype T of T1; T2 end end end"] $
           tGroup
               "type"
               [ testExpectSuccess "pass"
-              , testExpectSuccess "let using M in T1 >- match T1 => pass; T2 => fail \"wrong\" end"
-              , testExpectSuccess "T1.M >- match T1.M => pass; T2.M => fail \"wrong\" end"
-              , testExpectSuccess "let using M in let t: T = T1 in t >- match T1 => pass; T2 => fail \"wrong\" end"
-              , testExpectSuccess "let using M; t: T = T1 in t >- match T1 => pass; T2 => fail \"wrong\" end"
-              , testExpectSuccess "let t: T.M = T1.M in t >- match T1.M => pass; T2.M => fail \"wrong\" end"
+              , testExpectSuccess "let using M in T1.T >- match T1.T => pass; T2.T => fail \"wrong\" end"
+              , testExpectSuccess "T1.T.M >- match T1.T.M => pass; T2.T.M => fail \"wrong\" end"
+              , testExpectSuccess
+                    "let using M in let t: T = T1.T in t >- match T1.T => pass; T2.T => fail \"wrong\" end"
+              , testExpectSuccess "let using M; t: T = T1.T in t >- match T1.T => pass; T2.T => fail \"wrong\" end"
+              , testExpectSuccess "let t: T.M = T1.T.M in t >- match T1.T.M => pass; T2.T.M => fail \"wrong\" end"
               , testExpectSuccess "let using M; f: T -> T = fn x => x in pass"
               , testExpectSuccess "let using M in let f: T -> T = fn x => x in pass"
               , testExpectSuccess "let f: T.M -> T.M = fn x => x in pass"

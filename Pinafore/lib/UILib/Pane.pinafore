@@ -17,7 +17,7 @@ expose namespace UILib. of
         end;
 
         datatype NewItem +q of
-            MkNewItem of
+            Mk of
                 name: Text;
                 mkey: Maybe Text = Nothing;
                 newItem: Action q;
@@ -25,7 +25,7 @@ expose namespace UILib. of
         end;
 
         datatype TypePresentation {-p,+q} of
-            MkTypePresentation of
+            Mk of
                 #| pane title
                 title: Text;
 
@@ -46,7 +46,7 @@ expose namespace UILib. of
 
         #| A pane is a title, GTK element, and menu.
         datatype Pane of
-            MkPane of
+            Mk of
                 titleModel: WholeModel Text;
                 extraMenusModel: WholeModel (List MenuItem);
                 element: Element;
@@ -59,7 +59,7 @@ expose namespace UILib. of
             = fn title, element => let
                 titleModel = {title};
                 extraMenusModel = {[]};
-                in MkPane;
+                in Mk.Pane;
 
             #| A notebook from a list of panes
             notebook: WholeModel +Text -> List Pane -> Action Pane
@@ -67,18 +67,18 @@ expose namespace UILib. of
                 tabModel <- newMem.WholeModel;
                 pure $ let
                     makePage: Pane -> Element *: Element
-                    = fn MkPane => page.GTK titleModel element;
+                    = fn Mk.Pane => page.GTK titleModel element;
                     element: Element = notebook.GTK tabModel $ map.List makePage panes;
 
                     using WholeModel.;
-                    itemsModel = for panes $ fn MkPane => extraMenusModel;
+                    itemsModel = for panes $ fn Mk.Pane => extraMenusModel;
                     titleModel: WholeModel Text = immut title;
                     extraMenusModel: WholeModel (List MenuItem) = fromMaybe {index.List %itemsModel %tabModel};
-                    in MkPane;
+                    in Mk.Pane;
                 end;
 
             presentWithElement: TypePresentation item -> (WholeModel item -> Element) -> Action Pane
-            = fn MkTypePresentation, getElement => do
+            = fn Mk.TypePresentation, getElement => do
                 selectionRef <- newMem.WholeModel;
                 pure $ let
                     viewItem: Action Unit
@@ -94,7 +94,7 @@ expose namespace UILib. of
                         itemSet -=.SetModel item;
                         end;
 
-                    newItemToMenuItem = fn MkNewItem => menuAction name mkey
+                    newItemToMenuItem = fn Mk.NewItem => menuAction name mkey
                         {do
                         item <- newItem;
                         itemSet +=.SetModel item;
@@ -113,11 +113,11 @@ expose namespace UILib. of
                     titleModel: WholeModel Text = {title};
                     element: Element = getElement selectionRef;
                     extraMenusModel: WholeModel (List MenuItem) = {extraMenus};
-                    in MkPane;
+                    in Mk.Pane;
                 end;
 
             presentList: TypePresentation item -> Action Pane
-            = fn tp@MkTypePresentation =>
+            = fn tp@Mk.TypePresentation =>
                 presentWithElement tp $ fn selection => let
                     sidebarUI: Element
                     = listElement selection;
@@ -128,8 +128,8 @@ expose namespace UILib. of
                     in horizontal [sidebarUI, layoutGrow selectedUI];
 
             datatype Context <: Context.UILib of
-                MkContext of
-                    MkContext.UILib;
+                Mk of
+                    Mk.Context.UILib;
                     #| A window that comes with some menus.
                     stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window;
                     paneWindow: Pane -> Action Window;
@@ -137,7 +137,7 @@ expose namespace UILib. of
             end;
 
             mkContext: Context.UILib -> Context.Pane
-            = fn MkContext.UILib => let
+            = fn Mk.Context.UILib => let
                 stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
                 = fn title, extraMenus, contents => fix.Action $ fn window => do
                     textsel <- newMem.WholeModel;
@@ -199,8 +199,8 @@ expose namespace UILib. of
                     end;
 
                     paneWindow: Pane -> Action Window
-                    = fn MkPane => stdWindow titleModel extraMenusModel element;
-                in MkContext.Pane;
+                    = fn Mk.Pane => stdWindow titleModel extraMenusModel element;
+                in Mk.Context.Pane;
 
         end;
 

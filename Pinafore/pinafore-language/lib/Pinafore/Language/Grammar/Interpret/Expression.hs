@@ -386,7 +386,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                     Just (b, items) -> \name -> any (matchItem name) items == b
             return mempty
         NamespaceSyntaxDeclaration nsn decls -> do
-            close <- interpScopeBuilder $ withCurrentNamespace nsn
+            close <- interpScopeBuilder $ withCurrentNamespaceScope nsn
             docs <- interpretDocDeclarations decls
             interpScopeBuilder close
             return $ pure $ Node (MkDefDoc (NamespaceDocItem $ AbsoluteNamespaceRef nsn) doc) docs

@@ -67,7 +67,7 @@ readPlainDataTypeConstructor =
          readThis TokDataType
          name <- readTypeNewName
          readThis TokOf
-         constructors <- readLines $ readWithDoc readPlainDataTypeConstructor
+         constructors <- readWithNamespaceName (fnName name) $ readLines $ readWithDoc readPlainDataTypeConstructor
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
@@ -89,7 +89,7 @@ readStorableDataTypeConstructor =
          readThis TokStorable
          name <- readTypeNewName
          readThis TokOf
-         constructors <- readLines $ readWithDoc readStorableDataTypeConstructor
+         constructors <- readWithNamespaceName (fnName name) $ readLines $ readWithDoc readStorableDataTypeConstructor
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
@@ -134,18 +134,20 @@ readDataTypeDeclaration = do
             readThis TokSubtypeOf
             readType
     readThis TokOf
-    case storable of
-        Just () -> do
-            case msupertype of
-                Nothing -> return ()
-                Just _ -> throw $ DeclareDatatypeStorableSupertypeError name
-            constructors <- readLines $ readWithDoc readStorableDataTypeConstructor
-            readThis TokEnd
-            return $ TypeSyntaxDeclaration name $ StorableDatatypeSyntaxTypeDeclaration parameters constructors
-        Nothing -> do
-            constructors <- readLines $ readWithDoc readPlainDataTypeConstructor
-            readThis TokEnd
-            return $ TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters msupertype constructors
+    readWithNamespaceName (fnName name) $
+        case storable of
+            Just () -> do
+                case msupertype of
+                    Nothing -> return ()
+                    Just _ -> throw $ DeclareDatatypeStorableSupertypeError name
+                constructors <- readLines $ readWithDoc readStorableDataTypeConstructor
+                readThis TokEnd
+                return $ TypeSyntaxDeclaration name $ StorableDatatypeSyntaxTypeDeclaration parameters constructors
+            Nothing -> do
+                constructors <- readLines $ readWithDoc readPlainDataTypeConstructor
+                readThis TokEnd
+                return $
+                    TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters msupertype constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =

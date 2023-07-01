@@ -5,14 +5,14 @@ opentype A;
 opentype B;
 
 datatype R of
-    MkR of
+    Mk of
     f: A -> Action Unit;
     end;
 end;
 
-r: R = let f = fn _ => outputLn.Env "Done." in MkR;
+r: R = let f = fn _ => outputLn.Env "Done." in Mk.R;
 
-in r >- fn MkR =>
+in r >- fn Mk.R =>
     let
     subtype B <: A
     in f (error "" : B)

@@ -5,7 +5,7 @@ expose namespace UILib. of
     namespace UILib of
 
         datatype Context of
-            MkContext of
+            Mk of
                 gtk: Context.GTK;
                 undoHandler: UndoHandler;
                 store: Store;
@@ -19,7 +19,7 @@ expose namespace UILib. of
                 dstore <- openDefaultStore.Env;
                 undoHandler <- new.UndoHandler;
                 store <- handleStore.UndoHandler undoHandler dstore;
-                run.GTK $ fn gtk => call MkContext;
+                run.GTK $ fn gtk => call Mk.Context;
             end;
 
         end;

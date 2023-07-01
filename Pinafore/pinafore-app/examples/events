@@ -6,32 +6,32 @@ let
 in run.Context $ fn context =>
 let
 
-    MkContext.Named = mkContext.Named context;
+    Mk.Context.Named = mkContext.Named context;
 
     ### EventTime
 
     # An event can either be at a particular time, or a whole-day event.
     datatype storable EventTime of
-        EventTimeDate Date !"Date"; # all-day event
-        EventTimeTime LocalTime !"Time"; # event at a time
+        Date Date !"Date"; # all-day event
+        Time LocalTime !"Time"; # event at a time
     end;
 
     showEventTime: EventTime -> Text
     = match
-        EventTimeDate d => encode (unixAsText.Date "%F") d;
-        EventTimeTime t => encode (unixAsText.LocalTime "%F %R") t;
+        Date.EventTime d => encode (unixAsText.Date "%F") d;
+        Time.EventTime t => encode (unixAsText.LocalTime "%F %R") t;
         end;
 
     eventTimeDate: EventTime -> Date
     = match
-        EventTimeDate d => d;
-        EventTimeTime (DateAndTime d _) => d
+        Date.EventTime d => d;
+        Time.EventTime (DateAndTime d _) => d
         end;
 
     setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime
     = fn d, et => Just $ et >- match
-        Just (EventTimeTime (DateAndTime _ t)) => EventTimeTime (DateAndTime d t);
-        _ => EventTimeDate d;
+        Just (Time.EventTime (DateAndTime _ t)) => Time.EventTime (DateAndTime d t);
+        _ => Date.EventTime d;
         end;
 
     eventModelTimeDate: WholeModel EventTime -> WholeModel Date
@@ -41,7 +41,7 @@ let
     = fn r => let
         eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay
         = match
-            Just (EventTimeTime (DateAndTime _ tod)) => Just tod;
+            Just (Time.EventTime (DateAndTime _ tod)) => Just tod;
             _ => Nothing;
             end;
 
@@ -49,8 +49,8 @@ let
     = fn mtod, met => Just $ met >- match
         Nothing => Nothing;
         Just et => Just $ mtod >- match
-            Nothing => EventTimeDate $ eventTimeDate et;
-            Just tod => EventTimeTime $ DateAndTime (eventTimeDate et) tod;
+            Nothing => Date.EventTime $ eventTimeDate et;
+            Just tod => Time.EventTime $ DateAndTime (eventTimeDate et) tod;
             end;
         end;
     in maybeLensMap.WholeModel eventTimeTimeOfDay setEventTimeTimeOfDay r;
@@ -58,8 +58,8 @@ let
     # for ordering
     eventTimeTime: EventTime -> LocalTime
     = match
-        EventTimeDate d => DateAndTime d midnight;
-        EventTimeTime t => t
+        Date.EventTime d => DateAndTime d midnight;
+        Time.EventTime t => t
         end;
 
     eventTimeOrder: ModelOrder EventTime
@@ -92,7 +92,7 @@ let
 
             pickCurrent: EventTime *: Text -> Boolean
             = fn (t,_) => ge $ calendrical (eventTimeDate t) today;
-        in (EventTimeDate today,"Today") :: filter pickCurrent %(toList.FiniteSetModel eventDataOrder eventData)
+        in (Date.EventTime today,"Today") :: filter pickCurrent %(toList.FiniteSetModel eventDataOrder eventData)
         };
 
 
@@ -138,7 +138,7 @@ let
     = do
         item <- newOpenEntity @Event;
         day <- getNowLocal.Date;
-        eventTime !$ {item} := EventTimeDate day;
+        eventTime !$ {item} := Date.EventTime day;
         name !$ {item} := "";
         pure item;
         end;
@@ -163,12 +163,12 @@ let
         itemSet = events;
         newItems =
         [
-            let name = "New Event"; mkey = Just "Ctrl+K"; newItem = newEvent in MkNewItem
+            let name = "New Event"; mkey = Just "Ctrl+K"; newItem = newEvent in Mk.NewItem
         ];
         itemOpenAction = fn evt => eventWindow evt >> pure ();
         itemElement = eventUI;
         listElement = eventsTableUI;
-        in MkTypePresentation;
+        in Mk.TypePresentation;
 
 in do
     eventsPane <- presentList.Pane eventsPresentation;

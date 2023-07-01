@@ -4,13 +4,13 @@
 
 > doc:A
 > 
-> **<code>MkA1</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> A</code>
+> **<code>Mk1\.A</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> A</code>
 > 
-> > doc:MkA1
+> > doc:Mk1.A
 > > 
-> **<code>MkA2</code>**<code> : p \-\> (s \-\> r) \-\> A</code>
+> **<code>Mk2\.A</code>**<code> : p \-\> (s \-\> r) \-\> A</code>
 > 
-> > doc:MkA2
+> > doc:Mk2.A
 > > 
 <code>type </code>**<code>B</code>**
 
@@ -22,13 +22,13 @@
 
 > doc:RecA
 > 
-> **<code>MkRecA1</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> RecA</code>
+> **<code>Mk1\.RecA</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> RecA</code>
 > 
-> > doc:MkRecA1
+> > doc:Mk1.RecA
 > > 
-> **<code>MkRecA2</code>**<code> : p \-\> (s \-\> r) \-\> RecA</code>
+> **<code>Mk2\.RecA</code>**<code> : p \-\> (s \-\> r) \-\> RecA</code>
 > 
-> > doc:MkRecA2
+> > doc:Mk2.RecA
 > > 
 <code>type </code>**<code>RecB</code>**
 
@@ -40,9 +40,9 @@
 
 > doc:R
 > 
-> **<code>MkR</code>**<code> : R</code>
+> **<code>Mk\.R</code>**<code> : R</code>
 > 
-> > doc:MkR
+> > doc:Mk.R
 > > 
 > > **<code>rp</code>**<code> : Integer \-\> a \-\> a</code>
 > > 
@@ -76,21 +76,21 @@
 > 
 > > doc:NmA
 > > 
-> > **<code>MkNmA1\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmA\.N</code>
+> > **<code>Mk1\.NmA\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmA\.N</code>
 > > 
-> > > doc:MkNmA1
+> > > doc:Mk1.NmA
 > > > 
-> > **<code>MkNmA2\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmA\.N</code>
+> > **<code>Mk2\.NmA\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmA\.N</code>
 > > 
-> > > doc:MkNmA2
+> > > doc:Mk2.NmA
 > > > 
 > <code>type </code>**<code>NmB\.N</code>**
 > 
 > > doc:NmB
 > > 
-> > **<code>MkNmB\.N</code>**<code> : Integer \-\> NmB\.N</code>
+> > **<code>Mk\.NmB\.N</code>**<code> : Integer \-\> NmB\.N</code>
 > > 
-> > > doc:MkNmB
+> > > doc:Mk.NmB
 > > > 
 > <code>subtype NmA Integer Unit Unit \<: NmB</code>
 > 
@@ -98,21 +98,21 @@
 > 
 > > doc:NmRecA
 > > 
-> > **<code>MkNmRecA1\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmRecA\.N</code>
+> > **<code>Mk1\.NmRecA\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmRecA\.N</code>
 > > 
-> > > doc:MkNmRecA1
+> > > doc:Mk1.NmRecA
 > > > 
-> > **<code>MkNmRecA2\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmRecA\.N</code>
+> > **<code>Mk2\.NmRecA\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmRecA\.N</code>
 > > 
-> > > doc:MkNmRecA2
+> > > doc:Mk2.NmRecA
 > > > 
 > <code>type </code>**<code>NmRecB\.N</code>**
 > 
 > > doc:NmRecB
 > > 
-> > **<code>MkNmRecB\.N</code>**<code> : Integer \-\> NmRecB\.N</code>
+> > **<code>Mk\.NmRecB\.N</code>**<code> : Integer \-\> NmRecB\.N</code>
 > > 
-> > > doc:MkNmRecB
+> > > doc:Mk.NmRecB
 > > > 
 > <code>subtype NmRecA Integer Unit Unit \<: NmRecB</code>
 > 
@@ -120,9 +120,9 @@
 > 
 > > doc:NmR
 > > 
-> > **<code>MkNmR\.N</code>**<code> : NmR\.N</code>
+> > **<code>Mk\.NmR\.N</code>**<code> : NmR\.N</code>
 > > 
-> > > doc:MkNmR
+> > > doc:Mk.NmR
 > > > 
 > > > **<code>nmrp</code>**<code> : Integer \-\> a \-\> a</code>
 > > > 

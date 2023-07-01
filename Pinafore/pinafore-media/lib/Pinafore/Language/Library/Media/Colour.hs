@@ -170,14 +170,11 @@ colourStuff =
                 MkPerceptualSRGB16 $
             PureFunction $ \(MkPerceptualSRGB16 r g b) -> (r, (g, (b, ())))
           , valPatBDT
-                "SRGB"
+                "SRGBF"
                 "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
                 MkPerceptualSRGBFraction $
             PureFunction $ \(MkPerceptualSRGBFraction r g b) -> (r, (g, (b, ())))
-          , valPatBDT
-                "LinearRGB"
-                "Construct a Colour from linear red, green, blue, in range 0 to 1."
-                MkLinearRGBFraction $
+          , valPatBDT "LinearF" "Construct a Colour from linear red, green, blue, in range 0 to 1." MkLinearRGBFraction $
             PureFunction $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
           ]
     , typeBDT
@@ -185,12 +182,12 @@ colourStuff =
           "A human-perceivable colour, with opacity."
           (MkSomeGroundType alphaColourGroundType)
           [ valPatBDT
-                "MkAlphaColour16"
+                "Mk16"
                 "Construct an AlphaColour from an opacity in range 0 to 65535 and a Colour."
                 MkAlphaColour16 $
             PureFunction $ \(MkAlphaColour16 op col) -> (op, (col, ()))
           , valPatBDT
-                "MkAlphaColourFraction"
+                "MkF"
                 "Construct an AlphaColour from an opacity in range 0 to 1 and a Colour."
                 MkAlphaColourFraction $
             PureFunction $ \(MkAlphaColourFraction op col) -> (op, (col, ()))

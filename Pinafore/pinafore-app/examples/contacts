@@ -6,7 +6,7 @@ let
 in run.Context $ fn context =>
 let
 
-    MkContext.Named = mkContext.Named context;
+    Mk.Context.Named = mkContext.Named context;
 
     # something with a lifespan
     opentype Lifespanned;
@@ -132,11 +132,11 @@ let
         itemSet = legalentities;
         newItems =
         [
-            let name = "New Person"; mkey = Just "Ctrl+K"; newItem = newDynamicEntity @Person in MkNewItem,
-            let name = "New Organisation"; newItem = newDynamicEntity @Organisation in MkNewItem
+            let name = "New Person"; mkey = Just "Ctrl+K"; newItem = newDynamicEntity @Person in Mk.NewItem,
+            let name = "New Organisation"; newItem = newDynamicEntity @Organisation in Mk.NewItem
         ];
         itemElement = contactModelUI;
-        in namedToTypePresentation MkNamedTypePresentation;
+        in namedToTypePresentation Mk.NamedTypePresentation;
 
     contactsWindow: Action Window.GTK
     = do

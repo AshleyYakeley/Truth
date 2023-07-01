@@ -216,12 +216,12 @@ testScript =
     runScriptTestTree $
     tGroup
         "script"
-        [ tDecls ["datatype T of MkT Integer end", "unT = fn (MkT x) => x"] $
+        [ tDecls ["datatype T of Mk Integer end", "unT = fn (Mk.T x) => x"] $
           testExpectSuccess $
-          "let f = fn x => let subtype Unit <: T = fn () => MkT x in unT () in if f 17 ==.Entity 17 then pure.Action () else fail.Action \"FAILED\""
-        , tDecls ["datatype T1 +a of MkT1 a end", "unT1 = fn MkT1 x => x"] $
+          "let f = fn x => let subtype Unit <: T = fn () => Mk.T x in unT () in if f 17 ==.Entity 17 then pure.Action () else fail.Action \"FAILED\""
+        , tDecls ["datatype T1 +a of Mk a end", "unT1 = fn Mk.T1 x => x"] $
           testExpectSuccess $
-          "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in unT1 () in if f 17 ==.Entity 17 then pure.Action () else fail.Action \"FAILED\""
+          "let f = fn x => let subtype Unit <: T1 Integer = fn () => Mk.T1 x in unT1 () in if f 17 ==.Entity 17 then pure.Action () else fail.Action \"FAILED\""
         ]
 
 testSubtype :: TestTree

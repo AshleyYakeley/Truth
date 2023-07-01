@@ -11,7 +11,7 @@ expose namespace UILib of
         opentype Named;
 
         datatype NamedTypePresentation {-p,+q} of
-            MkNamedTypePresentation of
+            Mk of
                 #| pane title
                 title: Text;
 
@@ -28,7 +28,7 @@ expose namespace UILib of
         namespace Named of
 
             datatype Props of
-                MkProps of
+                Mk of
                     #| A name is a text that identifies (in some sense) an entity.
                     name: Property Named Text;
                     #| Order alphabetically (case-insensitive) by name
@@ -43,12 +43,12 @@ expose namespace UILib of
                 name = property @Named @Text !"identify.name" store;
                 nameOrder = on.ModelOrder name alphabetical.Order;
                 byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property name) !$$ model;
-                in MkProps;
+                in Mk.Props;
 
             datatype Context <: Context.Pane & Props of
-                MkContext of
-                    MkContext.Pane;
-                    MkProps;
+                Mk of
+                    Mk.Context.Pane;
+                    Mk.Props;
                     namedPane: (WholeModel +a -> Element) -> WholeModel +(a & Named) -> Pane;
                     nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
                     namedTable: FiniteSetModel {a,+Named} -> (a -> Action Any) -> Maybe (WholeModel {a,+Named}) -> Element;
@@ -58,16 +58,16 @@ expose namespace UILib of
             end;
 
             mkContext: Context.UILib -> Context.Named
-            = fn MkContext.UILib => let
-                MkContext.Pane = mkContext.Pane MkContext.UILib;
+            = fn Mk.Context.UILib => let
+                Mk.Context.Pane = mkContext.Pane Mk.Context.UILib;
 
-                MkProps = mkProps store;
+                Mk.Props = mkProps store;
 
                 namedPane = fn iui, e => let
                     titleModel= name !$% e;
                     extraMenusModel = {[]};
                     element = iui $ immut.WholeModel e;
-                    in MkPane;
+                    in Mk.Pane;
 
                 nameColumn = ({"Name"},fn p => name !$ {p});
 
@@ -80,12 +80,12 @@ expose namespace UILib of
                     namedTable set (fn e => paneWindow $ namedPane iui {e}) msel;
 
                 namedToTypePresentation: NamedTypePresentation {item,+Named} -> TypePresentation {item,-Named}
-                = fn MkNamedTypePresentation => let
+                = fn Mk.NamedTypePresentation => let
                     itemOpenAction = fn e => (paneWindow $ namedPane itemElement {e}) >> pure ();
                     listElement = fn sel => namedItemTable itemSet itemElement (Just sel);
-                    in MkTypePresentation;
+                    in Mk.TypePresentation;
 
-            in MkContext.Named;
+            in Mk.Context.Named;
 
         end
 

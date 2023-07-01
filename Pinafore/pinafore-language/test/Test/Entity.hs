@@ -836,16 +836,16 @@ testEntity =
           tGroup
               "datatype"
               [ testExpectSuccess "pass"
-              , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
-              , testExpectSuccess "let f = fn T1 x _ => x in pass"
-              , testExpectSuccess "T2 >- match T2 => pass end"
-              , testExpectSuccess "T3 True >- match T3 True => pass end"
-              , testExpectSuccess "T1 \"hello\" 3 >- match T1 \"hello\" 3 => pass end"
+              , testExpectSuccess "let t1 = T1.T \"hello\" 3 in pass"
+              , testExpectSuccess "let f = fn T1.T x _ => x in pass"
+              , testExpectSuccess "T2.T >- match T2.T => pass end"
+              , testExpectSuccess "T3.T True >- match T3.T True => pass end"
+              , testExpectSuccess "T1.T \"hello\" 3 >- match T1.T \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "T1 \"hello\" 3 >- match T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
+                    "T1.T \"hello\" 3 >- match T2.T => fail \"T2.T\"; T1.T \"hello\" 2 => fail \"T1.T 2\"; T1.T \"hell\" 3 => fail \"T1.T hell\"; T1.T \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "let f : Boolean -> Integer = fn b => if b then 1 else 0 in T5 \"abcd\" f >- match T5 _ ff => if ff True == 1 then pass else fail \"ff\" end"
-              , testExpectReject "let datatype B of MkB a end in pass"
+                    "let f : Boolean -> Integer = fn b => if b then 1 else 0 in T5.T \"abcd\" f >- match T5.T _ ff => if ff True == 1 then pass else fail \"ff\" end"
+              , testExpectReject "let datatype B of Mk a end in pass"
               , testExpectSuccess "let datatype P of end in pass"
               , testExpectSuccess "let datatype P of P1 end in pass"
               , testExpectSuccess "let datatype P of P1; end in pass"
@@ -866,34 +866,34 @@ testEntity =
               , tGroup
                     "contain-recursive"
                     [ tDecls
-                          [ "datatype P of MkP (rec a, Maybe a) end"
+                          [ "datatype P of Mk (rec a, Maybe a) end"
                           , "rec fromR: (rec a, Maybe a) -> Integer = match Nothing => 0; Just a => 1 + fromR a end end"
                           , "rec toR: Integer -> (rec a, Maybe a) = match 0 => Nothing; i => Just $ toR (i - 1) end end"
-                          , "rec fromP: P -> Integer = match MkP Nothing => 0; MkP (Just a) => 1 + fromP (MkP a) end end"
-                          , "rec toP: Integer -> P = match 0 => MkP Nothing; i => toP (i - 1) >- fn MkP a => MkP $ Just a end end"
+                          , "rec fromP: P -> Integer = match Mk.P Nothing => 0; Mk.P (Just a) => 1 + fromP (Mk.P a) end end"
+                          , "rec toP: Integer -> P = match 0 => Mk.P Nothing; i => toP (i - 1) >- fn Mk.P a => Mk.P $ Just a end end"
                           ] $
                       tGroup
                           "Maybe"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "testeqval 5 $ fromP $ MkP $ Just $ Just $ Just $ Just $ Just Nothing"
+                          , testExpectSuccess "testeqval 5 $ fromP $ Mk.P $ Just $ Just $ Just $ Just $ Just Nothing"
                           , testExpectSuccess "testeqval 17 $ fromP $ toP 17"
-                          , testExpectSuccess "testeqval 17 $ fromP $ MkP $ toR 17"
-                          , testExpectSuccess "testeqval 17 $ fromR $ toP 17 >- fn MkP a => a"
+                          , testExpectSuccess "testeqval 17 $ fromP $ Mk.P $ toR 17"
+                          , testExpectSuccess "testeqval 17 $ fromR $ toP 17 >- fn Mk.P a => a"
                           ]
                     , tDecls
-                          [ "datatype Q +t of MkQ (rec a, Maybe (t *: a)) end"
+                          [ "datatype Q +t of Mk (rec a, Maybe (t *: a)) end"
                           , "rec fromR: (rec a, Maybe (t *: a)) -> List t = match Nothing => []; Just (t,a) => t :: fromR a end end"
                           , "rec toR: List t -> (rec a, Maybe (t *: a)) = match [] => Nothing; t :: tt => Just (t, toR tt) end end"
-                          , "rec fromQ: Q t -> List t = match MkQ Nothing => []; MkQ (Just (t,a)) => t :: fromQ (MkQ a) end end"
-                          , "rec toQ: List t -> Q t = match [] => MkQ Nothing; t :: tt => MkQ $ Just (t, toQ tt >- fn MkQ a => a) end end"
+                          , "rec fromQ: Q t -> List t = match Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a) end end"
+                          , "rec toQ: List t -> Q t = match [] => Mk.Q Nothing; t :: tt => Mk.Q $ Just (t, toQ tt >- fn Mk.Q a => a) end end"
                           ] $
                       tGroup
                           "Pair"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "testeqval [5,3,1] $ fromQ $ MkQ $ Just (5,Just (3,Just (1,Nothing)))"
+                          , testExpectSuccess "testeqval [5,3,1] $ fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
                           , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ toQ [8,12,27,45]"
-                          , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ MkQ $ toR [8,12,27,45]"
-                          , testExpectSuccess "testeqval [8,12,27,45] $ fromR $ toQ [8,12,27,45] >- fn MkQ a => a"
+                          , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ Mk.Q $ toR [8,12,27,45]"
+                          , testExpectSuccess "testeqval [8,12,27,45] $ fromR $ toQ [8,12,27,45] >- fn Mk.Q a => a"
                           ]
                     ]
               , tGroup
@@ -904,31 +904,31 @@ testEntity =
                     , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of Q1 P end end in pass"
                     , testExpectSuccess "let rec datatype P of P1 P end end in pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = match P1 q => q >- match Q1 p => p end end end in pass"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = match P1.P q => q >- match Q1.Q p => p end end end in pass"
                     , testExpectSuccess
                           "let rec datatype P of P1 Q end; datatype storable Q of Q1 !\"Q1\" end end in pass"
                     , testExpectReject
                           "let rec datatype storable P of P1 Q end; datatype Q of Q1 !\"Q1\" end end in pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1 (Q1 pass) end in pqpass >- match P1 (Q1 p) => p end"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1.P (Q1.Q pass) end in pqpass >- match P1.P (Q1.Q p) => p end"
                     ]
               , tGroup
                     "parameters"
                     [ tGroup
                           "variance"
-                          [ testExpectSuccess "let datatype B +a of MkB a end in pass"
-                          , testExpectReject "let datatype B -a of MkB a end in pass"
-                          , testExpectSuccess "let datatype B -a of MkB (a -> Boolean) end in pass"
-                          , testExpectReject "let datatype B +a of MkB (a -> Boolean) end in pass"
-                          , testExpectSuccess "let datatype B {-p,+q} of MkB (p -> q) end in pass"
-                          , testExpectSuccess "let datatype B {+q,-p} of MkB (p -> q) end in pass"
-                          , testExpectReject "let datatype B {-p,+q} of MkB (q -> p) end in pass"
-                          , testExpectReject "let datatype B {+q,-p} of MkB (q -> p) end in pass"
+                          [ testExpectSuccess "let datatype B +a of Mk a end in pass"
+                          , testExpectReject "let datatype B -a of Mk a end in pass"
+                          , testExpectSuccess "let datatype B -a of Mk (a -> Boolean) end in pass"
+                          , testExpectReject "let datatype B +a of Mk (a -> Boolean) end in pass"
+                          , testExpectSuccess "let datatype B {-p,+q} of Mk (p -> q) end in pass"
+                          , testExpectSuccess "let datatype B {+q,-p} of Mk (p -> q) end in pass"
+                          , testExpectReject "let datatype B {-p,+q} of Mk (q -> p) end in pass"
+                          , testExpectReject "let datatype B {+q,-p} of Mk (q -> p) end in pass"
                           ]
                     , tGroup
                           "recursive"
-                          [ testExpectSuccess "let rec datatype R +a of MkR (R a) end end in pass"
-                          , testExpectSuccess "let rec datatype R -a of MkR (R a) end end in pass"
+                          [ testExpectSuccess "let rec datatype R +a of Mk (R a) end end in pass"
+                          , testExpectSuccess "let rec datatype R -a of Mk (R a) end end in pass"
                           , testExpectSuccess
                                 "let rec datatype R1 +a of MkR1 (R2 a) end; datatype R2 +a of MkR2 (R1 a) end end in pass"
                           , testExpectSuccess
@@ -939,24 +939,24 @@ testEntity =
                     , tGroup
                           "conversion"
                           [ tDecls
-                                [ "datatype D +a of Mk1D (List a); Mk2D (Maybe a) end"
-                                , "showD: D Showable -> Text = match Mk1D aa => show aa; Mk2D ma => show ma end"
-                                , "di: D Integer = Mk1D [576,469,12]"
+                                [ "datatype D +a of Mk1 (List a); Mk2 (Maybe a) end"
+                                , "showD: D Showable -> Text = match Mk1.D aa => show aa; Mk2.D ma => show ma end"
+                                , "di: D Integer = Mk1.D [576,469,12]"
                                 , "sdi: Text = showD di"
                                 ] $
                             testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
                           , tDecls
-                                [ "datatype D -a of Mk1D (a -> Integer); Mk2D (a -> a -> Text) end"
-                                , "dShow: D Number = Mk2D $ fn a, b => show a <>.Text \",\" <>.Text show b"
+                                [ "datatype D -a of Mk1 (a -> Integer); Mk2 (a -> a -> Text) end"
+                                , "dShow: D Number = Mk2.D $ fn a, b => show a <>.Text \",\" <>.Text show b"
                                 , "di: D Integer = dShow"
-                                , "showD: a -> D a -> Text = fn a => match Mk1D ai => show $ ai a; Mk2D aat => aat a a end"
+                                , "showD: a -> D a -> Text = fn a => match Mk1.D ai => show $ ai a; Mk2.D aat => aat a a end"
                                 , "sd: Text = showD 356 di"
                                 ] $
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
-                                [ "rec datatype RList +a of MkRList (Maybe (a *: RList a)) end end"
-                                , "rec showRList: RList Showable -> Text = fn MkRList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <>.Text \";\" <>.Text showRList rla end end"
-                                , "rlisti: RList Integer = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"
+                                [ "rec datatype RList +a of Mk (Maybe (a *: RList a)) end end"
+                                , "rec showRList: RList Showable -> Text = fn Mk.RList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <>.Text \";\" <>.Text showRList rla end end"
+                                , "rlisti: RList Integer = Mk.RList $ Just (45,Mk.RList $ Just (72, Mk.RList $ Just (18,Mk.RList Nothing)))"
                                 , "rlists: RList Showable = rlisti"
                                 , "sd: Text = showRList rlists"
                                 ] $
@@ -966,54 +966,54 @@ testEntity =
               , tGroup
                     "subtype"
                     [ tDecls
-                          [ "datatype D1 of C1 Integer; subtype datatype D2 of C2; subtype datatype D3 of C3 Boolean; end; end; end"
+                          [ "datatype D1 of Mk Integer; subtype datatype D2 of Mk; subtype datatype D3 of Mk Boolean; end; end; end"
                           ] $
                       tGroup
                           "T"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess $ isOfType "C1 3" "D1"
-                          , testExpectReject $ isOfType "C1 3" "D2"
-                          , testExpectReject $ isOfType "C1 3" "D3"
-                          , testExpectSuccess $ isOfType "C2" "D1"
-                          , testExpectSuccess $ isOfType "C2" "D2"
-                          , testExpectReject $ isOfType "C2" "D3"
-                          , testExpectSuccess $ isOfType "C3 True" "D1"
-                          , testExpectSuccess $ isOfType "C3 True" "D2"
-                          , testExpectSuccess $ isOfType "C3 True" "D3"
-                          , subtypeTest False SRSingle "D2" "D1"
-                          , subtypeTest False SRSingle "D3" "D2"
-                          , subtypeTest False SRSingle "D3" "D1"
-                          , subtypeTest False SRNot "D1" "D2"
-                          , subtypeTest False SRNot "D2" "D3"
-                          , subtypeTest False SRNot "D1" "D3"
+                          , testExpectSuccess $ isOfType "Mk.D1 3" "D1"
+                          , testExpectReject $ isOfType "Mk.D1 3" "D2.D1"
+                          , testExpectReject $ isOfType "Mk.D1 3" "D3.D2.D1"
+                          , testExpectSuccess $ isOfType "Mk.D2.D1" "D1"
+                          , testExpectSuccess $ isOfType "Mk.D2.D1" "D2.D1"
+                          , testExpectReject $ isOfType "Mk.D2.D1" "D3.D2.D1"
+                          , testExpectSuccess $ isOfType "Mk.D3.D2.D1 True" "D1"
+                          , testExpectSuccess $ isOfType "Mk.D3.D2.D1 True" "D2.D1"
+                          , testExpectSuccess $ isOfType "Mk.D3.D2.D1 True" "D3.D2.D1"
+                          , subtypeTest False SRSingle "D2.D1" "D1"
+                          , subtypeTest False SRSingle "D3.D2.D1" "D2.D1"
+                          , subtypeTest False SRSingle "D3.D2.D1" "D1"
+                          , subtypeTest False SRNot "D1" "D2.D1"
+                          , subtypeTest False SRNot "D2.D1" "D3.D2.D1"
+                          , subtypeTest False SRNot "D1" "D3.D2.D1"
                           ]
                     , tDecls
-                          [ "rec datatype D1 of C1 D1 D2 D3; subtype datatype D2 of C2 D1 D2 D3; subtype datatype D3 of C3 D1 D2 D3; C4; end; end; end; end"
+                          [ "rec datatype D1 of Mk D1 D2 D3.D2; subtype datatype D2 of Mk D1 D2 D3; subtype datatype D3 of P D1 D2 D3; Q; end; end; end; end"
                           ] $
                       tGroup
                           "recursive"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess $ isOfType "C1 C4 C4 C4" "D1"
-                          , testExpectReject $ isOfType "C1 C4 C4 C4" "D2"
-                          , testExpectReject $ isOfType "C1 C4 C4 C4" "D3"
-                          , testExpectSuccess $ isOfType "C2 C4 C4 C4" "D1"
-                          , testExpectSuccess $ isOfType "C2 C4 C4 C4" "D2"
-                          , testExpectReject $ isOfType "C2 C4 C4 C4" "D3"
-                          , testExpectSuccess $ isOfType "C3 C4 C4 C4" "D1"
-                          , testExpectSuccess $ isOfType "C3 C4 C4 C4" "D2"
-                          , testExpectSuccess $ isOfType "C3 C4 C4 C4" "D3"
-                          , subtypeTest False SRSingle "D2" "D1"
-                          , subtypeTest False SRSingle "D3" "D2"
-                          , subtypeTest False SRSingle "D3" "D1"
-                          , subtypeTest False SRNot "D1" "D2"
-                          , subtypeTest False SRNot "D2" "D3"
-                          , subtypeTest False SRNot "D1" "D3"
+                          , testExpectSuccess $ isOfType "Mk.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D1"
+                          , testExpectReject $ isOfType "Mk.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D2.D1"
+                          , testExpectReject $ isOfType "Mk.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D3.D2.D1"
+                          , testExpectSuccess $ isOfType "Mk.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D1"
+                          , testExpectSuccess $ isOfType "Mk.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D2.D1"
+                          , testExpectReject $ isOfType "Mk.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D3.D2.D1"
+                          , testExpectSuccess $ isOfType "P.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D1"
+                          , testExpectSuccess $ isOfType "P.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D2.D1"
+                          , testExpectSuccess $ isOfType "P.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1 Q.D3.D2.D1" "D3.D2.D1"
+                          , subtypeTest False SRSingle "D2.D1" "D1"
+                          , subtypeTest False SRSingle "D3.D2.D1" "D2.D1"
+                          , subtypeTest False SRSingle "D3.D2.D1" "D1"
+                          , subtypeTest False SRNot "D1" "D2.D1"
+                          , subtypeTest False SRNot "D2.D1" "D3.D2.D1"
+                          , subtypeTest False SRNot "D1" "D3.D2.D1"
                           , tGroup
                                 "GDS"
-                                [ testExpectSuccess $ isOfType "match C1 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "match C2 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "match C3 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "match C4 => () end" "D1 -> Unit"
+                                [ testExpectSuccess $ isOfType "match Mk.D1 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "match Mk.D2.D1 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "match P.D3.D2.D1 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "match Q.D3.D2.D1 => () end" "D1 -> Unit"
                                 ]
                           ]
                     , testExpectSuccess
@@ -1025,33 +1025,33 @@ testEntity =
                     "record-constructor"
                     [ tGroup
                           "rank-1"
-                          [ tDecls ["datatype R of MkR of di: Integer end end", "mkR: Integer -> R = fn di => MkR"] $
+                          [ tDecls ["datatype R of Mk of di: Integer end end", "mkR: Integer -> R = fn di => Mk.R"] $
                             tGroup
                                 "one"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {21} {(fn MkR => di) (mkR 21)}"
-                                , testExpectSuccess "testeq {22} {(match MkR => di end) (mkR 22)}"
-                                , testExpectSuccess "testeq {23} {let MkR = mkR 23 in 23}"
-                                , testExpectSuccess "testeq {24} {let MkR = mkR 24 in di}"
+                                , testExpectSuccess "testeq {21} {(fn Mk.R => di) (mkR 21)}"
+                                , testExpectSuccess "testeq {22} {(match Mk.R => di end) (mkR 22)}"
+                                , testExpectSuccess "testeq {23} {let Mk.R = mkR 23 in 23}"
+                                , testExpectSuccess "testeq {24} {let Mk.R = mkR 24 in di}"
                                 , testExpectSuccess "testeq {25} {let Just di = Just 25 in di}"
-                                , testExpectSuccess "let g: R -> Integer = fn MkR => di; in testeq {26} {g $ mkR 26}"
-                                , testExpectReject "testeq {27} {let MkR as A = mkR 27 in di}"
-                                , testExpectSuccess "testeq {28} {let MkR as A = mkR 28 in di.A}"
+                                , testExpectSuccess "let g: R -> Integer = fn Mk.R => di; in testeq {26} {g $ mkR 26}"
+                                , testExpectReject "testeq {27} {let Mk.R as A = mkR 27 in di}"
+                                , testExpectSuccess "testeq {28} {let Mk.R as A = mkR 28 in di.A}"
                                 ]
-                          , tDecls ["datatype R of MkR of di: Integer; dt: Text end end"] $
+                          , tDecls ["datatype R of Mk of di: Integer; dt: Text end end"] $
                             tGroup
                                 "two"
                                 [ testExpectSuccess "pass"
                                 , testExpectSuccess
-                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Integer = fn MkR => di; in testeq {17} {g $ f 17}"
+                                      "let f: Integer -> R = fn di => let dt = \"t\" in Mk.R; g: R -> Integer = fn Mk.R => di; in testeq {17} {g $ f 17}"
                                 , testExpectSuccess
-                                      "let f: Integer -> R = fn di => let dt = \"t\" in MkR; g: R -> Text = fn MkR => dt; in testeq {\"t\"} {g $ f 17}"
+                                      "let f: Integer -> R = fn di => let dt = \"t\" in Mk.R; g: R -> Text = fn Mk.R => dt; in testeq {\"t\"} {g $ f 17}"
                                 ]
                           ]
                     , tDecls
-                          [ "datatype UU of MkUU of r1: Unit; r2: Unit; end end"
-                          , "testr = fn f1, a1, f2, a2 => let r1 = f1 a1; r2 = f2 a2; in MkUU"
-                          , "testrs = fn f1, a1, f2, a2 => let r1:Unit = f1 a1; r2:Unit = f2 a2; in MkUU"
+                          [ "datatype UU of Mk of r1: Unit; r2: Unit; end end"
+                          , "testr = fn f1, a1, f2, a2 => let r1 = f1 a1; r2 = f2 a2; in Mk.UU"
+                          , "testrs = fn f1, a1, f2, a2 => let r1:Unit = f1 a1; r2:Unit = f2 a2; in Mk.UU"
                           , "testps = fn f1, a1, f2, a2 => let r1:Unit = f1 a1; r2:Unit = f2 a2; in (r1,r2)"
                           ] $
                       tGroup
@@ -1065,7 +1065,7 @@ testEntity =
                           , testExpectSuccess $ isOfType "testps" "(a -> Unit) -> a -> (b -> Unit) -> b -> Unit *: Unit"
                           ]
                     , tDecls
-                          [ "datatype R of MkR of df: (a -> a) -> a -> a end end"
+                          [ "datatype R of Mk of df: (a -> a) -> a -> a end end"
                           , "twice = fn f, x => f (f x)"
                           , "addone: Integer -> Integer = fn x => x + 1"
                           ] $
@@ -1073,14 +1073,14 @@ testEntity =
                           "rank-2"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess
-                                "let r:R = let df: (b -> b) -> b -> b = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
+                                "let r:R = let df: (b -> b) -> b -> b = twice in Mk.R in r >- fn Mk.R => testeq {9} {df addone 7}"
                           , testExpectReject
-                                "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in MkR in r >- fn MkR => testeq {9} {df addone 7}"
+                                "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in Mk.R in r >- fn Mk.R => testeq {9} {df addone 7}"
                           ]
                     , tDecls
-                          [ "datatype R +v of MkR of df: a -> Maybe (a *: v) end end"
+                          [ "datatype R +v of Mk of df: a -> Maybe (a *: v) end end"
                           , "ff: a -> Maybe (a *: Integer) = fn x => Just (x,45)"
-                          , "r = let df = ff in MkR"
+                          , "r = let df = ff in Mk.R"
                           ] $
                       tGroup
                           "sub-var"
@@ -1091,9 +1091,9 @@ testEntity =
                     , tGroup
                           "inversion"
                           [ tDecls
-                                [ "datatype W +a of MkW a end"
-                                , "wrap: a -> W a = MkW"
-                                , "unwrap: W a -> a = fn (MkW val) => val"
+                                [ "datatype W +a of Mk a end"
+                                , "wrap: a -> W a = Mk.W"
+                                , "unwrap: W a -> a = fn (Mk.W val) => val"
                                 ] $
                             tGroup
                                 "plain"
@@ -1101,25 +1101,25 @@ testEntity =
                           , tGroup
                                 "record"
                                 [ tDecls
-                                      [ "datatype W +p of MkW of val: p end end"
-                                      , "wrap: x -> W x = fn val => MkW"
-                                      , "unwrap: W y -> y = fn MkW => val"
+                                      [ "datatype W +p of Mk of val: p end end"
+                                      , "wrap: x -> W x = fn val => Mk.W"
+                                      , "unwrap: W y -> y = fn Mk.W => val"
                                       ] $
                                   tGroup
                                       "id"
                                       [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
                                 , tDecls
-                                      [ "datatype W +p of MkW of val: p end end"
-                                      , "wrap: x -> W x = fn v => let val = v in MkW"
-                                      , "unwrap: W y -> y = fn MkW => val"
+                                      [ "datatype W +p of Mk of val: p end end"
+                                      , "wrap: x -> W x = fn v => let val = v in Mk.W"
+                                      , "unwrap: W y -> y = fn Mk.W => val"
                                       ] $
                                   tGroup
                                       "let"
                                       [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
                                 , tDecls
-                                      [ "datatype W +p of MkW of val: Maybe p end end"
-                                      , "wrap: Maybe x -> W x = fn val => MkW"
-                                      , "unwrap: W y -> Maybe y = fn MkW => val"
+                                      [ "datatype W +p of Mk of val: Maybe p end end"
+                                      , "wrap: Maybe x -> W x = fn val => Mk.W"
+                                      , "unwrap: W y -> Maybe y = fn Mk.W => val"
                                       ] $
                                   tGroup
                                       "Maybe"
@@ -1127,15 +1127,15 @@ testEntity =
                                       , testExpectSuccess "testeq {Just 374} {unwrap $ wrap $ Just 374}"
                                       ]
                                 , tDecls
-                                      [ "datatype R +p of MkR of val: q -> (q *: p) end end"
-                                      , "f = fn x => let val = fn y => (y,x) in MkR"
+                                      [ "datatype R +p of Mk of val: q -> (q *: p) end end"
+                                      , "f = fn x => let val = fn y => (y,x) in Mk.R"
                                       ] $
                                   tGroup
                                       "infer-var"
                                       [testExpectSuccess "pass", testExpectSuccess $ isOfType "f" "a -> R a"]
                                 , tDecls
-                                      [ "datatype R +p of MkR of val: q -> (q *: p) end end"
-                                      , "f = fn x => let val = fn y => (y,x+1) in MkR"
+                                      [ "datatype R +p of Mk of val: q -> (q *: p) end end"
+                                      , "f = fn x => let val = fn y => (y,x+1) in Mk.R"
                                       ] $
                                   tGroup
                                       "infer-Integer"
@@ -1145,9 +1145,9 @@ testEntity =
                                 ]
                           ]
                     , tDecls
-                          [ "datatype R +a of MkR of val: List a end end"
-                          , "mkR: List a -> R a = fn val => MkR"
-                          , "rShow: R Showable -> Text = fn MkR => show val"
+                          [ "datatype R +a of Mk of val: List a end end"
+                          , "mkR: List a -> R a = fn val => Mk.R"
+                          , "rShow: R Showable -> Text = fn Mk.R => show val"
                           ] $
                       tGroup
                           "map"
@@ -1160,12 +1160,12 @@ testEntity =
                                 "let r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1 in testeq {\"[12, 10, 57]\"} {rShow r2}"
                           ]
                     , tDecls
-                          [ "datatype Rec +a of MkRec of rval: rec r, Maybe (a *: r) end end"
-                          , "rec0: Rec a = let rval = Nothing in MkRec"
-                          , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in MkRec"
-                          , "rec3: a -> a -> a -> Rec a = fn x0, x1, x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in MkRec"
+                          [ "datatype Rec +a of Mk of rval: rec r, Maybe (a *: r) end end"
+                          , "rec0: Rec a = let rval = Nothing in Mk.Rec"
+                          , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in Mk.Rec"
+                          , "rec3: a -> a -> a -> Rec a = fn x0, x1, x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in Mk.Rec"
                           , "rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <>.Text \",\" <>.Text rShow r end end"
-                          , "recShow: Rec Showable -> Text = fn MkRec => rShow rval"
+                          , "recShow: Rec Showable -> Text = fn Mk.Rec => rShow rval"
                           ] $
                       tGroup
                           "recursive"
@@ -1182,8 +1182,8 @@ testEntity =
                           [ tGroup "type" $ let
                                 testOverride :: Text -> Text -> Text
                                 testOverride ta tb =
-                                    "let datatype A of MkA of val: " <>
-                                    ta <> " end end; datatype B <: A of MkB of MkA; val: " <> tb <> " end end in pass"
+                                    "let datatype A of Mk of val: " <>
+                                    ta <> " end end; datatype B <: A of Mk of Mk.A; val: " <> tb <> " end end in pass"
                                 in [ testExpectSuccess $ testOverride "Integer" "Integer"
                                    , testExpectSuccess $ testOverride "Rational" "Integer"
                                    , testExpectReject $ testOverride "Integer" "Rational"
@@ -1195,39 +1195,39 @@ testEntity =
                                    , testExpectReject $ testOverride "a -> a" "Integer -> Integer"
                                    ]
                           , tDecls
-                                [ "datatype A of MkA of val: Integer end end"
-                                , "datatype B of MkB of val: Rational end end"
+                                [ "datatype A of Mk of val: Integer end end"
+                                , "datatype B of Mk of val: Rational end end"
                                 ] $
                             tGroup
                                 "multiple"
                                 [ testExpectSuccess "pass"
-                                , testExpectReject "let datatype C <: A & B of MkC of MkA; MkB end end in pass"
+                                , testExpectReject "let datatype C <: A & B of Mk of Mk.A; Mk.B end end in pass"
                                 , testExpectReject
-                                      "let datatype C <: A & B of MkC of MkA; MkB; val: Rational end end in pass"
+                                      "let datatype C <: A & B of Mk of Mk.A; Mk.B; val: Rational end end in pass"
                                 , testExpectSuccess
-                                      "let datatype C <: A & B of MkC of MkA; MkB; val: Integer end end in pass"
+                                      "let datatype C <: A & B of Mk of Mk.A; Mk.B; val: Integer end end in pass"
                                 ]
                           ]
-                    , tDecls ["datatype R of MkR of u: Unit end end"] $ let
+                    , tDecls ["datatype R of Mk of u: Unit end end"] $ let
                           testExpr t = testExpectSuccess $ "let f = " <> t <> " in seq f pass"
                           in tGroup
                                  "issue-199"
                                  [ testExpectSuccess "pass"
-                                 , testExpr "fn MkR => u"
-                                 , testExpr "fn a => let MkR = a in u"
-                                 , testExpr "fn MkR => let MkR = MkR in u"
-                                 , testExpr "fn MkR => fn MkR => u"
-                                 , testExpr "fn a => let MkR = a; MkR = a; in u"
+                                 , testExpr "fn Mk.R => u"
+                                 , testExpr "fn a => let Mk.R = a in u"
+                                 , testExpr "fn Mk.R => let Mk.R = Mk.R in u"
+                                 , testExpr "fn Mk.R => fn Mk.R => u"
+                                 , testExpr "fn a => let Mk.R = a; Mk.R = a; in u"
                                  ]
                     , tGroup
                           "supertype"
                           [ tDecls
-                                [ "datatype S of MkS of sval: Text end end"
-                                , "mkS: Text -> S = fn sval => MkS"
-                                , "unS: S -> Text = fn MkS => sval"
-                                , "datatype R <: S of MkR of MkS; rval: Integer end end"
-                                , "mkR: Text *: Integer -> R = fn (sval,rval) => MkR"
-                                , "unR: R -> Text *: Integer = fn MkR => (sval,rval)"
+                                [ "datatype S of Mk of sval: Text end end"
+                                , "mkS: Text -> S = fn sval => Mk.S"
+                                , "unS: S -> Text = fn Mk.S => sval"
+                                , "datatype R <: S of Mk of Mk.S; rval: Integer end end"
+                                , "mkR: Text *: Integer -> R = fn (sval,rval) => Mk.R"
+                                , "unR: R -> Text *: Integer = fn Mk.R => (sval,rval)"
                                 ] $
                             tGroup
                                 "simple"
@@ -1237,12 +1237,12 @@ testEntity =
                                 , subtypeTest False SRNot "S" "R"
                                 ]
                           , tDecls
-                                [ "datatype S of MkS of val: Rational end end"
-                                , "mkS: Rational -> S = fn val => MkS"
-                                , "unS: S -> Rational = fn MkS => val"
-                                , "datatype R <: S of MkR of MkS; val: Integer end end"
-                                , "mkR: Integer -> R = fn val => MkR"
-                                , "unR: R -> Integer = fn MkR => val"
+                                [ "datatype S of Mk of val: Rational end end"
+                                , "mkS: Rational -> S = fn val => Mk.S"
+                                , "unS: S -> Rational = fn Mk.S => val"
+                                , "datatype R <: S of Mk of Mk.S; val: Integer end end"
+                                , "mkR: Integer -> R = fn val => Mk.R"
+                                , "unR: R -> Integer = fn Mk.R => val"
                                 ] $
                             tGroup
                                 "refinement"
@@ -1252,104 +1252,104 @@ testEntity =
                                 , subtypeTest False SRNot "S" "R"
                                 ]
                           , tDecls
-                                [ "datatype S1 of MkS1 of val: Rational end end"
-                                , "datatype S2 of MkS2 of val: Rational end end"
+                                [ "datatype S1 of Mk of val: Rational end end"
+                                , "datatype S2 of Mk of val: Rational end end"
                                 ] $
                             tGroup
                                 "match-type"
-                                [ testExpectSuccess "let datatype R <: S1 of MkR of MkS1 end end in pass"
-                                , testExpectReject "let datatype R <: S1 of MkR of MkS2 end end in pass"
-                                , testExpectSuccess "let datatype R of MkR of end end in pass"
-                                , testExpectReject "let datatype R <: S1 of MkR of end end in pass"
-                                , testExpectReject "let datatype R of MkR of MkS1 end end in pass"
+                                [ testExpectSuccess "let datatype R <: S1 of Mk of Mk.S1 end end in pass"
+                                , testExpectReject "let datatype R <: S1 of Mk of Mk.S2 end end in pass"
+                                , testExpectSuccess "let datatype R of Mk of end end in pass"
+                                , testExpectReject "let datatype R <: S1 of Mk of end end in pass"
+                                , testExpectReject "let datatype R of Mk of Mk.S1 end end in pass"
                                 , testExpectSuccess
-                                      "let datatype R <: S1 & S2 of MkR of MkS1; MkS2; val: Rational end end in pass"
+                                      "let datatype R <: S1 & S2 of Mk of Mk.S1; Mk.S2; val: Rational end end in pass"
                                 , testExpectSuccess
-                                      "let datatype R <: S1 & S2 of MkR of MkS1; MkS2; val: Integer end end in pass"
-                                , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS1 end end in pass"
-                                , testExpectReject "let datatype R <: S1 & S2 of MkR of MkS2 end end in pass"
+                                      "let datatype R <: S1 & S2 of Mk of Mk.S1; Mk.S2; val: Integer end end in pass"
+                                , testExpectReject "let datatype R <: S1 & S2 of Mk of Mk.S1 end end in pass"
+                                , testExpectReject "let datatype R <: S1 & S2 of Mk of Mk.S2 end end in pass"
                                 ]
                           , tGroup
                                 "multiple-supertype"
                                 [ tDecls
-                                      [ "datatype A of MkA of ma: Integer end end"
-                                      , "datatype B of MkB of mb: Text end end"
-                                      , "datatype C <: A & B of MkC of MkA; MkB end end"
-                                      , "c = let ma = 75; mb = \"ttmb\" in MkC"
+                                      [ "datatype A of Mk of ma: Integer end end"
+                                      , "datatype B of Mk of mb: Text end end"
+                                      , "datatype C <: A & B of Mk of Mk.A; Mk.B end end"
+                                      , "c = let ma = 75; mb = \"ttmb\" in Mk.C"
                                       ] $
                                   tGroup
                                       "single-constructor"
                                       [ testExpectSuccess "pass"
-                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn MkB@MkA => (mb,ma)}"
-                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn MkC => (mb,ma)}"
+                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn Mk.B@Mk.A => (mb,ma)}"
+                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn Mk.C => (mb,ma)}"
                                       ]
                                 , tDecls
-                                      [ "datatype A of MkA1 of ma1: Integer end; MkA2 of ma2: Text end; end"
-                                      , "datatype B of MkB1 of mb1: Integer end; MkB2 of mb2: Text end; end"
-                                      , "datatype C <: A & B of MkC of MkA2; MkB1 end end"
-                                      , "c = let mb1 = 77; ma2 = \"ttma1\" in MkC"
+                                      [ "datatype A of Mk1 of ma1: Integer end; Mk2 of ma2: Text end; end"
+                                      , "datatype B of Mk1 of mb1: Integer end; Mk2 of mb2: Text end; end"
+                                      , "datatype C <: A & B of Mk of Mk2.A; Mk1.B end end"
+                                      , "c = let mb1 = 77; ma2 = \"ttma1\" in Mk.C"
                                       ] $
                                   tGroup
                                       "multiple-constructor"
                                       [ testExpectSuccess "pass"
-                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn MkA2@MkB1 => (ma2,mb1)}"
-                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn MkC => (ma2,mb1)}"
+                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn Mk2.A@Mk1.B => (ma2,mb1)}"
+                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn Mk.C => (ma2,mb1)}"
                                       ]
                                 , tDecls
-                                      [ "datatype A of MkA1 of ma1: Integer end; MkA2 of ma2: Text end; end"
-                                      , "datatype B <: A of MkB1 of MkA1; mb1: Integer end; MkB2 of MkA2; mb2: Text end; end"
-                                      , "datatype C <: A of MkC1 of MkA1; mc1: Integer end; MkC2 of MkA2; mc2: Text end; end"
+                                      [ "datatype A of Mk1 of ma1: Integer end; Mk2 of ma2: Text end; end"
+                                      , "datatype B <: A of Mk1 of Mk1.A; mb1: Integer end; Mk2 of Mk2.A; mb2: Text end; end"
+                                      , "datatype C <: A of Mk1 of Mk1.A; mc1: Integer end; Mk2 of Mk2.A; mc2: Text end; end"
                                       ] $
                                   tGroup
                                       "diamond"
                                       [ testExpectSuccess "pass"
                                       , tDecls
-                                            [ "datatype D <: B & C of MkD of MkB1; MkC1; end end"
-                                            , "d = let ma1 = 58; mb1 = 59; mc1 = 60 in MkD"
+                                            [ "datatype D <: B & C of Mk of Mk1.B; Mk1.C; end end"
+                                            , "d = let ma1 = 58; mb1 = 59; mc1 = 60 in Mk.D"
                                             ] $
                                         tGroup
                                             "consistent"
                                             [ testExpectSuccess "pass"
-                                            , testExpectSuccess "testeq {(58,59,60)} {d >- fn MkD => (ma1,mb1,mc1)}"
+                                            , testExpectSuccess "testeq {(58,59,60)} {d >- fn Mk.D => (ma1,mb1,mc1)}"
                                             , testExpectSuccess
-                                                  "testeq {(58,59,60)} {d >- fn MkB1@MkC1 => (ma1,mb1,mc1)}"
+                                                  "testeq {(58,59,60)} {d >- fn Mk1.B@Mk1.C => (ma1,mb1,mc1)}"
                                             ]
-                                      , tDecls ["datatype D <: B & C of MkD of MkB1; MkC2; end end"] $
+                                      , tDecls ["datatype D <: B & C of Mk of Mk1.B; Mk2.C; end end"] $
                                         tGroup "inconsistent" [testExpectReject "pass"]
                                       ]
                                 ]
                           ]
                     , tGroup
                           "default"
-                          [ tDecls ["datatype A of MkA of ma: Integer = 754 end end"] $
+                          [ tDecls ["datatype A of Mk of ma: Integer = 754 end end"] $
                             tGroup
                                 "simple"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {42} {(let ma = 42 in MkA) >- fn MkA => ma}"
-                                , testExpectSuccess "testeq {754} {MkA >- fn MkA => ma}"
+                                , testExpectSuccess "testeq {42} {(let ma = 42 in Mk.A) >- fn Mk.A => ma}"
+                                , testExpectSuccess "testeq {754} {Mk.A >- fn Mk.A => ma}"
                                 ]
                           , tDecls
-                                [ "datatype A of MkA1 of ma1: Integer = 755 end; MkA2 of ma2: Text end; end"
-                                , "datatype B <: A of MkB1 of MkA1; mb1: Integer end; MkB2 of MkA2; mb2: Text end; end"
-                                , "datatype C <: A of MkC1 of MkA1; mc1: Integer end; MkC2 of MkA2; mc2: Text end; end"
-                                , "datatype D <: B & C of MkD of MkB1; MkC1; end end"
+                                [ "datatype A of Mk1 of ma1: Integer = 755 end; Mk2 of ma2: Text end; end"
+                                , "datatype B <: A of Mk1 of Mk1.A; mb1: Integer end; Mk2 of Mk2.A; mb2: Text end; end"
+                                , "datatype C <: A of Mk1 of Mk1.A; mc1: Integer end; Mk2 of Mk2.A; mc2: Text end; end"
+                                , "datatype D <: B & C of Mk of Mk1.B; Mk1.C; end end"
                                 ] $
                             tGroup
                                 "diamond"
                                 [ testExpectSuccess "pass"
                                 , testExpectSuccess
-                                      "testeq {43} {(let ma1 = 43; mb1 = 44; mc1 = 45 in MkD) >- fn MkD => ma1}"
-                                , testExpectSuccess "testeq {755} {(let mb1 = 46; mc1 = 47 in MkD) >- fn MkD => ma1}"
+                                      "testeq {43} {(let ma1 = 43; mb1 = 44; mc1 = 45 in Mk.D) >- fn Mk.D => ma1}"
+                                , testExpectSuccess "testeq {755} {(let mb1 = 46; mc1 = 47 in Mk.D) >- fn Mk.D => ma1}"
                                 ]
                           ]
                     ]
               ]
         , tGroup
               "subtype-decl"
-              [ tDecls ["datatype T of T1 Integer end", "unT1 = fn T1 x => x"] $
+              [ tDecls ["datatype T of T1 Integer end", "unT1 = fn T1.T x => x"] $
                 tGroup
                     "simple"
-                    [ tDecls ["subtype Integer <: T = T1"] $
+                    [ tDecls ["subtype Integer <: T = T1.T"] $
                       tGroup
                           "Integer <: T"
                           [ testExpectSuccess "pass"
@@ -1364,17 +1364,17 @@ testEntity =
                           , subtypeTest False SRSingle "T" "Integer"
                           ]
                     ]
-              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1 x => x"] $
+              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1.T x => x"] $
                 tGroup
                     "parameter"
-                    [ tDecls ["subtype Maybe Integer <: T Integer = T1"] $
+                    [ tDecls ["subtype Maybe Integer <: T Integer = T1.T"] $
                       tGroup
                           "plain"
                           [ testExpectSuccess "pass"
                           , subtypeTest False SRSingle "Maybe Integer" "T Integer"
                           , testExpectSuccess "testeq {Just 3} {unT1 $ Just 3}"
                           ]
-                    , tDecls ["subtype Maybe a <: T a = T1"] $
+                    , tDecls ["subtype Maybe a <: T a = T1.T"] $
                       tGroup
                           "tyvar"
                           [ testExpectSuccess "pass"
@@ -1382,17 +1382,17 @@ testEntity =
                           , testExpectSuccess "testeq {Just 3} {unT1 $ Just 3}"
                           ]
                     ]
-              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1 x => x"] $
+              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1.T x => x"] $
                 tGroup
                     "dependent"
                     [ testExpectSuccess $
-                      "let x = 17; f = let subtype Unit <: T Integer = fn () => T1 (Just x) in unT1 () in testeq {Just 17} {f}"
+                      "let x = 17; f = let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 () in testeq {Just 17} {f}"
                     , testExpectSuccess $
-                      "let rec f = let subtype Unit <: T Integer = fn () => T1 (Just x) in unT1 (); x = 17 end in testeq {Just 17} {f}"
+                      "let rec f = let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 (); x = 17 end in testeq {Just 17} {f}"
                     , testExpectSuccess $
-                      "let f = fn x => let subtype Unit <: T Integer = fn () => T1 (Just x) in unT1 () in testeq {Just 17} {f 17}"
+                      "let f = fn x => let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 () in testeq {Just 17} {f 17}"
                     , testExpectSuccess $
-                      "let f = fn x => let y = x; subtype Unit <: T Integer = fn () => T1 (Just y) in unT1 () in testeq {Just 17} {f 17}"
+                      "let f = fn x => let y = x; subtype Unit <: T Integer = fn () => T1.T (Just y) in unT1 () in testeq {Just 17} {f 17}"
                     ]
               ]
         , tDecls ["datatype storable T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
@@ -1400,11 +1400,11 @@ testEntity =
               "datatype-storable"
               [ testExpectSuccess "pass"
               , testExpectSuccess "let f: T -> Entity = fn x => x in pass"
-              , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
-              , testExpectSuccess "let f = fn T1 x _ => x in pass"
-              , testExpectSuccess "T1 \"hello\" 3 >- match T1 \"hello\" 3 => pass end"
+              , testExpectSuccess "let t1 = T1.T \"hello\" 3 in pass"
+              , testExpectSuccess "let f = fn T1.T x _ => x in pass"
+              , testExpectSuccess "T1.T \"hello\" 3 >- match T1.T \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "T1 \"hello\" 3 >- match T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
+                    "T1.T \"hello\" 3 >- match T2.T => fail \"T2\"; T1.T \"hello\" 2 => fail \"T1.T 2\"; T1.T \"hell\" 3 => fail \"T1.T hell\"; T1.T \"hello\" 3 => pass end"
               , testExpectSuccess "let datatype storable P of end in pass"
               , testExpectSuccess "let datatype storable P of P1 !\"P1\" end in pass"
               , testExpectSuccess "let datatype storable P of P1 !\"P1\"; end in pass"
@@ -1437,7 +1437,7 @@ testEntity =
                     , testExpectSuccess
                           "let datatype storable P +a of P1 a !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
                     , testExpectSuccess
-                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Integer -> Integer= fn P1 x => x in pass"
+                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Integer -> Integer= fn P1.P x => x in pass"
                     , testExpectSuccess "let datatype storable P of P1 !\"P1\" end; f : P -> Entity = fn x => x in pass"
                     , testExpectSuccess
                           "let datatype storable P +a of P1 a !\"P1\" end; f : P Entity -> Entity = fn x => x in pass"
@@ -1460,8 +1460,8 @@ testEntity =
                     , testExpectSuccess "let rec datatype storable P +a of P1 (P (a *: a)) !\"P1\" end end in pass"
                     , tDecls
                           [ "rec datatype storable L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
-                          , "rec listToL: List a -> L a = match [] => Nil; x::xs => Cons x (listToL xs) end end"
-                          , "rec lToList: L a -> List a = match Nil => []; Cons x xs => x :: lToList xs end end"
+                          , "rec listToL: List a -> L a = match [] => Nil.L; x::xs => Cons.L x (listToL xs) end end"
+                          , "rec lToList: L a -> List a = match Nil.L => []; Cons.L x xs => x :: lToList xs end end"
                           ] $
                       tGroup
                           "list"
@@ -1469,8 +1469,8 @@ testEntity =
                           , testExpectSuccess "let l = listToL [1,2,3] in pass"
                           , testExpectSuccess "let l = listToL [1,2,3] in testeq {lToList l} {[1,2,3]}"
                           , testExpectSuccess "testeq {lToList $ listToL [1,2,3]} {[1,2,3]}"
-                          , testExpectSuccess "testeq {listToL [1,2,3]} {Cons 1 (Cons 2 (Cons 3 Nil))}"
-                          , testExpectSuccess "testeq {lToList $ Cons 1 $ Cons 2 $ Cons 3 Nil} {[1,2,3]}"
+                          , testExpectSuccess "testeq {listToL [1,2,3]} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
+                          , testExpectSuccess "testeq {lToList $ Cons.L 1 $ Cons.L 2 $ Cons.L 3 Nil.L} {[1,2,3]}"
                           ]
                     ]
               ]
@@ -1497,67 +1497,67 @@ testEntity =
                     , testExpectReject "let subtype P <: P = fn x => x in pass"
                     , testExpectReject "let subtype P <: Q = fn _ => error \"\" in pass"
                     ]
-              , tDecls ["datatype P of MkP Number end"] $
+              , tDecls ["datatype P of Mk Number end"] $
                 tGroup
                     "datatype"
-                    [ testExpectSuccess "let subtype Number <: P = MkP in pass"
-                    , testExpectReject "let subtype Number <: P = MkP; subtype Number <: P = MkP in pass"
-                    , testExpectReject "let subtype Number <: P = MkP; subtype Integer <: P = MkP in pass"
+                    [ testExpectSuccess "let subtype Number <: P = Mk.P in pass"
+                    , testExpectReject "let subtype Number <: P = Mk.P; subtype Number <: P = Mk.P in pass"
+                    , testExpectReject "let subtype Number <: P = Mk.P; subtype Integer <: P = Mk.P in pass"
                     ]
               , tDecls
-                    [ "datatype A of MkA Number end"
-                    , "datatype B of MkB Number end"
-                    , "datatype C of MkC Number end"
-                    , "datatype D of MkD Number end"
-                    , "subtype A <: B = fn MkA x => MkB x"
-                    , "subtype C <: D = fn MkC x => MkD x"
-                    , "subtype A <: D = fn MkA x => MkD x"
+                    [ "datatype A of Mk Number end"
+                    , "datatype B of Mk Number end"
+                    , "datatype C of Mk Number end"
+                    , "datatype D of Mk Number end"
+                    , "subtype A <: B = fn Mk.A x => Mk.B x"
+                    , "subtype C <: D = fn Mk.C x => Mk.D x"
+                    , "subtype A <: D = fn Mk.A x => Mk.D x"
                     ] $
                 tGroup
                     "verify"
                     [ testExpectSuccess "pass"
-                    , testExpectReject "let subtype B <: B = fn MkB x => MkB x in pass"
-                    , testExpectReject "let subtype B <: C = fn MkB x => MkC x in pass"
+                    , testExpectReject "let subtype B <: B = fn Mk.B x => Mk.B x in pass"
+                    , testExpectReject "let subtype B <: C = fn Mk.B x => Mk.C x in pass"
                     ]
-              , tDecls ["datatype A of MkA Number end", "datatype B of MkB Number end"] $
+              , tDecls ["datatype A of Mk Number end", "datatype B of Mk Number end"] $
                 tGroup
                     "trustme"
                     [ testExpectSuccess "pass"
-                    , testExpectSuccess "let subtype A <: B = fn MkA x => MkB x in pass"
+                    , testExpectSuccess "let subtype A <: B = fn Mk.A x => Mk.B x in pass"
                     , testExpectReject
-                          "let subtype A <: B = fn MkA x => MkB x; subtype A <: B = fn MkA x => MkB x in pass"
+                          "let subtype A <: B = fn Mk.A x => Mk.B x; subtype A <: B = fn Mk.A x => Mk.B x in pass"
                     , testExpectSuccess
-                          "let subtype A <: B = fn MkA x => MkB x; subtype trustme A <: B = fn MkA x => MkB x in pass"
+                          "let subtype A <: B = fn Mk.A x => Mk.B x; subtype trustme A <: B = fn Mk.A x => Mk.B x in pass"
                     , testExpectSuccess
-                          "let subtype trustme A <: B = fn MkA x => MkB x; subtype A <: B = fn MkA x => MkB x in pass"
+                          "let subtype trustme A <: B = fn Mk.A x => Mk.B x; subtype A <: B = fn Mk.A x => Mk.B x in pass"
                     ]
-              , tDecls ["datatype A +x of MkA x end", "datatype B +x of MkB x end", "datatype C of MkC end"] $
+              , tDecls ["datatype A +x of Mk x end", "datatype B +x of Mk x end", "datatype C of Mk end"] $
                 tGroup
                     "preferred"
                     [ testExpectSuccess "pass"
-                    , testExpectSuccess "let subtype trustme A Number <: B Number = fn MkA x => MkB x in pass"
+                    , testExpectSuccess "let subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x in pass"
                     , tDecls
-                          [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
-                          , "subtype trustme B Number <: C = fn MkB _ => MkC"
-                          , "subtype trustme A Any <: C = fn MkA _ => MkC"
+                          [ "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
+                          , "subtype trustme B Number <: C = fn Mk.B _ => Mk.C"
+                          , "subtype trustme A Any <: C = fn Mk.A _ => Mk.C"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
                     , tDecls
-                          [ "subtype trustme A Any <: C = fn MkA _ => MkC"
-                          , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
-                          , "subtype trustme B Number <: C = fn MkB _ => MkC"
+                          [ "subtype trustme A Any <: C = fn Mk.A _ => Mk.C"
+                          , "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
+                          , "subtype trustme B Number <: C = fn Mk.B _ => Mk.C"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
                     , tDecls
-                          [ "subtype trustme A a <: B a = fn MkA x => MkB x"
-                          , "subtype trustme B Any <: C = fn MkB _ => MkC"
-                          , "subtype trustme A Number <: C = fn MkA _ => MkC"
+                          [ "subtype trustme A a <: B a = fn Mk.A x => Mk.B x"
+                          , "subtype trustme B Any <: C = fn Mk.B _ => Mk.C"
+                          , "subtype trustme A Number <: C = fn Mk.A _ => Mk.C"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
                     , tDecls
-                          [ "subtype trustme A Number <: C = fn MkA _ => MkC"
-                          , "subtype trustme A a <: B a = fn MkA x => MkB x"
-                          , "subtype trustme B Any <: C = fn MkB _ => MkC"
+                          [ "subtype trustme A Number <: C = fn Mk.A _ => Mk.C"
+                          , "subtype trustme A a <: B a = fn Mk.A x => Mk.B x"
+                          , "subtype trustme B Any <: C = fn Mk.B _ => Mk.C"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
                     , tGroup
@@ -1565,21 +1565,21 @@ testEntity =
                           [ tGroup
                                 "var"
                                 [ tDecls
-                                      [ "subtype trustme A a <: B a = fn MkA x => MkB x"
-                                      , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      [ "subtype trustme A a <: B a = fn Mk.A x => Mk.B x"
+                                      , "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
                                       ] $
                                   subtypeTest False SRSingle "A Unit" "B Unit"
                                 , tDecls
-                                      [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
-                                      , "subtype trustme A a <: B a = fn MkA x => MkB x"
+                                      [ "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
+                                      , "subtype trustme A a <: B a = fn Mk.A x => Mk.B x"
                                       ] $
                                   subtypeTest False SRSingle "A Unit" "B Unit"
                                 ]
                           , tGroup
                                 "incoherent"
                                 [ tDecls
-                                      [ "subtype trustme A Integer <: B Integer = fn MkA x => MkB x"
-                                      , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      [ "subtype trustme A Integer <: B Integer = fn Mk.A x => Mk.B x"
+                                      , "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
                                       ] $
                                   tGroup
                                       "1"
@@ -1587,8 +1587,8 @@ testEntity =
                                       , subtypeTest False SRNot "A Integer" "B Integer"
                                       ]
                                 , tDecls
-                                      [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
-                                      , "subtype trustme A Integer <: B Integer = fn MkA x => MkB x"
+                                      [ "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
+                                      , "subtype trustme A Integer <: B Integer = fn Mk.A x => Mk.B x"
                                       ] $
                                   tGroup
                                       "2"
@@ -1599,52 +1599,52 @@ testEntity =
                           , tGroup
                                 "duplicate"
                                 [ tDecls
-                                      [ "subtype trustme A Number <: B Number = fn MkA x => MkB x"
-                                      , "subtype trustme A Number <: B Number = fn MkA x => MkB x"
+                                      [ "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
+                                      , "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
                                       ] $
                                   subtypeTest False SRSingle "A Number" "B Number"
                                 ]
                           , tGroup
                                 "sub"
                                 [ tDecls
-                                      [ "subtype trustme A Integer <: B Number = fn MkA x => MkB x"
-                                      , "subtype trustme A Number <: B Integer = fn MkA _ => MkB 0"
+                                      [ "subtype trustme A Integer <: B Number = fn Mk.A x => Mk.B x"
+                                      , "subtype trustme A Number <: B Integer = fn Mk.A _ => Mk.B 0"
                                       ] $
                                   subtypeTest False SRSingle "A Number" "B Integer"
                                 , tDecls
-                                      [ "subtype trustme A Number <: B Integer = fn MkA _ => MkB 0"
-                                      , "subtype trustme A Integer <: B Number = fn MkA x => MkB x"
+                                      [ "subtype trustme A Number <: B Integer = fn Mk.A _ => Mk.B 0"
+                                      , "subtype trustme A Integer <: B Number = fn Mk.A x => Mk.B x"
                                       ] $
                                   subtypeTest False SRSingle "A Number" "B Integer"
                                 ]
                           , tGroup
                                 "in"
                                 [ tDecls
-                                      [ "subtype trustme A Integer <: C = fn MkA _ => MkC"
-                                      , "subtype trustme A Number <: C = fn MkA _ => MkC"
+                                      [ "subtype trustme A Integer <: C = fn Mk.A _ => Mk.C"
+                                      , "subtype trustme A Number <: C = fn Mk.A _ => Mk.C"
                                       ] $
                                   subtypeTest False SRSingle "A Number" "C"
                                 , tDecls
-                                      [ "subtype trustme A Number <: C = fn MkA _ => MkC"
-                                      , "subtype trustme A Integer <: C = fn MkA _ => MkC"
+                                      [ "subtype trustme A Number <: C = fn Mk.A _ => Mk.C"
+                                      , "subtype trustme A Integer <: C = fn Mk.A _ => Mk.C"
                                       ] $
                                   subtypeTest False SRSingle "A Number" "C"
                                 ]
                           , tGroup
                                 "out"
                                 [ tDecls
-                                      [ "subtype trustme C <: B Integer = fn MkC => MkB 0"
-                                      , "subtype trustme C <: B Number = fn MkC => MkB 0"
+                                      [ "subtype trustme C <: B Integer = fn Mk.C => Mk.B 0"
+                                      , "subtype trustme C <: B Number = fn Mk.C => Mk.B 0"
                                       ] $
                                   subtypeTest False SRSingle "C" "B Integer"
                                 , tDecls
-                                      [ "subtype trustme C <: B Number = fn MkC => MkB 0"
-                                      , "subtype trustme C <: B Integer = fn MkC => MkB 0"
+                                      [ "subtype trustme C <: B Number = fn Mk.C => Mk.B 0"
+                                      , "subtype trustme C <: B Integer = fn Mk.C => Mk.B 0"
                                       ] $
                                   subtypeTest False SRSingle "C" "B Integer"
                                 ]
                           ]
-                    , tDecls ["subtype List (A a) <: A (List a) = fn aa => MkA $ map.List (fn MkA a => a) aa"] $
+                    , tDecls ["subtype List (A a) <: A (List a) = fn aa => Mk.A $ map.List (fn Mk.A a => a) aa"] $
                       tGroup
                           "monoid"
                           [ testExpectSuccess "pass"

@@ -298,7 +298,7 @@ window_cairoimage: Action Window.GTK
         block: Number -> Drawing Handler
         = fn a => concat.Drawing
         [
-            concat.Drawing $ map.List (fn (s,c) => translate s $ source (MkAlphaColourFraction a c) $ square) squares,
+            concat.Drawing $ map.List (fn (s,c) => translate s $ source (MkF.AlphaColour a c) $ square) squares,
             width 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 * pi)
         ];
         in
