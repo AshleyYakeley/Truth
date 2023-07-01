@@ -12,7 +12,7 @@ rec
             Just ("image",_) => True;
             _ => False;
             end;
-        ref <- fileMakeRef.GIO file;
+        ref <- makeRef.File.GIO file;
         jpeg <- get $ jpegMIME.JPEG.Image !$ ref;
         let
         path = file >- match

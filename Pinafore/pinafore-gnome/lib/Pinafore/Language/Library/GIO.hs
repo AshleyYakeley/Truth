@@ -74,5 +74,5 @@ gioStuff =
                     p <- fileToPath f
                     return (p, ())
               ]
-        , valBDT "fileMakeRef" "Make a reference from a file." fileMakeRef
+        , namespaceBDT "File" "" [valBDT "makeRef" "Make a reference from a file." fileMakeRef]
         ]

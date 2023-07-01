@@ -25,11 +25,11 @@ let
 
     rec
         datatype P of
-        MkP (Q -> P);
+        Mk (Q -> P);
         end;
 
         datatype Q of
-        MkQ (P -> Maybe Q);
+        Mk (P -> Maybe Q);
         end;
     end;
 
@@ -165,12 +165,12 @@ A module consists of an expose declaration, but they can also be used within `le
 let
 
     expose LowerCaseText, fromLowerCase, toLowerCase of
-        # MkLowerCaseText not exposed
-        datatype LowerCaseText of MkLowerCaseText Text end;
+        # Mk.LowerCaseText not exposed
+        datatype LowerCaseText of Mk Text end;
         fromLowerCase: LowerCaseText -> Text;
-        fromLowerCase = fn MkLowerCaseText t => t;
+        fromLowerCase = fn Mk.LowerCaseText t => t;
         toLowerCase: Text -> LowerCaseText;
-        toLowerCase t = MkLowerCaseText $ textLowerCase t;
+        toLowerCase t = Mk.LowerCaseText $ textLowerCase t;
     end;
 
 in toLowerCase "Hello"

@@ -9,6 +9,8 @@ For all types `T`, `None <: T` and `T <: Any`.
 Data types can be declared with the `datatype` keyword.
 The declaration specifies the constructors of the type.
 Each constructor has a name, which starts with a capital letter.
+These names are in the namespace created by the name of the type.
+
 There are two kinds of constructor, _plain_ and _record_.
 A datatype declaration can mix plain and record constructors.
 
@@ -18,12 +20,12 @@ Data types are not subtypes of `Entity` and are not storable, except with the `s
 
 A plain constructor consists of its name, and a list of zero or more ambipolar types, with no free type variables besides parameters.
 
-Here's an example of a type with two constructors, `T1` and `T2`:
+Here's an example of a type with two constructors, `Mk1.T` and `Mk2.T`:
 
 ```pinafore
 datatype T of
-    T1 (Int -> [Int]);
-    T2 Int Text;
+    Mk1 (Int -> [Int]);
+    Mk2 Int Text;
 end;
 ```
 ### Record Constructors
@@ -36,7 +38,7 @@ Here's an example of a type with a record constructor with three members:
 
 ```pinafore
 datatype T of
-    MkT of
+    Mk of
         f: List a -> Maybe a;
         g: Text -> Action Unit;
         h: Integer *: Integer = (100, 50);
@@ -44,14 +46,14 @@ datatype T of
 end;
 ```
 
-To create a value of the type `T` using its record constructor `MkT`, bring values matching its members into scope, like this:
+To create a value of the type `T` using its record constructor `Mk.T`, bring values matching its members into scope, like this:
 
 ```pinafore
 t: T = let
     f = match [] => Nothing; a :: _ => Just a; end;
     g = outputLn.Env.;
     h = (52,1);
-    in MkT;
+    in Mk.T;
 ```
 
 If a member has a default value, then you can omit it:
@@ -60,7 +62,7 @@ If a member has a default value, then you can omit it:
 t: T = let
     f = match [] => Nothing; a :: _ => Just a; end;
     g = outputLn.Env.;
-    in MkT;
+    in Mk.T;
 ```
 
 Values can be retrieved by matching the constructor, like this:
@@ -68,7 +70,7 @@ Values can be retrieved by matching the constructor, like this:
 
 ```pinafore
 tg: T -> Text -> Action Unit
-= fn MkT => g;
+= fn Mk.T => g;
 ```
 
 ### Record Inheritance
@@ -87,29 +89,29 @@ Here's an example:
 
 ```pinafore
 datatype S1 of
-    MkS1 of
+    Mk of
         p: Rational;
         q: Text -> Text;
     end;
 end;
 
 datatype S2 of
-    MkS2 of
+    Mk of
         r: Action Unit;
     end;
 end;
 
 datatype T <: S1 & S2 of
-    MkT of
-        MkS1;
-        MkS2;
+    Mk of
+        Mk.S1;
+        Mk.S2;
         x: Number;
     end;
 end;
 ```
 
 All members of each mentioned supertype constructor will be in the defined constructor.
-In this case, the constructor `MkT` has members `p`, `q`, `r`, `x`.
+In this case, the constructor `Mk.T` has members `p`, `q`, `r`, `x`.
 
 #### Member Refinement
 
@@ -120,23 +122,23 @@ For example:
 
 ```pinafore
 datatype S of
-    MkS of
+    Mk of
         n: Rational;
         f: Text -> Text;
     end;
 end;
 
 datatype T <: S of
-    MkT of
-        MkS;
+    Mk of
+        Mk.S;
         n: Integer;
         f: a -> a;
     end;
 end;
 ```
 
-In this case, constructor `MkT` has two members, `n` and `f`,
-of types that subsume to the corresponding types in `MkS`.
+In this case, constructor `Mk.T` has two members, `n` and `f`,
+of types that subsume to the corresponding types in `Mk.S`.
 
 If a same member name is defined in constructors from two different supertypes,
 the member must be defined in the type as well.
@@ -150,34 +152,34 @@ For example, this is consistent:
 
 ```pinafore
 datatype A of
-    MkA1 of
+    Mk1 of
     end;
-    MkA2 of
+    Mk2 of
     end;
 end;
 
 datatype B <: A of
-    MkB1 of
-        MkA1;
+    Mk1 of
+        Mk1.A;
     end;
-    MkB2 of
-        MkA2;
+    Mk2 of
+        Mk2.A;
     end;
 end;
 
 datatype C <: A of
-    MkC1 of
-        MkC1;
+    Mk1 of
+        Mk1.A;
     end;
-    MkC2 of
-        MkC2;
+    Mk2 of
+        Mk2.A;
     end;
 end;
 
 datatype D <: B & C of
-    MkD of
-        MkB1;
-        MkC1;
+    Mk of
+        Mk1.B;
+        Mk1.C;
     end;
 end;
 ```
@@ -187,9 +189,9 @@ However, this would be inconsistent:
 
 ```pinafore
 datatype D <: B & C of
-    MkD of
-        MkB1;
-        MkC2;
+    Mk of
+        Mk1.B;
+        Mk2.C;
     end;
 end;
 ```
@@ -208,8 +210,8 @@ For example:
 
 ```pinafore
 datatype D +a -b {-p,+q} of
-    T1 (b -> [a]);
-    T2 (p *: b -> q);
+    Mk1 (b -> [a]);
+    Mk2 (p *: b -> q);
 end;
 ```
 
@@ -220,14 +222,16 @@ For example:
 
 ```pinafore
 datatype P -x +y of
-    MkP (x -> y);
+    Mk (x -> y);
     subtype datatype Q of
-        MkQ (x -> Integer) y;
+        Mk (x -> Integer) y;
     end;
 end;
 ```
 
-This will give `Q <: P` as well as `D(Q) = D(P)`.
+This creates types `P` and `Q.P`, as well as constructors `Mk.P` and `Mk.Q.P`.
+
+This will give `Q.P <: P` as well as `D(Q.P) = D(P)`.
 
 ## Storable types
 

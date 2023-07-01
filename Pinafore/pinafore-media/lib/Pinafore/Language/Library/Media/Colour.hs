@@ -154,7 +154,7 @@ mkNamedColourEntry (name, colour) = let
             "span"
             [("style", "border: 1px solid black; background: rgb(" <> tr <> "," <> tg <> "," <> tb <> ")")]
             (rawMarkdown "&nbsp;&nbsp;&nbsp;&nbsp;") <>
-        " SRGB " <> plainText tr <> "/255 " <> plainText tg <> "/255 " <> plainText tb <> "/255"
+        " SRGB16 " <> plainText tr <> "*257 " <> plainText tg <> "*257 " <> plainText tb <> "*257"
     in valBDT (fromString name) (asRawMarkdown desc) $ fromSVGColor colour
 
 colourStuff :: BindDocTree ()

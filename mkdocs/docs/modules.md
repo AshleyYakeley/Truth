@@ -30,8 +30,8 @@ somenumber: Integer
 opentype X;
 
 datatype storable T of
-    T1 Integer Boolean;
-    T2;
+    Mk1 Integer Boolean;
+    Mk2;
 end;
 
 subtype T <: X;
