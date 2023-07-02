@@ -115,7 +115,7 @@ All declarations, including type declarations, are local to a `let` block.
     "match" <semicolon-separated(<match>)> "end" |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
-    "do" <semicolon-separated(<do-line>)> <expression> "end" |
+    "do" <optional("@" <namespace>)> <semicolon-separated(<do-line>)> <expression> "end" |
     <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
@@ -125,7 +125,7 @@ All declarations, including type declarations, are local to a `let` block.
 <annotations> ::= <annotation> | <annotations> <annotation>
 
 <expression-3> ::=
-    "{" <expression> "}" |
+    "{" <optional("@" <namespace>)> <expression> "}" |
     "%" <expression-3> |
     <expression-specialform> |
     <expression-var> |

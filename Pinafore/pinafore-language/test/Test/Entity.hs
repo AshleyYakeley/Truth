@@ -344,7 +344,7 @@ testEntity =
                     , testExpectSuccess
                           "pass >> runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
                     , testExpectSuccess
-                          "runreforfail {pass >> if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
+                          "runreforfail {pass >>.Action if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
                     , testExpectSuccess
                           "runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass} >> pass"
                     , testExpectSuccess "testisunknown unknown"

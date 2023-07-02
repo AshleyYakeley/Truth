@@ -677,7 +677,6 @@ baseLibSections =
                       (a:aa) -> fcons a aa
             , nameInRootBDT $ valBDT "length" "Number of items in a list" (length :: [TopType] -> Int)
             , nameInRootBDT $ valBDT "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
-            , valBDT "map" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
             , nameInRootBDT $ valBDT "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
             , nameInRootBDT $ valBDT "maybeMap" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
             , nameInRootBDT $ valBDT "take" "Take the first n elements." (take :: Int -> [A] -> [A])
@@ -691,8 +690,7 @@ baseLibSections =
             ]
           , namespaceBDT "List1" "" $
             applicativeEntries @_ @NonEmpty <>
-            [ valBDT "map" "Map the items of a non-empty list." (fmap :: (A -> B) -> NonEmpty A -> NonEmpty B)
-            , nameInRootBDT $ valBDT "<>" "Concatenate a non-empty list with a list." append
+            [ nameInRootBDT $ valBDT "<>" "Concatenate a non-empty list with a list." append
             , nameInRootBDT $ valBDT "concat1" "Concatenate a non-empty list of non-empty lists." mconcat1
             , nameInRootBDT $
               valBDT

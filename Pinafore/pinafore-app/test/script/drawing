@@ -20,8 +20,9 @@ datatype Progress of
 end;
 
 drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
-= fn ref => let using Drawing in
+= fn ref =>
 {
+    let using Drawing in
     scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat
     [
         source navy $ %(toMaybe.WholeModel ref) >- match

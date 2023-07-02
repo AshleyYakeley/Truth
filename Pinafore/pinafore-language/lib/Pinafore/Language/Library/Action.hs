@@ -26,8 +26,7 @@ actionLibSection =
         [ typeBDT "Action" "" (MkSomeGroundType actionGroundType) []
         , namespaceBDT "Action" "" $
           fmap nameInRootBDT (monadEntries @_ @Action) <>
-          [ valBDT "map" "Map a function on an action." (fmap :: (A -> B) -> Action A -> Action B)
-          , nameInRootBDT $ valBDT "fix" "The fixed point of an Action." $ mfix @Action @A
+          [ nameInRootBDT $ valBDT "fix" "The fixed point of an Action." $ mfix @Action @A
           , nameInRootBDT $ valBDT "fail" "Fail, causing the program to terminate with error." $ qfail
           , nameInRootBDT $
             valBDT

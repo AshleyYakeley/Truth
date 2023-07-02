@@ -24,6 +24,7 @@ module Pinafore.Language.Library.Defs
     , eqEntries
     , ordEntries
     , enumEntries
+    , functorEntries
     , applicativeEntries
     , monadEntries
     , semigroupEntries
@@ -298,6 +299,17 @@ enumEntries ::
     => [BindDocTree context]
 enumEntries = [valBDT "pred" "Previous value." $ pred @a, valBDT "succ" "Next value." $ succ @a]
 
+functorEntries ::
+       forall context (f :: Type -> Type).
+       ( Functor f
+       , HasQType 'Positive (f A)
+       , HasQType 'Negative (f A)
+       , HasQType 'Positive (f B)
+       , HasQType 'Negative (f B)
+       )
+    => [BindDocTree context]
+functorEntries = [valBDT "map" "" (fmap :: (A -> B) -> f A -> f B)]
+
 applicativeEntries ::
        forall context (f :: Type -> Type).
        ( Applicative f
@@ -313,6 +325,7 @@ applicativeEntries ::
        )
     => [BindDocTree context]
 applicativeEntries =
+    functorEntries @context @f <>
     [ valBDT "pure" "" (pure :: A -> f A)
     , valBDT "ap" "" ((<*>) :: f (A -> B) -> f A -> f B)
     , valBDT "liftA2" "" (liftA2 :: (A -> B -> C) -> f A -> f B -> f C)

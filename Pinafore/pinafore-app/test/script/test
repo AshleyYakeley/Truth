@@ -199,7 +199,7 @@ window_css: Action Window.GTK
     std_window {"CSS"} $ styleSheet.GTK (ignoreUpdateUIExceptions.GTK.Debug cssref) $ name.GTK "root" $ vertical.GTK
         [
             styleClass.GTK "x" $ name.GTK "A" $ checkBox.GTK {"Box"} {True},
-            styleClass.GTK "x" $ name.GTK "B" $ button.GTK {"Button"} {pure ()},
+            styleClass.GTK "x" $ name.GTK "B" $ button.GTK {"Button"} {do pure () end},
             styleClass.GTK "x" $ name.GTK "C" $ textEntry.GTK sometext,
             layoutGrow.GTK $ styleClass.GTK "y" $ name.GTK "D" $ textArea.GTK cssref,
             styleClass.GTK "y" $ name.GTK "E" $ label.GTK {"Some Text"}

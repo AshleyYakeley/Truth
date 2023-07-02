@@ -65,8 +65,7 @@ taskLibSection =
     [ typeBDT "Task" "A task is something that can be waited for to give a result." (MkSomeGroundType taskGroundType) []
     , namespaceBDT "Task" "" $
       applicativeEntries @_ @LangTask <>
-      [ valBDT "map" "" $ fmap @LangTask @A @B
-      , valBDT "async" "Run an action in another thread. It will complete in the current life cycle." $ asyncTask @A
+      [ valBDT "async" "Run an action in another thread. It will complete in the current life cycle." $ asyncTask @A
       , valBDT "await" "Wait for a task to complete. This action is idempotent." $ awaitTask @A
       , valBDT "check" "Check to see if a task is done without waiting." $ langCheckTask @A
       , valBDT "isDone" "Check whether a task is done." $ isDone @TopType

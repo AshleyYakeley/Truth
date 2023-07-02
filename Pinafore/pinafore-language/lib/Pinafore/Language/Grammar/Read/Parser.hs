@@ -9,6 +9,7 @@ module Pinafore.Language.Grammar.Read.Parser
     , parseReader
     , readAskNamespace
     , readWithNamespace
+    , readWithNamespaceRef
     , readWithNamespaceName
     , parseScopedReaderWhole
     , readThis
@@ -29,6 +30,7 @@ module Pinafore.Language.Grammar.Read.Parser
     , readNewUName
     , readNewLName
     , readNamespaceRef
+    , readNamespace
     , readModuleName
     , readLines1
     , readLines
@@ -81,11 +83,14 @@ parseReader r text = let
 readAskNamespace :: Parser Namespace
 readAskNamespace = MkParser ask
 
-readWithNamespace :: NamespaceRef -> Parser --> Parser
-readWithNamespace nr (MkParser p) = MkParser $ local (\n -> namespaceConcatRef n nr) p
+readWithNamespace :: Namespace -> Parser --> Parser
+readWithNamespace ns (MkParser p) = MkParser $ local (\_ -> ns) p
+
+readWithNamespaceRef :: NamespaceRef -> Parser --> Parser
+readWithNamespaceRef nr (MkParser p) = MkParser $ local (\n -> namespaceConcatRef n nr) p
 
 readWithNamespaceName :: Name -> Parser --> Parser
-readWithNamespaceName name = readWithNamespace $ RelativeNamespaceRef [name]
+readWithNamespaceName name = readWithNamespaceRef $ RelativeNamespaceRef [name]
 
 parseScopedReaderWhole :: Parser (QInterpreter t) -> Text -> QInterpreter t
 parseScopedReaderWhole parser text = do
@@ -231,6 +236,12 @@ readNewLName = do
 
 readNamespaceRef :: Parser NamespaceRef
 readNamespaceRef = fmap tokenNamesToNamespaceRef $ readThis TokNamesUpper
+
+readNamespace :: Parser Namespace
+readNamespace = do
+    ns <- readAskNamespace
+    nref <- readNamespaceRef
+    return $ namespaceConcatRef ns nref
 
 readModuleName :: Parser ModuleName
 readModuleName = do

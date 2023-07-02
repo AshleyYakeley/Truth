@@ -184,32 +184,27 @@ readImport = do
 readUsing :: Parser SyntaxDeclaration'
 readUsing = do
     readThis TokUsing
-    nref <- readNamespaceRef
-    ns <- readAskNamespace
+    ns <- readNamespace
     mnritems <-
         optional $ do
             neg <- optional $ readThis TokExcept
             ritems <- readParen $ readCommaList readNameRefItem
             return (not $ isJust neg, ritems)
-    masnref <-
+    masns <-
         optional $ do
             readThis TokAs
-            readNamespaceRef
-    return $
-        UsingSyntaxDeclaration
-            (namespaceConcatRef ns nref)
-            mnritems
-            (namespaceConcatRef ns $ fromMaybe CurrentNamespaceRef masnref)
+            readNamespace
+    curns <- readAskNamespace
+    return $ UsingSyntaxDeclaration ns mnritems (fromMaybe curns masns)
 
-readNamespace :: Parser SyntaxDeclaration'
-readNamespace = do
+readNamespaceDecl :: Parser SyntaxDeclaration'
+readNamespaceDecl = do
     readThis TokNamespace
-    nref <- readNamespaceRef
+    ns <- readNamespace
     readThis TokOf
-    decls <- readWithNamespace nref readDeclarations
+    decls <- readWithNamespace ns readDeclarations
     readThis TokEnd
-    ns <- readAskNamespace
-    return $ NamespaceSyntaxDeclaration (namespaceConcatRef ns nref) decls
+    return $ NamespaceSyntaxDeclaration ns decls
 
 readNameRefItem :: Parser SyntaxNameRefItem
 readNameRefItem =
@@ -253,7 +248,7 @@ readDeclaration =
         , fmap DirectSyntaxDeclaration readDirectDeclaration
         , readImport
         , readUsing
-        , readNamespace
+        , readNamespaceDecl
         , readRecursiveDeclaration
         , fmap ExposeSyntaxDeclaration readExpose
         ]
@@ -283,6 +278,11 @@ readSubsumedExpression expr = do
     case mt of
         Nothing -> return expr
         Just (spos, t) -> readSubsumedExpression $ MkWithSourcePos spos $ SESubsume expr t
+
+readMkVar :: FullNameRef -> Parser SyntaxExpression'
+readMkVar nref = do
+    curns <- readAskNamespace
+    return $ SEVar curns nref
 
 -- following Haskell
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
@@ -343,11 +343,11 @@ expressionFixityReader =
                   spos <- getPosition
                   tnames <- readThis TokOperator
                   let name = tokenNamesToFullNameRef tnames
-                  ns <- readAskNamespace
+                  var <- readMkVar name
                   return
                       ( name
                       , operatorFixity $ tnName tnames
-                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar ns name) [e1, e2])
+                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos var) [e1, e2])
         , efrMaxPrecedence = 10
         }
 
@@ -375,22 +375,20 @@ readDoLine =
          expr <- readExpression
          return $ ExpressionDoLine expr)
 
-doLines ::
-       forall m. MonadFail m
-    => DoLine
-    -> [DoLine]
-    -> m SyntaxExpression
+doLines :: DoLine -> [DoLine] -> Parser SyntaxExpression
 doLines (ExpressionDoLine expr) [] = return expr
 doLines (BindDoLine _ _) [] = fail "last line of do block not expression"
 doLines (ExpressionDoLine expra) (l:ll) = do
     exprb <- doLines l ll
-    return $ seApplys (getSourcePos expra) (MkWithSourcePos (getSourcePos exprb) $ SEConst SCBind_) [expra, exprb]
+    var <- readMkVar $ UnqualifiedFullNameRef ">>"
+    return $ seApplys (getSourcePos expra) (MkWithSourcePos (getSourcePos exprb) var) [expra, exprb]
 doLines (BindDoLine pat expra) (l:ll) = do
     exprb <- doLines l ll
+    var <- readMkVar $ UnqualifiedFullNameRef ">>="
     return $
         seApplys
             (getSourcePos expra)
-            (MkWithSourcePos (getSourcePos exprb) $ SEConst SCBind)
+            (MkWithSourcePos (getSourcePos exprb) var)
             [expra, seAbstract (getSourcePos pat) pat exprb]
 
 readMulticase :: Parser (Some SyntaxMulticase)
@@ -408,6 +406,18 @@ getMulticase expected (MkSome mm) = let
            Nothing ->
                throw $
                MatchesDifferentCount (peanoToNatural $ witnessToValue expected) (peanoToNatural $ witnessToValue found)
+
+withUsingExpr :: Namespace -> [FullNameRef] -> Parser SyntaxExpression -> Parser SyntaxExpression'
+withUsingExpr ns names mexpr = do
+    spos <- getPosition
+    curns <- readAskNamespace
+    expr <- mexpr
+    return $
+        SELet
+            [ MkSyntaxWithDoc mempty $
+              MkWithSourcePos spos $ UsingSyntaxDeclaration ns (Just (True, fmap NameSyntaxNameRefItem names)) curns
+            ]
+            expr
 
 readExpression1 :: Parser SyntaxExpression
 readExpression1 =
@@ -433,13 +443,20 @@ readExpression1 =
              readThis TokIn
              sbody <- readExpression
              return $ SELet sdecls sbody) <|>
-    (do
-         readThis TokDo
-         dl <- readLines readDoLine
-         readThis TokEnd
-         case dl of
-             [] -> fail "empty 'do' block"
-             l:ll -> doLines l ll) <|>
+    readWithSourcePos
+        (do
+             readThis TokDo
+             mns <-
+                 optional $ do
+                     readThis TokAt
+                     readNamespace
+             let ns = fromMaybe "Action." mns
+             withUsingExpr ns ["map", "pure", "ap", "liftA2", "**", ">>", ">>="] $ do
+                 dl <- readLines readDoLine
+                 readThis TokEnd
+                 case dl of
+                     [] -> fail "empty 'do' block"
+                     l:ll -> doLines l ll) <|>
     (do
          spos <- getPosition
          readThis TokIf
@@ -480,19 +497,24 @@ readExpression3 =
         (do
              name <- readFullLName
              annotations <- many readAnnotation
-             ns <- readAskNamespace
-             return $
-                 case annotations of
-                     [] -> SEVar ns name
-                     (a:aa) -> SESpecialForm name $ a :| aa) <|>
+             case annotations of
+                 [] -> readMkVar name
+                 (a:aa) -> return $ SESpecialForm name $ a :| aa) <|>
     readWithSourcePos
         (do
              c <- readConstructor
              return $ SEConst $ SCConstructor c) <|>
     readWithSourcePos
-        (do
-             rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
-             return $ SERef rexpr) <|>
+        (readBracketed TokOpenBrace TokCloseBrace $ do
+             mns <-
+                 optional $ do
+                     readThis TokAt
+                     readNamespace
+             let ns = fromMaybe "WholeModel." mns
+             withUsingExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
+                 readWithSourcePos $ do
+                     rexpr <- readExpression
+                     return $ SERef rexpr) <|>
     readWithSourcePos
         (do
              readThis TokUnquote
@@ -502,8 +524,7 @@ readExpression3 =
      readWithSourcePos
          (do
               tnames <- readThis TokOperator
-              ns <- readAskNamespace
-              return $ SEVar ns $ tokenNamesToFullNameRef tnames) <|>
+              readMkVar $ tokenNamesToFullNameRef tnames) <|>
      (do
           spos <- getPosition
           msexpr1 <- optional readExpression

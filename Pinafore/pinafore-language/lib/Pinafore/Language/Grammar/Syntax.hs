@@ -266,8 +266,6 @@ data SyntaxAnnotation
 
 data SyntaxConstant
     = SCIfThenElse
-    | SCBind
-    | SCBind_
     | SCConstructor SyntaxConstructor
     deriving (Eq)
 

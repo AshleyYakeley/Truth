@@ -487,8 +487,6 @@ interpretSpecialForm name annotations = do
 
 interpretConstant :: SyntaxConstant -> RefExpression
 interpretConstant SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse
-interpretConstant SCBind = return $ qConstExprAny $ jmToValue qbind
-interpretConstant SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
 withMatch :: QMatch -> RefNotation QPartialExpression -> RefNotation QPartialExpression
