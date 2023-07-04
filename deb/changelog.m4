@@ -28,6 +28,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . separate syntax for static ":" and dynamic ":?" pattern typing
       . new syntax for function expressions: fn, match, =>
       . new syntax for datatype definitions
+      . generalised "{}" and "do" syntax to any namespace
     - reject rather than mutate uninvertible type signatures
   * Interactive
     - :doc to retrieve name documentation
