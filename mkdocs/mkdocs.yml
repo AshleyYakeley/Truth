@@ -24,7 +24,8 @@ nav:
   - Type System: 'type-system.md'
   - Types: 'types.md'
   - Dynamic Supertypes: 'dynamic-supertypes.md'
-  - Model Notation: 'model-notation.md'
+  - Do Notation: 'do-notation.md'
+  - Applicative Notation: 'applicative-notation.md'
   - Modules: 'modules.md'
 - Library:
   - Built In: 'library/pinafore.md'
