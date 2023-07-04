@@ -52,9 +52,9 @@ benchScripts =
     bgroup
         "script"
         [ benchScript "do a <- pure $ pure (); a end"
-        , benchScript "do a <- get {pure ()}; a end"
+        , benchScript "do a <- get {pure.Action ()}; a end"
         , benchScript "do a <- get $ pure.WholeModel $ pure (); a end"
-        , benchScript "get {pure ()} >>= fn v => v"
+        , benchScript "get {pure.Action ()} >>= fn v => v"
         , benchScript "get {False} >>= fn v => pure ()"
         , benchScript "get (pure.WholeModel False) >>= fn v => pure ()"
         , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => pure ()"
