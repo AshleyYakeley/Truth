@@ -129,13 +129,15 @@ All declarations, including type declarations, are local to a `let` block.
     "%" <expression-3> |
     <expression-specialform> |
     <expression-var> |
-    <constructor> |
+    <constructor-expression> |
     <literal> |
     "[" <comma-separated(<expression>)> "]" |
     "(" ")" |
     "(" <expression> "," <comma-separated-1(<expression>)> ")" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
+
+<constructor-expression> ::= <constructor> <optional(<of(<name> "=" <expression>)>)>
 
 <expression-var> ::= qlname
 

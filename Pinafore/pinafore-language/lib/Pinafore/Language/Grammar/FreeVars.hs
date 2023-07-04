@@ -110,7 +110,7 @@ instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) 
     syntaxBindingVariables (MkWithSourcePos _ pat) = syntaxBindingVariables pat
 
 constructorBindingVariables :: Namespace -> SyntaxConstructor -> FiniteSet BindingThing
-constructorBindingVariables ns (SLNamedConstructor name) = singletonSet $ ConsBindingThing ns name
+constructorBindingVariables ns (SLNamedConstructor name _) = singletonSet $ ConsBindingThing ns name
 constructorBindingVariables _ _ = mempty
 
 instance SyntaxBindingVariables SyntaxPattern' where

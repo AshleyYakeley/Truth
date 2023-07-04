@@ -18,11 +18,15 @@ readPatterns = do
     return $ fmap (\pat -> pat ns) nspats
 
 nilPattern :: SyntaxPattern'
-nilPattern = ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef "[]" RootNamespaceRef) []
+nilPattern =
+    ConstructorSyntaxPattern RootNamespace (SLNamedConstructor (MkFullNameRef "[]" RootNamespaceRef) Nothing) []
 
 consPattern :: SyntaxPattern -> SyntaxPattern -> SyntaxPattern'
 consPattern pat1 pat2 =
-    ConstructorSyntaxPattern RootNamespace (SLNamedConstructor $ MkFullNameRef "::" RootNamespaceRef) [pat1, pat2]
+    ConstructorSyntaxPattern
+        RootNamespace
+        (SLNamedConstructor (MkFullNameRef "::" RootNamespaceRef) Nothing)
+        [pat1, pat2]
 
 readWithSourcePos1 :: Parser (a -> t) -> Parser (a -> WithSourcePos t)
 readWithSourcePos1 p = do
@@ -70,7 +74,7 @@ readPattern3 :: Parser (Namespace -> SyntaxPattern)
 readPattern3 =
     readWithSourcePos1
         (try $ do
-             c <- readConstructor
+             c <- readConstructor Nothing
              args <- some readPattern4
              return $ \ns -> ConstructorSyntaxPattern ns c $ fmap (\pat -> pat ns) args) <|>
     readPattern4
@@ -100,7 +104,7 @@ readPattern5 =
              return $ \ns -> DebugSyntaxPattern text $ pat ns) <|>
     readWithSourcePos1
         (do
-             c <- readConstructor
+             c <- readConstructor Nothing
              return $ \ns -> ConstructorSyntaxPattern ns c []) <|>
     readWithSourcePos1
         (do

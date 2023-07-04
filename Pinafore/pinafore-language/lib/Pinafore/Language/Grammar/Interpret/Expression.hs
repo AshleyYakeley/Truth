@@ -33,7 +33,7 @@ import Shapes
 type instance EntryDoc QTypeSystem = DefDoc
 
 interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordConstructor)
-interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
+interpretPatternConstructor (SLNamedConstructor name _) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
     Left $
@@ -405,20 +405,44 @@ interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
 interpretDeclarations :: [SyntaxDeclaration] -> RefNotation --> RefNotation
 interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
-interpretRecordConstructor :: QRecordConstructor -> RefExpression
-interpretRecordConstructor (MkRecordConstructor items vtype _ codec) = do
+interpretRecordConstructor :: QRecordConstructor -> Maybe [(Name, SyntaxExpression)] -> RefExpression
+interpretRecordConstructor (MkRecordConstructor items vtype _ codec) msarglist = do
+    let
+        getsigname :: forall a. QSignature 'Positive a -> Maybe Name
+        getsigname (ValueSignature _ name _ _) = Just name
+        signames :: [Name]
+        signames = catMaybes $ listVTypeToList getsigname items
+    margmap :: Maybe (Map Name QExpression) <-
+        for msarglist $ \sarglist -> do
+            arglist <-
+                for sarglist $ \(n, sv) -> do
+                    if elem n signames
+                        then return ()
+                        else throw $ RecordConstructorExtraName n
+                    v <- interpretExpression sv
+                    return (n, v)
+            return $ mapFromList arglist
     let
         freeFixedVars = freeTypeVariables vtype
         freeFixedNames = fmap someTypeVarName $ toList freeFixedVars
+        getName :: Maybe QExpression -> Name -> QInterpreter QExpression
+        getName =
+            case margmap of
+                Nothing -> \mdefexpr iname -> qNameWithDefault mdefexpr $ UnqualifiedFullNameRef iname
+                Just argmap ->
+                    \mdefexpr iname ->
+                        case lookup iname argmap of
+                            Just arg -> return arg
+                            Nothing ->
+                                case mdefexpr of
+                                    Just defexpr -> return defexpr
+                                    Nothing -> throw $ RecordConstructorMissingName iname
     liftRefNotation $
         runRenamer @QTypeSystem [] freeFixedNames $ do
             sexpr <-
                 listVTypeFor items $ \case
                     ValueSignature _ iname itype mdefault -> do
-                        iexpr <-
-                            lift $
-                            qNameWithDefault (fmap (MkSealedExpression (mkShimWit itype)) mdefault) $
-                            UnqualifiedFullNameRef iname
+                        iexpr <- lift $ getName (fmap (MkSealedExpression (mkShimWit itype)) mdefault) iname
                         itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
                         iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
                         subsumerExpressionTo @QTypeSystem itype' iexpr'
@@ -426,12 +450,13 @@ interpretRecordConstructor (MkRecordConstructor items vtype _ codec) = do
             unEndoM (subsumerSubstitute @QTypeSystem ssubs) $
                 MkSealedExpression (shimWitToDolan vtype) $ fmap (encode codec) resultExpr
 
-interpretNamedConstructor :: FullNameRef -> RefExpression
-interpretNamedConstructor name = do
+interpretNamedConstructor :: FullNameRef -> Maybe [(Name, SyntaxExpression)] -> RefExpression
+interpretNamedConstructor name mvals = do
     bv <- liftRefNotation $ lookupBoundValue name
-    case bv of
-        ValueBoundValue e -> return e
-        RecordBoundValue rc -> interpretRecordConstructor rc
+    case (bv, mvals) of
+        (ValueBoundValue e, Nothing) -> return e
+        (ValueBoundValue _, Just _) -> throw $ LookupNotRecordConstructorError name
+        (RecordBoundValue rc, _) -> interpretRecordConstructor rc mvals
 
 interpretConstructor :: SyntaxConstructor -> RefExpression
 interpretConstructor (SLNumber n) =
@@ -443,7 +468,7 @@ interpretConstructor (SLNumber n) =
                 Nothing -> qConstExprAny $ jmToValue r
         Nothing -> qConstExprAny $ jmToValue n
 interpretConstructor (SLString v) = return $ qConstExprAny $ jmToValue v
-interpretConstructor (SLNamedConstructor v) = interpretNamedConstructor v
+interpretConstructor (SLNamedConstructor v mvals) = interpretNamedConstructor v mvals
 interpretConstructor SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor SLUnit = return $ qConstExprAny $ jmToValue ()
 

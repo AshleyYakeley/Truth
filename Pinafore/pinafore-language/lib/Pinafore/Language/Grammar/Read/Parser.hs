@@ -34,6 +34,7 @@ module Pinafore.Language.Grammar.Read.Parser
     , readModuleName
     , readLines1
     , readLines
+    , readOf
     , readWithDoc
     , chainModify
     ) where
@@ -259,6 +260,13 @@ readLines1 p = do
 
 readLines :: Parser a -> Parser [a]
 readLines p = (fmap toList $ readLines1 p) <|> (return [])
+
+readOf :: Parser a -> Parser [a]
+readOf p = do
+    readThis TokOf
+    aa <- readLines p
+    readThis TokEnd
+    return aa
 
 readWithDoc :: Parser t -> Parser (SyntaxWithDoc t)
 readWithDoc pt = do

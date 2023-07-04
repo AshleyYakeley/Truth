@@ -66,16 +66,12 @@ readPlainDataTypeConstructor =
          readThis TokSubtype
          readThis TokDataType
          name <- readTypeNewName
-         readThis TokOf
-         constructors <- readWithNamespaceName (fnName name) $ readLines $ readWithDoc readPlainDataTypeConstructor
-         readThis TokEnd
+         constructors <- readWithNamespaceName (fnName name) $ readOf $ readWithDoc readPlainDataTypeConstructor
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
          consName <- readNewUName
          (do
-              readThis TokOf
-              sigs <- readLines readSignature
-              readThis TokEnd
+              sigs <- readOf readSignature
               return $ RecordSyntaxConstructorOrSubtype consName sigs) <|>
              (do
                   mtypes <- many readType3
@@ -88,9 +84,7 @@ readStorableDataTypeConstructor =
          readThis TokDataType
          readThis TokStorable
          name <- readTypeNewName
-         readThis TokOf
-         constructors <- readWithNamespaceName (fnName name) $ readLines $ readWithDoc readStorableDataTypeConstructor
-         readThis TokEnd
+         constructors <- readWithNamespaceName (fnName name) $ readOf $ readWithDoc readStorableDataTypeConstructor
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
          consName <- readNewUName
@@ -133,19 +127,16 @@ readDataTypeDeclaration = do
         optional $ do
             readThis TokSubtypeOf
             readType
-    readThis TokOf
     readWithNamespaceName (fnName name) $
         case storable of
             Just () -> do
                 case msupertype of
                     Nothing -> return ()
                     Just _ -> throw $ DeclareDatatypeStorableSupertypeError name
-                constructors <- readLines $ readWithDoc readStorableDataTypeConstructor
-                readThis TokEnd
+                constructors <- readOf $ readWithDoc readStorableDataTypeConstructor
                 return $ TypeSyntaxDeclaration name $ StorableDatatypeSyntaxTypeDeclaration parameters constructors
             Nothing -> do
-                constructors <- readLines $ readWithDoc readPlainDataTypeConstructor
-                readThis TokEnd
+                constructors <- readOf $ readWithDoc readPlainDataTypeConstructor
                 return $
                     TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters msupertype constructors
 
@@ -201,9 +192,7 @@ readNamespaceDecl :: Parser SyntaxDeclaration'
 readNamespaceDecl = do
     readThis TokNamespace
     ns <- readNamespace
-    readThis TokOf
-    decls <- readWithNamespace ns readDeclarations
-    readThis TokEnd
+    decls <- readWithNamespace ns $ readOf readDeclaration
     return $ NamespaceSyntaxDeclaration ns decls
 
 readNameRefItem :: Parser SyntaxNameRefItem
@@ -218,9 +207,7 @@ readExpose :: Parser SyntaxExposeDeclaration
 readExpose = do
     readThis TokExpose
     items <- readCommaList readNameRefItem
-    readThis TokOf
-    decls <- readDeclarations
-    readThis TokEnd
+    decls <- readOf readDeclaration
     return $ MkSyntaxExposeDeclaration items decls
 
 readDirectDeclaration :: Parser SyntaxRecursiveDeclaration'
@@ -253,13 +240,10 @@ readDeclaration =
         , fmap ExposeSyntaxDeclaration readExpose
         ]
 
-readDeclarations :: Parser [SyntaxDeclaration]
-readDeclarations = readLines readDeclaration
-
 readLetBindings :: Parser [SyntaxDeclaration]
 readLetBindings = do
     readThis TokLet
-    readDeclarations
+    readLines readDeclaration
 
 readTopDeclarations :: Parser SyntaxTopDeclarations
 readTopDeclarations = do
@@ -502,7 +486,7 @@ readExpression3 =
                  (a:aa) -> return $ SESpecialForm name $ a :| aa) <|>
     readWithSourcePos
         (do
-             c <- readConstructor
+             c <- readConstructor $ Just readExpression
              return $ SEConst $ SCConstructor c) <|>
     readWithSourcePos
         (readBracketed TokOpenBrace TokCloseBrace $ do

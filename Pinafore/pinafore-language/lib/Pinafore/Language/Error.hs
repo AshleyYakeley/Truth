@@ -38,6 +38,8 @@ data ErrorType
     | DeclareDatatypeMissingSupertypeMember Name
     | DeclareDatatypeDuplicateMembers Name
     | DeclareDatatypeDuplicateInheritedMembers Name
+    | RecordConstructorMissingName Name
+    | RecordConstructorExtraName Name
     | TypeConvertError Text
                        Polarity
                        Text
@@ -147,6 +149,8 @@ instance Show ErrorType where
     show (DeclareDatatypeMissingSupertypeMember t) = "missing member for supertype: " <> show t
     show (DeclareDatatypeDuplicateMembers m) = "duplicate member declarations for " <> show m
     show (DeclareDatatypeDuplicateInheritedMembers m) = "multiple inherited member declarations for " <> show m
+    show (RecordConstructorMissingName n) = "missing name for record constructor: " <> show n
+    show (RecordConstructorExtraName n) = "extra name for record constructor: " <> show n
     show (TypeConvertError ta pa tb pb) =
         unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
     show (NoGroundTypeConversionError ta tb) = unpack $ "no ground conversion for " <> ta <> " <: " <> tb

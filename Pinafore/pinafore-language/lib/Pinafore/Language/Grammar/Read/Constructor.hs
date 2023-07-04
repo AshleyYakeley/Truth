@@ -7,11 +7,21 @@ import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Grammar.Syntax
 import Shapes hiding (try)
 
-readConstructor :: Parser SyntaxConstructor
-readConstructor =
+readConstructor :: Maybe (Parser SyntaxExpression) -> Parser SyntaxConstructor
+readConstructor mp =
     (do
          name <- readFullUName
-         return $ SLNamedConstructor name) <|>
+         mvals <-
+             case mp of
+                 Just p ->
+                     optional $
+                     readOf $ do
+                         n <- readLName
+                         readThis TokAssign
+                         v <- p
+                         return (n, v)
+                 Nothing -> return Nothing
+         return $ SLNamedConstructor name mvals) <|>
     (do
          n <- readThis TokNumber
          return $ SLNumber n) <|>

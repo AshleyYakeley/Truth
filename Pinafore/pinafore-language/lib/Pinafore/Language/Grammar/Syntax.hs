@@ -194,6 +194,7 @@ data SyntaxConstructor
     = SLNumber Number
     | SLString Text
     | SLNamedConstructor FullNameRef
+                         (Maybe [(Name, SyntaxExpression)])
     | SLPair
     | SLUnit
     deriving (Eq)
@@ -201,7 +202,12 @@ data SyntaxConstructor
 instance ExprShow SyntaxConstructor where
     exprShowPrec (SLNumber x) = identifierPrecNamedText $ pack $ show x
     exprShowPrec (SLString x) = identifierPrecNamedText x
-    exprShowPrec (SLNamedConstructor x) = exprShowPrec x
+    exprShowPrec (SLNamedConstructor x mv) =
+        namedTextPrec 7 $
+        exprPrecShow 6 x <>
+        case mv of
+            Nothing -> ""
+            Just vv -> " of " <> intercalate ";" (fmap (\(n, _) -> exprPrecShow 6 n <> "=<expr>") vv) <> " end"
     exprShowPrec SLPair = "(,)"
     exprShowPrec SLUnit = "()"
 
