@@ -46,7 +46,18 @@ datatype T of
 end;
 ```
 
-To create a value of the type `T` using its record constructor `Mk.T`, bring values matching its members into scope, like this:
+To create a value of the type `T` using its record constructor `Mk.T`, set the member values inside `of` ... `end`, like this:
+
+
+```pinafore
+t: T = Mk.T of
+    f = match [] => Nothing; a :: _ => Just a; end;
+    g = outputLn.Env.;
+    h = (52,1);
+    end;
+```
+
+Alternatively, you can omit `of` ... `end` and instead bring values matching its members into scope, like this:
 
 ```pinafore
 t: T = let
@@ -59,10 +70,10 @@ t: T = let
 If a member has a default value, then you can omit it:
 
 ```pinafore
-t: T = let
+t: T = Mk.T of
     f = match [] => Nothing; a :: _ => Just a; end;
     g = outputLn.Env.;
-    in Mk.T;
+    end;
 ```
 
 Values can be retrieved by matching the constructor, like this:

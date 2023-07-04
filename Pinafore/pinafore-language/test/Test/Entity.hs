@@ -1025,18 +1025,26 @@ testEntity =
                     "record-constructor"
                     [ tGroup
                           "rank-1"
-                          [ tDecls ["datatype R of Mk of di: Integer end end", "mkR: Integer -> R = fn di => Mk.R"] $
+                          [ tDecls
+                                [ "datatype R of Mk of di: Integer end end"
+                                , "mkR1: Integer -> R = fn x => Mk.R of di = x end"
+                                , "mkR2: Integer -> R = fn di => Mk.R"
+                                ] $
                             tGroup
                                 "one"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {21} {(fn Mk.R => di) (mkR 21)}"
-                                , testExpectSuccess "testeq {22} {(match Mk.R => di end) (mkR 22)}"
-                                , testExpectSuccess "testeq {23} {let Mk.R = mkR 23 in 23}"
-                                , testExpectSuccess "testeq {24} {let Mk.R = mkR 24 in di}"
+                                , testExpectSuccess "testeq {21} {(fn Mk.R => di) (mkR1 21)}"
+                                , testExpectSuccess "testeq {21} {(fn Mk.R => di) (mkR2 21)}"
+                                , testExpectSuccess "testeq {22} {(match Mk.R => di end) (mkR1 22)}"
+                                , testExpectSuccess "testeq {22} {(match Mk.R => di end) (mkR2 22)}"
+                                , testExpectSuccess "testeq {23} {let Mk.R = mkR1 23 in 23}"
+                                , testExpectSuccess "testeq {23} {let Mk.R = mkR2 23 in 23}"
+                                , testExpectSuccess "testeq {24} {let Mk.R = mkR1 24 in di}"
+                                , testExpectSuccess "testeq {24} {let Mk.R = mkR2 24 in di}"
                                 , testExpectSuccess "testeq {25} {let Just di = Just 25 in di}"
-                                , testExpectSuccess "let g: R -> Integer = fn Mk.R => di; in testeq {26} {g $ mkR 26}"
-                                , testExpectReject "testeq {27} {let Mk.R as A = mkR 27 in di}"
-                                , testExpectSuccess "testeq {28} {let Mk.R as A = mkR 28 in di.A}"
+                                , testExpectSuccess "let g: R -> Integer = fn Mk.R => di; in testeq {26} {g $ mkR1 26}"
+                                , testExpectReject "testeq {27} {let Mk.R as A = mkR1 27 in di}"
+                                , testExpectSuccess "testeq {28} {let Mk.R as A = mkR1 28 in di.A}"
                                 ]
                           , tDecls ["datatype R of Mk of di: Integer; dt: Text end end"] $
                             tGroup
@@ -1073,6 +1081,8 @@ testEntity =
                           "rank-2"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess
+                                "let r:R = Mk.R of df = twice end in r >- fn Mk.R => testeq {9} {df addone 7}"
+                          , testExpectSuccess
                                 "let r:R = let df: (b -> b) -> b -> b = twice in Mk.R in r >- fn Mk.R => testeq {9} {df addone 7}"
                           , testExpectReject
                                 "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in Mk.R in r >- fn Mk.R => testeq {9} {df addone 7}"
@@ -1080,7 +1090,7 @@ testEntity =
                     , tDecls
                           [ "datatype R +v of Mk of df: a -> Maybe (a *: v) end end"
                           , "ff: a -> Maybe (a *: Integer) = fn x => Just (x,45)"
-                          , "r = let df = ff in Mk.R"
+                          , "r = Mk.R of df = ff end"
                           ] $
                       tGroup
                           "sub-var"
@@ -1325,7 +1335,9 @@ testEntity =
                             tGroup
                                 "simple"
                                 [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq {42} {Mk.A of ma = 42 end >- fn Mk.A => ma}"
                                 , testExpectSuccess "testeq {42} {(let ma = 42 in Mk.A) >- fn Mk.A => ma}"
+                                , testExpectSuccess "testeq {754} {Mk.A of end >- fn Mk.A => ma}"
                                 , testExpectSuccess "testeq {754} {Mk.A >- fn Mk.A => ma}"
                                 ]
                           , tDecls
@@ -1338,7 +1350,10 @@ testEntity =
                                 "diamond"
                                 [ testExpectSuccess "pass"
                                 , testExpectSuccess
+                                      "testeq {43} {Mk.D of ma1 = 43; mb1 = 44; mc1 = 45 end >- fn Mk.D => ma1}"
+                                , testExpectSuccess
                                       "testeq {43} {(let ma1 = 43; mb1 = 44; mc1 = 45 in Mk.D) >- fn Mk.D => ma1}"
+                                , testExpectSuccess "testeq {755} {Mk.D of mb1 = 46; mc1 = 47 end >- fn Mk.D => ma1}"
                                 , testExpectSuccess "testeq {755} {(let mb1 = 46; mc1 = 47 in Mk.D) >- fn Mk.D => ma1}"
                                 ]
                           ]
