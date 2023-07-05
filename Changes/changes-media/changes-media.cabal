@@ -1,0 +1,62 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           changes-media
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Data.Media.Image
+      Changes.Media.Image
+  other-modules:
+      Data.Media.Image.Pixel
+      Data.Media.Image.Metadata
+      Data.Media.Image.PNG
+      Data.Media.Image.JPEG
+      Data.Media.Image.True8
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      JuicyPixels
+    , changes-core
+    , deepseq
+    , shapes
+  default-language: GHC2021

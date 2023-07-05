@@ -3,7 +3,6 @@ out/
 .build
 .stack-root
 .stack-work
-*.cabal
 *.prof
 *.prof.html
 benchmarks.json

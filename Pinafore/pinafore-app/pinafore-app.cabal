@@ -1,0 +1,307 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           pinafore-app
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+extra-doc-files:
+    examples/calendar
+    examples/clock
+    examples/contacts
+    examples/events
+    examples/fake-theme-system-journal
+    examples/stopwatch
+
+flag gitversion
+  manual: True
+  default: True
+
+library
+  exposed-modules:
+      Pinafore.Version
+      Pinafore.Options
+      Pinafore.Libs
+  other-modules:
+      Paths_pinafore_app
+  autogen-modules:
+      Paths_pinafore_app
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      base >=4.16
+    , directory
+    , filepath
+    , pinafore-gnome
+    , pinafore-language
+    , pinafore-media
+    , shapes
+    , time
+    , xdg-basedir
+  default-language: GHC2021
+  if flag(gitversion)
+    cpp-options: -DFLAG_GITVERSION
+    build-depends:
+        githash
+
+executable pinafore
+  main-is: Main.hs
+  other-modules:
+      Options
+      Run
+  hs-source-dirs:
+      app/main
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , optparse-applicative
+    , pinafore-app
+    , pinafore-language
+    , shapes
+  default-language: GHC2021
+
+executable pinafore-doc
+  main-is: Main.hs
+  other-modules:
+      Options
+  hs-source-dirs:
+      app/doc
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , filepath
+    , optparse-applicative
+    , pinafore-app
+    , pinafore-language
+    , shapes
+  default-language: GHC2021
+
+test-suite app
+  type: exitcode-stdio-1.0
+  main-is: Test.hs
+  other-modules:
+      Options
+  hs-source-dirs:
+      app/main
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , optparse-applicative
+    , pinafore-app
+    , shapes
+  default-language: GHC2021
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Test.Interactive
+      Test.Scripts
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , directory
+    , filepath
+    , pinafore-app
+    , pinafore-language
+    , shapes
+  default-language: GHC2021
+
+benchmark benchmark
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_pinafore_app
+  autogen-modules:
+      Paths_pinafore_app
+  hs-source-dirs:
+      benchmark
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , criterion
+    , pinafore-app
+    , pinafore-language
+    , shapes
+  default-language: GHC2021

@@ -1,0 +1,72 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           pinafore-media
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Pinafore.Language.Library.Media
+  other-modules:
+      Pinafore.Language.Library.Media.Colour
+      Pinafore.Language.Library.Media.Image.Metadata
+      Pinafore.Language.Library.Media.Image.Image
+      Pinafore.Language.Library.Media.Image.PNG
+      Pinafore.Language.Library.Media.Image.JPEG
+      Pinafore.Language.Library.Media.Image
+      Pinafore.Language.Library.Media.Cairo
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      Color
+    , base >=4.16
+    , cairo-functional
+    , changes-core
+    , changes-media
+    , changes-world
+    , gi-cairo-render
+    , pinafore-base
+    , pinafore-language
+    , polar-shim
+    , shapes
+    , time
+    , typed-expression
+  default-language: GHC2021

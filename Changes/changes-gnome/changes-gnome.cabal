@@ -1,0 +1,433 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           changes-gnome
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+flag build-examples
+  description: Build examples
+  manual: False
+  default: False
+
+flag test-X11
+  description: Run tests that require an X11 server
+  manual: False
+  default: True
+
+flag trace
+  description: Trace functions
+  manual: False
+  default: True
+
+library
+  exposed-modules:
+      Changes.World.GNOME.GIO
+      Changes.World.GNOME.GTK
+      Changes.World.GNOME.GTK.Test
+  other-modules:
+      Changes.World.GNOME.GI.Error
+      Changes.World.GNOME.GI.Type
+      Changes.World.GNOME.GI.ViewLock
+      Changes.World.GNOME.GI.LockState
+      Changes.World.GNOME.GI.GView
+      Changes.World.GNOME.GI.Lifecycle
+      Changes.World.GNOME.GI.Signal
+      Changes.World.GNOME.GI.Widget
+      Changes.World.GNOME.GI
+      Changes.World.GNOME.GTK.Element.TextStyle
+      Changes.World.GNOME.GTK.Element.DynamicStore
+      Changes.World.GNOME.GTK.Element.Blank
+      Changes.World.GNOME.GTK.Element.Cairo
+      Changes.World.GNOME.GTK.Element.CSS
+      Changes.World.GNOME.GTK.Element.Button
+      Changes.World.GNOME.GTK.Element.Image
+      Changes.World.GNOME.GTK.Element.Icon
+      Changes.World.GNOME.GTK.Element.Label
+      Changes.World.GNOME.GTK.Element.Maybe
+      Changes.World.GNOME.GTK.Element.ListBox
+      Changes.World.GNOME.GTK.Element.Switch
+      Changes.World.GNOME.GTK.Element.CheckButton
+      Changes.World.GNOME.GTK.Element.Option
+      Changes.World.GNOME.GTK.Element.TextEntry
+      Changes.World.GNOME.GTK.Element.Text
+      Changes.World.GNOME.GTK.Element.Layout
+      Changes.World.GNOME.GTK.Element.Notebook
+      Changes.World.GNOME.GTK.Element.Table
+      Changes.World.GNOME.GTK.Element.Drag
+      Changes.World.GNOME.GTK.Element.MenuBar
+      Changes.World.GNOME.GTK.Element.Scrolled
+      Changes.World.GNOME.GTK.Element.Calendar
+      Changes.World.GNOME.GTK.ChooseFile
+      Changes.World.GNOME.GTK.Clipboard
+      Changes.World.GNOME.GTK.Window
+      Changes.World.GNOME.GTK.Main
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      base >=4.16
+    , cairo-functional
+    , changes-core
+    , changes-media
+    , gi-cairo-connector
+    , gi-gdk
+    , gi-gdkpixbuf
+    , gi-gio
+    , gi-glib
+    , gi-gobject
+    , gi-gtk
+    , gi-gtk-hs
+    , gi-pango
+    , haskell-gi-base
+    , shapes
+    , thread-trace
+    , time
+    , vector
+  default-language: GHC2021
+  if flag(trace)
+    exposed-modules:
+        Changes.World.GNOME.GI.Trace
+
+executable changes-cairo
+  main-is: Main.hs
+  other-modules:
+      Paths_changes_gnome
+  autogen-modules:
+      Paths_changes_gnome
+  hs-source-dirs:
+      examples/cairo
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , cairo-functional
+    , changes-core
+    , changes-gnome
+    , changes-world
+    , gi-cairo-render
+    , gi-gtk
+    , shapes
+    , time
+  default-language: GHC2021
+  if !flag(build-examples)
+    buildable: False
+
+executable changes-gio
+  main-is: Main.hs
+  other-modules:
+      Paths_changes_gnome
+  autogen-modules:
+      Paths_changes_gnome
+  hs-source-dirs:
+      examples/gio
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      aeson
+    , base >=4.16
+    , bytestring
+    , changes-core
+    , changes-gnome
+    , changes-world
+    , filepath
+    , gi-gio
+    , optparse-applicative
+    , shapes
+    , uuid
+  default-language: GHC2021
+  if !flag(build-examples)
+    buildable: False
+
+executable changes-showImages
+  main-is: Main.hs
+  other-modules:
+      Paths_changes_gnome
+  autogen-modules:
+      Paths_changes_gnome
+  hs-source-dirs:
+      examples/showImages
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , changes-gnome
+    , changes-media
+    , changes-world
+    , directory
+    , filepath
+    , shapes
+  default-language: GHC2021
+  if !flag(build-examples)
+    buildable: False
+
+executable changes-soup
+  main-is: Main.hs
+  other-modules:
+      Soup
+      Soup.Note
+      Soup.Edit
+      Soup.UI
+  hs-source-dirs:
+      examples/soup
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      aeson
+    , base >=4.16
+    , bytestring
+    , changes-core
+    , changes-gnome
+    , changes-world
+    , filepath
+    , optparse-applicative
+    , shapes
+    , uuid
+  default-language: GHC2021
+  if !flag(build-examples)
+    buildable: False
+
+executable changes-text
+  main-is: Main.hs
+  other-modules:
+      Paths_changes_gnome
+  autogen-modules:
+      Paths_changes_gnome
+  hs-source-dirs:
+      examples/text
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , bytestring
+    , changes-core
+    , changes-gnome
+    , changes-world
+    , filepath
+    , optparse-applicative
+    , shapes
+  default-language: GHC2021
+  if !flag(build-examples)
+    buildable: False
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Flags
+      Matrix
+      Lock
+      GIO
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , changes-gnome
+    , gi-cairo-render
+    , gi-gio
+    , shapes
+  default-language: GHC2021
+  if flag(test-X11)
+    cpp-options: -DTEST_X11

@@ -1,0 +1,195 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           changes-core
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Changes.Core
+      Changes.Debug
+      Changes.Debug.Edit
+      Changes.Debug.Reference
+      Changes.Debug.Subscriber
+  other-modules:
+      Changes.Core.Import
+      Changes.Core.Sequence
+      Changes.Core.Resource.Function
+      Changes.Core.Resource.SingleRunner
+      Changes.Core.Resource.ResourceRunner
+      Changes.Core.Resource.Runnable
+      Changes.Core.Resource
+      Changes.Core.Read.Readable
+      Changes.Core.Read.ReadM
+      Changes.Core.Read.SubjectReader
+      Changes.Core.Read.FullSubjectReader
+      Changes.Core.Read
+      Changes.Core.Edit.Edit
+      Changes.Core.Edit.Update
+      Changes.Core.Edit.FullEdit
+      Changes.Core.Edit.Cache
+      Changes.Core.Lens.Lens
+      Changes.Core.Lens.Floating
+      Changes.Core.Lens.State
+      Changes.Core.Lens
+      Changes.Core.Types.Partial
+      Changes.Core.Edit.Opaque
+      Changes.Core.Edit
+      Changes.Core.Types.None
+      Changes.Core.Types.ReadOnly
+      Changes.Core.Types.EditApplicative
+      Changes.Core.Types.Reject
+      Changes.Core.Types.Whole
+      Changes.Core.Types.WholeUpdateFunction
+      Changes.Core.Types.Unit
+      Changes.Core.Types.Sum
+      Changes.Core.Types.SumWhole
+      Changes.Core.Types.One.Read
+      Changes.Core.Types.One.Edit
+      Changes.Core.Types.One.Result
+      Changes.Core.Types.One.FullResult
+      Changes.Core.Types.Either
+      Changes.Core.Types.Comonad
+      Changes.Core.Types.Tuple.Tuple
+      Changes.Core.Types.Tuple.Cons
+      Changes.Core.Types.Tuple.Either
+      Changes.Core.Types.Tuple.Pair
+      Changes.Core.Types.Lattice
+      Changes.Core.Types.Tuple.Function
+      Changes.Core.Types.WholeFunction
+      Changes.Core.Types.UpdateOrder
+      Changes.Core.Types.Set
+      Changes.Core.Types.Tuple.Dependent
+      Changes.Core.Types.Tuple.Context
+      Changes.Core.Types.List.Read
+      Changes.Core.Types.List.Edit
+      Changes.Core.Types.List.Update
+      Changes.Core.Types.List.Ordered
+      Changes.Core.Types.List
+      Changes.Core.Types.String
+      Changes.Core.Types.ByteString
+      Changes.Core.Types.Key.HasKey
+      Changes.Core.Types.Key.Key
+      Changes.Core.Types.Key.Order
+      Changes.Core.Types.Key.FiniteSet
+      Changes.Core.Types.Database
+      Changes.Core.Types.Database.Show
+      Changes.Core.Types.Database.Tuple
+      Changes.Core.Types.Database.Tuple.Show
+      Changes.Core.Types.Bi.Bi
+      Changes.Core.Types.Bi.ChangeMap
+      Changes.Core.Types.Bi.Whole
+      Changes.Core.Types.Bi
+      Changes.Core.Types
+      Changes.Core.Model.DeferActionT
+      Changes.Core.Model.EditContext
+      Changes.Core.Model.Reference
+      Changes.Core.Model.AutoClose
+      Changes.Core.Model.ReferenceEdit
+      Changes.Core.Model.Premodel
+      Changes.Core.Model.Model
+      Changes.Core.Model.Tuple
+      Changes.Core.Model.MemoryCell
+      Changes.Core.UI.Editor
+      Changes.Core.Model.Cache
+      Changes.Core.Model.Savable
+      Changes.Core.Model.Undo
+      Changes.Core.Model.WModel
+      Changes.Core.Model
+      Changes.Core.UI.View.Context
+      Changes.Core.UI.View.View
+      Changes.Core.UI.Selection
+      Changes.Core.UI.Dynamic
+      Changes.Core.UI
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      base >=4.16
+    , shapes
+    , thread-trace
+    , time
+  default-language: GHC2021
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Test.Useful
+      Test.SimpleString
+      Resource
+      Subscribe
+      Lens
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , shapes
+  default-language: GHC2021

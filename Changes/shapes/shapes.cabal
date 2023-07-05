@@ -1,0 +1,175 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           shapes
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Data.Words
+      Control.Category.Groupoid
+      Control.FixIO
+      Data.CatEndo
+      Data.EndoM
+      Data.Filterable
+      Data.MonoApplicative
+      Data.CatFunctor
+      Data.Coercion
+      Data.SameItem
+      Data.HasNewValue
+      Data.Streamable
+      Data.Injection
+      Data.Isomorphism
+      Data.Lens
+      Data.Store
+      Data.ConstFunction
+      Data.CoerceFunction
+      Data.PurityFunction
+      Data.Codec
+      Data.KeyedOrder
+      Data.KeyContainer
+      Data.FiniteSet
+      Data.KindMorphism
+      Data.FixBox
+      Data.Serializer
+      Data.Serialize.Instances
+      Data.ReadShow
+      Data.Witness.ListVProduct
+      Control.Category.Dual
+      Control.Category.Lifted
+      Control.Clock
+      Control.Task
+      Control.Stream.Filter
+      Control.Stream.Sink
+      Control.Stream.Source
+      Control.Stream
+      Control.CallbackLock
+      Control.AsyncRunner
+      Unsafe.Type
+      Unsafe.IO
+      Shapes
+      Shapes.Numeric
+      Shapes.Unsafe
+      Shapes.Test
+      Shapes.Test.Context
+  other-modules:
+      Unsafe.Refl
+      Shapes.Import
+      Shapes.Instances
+  hs-source-dirs:
+      src
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      QuickCheck
+    , base >=4.16
+    , bytestring
+    , comonad
+    , constraints
+    , containers
+    , contravariant
+    , countable
+    , directory
+    , filepath
+    , hashable
+    , invariant
+    , lattices
+    , leb128
+    , monadology
+    , mono-traversable
+    , open-witness
+    , primitive-serial
+    , random
+    , stm
+    , tasty
+    , tasty-expected-failure
+    , tasty-golden
+    , tasty-hunit
+    , tasty-quickcheck
+    , text
+    , thread-trace
+    , time
+    , transformers
+    , type-rig
+    , unordered-containers
+    , vector
+    , witness
+  default-language: GHC2021
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Serializer
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , shapes
+    , time
+  default-language: GHC2021

@@ -1,0 +1,234 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           pinafore-language
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Pinafore.Language
+      Pinafore.Language.API
+      Pinafore.Documentation
+      Pinafore.Main
+      Pinafore
+      Pinafore.Test
+  other-modules:
+      Pinafore.Text.ToText
+      Pinafore.Text.Markdown
+      Pinafore.Text
+      Pinafore.Context
+      Pinafore.Language.Debug
+      Pinafore.Language.Value.Instances
+      Pinafore.Language.Value.Lens
+      Pinafore.Language.Value.Prism
+      Pinafore.Language.Value.Model
+      Pinafore.Language.Value.WholeModel
+      Pinafore.Language.Value.SetModel
+      Pinafore.Language.Value.FiniteSetModel
+      Pinafore.Language.Value.ListModel
+      Pinafore.Language.Value.TextModel
+      Pinafore.Language.Value.Attribute
+      Pinafore.Language.Value.Property
+      Pinafore.Language.Value.ModelOrder
+      Pinafore.Language.Value
+      Pinafore.Language.Name.Name
+      Pinafore.Language.Name.Namespace
+      Pinafore.Language.Name.FullName
+      Pinafore.Language.Name.NamespaceRef
+      Pinafore.Language.Name.FullNameRef
+      Pinafore.Language.Name.NamespaceConcat
+      Pinafore.Language.Name.ModuleName
+      Pinafore.Language.Name.NamedText
+      Pinafore.Language.Name.PrecNamedText
+      Pinafore.Language.Name.ExprShow
+      Pinafore.Language.Name
+      Pinafore.Language.Shim
+      Pinafore.Language.If
+      Pinafore.Language.Type.Family
+      Pinafore.Language.Type.Show
+      Pinafore.Language.Type.Ground
+      Pinafore.Language.Type.Types
+      Pinafore.Language.Type.Identified
+      Pinafore.Language.Error
+      Pinafore.Language.SpecialForm
+      Pinafore.Language.VarID
+      Pinafore.Language.Interpreter
+      Pinafore.Language.Var
+      Pinafore.Language.Convert.HasType
+      Pinafore.Language.Convert.Types
+      Pinafore.Language.Convert
+      Pinafore.Language.Type.Type
+      Pinafore.Language.Type.GetDynamicSupertype
+      Pinafore.Language.Type.Subtype.Hint
+      Pinafore.Language.Type.Subtype
+      Pinafore.Language.Type.Storable.Type
+      Pinafore.Language.Type.Storable.Dynamic
+      Pinafore.Language.Type.Storable.Open
+      Pinafore.Language.Type.Storable
+      Pinafore.Language.Type.DynamicSupertype
+      Pinafore.Language.Type
+      Pinafore.Language.DefDoc
+      Pinafore.Language.Grammar.Syntax
+      Pinafore.Language.Grammar.FreeVars
+      Pinafore.Language.Grammar.Read.Token
+      Pinafore.Language.Grammar.Read.Parser
+      Pinafore.Language.Grammar.Read.Type
+      Pinafore.Language.Grammar.Read.Infix
+      Pinafore.Language.Grammar.Read.Constructor
+      Pinafore.Language.Grammar.Read.Pattern
+      Pinafore.Language.Grammar.Read.Expression
+      Pinafore.Language.Grammar.Read.Interactive
+      Pinafore.Language.Grammar.Read
+      Pinafore.Language.Grammar.Interpret.RefNotation
+      Pinafore.Language.Grammar.Interpret.ScopeBuilder
+      Pinafore.Language.Grammar.Interpret.Type
+      Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
+      Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
+      Pinafore.Language.Grammar.Interpret.TypeDecl.Data
+      Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
+      Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
+      Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
+      Pinafore.Language.Grammar.Interpret.TypeDecl
+      Pinafore.Language.Grammar.Interpret.Expression
+      Pinafore.Language.Grammar.Interpret.Interact
+      Pinafore.Language.Grammar.Interpret
+      Pinafore.Language.Grammar
+      Pinafore.Language.Expression
+      Pinafore.Language.Library.FetchModule
+      Pinafore.Language.Library.Defs
+      Pinafore.Language.Library.Convert
+      Pinafore.Language.Library.Types
+      Pinafore.Language.Library.Base
+      Pinafore.Language.Library.Action
+      Pinafore.Language.Library.Lifecycle
+      Pinafore.Language.Library.Interpret
+      Pinafore.Language.Library.MIME
+      Pinafore.Language.Library.Model
+      Pinafore.Language.Library.Optics
+      Pinafore.Language.Library.ModelOrder
+      Pinafore.Language.Library.File
+      Pinafore.Language.Library.Task
+      Pinafore.Language.Library.Stream
+      Pinafore.Language.Library.Storage
+      Pinafore.Language.Library.Undo
+      Pinafore.Language.Library.Env
+      Pinafore.Language.Library.Eval
+      Pinafore.Language.Library.Debug
+      Pinafore.Language.Library
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      base >=4.16
+    , changes-core
+    , changes-world
+    , containers
+    , directory
+    , filepath
+    , parsec
+    , pinafore-base
+    , polar-shim
+    , shapes
+    , text
+    , thread-trace
+    , time
+    , typed-expression
+    , unicode-collation
+  default-language: GHC2021
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Test.Markdown
+      Test.Name
+      Test.Token
+      Test.RunScript
+      Test.Language
+      Test.Unifier
+      Test.Subtype
+      Test.Entity
+      Test.Type
+      Test.ReadType
+      Test.Output
+      Test.Namespace
+      Test.Module
+      Test.Interactive
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , filepath
+    , pinafore-language
+    , polar-shim
+    , shapes
+    , thread-trace
+    , typed-expression
+  default-language: GHC2021

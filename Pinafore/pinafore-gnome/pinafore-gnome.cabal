@@ -1,0 +1,140 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           pinafore-gnome
+version:        0.4
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2022 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+flag test-X11
+  description: Run tests that require an X11 server
+  manual: False
+  default: True
+
+library
+  exposed-modules:
+      Pinafore.Language.Library.GNOME
+  other-modules:
+      Pinafore.Language.Library.GIO
+      Pinafore.Language.Library.GTK.Context
+      Pinafore.Language.Library.GTK.Element.Context
+      Pinafore.Language.Library.GTK.Element.Drawing
+      Pinafore.Language.Library.GTK.Element
+      Pinafore.Language.Library.GTK.MenuItem
+      Pinafore.Language.Library.GTK.Clipboard
+      Pinafore.Language.Library.GTK.Window
+      Pinafore.Language.Library.GTK.Debug
+      Pinafore.Language.Library.GTK
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      Color
+    , base >=4.16
+    , changes-core
+    , changes-gnome
+    , changes-media
+    , changes-world
+    , gi-cairo-render
+    , gi-gdk
+    , gi-gio
+    , gi-gtk
+    , pinafore-base
+    , pinafore-language
+    , pinafore-media
+    , polar-shim
+    , shapes
+    , thread-trace
+    , time
+    , typed-expression
+  default-language: GHC2021
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Flags
+      Test.Context
+      Test.Golden
+      Test.UI
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeInType
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      base >=4.16
+    , changes-core
+    , changes-gnome
+    , filepath
+    , gi-gobject
+    , gi-gtk
+    , haskell-gi-base
+    , pinafore-gnome
+    , pinafore-language
+    , shapes
+    , thread-trace
+  default-language: GHC2021
+  if flag(test-X11)
+    cpp-options: -DTEST_X11
