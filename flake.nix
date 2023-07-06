@@ -2,7 +2,7 @@
     description = "Pinafore";
     inputs =
     {
-        haskellNix.url = "github:AshleyYakeley/haskell.nix?ref=Ashley";
+        haskellNix.url = "github:input-output-hk/haskell.nix";
         nixpkgs.follows = "haskellNix/nixpkgs-2305";
         flake-utils.url = "github:numtide/flake-utils";
     };
@@ -18,10 +18,11 @@
                 overlays = [ haskellNix.overlay
                     (final: prev:
                     {
-                        pinaforeProject = final.haskell-nix.stackProject'
+                        pinaforeProject = final.haskell-nix.stackProject
                         {
                             src = ./.;
                             evalSystem = "x86_64-linux";
+                            ignorePackageYaml = true;
                             modules =
                             [
                                 {
