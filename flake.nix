@@ -48,7 +48,7 @@
                 pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
                 flake = pkgs.pinaforeProject.flake {};
                 exePackage = flake.packages."pinafore-app:exe:pinafore";
-                stdLibPackage = pkgs.runCommand "pinafore-stdlib" {libdir = ./Pinafore/lib;}
+                stdLibPackage = pkgs.runCommand "pinafore-stdlib" {libdir = ./Pinafore/pinafore-stdlib/data;}
                     ''
                     mkdir -p $out/share/pinafore/lib
                     cp -r $libdir/* $out/share/pinafore/lib/

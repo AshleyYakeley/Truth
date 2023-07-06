@@ -73,6 +73,7 @@ tests:
           - shapes
           - changes-core
           - pinafore-language
+          - pinafore-stdlib
           - pinafore-app
         main: Main.hs
         other-modules:

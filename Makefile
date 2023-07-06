@@ -109,7 +109,7 @@ LIBMODULEFILES := \
 
 .build/deb/$(PACKAGEFULLNAME).deb: \
 		${BINPATH}/pinafore \
-		$(foreach I,$(LIBMODULEFILES),Pinafore/lib/$(I).pinafore) \
+		$(foreach I,$(LIBMODULEFILES),Pinafore/pinafore-stdlib/data/$(I).pinafore) \
 		deb/copyright \
 		deb/control.m4 \
 		deb/changelog.m4
@@ -117,7 +117,7 @@ LIBMODULEFILES := \
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
 	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UILib
-	for i in $(LIBMODULEFILES); do cp Pinafore/lib/$$i.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/$$i.pinafore; done
+	for i in $(LIBMODULEFILES); do cp Pinafore/pinafore-stdlib/data/$$i.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/$$i.pinafore; done
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
 	stack $(STACKFLAGS) exec -- \
@@ -186,7 +186,7 @@ LIBMODULEDOCS := \
 
 mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library
-	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/lib > $@
+	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/pinafore-stdlib/data > $@
 
 mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated

@@ -1,0 +1,15 @@
+_common: !include "../../common.yaml"
+name: pinafore-stdlib
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+data-dir: data
+data-files: "**/*.pinafore"
+
+library:
+    dependencies:
+      - base >= 4.16
+    exposed-modules:
+      - Paths_pinafore_stdlib

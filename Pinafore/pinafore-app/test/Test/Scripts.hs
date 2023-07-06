@@ -3,15 +3,17 @@ module Test.Scripts
     , testScripts
     ) where
 
+import Paths_pinafore_stdlib
 import Pinafore
 import Pinafore.Libs
 import Pinafore.Test
 import Shapes
 import Shapes.Test
+import Shapes.Unsafe (unsafePerformIO)
 import System.Directory
 
 libDir :: FilePath
-libDir = "../lib"
+libDir = unsafePerformIO getDataDir
 
 -- Just check, don't run
 testCheckScript :: FilePath -> String -> TestTree
