@@ -20,7 +20,11 @@
                     {
                         pinaforeProject = final.haskell-nix.stackProject
                         {
-                            src = ./.;
+                            src =
+                            {
+                                name = "Pinafore-source";
+                                outPath = ./.;
+                            };
                             evalSystem = "x86_64-linux";
                             ignorePackageYaml = true;
                             modules =
