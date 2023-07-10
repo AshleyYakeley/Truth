@@ -9,7 +9,6 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Text
 import Shapes
 
 type PinaforeTypeM = MPolarW QType
@@ -40,7 +39,7 @@ interpretNonpolarType st = do
                 MkSome tm ->
                     case positiveToNonpolar @QTypeSystem tm of
                         Just t -> return $ shimWitToSome t
-                        Nothing -> throwWithName $ \ntt -> InterpretTypeNotAmbipolarError $ ntt $ exprShow tm
+                        Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 
 interpretTypeM ::
        forall mpolarity. Is MPolarityType mpolarity
@@ -96,7 +95,7 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
                  assignTypeVarWit var t $
                  case safeRecursiveDolanSingularType var t of
                      Just rt -> return $ MkSome $ singleDolanType rt
-                     Nothing -> throwWithName $ \ntt -> InterpretTypeRecursionNotCovariant name $ ntt $ exprShow t)
+                     Nothing -> throw $ InterpretTypeRecursionNotCovariant name $ exprShow t)
             mt
 
 interpretTypeRangeFromType ::
@@ -135,8 +134,8 @@ interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
     return $ toMPolar (\(MkSome tp) -> MkSome $ MkRangeType tp NilDolanType) (MkInvertMPolarW atp)
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
-groundTypeText :: SyntaxGroundType -> Text
-groundTypeText (ConstSyntaxGroundType n) = toText n
+groundTypeText :: SyntaxGroundType -> NamedText
+groundTypeText (ConstSyntaxGroundType n) = showNamedText n
 
 data PinaforeGroundTypeM where
     MkPinaforeGroundTypeM :: Some (QGroundType dv) -> PinaforeGroundTypeM

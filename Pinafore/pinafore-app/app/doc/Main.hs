@@ -48,20 +48,19 @@ printModuleDoc modopts tmodname = do
                 mapNamespaceRef fn = namespaceConcatRef RootNamespace fn
                 mapFullNameRef :: FullNameRef -> FullName
                 mapFullNameRef fn = namespaceConcatFullName RootNamespace fn
-                toMarkdown ::
-                       forall a. ToNamedText a
+                toMarkdown :: NamedText -> MarkdownText
+                toMarkdown = plainText . toText
+                showMarkdown ::
+                       forall a. ShowNamedText a
                     => a
                     -> MarkdownText
-                toMarkdown = plainText . runRelativeNamedText [] . toNamedText
-                trailingParams ::
-                       forall a. ToNamedText a
-                    => [a]
-                    -> MarkdownText
+                showMarkdown = toMarkdown . showNamedText
+                trailingParams :: [NamedText] -> MarkdownText
                 trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
                 putBindDoc :: MarkdownText -> IO ()
                 putBindDoc m = putIndentMarkdown $ paragraphMarkdown $ codeMarkdown m
                 showNames :: NonEmpty FullNameRef -> MarkdownText
-                showNames names = intercalate ", " $ toList $ fmap (boldMarkdown . toMarkdown . mapFullNameRef) names
+                showNames names = intercalate ", " $ toList $ fmap (boldMarkdown . showMarkdown . mapFullNameRef) names
             case docItem of
                 ValueDocItem {..} ->
                     putBindDoc $ let
@@ -70,13 +69,13 @@ printModuleDoc modopts tmodname = do
                         in nameType
                 ValueSignatureDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown diSigName
+                        name = boldMarkdown $ showMarkdown diSigName
                         nameType = name <> " : " <> toMarkdown diType
                         in nameType <>
                            if diHasDefault
                                then " [optional]"
                                else ""
-                SupertypeConstructorSignatureDocItem {..} -> putBindDoc $ boldMarkdown $ toMarkdown diName
+                SupertypeConstructorSignatureDocItem {..} -> putBindDoc $ boldMarkdown $ showMarkdown diName
                 ValuePatternDocItem {..} ->
                     putBindDoc $ let
                         name = showNames diNames
@@ -99,7 +98,7 @@ printModuleDoc modopts tmodname = do
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
                 NamespaceDocItem {..} ->
                     putBindDoc $ let
-                        name = boldMarkdown $ toMarkdown $ mapNamespaceRef diNamespace
+                        name = boldMarkdown $ showMarkdown $ mapNamespaceRef diNamespace
                         in "namespace " <> name
                 HeadingDocItem {..} -> putIndentMarkdown $ titleMarkdown hlevel diTitle
             if docDescription == ""

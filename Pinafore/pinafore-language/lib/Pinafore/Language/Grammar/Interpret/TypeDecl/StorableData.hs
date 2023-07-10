@@ -59,7 +59,7 @@ lookupVar ::
        CovParams dv gt ta
     -> TypeVarT tv
     -> QInterpreter (Arguments f gt ta -> f tv)
-lookupVar NilCCRArguments var = throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow var
+lookupVar NilCCRArguments var = throw $ InterpretTypeNotEntityError $ exprShow var
 lookupVar (ConsCCRArguments (MkCovParam var') params) var
     | Just Refl <- testEquality var var' =
         return $ \(ConsArguments ft args) ->
@@ -79,12 +79,11 @@ nonpolarToStoreAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar p
 nonpolarToStoreAdapter params (GroundedNonpolarType ground args) = do
     (cvt, MkStorableGroundType _ (MkSealedStorability _ storability)) <-
         case dolanToMonoGroundType ground of
-            Nothing -> throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ showGroundType ground
+            Nothing -> throw $ InterpretTypeNotEntityError $ showGroundType ground
             Just x -> return x
     aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToStoreAdapter params arg) cvt args
     return $ Compose $ \eargs -> stbAdapter storability $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
-nonpolarToStoreAdapter _ t@(RecursiveNonpolarType {}) =
-    throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow t
+nonpolarToStoreAdapter _ t@(RecursiveNonpolarType {}) = throw $ InterpretTypeNotEntityError $ exprShow t
 
 makeConstructorAdapter ::
        CovParams dv gt decltype

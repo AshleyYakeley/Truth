@@ -133,4 +133,4 @@ getConcreteDynamicEntityType (MkSome tm) =
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkADynamicEntityFamily name (toList -> [dt])) <- getGroundFamily aDynamicStorableFamilyWitness gt ->
                 return (name, dt)
-        _ -> throwWithName $ \ntt -> InterpretTypeNotConcreteDynamicEntityError $ ntt $ exprShow tm
+        _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm

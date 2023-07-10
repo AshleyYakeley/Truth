@@ -14,9 +14,11 @@ instance (Monad m, Eq name, Show name) => TypeSystem (Unitype m name val) where
     type TSShim (Unitype m name val) = (->)
     type TSVarID (Unitype m name val) = name
 
+type UniShimWit val polarity = PolarShimWit (->) ((:~:) val) polarity
+
 unitypeShimWit ::
        forall polarity (val :: Type). Is PolarityType polarity
-    => PolarShimWit (->) ((:~:) val) polarity val
+    => UniShimWit val polarity val
 unitypeShimWit = mkPolarShimWit Refl
 
 instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) where
@@ -51,7 +53,7 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     subsumerNegSubstitute () Refl = return unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 
-instance (MonadThrow ExpressionError m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
+instance (Monad m, MonadThrow PatternError m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
     type TSInner (Unitype m name val) = m
     bottomShimWit = MkSome unitypeShimWit
 
@@ -59,7 +61,12 @@ class UnitypeValue val where
     applyValue :: val -> val -> val
     abstractValue :: (val -> val) -> val
 
-instance (MonadThrow ExpressionError m, Ord name, Show name, UnitypeValue val) =>
-             CompleteTypeSystem (Unitype m name val) where
+instance ( Monad m
+         , MonadThrow PatternError m
+         , MonadThrow (NamedExpressionError name (UniShimWit val 'Negative)) m
+         , Ord name
+         , Show name
+         , UnitypeValue val
+         ) => CompleteTypeSystem (Unitype m name val) where
     tsFunctionPosWitness Refl Refl = mkPosShimWit Refl abstractValue
     tsFunctionNegWitness Refl Refl = mkNegShimWit Refl applyValue

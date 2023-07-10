@@ -40,7 +40,6 @@ instance WitnessMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (Patt
                         case injectiveListProduct @lt @lt' of
                             Refl -> MkPatternConstructor tt' lvw' pat'
 
-sealedPatternConstructor ::
-       MonadThrow ExpressionError m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
+sealedPatternConstructor :: MonadThrow PatternError m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
 sealedPatternConstructor (MkPatternConstructor twt NilListType pat) = return $ MkSealedPattern twt pat
 sealedPatternConstructor _ = throw PatternTooFewConsArgsError

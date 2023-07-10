@@ -21,15 +21,15 @@ fullNameRefToUnqualified :: FullNameRef -> Maybe Name
 fullNameRefToUnqualified (UnqualifiedFullNameRef n) = Just n
 fullNameRefToUnqualified _ = Nothing
 
-instance ToText FullNameRef where
-    toText (MkFullNameRef name RootNamespaceRef)
-        | nameIsInfix name = toText name
-    toText (MkFullNameRef name CurrentNamespaceRef) = toText name
-    toText (MkFullNameRef name RootNamespaceRef) = toText name <> "."
-    toText (MkFullNameRef name ns) = toText name <> "." <> toText ns
+instance ShowText FullNameRef where
+    showText (MkFullNameRef name RootNamespaceRef)
+        | nameIsInfix name = showText name
+    showText (MkFullNameRef name CurrentNamespaceRef) = showText name
+    showText (MkFullNameRef name RootNamespaceRef) = showText name <> "."
+    showText (MkFullNameRef name ns) = showText name <> "." <> showText ns
 
 instance Show FullNameRef where
-    show = unpack . toText
+    show = unpack . showText
 
 instance IsString FullNameRef where
     fromString "." = MkFullNameRef "." CurrentNamespaceRef

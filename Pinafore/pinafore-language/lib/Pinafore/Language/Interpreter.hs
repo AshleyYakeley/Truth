@@ -16,6 +16,8 @@ module Pinafore.Language.Interpreter
     , SourcePos
     , initialPos
     , Interpreter
+    , mkErrorMessage
+    , nameWitnessErrorType
     , ScopeInterpreter
     , sourcePosParam
     , scopeSourcePos
@@ -24,7 +26,6 @@ module Pinafore.Language.Interpreter
     , withCurrentNamespaceScope
     , usingNamespace
     , getRenderFullName
-    , throwWithName
     , SpecialVals(..)
     , getSpecialVals
     , getBindingInfoMap
@@ -88,6 +89,7 @@ type HasInterpreter ts
        , IsDolanFunctionGroundType (InterpreterGroundType ts)
        , IsDolanSubtypeEntriesGroundType (InterpreterGroundType ts)
        , TSVarID ts ~ VarID
+       , AllConstraint ShowNamedText (TSNegWitness ts)
        , ExprShow (InterpreterBoundType ts)
        , Show (TSSealedExpression ts))
 
@@ -181,8 +183,7 @@ checkEntryConsistency ::
 checkEntryConsistency sce entries =
     case checkSubtypeConsistency (toList entries) sce of
         Nothing -> return ()
-        Just (gta, gtb) ->
-            throwWithName $ \ntt -> InterpretSubtypeInconsistent (ntt $ exprShow gta) (ntt $ exprShow gtb)
+        Just (gta, gtb) -> throw $ InterpretSubtypeInconsistent (exprShow gta) (exprShow gtb)
 
 addSCEntry ::
        forall ts. HasInterpreter ts
@@ -275,13 +276,37 @@ newtype Interpreter ts a = MkInterpreter
                , MonadTunnelIO
                )
 
+mkErrorMessage :: ErrorType -> Interpreter ts ErrorMessage
+mkErrorMessage err = do
+    spos <- paramAsk sourcePosParam
+    ntt <- getRenderFullName
+    return $ MkErrorMessage spos ntt err mempty
+
 instance MonadThrow ErrorType (Interpreter ts) where
     throw err = do
-        spos <- paramAsk sourcePosParam
-        throw $ MkErrorMessage spos err mempty
+        em <- mkErrorMessage err
+        throw em
 
-instance MonadThrow ExpressionError (Interpreter ts) where
-    throw err = throw $ ExpressionErrorError err
+instance MonadThrow PatternError (Interpreter ts) where
+    throw err = throw $ PatternErrorError err
+
+nameWitnessErrorType ::
+       forall ts. AllConstraint ShowNamedText (TSNegWitness ts)
+    => NonEmpty (Some (NameWitness VarID (TSNegShimWit ts)))
+    -> ErrorType
+nameWitnessErrorType ww = let
+    nwToPair :: Some (NameWitness VarID (TSNegShimWit ts)) -> (FullNameRef, NamedText)
+    nwToPair (MkSome (MkNameWitness varid (MkShimWit w _))) = let
+        name =
+            case varIdNameRef varid of
+                FailureResult fnr -> fnr
+                SuccessResult fn -> fullNameRef fn
+        in withAllConstraint @Type @ShowNamedText w (name, showNamedText w)
+    in ExpressionErrorError $ fmap nwToPair ww
+
+instance (AllConstraint ShowNamedText (TSNegWitness ts), vw ~ TSNegShimWit ts) =>
+             MonadThrow (NamedExpressionError VarID vw) (Interpreter ts) where
+    throw (UndefinedBindingsError ww) = throw $ nameWitnessErrorType @ts ww
 
 instance Semigroup a => Semigroup (Interpreter ts a) where
     (<>) = liftA2 (<>)
@@ -365,11 +390,6 @@ getRenderFullName :: Interpreter ts (NamedText -> Text)
 getRenderFullName = do
     curns <- getCurrentNamespace
     return $ runRelativeNamedText $ toList $ namespaceAncestry curns
-
-throwWithName :: ((NamedText -> Text) -> ErrorType) -> Interpreter ts a
-throwWithName err = do
-    ntt <- getRenderFullName
-    throw $ err ntt
 
 nameMapLookupBindingInfo :: NameMap ts -> FullName -> Maybe (FullName, BindingInfo ts)
 nameMapLookupBindingInfo (MkNameMap nspace) name = do
@@ -473,20 +493,19 @@ lookupMaybeValue name = do
             _ -> Nothing
 
 checkPureExpression ::
-       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
+       forall ts. HasInterpreter ts
     => TSSealedExpression ts
     -> Interpreter ts ()
 checkPureExpression expr = do
     _ <- tsEval @ts expr
     return ()
 
-checkPureBinding ::
-       (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts)) => InterpreterBinding ts -> Interpreter ts ()
+checkPureBinding :: HasInterpreter ts => InterpreterBinding ts -> Interpreter ts ()
 checkPureBinding (ValueBinding expr _) = checkPureExpression expr
 checkPureBinding _ = return ()
 
 exportNames ::
-       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
+       forall ts. HasInterpreter ts
     => [FullNameRef]
     -> Interpreter ts [(FullName, BindingInfo ts)]
 exportNames names = do
@@ -513,7 +532,7 @@ exportNamespace cnss = do
     return $ filter toBI $ mapToList nspace
 
 exportScope ::
-       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
+       forall ts. HasInterpreter ts
     => [Namespace]
     -> [FullNameRef]
     -> Interpreter ts ([FullName], Scope ts)
@@ -664,7 +683,7 @@ registerMatchBindings match = do
                 return (vn, "lambda", expr)
     case rbb of
         SuccessResult bb -> registerLetBindings bb
-        FailureResult fn -> lift $ throw $ KnownIssueError 0 $ "bad match var: " <> toText fn
+        FailureResult fn -> lift $ throw $ KnownIssueError 0 $ "bad match var: " <> showNamedText fn
 
 newTypeID :: Interpreter ts (Some TypeIDType)
 newTypeID = do

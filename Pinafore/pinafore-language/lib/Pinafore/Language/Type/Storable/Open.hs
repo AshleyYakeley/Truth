@@ -68,4 +68,4 @@ getOpenEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkOpenEntityFamily oet) <- getGroundFamily openStorableFamilyWitness gt -> return $ MkSome oet
-        _ -> throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tm
+        _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm

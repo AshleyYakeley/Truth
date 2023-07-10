@@ -353,7 +353,7 @@ checkKeyword _ = Nothing
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do
     (u, tns) <- readTokenNames
-    case checkKeyword $ toText $ tnName tns of
+    case checkKeyword $ showText $ tnName tns of
         Just stok ->
             case tns of
                 MkTokenNames False _ [] -> return stok

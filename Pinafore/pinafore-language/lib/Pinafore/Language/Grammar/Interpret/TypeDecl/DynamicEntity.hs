@@ -16,7 +16,7 @@ interpretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor _ na
     MkSomeGroundType t <- lookupBoundType name
     case getGroundFamily aDynamicStorableFamilyWitness t of
         Just (MkADynamicEntityFamily _ det) -> return det
-        Nothing -> throwWithName $ \ntt -> InterpretTypeNotDynamicEntityError $ ntt $ exprShow name
+        Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
 
 makeDynamicEntityTypeBox ::
        FullName -> RawMarkdown -> NonEmpty SyntaxDynamicEntityConstructor -> QInterpreter (QFixBox () ())

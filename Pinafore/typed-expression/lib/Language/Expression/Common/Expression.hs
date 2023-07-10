@@ -41,9 +41,13 @@ expressionFreeWitnessCount :: Expression w a -> Int
 expressionFreeWitnessCount (ClosedExpression _) = 0
 expressionFreeWitnessCount (OpenExpression _ expr) = succ $ expressionFreeWitnessCount expr
 
-evalExpression :: (MonadThrow ExpressionError m, AllConstraint Show w) => Expression w a -> m a
-evalExpression (ClosedExpression a) = return a
-evalExpression expr = throw $ UndefinedBindingsError $ nub $ expressionFreeWitnesses allShow expr
+evalExpressionResult :: Expression w a -> Result (ExpressionError w) a
+evalExpressionResult (ClosedExpression a) = return a
+evalExpressionResult (OpenExpression wt expr) =
+    throwExc $ UndefinedBindingsError $ MkSome wt :| expressionFreeWitnesses MkSome expr
+
+evalExpression :: MonadThrow (ExpressionError w) m => Expression w a -> m a
+evalExpression expr = fromResult $ evalExpressionResult expr
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id

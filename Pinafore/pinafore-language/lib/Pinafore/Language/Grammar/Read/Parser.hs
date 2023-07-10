@@ -118,7 +118,7 @@ readToken stok = let
 instance MonadThrow ErrorType Parser where
     throw err = do
         spos <- getPosition
-        MkParser $ lift $ lift $ throwExc $ MkPinaforeError $ pure $ MkErrorMessage spos err mempty
+        MkParser $ lift $ lift $ throwExc $ MkPinaforeError $ pure $ MkErrorMessage spos toText err mempty
 
 readComments :: Parser [Comment]
 readComments = many $ readToken TokComment

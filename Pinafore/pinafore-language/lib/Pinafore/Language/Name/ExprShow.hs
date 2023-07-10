@@ -13,8 +13,8 @@ import Shapes
 
 class ExprShow t where
     exprShowPrec :: t -> PrecNamedText
-    default exprShowPrec :: ToNamedText t => t -> PrecNamedText
-    exprShowPrec x = namedTextToPrec $ toNamedText x
+    default exprShowPrec :: ShowNamedText t => t -> PrecNamedText
+    exprShowPrec x = namedTextToPrec $ showNamedText x
 
 exprPrecShow :: ExprShow t => Int -> t -> NamedText
 exprPrecShow c t = precNamedText c $ exprShowPrec t

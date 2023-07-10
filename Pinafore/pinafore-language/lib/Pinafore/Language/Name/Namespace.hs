@@ -11,11 +11,11 @@ newtype Namespace =
 instance Ord Namespace where
     compare (MkNamespace a) (MkNamespace b) = compare (reverse a) (reverse b)
 
-instance ToText Namespace where
-    toText (MkNamespace nn) = (intercalate "." $ fmap toText nn) <> "."
+instance ShowText Namespace where
+    showText (MkNamespace nn) = (intercalate "." $ fmap showText nn) <> "."
 
 instance Show Namespace where
-    show = unpack . toText
+    show = unpack . showText
 
 namespaceFromStrings :: [String] -> Maybe Namespace
 namespaceFromStrings ss = do

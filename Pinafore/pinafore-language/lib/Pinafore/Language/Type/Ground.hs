@@ -119,7 +119,7 @@ stdSingleGroundType ::
     => IOWitness ('MkWitKind (SingletonFamily t))
     -> FullName
     -> QGroundType dv t
-stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @dv $ toNamedText name
+stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @dv $ showNamedText name
 
 type QTypeSystem = DolanTypeSystem QGroundType
 
@@ -179,6 +179,12 @@ instance GroundExprShow QGroundType where
         -> DolanArguments dv w f polarity t
         -> PrecNamedText
     groundTypeShowPrec t args = showPrecDolanVariance (qgtShowType t) args
+
+instance Is PolarityType polarity => ShowNamedText (DolanType QGroundType polarity a) where
+    showNamedText t = toNamedText $ exprShow t
+
+instance Is PolarityType polarity => AllConstraint ShowNamedText (DolanType QGroundType polarity) where
+    allConstraint = Dict
 
 instance Is PolarityType polarity => Show (DolanType QGroundType polarity a) where
     show t = unpack $ toText $ exprShow t

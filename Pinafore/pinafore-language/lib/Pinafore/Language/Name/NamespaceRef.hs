@@ -25,12 +25,12 @@ namespaceConcatRefM mnsa (RelativeNamespaceRef namesb) = fmap (\ns -> namespaceA
 namespaceConcatRef :: Namespace -> NamespaceRef -> Namespace
 namespaceConcatRef nsa nsb = runIdentity $ namespaceConcatRefM (Identity nsa) nsb
 
-instance ToText NamespaceRef where
-    toText (RelativeNamespaceRef nn) = intercalate "." $ fmap toText nn
-    toText (AbsoluteNamespaceRef asn) = toText asn
+instance ShowText NamespaceRef where
+    showText (RelativeNamespaceRef nn) = intercalate "." $ fmap showText nn
+    showText (AbsoluteNamespaceRef asn) = showText asn
 
 instance Show NamespaceRef where
-    show = unpack . toText
+    show = unpack . showText
 
 namespaceRefFromStrings :: [String] -> Maybe NamespaceRef
 namespaceRefFromStrings ss = do

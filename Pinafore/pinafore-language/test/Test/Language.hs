@@ -1044,25 +1044,25 @@ testShims :: TestTree
 testShims =
     testTree
         "shim"
-        [ testShim "3" "Integer" "(join1 id)"
-        , testShim "negate.Integer" "Integer -> Integer" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        , testShim "negate.Integer 3" "Integer" "(join1 id)"
+        [ testShim "3" "Integer." "(join1 id)"
+        , testShim "negate.Integer" "Integer. -> Integer." "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , testShim "negate.Integer 3" "Integer." "(join1 id)"
         , expectFailBecause "ISSUE #63" $ testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        , expectFailBecause "ISSUE #63" $ testShim "id 3" "Integer" "(join1 id)"
+        , expectFailBecause "ISSUE #63" $ testShim "id 3" "Integer." "(join1 id)"
         , expectFailBecause "ISSUE #63" $ testShim "fn x => x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        , expectFailBecause "ISSUE #63" $ testShim "(fn x => x) 3" "Integer" "(join1 id)"
+        , expectFailBecause "ISSUE #63" $ testShim "(fn x => x) 3" "Integer." "(join1 id)"
         , expectFailBecause "ISSUE #63" $
-          testShim "fn x => 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
-        , testShim "(fn x => 4) 3" "Integer" "(join1 id)"
+          testShim "fn x => 4" "Any -> Integer." "(join1 (co (contra id termf) (join1 id)))"
+        , testShim "(fn x => 4) 3" "Integer." "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
               "let rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount"
-              "(rec c, Maybe c) -> Integer"
+              "(rec c, Maybe c) -> Integer."
               "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
               "let rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount"
-              "(rec a, Maybe a) -> Integer"
+              "(rec a, Maybe a) -> Integer."
               "(join1 id)"
         ]
 

@@ -42,7 +42,7 @@ class ( RenameTypeSystem ts
       , UnifyTypeSystem ts
       , SimplifyTypeSystem ts
       , Monad (TSInner ts)
-      , MonadThrow ExpressionError (TSInner ts)
+      , MonadThrow PatternError (TSInner ts)
       , Ord (TSVarID ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
       ) => AbstractTypeSystem ts where

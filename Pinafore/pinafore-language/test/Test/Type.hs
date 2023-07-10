@@ -150,37 +150,39 @@ testType =
         "type"
         [ testTree
               "pure"
-              [ exprTypeTest "number" (return "{} -> Number") $ return numExpr
-              , exprTypeTest "boolean" (return "{} -> Boolean") $ return boolExpr
+              [ exprTypeTest "number" (return "{} -> Number.") $ return numExpr
+              , exprTypeTest "boolean" (return "{} -> Boolean.") $ return boolExpr
               , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
-              , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
-              , exprTypeTest "var" (return "{v : a} -> a") $ return varExpr
-              , exprTypeTest "apply-id-number" (return "{} -> Number") $ apExpr idExpr numExpr
-              , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
+              , exprTypeTest "nb" (return "{} -> Number. -> Boolean.") $ return nbFuncExpr
+              , exprTypeTest "var" (return "{v. : a} -> a") $ return varExpr
+              , exprTypeTest "apply-id-number" (return "{} -> Number.") $ apExpr idExpr numExpr
+              , exprTypeTest "apply nb number" (return "{} -> Boolean.") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
-              , exprTypeTest "apply id var" (return "{v : a} -> a") $ apExpr idExpr varExpr
-              , exprTypeTest "apply nb var" (return "{v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
-              , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
-              , exprTypeTest "list1" (return "{} -> a -> List a") $ return list1Expr
-              , exprTypeTest "listNumBool" (return "{} -> List (Boolean | Number)") $ do
+              , exprTypeTest "apply id var" (return "{v. : a} -> a") $ apExpr idExpr varExpr
+              , exprTypeTest "apply nb var" (return "{v. : Number.} -> Boolean.") $ apExpr nbFuncExpr varExpr
+              , exprTypeTest "ifelse" (return "{} -> Boolean. -> a -> a -> a") $ return ifelseExpr
+              , exprTypeTest "list1" (return "{} -> a -> List. a") $ return list1Expr
+              , exprTypeTest "listNumBool" (return "{} -> List. (Boolean. | Number.)") $ do
                     lne <- apExpr list1Expr numExpr
                     lbe <- apExpr list1Expr boolExpr
                     joinExpr lne lbe
-              , exprTypeTest "listlistNumBool" (return "{} -> List (List (Boolean | Number))") $ do
+              , exprTypeTest "listlistNumBool" (return "{} -> List. (List. (Boolean. | Number.))") $ do
                     lne <- apExpr list1Expr numExpr
                     lbe <- apExpr list1Expr boolExpr
                     llne <- apExpr list1Expr lne
                     llbe <- apExpr list1Expr lbe
                     joinExpr llne llbe
-              , exprTypeTest "List Number -> List Boolean" (return "{} -> List Number -> List Boolean") $
+              , exprTypeTest "List. Number. -> List. Boolean." (return "{} -> List. Number. -> List. Boolean.") $
                 return listNumBoolFuncExpr
-              , exprTypeTest "List Boolean -> List Number" (return "{} -> List Boolean -> List Number") $
+              , exprTypeTest "List. Boolean. -> List. Number." (return "{} -> List. Boolean. -> List. Number.") $
                 return listBoolNumFuncExpr
-              , exprTypeTest "List nn -> List bb" (return "{} -> List Number -> List Boolean") $
+              , exprTypeTest "List. nn -> List. bb" (return "{} -> List. Number. -> List. Boolean.") $
                 joinExpr listNumBoolFuncExpr listNumBoolFuncExpr
-              , exprTypeTest "List bb -> List nn" (return "{} -> List Boolean -> List Number") $
+              , exprTypeTest "List. bb -> List. nn" (return "{} -> List. Boolean. -> List. Number.") $
                 joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
-              , exprTypeTest "List nb -> List bn" (return "{} -> List (Boolean & Number) -> List (Number | Boolean)") $
+              , exprTypeTest
+                    "List. nb -> List. bn"
+                    (return "{} -> List. (Boolean. & Number.) -> List. (Number. | Boolean.)") $
                 joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
               , exprTypeTest "snd" (return "{} -> Any *: a -> a") $ return sndExpr
               , exprTypeTest "thing" (return "{} -> a *: b -> a *: (a | b)") $ return thingExpr
@@ -191,56 +193,56 @@ testType =
               , exprTypeTest "thing . twice" (return "{} -> a -> a *: a") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
-              , exprTypeTest "thing $ twice number" (return "{} -> Number *: Number") $ do
+              , exprTypeTest "thing $ twice number" (return "{} -> Number. *: Number.") $ do
                     e1 <- apExpr twiceExpr numExpr
                     apExpr thingExpr e1
-              , exprTypeTest "simplify $ thing $ twice number" (return "{} -> Number *: Number") $ do
+              , exprTypeTest "simplify $ thing $ twice number" (return "{} -> Number. *: Number.") $ do
                     e1 <- apExpr twiceExpr numExpr
                     r <- apExpr thingExpr e1
                     runRenamer @TS [] [] $ runSimplify r
-              , exprTypeTest "simplify duplicate" (return "{} -> Number") $
+              , exprTypeTest "simplify duplicate" (return "{} -> Number.") $
                 runRenamer @TS [] [] $
                 runSimplify $ typeFConstExpression toJMShimWit (MkJoinType (Right 3) :: JoinType Number Number)
-              , exprTypeTest "simplify duplicate list" (return "{} -> List Number") $
+              , exprTypeTest "simplify duplicate list" (return "{} -> List. Number.") $
                 runRenamer @TS [] [] $
                 runSimplify $ typeFConstExpression toJMShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
-              , exprTypeTest "simplify duplicate pair" (return "{} -> Number *: Number") $
+              , exprTypeTest "simplify duplicate pair" (return "{} -> Number. *: Number.") $
                 runRenamer @TS [] [] $
                 runSimplify $
                 typeFConstExpression
                     toJMShimWit
                     (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
-              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
+              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number. *: Number.") $
                 runRenamer @TS [] [] $
                 runSimplify $
                 typeFConstExpression toJMShimWit ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
-              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
+              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number. *: Number.") $
                 runRenamer @TS [] [] $
                 runSimplify $
                 typeFConstExpression
                     toJMShimWit
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
-              , exprTypeTest "simplify duplicate in list" (return "{} -> List Number") $
+              , exprTypeTest "simplify duplicate in list" (return "{} -> List. Number.") $
                 runRenamer @TS [] [] $
                 runSimplify $ typeFConstExpression toJMShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
         , testTree
               "read"
               [ textTypeTest "v" "{v : a} -> a"
-              , textTypeTest "if t then v1 else v2" "{t : Boolean, v1 : a, v2 : a} -> a"
-              , textTypeTest "[]" "{} -> List None"
-              , textTypeTest "fn v => 1" "{} -> Any -> Integer"
-              , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1 a"
-              , textTypeTest "[v,v,v]" "{v : a} -> List1 a"
-              , textTypeTest "[x,y,x,y]" "{x : a, y : a} -> List1 a"
-              , textTypeTest "(v 3,v \"text\")" "{v : Integer -> a, v : Text -> b} -> a *: b"
+              , textTypeTest "if t then v1 else v2" "{t : Boolean., v1 : a, v2 : a} -> a"
+              , textTypeTest "[]" "{} -> List. None"
+              , textTypeTest "fn v => 1" "{} -> Any -> Integer."
+              , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1. a"
+              , textTypeTest "[v,v,v]" "{v : a} -> List1. a"
+              , textTypeTest "[x,y,x,y]" "{x : a, y : a} -> List1. a"
+              , textTypeTest "(v 3,v \"text\")" "{v : Integer. -> a, v : Text. -> b} -> a *: b"
               , textTypeTest "(v,v)" "{v : a, v : b} -> a *: b"
-              , textTypeTest "(v 3,v 3)" "{v : Integer -> a, v : Integer -> b} -> a *: b"
-              , textTypeTest "[v 3]" "{v : Integer -> a} -> List1 a"
-              , textTypeTest "(v 3,v False)" "{v : Integer -> a, v : Boolean -> b} -> a *: b"
+              , textTypeTest "(v 3,v 3)" "{v : Integer. -> a, v : Integer. -> b} -> a *: b"
+              , textTypeTest "[v 3]" "{v : Integer. -> a} -> List1. a"
+              , textTypeTest "(v 3,v False)" "{v : Integer. -> a, v : Boolean. -> b} -> a *: b"
               , textTypeTest
                     "((v 3,v False),v 3)"
-                    "{v : Integer -> a, v : Boolean -> b, v : Integer -> c} -> (a *: b) *: c"
+                    "{v : Integer. -> a, v : Boolean. -> b, v : Integer. -> c} -> (a *: b) *: c"
               , testTree
                     "function"
                     [ textTypeTest "let i: tvar -> tvar = id.Function in i" "{} -> a -> a"
@@ -248,40 +250,40 @@ testType =
                     , textTypeTest "let i = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : a -> a = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : tvar -> tvar = fn x => x in i" "{} -> a -> a"
-                    , textTypeTest "let i : a -> a = fn x => x in i 3" "{} -> Integer"
+                    , textTypeTest "let i : a -> a = fn x => x in i 3" "{} -> Integer."
                     ]
-              , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1 a"
-              , textTypeTest "fn v1, v2 => [v1,v2]" "{} -> a -> a -> List1 a"
-              , textTypeTest "fn v1, v2, v3 => ([v1,v2],[v2,v3])" "{} -> a -> (a & b) -> b -> List1 a *: List1 b"
+              , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1. a"
+              , textTypeTest "fn v1, v2 => [v1,v2]" "{} -> a -> a -> List1. a"
+              , textTypeTest "fn v1, v2, v3 => ([v1,v2],[v2,v3])" "{} -> a -> (a & b) -> b -> List1. a *: List1. b"
               , textTypeTest
                     "fn v1, v2, v3 => (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (a & b) -> (a & c) -> (c & b) -> (List1 a *: List1 c) *: List1 b"
+                    "{} -> (a & b) -> (a & c) -> (c & b) -> (List1. a *: List1. c) *: List1. b"
               , testTree
                     "inversion"
-                    [ textTypeTest "fn x => let y : Integer = x in y" "{} -> Integer -> Integer"
+                    [ textTypeTest "fn x => let y : Integer = x in y" "{} -> Integer. -> Integer."
                     , rejectionTest "fn x => let y : Boolean | Number = x in y"
                     , rejectionTest "fn x => let y : (a -> a) *: (Boolean | Number) = x in y"
                     , rejectionTest "fn x => let y : (b -> b) *: (Boolean | Number) = x in y"
                     , textTypeTest
                           "fn x => let y: Boolean *: Number = (x,x) in y"
-                          "{} -> (Number & Boolean) -> Boolean *: Number"
+                          "{} -> (Number. & Boolean.) -> Boolean. *: Number."
                     , textTypeTest
                           "fn x1 => fn x2 => let y: Boolean *: Number = (x1,x2) in y"
-                          "{} -> Boolean -> Number -> Boolean *: Number"
-                    , textTypeTest "let f : a -> a = fn x => x; g : a -> a = f in f 3" "{} -> Integer"
+                          "{} -> Boolean. -> Number. -> Boolean. *: Number."
+                    , textTypeTest "let f : a -> a = fn x => x; g : a -> a = f in f 3" "{} -> Integer."
                     , textTypeTest
                           "let rec g : a -> a = f; f : a -> a = fn x => x end in (f 3, g \"t\")"
-                          "{} -> Integer *: Text"
+                          "{} -> Integer. *: Text."
                     , textTypeTest
                           "do i1 <- pure.Action. $.Function fn x => x; pure.Action. i1; end"
-                          "{} -> Action (a -> a)"
+                          "{} -> Action. (a -> a)"
                     , textTypeTest
                           "do i1 <- pure.Action. $.Function fn x => x; i2 <- pure.Action. i1; pure.Action. i2; end"
-                          "{} -> Action (a -> a)"
+                          "{} -> Action. (a -> a)"
                     , rejectionTest "do i1 <- pure.Action. $.Function fn x => x; pure.Action. (i1 : a -> a); end"
                     , textTypeTest
                           "do i1 <- pure.Action. $.Function fn x => x; pure.Action. (i1 : Text -> Text); end"
-                          "{} -> Action (Text -> Text)"
+                          "{} -> Action. (Text. -> Text.)"
                     , textTypeTest "fn x => let y = x in y" "{} -> a -> a"
                     , rejectionTest "fn x => let y : a -> a = x in y"
                     , rejectionTest
@@ -291,67 +293,67 @@ testType =
                     , rejectionTest
                           "do r <- newMem.WholeModel; (r1: WholeModel a) <- pure.Action. r; r1 := 3; t <- get r1; pure.Action. $.Function textLength t end"
                     ]
-              , textTypeTest "let f : Entity = Nothing in f" "{} -> Entity"
-              , textTypeTest "let f : Entity -> Entity = Just in f" "{} -> Entity -> Entity"
-              , textTypeTest "let f : Entity = [] in f" "{} -> Entity"
-              , textTypeTest "let f : Entity -> Entity = fn x => [x] in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity = Nothing in f" "{} -> Entity."
+              , textTypeTest "let f : Entity -> Entity = Just in f" "{} -> Entity. -> Entity."
+              , textTypeTest "let f : Entity = [] in f" "{} -> Entity."
+              , textTypeTest "let f : Entity -> Entity = fn x => [x] in f" "{} -> Entity. -> Entity."
               , textTypeTest
                     "let f : Entity -> Entity -> Entity = fn a, b => (a,b) in f"
-                    "{} -> Entity -> Entity -> Entity"
-              , textTypeTest "let f : Entity -> Entity = Left in f" "{} -> Entity -> Entity"
-              , textTypeTest "let f : Entity -> Entity = Right in f" "{} -> Entity -> Entity"
-              , textTypeTest "fn x => if odd.Integer x then x else (x:Number)" "{} -> Integer -> Number"
+                    "{} -> Entity. -> Entity. -> Entity."
+              , textTypeTest "let f : Entity -> Entity = Left in f" "{} -> Entity. -> Entity."
+              , textTypeTest "let f : Entity -> Entity = Right in f" "{} -> Entity. -> Entity."
+              , textTypeTest "fn x => if odd.Integer x then x else (x:Number)" "{} -> Integer. -> Number."
               , testTree
                     "recursive"
-                    [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe a"
-                    , textTypeTest "let rec x : rec a, Maybe a = Just x end in x" "{} -> rec a, Maybe a"
-                    , textTypeTest "let rec x = Just x end in x" "{} -> rec a, Maybe a"
-                    , textTypeTest "let rec x : Entity = Just x end in x" "{} -> Entity"
-                    , textTypeTest "let rec x : Maybe Entity = Just x end in x" "{} -> Maybe Entity"
+                    [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe. a"
+                    , textTypeTest "let rec x : rec a, Maybe a = Just x end in x" "{} -> rec a, Maybe. a"
+                    , textTypeTest "let rec x = Just x end in x" "{} -> rec a, Maybe. a"
+                    , textTypeTest "let rec x : Entity = Just x end in x" "{} -> Entity."
+                    , textTypeTest "let rec x : Maybe Entity = Just x end in x" "{} -> Maybe. Entity."
                     , textTypeTest
                           "let using Function; rec rcount = match Nothing => 0; Just y => succ.Integer $ rcount y end end in rcount"
-                          "{} -> (rec a, Maybe a) -> Integer"
+                          "{} -> (rec a, Maybe. a) -> Integer."
                     , textTypeTest
                           "Just $.Function Just $.Function Just Nothing"
-                          "{} -> Maybe (Maybe (Maybe (Maybe None)))"
+                          "{} -> Maybe. (Maybe. (Maybe. (Maybe. None)))"
                     , textTypeTest
                           "let using Function; rec rcount = match Nothing => 0; Just y => succ.Integer $ r1count y end; r1count = match Nothing => 0; Just y => succ.Integer $ r1count y end end in rcount $ Just $ Just $ Just Nothing"
-                          "{} -> Integer"
+                          "{} -> Integer."
                     , textTypeTest
                           "let using Function; rec rcount = match Nothing => 0; Just y => succ.Integer $ rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
-                          "{} -> ((rec a, Maybe a) -> Integer) *: (rec b, Maybe b) *: Integer"
+                          "{} -> ((rec a, Maybe. a) -> Integer.) *: (rec b, Maybe. b) *: Integer."
                     ]
               , testTree
                     "tuple"
-                    [ textTypeTest "()" "{} -> Unit"
-                    , textTypeTest "(1,False)" "{} -> Integer *: Boolean"
-                    , textTypeTest "(1,(False,(3,True)))" "{} -> Integer *: Boolean *: Integer *: Boolean"
-                    , textTypeTest "(1,False,(3,True))" "{} -> Integer *: Boolean *: Integer *: Boolean"
-                    , textTypeTest "(1,(False,3,True))" "{} -> Integer *: Boolean *: Integer *: Boolean"
-                    , textTypeTest "(1,False,3,True)" "{} -> Integer *: Boolean *: Integer *: Boolean"
-                    , textTypeTest "match (1,False) => () end" "{} -> Literal *: Literal -> Unit"
+                    [ textTypeTest "()" "{} -> Unit."
+                    , textTypeTest "(1,False)" "{} -> Integer. *: Boolean."
+                    , textTypeTest "(1,(False,(3,True)))" "{} -> Integer. *: Boolean. *: Integer. *: Boolean."
+                    , textTypeTest "(1,False,(3,True))" "{} -> Integer. *: Boolean. *: Integer. *: Boolean."
+                    , textTypeTest "(1,(False,3,True))" "{} -> Integer. *: Boolean. *: Integer. *: Boolean."
+                    , textTypeTest "(1,False,3,True)" "{} -> Integer. *: Boolean. *: Integer. *: Boolean."
+                    , textTypeTest "match (1,False) => () end" "{} -> Literal. *: Literal. -> Unit."
                     , textTypeTest
                           "match (1,False,3,True) => () end"
-                          "{} -> Literal *: Literal *: Literal *: Literal -> Unit"
+                          "{} -> Literal. *: Literal. *: Literal. *: Literal. -> Unit."
                     ]
               , testTree
                     "let-binding"
-                    [ textTypeTest "fn x => let in ()" "{} -> Any -> Unit"
-                    , textTypeTest "fn x => let y = x in ()" "{} -> Any -> Unit"
+                    [ textTypeTest "fn x => let in ()" "{} -> Any -> Unit."
+                    , textTypeTest "fn x => let y = x in ()" "{} -> Any -> Unit."
                     , textTypeTest "fn x => let y = x in y" "{} -> a -> a"
-                    , textTypeTest "fn x => let y = x +.Integer x in y" "{} -> Integer -> Integer"
-                    , textTypeTest "fn x => let y = x +.Integer x in ()" "{} -> Any -> Unit"
-                    , textTypeTest "fn x => let using Integer; y = x + x in y" "{} -> Integer -> Integer"
-                    , textTypeTest "fn x => let using Integer; y = x + x in ()" "{} -> Any -> Unit"
+                    , textTypeTest "fn x => let y = x +.Integer x in y" "{} -> Integer. -> Integer."
+                    , textTypeTest "fn x => let y = x +.Integer x in ()" "{} -> Any -> Unit."
+                    , textTypeTest "fn x => let using Integer; y = x + x in y" "{} -> Integer. -> Integer."
+                    , textTypeTest "fn x => let using Integer; y = x + x in ()" "{} -> Any -> Unit."
                     , textTypeTest
                           "fn x => let subtype Unit <: Action Integer = fn () => pure.Action. x in ()"
-                          "{} -> Any -> Unit"
+                          "{} -> Any -> Unit."
                     , textTypeTest
                           "fn x => let subtype Unit <: Action Integer = fn () => pure.Action. x in ((): Action Integer)"
-                          "{} -> Integer -> Action Integer"
+                          "{} -> Integer. -> Action. Integer."
                     , textTypeTest
                           "let subtype Unit <: Action Integer = fn () => pure.Action. x in ((): Action Integer)"
-                          "{x : b & Integer} -> Action Integer"
+                          "{x : b & Integer.} -> Action. Integer."
                     ]
               ]
         , testTree
@@ -363,92 +365,92 @@ testType =
               , simplifyTypeTest "a *: b -> a *: (a | b)" "a *: b -> a *: (a | b)"
               , simplifyTypeTest "a *: b -> b *: (a | b)" "a *: b -> b *: (a | b)"
               , simplifyTypeTest "(a&b) -> a *: b" "a -> a *: a"
-              , simplifyTypeTest "(a & Integer) -> Boolean" "Integer -> Boolean"
-              , simplifyTypeTest "(b & Integer) -> Integer" "Integer -> Integer"
-              , simplifyTypeTest "(a & Integer) -> b" "Integer -> None"
-              , simplifyTypeTest "(a & Integer) -> a" "(a & Integer) -> a"
-              , simplifyTypeTest "(a & Integer) -> (a | Number)" "Integer -> Number"
+              , simplifyTypeTest "(a & Integer) -> Boolean" "Integer. -> Boolean."
+              , simplifyTypeTest "(b & Integer) -> Integer" "Integer. -> Integer."
+              , simplifyTypeTest "(a & Integer) -> b" "Integer. -> None"
+              , simplifyTypeTest "(a & Integer) -> a" "(a & Integer.) -> a"
+              , simplifyTypeTest "(a & Integer) -> (a | Number)" "Integer. -> Number."
               , testTree
                     "subtype"
-                    [ simplifyTypeTest "Boolean | Integer" "Boolean | Integer"
-                    , simplifyTypeTest "Integer | Boolean" "Integer | Boolean"
-                    , simplifyTypeTest "(Boolean & Integer) -> Unit" "(Boolean & Integer) -> Unit"
-                    , simplifyTypeTest "(Integer & Boolean) -> Unit" "(Integer & Boolean) -> Unit"
-                    , simplifyTypeTest "Literal | Integer" "Literal"
-                    , simplifyTypeTest "Integer | Literal" "Literal"
-                    , simplifyTypeTest "List Literal | List Integer" "List Literal"
-                    , simplifyTypeTest "List Integer | List Literal" "List Literal"
-                    , simplifyTypeTest "(Literal & Integer) -> Unit" "Integer -> Unit"
-                    , simplifyTypeTest "(Integer & Literal) -> Unit" "Integer -> Unit"
-                    , simplifyTypeTest "(List Literal & List Integer) -> Unit" "List Integer -> Unit"
-                    , simplifyTypeTest "(List Integer & List Literal) -> Unit" "List Integer -> Unit"
+                    [ simplifyTypeTest "Boolean | Integer" "Boolean. | Integer."
+                    , simplifyTypeTest "Integer | Boolean" "Integer. | Boolean."
+                    , simplifyTypeTest "(Boolean & Integer) -> Unit" "(Boolean. & Integer.) -> Unit."
+                    , simplifyTypeTest "(Integer & Boolean) -> Unit" "(Integer. & Boolean.) -> Unit."
+                    , simplifyTypeTest "Literal | Integer" "Literal."
+                    , simplifyTypeTest "Integer | Literal" "Literal."
+                    , simplifyTypeTest "List Literal | List Integer" "List. Literal."
+                    , simplifyTypeTest "List Integer | List Literal" "List. Literal."
+                    , simplifyTypeTest "(Literal & Integer) -> Unit" "Integer. -> Unit."
+                    , simplifyTypeTest "(Integer & Literal) -> Unit" "Integer. -> Unit."
+                    , simplifyTypeTest "(List Literal & List Integer) -> Unit" "List. Integer. -> Unit."
+                    , simplifyTypeTest "(List Integer & List Literal) -> Unit" "List. Integer. -> Unit."
                     ]
               , testTree
                     "recursive"
                     [ simplifyTypeTest "rec a, a" "None"
-                    , simplifyTypeTest "rec a, (a | Maybe a)" "rec a, Maybe a"
-                    , simplifyTypeTest "rec a, (a | Integer)" "Integer"
-                    , simplifyTypeTest "rec a, Maybe a" "rec a, Maybe a"
-                    , simplifyTypeTest "rec a, Integer" "Integer"
-                    , simplifyTypeTest "Maybe (rec a, a)" "Maybe None"
-                    , simplifyTypeTest "Maybe (rec a, List a)" "Maybe (rec a, List a)"
-                    , simplifyTypeTest "Maybe (rec a, Integer)" "Maybe Integer"
+                    , simplifyTypeTest "rec a, (a | Maybe a)" "rec a, Maybe. a"
+                    , simplifyTypeTest "rec a, (a | Integer)" "Integer."
+                    , simplifyTypeTest "rec a, Maybe a" "rec a, Maybe. a"
+                    , simplifyTypeTest "rec a, Integer" "Integer."
+                    , simplifyTypeTest "Maybe (rec a, a)" "Maybe. None"
+                    , simplifyTypeTest "Maybe (rec a, List a)" "Maybe. (rec a, List. a)"
+                    , simplifyTypeTest "Maybe (rec a, Integer)" "Maybe. Integer."
                     , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a, rec b, a *: b" "rec b, b *: b"
                     , expectFailBecause "ISSUE #61" $
-                      simplifyTypeTest "(rec a, Maybe a) | (rec b, List b)" "rec a, Maybe a | List a"
+                      simplifyTypeTest "(rec a, Maybe a) | (rec b, List b)" "rec a, Maybe. a | List. a"
                     , expectFailBecause "ISSUE #61" $
-                      simplifyTypeTest "(rec a, Maybe a) | (rec a, List a)" "rec a, Maybe a | List a"
+                      simplifyTypeTest "(rec a, Maybe a) | (rec a, List a)" "rec a, Maybe. a | List. a"
                     , testTree
                           "roll"
-                          [ simplifyTypeTest "Maybe (rec a, Maybe a)" "rec a, Maybe a"
-                          , simplifyTypeTest "Maybe (Maybe (rec a, Maybe a))" "rec a, Maybe a"
-                          , simplifyTypeTest "Any -> Maybe (rec a, Maybe a)" "Any -> (rec a, Maybe a)"
-                          , unrollTest "rec a, Maybe a" "Maybe (rec a, Maybe a)"
+                          [ simplifyTypeTest "Maybe (rec a, Maybe a)" "rec a, Maybe. a"
+                          , simplifyTypeTest "Maybe (Maybe (rec a, Maybe a))" "rec a, Maybe. a"
+                          , simplifyTypeTest "Any -> Maybe (rec a, Maybe a)" "Any -> (rec a, Maybe. a)"
+                          , unrollTest "rec a, Maybe a" "Maybe. (rec a, Maybe. a)"
                           ]
                     ]
               , testTree
                     "fullconstraint"
-                    [ simplifyTypeTest "Integer | d" "Integer"
-                    , simplifyTypeTest "(rec a, Maybe a) | d" "rec a, Maybe a"
-                    , simplifyTypeTest "rec a, (Maybe a | d)" "rec a, Maybe a"
-                    , simplifyTypeTest "Maybe (rec a, Maybe a | d)" "rec a, Maybe a"
-                    , simplifyTypeTest "d -> Maybe (rec a, Maybe a | d)" "d -> Maybe (rec a, Maybe a | d)"
-                    , simplifyTypeTest "(a -> Literal) | ((Text & b) -> a)" "Text -> Literal"
-                    , simplifyTypeTest "(a & Text) -> (Literal | a)" "Text -> Literal"
+                    [ simplifyTypeTest "Integer | d" "Integer."
+                    , simplifyTypeTest "(rec a, Maybe a) | d" "rec a, Maybe. a"
+                    , simplifyTypeTest "rec a, (Maybe a | d)" "rec a, Maybe. a"
+                    , simplifyTypeTest "Maybe (rec a, Maybe a | d)" "rec a, Maybe. a"
+                    , simplifyTypeTest "d -> Maybe (rec a, Maybe a | d)" "d -> Maybe. (rec a, Maybe. a | d)"
+                    , simplifyTypeTest "(a -> Literal) | ((Text & b) -> a)" "Text. -> Literal."
+                    , simplifyTypeTest "(a & Text) -> (Literal | a)" "Text. -> Literal."
                     ]
               ]
         , testTree
               "library"
-              [ textTypeTest "()" "{} -> Unit"
-              , textTypeTest "{3}" "{} -> WholeModel +Integer"
-              , textTypeTest "id.Property !$%.Attribute {3}" "{} -> WholeModel +Integer"
-              , textTypeTest "id.Property !$.Attribute {3}" "{} -> WholeModel +Integer"
-              , textTypeTest "(id.Property ..Property id.Property) !$%.Attribute {3}" "{} -> WholeModel +Integer"
-              , textTypeTest "(id.Property ..Property id.Property) !$.Attribute {3}" "{} -> WholeModel +Integer"
+              [ textTypeTest "()" "{} -> Unit."
+              , textTypeTest "{3}" "{} -> WholeModel. +Integer."
+              , textTypeTest "id.Property !$%.Attribute {3}" "{} -> WholeModel. +Integer."
+              , textTypeTest "id.Property !$.Attribute {3}" "{} -> WholeModel. +Integer."
+              , textTypeTest "(id.Property ..Property id.Property) !$%.Attribute {3}" "{} -> WholeModel. +Integer."
+              , textTypeTest "(id.Property ..Property id.Property) !$.Attribute {3}" "{} -> WholeModel. +Integer."
               , textTypeTest
                     "property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store"
-                    "{store : Store} -> Property {-Integer,+Number} (Text *: Text)"
+                    "{store : Store.} -> Property. {-Integer.,+Number.} (Text. *: Text.)"
               , textTypeTest
                     "property.Store @Text @Integer !\"a\" store ++.Property property.Store @Text @Number !\"b\" store"
-                    "{store : Store} -> Property (Text +: Text) {-Integer,+Number}"
+                    "{store : Store.} -> Property. (Text. +: Text.) {-Integer.,+Number.}"
               , textTypeTest
                     "(property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store) !$%.Attribute {3}"
-                    "{store : Store} -> WholeModel (Text *: Text)"
+                    "{store : Store.} -> WholeModel. (Text. *: Text.)"
               , textTypeTest
                     "(property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store) !$.Attribute {3}"
-                    "{store : Store} -> WholeModel (Text *: Text)"
+                    "{store : Store.} -> WholeModel. (Text. *: Text.)"
               , textTypeTest
                     "property.Store @Integer @Text !\"a\" store !@%.Property {\"x\"}"
-                    "{store : Store} -> FiniteSetModel Integer"
+                    "{store : Store.} -> FiniteSetModel. Integer."
               , textTypeTest
                     "property.Store @Integer @Text !\"a\" store !@.Property {\"x\"}"
-                    "{store : Store} -> FiniteSetModel Integer"
+                    "{store : Store.} -> FiniteSetModel. Integer."
               , textTypeTest
                     "(property.Store @Integer @Text !\"a\" store !@%.Property {\"x\"}) <:*:>.FiniteSetModel (property.Store @Number @Text !\"b\" store !@%.Property {\"y\"})"
-                    "{store : Store} -> FiniteSetModel (Integer *: Number)"
-              , textTypeTest "product.WholeModel {3} {\"x\"}" "{} -> WholeModel {-(Any *: Any),+(Integer *: Text)}"
+                    "{store : Store.} -> FiniteSetModel. (Integer. *: Number.)"
+              , textTypeTest "product.WholeModel {3} {\"x\"}" "{} -> WholeModel. {-(Any *: Any),+(Integer. *: Text.)}"
               , textTypeTest
                     "immut.WholeModel $.Function product.WholeModel {3} {\"x\"}"
-                    "{} -> WholeModel +(Integer *: Text)"
+                    "{} -> WholeModel. +(Integer. *: Text.)"
               ]
         ]

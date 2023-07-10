@@ -5,6 +5,7 @@ import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
 import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
+import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
@@ -14,7 +15,10 @@ import Language.Expression.Common.TypeVariable
 import Language.Expression.Common.Unifier
 import Shapes
 
-class (AbstractTypeSystem ts, SubsumeTypeSystem ts) => CompleteTypeSystem (ts :: Type) where
+class ( AbstractTypeSystem ts
+      , SubsumeTypeSystem ts
+      , MonadThrow (NamedExpressionError (TSVarID ts) (TSNegShimWit ts)) (TSInner ts)
+      ) => CompleteTypeSystem (ts :: Type) where
     tsFunctionPosWitness :: forall a b. TSNegWitness ts a -> TSPosWitness ts b -> TSPosShimWit ts (a -> b)
     tsFunctionNegWitness :: forall a b. TSPosWitness ts a -> TSNegWitness ts b -> TSNegShimWit ts (a -> b)
 
@@ -37,7 +41,7 @@ tsFunctionNegShimWit ta tb =
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsEval ::
-       forall ts m. (MonadThrow ExpressionError m, Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
+       forall ts m. (MonadThrow (NamedExpressionError (TSVarID ts) (TSNegShimWit ts)) m)
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
@@ -249,7 +253,7 @@ tsBothPattern ::
 tsBothPattern = bothSealedPattern @ts
 
 tsSealPatternConstructor ::
-       forall ts m. MonadThrow ExpressionError m
+       forall ts m. MonadThrow PatternError m
     => TSExpressionPatternConstructor ts
     -> m (TSSealedExpressionPattern ts)
 tsSealPatternConstructor = sealedPatternConstructor

@@ -2,6 +2,7 @@
 
 module Language.Expression.Common.Named where
 
+import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
 import Language.Expression.Common.NameWit
 import Language.Expression.Common.Witness
@@ -72,3 +73,5 @@ substituteExpression witmap@(MkWitnessConvert wm) (OpenExpression (MkNameWitness
 
 varNamedExpression :: name -> vw t -> NamedExpression name vw t
 varNamedExpression n t = varNameTypeExpression (MkUnitType n) (MkUnitType' t)
+
+type NamedExpressionError name w = ExpressionError (NameWitness name w)

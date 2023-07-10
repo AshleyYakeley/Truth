@@ -30,13 +30,14 @@ instance IsDolanSubtypeGroundType QGroundType where
         ntt <- getRenderFullName
         rethrowCause
             spos
+            ntt
             (TypeConvertError
-                 (ntt $ exprShow ta)
+                 (exprShow ta)
                  (witnessToValue $ polarityType @pola)
-                 (ntt $ exprShow tb)
+                 (exprShow tb)
                  (witnessToValue $ polarityType @polb))
             ma
-    throwTypeNotInvertible t = throwWithName $ \ntt -> TypeNotInvertibleError $ ntt $ exprShow t
+    throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
 
 instance IsDolanSubtypeEntriesGroundType QGroundType where
     subtypeConversionEntries = getSubtypeConversions
@@ -44,10 +45,9 @@ instance IsDolanSubtypeEntriesGroundType QGroundType where
         case qgtSubtypeGroup t of
             Just sg -> sg
             Nothing -> singletonSubtypeGroup t
-    throwNoGroundTypeConversionError ta tb =
-        throwWithName $ \ntt -> NoGroundTypeConversionError (ntt $ showGroundType ta) (ntt $ showGroundType tb)
+    throwNoGroundTypeConversionError ta tb = throw $ NoGroundTypeConversionError (showGroundType ta) (showGroundType tb)
     throwIncoherentGroundTypeConversionError ta tb =
-        throwWithName $ \ntt -> IncoherentGroundTypeConversionError (ntt $ showGroundType ta) (ntt $ showGroundType tb)
+        throw $ IncoherentGroundTypeConversionError (showGroundType ta) (showGroundType tb)
 
 instance IsDolanFunctionGroundType QGroundType where
     functionGroundType = funcGroundType

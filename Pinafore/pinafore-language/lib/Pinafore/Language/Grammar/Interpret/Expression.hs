@@ -395,8 +395,8 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             liftIO $
                 debugMessage $
                 case mfd of
-                    Just (fn, desc) -> toText nameref <> " = " <> toText fn <> ": " <> pack desc
-                    Nothing -> toText nameref <> " not found"
+                    Just (fn, desc) -> showText nameref <> " = " <> showText fn <> ": " <> pack desc
+                    Nothing -> showText nameref <> " not found"
             return []
 
 interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs
@@ -487,11 +487,11 @@ specialFormArgs (ConsListType t tt) (a:aa) = do
     return (v, vv)
 specialFormArgs _ _ = liftInner Nothing
 
-showSA :: SyntaxAnnotation -> Text
+showSA :: SyntaxAnnotation -> NamedText
 showSA (SAType _) = "type"
 showSA (SAAnchor _) = "anchor"
 
-showAnnotation :: QAnnotation a -> Text
+showAnnotation :: QAnnotation a -> NamedText
 showAnnotation AnnotAnchor = "anchor"
 showAnnotation AnnotNonpolarType = "type"
 showAnnotation AnnotPositiveType = "type"
@@ -613,25 +613,24 @@ interpretExpression' (SEDebug t sexpr) = do
     liftIO $ debugMessage $ t <> ": " <> pack (show expr)
     return expr
 
-checkExprVars :: MonadThrow PinaforeError m => QExpression -> m ()
-checkExprVars (MkSealedExpression _ expr) = let
-    getBadVarErrors ::
-           forall w t. AllConstraint Show w
-        => NameWitness VarID w t
-        -> Maybe ErrorMessage
-    getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
-        Just $ MkErrorMessage spos (ExpressionErrorError $ UndefinedBindingsError [show w]) mempty
-    getBadVarErrors _ = Nothing
-    errorMessages :: [ErrorMessage]
-    errorMessages = catMaybes $ expressionFreeWitnesses getBadVarErrors expr
-    in case errorMessages of
-           [] -> return ()
-           errs -> throw $ MkPinaforeError errs
+checkExprVars :: QExpression -> QInterpreter ()
+checkExprVars (MkSealedExpression _ expr) = do
+    let
+        getBadVarErrors :: forall t. NameWitness VarID (QShimWit 'Negative) t -> QInterpreter (Maybe ErrorMessage)
+        getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
+            paramWith sourcePosParam spos $ do
+                em <- mkErrorMessage $ nameWitnessErrorType @QTypeSystem $ pure $ MkSome w
+                return $ Just em
+        getBadVarErrors _ = return Nothing
+    errorMessages <- sequenceA $ expressionFreeWitnesses getBadVarErrors expr
+    case catMaybes errorMessages of
+        [] -> return ()
+        errs -> throw $ MkPinaforeError errs
 
 interpretClosedExpression :: SyntaxExpression -> RefExpression
 interpretClosedExpression sexpr = do
     expr <- interpretExpression sexpr
-    checkExprVars expr
+    liftRefNotation $ checkExprVars expr
     return expr
 
 interpretBinding :: SingleBinding -> RefNotation QBinding
@@ -671,13 +670,13 @@ interpretGeneralSubtypeRelation trustme sta stb sbody =
                                     fmap
                                         (functionToShim "user-subtype" . (shimToFunction $ polarPolyIsoNegative iconv))
                                         convexpr
-                    _ -> lift $ throwWithName $ \ntt -> InterpretTypeNotGroundedError $ ntt $ exprShow atb
-            _ -> lift $ throwWithName $ \ntt -> InterpretTypeNotGroundedError $ ntt $ exprShow ata
+                    _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
+            _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 
 nonpolarSimpleEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, StorableGroundType t)
 nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
-nonpolarSimpleEntityType t = throwWithName $ \ntt -> InterpretTypeNotSimpleEntityError $ ntt $ exprShow t
+nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
 
 interpretOpenEntitySubtypeRelation :: SyntaxType -> SyntaxType -> ScopeBuilder ()
 interpretOpenEntitySubtypeRelation sta stb =
@@ -700,7 +699,7 @@ interpretOpenEntitySubtypeRelation sta stb =
                                 coerceShim "open entity" .
                                 (functionToShim "entityConvert" $
                                  storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)
-                    Nothing -> lift $ throwWithName $ \ntt -> InterpretTypeNotOpenEntityError $ ntt $ exprShow tb
+                    Nothing -> lift $ throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
 interpretSubtypeRelation :: TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder ()
 interpretSubtypeRelation trustme sta stb mbody =
@@ -711,4 +710,4 @@ interpretSubtypeRelation trustme sta stb mbody =
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule moduleName smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
-    return $ MkModule (Node (MkDefDoc (HeadingDocItem (plainText $ toText moduleName)) "") docs) scope
+    return $ MkModule (Node (MkDefDoc (HeadingDocItem (plainText $ showText moduleName)) "") docs) scope

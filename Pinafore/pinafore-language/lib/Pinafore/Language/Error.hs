@@ -3,6 +3,7 @@ module Pinafore.Language.Error where
 import Data.Shim
 import Language.Expression.Common
 import Pinafore.Language.Name
+import Pinafore.Text
 import Shapes
 import Shapes.Numeric
 import Text.Parsec.Error
@@ -10,10 +11,11 @@ import Text.Parsec.Pos
 
 data ErrorType
     = KnownIssueError Int
-                      Text
-    | UnicodeDecodeError Text
+                      NamedText
+    | UnicodeDecodeError NamedText
     | ParserError [Message]
-    | ExpressionErrorError ExpressionError
+    | PatternErrorError PatternError
+    | ExpressionErrorError (NonEmpty (FullNameRef, NamedText))
     | LookupNamesUndefinedError (NonEmpty FullNameRef)
     | LookupNotDefinedError FullNameRef
     | LookupNotTypeError FullNameRef
@@ -21,52 +23,52 @@ data ErrorType
     | LookupNotConstructorError FullNameRef
     | LookupNotRecordConstructorError FullNameRef
     | SpecialFormWrongAnnotationsError FullNameRef
-                                       [Text]
-                                       [Text]
+                                       [NamedText]
+                                       [NamedText]
     | DeclareTypeDuplicateError FullName
     | DeclareConstructorDuplicateError FullNameRef
     | DeclareDynamicTypeCycleError (NonEmpty FullName)
     | DeclareDatatypeStorableSupertypeError FullName
-    | DeclareDatatypeBadSupertypeError Text
+    | DeclareDatatypeBadSupertypeError NamedText
     | DeclareDatatypeConstructorNotSupertypeError FullNameRef
-                                                  Text
-                                                  [Text]
-    | DeclareDatatypeNoSupertypeConstructorError Text
-    | DeclareDatatypeMultipleSupertypeConstructorsError Text
-                                                        [Text]
+                                                  NamedText
+                                                  [NamedText]
+    | DeclareDatatypeNoSupertypeConstructorError NamedText
+    | DeclareDatatypeMultipleSupertypeConstructorsError NamedText
+                                                        [NamedText]
     | DeclareDatatypePositionalConstructorWithSupertypeError
     | DeclareDatatypeMissingSupertypeMember Name
     | DeclareDatatypeDuplicateMembers Name
     | DeclareDatatypeDuplicateInheritedMembers Name
     | RecordConstructorMissingName Name
     | RecordConstructorExtraName Name
-    | TypeConvertError Text
+    | TypeConvertError NamedText
                        Polarity
-                       Text
+                       NamedText
                        Polarity
-    | NoGroundTypeConversionError Text
-                                  Text
-    | IncoherentGroundTypeConversionError Text
-                                          Text
-    | TypeNotInvertibleError Text
+    | NoGroundTypeConversionError NamedText
+                                  NamedText
+    | IncoherentGroundTypeConversionError NamedText
+                                          NamedText
+    | TypeNotInvertibleError NamedText
     | NotationBareUnquoteError
     | MatchesDifferentCount Natural
                             Natural
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
     | InterpretTypeRecursionNotCovariant Name
-                                         Text
-    | InterpretTypeNotAmbipolarError Text
-    | InterpretTypeNotGroundedError Text
-    | InterpretTypeNotEntityError Text
-    | InterpretTypeNotSimpleEntityError Text
-    | InterpretTypeNotDynamicEntityError Text
-    | InterpretTypeNotOpenEntityError Text
-    | InterpretTypeNotConcreteDynamicEntityError Text
+                                         NamedText
+    | InterpretTypeNotAmbipolarError NamedText
+    | InterpretTypeNotGroundedError NamedText
+    | InterpretTypeNotEntityError NamedText
+    | InterpretTypeNotSimpleEntityError NamedText
+    | InterpretTypeNotDynamicEntityError NamedText
+    | InterpretTypeNotOpenEntityError NamedText
+    | InterpretTypeNotConcreteDynamicEntityError NamedText
     | InterpretTypeNoneNotNegativeEntityError
-    | InterpretTypeUnderApplyError Text
-    | InterpretTypeOverApplyError Text
-    | InterpretTypeRangeApplyError Text
+    | InterpretTypeUnderApplyError NamedText
+    | InterpretTypeOverApplyError NamedText
+    | InterpretTypeRangeApplyError NamedText
     | InterpretBindingsDuplicateError (NonEmpty FullName)
     | InterpretTypeDeclDuplicateTypeVariablesError FullName
                                                    (NonEmpty Name)
@@ -76,17 +78,20 @@ data ErrorType
                                                       Name
     | InterpretTypeDeclTypeVariableNotCovariantError FullName
     | InterpretTypeDeclTypeStorableRecord
-    | InterpretSubtypeInconsistent Text
-                                   Text
+    | InterpretSubtypeInconsistent NamedText
+                                   NamedText
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
-instance Show ErrorType where
-    show (KnownIssueError n "") = "issue #" <> show n
-    show (KnownIssueError n t) = unpack t <> " (issue #" <> show n <> ")"
-    show (UnicodeDecodeError t) = "Unicode decode error: " <> unpack t
-    show (ParserError msgs) = let
-        getMsgs :: (Message -> Maybe String) -> [String]
+instance ShowNamedText ErrorType where
+    showNamedText (KnownIssueError n nt) =
+        bindNamedText nt $ \t ->
+            case t of
+                "" -> "issue #" <> showNamedText n
+                _ -> toNamedText t <> " (issue #" <> showNamedText n <> ")"
+    showNamedText (UnicodeDecodeError t) = "Unicode decode error: " <> t
+    showNamedText (ParserError msgs) = let
+        getMsgs :: (Message -> Maybe String) -> [Text]
         getMsgs getm =
             nub $
             mapMaybe
@@ -94,7 +99,7 @@ instance Show ErrorType where
                      s <- getm msg
                      if s == ""
                          then Nothing
-                         else return s)
+                         else return $ toText s)
                 msgs
         msgsSysUnExpect =
             getMsgs $ \case
@@ -108,7 +113,7 @@ instance Show ErrorType where
             getMsgs $ \case
                 Message s -> Just s
                 _ -> Nothing
-        semicolon :: String -> String -> String
+        semicolon :: Text -> Text -> Text
         semicolon "" b = b
         semicolon a "" = a
         semicolon a b = a <> "; " <> b
@@ -121,112 +126,133 @@ instance Show ErrorType where
                 [] -> ""
                 s -> "expecting: " <> intercalate ", " s
         strMessage = intercalate "; " msgsMessage
-        in strUnexpected `semicolon` strExpecting `semicolon` strMessage
-    show (ExpressionErrorError e) = show e
-    show (LookupNamesUndefinedError nn) = "undefined names: " <> (intercalate ", " $ fmap show $ toList nn)
-    show (LookupNotDefinedError n) = "undefined: " <> show n
-    show (LookupNotTypeError n) = "name not type: " <> show n
-    show (LookupNotSpecialFormError n) = "name not special form: " <> show n
-    show (LookupNotConstructorError n) = "name not constructor: " <> show n
-    show (LookupNotRecordConstructorError n) = "name not record constructor: " <> show n
-    show (SpecialFormWrongAnnotationsError n expected found) =
+        in toNamedText $ strUnexpected `semicolon` strExpecting `semicolon` strMessage
+    showNamedText (PatternErrorError e) = showNamedText e
+    showNamedText (ExpressionErrorError nn) =
+        "undefined: " <>
+        intercalate
+            ", "
+            (fmap (\(n, t) -> showNamedText n <> ": " <> toNamedText t) $ nubBy (\x y -> fst x == fst y) $ toList nn)
+    showNamedText (LookupNamesUndefinedError nn) =
+        "undefined names: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
+    showNamedText (LookupNotDefinedError n) = "undefined: " <> showNamedText n
+    showNamedText (LookupNotTypeError n) = "name not type: " <> showNamedText n
+    showNamedText (LookupNotSpecialFormError n) = "name not special form: " <> showNamedText n
+    showNamedText (LookupNotConstructorError n) = "name not constructor: " <> showNamedText n
+    showNamedText (LookupNotRecordConstructorError n) = "name not record constructor: " <> showNamedText n
+    showNamedText (SpecialFormWrongAnnotationsError n expected found) =
         "wrong annotations for special form " <>
-        show n <>
-        ": expecting " <> intercalate " " (fmap unpack expected) <> ", found " <> intercalate " " (fmap unpack found)
-    show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
-    show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
-    show (DeclareDynamicTypeCycleError nn) =
-        "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
-    show (DeclareDatatypeStorableSupertypeError n) = "datatype storable has supertypes: " <> show n
-    show (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> unpack t
-    show (DeclareDatatypeConstructorNotSupertypeError c t ss) =
-        "constructor " <> show c <> ": " <> unpack t <> " is not from supertypes " <> (unpack $ intercalate " & " ss)
-    show (DeclareDatatypeNoSupertypeConstructorError t) = "no constructor defined for supertype " <> unpack t
-    show (DeclareDatatypeMultipleSupertypeConstructorsError t cc) =
-        "multiple constructors defined for supertype " <> unpack t <> ": " <> (unpack $ intercalate ", " cc)
-    show DeclareDatatypePositionalConstructorWithSupertypeError =
+        showNamedText n <> ": expecting " <> intercalate " " expected <> ", found " <> intercalate " " found
+    showNamedText (DeclareTypeDuplicateError n) = "duplicate type: " <> showNamedText n
+    showNamedText (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> showNamedText n
+    showNamedText (DeclareDynamicTypeCycleError nn) =
+        "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
+    showNamedText (DeclareDatatypeStorableSupertypeError n) = "datatype storable has supertypes: " <> showNamedText n
+    showNamedText (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> t
+    showNamedText (DeclareDatatypeConstructorNotSupertypeError c t ss) =
+        "constructor " <> showNamedText c <> ": " <> t <> " is not from supertypes " <> (intercalate " & " ss)
+    showNamedText (DeclareDatatypeNoSupertypeConstructorError t) = "no constructor defined for supertype " <> t
+    showNamedText (DeclareDatatypeMultipleSupertypeConstructorsError t cc) =
+        "multiple constructors defined for supertype " <> t <> ": " <> (intercalate ", " cc)
+    showNamedText DeclareDatatypePositionalConstructorWithSupertypeError =
         "positional constructor not allowed in datatype with supertype"
-    show (DeclareDatatypeMissingSupertypeMember t) = "missing member for supertype: " <> show t
-    show (DeclareDatatypeDuplicateMembers m) = "duplicate member declarations for " <> show m
-    show (DeclareDatatypeDuplicateInheritedMembers m) = "multiple inherited member declarations for " <> show m
-    show (RecordConstructorMissingName n) = "missing name for record constructor: " <> show n
-    show (RecordConstructorExtraName n) = "extra name for record constructor: " <> show n
-    show (TypeConvertError ta pa tb pb) =
-        unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
-    show (NoGroundTypeConversionError ta tb) = unpack $ "no ground conversion for " <> ta <> " <: " <> tb
-    show (IncoherentGroundTypeConversionError ta tb) =
-        unpack $ "incoherent ground conversions for " <> ta <> " <: " <> tb
-    show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
-    show NotationBareUnquoteError = "unquote outside WholeModel quote"
-    show (MatchesDifferentCount expected found) =
-        "different number of patterns in match, expected " <> show expected <> ", found " <> show found
-    show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
-    show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
-    show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
-    show (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
-    show (InterpretTypeRecursionNotCovariant var tp) =
-        "recursive variable " <> show var <> " is not covariant in type " <> unpack tp
-    show (InterpretTypeNotAmbipolarError t) = unpack t <> " is not an ambipolar type"
-    show (InterpretTypeNotGroundedError t) = unpack t <> " is not a grounded type"
-    show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
-    show (InterpretTypeNotSimpleEntityError t) = unpack t <> " is not a simple entity type"
-    show (InterpretTypeNotDynamicEntityError t) = unpack t <> " is not a dynamic entity type"
-    show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
-    show (InterpretTypeNotConcreteDynamicEntityError t) = unpack t <> " is not a concrete dynamic entity type"
-    show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
-    show (InterpretTypeUnderApplyError t) = "underapplied type constructor: " <> unpack t
-    show (InterpretTypeOverApplyError t) = "overapplied type constructor: " <> unpack t
-    show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
-    show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show $ toList nn)
-    show (InterpretTypeDeclDuplicateTypeVariablesError n vv) =
-        "duplicate type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
-    show (InterpretTypeDeclUnboundTypeVariablesError n vv) =
-        "unbound type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
-    show (InterpretTypeDeclTypeVariableWrongPolarityError n v) =
-        "wrong polarity of type variable " <> show v <> " in declaration of " <> show n
-    show (InterpretTypeDeclTypeVariableNotCovariantError n) =
-        "type variable is not covariant in declaration of storable datatype " <> show n
-    show InterpretTypeDeclTypeStorableRecord = "record constructor not allowed in storable datatype"
-    show (InterpretSubtypeInconsistent ta tb) =
-        "subtype relation is inconsistent with existing subtype relation " <> unpack ta <> " <: " <> unpack tb
-    show (ModuleNotFoundError mname) = "can't find module " <> show mname
-    show (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap show $ toList nn)
+    showNamedText (DeclareDatatypeMissingSupertypeMember t) = "missing member for supertype: " <> showNamedText t
+    showNamedText (DeclareDatatypeDuplicateMembers m) = "duplicate member declarations for " <> showNamedText m
+    showNamedText (DeclareDatatypeDuplicateInheritedMembers m) =
+        "multiple inherited member declarations for " <> showNamedText m
+    showNamedText (RecordConstructorMissingName n) = "missing name for record constructor: " <> showNamedText n
+    showNamedText (RecordConstructorExtraName n) = "extra name for record constructor: " <> showNamedText n
+    showNamedText (TypeConvertError ta pa tb pb) =
+        "cannot convert " <> ta <> toNamedText (polaritySymbol pa) <> " <: " <> tb <> toNamedText (polaritySymbol pb)
+    showNamedText (NoGroundTypeConversionError ta tb) = "no ground conversion for " <> ta <> " <: " <> tb
+    showNamedText (IncoherentGroundTypeConversionError ta tb) =
+        "incoherent ground conversions for " <> ta <> " <: " <> tb
+    showNamedText (TypeNotInvertibleError t) = "cannot invert type " <> t
+    showNamedText NotationBareUnquoteError = "unquote outside WholeModel quote"
+    showNamedText (MatchesDifferentCount expected found) =
+        "different number of patterns in match, expected " <>
+        showNamedText expected <> ", found " <> showNamedText found
+    showNamedText (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
+    showNamedText (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
+    showNamedText (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
+    showNamedText (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
+    showNamedText (InterpretTypeRecursionNotCovariant var tp) =
+        "recursive variable " <> showNamedText var <> " is not covariant in type " <> tp
+    showNamedText (InterpretTypeNotAmbipolarError t) = t <> " is not an ambipolar type"
+    showNamedText (InterpretTypeNotGroundedError t) = t <> " is not a grounded type"
+    showNamedText (InterpretTypeNotEntityError t) = t <> " is not an entity type"
+    showNamedText (InterpretTypeNotSimpleEntityError t) = t <> " is not a simple entity type"
+    showNamedText (InterpretTypeNotDynamicEntityError t) = t <> " is not a dynamic entity type"
+    showNamedText (InterpretTypeNotOpenEntityError t) = t <> " is not an open entity type"
+    showNamedText (InterpretTypeNotConcreteDynamicEntityError t) = t <> " is not a concrete dynamic entity type"
+    showNamedText InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
+    showNamedText (InterpretTypeUnderApplyError t) = "underapplied type constructor: " <> t
+    showNamedText (InterpretTypeOverApplyError t) = "overapplied type constructor: " <> t
+    showNamedText (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> t
+    showNamedText (InterpretBindingsDuplicateError nn) =
+        "duplicate bindings: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
+    showNamedText (InterpretTypeDeclDuplicateTypeVariablesError n vv) =
+        "duplicate type variables in declaration of " <>
+        showNamedText n <> ": " <> (intercalate ", " $ fmap showNamedText $ toList vv)
+    showNamedText (InterpretTypeDeclUnboundTypeVariablesError n vv) =
+        "unbound type variables in declaration of " <>
+        showNamedText n <> ": " <> (intercalate ", " $ fmap showNamedText $ toList vv)
+    showNamedText (InterpretTypeDeclTypeVariableWrongPolarityError n v) =
+        "wrong polarity of type variable " <> showNamedText v <> " in declaration of " <> showNamedText n
+    showNamedText (InterpretTypeDeclTypeVariableNotCovariantError n) =
+        "type variable is not covariant in declaration of storable datatype " <> showNamedText n
+    showNamedText InterpretTypeDeclTypeStorableRecord = "record constructor not allowed in storable datatype"
+    showNamedText (InterpretSubtypeInconsistent ta tb) =
+        "subtype relation is inconsistent with existing subtype relation " <> ta <> " <: " <> tb
+    showNamedText (ModuleNotFoundError mname) = "can't find module " <> showNamedText mname
+    showNamedText (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
 
 data ErrorMessage =
     MkErrorMessage SourcePos
+                   (NamedText -> Text)
                    ErrorType
                    PinaforeError
 
-showSourceError :: SourcePos -> String -> String
+showSourceError :: SourcePos -> Text -> Text
 showSourceError spos s =
-    sourceName spos <> ":" <> show (sourceLine spos) <> ":" <> show (sourceColumn spos) <> ": " <> s
+    toText (sourceName spos) <>
+    ":" <> toText (show (sourceLine spos)) <> ":" <> toText (show (sourceColumn spos)) <> ": " <> s
 
-showIndentErrorMessage :: Int -> ErrorMessage -> String
-showIndentErrorMessage n (MkErrorMessage spos err pe) =
-    replicate n ' ' <> (showSourceError spos $ show err <> showIndentPinaforeError (succ n) pe)
+showIndentErrorMessage :: Int -> ErrorMessage -> Text
+showIndentErrorMessage n (MkErrorMessage spos ntt err pe) =
+    replicate n ' ' <> (showSourceError spos $ ntt (showNamedText err) <> showIndentPinaforeError (succ n) pe)
 
-showIndentPinaforeError :: Int -> PinaforeError -> String
+showIndentPinaforeError :: Int -> PinaforeError -> Text
 showIndentPinaforeError n (MkPinaforeError ems) = let
     showMsg em = "\n" <> showIndentErrorMessage n em
     in mconcat $ fmap showMsg ems
 
-instance Show ErrorMessage where
-    show = showIndentErrorMessage 0
+instance ShowText ErrorMessage where
+    showText = showIndentErrorMessage 0
 
 parseErrorMessage :: ParseError -> ErrorMessage
-parseErrorMessage err = MkErrorMessage (errorPos err) (ParserError $ errorMessages err) mempty
+parseErrorMessage err = MkErrorMessage (errorPos err) toText (ParserError $ errorMessages err) mempty
 
 newtype PinaforeError =
     MkPinaforeError [ErrorMessage]
     deriving (Semigroup, Monoid)
 
+instance ShowText PinaforeError where
+    showText (MkPinaforeError msgs) = intercalate "\n" $ fmap showText msgs
+
 instance Show PinaforeError where
-    show (MkPinaforeError msgs) = intercalate "\n" $ fmap show msgs
+    show = unpack . showText
 
 instance Exception PinaforeError
 
-rethrowCause :: (MonadCatch PinaforeError m, MonadThrow ErrorMessage m) => SourcePos -> ErrorType -> m a -> m a
-rethrowCause spos err ma = catch ma $ \pe -> throw $ MkErrorMessage spos err pe
+rethrowCause ::
+       (MonadCatch PinaforeError m, MonadThrow ErrorMessage m)
+    => SourcePos
+    -> (NamedText -> Text)
+    -> ErrorType
+    -> m a
+    -> m a
+rethrowCause spos ntt err ma = catch ma $ \pe -> throw $ MkErrorMessage spos ntt err pe
 
 newtype InterpretResult a =
     MkInterpretResult (ResultT PinaforeError IO a)

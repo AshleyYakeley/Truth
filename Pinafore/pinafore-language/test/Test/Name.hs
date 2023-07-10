@@ -14,7 +14,7 @@ throwPureError x = do
         Nothing -> return ()
 
 testName ::
-       forall (a :: Type). (Eq a, Show a, IsString a, ToText a)
+       forall (a :: Type). (Eq a, Show a, IsString a, ShowText a)
     => String
     -> Text
     -> TestTree
@@ -24,7 +24,7 @@ testName input expected =
             found :: a
             found = fromString @a input
         throwPureError found
-        assertEqual "text" expected $ toText found
+        assertEqual "text" expected $ showText found
         assertEqual "name" (fromString @a $ unpack expected) found
 
 testEqual ::

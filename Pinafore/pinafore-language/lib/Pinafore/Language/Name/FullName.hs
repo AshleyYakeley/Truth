@@ -22,14 +22,14 @@ fullNameToRoot :: FullName -> Maybe Name
 fullNameToRoot (RootFullName n) = Just n
 fullNameToRoot _ = Nothing
 
-instance ToText FullName where
-    toText (MkFullName name RootNamespace)
-        | nameIsInfix name = toText name
-    toText (MkFullName name RootNamespace) = toText name <> "."
-    toText (MkFullName name nsn) = toText name <> "." <> toText nsn
+instance ShowText FullName where
+    showText (MkFullName name RootNamespace)
+        | nameIsInfix name = showText name
+    showText (MkFullName name RootNamespace) = showText name <> "."
+    showText (MkFullName name nsn) = showText name <> "." <> showText nsn
 
 instance Show FullName where
-    show = unpack . toText
+    show = unpack . showText
 
 instance IsString FullName where
     fromString s =

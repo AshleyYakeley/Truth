@@ -72,7 +72,7 @@ qApplyPatternConstructor :: QPatternConstructor -> QPattern -> QInterpreter (QPa
 qApplyPatternConstructor = tsApplyPatternConstructor @QTypeSystem
 
 qSealPatternConstructor ::
-       forall m. MonadThrow ExpressionError m
+       forall m. MonadThrow PatternError m
     => QPatternConstructor
     -> m QPattern
 qSealPatternConstructor = tsSealPatternConstructor @QTypeSystem
@@ -150,7 +150,7 @@ qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (RawMarkdown, Q
 qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
 
 qEvalExpr ::
-       forall m. MonadThrow ExpressionError m
+       forall m. MonadThrow (NamedExpressionError VarID (QShimWit 'Negative)) m
     => QExpression
     -> m QValue
 qEvalExpr expr = tsEval @QTypeSystem expr

@@ -151,7 +151,7 @@ testFunctionType =
             testerLiftInterpreter $
             unTransformT registerT1Stuff $ \() -> do
                 parseTopExpression "fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer)"
-        liftIO $ assertEqual "function type" "T1 Integer -> T1 Integer" $ show (sealedExpressionType funcExpression)
+        liftIO $ assertEqual "function type" "T1. Integer. -> T1. Integer." $ show (sealedExpressionType funcExpression)
 
 testSemiScript1 :: TestTree
 testSemiScript1 =

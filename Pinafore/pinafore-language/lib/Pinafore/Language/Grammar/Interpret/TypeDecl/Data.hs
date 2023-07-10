@@ -281,10 +281,7 @@ lookupRecordConstructorData supertypes rcdName = do
         case stpw of
             MkShimWit (MkDolanGroundedType gt NilCCRArguments) _
                 | elem (MkSome gt) supertypes -> return $ MkSome gt
-            _ ->
-                throwWithName $ \ntt ->
-                    DeclareDatatypeConstructorNotSupertypeError rcdName (ntt $ exprShow stpw) $
-                    fmap (ntt . exprShow) supertypes
+            _ -> throw $ DeclareDatatypeConstructorNotSupertypeError rcdName (exprShow stpw) $ fmap exprShow supertypes
     return MkRecordConstructorData {..}
 
 interpretSignature' ::
@@ -369,14 +366,12 @@ interpretConstructorTypes tid supertypes c = let
                rcds <-
                    for supertypes $ \supertype ->
                        case filter (\rcd -> rcdType rcd == supertype) rawrcds of
-                           [] ->
-                               throwWithName $ \ntt ->
-                                   DeclareDatatypeNoSupertypeConstructorError (ntt $ exprShow supertype)
+                           [] -> throw $ DeclareDatatypeNoSupertypeConstructorError (exprShow supertype)
                            [rcd] -> return rcd
                            rcds ->
-                               throwWithName $ \ntt ->
-                                   DeclareDatatypeMultipleSupertypeConstructorsError (ntt $ exprShow supertype) $
-                                   fmap (ntt . exprShow) rcds
+                               throw $
+                               DeclareDatatypeMultipleSupertypeConstructorsError (exprShow supertype) $
+                               fmap exprShow rcds
                case assembleListVType $ fromList $ inheritedQSigs <> thisQSigs of
                    MkSome qsiglist -> return $ MkSome $ MkConstructorType consname (RecordCF rcds) qsiglist
 
@@ -718,7 +713,7 @@ makePlainGroundType _ tparams = let
                 MkQGroundType
                     { qgtVarianceType = dvt
                     , qgtVarianceMap = lazyDolanVarianceMap dvt dvm
-                    , qgtShowType = standardListTypeExprShow @dv $ toNamedText name
+                    , qgtShowType = standardListTypeExprShow @dv $ showNamedText name
                     , qgtFamilyType = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily mainTypeID
                     , qgtSubtypeGroup = Nothing
                     , qgtProperties = mempty

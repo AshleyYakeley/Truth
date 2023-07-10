@@ -165,9 +165,10 @@ testInvertedCombinedSubtype ::
     -> InvertedCombinedDolanType ground 'Positive b
     -> DolanM ground (Maybe (DolanShim ground a b))
 testInvertedCombinedSubtype negtype postype =
+    fmap exec $
     mcatch $ do
         expr <- runVarRenamerT [] [] $ getCompose $ invertedCombinedSubtype @ground negtype postype
-        evalExpression expr
+        return $ resultToMaybe $ evalExpressionResult expr
 
 reduceUsageSolution ::
        forall (ground :: GroundTypeKind) tv t. IsDolanSubtypeGroundType ground

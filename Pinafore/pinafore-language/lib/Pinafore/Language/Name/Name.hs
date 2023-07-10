@@ -17,8 +17,8 @@ newtype Name =
     MkName Text
     deriving (Eq, Ord, MonoFoldable)
 
-instance ToText Name where
-    toText (MkName n) = n
+instance ShowText Name where
+    showText (MkName n) = n
 
 instance Show Name where
     show = unpack

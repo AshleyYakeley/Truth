@@ -2,7 +2,6 @@
 
 module Language.Expression.Common.Sealed where
 
-import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.WitnessMappable
@@ -15,8 +14,7 @@ data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
 constSealedExpression :: SomeOf tw -> SealedExpression name vw tw
 constSealedExpression (MkSomeOf twt t) = MkSealedExpression twt $ pure t
 
-evalSealedExpression ::
-       (MonadThrow ExpressionError m, AllConstraint Show vw, Show name) => SealedExpression name vw tw -> m (SomeOf tw)
+evalSealedExpression :: (MonadThrow (NamedExpressionError name vw) m) => SealedExpression name vw tw -> m (SomeOf tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkSomeOf twa a

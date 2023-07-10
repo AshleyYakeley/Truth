@@ -10,7 +10,6 @@ module Pinafore.Language.Type.Storable
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -36,4 +35,4 @@ getMonoStorableType :: QNonpolarType t -> QInterpreter (MonoStorableType t)
 getMonoStorableType tm =
     case nonpolarToMonoType tm of
         Just t -> return t
-        Nothing -> throwWithName $ \ntt -> InterpretTypeNotEntityError $ ntt $ exprShow tm
+        Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm

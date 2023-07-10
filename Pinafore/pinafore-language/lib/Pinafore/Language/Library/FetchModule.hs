@@ -43,7 +43,7 @@ loadModuleFromByteString :: ModuleName -> LazyByteString -> QInterpreter QModule
 loadModuleFromByteString modname bs =
     case eitherToResult $ decodeUtf8' $ toStrict bs of
         SuccessResult text -> loadModuleFromText modname text
-        FailureResult err -> throw $ UnicodeDecodeError $ pack $ show err
+        FailureResult err -> throw $ UnicodeDecodeError $ showNamedText err
 
 textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule context
 textFetchModule getText =

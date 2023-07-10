@@ -19,7 +19,7 @@ import Shapes
 
 getGroundType :: QSingularType 'Negative t -> QInterpreter (Some (QGroundType '[]))
 getGroundType (GroundedDolanSingularType (MkDolanGroundedType gt NilCCRArguments)) = return $ MkSome gt
-getGroundType t = throwWithName $ \ntt -> DeclareDatatypeBadSupertypeError $ ntt $ exprShow t
+getGroundType t = throw $ DeclareDatatypeBadSupertypeError $ exprShow t
 
 getGroundTypes :: QType 'Negative t -> QInterpreter [Some (QGroundType '[])]
 getGroundTypes NilDolanType = return []
