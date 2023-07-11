@@ -10,4 +10,4 @@ import Pinafore.Language.Library.GTK
 import Shapes
 
 gnomeLibrary :: [LibraryModule ()]
-gnomeLibrary = pure $ MkLibraryModule "pinafore-gnome" $ headingBDT "pinafore-gnome" "" $ [gioStuff] <> allGTKStuff
+gnomeLibrary = pure $ MkLibraryModule "pinafore-gnome" $ headingBDS "pinafore-gnome" "" $ [gioStuff] <> allGTKStuff

@@ -13,21 +13,21 @@ import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
 
-modelOrderLibSection :: BindDocTree context
+modelOrderLibSection :: BindDocStuff context
 modelOrderLibSection =
-    headingBDT
+    headingBDS
         "ModelOrder"
         ""
-        [ typeBDT "ModelOrder" "" (MkSomeGroundType modelOrderGroundType) []
-        , hasSubtypeRelationBDT Verify "" $ functionToShim "Order to ModelOrder" $ pureLangModelOrder @A
-        , namespaceBDT "ModelOrder" "" $
+        [ typeBDS "ModelOrder" "" (MkSomeGroundType modelOrderGroundType) []
+        , hasSubtypeRelationBDS Verify "" $ functionToShim "Order to ModelOrder" $ pureLangModelOrder @A
+        , namespaceBDS "ModelOrder" "" $
           monoidEntries @_ @(LangModelOrder A) <>
-          [ valBDT
+          [ valBDS
                 "map"
                 "Map a function on a `ModelOrder`."
                 (contramap :: (B -> A) -> LangModelOrder A -> LangModelOrder B)
-          , valBDT "on" "Order by a `ModelOrder` on a particular property." $ langModelOrderOn @B @A
-          , valBDT "reverse" "Reverse a `ModelOrder`." $ reverseLangModelOrder @A
-          , valBDT "whole" "Order two whole models." $ langModelOrderCompare @A
+          , valBDS "on" "Order by a `ModelOrder` on a particular property." $ langModelOrderOn @B @A
+          , valBDS "reverse" "Reverse a `ModelOrder`." $ reverseLangModelOrder @A
+          , valBDS "whole" "Order two whole models." $ langModelOrderCompare @A
           ]
         ]

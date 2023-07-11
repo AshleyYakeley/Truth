@@ -23,11 +23,11 @@ instance HasQGroundType '[] MIME where
 textMIME :: LangPrism' MIME Text
 textMIME = prism mimeToText textToMIME
 
-mimeLibSection :: BindDocTree context
+mimeLibSection :: BindDocStuff context
 mimeLibSection =
-    headingBDT
+    headingBDS
         "MIME"
         ""
-        [ typeBDT "MIME" "" (MkSomeGroundType mimeGroundType) []
-        , namespaceBDT "MIME" "" [nameInRootBDT $ valBDT "textMIME" "" textMIME]
+        [ typeBDS "MIME" "" (MkSomeGroundType mimeGroundType) []
+        , namespaceBDS "MIME" "" [addNameInRootBDS $ valBDS "textMIME" "" textMIME]
         ]

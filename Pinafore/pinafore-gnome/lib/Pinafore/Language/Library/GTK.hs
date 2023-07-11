@@ -13,10 +13,10 @@ import Pinafore.Language.Library.GTK.MenuItem
 import Pinafore.Language.Library.GTK.Window
 import Shapes
 
-gtkStuff :: BindDocTree ()
+gtkStuff :: BindDocStuff ()
 gtkStuff =
-    headingBDT "GTK" "User interface, using GTK." $
-    pure $ namespaceBDT "GTK" "" [elementStuff, drawingStuff, menuItemStuff, windowStuff, clipboardStuff, dialogStuff]
+    headingBDS "GTK" "User interface, using GTK." $
+    pure $ namespaceBDS "GTK" "" [elementStuff, drawingStuff, menuItemStuff, windowStuff, clipboardStuff, dialogStuff]
 
-allGTKStuff :: [BindDocTree ()]
+allGTKStuff :: [BindDocStuff ()]
 allGTKStuff = [gtkStuff, gtkDebugStuff]

@@ -50,20 +50,20 @@ jpegEncode q mdata image = bytesToDataLiteral $ jpegEncodeToBytes q mdata image
 jpegMetadata :: LangJPEGImage -> LangHasMetadata
 jpegMetadata image = keyMapToMetadata $ fst $ idlData image
 
-jpegStuff :: BindDocTree ()
+jpegStuff :: BindDocStuff ()
 jpegStuff =
-    headingBDT
+    headingBDS
         "JPEG"
         ""
-        [ typeBDT "JPEG" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
-        , hasSubtypeRelationBDT @LangJPEGImage @(Interpret LangImage) Verify "" $
+        [ typeBDS "JPEG" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
+        , hasSubtypeRelationBDS @LangJPEGImage @(Interpret LangImage) Verify "" $
           functionToShim "jpegImage" $ MkInterpret . MkLangImage . mapSome toPixelType . snd . idlData
-        , hasSubtypeRelationBDT @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral
-        , hasSubtypeRelationBDT @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
-        , namespaceBDT
+        , hasSubtypeRelationBDS @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral
+        , hasSubtypeRelationBDS @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
+        , namespaceBDS
               "JPEG"
               ""
-              [ valBDT "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
-              , valBDT "jpegMIME" "" $ dataLiteralMIMEPrism @LangJPEGImage
+              [ valBDS "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
+              , valBDS "jpegMIME" "" $ dataLiteralMIMEPrism @LangJPEGImage
               ]
         ]

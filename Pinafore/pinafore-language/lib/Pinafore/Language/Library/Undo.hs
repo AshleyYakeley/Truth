@@ -42,28 +42,28 @@ handleSetModel uh model = handleModel uh $ contramap meet2 model
 handleStore :: UndoHandler -> QStore -> IO QStore
 handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreGetModel store
 
-undoLibSection :: BindDocTree context
+undoLibSection :: BindDocStuff context
 undoLibSection =
-    headingBDT "Undo" "Undo and redo changes to models." $
-    [ typeBDT "UndoHandler" "A queue of undo (and redo) actions." (MkSomeGroundType undoHandlerGroundType) []
-    , namespaceBDT
+    headingBDS "Undo" "Undo and redo changes to models." $
+    [ typeBDS "UndoHandler" "A queue of undo (and redo) actions." (MkSomeGroundType undoHandlerGroundType) []
+    , namespaceBDS
           "UndoHandler"
           ""
-          [ valBDT "new" "Create a new `UndoHandler`." newUndoHandler
-          , nameInRootBDT $
-            valBDT "queueUndo" "Undo an action." $ \uh -> do
+          [ valBDS "new" "Create a new `UndoHandler`." newUndoHandler
+          , addNameInRootBDS $
+            valBDS "queueUndo" "Undo an action." $ \uh -> do
                 rc <- actionResourceContext
                 liftIO $ undoHandlerUndo uh rc noEditSource
-          , nameInRootBDT $
-            valBDT "queueRedo" "Redo an action." $ \uh -> do
+          , addNameInRootBDS $
+            valBDS "queueRedo" "Redo an action." $ \uh -> do
                 rc <- actionResourceContext
                 liftIO $ undoHandlerRedo uh rc noEditSource
-          , valBDT "handleStore" "Handle undo/redo for this model." handleStore
-          , valBDT "handleWholeModel" "Handle undo/redo for this model." $ handleModel @(LangWholeModel '( A, A))
-          , valBDT "handleTextModel" "Handle undo/redo for this model." $ handleModel @LangTextModel
-          , valBDT "handleListModel" "Handle undo/redo for this model." $ handleModel @(LangListModel '( A, A))
-          , valBDT "handleFiniteSetModel" "Handle undo/redo for this model." $
+          , valBDS "handleStore" "Handle undo/redo for this model." handleStore
+          , valBDS "handleWholeModel" "Handle undo/redo for this model." $ handleModel @(LangWholeModel '( A, A))
+          , valBDS "handleTextModel" "Handle undo/redo for this model." $ handleModel @LangTextModel
+          , valBDS "handleListModel" "Handle undo/redo for this model." $ handleModel @(LangListModel '( A, A))
+          , valBDS "handleFiniteSetModel" "Handle undo/redo for this model." $
             handleModel @(LangFiniteSetModel '( P, Q))
-          , valBDT "handleSetModel" "Handle undo/redo for this model." handleSetModel
+          , valBDS "handleSetModel" "Handle undo/redo for this model." handleSetModel
           ]
     ]

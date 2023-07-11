@@ -3,6 +3,7 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
     ) where
 
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Text
 import Shapes

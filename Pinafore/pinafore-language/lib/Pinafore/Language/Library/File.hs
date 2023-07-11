@@ -37,14 +37,14 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = unWRaised objRun $ refRead ReadByteStringLength
 -}
-fileLibEntries :: [BindDocTree context]
+fileLibEntries :: [BindDocStuff context]
 fileLibEntries =
-    [ headingBDT
+    [ headingBDS
           "File Storage"
           "NYI"
                   {-
-                  valBDT "file_import" "Import a file into a set." $ file_import
-              , valBDT "file_size" "The size of a file." file_size
+                  valBDS "file_import" "Import a file into a set." $ file_import
+              , valBDS "file_size" "The size of a file." file_size
               -}
           []
     ]

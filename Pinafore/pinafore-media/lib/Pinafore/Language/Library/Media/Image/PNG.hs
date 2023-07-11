@@ -50,20 +50,20 @@ pngEncode mdata image = bytesToDataLiteral $ pngEncodeToBytes mdata image
 pngMetadata :: LangPNGImage -> LangHasMetadata
 pngMetadata image = keyMapToMetadata $ fst $ idlData image
 
-pngStuff :: BindDocTree ()
+pngStuff :: BindDocStuff ()
 pngStuff =
-    headingBDT
+    headingBDS
         "PNG"
         ""
-        [ typeBDT "PNG" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
-        , hasSubtypeRelationBDT @LangPNGImage @(Interpret LangImage) Verify "" $
+        [ typeBDS "PNG" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
+        , hasSubtypeRelationBDS @LangPNGImage @(Interpret LangImage) Verify "" $
           functionToShim "pngImage" $ MkInterpret . MkLangImage . mapSome toPixelType . snd . idlData
-        , hasSubtypeRelationBDT @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
-        , hasSubtypeRelationBDT @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
-        , namespaceBDT
+        , hasSubtypeRelationBDS @LangPNGImage @Literal Verify "" $ functionToShim "pngLiteral" idlLiteral
+        , hasSubtypeRelationBDS @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
+        , namespaceBDS
               "PNG"
               ""
-              [ valBDT "encode" "Encode an image as PNG, with given metadata." pngEncode
-              , valBDT "pngMIME" "" $ dataLiteralMIMEPrism @LangPNGImage
+              [ valBDS "encode" "Encode an image as PNG, with given metadata." pngEncode
+              , valBDS "pngMIME" "" $ dataLiteralMIMEPrism @LangPNGImage
               ]
         ]

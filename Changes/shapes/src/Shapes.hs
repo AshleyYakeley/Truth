@@ -39,5 +39,6 @@ import Data.Serialize.Instances as I ()
 import Data.Serializer as I
 import Data.Store as I
 import Data.Streamable as I
+import Data.Tree as I
 import Data.Witness.ListVProduct as I
 import Data.Words as I

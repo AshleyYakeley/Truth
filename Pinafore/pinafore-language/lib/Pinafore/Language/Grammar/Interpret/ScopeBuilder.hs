@@ -1,8 +1,6 @@
 module Pinafore.Language.Grammar.Interpret.ScopeBuilder
     ( ScopeBuilder
     , runScopeBuilder
-    , Docs
-    , exposeDocs
     , sourcePosScopeBuilder
     , interpScopeBuilder
     , refScopeBuilder
@@ -10,30 +8,12 @@ module Pinafore.Language.Grammar.Interpret.ScopeBuilder
     , allocateVarScopeBuilder
     ) where
 
-import Pinafore.Language.DefDoc
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Shapes
-
-popFilterTree :: (a -> Bool) -> Tree a -> [Tree a]
-popFilterTree test (Node a tt) = let
-    tt' = popFilterForest test tt
-    in if test a
-           then [Node a tt']
-           else tt'
-
-popFilterForest :: (a -> Bool) -> [Tree a] -> [Tree a]
-popFilterForest test tt = mconcat $ fmap (popFilterTree test) tt
-
-type Docs = [Tree DefDoc]
-
-exposeDefDoc :: [FullName] -> DefDoc -> Bool
-exposeDefDoc names dd = any (\name -> diMatchNameOrSubtypeRel name $ docItem dd) names
-
-exposeDocs :: [FullName] -> Docs -> Docs
-exposeDocs names = popFilterForest $ exposeDefDoc names
 
 type ScopeBuilder = TransformT RefNotation
 

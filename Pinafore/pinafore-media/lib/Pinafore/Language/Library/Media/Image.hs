@@ -26,15 +26,15 @@ langBlankImage (MkOpaqueAlphaColour col) size =
     MkLangImage $ MkSomeFor RGB16PixelType $ blankImage size $ colourToPixel col
 langBlankImage acol size = MkLangImage $ MkSomeFor RGBA16PixelType $ blankImage size $ alphaColourToPixel acol
 
-imageStuff :: BindDocTree ()
+imageStuff :: BindDocStuff ()
 imageStuff =
-    headingBDT "Image" "" $
-    [ typeBDT "Image" "An image." (MkSomeGroundType imageGroundType) []
-    , namespaceBDT
+    headingBDS "Image" "" $
+    [ typeBDS "Image" "An image." (MkSomeGroundType imageGroundType) []
+    , namespaceBDS
           "Image"
           ""
-          [ valBDT "size" "The size of an image" langImageSize
-          , valBDT "blank" "An image of one colour" langBlankImage
+          [ valBDS "size" "The size of an image" langImageSize
+          , valBDS "blank" "An image of one colour" langBlankImage
           , metadataStuff
           , pngStuff
           , jpegStuff

@@ -19,15 +19,15 @@ debugLiteralLength = olength . unLiteral
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
-debugLibSection :: BindDocTree context
+debugLibSection :: BindDocStuff context
 debugLibSection =
-    headingBDT "Debug" "Functions for debugging." $
+    headingBDS "Debug" "Functions for debugging." $
     pure $
-    namespaceBDT
+    namespaceBDS
         "Debug"
         ""
-        [ valBDT "message" "Debug message to std error." debugMessage
-        , valBDT "checkEntity" "debugCheckEntity" debugCheckEntity
-        , valBDT "literalLength" "Byte length of a Literal" debugLiteralLength
-        , valBDT "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
+        [ valBDS "message" "Debug message to std error." debugMessage
+        , valBDS "checkEntity" "debugCheckEntity" debugCheckEntity
+        , valBDS "literalLength" "Byte length of a Literal" debugLiteralLength
+        , valBDS "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
         ]

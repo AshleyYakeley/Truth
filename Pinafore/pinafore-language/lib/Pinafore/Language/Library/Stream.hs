@@ -114,72 +114,72 @@ lineBufferSource (MkLangSource source) = do
 langListSource :: forall a. [a] -> IO (LangSource a)
 langListSource aa = fmap liftSource $ listSource aa
 
-streamLibSection :: BindDocTree context
+streamLibSection :: BindDocStuff context
 streamLibSection =
-    headingBDT
+    headingBDS
         "Stream"
         "Sinks and sources."
-        [ headingBDT
+        [ headingBDS
               "ItemOrEnd"
               ""
-              [ typeBDT
+              [ typeBDS
                     "ItemOrEnd"
                     "Either an item, or end (meaning end of stream)."
                     (MkSomeGroundType endOrItemGroundType)
-                    [ valPatBDT "Item" "Construct an `ItemOrEnd` representing an item." (Item @A) $
+                    [ valPatBDS "Item" "Construct an `ItemOrEnd` representing an item." (Item @A) $
                       ImpureFunction $ \(v :: ItemOrEnd A) ->
                           case v of
                               Item a -> Just (a, ())
                               _ -> Nothing
-                    , valPatBDT "End" "Construct an `ItemOrEnd` representing end of stream." (End @BottomType) $
+                    , valPatBDS "End" "Construct an `ItemOrEnd` representing end of stream." (End @BottomType) $
                       ImpureFunction $ \(v :: ItemOrEnd A) ->
                           case v of
                               End -> Just ()
                               _ -> Nothing
                     ]
               ]
-        , headingBDT
+        , headingBDS
               "Sink"
               ""
-              [ typeBDT
+              [ typeBDS
                     "Sink"
                     "A sink is something you can write data (and \"end\") to."
                     (MkSomeGroundType sinkGroundType)
-                    [ valPatBDT "MkSink" "Construct a `Sink` from a function." (toLangSink @A) $
+                    [ valPatBDS "MkSink" "Construct a `Sink` from a function." (toLangSink @A) $
                       PureFunction $ \v -> (fromLangSink @A v, ())
                     ]
-              , namespaceBDT
+              , namespaceBDS
                     "Sink"
                     ""
-                    [ valBDT "map" "" $ contramap @LangSink @A @B
-                    , valBDT "write" "Write an item to a sink." $ langSinkWrite @A
-                    , valBDT "writeEnd" "Write end to a sink. You should not write to the sink after this." $
+                    [ valBDS "map" "" $ contramap @LangSink @A @B
+                    , valBDS "write" "Write an item to a sink." $ langSinkWrite @A
+                    , valBDS "writeEnd" "Write end to a sink. You should not write to the sink after this." $
                       langSinkWriteEnd @BottomType
-                    , valBDT "writeLn" "Write text followed by a newline to a text sink." langSinkWriteLn
+                    , valBDS "writeLn" "Write text followed by a newline to a text sink." langSinkWriteLn
                     ]
               ]
-        , headingBDT
+        , headingBDS
               "Source"
               ""
-              [ typeBDT "Source" "A source is something you can read data from." (MkSomeGroundType sourceGroundType) []
-              , namespaceBDT "Source" "" $
+              [ typeBDS "Source" "A source is something you can read data from." (MkSomeGroundType sourceGroundType) []
+              , namespaceBDS "Source" "" $
                 functorEntries @_ @LangSource <>
-                [ valBDT "isReady" "Does this source have data available now?" $ langSourceReady @TopType
-                , valBDT "read" "Read data (or end), waiting if necessary." $ langSourceRead @A
-                , valBDT "readAvailable" "Read data (or end), if it is now available." $ langSourceReadAvailable @A
-                , valBDT "readAllAvailable" "Read all data now available. Second value is set if end was read." $
+                [ valBDS "isReady" "Does this source have data available now?" $ langSourceReady @TopType
+                , valBDS "read" "Read data (or end), waiting if necessary." $ langSourceRead @A
+                , valBDS "readAvailable" "Read data (or end), if it is now available." $ langSourceReadAvailable @A
+                , valBDS "readAllAvailable" "Read all data now available. Second value is set if end was read." $
                   langSourceReadAllAvailable @A
-                , valBDT "gather" "Gather all data (until end) from a source." $ langSourceGather @A
-                , valBDT "listSource" "Create a source for a list of items." $ langListSource @A
-                , valBDT
+                , valBDS "gather" "Gather all data (until end) from a source." $ langSourceGather @A
+                , valBDS "listSource" "Create a source for a list of items." $ langListSource @A
+                , valBDS
                       "connect"
                       "Read all data (until end) from a source and write it to a sink, as it becomes available. Does not write end to the sink." $
                   langConnectSourceSink @A
-                , valBDT
+                , valBDS
                       "createPipe"
                       "Create a pipe. Data written to the sink will be added to a buffer, which can be read from with the source. Can be used to transfer data between asynchronous tasks." $
                   langCreatePipe @A
-                , valBDT
+                , valBDS
                       "lineBuffere"
                       "Get a line-buffering source from a text source. Each read will be exactly one line."
                       lineBufferSource

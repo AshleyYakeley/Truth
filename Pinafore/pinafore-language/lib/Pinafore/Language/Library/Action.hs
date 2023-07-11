@@ -18,29 +18,29 @@ qfail t = fail $ unpack t
 onStop :: Action A -> Action A -> Action A
 onStop p q = p <|> q
 
-actionLibSection :: BindDocTree context
+actionLibSection :: BindDocStuff context
 actionLibSection =
-    headingBDT
+    headingBDS
         "Action"
         ""
-        [ typeBDT "Action" "" (MkSomeGroundType actionGroundType) []
-        , namespaceBDT "Action" "" $
-          fmap nameInRootBDT (monadEntries @_ @Action) <>
-          [ nameInRootBDT $ valBDT "fix" "The fixed point of an Action." $ mfix @Action @A
-          , nameInRootBDT $ valBDT "fail" "Fail, causing the program to terminate with error." $ qfail
-          , nameInRootBDT $
-            valBDT
+        [ typeBDS "Action" "" (MkSomeGroundType actionGroundType) []
+        , namespaceBDS "Action" "" $
+          fmap addNameInRootBDS (monadEntries @_ @Action) <>
+          [ addNameInRootBDS $ valBDS "fix" "The fixed point of an Action." $ mfix @Action @A
+          , addNameInRootBDS $ valBDS "fail" "Fail, causing the program to terminate with error." $ qfail
+          , addNameInRootBDS $
+            valBDS
                 "stop"
                 "Stop. This is similar to an exception that can be caught with `onStop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
                 (empty :: Action BottomType)
-          , nameInRootBDT $ valBDT "onStop" "`onStop p q` does `p` first, and if it stops, then does `q`." $ onStop
-          , nameInRootBDT $
-            valBDT "for_" "Perform an action on each value of a list." (for_ :: [A] -> (A -> Action ()) -> Action ())
-          , nameInRootBDT $
-            valBDT
+          , addNameInRootBDS $ valBDS "onStop" "`onStop p q` does `p` first, and if it stops, then does `q`." $ onStop
+          , addNameInRootBDS $
+            valBDS "for_" "Perform an action on each value of a list." (for_ :: [A] -> (A -> Action ()) -> Action ())
+          , addNameInRootBDS $
+            valBDS
                 "for"
                 "Perform an action on each value of a list, returning a list."
                 (for :: [A] -> (A -> Action B) -> Action [B])
-          , nameInRootBDT $ valBDT "sleep" "Do nothing for this duration." threadSleep
+          , addNameInRootBDS $ valBDS "sleep" "Do nothing for this duration." threadSleep
           ]
         ]

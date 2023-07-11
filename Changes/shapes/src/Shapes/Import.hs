@@ -96,7 +96,6 @@ import Data.Hashable as I (Hashable)
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
 import Data.Map as I (Map)
 import qualified Data.Map.Lazy
-import Data.Tree as I (Forest, Tree(..))
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
@@ -180,6 +179,10 @@ ifpure True x = pure x
 mpure :: Alternative m => Maybe a -> m a
 mpure (Just a) = pure a
 mpure Nothing = empty
+
+lpure :: Alternative m => [a] -> m a
+lpure [] = empty
+lpure (a:aa) = pure a <|> lpure aa
 
 mcatch :: Alternative m => m a -> m (Maybe a)
 mcatch ma = fmap Just ma <|> pure Nothing

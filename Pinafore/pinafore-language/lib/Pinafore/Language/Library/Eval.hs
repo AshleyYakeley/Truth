@@ -12,14 +12,14 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalLibSection :: BindDocTree context
+evalLibSection :: BindDocStuff context
 evalLibSection =
-    headingBDT "Eval" "" $
+    headingBDS "Eval" "" $
     pure $
-    namespaceBDT
+    namespaceBDS
         "Eval"
         ""
-        [ specialFormBDT
+        [ specialFormBDS
               "evaluate"
               "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
                 \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\

@@ -83,14 +83,14 @@ testLib = let
             then return ()
             else fail "different"
     in MkLibraryModule "TEST" $
-       headingBDT "TEST" "" $
-       [ valBDT "idText" "TEST" idText
-       , valBDT "testSameT" "TEST" testSameT
-       , valBDT "testSameI" "TEST" testSameI
-       , valBDT "op1" "TEST" op1
-       , valBDT "op2" "TEST" op2
-       , valBDT "op3" "TEST" op3
-       , valBDT "op4" "TEST" op4
+       headingBDS "TEST" "" $
+       [ valBDS "idText" "TEST" idText
+       , valBDS "testSameT" "TEST" testSameT
+       , valBDS "testSameI" "TEST" testSameI
+       , valBDS "op1" "TEST" op1
+       , valBDS "op2" "TEST" op2
+       , valBDS "op3" "TEST" op3
+       , valBDS "op4" "TEST" op4
        ]
 
 testUnifier :: TestTree

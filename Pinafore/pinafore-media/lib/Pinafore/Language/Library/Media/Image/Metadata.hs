@@ -34,9 +34,9 @@ updateMetadata :: Text -> Maybe Literal -> LangHasMetadata -> LangHasMetadata
 updateMetadata key (Just val) (MkLangHasMetadata mp) = MkLangHasMetadata $ insertMap key val mp
 updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMap key mp
 
-textKey :: Text -> BindDocTree ()
+textKey :: Text -> BindDocStuff ()
 textKey name =
-    valPatBDT (UnqualifiedFullNameRef $ MkName name) (plainText $ "Standard metadata key \"" <> name <> "\"") name $
+    valPatBDS (UnqualifiedFullNameRef $ MkName name) (plainText $ "Standard metadata key \"" <> name <> "\"") name $
     ImpureFunction $ \n ->
         if n == name
             then Just ()
@@ -97,27 +97,27 @@ metadataResolution md = do
     dy <- fromLiteral lity
     return (fromInteger dx, fromInteger dy)
 
-metadataStuff :: BindDocTree ()
+metadataStuff :: BindDocStuff ()
 metadataStuff =
-    headingBDT "Metadata" "" $
+    headingBDS "Metadata" "" $
     pure $
-    namespaceBDT
+    namespaceBDS
         "Metadata"
         ""
-        [ typeBDT
+        [ typeBDS
               "HasMetadata"
               "Something that has metadata."
               (MkSomeGroundType hasMetadataGroundType)
-              [ valPatBDT
+              [ valPatBDS
                     "MkHasMetadata"
                     "Construct metadata out of key-value pairs. Duplicates will be removed."
                     mkHasMetadata $
                 PureFunction $ \hm -> (getAllMetadata hm, ())
               ]
-        , valBDT "lookup" "Look up metadata by name." lookupMetadata
-        , valBDT "update" "Update metadata item." updateMetadata
-        , valBDT "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution
-        , headingBDT
+        , valBDS "lookup" "Look up metadata by name." lookupMetadata
+        , valBDS "update" "Update metadata item." updateMetadata
+        , valBDS "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution
+        , headingBDS
               "Keys"
               "Constructors for standard metadata keys"
               [ textKey "Title"

@@ -44,7 +44,6 @@ module Pinafore.Language.Interpreter
     , registerBoundType
     , registerType
     , ScopeFixBox
-    , FullName(..)
     , Signature(..)
     , RecordConstructor(..)
     , BindingInfo(..)

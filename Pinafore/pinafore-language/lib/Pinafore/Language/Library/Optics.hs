@@ -42,99 +42,99 @@ prismGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangPrism where
     qGroundType = prismGroundType
 
-opticsLibSection :: BindDocTree context
+opticsLibSection :: BindDocStuff context
 opticsLibSection =
-    headingBDT
+    headingBDS
         "Optics & Properties"
         ""
-        [ headingBDT
+        [ headingBDS
               "Lens"
               ""
-              [ typeBDT "Lens" "" (MkSomeGroundType lensGroundType) []
-              , hasSubtypeRelationBDT @(LangLens '( AP, AQ) '( BP, BQ)) @(LangAttribute '( AP, AQ) '( BP, BQ)) Verify "" $
+              [ typeBDS "Lens" "" (MkSomeGroundType lensGroundType) []
+              , hasSubtypeRelationBDS @(LangLens '( AP, AQ) '( BP, BQ)) @(LangAttribute '( AP, AQ) '( BP, BQ)) Verify "" $
                 functionToShim "langLensAttribute" $ langLensAttribute @AP @AQ @BP @BQ
-              , valPatBDT "MkLens" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
+              , valPatBDS "MkLens" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
                 PureFunction $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
-              , namespaceBDT
+              , namespaceBDS
                     "Lens"
                     ""
-                    [ nameInRootBDT $ valBDT "fetch" "" $ langLensGet @'( AP, AQ) @'( BP, BQ)
-                    , nameInRootBDT $ valBDT "putback" "" $ langLensPutback @'( AP, AQ) @'( BP, BQ)
-                    , valBDT "id" "Identity lens." $ identityLangLens @X @Y
-                    , valBDT "." "Compose lenses." $ composeLangLens @AP @AQ @BX @BY @CP @CQ
-                    , valBDT "product" "Product of lenses." $ pairLangLens @A @BP @BQ @CP @CQ
-                    , valBDT "sum" "Sum of lenses." $ eitherLangLens @AP @AQ @BP @BQ @CP @CQ
+                    [ addNameInRootBDS $ valBDS "fetch" "" $ langLensGet @'( AP, AQ) @'( BP, BQ)
+                    , addNameInRootBDS $ valBDS "putback" "" $ langLensPutback @'( AP, AQ) @'( BP, BQ)
+                    , valBDS "id" "Identity lens." $ identityLangLens @X @Y
+                    , valBDS "." "Compose lenses." $ composeLangLens @AP @AQ @BX @BY @CP @CQ
+                    , valBDS "product" "Product of lenses." $ pairLangLens @A @BP @BQ @CP @CQ
+                    , valBDS "sum" "Sum of lenses." $ eitherLangLens @AP @AQ @BP @BQ @CP @CQ
                     ]
               ]
-        , headingBDT
+        , headingBDS
               "Prism"
               ""
-              [ typeBDT "Prism" "" (MkSomeGroundType prismGroundType) []
-              , hasSubtypeRelationBDT
+              [ typeBDS "Prism" "" (MkSomeGroundType prismGroundType) []
+              , hasSubtypeRelationBDS
                     @(LangPrism '( AP, AQ) '( BP, BQ))
                     @(LangAttribute '( AP, AQ) '( BP, BQ))
                     Verify
                     "" $
                 functionToShim "langPrismAttribute" $ langPrismAttribute @AP @AQ @BP @BQ
-              , valPatBDT "MkPrism" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
+              , valPatBDS "MkPrism" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
                 PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
-              , namespaceBDT
+              , namespaceBDS
                     "Prism"
                     ""
-                    [ nameInRootBDT $ valBDT "decode" "" $ prismDecode @AP @AQ @BP @BQ
-                    , nameInRootBDT $ valBDT "encode" "" $ prismEncode @AP @AQ @BP @BQ
-                    , valBDT "id" "Identity prism." $ identityLangPrism @X @Y
-                    , valBDT "." "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
-                    , valBDT "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
+                    [ addNameInRootBDS $ valBDS "decode" "" $ prismDecode @AP @AQ @BP @BQ
+                    , addNameInRootBDS $ valBDS "encode" "" $ prismEncode @AP @AQ @BP @BQ
+                    , valBDS "id" "Identity prism." $ identityLangPrism @X @Y
+                    , valBDS "." "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
+                    , valBDS "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
                     ]
               ]
-        , headingBDT
+        , headingBDS
               "Attribute"
               "Attributes relate entities."
-              [ typeBDT "Attribute" "" (MkSomeGroundType attributeGroundType) []
-              , namespaceBDT
+              [ typeBDS "Attribute" "" (MkSomeGroundType attributeGroundType) []
+              , namespaceBDS
                     "Attribute"
                     ""
-                    [ valBDT "id" "The identity attribute." $ identityLangAttribute @X @Y
-                    , valBDT "." "Compose attributes." $ composeLangAttribute @AP @AQ @BX @BY @CP @CQ
-                    , valBDT "**" "Type product of attributes. Models from these attributes are undeleteable." $
+                    [ valBDS "id" "The identity attribute." $ identityLangAttribute @X @Y
+                    , valBDS "." "Compose attributes." $ composeLangAttribute @AP @AQ @BX @BY @CP @CQ
+                    , valBDS "**" "Type product of attributes. Models from these attributes are undeleteable." $
                       pairLangAttribute @AP @AQ @BP @BQ @CP @CQ
-                    , valBDT "++" "Type sum of attributes. Models from these attributes are undeleteable." $
+                    , valBDS "++" "Type sum of attributes. Models from these attributes are undeleteable." $
                       eitherLangAttribute @AP @AQ @BP @BQ @CP @CQ
-                    , nameInRootBDT $
-                      valBDT "!$" "Apply an attribute to a model." $ applyLangAttributeModel @AP @AQ @BP @BQ
-                    , nameInRootBDT $
-                      valBDT "!$%" "Apply an attribute to an immutable model.\n`m !$% r = m !$ immut.WholeModel r`" $
+                    , addNameInRootBDS $
+                      valBDS "!$" "Apply an attribute to a model." $ applyLangAttributeModel @AP @AQ @BP @BQ
+                    , addNameInRootBDS $
+                      valBDS "!$%" "Apply an attribute to an immutable model.\n`m !$% r = m !$ immut.WholeModel r`" $
                       applyLangAttributeImmutModel @A @BP @BQ
-                    , nameInRootBDT $ valBDT "!$$" "Apply an attribute to a set." $ applyLangAttributeSet @A @B
+                    , addNameInRootBDS $ valBDS "!$$" "Apply an attribute to a set." $ applyLangAttributeSet @A @B
                     ]
               ]
-        , headingBDT
+        , headingBDS
               "Property"
               "Properties relate entities."
-              [ typeBDT "Property" "" (MkSomeGroundType propertyGroundType) []
-              , hasSubtypeRelationBDT
+              [ typeBDS "Property" "" (MkSomeGroundType propertyGroundType) []
+              , hasSubtypeRelationBDS
                     @(LangProperty '( AP, AQ) '( BP, BQ))
                     @(LangAttribute '( AP, AQ) '( BP, BQ))
                     Verify
                     "" $
                 functionToShim "langPropertyAttribute" langPropertyAttribute
-              , namespaceBDT
+              , namespaceBDS
                     "Property"
                     ""
-                    [ valBDT "id" "The identity property." $ identityLangProperty @X @Y
-                    , valBDT "." "Compose properties." $ composeLangProperty @AP @AQ @BX @BY @CP @CQ
-                    , valBDT "**" "Type product of properties. Models from these properties are undeleteable." $
+                    [ valBDS "id" "The identity property." $ identityLangProperty @X @Y
+                    , valBDS "." "Compose properties." $ composeLangProperty @AP @AQ @BX @BY @CP @CQ
+                    , valBDS "**" "Type product of properties. Models from these properties are undeleteable." $
                       pairLangProperty @AP @AQ @BP @BQ @CP @CQ
-                    , valBDT "++" "Type sum of properties. Models from these properties are undeleteable." $
+                    , valBDS "++" "Type sum of properties. Models from these properties are undeleteable." $
                       eitherLangProperty @AP @AQ @BP @BQ @CP @CQ
-                    , nameInRootBDT $
-                      valBDT "!@" "Co-apply a property to a model." $ inverseApplyLangPropertyModel @A @BX @BY
-                    , nameInRootBDT $
-                      valBDT "!@%" "Co-apply a property to an immutable model.\n`m !@% r = m !@ immut.WholeModel r`" $
+                    , addNameInRootBDS $
+                      valBDS "!@" "Co-apply a property to a model." $ inverseApplyLangPropertyModel @A @BX @BY
+                    , addNameInRootBDS $
+                      valBDS "!@%" "Co-apply a property to an immutable model.\n`m !@% r = m !@ immut.WholeModel r`" $
                       inverseApplyLangPropertyImmutModel @A @B
-                    , nameInRootBDT $
-                      valBDT "!@@" "Co-apply a property to a set." $ inverseApplyLangPropertySet @A @BX @BY
+                    , addNameInRootBDS $
+                      valBDS "!@@" "Co-apply a property to a set." $ inverseApplyLangPropertySet @A @BX @BY
                     ]
               ]
         ]

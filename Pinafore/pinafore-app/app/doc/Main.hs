@@ -11,23 +11,21 @@ import Pinafore.Version
 import Shapes
 
 isSubtypeRel :: Tree DefDoc -> Bool
-isSubtypeRel (Node (MkDefDoc SubtypeRelationDocItem {} _) _) = True
+isSubtypeRel (MkTree (MkDefDoc SubtypeRelationDocItem {} _) _) = True
 isSubtypeRel _ = False
 
-trimDocL :: Tree DefDoc -> [Tree DefDoc]
-trimDocL (Node n children) =
+trimDocL :: Tree DefDoc -> Forest DefDoc
+trimDocL (MkTree n children) =
     case (docItem n, trimDocChildren children) of
-        (HeadingDocItem {}, children')
-            | all isSubtypeRel children' -> children'
-        (NamespaceDocItem {}, children')
-            | all isSubtypeRel children' -> children'
-        (_, children') -> [Node n children']
+        (HeadingDocItem {}, children'@(MkForest tt))
+            | all isSubtypeRel tt -> children'
+        (_, children') -> pureForest $ MkTree n children'
 
-trimDocChildren :: [Tree DefDoc] -> [Tree DefDoc]
-trimDocChildren children = children >>= trimDocL
+trimDocChildren :: Forest DefDoc -> Forest DefDoc
+trimDocChildren children = bindForest children trimDocL
 
 trimDoc :: Tree DefDoc -> Tree DefDoc
-trimDoc (Node n children) = Node n $ trimDocChildren children
+trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 
 printModuleDoc :: ModuleOptions -> Text -> IO ()
 printModuleDoc modopts tmodname = do
@@ -37,15 +35,13 @@ printModuleDoc modopts tmodname = do
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
     let
-        runDocTree :: Int -> Int -> Namespace -> Tree DefDoc -> IO ()
-        runDocTree hlevel ilevel curns (Node MkDefDoc {..} children) = do
+        runDocTree :: Int -> Int -> Tree DefDoc -> IO ()
+        runDocTree hlevel ilevel (MkTree MkDefDoc {..} (MkForest children)) = do
             let
                 putMarkdown :: Markdown -> IO ()
                 putMarkdown m = hPutStr stdout $ unpack $ toText m
                 putIndentMarkdown :: Markdown -> IO ()
                 putIndentMarkdown m = putMarkdown $ indentMarkdownN ilevel m
-                mapNamespaceRef :: NamespaceRef -> Namespace
-                mapNamespaceRef fn = namespaceConcatRef RootNamespace fn
                 mapFullNameRef :: FullNameRef -> FullName
                 mapFullNameRef fn = namespaceConcatFullName RootNamespace fn
                 toMarkdown :: NamedText -> MarkdownText
@@ -96,10 +92,6 @@ printModuleDoc modopts tmodname = do
                                _ -> name <> trailingParams diParams
                 SubtypeRelationDocItem {..} ->
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
-                NamespaceDocItem {..} ->
-                    putBindDoc $ let
-                        name = boldMarkdown $ showMarkdown $ mapNamespaceRef diNamespace
-                        in "namespace " <> name
                 HeadingDocItem {..} -> putIndentMarkdown $ titleMarkdown hlevel diTitle
             if docDescription == ""
                 then return ()
@@ -109,12 +101,8 @@ printModuleDoc modopts tmodname = do
                     case docItem of
                         HeadingDocItem {} -> (succ hlevel, ilevel)
                         _ -> (hlevel, succ ilevel)
-                curns' =
-                    case docItem of
-                        NamespaceDocItem {..} -> namespaceConcatRef RootNamespace diNamespace
-                        _ -> curns
-            for_ children $ runDocTree hlevel' ilevel' curns'
-    runDocTree 1 0 RootNamespace $ trimDoc $ moduleDoc pmodule
+            for_ children $ runDocTree hlevel' ilevel'
+    runDocTree 1 0 $ trimDoc $ moduleDoc pmodule
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do

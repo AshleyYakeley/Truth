@@ -69,29 +69,28 @@ directoryFetchModule dirpath =
 getLibraryModuleModule :: forall context. context -> LibraryModule context -> QInterpreter QModule
 getLibraryModuleModule context libmod = do
     let
-        bindDocs :: [BindDoc context]
-        bindDocs = libraryModuleEntries libmod
+        bindDocs :: [(ScopeEntry context, DefDoc)]
+        bindDocs = mapMaybe (\MkBindDoc {..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryModuleEntries libmod
         bscope :: QScope
         bscope =
             bindingInfosToScope $ do
-                MkBindDoc {..} <- bindDocs
-                se <- bdScopeEntries
+                (se, bd) <- bindDocs
                 case se of
-                    (BindScopeEntry name oname b) -> do
+                    (BindScopeEntry oname xnames b) -> do
+                        let biOriginalName = namespaceConcatFullName RootNamespace oname
+                        biName <- biOriginalName : xnames
                         let
-                            biName = namespaceConcatFullName RootNamespace name
-                            biOriginalName = namespaceConcatFullName RootNamespace oname
-                            biDocumentation = docDescription bdDoc
+                            biDocumentation = docDescription bd
                             biValue = b context
                         return (biName, MkBindingInfo {..})
                     _ -> []
     dscopes <-
-        for (bindDocs >>= bdScopeEntries) $ \case
-            BindScopeEntry _ _ _ -> return emptyScope
-            SubtypeScopeEntry entry -> getSubtypeScope entry
-    let moduleDoc = libraryModuleDocumentation libmod
-    moduleScope <- joinAllScopes dscopes bscope
-    return $ MkModule {..}
+        for bindDocs $ \(se, _) ->
+            case se of
+                BindScopeEntry _ _ _ -> return emptyScope
+                SubtypeScopeEntry entry -> getSubtypeScope entry
+    scope <- joinAllScopes dscopes bscope
+    return $ mkModule (lmName libmod) (libraryModuleDocumentation libmod) scope
 
 libraryFetchModule :: forall context. [LibraryModule context] -> FetchModule context
 libraryFetchModule lmods = let

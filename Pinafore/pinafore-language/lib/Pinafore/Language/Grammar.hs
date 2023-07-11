@@ -5,6 +5,7 @@ module Pinafore.Language.Grammar
     , module I
     ) where
 
+import Pinafore.Language.Grammar.Docs as I (Docs, mkModule)
 import Pinafore.Language.Grammar.Interpret as I (interpretImportDeclaration)
 import Pinafore.Language.Grammar.Interpret
 import Pinafore.Language.Grammar.Read as I

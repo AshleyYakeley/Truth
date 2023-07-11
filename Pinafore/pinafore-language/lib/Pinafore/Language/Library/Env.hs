@@ -28,26 +28,26 @@ openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
 
-envLibSection :: BindDocTree InvocationInfo
+envLibSection :: BindDocStuff InvocationInfo
 envLibSection =
-    headingBDT "Env" "The environment in which the script was invoked." $
+    headingBDS "Env" "The environment in which the script was invoked." $
     pure $
-    namespaceBDT
+    namespaceBDS
         "Env"
         ""
-        [ valBDT "scriptName" "The name of the script." (pack $ iiScriptName ?qcontext :: Text)
-        , valBDT "arguments" "Arguments passed to the script." (fmap pack $ iiScriptArguments ?qcontext :: [Text])
-        , valBDT
+        [ valBDS "scriptName" "The name of the script." (pack $ iiScriptName ?qcontext :: Text)
+        , valBDS "arguments" "Arguments passed to the script." (fmap pack $ iiScriptArguments ?qcontext :: [Text])
+        , valBDS
               "variables"
               "Environment variables."
               (fmap (\(n, v) -> (pack n, pack v)) $ iiEnvironment ?qcontext :: [(Text, Text)])
-        , valBDT "getVar" "Get environment variable." getVar
-        , valBDT "stdin" "Standard input source." langStdIn
-        , valBDT "stdout" "Standard output sink." langStdOut
-        , valBDT "stderr" "Standard error/diagnostics sink." langStdErr
-        , valBDT "outputLn" "Output text and a newline to standard output. Same as `writeLn stdout`." $
+        , valBDS "getVar" "Get environment variable." getVar
+        , valBDS "stdin" "Standard input source." langStdIn
+        , valBDS "stdout" "Standard output sink." langStdOut
+        , valBDS "stderr" "Standard error/diagnostics sink." langStdErr
+        , valBDS "outputLn" "Output text and a newline to standard output. Same as `writeLn stdout`." $
           langSinkWriteLn langStdOut
-        , valBDT
+        , valBDS
               "openDefaultStore"
               "Open the default `Store`. Will be closed at the end of the lifecycle."
               openDefaultStore

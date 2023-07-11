@@ -60,81 +60,81 @@
 
 > doc:y
 > 
-<code>namespace </code>**<code>N\.</code>**
+## N\.
 
 > doc:N
 > 
-> **<code>q\.N\.</code>**<code> : Integer</code>
+**<code>q\.N\.</code>**<code> : Integer</code>
+
+> doc:N.q
 > 
-> > doc:N.q
-> > 
-> **<code>xx\.N\.</code>**<code> : Text</code>
+**<code>xx\.N\.</code>**<code> : Text</code>
+
+> doc:N.xx
 > 
-> > doc:N.xx
-> > 
-> <code>type </code>**<code>NmA\.N\.</code>**<code> {\-q,\+p} \+r \-s</code>
+<code>type </code>**<code>NmA\.N\.</code>**<code> {\-q,\+p} \+r \-s</code>
+
+> doc:NmA
 > 
-> > doc:NmA
-> > 
-> > **<code>Mk1\.NmA\.N\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmA\.N\.</code>
-> > 
-> > > doc:Mk1.NmA
-> > > 
-> > **<code>Mk2\.NmA\.N\.</code>**<code> : p \-\> (s \-\> r) \-\> NmA\.N\.</code>
-> > 
-> > > doc:Mk2.NmA
-> > > 
-> <code>type </code>**<code>NmB\.N\.</code>**
+> **<code>Mk1\.NmA\.N\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmA\.N\.</code>
 > 
-> > doc:NmB
+> > doc:Mk1.NmA
 > > 
-> > **<code>Mk\.NmB\.N\.</code>**<code> : Integer \-\> NmB\.N\.</code>
-> > 
-> > > doc:Mk.NmB
-> > > 
-> <code>subtype NmA Integer Unit Unit \<: NmB</code>
+> **<code>Mk2\.NmA\.N\.</code>**<code> : p \-\> (s \-\> r) \-\> NmA\.N\.</code>
 > 
-> <code>type </code>**<code>NmRecA\.N\.</code>**<code> {\-q,\+p} \+r \-s</code>
+> > doc:Mk2.NmA
+> > 
+<code>type </code>**<code>NmB\.N\.</code>**
+
+> doc:NmB
 > 
-> > doc:NmRecA
-> > 
-> > **<code>Mk1\.NmRecA\.N\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmRecA\.N\.</code>
-> > 
-> > > doc:Mk1.NmRecA
-> > > 
-> > **<code>Mk2\.NmRecA\.N\.</code>**<code> : p \-\> (s \-\> r) \-\> NmRecA\.N\.</code>
-> > 
-> > > doc:Mk2.NmRecA
-> > > 
-> <code>type </code>**<code>NmRecB\.N\.</code>**
+> **<code>Mk\.NmB\.N\.</code>**<code> : Integer \-\> NmB\.N\.</code>
 > 
-> > doc:NmRecB
+> > doc:Mk.NmB
 > > 
-> > **<code>Mk\.NmRecB\.N\.</code>**<code> : Integer \-\> NmRecB\.N\.</code>
-> > 
-> > > doc:Mk.NmRecB
-> > > 
-> <code>subtype NmRecA Integer Unit Unit \<: NmRecB</code>
+<code>subtype NmA Integer Unit Unit \<: NmB</code>
+
+<code>type </code>**<code>NmRecA\.N\.</code>**<code> {\-q,\+p} \+r \-s</code>
+
+> doc:NmRecA
 > 
-> <code>type </code>**<code>NmR\.N\.</code>**
+> **<code>Mk1\.NmRecA\.N\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmRecA\.N\.</code>
 > 
-> > doc:NmR
+> > doc:Mk1.NmRecA
 > > 
-> > **<code>Mk\.NmR\.N\.</code>**<code> : NmR\.N\.</code>
-> > 
-> > > doc:Mk.NmR
-> > > 
-> > > **<code>nmrp</code>**<code> : Integer \-\> a \-\> a</code>
-> > > 
-> > > > doc:nmrp
-> > > > 
-> > > **<code>nmrq</code>**<code> : Integer | Text</code>
-> > > 
-> > > > doc:nmrq
-> > > > 
-> <code>namespace </code>**<code>NN\.N\.</code>**
+> **<code>Mk2\.NmRecA\.N\.</code>**<code> : p \-\> (s \-\> r) \-\> NmRecA\.N\.</code>
 > 
-> > **<code>xyz\.NN\.N\.</code>**<code> : Unit</code>
+> > doc:Mk2.NmRecA
 > > 
-> > > doc:N.NN.xyz
+<code>type </code>**<code>NmRecB\.N\.</code>**
+
+> doc:NmRecB
+> 
+> **<code>Mk\.NmRecB\.N\.</code>**<code> : Integer \-\> NmRecB\.N\.</code>
+> 
+> > doc:Mk.NmRecB
+> > 
+<code>subtype NmRecA Integer Unit Unit \<: NmRecB</code>
+
+<code>type </code>**<code>NmR\.N\.</code>**
+
+> doc:NmR
+> 
+> **<code>Mk\.NmR\.N\.</code>**<code> : NmR\.N\.</code>
+> 
+> > doc:Mk.NmR
+> > 
+> > **<code>nmrp</code>**<code> : Integer \-\> a \-\> a</code>
+> > 
+> > > doc:nmrp
 > > > 
+> > **<code>nmrq</code>**<code> : Integer | Text</code>
+> > 
+> > > doc:nmrq
+> > > 
+### NN\.N\.
+
+**<code>xyz\.NN\.N\.</code>**<code> : Unit</code>
+
+> doc:N.NN.xyz
+> 

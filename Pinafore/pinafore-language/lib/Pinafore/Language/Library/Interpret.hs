@@ -33,16 +33,16 @@ interpretGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFa
 instance HasQGroundType '[ CoCCRVariance] Interpret where
     qGroundType = interpretGroundType
 
-interpretLibSection :: BindDocTree context
+interpretLibSection :: BindDocStuff context
 interpretLibSection =
-    headingBDT
+    headingBDS
         "Interpretation"
         ""
-        [ typeBDT "Interpret" "" (MkSomeGroundType interpretGroundType) []
-        , valPatBDT "MkInterpret" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())
-        , namespaceBDT "Interpret" "" $
+        [ typeBDS "Interpret" "" (MkSomeGroundType interpretGroundType) []
+        , valPatBDS "MkInterpret" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())
+        , namespaceBDS "Interpret" "" $
           functorEntries @_ @Interpret <>
-          [ valBDT "map" "" (fmap :: (A -> B) -> Interpret A -> Interpret B)
-          , nameInRootBDT $ valBDT "interpret" "" $ interpret @A
+          [ valBDS "map" "" (fmap :: (A -> B) -> Interpret A -> Interpret B)
+          , addNameInRootBDS $ valBDS "interpret" "" $ interpret @A
           ]
         ]

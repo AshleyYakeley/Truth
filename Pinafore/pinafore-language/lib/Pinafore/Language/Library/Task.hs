@@ -59,18 +59,18 @@ langDurationTask d = fmap liftTask $ durationTask d
 langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
-taskLibSection :: BindDocTree context
+taskLibSection :: BindDocStuff context
 taskLibSection =
-    headingBDT "Task" "" $
-    [ typeBDT "Task" "A task is something that can be waited for to give a result." (MkSomeGroundType taskGroundType) []
-    , namespaceBDT "Task" "" $
+    headingBDS "Task" "" $
+    [ typeBDS "Task" "A task is something that can be waited for to give a result." (MkSomeGroundType taskGroundType) []
+    , namespaceBDS "Task" "" $
       applicativeEntries @_ @LangTask <>
-      [ valBDT "async" "Run an action in another thread. It will complete in the current life cycle." $ asyncTask @A
-      , valBDT "await" "Wait for a task to complete. This action is idempotent." $ awaitTask @A
-      , valBDT "check" "Check to see if a task is done without waiting." $ langCheckTask @A
-      , valBDT "isDone" "Check whether a task is done." $ isDone @TopType
-      , valBDT "time" "A task that is done at this time." langTimeTask
-      , valBDT "duration" "A task that will be done after this duration." langDurationTask
-      , valBDT "race" "Whichever task is done first." $ langRaceTasks @A
+      [ valBDS "async" "Run an action in another thread. It will complete in the current life cycle." $ asyncTask @A
+      , valBDS "await" "Wait for a task to complete. This action is idempotent." $ awaitTask @A
+      , valBDS "check" "Check to see if a task is done without waiting." $ langCheckTask @A
+      , valBDS "isDone" "Check whether a task is done." $ isDone @TopType
+      , valBDS "time" "A task that is done at this time." langTimeTask
+      , valBDS "duration" "A task that will be done after this duration." langDurationTask
+      , valBDS "race" "Whichever task is done first." $ langRaceTasks @A
       ]
     ]

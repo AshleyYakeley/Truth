@@ -11,7 +11,6 @@ import Shapes
 
 data DocItem
     = HeadingDocItem { diTitle :: MarkdownText }
-    | NamespaceDocItem { diNamespace :: NamespaceRef }
     | ValueDocItem { diNames :: NonEmpty FullNameRef
                    , diType :: NamedText }
     | ValueSignatureDocItem { diSigName :: Name
@@ -30,7 +29,6 @@ data DocItem
 
 instance Show DocItem where
     show (HeadingDocItem t) = "heading " <> show t
-    show (NamespaceDocItem n) = "namespace " <> show n
     show (ValueDocItem n t) = "val " <> show n <> ": " <> unpack (toText t)
     show (ValueSignatureDocItem n t hd) =
         "sig " <>
@@ -72,7 +70,6 @@ instance Show DefDoc where
     show (MkDefDoc i d) = show (i, d)
 
 instance NamespaceConcat DocItem where
-    namespaceConcat nsn (NamespaceDocItem nr) = NamespaceDocItem $ namespaceConcat nsn nr
     namespaceConcat nsn di = runIdentity $ diNameTraversal (Identity . namespaceConcat nsn) di
 
 instance NamespaceConcat DefDoc where

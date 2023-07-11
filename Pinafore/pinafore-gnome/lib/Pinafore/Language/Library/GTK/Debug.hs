@@ -23,13 +23,13 @@ ignoreUpdateException (MkWModel (MkResource rr amodel)) =
 debugIgnoreUpdateUIExceptions :: LangWholeModel '( P, Q) -> LangWholeModel '( P, Q)
 debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeModelMapModel (Identity . ignoreUpdateException) ref
 
-gtkDebugStuff :: BindDocTree ()
+gtkDebugStuff :: BindDocStuff ()
 gtkDebugStuff =
-    headingBDT "GTK.Debug" "Functions for GTK debugging." $
+    headingBDS "GTK.Debug" "Functions for GTK debugging." $
     pure $
-    namespaceBDT
+    namespaceBDS
         "GTK.Debug"
         ""
-        [ valBDT "ignoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
-        , valBDT "windowInfo" "Get window contents information" uiWindowDebugDescribe
+        [ valBDS "ignoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
+        , valBDS "windowInfo" "Get window contents information" uiWindowDebugDescribe
         ]

@@ -142,7 +142,7 @@ opaque = MkOpaqueAlphaColour
 transparent :: LangAlphaColour
 transparent = MkAlphaColour16 0 $ fromSVGColor black
 
-mkNamedColourEntry :: (String, Color (SRGB 'NonLinear) Word8) -> BindDocTree ()
+mkNamedColourEntry :: (String, Color (SRGB 'NonLinear) Word8) -> BindDocStuff ()
 mkNamedColourEntry (name, colour) = let
     ColorSRGB r g b = colour
     tr = pack $ show r
@@ -155,59 +155,59 @@ mkNamedColourEntry (name, colour) = let
             [("style", "border: 1px solid black; background: rgb(" <> tr <> "," <> tg <> "," <> tb <> ")")]
             (rawMarkdown "&nbsp;&nbsp;&nbsp;&nbsp;") <>
         " SRGB16 " <> plainText tr <> "*257 " <> plainText tg <> "*257 " <> plainText tb <> "*257"
-    in valBDT (fromString name) (asRawMarkdown desc) $ fromSVGColor colour
+    in valBDS (fromString name) (asRawMarkdown desc) $ fromSVGColor colour
 
-colourStuff :: BindDocTree ()
+colourStuff :: BindDocStuff ()
 colourStuff =
-    headingBDT "Colour" "" $
-    [ typeBDT
+    headingBDS "Colour" "" $
+    [ typeBDS
           "Colour"
           "A human-perceivable colour."
           (MkSomeGroundType colourGroundType)
-          [ valPatBDT
+          [ valPatBDS
                 "SRGB16"
                 "Construct a Colour from sRGB (perceptual) red, green, blue, integers in range 0 to 65535. (This is what it actually stored.)"
                 MkPerceptualSRGB16 $
             PureFunction $ \(MkPerceptualSRGB16 r g b) -> (r, (g, (b, ())))
-          , valPatBDT
+          , valPatBDS
                 "SRGBF"
                 "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
                 MkPerceptualSRGBFraction $
             PureFunction $ \(MkPerceptualSRGBFraction r g b) -> (r, (g, (b, ())))
-          , valPatBDT "LinearF" "Construct a Colour from linear red, green, blue, in range 0 to 1." MkLinearRGBFraction $
+          , valPatBDS "LinearF" "Construct a Colour from linear red, green, blue, in range 0 to 1." MkLinearRGBFraction $
             PureFunction $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
           ]
-    , typeBDT
+    , typeBDS
           "AlphaColour"
           "A human-perceivable colour, with opacity."
           (MkSomeGroundType alphaColourGroundType)
-          [ valPatBDT
+          [ valPatBDS
                 "Mk16"
                 "Construct an AlphaColour from an opacity in range 0 to 65535 and a Colour."
                 MkAlphaColour16 $
             PureFunction $ \(MkAlphaColour16 op col) -> (op, (col, ()))
-          , valPatBDT
+          , valPatBDS
                 "MkF"
                 "Construct an AlphaColour from an opacity in range 0 to 1 and a Colour."
                 MkAlphaColourFraction $
             PureFunction $ \(MkAlphaColourFraction op col) -> (op, (col, ()))
           ]
     , literalSubtypeRelationEntry @LangAlphaColour
-    , hasSubtypeRelationBDT @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $
+    , hasSubtypeRelationBDS @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $
       functionToShim "opaque" opaque
-    , namespaceBDT
+    , namespaceBDS
           "Colour"
           ""
-          [ valBDT "transparent" "The zero-opacity AlphaColour" transparent
+          [ valBDS "transparent" "The zero-opacity AlphaColour" transparent
         {- https://github.com/lehins/Color/issues/9
-        , valBDT "over" "An AlphaColour over a Colour" $ over @Colour @Word16
-        , valBDT "overA" "An AlphaColour over an AlphaColour" $ over @AlphaColour @Word16
-        , valBDT "blend" "Blend two Colours by weight (of the first)" $ blend @Word16 @Colour
-        , valBDT "blendA" "Blend two AlphaColours by weight (of the first)" $ blend @Word16 @AlphaColour
-        , valBDT "darken" "Darken a Colour" $ darken @Colour @Word16
-        , valBDT "darkenA" "Darken an AlphaColour" $ darken @AlphaColour @Word16
+        , valBDS "over" "An AlphaColour over a Colour" $ over @Colour @Word16
+        , valBDS "overA" "An AlphaColour over an AlphaColour" $ over @AlphaColour @Word16
+        , valBDS "blend" "Blend two Colours by weight (of the first)" $ blend @Word16 @Colour
+        , valBDS "blendA" "Blend two AlphaColours by weight (of the first)" $ blend @Word16 @AlphaColour
+        , valBDS "darken" "Darken a Colour" $ darken @Colour @Word16
+        , valBDS "darkenA" "Darken an AlphaColour" $ darken @AlphaColour @Word16
         -}
-          , headingBDT
+          , headingBDS
                 "Named Colours"
                 "SVG named colours, also used in CSS, from [SVG 1.1](https://www.w3.org/TR/SVG11/types.html#ColorKeywords)" $
             fmap mkNamedColourEntry allSVGColors

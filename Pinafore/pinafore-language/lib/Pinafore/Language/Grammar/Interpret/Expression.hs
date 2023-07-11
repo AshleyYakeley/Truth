@@ -7,12 +7,13 @@ module Pinafore.Language.Grammar.Interpret.Expression
     , interpretPattern
     ) where
 
-import Data.Graph
+import Data.Graph hiding (Forest, Tree)
 import Pinafore.Base
 import Pinafore.Language.Debug
 import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
+import Pinafore.Language.Grammar.Docs
 import Pinafore.Language.Grammar.FreeVars
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Grammar.Interpret.ScopeBuilder
@@ -29,8 +30,6 @@ import Pinafore.Language.Var
 import Pinafore.Language.VarID
 import Pinafore.Text
 import Shapes
-
-type instance EntryDoc QTypeSystem = DefDoc
 
 interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordConstructor)
 interpretPatternConstructor (SLNamedConstructor name _) = lookupPatternConstructor name
@@ -260,7 +259,7 @@ subtypeRelDocs sta stb docDescription = let
     diSubtype = exprShow sta
     diSupertype = exprShow stb
     docItem = SubtypeRelationDocItem {..}
-    in pure $ pure MkDefDoc {..}
+    in pure MkDefDoc {..}
 
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc = let
@@ -274,21 +273,21 @@ typeDeclDoc = let
     funcPNTList :: [PrecNamedText] -> PrecNamedText -> PrecNamedText
     funcPNTList [] t = t
     funcPNTList (a:aa) t = funcPNT a $ funcPNTList aa t
-    consDoc :: FullName -> [NamedText] -> SyntaxConstructorOrSubtype extra -> (DocItem, [Tree DefDoc])
+    consDoc :: FullName -> [NamedText] -> SyntaxConstructorOrSubtype extra -> (DocItem, Docs)
     consDoc tname _ (ConstructorSyntaxConstructorOrSubtype cname tt _) =
         ( ValuePatternDocItem (pure $ fullNameRef cname) $
           toNamedText $ funcPNTList (fmap exprShowPrec tt) (exprShowPrec tname)
-        , [])
+        , mempty)
     consDoc _ tparams (SubtypeSyntaxConstructorOrSubtype tname tt) =
         (TypeDocItem (pure $ fullNameRef tname) tparams, typeConssDoc tname tparams tt)
     consDoc tname _ (RecordSyntaxConstructorOrSubtype cname sigs) =
-        (ValuePatternDocItem (pure $ fullNameRef cname) (exprShow tname), fmap (pure . sigDoc) sigs)
+        (ValuePatternDocItem (pure $ fullNameRef cname) (exprShow tname), lpure $ fmap sigDoc sigs)
     typeConsDoc :: FullName -> [NamedText] -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
     typeConsDoc tname tparams (MkSyntaxWithDoc cdoc scs) = let
         (item, rest) = consDoc tname tparams scs
-        in Node (MkDefDoc item cdoc) rest
-    typeConssDoc :: FullName -> [NamedText] -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> [Tree DefDoc]
-    typeConssDoc tname tparams = fmap $ typeConsDoc tname tparams
+        in MkTree (MkDefDoc item cdoc) rest
+    typeConssDoc :: FullName -> [NamedText] -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> Docs
+    typeConssDoc tname tparams sdocs = MkForest $ fmap (typeConsDoc tname tparams) sdocs
     in \name defn doc -> let
            diNames = pure $ fullNameRef name
            (diParams, items) =
@@ -302,15 +301,16 @@ typeDeclDoc = let
                    _ -> mempty
            docItem = TypeDocItem {..}
            docDescription = doc
-           in Node MkDefDoc {..} items
+           in MkTree MkDefDoc {..} items
 
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> ScopeBuilder Docs
 interpretRecursiveDocDeclarations ddecls = do
     let
+        interp :: SyntaxRecursiveDeclaration -> ScopeBuilder (_, ScopeBuilder (), [SingleBinding], Docs)
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
                 TypeSyntaxDeclaration name defn ->
-                    return (pure (spos, name, doc, defn), mempty, mempty, pure $ typeDeclDoc name defn doc)
+                    return (pure (spos, name, doc, defn), mempty, mempty, pureForest $ typeDeclDoc name defn doc)
                 SubtypeSyntaxDeclaration trustme sta stb mbody ->
                     return
                         ( mempty
@@ -319,7 +319,7 @@ interpretRecursiveDocDeclarations ddecls = do
                         , subtypeRelDocs sta stb doc)
                 BindingSyntaxDeclaration sbind -> do
                     binds <- syntaxToSingleBindings True sbind doc
-                    return (mempty, mempty, binds, fmap (pure . sbDefDoc) binds)
+                    return (mempty, mempty, binds, lpure $ fmap sbDefDoc binds)
     (typeDecls, subtypeSB, bindingDecls, docDecls) <- fmap mconcat $ for ddecls interp
     interpScopeBuilder $ let
         ?interpretExpression = interpretTopExpression
@@ -345,7 +345,7 @@ interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
     newmod <- lift $ getModule modname
     registerScope $ moduleScope newmod
-    return [moduleDoc newmod]
+    return $ pureForest $ moduleDoc newmod
 
 interpretDocDeclaration :: SyntaxDeclaration -> ScopeBuilder Docs
 interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
@@ -362,14 +362,14 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             interpScopeBuilder $ let
                 ?interpretExpression = interpretTopExpression
                 in interpretSequentialTypeDeclaration name doc defn
-            return $ pure $ typeDeclDoc name defn doc
+            return $ pureForest $ typeDeclDoc name defn doc
         DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) -> do
             interpretSubtypeRelation trustme sta stb mbody
             return $ subtypeRelDocs sta stb doc
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
             binds <- syntaxToSingleBindings False sbind doc
             for_ binds interpretSequentialLetBinding
-            return $ fmap (pure . sbDefDoc) binds
+            return $ lpure $ fmap sbDefDoc binds
         RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
         UsingSyntaxDeclaration sourcens mitems destns -> do
             let
@@ -389,7 +389,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             close <- interpScopeBuilder $ withCurrentNamespaceScope nsn
             docs <- interpretDocDeclarations decls
             interpScopeBuilder close
-            return $ pure $ Node (MkDefDoc (NamespaceDocItem $ AbsoluteNamespaceRef nsn) doc) docs
+            return $ pureForest $ MkTree (MkDefDoc (HeadingDocItem $ plainText $ showText nsn) doc) docs
         DebugSyntaxDeclaration nameref -> do
             mfd <- interpScopeBuilder $ lift $ lookupDebugBindingInfo nameref
             liftIO $
@@ -397,7 +397,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 case mfd of
                     Just (fn, desc) -> showText nameref <> " = " <> showText fn <> ": " <> pack desc
                     Nothing -> showText nameref <> " not found"
-            return []
+            return mempty
 
 interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
@@ -708,6 +708,6 @@ interpretSubtypeRelation trustme sta stb mbody =
         Nothing -> interpretOpenEntitySubtypeRelation sta stb
 
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
-interpretModule moduleName smod = do
+interpretModule mname smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
-    return $ MkModule (Node (MkDefDoc (HeadingDocItem (plainText $ showText moduleName)) "") docs) scope
+    return $ mkModule mname docs scope
