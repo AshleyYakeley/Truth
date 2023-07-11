@@ -107,10 +107,7 @@ metadataStuff =
               "HasMetadata"
               "Something that has metadata."
               (MkSomeGroundType hasMetadataGroundType)
-              [ valPatBDS
-                    "MkHasMetadata"
-                    "Construct metadata out of key-value pairs. Duplicates will be removed."
-                    mkHasMetadata $
+              [ valPatBDS "Mk" "Construct metadata out of key-value pairs. Duplicates will be removed." mkHasMetadata $
                 PureFunction $ \hm -> (getAllMetadata hm, ())
               ]
         , valBDS "lookup" "Look up metadata by name." lookupMetadata

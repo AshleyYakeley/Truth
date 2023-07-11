@@ -28,6 +28,4 @@ mimeLibSection =
     headingBDS
         "MIME"
         ""
-        [ typeBDS "MIME" "" (MkSomeGroundType mimeGroundType) []
-        , namespaceBDS "MIME" [addNameInRootBDS $ valBDS "textMIME" "" textMIME]
-        ]
+        [typeBDS "MIME" "" (MkSomeGroundType mimeGroundType) [], namespaceBDS "MIME" [valBDS "text" "" textMIME]]

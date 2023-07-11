@@ -8,7 +8,7 @@ byName: FiniteSetModel {+a,+Named} -> WholeModel +[(a,Text)];
 byName ref = list.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name alphabetical) $ (identity **.Property name) !$$ ref;
 
 dynamictype Person = !"type.person";
-testpt = dynamicEntity @Person !"testpt";
+testpt = point.DynamicEntity @Person !"testpt";
 
 inform: Text -> Maybe Entity -> Action Unit;
 inform t mv = message.Debug $ t <> ": " <> case mv of

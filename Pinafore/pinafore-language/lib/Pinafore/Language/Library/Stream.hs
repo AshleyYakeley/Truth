@@ -145,7 +145,7 @@ streamLibSection =
                     "Sink"
                     "A sink is something you can write data (and \"end\") to."
                     (MkSomeGroundType sinkGroundType)
-                    [ valPatBDS "MkSink" "Construct a `Sink` from a function." (toLangSink @A) $
+                    [ valPatBDS "Mk" "Construct a `Sink` from a function." (toLangSink @A) $
                       PureFunction $ \v -> (fromLangSink @A v, ())
                     ]
               , namespaceBDS
@@ -179,7 +179,7 @@ streamLibSection =
                       "Create a pipe. Data written to the sink will be added to a buffer, which can be read from with the source. Can be used to transfer data between asynchronous tasks." $
                   langCreatePipe @A
                 , valBDS
-                      "lineBuffere"
+                      "lineBuffer"
                       "Get a line-buffering source from a text source. Each read will be exactly one line."
                       lineBufferSource
                 ]

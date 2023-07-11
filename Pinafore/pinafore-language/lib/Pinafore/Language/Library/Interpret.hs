@@ -37,12 +37,9 @@ interpretLibSection :: BindDocStuff context
 interpretLibSection =
     headingBDS
         "Interpretation"
-        ""
+        "This is used as a supertype of various media etc. type to represent \"can be interpreted as\"."
         [ typeBDS "Interpret" "" (MkSomeGroundType interpretGroundType) []
-        , valPatBDS "MkInterpret" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())
+        , valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())
         , namespaceBDS "Interpret" $
-          functorEntries @_ @Interpret <>
-          [ valBDS "map" "" (fmap :: (A -> B) -> Interpret A -> Interpret B)
-          , addNameInRootBDS $ valBDS "interpret" "" $ interpret @A
-          ]
+          functorEntries @_ @Interpret <> [addNameInRootBDS $ valBDS "interpret" "" $ interpret @A]
         ]

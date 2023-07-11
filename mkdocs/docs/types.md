@@ -399,14 +399,14 @@ So you can use `check`, `coerce`, and pattern-matching to convert between them.
 ```pinafore
 describeAnimalType :: Animal -> Text
 = match
-    h: Human => "Human";
-    c: Cat => "Cat";
-    d: Dog => "Dog";
+    h:? Human => "Human";
+    c:? Cat => "Cat";
+    d:? Dog => "Dog";
 end;
 ```
 
-To create new values of a concrete dynamic entity type at runtime, you can use `newDynamicEntity`.
-Or, you can declare them statically with `dynamicEntity`.
+To create new values of a concrete dynamic entity type at runtime, you can use `new.DynamicEntity`.
+Or, you can declare them statically with `point.DynamicEntity`.
 
 ### Open Entity Types
 

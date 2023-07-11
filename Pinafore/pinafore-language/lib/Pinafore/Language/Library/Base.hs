@@ -137,7 +137,7 @@ baseLibSections =
                   "Showable"
                   "Something that can be represented as `Text`."
                   (MkSomeGroundType showableGroundType)
-                  [valPatBDS "MkShowable" "" MkShowable $ PureFunction $ \(MkShowable t) -> (t, ())]
+                  [valPatBDS "Mk" "" MkShowable $ PureFunction $ \(MkShowable t) -> (t, ())]
             , namespaceBDS "Showable" [addNameInRootBDS $ valBDS "show" "Show something as `Text`" $ textShow @Showable]
             ]
       , headingBDS
@@ -541,33 +541,36 @@ baseLibSections =
             [ typeBDS "DynamicEntity" "" (MkSomeGroundType dynamicStorableGroundType) []
             , hasSubtypeRelationBDS @DynamicEntity @Entity Verify "" $
               functionToShim "dynamicStoreAdapter" $ storeAdapterConvert $ dynamicStoreAdapter Nothing
-            , specialFormBDS
-                  "dynamicEntity"
-                  "A dynamic entity for this anchor. `A` is a concrete dynamic entity type."
-                  ["@A", "<anchor>"]
-                  "A" $
-              MkSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
-                  (n, dt) <- getConcreteDynamicEntityType t
-                  let
-                      typef = dynamicEntityShimWit n dt
-                      pt :: DynamicEntity
-                      pt = MkDynamicEntity dt $ MkEntity anchor
-                  return $ MkSomeOf typef pt
-            , specialFormBDS
-                  "newDynamicEntity"
-                  "Generate a dynamic entity. `A` is a concrete dynamic entity type."
-                  ["@A"]
-                  "Action A" $
-              MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
-                  (n, dt) <- getConcreteDynamicEntityType t
-                  let
-                      pt :: Action DynamicEntity
-                      pt =
-                          liftIO $ do
-                              e <- newKeyContainerItem @(FiniteSet Entity)
-                              return $ MkDynamicEntity dt e
-                      typef = actionShimWit $ dynamicEntityShimWit n dt
-                  return $ MkSomeOf typef pt
+            , namespaceBDS
+                  "DynamicEntity"
+                  [ specialFormBDS
+                        "point"
+                        "A dynamic entity for this anchor. `A` is a concrete dynamic entity type."
+                        ["@A", "<anchor>"]
+                        "A" $
+                    MkSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
+                        (n, dt) <- getConcreteDynamicEntityType t
+                        let
+                            typef = dynamicEntityShimWit n dt
+                            pt :: DynamicEntity
+                            pt = MkDynamicEntity dt $ MkEntity anchor
+                        return $ MkSomeOf typef pt
+                  , specialFormBDS
+                        "new"
+                        "Generate a dynamic entity. `A` is a concrete dynamic entity type."
+                        ["@A"]
+                        "Action A" $
+                    MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+                        (n, dt) <- getConcreteDynamicEntityType t
+                        let
+                            pt :: Action DynamicEntity
+                            pt =
+                                liftIO $ do
+                                    e <- newKeyContainerItem @(FiniteSet Entity)
+                                    return $ MkDynamicEntity dt e
+                            typef = actionShimWit $ dynamicEntityShimWit n dt
+                        return $ MkSomeOf typef pt
+                  ]
             ]
       ]
     , headingBDS

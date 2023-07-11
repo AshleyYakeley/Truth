@@ -53,7 +53,7 @@ opticsLibSection =
               [ typeBDS "Lens" "" (MkSomeGroundType lensGroundType) []
               , hasSubtypeRelationBDS @(LangLens '( AP, AQ) '( BP, BQ)) @(LangAttribute '( AP, AQ) '( BP, BQ)) Verify "" $
                 functionToShim "langLensAttribute" $ langLensAttribute @AP @AQ @BP @BQ
-              , valPatBDS "MkLens" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
+              , valPatBDS "Mk" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
                 PureFunction $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
               , namespaceBDS
                     "Lens"
@@ -75,7 +75,7 @@ opticsLibSection =
                     Verify
                     "" $
                 functionToShim "langPrismAttribute" $ langPrismAttribute @AP @AQ @BP @BQ
-              , valPatBDS "MkPrism" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
+              , valPatBDS "Mk" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
                 PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
               , namespaceBDS
                     "Prism"

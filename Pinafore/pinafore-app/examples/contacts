@@ -132,8 +132,8 @@ let
         itemSet = legalentities;
         newItems =
         [
-            let name = "New Person"; mkey = Just "Ctrl+K"; newItem = newDynamicEntity @Person in Mk.NewItem,
-            let name = "New Organisation"; newItem = newDynamicEntity @Organisation in Mk.NewItem
+            let name = "New Person"; mkey = Just "Ctrl+K"; newItem = new.DynamicEntity @Person in Mk.NewItem,
+            let name = "New Organisation"; newItem = new.DynamicEntity @Organisation in Mk.NewItem
         ];
         itemElement = contactModelUI;
         in namedToTypePresentation Mk.NamedTypePresentation;

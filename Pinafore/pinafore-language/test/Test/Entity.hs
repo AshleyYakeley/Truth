@@ -815,7 +815,7 @@ testEntity =
               [ "dynamictype P1 = !\"P1\""
               , "dynamictype P2 = !\"P2\""
               , "dynamictype Q = P1 | P2"
-              , "e1 = dynamicEntity @P1 !\"e1\""
+              , "e1 = point.DynamicEntity @P1 !\"e1\""
               ] $
           tGroup
               "dynamictype"
