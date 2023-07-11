@@ -11,6 +11,7 @@ module Pinafore.Language.Library.Defs
     , EnA
     , qPositiveTypeDescription
     , qNegativeTypeDescription
+    , headingBDT
     , headingBDS
     , namespaceBDS
     , valBDS
@@ -35,7 +36,6 @@ import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.DefDoc
 import Pinafore.Language.Expression
-import Pinafore.Language.Grammar.Docs
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
@@ -77,7 +77,7 @@ singleBindDoc bd tt = pureForest $ MkTree bd $ mconcat tt
 
 data LibraryModule context = MkLibraryModule
     { lmName :: ModuleName
-    , lmContents :: BindDocStuff context
+    , lmContents :: Tree (BindDoc context)
     }
 
 instance Contravariant LibraryModule where
@@ -86,7 +86,7 @@ instance Contravariant LibraryModule where
 libraryModuleEntries :: LibraryModule context -> [BindDoc context]
 libraryModuleEntries (MkLibraryModule _ lmod) = toList lmod
 
-libraryModuleDocumentation :: LibraryModule context -> Docs
+libraryModuleDocumentation :: LibraryModule context -> Tree DefDoc
 libraryModuleDocumentation (MkLibraryModule _ lmod) = fmap bdDoc lmod
 
 type EnA = MeetType Entity A
@@ -150,8 +150,11 @@ pickNamesInRootBDS names =
             then addNameInRoot d
             else d
 
+headingBDT :: MarkdownText -> RawMarkdown -> [BindDocStuff context] -> Tree (BindDoc context)
+headingBDT name desc tree = MkTree (MkBindDoc Nothing $ MkDefDoc (HeadingDocItem name) desc) $ mconcat tree
+
 headingBDS :: MarkdownText -> RawMarkdown -> [BindDocStuff context] -> BindDocStuff context
-headingBDS name desc tree = singleBindDoc (MkBindDoc Nothing $ MkDefDoc (HeadingDocItem name) desc) tree
+headingBDS name desc tree = pureForest $ headingBDT name desc tree
 
 namespaceBDS :: NamespaceRef -> [BindDocStuff context] -> BindDocStuff context
 namespaceBDS name tree = namespaceConcat name $ mconcat tree

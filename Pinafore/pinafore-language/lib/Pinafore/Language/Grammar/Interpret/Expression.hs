@@ -710,4 +710,5 @@ interpretSubtypeRelation trustme sta stb mbody =
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule mname smod = do
     (docs, scope) <- runRefNotation $ interpretExpose smod
-    return $ mkModule mname docs scope
+    let doc = MkTree (MkDefDoc (HeadingDocItem (plainText $ showText mname)) "") docs
+    return $ MkModule doc scope

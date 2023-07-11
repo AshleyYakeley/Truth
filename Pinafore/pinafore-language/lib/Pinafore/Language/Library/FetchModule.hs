@@ -90,7 +90,7 @@ getLibraryModuleModule context libmod = do
                 BindScopeEntry _ _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
     scope <- joinAllScopes dscopes bscope
-    return $ mkModule (lmName libmod) (libraryModuleDocumentation libmod) scope
+    return $ MkModule (libraryModuleDocumentation libmod) scope
 
 libraryFetchModule :: forall context. [LibraryModule context] -> FetchModule context
 libraryFetchModule lmods = let

@@ -38,7 +38,7 @@ library :: [LibraryModule InvocationInfo]
 library =
     pure $
     MkLibraryModule builtInModuleName $
-    headingBDS "Built-In" "" $
+    headingBDT "Built-In" "" $
     baseLibSections <>
     [ actionLibSection
     , lifecycleLibSection

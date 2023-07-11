@@ -83,7 +83,7 @@ testLib = let
             then return ()
             else fail "different"
     in MkLibraryModule "TEST" $
-       headingBDS "TEST" "" $
+       headingBDT "TEST" "" $
        [ valBDS "idText" "TEST" idText
        , valBDS "testSameT" "TEST" testSameT
        , valBDS "testSameI" "TEST" testSameI

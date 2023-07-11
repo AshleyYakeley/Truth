@@ -1,6 +1,5 @@
 module Pinafore.Language.Grammar.Docs
     ( Docs
-    , mkModule
     , exposeDocs
     ) where
 
@@ -8,7 +7,6 @@ import Pinafore.Language.DefDoc
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Text
 import Shapes
 
 type instance EntryDoc QTypeSystem = DefDoc
@@ -24,9 +22,6 @@ popFilterForest :: (a -> Bool) -> Forest a -> Forest a
 popFilterForest test tt = bindForest tt $ popFilterTree test
 
 type Docs = Forest DefDoc
-
-mkModule :: ModuleName -> Docs -> QScope -> QModule
-mkModule mname docs scope = MkModule (MkTree (MkDefDoc (HeadingDocItem (plainText $ showText mname)) "") docs) scope
 
 exposeDefDoc :: [FullName] -> DefDoc -> Bool
 exposeDefDoc names dd = any (\name -> diMatchNameOrSubtypeRel name $ docItem dd) names
