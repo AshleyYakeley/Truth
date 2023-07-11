@@ -354,6 +354,16 @@ testType =
                     , textTypeTest
                           "let subtype Unit <: Action Integer = fn () => pure.Action. x in ((): Action Integer)"
                           "{x : b & Integer.} -> Action. Integer."
+                    , testTree
+                          "recursive"
+                          [ textTypeTest "id: a -> (a | Integer.)" "{} -> a -> (a | Integer.)"
+                          , textTypeTest "let rec f = seq (f 3) end in f" "{} -> a -> a"
+                          , textTypeTest "let rec f: a -> a = seq (f 3) end in f" "{} -> a -> a"
+                          , textTypeTest "let rec f: a -> a = fn x => seq (f x) x end in f" "{} -> a -> a"
+                          , textTypeTest "let rec f: a -> a = fn x => seq (f (Just x)) x end in f" "{} -> a -> a"
+                          , textTypeTest "let rec f = seq (g 3); g = f end in f" "{} -> a -> a"
+                          , textTypeTest "let rec f = seq g3; g3 = f 3 end in f" "{} -> a -> a"
+                          ]
                     ]
               ]
         , testTree
