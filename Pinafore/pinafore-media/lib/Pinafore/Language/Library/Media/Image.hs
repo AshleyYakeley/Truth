@@ -32,7 +32,6 @@ imageStuff =
     [ typeBDS "Image" "An image." (MkSomeGroundType imageGroundType) []
     , namespaceBDS
           "Image"
-          ""
           [ valBDS "size" "The size of an image" langImageSize
           , valBDS "blank" "An image of one colour" langBlankImage
           , metadataStuff

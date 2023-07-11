@@ -24,7 +24,7 @@ actionLibSection =
         "Action"
         ""
         [ typeBDS "Action" "" (MkSomeGroundType actionGroundType) []
-        , namespaceBDS "Action" "" $
+        , namespaceBDS "Action" $
           fmap addNameInRootBDS (monadEntries @_ @Action) <>
           [ addNameInRootBDS $ valBDS "fix" "The fixed point of an Action." $ mfix @Action @A
           , addNameInRootBDS $ valBDS "fail" "Fail, causing the program to terminate with error." $ qfail

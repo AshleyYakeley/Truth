@@ -111,7 +111,6 @@ modelLibSection =
               [ typeBDS "Model" "" (MkSomeGroundType modelGroundType) []
               , namespaceBDS
                     "Model"
-                    ""
                     [ addNameInRootBDS $
                       valBDS "onUpdate" "Do this on every update, during this lifecycle." langModelSubscribe
                     ]
@@ -126,7 +125,7 @@ modelLibSection =
                     []
               , hasSubtypeRelationBDS Verify "" $
                 functionToShim "WholeModel to Model" $ langWholeModelToModel @BottomType @TopType
-              , namespaceBDS "WholeModel" "" $
+              , namespaceBDS "WholeModel" $
                 applicativeEntries @_ @ImmutableWholeModel <>
                 [ valBDS
                       "immut"
@@ -179,7 +178,6 @@ modelLibSection =
               , hasSubtypeRelationBDS Verify "" $ functionToShim "SetModel to Model" $ langSetModelToModel @BottomType
               , namespaceBDS
                     "SetModel"
-                    ""
                     [ valBDS
                           "map"
                           "Map a function on a set."
@@ -231,7 +229,6 @@ modelLibSection =
                 functionToShim "FiniteSetModel to SetModel" $ langFiniteSetModelToSetModel @A @TopType
               , namespaceBDS
                     "FiniteSetModel"
-                    ""
                     [ valBDS
                           "coMap"
                           "Map a function on getting from a finite set."
@@ -295,7 +292,6 @@ modelLibSection =
                 functionToShim "langListModelToWholeModel" langListModelToWholeModel
               , namespaceBDS
                     "ListModel"
-                    ""
                     [ valBDS "fromWhole" "Represent a whole model as a list model." $ langWholeModelToListModel @A
                     , valBDS "getCount" "Get Count of elements in a list model." $
                       langListModelGetCount @BottomType @TopType
@@ -322,7 +318,6 @@ modelLibSection =
                 functionToShim "langTextModelToWholeModel" langTextModelToWholeModel
               , namespaceBDS
                     "TextModel"
-                    ""
                     [ valBDS "fromWhole" "Represent a whole model as a text model." langWholeModelToTextModel
                     , valBDS "getLength" "Get the length of text." langTextModelGetLength
                     , valBDS "get" "Get the whole text." langTextModelGet

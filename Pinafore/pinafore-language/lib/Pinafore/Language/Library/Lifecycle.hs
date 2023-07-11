@@ -16,7 +16,6 @@ lifecycleLibSection =
         "Ways of managing the closing of things that get opened, most notably UI windows."
         [ namespaceBDS
               "Lifecycle"
-              ""
               [ valBDS
                     "run"
                     "Close everything that gets opened in the given action.\n\n\

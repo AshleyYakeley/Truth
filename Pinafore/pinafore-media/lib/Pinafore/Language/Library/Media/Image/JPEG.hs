@@ -62,7 +62,6 @@ jpegStuff =
         , hasSubtypeRelationBDS @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
         , namespaceBDS
               "JPEG"
-              ""
               [ valBDS "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
               , valBDS "jpegMIME" "" $ dataLiteralMIMEPrism @LangJPEGImage
               ]

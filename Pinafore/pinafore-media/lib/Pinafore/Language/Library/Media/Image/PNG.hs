@@ -62,7 +62,6 @@ pngStuff =
         , hasSubtypeRelationBDS @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
         , namespaceBDS
               "PNG"
-              ""
               [ valBDS "encode" "Encode an image as PNG, with given metadata." pngEncode
               , valBDS "pngMIME" "" $ dataLiteralMIMEPrism @LangPNGImage
               ]

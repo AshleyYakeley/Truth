@@ -18,7 +18,6 @@ evalLibSection =
     pure $
     namespaceBDS
         "Eval"
-        ""
         [ specialFormBDS
               "evaluate"
               "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\

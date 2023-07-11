@@ -34,7 +34,6 @@ envLibSection =
     pure $
     namespaceBDS
         "Env"
-        ""
         [ valBDS "scriptName" "The name of the script." (pack $ iiScriptName ?qcontext :: Text)
         , valBDS "arguments" "Arguments passed to the script." (fmap pack $ iiScriptArguments ?qcontext :: [Text])
         , valBDS

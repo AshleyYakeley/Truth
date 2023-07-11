@@ -125,7 +125,7 @@ baseLibSections :: [BindDocStuff context]
 baseLibSections =
     [ headingBDS "Literals & Entities" "" $
       [ typeBDS "Entity" "" (MkSomeGroundType entityGroundType) []
-      , namespaceBDS "Entity" "" $
+      , namespaceBDS "Entity" $
         fmap addNameInRootBDS (eqEntries @_ @Entity) <>
         [valBDS "anchor" "The anchor of an entity, as text." entityAnchor]
       , typeBDS "Literal" "" (MkSomeGroundType literalGroundType) []
@@ -138,10 +138,7 @@ baseLibSections =
                   "Something that can be represented as `Text`."
                   (MkSomeGroundType showableGroundType)
                   [valPatBDS "MkShowable" "" MkShowable $ PureFunction $ \(MkShowable t) -> (t, ())]
-            , namespaceBDS
-                  "Showable"
-                  ""
-                  [addNameInRootBDS $ valBDS "show" "Show something as `Text`" $ textShow @Showable]
+            , namespaceBDS "Showable" [addNameInRootBDS $ valBDS "show" "Show something as `Text`" $ textShow @Showable]
             ]
       , headingBDS
             "Unit"
@@ -149,7 +146,7 @@ baseLibSections =
             [ typeBDS "Unit" "" (MkSomeGroundType unitGroundType) []
             , literalSubtypeRelationEntry @()
             , showableSubtypeRelationEntry @()
-            , namespaceBDS "Unit" "" $ monoidEntries @_ @()
+            , namespaceBDS "Unit" $ monoidEntries @_ @()
             ]
       , headingBDS
             "Boolean"
@@ -172,7 +169,6 @@ baseLibSections =
             , showableSubtypeRelationEntry @Bool
             , namespaceBDS
                   "Boolean"
-                  ""
                   [ addNameInRootBDS $ valBDS "&&" "Boolean AND." (&&)
                   , addNameInRootBDS $ valBDS "||" "Boolean OR." (||)
                   , addNameInRootBDS $ valBDS "not" "Boolean NOT." not
@@ -202,7 +198,7 @@ baseLibSections =
                   ]
             , literalSubtypeRelationEntry @Ordering
             , showableSubtypeRelationEntry @Ordering
-            , namespaceBDS "Ordering" "" $
+            , namespaceBDS "Ordering" $
               monoidEntries @_ @Ordering <>
               [ addNameInRootBDS $ valBDS "eq" "Equal." $ (==) EQ
               , addNameInRootBDS $ valBDS "ne" "Not equal." $ (/=) EQ
@@ -211,7 +207,7 @@ baseLibSections =
               , addNameInRootBDS $ valBDS "gt" "Greater than." $ (==) GT
               , addNameInRootBDS $ valBDS "ge" "Greater than or equal to." $ (/=) LT
               ]
-            , namespaceBDS "Order" "" $
+            , namespaceBDS "Order" $
               monoidEntries @_ @(A -> A -> Ordering) <>
               [ valBDS "reverse" "Reverse an order." $ reverseOrder @A
               , addNameInRootBDS $ valBDS "lesser" "The lesser of two items." lesser
@@ -233,7 +229,7 @@ baseLibSections =
             [ typeBDS "Text" "" (MkSomeGroundType textGroundType) []
             , literalSubtypeRelationEntry @Text
             , showableSubtypeRelationEntry @Text
-            , namespaceBDS "Text" "" $
+            , namespaceBDS "Text" $
               monoidEntries @_ @Text <>
               [ valBDS "length" "The length of a text." $ olength @Text
               , valBDS
@@ -265,7 +261,7 @@ baseLibSections =
                      [ typeBDS "Integer" "" (MkSomeGroundType integerGroundType) []
                      , hasSubtypeRelationBDS @Integer @SafeRational Verify "" $
                        functionToShim "integerSafeRational" $ encode integerSafeRational
-                     , namespaceBDS "Integer" "" $
+                     , namespaceBDS "Integer" $
                        pickNamesInRootBDS ["min", "max"] (ordEntries @_ @Integer) <>
                        pickNamesInRootBDS ["succ", "pred"] (enumEntries @_ @Integer) <>
                        [ plainFormattingDef @Integer "an integer"
@@ -302,7 +298,6 @@ baseLibSections =
                        functionToShim "safeRationalNumber" $ encode safeRationalNumber
                      , namespaceBDS
                            "Rational"
-                           ""
                            [ plainFormattingDef @SafeRational "a rational"
                            , valBDS "min" "Lesser of two Rationals" $ min @SafeRational
                            , valBDS "max" "Greater of two Rationals" $ max @SafeRational
@@ -325,7 +320,7 @@ baseLibSections =
                      [ typeBDS "Number" "" (MkSomeGroundType numberGroundType) []
                      , literalSubtypeRelationEntry @Number
                      , showableSubtypeRelationEntry @Number
-                     , namespaceBDS "Number" "" $
+                     , namespaceBDS "Number" $
                        pickNamesInRootBDS ["<", "<=", ">", ">="] (ordEntries @_ @Number) <>
                        [ plainFormattingDef @Number "a number"
                        , valBDS "+" "Add." $ (+) @Number
@@ -406,7 +401,6 @@ baseLibSections =
               , showableSubtypeRelationEntry @NominalDiffTime
               , namespaceBDS
                     "Duration"
-                    ""
                   -- plainFormattingDef @NominalDiffTime  "a duration"
                     [ valBDS "zero" "No duration." $ (0 :: NominalDiffTime)
                     , valBDS "day" "One day duration." nominalDay
@@ -425,7 +419,6 @@ baseLibSections =
               , showableSubtypeRelationEntry @UTCTime
               , namespaceBDS
                     "Time"
-                    ""
                     [ plainFormattingDef @UTCTime "a time"
                     , unixFormattingDef @UTCTime "a time"
                     , valBDS "+" "Add duration to time." addUTCTime
@@ -451,7 +444,7 @@ baseLibSections =
                     ]
               , literalSubtypeRelationEntry @Day
               , showableSubtypeRelationEntry @Day
-              , namespaceBDS "Date" "" $
+              , namespaceBDS "Date" $
                 enumEntries @_ @Day <>
                 [ plainFormattingDef @Day "a date"
                 , unixFormattingDef @Day "a date"
@@ -480,7 +473,6 @@ baseLibSections =
               , showableSubtypeRelationEntry @TimeOfDay
               , namespaceBDS
                     "TimeOfDay"
-                    ""
                     [ plainFormattingDef @TimeOfDay "a time of day"
                     , unixFormattingDef @TimeOfDay "a time of day"
                     , addNameInRootBDS $ valBDS "midnight" "Midnight." midnight
@@ -500,7 +492,6 @@ baseLibSections =
               , showableSubtypeRelationEntry @LocalTime
               , namespaceBDS
                     "LocalTime"
-                    ""
                     [ plainFormattingDef @LocalTime "a local time"
                     , unixFormattingDef @LocalTime "a local time"
                     , valBDS "fromTime" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
@@ -599,7 +590,7 @@ baseLibSections =
           , hasSubtypeRelationBDS @(Maybe Entity) @Entity Verify "" $
             functionToShim "maybeEntityConvert" maybeEntityConvert
           , hasSubtypeRelationBDS @(Maybe Showable) @Showable Verify "" $ functionToShim "show" textShowable
-          , namespaceBDS "Maybe" "" $ monadEntries @_ @Maybe
+          , namespaceBDS "Maybe" $ monadEntries @_ @Maybe
           ]
     , headingBDS
           "Type Product"
@@ -610,7 +601,6 @@ baseLibSections =
           , hasSubtypeRelationBDS @(Showable, Showable) @Showable Verify "" $ functionToShim "show" textShowable
           , namespaceBDS
                 "Product"
-                ""
                 [ addNameInRootBDS $ valBDS "fst" "Get the first member of a pair." $ fst @A @B
                 , addNameInRootBDS $ valBDS "snd" "Get the second member of a pair." $ snd @A @B
                 , valBDS "to" "Construct a pair." $ (,) @A @B
@@ -637,7 +627,7 @@ baseLibSections =
           , hasSubtypeRelationBDS @(Either Entity Entity) @Entity Verify "" $
             functionToShim "eitherEntityConvert" eitherEntityConvert
           , hasSubtypeRelationBDS @(Either Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
-          , namespaceBDS "Sum" "" $
+          , namespaceBDS "Sum" $
             monadEntries @_ @(Either P) <>
             [ valBDS "from" "Eliminate a sum" $ either @A @C @B
             , addNameInRootBDS $
@@ -672,7 +662,7 @@ baseLibSections =
                 ]
           , hasSubtypeRelationBDS @[Entity] @Entity Verify "" $ functionToShim "listEntityConvert" listEntityConvert
           , hasSubtypeRelationBDS @[Showable] @Showable Verify "" $ functionToShim "show" textShowable
-          , namespaceBDS "List" "" $
+          , namespaceBDS "List" $
             monoidEntries @_ @[A] <>
             monadEntries @_ @[] <>
             [ valBDS "from" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
@@ -692,7 +682,7 @@ baseLibSections =
             , addNameInRootBDS $ valBDS "zip" "Zip two lists." $ zip @A @B
             , addNameInRootBDS $ valBDS "sort" "Sort list by an order." (sortBy :: (A -> A -> Ordering) -> [A] -> [A])
             ]
-          , namespaceBDS "List1" "" $
+          , namespaceBDS "List1" $
             applicativeEntries @_ @NonEmpty <>
             [ addNameInRootBDS $ valBDS "<>" "Concatenate a non-empty list with a list." append
             , addNameInRootBDS $ valBDS "concat1" "Concatenate a non-empty list of non-empty lists." mconcat1
@@ -707,7 +697,7 @@ baseLibSections =
           "Function"
           ""
           [ typeBDS "->" "A pure function." (MkSomeGroundType funcGroundType) []
-          , namespaceBDS "Function" "" $
+          , namespaceBDS "Function" $
             monadEntries @_ @((->) P) <>
             [ addNameInRootBDS $ valBDS "$" "Apply a function to a value." $ id @(->) @(A -> B)
             , addNameInRootBDS $ valBDS ">-" "Apply a value to a function." revap

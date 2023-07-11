@@ -153,8 +153,8 @@ pickNamesInRootBDS names =
 headingBDS :: MarkdownText -> RawMarkdown -> [BindDocStuff context] -> BindDocStuff context
 headingBDS name desc tree = singleBindDoc (MkBindDoc Nothing $ MkDefDoc (HeadingDocItem name) desc) tree
 
-namespaceBDS :: NamespaceRef -> RawMarkdown -> [BindDocStuff context] -> BindDocStuff context
-namespaceBDS name _desc tree = namespaceConcat name $ mconcat tree
+namespaceBDS :: NamespaceRef -> [BindDocStuff context] -> BindDocStuff context
+namespaceBDS name tree = namespaceConcat name $ mconcat tree
 
 valBDS ::
        forall context t. HasQType 'Positive t

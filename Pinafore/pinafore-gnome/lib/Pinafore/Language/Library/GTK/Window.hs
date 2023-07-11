@@ -96,7 +96,6 @@ windowStuff =
         , typeBDS "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
         , namespaceBDS
               "Window"
-              ""
               [ valBDS "open" "Open a new window with this size, title and element." openWindow
               , valBDS "close" "Close a window." uiWindowClose
               , valBDS "show" "Show a window." showWindow

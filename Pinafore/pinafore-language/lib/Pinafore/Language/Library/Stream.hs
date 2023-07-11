@@ -150,7 +150,6 @@ streamLibSection =
                     ]
               , namespaceBDS
                     "Sink"
-                    ""
                     [ valBDS "map" "" $ contramap @LangSink @A @B
                     , valBDS "write" "Write an item to a sink." $ langSinkWrite @A
                     , valBDS "writeEnd" "Write end to a sink. You should not write to the sink after this." $
@@ -162,7 +161,7 @@ streamLibSection =
               "Source"
               ""
               [ typeBDS "Source" "A source is something you can read data from." (MkSomeGroundType sourceGroundType) []
-              , namespaceBDS "Source" "" $
+              , namespaceBDS "Source" $
                 functorEntries @_ @LangSource <>
                 [ valBDS "isReady" "Does this source have data available now?" $ langSourceReady @TopType
                 , valBDS "read" "Read data (or end), waiting if necessary." $ langSourceRead @A

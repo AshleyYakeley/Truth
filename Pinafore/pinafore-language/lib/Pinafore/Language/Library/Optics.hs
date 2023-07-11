@@ -57,7 +57,6 @@ opticsLibSection =
                 PureFunction $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
               , namespaceBDS
                     "Lens"
-                    ""
                     [ addNameInRootBDS $ valBDS "fetch" "" $ langLensGet @'( AP, AQ) @'( BP, BQ)
                     , addNameInRootBDS $ valBDS "putback" "" $ langLensPutback @'( AP, AQ) @'( BP, BQ)
                     , valBDS "id" "Identity lens." $ identityLangLens @X @Y
@@ -80,7 +79,6 @@ opticsLibSection =
                 PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
               , namespaceBDS
                     "Prism"
-                    ""
                     [ addNameInRootBDS $ valBDS "decode" "" $ prismDecode @AP @AQ @BP @BQ
                     , addNameInRootBDS $ valBDS "encode" "" $ prismEncode @AP @AQ @BP @BQ
                     , valBDS "id" "Identity prism." $ identityLangPrism @X @Y
@@ -94,7 +92,6 @@ opticsLibSection =
               [ typeBDS "Attribute" "" (MkSomeGroundType attributeGroundType) []
               , namespaceBDS
                     "Attribute"
-                    ""
                     [ valBDS "id" "The identity attribute." $ identityLangAttribute @X @Y
                     , valBDS "." "Compose attributes." $ composeLangAttribute @AP @AQ @BX @BY @CP @CQ
                     , valBDS "**" "Type product of attributes. Models from these attributes are undeleteable." $
@@ -121,7 +118,6 @@ opticsLibSection =
                 functionToShim "langPropertyAttribute" langPropertyAttribute
               , namespaceBDS
                     "Property"
-                    ""
                     [ valBDS "id" "The identity property." $ identityLangProperty @X @Y
                     , valBDS "." "Compose properties." $ composeLangProperty @AP @AQ @BX @BY @CP @CQ
                     , valBDS "**" "Type product of properties. Models from these properties are undeleteable." $

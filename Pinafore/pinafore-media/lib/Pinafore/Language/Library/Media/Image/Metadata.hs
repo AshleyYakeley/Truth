@@ -103,7 +103,6 @@ metadataStuff =
     pure $
     namespaceBDS
         "Metadata"
-        ""
         [ typeBDS
               "HasMetadata"
               "Something that has metadata."

@@ -197,7 +197,6 @@ colourStuff =
       functionToShim "opaque" opaque
     , namespaceBDS
           "Colour"
-          ""
           [ valBDS "transparent" "The zero-opacity AlphaColour" transparent
         {- https://github.com/lehins/Color/issues/9
         , valBDS "over" "An AlphaColour over a Colour" $ over @Colour @Word16

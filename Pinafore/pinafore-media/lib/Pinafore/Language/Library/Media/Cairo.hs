@@ -129,12 +129,11 @@ cairoStuff =
     pure $
     namespaceBDS
         "Cairo"
-        ""
         [ headingBDS
               "Drawing"
               ""
               [ typeBDS "Drawing" "Something that can be drawn." (MkSomeGroundType drawingGroundType) []
-              , namespaceBDS "Drawing" "" $
+              , namespaceBDS "Drawing" $
                 monoidEntries @_ @(LangDrawing A) <>
                 applicativeEntries @_ @LangDrawing <>
                 [ valBDS "map" "" $ fmap @LangDrawing @A @B
@@ -174,7 +173,6 @@ cairoStuff =
                       , valBDS "fontSize" "" $ hoist1Drawing @A fontSize
                       , namespaceBDS
                             "Operator"
-                            ""
                             [ valBDS "clear" "" $ hoistDrawing @A operatorClear
                             , valBDS "source" "" $ hoistDrawing @A operatorSource
                             , valBDS "over" "" $ hoistDrawing @A operatorOver
@@ -219,7 +217,7 @@ cairoStuff =
               "Path"
               ""
               [ typeBDS "Path" "A path on a drawing." (MkSomeGroundType pathGroundType) []
-              , namespaceBDS "Path" "" $
+              , namespaceBDS "Path" $
                 monoidEntries @_ @LangPath <>
                 [ headingBDS
                       "Construction"
@@ -251,7 +249,6 @@ cairoStuff =
               [ typeBDS "Pattern" "" (MkSomeGroundType patternGroundType) []
               , namespaceBDS
                     "Pattern"
-                    ""
                     [ valBDS "source" "" langPatternSource
                     , valBDS "mask" "" langPatternMask
                     , valBDS "solid" "" solidPattern

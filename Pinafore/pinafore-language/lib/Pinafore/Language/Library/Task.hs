@@ -63,7 +63,7 @@ taskLibSection :: BindDocStuff context
 taskLibSection =
     headingBDS "Task" "" $
     [ typeBDS "Task" "A task is something that can be waited for to give a result." (MkSomeGroundType taskGroundType) []
-    , namespaceBDS "Task" "" $
+    , namespaceBDS "Task" $
       applicativeEntries @_ @LangTask <>
       [ valBDS "async" "Run an action in another thread. It will complete in the current life cycle." $ asyncTask @A
       , valBDS "await" "Wait for a task to complete. This action is idempotent." $ awaitTask @A

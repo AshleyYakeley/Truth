@@ -28,7 +28,6 @@ storageLibSection =
     [ typeBDS "Store" "Storage of information." (MkSomeGroundType storeGroundType) []
     , namespaceBDS
           "Store"
-          ""
           [ addNameInRootBDS $
             specialFormBDS
                 "property"

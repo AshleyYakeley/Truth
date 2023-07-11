@@ -25,7 +25,6 @@ debugLibSection =
     pure $
     namespaceBDS
         "Debug"
-        ""
         [ valBDS "message" "Debug message to std error." debugMessage
         , valBDS "checkEntity" "debugCheckEntity" debugCheckEntity
         , valBDS "literalLength" "Byte length of a Literal" debugLiteralLength

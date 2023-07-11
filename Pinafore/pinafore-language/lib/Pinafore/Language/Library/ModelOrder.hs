@@ -20,7 +20,7 @@ modelOrderLibSection =
         ""
         [ typeBDS "ModelOrder" "" (MkSomeGroundType modelOrderGroundType) []
         , hasSubtypeRelationBDS Verify "" $ functionToShim "Order to ModelOrder" $ pureLangModelOrder @A
-        , namespaceBDS "ModelOrder" "" $
+        , namespaceBDS "ModelOrder" $
           monoidEntries @_ @(LangModelOrder A) <>
           [ valBDS
                 "map"

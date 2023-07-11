@@ -16,7 +16,7 @@ import Shapes
 gtkStuff :: BindDocStuff ()
 gtkStuff =
     headingBDS "GTK" "User interface, using GTK." $
-    pure $ namespaceBDS "GTK" "" [elementStuff, drawingStuff, menuItemStuff, windowStuff, clipboardStuff, dialogStuff]
+    pure $ namespaceBDS "GTK" [elementStuff, drawingStuff, menuItemStuff, windowStuff, clipboardStuff, dialogStuff]
 
 allGTKStuff :: [BindDocStuff ()]
 allGTKStuff = [gtkStuff, gtkDebugStuff]

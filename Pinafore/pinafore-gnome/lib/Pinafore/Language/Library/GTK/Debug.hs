@@ -29,7 +29,6 @@ gtkDebugStuff =
     pure $
     namespaceBDS
         "GTK.Debug"
-        ""
         [ valBDS "ignoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
         , valBDS "windowInfo" "Get window contents information" uiWindowDebugDescribe
         ]

@@ -48,7 +48,6 @@ undoLibSection =
     [ typeBDS "UndoHandler" "A queue of undo (and redo) actions." (MkSomeGroundType undoHandlerGroundType) []
     , namespaceBDS
           "UndoHandler"
-          ""
           [ valBDS "new" "Create a new `UndoHandler`." newUndoHandler
           , addNameInRootBDS $
             valBDS "queueUndo" "Undo an action." $ \uh -> do

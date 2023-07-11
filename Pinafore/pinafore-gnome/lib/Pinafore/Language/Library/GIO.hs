@@ -63,7 +63,6 @@ gioStuff =
     pure $
     namespaceBDS
         "GIO"
-        ""
         [ typeBDS
               "File"
               "A file."
@@ -74,5 +73,5 @@ gioStuff =
                     p <- fileToPath f
                     return (p, ())
               ]
-        , namespaceBDS "File" "" [valBDS "makeRef" "Make a reference from a file." fileMakeRef]
+        , namespaceBDS "File" [valBDS "makeRef" "Make a reference from a file." fileMakeRef]
         ]
