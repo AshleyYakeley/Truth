@@ -354,16 +354,41 @@ testType =
                     , textTypeTest
                           "let subtype Unit <: Action Integer = fn () => pure.Action. x in ((): Action Integer)"
                           "{x : b & Integer.} -> Action. Integer."
-                    , testTree
-                          "recursive"
-                          [ textTypeTest "id: a -> (a | Integer.)" "{} -> a -> (a | Integer.)"
-                          , textTypeTest "let rec f = seq (f 3) end in f" "{} -> a -> a"
-                          , textTypeTest "let rec f: a -> a = seq (f 3) end in f" "{} -> a -> a"
-                          , textTypeTest "let rec f: a -> a = fn x => seq (f x) x end in f" "{} -> a -> a"
-                          , textTypeTest "let rec f: a -> a = fn x => seq (f (Just x)) x end in f" "{} -> a -> a"
-                          , textTypeTest "let rec f = seq (g 3); g = f end in f" "{} -> a -> a"
-                          , textTypeTest "let rec f = seq g3; g3 = f 3 end in f" "{} -> a -> a"
-                          ]
+                    , testTree "recursive" $ let
+                          fixTest :: Text -> Text -> String -> TestTree
+                          fixTest ta tr expected = let
+                              typeText = "(" <> ta <> ") -> " <> tr
+                              script = "let rec f: (t -> t) -> t = f end; rec u: " <> typeText <> " = u end in f u"
+                              in textTypeTest script ("{} -> " <> expected)
+                          recTest :: Text -> Text -> String -> TestTree
+                          recTest ta tr expected = let
+                              typeText = "(" <> ta <> ") -> " <> tr
+                              script = "let rec f: " <> typeText <> " = f end; rec x = f x end in x"
+                              in textTypeTest script ("{} -> " <> expected)
+                          in [ textTypeTest "id: a -> (a | Integer.)" "{} -> a -> (a | Integer.)"
+                             , textTypeTest "let rec f = seq (f 3) end in f" "{} -> a -> a"
+                             , textTypeTest "let rec f: a -> a = seq (f 3) end in f" "{} -> a -> a"
+                             , textTypeTest "let rec f: a -> a = fn x => seq (f x) x end in f" "{} -> a -> a"
+                             , textTypeTest "let rec f: a -> a = fn x => seq (f (Just x)) x end in f" "{} -> a -> a"
+                             , textTypeTest "let rec f = seq (g 3); g = f end in f" "{} -> a -> a"
+                             , textTypeTest "let rec f = seq g3; g3 = f 3 end in f" "{} -> a -> a"
+                             , textTypeTest
+                                   "let fixf = fn f => let rec x = f x end in x; rf = fn r => seq (r 3); r = fixf rf in r"
+                                   "{} -> a -> (a | Integer.)"
+                             , textTypeTest "fn r => seq (r 3)" "{} -> (Integer. -> Any) -> a -> a"
+                             , textTypeTest "(fn r => seq (r 3)): (a -> a) -> a -> a" "{} -> (a -> a) -> a -> a"
+                             , textTypeTest "(fn r => seq (r 3)): (a -> a) -> b -> b" "{} -> (a -> a) -> b -> b"
+                             , fixTest "Integer -> Any" "a -> a" "a -> (a | Integer.)"
+                             , recTest "Integer -> Any" "a -> a" "a -> a"
+                             , failTestBecause "ISSUE #206" $ fixTest "Maybe a -> Maybe a" "a -> a" "a -> a"
+                             , failTestBecause "ISSUE #206" $ recTest "Maybe a -> Maybe a" "a -> a" "a -> a"
+                             , fixTest "a" "Maybe a" "rec a, Maybe. a"
+                             , recTest "a" "Maybe a" "rec a, Maybe. a"
+                             , fixTest "Any" "Integer" "Integer."
+                             , recTest "Any" "Integer" "Integer."
+                             , fixTest "Maybe Integer" "Maybe None" "Maybe. None"
+                             , recTest "Maybe Integer" "Maybe None" "Maybe. None"
+                             ]
                     ]
               ]
         , testTree
