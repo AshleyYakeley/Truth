@@ -13,6 +13,7 @@ import Test.Name
 import Test.Namespace
 import Test.Output
 import Test.ReadType
+import Test.Solver
 import Test.Subtype
 import Test.Token
 import Test.Type
@@ -33,6 +34,7 @@ main = do
                 , testType
                 , testLanguage
                 , testReadTypes
+                , testSolver
                 , testUnifier
                 , testSubtype
                 , testEntity

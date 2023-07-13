@@ -19,6 +19,14 @@ instance Functor valexpr => Invariant (SolverExpression poswit negwit typeexpr v
 
 instance (Applicative typeexpr, Applicative valexpr) => Productable (SolverExpression poswit negwit typeexpr valexpr)
 
+instance (Applicative typeexpr, Applicative valexpr, Semigroup a) =>
+             Semigroup (SolverExpression poswit negwit typeexpr valexpr a) where
+    (<>) = liftA2 (<>)
+
+instance (Applicative typeexpr, Applicative valexpr, Monoid a) =>
+             Monoid (SolverExpression poswit negwit typeexpr valexpr a) where
+    mempty = pure mempty
+
 solverExpressionLiftValue ::
        (Applicative typeexpr, Functor valexpr) => valexpr a -> SolverExpression poswit negwit typeexpr valexpr a
 solverExpressionLiftValue expr = MkSolverExpression (pure ()) $ fmap (\a _ -> a) expr
