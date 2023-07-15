@@ -152,13 +152,13 @@ invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar st) (OpenE
             pure $ \conv -> fa $ meetf conv convm
 invertSubstitute sub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute sub expr
 
--- | possibly can be switched off, but safer on
+-- | For debugging only. Switching this on may cause issue #206.
 genNewNamePlain :: Bool
-genNewNamePlain = True
+genNewNamePlain = False
 
--- | switching this off will break the unifier
+-- | For debugging only. Switching this on will cause issue #206.
 genNewNameRec :: Bool
-genNewNameRec = True
+genNewNameRec = False
 
 runUnifierExpression ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

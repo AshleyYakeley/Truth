@@ -99,8 +99,12 @@ testSolver =
         , applyTest "fix-0" "(t -> t) -> t" "(Unit -> Unit)" "Unit."
         , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
         , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
-        , failTestBecause "ISSUE #206" $
-          applyTest "issue-206" "(t -> t) -> t" "((Maybe a -> Maybe a) -> (a -> a))" "Unit"
+        , applyTest "issue-206-1" "(t -> t) -> t" "((Maybe a -> Maybe a) -> (a -> a))" "Any -> (rec a, Maybe. a)"
+        , applyTest
+              "issue-206-2"
+              "(t -> t) -> t"
+              "((a -> a) -> (Maybe a -> Maybe a))"
+              "(rec a, Maybe. a) -> Maybe. None"
         , unifierTest "rec-0" "rec a, Maybe. a" $ do
               ta <- utParseTypeBoth "a"
               tma <- utParseTypeBoth "Maybe a"
@@ -113,8 +117,7 @@ testSolver =
               ((_tan, tap), (tman, _tmap)) <- utRename (ta, tma)
               utUnify tap tman
               return tap
-        , failTestBecause "ISSUE #206" $
-          unifierTest "rec-2" "rec a, Maybe. a" $ do
+        , unifierTest "rec-2" "rec a, Maybe. a" $ do
               ta <- utParseTypeBoth "a"
               tma <- utParseTypeBoth "Maybe a"
               ((tan, tap), (tman, tmap)) <- utRename (ta, tma)
