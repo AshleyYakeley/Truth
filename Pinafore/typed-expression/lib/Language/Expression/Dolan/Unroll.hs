@@ -21,11 +21,8 @@ unrollRecursiveType ::
     -> DolanType ground polarity tv
     -> DolanIsoShimWit ground polarity tv
 unrollRecursiveType var pt =
-    invertPolarity @polarity $ let
-        rt = RecursiveDolanSingularType var pt
-        bisub :: Bisubstitution ground (DolanPolyIsoShim ground Type) Identity
-        bisub = mkSingleBisubstitution True var $ return $ shimWitToDolan $ mkPolarShimWit rt
-        in runIdentity $ bisubstituteType bisub pt
+    invertPolarity @polarity $
+    singleBisubstitute var (shimWitToDolan $ mkPolarShimWit $ RecursiveDolanSingularType var pt) (mkPolarShimWit pt)
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

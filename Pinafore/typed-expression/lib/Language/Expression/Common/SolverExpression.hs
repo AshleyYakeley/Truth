@@ -27,6 +27,14 @@ instance (Applicative typeexpr, Applicative valexpr, Monoid a) =>
              Monoid (SolverExpression poswit negwit typeexpr valexpr a) where
     mempty = pure mempty
 
+instance (AllConstraint Show typeexpr, AllConstraint Show valexpr) =>
+             Show (SolverExpression poswit negwit typeexpr valexpr a) where
+    show (MkSolverExpression uu exp) = "{" <> allShow uu <> "; " <> allShow exp <> "}"
+
+instance (AllConstraint Show typeexpr, AllConstraint Show valexpr) =>
+             AllConstraint Show (SolverExpression poswit negwit typeexpr valexpr) where
+    allConstraint = Dict
+
 solverExpressionLiftValue ::
        (Applicative typeexpr, Functor valexpr) => valexpr a -> SolverExpression poswit negwit typeexpr valexpr a
 solverExpressionLiftValue expr = MkSolverExpression (pure ()) $ fmap (\a _ -> a) expr
