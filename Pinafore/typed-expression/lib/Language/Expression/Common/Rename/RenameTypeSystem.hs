@@ -7,7 +7,6 @@ module Language.Expression.Common.Rename.RenameTypeSystem
     , finalRenameMappable
     , NewVar(..)
     , namespaceRenameType
-    , typeSignatureNames
     ) where
 
 import Data.Shim
@@ -99,12 +98,6 @@ renameMappableSimple ::
     => a
     -> RenamerT ts m a
 renameMappableSimple = renameMappable @ts [] FreeName
-
-typeSignatureNames ::
-       forall ts. RenameTypeSystem ts
-    => Some (TSPosWitness ts)
-    -> [String]
-typeSignatureNames (MkSome t) = renameableVars t
 
 renameType ::
        forall ts m a. (RenameTypeSystem ts, Monad m, VarRenameable a)

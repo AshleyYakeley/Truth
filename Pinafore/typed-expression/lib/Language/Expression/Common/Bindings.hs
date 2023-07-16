@@ -112,10 +112,10 @@ bindingSequentialLetSealedExpression ::
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 bindingSequentialLetSealedExpression (MkTSBinding name bd mexpr) =
     runRenamer @ts [] [] $ do
-        MkSealedSubsumerExpression tdecl (MkSolverExpression subsumer expr) <- mexpr
-        (ssexpr, ssubs) <- solveSubsumer @ts subsumer
+        MkSealedSubsumerExpression tdecl sexpr <- mexpr
+        (expr, ssubs) <- solveSubsumerExpression @ts sexpr
         expr' <- unEndoM (subsumerSubstitute @ts ssubs) expr
-        return $ singletonMap name (bd, MkSealedExpression tdecl $ expr' <*> ssexpr)
+        return $ singletonMap name (bd, MkSealedExpression tdecl $ expr')
 
 bindingsNames :: [TSBinding ts] -> [TSVarID ts]
 bindingsNames bindings = fmap (\(MkTSBinding name _ _) -> name) bindings

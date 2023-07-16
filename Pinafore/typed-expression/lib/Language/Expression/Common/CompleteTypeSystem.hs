@@ -123,7 +123,7 @@ tsSubsume ::
     => TSPosShimWit ts inf
     -> TSPosWitness ts decl
     -> TSInner ts (TSOpenExpression ts (TSShim ts inf decl))
-tsSubsume winf tdecl = runRenamer @ts (typeSignatureNames @ts (MkSome tdecl)) [] $ solveSubsumeShimWit @ts winf tdecl
+tsSubsume winf tdecl = runRenamer @ts (renameableVars tdecl) [] $ solveSubsumeShimWit @ts winf tdecl
 
 tsSubsumeValue ::
        forall ts t. CompleteTypeSystem ts
@@ -194,7 +194,7 @@ tsSubsumeExpressionTo ::
     -> TSSealedExpression ts
     -> TSInner ts (TSOpenExpression ts t)
 tsSubsumeExpressionTo freevars tdecl expr = let
-    fixednames = typeSignatureNames @ts $ MkSome tdecl
+    fixednames = renameableVars tdecl
     freenames = fmap someTypeVarName $ toList freevars
     rigidnames = fixednames \\ freenames
     in runRenamer @ts rigidnames freenames $ do
@@ -206,11 +206,11 @@ tsSubsumeExpression ::
     => Some (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-tsSubsumeExpression tdecl expr =
-    runRenamer @ts (typeSignatureNames @ts tdecl) [] $
+tsSubsumeExpression stdecl@(MkSome tdecl) expr =
+    runRenamer @ts (renameableVars tdecl) [] $
     withTransConstraintTM @Monad $ do
         expr' <- renameMappableSimple @ts expr
-        subsumeExpression @ts tdecl expr'
+        subsumeExpression @ts stdecl expr'
 
 tsUncheckedRecursiveLet ::
        forall ts. (Ord (TSVarID ts), CompleteTypeSystem ts)
