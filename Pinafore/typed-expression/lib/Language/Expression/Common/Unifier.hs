@@ -81,14 +81,6 @@ unifyPosNegShimWit ta tb =
             uab <- unifyPosNegWitnesses @ts wa wb
             return $ uuGetShim @ts $ convb . uab . conva
 
-solveUnifierExpression ::
-       forall ts a. UnifyTypeSystem ts
-    => UnifierExpression ts a
-    -> TSOuter ts (TSOpenExpression ts a, UnifierSubstitutions ts)
-solveUnifierExpression (MkSolverExpression ut eta) = do
-    (texpr, subs) <- solveUnifier @ts ut
-    return $ (eta <*> texpr, subs)
-
 unifierSubstitute ::
        forall ts a. (UnifyTypeSystem ts, TSMappable ts a)
     => UnifierSubstitutions ts

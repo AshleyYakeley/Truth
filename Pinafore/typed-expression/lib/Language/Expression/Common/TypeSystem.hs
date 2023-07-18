@@ -9,7 +9,13 @@ import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-class (Monad (TSOuter ts), Category (TSShim ts), Eq (TSVarID ts), Show (TSVarID ts)) => TypeSystem (ts :: Type) where
+class ( Monad (TSOuter ts)
+      , Category (TSShim ts)
+      , Eq (TSVarID ts)
+      , Show (TSVarID ts)
+      , AllConstraint Show (TSNegWitness ts)
+      , AllConstraint Show (TSPosWitness ts)
+      ) => TypeSystem (ts :: Type) where
     type TSOuter ts :: Type -> Type
     type TSNegWitness ts :: Type -> Type
     type TSPosWitness ts :: Type -> Type

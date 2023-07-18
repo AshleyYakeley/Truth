@@ -130,8 +130,8 @@ Thus a type such as `T +A -> T +A` may not include the identity function, since 
 ## Type Inversion
 
 Type inversion is converting a positive type to a negative type, or vice-versa.
-Specifically, given a positive type `T`, there is some set `S` of positive types that can subsume to `T`.
-The inverse of `T` is a negative type `T'` such that the set of positive types that unify with `T'` is the same as `S`.
+Specifically, given a positive type `T`, there is some set `S(T)` of positive types that can subsume to `T`.
+The inverse of `T` is a negative type `T'` such that the set of positive types that unify with `T'`, is the same as `S(T)`.
 
 As a rule of thumb, types that, after simplification, have free type variables, or mention `|`, `&`, `Any`, or `None`, cannot be inverted.
 

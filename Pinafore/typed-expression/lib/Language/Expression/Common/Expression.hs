@@ -24,7 +24,7 @@ instance Applicative (Expression w) where
 instance Productable (Expression w)
 
 instance AllConstraint Show w => Show (Expression w a) where
-    show expr = "{" <> intercalate "," (expressionFreeWitnesses allShow expr) <> "}"
+    show expr = "{" <> intercalate "; " (expressionFreeWitnesses allShow expr) <> "}"
 
 instance AllConstraint Show w => AllConstraint Show (Expression w) where
     allConstraint = Dict

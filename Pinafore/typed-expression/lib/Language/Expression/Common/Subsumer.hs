@@ -24,12 +24,7 @@ import Shapes
 
 type OpenSubsumerExpression ts = TSOpenSolverExpression ts (Subsumer ts)
 
-class ( UnifyTypeSystem ts
-      , Applicative (Subsumer ts)
-      , Show (SubsumerSubstitutions ts)
-      , AllConstraint Show (TSPosWitness ts)
-      , AllConstraint Show (TSNegWitness ts)
-      ) => SubsumeTypeSystem ts where
+class (UnifyTypeSystem ts, Applicative (Subsumer ts), Show (SubsumerSubstitutions ts)) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
     usubSubsumer :: forall a. UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (OpenSubsumerExpression ts a)

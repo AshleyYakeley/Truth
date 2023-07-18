@@ -69,9 +69,9 @@ unifierSolve ::
     => UnifierExpression ts a
     -> (TSOpenExpression ts a -> TSOuter ts b)
     -> TSOuter ts b
-unifierSolve uexpr mab = do
-    (expr, subs) <- solveUnifierExpression @ts uexpr
-    b <- mab expr
+unifierSolve (MkSolverExpression ut eta) mab = do
+    (texpr, subs) <- solveUnifier @ts ut
+    b <- mab $ eta <*> texpr
     unEndoM (unifierSubstituteSimplifyFinalRename @ts subs) b
 
 abstractNamedExpressionUnifier ::
