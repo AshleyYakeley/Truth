@@ -182,7 +182,7 @@ tsSingleBinding ::
     -> TSSealedExpression ts
     -> TSBinding ts
 tsSingleBinding name bd madecltype expr =
-    singleBinding name bd $ do
+    singleBinding name bd (isJust madecltype) $ do
         madecltype' <- unEndoM (endoFor $ renameTypeSignature @ts) madecltype
         expr' <- renameMappableSimple @ts expr
         subsumerExpression madecltype' expr'

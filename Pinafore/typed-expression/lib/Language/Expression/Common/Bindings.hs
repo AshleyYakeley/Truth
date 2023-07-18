@@ -22,10 +22,10 @@ type TSBindingData :: Type -> Type
 type family TSBindingData ts
 
 data TSBinding (ts :: Type) where
-    MkTSBinding :: TSVarID ts -> TSBindingData ts -> TSOuter ts (SealedSubsumerExpression ts) -> TSBinding ts
+    MkTSBinding :: TSVarID ts -> TSBindingData ts -> Bool -> TSOuter ts (SealedSubsumerExpression ts) -> TSBinding ts
 
-singleBinding :: TSVarID ts -> TSBindingData ts -> TSOuter ts (SealedSubsumerExpression ts) -> TSBinding ts
-singleBinding name bd expr = MkTSBinding name bd expr
+singleBinding :: TSVarID ts -> TSBindingData ts -> Bool -> TSOuter ts (SealedSubsumerExpression ts) -> TSBinding ts
+singleBinding = MkTSBinding
 
 type BindMap ts = Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts)
 
@@ -70,11 +70,15 @@ singleBound ::
        forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
     => TSBinding ts
     -> TSOuter ts (Bound ts)
-singleBound (MkTSBinding name bd mexpr) = do
+singleBound (MkTSBinding name bd hasTypeSig mexpr) = do
     MkSealedSubsumerExpression (decltype :: _ tdecl) subsexpr <- mexpr
+    decltype' <-
+        if hasTypeSig
+            then renameMappable @ts [] FreeName decltype
+            else return decltype
     let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifierExpression ts (tdecl -> a))
-        abstractNames = abstractExpression @ts name decltype
+        abstractNames = abstractExpression @ts name decltype'
         getbinds ::
                UnifierSubstitutions ts
             -> SubsumerSubstitutions ts
@@ -110,7 +114,7 @@ bindingSequentialLetSealedExpression ::
        forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
     => TSBinding ts
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
-bindingSequentialLetSealedExpression (MkTSBinding name bd mexpr) =
+bindingSequentialLetSealedExpression (MkTSBinding name bd _ mexpr) =
     runRenamer @ts [] [] $ do
         MkSealedSubsumerExpression tdecl sexpr <- mexpr
         (expr, ssubs) <- solveSubsumerExpression @ts sexpr
@@ -118,4 +122,4 @@ bindingSequentialLetSealedExpression (MkTSBinding name bd mexpr) =
         return $ singletonMap name (bd, MkSealedExpression tdecl $ expr')
 
 bindingsNames :: [TSBinding ts] -> [TSVarID ts]
-bindingsNames bindings = fmap (\(MkTSBinding name _ _) -> name) bindings
+bindingsNames bindings = fmap (\(MkTSBinding name _ _ _) -> name) bindings
