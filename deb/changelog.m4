@@ -30,6 +30,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . new syntax for datatype definitions
       . generalised "{}" and "do" syntax to any namespace
     - reject rather than mutate uninvertible type signatures
+    - allow polymorphic recursion with type signatures
   * Interactive
     - :doc to retrieve name documentation
   * Library
