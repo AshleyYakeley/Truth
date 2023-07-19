@@ -14,7 +14,7 @@ ui_page = fn n, ui => (label.GTK n,ui);
 ui_labelled = fn n, ui => horizontal.GTK [label.GTK n, layoutGrow.GTK  ui];
 
 std_window: WholeModel +Text -> Element.GTK -> Action Window.GTK
-= fn title, contents => fix.Action $ fn window => let
+= fn title, contents => mfix.Action $ fn window => let
     mbar: Element.GTK
     = menuBar.GTK
         [

@@ -111,7 +111,7 @@ let
         end;
 
     calendarWindow: WholeModel +Event -> Action Window.GTK
-    = fn evt => fix $ fn window =>
+    = fn evt => mfix $ fn window =>
         open.Window.GTK gtk (200,200) {"date of " <>.Text %(name !$% evt)} $ vertical.GTK
         [
             calendar.GTK $ eventModelTimeDate $ eventTime !$% evt,

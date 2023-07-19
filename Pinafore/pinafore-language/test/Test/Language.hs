@@ -892,10 +892,10 @@ testQueries =
                           "let using Function; using Integer; rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing end in rcount rval" $
                       LRSuccess "10"
                     , testQuery
-                          "let using Function; using Integer; fix: (a -> a) -> a = fn f => let rec x = f x end in x; rc: (a -> Integer) -> Maybe a -> Integer = fn r => match Nothing => 0; Just y => succ $ r y end in fix rc $ Just Nothing" $
+                          "let using Function; using Integer; rc: (a -> Integer) -> Maybe a -> Integer = fn r => match Nothing => 0; Just y => succ $ r y end in fix rc $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let using Function; using Integer; fix: (a -> a) -> a = fn f => let rec x = f x end in x; rc: (a -> Integer) -> Maybe a -> Integer = fn r => match Nothing => 0; Just y => succ $ r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "let using Function; using Integer; rc: (a -> Integer) -> Maybe a -> Integer = fn r => match Nothing => 0; Just y => succ $ r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
                           "let using Function; using Integer; rec rcount = match Nothing => 0; Just y => succ $ rcount y end end in rcount $ Just $ Just Nothing" $

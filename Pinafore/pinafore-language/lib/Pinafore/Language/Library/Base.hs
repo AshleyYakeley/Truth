@@ -706,7 +706,10 @@ baseLibSections =
             , addNameInRootBDS $ valBDS ">-" "Apply a value to a function." revap
             , addNameInRootBDS $ valBDS "id" "The identity function." $ id @(->) @A
             , addNameInRootBDS $ valBDS "." "Compose functions." $ (.) @(->) @A @B @C
+            , addNameInRootBDS $ valBDS "fix" "Fixed point of a function." $ fix @A
             , addNameInRootBDS $ valBDS "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
+            , addNameInRootBDS $
+              valBDS "undefined" "Same as `error \"undefined\"`." $ ((error "undefined") :: BottomType)
             , addNameInRootBDS $
               valBDS
                   "seq"

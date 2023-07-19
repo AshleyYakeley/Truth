@@ -1,9 +1,6 @@
 #!/usr/bin/pinafore
 let
 
-fix: (a -> a) -> a
-= fn f => let rec x = f x end in x;
-
 recf: (Integer -> b -> b) -> Integer -> b -> b
 = fn s, a, b => if a <= 0 then b else s (pred a) b;
 

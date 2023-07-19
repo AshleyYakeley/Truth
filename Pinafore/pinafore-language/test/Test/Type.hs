@@ -364,16 +364,13 @@ testType =
                           , textTypeTest "let rec f: a -> a = fn x => seq (f (Just x)) x end in f" "{} -> a -> a"
                           , textTypeTest "let rec f = seq (g 3); g = f end in f" "{} -> a -> (a | Integer.)"
                           , textTypeTest "let rec f = seq g3; g3 = f 3 end in f" "{} -> a -> (a | Integer.)"
-                          , textTypeTest
-                                "let fixf = fn f => let rec x = f x end in x; rf = fn r => seq (r 3); r = fixf rf in r"
-                                "{} -> a -> (a | Integer.)"
+                          , textTypeTest "let rf = fn r => seq (r 3); r = fix rf in r" "{} -> a -> (a | Integer.)"
                           , textTypeTest "fn r => seq (r 3)" "{} -> (Integer. -> Any) -> a -> a"
                           , testTree "fixrec" $ let
                                 fixTest :: Text -> Text -> String -> TestTree
                                 fixTest ta tr expected = let
                                     typeText = "(" <> ta <> ") -> " <> tr
-                                    script =
-                                        "let rec f: (t -> t) -> t = f end; rec u: " <> typeText <> " = u end in f u"
+                                    script = "fix (undefined: " <> typeText <> ")"
                                     in textTypeTest script ("{} -> " <> expected)
                                 recTest :: Text -> Text -> String -> TestTree
                                 recTest ta tr expected = let

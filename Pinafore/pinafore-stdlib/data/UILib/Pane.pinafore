@@ -139,7 +139,7 @@ expose namespace UILib. of
             mkContext: Context.UILib -> Context.Pane
             = fn Mk.Context.UILib => let
                 stdWindow: WholeModel +Text -> WholeModel +(List MenuItem) -> Element -> Action Window
-                = fn title, extraMenus, contents => fix.Action $ fn window => do
+                = fn title, extraMenus, contents => mfix.Action $ fn window => do
                     textsel <- newMem.WholeModel;
                     let
                         notify: Action TextModel -> Action Unit
