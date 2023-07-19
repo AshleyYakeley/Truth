@@ -19,17 +19,6 @@ packages:
   original:
     hackage: leb128-0.1.0.0
 - completed:
-    commit: db5ec051116579c33472a0193251a3333f3f336f
-    git: https://github.com/AshleyYakeley/haskell-gi.git
-    name: haskell-gi
-    pantry-tree:
-      sha256: 062dea79056ab553bdf23cfb6ed8952bc94ad0d5b7dc17302f41d734990c501b
-      size: 35433
-    version: 0.26.2
-  original:
-    commit: db5ec051116579c33472a0193251a3333f3f336f
-    git: https://github.com/AshleyYakeley/haskell-gi.git
-- completed:
     commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
@@ -64,7 +53,7 @@ packages:
     git: https://github.com/fpco/ghc-prof-flamegraph.git
 snapshots:
 - completed:
-    sha256: 1867d84255dff8c87373f5dd03e5a5cb1c10a99587e26c8793e750c54e83ffdc
-    size: 639139
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/0.yaml
-  original: lts-21.0
+    sha256: 97710f56bf093fca0ee5d8dbe19d96b654c752e405b66795b4baedd84a794c60
+    size: 640010
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/3.yaml
+  original: lts-21.3
