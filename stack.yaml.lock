@@ -19,6 +19,13 @@ packages:
   original:
     hackage: leb128-0.1.0.0
 - completed:
+    hackage: primitive-serial-0.1@sha256:2e3660f4fe9f86bcbf3052bc5cf2c14f6e60394f51f80cbbe05df27919b076a5,1159
+    pantry-tree:
+      sha256: d6b5191e3e462c6a7a86dd9856662de8b1cdf6d7223868b925a0f26f376caf69
+      size: 279
+  original:
+    hackage: primitive-serial-0.1
+- completed:
     commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
