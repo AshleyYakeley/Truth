@@ -100,8 +100,16 @@ For example:
 
 ### Infix operators
 
-Built-in operators are all predefined (in various namespaces).
-New operators cannot be declared.
+New operators can be declared with paremtheses, like this:
+
+```pinafore
+let
+(&$$&) = fn a,b => a - b;
+in 57 &$$& 22
+```
+
+The parsing "infixity" of the operator is determined by its name (regardless of namespace) according to [the table](../syntax/#infix-operators),
+and is "(A x B) x C" level 10 for other names.
 
 ### Example
 

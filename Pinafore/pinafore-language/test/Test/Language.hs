@@ -239,6 +239,7 @@ testQueries =
               , testQuery "True" $ LRSuccess "True"
               , testQuery "False" $ LRSuccess "False"
               , testQuery "\"1\"" $ LRSuccess "\"1\""
+              , testQuery "(+)" $ LRSuccess "<?>"
               , testQuery "length.Text." $ LRSuccess "<?>"
               , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
               , testQuery "let opentype T in anchor.Entity $.Function openEntity @T !\"example\"" $
@@ -281,6 +282,17 @@ testQueries =
               , testQuery "let a=7;b=a in a" $ LRSuccess "7"
               , testQuery "let a=7;b=a in b" $ LRSuccess "7"
               , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
+              , testTree
+                    "operator"
+                    [ testQuery "(-) 9 5" $ LRSuccess "4"
+                    , testQuery "let minus = (-) in minus 4 2" $ LRSuccess "2"
+                    , testQuery "let (&$$&) = fn a,b => a -.Integer b in 374 &$$& 21" $ LRSuccess "353"
+                    , testQuery "let (&$$&) = (-) in 7 &$$& 4" $ LRSuccess "3"
+                    , testQuery "let (&$$&) = fn a,b => a -.Integer b; (**$*) = (&$$&) in 15 **$* 8" $ LRSuccess "7"
+                    , testQuery "let (&$$&) = fn a,b => a -.Integer b; (**$*) = (&$$&) in 15 **$* 8" $ LRSuccess "7"
+                    , testQuery "let (&$$&) = fn a,b => a -.Integer b; (**$*) = fn a,b => a &$$& b in 18 **$* 3" $
+                      LRSuccess "15"
+                    ]
               , testTree
                     "recursive"
                     [ testQuery "let rec a=1 end in a" $ LRSuccess "1"

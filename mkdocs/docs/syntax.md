@@ -243,6 +243,7 @@ All declarations, including type declarations, are local to a `let` block.
     "_" |
     "[" <comma-separated(<pattern-1>)> "]" |
     "(" ")" |
+    "(" <infix-operator[n]> ")" |
     "(" <pattern-1> "," <comma-separated-1(<pattern-1>)> ")" |
     "(" <pattern-1> ")"
 

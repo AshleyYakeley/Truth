@@ -21,6 +21,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - can declare arbitrary subtype relations
     - import lists
     - syntax
+      . allow defintion of new operators
       . changed recursive type syntax from "rec v. T" to "rec v, T"
       . type names (+:), (*:), List, Unit
       . tuple constructor/pattern (,,) etc.
