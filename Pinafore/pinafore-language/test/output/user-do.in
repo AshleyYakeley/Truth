@@ -1,0 +1,52 @@
+#!/usr/bin/pinafore
+
+let
+
+    datatype State {-p,+q} +a of
+        MkState (p -> q *: a);
+    end;
+
+    namespace State of
+        map: (a -> b) -> State s a -> State s b =
+            fn ab, MkState f => MkState $ fn old => f old >- fn (new,a) => (new,ab a);
+
+        pure: a -> State s a =
+            fn a => MkState $ fn s => (s,a);
+
+        (>>=): State s a -> (a -> State s b) -> State s b =
+            fn MkState f, q => MkState $ fn old => let (new,a) = f old; MkState g = q a in g new;
+
+        ap: State s (a -> b) -> State s a -> State s b = fn mab,ma => mab >>= (fn ab => map ab ma);
+
+        liftA2: (a -> b -> c) -> State s a -> State s b -> State s c = fn f,expr => ap $ map f expr;
+
+        (**): State s a -> State s b -> State s (a *: b) = liftA2 $ fn a,b => (a,b);
+
+        (>>): State s a -> State s b -> State s b = fn ma,mb => ma >>= (fn _ => mb);
+
+        get: State s s =
+            MkState $ fn old => (old,old);
+
+        set: s -> State +s Unit =
+            fn s => MkState $ fn _ => (s,());
+
+        modify: (s -> s) -> State s Unit =
+            fn m => do @State
+                s <- get;
+                set $ m s;
+                end;
+
+        run: s -> State s a -> a =
+            fn s, MkState f => f s >- fn (_,a) => a;
+    end;
+
+    val = let using State in
+        run 0 $ do @State
+            set 7;
+            a <- get;
+            modify ((+) 4);
+            modify ((*) a);
+            get;
+            end;
+
+in outputLn.Env $ show val
