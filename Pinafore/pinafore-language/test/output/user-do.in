@@ -3,18 +3,18 @@
 let
 
     datatype State {-p,+q} +a of
-        MkState (p -> q *: a);
+        Mk (p -> q *: a);
     end;
 
     namespace State of
         map: (a -> b) -> State s a -> State s b =
-            fn ab, MkState f => MkState $ fn old => f old >- fn (new,a) => (new,ab a);
+            fn ab, Mk f => Mk $ fn old => f old >- fn (new,a) => (new,ab a);
 
         pure: a -> State s a =
-            fn a => MkState $ fn s => (s,a);
+            fn a => Mk $ fn s => (s,a);
 
         (>>=): State s a -> (a -> State s b) -> State s b =
-            fn MkState f, q => MkState $ fn old => let (new,a) = f old; MkState g = q a in g new;
+            fn Mk f, q => Mk $ fn old => let (new,a) = f old; Mk g = q a in g new;
 
         ap: State s (a -> b) -> State s a -> State s b = fn mab,ma => mab >>= (fn ab => map ab ma);
 
@@ -25,10 +25,10 @@ let
         (>>): State s a -> State s b -> State s b = fn ma,mb => ma >>= (fn _ => mb);
 
         get: State s s =
-            MkState $ fn old => (old,old);
+            Mk $ fn old => (old,old);
 
         set: s -> State +s Unit =
-            fn s => MkState $ fn _ => (s,());
+            fn s => Mk $ fn _ => (s,());
 
         modify: (s -> s) -> State s Unit =
             fn m => do @State
@@ -37,7 +37,7 @@ let
                 end;
 
         run: s -> State s a -> a =
-            fn s, MkState f => f s >- fn (_,a) => a;
+            fn s, Mk f => f s >- fn (_,a) => a;
     end;
 
     val = let using State in
