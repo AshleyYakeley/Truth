@@ -9,6 +9,7 @@ module Pinafore.Documentation
     , Name(..)
     , ToText(..)
     , nameIsInfix
+    , allKeywords
     , allOperatorNames
     ) where
 

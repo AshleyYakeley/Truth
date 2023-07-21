@@ -131,6 +131,7 @@ main :: IO ()
 main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
+        KeywordsDocOption -> for_ allKeywords $ \(n, t) -> putStrLn $ n <> " " <> t
         ModuleDocOption moModuleDirs modname -> let
             moExtraLibrary = extraLibrary
             in printModuleDoc MkModuleOptions {..} modname

@@ -6,6 +6,7 @@ module Pinafore.Language.Grammar.Read.Token
     , tokenNamesToNamespaceRef
     , Token(..)
     , parseTokens
+    , allKeywords
     ) where
 
 import Pinafore.Base
@@ -349,6 +350,34 @@ checkKeyword "using" = return $ MkSomeOf TokUsing ()
 checkKeyword "debug"
     | debugSyntax = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
+
+allKeywords :: [(String, String)]
+allKeywords =
+    [ ("fn", "keyword.control.pinafore")
+    , ("match", "keyword.control.pinafore")
+    , ("rec", "keyword.other.pinafore")
+    , ("let", "keyword.other.pinafore")
+    , ("in", "keyword.other.pinafore")
+    , ("do", "keyword.control.pinafore")
+    , ("of", "keyword.other.pinafore")
+    , ("end", "keyword.other.pinafore")
+    , ("if", "keyword.control.pinafore")
+    , ("then", "keyword.control.pinafore")
+    , ("else", "keyword.control.pinafore")
+    , ("datatype", "keyword.declaration.pinafore")
+    , ("opentype", "keyword.declaration.pinafore")
+    , ("subtype", "keyword.declaration.pinafore")
+    , ("trustme", "keyword.declaration.pinafore")
+    , ("storable", "keyword.declaration.pinafore")
+    , ("dynamictype", "keyword.declaration.pinafore")
+    , ("expose", "keyword.declaration.pinafore")
+    , ("import", "keyword.declaration.pinafore")
+    , ("as", "keyword.other.pinafore")
+    , ("except", "keyword.other.pinafore")
+    , ("namespace", "keyword.declaration.pinafore")
+    , ("using", "keyword.declaration.pinafore")
+    , ("debug", "keyword.other.pinafore")
+    ]
 
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do
