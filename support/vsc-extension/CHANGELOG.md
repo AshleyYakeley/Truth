@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.4.0
+- Update grammar for Pinafore 0.4.
+
 ## 0.3.0
 - Update grammar for Pinafore 0.3.
 

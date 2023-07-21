@@ -216,6 +216,9 @@ docs: $(foreach f,$(LIBMODULEDOCS),mkdocs/docs/library/$f.md) mkdocs/generated/i
 
 VSCXVERSION := $(PACKAGEVERSION).0
 
+support/vsc-extension/%.json: support/vsc-extension/%.yaml
+	stack $(STACKFLAGS) exec -- yq < $< > $@
+
 out/pinafore-$(VSCXVERSION).vsix: docker-image out \
  support/vsc-extension/package.json \
  support/vsc-extension/LICENSE \
