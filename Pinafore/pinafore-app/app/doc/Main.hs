@@ -131,7 +131,19 @@ main :: IO ()
 main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
-        KeywordsDocOption -> for_ allKeywords $ \(n, t) -> putStrLn $ n <> " " <> t
+        KeywordsDocOption -> let
+            groups = sort $ nub $ fmap snd allKeywords
+            items gp =
+                sort $
+                mapMaybe
+                    (\(n, g) ->
+                         if gp == g
+                             then Just n
+                             else Nothing)
+                    allKeywords
+            gtext gp = "  " <> show gp <> ": [" <> intercalate ", " (fmap show $ items gp) <> "]"
+            text = intercalate ",\n" $ fmap gtext groups
+            in putStrLn $ "{\n" <> text <> "\n}"
         ModuleDocOption moModuleDirs modname -> let
             moExtraLibrary = extraLibrary
             in printModuleDoc MkModuleOptions {..} modname

@@ -1,6 +1,7 @@
 ---
 "$schema": https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json
 name: Pinafore
+
 patterns:
 - include: "#block_comment"
 - include: "#comments"
@@ -8,6 +9,7 @@ patterns:
 - include: "#types"
 - include: "#strings"
 - include: "#anchors"
+
 repository:
   block_comment:
     applyEndPatternLast: 1
@@ -26,12 +28,13 @@ repository:
     patterns: []
   keywords:
     patterns:
-    - name: keyword.control.pinafore
-      match: "\\b(fn|match|rec|if|then|else|let|import|expose|namespace|using|as|in|do|case|of|end)\\b"
-    - name: keyword.declaration.pinafore
-      match: "\\b(datatype|opentype|subtype|storable|dynamictype)\\b"
-    - name: constant.other.predefined.pinafore
-      match: "\\b(property|openEntity|newOpenEntity|evaluate)\\b"
+      _eval: "load(\"out/support/keywords.json\") | to_entries |
+          map (
+              {
+                  \"name\": .key,
+                  \"match\": (\"\\\\b(\" + (.value|join(\"|\")) + \")\\\\b\")
+              }
+          )"
   types:
     patterns:
     - name: storage.type.predefined.pinafore
@@ -51,4 +54,5 @@ repository:
       begin: '!"'
       end: "\""
       patterns: []
+
 scopeName: source.pinafore

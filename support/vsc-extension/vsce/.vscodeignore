@@ -3,6 +3,5 @@
 .gitattributes
 .gitignore
 .stack-root
-vsc-extension-quickstart.md
 *.yaml
 */*.yaml

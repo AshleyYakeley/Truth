@@ -216,17 +216,23 @@ docs: $(foreach f,$(LIBMODULEDOCS),mkdocs/docs/library/$f.md) mkdocs/generated/i
 
 VSCXVERSION := $(PACKAGEVERSION).0
 
-support/vsc-extension/%.json: support/vsc-extension/%.yaml
-	stack $(STACKFLAGS) exec -- yq < $< > $@
+out/support:
+	mkdir -p $@
+
+out/support/keywords.json: ${BINPATH}/pinafore-doc out/support
+	stack $(STACKFLAGS) exec -- $< --keywords > $@
+
+support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/support/keywords.json
+	stack $(STACKFLAGS) exec -- yq --from-file support/vsc-extension/transform.yq -o json $< > $@
 
 out/pinafore-$(VSCXVERSION).vsix: docker-image out \
- support/vsc-extension/package.json \
- support/vsc-extension/LICENSE \
- support/vsc-extension/README.md \
- support/vsc-extension/CHANGELOG.md \
- support/vsc-extension/language-configuration.json \
- support/vsc-extension/syntaxes/pinafore.tmLanguage.json
-	cd support/vsc-extension && stack $(STACKFLAGS) exec -- vsce package -o ../../$@
+ support/vsc-extension/vsce/package.json \
+ support/vsc-extension/vsce/LICENSE \
+ support/vsc-extension/vsce/README.md \
+ support/vsc-extension/vsce/CHANGELOG.md \
+ support/vsc-extension/vsce/language-configuration.json \
+ support/vsc-extension/vsce/syntaxes/pinafore.tmLanguage.json
+	cd support/vsc-extension/vsce && stack $(STACKFLAGS) exec -- vsce package -o ../../../$@
 
 .PHONY: vsc-extension
 
@@ -258,6 +264,9 @@ clean:
 	rm -rf mkdocs/generated
 	rm -rf mkdocs/docs/library
 	rm -rf Changes/changes-gnome/examples/showImages/images
+	rm -rf support/vsc-extension/*.json
+	rm -rf support/vsc-extension/*/*.json
+	rm -rf support/vsc-extension/*/*/*.json
 	rm -rf .stack-work
 
 full-clean: clean
