@@ -32,13 +32,14 @@ repository:
           map (
               {
                   \"name\": .key,
-                  \"match\": (\"\\\\b(\" + (.value|join(\"|\")) + \")\\\\b\")
+                  \"match\": (\"\\b(\" + (.value|join(\"|\")) + \")\\b\")
               }
           )"
   types:
     patterns:
     - name: storage.type.predefined.pinafore
-      match: "\\b(Any|None|Unit|Literal|Text|Number|Rational|Integer|Boolean|Ordering|Time|Duration|Date|TimeOfDay|LocalTime|Entity|DynamicEntity|Maybe|List|List1|ModelOrder|Action|WholeModel|SetModel|FiniteSetModel|ListModel|TextModel|Context|Element|Window|MenuItem)\\b"
+      match:
+        _eval: "load(\"out/support/types.json\") | \"\\b(\" + (join(\"|\")) + \")\\b\""
   strings:
     name: string.quoted.double.pinafore
     begin: "\""

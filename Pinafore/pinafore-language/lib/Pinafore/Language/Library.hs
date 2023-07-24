@@ -1,6 +1,7 @@
 module Pinafore.Language.Library
     ( DefDoc(..)
     , LibraryModule
+    , builtInLibrary
     , FetchModule
     , directoryFetchModule
     , textFetchModule
@@ -8,7 +9,6 @@ module Pinafore.Language.Library
     , LibraryContext(..)
     , mkLibraryContext
     , nameIsInfix
-    , allOperatorNames
     ) where
 
 import Pinafore.Context
@@ -34,8 +34,8 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
-library :: [LibraryModule InvocationInfo]
-library =
+builtInLibrary :: [LibraryModule InvocationInfo]
+builtInLibrary =
     pure $
     MkLibraryModule builtInModuleName $
     headingBDT "Built-In" "" $
@@ -56,19 +56,10 @@ library =
     , debugLibSection
     ]
 
-allOperatorNames :: (DocItem -> Bool) -> [Name]
-allOperatorNames test = let
-    getDocName :: forall context. BindDoc context -> Maybe Name
-    getDocName MkBindDoc {bdScopeEntry = Just (BindScopeEntry (MkFullNameRef name _) _ _), bdDoc = dd}
-        | test $ docItem dd
-        , nameIsInfix name = Just name
-    getDocName _ = Nothing
-    in mapMaybe getDocName $ mconcat $ fmap libraryModuleEntries library
-
 data LibraryContext = MkLibraryContext
     { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
     }
 
 mkLibraryContext :: InvocationInfo -> FetchModule InvocationInfo -> LibraryContext
 mkLibraryContext context fetchModule =
-    MkLibraryContext $ runFetchModule (libraryFetchModule library <> fetchModule) context
+    MkLibraryContext $ runFetchModule (libraryFetchModule builtInLibrary <> fetchModule) context

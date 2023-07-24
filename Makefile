@@ -222,7 +222,10 @@ out/support:
 out/support/keywords.json: ${BINPATH}/pinafore-doc out/support
 	stack $(STACKFLAGS) exec -- $< --keywords > $@
 
-support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/support/keywords.json
+out/support/types.json: ${BINPATH}/pinafore-doc out/support
+	stack $(STACKFLAGS) exec -- $< --types > $@
+
+support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/support/keywords.json out/support/types.json
 	stack $(STACKFLAGS) exec -- yq --from-file support/vsc-extension/transform.yq -o json $< > $@
 
 out/pinafore-$(VSCXVERSION).vsix: docker-image out \

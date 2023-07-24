@@ -144,6 +144,7 @@ main =
             gtext gp = "  " <> show gp <> ": [" <> intercalate ", " (fmap show $ items gp) <> "]"
             text = intercalate ",\n" $ fmap gtext groups
             in putStrLn $ "{\n" <> text <> "\n}"
+        TypesDocOption -> putStrLn $ "[\n" <> intercalate ",\n" (fmap (\n -> show (show n)) allTypeNames) <> "\n]"
         ModuleDocOption moModuleDirs modname -> let
             moExtraLibrary = extraLibrary
             in printModuleDoc MkModuleOptions {..} modname
