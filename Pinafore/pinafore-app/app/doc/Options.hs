@@ -9,8 +9,7 @@ import Shapes
 
 data Options
     = ShowVersionOption
-    | KeywordsDocOption
-    | TypesDocOption
+    | SyntaxDataDocOption
     | ModuleDocOption [FilePath]
                       Text
     | InfixDocOption
@@ -24,8 +23,7 @@ optParser :: Parser Options
 optParser =
     choice
         [ flag' ShowVersionOption $ long "version" <> short 'v'
-        , flag' KeywordsDocOption $ long "keywords"
-        , flag' TypesDocOption $ long "types"
+        , flag' SyntaxDataDocOption $ long "syntax-data"
         , ModuleDocOption <$> optIncludes <*> (strOption $ long "module" <> metavar "MODULENAME")
         , flag' InfixDocOption $ long "infix"
         , flag' TypeInfixDocOption $ long "infix-type"

@@ -161,7 +161,8 @@ executable pinafore-doc
       ViewPatterns
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
   build-depends:
-      base >=4.16
+      aeson
+    , base >=4.16
     , filepath
     , optparse-applicative
     , pinafore-app

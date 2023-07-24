@@ -351,7 +351,7 @@ checkKeyword "debug"
     | debugSyntax = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
 
-allKeywords :: [(String, String)]
+allKeywords :: [(Text, Text)]
 allKeywords =
     [ ("fn", "keyword.control.pinafore")
     , ("match", "keyword.control.pinafore")
