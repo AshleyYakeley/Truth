@@ -41,7 +41,6 @@ BINPATH := $(shell stack $(STACKFLAGS) path --local-bin)
 ### Docker image
 
 .PHONY: docker-image
-
 docker-image:
 ifeq ($(nodocker),1)
 else
@@ -55,11 +54,9 @@ ${BINPATH}/hindent: docker-image
 	stack $(STACKFLAGS) install hindent
 
 .PHONY: hindent
-
 hindent: ${BINPATH}/hindent
 
 .PHONY: format
-
 format: ${BINPATH}/hindent
 	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/hindent-all
 
@@ -73,7 +70,6 @@ out/licensing: out
 	stack ls dependencies --license | awk '{t=$$1;$$1=$$2;$$2=t;print}' | sort > $@
 
 .PHONY: licensing
-
 licensing: out/licensing
 
 
@@ -105,7 +101,6 @@ ifeq ($(bench),1)
 endif
 
 .PHONY: exe
-
 exe: ${BINPATH}/pinafore
 
 
@@ -171,7 +166,6 @@ out/pinafore.deps: ${BINPATH}/pinafore out
 	ldd $< > $@
 
 .PHONY: deps
-
 deps: out/pinafore.deps
 
 out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest out
@@ -181,7 +175,6 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 	cp $< $@
 
 .PHONY: deb
-
 deb: out/$(PACKAGEFULLNAME).deb
 
 
@@ -247,7 +240,6 @@ mkdocs/generated/type-infix.md: ${BINPATH}/pinafore-doc
 	stack $(STACKFLAGS) exec -- $< --infix-type > $@
 
 .PHONY: scour
-
 scour: mkdocs/docs/img/information.svg docker-image
 	stack $(STACKFLAGS) exec -- scour $< | stack $(STACKFLAGS) exec -- sponge $<
 
@@ -256,7 +248,6 @@ mkdocs/generated/img/information.png: mkdocs/docs/img/information.png
 	cp $< $@
 
 .PHONY: docs
-
 docs: \
  $(foreach f,$(LIBMODULEDOCS),mkdocs/docs/library/$f.md) \
  mkdocs/generated/infix.md \
@@ -288,7 +279,6 @@ out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
 	cd support/vsc-extension/vsce && stack $(STACKFLAGS) exec -- vsce package -o ../../../$@
 
 .PHONY: vsc-extension
-
 vsc-extension: out/support/pinafore-$(VSCXVERSION).vsix
 
 
@@ -303,7 +293,6 @@ Changes/changes-gnome/examples/showImages/images/%.YCbCr.jpeg: Changes/changes-g
 	stack $(STACKFLAGS) exec -- convert $< -colorspace YCbCr $@
 
 .PHONY: testimages
-
 testimages: docker-image \
 	Changes/changes-gnome/examples/showImages/images/cat.RGB.jpeg \
 	Changes/changes-gnome/examples/showImages/images/cat.YCbCr.jpeg \
@@ -314,9 +303,9 @@ testimages: docker-image \
 ### Full build, clean
 
 .PHONY: full
-
 full: testimages format deb nix-docker-flake deps licensing docs vsc-extension
 
+.PHONY: clean
 clean:
 	rm -rf .build
 	rm -rf out
@@ -326,8 +315,14 @@ clean:
 	rm -rf support/vsc-extension/*.json
 	rm -rf support/vsc-extension/*/*.json
 	rm -rf support/vsc-extension/*/*/*.json
-	rm -rf support/pygments-lexer/*.json
+	rm -rf support/pygments-lexer/*/*.json
+	rm -rf support/pygments-lexer/*.egg-info
 	rm -rf .stack-work
+	rm -rf */*/.stack-work
+	rm -rf */*/test/*/*.out
+	rm -rf */*/test/*/*/*.out
+	rm -rf result
 
+.PHONY: full-clean
 full-clean: clean
 	rm -rf .stack-root
