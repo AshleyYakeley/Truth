@@ -26,6 +26,13 @@ packages:
   original:
     hackage: primitive-serial-0.1
 - completed:
+    hackage: witness-0.6.2@sha256:4beb4195ecabeb5a26bf58c308d35f149a02dd5f86bd3b89c1cf8349f8b85f28,3613
+    pantry-tree:
+      sha256: 33790bc5ba957951993960a3388d72d82a38ac7cb64181f0ec2a7d6f9a48849a
+      size: 2985
+  original:
+    hackage: witness-0.6.2
+- completed:
     commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
