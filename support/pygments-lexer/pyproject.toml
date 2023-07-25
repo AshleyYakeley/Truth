@@ -10,5 +10,8 @@ authors=[{name="Ashley Yakeley",email="ashley@semantic.org"}]
 dependencies=["Pygments>=2.0.1"]
 license = {text = "GPL-2"}
 
+[tool.setuptools.package-data]
+pinafore_lexer = ["syntax-data.json"]
+
 [project.entry-points."pygments.lexers"]
 pinafore="pinafore_lexer:PinaforeLexer"

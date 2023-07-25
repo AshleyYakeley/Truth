@@ -212,10 +212,14 @@ out/support/syntax-data.json: ${BINPATH}/pinafore-doc out/support
 
 PYGLEXERVERSION := $(PACKAGEVERSION).0
 
+support/pygments-lexer/pinafore_lexer/syntax-data.json: out/support/syntax-data.json
+	cp $< $@
+
 out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz: \
  out/support \
  support/pygments-lexer/pyproject.toml \
  support/pygments-lexer/pinafore_lexer/__init__.py \
+ support/pygments-lexer/pinafore_lexer/syntax-data.json
 	stack $(STACKFLAGS) exec -- python3 -m build -o out/support/ support/pygments-lexer/
 
 .PHONY: pyg-lexer
