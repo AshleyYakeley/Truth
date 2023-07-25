@@ -2,8 +2,27 @@ import re
 
 from pygments.lexer import RegexLexer, bygroups, words
 from pygments.token import *
+import importlib.resources, json
 
 __all__ = ['PinaforeLexer']
+
+with open(importlib.resources.files('pinafore_lexer').joinpath('syntax-data.json')) as f:
+    syntaxData = json.load(f)
+
+def getTokenType(t):
+    match t:
+        case "keyword.control.pinafore":
+            return Keyword
+        case "keyword.declaration.pinafore":
+            return Keyword.Declaration
+        case "keyword.other.pinafore":
+            return Keyword
+        case _:
+            return t # will give error, add new entry
+
+keywordMatchers = [(words(names, suffix=r'\b'), getTokenType(t)) for t,names in syntaxData["keywords"].items()]
+
+typeMatcher = (words(syntaxData["types"], suffix=r'\b'), Keyword.Type)
 
 class PinaforeLexer(RegexLexer):
     name = 'Pinafore'
@@ -20,14 +39,8 @@ class PinaforeLexer(RegexLexer):
             (r'\#(.*?)\n', Comment.Single),
             (r'{\#', Comment.Multiline, 'comment'),
             (r'"(\\\\|\\"|[^"])*"', String),
-            (words(('fn', 'match', 'rec', 'if', 'then', 'else', 'let', 'import', 'expose', 'namespace', 'using', 'as', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
-            (words(('datatype', 'opentype', 'subtype', 'storable', 'dynamictype'), suffix=r'\b'), Keyword.Declaration),
-            (words(('property', 'openEntity', 'newOpenEntity', 'evaluate'), suffix=r'\b'), Keyword.Pseudo),
-            (words((
-                'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Ordering', 'Time', 'Duration', 'Date', 'TimeOfDay', 'LocalTime',
-                'Entity', 'DynamicEntity',
-                'Unit', 'Maybe', 'List', 'List1', 'ModelOrder', 'Action', 'WholeModel', 'SetModel', 'FiniteSetModel', 'ListModel', 'TextModel', 'Context', 'Element', 'Window', 'MenuItem'
-                ), suffix=r'\b'), Keyword.Type),
+        ] + keywordMatchers + [
+            typeMatcher,
             (r'![-0-9A-Fa-f]+', Literal.Anchor),
             (r'!"(\\\\|\\"|[^"])*"', Literal.Anchor),
             (r'~?-?[0-9][0-9.e_]*', Number),
@@ -39,6 +52,6 @@ class PinaforeLexer(RegexLexer):
             (r'[^#{]', Comment.Multiline),
             (r'{\#', Comment.Multiline, '#push'),
             (r'\#}', Comment.Multiline, '#pop'),
-            (r'[#{]', Comment.Multiline)
+            (r'[#{]', Comment.Multiline),
         ]
     }
