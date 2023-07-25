@@ -28,7 +28,7 @@ repository:
     patterns: []
   keywords:
     patterns:
-      _eval: "load(\"out/syntax-data.json\").keywords | to_entries |
+      _eval: "load(\"out/support/syntax-data.json\").keywords | to_entries |
           map (
               {
                   \"name\": .key,
@@ -39,7 +39,7 @@ repository:
     patterns:
     - name: storage.type.predefined.pinafore
       match:
-        _eval: "load(\"out/syntax-data.json\").types | \"\\b(\" + (join(\"|\")) + \")\\b\""
+        _eval: "load(\"out/support/syntax-data.json\").types | \"\\b(\" + (join(\"|\")) + \")\\b\""
   strings:
     name: string.quoted.double.pinafore
     begin: "\""
