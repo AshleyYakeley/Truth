@@ -1,14 +1,14 @@
 FROM fpco/stack-build-small:lts-21.3
-RUN echo 2023-07-22 > /container.date
+RUN echo 2023-07-24 > /container.date
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get full-upgrade -y
 RUN apt autoremove --purge -y
-RUN apt-get install -y sudo git curl m4 libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev python3-pip imagemagick moreutils
+RUN apt-get install -y sudo git curl m4 libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev python3-pip python3-venv imagemagick moreutils
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
 RUN chmod +x /usr/local/bin/yq
 RUN pip3 install --upgrade pip
-RUN pip3 install mkdocs markdown-include Pygments scour
+RUN pip3 install mkdocs markdown-include Pygments scour build
 RUN mkdir /extra
 WORKDIR /extra
 RUN curl -O http://http.us.debian.org/debian/pool/main/l/lintian/lintian_2.116.3_all.deb

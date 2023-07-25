@@ -1,5 +1,8 @@
 default: full
 
+
+### Flags for stack
+
 ifeq ($(nodocker),1)
 DOCKERFLAGS := --no-docker
 else
@@ -35,6 +38,8 @@ endif
 BINPATH := $(shell stack $(STACKFLAGS) path --local-bin)
 
 
+### Docker image
+
 .PHONY: docker-image
 
 docker-image:
@@ -42,6 +47,9 @@ ifeq ($(nodocker),1)
 else
 	docker build -t local-build docker
 endif
+
+
+### Formatting
 
 ${BINPATH}/hindent: docker-image
 	stack $(STACKFLAGS) install hindent
@@ -55,8 +63,11 @@ hindent: ${BINPATH}/hindent
 format: ${BINPATH}/hindent
 	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/hindent-all
 
+
+### Licensing info
+
 out:
-	mkdir -p out
+	mkdir -p $@
 
 out/licensing: out
 	stack ls dependencies --license | awk '{t=$$1;$$1=$$2;$$2=t;print}' | sort > $@
@@ -64,6 +75,9 @@ out/licensing: out
 .PHONY: licensing
 
 licensing: out/licensing
+
+
+### Executables
 
 ${BINPATH}/pinafore ${BINPATH}/pinafore-doc &: out docker-image
 ifeq ($(nodocker),1)
@@ -93,6 +107,9 @@ endif
 .PHONY: exe
 
 exe: ${BINPATH}/pinafore
+
+
+### Debian package
 
 PACKAGENAME := pinafore
 PACKAGEVERSION := 0.4
@@ -167,6 +184,9 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 
 deb: out/$(PACKAGEFULLNAME).deb
 
+
+### Nix
+
 # Use this on a Nix system
 nix-flake: out
 	nix flake check .?submodules=1
@@ -177,6 +197,32 @@ nix-docker-image:
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
 	docker run --rm -v `pwd`:/workspace -ti nix-build nix flake check .?submodules=1
+
+
+### Support data
+
+out/support:
+	mkdir -p $@
+
+out/support/syntax-data.json: ${BINPATH}/pinafore-doc out/support
+	stack $(STACKFLAGS) exec -- $< --syntax-data > $@
+
+
+### Pygments lexer
+
+PYGLEXERVERSION := $(PACKAGEVERSION).0
+
+out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz: \
+ out/support \
+ support/pygments-lexer/pyproject.toml \
+ support/pygments-lexer/pinafore_lexer/__init__.py \
+	stack $(STACKFLAGS) exec -- python3 -m build -o out/support/ support/pygments-lexer/
+
+.PHONY: pyg-lexer
+pyg-lexer: out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz
+
+
+### Website
 
 LIBMODULEDOCS := \
     pinafore \
@@ -207,22 +253,28 @@ mkdocs/generated/img/information.png: mkdocs/docs/img/information.png
 
 .PHONY: docs
 
-docs: $(foreach f,$(LIBMODULEDOCS),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md mkdocs/generated/type-infix.md mkdocs/generated/img/information.png docker-image
+docs: \
+ $(foreach f,$(LIBMODULEDOCS),mkdocs/docs/library/$f.md) \
+ mkdocs/generated/infix.md \
+ mkdocs/generated/type-infix.md \
+ mkdocs/generated/img/information.png \
+ out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz \
+ docker-image
 	mkdir -p mkdocs/generated/examples
 	cp Pinafore/pinafore-app/examples/* mkdocs/generated/examples/
-	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
+	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz
 	mkdir -p out/website
 	stack $(STACKFLAGS) exec --cwd mkdocs -- mkdocs build --site-dir ../out/website
 
+
+### VSCode extension
+
 VSCXVERSION := $(PACKAGEVERSION).0
 
-out/syntax-data.json: ${BINPATH}/pinafore-doc out
-	stack $(STACKFLAGS) exec -- $< --syntax-data > $@
-
-support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/syntax-data.json
+support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/support/syntax-data.json
 	stack $(STACKFLAGS) exec -- yq --from-file support/vsc-extension/transform.yq -o json $< > $@
 
-out/pinafore-$(VSCXVERSION).vsix: docker-image out \
+out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
  support/vsc-extension/vsce/package.json \
  support/vsc-extension/vsce/LICENSE \
  support/vsc-extension/vsce/README.md \
@@ -233,7 +285,10 @@ out/pinafore-$(VSCXVERSION).vsix: docker-image out \
 
 .PHONY: vsc-extension
 
-vsc-extension: out/pinafore-$(VSCXVERSION).vsix
+vsc-extension: out/support/pinafore-$(VSCXVERSION).vsix
+
+
+### Test images
 
 Changes/changes-gnome/examples/showImages/images/%.RGB.jpeg: Changes/changes-gnome/examples/showImages/%.jpeg
 	mkdir -p Changes/changes-gnome/examples/showImages/images
@@ -251,6 +306,9 @@ testimages: docker-image \
 	Changes/changes-gnome/examples/showImages/images/stairs.RGB.jpeg \
 	Changes/changes-gnome/examples/showImages/images/stairs.YCbCr.jpeg
 
+
+### Full build, clean
+
 .PHONY: full
 
 full: testimages format deb nix-docker-flake deps licensing docs vsc-extension
@@ -264,6 +322,7 @@ clean:
 	rm -rf support/vsc-extension/*.json
 	rm -rf support/vsc-extension/*/*.json
 	rm -rf support/vsc-extension/*/*/*.json
+	rm -rf support/pygments-lexer/*.json
 	rm -rf .stack-work
 
 full-clean: clean
