@@ -36,8 +36,8 @@ pattern RootNamespace :: Namespace
 
 pattern RootNamespace = MkNamespace []
 
-namespaceAppend :: Namespace -> [Name] -> Namespace
-namespaceAppend (MkNamespace na) nb = MkNamespace $ nb <> na
+namespaceAppend :: [Name] -> Namespace -> Namespace
+namespaceAppend na (MkNamespace nb) = MkNamespace $ na <> nb
 
 namespaceWithin :: Namespace -> Namespace -> Maybe [Name]
 namespaceWithin (MkNamespace na) (MkNamespace nb) = endsWith na nb

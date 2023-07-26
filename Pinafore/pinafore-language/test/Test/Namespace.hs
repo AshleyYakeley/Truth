@@ -229,13 +229,17 @@ testNamespace =
               ]
         , tGroup
               "qualified"
-              [ testExpectSuccess "let x = fn a, b => a ++.Property b in pass"
-              , testExpectSuccess "let x = (++.Property) in pass"
-              , testExpectSuccess "let x = fn a, b => a ++.Property. b in pass"
-              , testExpectSuccess "let x = (++.Property.) in pass"
-              , testExpectSuccess "let x = fn a, b => a ..Property b in pass"
-              , testExpectSuccess "let x = (..Property) in pass"
-              , testExpectSuccess "let x = fn a, b => a ..Property. b in pass"
-              , testExpectSuccess "let x = (..Property.) in pass"
+              [ testExpectSuccess "let x = fn a, b => a $ b in pass"
+              , testExpectSuccess "let x = ($) in pass"
+              , testExpectSuccess "let x = fn a, b => a $.Function b in pass"
+              , testExpectSuccess "let x = ($.Function) in pass"
+              , testExpectSuccess "let x = fn a, b => a $.Function. b in pass"
+              , testExpectSuccess "let x = ($.Function.) in pass"
+              , testExpectSuccess "let x = fn a, b => a .. b in pass"
+              , testExpectSuccess "let x = (..) in pass"
+              , testExpectSuccess "let x = fn a, b => a ..Function b in pass"
+              , testExpectSuccess "let x = (..Function) in pass"
+              , testExpectSuccess "let x = fn a, b => a ..Function. b in pass"
+              , testExpectSuccess "let x = (..Function.) in pass"
               ]
         ]

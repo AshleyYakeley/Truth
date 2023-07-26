@@ -16,7 +16,7 @@ pattern RootFullName n = MkFullName n RootNamespace
 
 -- | The companion namespace of N is a namespace with the same name as N.
 fnCompanion :: FullName -> Namespace
-fnCompanion (MkFullName name ns) = namespaceAppend ns [name]
+fnCompanion (MkFullName name ns) = namespaceAppend [name] ns
 
 fullNameToRoot :: FullName -> Maybe Name
 fullNameToRoot (RootFullName n) = Just n

@@ -35,6 +35,14 @@ data TokenNames = MkTokenNames
     , tnSpace :: [Name] -- always upper
     } deriving (Eq)
 
+instance Show TokenNames where
+    show MkTokenNames {..} =
+        show tnName <>
+        mconcat (fmap (\n -> "." <> show n) tnSpace) <>
+        if tnAbsolute
+            then "."
+            else ""
+
 instance IsString TokenNames where
     fromString s = let
         tnAbsolute = False
@@ -114,6 +122,15 @@ data Token t where
     TokAnd :: Token ()
     TokNumber :: Token Number
     TokDebug :: Token ()
+
+showTokenContents :: Token a -> Maybe (a -> String)
+showTokenContents TokComment = Just show
+showTokenContents TokNamesUpper = Just show
+showTokenContents TokNamesLower = Just show
+showTokenContents TokAnchor = Just show
+showTokenContents TokOperator = Just show
+showTokenContents TokNumber = Just show
+showTokenContents _ = Nothing
 
 instance TestEquality Token where
     testEquality TokComment TokComment = Just Refl
@@ -221,7 +238,11 @@ instance Show (Token t) where
     show TokDebug = "debug"
 
 instance Show (SomeOf Token) where
-    show (MkSomeOf t _) = show t
+    show (MkSomeOf t x) =
+        show t <>
+        case showTokenContents t of
+            Just f -> "(" <> f x <> ")"
+            Nothing -> ""
 
 readChar :: Char -> Parser ()
 readChar c = void $ char c
