@@ -1725,13 +1725,13 @@ testEntity =
               ]
         , tGroup
               "applicative-notation"
-              [ testExpectSuccess "testeq {Just 3} {{@Maybe 3}}"
-              , testExpectSuccess "testeq {[10,13,11,14]} {{@List %([3,4]) +.Integer %([7,10])}}"
+              [ testExpectSuccess "testeq {Just 3} {{.Maybe 3}}"
+              , testExpectSuccess "testeq {[10,13,11,14]} {{.List %([3,4]) +.Integer %([7,10])}}"
               ]
         , tGroup
               "do-notation"
-              [ testExpectSuccess "testeq {Just 3} {do @Maybe pure 3 end}"
-              , testExpectSuccess "testeq {[10,13,11,14]} {do @List a <- [3,4]; b <- [7,10]; pure $ a +.Integer b end}"
+              [ testExpectSuccess "testeq {Just 3} {do.Maybe pure 3 end}"
+              , testExpectSuccess "testeq {[10,13,11,14]} {do.List a <- [3,4]; b <- [7,10]; pure $ a +.Integer b end}"
               ]
         , tGroup
               "task"

@@ -327,22 +327,6 @@ readName = do
     rest <- many $ satisfy allowedAlphaNameChar
     return (isUpper firstC, MkName $ pack $ firstC : rest)
 
-readTokenNames :: Parser (Bool, TokenNames)
-readTokenNames =
-    try $ do
-        (u, name) <- readName
-        ns <-
-            many $
-            try $ do
-                readChar '.'
-                readName
-        nspace <-
-            for ns $ \(b, nsn) -> do
-                altIf b
-                return nsn
-        mabs <- optional $ readChar '.'
-        return (u, MkTokenNames {tnAbsolute = isJust mabs, tnSpace = nspace, tnName = name})
-
 checkKeyword :: Text -> Maybe (SomeOf Token)
 checkKeyword "_" = return $ MkSomeOf TokUnderscore ()
 checkKeyword "fn" = return $ MkSomeOf TokFn ()
@@ -402,19 +386,27 @@ allKeywords =
 
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do
-    (u, tns) <- readTokenNames
-    case checkKeyword $ showText $ tnName tns of
-        Just stok ->
-            case tns of
-                MkTokenNames False _ [] -> return stok
-                _ -> empty
-        Nothing ->
-            return $
-            MkSomeOf
-                (if u
-                     then TokNamesUpper
-                     else TokNamesLower)
-                tns
+    (u, name) <- readName
+    case checkKeyword $ showText name of
+        Just stok -> return stok
+        Nothing -> do
+            ns <-
+                many $
+                try $ do
+                    readChar '.'
+                    readName
+            nspace <-
+                for ns $ \(b, nsn) -> do
+                    altIf b
+                    return nsn
+            mabs <- optional $ readChar '.'
+            let
+                ttype =
+                    if u
+                        then TokNamesUpper
+                        else TokNamesLower
+                tns = MkTokenNames {tnAbsolute = isJust mabs, tnSpace = nspace, tnName = name}
+            return $ MkSomeOf ttype tns
 
 toHexDigit :: Char -> Maybe Word8
 toHexDigit c =

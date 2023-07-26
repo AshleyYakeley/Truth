@@ -31,7 +31,7 @@ let
             fn s => Mk $ fn _ => (s,());
 
         modify: (s -> s) -> State s Unit =
-            fn m => do @State
+            fn m => do.State
                 s <- get;
                 set $ m s;
                 end;
@@ -41,7 +41,7 @@ let
     end;
 
     val = let using State in
-        run 0 $ do @State
+        run 0 $ do.State
             set 7;
             a <- get;
             modify ((+) 4);

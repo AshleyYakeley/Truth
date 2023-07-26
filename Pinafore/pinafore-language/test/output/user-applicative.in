@@ -96,6 +96,6 @@ let
 
 in do
     outputLn.Env $ show $ Lit.Value 47;
-    outputLn.Env $ show $ eval {@Expr Lit.Value 17};
-    outputLn.Env $ show $ eval {@Expr %k (Lit.Value 12) (Lit.Value 37)};
+    outputLn.Env $ show $ eval {.Expr Lit.Value 17};
+    outputLn.Env $ show $ eval {.Expr %k (Lit.Value 12) (Lit.Value 37)};
     end

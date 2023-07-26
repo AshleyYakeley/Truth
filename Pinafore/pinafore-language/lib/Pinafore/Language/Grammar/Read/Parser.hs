@@ -31,6 +31,7 @@ module Pinafore.Language.Grammar.Read.Parser
     , readNewLName
     , readNamespaceRef
     , readNamespace
+    , readNamespaceQualifier
     , readModuleName
     , readLines1
     , readLines
@@ -243,6 +244,11 @@ readNamespace = do
     ns <- readAskNamespace
     nref <- readNamespaceRef
     return $ namespaceConcatRef ns nref
+
+readNamespaceQualifier :: Parser Namespace
+readNamespaceQualifier = do
+    readExactlyThis TokOperator $ MkTokenNames False "." []
+    readNamespace
 
 readModuleName :: Parser ModuleName
 readModuleName = do

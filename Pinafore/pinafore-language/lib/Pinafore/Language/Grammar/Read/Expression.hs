@@ -430,10 +430,7 @@ readExpression1 =
     readWithSourcePos
         (do
              readThis TokDo
-             mns <-
-                 optional $ do
-                     readThis TokAt
-                     readNamespace
+             mns <- optional readNamespaceQualifier
              let ns = fromMaybe "Action." mns
              withUsingExpr ns ["map", "pure", "ap", "liftA2", "**", ">>", ">>="] $ do
                  dl <- readLines readDoLine
@@ -490,10 +487,7 @@ readExpression3 =
              return $ SEConst $ SCConstructor c) <|>
     readWithSourcePos
         (readBracketed TokOpenBrace TokCloseBrace $ do
-             mns <-
-                 optional $ do
-                     readThis TokAt
-                     readNamespace
+             mns <- optional readNamespaceQualifier
              let ns = fromMaybe "WholeModel." mns
              withUsingExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
                  readWithSourcePos $ do
