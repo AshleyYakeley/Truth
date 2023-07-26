@@ -10,8 +10,8 @@ All of these names will be aliased from `N` into the current namespace.
 Do-lines are expressions or of the form `<pattern> <- <expression>`.
 The last line must be an expression.
 
-* `do.N expr; exprs... end` is the same as `expr >>.N do exprs... end`
-* `do.N pat <- expr; exprs... end` is the same as `expr >>=.N fn pat => do exprs... end`
+* `do.N expr; exprs... end` is the same as `expr >>.N do.N exprs... end`
+* `do.N pat <- expr; exprs... end` is the same as `expr >>=.N fn pat => do.N exprs... end`
 * `do.N expr end` is the same as `expr`
 
 Appropriate namespaces for do notation:

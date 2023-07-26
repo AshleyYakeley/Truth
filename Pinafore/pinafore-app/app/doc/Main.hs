@@ -127,7 +127,7 @@ printInfixOperatorTable fixities = do
                                  then Just n
                                  else Nothing)
                         fixities
-            for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
+            putStr $ unpack $ toText $ codeMarkdown $ plainText $ intercalate "  " $ fmap showText mnames
             putStr " |"
         putStrLn ""
 

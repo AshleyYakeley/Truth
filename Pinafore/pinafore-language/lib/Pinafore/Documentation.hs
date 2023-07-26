@@ -29,7 +29,7 @@ allOperatorNames test = let
         | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing
-    in mapMaybe getDocName $ builtInLibrary >>= libraryModuleEntries
+    in sort $ nub $ mapMaybe getDocName $ builtInLibrary >>= libraryModuleEntries
 
 bindDocTypeName :: BindDoc a -> [Name]
 bindDocTypeName bd =

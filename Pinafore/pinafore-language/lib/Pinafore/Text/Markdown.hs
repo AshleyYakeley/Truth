@@ -89,7 +89,7 @@ escapeChars t = let
     escapeChar :: Char -> String
     escapeChar '\n' = "  \n"
     escapeChar c =
-        if elem c ("\\+*&<>_`#.-[]" :: [Char])
+        if elem c ("\\+*&<>_`#.-[]|" :: [Char])
             then ['\\', c]
             else [c]
     in pack $ mconcat $ fmap escapeChar $ unpack t

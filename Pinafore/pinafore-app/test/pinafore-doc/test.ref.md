@@ -48,7 +48,7 @@
 > > 
 > > > doc:rp
 > > > 
-> > **<code>rq</code>**<code> : Integer | Text</code>
+> > **<code>rq</code>**<code> : Integer \| Text</code>
 > > 
 > > > doc:rq
 > > > 
@@ -128,7 +128,7 @@
 > > 
 > > > doc:nmrp
 > > > 
-> > **<code>nmrq</code>**<code> : Integer | Text</code>
+> > **<code>nmrq</code>**<code> : Integer \| Text</code>
 > > 
 > > > doc:nmrq
 > > > 
