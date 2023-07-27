@@ -7,7 +7,7 @@ Install the latest one from [the release page](https://github.com/AshleyYakeley/
 
 This will put the executable program in `/usr/bin/pinafore`.
 
-If you're using Nix, use this flake: `git+https://github.com/AshleyYakeley/Truth?ref=v0.4&submodules=1`
+If you're using Nix, use this flake: `git+https://github.com/AshleyYakeley/Truth?ref=v0.4`
 
 ## Running
 
