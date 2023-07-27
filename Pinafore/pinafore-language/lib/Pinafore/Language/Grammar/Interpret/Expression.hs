@@ -345,7 +345,7 @@ interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
     newmod <- lift $ getModule modname
     registerScope $ moduleScope newmod
-    return $ pureForest $ moduleDoc newmod
+    return $ treeBranches $ moduleDoc newmod
 
 interpretDocDeclaration :: SyntaxDeclaration -> ScopeBuilder Docs
 interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do

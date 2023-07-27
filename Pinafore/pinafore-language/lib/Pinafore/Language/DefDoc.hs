@@ -26,6 +26,7 @@ data DocItem
                   , diParams :: [NamedText] }
     | SubtypeRelationDocItem { diSubtype :: NamedText
                              , diSupertype :: NamedText }
+    deriving (Eq)
 
 instance Show DocItem where
     show (HeadingDocItem t) = "heading " <> show t

@@ -1,15 +1,16 @@
 module Data.Tree where
 
+import Data.Merge
 import Shapes.Import
 
 data Tree a = MkTree
     { treeRoot :: a
     , treeBranches :: Forest a
-    }
+    } deriving (Eq)
 
 newtype Forest a =
     MkForest [Tree a]
-    deriving (Semigroup, Monoid)
+    deriving (Semigroup, Monoid, Eq)
 
 instance Functor Tree where
     fmap ab (MkTree r br) = MkTree (ab r) (fmap ab br)
@@ -53,3 +54,20 @@ combineForest f (MkForest a) (MkForest b) = MkForest $ liftA2 f a b
 
 bindForest :: Forest a -> (Tree a -> Forest b) -> Forest b
 bindForest (MkForest tt) f = mconcat $ fmap f tt
+
+deepForest :: (Forest a -> Forest a) -> Forest a -> Forest a
+deepForest m f = mapForest (deepTree m) $ m f
+
+deepTree :: (Forest a -> Forest a) -> Tree a -> Tree a
+deepTree m (MkTree r bb) = MkTree r $ (deepForest m) bb
+
+shallowMergeTrees :: Merge a -> Merge (Tree a)
+shallowMergeTrees m (MkTree r1 b1) (MkTree r2 b2) = do
+    r12 <- m r1 r2
+    return $ MkTree r12 $ b1 <> b2
+
+shallowMergeForest :: Merge a -> Forest a -> Forest a
+shallowMergeForest m (MkForest f) = MkForest $ mergeList (shallowMergeTrees m) f
+
+deepMergeTree :: Merge a -> Tree a -> Tree a
+deepMergeTree m = deepTree $ shallowMergeForest m

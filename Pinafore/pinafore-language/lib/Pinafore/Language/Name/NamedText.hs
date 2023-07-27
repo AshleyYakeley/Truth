@@ -19,6 +19,9 @@ newtype NamedText =
     MkNamedText ((NamedTextItem -> Text) -> Text)
     deriving (Semigroup, Monoid)
 
+instance Eq NamedText where
+    a == b = toText a == toText b
+
 mapNamedText :: (Text -> Text) -> NamedText -> NamedText
 mapNamedText m (MkNamedText ntt) = MkNamedText $ \nt -> m $ ntt nt
 

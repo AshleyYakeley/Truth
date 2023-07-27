@@ -31,6 +31,7 @@ import Data.KeyContainer as I
 import Data.KeyedOrder as I
 import Data.KindMorphism as I
 import Data.Lens as I
+import Data.Merge as I
 import Data.MonoApplicative as I
 import Data.PurityFunction as I
 import Data.ReadShow as I

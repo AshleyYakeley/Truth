@@ -38,6 +38,7 @@ library
       Data.KeyedOrder
       Data.KeyContainer
       Data.FiniteSet
+      Data.Merge
       Data.Tree
       Data.KindMorphism
       Data.FixBox

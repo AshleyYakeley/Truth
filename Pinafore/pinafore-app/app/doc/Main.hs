@@ -106,7 +106,7 @@ printModuleDoc modopts tmodname = do
                         HeadingDocItem {} -> (succ hlevel, ilevel)
                         _ -> (hlevel, succ ilevel)
             for_ children $ runDocTree hlevel' ilevel'
-    runDocTree 1 0 $ trimDoc $ moduleDoc pmodule
+    runDocTree 1 0 $ trimDoc $ deepMergeTree (eqMergeOn docItem) $ moduleDoc pmodule
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do
