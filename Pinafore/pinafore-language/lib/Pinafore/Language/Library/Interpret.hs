@@ -38,8 +38,11 @@ interpretLibSection =
     headingBDS
         "Interpretation"
         "This is used as a supertype of various media etc. type to represent \"can be interpreted as\"."
-        [ typeBDS "Interpret" "" (MkSomeGroundType interpretGroundType) []
-        , valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())
+        [ typeBDS
+              "Interpret"
+              ""
+              (MkSomeGroundType interpretGroundType)
+              [valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())]
         , namespaceBDS "Interpret" $
           functorEntries @_ @Interpret <> [addNameInRootBDS $ valBDS "interpret" "" $ interpret @A]
         ]

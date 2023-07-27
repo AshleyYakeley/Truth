@@ -50,11 +50,15 @@ opticsLibSection =
         [ headingBDS
               "Lens"
               ""
-              [ typeBDS "Lens" "" (MkSomeGroundType lensGroundType) []
+              [ typeBDS
+                    "Lens"
+                    ""
+                    (MkSomeGroundType lensGroundType)
+                    [ valPatBDS "Mk" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
+                      PureFunction $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
+                    ]
               , hasSubtypeRelationBDS @(LangLens '( AP, AQ) '( BP, BQ)) @(LangAttribute '( AP, AQ) '( BP, BQ)) Verify "" $
                 functionToShim "langLensAttribute" $ langLensAttribute @AP @AQ @BP @BQ
-              , valPatBDS "Mk" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
-                PureFunction $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
               , namespaceBDS
                     "Lens"
                     [ addNameInRootBDS $ valBDS "fetch" "" $ langLensGet @'( AP, AQ) @'( BP, BQ)
@@ -68,15 +72,19 @@ opticsLibSection =
         , headingBDS
               "Prism"
               ""
-              [ typeBDS "Prism" "" (MkSomeGroundType prismGroundType) []
+              [ typeBDS
+                    "Prism"
+                    ""
+                    (MkSomeGroundType prismGroundType)
+                    [ valPatBDS "Mk" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
+                      PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
+                    ]
               , hasSubtypeRelationBDS
                     @(LangPrism '( AP, AQ) '( BP, BQ))
                     @(LangAttribute '( AP, AQ) '( BP, BQ))
                     Verify
                     "" $
                 functionToShim "langPrismAttribute" $ langPrismAttribute @AP @AQ @BP @BQ
-              , valPatBDS "Mk" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
-                PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
               , namespaceBDS
                     "Prism"
                     [ addNameInRootBDS $ valBDS "decode" "" $ prismDecode @AP @AQ @BP @BQ
