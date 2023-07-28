@@ -166,15 +166,8 @@ readBinding = do
     defn <- readExpression
     return $ MkSyntaxBinding pat defn
 
-readImport :: Parser SyntaxDeclaration'
-readImport = do
-    readThis TokImport
-    mname <- readModuleName
-    return $ ImportSyntaxDeclaration mname
-
-readUsing :: Parser SyntaxDeclaration'
-readUsing = do
-    readThis TokUsing
+readNamespaceWith :: Parser SyntaxNamespaceWith
+readNamespaceWith = do
     ns <- readNamespace
     mnritems <-
         optional $ do
@@ -186,7 +179,7 @@ readUsing = do
             readThis TokAs
             readNamespace
     curns <- readAskNamespace
-    return $ UsingSyntaxDeclaration ns mnritems (fromMaybe curns masns)
+    return $ MkSyntaxNamespaceWith ns mnritems (fromMaybe curns masns)
 
 readNamespaceDecl :: Parser SyntaxDeclaration'
 readNamespaceDecl = do
@@ -203,22 +196,14 @@ readNameRefItem =
          return $ NamespaceSyntaxNameRefItem name) <|>
     fmap NameSyntaxNameRefItem readFullNameRef
 
-readExpose :: Parser SyntaxExposeDeclaration
-readExpose = do
-    readThis TokExpose
-    items <- readCommaList readNameRefItem
-    decls <- readOf readDeclaration
-    return $ MkSyntaxExposeDeclaration items decls
-
 readDirectDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
 
-readRecursiveDeclaration :: Parser SyntaxDeclaration'
-readRecursiveDeclaration = do
-    readThis TokRec
-    decls <- readLines $ readWithDoc $ readWithSourcePos readDirectDeclaration
+readDeclaratorDeclaration :: Parser SyntaxDeclaration'
+readDeclaratorDeclaration = do
+    sdecl <- readDeclarator
     readThis TokEnd
-    return $ RecursiveSyntaxDeclaration decls
+    return $ DeclaratorSyntaxDeclaration sdecl
 
 readDebugDeclaration :: Parser SyntaxDeclaration'
 readDebugDeclaration = do
@@ -232,23 +217,15 @@ readDeclaration =
     readWithSourcePos $
     choice
         [ readDebugDeclaration
+        , readDeclaratorDeclaration
         , fmap DirectSyntaxDeclaration readDirectDeclaration
-        , readImport
-        , readUsing
         , readNamespaceDecl
-        , readRecursiveDeclaration
-        , fmap ExposeSyntaxDeclaration readExpose
         ]
-
-readLetBindings :: Parser [SyntaxDeclaration]
-readLetBindings = do
-    readThis TokLet
-    readLines readDeclaration
 
 readTopDeclarations :: Parser SyntaxTopDeclarations
 readTopDeclarations = do
     spos <- getPosition
-    sdecls <- readLetBindings
+    sdecls <- readDeclarator
     return $ MkSyntaxTopDeclarations spos sdecls
 
 readSubsumedExpression :: SyntaxExpression -> Parser SyntaxExpression
@@ -340,8 +317,12 @@ readExpression = do
     expr <- readInfixed expressionFixityReader readExpression1
     readSubsumedExpression expr
 
-readModule :: Parser SyntaxExposeDeclaration
-readModule = readExpose
+readModule :: Parser SyntaxModule
+readModule = do
+    readThis TokExpose
+    items <- readCommaList readNameRefItem
+    sdecls <- readOf readDeclaration
+    return $ MkSyntaxModule (MkSyntaxExpose items) sdecls
 
 data DoLine
     = ExpressionDoLine SyntaxExpression
@@ -391,17 +372,37 @@ getMulticase expected (MkSome mm) = let
                throw $
                MatchesDifferentCount (peanoToNatural $ witnessToValue expected) (peanoToNatural $ witnessToValue found)
 
-withUsingExpr :: Namespace -> [FullNameRef] -> Parser SyntaxExpression -> Parser SyntaxExpression'
-withUsingExpr ns names mexpr = do
-    spos <- getPosition
+withWithExpr :: Namespace -> [FullNameRef] -> Parser SyntaxExpression -> Parser SyntaxExpression'
+withWithExpr ns names mexpr = do
     curns <- readAskNamespace
     expr <- mexpr
-    return $
-        SELet
-            [ MkSyntaxWithDoc mempty $
-              MkWithSourcePos spos $ UsingSyntaxDeclaration ns (Just (True, fmap NameSyntaxNameRefItem names)) curns
-            ]
-            expr
+    return $ SEDecl (SDWith [MkSyntaxNamespaceWith ns (Just (True, fmap NameSyntaxNameRefItem names)) curns]) expr
+
+readDeclarator :: Parser SyntaxDeclarator
+readDeclarator =
+    (do
+         readThis TokLet
+         (do
+              readThis TokExpose
+              items <- readCommaList readNameRefItem
+              readThis TokOf
+              sdecls <- readLines readDeclaration
+              return $ SDLet (Just $ MkSyntaxExpose items) sdecls) <|>
+             (do
+                  readThis TokRec
+                  sdecls <- readLines $ readWithDoc $ readWithSourcePos readDirectDeclaration
+                  return $ SDLetRec sdecls) <|>
+             (do
+                  sdecls <- readLines readDeclaration
+                  return $ SDLet Nothing sdecls)) <|>
+    (do
+         readThis TokWith
+         snws <- readCommaList readNamespaceWith
+         return $ SDWith snws) <|>
+    (do
+         readThis TokImport
+         simps <- readCommaList readModuleName
+         return $ SDImport simps)
 
 readExpression1 :: Parser SyntaxExpression
 readExpression1 =
@@ -423,16 +424,16 @@ readExpression1 =
                      return $ SEMatches $ MkSyntaxMulticaseList n smm) <|>
     readWithSourcePos
         (do
-             sdecls <- readLetBindings
+             sdecl <- readDeclarator
              readThis TokIn
              sbody <- readExpression
-             return $ SELet sdecls sbody) <|>
+             return $ SEDecl sdecl sbody) <|>
     readWithSourcePos
         (do
              readThis TokDo
              mns <- optional readNamespaceQualifier
              let ns = fromMaybe "Action." mns
-             withUsingExpr ns ["map", "pure", "ap", "liftA2", "**", ">>", ">>="] $ do
+             withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>", ">>="] $ do
                  dl <- readLines readDoLine
                  readThis TokEnd
                  case dl of
@@ -489,7 +490,7 @@ readExpression3 =
         (readBracketed TokOpenBrace TokCloseBrace $ do
              mns <- optional readNamespaceQualifier
              let ns = fromMaybe "WholeModel." mns
-             withUsingExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
+             withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
                  readWithSourcePos $ do
                      rexpr <- readExpression
                      return $ SERef rexpr) <|>

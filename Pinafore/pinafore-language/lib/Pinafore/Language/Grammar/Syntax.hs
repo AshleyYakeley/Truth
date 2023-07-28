@@ -7,6 +7,19 @@ import Pinafore.Text
 import Shapes
 import Text.Parsec (SourcePos)
 
+data WithSourcePos t =
+    MkWithSourcePos SourcePos
+                    t
+    deriving (Eq)
+
+instance ExprShow t => ExprShow (WithSourcePos t) where
+    exprShowPrec (MkWithSourcePos _ expr) = exprShowPrec expr
+
+data SyntaxWithDoc t =
+    MkSyntaxWithDoc RawMarkdown
+                    t
+    deriving (Eq)
+
 data SyntaxConstructorOrSubtype extra
     = ConstructorSyntaxConstructorOrSubtype FullName
                                             [SyntaxType]
@@ -70,29 +83,14 @@ data SyntaxRecursiveDeclaration'
 
 type SyntaxRecursiveDeclaration = SyntaxWithDoc (WithSourcePos SyntaxRecursiveDeclaration')
 
-data SyntaxWithDoc t =
-    MkSyntaxWithDoc RawMarkdown
-                    t
-    deriving (Eq)
-
 data SyntaxNameRefItem
     = NameSyntaxNameRefItem FullNameRef
     | NamespaceSyntaxNameRefItem NamespaceRef
     deriving (Eq)
 
-data SyntaxExposeDeclaration =
-    MkSyntaxExposeDeclaration [SyntaxNameRefItem]
-                              [SyntaxDeclaration]
-    deriving (Eq)
-
 data SyntaxDeclaration'
     = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
-    | ImportSyntaxDeclaration ModuleName
-    | ExposeSyntaxDeclaration SyntaxExposeDeclaration
-    | RecursiveSyntaxDeclaration [SyntaxRecursiveDeclaration]
-    | UsingSyntaxDeclaration Namespace
-                             (Maybe (Bool, [SyntaxNameRefItem]))
-                             Namespace
+    | DeclaratorSyntaxDeclaration SyntaxDeclarator
     | NamespaceSyntaxDeclaration Namespace
                                  [SyntaxDeclaration]
     | DebugSyntaxDeclaration FullNameRef
@@ -100,13 +98,23 @@ data SyntaxDeclaration'
 
 type SyntaxDeclaration = SyntaxWithDoc (WithSourcePos SyntaxDeclaration')
 
-data WithSourcePos t =
-    MkWithSourcePos SourcePos
-                    t
+data SyntaxNamespaceWith =
+    MkSyntaxNamespaceWith Namespace
+                          (Maybe (Bool, [SyntaxNameRefItem]))
+                          Namespace
     deriving (Eq)
 
-instance ExprShow t => ExprShow (WithSourcePos t) where
-    exprShowPrec (MkWithSourcePos _ expr) = exprShowPrec expr
+data SyntaxExpose =
+    MkSyntaxExpose [SyntaxNameRefItem]
+    deriving (Eq)
+
+data SyntaxDeclarator
+    = SDLet (Maybe SyntaxExpose)
+            [SyntaxDeclaration]
+    | SDLetRec [SyntaxRecursiveDeclaration]
+    | SDImport [ModuleName]
+    | SDWith [SyntaxNamespaceWith]
+    deriving (Eq)
 
 data SyntaxVariance
     = CoSyntaxVariance
@@ -301,8 +309,8 @@ data SyntaxExpression'
     | SEMatches SyntaxMulticaseList
     | SERef SyntaxExpression
     | SEUnref SyntaxExpression
-    | SELet [SyntaxDeclaration]
-            SyntaxExpression
+    | SEDecl SyntaxDeclarator
+             SyntaxExpression
     | SEList [SyntaxExpression]
     | SEDebug Text
               SyntaxExpression
@@ -323,11 +331,13 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
-type SyntaxModule = SyntaxExposeDeclaration
+data SyntaxModule =
+    MkSyntaxModule SyntaxExpose
+                   [SyntaxDeclaration]
 
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
-                            [SyntaxDeclaration]
+                            SyntaxDeclarator
 
 class HasSourcePos t where
     getSourcePos :: t -> SourcePos

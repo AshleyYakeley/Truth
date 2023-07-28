@@ -1,17 +1,13 @@
 #!/usr/bin/pinafore
+import "pinafore-media", "pinafore-gnome" in
+with GTK, Colour, Cairo in
 let
-import "pinafore-media";
-import "pinafore-gnome";
-using GTK;
-using Colour;
-using Cairo;
 
 # transform from (-1 .. +1,-1 .. +1)
 scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a)
 = fn rd => {fn (w,h) => let
-    using Drawing;
     size = min w h;
-    in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
+    in with Drawing in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
 
 datatype Progress of
     No;
@@ -22,7 +18,7 @@ end;
 drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
 = fn ref =>
 {
-    let using Drawing in
+    with Drawing in
     scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat
     [
         source navy $ %(toMaybe.WholeModel ref) >- match
@@ -30,16 +26,16 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
             Just No.Progress => pure $ onClick $ ref := Partial.Progress;
             Just Partial.Progress => concat
                 [
-                    let using Path in fill $ concat [arc (0,0) 1 0 pi, close],
+                    with Path in fill $ concat [arc (0,0) 1 0 pi, close],
                     pure $ onClick $ ref := Done.Progress
                 ];
             Just Done.Progress => concat
                 [
-                    let using Path in fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
+                    with Path in fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
                     pure $ onClick $ ref := No.Progress
                 ];
         end,
-        let using Path in stroke $ concat
+        with Path in stroke $ concat
         [
             arc (0,0) 1 0 (2 *.Number pi),
             moveTo (-1,0),
@@ -48,7 +44,6 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
     ]
 };
 
-using GTK;
 in run $ fn gtk => do
     ref <- newMem.WholeModel;
     open.Window gtk (300,400) {"Drawing"} $ vertical

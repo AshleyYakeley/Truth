@@ -59,6 +59,12 @@ instance SyntaxFreeVariables (Some SyntaxMulticase) where
 instance SyntaxFreeVariables SyntaxMulticaseList where
     syntaxFreeVariables (MkSyntaxMulticaseList _ l) = syntaxFreeVariables l
 
+instance SyntaxFreeVariables SyntaxDeclarator where
+    syntaxFreeVariables (SDLet _ sdecls) = syntaxFreeVariables sdecls
+    syntaxFreeVariables (SDLetRec sdecls) = syntaxFreeVariables sdecls
+    syntaxFreeVariables (SDImport _) = mempty
+    syntaxFreeVariables (SDWith _) = mempty
+
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
     syntaxFreeVariables (SEConst _) = mempty
@@ -71,10 +77,10 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEMatches match) = syntaxFreeVariables match
     syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
-    syntaxFreeVariables (SELet binds expr) =
+    syntaxFreeVariables (SEDecl decl expr) =
         difference
-            (syntaxFreeVariables binds <> syntaxFreeVariables expr)
-            (mapMaybe btGetVar $ syntaxBindingVariables binds)
+            (syntaxFreeVariables decl <> syntaxFreeVariables expr)
+            (mapMaybe btGetVar $ syntaxBindingVariables decl)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
     syntaxFreeVariables (SEDebug _ expr) = syntaxFreeVariables expr
 
@@ -90,7 +96,6 @@ instance SyntaxFreeVariables SyntaxRecursiveDeclaration' where
 
 instance SyntaxFreeVariables SyntaxDeclaration' where
     syntaxFreeVariables (DirectSyntaxDeclaration bind) = syntaxFreeVariables bind
-    syntaxFreeVariables (RecursiveSyntaxDeclaration decls) = syntaxFreeVariables decls
     syntaxFreeVariables (NamespaceSyntaxDeclaration _ decls) = syntaxFreeVariables decls
     syntaxFreeVariables _ = mempty
 
@@ -132,9 +137,15 @@ instance SyntaxBindingVariables SyntaxRecursiveDeclaration' where
     syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
     syntaxBindingVariables _ = mempty
 
+instance SyntaxBindingVariables SyntaxDeclarator where
+    syntaxBindingVariables (SDLet _ sdecls) = syntaxBindingVariables sdecls
+    syntaxBindingVariables (SDLetRec sdecls) = syntaxBindingVariables sdecls
+    syntaxBindingVariables (SDImport _) = mempty
+    syntaxBindingVariables (SDWith _) = mempty
+
 instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind
-    syntaxBindingVariables (RecursiveSyntaxDeclaration decls) = syntaxBindingVariables decls
+    syntaxBindingVariables (DeclaratorSyntaxDeclaration decl) = syntaxBindingVariables decl
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxBinding where

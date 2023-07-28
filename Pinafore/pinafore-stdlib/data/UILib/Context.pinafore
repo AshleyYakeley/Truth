@@ -1,6 +1,6 @@
 expose namespace UILib. of
 
-    import "pinafore-gnome";
+    import "pinafore-gnome" end;
 
     namespace UILib of
 

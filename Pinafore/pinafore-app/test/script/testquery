@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 openDefaultStore.Env >>= fn store =>
+with Store in
 let
-using Store;
 
 # Define a type of entity for people
 opentype Person;

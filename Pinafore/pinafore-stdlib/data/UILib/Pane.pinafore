@@ -1,9 +1,7 @@
 expose namespace UILib. of
 
-    import "pinafore-gnome";
-    using GTK.;
-
-    import "UILib/Context";
+    import "pinafore-gnome", "UILib/Context" end;
+    with GTK. end;
 
     namespace UILib of
 
@@ -70,7 +68,7 @@ expose namespace UILib. of
                     = fn Mk.Pane => page.GTK titleModel element;
                     element: Element = notebook.GTK tabModel $ map.List makePage panes;
 
-                    using WholeModel.;
+                    with WholeModel. end;
                     itemsModel = for panes $ fn Mk.Pane => extraMenusModel;
                     titleModel: WholeModel Text = immut title;
                     extraMenusModel: WholeModel (List MenuItem) = fromMaybe {index.List %itemsModel %tabModel};

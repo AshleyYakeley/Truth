@@ -1,14 +1,12 @@
 #!/usr/bin/pinafore
-let
-    import "pinafore-gnome";
-    import "UILib";
-    using UILib.;
-in run.Context $ fn context =>
+import "pinafore-gnome", "UILib" in
+with UILib. in
+run.Context $ fn context =>
 let
 
     Mk.Context.Named = mkContext.Named context;
 
-    using Store;
+    with Store end;
 
     years: FiniteSetModel Integer
     = property @Integer @Unit !"FTSJ.years" store !@ {()};
@@ -16,7 +14,7 @@ let
     yearTheme: Property Integer Text
     = property @Integer @Text !"FTSJ.yearTheme" store;
 
-    using GTK;
+    with GTK end;
 
     frontCoverPane: Pane
     = simple.Pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};

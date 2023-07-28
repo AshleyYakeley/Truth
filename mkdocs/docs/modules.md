@@ -1,13 +1,12 @@
 # Modules
 
 You can put declarations in module files to organise your code.
-Scripts (and modules) can import modules with the `import` declaration.
+Scripts (and modules) can import modules with the `import` expression.
 Like this:
 
 ```pinafore
-let
-import "my/stuff";
-in outputLn.Env sometext
+import "my/stuff" in
+outputLn.Env sometext
 ```
 
 To import the module `my/stuff`, Pinafore will look for a file in these paths in this order:

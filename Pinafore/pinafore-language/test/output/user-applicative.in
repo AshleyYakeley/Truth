@@ -2,7 +2,7 @@
 
 let
 
-    rec
+    let rec
         datatype Value of
             Lit Literal;
             Func (Value -> Value);
@@ -32,7 +32,7 @@ let
             end;
     end;
 
-    rec
+    let rec
         datatype Expr +a of
             Closed a;
             Open Text (Expr (Value -> a));
@@ -42,7 +42,7 @@ let
     namespace Expr of
         var: Text -> Expr Value = fn name => Open name $ Closed id;
 
-        rec
+        let rec
             map: (a -> b) -> Expr a -> Expr b =
                 fn f =>
                     match
@@ -87,7 +87,7 @@ let
         end;
     end;
 
-    using Expr;
+    with Expr end;
 
     k: Expr (Value -> Value -> Value) =
         abstract "a" $ abstract "b" $ var "a";

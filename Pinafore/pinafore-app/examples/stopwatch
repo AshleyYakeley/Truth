@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
+import "pinafore-gnome" in
 let
-    import "pinafore-gnome";
 
     datatype State of
         Stopped Duration;

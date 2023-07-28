@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 openDefaultStore.Env >>= fn store =>
+import "pinafore-gnome" in
 let
-    import "pinafore-gnome";
 
     dateText: Property Date Text
     = property @Date @Text !"example.calendar:dateText" store;

@@ -1,9 +1,7 @@
 #!/usr/bin/pinafore
-let
-    import "pinafore-gnome";
-    import "UILib";
-    using UILib.;
-in run.Context $ fn context =>
+import "pinafore-gnome", "UILib" in
+with UILib. in
+run.Context $ fn context =>
 let
 
     Mk.Context.Named = mkContext.Named context;
@@ -34,7 +32,7 @@ let
         labelled.GTK {"Phone: "} $ textEntry.GTK $ locphone !$% loc
     ];
 
-    rec
+    let rec
         # a person or organisation
         dynamictype LegalEntity = Person | Organisation;
         subtype LegalEntity <: Named;
@@ -69,7 +67,7 @@ let
 
     ### User Interface
 
-    rec
+    let rec
         contactPages: WholeModel +LegalEntity -> List (Element.GTK *: Element.GTK)
         = fn er =>
         [

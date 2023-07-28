@@ -1,2 +1,2 @@
 #!/usr/bin/pinafore
-let import "pinafore-gnome" in run $ \gtk => open.Window gtk (400,500) {"Title"} $ notebook unknown [(label {"Tab"},blank)]
+import "pinafore-gnome" in run $ \gtk => open.Window gtk (400,500) {"Title"} $ notebook unknown [(label {"Tab"},blank)]

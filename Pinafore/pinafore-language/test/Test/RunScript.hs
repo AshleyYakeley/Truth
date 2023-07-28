@@ -6,6 +6,9 @@ module Test.RunScript
     , tDeclsRec
     , tFetchModule
     , tPrefix
+    , tDeclarator
+    , tWith
+    , tImport
     , tOpenDefaultStore
     , testOpenUHStore
     , tModule
@@ -28,24 +31,32 @@ import Shapes.Test
 import Shapes.Test.Context
 
 data ScriptContext = MkScriptContext
-    { scDeclarations :: [String]
-    , scFetchModule :: FetchModule ()
+    { scFetchModule :: FetchModule ()
     , scPrefix :: Text
     }
 
 type ScriptTestTree = ContextTestTree ScriptContext
-
-tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
-tDecls defs = tContext $ \sc -> sc {scDeclarations = scDeclarations sc <> defs}
-
-tDeclsRec :: [String] -> ScriptTestTree -> ScriptTestTree
-tDeclsRec defs = tDecls $ pure $ "rec\n" ++ intercalate ";\n" defs ++ "\nend"
 
 tFetchModule :: FetchModule () -> ScriptTestTree -> ScriptTestTree
 tFetchModule fm = tContext $ \sc -> sc {scFetchModule = fm <> scFetchModule sc}
 
 tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
 tPrefix t = tContext $ \sc -> sc {scPrefix = scPrefix sc <> t <> "\n"}
+
+tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
+tDecls defs = tPrefix $ pack $ "let\n" <> intercalate ";\n" defs <> "\nin\n"
+
+tDeclsRec :: [String] -> ScriptTestTree -> ScriptTestTree
+tDeclsRec defs = tPrefix $ pack $ "let rec\n" <> intercalate ";\n" defs <> "\nin\n"
+
+tDeclarator :: Text -> ScriptTestTree -> ScriptTestTree
+tDeclarator t = tPrefix $ t <> " in\n"
+
+tWith :: [Text] -> ScriptTestTree -> ScriptTestTree
+tWith tt = tDeclarator $ "with " <> intercalate ", " tt
+
+tImport :: [Text] -> ScriptTestTree -> ScriptTestTree
+tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap (pack . show) tt)
 
 tOpenDefaultStore :: ScriptTestTree -> ScriptTestTree
 tOpenDefaultStore = tPrefix "openDefaultStore.Env >>=.Action fn store =>"
@@ -71,13 +82,9 @@ tLibrary libm = tFetchModule $ libraryFetchModule [libm]
 runScriptTestTree :: ScriptTestTree -> TestTree
 runScriptTestTree =
     runContextTestTree $ let
-        scDeclarations = mempty
         scFetchModule = mempty
         scPrefix = mempty
         in MkScriptContext {..}
-
-declsPrefix :: [String] -> Text
-declsPrefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
 testExpression ::
        forall a. HasQType 'Negative a
@@ -88,7 +95,7 @@ testExpression ::
 testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
-            fullscript = scPrefix <> declsPrefix scDeclarations <> script
+            fullscript = scPrefix <> script
             in runTester defaultTester {tstFetchModule = scFetchModule} $ do
                    call $ testerLiftInterpreter $ parseValueUnify fullscript
 

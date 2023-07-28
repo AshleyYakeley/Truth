@@ -1,8 +1,8 @@
 #!/usr/bin/pinafore
 openDefaultStore.Env >>= fn store =>
+import "pinafore-gnome" in
+with Store in
 let
-import "pinafore-gnome";
-using Store;
 
 # Ontology
 # Define a type of entity for people

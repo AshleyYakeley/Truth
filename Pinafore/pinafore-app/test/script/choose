@@ -1,11 +1,8 @@
 #!/usr/bin/pinafore
-let
-import "pinafore-media";
-import "pinafore-gnome";
-in
-run.GTK $ fn gtk => let
+import "pinafore-media", "pinafore-gnome" in
+run.GTK $ fn gtk =>
+let rec
 
-rec
     showFile: Action Unit
     = do
         file <- chooseExistingFile.GTK gtk $ match
@@ -23,6 +20,5 @@ rec
         in open.Window.GTK gtk (size.Image image) {path} $ image.GTK {image};
         showFile;
     end;
-end;
 
 in showFile

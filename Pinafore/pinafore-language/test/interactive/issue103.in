@@ -8,7 +8,7 @@ let g: ((a -> a) & b) -> b = fn x => x
 :type g
 :type g i
 
-let using Action
+with Action
 let ur: WholeModel a -> Unit = fn _ => ()
 :type ur
 :type newMem.WholeModel >>= fn model => pure (model, ())

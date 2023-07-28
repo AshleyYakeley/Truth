@@ -16,7 +16,7 @@ expose x, B, A, Mk1.A, Mk2.A, RecA, Mk1.RecA, Mk2.RecA, RecB, R, Mk.R, y, namesp
 
     subtype A Integer Unit Unit <: B = fn _ => Mk.B 17;
 
-    rec
+    let rec
         #| doc:RecA
         datatype RecA {+p,-q} +r -s of
             #| doc:Mk1.RecA
@@ -77,7 +77,7 @@ expose x, B, A, Mk1.A, Mk2.A, RecA, Mk1.RecA, Mk2.RecA, RecB, R, Mk.R, y, namesp
 
         subtype NmA Integer Unit Unit <: NmB = fn _ => Mk.NmB 17;
 
-        rec
+        let rec
             #| doc:NmRecA
             datatype NmRecA {+p,-q} +r -s of
                 #| doc:Mk1.NmRecA

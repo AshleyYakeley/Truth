@@ -39,8 +39,7 @@ noTestAction = return ()
 
 testUIAction :: Text -> GView 'Unlocked () -> ScriptTestTree
 testUIAction text testaction =
-    scriptTestCase text ("fn call => run.GTK $ fn gtk => let in do " <> text <> "; call gtk; end") $
-    runUIAction testaction
+    scriptTestCase text ("fn call => run.GTK $ fn gtk => do " <> text <> "; call gtk; end") $ runUIAction testaction
 
 testActions :: ScriptTestTree
 testActions =
@@ -64,10 +63,8 @@ testUI :: TestTree
 testUI =
     runScriptTestTree $
     tDecls
-        [ "using Function"
-        , "using SetModel"
-        , "using Action"
-        , "import \"pinafore-gnome\""
+        [ "with Function, SetModel, Action end"
+        , "import \"pinafore-gnome\" end"
         , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.GTK; pure (); end"
         , "opentype T"
         , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- newOpenEntity @T; s += p; pure (); end"

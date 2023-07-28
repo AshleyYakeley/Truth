@@ -1,13 +1,11 @@
 #!/usr/bin/pinafore
-let
-import "pinafore-media";
-import "pinafore-gnome";
-in
+import "pinafore-media", "pinafore-gnome" in
 openDefaultStore.Env >>= fn dstore =>
 new.UndoHandler >>= fn uh =>
 handleStore.UndoHandler uh dstore >>= fn store =>
-run.GTK $ fn gtk => let
-using Store;
+run.GTK $ fn gtk =>
+with Store in
+let
 
 ### Useful
 ui_page = fn n, ui => (label.GTK n,ui);
@@ -70,7 +68,7 @@ deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb" store
 married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22" store;
 
 # GTK
-rec
+let rec
 ui_people : FiniteSetModel Person -> Element.GTK
 = fn pp => exec.GTK $ do
     selectedperson <- newMem.WholeModel;
@@ -208,13 +206,9 @@ window_css: Action Window.GTK
 
 ### Drawing
 window_drawing: WholeModel +Time -> Action Window.GTK
-= fn now => let
-    using Colour;
-    using Cairo;
-    using Drawing;
-    using Path;
-    using Number;
-    in do
+= fn now =>
+    with Colour, Cairo, Drawing, Path, Number in
+    do
         tzref <- newTimeZoneModel.LocalTime now;
         std_window {"Drawing"} $ draw.GTK {fn (w,h) => let
             size = min w h;
@@ -262,13 +256,8 @@ window_textselection: Action Window.GTK
 
 ### Cairo Image
 window_cairoimage: Action Window.GTK
-= let
-    using Colour;
-    using Cairo;
-    using Drawing;
-    using Path;
-    using Number;
-    using GTK;
+= with Colour, Cairo, Drawing, Path, Number, GTK in
+    let
     dimensions: Integer *: Integer
     = (400,400);
     drawing: Integer *: Integer -> Drawing Handler
@@ -319,7 +308,7 @@ window_cairoimage: Action Window.GTK
 
 ### Start Window
 
-rec
+let rec
 window_start : Action Window.GTK
 = do
     now <- newClock $ Seconds 1;

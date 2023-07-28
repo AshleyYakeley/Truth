@@ -40,7 +40,7 @@ let
             fn s, Mk f => f s >- fn (_,a) => a;
     end;
 
-    val = let using State in
+    val = with State in
         run 0 $ do.State
             set 7;
             a <- get;

@@ -39,11 +39,10 @@ subtypeTests polar sr p q =
           "unify"
           [ testSubtypeUnify polar sr $
             "let f: (" <> q <> ") -> Unit = fn _ => (); x: " <> p <> " = undefined; fx = f x in pass"
-          , testSubtypeUnify polar sr $
-            "let rec f: (" <> q <> ") -> Unit = f end; rec x: " <> p <> " = x; end; fx = f x in pass"
+          , testSubtypeUnify polar sr $ "let rec f: (" <> q <> ") -> Unit = f; x: " <> p <> " = x; fx = f x in pass"
           ]
     , tGroup "subsume" $
-      [ testSubtypeSubsume polar sr $ "let rec x: " <> p <> " = x end; y: " <> q <> " = x in pass"
+      [ testSubtypeSubsume polar sr $ "let rec x: " <> p <> " = x; y: " <> q <> " = x in pass"
       , testSubtypeSubsume polar sr $ "let x: " <> p <> " = undefined; y: " <> q <> " = x in pass"
       , testSubtypeSubsume polar sr $ "let x: " <> q <> " = undefined: " <> p <> " in pass"
       , testSubtypeSubsume polar sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
@@ -312,9 +311,9 @@ testEntity =
                     ]
               ]
         , tOpenDefaultStore $
+          tWith ["Store"] $
           tDecls
-              [ "using Store"
-              , "opentype E"
+              [ "opentype E"
               , "eea = property @E @E !\"eea\" store"
               , "eeb = property @E @E !\"eeb\" store"
               , "eec = property @E @E !\"eec\" store"
@@ -867,10 +866,10 @@ testEntity =
                     "contain-recursive"
                     [ tDecls
                           [ "datatype P of Mk (rec a, Maybe a) end"
-                          , "rec fromR: (rec a, Maybe a) -> Integer = match Nothing => 0; Just a => 1 + fromR a end end"
-                          , "rec toR: Integer -> (rec a, Maybe a) = match 0 => Nothing; i => Just $ toR (i - 1) end end"
-                          , "rec fromP: P -> Integer = match Mk.P Nothing => 0; Mk.P (Just a) => 1 + fromP (Mk.P a) end end"
-                          , "rec toP: Integer -> P = match 0 => Mk.P Nothing; i => toP (i - 1) >- fn Mk.P a => Mk.P $ Just a end end"
+                          , "let rec fromR: (rec a, Maybe a) -> Integer = match Nothing => 0; Just a => 1 + fromR a end end"
+                          , "let rec toR: Integer -> (rec a, Maybe a) = match 0 => Nothing; i => Just $ toR (i - 1) end end"
+                          , "let rec fromP: P -> Integer = match Mk.P Nothing => 0; Mk.P (Just a) => 1 + fromP (Mk.P a) end end"
+                          , "let rec toP: Integer -> P = match 0 => Mk.P Nothing; i => toP (i - 1) >- fn Mk.P a => Mk.P $ Just a end end"
                           ] $
                       tGroup
                           "Maybe"
@@ -882,10 +881,10 @@ testEntity =
                           ]
                     , tDecls
                           [ "datatype Q +t of Mk (rec a, Maybe (t *: a)) end"
-                          , "rec fromR: (rec a, Maybe (t *: a)) -> List t = match Nothing => []; Just (t,a) => t :: fromR a end end"
-                          , "rec toR: List t -> (rec a, Maybe (t *: a)) = match [] => Nothing; t :: tt => Just (t, toR tt) end end"
-                          , "rec fromQ: Q t -> List t = match Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a) end end"
-                          , "rec toQ: List t -> Q t = match [] => Mk.Q Nothing; t :: tt => Mk.Q $ Just (t, toQ tt >- fn Mk.Q a => a) end end"
+                          , "let rec fromR: (rec a, Maybe (t *: a)) -> List t = match Nothing => []; Just (t,a) => t :: fromR a end end"
+                          , "let rec toR: List t -> (rec a, Maybe (t *: a)) = match [] => Nothing; t :: tt => Just (t, toR tt) end end"
+                          , "let rec fromQ: Q t -> List t = match Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a) end end"
+                          , "let rec toQ: List t -> Q t = match [] => Mk.Q Nothing; t :: tt => Mk.Q $ Just (t, toQ tt >- fn Mk.Q a => a) end end"
                           ] $
                       tGroup
                           "Pair"
@@ -900,17 +899,15 @@ testEntity =
                     "recursive"
                     [ testExpectSuccess "let datatype P of P1 end in let datatype Q of Q1 P end in pass"
                     , testExpectSuccess "let datatype P of P1 end; datatype Q of Q1 P end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of end end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of Q1 P end end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 P end end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of Q1 P end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 P end in pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = match P1.P q => q >- match Q1.Q p => p end end end in pass"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = match P1.P q => q >- match Q1.Q p => p end end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype storable Q of Q1 !\"Q1\" end in pass"
+                    , testExpectReject "let rec datatype storable P of P1 Q end; datatype Q of Q1 !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype storable Q of Q1 !\"Q1\" end end in pass"
-                    , testExpectReject
-                          "let rec datatype storable P of P1 Q end; datatype Q of Q1 !\"Q1\" end end in pass"
-                    , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1.P (Q1.Q pass) end in pqpass >- match P1.P (Q1.Q p) => p end"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1.P (Q1.Q pass) in pqpass >- match P1.P (Q1.Q p) => p end"
                     ]
               , tGroup
                     "parameters"
@@ -927,14 +924,14 @@ testEntity =
                           ]
                     , tGroup
                           "recursive"
-                          [ testExpectSuccess "let rec datatype R +a of Mk (R a) end end in pass"
-                          , testExpectSuccess "let rec datatype R -a of Mk (R a) end end in pass"
+                          [ testExpectSuccess "let rec datatype R +a of Mk (R a) end in pass"
+                          , testExpectSuccess "let rec datatype R -a of Mk (R a) end in pass"
                           , testExpectSuccess
-                                "let rec datatype R1 +a of MkR1 (R2 a) end; datatype R2 +a of MkR2 (R1 a) end end in pass"
+                                "let rec datatype R1 +a of MkR1 (R2 a) end; datatype R2 +a of MkR2 (R1 a) end in pass"
                           , testExpectSuccess
-                                "let rec datatype R1 -a of MkR1 (R2 a) end; datatype R2 -a of MkR2 (R1 a) end end in pass"
+                                "let rec datatype R1 -a of MkR1 (R2 a) end; datatype R2 -a of MkR2 (R1 a) end in pass"
                           , testExpectSuccess
-                                "let rec datatype R1 +a of MkR1 (R2 a -> Integer) end; datatype R2 -a of MkR2 (R1 a -> Integer) end end in pass"
+                                "let rec datatype R1 +a of MkR1 (R2 a -> Integer) end; datatype R2 -a of MkR2 (R1 a -> Integer) end in pass"
                           ]
                     , tGroup
                           "conversion"
@@ -954,8 +951,8 @@ testEntity =
                                 ] $
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
-                                [ "rec datatype RList +a of Mk (Maybe (a *: RList a)) end end"
-                                , "rec showRList: RList Showable -> Text = fn Mk.RList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <>.Text \";\" <>.Text showRList rla end end"
+                                [ "let rec datatype RList +a of Mk (Maybe (a *: RList a)) end end"
+                                , "let rec showRList: RList Showable -> Text = fn Mk.RList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <>.Text \";\" <>.Text showRList rla end end"
                                 , "rlisti: RList Integer = Mk.RList $ Just (45,Mk.RList $ Just (72, Mk.RList $ Just (18,Mk.RList Nothing)))"
                                 , "rlists: RList Showable = rlisti"
                                 , "sd: Text = showRList rlists"
@@ -987,9 +984,8 @@ testEntity =
                           , subtypeTest False SRNot "D2.D1" "D3.D2.D1"
                           , subtypeTest False SRNot "D1" "D3.D2.D1"
                           ]
-                    , tDecls
-                          [ "rec datatype D1 of Mk D1 D2 D3.D2; subtype datatype D2 of Mk D1 D2 D3; subtype datatype D3 of P D1 D2 D3; Q; end; end; end; end"
-                          ] $
+                    , tDeclarator
+                          "let rec datatype D1 of Mk D1 D2 D3.D2; subtype datatype D2 of Mk D1 D2 D3; subtype datatype D3 of P D1 D2 D3; Q; end end end" $
                       tGroup
                           "recursive"
                           [ testExpectSuccess "pass"
@@ -1017,9 +1013,9 @@ testEntity =
                                 ]
                           ]
                     , testExpectSuccess
-                          "let rec datatype L of LNil; subtype datatype L1 of LCons Unit L end end end in pass"
+                          "let rec datatype L of LNil; subtype datatype L1 of LCons Unit L end end in pass"
                     , testExpectSuccess
-                          "let rec datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end end in pass"
+                          "let rec datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end in pass"
                     ]
               , tGroup
                     "record-constructor"
@@ -1174,7 +1170,7 @@ testEntity =
                           , "rec0: Rec a = let rval = Nothing in Mk.Rec"
                           , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in Mk.Rec"
                           , "rec3: a -> a -> a -> Rec a = fn x0, x1, x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in Mk.Rec"
-                          , "rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <>.Text \",\" <>.Text rShow r end end"
+                          , "let rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <>.Text \",\" <>.Text rShow r end end"
                           , "recShow: Rec Showable -> Text = fn Mk.Rec => rShow rval"
                           ] $
                       tGroup
@@ -1403,7 +1399,7 @@ testEntity =
                     [ testExpectSuccess $
                       "let x = 17; f = let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 () in testeq {Just 17} {f}"
                     , testExpectSuccess $
-                      "let rec f = let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 (); x = 17 end in testeq {Just 17} {f}"
+                      "let rec f = let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 (); x = 17 in testeq {Just 17} {f}"
                     , testExpectSuccess $
                       "let f = fn x => let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 () in testeq {Just 17} {f 17}"
                     , testExpectSuccess $
@@ -1466,17 +1462,17 @@ testEntity =
                     , testExpectSuccess
                           "let datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let rec datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end end in pass"
+                          "let rec datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of end end in pass"
+                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of end in pass"
                     , testExpectSuccess
-                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end end in pass"
-                    , testExpectSuccess "let rec datatype storable P of P1 P !\"P1\" end end in pass"
-                    , testExpectSuccess "let rec datatype storable P +a of P1 (P (a *: a)) !\"P1\" end end in pass"
+                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end in pass"
+                    , testExpectSuccess "let rec datatype storable P of P1 P !\"P1\" end in pass"
+                    , testExpectSuccess "let rec datatype storable P +a of P1 (P (a *: a)) !\"P1\" end in pass"
                     , tDecls
-                          [ "rec datatype storable L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
-                          , "rec listToL: List a -> L a = match [] => Nil.L; x::xs => Cons.L x (listToL xs) end end"
-                          , "rec lToList: L a -> List a = match Nil.L => []; Cons.L x xs => x :: lToList xs end end"
+                          [ "let rec datatype storable L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
+                          , "let rec listToL: List a -> L a = match [] => Nil.L; x::xs => Cons.L x (listToL xs) end end"
+                          , "let rec lToList: L a -> List a = match Nil.L => []; Cons.L x xs => x :: lToList xs end end"
                           ] $
                       tGroup
                           "list"
@@ -1669,10 +1665,9 @@ testEntity =
                     ]
               ]
         , testOpenUHStore $
+          tWith ["Store", "UndoHandler"] $
           tDecls
-              [ "using Store"
-              , "using UndoHandler"
-              , "opentype E"
+              [ "opentype E"
               , "eta = property @E @Text !\"eta\" store"
               , "e1 = openEntity @E !\"e1\""
               , "rt1 = eta !$ {e1}"
@@ -1696,8 +1691,8 @@ testEntity =
               [ "runresult = fn ar, arg => ar >- match Left err => fail err; Right f => f arg end"
               , "testaction = fn expected, action => do found <- action; testeqval expected found end"
               , "testleft = fn action => do found <- action; found >- match Left _ => pass; Right _ => fail \"not Left\" end end"
-              , "using Eval"
               ] $
+          tWith ["Eval"] $
           tGroup
               "evaluate"
               [ testExpectSuccess "testaction (Right True) $ evaluate @Boolean \"True\""

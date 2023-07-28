@@ -114,7 +114,7 @@ testUnifier =
                           ]
                     , runScriptTestTree $
                       tLibrary testLib $
-                      tDecls ["import \"TEST\""] $
+                      tImport ["TEST"] $
                       tGroup
                           "interpret"
                           [ testInterpret @(A -> (A -> A) -> A) "op1" $ \found ->
@@ -181,7 +181,7 @@ testUnifier =
                           ]
                     , runScriptTestTree $
                       tLibrary testLib $
-                      tDecls ["import \"TEST\""] $
+                      tImport ["TEST"] $
                       tGroup
                           "interpret"
                           [ testInterpret @(Text -> (Text -> Text) -> (Text -> Text) -> Text) "op2" $ \found ->
@@ -203,7 +203,7 @@ testUnifier =
                     [ testTree @[TestTree] "unify" []
                     , runScriptTestTree $
                       tLibrary testLib $
-                      tDecls ["import \"TEST\""] $
+                      tImport ["TEST"] $
                       tGroup
                           "interpret"
                           [ testExpectSuccess "testSameT \"PQPQPQ\" \"PQPQPQ\""

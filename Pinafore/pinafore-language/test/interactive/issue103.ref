@@ -13,7 +13,7 @@ pinafore> :type g
 pinafore> :type g i
 : a -> a
 pinafore> 
-pinafore> let using Action
+pinafore> with Action
 pinafore> let ur: WholeModel a -> Unit = fn _ => ()
 pinafore> :type ur
 : WholeModel a -> Unit

@@ -1,9 +1,7 @@
 #!/usr/bin/pinafore
-let
-    import "pinafore-gnome";
-    import "UILib";
-    using UILib.;
-in run.Context $ fn context =>
+import "pinafore-gnome", "UILib" in
+with UILib. in
+run.Context $ fn context =>
 let
 
     Mk.Context.Named = mkContext.Named context;

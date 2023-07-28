@@ -328,19 +328,6 @@ interpretRecursiveDocDeclarations ddecls = do
     interpretRecursiveLetBindings bindingDecls
     return docDecls
 
-partitionItem :: Namespace -> SyntaxNameRefItem -> ([Namespace], [FullNameRef])
-partitionItem _ (NameSyntaxNameRefItem n) = ([], [n])
-partitionItem curns (NamespaceSyntaxNameRefItem n) = ([namespaceConcatRef curns n], [])
-
-interpretExpose :: SyntaxExposeDeclaration -> RefNotation (Docs, QScope)
-interpretExpose (MkSyntaxExposeDeclaration items sdecls) =
-    runScopeBuilder (interpretDocDeclarations sdecls) $ \doc ->
-        liftRefNotation $ do
-            curns <- getCurrentNamespace
-            let (namespaces, names) = mconcat $ fmap (partitionItem curns) items
-            (bnames, scope) <- exportScope namespaces names
-            return (exposeDocs bnames doc, scope)
-
 interpretImportDeclaration :: ModuleName -> QScopeInterpreter Docs
 interpretImportDeclaration modname = do
     newmod <- lift $ getModule modname
@@ -351,13 +338,6 @@ interpretDocDeclaration :: SyntaxDeclaration -> ScopeBuilder Docs
 interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
     sourcePosScopeBuilder spos
     case decl of
-        ExposeSyntaxDeclaration expdecl ->
-            refScopeBuilder $ do
-                (docs, scope) <- interpretExpose expdecl
-                return $ do
-                    pureScopeBuilder scope
-                    return docs
-        ImportSyntaxDeclaration modname -> interpScopeBuilder $ interpretImportDeclaration modname
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> do
             interpScopeBuilder $ let
                 ?interpretExpression = interpretTopExpression
@@ -370,21 +350,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             binds <- syntaxToSingleBindings False sbind doc
             for_ binds interpretSequentialLetBinding
             return $ lpure $ fmap sbDefDoc binds
-        RecursiveSyntaxDeclaration rdecls -> interpretRecursiveDocDeclarations rdecls
-        UsingSyntaxDeclaration sourcens mitems destns -> do
-            let
-                matchItem :: FullNameRef -> SyntaxNameRefItem -> Bool
-                matchItem name (NameSyntaxNameRefItem name') = name == name'
-                matchItem (MkFullNameRef _ nsr') (NamespaceSyntaxNameRefItem nsr) = let
-                    ns = namespaceConcatRef sourcens nsr
-                    ns' = namespaceConcatRef sourcens nsr'
-                    in isJust $ namespaceWithinRef ns ns'
-            interpScopeBuilder $
-                usingNamespace sourcens destns $
-                case mitems of
-                    Nothing -> \_ -> True
-                    Just (b, items) -> \name -> any (matchItem name) items == b
-            return mempty
+        DeclaratorSyntaxDeclaration declarator -> interpretDeclarator declarator
         NamespaceSyntaxDeclaration nsn decls -> do
             close <- interpScopeBuilder $ withCurrentNamespaceScope nsn
             docs <- interpretDocDeclarations decls
@@ -401,9 +367,6 @@ interpretDocDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
 
 interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
-
-interpretDeclarations :: [SyntaxDeclaration] -> RefNotation --> RefNotation
-interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
 interpretRecordConstructor :: QRecordConstructor -> Maybe [(Name, SyntaxExpression)] -> RefExpression
 interpretRecordConstructor (MkRecordConstructor items vtype _ codec) msarglist = do
@@ -558,6 +521,50 @@ multiAbstractExpr (ConsFixedList v vv) exp = do
     exp' <- multiAbstractExpr vv exp
     qAbstractExpr v exp'
 
+interpretNamespaceWith :: SyntaxNamespaceWith -> ScopeBuilder ()
+interpretNamespaceWith (MkSyntaxNamespaceWith sourcens mitems destns) = do
+    let
+        matchItem :: FullNameRef -> SyntaxNameRefItem -> Bool
+        matchItem name (NameSyntaxNameRefItem name') = name == name'
+        matchItem (MkFullNameRef _ nsr') (NamespaceSyntaxNameRefItem nsr) = let
+            ns = namespaceConcatRef sourcens nsr
+            ns' = namespaceConcatRef sourcens nsr'
+            in isJust $ namespaceWithinRef ns ns'
+    interpScopeBuilder $
+        usingNamespace sourcens destns $
+        case mitems of
+            Nothing -> \_ -> True
+            Just (b, items) -> \name -> any (matchItem name) items == b
+
+partitionItem :: Namespace -> SyntaxNameRefItem -> ([Namespace], [FullNameRef])
+partitionItem _ (NameSyntaxNameRefItem n) = ([], [n])
+partitionItem curns (NamespaceSyntaxNameRefItem n) = ([namespaceConcatRef curns n], [])
+
+interpretExpose :: SyntaxExpose -> [SyntaxDeclaration] -> RefNotation (Docs, QScope)
+interpretExpose (MkSyntaxExpose items) sdecls =
+    runScopeBuilder (interpretDocDeclarations sdecls) $ \doc ->
+        liftRefNotation $ do
+            curns <- getCurrentNamespace
+            let (namespaces, names) = mconcat $ fmap (partitionItem curns) items
+            (bnames, scope) <- exportScope namespaces names
+            return (exposeDocs bnames doc, scope)
+
+interpretDeclarator :: SyntaxDeclarator -> ScopeBuilder Docs
+interpretDeclarator (SDLet Nothing sdecls) = interpretDocDeclarations sdecls
+interpretDeclarator (SDLet (Just items) sdecls) =
+    refScopeBuilder $ do
+        (docs, scope) <- interpretExpose items sdecls
+        return $ do
+            pureScopeBuilder scope
+            return docs
+interpretDeclarator (SDLetRec sdecls) = interpretRecursiveDocDeclarations sdecls
+interpretDeclarator (SDWith swns) = do
+    for_ swns interpretNamespaceWith
+    return mempty
+interpretDeclarator (SDImport simps) = do
+    for_ simps $ \modname -> interpScopeBuilder $ interpretImportDeclaration modname
+    return mempty
+
 interpretExpression' :: SyntaxExpression' -> RefExpression
 interpretExpression' (SESubsume sexpr stype) = do
     expr <- interpretExpression sexpr
@@ -582,7 +589,8 @@ interpretExpression' (SEAbstracts (MkSome multimatch@(MkSyntaxMulticase spats _)
     runScopeBuilder (for spats $ \_ -> fmap snd $ allocateVarScopeBuilder Nothing) $ \varids -> do
         pexpr <- interpretMulticase varids multimatch
         liftRefNotation $ multiAbstractExpr varids $ partialToSealedExpression pexpr
-interpretExpression' (SELet sdecls sbody) = interpretDeclarations sdecls $ interpretExpression sbody
+interpretExpression' (SEDecl sdecls sbody) =
+    runScopeBuilder (interpretDeclarator sdecls) $ \_ -> interpretExpression sbody
 interpretExpression' (SEMatch scases) =
     withAllocateNewVar Nothing $ \varid -> do
         pexprs <- for scases $ interpretCase varid
@@ -644,7 +652,8 @@ interpretBindings sbinds = for sbinds interpretBinding
 
 interpretTopDeclarations :: SyntaxTopDeclarations -> QInterpreter --> QInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
-    paramWith sourcePosParam spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
+    paramWith sourcePosParam spos $
+    runRefNotation $ runScopeBuilder (interpretDeclarator sdecls) $ \_ -> liftRefNotation ma
 
 interpretTopExpression :: SyntaxExpression -> QInterpreter QExpression
 interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
@@ -708,7 +717,7 @@ interpretSubtypeRelation trustme sta stb mbody =
         Nothing -> interpretOpenEntitySubtypeRelation sta stb
 
 interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
-interpretModule mname smod = do
-    (docs, scope) <- runRefNotation $ interpretExpose smod
+interpretModule mname (MkSyntaxModule items sdecls) = do
+    (docs, scope) <- runRefNotation $ interpretExpose items sdecls
     let doc = MkTree (MkDefDoc (HeadingDocItem (plainText $ showText mname)) "") docs
     return $ MkModule doc scope

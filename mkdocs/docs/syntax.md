@@ -25,7 +25,7 @@ All declarations, including type declarations, are local to a `let` block.
 ```text
 <script> ::= <expression>
 
-<module> ::= <expose-declaration>
+<module> ::= "expose" <name-list> <of(<declaration>)>
 
 <names> ::= <comma-separated(<name>)>
 
@@ -33,7 +33,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <qname> ::= quname | qlname
 
-<interactive> ::= <do-line> | <let-declarations> | ":" <interactive-command>
+<interactive> ::= <do-line> | <declarator> | ":" <interactive-command>
 
 <interactive-command> ::=
     "doc" <qname> |
@@ -113,7 +113,7 @@ All declarations, including type declarations, are local to a `let` block.
 <expression-1> ::=
     "fn" <match> |
     "match" <semicolon-separated(<match>)> "end" |
-    <let-declarations> "in" <expression> |
+    <declarator> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "do" <optional("." <namespace>)> <semicolon-separated(<do-line>)> <expression> "end" |
     <expression-2>
@@ -161,15 +161,17 @@ All declarations, including type declarations, are local to a `let` block.
 
 <do-line> = <expression> | <pattern-1> "<-" <expression>
 
-<let-declarations> ::= "let" <semicolon-separated(<declaration>)>
+<declarator> ::=
+    "let" <semicolon-separated(<declaration>)>
+    "let" "expose" <name-list> "of" <semicolon-separated(<declaration>)>
+    "let" "rec" <semicolon-separated(<direct-declaration>)>
+    "import" <comma-separated(<module-name>)> |
+    "with" <comma-separated(<namespace> <with-names> <optional("as" <namespace>)>)> |
 
 <declaration> ::=
     direct-declaration |
-    "import" <module-name> |
-    "using" <namespace> <using-names> <optional("as" <namespace>)> |
     "namespace" <namepace> <of(<declaration>)> |
-    <expose-declaration> |
-    "rec" <semicolon-separated(<direct-declaration>)> "end"
+    <declarator> "end"
 
 <direct-declaration> ::=
     "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <of(<plain-datatype-constructor>)> |
@@ -183,9 +185,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <name-list> ::= <comma-separated(<name-item>)>
 
-<expose-declaration> ::= "expose" <name-list> <of(<declaration>)>
-
-<using-names> ::=  | "(" <name-list> ")" | "except" "(" <name-list> ")"
+<with-names> ::=  | "(" <name-list> ")" | "except" "(" <name-list> ")"
 
 <namespace> ::= uname | uname "." <namespace> | "."
 

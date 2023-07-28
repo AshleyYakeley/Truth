@@ -105,7 +105,7 @@ data Token t where
     TokAs :: Token ()
     TokExcept :: Token ()
     TokNamespace :: Token ()
-    TokUsing :: Token ()
+    TokWith :: Token ()
     TokNamesUpper :: Token TokenNames
     TokNamesLower :: Token TokenNames
     TokUnderscore :: Token ()
@@ -166,7 +166,7 @@ instance TestEquality Token where
     testEquality TokAs TokAs = Just Refl
     testEquality TokExcept TokExcept = Just Refl
     testEquality TokNamespace TokNamespace = Just Refl
-    testEquality TokUsing TokUsing = Just Refl
+    testEquality TokWith TokWith = Just Refl
     testEquality TokNamesUpper TokNamesUpper = Just Refl
     testEquality TokNamesLower TokNamesLower = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
@@ -219,7 +219,7 @@ instance Show (Token t) where
     show TokAs = show ("as" :: String)
     show TokExcept = show ("except" :: String)
     show TokNamespace = show ("namespace" :: String)
-    show TokUsing = show ("using" :: String)
+    show TokWith = show ("with" :: String)
     show TokNamesUpper = "unames"
     show TokNamesLower = "lnames"
     show TokUnderscore = show ("_" :: String)
@@ -351,7 +351,7 @@ checkKeyword "import" = return $ MkSomeOf TokImport ()
 checkKeyword "as" = return $ MkSomeOf TokAs ()
 checkKeyword "except" = return $ MkSomeOf TokExcept ()
 checkKeyword "namespace" = return $ MkSomeOf TokNamespace ()
-checkKeyword "using" = return $ MkSomeOf TokUsing ()
+checkKeyword "with" = return $ MkSomeOf TokWith ()
 checkKeyword "debug"
     | debugSyntax = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
@@ -375,12 +375,13 @@ allKeywords =
     , ("trustme", "keyword.declaration.pinafore")
     , ("storable", "keyword.declaration.pinafore")
     , ("dynamictype", "keyword.declaration.pinafore")
+    , ("module", "keyword.declaration.pinafore")
     , ("expose", "keyword.declaration.pinafore")
     , ("import", "keyword.declaration.pinafore")
     , ("as", "keyword.other.pinafore")
     , ("except", "keyword.other.pinafore")
     , ("namespace", "keyword.declaration.pinafore")
-    , ("using", "keyword.declaration.pinafore")
+    , ("with", "keyword.declaration.pinafore")
     , ("debug", "keyword.other.pinafore")
     ]
 

@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-let import "pinafore-gnome" in
+import "pinafore-gnome" in
 do
 outputLn.Env "BEGIN";
 run.GTK $

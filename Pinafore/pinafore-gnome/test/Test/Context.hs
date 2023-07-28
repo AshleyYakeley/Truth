@@ -3,8 +3,12 @@ module Test.Context
     , module Shapes.Test.Context
     , ScriptTestTree
     , runScriptTestTree
+    , tPrefix
+    , tDeclarator
     , tDecls
     , tDeclsRec
+    , tWith
+    , tImport
     , scriptTestCase
     ) where
 
@@ -12,19 +16,28 @@ import Shapes
 import Shapes.Test
 import Shapes.Test.Context
 
-type ScriptTestTree = ContextTestTree [String]
+type ScriptTestTree = ContextTestTree Text
 
 runScriptTestTree :: ScriptTestTree -> TestTree
 runScriptTestTree = runContextTestTree mempty
 
+tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
+tPrefix p = tContext $ \t -> p <> t
+
+tDeclarator :: Text -> ScriptTestTree -> ScriptTestTree
+tDeclarator t = tPrefix $ t <> " in\n"
+
+tWith :: [Text] -> ScriptTestTree -> ScriptTestTree
+tWith tt = tDeclarator $ "with " <> intercalate ", " tt
+
+tImport :: [Text] -> ScriptTestTree -> ScriptTestTree
+tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap (pack . show) tt)
+
 tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
-tDecls defs = tContext $ \c -> defs <> c
+tDecls defs = tPrefix $ pack $ "let\n" <> intercalate ";\n" defs <> "\nin\n"
 
 tDeclsRec :: [String] -> ScriptTestTree -> ScriptTestTree
-tDeclsRec defs = tDecls $ pure $ "rec\n" ++ intercalate ";\n" defs ++ "\nend"
-
-prefix :: [String] -> Text
-prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
+tDeclsRec defs = tPrefix $ pack $ "let rec\n" <> intercalate ";\n" defs <> "\nin\n"
 
 scriptTestCase :: Text -> Text -> (Text -> IO ()) -> ScriptTestTree
-scriptTestCase name text tester = MkContextTestTree $ \c -> testTree (unpack name) $ tester $ prefix c <> text
+scriptTestCase name text tester = MkContextTestTree $ \t -> testTree (unpack name) $ tester $ t <> text

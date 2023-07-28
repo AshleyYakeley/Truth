@@ -202,13 +202,3 @@ let
 
 in N.p + N.q + r
 ```
-
-## Import Declarations
-
-An import declaration brings declarations from a module into scope.
-
-```pinafore
-let
-import "pinafore-media";
-in blank.Image honeydew.Colour (512,512)
-```
