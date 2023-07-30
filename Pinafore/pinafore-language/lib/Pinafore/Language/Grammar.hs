@@ -15,6 +15,7 @@ import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Token as I (allKeywords)
 import Pinafore.Language.Grammar.Read.Type
 import Pinafore.Language.Grammar.Syntax as I (FixAssoc(..), Fixity(..), typeOperatorFixity)
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes

@@ -4,12 +4,8 @@ module Pinafore.Language.Grammar.Docs
     ) where
 
 import Pinafore.Language.DefDoc
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Type
 import Shapes
-
-type instance EntryDoc QTypeSystem = DefDoc
 
 popFilterTree :: (a -> Bool) -> Tree a -> Forest a
 popFilterTree test (MkTree a tt) = let

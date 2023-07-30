@@ -7,6 +7,7 @@ module Pinafore.Language.Library.Storage
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Optics
@@ -34,7 +35,7 @@ storageLibSection =
                 "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
                 ["@A", "@B", "<anchor>"]
                 "Store -> Property A B" $
-            MkSpecialForm
+            MkQSpecialForm
                 (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
                 eta <- getMonoStorableType ta
                 etb <- getMonoStorableType tb

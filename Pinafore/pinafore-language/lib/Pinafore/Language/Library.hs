@@ -13,6 +13,7 @@ module Pinafore.Language.Library
 
 import Pinafore.Context
 import Pinafore.Language.DefDoc
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Action
 import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Debug
@@ -31,7 +32,6 @@ import Pinafore.Language.Library.Stream
 import Pinafore.Language.Library.Task
 import Pinafore.Language.Library.Undo
 import Pinafore.Language.Name
-import Pinafore.Language.Type
 import Shapes
 
 builtInLibrary :: [LibraryModule InvocationInfo]

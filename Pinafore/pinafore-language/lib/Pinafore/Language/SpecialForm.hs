@@ -1,17 +1,14 @@
 module Pinafore.Language.SpecialForm where
 
+import Data.Shim
 import Language.Expression.Common
 import Pinafore.Base
+import Pinafore.Language.Type.Ground
 import Shapes
 
-type Annotation :: Type -> Type -> Type
-data Annotation ts t where
-    AnnotAnchor :: Annotation ts Anchor
-    AnnotNonpolarType :: Annotation ts (Some (TSNonpolarWitness ts))
-    AnnotPositiveType :: Annotation ts (Some (TSPosWitness ts))
-    AnnotNegativeType :: Annotation ts (Some (TSNegWitness ts))
-
-type SpecialForm :: Type -> (Type -> Type) -> Type
-data SpecialForm ts m =
-    forall lt. MkSpecialForm (ListType (Annotation ts) lt)
-                             (ListProduct lt -> m (TSValue ts))
+type QAnnotation :: Type -> Type
+data QAnnotation t where
+    AnnotAnchor :: QAnnotation Anchor
+    AnnotNonpolarType :: QAnnotation (Some (TSNonpolarWitness QTypeSystem))
+    AnnotPositiveType :: QAnnotation (Some (QType 'Positive))
+    AnnotNegativeType :: QAnnotation (Some (QType 'Negative))

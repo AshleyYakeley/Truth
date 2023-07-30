@@ -13,6 +13,7 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Optics ()
@@ -515,7 +516,7 @@ baseLibSections =
                   "An open entity for this anchor. `A` is an open entity type."
                   ["@A", "<anchor>"]
                   "A" $
-              MkSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
+              MkQSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
                   mtp <- getOpenEntityType t
                   return $
                       case mtp of
@@ -525,7 +526,7 @@ baseLibSections =
                               pt = MkOpenEntity $ MkEntity anchor
                               in MkSomeOf typef pt
             , specialFormBDS "newOpenEntity" "Generate an open entity. `A` is an open entity type." ["@A"] "Action A" $
-              MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+              MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                   mtp <- getOpenEntityType t
                   return $
                       case mtp of
@@ -548,7 +549,7 @@ baseLibSections =
                         "A dynamic entity for this anchor. `A` is a concrete dynamic entity type."
                         ["@A", "<anchor>"]
                         "A" $
-                    MkSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
+                    MkQSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
                         (n, dt) <- getConcreteDynamicEntityType t
                         let
                             typef = dynamicEntityShimWit n dt
@@ -560,7 +561,7 @@ baseLibSections =
                         "Generate a dynamic entity. `A` is a concrete dynamic entity type."
                         ["@A"]
                         "Action A" $
-                    MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+                    MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                         (n, dt) <- getConcreteDynamicEntityType t
                         let
                             pt :: Action DynamicEntity
@@ -717,13 +718,13 @@ baseLibSections =
                   (seq :: TopType -> A -> A)
             , addNameInRootBDS $
               specialFormBDS "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
-              MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
+              MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                   let dtw = getGreatestDynamicSupertype tn
                   tpw <- invertType tn
                   return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
             , addNameInRootBDS $
               specialFormBDS "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
-              MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
+              MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                   let dtw = getGreatestDynamicSupertype tn
                   tpw <- invertType tn
                   return $

@@ -25,7 +25,7 @@ evalLibSection =
                 \The local scope is not in any way transmitted to the evaluation."
               ["@A"]
               "Text -> Action (Either Text A)" $
-          MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
+          MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
               spvals <- getSpecialVals
               let
                   valShimWit :: forall t. QShimWit 'Positive t -> QShimWit 'Positive (Text -> Action (Either Text t))

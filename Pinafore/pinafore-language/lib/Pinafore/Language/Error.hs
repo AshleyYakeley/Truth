@@ -245,15 +245,6 @@ instance Show PinaforeError where
 
 instance Exception PinaforeError
 
-rethrowCause ::
-       (MonadCatch PinaforeError m, MonadThrow ErrorMessage m)
-    => SourcePos
-    -> (NamedText -> Text)
-    -> ErrorType
-    -> m a
-    -> m a
-rethrowCause spos ntt err ma = catch ma $ \pe -> throw $ MkErrorMessage spos ntt err pe
-
 newtype InterpretResult a =
     MkInterpretResult (ResultT PinaforeError IO a)
     deriving ( Functor

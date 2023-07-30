@@ -12,7 +12,6 @@ import Pinafore.Language.Grammar
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Name
-import Pinafore.Language.Type
 import Shapes
 import System.Directory (doesFileExist)
 import System.FilePath
@@ -82,7 +81,7 @@ getLibraryModuleModule context libmod = do
                         let
                             biDocumentation = docDescription bd
                             biValue = b context
-                        return (biName, MkBindingInfo {..})
+                        return (biName, MkQBindingInfo {..})
                     _ -> []
     dscopes <-
         for bindDocs $ \(se, _) ->
@@ -90,7 +89,7 @@ getLibraryModuleModule context libmod = do
                 BindScopeEntry _ _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
     scope <- joinAllScopes dscopes bscope
-    return $ MkModule (libraryModuleDocumentation libmod) scope
+    return $ MkQModule (libraryModuleDocumentation libmod) scope
 
 libraryFetchModule :: forall context. [LibraryModule context] -> FetchModule context
 libraryFetchModule lmods = let

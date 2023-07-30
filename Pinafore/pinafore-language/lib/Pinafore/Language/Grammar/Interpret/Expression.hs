@@ -73,7 +73,7 @@ constructPattern ::
        Namespace -> Either QPatternConstructor QRecordConstructor -> [QPattern] -> QScopeInterpreter QPattern
 constructPattern _ (Left pc) pats = lift $ qConstructPattern pc pats
 constructPattern _ (Right _) (_:_) = lift $ throw PatternTooManyConsArgsError
-constructPattern ns (Right (MkRecordConstructor sigs _ tt codec)) [] = do
+constructPattern ns (Right (MkQRecordConstructor sigs _ tt codec)) [] = do
     pat <- mkRecordPattern ns sigs
     return $ MkSealedPattern (MkExpressionWitness (shimWitToDolan tt) $ pure ()) $ pat . arr (decode codec . meet1)
 
@@ -154,7 +154,7 @@ getPatternBindingVariables spat = do
             pres <- lookupPatternConstructor cref
             case pres of
                 Left _ -> return []
-                Right (MkRecordConstructor lt _ _ _) -> return $ listVTypeToList (signatureName cns) lt
+                Right (MkQRecordConstructor lt _ _ _) -> return $ listVTypeToList (signatureName cns) lt
     return $ names <> mconcat namess
 
 data SingleBinding = MkSingleBinding
@@ -369,7 +369,7 @@ interpretDocDeclarations :: [SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
 
 interpretRecordConstructor :: QRecordConstructor -> Maybe [(Name, SyntaxExpression)] -> RefExpression
-interpretRecordConstructor (MkRecordConstructor items vtype _ codec) msarglist = do
+interpretRecordConstructor (MkQRecordConstructor items vtype _ codec) msarglist = do
     let
         getsigname :: forall a. QSignature 'Positive a -> Maybe Name
         getsigname (ValueSignature _ name _ _) = Just name
@@ -462,7 +462,7 @@ showAnnotation AnnotNegativeType = "type"
 
 interpretSpecialForm :: FullNameRef -> NonEmpty SyntaxAnnotation -> QInterpreter QValue
 interpretSpecialForm name annotations = do
-    MkSpecialForm largs val <- lookupSpecialForm name
+    MkQSpecialForm largs val <- lookupSpecialForm name
     margs <- unComposeInner $ specialFormArgs largs $ toList annotations
     case margs of
         Just args -> val args
@@ -627,8 +627,8 @@ checkExprVars (MkSealedExpression _ expr) = do
         getBadVarErrors :: forall t. NameWitness VarID (QShimWit 'Negative) t -> QInterpreter (Maybe ErrorMessage)
         getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
             paramWith sourcePosParam spos $ do
-                em <- mkErrorMessage $ nameWitnessErrorType @QTypeSystem $ pure $ MkSome w
-                return $ Just em
+                em <- mkErrorMessage
+                return $ Just $ em (nameWitnessErrorType $ pure $ MkSome w) mempty
         getBadVarErrors _ = return Nothing
     errorMessages <- sequenceA $ expressionFreeWitnesses getBadVarErrors expr
     case catMaybes errorMessages of
@@ -720,4 +720,4 @@ interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
 interpretModule mname (MkSyntaxModule items sdecls) = do
     (docs, scope) <- runRefNotation $ interpretExpose items sdecls
     let doc = MkTree (MkDefDoc (HeadingDocItem (plainText $ showText mname)) "") docs
-    return $ MkModule doc scope
+    return $ MkQModule doc scope

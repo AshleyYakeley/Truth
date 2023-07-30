@@ -272,11 +272,11 @@ type SomeSignature = Some (QSignature 'Positive)
 rcdSignatures :: RecordConstructorData -> [SomeSignature]
 rcdSignatures MkRecordConstructorData {..} =
     case rcdRecordConstructor of
-        (MkRecordConstructor sigs _ _ _) -> listVTypeToList MkSome sigs
+        (MkQRecordConstructor sigs _ _ _) -> listVTypeToList MkSome sigs
 
 lookupRecordConstructorData :: [Some (QGroundType '[])] -> FullNameRef -> QInterpreter RecordConstructorData
 lookupRecordConstructorData supertypes rcdName = do
-    rcdRecordConstructor@(MkRecordConstructor _ stpw _ _) <- lookupRecordConstructor rcdName
+    rcdRecordConstructor@(MkQRecordConstructor _ stpw _ _) <- lookupRecordConstructor rcdName
     rcdType <-
         case stpw of
             MkShimWit (MkDolanGroundedType gt NilCCRArguments) _
@@ -584,7 +584,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                                    in registerPatternConstructor ctfullname (ctDoc constructor) expr $
                                                       toExpressionPatternConstructor pc
                                                MkConstructorType _ (RecordCF _) lt -> let
-                                                   recordcons = MkRecordConstructor lt declpos declneg codec
+                                                   recordcons = MkQRecordConstructor lt declpos declneg codec
                                                    in registerRecord ctfullname (ctDoc constructor) recordcons
                                 constructorBox ::
                                        Constructor dv maintype extra
@@ -635,7 +635,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                             getConstypeConvert (MkConstructorType consname (RecordCF rcds) sigs) = let
                                                 rcd = unsafeIndex rcds i
                                                 in case rcdRecordConstructor rcd of
-                                                       MkRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarMap sgtconv)) _ stcodec
+                                                       MkQRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarMap sgtconv)) _ stcodec
                                                            | Just Refl <- testEquality supergroundtype sgt -> do
                                                                memberconvexpr <-
                                                                    lift $ getMatchMemberConvert sigs stmembers

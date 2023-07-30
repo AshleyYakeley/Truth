@@ -5,12 +5,10 @@ module Pinafore.Language
     , directoryFetchModule
     , textFetchModule
     , libraryFetchModule
-    , QModule
-    , Module(..)
+    , QModule(..)
     , LibraryContext(..)
     , mkLibraryContext
-    , QSpecialVals
-    , SpecialVals(..)
+    , QSpecialVals(..)
     , PinaforeError
     , InterpretResult
     , fromInterpretResult
@@ -63,7 +61,7 @@ spvals = let
             case result of
                 SuccessResult r -> Right r
                 FailureResult err -> Left $ pack $ show err
-    in MkSpecialVals {..}
+    in MkQSpecialVals {..}
 
 parseValue :: Text -> QInterpreter QValue
 parseValue text = do

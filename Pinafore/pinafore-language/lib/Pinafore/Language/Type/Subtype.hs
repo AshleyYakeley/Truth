@@ -9,7 +9,6 @@ module Pinafore.Language.Type.Subtype
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Language.Error
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -22,24 +21,23 @@ funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
         namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
-instance IsDolanSubtypeGroundType QGroundType where
+instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
     type DolanSubtypeHint QGroundType = QSubtypeHint
     subtypeGroundedTypes = entries_subtypeGroundedTypes
     tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
-        spos <- paramAsk sourcePosParam
-        ntt <- getRenderFullName
-        rethrowCause
-            spos
-            ntt
-            (TypeConvertError
-                 (exprShow ta)
-                 (witnessToValue $ polarityType @pola)
-                 (exprShow tb)
-                 (witnessToValue $ polarityType @polb))
-            ma
+        msg <- mkErrorMessage
+        catch ma $ \pe ->
+            throw $
+            msg
+                (TypeConvertError
+                     (exprShow ta)
+                     (witnessToValue $ polarityType @pola)
+                     (exprShow tb)
+                     (witnessToValue $ polarityType @polb))
+                pe
     throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
 
-instance IsDolanSubtypeEntriesGroundType QGroundType where
+instance HasInterpreter => IsDolanSubtypeEntriesGroundType QGroundType where
     subtypeConversionEntries = getSubtypeConversions
     getSubtypeGroup t =
         case qgtSubtypeGroup t of
@@ -49,5 +47,5 @@ instance IsDolanSubtypeEntriesGroundType QGroundType where
     throwIncoherentGroundTypeConversionError ta tb =
         throw $ IncoherentGroundTypeConversionError (showGroundType ta) (showGroundType tb)
 
-instance IsDolanFunctionGroundType QGroundType where
+instance HasInterpreter => IsDolanFunctionGroundType QGroundType where
     functionGroundType = funcGroundType

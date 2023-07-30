@@ -3,7 +3,7 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
-import Pinafore.Language.Interpreter
+import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
@@ -65,13 +65,24 @@ getGroundProperty prop gt =
     case qgtProperties gt of
         MkGroundProperties f -> f prop
 
-instance ExprShow (QGroundType dv gt) where
+class ( MonadPlus Interpreter
+      , MonadThrow PatternError Interpreter
+      , MonadThrow (NamedExpressionError VarID (QShimWit 'Negative)) Interpreter
+      , MonadThrow ErrorType Interpreter
+      , MonadThrow ErrorMessage Interpreter
+      , MonadCatch PinaforeError Interpreter
+      ) => HasInterpreter where
+    type Interpreter :: Type -> Type
+    getSubtypeConversions :: Interpreter [SubtypeConversionEntry QGroundType]
+    mkErrorMessage :: Interpreter (ErrorType -> PinaforeError -> ErrorMessage)
+
+instance HasInterpreter => ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType
 
-instance AllConstraint ExprShow (QGroundType '[]) where
+instance HasInterpreter => AllConstraint ExprShow (QGroundType '[]) where
     allConstraint = Dict
 
-instance Show (QGroundType dv gt) where
+instance HasInterpreter => Show (QGroundType dv gt) where
     show t = unpack $ toText $ showGroundType t
 
 type PinaforePolyGreatestDynamicSupertype :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
@@ -127,9 +138,56 @@ type instance TSBindingData QTypeSystem = RawMarkdown
 
 type instance DolanPolyShim QGroundType = QPolyShim
 
-instance IsDolanGroundType QGroundType where
+type QSomeGroundType :: Type
+type QSomeGroundType = SomeGroundType QGroundType
+
+type QSingularType :: Polarity -> Type -> Type
+type QSingularType = DolanSingularType QGroundType
+
+type QSingularShimWit :: Polarity -> Type -> Type
+type QSingularShimWit polarity = DolanSingularShimWit QGroundType polarity
+
+type QGroundedType :: Polarity -> Type -> Type
+type QGroundedType = DolanGroundedType QGroundType
+
+type QGroundedShimWit :: Polarity -> Type -> Type
+type QGroundedShimWit polarity = DolanGroundedShimWit QGroundType polarity
+
+type QType :: Polarity -> Type -> Type
+type QType = DolanType QGroundType
+
+type QShimWit :: Polarity -> Type -> Type
+type QShimWit polarity = DolanShimWit QGroundType polarity
+
+type QIsoShimWit :: Polarity -> Type -> Type
+type QIsoShimWit polarity = DolanIsoShimWit QGroundType polarity
+
+type QArgumentsShimWit :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Polarity -> Type -> Type
+type QArgumentsShimWit dv gt polarity = DolanArgumentsShimWit QPolyShim dv QType gt polarity
+
+type QValue = TSValue QTypeSystem
+
+type QValueF f = TSValueF QTypeSystem f
+
+type QOpenExpression = TSOpenExpression QTypeSystem
+
+type QExpression = TSSealedExpression QTypeSystem
+
+type QPartialExpression = TSSealedPartialExpression QTypeSystem
+
+type QMatch = TSMatch QTypeSystem
+
+type QPatternConstructor = TSExpressionPatternConstructor QTypeSystem
+
+type QOpenPattern = TSOpenPattern QTypeSystem
+
+type QPattern = TSSealedExpressionPattern QTypeSystem
+
+type QBinding = TSBinding QTypeSystem
+
+instance HasInterpreter => IsDolanGroundType QGroundType where
     type DolanVarID QGroundType = VarID
-    type DolanM QGroundType = Interpreter QTypeSystem
+    type DolanM QGroundType = Interpreter
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). QGroundType dv f -> DolanVarianceMap dv f
     groundTypeVarianceMap = qgtVarianceMap
@@ -141,7 +199,7 @@ instance IsDolanGroundType QGroundType where
         HRefl <- testHetEquality (qgtFamilyType ta) (qgtFamilyType tb)
         Just (Refl, HRefl)
 
-instance ExprShow (SomeGroundType QGroundType) where
+instance HasInterpreter => ExprShow (SomeGroundType QGroundType) where
     exprShowPrec (MkSomeGroundType t) = exprShowPrec t
 
 showPrecVariance ::

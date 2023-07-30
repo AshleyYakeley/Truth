@@ -11,7 +11,6 @@ module Pinafore.Language.Grammar.Interpret.ScopeBuilder
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Shapes
 
