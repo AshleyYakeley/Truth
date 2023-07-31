@@ -1,7 +1,9 @@
 module Pinafore.Language.Interpreter.ScopeInterpreter
     ( QScopeInterpreter
+    , runScopeInterpreter
+    , execScopeInterpreter
     , QFixBox
-    , scopeSourcePos
+    , scopeSetSourcePos
     , allocateVar
     , withCurrentNamespaceScope
     , usingNamespace
@@ -31,6 +33,12 @@ import Text.Parsec.Pos (SourcePos)
 
 type QScopeInterpreter = TransformT QInterpreter
 
+runScopeInterpreter :: QScopeInterpreter a -> (a -> QInterpreter b) -> QInterpreter b
+runScopeInterpreter sb = unTransformT sb
+
+execScopeInterpreter :: QInterpreter (QScopeInterpreter a) -> QScopeInterpreter a
+execScopeInterpreter = execMapTransformT
+
 type QFixBox = FixBox QScopeInterpreter
 
 scopeRef :: Ref QScopeInterpreter QScope
@@ -45,8 +53,8 @@ currentNamespaceRef = transformParamRef currentNamespaceParam
 varIDStateRef :: Ref QScopeInterpreter VarIDState
 varIDStateRef = transformParamRef varIDStateParam
 
-scopeSourcePos :: SourcePos -> QScopeInterpreter ()
-scopeSourcePos = refPut (transformParamRef sourcePosParam)
+scopeSetSourcePos :: SourcePos -> QScopeInterpreter ()
+scopeSetSourcePos = refPut (transformParamRef sourcePosParam)
 
 allocateVar :: Maybe FullName -> QScopeInterpreter (FullName, VarID)
 allocateVar mname = do

@@ -92,8 +92,7 @@ library
       Pinafore.Language.Grammar.Read.Interactive
       Pinafore.Language.Grammar.Read
       Pinafore.Language.Grammar.Docs
-      Pinafore.Language.Grammar.Interpret.RefNotation
-      Pinafore.Language.Grammar.Interpret.ScopeBuilder
+      Pinafore.Language.Grammar.Interpret.AppNotation
       Pinafore.Language.Grammar.Interpret.Type
       Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
       Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter

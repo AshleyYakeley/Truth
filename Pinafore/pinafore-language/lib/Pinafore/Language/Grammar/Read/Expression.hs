@@ -493,12 +493,12 @@ readExpression3 =
              withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
                  readWithSourcePos $ do
                      rexpr <- readExpression
-                     return $ SERef rexpr) <|>
+                     return $ SEAppQuote rexpr) <|>
     readWithSourcePos
         (do
              readThis TokUnquote
              rexpr <- readExpression3
-             return $ SEUnref rexpr) <|>
+             return $ SEAppUnquote rexpr) <|>
     (readParen $
      readWithSourcePos
          (do

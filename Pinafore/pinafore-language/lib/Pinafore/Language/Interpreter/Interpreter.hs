@@ -8,6 +8,8 @@ module Pinafore.Language.Interpreter.Interpreter
     , scopeParam
     , bindingsParam
     , currentNamespaceParam
+    , appNotationVarRef
+    , appNotationBindsProd
     , runInterpreter
     , getRenderFullName
     , getBindingInfoLookup
@@ -54,17 +56,21 @@ data InterpretContext = MkInterpretContext
 data InterpretState = MkInterpretState
     { isTypeID :: TypeID
     , isModules :: Map ModuleName QModule
+    , isAppNotationVar :: VarIDState
     }
 
 emptyInterpretState :: InterpretState
 emptyInterpretState = let
     isTypeID = zeroTypeID
     isModules = mempty
+    isAppNotationVar = firstVarIDState
     in MkInterpretState {..}
+
+type InterpretOutput = [(VarID, QExpression)]
 
 type QInterpreter :: Type -> Type
 newtype QInterpreter a = MkQInterpreter
-    { unInterpreter :: ReaderT InterpretContext (StateT InterpretState InterpretResult) a
+    { unInterpreter :: ReaderT InterpretContext (WriterT InterpretOutput (StateT InterpretState InterpretResult)) a
     } deriving ( Functor
                , Applicative
                , Alternative
@@ -147,14 +153,23 @@ loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bf
 
 interpretStateRef :: Ref QInterpreter InterpretState
 interpretStateRef = let
-    ref = liftRef stateRef
+    ref = liftRef $ liftRef stateRef
     in MkRef (MkQInterpreter $ refGet ref) $ \a -> MkQInterpreter $ refPut ref a
+
+appNotationBindsProd :: Prod QInterpreter [(VarID, QExpression)]
+appNotationBindsProd = let
+    prod = liftProd writerProd
+    in MkProd (\a -> MkQInterpreter $ prodTell prod a) (\(MkQInterpreter mr) -> MkQInterpreter $ prodCollect prod mr)
 
 typeIDRef :: Ref QInterpreter TypeID
 typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
 
 modulesRef :: Ref QInterpreter (Map ModuleName QModule)
 modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) interpretStateRef
+
+appNotationVarRef :: Ref QInterpreter VarIDState
+appNotationVarRef =
+    lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
 
 runInterpreter ::
        SourcePos -> (ModuleName -> QInterpreter (Maybe QModule)) -> QSpecialVals -> QInterpreter a -> InterpretResult a
@@ -163,7 +178,7 @@ runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace
-    in evalStateT (runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
+    in evalStateT (evalWriterT $ runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
 firstOf :: [a] -> (a -> Maybe b) -> Maybe b
 firstOf [] _ = Nothing

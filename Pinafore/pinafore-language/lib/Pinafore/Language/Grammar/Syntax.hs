@@ -307,8 +307,8 @@ data SyntaxExpression'
     | SEAbstracts (Some SyntaxMulticase)
     | SEMatch [SyntaxCase]
     | SEMatches SyntaxMulticaseList
-    | SERef SyntaxExpression
-    | SEUnref SyntaxExpression
+    | SEAppQuote SyntaxExpression
+    | SEAppUnquote SyntaxExpression
     | SEDecl SyntaxDeclarator
              SyntaxExpression
     | SEList [SyntaxExpression]

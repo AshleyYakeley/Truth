@@ -75,8 +75,8 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEAbstracts match) = syntaxFreeVariables match
     syntaxFreeVariables (SEMatch match) = syntaxFreeVariables match
     syntaxFreeVariables (SEMatches match) = syntaxFreeVariables match
-    syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
-    syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
+    syntaxFreeVariables (SEAppQuote expr) = syntaxFreeVariables expr
+    syntaxFreeVariables (SEAppUnquote expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEDecl decl expr) =
         difference
             (syntaxFreeVariables decl <> syntaxFreeVariables expr)
