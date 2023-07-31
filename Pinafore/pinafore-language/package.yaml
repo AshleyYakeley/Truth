@@ -70,6 +70,10 @@ library:
       - Pinafore.Language.Error
       - Pinafore.Language.SpecialForm
       - Pinafore.Language.VarID
+      - Pinafore.Language.Interpreter.Binding
+      - Pinafore.Language.Interpreter.Scope
+      - Pinafore.Language.Interpreter.Interpreter
+      - Pinafore.Language.Interpreter.ScopeInterpreter
       - Pinafore.Language.Interpreter
       - Pinafore.Language.Var
       - Pinafore.Language.Convert.HasType

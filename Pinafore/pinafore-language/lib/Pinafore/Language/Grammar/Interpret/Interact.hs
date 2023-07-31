@@ -95,7 +95,7 @@ interactLoop inh outh echo = do
                                  interactRunQInterpreter $ bind $ return () -- check errors
                                  lift $ readerStateUpdate bind
                              ShowDocInteractiveCommand rname -> do
-                                 bmap <- interactRunQInterpreter $ getBindingInfoMap
+                                 bmap <- interactRunQInterpreter $ getBindingInfoLookup
                                  liftIO $
                                      case fmap (biDocumentation . snd) $ bmap rname of
                                          Nothing -> hPutStrLn outh $ "! " <> show rname <> " undefined"

@@ -28,7 +28,7 @@ tShimWit = qType
 subtypeEntry ::
        forall a b. (HasQType 'Negative a, HasQType 'Positive b)
     => QOpenExpression (QPolyShim Type a b)
-    -> SubtypeConversionEntry QGroundType
+    -> QSubtypeConversionEntry
 subtypeEntry convexpr = let
     ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)

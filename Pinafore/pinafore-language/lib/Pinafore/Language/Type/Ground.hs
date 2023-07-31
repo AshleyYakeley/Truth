@@ -73,7 +73,7 @@ class ( MonadPlus Interpreter
       , MonadCatch PinaforeError Interpreter
       ) => HasInterpreter where
     type Interpreter :: Type -> Type
-    getSubtypeConversions :: Interpreter [SubtypeConversionEntry QGroundType]
+    getSubtypeConversions :: Interpreter [QSubtypeConversionEntry]
     mkErrorMessage :: Interpreter (ErrorType -> PinaforeError -> ErrorMessage)
 
 instance HasInterpreter => ExprShow (QGroundType dv gt) where
@@ -184,6 +184,8 @@ type QOpenPattern = TSOpenPattern QTypeSystem
 type QPattern = TSSealedExpressionPattern QTypeSystem
 
 type QBinding = TSBinding QTypeSystem
+
+type QSubtypeConversionEntry = SubtypeConversionEntry QGroundType
 
 instance HasInterpreter => IsDolanGroundType QGroundType where
     type DolanVarID QGroundType = VarID

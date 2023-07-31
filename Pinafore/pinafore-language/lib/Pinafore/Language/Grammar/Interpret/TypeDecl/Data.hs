@@ -336,7 +336,7 @@ interpretConstructorTypes ::
     -> QInterpreter (Some ConstructorType)
 interpretConstructorTypes tid supertypes c = let
     consname = fnName $ ctName c
-    in withCurrentNamespace (fnCompanion $ tdName $ ctOuterType c) $
+    in paramWith currentNamespaceParam (fnCompanion $ tdName $ ctOuterType c) $
        case ctContents c of
            Left innerTypes -> do
                etypes <- for innerTypes interpretNonpolarType

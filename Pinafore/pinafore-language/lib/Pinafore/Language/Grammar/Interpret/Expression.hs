@@ -544,7 +544,7 @@ interpretExpose :: SyntaxExpose -> [SyntaxDeclaration] -> RefNotation (Docs, QSc
 interpretExpose (MkSyntaxExpose items) sdecls =
     runScopeBuilder (interpretDocDeclarations sdecls) $ \doc ->
         liftRefNotation $ do
-            curns <- getCurrentNamespace
+            curns <- paramAsk currentNamespaceParam
             let (namespaces, names) = mconcat $ fmap (partitionItem curns) items
             (bnames, scope) <- exportScope namespaces names
             return (exposeDocs bnames doc, scope)

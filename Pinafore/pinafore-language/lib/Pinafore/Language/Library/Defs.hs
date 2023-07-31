@@ -49,7 +49,7 @@ data ScopeEntry context
     = BindScopeEntry FullNameRef
                      [FullName]
                      (context -> QInterpreterBinding)
-    | SubtypeScopeEntry (SubtypeConversionEntry QGroundType)
+    | SubtypeScopeEntry QSubtypeConversionEntry
 
 instance Contravariant ScopeEntry where
     contramap ab (BindScopeEntry name oname f) = BindScopeEntry name oname $ \c -> f $ ab c
