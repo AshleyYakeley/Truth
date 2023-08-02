@@ -110,13 +110,17 @@ joinScopes old new = do
     st <- addSCEntries newlist $ scopeSubtypes old
     return MkQScope {scopeBindings = bb, scopeSubtypes = st}
 
+-- old, new (oldest first)
+joinAllScopesTo :: HasInterpreter => QScope -> [QScope] -> Interpreter QScope
+joinAllScopesTo b [] = return b
+joinAllScopesTo b (s:ss) = do
+    s' <- joinScopes b s
+    joinAllScopesTo s' ss
+
 -- oldest first
 joinAllScopes :: HasInterpreter => [QScope] -> Interpreter QScope
 joinAllScopes [] = return emptyScope
-joinAllScopes [s] = return s
-joinAllScopes (s:ss) = do
-    s' <- joinAllScopes ss
-    joinScopes s s'
+joinAllScopes (s:ss) = joinAllScopesTo s ss
 
 data QModule = MkQModule
     { moduleDoc :: Tree DefDoc
