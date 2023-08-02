@@ -60,7 +60,7 @@ instance SyntaxFreeVariables SyntaxMulticaseList where
     syntaxFreeVariables (MkSyntaxMulticaseList _ l) = syntaxFreeVariables l
 
 instance SyntaxFreeVariables SyntaxDeclarator where
-    syntaxFreeVariables (SDLet _ sdecls) = syntaxFreeVariables sdecls
+    syntaxFreeVariables (SDLetSeq sdecls) = syntaxFreeVariables sdecls
     syntaxFreeVariables (SDLetRec sdecls) = syntaxFreeVariables sdecls
     syntaxFreeVariables (SDImport _) = mempty
     syntaxFreeVariables (SDWith _) = mempty
@@ -138,14 +138,15 @@ instance SyntaxBindingVariables SyntaxRecursiveDeclaration' where
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxDeclarator where
-    syntaxBindingVariables (SDLet _ sdecls) = syntaxBindingVariables sdecls
+    syntaxBindingVariables (SDLetSeq sdecls) = syntaxBindingVariables sdecls
     syntaxBindingVariables (SDLetRec sdecls) = syntaxBindingVariables sdecls
     syntaxBindingVariables (SDImport _) = mempty
     syntaxBindingVariables (SDWith _) = mempty
 
 instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind
-    syntaxBindingVariables (DeclaratorSyntaxDeclaration decl) = syntaxBindingVariables decl
+    syntaxBindingVariables (DeclaratorSyntaxDeclaration declarator) = syntaxBindingVariables declarator
+    syntaxBindingVariables (DeclaratorInSyntaxDeclaration _ decl) = syntaxBindingVariables decl
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxBinding where

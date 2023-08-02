@@ -6,23 +6,14 @@ module Pinafore.Language.Interpreter.Interpreter
     , sourcePosParam
     , varIDStateParam
     , scopeParam
-    , bindingsParam
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
     , runInterpreter
     , getRenderFullName
     , getBindingInfoLookup
-    , getBindingLookup
-    , lookupDebugBindingInfo
-    , lookupBoundType
-    , lookupPatternConstructor
-    , lookupRecordConstructor
-    , lookupSpecialForm
+    , getNamespaceWithScope
     , getSpecialVals
-    , QBoundValue(..)
-    , lookupBoundValue
-    , lookupMaybeValue
     , exportScope
     , getModule
     , getSubtypeScope
@@ -204,73 +195,10 @@ getBindingInfoLookup = do
     nsp <- namespacePriority
     return $ \(MkFullNameRef name nsn) -> firstOf (nsp nsn) $ \ns -> bindingMapLookupInfo nspace $ MkFullName name ns
 
-getBindingLookup :: QInterpreter (FullNameRef -> Maybe QInterpreterBinding)
-getBindingLookup = do
-    bindmap <- getBindingInfoLookup
-    return $ \rname -> fmap (biValue . snd) $ bindmap rname
-
-rnuToInterpreter :: FullNameRef -> Maybe a -> QInterpreter a
-rnuToInterpreter _ (Just a) = return a
-rnuToInterpreter name Nothing = throw $ LookupNotDefinedError name
-
-lookupBinding :: FullNameRef -> QInterpreter QInterpreterBinding
-lookupBinding name = do
-    bindmap <- getBindingLookup
-    rnuToInterpreter name $ bindmap name
-
-lookupDebugBindingInfo :: FullNameRef -> QInterpreter (Maybe (FullName, String))
-lookupDebugBindingInfo nameref = do
-    bindmap <- getBindingInfoLookup
-    return $ fmap (\(name, b) -> (name, show $ biValue b)) $ bindmap nameref
-
-lookupBoundType :: FullNameRef -> QInterpreter QSomeGroundType
-lookupBoundType name = do
-    b <- lookupBinding name
-    case b of
-        TypeBinding t -> return t
-        _ -> throw $ LookupNotTypeError name
-
-lookupPatternConstructor :: FullNameRef -> QInterpreter (Either QPatternConstructor QRecordConstructor)
-lookupPatternConstructor name = do
-    b <- lookupBinding name
-    case b of
-        ValueBinding _ (Just pc) -> return $ Left pc
-        RecordConstructorBinding rc -> return $ Right rc
-        _ -> throw $ LookupNotConstructorError name
-
-lookupRecordConstructor :: FullNameRef -> QInterpreter QRecordConstructor
-lookupRecordConstructor name = do
-    b <- lookupBinding name
-    case b of
-        RecordConstructorBinding rc -> return rc
-        _ -> throw $ LookupNotRecordConstructorError name
-
-lookupSpecialForm :: FullNameRef -> QInterpreter QSpecialForm
-lookupSpecialForm name = do
-    b <- lookupBinding name
-    case b of
-        SpecialFormBinding sf -> return sf
-        _ -> throw $ LookupNotSpecialFormError name
-
-data QBoundValue
-    = ValueBoundValue QExpression
-    | RecordBoundValue QRecordConstructor
-
-lookupBoundValue :: FullNameRef -> QInterpreter QBoundValue
-lookupBoundValue name = do
-    b <- lookupBinding name
-    case b of
-        ValueBinding exp _ -> return $ ValueBoundValue exp
-        RecordConstructorBinding rc -> return $ RecordBoundValue rc
-        _ -> throw $ LookupNotConstructorError name
-
-lookupMaybeValue :: FullNameRef -> QInterpreter (Maybe QExpression)
-lookupMaybeValue name = do
-    mb <- getBindingLookup
-    return $
-        case mb name of
-            Just (ValueBinding exp _) -> Just exp
-            _ -> Nothing
+getNamespaceWithScope :: Namespace -> Namespace -> (FullNameRef -> Bool) -> QInterpreter QScope
+getNamespaceWithScope sourcens destns ff = do
+    bmap <- paramAsk bindingsParam
+    return $ emptyScope {scopeBindings = bindingMapNamespaceWith sourcens destns ff bmap}
 
 checkPureExpression :: QExpression -> QInterpreter ()
 checkPureExpression expr = do
@@ -305,7 +233,7 @@ exportNamespace cnss = do
         toBI (MkFullName _ ns, _) = isJust $ choice $ fmap (\cns -> namespaceWithin cns ns) cnss
     return $ filter toBI $ bindingMapEntries bmap
 
-exportScope :: [Namespace] -> [FullNameRef] -> QInterpreter ([FullName], QScope)
+exportScope :: [Namespace] -> [FullNameRef] -> QInterpreter QScope
 exportScope nsns names = do
     MkQScope _ subtypes <- paramAsk scopeParam
     nsbindss <- exportNamespace nsns
@@ -314,7 +242,7 @@ exportScope nsns names = do
         binds :: [(FullName, QBindingInfo)]
         binds = nsbindss <> nbinds
     for_ binds $ \bi -> checkPureBinding $ biValue $ snd bi
-    return $ (fmap fst binds, MkQScope (bindingInfosToMap binds) subtypes)
+    return $ MkQScope (bindingInfosToMap binds) subtypes
 
 getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
 getCycle _ [] = Nothing

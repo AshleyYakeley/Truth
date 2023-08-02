@@ -22,7 +22,8 @@ module Pinafore.Test
     , QInterpreter
     , toJMShimWit
     , allocateVar
-    , QScopeInterpreter
+    , QScopeBuilder
+    , withScopeBuilder
     , registerType
     , registerLetBindings
     , registerLetBinding

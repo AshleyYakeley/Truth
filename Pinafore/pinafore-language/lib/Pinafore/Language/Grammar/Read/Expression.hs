@@ -201,9 +201,20 @@ readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration re
 
 readDeclaratorDeclaration :: Parser SyntaxDeclaration'
 readDeclaratorDeclaration = do
-    sdecl <- readDeclarator
-    readThis TokEnd
-    return $ DeclaratorSyntaxDeclaration sdecl
+    sdeclarator <- readDeclarator
+    (do
+         readThis TokEnd
+         return $ DeclaratorSyntaxDeclaration sdeclarator) <|>
+        (do
+             readThis TokIn
+             sdecl <- readDeclaration
+             return $ DeclaratorInSyntaxDeclaration sdeclarator sdecl)
+
+readExposeDeclaration :: Parser SyntaxDeclaration'
+readExposeDeclaration = do
+    readThis TokExpose
+    items <- readCommaList readNameRefItem
+    return $ ExposeDeclaration items
 
 readDebugDeclaration :: Parser SyntaxDeclaration'
 readDebugDeclaration = do
@@ -217,6 +228,7 @@ readDeclaration =
     readWithSourcePos $
     choice
         [ readDebugDeclaration
+        , readExposeDeclaration
         , readDeclaratorDeclaration
         , fmap DirectSyntaxDeclaration readDirectDeclaration
         , readNamespaceDecl
@@ -319,10 +331,8 @@ readExpression = do
 
 readModule :: Parser SyntaxModule
 readModule = do
-    readThis TokExpose
-    items <- readCommaList readNameRefItem
-    sdecls <- readOf readDeclaration
-    return $ MkSyntaxModule (MkSyntaxExpose items) sdecls
+    sdecls <- readLines readDeclaration
+    return $ MkSyntaxModule sdecls
 
 data DoLine
     = ExpressionDoLine SyntaxExpression
@@ -383,18 +393,12 @@ readDeclarator =
     (do
          readThis TokLet
          (do
-              readThis TokExpose
-              items <- readCommaList readNameRefItem
-              readThis TokOf
-              sdecls <- readLines readDeclaration
-              return $ SDLet (Just $ MkSyntaxExpose items) sdecls) <|>
-             (do
-                  readThis TokRec
-                  sdecls <- readLines $ readWithDoc $ readWithSourcePos readDirectDeclaration
-                  return $ SDLetRec sdecls) <|>
+              readThis TokRec
+              sdecls <- readLines $ readWithDoc $ readWithSourcePos readDirectDeclaration
+              return $ SDLetRec sdecls) <|>
              (do
                   sdecls <- readLines readDeclaration
-                  return $ SDLet Nothing sdecls)) <|>
+                  return $ SDLetSeq sdecls)) <|>
     (do
          readThis TokWith
          snws <- readCommaList readNamespaceWith

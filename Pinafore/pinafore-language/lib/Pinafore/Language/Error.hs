@@ -25,7 +25,7 @@ data ErrorType
     | SpecialFormWrongAnnotationsError FullNameRef
                                        [NamedText]
                                        [NamedText]
-    | DeclareTypeDuplicateError FullName
+    | DeclareBindingDuplicateError FullName
     | DeclareConstructorDuplicateError FullNameRef
     | DeclareDynamicTypeCycleError (NonEmpty FullName)
     | DeclareDatatypeStorableSupertypeError FullName
@@ -143,7 +143,7 @@ instance ShowNamedText ErrorType where
     showNamedText (SpecialFormWrongAnnotationsError n expected found) =
         "wrong annotations for special form " <>
         showNamedText n <> ": expecting " <> intercalate " " expected <> ", found " <> intercalate " " found
-    showNamedText (DeclareTypeDuplicateError n) = "duplicate type: " <> showNamedText n
+    showNamedText (DeclareBindingDuplicateError n) = "duplicate binding: " <> showNamedText n
     showNamedText (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> showNamedText n
     showNamedText (DeclareDynamicTypeCycleError nn) =
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap showNamedText $ toList nn)

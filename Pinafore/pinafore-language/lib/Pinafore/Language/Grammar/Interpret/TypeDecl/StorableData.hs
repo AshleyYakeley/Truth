@@ -158,7 +158,7 @@ makeStorableGroundType mainTypeName tparams = let
                         , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
                         }
                 in (gt, storability)
-    postregister :: QGroundType dv gt -> Storability dv gt -> QScopeInterpreter ()
+    postregister :: QGroundType dv gt -> Storability dv gt -> QScopeBuilder ()
     postregister gt storability =
         registerSubtypeConversion $
         MkSubtypeConversionEntry TrustMe gt entityGroundType $

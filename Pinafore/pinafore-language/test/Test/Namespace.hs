@@ -21,6 +21,13 @@ testNamespace =
               , testExpectSuccess "let a=4 in test $ a == 4"
               ]
         , tGroup
+              "let"
+              [ testExpectSuccess "let f: Integer = undefined in pass"
+              , testExpectSuccess "let opentype P; f: P = undefined in pass"
+              , testExpectSuccess "let let opentype P in expose P; f: P = undefined in pass"
+              , testExpectSuccess "let namespace M of opentype P end; with M. in f: P = undefined in pass"
+              ]
+        , tGroup
               "exprs"
               [ tDecls ["namespace M of a=4 end"] $
                 tGroup
@@ -44,15 +51,15 @@ testNamespace =
                     , testExpectSuccess "let not = fn x => x in test $ not True"
                     , testExpectSuccess "with M in test $ not True"
                     ]
-              , tDeclarator "let expose a of a=4" $
+              , tDecls ["let a=4 in expose a"] $
                 tGroup
                     "expose"
                     [ testExpectSuccess "pass"
                     , testExpectSuccess "test $ a == 4"
                     , testExpectSuccess "let b = a in test $ b == 4"
                     ]
-              , tDeclarator "let expose a of b=4" $ tGroup "non-expose" [testExpectReject "pass"]
-              , tDecls ["namespace M of let expose a of a=4 end end"] $
+              , tDecls ["let b=4 in expose a"] $ tGroup "non-expose" [testExpectReject "pass"]
+              , tDecls ["namespace M of let a=4 in expose a end"] $
                 tGroup
                     "namespace-expose"
                     [ testExpectSuccess "pass"
@@ -64,7 +71,7 @@ testNamespace =
                     , testExpectSuccess "let b = a.M in test $ b == 4"
                     , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
-              , tDeclarator "let expose a.M of namespace M of a=4 end" $
+              , tDecls ["let namespace M of a=4 end in expose a.M"] $
                 tGroup
                     "expose-namespace"
                     [ testExpectSuccess "pass"
@@ -76,7 +83,7 @@ testNamespace =
                     , testExpectSuccess "let b = a.M in test $ b == 4"
                     , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
-              , tDeclarator "let expose namespace M of namespace M of a=4 end" $
+              , tDecls ["let namespace M of a=4 end in expose namespace M"] $
                 tGroup
                     "expose-whole-namespace"
                     [ testExpectSuccess "pass"
@@ -89,7 +96,7 @@ testNamespace =
                     , testExpectSuccess "let a = 3; b = a.M in test $ b == 4"
                     ]
               ]
-        , tDecls ["namespace M of let expose T, namespace T of datatype T of T1; T2 end end end"] $
+        , tDecls ["namespace M of let datatype T of T1; T2 end in expose T, namespace T end"] $
           tGroup
               "type"
               [ testExpectSuccess "pass"
@@ -101,8 +108,8 @@ testNamespace =
               , testExpectSuccess "with M in let f: T -> T = fn x => x in pass"
               , testExpectSuccess "let f: T.M -> T.M = fn x => x in pass"
               ]
-        , tDecls ["namespace M of let expose a of a = b end end"] $ testExpectReject "with M in pass"
-        , tDecls ["namespace M of let expose T of opentype T end end"] $
+        , tDecls ["namespace M of let a = b in expose a end"] $ testExpectReject "with M in pass"
+        , tDecls ["namespace M of let opentype T in expose T end"] $
           tGroup
               "opentype"
               [ testExpectSuccess "with M in let datatype D of MkD T end; in pass"
@@ -115,8 +122,8 @@ testNamespace =
                     "namespace"
                     [testExpectSuccess "pass", testExpectSuccess "with M in let f: P -> Q = fn x => x in pass"]
               , tDecls
-                    [ "namespace M of let expose P, Q of opentype P; opentype Q end end"
-                    , "namespace N of let expose of with M. end; subtype P <: Q end end"
+                    [ "namespace M of let opentype P; opentype Q in expose P, Q end"
+                    , "namespace N of with M. in subtype P <: Q end"
                     ] $
                 tGroup
                     "expose"

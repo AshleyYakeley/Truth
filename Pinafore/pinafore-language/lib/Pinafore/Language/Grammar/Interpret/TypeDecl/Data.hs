@@ -158,7 +158,7 @@ getDolanVarianceMap tname (ConsCCRArguments p pp) vm = do
 data TypeConstruction dv gt extra =
     forall x y. MkTypeConstruction (DolanVarianceMap dv gt -> extra -> QInterpreter x)
                                    (x -> QInterpreter (GroundTypeFromTypeID dv gt y))
-                                   (QGroundType dv gt -> y -> QScopeInterpreter ())
+                                   (QGroundType dv gt -> y -> QScopeBuilder ())
 
 type GroundTypeFromTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 newtype GroundTypeFromTypeID dv gt y = MkGroundTypeFromTypeID
@@ -433,22 +433,22 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                         withRepresentative (ccrArgumentsType tparams) $
                         case gmaker mainTypeName tparams of
                             MkTypeConstruction mkx (mkgt :: x -> _ (_ y)) postregister -> let
-                                mainRegister :: x -> QScopeInterpreter ()
+                                mainRegister :: x -> QScopeBuilder ()
                                 mainRegister x = do
-                                    MkGroundTypeFromTypeID gttid <- lift $ mkgt x
+                                    MkGroundTypeFromTypeID gttid <- builderLift $ mkgt x
                                     let (gt, y) = gttid mainTypeName mainTypeID
                                     registerType mainTypeName mainTypeDoc gt
                                     postregister gt y
                                 mainConstruct ::
                                        ()
-                                    -> QScopeInterpreter ( x
-                                                         , ( x
-                                                           , DolanVarianceMap dv maintype
-                                                           , FixedList conscount (ConstructorCodec decltype)
-                                                           , decltype -> TypeData dv maintype))
+                                    -> QScopeBuilder ( x
+                                                     , ( x
+                                                       , DolanVarianceMap dv maintype
+                                                       , FixedList conscount (ConstructorCodec decltype)
+                                                       , decltype -> TypeData dv maintype))
                                 mainConstruct () = do
                                     constructorInnerTypes <-
-                                        lift $
+                                        builderLift $
                                         for constructorFixedList $
                                         interpretConstructorTypes (witnessToValue mainTypeID) supertypes
                                     assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
@@ -462,22 +462,22 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                         case nonEmpty $ duplicates declaredvars of
                                             Nothing -> return ()
                                             Just vv ->
-                                                lift $
+                                                builderLift $
                                                 throw $
                                                 InterpretTypeDeclDuplicateTypeVariablesError mainTypeName $
                                                 fmap someTypeVarToName vv
                                         case nonEmpty unboundvars of
                                             Nothing -> return ()
                                             Just vv ->
-                                                lift $
+                                                builderLift $
                                                 throw $
                                                 InterpretTypeDeclUnboundTypeVariablesError mainTypeName $
                                                 fmap someTypeVarToName vv
                                         Refl <- unsafeGetRefl @Type @structtype @decltype
                                         dvm :: DolanVarianceMap dv maintype <-
-                                            lift $ getDolanVarianceMap @dv mainTypeName tparams vmap
+                                            builderLift $ getDolanVarianceMap @dv mainTypeName tparams vmap
                                         x <-
-                                            lift $
+                                            builderLift $
                                             mkx dvm $ toList $ liftA2 (,) codecs $ fmap ctExtra constructorFixedList
                                         return $ (x, (x, dvm, codecs, \t -> ctOuterType $ pickn t constructorFixedList))
                                 mainBox ::
@@ -489,7 +489,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                 mainTypeBox :: QFixBox x (QGroundType dv maintype)
                                 mainTypeBox =
                                     mkConstructFixBox $ \x -> do
-                                        gtft <- lift $ mkgt x
+                                        gtft <- builderLift $ mkgt x
                                         return $ fst $ unGroundTypeFromTypeID gtft mainTypeName mainTypeID
                                 getGroundType ::
                                        QGroundType dv maintype
@@ -553,9 +553,9 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                        , x
                                        , DolanVarianceMap dv maintype
                                        , ConstructorCodec decltype)
-                                    -> QScopeInterpreter ()
+                                    -> QScopeBuilder ()
                                 registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor ctype codec) = do
-                                    gttid <- lift $ mkgt x
+                                    gttid <- builderLift $ mkgt x
                                     let
                                         groundType :: QGroundType dv maintype
                                         groundType =
@@ -597,9 +597,9 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                 subtypeRegister ::
                                        TypeData dv maintype
                                     -> (QGroundType dv maintype, decltype -> TypeData dv maintype, x)
-                                    -> QScopeInterpreter ()
+                                    -> QScopeBuilder ()
                                 subtypeRegister tdata (~(mainGroundType, picktype, x)) = do
-                                    gttid <- lift $ mkgt x
+                                    gttid <- builderLift $ mkgt x
                                     let
                                         subGroundType :: QGroundType dv maintype
                                         subGroundType = getGroundType mainGroundType picktype gttid tdata
@@ -629,16 +629,17 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                             getConstypeConvert ::
                                                    forall t.
                                                    ConstructorType t
-                                                -> QScopeInterpreter ((Name, Name), QOpenExpression (t -> supertype))
+                                                -> QScopeBuilder ((Name, Name), QOpenExpression (t -> supertype))
                                             getConstypeConvert (MkConstructorType _ PositionalCF _) =
-                                                lift $ throw DeclareDatatypePositionalConstructorWithSupertypeError
+                                                builderLift $
+                                                throw DeclareDatatypePositionalConstructorWithSupertypeError
                                             getConstypeConvert (MkConstructorType consname (RecordCF rcds) sigs) = let
                                                 rcd = unsafeIndex rcds i
                                                 in case rcdRecordConstructor rcd of
                                                        MkQRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarMap sgtconv)) _ stcodec
                                                            | Just Refl <- testEquality supergroundtype sgt -> do
                                                                memberconvexpr <-
-                                                                   lift $ getMatchMemberConvert sigs stmembers
+                                                                   builderLift $ getMatchMemberConvert sigs stmembers
                                                                let
                                                                    convexpr =
                                                                        fmap
@@ -651,8 +652,8 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                                            error $ "broken supertype in datatype: " <> show mainTypeName
                                             getCodecConvert ::
                                                    ConstructorCodec decltype
-                                                -> QScopeInterpreter ( (Name, Name)
-                                                                     , QOpenExpression (decltype -> Maybe supertype))
+                                                -> QScopeBuilder ( (Name, Name)
+                                                                 , QOpenExpression (decltype -> Maybe supertype))
                                             getCodecConvert (MkSomeFor constype codec) = do
                                                 (chint, convexpr) <- getConstypeConvert constype
                                                 return $ (chint, fmap (\conv -> fmap conv . decode codec) convexpr)

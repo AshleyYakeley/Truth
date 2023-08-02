@@ -382,7 +382,6 @@ allKeywords =
     , ("except", "keyword.other.pinafore")
     , ("namespace", "keyword.declaration.pinafore")
     , ("with", "keyword.declaration.pinafore")
-    , ("debug", "keyword.other.pinafore")
     ]
 
 readTextToken :: Parser (SomeOf Token)

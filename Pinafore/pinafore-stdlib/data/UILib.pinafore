@@ -1,7 +1,5 @@
-expose namespace UILib of
-    import
-        "UILib/Context",
-        "UILib/Pane",
-        "UILib/Named"
-    end
-end
+import
+    "UILib/Context",
+    "UILib/Pane",
+    "UILib/Named"
+end;

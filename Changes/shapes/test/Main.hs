@@ -91,14 +91,11 @@ runBoxes = do
     liftIO $ assertEqual "" 8 x
 
 testFix :: TestTree
-testFix =
-    testTree "fix" [testTree "IO" (runFix :: IO ()), testTree "TransformT IO" (unTransformT runFix return :: IO ())]
+testFix = testTree "fix" [testTree "IO" (runFix :: IO ()), testTree "WithT IO" (unWithT runFix return :: IO ())]
 
 testFixBox :: TestTree
 testFixBox =
-    testTree
-        "fixbox"
-        [testTree "IO" (runBoxes :: IO ()), testTree "TransformT IO" (unTransformT runBoxes return :: IO ())]
+    testTree "fixbox" [testTree "IO" (runBoxes :: IO ()), testTree "WithT IO" (unWithT runBoxes return :: IO ())]
 
 main :: IO ()
 main = testMain $ testTree "shapes" [testClock, testFix, testFixBox, testSerializer]

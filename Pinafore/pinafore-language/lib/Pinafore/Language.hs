@@ -47,9 +47,10 @@ import Pinafore.Language.Var
 import Shapes
 
 runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
-runPinaforeScoped sourcename scp =
-    runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $
-    transformTMap (void $ interpretImportDeclaration builtInModuleName) scp
+runPinaforeScoped sourcename ma =
+    runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $ do
+        sd <- interpretImportDeclaration builtInModuleName
+        withScopeDocs sd ma
 
 spvals :: (?library :: LibraryContext) => QSpecialVals
 spvals = let

@@ -207,7 +207,7 @@ window_css: Action Window.GTK
 ### Drawing
 window_drawing: WholeModel +Time -> Action Window.GTK
 = fn now =>
-    with Colour, Cairo, Drawing, Path, Number in
+    with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number in
     do
         tzref <- newTimeZoneModel.LocalTime now;
         std_window {"Drawing"} $ draw.GTK {fn (w,h) => let
@@ -256,7 +256,7 @@ window_textselection: Action Window.GTK
 
 ### Cairo Image
 window_cairoimage: Action Window.GTK
-= with Colour, Cairo, Drawing, Path, Number, GTK in
+= with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number, GTK in
     let
     dimensions: Integer *: Integer
     = (400,400);

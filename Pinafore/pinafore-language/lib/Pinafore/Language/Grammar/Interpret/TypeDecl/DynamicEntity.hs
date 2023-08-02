@@ -22,13 +22,13 @@ makeDynamicEntityTypeBox ::
        FullName -> RawMarkdown -> NonEmpty SyntaxDynamicEntityConstructor -> QInterpreter (QFixBox () ())
 makeDynamicEntityTypeBox name doc stcons =
     return $ let
-        register :: DynamicEntityType -> QScopeInterpreter ()
+        register :: DynamicEntityType -> QScopeBuilder ()
         register det = do
             let tp = aDynamicStorableGroundType name det
             registerType name doc tp
-        construct :: () -> QScopeInterpreter (DynamicEntityType, ())
+        construct :: () -> QScopeBuilder (DynamicEntityType, ())
         construct _ = do
-            dts <- lift $ for stcons interpretSyntaxDynamicEntityConstructor
+            dts <- builderLift $ for stcons interpretSyntaxDynamicEntityConstructor
             let det = mconcat $ toList dts
             return (det, ())
         in mkFixBox register construct

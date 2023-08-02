@@ -35,8 +35,9 @@ instance Contravariant FetchModule where
     contramap ab (MkFetchModule f) = MkFetchModule $ f . ab
 
 loadModuleFromText :: ModuleName -> Text -> QInterpreter QModule
-loadModuleFromText modname text =
-    transformTMap (void $ interpretImportDeclaration builtInModuleName) $ parseModule modname text
+loadModuleFromText modname text = do
+    sd <- interpretImportDeclaration builtInModuleName
+    withScopeDocs sd $ parseModule modname text
 
 loadModuleFromByteString :: ModuleName -> LazyByteString -> QInterpreter QModule
 loadModuleFromByteString modname bs =
@@ -88,7 +89,7 @@ getLibraryModuleModule context libmod = do
             case se of
                 BindScopeEntry _ _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
-    scope <- joinAllScopes dscopes bscope
+    scope <- joinAllScopes $ bscope : dscopes
     return $ MkQModule (libraryModuleDocumentation libmod) scope
 
 libraryFetchModule :: forall context. [LibraryModule context] -> FetchModule context

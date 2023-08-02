@@ -91,6 +91,9 @@ data SyntaxNameRefItem
 data SyntaxDeclaration'
     = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
     | DeclaratorSyntaxDeclaration SyntaxDeclarator
+    | DeclaratorInSyntaxDeclaration SyntaxDeclarator
+                                    SyntaxDeclaration
+    | ExposeDeclaration [SyntaxNameRefItem]
     | NamespaceSyntaxDeclaration Namespace
                                  [SyntaxDeclaration]
     | DebugSyntaxDeclaration FullNameRef
@@ -104,13 +107,8 @@ data SyntaxNamespaceWith =
                           Namespace
     deriving (Eq)
 
-data SyntaxExpose =
-    MkSyntaxExpose [SyntaxNameRefItem]
-    deriving (Eq)
-
 data SyntaxDeclarator
-    = SDLet (Maybe SyntaxExpose)
-            [SyntaxDeclaration]
+    = SDLetSeq [SyntaxDeclaration]
     | SDLetRec [SyntaxRecursiveDeclaration]
     | SDImport [ModuleName]
     | SDWith [SyntaxNamespaceWith]
@@ -332,8 +330,7 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
 data SyntaxModule =
-    MkSyntaxModule SyntaxExpose
-                   [SyntaxDeclaration]
+    MkSyntaxModule [SyntaxDeclaration]
 
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos

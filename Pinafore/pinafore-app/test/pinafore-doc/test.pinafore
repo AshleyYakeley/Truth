@@ -1,4 +1,4 @@
-expose x, B, A, Mk1.A, Mk2.A, RecA, Mk1.RecA, Mk2.RecA, RecB, R, Mk.R, y, namespace N of
+let
 
     #| doc:A
     datatype A {+p,-q} +r -s of
@@ -113,4 +113,4 @@ expose x, B, A, Mk1.A, Mk2.A, RecA, Mk1.RecA, Mk2.RecA, RecB, R, Mk.R, y, namesp
 
     end;
 
-end
+in expose x, B, A, Mk1.A, Mk2.A, RecA, Mk1.RecA, Mk2.RecA, RecB, R, Mk.R, y, namespace N

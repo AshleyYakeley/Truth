@@ -51,7 +51,7 @@ testSimple =
         MkT i <-
             testerLiftInterpreter $ do
                 tExpression <-
-                    unTransformT (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
+                    withScopeBuilder (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 resultOpenExpression <- typedUnifyExpressionToOpen tShimWit tExpression
                 evalExpression resultOpenExpression
@@ -66,9 +66,9 @@ testDependentLet =
     runTester defaultTester $ do
         MkT i <-
             testerLiftInterpreter $
-            unTransformT (allocateVar $ Just "x.") $ \(_, varid) -> do
+            withScopeBuilder (allocateVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
-                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
+                    withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 resultExpression <- qLetExpr varid (constIntegerExpression 17) tExpression
                 resultOpenExpression <- typedUnifyExpressionToOpen tShimWit resultExpression
@@ -81,9 +81,9 @@ testDependentFunction =
     runTester defaultTester $ do
         MkT i <-
             testerLiftInterpreter $
-            unTransformT (allocateVar $ Just "x.") $ \(_, varid) -> do
+            withScopeBuilder (allocateVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
-                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
+                    withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
@@ -127,9 +127,9 @@ testPolyDependentFunction =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
         MkT1 i <-
             testerLiftInterpreter $
-            unTransformT (allocateVar $ Just "x.") $ \(_, varid) -> do
+            withScopeBuilder (allocateVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
-                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
+                    withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
@@ -137,7 +137,7 @@ testPolyDependentFunction =
                 evalExpression resultOpenExpression
         liftIO $ assertEqual "" 91 i
 
-registerT1Stuff :: QScopeInterpreter ()
+registerT1Stuff :: QScopeBuilder ()
 registerT1Stuff = do
     registerType "T1." "" t1GroundType
     registerPatternConstructor "MkT1." "" (MkSealedExpression (qType :: _ (AP -> T1 AP)) $ pure MkT1) $
@@ -149,7 +149,7 @@ testFunctionType =
     runTester defaultTester $ do
         funcExpression <-
             testerLiftInterpreter $
-            unTransformT registerT1Stuff $ \() -> do
+            withScopeBuilder registerT1Stuff $ \() -> do
                 parseTopExpression "fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer)"
         liftIO $ assertEqual "function type" "T1. Integer. -> T1. Integer." $ show (sealedExpressionType funcExpression)
 
@@ -163,15 +163,15 @@ testSemiScript1 =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> i
         MkT1 i <-
             testerLiftInterpreter $
-            unTransformT
+            withScopeBuilder
                 (do
                      registerT1Stuff
                      allocateVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
-                    unTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
+                    withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
-                unTransformT (registerLetBinding "f." "" funcExpression) $ \() -> do
+                withScopeBuilder (registerLetBinding "f." "" funcExpression) $ \() -> do
                     parseValueUnify @(T1 Integer) "f (MkT1 62)"
         liftIO $ assertEqual "" 62 i
 
@@ -181,7 +181,7 @@ testSemiScript2 =
     runTester defaultTester $ do
         MkT1 i <-
             testerLiftInterpreter $
-            unTransformT registerT1Stuff $ \() -> do
+            withScopeBuilder registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer) in f (MkT1 17)"
@@ -193,7 +193,7 @@ testSemiScript3 =
     runTester defaultTester $ do
         MkT1 i <-
             testerLiftInterpreter $
-            unTransformT registerT1Stuff $ \() -> do
+            withScopeBuilder registerT1Stuff $ \() -> do
                 parseValueUnify
                     @(T1 Integer)
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in ((): T1 Integer) in f 17"
@@ -205,7 +205,7 @@ testSemiScript4 =
     runTester defaultTester $ do
         i <-
             testerLiftInterpreter $
-            unTransformT registerT1Stuff $ \() -> do
+            withScopeBuilder registerT1Stuff $ \() -> do
                 parseValueUnify
                     @Integer
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in (fn MkT1 y => y) () in f 17"

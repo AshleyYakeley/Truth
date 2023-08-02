@@ -1,29 +1,53 @@
-# Declarations
+# Declarations & Declarators
 
 There is no "top level" in Pinafore.
 A program file consists of an expression.
-A module consists of an "expose" declaration.
+A module consists of a list of declarations.
 
-Declarations in `let`-expressions and modules have sequential, not recursive scope.
-These are the different kinds of declarations:
+Declarators output bindings to be used in the scope of declarations and expressions.
 
-- Type declarations
-- Subtype declarations
-- Import declarations
-- Expose declarations
-- Bindings
-- Recursive blocks
+## "Let" Declarators
 
-## Recursive Blocks
+`let`-declarators output bindings from their contained declarations.
+Declarations in `let`-declarators have sequential, not recursive scope.
 
-Recursive blocks are declarations enclosed within `rec ... end`.
-Declarations inside a recursive block are declared recursively.
+For example:
+
+```pinafore
+let a=3; b=4 in a+b
+```
+
+Here `a+b` is an expression, `a=3` and `b=4` are declarations, and `let a=3; b=4` is a declarator.
+This declarator outputs bindings for `a` and `b` to the scope of the expression `a+b`.
+
+Declarators can also output bindings to declarations:
+
+```pinafore
+let let a=3; b=4 in c=a+b in c+1
+```
+
+Here the declarator `let a=3; b=4` outputs bindings for `a` and `b` to the declaration `c=a+b`.
+
+The declarator `let let a=3; b=4 in c=a+b` outputs a binding for `c`, but not `a` or `b`, to the expression `c+1`.
+
+A declarator can also be converted into a declaration using the `end` keyword:
+
+```pinafore
+let let a=3; b=4 end; c=a+b in c+a+b
+```
+
+Here `let a=3; b=4 end` and `c=a+b` are declarations.
+The outer declarator outputs bindings for `a`, `b`, and `c` to the expression `c+a+b`.
+
+## Recursive "Let" Declarators
+
+For recursive declarations, use `let rec` to make a recursive "let"-declarator.
 Import declarations, expose declarations, and (nested) recursive blocks are not allowed inside recursive blocks.
 
 ```pinafore
 let
 
-    rec
+    let rec
         datatype P of
         Mk (Q -> P);
         end;
@@ -33,7 +57,7 @@ let
         end;
     end;
 
-    rec
+    let rec
     fact = match
         0 => 1;
         n => n * fact (n - 1);
@@ -42,6 +66,16 @@ let
 
 in fact 12
 ```
+
+
+## Declarations
+These are the different kinds of declarations:
+
+- Type declarations
+- Subtype declarations
+- BindingMap
+- Declarator declarations
+
 
 ## Namespaces
 

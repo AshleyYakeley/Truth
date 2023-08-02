@@ -85,13 +85,13 @@ interactLoop inh outh echo = do
                                  r <- lift $ lift $ unliftActionOrFail action
                                  let
                                      rval = MkSomeOf rwit r
-                                     buildScope :: QScopeInterpreter ()
+                                     buildScope :: QScopeBuilder ()
                                      buildScope = do
                                          pat <- interpretPattern spat
-                                         match <- lift $ qExpressionPatternMatch (qConstExprAny rval) pat
+                                         match <- builderLift $ qExpressionPatternMatch (qConstExprAny rval) pat
                                          registerMatchBindings match
                                      bind :: QInterpreter --> QInterpreter
-                                     bind qia = transformTMap buildScope qia
+                                     bind qia = withScopeBuilder buildScope $ \() -> qia
                                  interactRunQInterpreter $ bind $ return () -- check errors
                                  lift $ readerStateUpdate bind
                              ShowDocInteractiveCommand rname -> do

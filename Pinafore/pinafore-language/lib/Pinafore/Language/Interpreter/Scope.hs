@@ -1,6 +1,6 @@
 module Pinafore.Language.Interpreter.Scope
     ( QBindingMap
-    , bindingMapLookupNamespace
+    , bindingMapNamespaceWith
     , bindingMapLookupInfo
     , bindingMapEntries
     , bindingInfoToMap
@@ -37,15 +37,15 @@ instance HasInterpreter => Show QBindingMap where
     show (MkQBindingMap m) =
         "{" <> intercalate "," (fmap (\(n, b) -> show n <> "=" <> show (biValue b)) $ mapToList m) <> "}"
 
-bindingMapLookupNamespace :: Namespace -> Namespace -> (FullNameRef -> Bool) -> QBindingMap -> QBindingMap
-bindingMapLookupNamespace sourcens destns ff (MkQBindingMap nm) = let
+bindingMapNamespaceWith :: Namespace -> Namespace -> (FullNameRef -> Bool) -> QBindingMap -> QBindingMap
+bindingMapNamespaceWith sourcens destns ff (MkQBindingMap nm) = let
     matchNS :: forall a. (FullName, a) -> Maybe (FullName, a)
     matchNS (fn, a) = do
         fnr <- namespaceWithinFullNameRef sourcens fn
         altIf $ ff fnr
         return (namespaceConcatFullName destns fnr, a)
     newEntries = mapMaybe matchNS $ mapToList nm
-    in MkQBindingMap $ mapFromList newEntries <> nm
+    in MkQBindingMap $ mapFromList newEntries
 
 bindingMapLookupInfo :: QBindingMap -> FullName -> Maybe (FullName, QBindingInfo)
 bindingMapLookupInfo (MkQBindingMap nspace) name = do
@@ -100,19 +100,23 @@ addSCEntries (a:aa) entries = do
     entries' <- addSCEntry a entries
     addSCEntries aa entries'
 
+-- old, new
+-- should be associative
 joinScopes :: HasInterpreter => QScope -> QScope -> Interpreter QScope
-joinScopes a b = do
+joinScopes old new = do
     let
-        bb = scopeBindings b <> scopeBindings a
-        alist = mapToList $ scopeSubtypes a
-    st <- addSCEntries alist $ scopeSubtypes b
+        bb = scopeBindings old <> scopeBindings new
+        newlist = mapToList $ scopeSubtypes new
+    st <- addSCEntries newlist $ scopeSubtypes old
     return MkQScope {scopeBindings = bb, scopeSubtypes = st}
 
-joinAllScopes :: HasInterpreter => [QScope] -> QScope -> Interpreter QScope
-joinAllScopes [] s = return s
-joinAllScopes (a:aa) s = do
-    s' <- joinScopes a s
-    joinAllScopes aa s'
+-- oldest first
+joinAllScopes :: HasInterpreter => [QScope] -> Interpreter QScope
+joinAllScopes [] = return emptyScope
+joinAllScopes [s] = return s
+joinAllScopes (s:ss) = do
+    s' <- joinAllScopes ss
+    joinScopes s s'
 
 data QModule = MkQModule
     { moduleDoc :: Tree DefDoc

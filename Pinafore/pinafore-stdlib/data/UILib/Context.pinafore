@@ -1,29 +1,25 @@
-expose namespace UILib. of
+import "pinafore-gnome" in
+namespace UILib of
 
-    import "pinafore-gnome" end;
-
-    namespace UILib of
-
-        datatype Context of
-            Mk of
-                gtk: Context.GTK;
-                undoHandler: UndoHandler;
-                store: Store;
-            end;
+    datatype Context of
+        Mk of
+            gtk: Context.GTK;
+            undoHandler: UndoHandler;
+            store: Store;
         end;
+    end;
 
-        namespace Context of
+    namespace Context of
 
-            run: (Context -> Action a) -> Action a
-            = fn call => do
-                dstore <- openDefaultStore.Env;
-                undoHandler <- new.UndoHandler;
-                store <- handleStore.UndoHandler undoHandler dstore;
-                run.GTK $ fn gtk => call Mk.Context;
-            end;
-
+        run: (Context -> Action a) -> Action a
+        = fn call => do
+            dstore <- openDefaultStore.Env;
+            undoHandler <- new.UndoHandler;
+            store <- handleStore.UndoHandler undoHandler dstore;
+            run.GTK $ fn gtk => call Mk.Context;
         end;
 
     end;
 
-end
+end;
+

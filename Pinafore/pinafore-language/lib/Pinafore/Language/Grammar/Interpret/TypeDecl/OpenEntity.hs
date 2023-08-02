@@ -11,7 +11,7 @@ import Shapes
 makeOpenEntityTypeBox :: FullName -> RawMarkdown -> QInterpreter (QFixBox () ())
 makeOpenEntityTypeBox name doc =
     withNewTypeID $ \tidsym -> let
-        register :: () -> QScopeInterpreter ()
+        register :: () -> QScopeBuilder ()
         register _ = do
             let t = openStorableGroundType $ MkOpenEntityType name tidsym
             registerType name doc t

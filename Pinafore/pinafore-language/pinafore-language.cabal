@@ -64,7 +64,10 @@ library
       Pinafore.Language.Interpreter.Binding
       Pinafore.Language.Interpreter.Scope
       Pinafore.Language.Interpreter.Interpreter
-      Pinafore.Language.Interpreter.ScopeInterpreter
+      Pinafore.Language.Interpreter.Lookup
+      Pinafore.Language.Interpreter.ScopeDocs
+      Pinafore.Language.Interpreter.ScopeBuilder
+      Pinafore.Language.Interpreter.Register
       Pinafore.Language.Interpreter
       Pinafore.Language.Var
       Pinafore.Language.Convert.HasType

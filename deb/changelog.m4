@@ -8,8 +8,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Language
     - overhaul of declarations
       . separate namespaces from modules,
-        with "namespace" and "using" declarations
-      . declarations now non-recursive, with recursive rec-blocks
+        with "namespace" declarations and "with" and "import" declarators
+      . both non-recursive ("let") and recursive ("let rec") declarators
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments
     - datatype declarations
