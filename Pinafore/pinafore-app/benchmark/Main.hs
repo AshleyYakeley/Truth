@@ -58,15 +58,15 @@ benchScripts =
         , benchScript "get {False} >>= fn v => pure ()"
         , benchScript "get (pure.WholeModel False) >>= fn v => pure ()"
         , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => pure ()"
-        , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=pure () end in a"
+        , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=pure () in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ pure ()"
         , benchScript
-              "import \"pinafore-gnome\" in with GTK in const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, layoutGrow ui] in const (pure ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.GTK"
-        , benchScript "let const = fn a, b => a; rec r = 3::r end in const (pure ()) r"
+              "import \"pinafore-gnome\" in with GTK in let const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, layoutGrow ui] in const (pure ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.GTK"
+        , benchScript "let const = fn a, b => a; let rec r = 3::r end in const (pure ()) r"
         , benchScript
               "let cpass = fn x => pure (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass = fn x => pure (); rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
+              "let cpass = fn x => pure (); let rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
         , benchScript
               "let cpass = fn x => pure () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
