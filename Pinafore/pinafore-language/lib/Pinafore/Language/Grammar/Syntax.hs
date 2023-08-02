@@ -20,14 +20,17 @@ data SyntaxWithDoc t =
                     t
     deriving (Eq)
 
+data SyntaxDataConstructor extra
+    = PlainSyntaxConstructor [SyntaxType]
+                             extra
+    | RecordSyntaxConstructor [SyntaxSignature]
+    deriving (Eq)
+
 data SyntaxConstructorOrSubtype extra
     = ConstructorSyntaxConstructorOrSubtype FullName
-                                            [SyntaxType]
-                                            extra
+                                            (SyntaxDataConstructor extra)
     | SubtypeSyntaxConstructorOrSubtype FullName
                                         [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
-    | RecordSyntaxConstructorOrSubtype FullName
-                                       [SyntaxSignature]
     deriving (Eq)
 
 type SyntaxStorableDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor

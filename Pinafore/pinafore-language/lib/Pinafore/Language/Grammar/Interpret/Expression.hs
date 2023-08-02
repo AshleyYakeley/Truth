@@ -18,6 +18,7 @@ import Pinafore.Language.Grammar.Interpret.AppNotation
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl
 import Pinafore.Language.Grammar.Syntax
+import Pinafore.Language.Grammar.SyntaxDoc
 import Pinafore.Language.If
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
@@ -165,9 +166,7 @@ data SingleBinding = MkSingleBinding
 
 sbDefDoc :: SingleBinding -> DefDoc
 sbDefDoc MkSingleBinding {..} = let
-    diNames = pure $ fullNameRef sbName
-    diType = fromMaybe "" $ fmap exprShow sbType
-    docItem = ValueDocItem {..}
+    docItem = valueDocItem sbName sbType
     docDescription = sbDoc
     in MkDefDoc {..}
 
@@ -220,7 +219,7 @@ sbNode sb = (sb, sbName sb, sbRefVars sb)
 clumpBindings :: [SingleBinding] -> [[SingleBinding]]
 clumpBindings sbb = fmap flattenSCC $ stronglyConnComp $ fmap sbNode sbb
 
-mapVarID :: Map VarID (RawMarkdown, expr) -> [(FullName, VarID)] -> [(FullName, RawMarkdown, expr)]
+mapVarID :: Map VarID (DefDoc, expr) -> [(FullName, VarID)] -> [(FullName, DefDoc, expr)]
 mapVarID mm =
     mapMaybe $ \(n, v) -> do
         (d, e) <- lookup v mm
@@ -228,9 +227,11 @@ mapVarID mm =
 
 interpretRecursiveLetBindingsClump :: [SingleBinding] -> QScopeBuilder ()
 interpretRecursiveLetBindingsClump sbinds = do
+    bmap <-
+        builderLift $ do
+            bl <- for sbinds interpretBinding
+            qUncheckedBindingsRecursiveLetExpr bl
     let nvs = fmap (\sb -> (sbName sb, sbVarID sb)) sbinds
-    bl <- builderLift $ interpretBindings sbinds
-    bmap <- builderLift $ qUncheckedBindingsRecursiveLetExpr bl
     registerLetBindings $ mapVarID bmap nvs
 
 interpretRecursiveLetBindings :: [SingleBinding] -> QScopeBuilder ()
@@ -292,8 +293,8 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             sd <- builderLift $ interpretDeclaratorWith declarator $ runScopeBuilder $ interpretDeclaration declaration
             registerScopeDocs sd
         ExposeDeclaration items -> do
-            scope <- builderLift $ interpretExpose items
-            outputScope scope
+            sd <- builderLift $ interpretExpose items
+            outputScopeDocs sd
         NamespaceSyntaxDeclaration nsn decls ->
             withCurrentNamespaceScope nsn $
             prodCensor
@@ -477,11 +478,12 @@ partitionItem :: Namespace -> SyntaxNameRefItem -> ([Namespace], [FullNameRef])
 partitionItem _ (NameSyntaxNameRefItem n) = ([], [n])
 partitionItem curns (NamespaceSyntaxNameRefItem n) = ([namespaceConcatRef curns n], [])
 
-interpretExpose :: [SyntaxNameRefItem] -> QInterpreter QScope
+interpretExpose :: [SyntaxNameRefItem] -> QInterpreter QScopeDocs
 interpretExpose items = do
     curns <- paramAsk currentNamespaceParam
     let (namespaces, names) = mconcat $ fmap (partitionItem curns) items
-    exportScope namespaces names
+    (scope, docs) <- exportScope namespaces names
+    return $ MkQScopeDocs {sdScopes = [scope], sdDocs = MkForest $ fmap pure docs}
 
 interpretDeclarator :: SyntaxDeclarator -> QInterpreter QScopeDocs
 interpretDeclarator (SDLetSeq sdecls) = runScopeBuilder $ for_ sdecls interpretDeclaration
@@ -572,13 +574,10 @@ interpretClosedExpression sexpr = do
     return expr
 
 interpretBinding :: SingleBinding -> QInterpreter QBinding
-interpretBinding MkSingleBinding {..} = do
+interpretBinding sb@MkSingleBinding {..} = do
     mtype <- for sbType interpretType
     expr <- interpretClosedExpression sbBody
-    return $ qBindExpr sbVarID sbDoc mtype expr
-
-interpretBindings :: [SingleBinding] -> QInterpreter [QBinding]
-interpretBindings sbinds = for sbinds interpretBinding
+    return $ qBindExpr sbVarID (sbDefDoc sb) mtype expr
 
 interpretTopDeclarations :: SyntaxTopDeclarations -> QInterpreter --> QInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos declarator) ma =

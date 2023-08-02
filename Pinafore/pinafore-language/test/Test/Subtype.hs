@@ -11,6 +11,9 @@ import Pinafore.Test
 import Shapes
 import Test.RunScript
 
+emptyDefDoc :: DefDoc
+emptyDefDoc = MkDefDoc (HeadingDocItem mempty) mempty
+
 newtype T =
     MkT Integer
 
@@ -139,8 +142,8 @@ testPolyDependentFunction =
 
 registerT1Stuff :: QScopeBuilder ()
 registerT1Stuff = do
-    registerType "T1." "" t1GroundType
-    registerPatternConstructor "MkT1." "" (MkSealedExpression (qType :: _ (AP -> T1 AP)) $ pure MkT1) $
+    registerType "T1." emptyDefDoc t1GroundType
+    registerPatternConstructor "MkT1." emptyDefDoc (MkSealedExpression (qType :: _ (AP -> T1 AP)) $ pure MkT1) $
         qToPatternConstructor $ PureFunction $ \(MkT1 (a :: AQ)) -> (a, ())
 
 testFunctionType :: TestTree
@@ -171,7 +174,7 @@ testSemiScript1 =
                     withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
-                withScopeBuilder (registerLetBinding "f." "" funcExpression) $ \() -> do
+                withScopeBuilder (registerLetBinding "f." emptyDefDoc funcExpression) $ \() -> do
                     parseValueUnify @(T1 Integer) "f (MkT1 62)"
         liftIO $ assertEqual "" 62 i
 

@@ -3,6 +3,7 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
@@ -134,7 +135,7 @@ stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @
 
 type QTypeSystem = DolanTypeSystem QGroundType
 
-type instance TSBindingData QTypeSystem = RawMarkdown
+type instance TSBindingData QTypeSystem = DefDoc
 
 type instance DolanPolyShim QGroundType = QPolyShim
 

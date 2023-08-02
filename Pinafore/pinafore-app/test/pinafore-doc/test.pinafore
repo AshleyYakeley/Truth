@@ -1,116 +1,109 @@
-let
+#| doc:A
+datatype A {+p,-q} +r -s of
+    #| doc:Mk1.A
+    Mk1 (q -> s -> p) r;
+    #| doc:Mk2.A
+    Mk2 p (s -> r);
+end;
 
-    #| doc:A
-    datatype A {+p,-q} +r -s of
-        #| doc:Mk1.A
+#| doc:B
+datatype B of
+    #| doc:Mk.B
+    Mk Integer;
+end;
+
+subtype A Integer Unit Unit <: B = fn _ => Mk.B 17;
+
+let rec
+    #| doc:RecA
+    datatype RecA {+p,-q} +r -s of
+        #| doc:Mk1.RecA
         Mk1 (q -> s -> p) r;
-        #| doc:Mk2.A
+        #| doc:Mk2.RecA
         Mk2 p (s -> r);
     end;
 
-    #| doc:B
-    datatype B of
-        #| doc:Mk.B
+    #| doc:RecB
+    datatype RecB of
+        #| doc:Mk.RecB
         Mk Integer;
     end;
 
-    subtype A Integer Unit Unit <: B = fn _ => Mk.B 17;
+    subtype RecA Integer Unit Unit <: RecB = fn _ => Mk.RecB 17;
+end;
+
+#| doc:R
+datatype R of
+    #| doc:Mk.R
+    Mk of
+        #| doc:rp
+        rp: Integer -> a -> a;
+        #| doc:rq
+        rq: Integer | Text;
+    end;
+end;
+
+#| doc:x
+x: Text = "x";
+
+#| doc:y
+y: Text -> Text = fn _ => "y";
+
+#| doc:N
+namespace N of
+    #| doc:N.q
+    q: Integer = 45;
+    #| doc:N.xx
+    xx: Text = "Hello";
+
+    #| doc:NmA
+    datatype NmA {+p,-q} +r -s of
+        #| doc:Mk1.NmA
+        Mk1 (q -> s -> p) r;
+        #| doc:Mk2.NmA
+        Mk2 p (s -> r);
+    end;
+
+    #| doc:NmB
+    datatype NmB of
+        #| doc:Mk.NmB
+        Mk Integer;
+    end;
+
+    subtype NmA Integer Unit Unit <: NmB = fn _ => Mk.NmB 17;
 
     let rec
-        #| doc:RecA
-        datatype RecA {+p,-q} +r -s of
-            #| doc:Mk1.RecA
+        #| doc:NmRecA
+        datatype NmRecA {+p,-q} +r -s of
+            #| doc:Mk1.NmRecA
             Mk1 (q -> s -> p) r;
-            #| doc:Mk2.RecA
+            #| doc:Mk2.NmRecA
             Mk2 p (s -> r);
         end;
 
-        #| doc:RecB
-        datatype RecB of
-            #| doc:Mk.RecB
+        #| doc:NmRecB
+        datatype NmRecB of
+            #| doc:Mk.NmRecB
             Mk Integer;
         end;
 
-        subtype RecA Integer Unit Unit <: RecB = fn _ => Mk.RecB 17;
+        subtype NmRecA Integer Unit Unit <: NmRecB = fn _ => Mk.NmRecB 17;
     end;
 
-    #| doc:R
-    datatype R of
-        #| doc:Mk.R
+    #| doc:NmR
+    datatype NmR of
+        #| doc:Mk.NmR
         Mk of
-            #| doc:rp
-            rp: Integer -> a -> a;
-            #| doc:rq
-            rq: Integer | Text;
+            #| doc:nmrp
+            nmrp: Integer -> a -> a;
+            #| doc:nmrq
+            nmrq: Integer | Text;
         end;
     end;
 
-    #| doc:x
-    x: Text = "x";
-
-    #| doc:y
-    y: Text -> Text = fn _ => "y";
-
-    #| doc:hidden
-    hidden: Unit = ();
-
-    #| doc:N
-    namespace N of
-        #| doc:N.q
-        q: Integer = 45;
-        #| doc:N.xx
-        xx: Text = "Hello";
-
-        #| doc:NmA
-        datatype NmA {+p,-q} +r -s of
-            #| doc:Mk1.NmA
-            Mk1 (q -> s -> p) r;
-            #| doc:Mk2.NmA
-            Mk2 p (s -> r);
-        end;
-
-        #| doc:NmB
-        datatype NmB of
-            #| doc:Mk.NmB
-            Mk Integer;
-        end;
-
-        subtype NmA Integer Unit Unit <: NmB = fn _ => Mk.NmB 17;
-
-        let rec
-            #| doc:NmRecA
-            datatype NmRecA {+p,-q} +r -s of
-                #| doc:Mk1.NmRecA
-                Mk1 (q -> s -> p) r;
-                #| doc:Mk2.NmRecA
-                Mk2 p (s -> r);
-            end;
-
-            #| doc:NmRecB
-            datatype NmRecB of
-                #| doc:Mk.NmRecB
-                Mk Integer;
-            end;
-
-            subtype NmRecA Integer Unit Unit <: NmRecB = fn _ => Mk.NmRecB 17;
-        end;
-
-        #| doc:NmR
-        datatype NmR of
-            #| doc:Mk.NmR
-            Mk of
-                #| doc:nmrp
-                nmrp: Integer -> a -> a;
-                #| doc:nmrq
-                nmrq: Integer | Text;
-            end;
-        end;
-
-        namespace NN of
-            #| doc:N.NN.xyz
-            xyz: Unit = ();
-        end;
-
+    namespace NN of
+        #| doc:N.NN.xyz
+        xyz: Unit = ();
     end;
 
-in expose x, B, A, Mk1.A, Mk2.A, RecA, Mk1.RecA, Mk2.RecA, RecB, R, Mk.R, y, namespace N
+end;

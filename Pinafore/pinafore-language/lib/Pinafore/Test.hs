@@ -24,6 +24,7 @@ module Pinafore.Test
     , allocateVar
     , QScopeBuilder
     , withScopeBuilder
+    , module Pinafore.Language.DefDoc
     , registerType
     , registerLetBindings
     , registerLetBinding
@@ -49,6 +50,7 @@ module Pinafore.Test
 
 import Changes.Core
 import Pinafore
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
 import Pinafore.Language.Grammar.Interpret.Interact

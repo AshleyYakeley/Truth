@@ -10,6 +10,7 @@ module Pinafore.Language.Interpreter.Binding
 import Data.Shim
 import Language.Expression.Common
 import Pinafore.Base
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Ground
@@ -59,6 +60,6 @@ instance HasInterpreter => Show QInterpreterBinding where
 
 data QBindingInfo = MkQBindingInfo
     { biOriginalName :: FullName
-    , biDocumentation :: RawMarkdown
+    , biDocumentation :: DefDoc
     , biValue :: QInterpreterBinding
     }

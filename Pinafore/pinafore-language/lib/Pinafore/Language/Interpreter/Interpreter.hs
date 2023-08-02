@@ -23,6 +23,7 @@ module Pinafore.Language.Interpreter.Interpreter
 
 import Data.Shim
 import Language.Expression.Common
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Interpreter.Scope
@@ -112,7 +113,7 @@ instance HasInterpreter where
         spos <- paramAsk sourcePosParam
         ntt <- getRenderFullName
         return $ MkErrorMessage spos ntt
-    getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) $ paramAsk scopeParam
+    getSubtypeConversions = fmap (toList . scopeSubtypes) $ paramAsk scopeParam
 
 contextParam :: Param QInterpreter InterpretContext
 contextParam = MkParam (MkQInterpreter ask) $ \a (MkQInterpreter m) -> MkQInterpreter $ with a m
@@ -233,7 +234,7 @@ exportNamespace cnss = do
         toBI (MkFullName _ ns, _) = isJust $ choice $ fmap (\cns -> namespaceWithin cns ns) cnss
     return $ filter toBI $ bindingMapEntries bmap
 
-exportScope :: [Namespace] -> [FullNameRef] -> QInterpreter QScope
+exportScope :: [Namespace] -> [FullNameRef] -> QInterpreter (QScope, [DefDoc])
 exportScope nsns names = do
     MkQScope _ subtypes <- paramAsk scopeParam
     nsbindss <- exportNamespace nsns
@@ -242,7 +243,10 @@ exportScope nsns names = do
         binds :: [(FullName, QBindingInfo)]
         binds = nsbindss <> nbinds
     for_ binds $ \bi -> checkPureBinding $ biValue $ snd bi
-    return $ MkQScope (bindingInfosToMap binds) subtypes
+    let
+        scope = MkQScope (bindingInfosToMap binds) subtypes
+        docs = fmap (biDocumentation . snd) binds
+    return (scope, docs)
 
 getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
 getCycle _ [] = Nothing

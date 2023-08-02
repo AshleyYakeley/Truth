@@ -1,6 +1,5 @@
 module Pinafore.Language.Interpreter.ScopeBuilder
-    ( QScopeDocs(..)
-    , QScopeBuilder
+    ( QScopeBuilder
     , builderLift
     , withScopeBuilder
     , runScopeBuilder
@@ -8,7 +7,7 @@ module Pinafore.Language.Interpreter.ScopeBuilder
     , builderScopeDocsProd
     , builderDocsProd
     , registerScopeDocs
-    , outputScope
+    , outputScopeDocs
     , QFixBox
     , scopeSetSourcePos
     , allocateVar
@@ -16,6 +15,7 @@ module Pinafore.Language.Interpreter.ScopeBuilder
     ) where
 
 import Language.Expression.Common
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.Grammar.Docs
 import Pinafore.Language.Interpreter.Binding
@@ -96,7 +96,7 @@ allocateVar mname = do
                 Just name' -> (mkVarID vs name', name')
                 Nothing -> mkUniqueVarID vs
         biOriginalName = name
-        biDocumentation = fromString "variable"
+        biDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
         biValue = ValueBinding (tsVar @QTypeSystem vid) Nothing
         insertScope = MkQScope (bindingInfoToMap (name, MkQBindingInfo {..})) mempty
     refPut varIDStateRef $ nextVarIDState vs
@@ -106,10 +106,10 @@ allocateVar mname = do
 withCurrentNamespaceScope :: Namespace -> QScopeBuilder a -> QScopeBuilder a
 withCurrentNamespaceScope ns ma = paramWith (refParam currentNamespaceRef) ns ma
 
-outputScope :: QScope -> QScopeBuilder ()
-outputScope scope = prodTell builderScopeDocsProd $ mempty {sdScopes = [scope]}
+outputScopeDocs :: QScopeDocs -> QScopeBuilder ()
+outputScopeDocs sd = prodTell builderScopeDocsProd sd
 
 registerScopeDocs :: QScopeDocs -> QScopeBuilder ()
 registerScopeDocs sd = do
     refModifyM scopeRef $ \oldScope -> builderLift $ joinAllScopes $ oldScope : sdScopes sd
-    prodTell builderScopeDocsProd sd
+    outputScopeDocs sd

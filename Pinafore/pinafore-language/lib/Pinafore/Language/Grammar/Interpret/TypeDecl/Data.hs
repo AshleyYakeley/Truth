@@ -9,12 +9,14 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     , makePlainDataTypeBox
     ) where
 
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
 import Pinafore.Language.Grammar.Syntax
+import Pinafore.Language.Grammar.SyntaxDoc
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
@@ -190,29 +192,46 @@ newMatchingTypeID =
         case unsafeIdentifyKind @_ @(DolanVarianceKind dv) typeID of
             Identity Refl -> return $ MkSome $ MkMatchingTypeID typeID
 
+data TypeInfo = MkTypeInfo
+    { tiName :: FullName
+    , tiParams :: [SyntaxTypeParameter]
+    , tiDescription :: RawMarkdown
+    }
+
+tiDoc :: TypeInfo -> DefDoc
+tiDoc MkTypeInfo {..} = MkDefDoc (typeDocItem tiName tiParams) tiDescription
+
 data TypeData dv t = MkTypeData
-    { tdID :: MatchingTypeID dv t
+    { tdInfo :: TypeInfo
+    , tdID :: MatchingTypeID dv t
     , tdSupertype :: Maybe (TypeData dv t)
     , tdSubtypes :: [MatchingTypeID dv t] -- includes self
-    , tdName :: FullName
-    , tdDoc :: RawMarkdown
     }
+
+tdName :: TypeData dv t -> FullName
+tdName = tiName . tdInfo
+
+tdDoc :: TypeData dv t -> DefDoc
+tdDoc = tiDoc . tdInfo
 
 getConsSubtypeData ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv) extra.
        TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [TypeData dv t]
-getConsSubtypeData superTD (MkSyntaxWithDoc doc (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
+getConsSubtypeData superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
     ssubtid <- newMatchingTypeID @dv
     case ssubtid of
         MkSome subMTID@(MkMatchingTypeID subTypeID) -> do
             Refl <- unsafeIdentify @_ @t subTypeID
             rec
                 let
+                    subInfo :: TypeInfo
+                    subInfo = MkTypeInfo {tiName = tname, tiParams = tiParams $ tdInfo superTD, tiDescription = md}
                     subtypes = tdID superTD : mconcat (fmap tdSubtypes subtdata)
                     subTD :: TypeData dv t
-                    subTD = MkTypeData subMTID (Just superTD) subtypes tname doc
+                    subTD =
+                        MkTypeData {tdInfo = subInfo, tdID = subMTID, tdSupertype = Just superTD, tdSubtypes = subtypes}
                 subtdata <- getConssSubtypeData subTD conss
             return $ subTD : subtdata
 getConsSubtypeData _ _ = return mempty
@@ -225,7 +244,7 @@ getConssSubtypeData superTD conss = do
 
 data Constructor dv t extra = MkConstructor
     { ctName :: FullName
-    , ctDoc :: RawMarkdown
+    , ctDoc :: DefDoc
     , ctOuterType :: TypeData dv t
     , ctContents :: Either [SyntaxType] [SyntaxSignature]
     , ctExtra :: extra
@@ -237,16 +256,21 @@ typeDataLookup (t:_) name
     | tdName t == name = return t
 typeDataLookup (_:tt) name = typeDataLookup tt name
 
-getConstructor ::
+getConstructor :: TypeData dv t -> FullName -> DefDoc -> SyntaxDataConstructor extra -> Constructor dv t extra
+getConstructor typeNM consName doc (PlainSyntaxConstructor stypes extra) =
+    MkConstructor consName doc typeNM (Left stypes) extra
+getConstructor typeNM consName doc (RecordSyntaxConstructor sigs) =
+    MkConstructor consName doc typeNM (Right sigs) $ error "record extra data"
+
+getConstructorOrSubtype ::
        [TypeData dv t]
     -> TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [Constructor dv t extra]
-getConstructor _ typeNM (MkSyntaxWithDoc doc (ConstructorSyntaxConstructorOrSubtype consName stypes extra)) =
-    return $ pure $ MkConstructor consName doc typeNM (Left stypes) extra
-getConstructor _ typeNM (MkSyntaxWithDoc doc (RecordSyntaxConstructorOrSubtype consName sigs)) =
-    return $ pure $ MkConstructor consName doc typeNM (Right sigs) $ error "record extra data"
-getConstructor tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes)) = do
+getConstructorOrSubtype _ typeNM (MkSyntaxWithDoc md (ConstructorSyntaxConstructorOrSubtype consName dcons)) =
+    return $
+    pure $ getConstructor typeNM consName (MkDefDoc (constructorDocItem (tdName typeNM) consName dcons) md) dcons
+getConstructorOrSubtype tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes)) = do
     subtypeTD <- typeDataLookup tdata subtypeName
     getConstructors tdata subtypeTD stypes
 
@@ -256,7 +280,7 @@ getConstructors ::
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> QInterpreter [Constructor dv t extra]
 getConstructors tdata typeNM syntaxConstructorList =
-    fmap mconcat $ for syntaxConstructorList $ getConstructor tdata typeNM
+    fmap mconcat $ for syntaxConstructorList $ getConstructorOrSubtype tdata typeNM
 
 data RecordConstructorData = MkRecordConstructorData
     { rcdName :: FullNameRef
@@ -404,25 +428,24 @@ makeBox ::
        forall extra (dv :: DolanVariance). (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
     => GroundTypeMaker extra
     -> [Some (QGroundType '[])]
-    -> FullName
-    -> RawMarkdown
+    -> TypeInfo
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> GenCCRTypeParams dv
     -> QInterpreter (QFixBox () ())
-makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
+makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
     stid <- newMatchingTypeID @dv
     case stid of
         MkSome (mainMTID@(MkMatchingTypeID mainTypeID) :: _ maintype) -> do
             rec
                 let
+                    mainTypeName = tiName tinfo
                     mainTypeData :: TypeData dv maintype
                     mainTypeData =
                         MkTypeData
-                            { tdID = mainMTID
+                            { tdInfo = tinfo
+                            , tdID = mainMTID
                             , tdSupertype = Nothing
                             , tdSubtypes = mainMTID : mconcat (fmap tdSubtypes subtypeDatas)
-                            , tdName = mainTypeName
-                            , tdDoc = mainTypeDoc
                             }
                 subtypeDatas <- getConssSubtypeData mainTypeData syntaxConstructorList
             constructorList <- getConstructors subtypeDatas mainTypeData syntaxConstructorList
@@ -437,7 +460,7 @@ makeBox gmaker supertypes mainTypeName mainTypeDoc syntaxConstructorList gtparam
                                 mainRegister x = do
                                     MkGroundTypeFromTypeID gttid <- builderLift $ mkgt x
                                     let (gt, y) = gttid mainTypeName mainTypeID
-                                    registerType mainTypeName mainTypeDoc gt
+                                    registerType mainTypeName (tdDoc mainTypeData) gt
                                     postregister gt y
                                 mainConstruct ::
                                        ()
@@ -692,9 +715,10 @@ makeDataTypeBox ::
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> QInterpreter (QFixBox () ())
-makeDataTypeBox gmaker supertypes name doc params syntaxConstructorList =
+makeDataTypeBox gmaker supertypes name md params syntaxConstructorList =
     case getAnyCCRTypeParams params of
-        MkAnyCCRTypeParams gtparams -> makeBox gmaker supertypes name doc syntaxConstructorList gtparams
+        MkAnyCCRTypeParams gtparams ->
+            makeBox gmaker supertypes (MkTypeInfo name params md) syntaxConstructorList gtparams
 
 makePlainGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv

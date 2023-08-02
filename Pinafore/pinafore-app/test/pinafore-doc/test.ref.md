@@ -16,6 +16,10 @@
 
 > doc:B
 > 
+> **<code>Mk\.B\.</code>**<code> : Integer \-\> B\.</code>
+> 
+> > doc:Mk.B
+> > 
 <code>subtype A Integer Unit Unit \<: B</code>
 
 <code>type </code>**<code>RecA\.</code>**<code> {\-q,\+p} \+r \-s</code>
@@ -34,6 +38,10 @@
 
 > doc:RecB
 > 
+> **<code>Mk\.RecB\.</code>**<code> : Integer \-\> RecB\.</code>
+> 
+> > doc:Mk.RecB
+> > 
 <code>subtype RecA Integer Unit Unit \<: RecB</code>
 
 <code>type </code>**<code>R\.</code>**

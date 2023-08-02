@@ -70,12 +70,13 @@ readPlainDataTypeConstructor =
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
          consName <- readNewUName
-         (do
-              sigs <- readOf readSignature
-              return $ RecordSyntaxConstructorOrSubtype consName sigs) <|>
+         fmap (ConstructorSyntaxConstructorOrSubtype consName) $
+             (do
+                  sigs <- readOf readSignature
+                  return $ RecordSyntaxConstructor sigs) <|>
              (do
                   mtypes <- many readType3
-                  return $ ConstructorSyntaxConstructorOrSubtype consName mtypes ()))
+                  return $ PlainSyntaxConstructor mtypes ()))
 
 readStorableDataTypeConstructor :: Parser SyntaxStorableDatatypeConstructorOrSubtype
 readStorableDataTypeConstructor =
@@ -90,7 +91,7 @@ readStorableDataTypeConstructor =
          consName <- readNewUName
          mtypes <- many readType3
          anchor <- readThis TokAnchor
-         return $ ConstructorSyntaxConstructorOrSubtype consName mtypes anchor)
+         return $ ConstructorSyntaxConstructorOrSubtype consName $ PlainSyntaxConstructor mtypes anchor)
 
 readPositiveParameter :: Parser Name
 readPositiveParameter = do

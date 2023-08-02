@@ -3,13 +3,13 @@
 module Pinafore.Language.Expression where
 
 import Pinafore.Language.Convert
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
-import Pinafore.Text
 import Shapes
 
 qConstExprAny :: QValue -> QExpression
@@ -134,7 +134,7 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-qBindExpr :: VarID -> RawMarkdown -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
+qBindExpr :: VarID -> DefDoc -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
 qBindExpr = tsSingleBinding @QTypeSystem
 
 qSubsumeExpr :: Some (QType 'Positive) -> QExpression -> QInterpreter QExpression
@@ -143,10 +143,10 @@ qSubsumeExpr = tsSubsumeExpression @QTypeSystem
 qLetExpr :: VarID -> QExpression -> QExpression -> QInterpreter QExpression
 qLetExpr name exp body = tsLet @QTypeSystem name exp body
 
-qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> QInterpreter (Map VarID (RawMarkdown, QExpression))
+qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> QInterpreter (Map VarID (DefDoc, QExpression))
 qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @QTypeSystem
 
-qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (RawMarkdown, QExpression))
+qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (DefDoc, QExpression))
 qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
 
 qEvalExpr ::

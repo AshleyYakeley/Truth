@@ -6,6 +6,7 @@ module Pinafore.Language.Grammar.Interpret.Interact
 import Changes.Core
 import Control.Exception (Handler(..), catches)
 import Pinafore.Base
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Expression
@@ -97,7 +98,7 @@ interactLoop inh outh echo = do
                              ShowDocInteractiveCommand rname -> do
                                  bmap <- interactRunQInterpreter $ getBindingInfoLookup
                                  liftIO $
-                                     case fmap (biDocumentation . snd) $ bmap rname of
+                                     case fmap (docDescription . biDocumentation . snd) $ bmap rname of
                                          Nothing -> hPutStrLn outh $ "! " <> show rname <> " undefined"
                                          Just "" -> return ()
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)

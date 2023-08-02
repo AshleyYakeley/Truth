@@ -80,7 +80,7 @@ getLibraryModuleModule context libmod = do
                         let biOriginalName = namespaceConcatFullName RootNamespace oname
                         biName <- biOriginalName : xnames
                         let
-                            biDocumentation = docDescription bd
+                            biDocumentation = bd
                             biValue = b context
                         return (biName, MkQBindingInfo {..})
                     _ -> []
