@@ -32,7 +32,7 @@ data UndoHandler = MkUndoHandler
     , uhRunner :: ResourceRunner '[ WriterT [RefEdits]]
     }
 
-undoVarUnlift :: MVar UndoQueue -> Unlift MonadTunnelIOInner (WriterT [RefEdits])
+undoVarUnlift :: MVar UndoQueue -> Unlift MonadTunnelIO (WriterT [RefEdits])
 undoVarUnlift var wma = do
     (a, lrefedits) <- runWriterT wma
     case nonEmpty lrefedits of

@@ -4,7 +4,7 @@ import Changes.Core.Import
 
 data TransListFunction (tt1 :: [TransKind]) (tt2 :: [TransKind]) = MkTransListFunction
     { tlfFunction :: forall m. MonadIO m => Proxy m -> ApplyStack tt1 m --> ApplyStack tt2 m
-    , tlfBackFunction :: forall m. MonadTunnelIOInner m => Proxy m -> ApplyStack tt1 m -/-> ApplyStack tt2 m
+    , tlfBackFunction :: forall m. MonadTunnelIO m => Proxy m -> ApplyStack tt1 m -/-> ApplyStack tt2 m
     }
 
 instance Category TransListFunction where
@@ -24,13 +24,13 @@ fstTransListFunction = let
         -> ApplyStack tt1 m --> ApplyStack (Concat tt1 tt2) m
     tlfFunction _ = stackConcatFst @tt1 @tt2 @m
     tlfBackFunction ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack tt1 m -/-> ApplyStack (Concat tt1 tt2) m
     tlfBackFunction _ =
         case transStackConcatRefl @tt1 @tt2 @m of
             Refl ->
-                case transStackDict @MonadTunnelIOInner @tt2 @m of
+                case transStackDict @MonadTunnelIO @tt2 @m of
                     Dict -> stackBackHoist @tt1 $ stackLiftWithUnlift @tt2 @m
     in MkTransListFunction {..}
 
@@ -44,13 +44,13 @@ sndTransListFunction = let
         -> ApplyStack tt2 m --> ApplyStack (Concat tt1 tt2) m
     tlfFunction _ = stackConcatSnd @tt1 @tt2 @m
     tlfBackFunction ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack tt2 m -/-> ApplyStack (Concat tt1 tt2) m
     tlfBackFunction _ =
         case transStackConcatRefl @tt1 @tt2 @m of
             Refl ->
-                case transStackDict @MonadTunnelIOInner @tt2 @m of
+                case transStackDict @MonadTunnelIO @tt2 @m of
                     Dict -> stackLiftWithUnlift @tt1
     in MkTransListFunction {..}
 
@@ -66,11 +66,11 @@ liftTransListFunction = let
         case transStackDict @Monad @tt @m of
             Dict -> lift
     tlfBackFunction ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack tt m -/-> ApplyStack (t ': tt) m
     tlfBackFunction _ =
-        case transStackDict @MonadTunnelIOInner @tt @m of
+        case transStackDict @MonadTunnelIO @tt @m of
             Dict -> \call -> liftWithUnlift $ \unlift -> call unlift
     in MkTransListFunction {..}
 
@@ -84,7 +84,7 @@ emptyTransListFunction = let
         -> m --> ApplyStack tt m
     tlfFunction _ = stackLift @tt @m
     tlfBackFunction ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> m -/-> ApplyStack tt m
     tlfBackFunction _ = stackLiftWithUnlift @tt @m
@@ -104,7 +104,7 @@ consTransListFunction wtta wttb (MkTransListFunction tf tbf) = let
         case (witTransStackDict @Monad @tta @m wtta, witTransStackDict @Monad @ttb @m wttb) of
             (Dict, Dict) -> hoist $ tf pm
     tbf' ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack (t ': tta) m -/-> ApplyStack (t ': ttb) m
     tbf' pm =
@@ -166,7 +166,7 @@ reorderTransListFunction wtta wttb = let
                         , Refl
                         , transConstraintDict dtm)
     tlfBackFunction ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack (Concat tta (t ': ttb)) m -/-> ApplyStack (t ': Concat tta ttb) m
     tlfBackFunction pm =
@@ -187,7 +187,7 @@ contractTransListFunction wtt = let
         case witTransStackDict @Monad @tt @m wtt of
             Dict -> contractT
     tlfBackFunction ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack (t ': (t ': tt)) m -/-> ApplyStack (t ': tt) m
     tlfBackFunction _ =
@@ -203,7 +203,7 @@ stackTransListFunction = let
         -> ApplyStack tt m --> StackT tt m
     tlfFunction _ = MkStackT
     tlfBackFunction ::
-           forall m. MonadTunnelIOInner m
+           forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack tt m -/-> StackT tt m
     tlfBackFunction _ call = MkStackT $ call unStackT
