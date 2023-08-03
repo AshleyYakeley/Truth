@@ -185,7 +185,9 @@ readNamespaceWith = do
 readNamespaceDecl :: Parser SyntaxDeclaration'
 readNamespaceDecl = do
     readThis TokNamespace
-    ns <- readNamespace
+    curns <- readAskNamespace
+    name <- readUName
+    let ns = namespaceAppend [name] curns
     decls <- readWithNamespace ns $ readOf readDeclaration
     return $ NamespaceSyntaxDeclaration ns decls
 

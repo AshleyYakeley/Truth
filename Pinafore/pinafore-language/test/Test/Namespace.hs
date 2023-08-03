@@ -134,7 +134,8 @@ testNamespace =
               [ testExpectSuccess "let namespace M of a = 6; b = a end; in test $ b.M == 6"
               , testExpectSuccess "let namespace M of a = 6; b = a end in with M in test $ b == 6"
               , testExpectSuccess "let namespace P of a = 6; namespace Q of b = a end end; in test $ b.Q.P == 6"
-              , testExpectSuccess "let namespace P of a = 6 end; namespace Q.P of b = a end; in test $ b.Q.P == 6"
+              , testExpectSuccess
+                    "let namespace P of a = 6 end; namespace P of namespace Q of b = a end end in test $ b.Q.P == 6"
               ]
         , tGroup
               "decl"

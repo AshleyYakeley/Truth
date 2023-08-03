@@ -169,7 +169,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <declaration> ::=
     direct-declaration |
-    "namespace" <namepace> <of(<declaration>)> |
+    "namespace" uname <of(<declaration>)> |
     "expose" <name-list> |
     <declarator> "end"
     <declarator> "in" <declaration> "end"
