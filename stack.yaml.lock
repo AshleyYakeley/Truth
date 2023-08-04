@@ -26,13 +26,6 @@ packages:
   original:
     hackage: primitive-serial-0.1
 - completed:
-    hackage: witness-0.6.2@sha256:4beb4195ecabeb5a26bf58c308d35f149a02dd5f86bd3b89c1cf8349f8b85f28,3613
-    pantry-tree:
-      sha256: 33790bc5ba957951993960a3388d72d82a38ac7cb64181f0ec2a7d6f9a48849a
-      size: 2985
-  original:
-    hackage: witness-0.6.2
-- completed:
     commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
@@ -67,7 +60,7 @@ packages:
     git: https://github.com/fpco/ghc-prof-flamegraph.git
 snapshots:
 - completed:
-    sha256: 97710f56bf093fca0ee5d8dbe19d96b654c752e405b66795b4baedd84a794c60
-    size: 640010
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/3.yaml
-  original: lts-21.3
+    sha256: 2e7d4a730d8eb5373b2d383fac84efcf7c81e3b7a5fce71b4c2e19a1768f25a6
+    size: 640239
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/6.yaml
+  original: lts-21.6
