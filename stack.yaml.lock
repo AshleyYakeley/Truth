@@ -26,6 +26,13 @@ packages:
   original:
     hackage: primitive-serial-0.1
 - completed:
+    hackage: monadology-0.2@sha256:fbb9640f4340998115d12d0929cefc30189382b89aacd4d2b05e4c8107e9feea,5903
+    pantry-tree:
+      sha256: 69ce07d6f6f43f925f330739e900b7ddae07092458247b0b465e851aa34efbe2
+      size: 4297
+  original:
+    hackage: monadology-0.2
+- completed:
     commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts

@@ -8,7 +8,7 @@ packages:
 #- external/witness
 #- external/open-witness
 #- external/type-rig
-- external/monadology
+#- external/monadology
 #- external/primitive-serial
 
 # Changes
@@ -38,6 +38,7 @@ extra-deps:
 - blake3-0.2
 - leb128-0.1.0.0
 - primitive-serial-0.1
+- monadology-0.2
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
 - git: https://github.com/AshleyYakeley/hindent.git
