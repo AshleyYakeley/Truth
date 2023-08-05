@@ -70,7 +70,6 @@ tests:
         dependencies:
           - base >= 4.16
           - filepath
-          - directory
           - shapes
           - changes-core
           - pinafore-language

@@ -13,3 +13,18 @@ library:
       - base >= 4.16
     exposed-modules:
       - Paths_pinafore_stdlib
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.16
+          - directory
+          - shapes
+          - changes-core
+          - pinafore-language
+          - pinafore-media
+          - pinafore-gnome
+          - pinafore-stdlib
+        main: Main.hs
+        ghc-options: -threaded
