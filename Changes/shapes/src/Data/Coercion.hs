@@ -114,6 +114,9 @@ instance RepresentationalRole [] where
 instance RepresentationalRole NonEmpty where
     representationalCoercion MkCoercion = MkCoercion
 
+instance RepresentationalRole (Map k) where
+    representationalCoercion MkCoercion = MkCoercion
+
 instance RepresentationalRole (->) where
     representationalCoercion MkCoercion = MkCoercion
 

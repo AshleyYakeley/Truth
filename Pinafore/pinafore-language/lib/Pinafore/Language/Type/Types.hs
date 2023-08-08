@@ -5,6 +5,8 @@ module Pinafore.Language.Type.Types
     , list1GroundType
     , eitherGroundType
     , pairGroundType
+    , mapGroundType
+    , mapEntityConvert
     , showableGroundType
     , maybeEntityConvert
     , listEntityConvert
@@ -20,7 +22,7 @@ import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Storable
-import Pinafore.Language.Value ()
+import Pinafore.Language.Value
 import Shapes
 
 actionGroundType :: QGroundType '[ CoCCRVariance] Action
@@ -75,8 +77,14 @@ listStoreAdapters et = let
     to (a:aa) = Right $ a :| aa
     in (listAdapter, list1Adapter)
 
+listStoreAdapter :: StoreAdapter t -> StoreAdapter [t]
+listStoreAdapter = fst . listStoreAdapters
+
+list1StoreAdapter :: StoreAdapter t -> StoreAdapter (NonEmpty t)
+list1StoreAdapter = snd . listStoreAdapters
+
 listEntityConvert :: [Entity] -> Entity
-listEntityConvert = storeAdapterConvert $ fst $ listStoreAdapters plainStoreAdapter
+listEntityConvert = storeAdapterConvert $ listStoreAdapter plainStoreAdapter
 
 listGroundType :: QGroundType '[ CoCCRVariance] []
 listGroundType = let
@@ -85,7 +93,7 @@ listGroundType = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapter :: forall t. Arguments StoreAdapter [] t -> StoreAdapter t
-        stbAdapter (ConsArguments t NilArguments) = fst $ listStoreAdapters t
+        stbAdapter (ConsArguments t NilArguments) = listStoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List") {qgtProperties = props}
@@ -97,7 +105,7 @@ list1GroundType = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapter :: forall t. Arguments StoreAdapter NonEmpty t -> StoreAdapter t
-        stbAdapter (ConsArguments t NilArguments) = snd $ listStoreAdapters t
+        stbAdapter (ConsArguments t NilArguments) = list1StoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
@@ -163,6 +171,25 @@ pairGroundType = let
     showtype :: ListTypeExprShow '[ CoCCRVariance, CoCCRVariance]
     showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
     in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) showtype) {qgtProperties = props}
+
+mapStoreAdapter :: StoreAdapter t -> StoreAdapter (LangMap t)
+mapStoreAdapter t = invmap langMapFromList langMapToList $ listStoreAdapter $ pairStoreAdapter plainStoreAdapter t
+
+mapGroundType :: QGroundType '[ CoCCRVariance] LangMap
+mapGroundType = let
+    storability :: Storability '[ CoCCRVariance] LangMap
+    storability = let
+        stbKind = ConsListType Refl NilListType
+        stbCovaryMap = covarymap
+        stbAdapter :: forall t. Arguments StoreAdapter LangMap t -> StoreAdapter t
+        stbAdapter (ConsArguments t NilArguments) = mapStoreAdapter t
+        in MkStorability {..}
+    props :: GroundProperties '[ CoCCRVariance] LangMap
+    props = singleGroundProperty storabilityProperty storability
+    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMap)|]) "Map") {qgtProperties = props}
+
+mapEntityConvert :: LangMap Entity -> Entity
+mapEntityConvert = storeAdapterConvert $ mapStoreAdapter plainStoreAdapter
 
 showableGroundType :: QGroundType '[] Showable
 showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"

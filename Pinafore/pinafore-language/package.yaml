@@ -37,6 +37,7 @@ library:
       - Pinafore.Context
       - Pinafore.Language.Debug
       - Pinafore.Language.Value.Instances
+      - Pinafore.Language.Value.Map
       - Pinafore.Language.Value.Lens
       - Pinafore.Language.Value.Prism
       - Pinafore.Language.Value.Model

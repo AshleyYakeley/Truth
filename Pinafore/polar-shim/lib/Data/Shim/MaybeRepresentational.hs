@@ -14,6 +14,12 @@ instance MaybeRepresentational [] where
 instance MaybeRepresentational NonEmpty where
     maybeRepresentational = Just Dict
 
+instance MaybeRepresentational (Map k) where
+    maybeRepresentational = Just Dict
+
+instance MaybeRepresentational Map where
+    maybeRepresentational = Nothing
+
 instance MaybeRepresentational ((->) a) where
     maybeRepresentational = Just Dict
 

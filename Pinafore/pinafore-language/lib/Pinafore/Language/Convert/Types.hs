@@ -59,6 +59,10 @@ instance HasQGroundType '[ CoCCRVariance] [] where
 instance HasQGroundType '[ CoCCRVariance] NonEmpty where
     qGroundType = list1GroundType
 
+-- LangMap
+instance HasQGroundType '[ CoCCRVariance] LangMap where
+    qGroundType = mapGroundType
+
 -- Showable
 instance HasQGroundType '[] Showable where
     qGroundType = showableGroundType
