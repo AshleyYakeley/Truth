@@ -216,12 +216,13 @@ baseLibSections =
               , addNameInRootBDS $
                 valBDS "alphabetical" "Alphabetical first, then lower case before upper, per Unicode normalisation." $
                 Text.Collate.collate Text.Collate.rootCollator
-              , addNameInRootBDS $ valBDS "numerical" "Numercal order." $ compare @Number
+              , addNameInRootBDS $ valBDS "numerical" "Numerical order." $ compare @Number
               , addNameInRootBDS $ valBDS "chronological" "Chronological order." $ compare @UTCTime
               , addNameInRootBDS $ valBDS "durational" "Durational order." $ compare @NominalDiffTime
               , addNameInRootBDS $ valBDS "calendrical" "Date order." $ compare @Day
               , addNameInRootBDS $ valBDS "horological" "Time of day order." $ compare @TimeOfDay
               , addNameInRootBDS $ valBDS "localChronological" "Local time order." $ compare @LocalTime
+              , valBDS "arbitrary" "An arbitrary order on `Entity`." $ compare @Entity
               ]
             ]
       , headingBDS
