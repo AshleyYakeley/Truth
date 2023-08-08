@@ -8,7 +8,7 @@ RUN apt-get install -y sudo git curl m4 libgmp-dev gnome-platform-devel libgtk-3
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
 RUN chmod +x /usr/local/bin/yq
 RUN pip3 install --upgrade pip
-RUN pip3 install mkdocs markdown-include Pygments scour build
+RUN pip3 install mkdocs==1.4.3 markdown-include Pygments scour build
 RUN mkdir /extra
 WORKDIR /extra
 RUN curl -O http://http.us.debian.org/debian/pool/main/l/lintian/lintian_2.116.3_all.deb
