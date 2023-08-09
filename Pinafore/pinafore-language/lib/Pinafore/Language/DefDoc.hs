@@ -23,6 +23,7 @@ data DocItem
                          , diParams :: [NamedText]
                          , diType :: NamedText }
     | TypeDocItem { diNames :: NonEmpty FullNameRef
+                  , diStorable :: Bool
                   , diParams :: [NamedText] }
     | SubtypeRelationDocItem { diSubtype :: NamedText
                              , diSupertype :: NamedText }
@@ -31,19 +32,13 @@ data DocItem
 instance Show DocItem where
     show (HeadingDocItem t) = "heading " <> show t
     show (ValueDocItem n t) = "val " <> show n <> ": " <> unpack (toText t)
-    show (ValueSignatureDocItem n t hd) =
-        "sig " <>
-        show n <>
-        ": " <>
-        unpack (toText t) <>
-        if hd
-            then " [optional]"
-            else ""
+    show (ValueSignatureDocItem n t hd) = "sig " <> show n <> ": " <> unpack (toText t) <> mif hd " [optional]"
     show (SupertypeConstructorSignatureDocItem n) = "constructor " <> show n
     show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
     show (SpecialFormDocItem n pp t) =
         "spform " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <> ": " <> unpack (toText t)
-    show (TypeDocItem n pp) = "type " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp)
+    show (TypeDocItem n st pp) =
+        "type " <> mif st "storable " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp)
     show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
 
 diNamesTraversal :: Applicative m => (NonEmpty FullNameRef -> m (NonEmpty FullNameRef)) -> DocItem -> m DocItem

@@ -91,6 +91,7 @@ printModuleDoc modopts tmodname = do
                     putBindDoc $ let
                         name = showNames diNames
                         in "type " <>
+                           mif diStorable "storable " <>
                            case (fmap nameIsInfix $ fullNameRefToUnqualified $ head diNames, diParams) of
                                (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
                                _ -> name <> trailingParams diParams

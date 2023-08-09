@@ -16,7 +16,7 @@ makeOpenEntityTypeBox name md =
         register :: () -> QScopeBuilder ()
         register _ = do
             let
-                doc = MkDefDoc (typeDocItem name []) md
+                doc = MkDefDoc (typeDocItem name True []) md
                 t = openStorableGroundType $ MkOpenEntityType name tidsym
             registerType name doc t
             registerSubtypeConversion $ MkSubtypeConversionEntry Verify t entityGroundType coerceSubtypeConversion

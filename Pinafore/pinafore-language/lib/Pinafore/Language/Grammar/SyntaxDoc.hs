@@ -37,34 +37,31 @@ constructorDocItemDocs tname cname (RecordSyntaxConstructor sigs) =
 constructorDocItem :: FullName -> FullName -> SyntaxDataConstructor extra -> DocItem
 constructorDocItem tname cname dcons = fst $ constructorDocItemDocs tname cname dcons
 
-typeDocItem :: FullName -> [SyntaxTypeParameter] -> DocItem
-typeDocItem name tparams = let
+typeDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> DocItem
+typeDocItem name diStorable tparams = let
     diNames = pure $ fullNameRef name
     diParams = fmap exprShow tparams
     in TypeDocItem {..}
 
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
-typeDeclDoc = let
-    consDoc :: FullName -> [SyntaxTypeParameter] -> SyntaxConstructorOrSubtype extra -> (DocItem, Docs)
-    consDoc tname _ (ConstructorSyntaxConstructorOrSubtype cname constructor) =
+typeDeclDoc mtname defn docDescription = let
+    consDoc :: FullName -> SyntaxConstructorOrSubtype extra -> (DocItem, Docs)
+    consDoc tname (ConstructorSyntaxConstructorOrSubtype cname constructor) =
         constructorDocItemDocs tname cname constructor
-    consDoc _ tparams (SubtypeSyntaxConstructorOrSubtype tname tt) =
-        (typeDocItem tname tparams, typeConssDoc tname tparams tt)
-    typeConsDoc :: FullName -> [SyntaxTypeParameter] -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
-    typeConsDoc tname tparams (MkSyntaxWithDoc cdoc scs) = let
-        (item, rest) = consDoc tname tparams scs
+    consDoc _ (SubtypeSyntaxConstructorOrSubtype tname tt) = (typeDocItem tname storable tparams, typeConssDoc tname tt)
+    typeConsDoc :: FullName -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
+    typeConsDoc tname (MkSyntaxWithDoc cdoc scs) = let
+        (item, rest) = consDoc tname scs
         in MkTree (MkDefDoc item cdoc) rest
-    typeConssDoc :: FullName -> [SyntaxTypeParameter] -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> Docs
-    typeConssDoc tname tparams sdocs = MkForest $ fmap (typeConsDoc tname tparams) sdocs
-    in \tname defn md -> let
-           (params, items) =
-               case defn of
-                   StorableDatatypeSyntaxTypeDeclaration tparams conss -> (tparams, typeConssDoc tname tparams conss)
-                   PlainDatatypeSyntaxTypeDeclaration tparams _ conss -> (tparams, typeConssDoc tname tparams conss)
-                   _ -> mempty
-           docItem = typeDocItem tname params
-           docDescription = md
-           in MkTree MkDefDoc {..} items
+    typeConssDoc :: FullName -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> Docs
+    typeConssDoc tname sdocs = MkForest $ fmap (typeConsDoc tname) sdocs
+    (storable, tparams, items) =
+        case defn of
+            StorableDatatypeSyntaxTypeDeclaration tparams' conss -> (True, tparams', typeConssDoc mtname conss)
+            PlainDatatypeSyntaxTypeDeclaration tparams' _ conss -> (False, tparams', typeConssDoc mtname conss)
+            _ -> (False, mempty, mempty)
+    docItem = typeDocItem mtname storable tparams
+    in MkTree MkDefDoc {..} items
 
 valueDocItem :: FullName -> Maybe SyntaxType -> DocItem
 valueDocItem name stype = let

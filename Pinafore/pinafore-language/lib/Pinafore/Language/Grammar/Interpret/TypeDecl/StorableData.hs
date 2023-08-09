@@ -177,4 +177,4 @@ makeStorableDataTypeBox ::
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())
-makeStorableDataTypeBox = makeDataTypeBox makeStorableGroundType []
+makeStorableDataTypeBox = makeDataTypeBox makeStorableGroundType True []

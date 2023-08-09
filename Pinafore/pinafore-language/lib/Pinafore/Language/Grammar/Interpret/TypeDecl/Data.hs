@@ -194,12 +194,13 @@ newMatchingTypeID =
 
 data TypeInfo = MkTypeInfo
     { tiName :: FullName
+    , tiStorable :: Bool
     , tiParams :: [SyntaxTypeParameter]
     , tiDescription :: RawMarkdown
     }
 
 tiDoc :: TypeInfo -> DefDoc
-tiDoc MkTypeInfo {..} = MkDefDoc (typeDocItem tiName tiParams) tiDescription
+tiDoc MkTypeInfo {..} = MkDefDoc (typeDocItem tiName tiStorable tiParams) tiDescription
 
 data TypeData dv t = MkTypeData
     { tdInfo :: TypeInfo
@@ -226,8 +227,16 @@ getConsSubtypeData superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructorOrSubtyp
             Refl <- unsafeIdentify @_ @t subTypeID
             rec
                 let
+                    superInfo :: TypeInfo
+                    superInfo = tdInfo superTD
                     subInfo :: TypeInfo
-                    subInfo = MkTypeInfo {tiName = tname, tiParams = tiParams $ tdInfo superTD, tiDescription = md}
+                    subInfo =
+                        MkTypeInfo
+                            { tiName = tname
+                            , tiStorable = tiStorable superInfo
+                            , tiParams = tiParams superInfo
+                            , tiDescription = md
+                            }
                     subtypes = tdID superTD : mconcat (fmap tdSubtypes subtdata)
                     subTD :: TypeData dv t
                     subTD =
@@ -709,16 +718,17 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
 makeDataTypeBox ::
        forall extra. (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
     => GroundTypeMaker extra
+    -> Bool
     -> [Some (QGroundType '[])]
     -> FullName
     -> RawMarkdown
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> QInterpreter (QFixBox () ())
-makeDataTypeBox gmaker supertypes name md params syntaxConstructorList =
+makeDataTypeBox gmaker storable supertypes name md params syntaxConstructorList =
     case getAnyCCRTypeParams params of
         MkAnyCCRTypeParams gtparams ->
-            makeBox gmaker supertypes (MkTypeInfo name params md) syntaxConstructorList gtparams
+            makeBox gmaker supertypes (MkTypeInfo name storable params md) syntaxConstructorList gtparams
 
 makePlainGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
@@ -755,4 +765,4 @@ makePlainDataTypeBox ::
     -> [SyntaxTypeParameter]
     -> [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     -> QInterpreter (QFixBox () ())
-makePlainDataTypeBox = makeDataTypeBox makePlainGroundType
+makePlainDataTypeBox = makeDataTypeBox makePlainGroundType False

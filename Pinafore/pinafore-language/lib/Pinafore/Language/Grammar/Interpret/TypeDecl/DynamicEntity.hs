@@ -27,7 +27,7 @@ makeDynamicEntityTypeBox name md stcons =
         register :: DynamicEntityType -> QScopeBuilder ()
         register det = let
             tp = aDynamicStorableGroundType name det
-            doc = MkDefDoc (typeDocItem name []) md
+            doc = MkDefDoc (typeDocItem name True []) md
             in registerType name doc tp
         construct :: () -> QScopeBuilder (DynamicEntityType, ())
         construct _ = do
