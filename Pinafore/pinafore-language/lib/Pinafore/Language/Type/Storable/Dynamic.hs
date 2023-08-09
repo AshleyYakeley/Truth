@@ -63,10 +63,21 @@ dynamicStoreAdapter mdt =
         dynamicAnchor
         (ConsListType (typeStoreAdapter mdt) $ ConsListType plainStoreAdapter NilListType)
 
+dynamicEntityStorability :: Maybe DynamicEntityType -> Storability '[] DynamicEntity
+dynamicEntityStorability mdts = let
+    stbKind = NilListType
+    stbCovaryMap :: CovaryMap DynamicEntity
+    stbCovaryMap = covarymap
+    stbAdapter :: forall ta. Arguments StoreAdapter DynamicEntity ta -> StoreAdapter ta
+    stbAdapter NilArguments = dynamicStoreAdapter mdts
+    in MkStorability {..}
+
 dynamicStorableGroundType :: QGroundType '[] DynamicEntity
 dynamicStorableGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily DynamicEntity)|]) "DynamicEntity")
-        {qgtSubtypeGroup = Just dynamicEntitySubtypeGroup}
+        { qgtSubtypeGroup = Just dynamicEntitySubtypeGroup
+        , qgtProperties = singleGroundProperty storabilityProperty $ dynamicEntityStorability Nothing
+        }
 
 -- P <: DynamicEntity
 dynamicTest :: QGroundType '[] DynamicEntity -> QGroundType '[] DynamicEntity -> Bool
@@ -104,18 +115,9 @@ instance TestHetEquality ADynamicEntityFamily where
 aDynamicStorableFamilyWitness :: IOWitness ('MkWitKind ADynamicEntityFamily)
 aDynamicStorableFamilyWitness = $(iowitness [t|'MkWitKind ADynamicEntityFamily|])
 
-aDynamicEntityStorability :: DynamicEntityType -> Storability '[] DynamicEntity
-aDynamicEntityStorability dts = let
-    stbKind = NilListType
-    stbCovaryMap :: CovaryMap DynamicEntity
-    stbCovaryMap = covarymap
-    stbAdapter :: forall ta. Arguments StoreAdapter DynamicEntity ta -> StoreAdapter ta
-    stbAdapter NilArguments = dynamicStoreAdapter $ Just dts
-    in MkStorability {..}
-
 aDynamicStorableGroundType :: FullName -> DynamicEntityType -> QGroundType '[] DynamicEntity
 aDynamicStorableGroundType name dts = let
-    props = singleGroundProperty storabilityProperty $ aDynamicEntityStorability dts
+    props = singleGroundProperty storabilityProperty $ dynamicEntityStorability $ Just dts
     in (singleGroundType' (MkFamilialType aDynamicStorableFamilyWitness $ MkADynamicEntityFamily name dts) props $
         exprShowPrec name)
            { qgtGreatestDynamicSupertype =
