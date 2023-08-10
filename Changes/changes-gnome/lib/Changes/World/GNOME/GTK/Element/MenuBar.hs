@@ -3,7 +3,7 @@ module Changes.World.GNOME.GTK.Element.MenuBar
     , KeyboardKey
     , MenuAccelerator(..)
     , MenuEntry(..)
-    , simpleActionMenuItem
+    , simpleActionMenuEntry
     , MenuBar
     , createMenuBar
     ) where
@@ -36,8 +36,8 @@ data MenuEntry
 
 type MenuBar = [MenuEntry]
 
-simpleActionMenuItem :: Text -> Maybe MenuAccelerator -> GView 'Locked () -> MenuEntry
-simpleActionMenuItem label maccel action = ActionMenuEntry label maccel $ constantModel $ Just action
+simpleActionMenuEntry :: Text -> Maybe MenuAccelerator -> GView 'Locked () -> MenuEntry
+simpleActionMenuEntry label maccel action = ActionMenuEntry label maccel $ constantModel $ Just action
 
 toModifierType :: KeyboardModifier -> ModifierType
 toModifierType KMShift = ModifierTypeShiftMask

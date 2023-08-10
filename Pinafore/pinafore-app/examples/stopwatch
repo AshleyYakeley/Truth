@@ -1,5 +1,6 @@
 #!/usr/bin/pinafore
 import "pinafore-gnome" in
+with GTK. in
 let
 
     datatype State of
@@ -24,12 +25,12 @@ let
         Running.State t => show $ n -.Time t
         end;
 
-    ui: WholeModel +Time -> WholeModel State -> Element.GTK
-    = fn now, r => button.GTK {showStopwatch %r %now} {toggleStopwatch now r};
+    ui: WholeModel +Time -> WholeModel State -> Element
+    = fn now, r => button.Element {showStopwatch %r %now} {toggleStopwatch now r};
 
 in do
     now <- newClock.Time $ Seconds 0.001;
     r <- newMem.WholeModel;
     r := Stopped.State zero.Duration;
-    run.GTK $ fn gtk => open.Window.GTK gtk (150,40) {"Stopwatch"} $ ui now r;
+    run $ fn gtk => open.Window gtk (150,40) {"Stopwatch"} $ ui now r;
     end

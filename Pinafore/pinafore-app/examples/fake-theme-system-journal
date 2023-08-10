@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 import "pinafore-gnome", "UILib" in
-with UILib. in
+with GTK., UILib. in
 run.Context $ fn context =>
 let
 
@@ -14,16 +14,14 @@ let
     yearTheme: Property Integer Text
     = property @Integer @Text !"FTSJ.yearTheme" store;
 
-    with GTK end;
-
     frontCoverPane: Pane
-    = simple.Pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+    = simple.Pane "Cover" $ styleSheet.Element {"* {font-size: 32pt;}"} $ label.Element {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
     getThemesPane: Action Pane
-    = pure $ simple.Pane "Themes" $ blank;
+    = pure $ simple.Pane "Themes" $ blank.Element;
 
     daysPane: Pane
-    = simple.Pane "Days" $ blank;
+    = simple.Pane "Days" $ blank.Element;
 
     createMainPane: Action Pane
     = do

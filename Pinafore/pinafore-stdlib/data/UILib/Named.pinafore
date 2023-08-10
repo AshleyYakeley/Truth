@@ -48,7 +48,7 @@ namespace UILib of
                 nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
                 namedTable: FiniteSetModel {a,+Named} -> (a -> Action Any) -> Maybe (WholeModel {a,+Named}) -> Element;
                 namedItemTable: FiniteSetModel {a,+Named} -> (WholeModel +a -> Element) -> Maybe (WholeModel {a,+Named}) -> Element;
-                namedToTypePresentation: NamedTypePresentation {item,+Named} -> TypePresentation {item,-Named};
+                namedToTypePresentation: NamedTypePresentation {item,+Named} -> SetPresentation {item,-Named};
             end;
         end;
 
@@ -66,19 +66,19 @@ namespace UILib of
 
             nameColumn = ({"Name"},fn p => name !$ {p});
 
-            namedTable = fn sm, onActivate, msel => exec $ do
+            namedTable = fn sm, onActivate, msel => exec.Element $ do
                 lm <- getList.FiniteSetModel nameOrder sm;
-                pure.Action $ listTable [nameColumn] lm onActivate msel;
+                pure.Action $ listTable.Element [nameColumn] lm onActivate msel;
                 end;
 
             namedItemTable = fn set, iui, msel =>
                 namedTable set (fn e => paneWindow $ namedPane iui {e}) msel;
 
-            namedToTypePresentation: NamedTypePresentation {item,+Named} -> TypePresentation {item,-Named}
+            namedToTypePresentation: NamedTypePresentation {item,+Named} -> SetPresentation {item,-Named}
             = fn Mk.NamedTypePresentation => let
                 itemOpenAction = fn e => (paneWindow $ namedPane itemElement {e}) >> pure ();
                 listElement = fn sel => namedItemTable itemSet itemElement (Just sel);
-                in Mk.TypePresentation;
+                in Mk.SetPresentation;
 
         in Mk.Context.Named;
 

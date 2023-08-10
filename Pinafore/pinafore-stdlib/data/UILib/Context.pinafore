@@ -1,6 +1,7 @@
 import "pinafore-gnome" in
 namespace UILib of
 
+    #| Context type for using GTK, storage, and undo together.
     datatype Context of
         Mk of
             gtk: Context.GTK;
@@ -11,6 +12,7 @@ namespace UILib of
 
     namespace Context of
 
+        #| Run an action, giving a `Context`.
         run: (Context -> Action a) -> Action a
         = fn call => do
             dstore <- openDefaultStore.Env;
@@ -22,4 +24,3 @@ namespace UILib of
     end;
 
 end;
-

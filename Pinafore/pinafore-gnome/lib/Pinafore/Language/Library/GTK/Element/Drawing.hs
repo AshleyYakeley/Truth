@@ -62,8 +62,10 @@ drawingStuff =
         "Drawing"
         ""
         [ typeBDS "Handler" "Response to button-clicked events" (MkSomeGroundType handlerGroundType) []
-        , valBDS "concatHandler" "Collect handlers." $ mconcat @LangHandler
-        , valBDS "onClick" "Action to perform on click" langOnClick
-        , valBDS "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
-        , valBDS "draw" "Drawable element" uiDraw
+        , namespaceBDS "Handler" $
+          monoidEntries @_ @LangHandler <>
+          [ valBDS "onClick" "Action to perform on click" langOnClick
+          , valBDS "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
+          ]
+        , namespaceBDS "Element" [valBDS "draw" "Drawable element" uiDraw]
         ]

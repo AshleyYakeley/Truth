@@ -111,10 +111,10 @@ main = do
                             mbar =
                                 [ SubMenuEntry
                                       "File"
-                                      [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
+                                      [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
                                         gvCloseState closer
                                       , SeparatorMenuEntry
-                                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                      , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
                                       ]
                                 ]
                             in (mbar, spec)
@@ -144,19 +144,19 @@ main = do
                             mbar =
                                 [ SubMenuEntry
                                       "File"
-                                      [ simpleActionMenuItem "Save" (Just $ MkMenuAccelerator [KMCtrl] 'S') $
+                                      [ simpleActionMenuEntry "Save" (Just $ MkMenuAccelerator [KMCtrl] 'S') $
                                         liftIO saveAction
-                                      , simpleActionMenuItem "Revert" Nothing $ liftIO revertAction
-                                      , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
+                                      , simpleActionMenuEntry "Revert" Nothing $ liftIO revertAction
+                                      , simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
                                         gvCloseState closer
                                       , SeparatorMenuEntry
-                                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                      , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
                                       ]
                                 , SubMenuEntry
                                       "Edit"
-                                      [ simpleActionMenuItem "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
+                                      [ simpleActionMenuEntry "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
                                         liftIO $ undoHandlerUndo uh emptyResourceContext noEditSource >> return ()
-                                      , simpleActionMenuItem "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
+                                      , simpleActionMenuEntry "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
                                         liftIO $ undoHandlerRedo uh emptyResourceContext noEditSource >> return ()
                                       ]
                                 ]

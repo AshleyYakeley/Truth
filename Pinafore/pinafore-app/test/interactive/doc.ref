@@ -11,7 +11,7 @@ pinafore> :doc paintAlpha.Drawing
 #| Paint everywhere with this alpha (within the clip)
 pinafore> :doc Element.GTK
 #| A user interface element is something that goes inside a window.
-pinafore> :doc textArea.GTK
+pinafore> :doc textArea.Element.GTK
 #| Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference.
 pinafore> :doc notfound
 ! notfound undefined

@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 import "pinafore-media", "pinafore-gnome" in
-with GTK, Colour, Cairo in
+with GTK., Colour., Cairo. in
 let
 
 # transform from (-1 .. +1,-1 .. +1)
@@ -22,17 +22,17 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
     scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat
     [
         source navy $ %(toMaybe.WholeModel ref) >- match
-            Nothing => pure $ onClick $ ref := Partial.Progress;
-            Just No.Progress => pure $ onClick $ ref := Partial.Progress;
+            Nothing => pure $ onClick.Handler $ ref := Partial.Progress;
+            Just No.Progress => pure $ onClick.Handler $ ref := Partial.Progress;
             Just Partial.Progress => concat
                 [
                     with Path in fill $ concat [arc (0,0) 1 0 pi, close],
-                    pure $ onClick $ ref := Done.Progress
+                    pure $ onClick.Handler $ ref := Done.Progress
                 ];
             Just Done.Progress => concat
                 [
                     with Path in fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
-                    pure $ onClick $ ref := No.Progress
+                    pure $ onClick.Handler $ ref := No.Progress
                 ];
         end,
         with Path in stroke $ concat
@@ -46,9 +46,9 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
 
 in run $ fn gtk => do
     ref <- newMem.WholeModel;
-    open.Window gtk (300,400) {"Drawing"} $ vertical
+    open.Window gtk (300,400) {"Drawing"} $ vertical.Element
     [
-        layoutGrow $ draw $ scaleDrawing $ drawing ref,
-        layoutGrow $ draw $ scaleDrawing $ drawing ref
+        layoutGrow.Element $ draw.Element $ scaleDrawing $ drawing ref,
+        layoutGrow.Element $ draw.Element $ scaleDrawing $ drawing ref
     ];
     end

@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 import "pinafore-gnome", "UILib" in
-with UILib. in
+with GTK., UILib. in
 run.Context $ fn context =>
 let
 
@@ -102,34 +102,34 @@ let
 
     # Overview tab GTK
     overviewPane: Pane
-    = simple.Pane "Overview" $ exec.GTK $ do
+    = simple.Pane "Overview" $ exec.Element $ do
         now <- newClock $ Seconds 60; # update every minute
         tz <- newTimeZoneModel.LocalTime now;
-        pure $ label.GTK $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
+        pure $ label.Element $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
         end;
 
-    calendarWindow: WholeModel +Event -> Action Window.GTK
+    calendarWindow: WholeModel +Event -> Action Window
     = fn evt => mfix $ fn window =>
-        open.Window.GTK gtk (200,200) {"date of " <>.Text %(name !$% evt)} $ vertical.GTK
+        open.Window gtk (200,200) {"date of " <>.Text %(name !$% evt)} $ vertical.Element
         [
-            calendar.GTK $ eventModelTimeDate $ eventTime !$% evt,
-            button.GTK {"Done: " <>.Text show %(eventModelTimeDate $ eventTime !$% evt)} {close.Window.GTK window}
+            calendar.Element $ eventModelTimeDate $ eventTime !$% evt,
+            button.Element {"Done: " <>.Text show %(eventModelTimeDate $ eventTime !$% evt)} {close.Window window}
         ];
 
-    eventUI: WholeModel +Event -> Element.GTK
-    = fn evt => vertical.GTK
+    eventUI: WholeModel +Event -> Element
+    = fn evt => vertical.Element
     [
-        textEntry.GTK $ name !$% evt,
-        horizontal.GTK
+        textEntry.Element $ name !$% evt,
+        horizontal.Element
         [
-            button.GTK {"cal"} {calendarWindow evt},
-            textEntry.GTK $ reverse.Prism asText.Date !$ (eventModelTimeDate $ eventTime !$% evt),
-            textEntry.GTK $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (eventModelTimeTimeOfDay $ eventTime !$% evt)
+            button.Element {"cal"} {calendarWindow evt},
+            textEntry.Element $ reverse.Prism asText.Date !$ (eventModelTimeDate $ eventTime !$% evt),
+            textEntry.Element $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (eventModelTimeTimeOfDay $ eventTime !$% evt)
         ],
-        layoutGrow.GTK $ textArea.GTK (fromWhole.TextModel $ eventNotes !$% evt)
+        layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ eventNotes !$% evt)
     ];
 
-    eventWindow: Event -> Action Window.GTK
+    eventWindow: Event -> Action Window
     = fn evt => paneWindow $ namedPane eventUI {evt};
 
     newEvent: Action Event
@@ -141,7 +141,7 @@ let
         pure item;
         end;
 
-    eventsTableUI: WholeModel Event -> Element.GTK
+    eventsTableUI: WholeModel Event -> Element
     = fn selection => let
         columns: List (WholeModel +Text *: (Event -> WholeModel Text))
         = let
@@ -150,12 +150,12 @@ let
             nameColumn: WholeModel +Text *: (Event -> WholeModel Text)
             = ({"What"},fn e => name !$ {e});
             in [timeColumn,nameColumn];
-        in exec.GTK $ do
+        in exec.Element $ do
             lm <- getList.FiniteSetModel eventOrder events;
-            pure $ listTable.GTK columns lm eventWindow (Just selection);
+            pure $ listTable.Element columns lm eventWindow (Just selection);
             end;
 
-    eventsPresentation: TypePresentation Event
+    eventsPresentation: SetPresentation Event
     = let
         title = "Events";
         itemSet = events;
@@ -166,7 +166,7 @@ let
         itemOpenAction = fn evt => eventWindow evt >> pure ();
         itemElement = eventUI;
         listElement = eventsTableUI;
-        in Mk.TypePresentation;
+        in Mk.SetPresentation;
 
 in do
     eventsPane <- presentList.Pane eventsPresentation;

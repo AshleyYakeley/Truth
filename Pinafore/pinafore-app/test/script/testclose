@@ -4,7 +4,7 @@ run $
 \gtk =>
 fixAction $
 \window =>
-let mbar = menuBar [menuAction "Close" (Just "Ctrl+W") {close.Window window}] in
+let mbar = menuBar [action.MenuEntry "Close" (Just "Ctrl+W") {close.Window window}] in
 open.Window gtk (400,600) {"Pinafore"} $
 vertical
 [mbar, layoutGrow $ button {"Close"} {close.Window window}]

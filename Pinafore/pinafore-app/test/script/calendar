@@ -6,4 +6,5 @@ pdate = property @Unit @Date !"calendar-test" store;
 rdate = pdate !$ {()};
 in
 import "pinafore-gnome" in
-run.GTK $ fn gtk => open.Window.GTK gtk (300,400) {"Test Calendar"} $ vertical.GTK [calendar.GTK rdate,layoutGrow.GTK $ label.GTK {show %rdate}]
+with GTK. in
+run $ fn gtk => open.Window gtk (300,400) {"Test Calendar"} $ vertical.Element [calendar.Element rdate,layoutGrow.Element $ label.Element {show %rdate}]

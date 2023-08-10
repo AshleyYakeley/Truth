@@ -110,13 +110,13 @@ soupWindow newWindow dirpath = do
         mbar cc _ =
             [ SubMenuEntry
                   "File"
-                  [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ gvCloseState cc
-                  , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                  [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ gvCloseState cc
+                  , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
                   ]
             , SubMenuEntry
                   "Item"
-                  [ simpleActionMenuItem "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') newItem
-                  , simpleActionMenuItem "Delete" Nothing $ withSelection deleteItem
+                  [ simpleActionMenuEntry "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') newItem
+                  , simpleActionMenuEntry "Delete" Nothing $ withSelection deleteItem
                   ]
             ]
         openItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Locked ()

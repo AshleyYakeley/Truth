@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 import "pinafore-gnome", "UILib" in
-with UILib. in
+with GTK., UILib. in
 run.Context $ fn context =>
 let
 
@@ -21,15 +21,15 @@ let
     province = property @Location @Text !"location.address.province" store;
     country = property @Location @Text !"location.address.country" store;
 
-    locationUI: WholeModel +Location -> Element.GTK
-    = fn loc => vertical.GTK
+    locationUI: WholeModel +Location -> Element
+    = fn loc => vertical.Element
     [
-        layoutGrow.GTK $ labelled.GTK {"Address: "} $ textArea.GTK (fromWhole.TextModel $ address !$% loc),
-        labelled.GTK {"City: "} $ textEntry.GTK $ city !$% loc,
-        labelled.GTK {"Postcode/ZIP: "} $ textEntry.GTK $ postcode !$% loc,
-        labelled.GTK {"State/Province: "} $ textEntry.GTK $ province !$% loc,
-        labelled.GTK {"Country: "} $ textEntry.GTK $ country !$% loc,
-        labelled.GTK {"Phone: "} $ textEntry.GTK $ locphone !$% loc
+        layoutGrow.Element $ labelled.Element {"Address: "} $ textArea.Element (fromWhole.TextModel $ address !$% loc),
+        labelled.Element {"City: "} $ textEntry.Element $ city !$% loc,
+        labelled.Element {"Postcode/ZIP: "} $ textEntry.Element $ postcode !$% loc,
+        labelled.Element {"State/Province: "} $ textEntry.Element $ province !$% loc,
+        labelled.Element {"Country: "} $ textEntry.Element $ country !$% loc,
+        labelled.Element {"Phone: "} $ textEntry.Element $ locphone !$% loc
     ];
 
     let rec
@@ -68,63 +68,63 @@ let
     ### User Interface
 
     let rec
-        contactPages: WholeModel +LegalEntity -> List (Element.GTK *: Element.GTK)
+        contactPages: WholeModel +LegalEntity -> List (Element *: Element)
         = fn er =>
         [
-            page.GTK {"Social"} $ vertical.GTK
+            page.Element {"Social"} $ vertical.Element
             [
-                labelled.GTK {"Email: "} $ textEntry.GTK $ email !$% er,
-                labelled.GTK {"Phone: "} $ textEntry.GTK $ phone !$% er
+                labelled.Element {"Email: "} $ textEntry.Element $ email !$% er,
+                labelled.Element {"Phone: "} $ textEntry.Element $ phone !$% er
             ],
-            page.GTK {"Home"} $ locationUI $ home !$% er
+            page.Element {"Home"} $ locationUI $ home !$% er
         ];
 
-        personPages: WholeModel +Person -> List (Element.GTK *: Element.GTK)
+        personPages: WholeModel +Person -> List (Element *: Element)
         = fn p =>
         [
-            page.GTK {"Work"} $ vertical.GTK
+            page.Element {"Work"} $ vertical.Element
             [
-                labelled.GTK {"Employer: "} $ pick.GTK (byName legalentities) $ employer !$% p
+                labelled.Element {"Employer: "} $ pick.Element (byName legalentities) $ employer !$% p
             ],
-            page.GTK {"Family"} $ familyUI p
+            page.Element {"Family"} $ familyUI p
         ];
 
-        familyUI: WholeModel +Person -> Element.GTK
-        = fn p => vertical.GTK
+        familyUI: WholeModel +Person -> Element
+        = fn p => vertical.Element
         [
-            labelled.GTK {"Birth: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ birthdate !$% p,
-            labelled.GTK {"Death: "} $ textEntry.GTK $ reverse.Prism asText.Date !$ deathdate !$% p,
-            checkBox.GTK {"Married"} $ married !$% p,
-            labelled.GTK {"Mother: "} $ pick.GTK (byName people) $ mother !$% p,
-            labelled.GTK {"Father: "} $ pick.GTK (byName people) $ father !$% p,
-            label.GTK {"Children:"},
-            layoutGrow.GTK $ namedItemTable (children p) contactModelUI Nothing
+            labelled.Element {"Birth: "} $ textEntry.Element $ reverse.Prism asText.Date !$ birthdate !$% p,
+            labelled.Element {"Death: "} $ textEntry.Element $ reverse.Prism asText.Date !$ deathdate !$% p,
+            checkBox.Element {"Married"} $ married !$% p,
+            labelled.Element {"Mother: "} $ pick.Element (byName people) $ mother !$% p,
+            labelled.Element {"Father: "} $ pick.Element (byName people) $ father !$% p,
+            label.Element {"Children:"},
+            layoutGrow.Element $ namedItemTable (children p) contactModelUI Nothing
         ];
 
-        organisationPages: WholeModel +Organisation -> List (Element.GTK *: Element.GTK)
+        organisationPages: WholeModel +Organisation -> List (Element *: Element)
         = fn subj =>
         [
-            page.GTK {"Employees"} $ namedItemTable (employees subj) contactModelUI Nothing
+            page.Element {"Employees"} $ namedItemTable (employees subj) contactModelUI Nothing
         ];
 
-        contactUI: LegalEntity -> Element.GTK
+        contactUI: LegalEntity -> Element
         = fn e => let
-            pages: List (Element.GTK *: Element.GTK)
+            pages: List (Element *: Element)
             = contactPages {e} <>.List (e >- match
                 p:? Person => personPages {p};
                 o:? Organisation => organisationPages {o};
                 end);
-            in vertical.GTK
+            in vertical.Element
             [
-                labelled.GTK {"Name: "} $ textEntry.GTK $ name !$% {e},
-                layoutGrow.GTK $ notebook.GTK unknown pages
+                labelled.Element {"Name: "} $ textEntry.Element $ name !$% {e},
+                layoutGrow.Element $ notebook.Element unknown pages
             ];
 
-        contactModelUI: WholeModel +LegalEntity -> Element.GTK
-        = fn model => dynamic.GTK $ coMap.WholeModel contactUI model;
+        contactModelUI: WholeModel +LegalEntity -> Element
+        = fn model => dynamic.Element $ coMap.WholeModel contactUI model;
     end;
 
-    contactsPresentation: TypePresentation LegalEntity
+    contactsPresentation: SetPresentation LegalEntity
     = let
         title = "Contacts";
         itemSet = legalentities;
@@ -136,7 +136,7 @@ let
         itemElement = contactModelUI;
         in namedToTypePresentation Mk.NamedTypePresentation;
 
-    contactsWindow: Action Window.GTK
+    contactsWindow: Action Window
     = do
         p <- presentList.Pane contactsPresentation;
         paneWindow p;

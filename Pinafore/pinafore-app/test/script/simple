@@ -16,7 +16,7 @@ me = openEntity @Person !"example:me";
 
 # GTK
 ui_person : Person -> Element.GTK
-= fn p => textEntry.GTK $ name !$ {p};
+= fn p => textEntry.Element.GTK $ name !$ {p};
 
 window_person : Context.GTK -> Person -> Action Window.GTK
 = fn gtk, p => open.Window.GTK gtk (300,400) {"Name"} (ui_person p);

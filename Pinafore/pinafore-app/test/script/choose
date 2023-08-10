@@ -17,7 +17,7 @@ let rec
                 _ => "unknown";
             end;
         image = interpret jpeg;
-        in open.Window.GTK gtk (size.Image image) {path} $ image.GTK {image};
+        in open.Window.GTK gtk (size.Image image) {path} $ image.Element.GTK {image};
         showFile;
     end;
 

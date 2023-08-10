@@ -6,7 +6,7 @@ import "pinafore-media"
 with Cairo
 :doc paintAlpha.Drawing
 :doc Element.GTK
-:doc textArea.GTK
+:doc textArea.Element.GTK
 :doc notfound
 let aa = 8
 :doc aa
