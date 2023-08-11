@@ -378,6 +378,7 @@ executable changes-text
     , filepath
     , optparse-applicative
     , shapes
+    , thread-trace
   default-language: GHC2021
   if !flag(build-examples)
     buildable: False

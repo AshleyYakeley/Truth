@@ -117,6 +117,7 @@ executables:
           - base >= 4.16
           - filepath
           - bytestring
+          - thread-trace
           - shapes
           - changes-core
           - changes-gnome
