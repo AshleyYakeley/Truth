@@ -10,7 +10,7 @@ import System.Directory
 import System.FilePath
 
 imagedir :: FilePath
-imagedir = "changes-gnome/examples/showImages/images"
+imagedir = "Changes/changes-gnome/examples/showImages/images"
 
 resultTextToM :: MonadFail m => Result Text a -> m a
 resultTextToM = resultToM . mapResultFailure unpack
