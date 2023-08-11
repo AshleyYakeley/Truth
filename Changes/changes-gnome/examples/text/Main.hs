@@ -60,7 +60,7 @@ main = do
                                 rTextSpec (FailureResult err) = createLabel $ constantModel err
                                 makeSpecs sub = do
                                     viewButton <-
-                                        createButton (constantModel "GView 'Locked") $
+                                        createButton (constantModel "Open Selection") $
                                         constantModel $ Just $ openSelection sub
                                     textContent <- createOneWhole sub rTextSpec
                                     scrolledTextContent <- createScrolled textContent

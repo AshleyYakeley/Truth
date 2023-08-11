@@ -345,4 +345,4 @@ gvInnerWholeView ::
     -> GView ls ()
 gvInnerWholeView model baseView seln = do
     ctx <- gvGetContext
-    gvLiftRelock @ls @ls $ viewInnerWholeView model (\fm -> gvUnliftRelock @'Unlocked @ls ctx $ baseView fm) seln
+    gvLiftRelock @ls @ls $ viewInnerWholeView model (\fm -> gvUnliftRelock @ls @ls ctx $ baseView fm) seln
