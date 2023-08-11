@@ -6,7 +6,7 @@ while [[ ! -z "$1" ]]; do
             shift 1
             ;;
         -i)
-            `stack path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore -i
+            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data --data test/pinafore -i
             shift 1
             ;;
         -*)
@@ -14,7 +14,7 @@ while [[ ! -z "$1" ]]; do
             exit 1
             ;;
         *)
-            `stack path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore "Pinafore/pinafore-app/test/script/$1"
+            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data --data test/pinafore "Pinafore/pinafore-app/test/script/$1"
             shift 1
             ;;
     esac
