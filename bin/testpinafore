@@ -2,7 +2,7 @@
 while [[ ! -z "$1" ]]; do
     case "$1" in
         --build)
-            make exe
+            stack build pinafore-app:pinafore
             shift 1
             ;;
         -i)
