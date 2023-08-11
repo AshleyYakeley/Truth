@@ -14,7 +14,7 @@ while [[ ! -z "$1" ]]; do
             exit 1
             ;;
         *)
-            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data --data test/pinafore "Pinafore/pinafore-app/test/script/$1"
+            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data --data test/pinafore "$1"
             shift 1
             ;;
     esac

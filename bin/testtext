@@ -1,4 +1,4 @@
 #!/bin/sh -e
-stack install changes-gnome
+stack build changes-gnome:changes-text
 echo OK
-`stack path --local-bin`/changes-text --seltest --save test/text
+stack --docker-env DISPLAY exec -- changes-text --seltest --save test/text

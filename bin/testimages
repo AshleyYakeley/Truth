@@ -2,4 +2,4 @@
 make testimages
 stack install changes-gnome
 echo OK
-`stack path --local-bin`/changes-showImages
+stack --docker-env DISPLAY exec -- changes-showImages
