@@ -1,4 +1,4 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env -S pinafore
 import "pinafore-gnome" in
 do
 outputLn.Env "BEGIN";

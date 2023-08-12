@@ -51,6 +51,7 @@ handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> Fal
 uiDraw :: ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangElement
 uiDraw model =
     MkLangElement $ \ec ->
+        gvRunLocked $
         createCairo $
         unWModel $
         immutableWholeModelValue mempty $

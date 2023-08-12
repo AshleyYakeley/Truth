@@ -21,7 +21,7 @@ testFile inpath = let
                    action
 
 items :: [String]
-items = ["gio", "output"] <> ifpure flag_TestX11 "window"
+items = ["gio", "output"] <> mif flag_TestX11 ["window", "close-update", "listTable"]
 
 testItem :: String -> TestTree
 testItem item = let

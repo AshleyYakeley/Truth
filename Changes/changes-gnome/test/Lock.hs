@@ -111,7 +111,10 @@ lockTests =
               setup :: GView 'Unlocked (GView 'Unlocked ())
               setup =
                   gvRunLocked $ do
-                      let wspec = blankWindowSpec {wsContent = \_ -> createDynamic $ constantModel createBlank}
+                      let
+                          wspec =
+                              blankWindowSpec
+                                  {wsContent = \_ -> createDynamic $ constantModel $ gvRunLocked createBlank}
                       (w, closer) <- gvGetCloser $ createWindow wspec
                       uiWindowShow w
                       return $ gvRunLocked closer

@@ -57,6 +57,7 @@ openWindow lc wsSize title (MkLangElement element) =
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
                 wsContent :: AccelGroup -> GView 'Locked Widget
                 wsContent ag =
+                    gvRunUnlocked $
                     element
                         MkElementContext
                             { ecUnlift = unlift

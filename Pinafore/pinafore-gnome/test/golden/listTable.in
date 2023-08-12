@@ -1,0 +1,21 @@
+#!/usr/bin/env -S pinafore
+import "pinafore-gnome" in
+with GTK. in
+openDefaultStore.Env >>= fn store =>
+run.GTK $ fn gtk =>
+let
+
+    dynamictype Person = !"TP";
+    p = point.DynamicEntity @Person !"p";
+    people: FiniteSetModel Person = property @Person @Unit !"T" store !@ {()};
+
+in do
+    selectionRef <- newMem.WholeModel;
+    lm <- getList.FiniteSetModel arbitrary.Order people;
+    w <- open.Window gtk (600,800) {"Test"} $ listTable.Element [] lm (fn _ => pure ()) $ Just selectionRef;
+
+    people +=.SetModel p;
+    selectionRef :=.WholeModel p;
+    sleep $ Seconds 0.2;
+    close.Window w;
+    end

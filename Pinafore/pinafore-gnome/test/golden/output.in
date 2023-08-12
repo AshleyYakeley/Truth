@@ -1,2 +1,2 @@
-#!/usr/bin/pinafore
+#!/usr/bin/env -S pinafore
 outputLn.Env "OUTPUT"

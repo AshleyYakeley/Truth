@@ -18,7 +18,7 @@ data ElementContext = MkElementContext
 
 -- LangElement
 newtype LangElement = MkLangElement
-    { unLangElement :: ElementContext -> GView 'Locked Widget
+    { unLangElement :: ElementContext -> GView 'Unlocked Widget
     }
 
 elementGroundType :: QGroundType '[] LangElement

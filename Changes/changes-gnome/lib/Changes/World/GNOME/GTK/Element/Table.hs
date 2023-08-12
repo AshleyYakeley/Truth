@@ -197,7 +197,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> GView 'Locked ( Mod
         setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> GView 'Locked ()
         setSelection Nothing = setSelectedIndex Nothing
         setSelection (Just sel) = do
-            gvLiftViewNoUI $ viewWaitUpdates tableModel
+            gvRunUnlocked $ gvLiftView $ viewWaitUpdates tableModel
             items <- dynamicStoreContents store
             let
                 testEntry :: StoreEntry update rowtext rowprops -> GView 'Locked Bool
