@@ -75,7 +75,7 @@ ui_people : FiniteSetModel Person -> Element
     pplist <- getList.FiniteSetModel empty.Order pp;
     pure $ vertical.Element
     [
-        button.Element {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
+        button.Element {"New Person"} {do p <- new.OpenEntity @Person; pp += p; window_person p end},
         button.Element {"View Person"} {get selectedperson >>= window_person},
         button.Element {"Remove Person"} {get selectedperson >>= fn p => pp -= p},
         layoutGrow.Element $ listTable.Element [({"Name"},fn p => name !$ {p})] pplist window_person (Just selectedperson)
@@ -134,8 +134,8 @@ window_calc : Action Window
 = let
     opentype P;
     pvalue = property @P @Number !"pvalue" store;
-    aval = pvalue !$ {openEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
-    bval = pvalue !$ {openEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
+    aval = pvalue !$ {point.OpenEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
+    bval = pvalue !$ {point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
     in std_window {"Calc"} $ vertical.Element
     [
         #textEntry.Element aval,
@@ -150,9 +150,9 @@ window_switch : Action Window
     opentype P;
     pbool = property @P @Boolean !"pbool" store;
     ptext = property @P @Text !"ptext" store;
-    sw_pick = pbool !$ {openEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
-    sw_val1 = ptext !$ {openEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
-    sw_val2 = ptext !$ {openEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
+    sw_pick = pbool !$ {point.OpenEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
+    sw_val1 = ptext !$ {point.OpenEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
+    sw_val2 = ptext !$ {point.OpenEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
     in std_window {"Switch"} $ vertical.Element
     [
         #textEntry.Element sw_pick),

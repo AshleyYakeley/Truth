@@ -1,8 +1,8 @@
 pinafore> let opentype P
 pinafore> let opentype Q
 pinafore> let subtype P <: Q
-pinafore> let p = openEntity @P !"p"
-pinafore> let q = openEntity @Q !"q"
+pinafore> let p = point.OpenEntity @P !"p"
+pinafore> let q = point.OpenEntity @Q !"q"
 pinafore> with Attribute
 pinafore> with Store
 pinafore> store <- openDefaultStore.Env

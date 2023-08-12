@@ -134,7 +134,7 @@ let
 
     newEvent: Action Event
     = do
-        item <- newOpenEntity @Event;
+        item <- new.OpenEntity @Event;
         day <- getNowLocal.Date;
         eventTime !$ {item} := Date.EventTime day;
         name !$ {item} := "";

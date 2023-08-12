@@ -1,8 +1,8 @@
 let opentype P
 let opentype Q
 let subtype P <: Q
-let p = openEntity @P !"p"
-let q = openEntity @Q !"q"
+let p = point.OpenEntity @P !"p"
+let q = point.OpenEntity @Q !"q"
 let fp : P -> Boolean = fn _ => True
 let fq : Q -> Boolean = fn _ => True
 fp p

@@ -12,7 +12,7 @@ opentype Person;
 name = property @Person @Text !"example:name" store;
 
 # One particular Person
-me = openEntity @Person !"example:me";
+me = point.OpenEntity @Person !"example:me";
 
 # GTK
 ui_person : Person -> Element.GTK

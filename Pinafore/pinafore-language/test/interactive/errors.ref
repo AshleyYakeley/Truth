@@ -16,10 +16,10 @@ pinafore> a
 <input>:2:1: undefined: a: a
 pinafore> p
 <input>:2:1: undefined: p: a
-pinafore> openEntity @X !"x"
-<input>:1:13: undefined: X
-pinafore> let y = openEntity @Y !"y"
-<input>:1:21: undefined: Y
+pinafore> point.OpenEntity @X !"x"
+<input>:1:19: undefined: X
+pinafore> let y = point.OpenEntity @Y !"y"
+<input>:1:27: undefined: Y
 pinafore> 35
 35
 pinafore> x +.Integer 1

@@ -13,7 +13,7 @@ father = property @Person @Person !"example:father" store;
 
 # Root type and entity
 opentype Root;
-root = openEntity @Root !"example:root";
+root = point.OpenEntity @Root !"example:root";
 
 # The set of people connected to root.
 people = property @Person @Root !"example:people" store !@ {root};

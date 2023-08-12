@@ -5,7 +5,7 @@ with Store in
 let
 
 opentype T;
-me = openEntity @T !"T";
+me = point.OpenEntity @T !"T";
 
 func20 = fn n, a, b, c, d, e, f => label.Element.GTK n;
 func19 = fn n, a, b, c, d, e, f => func20 n a b c d e f;

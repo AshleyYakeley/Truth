@@ -7,8 +7,8 @@ let p = q
 p
 a
 p
-openEntity @X !"x"
-let y = openEntity @Y !"y"
+point.OpenEntity @X !"x"
+let y = point.OpenEntity @Y !"y"
 35
 x +.Integer 1
 x +.Integer y

@@ -512,30 +512,33 @@ baseLibSections =
       , headingBDS
             "Open Entity Types"
             ""
-            [ specialFormBDS
-                  "openEntity"
-                  "An open entity for this anchor. `A` is an open entity type."
-                  ["@A", "<anchor>"]
-                  "A" $
-              MkQSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
-                  mtp <- getOpenEntityType t
-                  return $
-                      case mtp of
-                          MkSome (tp :: OpenEntityType tid) -> let
-                              typef = openEntityShimWit tp
-                              pt :: OpenEntity tid
-                              pt = MkOpenEntity $ MkEntity anchor
-                              in MkSomeOf typef pt
-            , specialFormBDS "newOpenEntity" "Generate an open entity. `A` is an open entity type." ["@A"] "Action A" $
-              MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
-                  mtp <- getOpenEntityType t
-                  return $
-                      case mtp of
-                          MkSome (tp :: OpenEntityType tid) -> let
-                              pt :: Action (OpenEntity tid)
-                              pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
-                              typef = actionShimWit $ openEntityShimWit tp
-                              in MkSomeOf typef pt
+            [ namespaceBDS
+                  "OpenEntity"
+                  [ specialFormBDS
+                        "point"
+                        "An open entity for this anchor. `A` is an open entity type."
+                        ["@A", "<anchor>"]
+                        "A" $
+                    MkQSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
+                        mtp <- getOpenEntityType t
+                        return $
+                            case mtp of
+                                MkSome (tp :: OpenEntityType tid) -> let
+                                    typef = openEntityShimWit tp
+                                    pt :: OpenEntity tid
+                                    pt = MkOpenEntity $ MkEntity anchor
+                                    in MkSomeOf typef pt
+                  , specialFormBDS "new" "Generate an open entity. `A` is an open entity type." ["@A"] "Action A" $
+                    MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+                        mtp <- getOpenEntityType t
+                        return $
+                            case mtp of
+                                MkSome (tp :: OpenEntityType tid) -> let
+                                    pt :: Action (OpenEntity tid)
+                                    pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
+                                    typef = actionShimWit $ openEntityShimWit tp
+                                    in MkSomeOf typef pt
+                  ]
             ]
       , headingBDS
             "Dynamic Entity Types"

@@ -324,10 +324,10 @@ testEntity =
               , "eic = property @E @Integer !\"eic\" store"
               , "tea = property @Text @E !\"tea\" store"
               , "nea = property @Integer @E !\"nea\" store"
-              , "e1 = openEntity @E !\"e1\""
-              , "e2 = openEntity @E !\"e2\""
-              , "e3 = openEntity @E !\"e3\""
-              , "e4 = openEntity @E !\"e4\""
+              , "e1 = point.OpenEntity @E !\"e1\""
+              , "e2 = point.OpenEntity @E !\"e2\""
+              , "e3 = point.OpenEntity @E !\"e3\""
+              , "e4 = point.OpenEntity @E !\"e4\""
               , "eba = property @E @Boolean !\"eba\" store"
               , "era = property @E @Rational !\"era\" store"
               , "ena = property @E @Number !\"ena\" store"
@@ -1491,13 +1491,13 @@ testEntity =
         , tGroup
               "type escape"
               [ testExpectSuccess
-                    "let opentype T; t = let in openEntity @T !\"t\"; f = let f : T -> Action Unit = fn _ => pass in f; in f t"
+                    "let opentype T; t = let in point.OpenEntity @T !\"t\"; f = let f : T -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let opentype T1; opentype T2; t = let in openEntity @T1 !\"t\"; f = let f : T2 -> Action Unit = fn _ => pass in f; in f t"
+                    "let opentype T1; opentype T2; t = let in point.OpenEntity @T1 !\"t\"; f = let f : T2 -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T in openEntity @T !\"t\"; f = let opentype T; f : T -> Action Unit = fn _ => pass in f; in f t"
+                    "let t = let opentype T in point.OpenEntity @T !\"t\"; f = let opentype T; f : T -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T1 in openEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action Unit = fn _ => pass in f; in f t"
+                    "let t = let opentype T1 in point.OpenEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action Unit = fn _ => pass in f; in f t"
               ]
         , tGroup
               "general-subtype"
@@ -1672,7 +1672,7 @@ testEntity =
           tDecls
               [ "opentype E"
               , "eta = property @E @Text !\"eta\" store"
-              , "e1 = openEntity @E !\"e1\""
+              , "e1 = point.OpenEntity @E !\"e1\""
               , "rt1 = eta !$ {e1}"
               ] $
           tGroup

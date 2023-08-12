@@ -67,7 +67,7 @@ testUI =
         , "import \"pinafore-gnome\" end"
         , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.Element.GTK; pure (); end"
         , "opentype T"
-        , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- newOpenEntity @T; s += p; pure (); end"
+        , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- new.OpenEntity @T; s += p; pure (); end"
         , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.Element.GTK {\"Button\"} {action}); pure (); end"
         ]
         testActions

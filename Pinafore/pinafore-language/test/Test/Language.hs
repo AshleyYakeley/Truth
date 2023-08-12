@@ -239,8 +239,8 @@ testQueries =
               , testQuery "\"1\"" $ LRSuccess "\"1\""
               , testQuery "(+)" $ LRSuccess "<?>"
               , testQuery "length.Text." $ LRSuccess "<?>"
-              , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
-              , testQuery "let opentype T in anchor.Entity $.Function openEntity @T !\"example\"" $
+              , testQuery "let opentype T in point.OpenEntity @T !\"example\"" $ LRSuccess "<?>"
+              , testQuery "let opentype T in anchor.Entity $.Function point.OpenEntity @T !\"example\"" $
                 LRSuccess "\"!F332D47A-3C96F533-854E5116-EC65D65E-5279826F-25EE1F57-E925B6C3-076D3BEC\""
               ]
         , testTree
