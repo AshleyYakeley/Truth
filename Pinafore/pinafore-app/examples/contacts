@@ -34,19 +34,19 @@ let
 
     let rec
         # a person or organisation
-        dynamictype LegalEntity = Person | Organisation;
-        subtype LegalEntity <: Named;
-        subtype LegalEntity <: Lifespanned;
-        email = property @LegalEntity @Text !"contact.email" store;
-        phone = property @LegalEntity @Text !"contact.telephone" store;
-        home = property @LegalEntity @Location !"being.location" store;
-        legalentities: FiniteSetModel LegalEntity
-        = property @LegalEntity @Unit !"type.legalentity" store !@ {()};
+        dynamictype Contact = Person | Organisation;
+        subtype Contact <: Named;
+        subtype Contact <: Lifespanned;
+        email = property @Contact @Text !"contact.email" store;
+        phone = property @Contact @Text !"contact.telephone" store;
+        home = property @Contact @Location !"being.location" store;
+        contacts: FiniteSetModel Contact
+        = property @Contact @Unit !"type.legalentity" store !@ {()};
 
         # a person
         dynamictype Person = !"type.person";
         people: FiniteSetModel Person
-        = maybeMap.FiniteSetModel (check @Person) legalentities;
+        = maybeMap.FiniteSetModel (check @Person) contacts;
         # family relationships between people
         mother = property @Person @Person !"relation.family.mother" store;
         father = property @Person @Person !"relation.family.father" store;
@@ -55,8 +55,8 @@ let
         married = property @Person @Boolean !"relation.family.spouse.exist" store;
 
         # employment relationship
-        employer = property @Person @LegalEntity !"relation.employer" store;
-        employees: WholeModel +LegalEntity -> FiniteSetModel Person
+        employer = property @Person @Contact !"relation.employer" store;
+        employees: WholeModel +Contact -> FiniteSetModel Person
         = fn p => employer !@% p;
 
         # an organisation
@@ -68,7 +68,7 @@ let
     ### User Interface
 
     let rec
-        contactPages: WholeModel +LegalEntity -> List (Element *: Element)
+        contactPages: WholeModel +Contact -> List (Element *: Element)
         = fn er =>
         [
             page.Element {"Social"} $ vertical.Element
@@ -84,7 +84,7 @@ let
         [
             page.Element {"Work"} $ vertical.Element
             [
-                labelled.Element {"Employer: "} $ pick.Element (byName legalentities) $ employer !$% p
+                labelled.Element {"Employer: "} $ pick.Element (byName contacts) $ employer !$% p
             ],
             page.Element {"Family"} $ familyUI p
         ];
@@ -98,47 +98,45 @@ let
             labelled.Element {"Mother: "} $ pick.Element (byName people) $ mother !$% p,
             labelled.Element {"Father: "} $ pick.Element (byName people) $ father !$% p,
             label.Element {"Children:"},
-            layoutGrow.Element $ namedItemTable (children p) contactModelUI Nothing
+            layoutGrow.Element $ toElement.SetElement $ namedTable (children p) contactUI
         ];
 
         organisationPages: WholeModel +Organisation -> List (Element *: Element)
         = fn subj =>
         [
-            page.Element {"Employees"} $ namedItemTable (employees subj) contactModelUI Nothing
+            page.Element {"Employees"} $ toElement.SetElement $ namedTable (employees subj) contactUI
         ];
 
-        contactUI: LegalEntity -> Element
-        = fn e => let
+        contactUI: Contact -> Element
+        = fn c => let
             pages: List (Element *: Element)
-            = contactPages {e} <>.List (e >- match
+            = contactPages {c} <>.List (c >- match
                 p:? Person => personPages {p};
                 o:? Organisation => organisationPages {o};
                 end);
             in vertical.Element
             [
-                labelled.Element {"Name: "} $ textEntry.Element $ name !$% {e},
+                labelled.Element {"Name: "} $ textEntry.Element $ name !$% {c},
                 layoutGrow.Element $ notebook.Element unknown pages
             ];
-
-        contactModelUI: WholeModel +LegalEntity -> Element
-        = fn model => dynamic.Element $ coMap.WholeModel contactUI model;
     end;
 
-    contactsPresentation: SetPresentation LegalEntity
-    = let
-        title = "Contacts";
-        itemSet = legalentities;
+    contactsPresentation: SetPresentation Contact
+    = Mk.SetPresentation of
+        setName = "Contacts";
+        itemSet = contacts;
         newItems =
         [
-            let name = "New Person"; mkey = Just "Ctrl+K"; newItem = new.DynamicEntity @Person in Mk.NewItem,
-            let name = "New Organisation"; newItem = new.DynamicEntity @Organisation in Mk.NewItem
+            Mk.NewItem of name = "New Person"; mkey = Just "Ctrl+K"; newItem = new.DynamicEntity @Person end,
+            Mk.NewItem of name = "New Organisation"; newItem = new.DynamicEntity @Organisation end
         ];
-        itemElement = contactModelUI;
-        in namedToTypePresentation Mk.NamedTypePresentation;
+        itemPane = namedPane contactUI;
+        setElement = namedTable contacts contactUI;
+        end;
 
     contactsWindow: Action Window
     = do
-        p <- presentList.Pane contactsPresentation;
+        p <- presentSetWithItem contactsPresentation;
         paneWindow p;
         end;
 

@@ -116,21 +116,21 @@ let
             button.Element {"Done: " <>.Text show %(eventModelTimeDate $ eventTime !$% evt)} {close.Window window}
         ];
 
-    eventUI: WholeModel +Event -> Element
+    eventUI: Event -> Element
     = fn evt => vertical.Element
     [
-        textEntry.Element $ name !$% evt,
+        textEntry.Element $ name !$% {evt},
         horizontal.Element
         [
-            button.Element {"cal"} {calendarWindow evt},
-            textEntry.Element $ reverse.Prism asText.Date !$ (eventModelTimeDate $ eventTime !$% evt),
-            textEntry.Element $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (eventModelTimeTimeOfDay $ eventTime !$% evt)
+            button.Element {"cal"} {calendarWindow {evt}},
+            textEntry.Element $ reverse.Prism asText.Date !$ (eventModelTimeDate $ eventTime !$% {evt}),
+            textEntry.Element $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (eventModelTimeTimeOfDay $ eventTime !$% {evt})
         ],
-        layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ eventNotes !$% evt)
+        layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ eventNotes !$% {evt})
     ];
 
     eventWindow: Event -> Action Window
-    = fn evt => paneWindow $ namedPane eventUI {evt};
+    = fn evt => paneWindow $ namedPane eventUI evt;
 
     newEvent: Action Event
     = do
@@ -141,8 +141,8 @@ let
         pure item;
         end;
 
-    eventsTableUI: WholeModel Event -> Element
-    = fn selection => let
+    eventsTableUI: SetElement Event
+    = Mk.SetElement $ fn mSelectionModel => let
         columns: List (WholeModel +Text *: (Event -> WholeModel Text))
         = let
             timeColumn: WholeModel +Text *: (Event -> WholeModel Text)
@@ -152,24 +152,27 @@ let
             in [timeColumn,nameColumn];
         in exec.Element $ do
             lm <- getList.FiniteSetModel eventOrder events;
-            pure $ listTable.Element columns lm eventWindow (Just selection);
+            pure $ listTable.Element columns lm eventWindow mSelectionModel;
             end;
 
     eventsPresentation: SetPresentation Event
-    = let
-        title = "Events";
+    = Mk.SetPresentation of
+        setName = "Events";
         itemSet = events;
         newItems =
         [
-            let name = "New Event"; mkey = Just "Ctrl+K"; newItem = newEvent in Mk.NewItem
+            Mk.NewItem of
+                name = "New Event";
+                mkey = Just "Ctrl+K";
+                newItem = newEvent;
+            end
         ];
-        itemOpenAction = fn evt => eventWindow evt >> pure ();
-        itemElement = eventUI;
-        listElement = eventsTableUI;
-        in Mk.SetPresentation;
+        itemPane = namedPane eventUI;
+        setElement = eventsTableUI;
+        end;
 
 in do
-    eventsPane <- presentList.Pane eventsPresentation;
+    eventsPane <- presentSetWithItem eventsPresentation;
     p <- notebook.Pane {"Events"} [overviewPane,eventsPane];
     paneWindow p
     end

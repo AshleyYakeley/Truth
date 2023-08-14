@@ -13,6 +13,18 @@ namespace UILib of
         = fn n, ui => horizontal.Element [label.Element n, layoutGrow.Element ui];
     end;
 
+    #| A pane is a title, GTK element, and menu.
+    datatype Pane of
+        Mk of
+            titleModel: WholeModel Text;
+
+            extraMenusModel: WholeModel (List MenuEntry)
+            = {[]};
+
+            element: Element;
+        end;
+    end;
+
     #| A menu entry for creating a new "item" (of type `q`).
     datatype NewItem +q of
         Mk of
@@ -22,118 +34,79 @@ namespace UILib of
         end;
     end;
 
+    #| An element for a set, for a model of the current selection
+    datatype SetElement {-p,+q} of
+        Mk (Maybe (WholeModel {-q,+p}) -> Element);
+    end;
+
+    namespace SetElement of
+        toElement: SetElement {} -> Element
+        = fn Mk se => se Nothing;
+    end;
+
     #| A way of presenting some set of items as a `Pane`.
     datatype SetPresentation {-p,+q} of
         Mk of
-            #| pane title
-            title: Text;
+            #| name for a collection of the items
+            setName: Text;
 
             #| the set of items
             itemSet: SetModel p;
 
             #| menu items for creating new items
-            newItems: List (NewItem q) = [];
+            newItems: List (NewItem q)
+            = [];
 
-            #| what to do when an item is activated
-            itemOpenAction: p -> Action Unit;
+            #| a `Pane` for a individual item
+            itemPane: p -> Pane;
 
-            itemElement: WholeModel +p -> Element
-            = fn _ => blank.Element;
-
-            listElement: WholeModel {-q,+p} -> Element
-            = fn _ => blank.Element;
-        end;
-    end;
-
-    #| A pane is a title, GTK element, and menu.
-    datatype Pane of
-        Mk of
-            titleModel: WholeModel Text;
-            extraMenusModel: WholeModel (List MenuEntry);
-            element: Element;
+            #| a `SetElement` for the set as a whole.
+            setElement: SetElement {-p,+q};
         end;
     end;
 
     namespace Pane of
 
+        #| A pane with this title and element
         simple: Text -> Element -> Pane
-        = fn title, element => let
+        = fn title, e => Mk.Pane of
             titleModel = {title};
-            extraMenusModel = {[]};
-            in Mk.Pane;
+            element = e;
+            end;
 
-        #| A notebook from a list of panes
+        #| Create a notebook from a list of panes
         notebook: WholeModel +Text -> List Pane -> Action Pane
         = fn title, panes => do
             tabModel <- newMem.WholeModel;
             pure $ let
                 makePage: Pane -> Element *: Element
                 = fn Mk.Pane => page.Element titleModel element;
-                element: Element = notebook.Element tabModel $ map.List makePage panes;
 
                 with WholeModel. end;
                 itemsModel = for panes $ fn Mk.Pane => extraMenusModel;
-                titleModel: WholeModel Text = immut title;
-                extraMenusModel: WholeModel (List MenuEntry) = fromMaybe {index.List %itemsModel %tabModel};
-                in Mk.Pane;
+                in Mk.Pane of
+                    titleModel = immut title;
+                    extraMenusModel = fromMaybe {index.List %itemsModel %tabModel};
+                    element = notebook.Element tabModel $ map.List makePage panes;
+                end;
             end;
 
-        presentWithElement: SetPresentation item -> (WholeModel item -> Element) -> Action Pane
-        = fn Mk.SetPresentation, getElement => do
-            selectionRef <- newMem.WholeModel;
-            pure $ let
-                viewItem: Action Unit
-                = do
-                    item <- get.WholeModel selectionRef;
-                    itemOpenAction item;
-                    pure ();
-                    end;
-
-                deleteItem: Action Unit
-                = do
-                    item <- get.WholeModel selectionRef;
-                    itemSet -=.SetModel item;
-                    end;
-
-                newItemToMenuEntry = fn Mk.NewItem => action.MenuEntry name mkey
-                    {do
-                    item <- newItem;
-                    itemSet +=.SetModel item;
-                    selectionRef :=.WholeModel item;
-                    end};
-
-                extraMenus: List MenuEntry
-                = with MenuEntry.GTK. in
-                    [
-                        submenu "Selection" $ map.List newItemToMenuEntry newItems <>.List
-                        [
-                            action "View" Nothing {viewItem},
-                            action "Delete" Nothing {deleteItem}
-                        ]
-                    ];
-                titleModel: WholeModel Text = {title};
-                element: Element = getElement selectionRef;
-                extraMenusModel: WholeModel (List MenuEntry) = {extraMenus};
-                in Mk.Pane;
-            end;
-
-        presentList: SetPresentation item -> Action Pane
-        = fn tp@Mk.SetPresentation =>
-            presentWithElement tp $ fn selection => let
-                sidebarUI: Element
-                = listElement selection;
-
-                selectedUI: Element
-                = itemElement $ immut.WholeModel selection;
-
-                in horizontal.Element [sidebarUI, layoutGrow.Element selectedUI];
-
+        #| This `Context` type has some functions for windows.
         datatype Context <: Context.UILib of
             Mk of
                 Mk.Context.UILib;
+
                 #| A window that comes with some menus.
                 stdWindow: WholeModel +Text -> WholeModel +(List MenuEntry) -> Element -> Action Window;
+
+                #| Open a `Window` with this `Pane`.
                 paneWindow: Pane -> Action Window;
+
+                #| Create a simple `Pane` for this set of items.
+                presentSet: SetPresentation item -> Action Pane;
+
+                #| Create a two-column `Pane`, with the set list on one side, and a selected item on the other.
+                presentSetWithItem: SetPresentation item -> Action Pane;
             end;
         end;
 
@@ -201,6 +174,65 @@ namespace UILib of
 
                 paneWindow: Pane -> Action Window
                 = fn Mk.Pane => stdWindow titleModel extraMenusModel element;
+
+                presentWithElement: SetPresentation item -> SetElement item -> Action Pane
+                = fn Mk.SetPresentation, Mk.SetElement se => do
+                    selectionModel <- newMem.WholeModel;
+                    pure $ let
+                        viewItem: Action Unit
+                        = do
+                            item <- get.WholeModel selectionModel;
+                            paneWindow $ itemPane item;
+                            pure ();
+                            end;
+
+                        deleteItem: Action Unit
+                        = do
+                            item <- get.WholeModel selectionModel;
+                            itemSet -=.SetModel item;
+                            end;
+
+                        newItemToMenuEntry = fn Mk.NewItem => action.MenuEntry name mkey
+                            {do
+                            item <- newItem;
+                            itemSet +=.SetModel item;
+                            selectionModel :=.WholeModel item;
+                            end};
+
+                        extraMenus: List MenuEntry
+                        = with MenuEntry.GTK. in
+                            [
+                                submenu "Selection" $ map.List newItemToMenuEntry newItems <>.List
+                                [
+                                    action "View" Nothing {viewItem},
+                                    action "Delete" Nothing {deleteItem}
+                                ]
+                            ];
+                        in Mk.Pane of
+                            titleModel = {setName};
+                            element = se $ Just selectionModel;
+                            extraMenusModel = {extraMenus};
+                        end;
+                    end;
+
+                presentSet: SetPresentation item -> Action Pane
+                = fn tp@Mk.SetPresentation => presentWithElement tp setElement;
+
+                presentSetWithItem: SetPresentation item -> Action Pane
+                = fn tp@Mk.SetPresentation =>
+                    presentWithElement tp $ Mk.SetElement $ fn mSelectionModel => let
+                        sidebarUI: Element
+                        = setElement >- fn Mk.SetElement se => se mSelectionModel;
+
+                        selectedUI: Element
+                        = mSelectionModel >-
+                            match
+                                Nothing => blank.Element;
+                                Just selectionModel => dynamic.Element {itemPane %selectionModel >- fn Mk.Pane => element};
+                            end;
+
+                        in horizontal.Element [sidebarUI, layoutGrow.Element selectedUI];
+
             in Mk.Context.Pane;
 
     end;
