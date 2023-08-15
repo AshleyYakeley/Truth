@@ -1,4 +1,13 @@
-module Changes.Core.Edit.Cache where
+module Changes.Core.Edit.Cache
+    ( IsCache(..)
+    , cacheAdd
+    , subcacheModify
+    , ListCache
+    , CacheableEdit(..)
+    , trimWithMap
+    , editCacheUpdates
+    , SimpleCacheKey(..)
+    ) where
 
 import Changes.Core.Edit.Edit
 import Changes.Core.Import
@@ -49,6 +58,7 @@ instance IsCache ListCache where
             in go cc
 
 class CacheableEdit (edit :: Type) where
+    trimEdits :: [edit] -> [edit]
     type EditCacheKey (cache :: (Type -> Type) -> Type) edit :: Type -> Type
     editCacheAdd ::
            forall cache m t. (IsCache cache, Applicative m)
@@ -87,6 +97,18 @@ class CacheableEdit (edit :: Type) where
                     Refl <- testEquality rt rt'
                     return val
             in unComposeInner $ applyEdit edit tmr rt
+
+trimWithMap' :: Ord k => (e -> k) -> [e] -> ([e], Map k ())
+trimWithMap' _ [] = ([], mempty)
+trimWithMap' ek (e:ee) = let
+    (ee', m) = trimWithMap' ek ee
+    k = ek e
+    in case lookup k m of
+           Nothing -> (e : ee', insertMap k () m)
+           Just () -> (ee', m)
+
+trimWithMap :: Ord k => (e -> k) -> [e] -> [e]
+trimWithMap ek ee = fst $ trimWithMap' ek ee
 
 editCacheUpdates ::
        forall edit cache. (CacheableEdit edit, IsCache cache)

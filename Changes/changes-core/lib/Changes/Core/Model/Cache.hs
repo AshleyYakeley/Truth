@@ -16,7 +16,10 @@ cacheReference ::
 cacheReference rc mus obj = do
     (runAction, asyncTask) <-
         asyncWaitRunner mus $ \editsnl ->
-            runResource rc obj $ \anobj -> pushOrFail "cached reference" noEditSource $ refEdit anobj editsnl
+            case nonEmpty $ trimEdits $ toList editsnl of
+                Nothing -> return ()
+                Just editsnl' ->
+                    runResource rc obj $ \anobj -> pushOrFail "cached reference" noEditSource $ refEdit anobj editsnl'
     objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
     return $ \rc' -> let
         refRead :: Readable (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)

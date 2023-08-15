@@ -179,6 +179,7 @@ instance TestEquality sel => TestEquality (TupleUpdateEditCacheKey cache sel) wh
         return Refl
 
 instance (TestEquality sel, TupleEditWitness CacheableEdit sel) => CacheableEdit (TupleUpdateEdit sel) where
+    trimEdits = id
     type EditCacheKey cache (TupleUpdateEdit sel) = TupleUpdateEditCacheKey cache sel
     editCacheAdd (MkTupleUpdateReader (sel :: sel update) rt) t =
         case tupleEditWitness @CacheableEdit sel of

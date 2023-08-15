@@ -15,7 +15,7 @@ import Shapes
 
 newtype Predicate =
     MkPredicate Anchor
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 instance Show Predicate where
     show (MkPredicate anchor) = show anchor

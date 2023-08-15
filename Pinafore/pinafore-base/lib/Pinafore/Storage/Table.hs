@@ -182,7 +182,23 @@ instance TestEquality (QTableEditCacheKey cache) where
     testEquality LiteralQTableEditCacheKey LiteralQTableEditCacheKey = Just Refl
     testEquality _ _ = Nothing
 
+data QTableEditKey
+    = QTEKProperty Predicate
+                   Entity
+    | QTEKEntityRefCount Entity
+    | QTEKFact Predicate
+               Entity
+    | QTEKLiteral Entity
+    deriving (Eq, Ord)
+
+qTableEditKey :: QTableEdit -> QTableEditKey
+qTableEditKey (QTableEditPropertySet p e _) = QTEKProperty p e
+qTableEditKey (QTableEditEntityRefCount e _) = QTEKEntityRefCount e
+qTableEditKey (QTableEditFactSet p e _) = QTEKFact p e
+qTableEditKey (QTableEditLiteralSet e _) = QTEKLiteral e
+
 instance CacheableEdit QTableEdit where
+    trimEdits = trimWithMap qTableEditKey
     type EditCacheKey cache QTableEdit = QTableEditCacheKey cache
     editCacheAdd (QTableReadPropertyGet p s) mv =
         subcacheModify (PropertyQTableEditCacheKey p) $

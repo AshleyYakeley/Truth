@@ -52,7 +52,8 @@ instance FullSubjectReader reader => SubjectMapEdit (ConstEdit reader)
 instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (ConstEdit reader) where
     replaceEdit _ _ = return ()
 
-instance TestEquality reader => CacheableEdit (ConstEdit reader)
+instance TestEquality reader => CacheableEdit (ConstEdit reader) where
+    trimEdits _ = []
 
 type ConstUpdate reader = EditUpdate (ConstEdit reader)
 

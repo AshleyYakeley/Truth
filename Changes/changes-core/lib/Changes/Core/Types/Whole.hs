@@ -59,7 +59,11 @@ instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
         a <- readableToSubject mr
         write $ MkWholeReaderEdit a
 
-instance (FullSubjectReader reader, TestEquality reader) => CacheableEdit (WholeReaderEdit reader)
+instance (FullSubjectReader reader, TestEquality reader) => CacheableEdit (WholeReaderEdit reader) where
+    trimEdits edits =
+        case lastM edits of
+            Nothing -> []
+            Just edit -> [edit]
 
 mapWholeEdit :: (ReaderSubject ra -> ReaderSubject rb) -> WholeReaderEdit ra -> WholeReaderEdit rb
 mapWholeEdit = coerce
