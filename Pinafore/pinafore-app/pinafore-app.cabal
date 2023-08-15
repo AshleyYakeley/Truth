@@ -123,6 +123,7 @@ executable pinafore
     , pinafore-app
     , pinafore-language
     , shapes
+    , thread-trace
   default-language: GHC2021
 
 executable pinafore-doc

@@ -39,6 +39,7 @@ executables:
         source-dirs: app/main
         dependencies:
           - base >= 4.16
+          - thread-trace
           - shapes
           - optparse-applicative
           - changes-core

@@ -85,6 +85,7 @@ library
     , deepseq
     , memory
     , shapes
+    , thread-trace
     , time
   default-language: GHC2021
 

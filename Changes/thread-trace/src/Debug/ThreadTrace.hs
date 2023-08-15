@@ -1,4 +1,24 @@
-module Debug.ThreadTrace where
+module Debug.ThreadTrace
+    ( contextStr
+    , traceNameThread
+    , traceHide
+    , traceIOM
+    , traceBracketArgs
+    , traceBracket_
+    , DebugMonadIO
+    , traceBracket
+    , traceThread
+    , traceForkIO
+    , traceEvaluate
+    , traceBarrier_
+    , traceBarrier
+    , tracePure
+    , tracePureM
+    , tracePureBracket
+    , TraceThing(..)
+    , traceSTM
+    , traceBracketSTM
+    ) where
 
 import Control.Applicative
 import Control.Concurrent
@@ -12,34 +32,78 @@ import GHC.Conc
 import Prelude
 import System.IO.Unsafe
 
-traceThreadNames :: MVar (Map.Map ThreadId String)
-{-# NOINLINE traceThreadNames #-}
-traceThreadNames = unsafePerformIO $ newMVar mempty
-
 contextStr :: String -> String -> String
 contextStr "" b = b
 contextStr a b = a ++ ": " ++ b
 
-traceNameThread :: String -> IO ()
-traceNameThread name = do
+data ThreadData = MkThreadData
+    { tdName :: String
+    , tdHide :: Int
+    }
+
+defaultThreadData :: ThreadData
+defaultThreadData = let
+    tdName = ""
+    tdHide = 0
+    in MkThreadData {..}
+
+traceThreadData :: MVar (Map.Map ThreadId ThreadData)
+{-# NOINLINE traceThreadData #-}
+traceThreadData = unsafePerformIO $ newMVar mempty
+
+threadGetData :: IO ThreadData
+threadGetData = do
     tid <- myThreadId
-    modifyMVar_ traceThreadNames $ \m -> return $ Map.insert tid name m
+    tdmap <- readMVar traceThreadData
+    return $
+        case Map.lookup tid tdmap of
+            Just tdata -> tdata
+            Nothing -> defaultThreadData
+
+threadModifyData :: (ThreadData -> ThreadData) -> IO ()
+threadModifyData m = do
+    tid <- myThreadId
+    modifyMVar_ traceThreadData $ \tdmap ->
+        return $ let
+            oldtdata =
+                case Map.lookup tid tdmap of
+                    Just tdata -> tdata
+                    Nothing -> defaultThreadData
+            newtdata = m oldtdata
+            in Map.insert tid newtdata tdmap
+
+traceNameThread :: String -> IO ()
+traceNameThread name = threadModifyData $ \tdata -> tdata {tdName = name}
+
+traceHide :: MonadIO m => m r -> m r
+traceHide mr = do
+    liftIO $ threadModifyData $ \tdata -> tdata {tdHide = succ $ tdHide tdata}
+    a <- mr
+    liftIO $ threadModifyData $ \tdata -> tdata {tdHide = pred $ tdHide tdata}
+    return a
 
 traceIOM :: MonadIO m => String -> m ()
 traceIOM msg =
     liftIO $ do
-        MkSystemTime s ns <- getSystemTime
-        th <- myThreadId
-        names <- readMVar traceThreadNames
-        let
-            nametxt =
-                case Map.lookup th names of
-                    Just name -> " (" ++ name ++ ")"
-                    Nothing -> ""
-            showMod :: Int -> Word32 -> String
-            showMod 0 _ = ""
-            showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
-        traceIO $ show s <> "." <> showMod 9 ns <> ": " <> show th <> nametxt <> ": " <> msg
+        tdata <- threadGetData
+        if tdHide tdata > 0
+            then return ()
+            else do
+                MkSystemTime s ns <- getSystemTime
+                tid <- myThreadId
+                let
+                    threadtext =
+                        case show tid of
+                            'T':'h':'r':'e':'a':'d':'I':'d':' ':t -> '#' : t
+                            t -> t
+                    nametxt =
+                        case tdName tdata of
+                            "" -> ""
+                            name -> " (" ++ name ++ ")"
+                    showMod :: Int -> Word32 -> String
+                    showMod 0 _ = ""
+                    showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
+                traceIO $ show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> ": " <> msg
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
