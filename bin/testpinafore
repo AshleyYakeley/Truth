@@ -5,6 +5,10 @@ while [[ ! -z "$1" ]]; do
             stack build pinafore-app:pinafore
             shift 1
             ;;
+        --clear)
+            rm -f test/pinafore/tables.sqlite3
+            shift 1
+            ;;
         -i)
             stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data --data test/pinafore -i
             shift 1
