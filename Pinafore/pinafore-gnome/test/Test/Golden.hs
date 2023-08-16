@@ -21,7 +21,7 @@ testFile inpath = let
                    action
 
 items :: [String]
-items = ["gio", "output"] <> mif flag_TestX11 ["window", "close-update", "listTable"]
+items = ["gio", "output"] <> mif flag_TestX11 ["window", "close-update", "listTable-selection", "listTable-insert"]
 
 testItem :: String -> TestTree
 testItem item = let
