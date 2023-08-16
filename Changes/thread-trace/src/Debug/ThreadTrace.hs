@@ -30,7 +30,7 @@ import qualified Data.Map as Map
 import Data.Time.Clock.System
 import Data.Word
 import Debug.ThreadTrace.Lookup
-import Debug.Trace.Null
+import Debug.Trace
 import GHC.Conc
 import Prelude
 import System.IO.Unsafe
