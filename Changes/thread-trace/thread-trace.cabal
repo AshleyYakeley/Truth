@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -17,6 +17,7 @@ library
   exposed-modules:
       Debug.Trace.Null
       Debug.ThreadTrace
+      Debug.ThreadTrace.Lookup
   other-modules:
       Paths_thread_trace
   autogen-modules:

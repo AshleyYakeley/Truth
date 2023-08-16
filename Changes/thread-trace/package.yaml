@@ -15,3 +15,4 @@ library:
     exposed-modules:
       - Debug.Trace.Null
       - Debug.ThreadTrace
+      - Debug.ThreadTrace.Lookup

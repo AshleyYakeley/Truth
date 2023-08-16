@@ -5,6 +5,7 @@ module Debug.ThreadTrace
     , traceIOM
     , traceBracketArgs
     , traceBracket_
+    , traceBracketWithLift
     , DebugMonadIO
     , traceBracket
     , traceThread
@@ -18,6 +19,7 @@ module Debug.ThreadTrace
     , TraceThing(..)
     , traceSTM
     , traceBracketSTM
+    , module Debug.ThreadTrace.Lookup
     ) where
 
 import Control.Applicative
@@ -27,7 +29,8 @@ import Control.Monad.Ology
 import qualified Data.Map as Map
 import Data.Time.Clock.System
 import Data.Word
-import Debug.Trace
+import Debug.ThreadTrace.Lookup
+import Debug.Trace.Null
 import GHC.Conc
 import Prelude
 import System.IO.Unsafe
@@ -125,6 +128,13 @@ traceBracketArgs s args showr ma = do
 
 traceBracket_ :: MonadIO m => String -> m r -> m r
 traceBracket_ s = traceBracketArgs s "" (\_ -> "")
+
+traceBracketWithLift :: Monad m => (IO () -> m ()) -> String -> m r -> m r
+traceBracketWithLift lft s ma = do
+    lft $ traceIOM $ s ++ " ["
+    a <- ma
+    lft $ traceIOM $ s ++ " ]"
+    return a
 
 type DebugMonadIO m = (MonadException m, Show (Exc m), MonadIO m)
 
