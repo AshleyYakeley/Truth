@@ -11,12 +11,10 @@ viewOpenRunUnlocked :: CallbackLock -> View --> View
 viewOpenRunUnlocked lock = hoistIO $ cbRunUnlocked lock
 
 viewStateRunLocked :: CallbackLock -> ViewState -> ViewState
-viewStateRunLocked _ (MkLifeState Nothing) = MkLifeState Nothing
-viewStateRunLocked lock (MkLifeState (Just lfs)) = MkLifeState $ Just $ cbRunLocked lock lfs
+viewStateRunLocked lock = lifeStateModify $ cbRunLocked lock
 
 viewStateRunUnlocked :: CallbackLock -> ViewState -> ViewState
-viewStateRunUnlocked _ (MkLifeState Nothing) = MkLifeState Nothing
-viewStateRunUnlocked lock (MkLifeState (Just lfs)) = MkLifeState $ Just $ cbRunUnlocked lock lfs
+viewStateRunUnlocked lock = lifeStateModify $ cbRunUnlocked lock
 
 viewCloseRunLocked :: CallbackLock -> View --> View
 viewCloseRunLocked lock va = do

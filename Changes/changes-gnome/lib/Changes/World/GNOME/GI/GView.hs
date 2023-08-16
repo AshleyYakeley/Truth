@@ -91,7 +91,7 @@ gvCloseState ::
        forall lsa lsb. (Is LockStateType lsa, Is LockStateType lsb)
     => GViewState lsa
     -> GView lsb ()
-gvCloseState (MkGViewState (MkLifeState Nothing)) = return ()
+gvCloseState (MkGViewState NoLifeState) = return ()
 gvCloseState state = gvMatchLock @lsa @lsb $ MkGView $ liftIO $ closeLifeState $ gvsViewState state
 
 gvOnClose ::
