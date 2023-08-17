@@ -31,6 +31,16 @@ instance Monoid QueryString where
 instance IsString QueryString where
     fromString s = MkQueryString (fromString s) []
 
+groupQueryStringsMap :: [QueryString] -> Map Query (NonEmpty [SQLData])
+groupQueryStringsMap [] = mempty
+groupQueryStringsMap (MkQueryString q d:qss) = let
+    m = groupQueryStringsMap qss
+    dd =
+        case lookup q m of
+            Nothing -> []
+            Just ndd -> toList ndd
+    in insertMap q (d :| dd) m
+
 valQueryString :: ToField t => t -> QueryString
 valQueryString t = MkQueryString (fromString "?") [toField t]
 
@@ -265,10 +275,13 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
         refEdit ::
                NonEmpty (SQLiteEdit tablesel) -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
         refEdit =
-            singleAlwaysEdit $ \edit _ ->
-                case sqliteEditQuery edit of
-                    MkQueryString s v -> do
-                        conn <- ask
-                        lift $ execute conn s v
+            alwaysEdit $ \edits _ -> let
+                queries :: [QueryString]
+                queries = fmap sqliteEditQuery $ toList edits
+                pairs :: [(Query, NonEmpty [SQLData])]
+                pairs = mapToList $ groupQueryStringsMap queries
+                in for_ pairs $ \(s, vv) -> do
+                       conn <- ask
+                       lift $ executeMany conn s (toList vv)
         refCommitTask = mempty
     return $ MkResource objRun MkAReference {..}
