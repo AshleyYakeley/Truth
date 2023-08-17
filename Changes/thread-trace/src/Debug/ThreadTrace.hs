@@ -8,6 +8,7 @@ module Debug.ThreadTrace
     , traceBracketWithLift
     , DebugMonadIO
     , traceBracket
+    , traceTime
     , traceThread
     , traceForkIO
     , traceEvaluate
@@ -26,6 +27,7 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Control.Monad.Ology
+import Data.Fixed
 import qualified Data.Map as Map
 import Data.Time.Clock.System
 import Data.Word
@@ -137,6 +139,19 @@ traceBracketWithLift lft s ma = do
     return a
 
 type DebugMonadIO m = (MonadException m, Show (Exc m), MonadIO m)
+
+getSeconds :: IO Nano
+getSeconds = do
+    MkSystemTime s ns <- getSystemTime
+    return $ fromIntegral s + fromIntegral ns / 1000000000
+
+traceTime :: MonadIO m => m r -> m r
+traceTime ma = do
+    t0 <- liftIO getSeconds
+    a <- ma
+    t1 <- liftIO getSeconds
+    traceIOM $ "timed: " <> show (t1 - t0) <> "s"
+    return a
 
 traceBracket :: DebugMonadIO m => String -> m r -> m r
 traceBracket s ma = do
