@@ -14,9 +14,11 @@ let
     = property @Person @Text !"identify.name" store;
 
 in do
+    outputLn.Env "Main Start";
     lm <- getList.FiniteSetModel arbitrary.Order people;
     w <- open.Window gtk (600,800) {"Test"} $ listTable.Element [({"Name"},fn p => name !$ {p})] lm (fn _ => pure ()) Nothing;
     async.Task $ do
+        outputLn.Env "Thread Start";
         sleep $ Seconds 0.2;
         for_ (range 0 200) $ fn i =>
         do
@@ -24,6 +26,7 @@ in do
             people += p;
         end;
         close.Window w;
+        outputLn.Env "Thread End";
     end;
-    pure ();
+    outputLn.Env "Main End";
 end

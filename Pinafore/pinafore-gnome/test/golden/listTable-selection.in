@@ -10,6 +10,7 @@ let
     people: FiniteSetModel Person = property @Person @Unit !"T" store !@ {()};
 
 in do
+    outputLn.Env "Start";
     selectionRef <- newMem.WholeModel;
     lm <- getList.FiniteSetModel arbitrary.Order people;
     w <- open.Window gtk (600,800) {"Test"} $ listTable.Element [] lm (fn _ => pure ()) $ Just selectionRef;
@@ -18,4 +19,5 @@ in do
     selectionRef :=.WholeModel p;
     sleep $ Seconds 0.2;
     close.Window w;
+    outputLn.Env "End";
     end

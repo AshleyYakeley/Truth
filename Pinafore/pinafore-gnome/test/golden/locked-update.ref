@@ -1,0 +1,10 @@
+main [
+thread [
+thread: lock: outside [
+thread: lock: inside [
+main ]
+thread: lock: inside ]
+thread: lock: outside ]
+thread: closeWindow [
+thread: closeWindow ]
+thread ]
