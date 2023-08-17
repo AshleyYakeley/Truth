@@ -4,7 +4,9 @@ module Pinafore.Language.Library.GTK.Debug
 
 import Changes.Core
 import Changes.World.GNOME.GTK
+import Pinafore.Base
 import Pinafore.Language.API
+import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Window ()
 import Shapes
 
@@ -23,6 +25,9 @@ ignoreUpdateException (MkWModel (MkResource rr amodel)) =
 debugIgnoreUpdateUIExceptions :: LangWholeModel '( P, Q) -> LangWholeModel '( P, Q)
 debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeModelMapModel (Identity . ignoreUpdateException) ref
 
+gtkLock :: LangContext -> Action A -> Action A
+gtkLock lc = actionHoistView $ \va -> runGView (lcGTKContext lc) $ gvRunLocked $ gvRunUnlocked $ gvLiftView va
+
 gtkDebugStuff :: BindDocStuff ()
 gtkDebugStuff =
     headingBDS "GTK.Debug" "Functions for GTK debugging." $
@@ -31,4 +36,5 @@ gtkDebugStuff =
         "GTK.Debug"
         [ valBDS "ignoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
         , valBDS "windowInfo" "Get window contents information" uiWindowDebugDescribe
+        , valBDS "lock" "Lock GTK" gtkLock
         ]
