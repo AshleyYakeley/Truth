@@ -40,7 +40,7 @@ mainLoop uiLock runVar = do
                             _ <- mainContextIteration mc True
                             mainloop
                         RSStop -> return ()
-            liftIO $ cbRunLocked uiLock mainloop
+            liftIO mainloop
 
 runGTK :: forall a. (GTKContext -> Lifecycle a) -> Lifecycle a
 runGTK call = do
@@ -56,10 +56,11 @@ runGTK call = do
         gtkcExitOnClosed ma = do
             viewLiftLifecycle ondone
             ma
-    a <- call MkGTKContext {..}
-    liftIO checkdone
-    mainLoop gtkcLock runVar
-    return a
+    hoistIO (cbRunLocked gtkcLock) $ do
+        a <- hoistIO (cbRunUnlocked gtkcLock) $ call MkGTKContext {..}
+        liftIO checkdone
+        mainLoop gtkcLock runVar
+        return a
 
 runGTKView :: forall a. (GTKContext -> View a) -> View a
 runGTKView call = viewLiftLifecycleWithUnlift $ \unlift -> runGTK $ \gtkc -> unlift $ call gtkc
