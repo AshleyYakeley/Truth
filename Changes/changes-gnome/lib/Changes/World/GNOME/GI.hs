@@ -3,7 +3,6 @@ module Changes.World.GNOME.GI
     ) where
 
 import Changes.World.GNOME.GI.Error as I
-import Changes.World.GNOME.GI.Exists as I
 import Changes.World.GNOME.GI.GView as I
 import Changes.World.GNOME.GI.Lifecycle as I
 import Changes.World.GNOME.GI.LockState as I
