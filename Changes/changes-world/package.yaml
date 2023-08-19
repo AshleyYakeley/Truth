@@ -15,6 +15,7 @@ library:
       - directory
       - aeson
       - sqlite-simple
+      - thread-trace
       - changes-core
     exposed-modules:
       - Changes.World.Clock

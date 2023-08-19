@@ -14,6 +14,7 @@ module Debug.ThreadTrace
     , traceEvaluate
     , traceBarrier_
     , traceBarrier
+    , traceMVarRunStateT
     , tracePure
     , tracePureM
     , tracePureBracket
@@ -180,6 +181,11 @@ traceBarrier_ s tr ma = traceBracket_ (contextStr s "outside") $ tr $ traceBrack
 
 traceBarrier :: (DebugMonadIO m1, DebugMonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
 traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket (contextStr s "inside") ma
+
+traceMVarRunStateT :: String -> MVar s -> Unlift MonadTunnelIO (StateT s)
+traceMVarRunStateT s var ma = do
+    name <- lookupMVar var
+    traceBarrier_ (s <> " on " <> name) (mVarRunStateT var) ma
 
 {-# NOINLINE tracePure #-}
 tracePure :: String -> a -> a

@@ -65,5 +65,6 @@ library
     , filepath
     , shapes
     , sqlite-simple
+    , thread-trace
     , time
   default-language: GHC2021

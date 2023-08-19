@@ -12,6 +12,7 @@ library:
       - time
       - containers
       - monadology
+      - open-witness
     exposed-modules:
       - Debug.Trace.Null
       - Debug.ThreadTrace

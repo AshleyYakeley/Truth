@@ -57,5 +57,6 @@ library
       base >=4.16
     , containers
     , monadology
+    , open-witness
     , time
   default-language: GHC2021
