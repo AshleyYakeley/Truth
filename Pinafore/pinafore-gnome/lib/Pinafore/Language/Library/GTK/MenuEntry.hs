@@ -53,7 +53,7 @@ menuSubmenu name entries =
 uiMenuBar :: LangMenuBar -> LangElement
 uiMenuBar lmb =
     MkLangElement $ \MkElementContext {..} ->
-        gvRunLocked $ createMenuBar ecAccelGroup $ fmap (\(MkLangMenuEntry me) -> me ecUnlift) lmb
+        createMenuBar ecAccelGroup $ fmap (\(MkLangMenuEntry me) -> me ecUnlift) lmb
 
 menuEntryStuff :: BindDocStuff ()
 menuEntryStuff =

@@ -15,7 +15,7 @@ cacheReference ::
     -> Lifecycle (ResourceContext -> Reference edit)
 cacheReference rc mus obj = do
     (runAction, asyncTask) <-
-        asyncWaitRunner mus $ \editsnl ->
+        asyncWaitRunner "cache" mus $ \editsnl ->
             case nonEmpty $ trimEdits $ toList editsnl of
                 Nothing -> return ()
                 Just editsnl' ->

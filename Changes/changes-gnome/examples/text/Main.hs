@@ -20,8 +20,7 @@ optParser =
     (,,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "seltest") <*>
     O.switch (O.long "save")
 
-newtype AppUI =
-    MkAppUI (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
+type AppUI = GViewState 'Unlocked -> MenuBar
 
 main :: IO ()
 main = do
@@ -29,8 +28,7 @@ main = do
     runLifecycle $
         runGTK $ \gtkContext ->
             runNewView $
-            runGView gtkContext $
-            gvRunLocked $ do
+            runGView gtkContext $ do
                 for_ paths $ \path -> do
                     let
                         bsObj :: Reference ByteStringEdit
@@ -39,23 +37,27 @@ main = do
                         wholeTextObj = mapReference textLens bsObj
                         ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                            -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                           -> (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
-                           -> GView 'Locked Widget
-                        ui sub1 msub2 extraui = do
-                            (selModel, setsel) <- gvLiftLifecycleNoUI $ makeSharedModel makePremodelSelectNotify
+                           -> AppUI
+                           -> GView 'Unlocked Widget
+                        ui sub1 msub2 appui = do
+                            (selModel, setsel) <- gvLiftLifecycle $ makeSharedModel makePremodelSelectNotify
                             let
                                 openSelection ::
                                        Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> GView 'Locked ()
-                                openSelection sub = do
-                                    mflens <- gvRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
-                                    case mflens of
-                                        Nothing -> return ()
-                                        Just flens -> do
-                                            subSub <-
-                                                gvLiftViewNoUI $
-                                                viewFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
-                                            makeWindow "section" subSub Nothing extraui
-                                rTextSpec :: Result Text (Model (StringUpdate Text)) -> GView 'Locked Widget
+                                openSelection sub =
+                                    gvRunUnlocked $ do
+                                        mflens <-
+                                            gvLiftView $
+                                            viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
+                                        case mflens of
+                                            Nothing -> return ()
+                                            Just flens -> do
+                                                subSub <-
+                                                    gvLiftView $
+                                                    viewFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
+                                                _ <- makeWindow "section" subSub Nothing appui
+                                                return ()
+                                rTextSpec :: Result Text (Model (StringUpdate Text)) -> GView 'Unlocked Widget
                                 rTextSpec (SuccessResult sub) = createTextArea sub setsel
                                 rTextSpec (FailureResult err) = createLabel $ constantModel err
                                 makeSpecs sub = do
@@ -78,54 +80,42 @@ main = do
                                Text
                             -> Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                             -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                            -> (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> ( MenuBar
-                                                                                          , GView 'Locked Widget))
-                            -> GView 'Locked ()
-                        makeWindow title sub msub2 extraui = do
+                            -> AppUI
+                            -> GView 'Unlocked UIWindow
+                        makeWindow title sub msub2 appui = do
                             rec
-                                let (mbar, cuic) = extraui closer r $ ui sub msub2 extraui
-                                (r, closer) <-
+                                (window, closer) <-
                                     gvGetState $
                                     createWindow $ let
                                         wsPosition = WindowPositionCenter
                                         wsSize = (300, 400)
                                         wsCloseBoxAction :: GView 'Locked ()
-                                        wsCloseBoxAction = gvCloseState closer
+                                        wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer
                                         wsTitle :: Model (ROWUpdate Text)
                                         wsTitle = constantModel title
-                                        wsContent :: AccelGroup -> GView 'Locked Widget
+                                        wsContent :: AccelGroup -> GView 'Unlocked Widget
                                         wsContent ag = do
-                                            mb <- createMenuBar ag mbar
-                                            uic <- cuic
+                                            mb <- createMenuBar ag $ appui closer
+                                            uic <- ui sub msub2 appui
                                             createLayout
                                                 OrientationVertical
                                                 [ (defaultLayoutOptions, mb)
                                                 , (defaultLayoutOptions {loGrow = True}, uic)
                                                 ]
                                         in MkWindowSpec {..}
-                            return ()
-                        simpleUI ::
-                               GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget)
-                        simpleUI closer _ spec = let
-                            mbar :: MenuBar
-                            mbar =
-                                [ SubMenuEntry
-                                      "File"
-                                      [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
-                                        gvCloseState closer
-                                      , SeparatorMenuEntry
-                                      , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
-                                      ]
-                                ]
-                            in (mbar, spec)
-                        extraUI ::
-                               SaveActions
-                            -> UndoHandler
-                            -> GViewState 'Locked
-                            -> UIWindow
-                            -> GView 'Locked Widget
-                            -> (MenuBar, GView 'Locked Widget)
-                        extraUI (MkSaveActions saveActions) uh closer _ spec = let
+                            return window
+                        simpleUI :: AppUI
+                        simpleUI closer =
+                            [ SubMenuEntry
+                                  "File"
+                                  [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
+                                    gvRunUnlocked $ gvCloseState closer
+                                  , SeparatorMenuEntry
+                                  , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                  ]
+                            ]
+                        extraUI :: SaveActions -> UndoHandler -> AppUI
+                        extraUI (MkSaveActions saveActions) uh closer = let
                             saveAction = do
                                 mactions <- saveActions
                                 _ <-
@@ -140,50 +130,49 @@ main = do
                                         Just (_, action) -> action emptyResourceContext noEditSource
                                         _ -> return False
                                 return ()
-                            mbar :: [MenuEntry]
-                            mbar =
-                                [ SubMenuEntry
-                                      "File"
-                                      [ simpleActionMenuEntry "Save" (Just $ MkMenuAccelerator [KMCtrl] 'S') $
-                                        liftIO saveAction
-                                      , simpleActionMenuEntry "Revert" Nothing $ liftIO revertAction
-                                      , simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
-                                        gvCloseState closer
-                                      , SeparatorMenuEntry
-                                      , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
-                                      ]
-                                , SubMenuEntry
-                                      "Edit"
-                                      [ simpleActionMenuEntry "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
-                                        liftIO $ undoHandlerUndo uh emptyResourceContext noEditSource >> return ()
-                                      , simpleActionMenuEntry "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
-                                        liftIO $ undoHandlerRedo uh emptyResourceContext noEditSource >> return ()
-                                      ]
-                                ]
-                            in (mbar, spec)
-                    action <- do
-                        (textSub, MkAppUI appUI) <-
-                            if saveOpt
-                                then do
-                                    (bufferSub, saveActions) <-
-                                        gvLiftLifecycleNoUI $
-                                        makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
-                                    uh <- liftIO newUndoHandler
-                                    return (undoHandlerModel uh bufferSub, MkAppUI $ extraUI saveActions uh)
-                                else do
-                                    textSub <- gvLiftLifecycleNoUI $ makeReflectingModel $ convertReference wholeTextObj
-                                    return (textSub, MkAppUI simpleUI)
-                        mTextSub2 <-
-                            case selTest of
-                                False -> return Nothing
-                                True -> do
-                                    bsObj2 <- liftIO $ makeMemoryReference mempty $ \_ -> True
-                                    textSub2 <-
-                                        gvLiftLifecycleNoUI $
-                                        makeReflectingModel $
-                                        convertReference $ mapReference textLens $ convertReference bsObj2
-                                    return $ Just textSub2
-                        return $ makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI
+                            in [ SubMenuEntry
+                                     "File"
+                                     [ simpleActionMenuEntry "Save" (Just $ MkMenuAccelerator [KMCtrl] 'S') $
+                                       liftIO saveAction
+                                     , simpleActionMenuEntry "Revert" Nothing $ liftIO revertAction
+                                     , simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
+                                       gvRunUnlocked $ gvCloseState closer
+                                     , SeparatorMenuEntry
+                                     , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                                     ]
+                               , SubMenuEntry
+                                     "Edit"
+                                     [ simpleActionMenuEntry "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
+                                       liftIO $ undoHandlerUndo uh emptyResourceContext noEditSource >> return ()
+                                     , simpleActionMenuEntry "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
+                                       liftIO $ undoHandlerRedo uh emptyResourceContext noEditSource >> return ()
+                                     ]
+                               ]
+                    (textSub, appUI) <-
+                        if saveOpt
+                            then do
+                                (bufferSub, saveActions) <-
+                                    gvLiftLifecycle $
+                                    makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
+                                uh <- gvLiftIONoUI newUndoHandler
+                                return (undoHandlerModel uh bufferSub, extraUI saveActions uh)
+                            else do
+                                textSub <- gvLiftLifecycle $ makeReflectingModel $ convertReference wholeTextObj
+                                return (textSub, simpleUI)
+                    mTextSub2 <-
+                        case selTest of
+                            False -> return Nothing
+                            True -> do
+                                bsObj2 <- gvLiftIONoUI $ makeMemoryReference mempty $ \_ -> True
+                                textSub2 <-
+                                    gvLiftLifecycle $
+                                    makeReflectingModel $
+                                    convertReference $ mapReference textLens $ convertReference bsObj2
+                                return $ Just textSub2
+                    let
+                        action = do
+                            _ <- makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI
+                            return ()
                     action
                     if double
                         then action

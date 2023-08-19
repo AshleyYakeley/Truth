@@ -17,11 +17,10 @@ main = do
     runLifecycle $
         runGTK $ \gtkContext ->
             runNewView $
-            runGView gtkContext $ do
-                gvRunLocked $ do
-                    for_ dirpaths $ \dirpath -> do
-                        let action = soupWindow createWindow dirpath
-                        action
-                        if double
-                            then action
-                            else return ()
+            runGView gtkContext $
+            for_ dirpaths $ \dirpath -> do
+                let action = soupWindow createWindow dirpath
+                action
+                if double
+                    then action
+                    else return ()

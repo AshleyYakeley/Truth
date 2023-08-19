@@ -19,7 +19,7 @@ import Shapes
 -- LangWindow
 data LangWindow = MkLangWindow
     { lwContext :: LangContext
-    , lwClose :: GView 'Locked ()
+    , lwClose :: GView 'Unlocked ()
     , lwWindow :: UIWindow
     }
 
@@ -35,13 +35,13 @@ instance HasQType 'Negative UIWindow where
 
 createLangWindow :: LangContext -> WindowSpec -> View LangWindow
 createLangWindow lc uiw = do
-    (lwWindow, wclose) <- runGView (lcGTKContext lc) $ gvRunLocked $ gvGetCloser $ createWindow uiw
+    (lwWindow, wclose) <- runGView (lcGTKContext lc) $ gvGetCloser $ createWindow uiw
     let lwContext = lc
     let lwClose = wclose
     return $ MkLangWindow {..}
 
 uiWindowClose :: LangWindow -> View ()
-uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked lwClose
+uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) lwClose
 
 openWindow :: LangContext -> (Int32, Int32) -> ImmutableWholeModel Text -> LangElement -> Action LangWindow
 openWindow lc wsSize title (MkLangElement element) =
@@ -52,12 +52,11 @@ openWindow lc wsSize title (MkLangElement element) =
             createLangWindow lc $ let
                 wsPosition = WindowPositionCenter
                 wsCloseBoxAction :: GView 'Locked ()
-                wsCloseBoxAction = lwClose w
+                wsCloseBoxAction = gvRunUnlocked $ lwClose w
                 wsTitle :: Model (ROWUpdate Text)
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
-                wsContent :: AccelGroup -> GView 'Locked Widget
+                wsContent :: AccelGroup -> GView 'Unlocked Widget
                 wsContent ag =
-                    gvRunUnlocked $
                     element
                         MkElementContext
                             { ecUnlift = unlift
@@ -80,7 +79,7 @@ run :: forall a. (LangContext -> Action a) -> Action a
 run call =
     actionTunnelView $ \unlift ->
         runGTKView $ \gtkc -> do
-            clipboard <- runGView gtkc $ gvRunLocked getClipboard
+            clipboard <- runGView gtkc getClipboard
             unlift $
                 call $ MkLangContext {lcGTKContext = gtkc, lcOtherContext = MkOtherContext {ocClipboard = clipboard}}
 

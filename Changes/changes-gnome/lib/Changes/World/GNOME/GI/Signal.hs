@@ -12,10 +12,13 @@ import Data.GI.Base.Signals
 import GI.GObject
 import Shapes
 
-withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> GView 'Locked --> GView 'Locked
-withSignalBlocked obj conn = bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
+withSignalBlocked :: (Is LockStateType ls, IsObject obj) => obj -> SignalHandlerId -> GView ls --> GView ls
+withSignalBlocked obj conn =
+    bracketNoMask_
+        (gvRunLocked' $ gvLiftIO $ signalHandlerBlock obj conn)
+        (gvRunLocked' $ gvLiftIO $ signalHandlerUnblock obj conn)
 
-withSignalsBlocked :: IsObject obj => obj -> [SignalHandlerId] -> GView 'Locked --> GView 'Locked
+withSignalsBlocked :: (Is LockStateType ls, IsObject obj) => obj -> [SignalHandlerId] -> GView ls --> GView ls
 withSignalsBlocked _obj [] = id
 withSignalsBlocked obj (c:cc) = withSignalBlocked obj c . withSignalsBlocked obj cc
 
@@ -31,8 +34,8 @@ instance GTKCallbackType r => GTKCallbackType (a -> r) where
     type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
     gCallbackUnlift mf av a = gCallbackUnlift mf $ av a
 
-gvCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> GView 'Locked ()
-gvCloseDisconnectSignal object shid =
+gvOnCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> GView 'Locked ()
+gvOnCloseDisconnectSignal object shid =
     gvOnClose $
     gvLiftIO $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
@@ -50,7 +53,7 @@ gvOnSignal ::
     -> GView 'Locked SignalHandlerId
 gvOnSignal object signal call = do
     shid <- gvWithUnliftLockedAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
-    gvCloseDisconnectSignal object shid
+    gvOnCloseDisconnectSignal object shid
     return shid
 
 gvAfterSignal ::
@@ -61,5 +64,5 @@ gvAfterSignal ::
     -> GView 'Locked SignalHandlerId
 gvAfterSignal object signal call = do
     shid <- gvWithUnliftLockedAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
-    gvCloseDisconnectSignal object shid
+    gvOnCloseDisconnectSignal object shid
     return shid

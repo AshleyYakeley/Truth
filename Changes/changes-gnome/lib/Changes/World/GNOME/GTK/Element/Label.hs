@@ -7,8 +7,12 @@ import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
 
-createLabel :: Model (ROWUpdate Text) -> GView 'Locked Widget
+createLabel :: Model (ROWUpdate Text) -> GView 'Unlocked Widget
 createLabel lmod = do
-    widget <- gvNew Label []
-    gvBindReadOnlyWholeModel lmod $ \label -> gvLiftIO $ set widget [#label := label]
-    toWidget widget
+    (label, widget) <-
+        gvRunLocked $ do
+            label <- gvNew Label []
+            widget <- toWidget label
+            return (label, widget)
+    gvBindReadOnlyWholeModel lmod $ \text -> gvRunLocked $ set label [#label := text]
+    return widget

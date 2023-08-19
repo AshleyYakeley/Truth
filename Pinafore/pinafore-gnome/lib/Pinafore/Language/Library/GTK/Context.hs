@@ -23,8 +23,11 @@ contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFami
 instance HasQGroundType '[] LangContext where
     qGroundType = contextGroundType
 
-gvRunAction :: (View --> IO) -> Action () -> GView 'Locked ()
-gvRunAction unlift pa = gvRunUnlockedIO $ unlift $ runAction pa
+viewUnlift :: (View --> IO) -> View --> View
+viewUnlift unlift va = liftIO $ unlift va
 
-gvRunActionDefault :: (View --> IO) -> a -> Action a -> GView 'Locked a
-gvRunActionDefault unlift a pa = fmap (fromKnow a) $ gvRunUnlockedIO $ unlift $ unliftAction pa
+viewRunAction :: (View --> IO) -> Action () -> View ()
+viewRunAction unlift pa = viewUnlift unlift $ runAction pa
+
+viewRunActionDefault :: (View --> IO) -> a -> Action a -> View a
+viewRunActionDefault unlift a pa = viewUnlift unlift $ fmap (fromKnow a) $ unliftAction pa

@@ -31,10 +31,11 @@ instance Show (VarState t) where
 
 asyncWaitRunner ::
        forall t. Semigroup t
-    => Int
+    => Text
+    -> Int
     -> (t -> IO ())
     -> Lifecycle (Maybe t -> IO (), Task IO ())
-asyncWaitRunner mus doit = do
+asyncWaitRunner _ mus doit = do
     bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSIdle
     let
         threadDo :: IO ()
@@ -121,13 +122,14 @@ asyncWaitRunner mus doit = do
 
 asyncRunner ::
        forall t. Semigroup t
-    => (t -> IO ())
+    => Text
+    -> (t -> IO ())
     -> Lifecycle (t -> IO (), Task IO ())
-asyncRunner doit = do
-    (asyncDoIt, utask) <- asyncWaitRunner 0 doit
+asyncRunner name doit = do
+    (asyncDoIt, utask) <- asyncWaitRunner name 0 doit
     return (\t -> asyncDoIt $ Just t, utask)
 
-asyncIORunner :: Lifecycle (IO () -> IO (), Task IO ())
-asyncIORunner = do
-    (asyncDoIt, utask) <- asyncRunner sequence_
+asyncIORunner :: Text -> Lifecycle (IO () -> IO (), Task IO ())
+asyncIORunner name = do
+    (asyncDoIt, utask) <- asyncRunner name sequence_
     return (\io -> asyncDoIt [io], utask)

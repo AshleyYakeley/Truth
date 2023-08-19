@@ -42,24 +42,23 @@ main = do
             runNewView $
             runGView gtkContext $ do
                 (clockModel, ()) <-
-                    gvLiftLifecycleNoUI $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1
+                    gvLiftLifecycle $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1
                 tz <- gvLiftIONoUI getCurrentTimeZone
                 rec
                     (_, closer) <-
-                        gvRunLocked $
                         gvGetState $
                         createWindow $ let
                             wsPosition = WindowPositionCenter
                             wsSize = (600, 600)
                             wsCloseBoxAction :: GView 'Locked ()
-                            wsCloseBoxAction = gvCloseState closer
+                            wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer
                             wsTitle :: Model (ROWUpdate Text)
                             wsTitle = constantModel "Cairo"
-                            wsContent :: AccelGroup -> GView 'Locked Widget
+                            wsContent :: AccelGroup -> GView 'Unlocked Widget
                             wsContent _ = do
                                 w1 <- createButton (constantModel "Button") (constantModel Nothing)
                                 w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel
-                                GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
+                                gvRunLocked $ GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
                                 createLayout
                                     OrientationHorizontal
                                     [(defaultLayoutOptions, w1), (defaultLayoutOptions {loGrow = True}, w2)]

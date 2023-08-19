@@ -28,12 +28,12 @@ listStoreView ::
     => WRaised (GView 'Locked) (GView 'Locked)
     -> Model (ReadOnlyUpdate (OrderedListUpdate update))
     -> EditSource
-    -> GView 'Locked (SeqStore (UpdateSubject update))
+    -> GView 'Unlocked (SeqStore (UpdateSubject update))
 listStoreView (MkWRaised blockSignal) itemsModel esrc = let
-    initV :: GView 'Locked (SeqStore (UpdateSubject update))
+    initV :: GView 'Unlocked (SeqStore (UpdateSubject update))
     initV = do
-        subjects <- gvRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
-        seqStoreNew $ toList subjects
+        subjects <- gvLiftView $ viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
+        gvRunLocked $ seqStoreNew $ toList subjects
     recv ::
            SeqStore (UpdateSubject update) -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate update)) -> GView 'Unlocked ()
     recv store updates =
@@ -68,53 +68,58 @@ cboxFromStore ::
     => Model (WholeUpdate t)
     -> EditSource
     -> SeqStore (t, ComboBoxCell)
-    -> GView 'Locked (WRaised (GView 'Locked) (GView 'Locked), Widget)
-cboxFromStore whichModel esrc store = do
-    widget <- comboBoxNewWithModel store
-    renderer <- gvNew CellRendererText []
-    #packStart widget renderer False
-    cellLayoutSetAttributes widget renderer store $ \(_, cell) -> comboBoxCellAttributes cell
-    changedSignal <-
-        gvOnSignal widget #changed $ do
-            mi <- #getActiveIter widget
-            case mi of
-                (True, iter) -> do
-                    i <- seqStoreIterToIndex iter
-                    (t, _) <- seqStoreGetValue store i
-                    _ <-
-                        gvRunResource whichModel $ \asub -> pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit t
-                    return ()
-                (False, _) -> return ()
-    let
-        blockSignal :: GView 'Locked --> GView 'Locked
-        blockSignal = withSignalBlocked widget changedSignal
-        findN ::
-               forall l. SemiSequence l
-            => [Element l -> Bool]
-            -> l
-            -> Maybe (Element l)
-        findN [] _ = empty
-        findN (p:pp) fa = find p fa <|> findN pp fa
-        update :: t -> GView 'Unlocked ()
-        update t =
-            gvRunLocked $ do
-                items <- seqStoreToList store
-                let
-                    matchVal :: (Int, (t, ComboBoxCell)) -> Bool
-                    matchVal (_, (t', _)) = t == t'
-                    isDefault :: (Int, (t, ComboBoxCell)) -> Bool
-                    isDefault (_, (_, cell)) = cbcDefault cell
-                case findN [matchVal, isDefault] $ zip [(0 :: Int) ..] items of
-                    Just (i, _) -> do
-                        tp <- treePathNewFromIndices [fromIntegral i]
-                        mti <- treeModelGetIter store tp
-                        case mti of
-                            Just ti -> blockSignal $ #setActiveIter widget $ Just ti
-                            Nothing -> return ()
-                    Nothing -> return ()
-    gvBindWholeModel whichModel (Just esrc) update
-    w <- toWidget widget
-    return (MkWRaised blockSignal, w)
+    -> GView 'Unlocked (WRaised (GView 'Locked) (GView 'Locked), Widget)
+cboxFromStore whichModel esrc store =
+    gvRunLockedThen $ do
+        cbox <- comboBoxNewWithModel store
+        widget <- toWidget cbox
+        renderer <- gvNew CellRendererText []
+        #packStart cbox renderer False
+        cellLayoutSetAttributes cbox renderer store $ \(_, cell) -> comboBoxCellAttributes cell
+        changedSignal <-
+            gvOnSignal cbox #changed $ do
+                mi <- #getActiveIter cbox
+                case mi of
+                    (True, iter) -> do
+                        i <- seqStoreIterToIndex iter
+                        (t, _) <- seqStoreGetValue store i
+                        _ <-
+                            gvRunUnlocked $
+                            gvLiftView $
+                            viewRunResource whichModel $ \asub ->
+                                pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit t
+                        return ()
+                    (False, _) -> return ()
+        let
+            blockSignal :: GView 'Locked --> GView 'Locked
+            blockSignal = withSignalBlocked cbox changedSignal
+            findN ::
+                   forall l. SemiSequence l
+                => [Element l -> Bool]
+                -> l
+                -> Maybe (Element l)
+            findN [] _ = empty
+            findN (p:pp) fa = find p fa <|> findN pp fa
+            update :: t -> GView 'Unlocked ()
+            update t =
+                gvRunLocked $ do
+                    items <- seqStoreToList store
+                    let
+                        matchVal :: (Int, (t, ComboBoxCell)) -> Bool
+                        matchVal (_, (t', _)) = t == t'
+                        isDefault :: (Int, (t, ComboBoxCell)) -> Bool
+                        isDefault (_, (_, cell)) = cbcDefault cell
+                    case findN [matchVal, isDefault] $ zip [(0 :: Int) ..] items of
+                        Just (i, _) -> do
+                            tp <- treePathNewFromIndices [fromIntegral i]
+                            mti <- treeModelGetIter store tp
+                            case mti of
+                                Just ti -> blockSignal $ #setActiveIter cbox $ Just ti
+                                Nothing -> return ()
+                        Nothing -> return ()
+        return $ do
+            gvBindWholeModel whichModel (Just esrc) update
+            return (MkWRaised blockSignal, widget)
 
 createComboBox ::
        forall update t.
@@ -126,9 +131,9 @@ createComboBox ::
        )
     => Model (ReadOnlyUpdate (OrderedListUpdate update))
     -> Model (WholeUpdate t)
-    -> GView 'Locked Widget
+    -> GView 'Unlocked Widget
 createComboBox itemsModel whichModel = do
-    esrc <- newEditSource
+    esrc <- gvNewEditSource
     rec
         store <- listStoreView blockSignal itemsModel esrc
         (blockSignal, w) <- cboxFromStore whichModel esrc store

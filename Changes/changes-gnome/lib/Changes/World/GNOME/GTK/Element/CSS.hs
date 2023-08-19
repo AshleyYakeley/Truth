@@ -17,14 +17,17 @@ setCSSClass cssclass w = do
     sc <- #getStyleContext w
     #addClass sc cssclass
 
-bindCSS :: Bool -> Word32 -> Model (ROWUpdate Text) -> Widget -> GView 'Locked ()
+bindCSS :: Bool -> Word32 -> Model (ROWUpdate Text) -> Widget -> GView 'Unlocked ()
 bindCSS tree priority cssmod widget = do
-    provider <- gvNew CssProvider []
-    widgets <-
-        case tree of
-            False -> return [widget]
-            True -> liftIO $ widgetGetTree False widget
-    for_ widgets $ \w -> do
-        sc <- #getStyleContext w
-        #addProvider sc provider priority
-    gvBindReadOnlyWholeModel cssmod $ \css -> gvLiftIO $ #loadFromData provider $ encodeUtf8 css
+    provider <-
+        gvRunLocked $ do
+            provider <- gvNew CssProvider []
+            widgets <-
+                case tree of
+                    False -> return [widget]
+                    True -> liftIO $ widgetGetTree False widget
+            for_ widgets $ \w -> do
+                sc <- #getStyleContext w
+                #addProvider sc provider priority
+            return provider
+    gvBindReadOnlyWholeModel cssmod $ \css -> gvRunLocked $ #loadFromData provider $ encodeUtf8 css

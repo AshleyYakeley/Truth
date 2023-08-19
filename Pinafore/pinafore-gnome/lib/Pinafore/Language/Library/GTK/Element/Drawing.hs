@@ -33,7 +33,8 @@ instance HasQGroundType '[] LangHandler where
     qGroundType = handlerGroundType
 
 runLangHandler :: ElementContext -> LangHandler -> UIEvents
-runLangHandler ec (MkLangHandler action) = MkUIEvents $ \eb -> gvRunActionDefault (ecUnlift ec) True $ action eb
+runLangHandler ec (MkLangHandler action) =
+    MkUIEvents $ \eb -> gvRunUnlocked $ gvLiftView $ viewRunActionDefault (ecUnlift ec) True $ action eb
 
 langOnClick :: Action () -> LangHandler
 langOnClick action =
@@ -51,7 +52,6 @@ handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> Fal
 uiDraw :: ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangElement
 uiDraw model =
     MkLangElement $ \ec ->
-        gvRunLocked $
         createCairo $
         unWModel $
         immutableWholeModelValue mempty $

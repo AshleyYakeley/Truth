@@ -20,6 +20,16 @@ gvNew cc attrs = do
     gvAcquire a
     return a
 
+gvNewWidget ::
+       (Constructible a tag, IsObject a, IsWidget a)
+    => (ManagedPtr a -> a)
+    -> [AttrOp a tag]
+    -> GView 'Locked (a, Widget)
+gvNewWidget cc attrs = do
+    a <- gvNew cc attrs
+    widget <- toWidget a
+    return (a, widget)
+
 -- | Probably only use this for top-level widgets
 gvTopLevelNew ::
        (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> GView 'Locked a

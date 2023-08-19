@@ -11,35 +11,36 @@ import Shapes
 oneWholeView ::
        forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> GView 'Locked Widget)
+    -> (f (Model update) -> GView 'Unlocked Widget)
     -> SelectNotify (f ())
-    -> GView 'Locked Widget
+    -> GView 'Unlocked Widget
 oneWholeView model baseView sn = do
-    box <- gvNew Box [#orientation := OrientationVertical]
+    (box, widget) <- gvRunLocked $ gvNewWidget Box [#orientation := OrientationVertical]
     let
-        addWidget :: GView 'Locked Widget -> GView 'Locked ()
+        addWidget :: GView 'Unlocked Widget -> GView 'Unlocked ()
         addWidget cvw = do
-            widget <- cvw
-            gvPackStart True box widget
-            widgetShow widget
-    gvInnerWholeView model (\fmodel -> gvRunLocked $ addWidget $ baseView fmodel) sn
-    toWidget box
+            item <- cvw
+            gvRunLocked $ do
+                gvPackStart True box item
+                widgetShow item
+    gvInnerWholeView model (\fmodel -> addWidget $ baseView fmodel) sn
+    return widget
 
 createOneWhole ::
        forall f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> GView 'Locked Widget)
-    -> GView 'Locked Widget
+    -> (f (Model update) -> GView 'Unlocked Widget)
+    -> GView 'Unlocked Widget
 createOneWhole sub itemspec = oneWholeView sub itemspec mempty
 
 createOneWholeSel ::
        forall sel f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update, SelectNotify sel) -> GView 'Locked Widget)
+    -> (f (Model update, SelectNotify sel) -> GView 'Unlocked Widget)
     -> SelectNotify (f sel)
-    -> GView 'Locked Widget
+    -> GView 'Unlocked Widget
 createOneWholeSel subf specsel snfsel = let
-    spec :: f (Model update) -> GView 'Locked Widget
+    spec :: f (Model update) -> GView 'Unlocked Widget
     spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
     getf :: f () -> Maybe (f sel)
     getf fu =

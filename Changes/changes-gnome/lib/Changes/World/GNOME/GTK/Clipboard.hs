@@ -13,10 +13,12 @@ data Clip
     | RichTextClip Text
     | ImageClip Pixbuf
 
-getClipboard :: GView 'Locked (Model (WholeUpdate (Maybe Clip)))
+getClipboard :: GView 'Unlocked (Model (WholeUpdate (Maybe Clip)))
 getClipboard = do
-    atom <- atomIntern "CLIPBOARD" False
-    clipboard <- clipboardGet atom
+    clipboard <-
+        gvRunLocked $ do
+            atom <- atomIntern "CLIPBOARD" False
+            clipboardGet atom
     lock <- gvGetLock
     let
         writeClipboard :: Maybe Clip -> IO ()
@@ -38,4 +40,4 @@ getClipboard = do
         refCommitTask = mempty
         ref :: Reference (WholeEdit (Maybe Clip))
         ref = MkResource nilResourceRunner $ MkAReference {..}
-    gvLiftLifecycleNoUI $ makeReflectingModel ref
+    gvLiftLifecycle $ makeReflectingModel ref

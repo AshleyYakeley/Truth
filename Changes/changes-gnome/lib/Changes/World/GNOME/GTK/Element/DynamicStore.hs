@@ -21,7 +21,7 @@ import Shapes
 data DynamicStoreEntry t = MkDynamicStoreEntry
     { dynamicStoreEntryKey :: Unique
     , dynamicStoreEntryValue :: t
-    , dynamicStoreEntryState :: GViewState 'Locked
+    , dynamicStoreEntryState :: GViewState 'Unlocked
     }
 
 newtype DynamicStore t = MkDynamicStore
@@ -44,12 +44,12 @@ findInStore key store = do
 makeEntry ::
        forall t.
        t
-    -> (((t -> t) -> IO ()) -> GView 'Locked ())
+    -> (((t -> t) -> IO ()) -> GView 'Unlocked ())
     -> SeqStore (DynamicStoreEntry t)
-    -> GView 'Locked (DynamicStoreEntry t)
+    -> GView 'Unlocked (DynamicStoreEntry t)
 makeEntry tdef cvt store = do
-    dynamicStoreEntryKey <- liftIO newUnique
-    initValRef <- liftIO $ newIORef tdef
+    dynamicStoreEntryKey <- gvLiftIONoUI newUnique
+    initValRef <- gvLiftIONoUI $ newIORef tdef
     let
         setValStore :: (t -> t) -> IO ()
         setValStore tt = do
@@ -65,50 +65,51 @@ makeEntry tdef cvt store = do
         setValInitial tt = do
             t <- readIORef initValRef
             writeIORef initValRef $ tt t
-    setValRef <- liftIO $ newIORef setValInitial
+    setValRef <- gvLiftIONoUI $ newIORef setValInitial
     let
         setVal :: (t -> t) -> IO ()
         setVal tt = do
             sv <- readIORef setValRef
             sv tt
     ((), dynamicStoreEntryState) <- gvGetState $ cvt setVal
-    liftIO $ writeIORef setValRef setValStore
-    dynamicStoreEntryValue <- liftIO $ readIORef initValRef
+    gvLiftIONoUI $ writeIORef setValRef setValStore
+    dynamicStoreEntryValue <- gvLiftIONoUI $ readIORef initValRef
     return MkDynamicStoreEntry {..}
 
-newDynamicStore :: t -> [((t -> t) -> IO ()) -> GView 'Locked ()] -> GView 'Locked (DynamicStore t)
+newDynamicStore :: t -> [((t -> t) -> IO ()) -> GView 'Unlocked ()] -> GView 'Unlocked (DynamicStore t)
 newDynamicStore tdef lcv = do
     rec
         entries <- for lcv $ \cvt -> makeEntry tdef cvt store
-        store <- seqStoreNew entries
+        store <- gvRunLocked $ seqStoreNew entries
     gvOnClose $ dynamicStoreClear $ MkDynamicStore store
     return $ MkDynamicStore store
 
 dynamicStoreInsert ::
-       Integral pos => pos -> t -> (((t -> t) -> IO ()) -> GView 'Locked ()) -> DynamicStore t -> GView 'Locked ()
+       Integral pos => pos -> t -> (((t -> t) -> IO ()) -> GView 'Unlocked ()) -> DynamicStore t -> GView 'Unlocked ()
 dynamicStoreInsert i tdef cvt (MkDynamicStore store) = do
     entry <- makeEntry tdef cvt store
-    seqStoreInsert store (fromIntegral i) entry
+    gvRunLocked $ seqStoreInsert store (fromIntegral i) entry
 
-dynamicStoreClear :: DynamicStore t -> GView 'Locked ()
+dynamicStoreClear :: DynamicStore t -> GView 'Unlocked ()
 dynamicStoreClear (MkDynamicStore store) = do
-    entries <- seqStoreToList store
+    entries <- gvRunLocked $ seqStoreToList store
     for_ entries $ \entry -> gvCloseState $ dynamicStoreEntryState entry
-    seqStoreClear store
+    gvRunLocked $ seqStoreClear store
 
-dynamicStoreDelete :: Integral pos => pos -> DynamicStore t -> GView 'Locked ()
+dynamicStoreDelete :: Integral pos => pos -> DynamicStore t -> GView 'Unlocked ()
 dynamicStoreDelete i (MkDynamicStore store) = do
-    entry <- seqStoreGetValue store $ fromIntegral i
+    entry <- gvRunLocked $ seqStoreGetValue store $ fromIntegral i
     gvCloseState $ dynamicStoreEntryState entry
-    seqStoreRemove store $ fromIntegral i
+    gvRunLocked $ seqStoreRemove store $ fromIntegral i
 
-dynamicStoreMove :: Integral pos => pos -> pos -> DynamicStore t -> GView 'Locked ()
+dynamicStoreMove :: Integral pos => pos -> pos -> DynamicStore t -> GView 'Unlocked ()
 dynamicStoreMove a b _
     | a == b = return ()
-dynamicStoreMove a b (MkDynamicStore store) = do
-    entry <- seqStoreGetValue store $ fromIntegral a
-    seqStoreRemove store $ fromIntegral a
-    seqStoreInsert store (fromIntegral b) entry
+dynamicStoreMove a b (MkDynamicStore store) =
+    gvRunLocked $ do
+        entry <- seqStoreGetValue store $ fromIntegral a
+        seqStoreRemove store $ fromIntegral a
+        seqStoreInsert store (fromIntegral b) entry
 
 dynamicStoreGet :: Integral pos => pos -> DynamicStore t -> GView 'Locked (Unique, t)
 dynamicStoreGet i (MkDynamicStore store) = do

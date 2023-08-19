@@ -21,8 +21,9 @@ defaultLayoutOptions = let
 packLayout :: MonadIO m => Box -> (LayoutOptions, Widget) -> m ()
 packLayout box (MkLayoutOptions {..}, widget) = #packStart box widget loGrow loGrow 0
 
-createLayout :: Orientation -> [(LayoutOptions, Widget)] -> GView 'Locked Widget
-createLayout orientation contents = do
-    box <- gvNew Box [#orientation := orientation]
-    for_ contents $ packLayout box
-    toWidget box
+createLayout :: Orientation -> [(LayoutOptions, Widget)] -> GView 'Unlocked Widget
+createLayout orientation contents =
+    gvRunLocked $ do
+        box <- gvNew Box [#orientation := orientation]
+        for_ contents $ packLayout box
+        toWidget box

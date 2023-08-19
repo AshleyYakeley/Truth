@@ -11,29 +11,24 @@ module Changes.World.GNOME.GI.GView
     , gvGetContext
     , gvLiftView
     , gvLiftViewWithUnlift
-    , gvLiftRelock
-    , gvUnliftRelock
     , gvGetUnliftToView
     , gvHoistView
-    , gvHoistViewNoUI
     , gvSubLifecycle
     , gvLiftIO
     , gvLiftIONoUI
-    , gvLiftViewNoUI
-    , gvLiftLifecycleNoUI
+    , gvLiftLifecycle
     , gvGetLock
     , gvRunLockedState
     , gvRunLocked
-    , gvRunLockedIO
     , gvRunUnlockedState
     , gvRunUnlocked
-    , gvRunUnlockedIO
+    , gvRunLocked'
+    , gvRunLockedThen
     , gvSleep
     , gvExitUI
     , gvExitOnClosed
     , gvWithUnliftLockedAsync
-    , gvRunResource
-    , gvRunResourceContext
+    , gvNewEditSource
     , gvBindModelUpdates
     , gvBindModel
     , gvBindWholeModel
@@ -55,6 +50,14 @@ data GTKContext = MkGTKContext
     , gtkcExitOnClosed :: View --> View
     }
 
+-- | Rules:
+-- 1. Don't call GTK functions unless holding the GTK lock.
+-- For this reason `liftIO` requires holding the lock.
+--
+-- 2. Don't aquire model "runner" locks while holding the GTK lock (to prevent deadlock).
+-- Therefore, avoid calling code while holding the GTK lock unless you know it's safe.
+--
+-- 3. Call `gvRunUnlocked` only when necessary (generally when called by a signal handler).
 type GView :: LockState -> Type -> Type
 newtype GView ls a = MkGView
     { unGView :: ReaderT GTKContext View a
@@ -88,17 +91,17 @@ gvAddState :: GViewState ls -> GView ls ()
 gvAddState state = MkGView $ lift $ viewAddViewState $ gvsViewState state
 
 gvCloseState ::
-       forall lsa lsb. (Is LockStateType lsa, Is LockStateType lsb)
-    => GViewState lsa
-    -> GView lsb ()
+       forall ls. Is LockStateType ls
+    => GViewState ls
+    -> GView ls ()
 gvCloseState (MkGViewState NoLifeState) = return ()
-gvCloseState state = gvMatchLock @lsa @lsb $ MkGView $ liftIO $ closeLifeState $ gvsViewState state
+gvCloseState state = MkGView $ liftIO $ closeLifeState $ gvsViewState state
 
 gvOnClose ::
-       forall lsa lsb. (Is LockStateType lsa, Is LockStateType lsb)
-    => GView lsa ()
-    -> GView lsb ()
-gvOnClose gv = gvLiftViewWithUnliftNoUI $ \unlift -> viewOnClose $ unlift $ gvMatchLock @lsa @lsb gv
+       forall ls. Is LockStateType ls
+    => GView ls ()
+    -> GView ls ()
+gvOnClose gv = gvLiftViewWithUnliftNoUI $ \unlift -> viewOnClose $ unlift gv
 
 gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GView ls ())
 gvGetCloser gv =
@@ -116,11 +119,8 @@ gvLiftIO = liftIO
 gvLiftIONoUI :: IO --> GView ls
 gvLiftIONoUI = MkGView . liftIO
 
-gvLiftViewNoUI :: View --> GView ls
-gvLiftViewNoUI = MkGView . lift
-
 gvLiftView :: View --> GView 'Unlocked
-gvLiftView = gvLiftViewNoUI
+gvLiftView = MkGView . lift
 
 gvLiftViewWithUnliftNoUI :: forall ls a. ((forall ls'. GView ls' --> View) -> View a) -> GView ls a
 gvLiftViewWithUnliftNoUI call = MkGView $ liftWithUnlift $ \unlift -> call $ unlift . unGView
@@ -128,8 +128,8 @@ gvLiftViewWithUnliftNoUI call = MkGView $ liftWithUnlift $ \unlift -> call $ unl
 gvLiftViewWithUnlift :: forall a. ((GView 'Unlocked --> View) -> View a) -> GView 'Unlocked a
 gvLiftViewWithUnlift call = gvLiftViewWithUnliftNoUI $ \unlift -> call unlift
 
-gvHoistViewNoUI :: (View --> View) -> GView ls --> GView ls
-gvHoistViewNoUI f gv = gvLiftViewWithUnliftNoUI $ \unlift -> f $ unlift gv
+gvLiftLifecycle :: Lifecycle --> GView 'Unlocked
+gvLiftLifecycle = gvLiftView . viewLiftLifecycle
 
 gvGetUnliftToView :: forall ls. GView ls (WRaised (GView 'Unlocked) View)
 gvGetUnliftToView = do
@@ -147,10 +147,10 @@ gvExitUI = do
     gtkc <- gvGetContext
     gvLiftIONoUI $ gtkcExit gtkc
 
-gvExitOnClosed :: GView ls --> GView ls
+gvExitOnClosed :: GView 'Unlocked --> GView Unlocked
 gvExitOnClosed gv = do
     gtkc <- gvGetContext
-    gvHoistViewNoUI (gtkcExitOnClosed gtkc) gv
+    gvHoistView (gtkcExitOnClosed gtkc) gv
 
 gvSubLifecycle :: GView ls --> GView ls
 gvSubLifecycle (MkGView rva) = MkGView $ hoist viewSubLifecycle rva
@@ -169,12 +169,6 @@ gvRunLocked (MkGView rva) =
         lock <- asks gtkcLock
         hoist (viewCloseRunLocked lock . viewOpenRunLocked lock) rva
 
-gvRunLockedIO :: IO --> GView 'Unlocked
-gvRunLockedIO ioa =
-    MkGView $ do
-        lock <- asks gtkcLock
-        liftIO $ cbRunLocked lock ioa
-
 gvRunUnlockedState :: GView ls (GViewState 'Unlocked -> GViewState 'Locked)
 gvRunUnlockedState = do
     lock <- MkGView $ asks gtkcLock
@@ -186,21 +180,18 @@ gvRunUnlocked (MkGView rva) =
         lock <- asks gtkcLock
         hoist (viewCloseRunUnlocked lock . viewOpenRunUnlocked lock) rva
 
-gvRunUnlockedIO :: IO --> GView 'Locked
-gvRunUnlockedIO ioa =
-    MkGView $ do
-        lock <- asks gtkcLock
-        liftIO $ cbRunUnlocked lock ioa
+gvRunLocked' ::
+       forall ls. Is LockStateType ls
+    => GView 'Locked --> GView ls
+gvRunLocked' =
+    case lockStateType @ls of
+        LockedType -> id
+        UnlockedType -> gvRunLocked
 
-gvMatchLock ::
-       forall lsa lsb. (Is LockStateType lsa, Is LockStateType lsb)
-    => GView lsa --> GView lsb
-gvMatchLock =
-    case (lockStateType @lsa, lockStateType @lsb) of
-        (LockedType, LockedType) -> id
-        (UnlockedType, UnlockedType) -> id
-        (LockedType, UnlockedType) -> gvRunLocked
-        (UnlockedType, LockedType) -> gvRunUnlocked
+gvRunLockedThen :: GView 'Locked (GView 'Unlocked a) -> GView 'Unlocked a
+gvRunLockedThen mma = do
+    ma <- gvRunLocked mma
+    ma
 
 gvUnliftRelock ::
        forall lsopen lsclose ls. (Is LockStateType lsopen, Is LockStateType lsclose, Is LockStateType ls)
@@ -218,9 +209,6 @@ gvLiftRelock va =
         lock <- asks gtkcLock
         lift $ viewRelockClose @lsclose @ls lock $ viewRelockOpen @lsopen @ls lock va
 
-gvLiftLifecycleNoUI :: Lifecycle --> GView ls
-gvLiftLifecycleNoUI = gvLiftViewNoUI . viewLiftLifecycle
-
 gvWithUnliftLockedAsync ::
        forall ls a. Is LockStateType ls
     => ((GView 'Locked --> IO) -> GView ls a)
@@ -230,75 +218,40 @@ gvWithUnliftLockedAsync call = do
     gvLiftRelock @ls @ls $
         viewWithUnliftAsync $ \unlift -> gvUnliftRelock @ls @ls ctx $ call $ unlift . gvUnliftRelock @'Locked @ls ctx
 
+gvNewEditSource :: GView ls EditSource
+gvNewEditSource = gvLiftIONoUI newEditSource
+
 gvBindModelUpdates ::
-       forall ls update a. Is LockStateType ls
-    => Model update
+       forall update a.
+       Model update
     -> (EditSource -> Bool)
-    -> GView ls a
+    -> GView 'Unlocked a
     -> (a -> Task IO ())
     -> (a -> NonEmpty update -> EditContext -> GView 'Unlocked ())
-    -> GView ls a
-gvBindModelUpdates model testesrc initv utask recv = do
-    ctx <- gvGetContext
-    gvLiftRelock @ls @ls $
-        viewBindModelUpdates model testesrc (gvUnliftRelock @ls @ls ctx initv) utask $ \a updates ec ->
-            gvUnliftRelock @'Unlocked @ls ctx $ recv a updates ec
+    -> GView 'Unlocked a
+gvBindModelUpdates model testesrc initv utask recv =
+    gvLiftViewWithUnlift $ \unlift ->
+        viewBindModelUpdates model testesrc (unlift initv) utask $ \a updates ec -> unlift $ recv a updates ec
 
 gvBindModel ::
-       forall ls update a. Is LockStateType ls
-    => Model update
+       forall update a.
+       Model update
     -> Maybe EditSource
-    -> GView ls a
+    -> GView 'Unlocked a
     -> (a -> Task IO ())
     -> (a -> NonEmpty update -> GView 'Unlocked ())
-    -> GView ls a
+    -> GView 'Unlocked a
 gvBindModel model mesrc initv utask recv =
     gvBindModelUpdates model (\ec -> mesrc /= Just ec) initv utask $ \a updates _ec -> recv a updates
 
 gvBindWholeModel ::
-       forall ls lsr t. (Is LockStateType ls, Is LockStateType lsr)
-    => Model (WholeUpdate t)
-    -> Maybe EditSource
-    -> (t -> GView lsr ())
-    -> GView ls ()
-gvBindWholeModel model mesrc call = do
-    ctx <- gvGetContext
-    gvLiftRelock @ls @ls $
-        viewBindWholeModel model mesrc $ \finit t ->
-            if finit
-                then gvUnliftRelock @ls @ls ctx $ call t
-                else gvUnliftRelock @'Unlocked @ls ctx $ call t
+       forall t. Model (WholeUpdate t) -> Maybe EditSource -> (t -> GView 'Unlocked ()) -> GView 'Unlocked ()
+gvBindWholeModel model mesrc call =
+    gvLiftViewWithUnlift $ \unlift -> viewBindWholeModel model mesrc $ \_finit t -> unlift $ call t
 
-gvBindReadOnlyWholeModel ::
-       forall ls lsr t. (Is LockStateType ls, Is LockStateType lsr)
-    => Model (ROWUpdate t)
-    -> (t -> GView lsr ())
-    -> GView ls ()
-gvBindReadOnlyWholeModel model call = do
-    ctx <- gvGetContext
-    gvLiftRelock @ls @ls $
-        viewBindReadOnlyWholeModel model $ \finit t ->
-            if finit
-                then gvUnliftRelock @ls @ls ctx $ call t
-                else gvUnliftRelock @'Unlocked @ls ctx $ call t
-
-gvRunResource ::
-       forall ls f r.
-       Resource f
-    -> (forall tt.
-            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO), MonadFail (ApplyStack tt IO)) =>
-                    f tt -> ApplyStack tt IO r)
-    -> GView ls r
-gvRunResource r call = MkGView $ lift $ viewRunResource r call
-
-gvRunResourceContext ::
-       forall ls f r.
-       Resource f
-    -> (forall tt.
-            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) => StackUnlift tt -> f tt -> GView ls r)
-    -> GView ls r
-gvRunResourceContext r call =
-    gvLiftViewWithUnliftNoUI $ \unlift -> viewRunResourceContext r $ \uu ftt -> unlift $ call uu ftt
+gvBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (t -> GView 'Unlocked ()) -> GView 'Unlocked ()
+gvBindReadOnlyWholeModel model call =
+    gvLiftViewWithUnlift $ \unlift -> viewBindReadOnlyWholeModel model $ \_finit t -> unlift $ call t
 
 gvDynamic ::
        forall dvs update a.
@@ -313,7 +266,7 @@ gvDynamic model initCV tovsCV taskCV recvCV =
         viewDynamic model (unlift initCV) (fmap gvsViewState . tovsCV) taskCV $ \a updates ->
             hoist unlift $ recvCV a updates
 
-gvReplaceDynamicView :: Is LockStateType ls => GView ls dvs -> (dvs -> GViewState 'Unlocked) -> StateT dvs (GView ls) ()
+gvReplaceDynamicView :: GView 'Unlocked dvs -> (dvs -> GViewState 'Unlocked) -> StateT dvs (GView 'Unlocked) ()
 gvReplaceDynamicView getNewDVS tovsCV = do
     olddvs <- get
     lift $ gvCloseState $ tovsCV olddvs
@@ -329,8 +282,8 @@ gvSwitch model = do
             return vs
         initVS :: GView 'Unlocked (GViewState 'Unlocked, ())
         initVS = do
-            firstspec <- gvLiftViewNoUI $ viewRunResource model $ \am -> aModelRead am ReadWhole
-            ((), vs) <- gvMatchLock $ gvGetState firstspec
+            firstspec <- gvLiftView $ viewRunResource model $ \am -> aModelRead am ReadWhole
+            ((), vs) <- gvGetState firstspec
             return (vs, ())
         recvVS :: () -> [ROWUpdate (GView 'Unlocked ())] -> StateT (GViewState 'Unlocked) (GView 'Unlocked) ()
         recvVS () updates =
@@ -338,11 +291,10 @@ gvSwitch model = do
     gvDynamic model initVS return mempty recvVS
 
 gvInnerWholeView ::
-       forall ls f update. (Is LockStateType ls, MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> GView 'Unlocked ())
     -> SelectNotify (f ())
-    -> GView ls ()
-gvInnerWholeView model baseView seln = do
-    ctx <- gvGetContext
-    gvLiftRelock @ls @ls $ viewInnerWholeView model (\fm -> gvUnliftRelock @ls @ls ctx $ baseView fm) seln
+    -> GView 'Unlocked ()
+gvInnerWholeView model baseView seln =
+    gvLiftViewWithUnlift $ \unlift -> viewInnerWholeView model (\fm -> unlift $ baseView fm) seln

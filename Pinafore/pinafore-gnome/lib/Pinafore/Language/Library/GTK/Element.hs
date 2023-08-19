@@ -41,7 +41,7 @@ uiListTable ::
     -> LangElement
 uiListTable cols lref onDoubleClick mSelectionLangRef =
     MkLangElement $ \MkElementContext {..} -> do
-        esrc <- gvLiftIONoUI newEditSource
+        esrc <- gvNewEditSource
         let
             mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
             mSelectionModel = fmap (unWModel . langWholeModelToBiWholeModel) mSelectionLangRef
@@ -51,9 +51,11 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                     ea <- aModelRead asub ReadWhole
                     return $ meet2 ea
             onSelect :: Model (ROWUpdate EnA) -> GView 'Locked ()
-            onSelect osub = do
-                a <- gvLiftViewNoUI $ readSub osub
-                gvRunAction ecUnlift $ void $ onDoubleClick a
+            onSelect osub =
+                gvRunUnlocked $
+                gvLiftView $ do
+                    a <- readSub osub
+                    viewRunAction ecUnlift $ void $ onDoubleClick a
             getColumn ::
                    (LangWholeModel '( BottomType, Text), A -> LangWholeModel '( BottomType, Text))
                 -> KeyColumn (ROWUpdate EnA)
@@ -63,9 +65,9 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
                 nameOpenSub :: Model (ROWUpdate Text)
                 nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeModelToReadOnlyValue nameRef
-                getCellSub :: Model (ROWUpdate EnA) -> GView 'Locked (Model (ROWUpdate (Text, TableCellProps)))
+                getCellSub :: Model (ROWUpdate EnA) -> GView 'Unlocked (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
-                    a <- gvLiftViewNoUI $ readSub osub
+                    a <- gvLiftView $ readSub osub
                     return $
                         unWModel $
                         eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeModelToReadOnlyValue $ getCellRef a
@@ -77,21 +79,21 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                     Just selectionModel ->
                         contramap readSub $ viewLiftSelectNotify $ modelSelectNotify esrc selectionModel
         (widget, setSelection) <-
-            gvRunLocked $ createListTable (fmap getColumn cols) (unWModel $ langListModelToOrdered lref) onSelect tsn
+            createListTable (fmap getColumn cols) (unWModel $ langListModelToOrdered lref) onSelect tsn
         for_ mSelectionModel $ \selectionModel -> let
             setsel :: Know EnA -> GView 'Unlocked ()
-            setsel Unknown = gvRunLocked $ setSelection Nothing
+            setsel Unknown = setSelection Nothing
             setsel (Known a) =
-                gvRunLocked $
                 setSelection $
                 Just $ do
                     a' <- readM ReadWhole
                     return $ a' == a
             finit :: GView 'Unlocked ()
             finit =
-                gvRunResourceContext selectionModel $ \unliftR (amod :: _ tt) -> do
-                    ka <- gvLiftIONoUI $ unliftR $ aModelRead amod ReadWhole
-                    setsel ka
+                gvLiftViewWithUnlift $ \unlift ->
+                    viewRunResourceContext selectionModel $ \unliftR (amod :: _ tt) -> do
+                        ka <- liftIO $ unliftR $ aModelRead amod ReadWhole
+                        unlift $ setsel ka
             recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> GView 'Unlocked ()
             recv () updates = let
                 MkBiWholeUpdate ka = last updates
@@ -102,8 +104,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
 uiList :: (ImmutableWholeModel A -> LangElement) -> LangListModel '( BottomType, A) -> LangElement
 uiList mkElement listModel =
     MkLangElement $ \ec ->
-        gvRunLocked $
-        createListBox (\model -> gvRunUnlocked $ unLangElement (mkElement $ functionImmutableModel $ MkWModel model) ec) $
+        createListBox (\model -> unLangElement (mkElement $ functionImmutableModel $ MkWModel model) ec) $
         unWModel $ langListModelToOrdered listModel
 
 type PickerType = Know EnA
@@ -131,17 +132,17 @@ uiPick itemsRef ref =
             subOpts = unWModel $ eaMapSemiReadOnly itemsLens $ immutableModelToReadOnlyModel itemsRef
             subVal :: Model (WholeUpdate PickerType)
             subVal = unWModel $ langWholeModelToValue $ contraRangeLift meet2 ref
-        gvRunLocked $ createComboBox subOpts subVal
+        createComboBox subOpts subVal
 
 actionRef :: (View --> IO) -> ImmutableWholeModel (Action TopType) -> WROWModel (Maybe (GView 'Locked ()))
 actionRef unlift raction =
-    eaMapReadOnlyWhole (fmap (\action -> gvRunAction unlift $ action >> return ()) . knowToMaybe) $
+    eaMapReadOnlyWhole
+        (fmap (\action -> gvRunUnlocked $ gvLiftView $ viewRunAction unlift $ action >> return ()) . knowToMaybe) $
     immutableModelToReadOnlyModel raction
 
 uiButton :: ImmutableWholeModel Text -> ImmutableWholeModel (Action TopType) -> LangElement
 uiButton text raction =
     MkLangElement $ \MkElementContext {..} ->
-        gvRunLocked $
         createButton
             (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text)
             (unWModel $ actionRef ecUnlift raction)
@@ -149,39 +150,36 @@ uiButton text raction =
 uiLabel :: ImmutableWholeModel Text -> LangElement
 uiLabel text =
     MkLangElement $ \_ ->
-        gvRunLocked $ createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text
+        createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text
 
 uiDynamic :: ImmutableWholeModel LangElement -> LangElement
 uiDynamic uiref =
     MkLangElement $ \ec -> let
         getSpec :: Know LangElement -> GView 'Unlocked Widget
-        getSpec Unknown = gvRunLocked createBlank
+        getSpec Unknown = createBlank
         getSpec (Known (MkLangElement pui)) = pui ec
-        in gvRunLocked $ createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableModelToReadOnlyModel uiref
+        in createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableModelToReadOnlyModel uiref
 
 uiScrolled :: LangElement -> LangElement
 uiScrolled (MkLangElement lui) =
     MkLangElement $ \ec -> do
         w <- lui ec
-        gvRunLocked $ createScrolled w
+        createScrolled w
 
 uiUnitCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know ())) -> LangElement
 uiUnitCheckBox name val =
     MkLangElement $ \_ ->
-        gvRunLocked $
         createCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
         unWModel $ eaMap (toChangeLens knowBool) val
 
 uiCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know Bool)) -> LangElement
 uiCheckBox name val =
     MkLangElement $ \_ ->
-        gvRunLocked $
         createMaybeCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
         unWModel $ eaMap (toChangeLens knowMaybe) val
 
 uiTextEntry :: WModel (WholeUpdate (Know Text)) -> LangElement
-uiTextEntry val =
-    MkLangElement $ \_ -> gvRunLocked $ createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
+uiTextEntry val = MkLangElement $ \_ -> createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
 
 uiLayout :: Orientation -> [LangLayoutElement] -> LangElement
 uiLayout orientation mitems =
@@ -190,7 +188,7 @@ uiLayout orientation mitems =
             for mitems $ \(MkLangLayoutElement lopts (MkLangElement lui)) -> do
                 ui <- lui ec
                 return (lopts, ui)
-        gvRunLocked $ createLayout orientation items
+        createLayout orientation items
 
 layoutGrow :: LangLayoutElement -> LangLayoutElement
 layoutGrow (MkLangLayoutElement lopts ui) = MkLangLayoutElement (lopts {loGrow = True}) ui
@@ -203,7 +201,7 @@ uiNotebook selref mitems =
                 t <- mt ec
                 b <- mb ec
                 return (t, b)
-        gvRunLocked $ createNotebook (langWholeModelSelectNotify noEditSource selref) items
+        createNotebook (langWholeModelSelectNotify noEditSource selref) items
 
 uiExec :: Action LangElement -> LangElement
 uiExec pui =
@@ -211,13 +209,13 @@ uiExec pui =
         kui <- gvLiftView $ unliftAction pui
         case kui of
             Known (MkLangElement ui) -> ui ec
-            Unknown -> gvRunLocked createBlank
+            Unknown -> createBlank
 
 uiStyleSheet :: ImmutableWholeModel Text -> LangElement -> LangElement
 uiStyleSheet cssmodel (MkLangElement mw) =
     MkLangElement $ \ec -> do
         widget <- mw ec
-        gvRunLocked $ bindCSS True maxBound (unWModel $ immutableWholeModelValue mempty cssmodel) widget
+        bindCSS True maxBound (unWModel $ immutableWholeModelValue mempty cssmodel) widget
         return widget
 
 uiName :: Text -> LangElement -> LangElement
@@ -237,15 +235,13 @@ uiStyleClass sclass (MkLangElement mw) =
 uiTextArea :: LangTextModel -> LangElement
 uiTextArea (MkLangTextModel model) =
     MkLangElement $ \ec ->
-        gvRunLocked $
         createTextArea (unWModel model) $
         contramap (\tsel -> fmap (TextSelectionModel . MkLangTextModel) $ viewFloatMap tsel model) $
         viewLiftSelectNotify $ ecSelectNotify ec
 
 uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =
-    MkLangElement $ \_ ->
-        gvRunLocked $ createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
+    MkLangElement $ \_ -> createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
 uiWithContext :: (LangContext -> LangElement) -> LangElement
 uiWithContext call =
@@ -270,7 +266,6 @@ uiOwned (MkLangElement mw) =
 langImage :: ImmutableWholeModel LangImage -> LangElement
 langImage ref =
     MkLangElement $ \_ ->
-        gvRunLocked $
         createImage $
         unWModel $
         eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableModelToReadOnlyModel ref
@@ -294,7 +289,7 @@ elementStuff =
               , valBDS "withContext" "Element that requires a Context." uiWithContext
               , valBDS "notifySelection" "Notify whenever the selection changes." uiNotifySelection
               , valBDS "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
-              , valBDS "blank" "Blank element" $ MkLangElement $ \_ -> gvRunLocked createBlank
+              , valBDS "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
               , valBDS "image" "Blank element" langImage
               , valBDS "unitCheckBox" "(TBD)" uiUnitCheckBox
               , valBDS "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox

@@ -28,16 +28,15 @@ main = do
                     gvLiftIONoUI $
                     makeMemoryReference (Just $ MkSomeFor NoAlphaTrue8PixelType $ blankImage (100, 100) black) $ \_ ->
                         True
-                model <- gvLiftLifecycleNoUI $ makeReflectingModel imageRef
+                model <- gvLiftLifecycle $ makeReflectingModel imageRef
                 rec
                     (_, closer) <-
-                        gvRunLocked $
                         gvGetState $
                         createWindow $ let
                             wsPosition = WindowPositionCenter
                             wsSize = (600, 600)
                             wsCloseBoxAction :: GView 'Locked ()
-                            wsCloseBoxAction = gvCloseState closer
+                            wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer
                             wsTitle :: Model (ROWUpdate Text)
                             wsTitle = constantModel "Images"
                             setFileRef :: FilePath -> MenuEntry
@@ -57,7 +56,7 @@ main = do
                                                 aModelEdit asub $
                                                 pure $ MkWholeReaderEdit $ Just $ MkSomeFor NoAlphaTrue8PixelType image
                                             return ()
-                            wsContent :: AccelGroup -> GView 'Locked Widget
+                            wsContent :: AccelGroup -> GView 'Unlocked Widget
                             wsContent ag = do
                                 mb <- createMenuBar ag $ pure $ SubMenuEntry "Image" $ fmap setFileRef filenames
                                 uic <- createImage $ mapModel toReadOnlyChangeLens model

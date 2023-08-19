@@ -29,9 +29,9 @@ pixbufNewFromImage ::
 pixbufNewFromImage (Image w h pixelVec) =
     unsafeWith pixelVec $ \pixelPtr -> pixbufNewFrom @px (fromIntegral w) (fromIntegral h) pixelPtr
 
-createImage :: Model (ROWUpdate (Maybe (SomeFor Image True8PixelType))) -> GView 'Locked Widget
+createImage :: Model (ROWUpdate (Maybe (SomeFor Image True8PixelType))) -> GView 'Unlocked Widget
 createImage lmod = do
-    widget <- gvNew GI.Image []
+    (imageW, widget) <- gvRunLocked $ gvNewWidget GI.Image []
     gvBindReadOnlyWholeModel lmod $ \case
         Just (MkSomeFor px image) -> do
             pixbuf :: Pixbuf <-
@@ -39,6 +39,6 @@ createImage lmod = do
                 case px of
                     NoAlphaTrue8PixelType -> pixbufNewFromImage image
                     AlphaTrue8PixelType -> pixbufNewFromImage image
-            gvRunLocked $ set widget [#pixbuf := pixbuf]
-        Nothing -> gvRunLocked $ clear widget #pixbuf
-    toWidget widget
+            gvRunLocked $ set imageW [#pixbuf := pixbuf]
+        Nothing -> gvRunLocked $ clear imageW #pixbuf
+    return widget

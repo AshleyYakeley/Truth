@@ -49,22 +49,13 @@ lockTests =
                gvRunUnlocked $
                gvRunLocked $ gvRunUnlocked $ gvRunLocked $ gvRunUnlocked $ gvRunLocked $ gvRunUnlocked $ return ())
               noAction
-        , lockTest "onclose-locked" (gvOnClose @'Locked $ return ()) noAction
-        , lockTest "onclose-unlocked" (gvOnClose @'Unlocked $ return ()) noAction
-        , lockTest "lock-onclose-locked" (gvRunLocked $ gvOnClose @'Locked $ return ()) noAction
-        , lockTest "lock-onclose-unlocked" (gvRunLocked $ gvOnClose @'Unlocked $ return ()) noAction
-        , lockTest "lock-unlock-onclose-locked" (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Locked $ return ()) noAction
-        , lockTest
-              "lock-unlock-onclose-unlocked"
-              (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Unlocked $ return ())
-              noAction
-        , lockTest
-              "lock-unlock-onclose-locked-unlock"
-              (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Locked $ gvRunUnlocked $ return ())
-              noAction
+        , lockTest "onclose-unlocked" (gvOnClose $ return ()) noAction
+        , lockTest "lock-onclose-locked" (gvRunLocked $ gvOnClose $ return ()) noAction
+        , lockTest "lock-unlock-onclose-locked" (gvRunLocked $ gvRunUnlocked $ gvOnClose $ return ()) noAction
+        , lockTest "lock-unlock-onclose-unlocked" (gvRunLocked $ gvRunUnlocked $ gvOnClose $ return ()) noAction
         , lockTest
               "lock-unlock-onclose-unlocked-lock"
-              (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Unlocked $ gvRunLocked $ return ())
+              (gvRunLocked $ gvRunUnlocked $ gvOnClose $ gvRunLocked $ return ())
               noAction
         , let
               setup :: GView 'Unlocked ()
@@ -103,20 +94,17 @@ lockTests =
               setup :: GView 'Unlocked (GView 'Unlocked ())
               setup =
                   gvRunLocked $ do
-                      (w, closer) <- gvGetCloser $ createWindow blankWindowSpec
+                      (w, closer) <- gvRunUnlocked $ gvGetCloser $ createWindow blankWindowSpec
                       uiWindowShow w
-                      return $ gvRunLocked closer
+                      return closer
               in lockTest "window" setup closeAction
         , let
               setup :: GView 'Unlocked (GView 'Unlocked ())
               setup =
                   gvRunLocked $ do
-                      let
-                          wspec =
-                              blankWindowSpec
-                                  {wsContent = \_ -> createDynamic $ constantModel $ gvRunLocked createBlank}
-                      (w, closer) <- gvGetCloser $ createWindow wspec
+                      let wspec = blankWindowSpec {wsContent = \_ -> createDynamic $ constantModel $ createBlank}
+                      (w, closer) <- gvRunUnlocked $ gvGetCloser $ createWindow wspec
                       uiWindowShow w
-                      return $ gvRunLocked closer
+                      return closer
               in lockTest "window-dynamic" setup closeAction
         ]

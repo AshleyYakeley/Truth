@@ -57,54 +57,63 @@ accelGroupConnection ag key mods flags action = do
         _ <- gvLiftIO $ accelGroupDisconnect ag $ Just closure
         return ()
 
-attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> GView 'Locked ()
+attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> GView 'Unlocked ()
 attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
-    aref <- liftIO $ newIORef Nothing
-    item <- menuItemNew
-    menuShellAppend ms item
-    let
-        meaction :: GView 'Locked ()
-        meaction = do
-            maction <- liftIO $ readIORef aref
-            case maction of
-                Nothing -> return ()
-                Just action -> action
-    set item [#label := label] -- creates child if not present
-    mc <- binGetChild item
-    for_ mc $ \c -> do
-        ml <- gvLiftIO $ castTo AccelLabel c
-        for_ ml $ \l -> do
-            case maccel of
-                Nothing -> gvLiftIO $ accelLabelSetAccel l 0 []
-                Just (MkMenuAccelerator mods key) -> do
-                    let
-                        keyw :: Word32
-                        keyw = fromIntegral $ ord key
-                        gmods :: [ModifierType]
-                        gmods = fmap toModifierType mods
-                    gvLiftIO $ accelLabelSetAccel l keyw gmods
-                    accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
-    gvBindReadOnlyWholeModel raction $ \maction ->
+    aref <- gvLiftIONoUI $ newIORef Nothing
+    item <-
         gvRunLocked $ do
-            liftIO $ writeIORef aref maction
-            set item [#sensitive := isJust maction]
-    _ <- gvOnSignal item #activate meaction
-    return ()
+            item <- menuItemNew
+            menuShellAppend ms item
+            let
+                meaction :: GView 'Locked ()
+                meaction = do
+                    maction <- liftIO $ readIORef aref
+                    case maction of
+                        Nothing -> return ()
+                        Just action -> action
+            set item [#label := label] -- creates child if not present
+            mc <- binGetChild item
+            for_ mc $ \c -> do
+                ml <- liftIO $ castTo AccelLabel c
+                for_ ml $ \l -> do
+                    case maccel of
+                        Nothing -> liftIO $ accelLabelSetAccel l 0 []
+                        Just (MkMenuAccelerator mods key) -> do
+                            let
+                                keyw :: Word32
+                                keyw = fromIntegral $ ord key
+                                gmods :: [ModifierType]
+                                gmods = fmap toModifierType mods
+                            liftIO $ accelLabelSetAccel l keyw gmods
+                            accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
+            _ <- gvOnSignal item #activate meaction
+            return item
+    gvBindReadOnlyWholeModel raction $ \maction -> do
+        gvLiftIONoUI $ writeIORef aref maction
+        gvRunLocked $ set item [#sensitive := isJust maction]
 attachMenuEntry ag ms (SubMenuEntry name entries) = do
-    item <- menuItemNewWithLabel name
-    menuShellAppend ms item
-    menu <- menuNew
-    menuItemSetSubmenu item $ Just menu
+    menu <-
+        gvRunLocked $ do
+            item <- menuItemNewWithLabel name
+            menuShellAppend ms item
+            menu <- menuNew
+            menuItemSetSubmenu item $ Just menu
+            return menu
     attachMenuEntries ag menu entries
-attachMenuEntry _ ms SeparatorMenuEntry = do
-    item <- gvNew SeparatorMenuItem []
-    menuShellAppend ms item
+attachMenuEntry _ ms SeparatorMenuEntry =
+    gvRunLocked $ do
+        item <- gvNew SeparatorMenuItem []
+        menuShellAppend ms item
 
-attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> GView 'Locked ()
+attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> GView 'Unlocked ()
 attachMenuEntries ag menu mm = for_ mm $ attachMenuEntry ag menu
 
-createMenuBar :: IsAccelGroup ag => ag -> MenuBar -> GView 'Locked Widget
+createMenuBar :: IsAccelGroup ag => ag -> MenuBar -> GView 'Unlocked Widget
 createMenuBar ag menu = do
-    mbar <- menuBarNew
+    (mbar, widget) <-
+        gvRunLocked $ do
+            mbar <- menuBarNew
+            widget <- toWidget mbar
+            return (mbar, widget)
     attachMenuEntries ag mbar menu
-    toWidget mbar
+    return widget

@@ -8,32 +8,37 @@ import Data.Time
 import GI.Gtk as Gtk
 import Shapes hiding (get)
 
-createCalendar :: Model (WholeUpdate Day) -> GView 'Locked Widget
+createCalendar :: Model (WholeUpdate Day) -> GView 'Unlocked Widget
 createCalendar rmod = do
-    esrc <- newEditSource
-    widget <- gvNew Calendar []
-    let
-        getDay :: GView 'Locked Day
-        getDay = do
-            y <- get widget #year
-            m <- get widget #month
-            d <- get widget #day
-            return $ fromGregorian (toInteger y) (succ $ fromIntegral m) (fromIntegral d)
-        putDay :: Day -> GView 'Locked ()
-        putDay day = let
-            (y, m, d) = toGregorian day
-            in set widget [#year := fromInteger y, #month := pred (fromIntegral m), #day := fromIntegral d]
-        onChanged :: GView 'Locked ()
-        onChanged = do
-            st <- getDay
-            gvRunResource rmod $ \asub -> do
-                _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
-                return ()
-    sig1 <- gvOnSignal widget #daySelected onChanged
-    sig2 <- gvOnSignal widget #monthChanged onChanged
-    gvBindWholeModel rmod (Just esrc) $ \newval -> do
-        oldval <- getDay
-        if oldval == newval
-            then return ()
-            else withSignalsBlocked widget [sig1, sig2] $ putDay newval
-    toWidget widget
+    esrc <- gvNewEditSource
+    gvRunLockedThen $ do
+        (calendar, widget) <- gvNewWidget Calendar []
+        let
+            getDay :: GView 'Locked Day
+            getDay = do
+                y <- get calendar #year
+                m <- get calendar #month
+                d <- get calendar #day
+                return $ fromGregorian (toInteger y) (succ $ fromIntegral m) (fromIntegral d)
+            putDay :: Day -> GView 'Locked ()
+            putDay day = let
+                (y, m, d) = toGregorian day
+                in set calendar [#year := fromInteger y, #month := pred (fromIntegral m), #day := fromIntegral d]
+            onChanged :: GView 'Locked ()
+            onChanged = do
+                st <- getDay
+                gvRunUnlocked $
+                    gvLiftView $
+                    viewRunResource rmod $ \asub -> do
+                        _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
+                        return ()
+        sig1 <- gvOnSignal calendar #daySelected onChanged
+        sig2 <- gvOnSignal calendar #monthChanged onChanged
+        return $ do
+            gvBindWholeModel rmod (Just esrc) $ \newval ->
+                gvRunLocked $ do
+                    oldval <- getDay
+                    if oldval == newval
+                        then return ()
+                        else withSignalsBlocked calendar [sig1, sig2] $ putDay newval
+            return widget

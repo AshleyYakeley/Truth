@@ -4,8 +4,10 @@ module Changes.World.GNOME.GTK.Element.Blank
 
 import Changes.World.GNOME.GI
 import GI.Gtk
+import Shapes
 
-createBlank :: GView 'Locked Widget
-createBlank = do
-    widget <- gvNew DrawingArea []
-    toWidget widget
+createBlank :: GView 'Unlocked Widget
+createBlank =
+    gvRunLocked $ do
+        widget <- gvNew DrawingArea []
+        toWidget widget

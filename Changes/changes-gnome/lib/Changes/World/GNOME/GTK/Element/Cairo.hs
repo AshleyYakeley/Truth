@@ -53,32 +53,34 @@ onClick action =
                 return True
             _ -> return False
 
-createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> GView 'Locked Widget
+createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> GView 'Unlocked Widget
 createCairo model = do
-    widget <- gvNew DrawingArea []
-    drawingRef :: IORef ((Int32, Int32) -> UIDrawing) <- liftIO $ newIORef $ \_ -> mempty
-    gvBindReadOnlyWholeModel model $ \pdrawing ->
-        gvLiftIO $ do
-            writeIORef drawingRef pdrawing
-            #queueDraw widget
-    let
-        getDrawing :: IO UIDrawing
-        getDrawing = do
-            pdrawing <- readIORef drawingRef
-            w <- #getAllocatedWidth widget
-            h <- #getAllocatedHeight widget
-            return $ pdrawing (w, h)
-    _ <-
-        gvOnSignal widget #draw $ \context ->
-            liftIO $ do
-                drawing <- getDrawing
-                renderWithContext (drawingRender drawing) context
-                return True
-    widgetAddEvents widget [EventMaskButtonPressMask]
-    _ <-
-        gvOnSignal widget #buttonPressEvent $ \event -> do
-            drawing <- liftIO getDrawing
-            h <- GI.get event #x
-            v <- GI.get event #y
-            unUIEvents (drawingPoint drawing (h, v)) event
-    toWidget widget
+    drawingRef :: IORef ((Int32, Int32) -> UIDrawing) <- gvLiftIONoUI $ newIORef $ \_ -> mempty
+    gvRunLockedThen $ do
+        (drawingArea, widget) <- gvNewWidget DrawingArea []
+        let
+            getDrawing :: IO UIDrawing
+            getDrawing = do
+                pdrawing <- readIORef drawingRef
+                w <- #getAllocatedWidth drawingArea
+                h <- #getAllocatedHeight drawingArea
+                return $ pdrawing (w, h)
+        _ <-
+            gvOnSignal drawingArea #draw $ \context ->
+                liftIO $ do
+                    drawing <- getDrawing
+                    renderWithContext (drawingRender drawing) context
+                    return True
+        widgetAddEvents drawingArea [EventMaskButtonPressMask]
+        _ <-
+            gvOnSignal drawingArea #buttonPressEvent $ \event -> do
+                drawing <- liftIO getDrawing
+                h <- GI.get event #x
+                v <- GI.get event #y
+                unUIEvents (drawingPoint drawing (h, v)) event
+        return $ do
+            gvBindReadOnlyWholeModel model $ \pdrawing ->
+                gvLiftIONoUI $ do
+                    writeIORef drawingRef pdrawing
+                    #queueDraw drawingArea
+            return widget

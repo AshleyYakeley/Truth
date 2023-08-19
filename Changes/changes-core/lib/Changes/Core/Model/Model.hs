@@ -95,7 +95,7 @@ getRunner ::
     -> Lifecycle (Task IO (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
 getRunner recv = do
     (runAsync, utask) <-
-        asyncRunner $ \(MkUpdateQueue sourcedupdates) ->
+        asyncRunner "model updates" $ \(MkUpdateQueue sourcedupdates) ->
             for_ sourcedupdates $ \(ec, updates) -> recv emptyResourceContext updates ec
     let recvAsync _ updates ec = runAsync $ singleUpdateQueue updates ec
     return (utask, recvAsync)
@@ -156,9 +156,9 @@ floatMapModel ::
     -> FloatingChangeLens updateA updateB
     -> Model updateA
     -> Lifecycle (Model updateB)
-floatMapModel rc lens subA = do
-    (subB, ()) <- makeSharedModel $ mapPremodel rc lens $ modelPremodel rc subA ()
-    return subB
+floatMapModel rc lens modelA = do
+    (modelB, ()) <- makeSharedModel $ mapPremodel rc lens $ modelPremodel rc modelA ()
+    return modelB
 
 mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA -> Model updateB
 mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
