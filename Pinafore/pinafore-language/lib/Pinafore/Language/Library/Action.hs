@@ -43,15 +43,15 @@ actionLibSection =
           , addNameInRootBDS $
             valBDS
                 "forever"
-                "Run this action repeatedly forever. Use `stop` to break out, propagating the stop. Same as `fn x => let rec fx = x >> fx in fx`." $
+                "Run this action repeatedly forever. Use `stop` to break out, propagating the stop.  \nSame as `fn x => let rec fx = x >> fx in fx`." $
             (forever :: Action () -> Action BottomType)
           , addNameInRootBDS $
             valBDS
                 "tryStop"
-                "Run action. If it stops, catch and return `Nothing`. Same as `fn x => onStop (map.Action Just x) $ pure Nothing`." $
+                "Run action. If it stops, catch and return `Nothing`.  \nSame as `fn x => onStop (map.Action Just x) $ pure Nothing`." $
             tryStop
           , addNameInRootBDS $
-            valBDS "tryStop_" "Run action. If it stops, catch and return `()`. Same as `fn x => onStop x $ pure ()`." $
+            valBDS "tryStop_" "Run action. If it stops, catch and return `()`.  \nSame as `fn x => onStop x $ pure ()`." $
             tryStop_
           , addNameInRootBDS $
             valBDS "for_" "Perform an action on each value of a list." (for_ :: [A] -> (A -> Action ()) -> Action ())
