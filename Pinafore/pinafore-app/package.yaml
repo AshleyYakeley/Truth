@@ -80,6 +80,7 @@ tests:
         other-modules:
           - Test.Interactive
           - Test.Scripts
+          - Test.Library
         ghc-options: -threaded
     app:
         source-dirs: app/main

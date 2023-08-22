@@ -16,7 +16,7 @@ newtype LangHasMetadata =
 
 hasMetadataGroundType :: QGroundType '[] LangHasMetadata
 hasMetadataGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHasMetadata)|]) "HasMetadata")
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangHasMetadata)|]) "HasMetadata.Metadata.Image.")
 
 instance HasQGroundType '[] LangHasMetadata where
     qGroundType = hasMetadataGroundType

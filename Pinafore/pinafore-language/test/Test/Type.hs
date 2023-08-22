@@ -232,13 +232,13 @@ testType =
               , textTypeTest "if t then v1 else v2" "{t : Boolean., v1 : a, v2 : a} -> a"
               , textTypeTest "[]" "{} -> List. None"
               , textTypeTest "fn v => 1" "{} -> Any -> Integer."
-              , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1. a"
-              , textTypeTest "[v,v,v]" "{v : a} -> List1. a"
-              , textTypeTest "[x,y,x,y]" "{x : a, y : a} -> List1. a"
+              , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1.List. a"
+              , textTypeTest "[v,v,v]" "{v : a} -> List1.List. a"
+              , textTypeTest "[x,y,x,y]" "{x : a, y : a} -> List1.List. a"
               , textTypeTest "(v 3,v \"text\")" "{v : Integer. -> a, v : Text. -> b} -> a *: b"
               , textTypeTest "(v,v)" "{v : a, v : b} -> a *: b"
               , textTypeTest "(v 3,v 3)" "{v : Integer. -> a, v : Integer. -> b} -> a *: b"
-              , textTypeTest "[v 3]" "{v : Integer. -> a} -> List1. a"
+              , textTypeTest "[v 3]" "{v : Integer. -> a} -> List1.List. a"
               , textTypeTest "(v 3,v False)" "{v : Integer. -> a, v : Boolean. -> b} -> a *: b"
               , textTypeTest
                     "((v 3,v False),v 3)"
@@ -252,12 +252,14 @@ testType =
                     , textTypeTest "let i : tvar -> tvar = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : a -> a = fn x => x in i 3" "{} -> Integer."
                     ]
-              , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1. a"
-              , textTypeTest "fn v1, v2 => [v1,v2]" "{} -> a -> a -> List1. a"
-              , textTypeTest "fn v1, v2, v3 => ([v1,v2],[v2,v3])" "{} -> a -> (a & b) -> b -> List1. a *: List1. b"
+              , textTypeTest "fn x => let v = x in [v,v,v]" "{} -> a -> List1.List. a"
+              , textTypeTest "fn v1, v2 => [v1,v2]" "{} -> a -> a -> List1.List. a"
+              , textTypeTest
+                    "fn v1, v2, v3 => ([v1,v2],[v2,v3])"
+                    "{} -> a -> (a & b) -> b -> List1.List. a *: List1.List. b"
               , textTypeTest
                     "fn v1, v2, v3 => (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (a & b) -> (a & c) -> (c & b) -> (List1. a *: List1. c) *: List1. b"
+                    "{} -> (a & b) -> (a & c) -> (c & b) -> (List1.List. a *: List1.List. c) *: List1.List. b"
               , testTree
                     "inversion"
                     [ textTypeTest "fn x => let y : Integer = x in y" "{} -> Integer. -> Integer."

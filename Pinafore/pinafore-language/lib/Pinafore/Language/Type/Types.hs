@@ -108,7 +108,7 @@ list1GroundType = let
         stbAdapter (ConsArguments t NilArguments) = list1StoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
-    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
+    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1.List.")
            { qgtProperties = props
            , qgtGreatestDynamicSupertype =
                  GeneralPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let

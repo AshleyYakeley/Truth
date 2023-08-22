@@ -19,6 +19,9 @@ module Pinafore.Test
     , QShimWit
     , QSingularType
     , QSingularShimWit
+    , QBindingInfo(..)
+    , SomeGroundType(..)
+    , QInterpreterBinding(..)
     , QInterpreter
     , toJMShimWit
     , allocateVar
@@ -33,6 +36,7 @@ module Pinafore.Test
     , QSubtypeConversionEntry
     , registerSubtypeConversion
     , module Pinafore.Language.Expression
+    , moduleScopeEntries
     , checkUpdateEditor
     , QTableSubject(..)
     , makeTestInvocationInfo
@@ -61,6 +65,9 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
 import Shapes
+
+moduleScopeEntries :: QModule -> [(FullName, QBindingInfo)]
+moduleScopeEntries qmod = bindingMapEntries $ scopeBindings $ moduleScope qmod
 
 checkUpdateEditor ::
        forall a. Eq a

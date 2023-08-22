@@ -37,7 +37,7 @@ instance HasVariance LangDrawing where
     type VarianceOf LangDrawing = 'Covariance
 
 drawingGroundType :: QGroundType '[ CoCCRVariance] LangDrawing
-drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangDrawing)|]) "Drawing"
+drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangDrawing)|]) "Drawing.Cairo."
 
 instance HasQGroundType '[ CoCCRVariance] LangDrawing where
     qGroundType = drawingGroundType
@@ -73,7 +73,7 @@ langIfInRect ((x0, y0), (w, h)) = langIfPoint $ \(x, y) -> (x >= x0) && (x < x0 
 type LangPath = Path
 
 pathGroundType :: QGroundType '[] LangPath
-pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPath)|]) "Path"
+pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPath)|]) "Path.Cairo."
 
 instance HasQGroundType '[] LangPath where
     qGroundType = pathGroundType
@@ -86,7 +86,7 @@ liftPattern :: Pattern -> LangPattern
 liftPattern p = MkLangPattern p
 
 patternGroundType :: QGroundType '[] LangPattern
-patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPattern)|]) "Pattern"
+patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPattern)|]) "Pattern.Cairo."
 
 instance HasQGroundType '[] LangPattern where
     qGroundType = patternGroundType
