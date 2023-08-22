@@ -128,7 +128,7 @@ let
         in
         vertical.Element
         [
-            labelled.Element {"Name: "} $ textEntry.Element $ name !$% {c},
+            labelled.Element {"Name: "} $ textEntry.Element $ nameOf !$% {c},
             layoutGrow.Element $ notebook.Element unknown pages
         ];
     end;

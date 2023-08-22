@@ -11,7 +11,7 @@ namespace UILib of
         datatype Props of
             Mk of
                 #| A name is a text that identifies (in some sense) an entity.
-                name: Property Named Text;
+                nameOf: Property Named Text;
                 #| Order alphabetically (case-insensitive) by name
                 nameOrder: ModelOrder Named;
                 #| Order a set of entities by their names.
@@ -21,9 +21,9 @@ namespace UILib of
 
         mkProps: Store -> Props
         = fn store => let
-            name = property @Named @Text !"identify.name" store;
-            nameOrder = on.ModelOrder name alphabetical.Order;
-            byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property name) !$$ model;
+            nameOf = property @Named @Text !"identify.name" store;
+            nameOrder = on.ModelOrder nameOf alphabetical.Order;
+            byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property nameOf) !$$ model;
             in Mk.Props;
 
         datatype Context <: Context.Pane & Props of
@@ -49,12 +49,12 @@ namespace UILib of
             Mk.Props = mkProps store;
 
             namedPane = fn itemElement, e => let
-                titleModel= name !$% {e};
+                titleModel= nameOf !$% {e};
                 extraMenusModel = {[]};
                 element = itemElement e;
                 in Mk.Pane;
 
-            nameColumn = ({"Name"},fn p => name !$ {p});
+            nameColumn = ({"Name"},fn p => nameOf !$ {p});
 
             namedTable = fn sm, itemElement => Mk.SetElement $ fn msel => exec.Element $ do
                 lm <- getList.FiniteSetModel nameOrder sm;

@@ -95,7 +95,7 @@ let
         let
 
             eventData: FiniteSetModel (EventTime *: Text) =
-            (timeOf.Event **.Property name) !$$ eventSet;
+            (timeOf.Event **.Property nameOf) !$$ eventSet;
 
             eventDataOrder: ModelOrder (EventTime *: Text) =
             map.ModelOrder fst order.EventTime;
@@ -150,7 +150,7 @@ let
     fn evt =>
     mfix $
     fn window =>
-    open.Window gtk (200,200) {"date of " <>.Text %(name !$% evt)} $ vertical.Element
+    open.Window gtk (200,200) {"date of " <>.Text %(nameOf !$% evt)} $ vertical.Element
     [
         calendar.Element $ dateModel.EventTime $ timeOf.Event !$% evt,
         button.Element {"Done: " <>.Text show %(dateModel.EventTime $ timeOf.Event !$% evt)} {close.Window window}
@@ -160,7 +160,7 @@ let
     fn evt =>
     vertical.Element
     [
-        textEntry.Element $ name !$% {evt},
+        textEntry.Element $ nameOf !$% {evt},
         horizontal.Element
         [
             button.Element {"cal"} {calendarWindow {evt}},
@@ -179,7 +179,7 @@ let
         item <- new.OpenEntity @Event;
         day <- getNowLocal.Date;
         timeOf.Event !$ {item} := MkDate.EventTime day;
-        name !$ {item} := "";
+        nameOf !$ {item} := "";
         pure item;
     end;
 
@@ -192,7 +192,7 @@ let
             timeColumn: WholeModel +Text *: (Event -> WholeModel Text)
             = ({"When"},fn e => {show $ %(timeOf.Event !$ {e})});
             nameColumn: WholeModel +Text *: (Event -> WholeModel Text)
-            = ({"What"},fn e => name !$ {e});
+            = ({"What"},fn e => nameOf !$ {e});
         in
         [timeColumn,nameColumn];
     in
