@@ -8,29 +8,39 @@ let
         Running Time;
     end;
 
-    toggleStopwatch: WholeModel +Time -> WholeModel State -> Action Unit
-    = fn now, r => do
+    toggleStopwatch: WholeModel +Time -> WholeModel State -> Action Unit =
+    fn now, r =>
+    do
         n <- get now;
         oldstate <- get r;
-        newstate <- pure $ oldstate >- match
-            Stopped.State d => Running.State $ negate.Duration d +.Time n;
-            Running.State t => Stopped.State $ n -.Time t
+        newstate <-
+            pure $
+            oldstate >-
+            match
+                Stopped.State d => Running.State $ negate.Duration d +.Time n;
+                Running.State t => Stopped.State $ n -.Time t
             end;
         r := newstate;
-        end;
+    end;
 
-    showStopwatch: State -> Time -> Text
-    = fn state, n => state >- match
+    showStopwatch: State -> Time -> Text =
+    fn state, n =>
+    state >-
+    match
         Stopped.State d => "[" <>.Text show d <>.Text "]";
         Running.State t => show $ n -.Time t
-        end;
+    end;
 
-    ui: WholeModel +Time -> WholeModel State -> Element
-    = fn now, r => button.Element {showStopwatch %r %now} {toggleStopwatch now r};
+    ui: WholeModel +Time -> WholeModel State -> Element =
+    fn now, r =>
+    button.Element {showStopwatch %r %now} {toggleStopwatch now r};
 
-in do
+in
+do
     now <- newClock.Time $ Seconds 0.001;
     r <- newMem.WholeModel;
     r := Stopped.State zero.Duration;
-    run $ fn gtk => open.Window gtk (150,40) {"Stopwatch"} $ ui now r;
-    end
+    run $
+        fn gtk =>
+        open.Window gtk (150,40) {"Stopwatch"} $ ui now r;
+end

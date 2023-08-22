@@ -3,48 +3,63 @@ import "pinafore-media", "pinafore-gnome" in
 with GTK., Element.GTK., Cairo., Drawing.Cairo., Colour., Number. in
 let
 
-    scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a
-    = fn d, (w,h) => let
+    scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a =
+    fn d, (w,h) =>
+    let
         size = min w h;
-        in translate (w/2,h/2) $ scale (size/2,size/2) d;
+    in translate (w/2,h/2) $ scale (size/2,size/2) d;
 
-    circle: Number *: Number -> Number -> Path
-    = fn centre, radius => arc.Path centre radius 0 (2 * pi);
+    circle: Number *: Number -> Number -> Path =
+    fn centre, radius =>
+    arc.Path centre radius 0 (2 * pi);
 
-    tickMark: Integer -> Drawing None
-    = fn m => let
+    tickMark: Integer -> Drawing None =
+    fn m =>
+    let
         major = mod m 5 == 0
-        in with Path in width (if major then 0.015 else 0.005) $ stroke $ concat [moveTo (0,if major then 0.8 else 0.85), lineTo (0,0.95)];
+    in
+    with Path in
+    width (if major then 0.015 else 0.005) $ stroke $ concat [moveTo (0,if major then 0.8 else 0.85), lineTo (0,0.95)];
 
-    face: Drawing None
-    = concat
+    face: Drawing None =
+    concat
     [
         source antiquewhite $ fill.Path $ circle (0,0) 1,
         source black $ width 0.01 $ stroke.Path $ circle (0,0) 1,
         concat $ map.List (fn m => rotate (m * pi / 30) $ tickMark m) $ range 0 59
     ];
 
-    hourHand: Drawing None
-    = with Path in source navy $ width 0.1 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.5)];
+    hourHand: Drawing None =
+    with Path in
+    source navy $ width 0.1 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.5)];
 
-    minuteHand: Drawing None
-    = with Path in source navy $ width 0.05 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.8)];
+    minuteHand: Drawing None =
+    with Path in
+    source navy $ width 0.05 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.8)];
 
-    secondHand: Drawing None
-    = with Path in source red $ width 0.01 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.9)];
+    secondHand: Drawing None =
+    with Path in
+    source red $ width 0.01 $ stroke $ concat [moveTo (0,0), lineTo (0,-0.9)];
 
-in do
+in
+do
     now <- newClock $ Seconds 0.1;
     tz <- getCurrentTimeZone.LocalTime;
-    run $ fn gtk => open.Window gtk (300,400) {"Clock"} $ draw
-    {
-        scaleDrawing $
-            fromTime.LocalTime tz %now >- match
-                DateAndTime _ (SinceMidnight (Seconds ss)) => let
-                    s = floor $ mod ss 60; # floor for ticking motion
-                    m = mod (ss / 60) 60;
-                    h = mod (ss / 3600) 24;
-                    in concat
+    run $
+        fn gtk =>
+        open.Window gtk (300,400) {"Clock"} $
+        draw
+        {
+            scaleDrawing $
+            fromTime.LocalTime tz %now >-
+            match
+                DateAndTime _ (SinceMidnight (Seconds ss)) =>
+                    let
+                        s = floor $ mod ss 60; # floor for ticking motion
+                        m = mod (ss / 60) 60;
+                        h = mod (ss / 3600) 24;
+                    in
+                    concat
                     [
                         face,
                         rotate (h * pi / 6) hourHand,
@@ -52,5 +67,5 @@ in do
                         rotate (s * pi / 30) secondHand
                     ]
             end
-    }
-    end
+        }
+end

@@ -9,27 +9,31 @@ let
     # something with a lifespan
     opentype Lifespanned;
     # birth and death dates
-    birthdate = property @Lifespanned @Date !"lifespan.start.date" store;
-    deathdate = property @Lifespanned @Date !"lifespan.end.date" store;
+    birthDateOf = property @Lifespanned @Date !"lifespan.start.date" store;
+    deathDateOf = property @Lifespanned @Date !"lifespan.end.date" store;
 
     # physical locations, that have addresses
     opentype Location;
-    address = property @Location @Text !"location.address.withincity" store;
-    locphone = property @Location @Text !"location.telephone" store;
-    city = property @Location @Text !"location.address.city" store;
-    postcode = property @Location @Text !"location.address.postcode" store;
-    province = property @Location @Text !"location.address.province" store;
-    country = property @Location @Text !"location.address.country" store;
 
-    locationUI: WholeModel +Location -> Element
-    = fn loc => vertical.Element
+    namespace Location of
+        addressOf = property @Location @Text !"location.address.withincity" store;
+        phoneOf = property @Location @Text !"location.telephone" store;
+        cityOf = property @Location @Text !"location.address.city" store;
+        postcodeOf = property @Location @Text !"location.address.postcode" store;
+        provinceOf = property @Location @Text !"location.address.province" store;
+        countryOf = property @Location @Text !"location.address.country" store;
+    end;
+
+    locationUI: WholeModel +Location -> Element =
+    fn loc =>
+    vertical.Element
     [
-        layoutGrow.Element $ labelled.Element {"Address: "} $ textArea.Element (fromWhole.TextModel $ address !$% loc),
-        labelled.Element {"City: "} $ textEntry.Element $ city !$% loc,
-        labelled.Element {"Postcode/ZIP: "} $ textEntry.Element $ postcode !$% loc,
-        labelled.Element {"State/Province: "} $ textEntry.Element $ province !$% loc,
-        labelled.Element {"Country: "} $ textEntry.Element $ country !$% loc,
-        labelled.Element {"Phone: "} $ textEntry.Element $ locphone !$% loc
+        layoutGrow.Element $ labelled.Element {"Address: "} $ textArea.Element (fromWhole.TextModel $ addressOf.Location !$% loc),
+        labelled.Element {"City: "} $ textEntry.Element $ cityOf.Location !$% loc,
+        labelled.Element {"Postcode/ZIP: "} $ textEntry.Element $ postcodeOf.Location !$% loc,
+        labelled.Element {"State/Province: "} $ textEntry.Element $ provinceOf.Location !$% loc,
+        labelled.Element {"Country: "} $ textEntry.Element $ countryOf.Location !$% loc,
+        labelled.Element {"Phone: "} $ textEntry.Element $ phoneOf.Location !$% loc
     ];
 
     let rec
@@ -37,107 +41,115 @@ let
         dynamictype Contact = Person | Organisation;
         subtype Contact <: Named;
         subtype Contact <: Lifespanned;
-        email = property @Contact @Text !"contact.email" store;
-        phone = property @Contact @Text !"contact.telephone" store;
-        home = property @Contact @Location !"being.location" store;
-        contacts: FiniteSetModel Contact
-        = property @Contact @Unit !"type.legalentity" store !@ {()};
+
+        emailOf = property @Contact @Text !"contact.email" store;
+        phoneOf = property @Contact @Text !"contact.telephone" store;
+        homeOf = property @Contact @Location !"being.location" store;
+
+        contactSet: FiniteSetModel Contact =
+        property @Contact @Unit !"type.legalentity" store !@ {()};
 
         # a person
         dynamictype Person = !"type.person";
-        people: FiniteSetModel Person
-        = maybeMap.FiniteSetModel (check @Person) contacts;
+
+        peopleSet: FiniteSetModel Person =
+        maybeMap.FiniteSetModel (check @Person) contactSet;
+
         # family relationships between people
-        mother = property @Person @Person !"relation.family.mother" store;
-        father = property @Person @Person !"relation.family.father" store;
-        children: WholeModel +Person -> FiniteSetModel Person
-        = fn p => (mother !@% p) <:|:> (father !@% p);
-        married = property @Person @Boolean !"relation.family.spouse.exist" store;
+        motherOf = property @Person @Person !"relation.family.mother" store;
+        fatherOf = property @Person @Person !"relation.family.father" store;
+        childrenSet: WholeModel +Person -> FiniteSetModel Person =
+        fn p => (motherOf !@% p) <:|:> (fatherOf !@% p);
+        marriedOf = property @Person @Boolean !"relation.family.spouse.exist" store;
 
         # employment relationship
-        employer = property @Person @Contact !"relation.employer" store;
-        employees: WholeModel +Contact -> FiniteSetModel Person
-        = fn p => employer !@% p;
+        employerOf = property @Person @Contact !"relation.employer" store;
+        employeeSet: WholeModel +Contact -> FiniteSetModel Person =
+        fn p => employerOf !@% p;
 
         # an organisation
         dynamictype Organisation = !"type.organisation";
-        organisations: FiniteSetModel Organisation
-        = property @Organisation @Unit !"type.organisation" store !@ {()};
+        organisationSet: FiniteSetModel Organisation =
+        property @Organisation @Unit !"type.organisation" store !@ {()};
     end;
 
     ### User Interface
 
     let rec
-        contactPages: WholeModel +Contact -> List (Element *: Element)
-        = fn er =>
+
+        contactPages: WholeModel +Contact -> List (Element *: Element) =
+        fn er =>
         [
             page.Element {"Social"} $ vertical.Element
             [
-                labelled.Element {"Email: "} $ textEntry.Element $ email !$% er,
-                labelled.Element {"Phone: "} $ textEntry.Element $ phone !$% er
+                labelled.Element {"Email: "} $ textEntry.Element $ emailOf !$% er,
+                labelled.Element {"Phone: "} $ textEntry.Element $ phoneOf !$% er
             ],
-            page.Element {"Home"} $ locationUI $ home !$% er
+            page.Element {"Home"} $ locationUI $ homeOf !$% er
         ];
 
-        personPages: WholeModel +Person -> List (Element *: Element)
-        = fn p =>
+        personPages: WholeModel +Person -> List (Element *: Element) =
+        fn p =>
         [
             page.Element {"Work"} $ vertical.Element
             [
-                labelled.Element {"Employer: "} $ pick.Element (byName contacts) $ employer !$% p
+                labelled.Element {"Employer: "} $ pick.Element (byName contactSet) $ employerOf !$% p
             ],
             page.Element {"Family"} $ familyUI p
         ];
 
-        familyUI: WholeModel +Person -> Element
-        = fn p => vertical.Element
+        familyUI: WholeModel +Person -> Element =
+        fn p =>
+        vertical.Element
         [
-            labelled.Element {"Birth: "} $ textEntry.Element $ reverse.Prism asText.Date !$ birthdate !$% p,
-            labelled.Element {"Death: "} $ textEntry.Element $ reverse.Prism asText.Date !$ deathdate !$% p,
-            checkBox.Element {"Married"} $ married !$% p,
-            labelled.Element {"Mother: "} $ pick.Element (byName people) $ mother !$% p,
-            labelled.Element {"Father: "} $ pick.Element (byName people) $ father !$% p,
+            labelled.Element {"Birth: "} $ textEntry.Element $ reverse.Prism asText.Date !$ birthDateOf !$% p,
+            labelled.Element {"Death: "} $ textEntry.Element $ reverse.Prism asText.Date !$ deathDateOf !$% p,
+            checkBox.Element {"Married"} $ marriedOf !$% p,
+            labelled.Element {"Mother: "} $ pick.Element (byName peopleSet) $ motherOf !$% p,
+            labelled.Element {"Father: "} $ pick.Element (byName peopleSet) $ fatherOf !$% p,
             label.Element {"Children:"},
-            layoutGrow.Element $ toElement.SetElement $ namedTable (children p) contactUI
+            layoutGrow.Element $ toElement.SetElement $ namedTable (childrenSet p) contactUI
         ];
 
-        organisationPages: WholeModel +Organisation -> List (Element *: Element)
-        = fn subj =>
+        organisationPages: WholeModel +Organisation -> List (Element *: Element) =
+        fn subj =>
         [
-            page.Element {"Employees"} $ toElement.SetElement $ namedTable (employees subj) contactUI
+            page.Element {"Employees"} $ toElement.SetElement $ namedTable (employeeSet subj) contactUI
         ];
 
-        contactUI: Contact -> Element
-        = fn c => let
-            pages: List (Element *: Element)
-            = contactPages {c} <>.List (c >- match
+        contactUI: Contact -> Element =
+        fn c =>
+        let
+            pages: List (Element *: Element) =
+            contactPages {c} <>.List (c >- match
                 p:? Person => personPages {p};
                 o:? Organisation => organisationPages {o};
                 end);
-            in vertical.Element
-            [
-                labelled.Element {"Name: "} $ textEntry.Element $ name !$% {c},
-                layoutGrow.Element $ notebook.Element unknown pages
-            ];
+        in
+        vertical.Element
+        [
+            labelled.Element {"Name: "} $ textEntry.Element $ name !$% {c},
+            layoutGrow.Element $ notebook.Element unknown pages
+        ];
     end;
 
-    contactsPresentation: SetPresentation Contact
-    = Mk.SetPresentation of
+    contactsPresentation: SetPresentation Contact =
+    Mk.SetPresentation of
         setName = "Contacts";
-        itemSet = contacts;
+        itemSet = contactSet;
         newItems =
         [
             Mk.NewItem of name = "New Person"; mkey = Just "Ctrl+K"; newItem = new.DynamicEntity @Person end,
             Mk.NewItem of name = "New Organisation"; newItem = new.DynamicEntity @Organisation end
         ];
         itemPane = namedPane contactUI;
-        setElement = namedTable contacts contactUI;
-        end;
+        setElement = namedTable contactSet contactUI;
+    end;
 
-    contactsWindow: Action Window
-    = do
+    contactsWindow: Action Window =
+    do
         p <- presentSetWithItem contactsPresentation;
         paneWindow p;
-        end;
+    end;
 
 in contactsWindow

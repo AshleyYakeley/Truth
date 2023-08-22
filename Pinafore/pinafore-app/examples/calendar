@@ -4,24 +4,26 @@ import "pinafore-gnome" in
 with GTK. in
 let
 
-    dateText: Property Date Text
-    = property @Date @Text !"example.calendar:dateText" store;
+    dateNotesOf: Property Date Text =
+    property @Date @Text !"example.calendar:dateNotes" store;
 
-    ui: WholeModel Date -> Element
-    = fn r => vertical.Element
+    ui: WholeModel Date -> Element =
+    fn r =>
+    vertical.Element
+    [
+    horizontal.Element
         [
-        horizontal.Element
-            [
-            button.Element {"<"} {do d <- get r; r := pred.Date d; end},
-            layoutGrow.Element $ label.Element {encode (unixAsText.Date "%A, %B %e, %Y") %r},
-            button.Element {">"} {do d <- get r; r := succ.Date d; end}
-            ],
-        layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ dateText !$ r)
-        ];
+        button.Element {"<"} {do d <- get r; r := pred.Date d; end},
+        layoutGrow.Element $ label.Element {encode (unixAsText.Date "%A, %B %e, %Y") %r},
+        button.Element {">"} {do d <- get r; r := succ.Date d; end}
+        ],
+    layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ dateNotesOf !$ r)
+    ];
 
-in do
+in
+do
     r <- newMem.WholeModel;
     d <- getNowLocal.Date;
     r := d;
     run $ fn gtk => open.Window gtk (300,400) {show %r} $ ui r;
-    end
+end

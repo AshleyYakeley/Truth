@@ -10,155 +10,202 @@ let
 
     # An event can either be at a particular time, or a whole-day event.
     datatype storable EventTime of
-        Date Date !"Date"; # all-day event
-        Time LocalTime !"Time"; # event at a time
+        MkDate Date !"Date"; # all-day event
+        MkTime LocalTime !"Time"; # event at a time
     end;
 
-    showEventTime: EventTime -> Text
-    = match
-        Date.EventTime d => encode (unixAsText.Date "%F") d;
-        Time.EventTime t => encode (unixAsText.LocalTime "%F %R") t;
+    namespace EventTime of
+
+        subtype EventTime <: Showable =
+        match
+            MkDate d => Mk.Showable $ encode (unixAsText.Date "%F") d;
+            MkTime t => Mk.Showable $ encode (unixAsText.LocalTime "%F %R") t;
         end;
 
-    eventTimeDate: EventTime -> Date
-    = match
-        Date.EventTime d => d;
-        Time.EventTime (DateAndTime d _) => d
+        getDate: EventTime -> Date =
+        match
+            MkDate d => d;
+            MkTime (DateAndTime d _) => d
         end;
 
-    setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime
-    = fn d, et => Just $ et >- match
-        Just (Time.EventTime (DateAndTime _ t)) => Time.EventTime (DateAndTime d t);
-        _ => Date.EventTime d;
+        setDate: Date -> Maybe EventTime -> Maybe EventTime =
+        fn d, et =>
+        Just $ et >-
+        match
+            Just (MkTime (DateAndTime _ t)) => MkTime (DateAndTime d t);
+            _ => MkDate d;
         end;
 
-    eventModelTimeDate: WholeModel EventTime -> WholeModel Date
-    = fn r => lensMap.WholeModel eventTimeDate setEventTimeDate r;
+        dateModel: WholeModel EventTime -> WholeModel Date =
+        lensMap.WholeModel getDate setDate;
 
-    eventModelTimeTimeOfDay: WholeModel EventTime -> WholeModel TimeOfDay
-    = fn r => let
-        eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay
-        = match
-            Just (Time.EventTime (DateAndTime _ tod)) => Just tod;
-            _ => Nothing;
+        timeOfDayModel: WholeModel EventTime -> WholeModel TimeOfDay =
+        fn r =>
+        let
+            eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay =
+            match
+                Just (MkTime (DateAndTime _ tod)) => Just tod;
+                _ => Nothing;
             end;
 
-    setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime)
-    = fn mtod, met => Just $ met >- match
-        Nothing => Nothing;
-        Just et => Just $ mtod >- match
-            Nothing => Date.EventTime $ eventTimeDate et;
-            Just tod => Time.EventTime $ DateAndTime (eventTimeDate et) tod;
+            setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime) =
+            fn mtod, met =>
+            Just $ met >-
+            match
+                Nothing => Nothing;
+                Just et =>
+                    Just $ mtod >-
+                    match
+                        Nothing => MkDate $ getDate et;
+                        Just tod => MkTime $ DateAndTime (getDate et) tod;
+                    end;
             end;
+        in maybeLensMap.WholeModel eventTimeTimeOfDay setEventTimeTimeOfDay r;
+
+        # for ordering
+        getTime: EventTime -> LocalTime =
+        match
+            MkDate d => DateAndTime d midnight;
+            MkTime t => t
         end;
-    in maybeLensMap.WholeModel eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
-    # for ordering
-    eventTimeTime: EventTime -> LocalTime
-    = match
-        Date.EventTime d => DateAndTime d midnight;
-        Time.EventTime t => t
-        end;
+        order: ModelOrder EventTime =
+        map.ModelOrder getTime localChronological;
 
-    eventTimeOrder: ModelOrder EventTime
-    = map.ModelOrder eventTimeTime localChronological;
-
+    end;
 
     ### Event
 
     opentype Event;
     subtype Event <: Named;
-    events: FiniteSetModel Event
-    = property @Event @Unit !"type.event" store !@ {()};
 
-    eventTime = property @Event @EventTime !"event.time" store;
-    eventNotes = property @Event @Text !"item.description" store;
+    namespace Event of
 
-    eventOrder: ModelOrder Event
-    = on.ModelOrder eventTime eventTimeOrder;
+        eventSet: FiniteSetModel Event =
+        property @Event @Unit !"type.event" store !@ {()};
 
-    eventData: FiniteSetModel (EventTime *: Text)
-    = (eventTime **.Property name) !$$ events;
+        timeOf = property @Event @EventTime !"event.time" store;
 
-    eventDataOrder: ModelOrder (EventTime *: Text)
-    = map.ModelOrder fst eventTimeOrder;
+        notesOf = property @Event @Text !"item.description" store;
 
-    eventList: WholeModel +Date -> WholeModel +(List (EventTime *: Text))
-    = fn todaymodel => {
+        order: ModelOrder Event =
+        on.ModelOrder timeOf order.EventTime;
+
+        forDayModel: WholeModel +Date -> WholeModel +(List (EventTime *: Text)) =
         let
-            today: Date = %todaymodel;
 
-            pickCurrent: EventTime *: Text -> Boolean
-            = fn (t,_) => ge $ calendrical (eventTimeDate t) today;
-        in (Date.EventTime today,"Today") :: filter pickCurrent %(toList.FiniteSetModel eventDataOrder eventData)
+            eventData: FiniteSetModel (EventTime *: Text) =
+            (timeOf.Event **.Property name) !$$ eventSet;
+
+            eventDataOrder: ModelOrder (EventTime *: Text) =
+            map.ModelOrder fst order.EventTime;
+
+            orderedEventsModel: WholeModel +(List (EventTime *: Text)) =
+            toList.FiniteSetModel eventDataOrder eventData;
+
+        in
+        fn todaymodel =>
+        {
+            let
+
+                today: Date = %todaymodel;
+
+                pickCurrent: EventTime *: Text -> Boolean =
+                fn (t,_) =>
+                ge $ calendrical (getDate.EventTime t) today;
+
+                todayEvent: EventTime *: Text =
+                (MkDate.EventTime today,"Today");
+
+                futureEvents: List (EventTime *: Text) =
+                filter pickCurrent %orderedEventsModel;
+
+            in todayEvent :: futureEvents
         };
+
+    end;
 
 
     ### GTK
 
     # Text for the overview tab.
-    overviewModel: WholeModel +Date -> WholeModel +Text
-    = fn todaymodel => {concat.Text $ map.List (fn (t,n) => showEventTime t <>.Text ": " <>.Text n <>.Text "\n") %(eventList todaymodel)};
+    overviewModel: WholeModel +Date -> WholeModel +Text =
+    fn todaymodel =>
+    {
+        concat.Text $
+        map.List (fn (t,n) => show t <>.Text ": " <>.Text n <>.Text "\n") %(forDayModel.Event todaymodel)
+    };
 
     # Overview tab GTK
-    overviewPane: Pane
-    = simple.Pane "Overview" $ exec.Element $ do
+    overviewPane: Pane =
+    simple.Pane "Overview" $
+    exec.Element $
+    do
         now <- newClock $ Seconds 60; # update every minute
         tz <- newTimeZoneModel.LocalTime now;
         pure $ label.Element $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
-        end;
+    end;
 
-    calendarWindow: WholeModel +Event -> Action Window
-    = fn evt => mfix $ fn window =>
-        open.Window gtk (200,200) {"date of " <>.Text %(name !$% evt)} $ vertical.Element
-        [
-            calendar.Element $ eventModelTimeDate $ eventTime !$% evt,
-            button.Element {"Done: " <>.Text show %(eventModelTimeDate $ eventTime !$% evt)} {close.Window window}
-        ];
+    calendarWindow: WholeModel +Event -> Action Window =
+    fn evt =>
+    mfix $
+    fn window =>
+    open.Window gtk (200,200) {"date of " <>.Text %(name !$% evt)} $ vertical.Element
+    [
+        calendar.Element $ dateModel.EventTime $ timeOf.Event !$% evt,
+        button.Element {"Done: " <>.Text show %(dateModel.EventTime $ timeOf.Event !$% evt)} {close.Window window}
+    ];
 
-    eventUI: Event -> Element
-    = fn evt => vertical.Element
+    eventUI: Event -> Element =
+    fn evt =>
+    vertical.Element
     [
         textEntry.Element $ name !$% {evt},
         horizontal.Element
         [
             button.Element {"cal"} {calendarWindow {evt}},
-            textEntry.Element $ reverse.Prism asText.Date !$ (eventModelTimeDate $ eventTime !$% {evt}),
-            textEntry.Element $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (eventModelTimeTimeOfDay $ eventTime !$% {evt})
+            textEntry.Element $ reverse.Prism asText.Date !$ (dateModel.EventTime $ timeOf.Event !$% {evt}),
+            textEntry.Element $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (timeOfDayModel.EventTime $ timeOf.Event !$% {evt})
         ],
-        layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ eventNotes !$% {evt})
+        layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ notesOf.Event !$% {evt})
     ];
 
-    eventWindow: Event -> Action Window
-    = fn evt => paneWindow $ namedPane eventUI evt;
+    eventWindow: Event -> Action Window =
+    fn evt =>
+    paneWindow $ namedPane eventUI evt;
 
-    newEvent: Action Event
-    = do
+    newEvent: Action Event =
+    do
         item <- new.OpenEntity @Event;
         day <- getNowLocal.Date;
-        eventTime !$ {item} := Date.EventTime day;
+        timeOf.Event !$ {item} := MkDate.EventTime day;
         name !$ {item} := "";
         pure item;
-        end;
+    end;
 
-    eventsTableUI: SetElement Event
-    = Mk.SetElement $ fn mSelectionModel => let
-        columns: List (WholeModel +Text *: (Event -> WholeModel Text))
-        = let
+    eventsTableUI: SetElement Event =
+    Mk.SetElement $
+    fn mSelectionModel =>
+    let
+        columns: List (WholeModel +Text *: (Event -> WholeModel Text)) =
+        let
             timeColumn: WholeModel +Text *: (Event -> WholeModel Text)
-            = ({"When"},fn e => {showEventTime $ %(eventTime !$ {e})});
+            = ({"When"},fn e => {show $ %(timeOf.Event !$ {e})});
             nameColumn: WholeModel +Text *: (Event -> WholeModel Text)
             = ({"What"},fn e => name !$ {e});
-            in [timeColumn,nameColumn];
-        in exec.Element $ do
-            lm <- getList.FiniteSetModel eventOrder events;
-            pure $ listTable.Element columns lm eventWindow mSelectionModel;
-            end;
+        in
+        [timeColumn,nameColumn];
+    in
+    exec.Element $
+    do
+        lm <- getList.FiniteSetModel order.Event eventSet.Event;
+        pure $ listTable.Element columns lm eventWindow mSelectionModel;
+    end;
 
-    eventsPresentation: SetPresentation Event
-    = Mk.SetPresentation of
+    eventsPresentation: SetPresentation Event =
+    Mk.SetPresentation of
         setName = "Events";
-        itemSet = events;
+        itemSet = eventSet.Event;
         newItems =
         [
             Mk.NewItem of
@@ -169,10 +216,11 @@ let
         ];
         itemPane = namedPane eventUI;
         setElement = eventsTableUI;
-        end;
+    end;
 
-in do
+in
+do
     eventsPane <- presentSetWithItem eventsPresentation;
     p <- notebook.Pane {"Events"} [overviewPane,eventsPane];
     paneWindow p
-    end
+end
