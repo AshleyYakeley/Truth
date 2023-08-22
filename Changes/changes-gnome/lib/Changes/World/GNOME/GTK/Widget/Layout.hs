@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Layout
+module Changes.World.GNOME.GTK.Widget.Layout
     ( Orientation(..)
     , LayoutOptions(..)
     , defaultLayoutOptions

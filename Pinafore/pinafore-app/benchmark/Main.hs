@@ -61,7 +61,7 @@ benchScripts =
         , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=pure () in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ pure ()"
         , benchScript
-              "import \"pinafore-gnome\" in with GTK in let const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, layoutGrow ui] in const (pure ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.Element.GTK"
+              "import \"pinafore-gnome\" in with GTK in let const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, layoutGrow ui] in const (pure ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.Widget.GTK"
         , benchScript "let const = fn a, b => a; let rec r = 3::r end in const (pure ()) r"
         , benchScript
               "let cpass = fn x => pure (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"

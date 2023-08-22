@@ -5,11 +5,11 @@ with GTK end;
 
 emptywindow :: Action Unit;
 emptywindow =  do
-    open.Window (300,400) {"Empty"} blank.Element;
+    open.Window (300,400) {"Empty"} blank.Widget;
     pure ();
     end;
 
 newpoint :: Action Unit;
 newpoint = do s <- newMem.FiniteSetModel; newEntity s; pure (); end;
 
-in open.Window (300,400) {"Test"} $ button.Element {"Button"} {newpoint >> emptywindow};
+in open.Window (300,400) {"Test"} $ button.Widget {"Button"} {newpoint >> emptywindow};

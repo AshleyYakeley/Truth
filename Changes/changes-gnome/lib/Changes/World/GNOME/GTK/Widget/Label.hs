@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Label
+module Changes.World.GNOME.GTK.Widget.Label
     ( createLabel
     ) where
 

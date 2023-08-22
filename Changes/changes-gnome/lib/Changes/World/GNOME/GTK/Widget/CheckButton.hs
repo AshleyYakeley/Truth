@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.CheckButton
+module Changes.World.GNOME.GTK.Widget.CheckButton
     ( createCheckButton
     , createMaybeCheckButton
     ) where

@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Button
+module Changes.World.GNOME.GTK.Widget.Button
     ( createButton
     ) where
 

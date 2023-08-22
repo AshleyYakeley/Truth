@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.ListBox
+module Changes.World.GNOME.GTK.Widget.ListBox
     ( createListBox
     ) where
 
@@ -34,12 +34,12 @@ createListBox ::
     => (Model update -> GView 'Unlocked Widget)
     -> Model (OrderedListUpdate update)
     -> GView 'Unlocked Widget
-createListBox mkElement model = do
+createListBox mkWidget model = do
     (listBox, widget) <-
         gvRunLocked $ gvNewWidget ListBox [#selectionMode := SelectionModeSingle, #activateOnSingleClick := True]
     let
-        insertElement :: SequencePoint -> GView 'Unlocked (GViewState 'Unlocked)
-        insertElement i = do
+        insertWidget :: SequencePoint -> GView 'Unlocked (GViewState 'Unlocked)
+        insertWidget i = do
             ((), vs) <-
                 gvGetState $ do
                     imodel <-
@@ -47,14 +47,14 @@ createListBox mkElement model = do
                         viewFloatMapModel
                             (changeLensToFloating (mustExistOneChangeLens "GTK list box") . orderedListItemLens i)
                             model
-                    iwidget <- mkElement imodel
+                    iwidget <- mkWidget imodel
                     gvRunLocked $ #insert listBox iwidget (fromIntegral i)
                     return ()
             return vs
         initVS :: GView 'Unlocked (ListViewState, ())
         initVS = do
             n <- gvLiftView $ viewRunResource model $ \am -> aModelRead am ListReadLength
-            vss <- for [0 .. pred n] insertElement
+            vss <- for [0 .. pred n] insertWidget
             return (MkListViewState vss, ())
         recvVS :: () -> [OrderedListUpdate update] -> StateT ListViewState (GView 'Unlocked) ()
         recvVS () updates =
@@ -80,7 +80,7 @@ createListBox mkElement model = do
                     vs <- removeListViewState i
                     lift $ do gvCloseState vs
                 OrderedListUpdateInsert i _ -> do
-                    vs <- lift $ insertElement i
+                    vs <- lift $ insertWidget i
                     insertListViewState i vs
                 OrderedListUpdateClear -> do
                     lift $

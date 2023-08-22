@@ -5,8 +5,8 @@ import "pinafore-gnome"
 import "pinafore-media"
 with Cairo
 :doc paintAlpha.Drawing
-:doc Element.GTK
-:doc textArea.Element.GTK
+:doc Widget.GTK
+:doc textArea.Widget.GTK
 :doc notfound
 let aa = 8
 :doc aa

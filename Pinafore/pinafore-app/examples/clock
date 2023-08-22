@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 import "pinafore-media", "pinafore-gnome" in
-with GTK., Element.GTK., Cairo., Drawing.Cairo., Colour., Number. in
+with GTK., Widget.GTK., Cairo., Drawing.Cairo., Colour., Number. in
 let
 
     scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a =

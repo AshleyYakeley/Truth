@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Calendar
+module Changes.World.GNOME.GTK.Widget.Calendar
     ( createCalendar
     ) where
 

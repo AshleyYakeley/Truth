@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Maybe
+module Changes.World.GNOME.GTK.Widget.Maybe
     ( createOneWhole
     , createOneWholeSel
     ) where

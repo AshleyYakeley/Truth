@@ -1,8 +1,8 @@
-module Pinafore.Language.Library.GTK.Element
-    ( elementStuff
+module Pinafore.Language.Library.GTK.Widget
+    ( widgetStuff
     , actionRef
-    , ElementContext(..)
-    , LangElement(..)
+    , WidgetContext(..)
+    , LangWidget(..)
     ) where
 
 import Changes.Core
@@ -13,21 +13,21 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Element.Context
+import Pinafore.Language.Library.GTK.Widget.Context
 import Pinafore.Language.Library.Media
 import Shapes
 
--- LangLayoutElement
-data LangLayoutElement =
-    MkLangLayoutElement LayoutOptions
-                        LangElement
+-- LangLayoutWidget
+data LangLayoutWidget =
+    MkLangLayoutWidget LayoutOptions
+                       LangWidget
 
-layoutElementGroundType :: QGroundType '[] LangLayoutElement
-layoutElementGroundType =
-    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangLayoutElement)|]) "Layout.Element.GTK."
+layoutWidgetGroundType :: QGroundType '[] LangLayoutWidget
+layoutWidgetGroundType =
+    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangLayoutWidget)|]) "Layout.Widget.GTK."
 
-instance HasQGroundType '[] LangLayoutElement where
-    qGroundType = layoutElementGroundType
+instance HasQGroundType '[] LangLayoutWidget where
+    qGroundType = layoutWidgetGroundType
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
@@ -38,9 +38,9 @@ uiListTable ::
     -> LangListModel '( BottomType, EnA)
     -> (A -> Action TopType)
     -> Maybe (LangWholeModel '( A, EnA))
-    -> LangElement
+    -> LangWidget
 uiListTable cols lref onDoubleClick mSelectionLangRef =
-    MkLangElement $ \MkElementContext {..} -> do
+    MkLangWidget $ \MkWidgetContext {..} -> do
         esrc <- gvNewEditSource
         let
             mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
@@ -55,7 +55,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 gvRunUnlocked $
                 gvLiftView $ do
                     a <- readSub osub
-                    viewRunAction ecUnlift $ void $ onDoubleClick a
+                    viewRunAction wcUnlift $ void $ onDoubleClick a
             getColumn ::
                    (LangWholeModel '( BottomType, Text), A -> LangWholeModel '( BottomType, Text))
                 -> KeyColumn (ROWUpdate EnA)
@@ -101,19 +101,19 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
             in gvBindModel selectionModel (Just esrc) finit mempty recv
         return widget
 
-uiList :: (ImmutableWholeModel A -> LangElement) -> LangListModel '( BottomType, A) -> LangElement
-uiList mkElement listModel =
-    MkLangElement $ \ec ->
-        createListBox (\model -> unLangElement (mkElement $ functionImmutableModel $ MkWModel model) ec) $
+uiList :: (ImmutableWholeModel A -> LangWidget) -> LangListModel '( BottomType, A) -> LangWidget
+uiList mkWidget listModel =
+    MkLangWidget $ \ec ->
+        createListBox (\model -> unLangWidget (mkWidget $ functionImmutableModel $ MkWModel model) ec) $
         unWModel $ langListModelToOrdered listModel
 
 type PickerType = Know EnA
 
 type PickerPairType = (PickerType, ComboBoxCell)
 
-uiPick :: ImmutableWholeModel (Vector (EnA, Text)) -> LangWholeModel '( A, EnA) -> LangElement
+uiPick :: ImmutableWholeModel (Vector (EnA, Text)) -> LangWholeModel '( A, EnA) -> LangWidget
 uiPick itemsRef ref =
-    MkLangElement $ \_ -> do
+    MkLangWidget $ \_ -> do
         let
             mapItem :: (EnA, Text) -> PickerPairType
             mapItem (ea, t) = (Known ea, plainComboBoxCell t)
@@ -140,171 +140,171 @@ actionRef unlift raction =
         (fmap (\action -> gvRunUnlocked $ gvLiftView $ viewRunAction unlift $ action >> return ()) . knowToMaybe) $
     immutableModelToReadOnlyModel raction
 
-uiButton :: ImmutableWholeModel Text -> ImmutableWholeModel (Action TopType) -> LangElement
+uiButton :: ImmutableWholeModel Text -> ImmutableWholeModel (Action TopType) -> LangWidget
 uiButton text raction =
-    MkLangElement $ \MkElementContext {..} ->
+    MkLangWidget $ \MkWidgetContext {..} ->
         createButton
             (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text)
-            (unWModel $ actionRef ecUnlift raction)
+            (unWModel $ actionRef wcUnlift raction)
 
-uiLabel :: ImmutableWholeModel Text -> LangElement
+uiLabel :: ImmutableWholeModel Text -> LangWidget
 uiLabel text =
-    MkLangElement $ \_ ->
+    MkLangWidget $ \_ ->
         createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text
 
-uiDynamic :: ImmutableWholeModel LangElement -> LangElement
+uiDynamic :: ImmutableWholeModel LangWidget -> LangWidget
 uiDynamic uiref =
-    MkLangElement $ \ec -> let
-        getSpec :: Know LangElement -> GView 'Unlocked Widget
+    MkLangWidget $ \ec -> let
+        getSpec :: Know LangWidget -> GView 'Unlocked Widget
         getSpec Unknown = createBlank
-        getSpec (Known (MkLangElement pui)) = pui ec
+        getSpec (Known (MkLangWidget pui)) = pui ec
         in createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableModelToReadOnlyModel uiref
 
-uiScrolled :: LangElement -> LangElement
-uiScrolled (MkLangElement lui) =
-    MkLangElement $ \ec -> do
+uiScrolled :: LangWidget -> LangWidget
+uiScrolled (MkLangWidget lui) =
+    MkLangWidget $ \ec -> do
         w <- lui ec
         createScrolled w
 
-uiUnitCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know ())) -> LangElement
+uiUnitCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know ())) -> LangWidget
 uiUnitCheckBox name val =
-    MkLangElement $ \_ ->
+    MkLangWidget $ \_ ->
         createCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
         unWModel $ eaMap (toChangeLens knowBool) val
 
-uiCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know Bool)) -> LangElement
+uiCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know Bool)) -> LangWidget
 uiCheckBox name val =
-    MkLangElement $ \_ ->
+    MkLangWidget $ \_ ->
         createMaybeCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
         unWModel $ eaMap (toChangeLens knowMaybe) val
 
-uiTextEntry :: WModel (WholeUpdate (Know Text)) -> LangElement
-uiTextEntry val = MkLangElement $ \_ -> createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
+uiTextEntry :: WModel (WholeUpdate (Know Text)) -> LangWidget
+uiTextEntry val = MkLangWidget $ \_ -> createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
 
-uiLayout :: Orientation -> [LangLayoutElement] -> LangElement
+uiLayout :: Orientation -> [LangLayoutWidget] -> LangWidget
 uiLayout orientation mitems =
-    MkLangElement $ \ec -> do
+    MkLangWidget $ \ec -> do
         items <-
-            for mitems $ \(MkLangLayoutElement lopts (MkLangElement lui)) -> do
+            for mitems $ \(MkLangLayoutWidget lopts (MkLangWidget lui)) -> do
                 ui <- lui ec
                 return (lopts, ui)
         createLayout orientation items
 
-layoutGrow :: LangLayoutElement -> LangLayoutElement
-layoutGrow (MkLangLayoutElement lopts ui) = MkLangLayoutElement (lopts {loGrow = True}) ui
+layoutGrow :: LangLayoutWidget -> LangLayoutWidget
+layoutGrow (MkLangLayoutWidget lopts ui) = MkLangLayoutWidget (lopts {loGrow = True}) ui
 
-uiNotebook :: LangWholeModel '( Int, TopType) -> [(LangElement, LangElement)] -> LangElement
+uiNotebook :: LangWholeModel '( Int, TopType) -> [(LangWidget, LangWidget)] -> LangWidget
 uiNotebook selref mitems =
-    MkLangElement $ \ec -> do
+    MkLangWidget $ \ec -> do
         items <-
-            for mitems $ \(MkLangElement mt, MkLangElement mb) -> do
+            for mitems $ \(MkLangWidget mt, MkLangWidget mb) -> do
                 t <- mt ec
                 b <- mb ec
                 return (t, b)
         createNotebook (langWholeModelSelectNotify noEditSource selref) items
 
-uiExec :: Action LangElement -> LangElement
+uiExec :: Action LangWidget -> LangWidget
 uiExec pui =
-    MkLangElement $ \ec -> do
+    MkLangWidget $ \ec -> do
         kui <- gvLiftView $ unliftAction pui
         case kui of
-            Known (MkLangElement ui) -> ui ec
+            Known (MkLangWidget ui) -> ui ec
             Unknown -> createBlank
 
-uiStyleSheet :: ImmutableWholeModel Text -> LangElement -> LangElement
-uiStyleSheet cssmodel (MkLangElement mw) =
-    MkLangElement $ \ec -> do
+uiStyleSheet :: ImmutableWholeModel Text -> LangWidget -> LangWidget
+uiStyleSheet cssmodel (MkLangWidget mw) =
+    MkLangWidget $ \ec -> do
         widget <- mw ec
         bindCSS True maxBound (unWModel $ immutableWholeModelValue mempty cssmodel) widget
         return widget
 
-uiName :: Text -> LangElement -> LangElement
-uiName name (MkLangElement mw) =
-    MkLangElement $ \ec -> do
+uiName :: Text -> LangWidget -> LangWidget
+uiName name (MkLangWidget mw) =
+    MkLangWidget $ \ec -> do
         widget <- mw ec
         gvRunLocked $ setCSSName name widget
         return widget
 
-uiStyleClass :: Text -> LangElement -> LangElement
-uiStyleClass sclass (MkLangElement mw) =
-    MkLangElement $ \ec -> do
+uiStyleClass :: Text -> LangWidget -> LangWidget
+uiStyleClass sclass (MkLangWidget mw) =
+    MkLangWidget $ \ec -> do
         widget <- mw ec
         gvRunLocked $ setCSSClass sclass widget
         return widget
 
-uiTextArea :: LangTextModel -> LangElement
+uiTextArea :: LangTextModel -> LangWidget
 uiTextArea (MkLangTextModel model) =
-    MkLangElement $ \ec ->
+    MkLangWidget $ \ec ->
         createTextArea (unWModel model) $
         contramap (\tsel -> fmap (TextSelectionModel . MkLangTextModel) $ viewFloatMap tsel model) $
-        viewLiftSelectNotify $ ecSelectNotify ec
+        viewLiftSelectNotify $ wcSelectNotify ec
 
-uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
+uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangWidget
 uiCalendar day =
-    MkLangElement $ \_ -> createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
+    MkLangWidget $ \_ -> createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
-uiWithContext :: (LangContext -> LangElement) -> LangElement
+uiWithContext :: (LangContext -> LangWidget) -> LangWidget
 uiWithContext call =
-    MkLangElement $ \ec -> do
+    MkLangWidget $ \ec -> do
         gtkc <- gvGetContext
-        unLangElement (call $ MkLangContext gtkc $ ecOtherContext ec) ec
+        unLangWidget (call $ MkLangContext gtkc $ wcOtherContext ec) ec
 
-uiNotifySelection :: (Action LangTextModel -> Action ()) -> LangElement -> LangElement
-uiNotifySelection notify (MkLangElement e) = let
+uiNotifySelection :: (Action LangTextModel -> Action ()) -> LangWidget -> LangWidget
+uiNotifySelection notify (MkLangWidget e) = let
     sel :: SelectNotify SelectionModel
     sel =
         MkSelectNotify $ \vms ->
             runAction $ notify $ actionLiftViewKnow $ fmap (fmap (\(TextSelectionModel x) -> x) . maybeToKnow) vms
-    in MkLangElement $ \ec -> e (ec {ecSelectNotify = ecSelectNotify ec <> sel})
+    in MkLangWidget $ \ec -> e (ec {wcSelectNotify = wcSelectNotify ec <> sel})
 
-uiOwned :: LangElement -> LangElement
-uiOwned (MkLangElement mw) =
-    MkLangElement $ \ec ->
+uiOwned :: LangWidget -> LangWidget
+uiOwned (MkLangWidget mw) =
+    MkLangWidget $ \ec ->
         gvLiftViewWithUnlift $ \unliftView ->
-            liftIOWithUnlift $ \unliftIO -> unliftIO $ unliftView $ mw ec {ecUnlift = unliftIO}
+            liftIOWithUnlift $ \unliftIO -> unliftIO $ unliftView $ mw ec {wcUnlift = unliftIO}
 
-langImage :: ImmutableWholeModel LangImage -> LangElement
+langImage :: ImmutableWholeModel LangImage -> LangWidget
 langImage ref =
-    MkLangElement $ \_ ->
+    MkLangWidget $ \_ ->
         createImage $
         unWModel $
         eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableModelToReadOnlyModel ref
 
-elementStuff :: BindDocStuff ()
-elementStuff =
+widgetStuff :: BindDocStuff ()
+widgetStuff =
     headingBDS
-        "Element"
+        "Widget"
         ""
         [ typeBDS
-              "Element"
-              "A user interface element is something that goes inside a window."
-              (MkSomeGroundType elementGroundType)
+              "Widget"
+              "A user interface widget is something that goes inside a window."
+              (MkSomeGroundType widgetGroundType)
               []
         , namespaceBDS
-              "Element"
-              [ typeBDS "Layout" "An Element in the context of a layout." (MkSomeGroundType layoutElementGroundType) []
-              , hasSubtypeRelationBDS @LangElement @LangLayoutElement Verify "" $
-                functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
-              , valBDS "exec" "Element that runs an Action first." uiExec
-              , valBDS "withContext" "Element that requires a Context." uiWithContext
+              "Widget"
+              [ typeBDS "Layout" "A widget in the context of a layout." (MkSomeGroundType layoutWidgetGroundType) []
+              , hasSubtypeRelationBDS @LangWidget @LangLayoutWidget Verify "" $
+                functionToShim "layout widget" $ MkLangLayoutWidget defaultLayoutOptions
+              , valBDS "exec" "A widget that runs an Action first." uiExec
+              , valBDS "withContext" "A widget that requires a Context." uiWithContext
               , valBDS "notifySelection" "Notify whenever the selection changes." uiNotifySelection
-              , valBDS "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
-              , valBDS "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
-              , valBDS "image" "Blank element" langImage
+              , valBDS "owned" "Run actions caused by this widget in the window's lifecycle." uiOwned
+              , valBDS "blank" "Blank widget" $ MkLangWidget $ \_ -> createBlank
+              , valBDS "image" "A widget for an image" langImage
               , valBDS "unitCheckBox" "(TBD)" uiUnitCheckBox
               , valBDS "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
               , valBDS
                     "textEntry"
-                    "Text entry, unknown reference will be interpreted as empty text, but the element will not delete the reference."
+                    "Text entry, unknown reference will be interpreted as empty text, but the widget will not delete the reference."
                     uiTextEntry
               , valBDS
                     "textArea"
-                    "Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference." $
+                    "Text area, unknown reference will be interpreted as empty text, but the widget will not delete the reference." $
                 uiTextArea
               , valBDS "label" "Label." uiLabel
-              , valBDS "horizontal" "Elements laid out horizontally." $ uiLayout OrientationHorizontal
-              , valBDS "vertical" "Elements laid out vertically." $ uiLayout OrientationVertical
-              , valBDS "layoutGrow" "Allow the element to expand into remaining space within the layout." layoutGrow
+              , valBDS "horizontal" "Widgets laid out horizontally." $ uiLayout OrientationHorizontal
+              , valBDS "vertical" "Widgets laid out vertically." $ uiLayout OrientationVertical
+              , valBDS "layoutGrow" "Allow the widget to expand into remaining space within the layout." layoutGrow
               , valBDS
                     "notebook"
                     "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
@@ -316,25 +316,25 @@ elementStuff =
                     "A button with this text that does this action. Button will be disabled if the action reference is unknown."
                     uiButton
               , valBDS "pick" "A drop-down menu." uiPick
-              , valBDS "list" "A dynamic list of elements." uiList
+              , valBDS "list" "A dynamic list of widgets." uiList
               , valBDS
                     "listTable"
                     "A list table. First arg is columns (name, property), second is list-reference of items, third is the action for item activation, fourth is an optional reference for the selected row."
                     uiListTable
               , valBDS "calendar" "A calendar." uiCalendar
               , valBDS "scrolled" "A scrollable container." uiScrolled
-              , valBDS "dynamic" "An element that can be updated to different UIs." uiDynamic
+              , valBDS "dynamic" "A widget that can be updated to different UIs." uiDynamic
               , valBDS
                     "name"
-                    "An element with name set. You can use something like `#text` to refer to it in the CSS style-sheet."
+                    "A widget with name set. You can use something like `#text` to refer to it in the CSS style-sheet."
                     uiName
               , valBDS
                     "styleClass"
-                    "An element with CSS class set. You can use something like `.text` to refer to all elements in this class in the CSS style-sheet."
+                    "A widget with CSS class set. You can use something like `.text` to refer to all widgets in this class in the CSS style-sheet."
                     uiStyleClass
               , valBDS
                     "styleSheet"
-                    "An element with a CSS style-sheet (applied to the whole tree of elements). \
+                    "A widget with a CSS style-sheet (applied to the whole tree of widgets). \
                         \See the GTK+ CSS [overview](https://developer.gnome.org/gtk3/stable/chap-css-overview.html) and [properties](https://developer.gnome.org/gtk3/stable/chap-css-properties.html) for how this works."
                     uiStyleSheet
               ]

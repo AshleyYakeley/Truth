@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Option
+module Changes.World.GNOME.GTK.Widget.Option
     ( ComboBoxCell(..)
     , plainComboBoxCell
     , createComboBox
@@ -6,7 +6,7 @@ module Changes.World.GNOME.GTK.Element.Option
 
 import Changes.Core
 import Changes.World.GNOME.GI
-import Changes.World.GNOME.GTK.Element.TextStyle
+import Changes.World.GNOME.GTK.Widget.TextStyle
 import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import Shapes

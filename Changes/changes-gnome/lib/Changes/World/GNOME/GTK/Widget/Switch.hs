@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Switch
+module Changes.World.GNOME.GTK.Widget.Switch
     ( createDynamic
     ) where
 

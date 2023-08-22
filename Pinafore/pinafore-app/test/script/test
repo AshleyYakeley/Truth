@@ -8,13 +8,13 @@ run $ fn gtk =>
 let
 
 ### Useful
-ui_page = fn n, ui => (label.Element n,ui);
-ui_labelled = fn n, ui => horizontal.Element [label.Element n, layoutGrow.Element  ui];
+ui_page = fn n, ui => (label.Widget n,ui);
+ui_labelled = fn n, ui => horizontal.Widget [label.Widget n, layoutGrow.Widget  ui];
 
-std_window: WholeModel +Text -> Element -> Action Window
+std_window: WholeModel +Text -> Widget -> Action Window
 = fn title, contents => mfix.Action $ fn window => let
-    mbar: Element
-    = menuBar.Element
+    mbar: Widget
+    = menuBar.Widget
         [
             submenu.MenuEntry "File"
             [
@@ -28,7 +28,7 @@ std_window: WholeModel +Text -> Element -> Action Window
                 action.MenuEntry "Redo" (Just "Ctrl+Y") {queueRedo.UndoHandler uh}
             ]
         ]
-    in open.Window gtk (400,600) title $ vertical.Element [mbar, layoutGrow.Element $ scrolled.Element contents];
+    in open.Window gtk (400,600) title $ vertical.Widget [mbar, layoutGrow.Widget $ scrolled.Widget contents];
 
 ### People
 
@@ -69,54 +69,54 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22" stor
 
 # GTK
 let rec
-ui_people : FiniteSetModel Person -> Element
-= fn pp => exec.Element $ do
+ui_people : FiniteSetModel Person -> Widget
+= fn pp => exec.Widget $ do
     selectedperson <- newMem.WholeModel;
     pplist <- getList.FiniteSetModel empty.Order pp;
-    pure $ vertical.Element
+    pure $ vertical.Widget
     [
-        button.Element {"New Person"} {do p <- new.OpenEntity @Person; pp += p; window_person p end},
-        button.Element {"View Person"} {get selectedperson >>= window_person},
-        button.Element {"Remove Person"} {get selectedperson >>= fn p => pp -= p},
-        layoutGrow.Element $ listTable.Element [({"Name"},fn p => name !$ {p})] pplist window_person (Just selectedperson)
+        button.Widget {"New Person"} {do p <- new.OpenEntity @Person; pp += p; window_person p end},
+        button.Widget {"View Person"} {get selectedperson >>= window_person},
+        button.Widget {"Remove Person"} {get selectedperson >>= fn p => pp -= p},
+        layoutGrow.Widget $ listTable.Widget [({"Name"},fn p => name !$ {p})] pplist window_person (Just selectedperson)
     ];
     end;
 
 peopleByName : WholeModel +(List (Person *: Text))
 = toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name alphabetical) $ (id.Property **.Property name) !$$ people;
 
-ui_person : WholeModel Person -> Element
-= fn p => vertical.Element
+ui_person : WholeModel Person -> Widget
+= fn p => vertical.Widget
 [
-    ui_labelled {"Name: "} $ textEntry.Element $ name !$ p,
-    layoutGrow.Element $ notebook.Element unknown
+    ui_labelled {"Name: "} $ textEntry.Widget $ name !$ p,
+    layoutGrow.Widget $ notebook.Widget unknown
     [
-        ui_page {"Social"} $ vertical.Element
+        ui_page {"Social"} $ vertical.Widget
         [
-            ui_labelled {"Email: "} $ textEntry.Element $ email !$ p,
-            ui_labelled {"Phone: "} $ textEntry.Element $ phone !$ p
+            ui_labelled {"Email: "} $ textEntry.Widget $ email !$ p,
+            ui_labelled {"Phone: "} $ textEntry.Widget $ phone !$ p
         ],
-        ui_page {"Home"} $ let homep = home !$ p in vertical.Element
+        ui_page {"Home"} $ let homep = home !$ p in vertical.Widget
         [
-            ui_labelled {"Address: "} $ textArea.Element (fromWhole.TextModel $ address !$ homep),
-            ui_labelled {"City: "} $ textEntry.Element $ city !$ homep,
-            ui_labelled {"Postcode/ZIP: "} $ textEntry.Element $ postcode !$ homep,
-            ui_labelled {"State/Province: "} $ textEntry.Element $ province !$ homep,
-            ui_labelled {"Country: "} $ textEntry.Element $ country !$ homep,
-            ui_labelled {"Phone: "} $ textEntry.Element $ locphone !$ homep
+            ui_labelled {"Address: "} $ textArea.Widget (fromWhole.TextModel $ address !$ homep),
+            ui_labelled {"City: "} $ textEntry.Widget $ city !$ homep,
+            ui_labelled {"Postcode/ZIP: "} $ textEntry.Widget $ postcode !$ homep,
+            ui_labelled {"State/Province: "} $ textEntry.Widget $ province !$ homep,
+            ui_labelled {"Country: "} $ textEntry.Widget $ country !$ homep,
+            ui_labelled {"Phone: "} $ textEntry.Widget $ locphone !$ homep
         ],
-        ui_page {"Work"} $ vertical.Element
+        ui_page {"Work"} $ vertical.Widget
         [
-            ui_labelled {"Employer: "} $ textEntry.Element $ (name ..Property employer) !$ p
+            ui_labelled {"Employer: "} $ textEntry.Widget $ (name ..Property employer) !$ p
         ],
-        ui_page {"Family"} $ vertical.Element
+        ui_page {"Family"} $ vertical.Widget
         [
-            ui_labelled {"Birth: "} $ textEntry.Element $ birthdate !$ p,
-            ui_labelled {"Death: "} $ textEntry.Element $ deathdate !$ p,
-            checkBox.Element {"Married"} $ married !$ p,
-            ui_labelled {"Mother: "} $ pick.Element peopleByName $ mother !$ p,
-            ui_labelled {"Father: "} $ pick.Element peopleByName $ father !$ p,
-            layoutGrow.Element $ ui_people (children p)
+            ui_labelled {"Birth: "} $ textEntry.Widget $ birthdate !$ p,
+            ui_labelled {"Death: "} $ textEntry.Widget $ deathdate !$ p,
+            checkBox.Widget {"Married"} $ married !$ p,
+            ui_labelled {"Mother: "} $ pick.Widget peopleByName $ mother !$ p,
+            ui_labelled {"Father: "} $ pick.Widget peopleByName $ father !$ p,
+            layoutGrow.Widget $ ui_people (children p)
         ]
     ]
 ];
@@ -136,11 +136,11 @@ window_calc : Action Window
     pvalue = property @P @Number !"pvalue" store;
     aval = pvalue !$ {point.OpenEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
     bval = pvalue !$ {point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
-    in std_window {"Calc"} $ vertical.Element
+    in std_window {"Calc"} $ vertical.Widget
     [
-        #textEntry.Element aval,
-        #textEntry.Element bval,
-        #label.Element $ aval / bval
+        #textEntry.Widget aval,
+        #textEntry.Widget bval,
+        #label.Widget $ aval / bval
     ];
 
 ### Switching Value
@@ -153,11 +153,11 @@ window_switch : Action Window
     sw_pick = pbool !$ {point.OpenEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
     sw_val1 = ptext !$ {point.OpenEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
     sw_val2 = ptext !$ {point.OpenEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
-    in std_window {"Switch"} $ vertical.Element
+    in std_window {"Switch"} $ vertical.Widget
     [
-        #textEntry.Element sw_pick),
-        checkBox.Element {"pick"} sw_pick,
-        layoutGrow.Element $ dynamic.Element {if %sw_pick then textArea.Element (fromWhole.TextModel sw_val1) else textArea.Element (fromWhole.TextModel sw_val2)}
+        #textEntry.Widget sw_pick),
+        checkBox.Widget {"pick"} sw_pick,
+        layoutGrow.Widget $ dynamic.Widget {if %sw_pick then textArea.Widget (fromWhole.TextModel sw_val1) else textArea.Widget (fromWhole.TextModel sw_val2)}
     ];
 
 ### Imported Files
@@ -166,25 +166,25 @@ window_files : Action Window
 = let
     #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
     #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-    window_file = fn f => std_window {"File"} $ vertical.Element
+    window_file = fn f => std_window {"File"} $ vertical.Widget
     [
-        #textEntry.Element $ caption f
+        #textEntry.Widget $ caption f
     ];
-    in std_window {"Files"} $ vertical.Element
+    in std_window {"Files"} $ vertical.Widget
     [
-        #button.Element "Import" {file_import Files $ fn f => std_window $ window_file f},
-        #layoutGrow.Element $ listTable.Element [column "Caption" caption, column "Size" file_size] window_file Files
+        #button.Widget "Import" {file_import Files $ fn f => std_window $ window_file f},
+        #layoutGrow.Widget $ listTable.Widget [column "Caption" caption, column "Size" file_size] window_file Files
     ];
 
 ### Constant Edit
 
 window_constant : Action Window
-= std_window {"Constant"} $ vertical.Element
+= std_window {"Constant"} $ vertical.Widget
 [
-    checkBox.Element {"off"} {False},
-    checkBox.Element {"on"} {True},
-    textEntry.Element {"constant"},
-    layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ {"constant"})
+    checkBox.Widget {"off"} {False},
+    checkBox.Widget {"on"} {True},
+    textEntry.Widget {"constant"},
+    layoutGrow.Widget $ textArea.Widget (fromWhole.TextModel $ {"constant"})
 ];
 
 ### CSS
@@ -194,13 +194,13 @@ window_css: Action Window
     cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
     sometext <- newMem.WholeModel;
     sometext := "whatever";
-    std_window {"CSS"} $ styleSheet.Element (ignoreUpdateUIExceptions.GTK.Debug. cssref) $ name.Element "root" $ vertical.Element
+    std_window {"CSS"} $ styleSheet.Widget (ignoreUpdateUIExceptions.GTK.Debug. cssref) $ name.Widget "root" $ vertical.Widget
         [
-            styleClass.Element "x" $ name.Element "A" $ checkBox.Element {"Box"} {True},
-            styleClass.Element "x" $ name.Element "B" $ button.Element {"Button"} {do pure () end},
-            styleClass.Element "x" $ name.Element "C" $ textEntry.Element sometext,
-            layoutGrow.Element $ styleClass.Element "y" $ name.Element "D" $ textArea.Element cssref,
-            styleClass.Element "y" $ name.Element "E" $ label.Element {"Some Text"}
+            styleClass.Widget "x" $ name.Widget "A" $ checkBox.Widget {"Box"} {True},
+            styleClass.Widget "x" $ name.Widget "B" $ button.Widget {"Button"} {do pure () end},
+            styleClass.Widget "x" $ name.Widget "C" $ textEntry.Widget sometext,
+            layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textArea.Widget cssref,
+            styleClass.Widget "y" $ name.Widget "E" $ label.Widget {"Some Text"}
         ];
     end;
 
@@ -210,7 +210,7 @@ window_drawing: WholeModel +Time -> Action Window
     with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number in
     do
         tzref <- newTimeZoneModel.LocalTime now;
-        std_window {"Drawing"} $ draw.Element {fn (w,h) => let
+        std_window {"Drawing"} $ draw.Widget {fn (w,h) => let
             size = min w h;
             in fromTime.LocalTime %tzref %now >- match
                 DateAndTime _ (HourMinuteSecond _ _ s) =>
@@ -229,7 +229,7 @@ window_drawing: WholeModel +Time -> Action Window
 window_list: Action Window
 = do
     peopleList <- getList.FiniteSetModel (on.ModelOrder name alphabetical) people;
-    std_window {"List"} $ list.Element ui_person peopleList;
+    std_window {"List"} $ list.Widget ui_person peopleList;
     end;
 
 ### Text Selection
@@ -245,18 +245,18 @@ window_textselection: Action Window
     let
         notify: Action TextModel -> Action Unit
         = fn atref => sel := atref;
-    in std_window {"Text Selection"} $ styleSheet.Element {"* {padding: 2pt;}"} $ vertical.Element
+    in std_window {"Text Selection"} $ styleSheet.Widget {"* {padding: 2pt;}"} $ vertical.Widget
     [
-        notifySelection.Element notify $ textArea.Element tref1,
-        notifySelection.Element notify $ textArea.Element tref2,
-        notifySelection.Element notify $ textArea.Element tref3,
-        dynamic.Element {exec.Element $ map.Action (fn tref => textArea.Element (fromWhole.TextModel tref)) %sel}
+        notifySelection.Widget notify $ textArea.Widget tref1,
+        notifySelection.Widget notify $ textArea.Widget tref2,
+        notifySelection.Widget notify $ textArea.Widget tref3,
+        dynamic.Widget {exec.Widget $ map.Action (fn tref => textArea.Widget (fromWhole.TextModel tref)) %sel}
     ];
     end;
 
 ### Cairo Image
 window_cairoimage: Action Window
-= with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number, Element in
+= with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number, Widget in
     let
     dimensions: Integer *: Integer
     = (400,400);
@@ -318,26 +318,26 @@ window_start : Action Window
         localNow = {fromTime.LocalTime %timeZone %now};
         today = {%localNow >- match DateAndTime day _ => day end};
         in do
-        std_window {"Pinafore"} $ vertical.Element
+        std_window {"Pinafore"} $ vertical.Widget
         [
-            label.Element {"UTC time: " <>.Text show %now},
-            label.Element {"UTC date: " <>.Text show %utcDate},
-            label.Element {"Local time: " <>.Text show %localNow},
-            label.Element {"Local date: " <>.Text show %today},
-            label.Element {"Time zone offset minutes: " <>.Text show %timeZone},
-            button.Element {"Calculated Form"} {window_calc},
-            button.Element {"Switch"} {window_switch},
-            button.Element {"Files"} {window_files},
-            button.Element {"Constant"} {window_constant},
-            button.Element {"CSS"} {window_css},
-            button.Element {"Drawing"} {window_drawing now},
-            button.Element {"List"} {window_list},
-            button.Element {"Text Selection"} {window_textselection},
-            button.Element {"Disabled"} unknown,
-            button.Element {"Unowned self"} {window_start},
-            owned.Element $ button.Element {"Owned Self"} {window_start},
-            button.Element {"Cairo Image"} {window_cairoimage},
-            layoutGrow.Element $ blank.Element
+            label.Widget {"UTC time: " <>.Text show %now},
+            label.Widget {"UTC date: " <>.Text show %utcDate},
+            label.Widget {"Local time: " <>.Text show %localNow},
+            label.Widget {"Local date: " <>.Text show %today},
+            label.Widget {"Time zone offset minutes: " <>.Text show %timeZone},
+            button.Widget {"Calculated Form"} {window_calc},
+            button.Widget {"Switch"} {window_switch},
+            button.Widget {"Files"} {window_files},
+            button.Widget {"Constant"} {window_constant},
+            button.Widget {"CSS"} {window_css},
+            button.Widget {"Drawing"} {window_drawing now},
+            button.Widget {"List"} {window_list},
+            button.Widget {"Text Selection"} {window_textselection},
+            button.Widget {"Disabled"} unknown,
+            button.Widget {"Unowned self"} {window_start},
+            owned.Widget $ button.Widget {"Owned Self"} {window_start},
+            button.Widget {"Cairo Image"} {window_cairoimage},
+            layoutGrow.Widget $ blank.Widget
         ];
         end;
     end;

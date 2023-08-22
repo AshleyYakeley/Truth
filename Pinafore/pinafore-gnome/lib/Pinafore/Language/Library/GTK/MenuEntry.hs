@@ -11,7 +11,7 @@ import Changes.World.GNOME.GTK
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.API
-import Pinafore.Language.Library.GTK.Element
+import Pinafore.Language.Library.GTK.Widget
 import Shapes
 
 -- LangMenuEntry
@@ -50,10 +50,9 @@ menuSubmenu :: Text -> [LangMenuEntry] -> LangMenuEntry
 menuSubmenu name entries =
     MkLangMenuEntry $ \unlift -> SubMenuEntry name $ fmap (\(MkLangMenuEntry entry) -> entry unlift) entries
 
-uiMenuBar :: LangMenuBar -> LangElement
+uiMenuBar :: LangMenuBar -> LangWidget
 uiMenuBar lmb =
-    MkLangElement $ \MkElementContext {..} ->
-        createMenuBar ecAccelGroup $ fmap (\(MkLangMenuEntry me) -> me ecUnlift) lmb
+    MkLangWidget $ \MkWidgetContext {..} -> createMenuBar wcAccelGroup $ fmap (\(MkLangMenuEntry me) -> me wcUnlift) lmb
 
 menuEntryStuff :: BindDocStuff ()
 menuEntryStuff =
@@ -67,5 +66,5 @@ menuEntryStuff =
               , valBDS "submenu" "Submenu menu item." menuSubmenu
               , valBDS "action" "Action menu item. Item will be disabled if the action reference is unknown." menuAction
               ]
-        , namespaceBDS "Element" [valBDS "menuBar" "Menu bar element" uiMenuBar]
+        , namespaceBDS "Widget" [valBDS "menuBar" "Menu bar widget" uiMenuBar]
         ]

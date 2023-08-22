@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Blank
+module Changes.World.GNOME.GTK.Widget.Blank
     ( createBlank
     ) where
 

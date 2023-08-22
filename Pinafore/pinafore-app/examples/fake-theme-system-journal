@@ -15,13 +15,13 @@ let
     property @Integer @Text !"FTSJ.yearTheme" store;
 
     frontCoverPane: Pane =
-    simple.Pane "Cover" $ styleSheet.Element {"* {font-size: 32pt;}"} $ label.Element {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+    simple.Pane "Cover" $ styleSheet.Widget {"* {font-size: 32pt;}"} $ label.Widget {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
     getThemesPane: Action Pane =
-    pure $ simple.Pane "Themes" $ blank.Element;
+    pure $ simple.Pane "Themes" $ blank.Widget;
 
     daysPane: Pane =
-    simple.Pane "Days" $ blank.Element;
+    simple.Pane "Days" $ blank.Widget;
 
     createMainPane: Action Pane =
     do

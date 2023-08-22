@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.DynamicStore
+module Changes.World.GNOME.GTK.Widget.DynamicStore
     ( DynamicStoreEntry
     , dynamicStoreEntryValue
     , DynamicStore

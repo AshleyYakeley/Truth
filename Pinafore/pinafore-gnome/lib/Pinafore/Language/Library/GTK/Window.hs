@@ -13,7 +13,7 @@ import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GIO
 import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Element
+import Pinafore.Language.Library.GTK.Widget
 import Shapes
 
 -- LangWindow
@@ -43,8 +43,8 @@ createLangWindow lc uiw = do
 uiWindowClose :: LangWindow -> View ()
 uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) lwClose
 
-openWindow :: LangContext -> (Int32, Int32) -> ImmutableWholeModel Text -> LangElement -> Action LangWindow
-openWindow lc wsSize title (MkLangElement element) =
+openWindow :: LangContext -> (Int32, Int32) -> ImmutableWholeModel Text -> LangWidget -> Action LangWindow
+openWindow lc wsSize title (MkLangWidget widget) =
     actionLiftView $
     mfix $ \w ->
         liftIOWithUnlift $ \unlift ->
@@ -57,12 +57,12 @@ openWindow lc wsSize title (MkLangElement element) =
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
                 wsContent :: AccelGroup -> GView 'Unlocked Widget
                 wsContent ag =
-                    element
-                        MkElementContext
-                            { ecUnlift = unlift
-                            , ecAccelGroup = ag
-                            , ecSelectNotify = mempty
-                            , ecOtherContext = lcOtherContext lc
+                    widget
+                        MkWidgetContext
+                            { wcUnlift = unlift
+                            , wcAccelGroup = ag
+                            , wcSelectNotify = mempty
+                            , wcOtherContext = lcOtherContext lc
                             }
                 in MkWindowSpec {..}
 
@@ -96,7 +96,7 @@ windowStuff =
         , typeBDS "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
         , namespaceBDS
               "Window"
-              [ valBDS "open" "Open a new window with this size, title and element." openWindow
+              [ valBDS "open" "Open a new window with this size, title and widget." openWindow
               , valBDS "close" "Close a window." uiWindowClose
               , valBDS "show" "Show a window." showWindow
               , valBDS "hide" "Hide a window." hideWindow

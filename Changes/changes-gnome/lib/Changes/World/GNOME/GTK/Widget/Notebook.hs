@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Notebook
+module Changes.World.GNOME.GTK.Widget.Notebook
     ( createNotebook
     ) where
 

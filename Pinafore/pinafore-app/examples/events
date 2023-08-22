@@ -139,35 +139,35 @@ let
     # Overview tab GTK
     overviewPane: Pane =
     simple.Pane "Overview" $
-    exec.Element $
+    exec.Widget $
     do
         now <- newClock $ Seconds 60; # update every minute
         tz <- newTimeZoneModel.LocalTime now;
-        pure $ label.Element $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
+        pure $ label.Widget $ overviewModel {fromTime.LocalTime %tz %now >- match DateAndTime d _ => d end};
     end;
 
     calendarWindow: WholeModel +Event -> Action Window =
     fn evt =>
     mfix $
     fn window =>
-    open.Window gtk (200,200) {"date of " <>.Text %(nameOf !$% evt)} $ vertical.Element
+    open.Window gtk (200,200) {"date of " <>.Text %(nameOf !$% evt)} $ vertical.Widget
     [
-        calendar.Element $ dateModel.EventTime $ timeOf.Event !$% evt,
-        button.Element {"Done: " <>.Text show %(dateModel.EventTime $ timeOf.Event !$% evt)} {close.Window window}
+        calendar.Widget $ dateModel.EventTime $ timeOf.Event !$% evt,
+        button.Widget {"Done: " <>.Text show %(dateModel.EventTime $ timeOf.Event !$% evt)} {close.Window window}
     ];
 
-    eventUI: Event -> Element =
+    eventUI: Event -> Widget =
     fn evt =>
-    vertical.Element
+    vertical.Widget
     [
-        textEntry.Element $ nameOf !$% {evt},
-        horizontal.Element
+        textEntry.Widget $ nameOf !$% {evt},
+        horizontal.Widget
         [
-            button.Element {"cal"} {calendarWindow {evt}},
-            textEntry.Element $ reverse.Prism asText.Date !$ (dateModel.EventTime $ timeOf.Event !$% {evt}),
-            textEntry.Element $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (timeOfDayModel.EventTime $ timeOf.Event !$% {evt})
+            button.Widget {"cal"} {calendarWindow {evt}},
+            textEntry.Widget $ reverse.Prism asText.Date !$ (dateModel.EventTime $ timeOf.Event !$% {evt}),
+            textEntry.Widget $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (timeOfDayModel.EventTime $ timeOf.Event !$% {evt})
         ],
-        layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ notesOf.Event !$% {evt})
+        layoutGrow.Widget $ textArea.Widget (fromWhole.TextModel $ notesOf.Event !$% {evt})
     ];
 
     eventWindow: Event -> Action Window =
@@ -183,8 +183,8 @@ let
         pure item;
     end;
 
-    eventsTableUI: SetElement Event =
-    Mk.SetElement $
+    eventsTableUI: SetWidget Event =
+    Mk.SetWidget $
     fn mSelectionModel =>
     let
         columns: List (WholeModel +Text *: (Event -> WholeModel Text)) =
@@ -196,10 +196,10 @@ let
         in
         [timeColumn,nameColumn];
     in
-    exec.Element $
+    exec.Widget $
     do
         lm <- getList.FiniteSetModel order.Event eventSet.Event;
-        pure $ listTable.Element columns lm eventWindow mSelectionModel;
+        pure $ listTable.Widget columns lm eventWindow mSelectionModel;
     end;
 
     eventsPresentation: SetPresentation Event =
@@ -215,7 +215,7 @@ let
             end
         ];
         itemPane = namedPane eventUI;
-        setElement = eventsTableUI;
+        setWidget = eventsTableUI;
     end;
 
 in

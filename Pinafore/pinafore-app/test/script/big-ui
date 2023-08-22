@@ -7,7 +7,7 @@ let
 opentype T;
 me = point.OpenEntity @T !"T";
 
-func20 = fn n, a, b, c, d, e, f => label.Element.GTK n;
+func20 = fn n, a, b, c, d, e, f => label.Widget.GTK n;
 func19 = fn n, a, b, c, d, e, f => func20 n a b c d e f;
 func18 = fn n, a, b, c, d, e, f => func19 n a b c d e f;
 func17 = fn n, a, b, c, d, e, f => func18 n a b c d e f;

@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.TextStyle where
+module Changes.World.GNOME.GTK.Widget.TextStyle where
 
 import Data.GI.Base.Attributes
 import Data.GI.Gtk

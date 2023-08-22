@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Cairo
+module Changes.World.GNOME.GTK.Widget.Cairo
     ( UIEvents(..)
     , UIDrawing
     , createCairo

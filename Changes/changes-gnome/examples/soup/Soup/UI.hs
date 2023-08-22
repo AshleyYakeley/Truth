@@ -25,31 +25,31 @@ type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 
 soupEditSpec ::
        Model (SoupUpdate PossibleNoteUpdate)
-    -> SelectNotify (Model (UUIDElementUpdate PossibleNoteUpdate))
-    -> (Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Locked ())
+    -> SelectNotify (Model (UUIDWidgetUpdate PossibleNoteUpdate))
+    -> (Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Locked ())
     -> GView 'Unlocked Widget
 soupEditSpec sub selnotify openItem = do
     let
-        nameLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
+        nameLens :: ChangeLens (UUIDWidgetUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
         nameLens =
             convertReadOnlyChangeLens .
             liftFullResultOneChangeLens (tupleChangeLens NoteTitle) . tupleChangeLens SelectSecond
         cmp :: Result Text Text -> Result Text Text -> Ordering
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
-        uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
+        uo :: UpdateOrder (UUIDWidgetUpdate PossibleNoteUpdate)
         uo = mkUpdateOrder cmp nameLens
-    osub :: Model (OrderedListUpdate (UUIDElementUpdate PossibleNoteUpdate)) <-
+    osub :: Model (OrderedListUpdate (UUIDWidgetUpdate PossibleNoteUpdate)) <-
         gvLiftView $ viewFloatMapModel (orderedSetLens uo) sub
     let
-        nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
+        nameColumn :: KeyColumn (UUIDWidgetUpdate PossibleNoteUpdate)
         nameColumn =
             readOnlyKeyColumn (constantModel "Name") $ \cellsub -> let
-                valLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Text, TableCellProps))
+                valLens :: ChangeLens (UUIDWidgetUpdate PossibleNoteUpdate) (ROWUpdate (Text, TableCellProps))
                 valLens =
                     funcChangeLens cellFromResult .
                     liftFullResultOneChangeLens (tupleChangeLens NoteTitle) . tupleChangeLens SelectSecond
                 in return $ mapModel valLens cellsub {-(updateFunctionToChangeLens (funcChangeLens cellFromResult) . valLens)-}
-        pastColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
+        pastColumn :: KeyColumn (UUIDWidgetUpdate PossibleNoteUpdate)
         pastColumn =
             readOnlyKeyColumn (constantModel "Past") $ \cellsub -> let
                 valLens =
@@ -81,7 +81,7 @@ soupWindow newWindow dirpath = do
     smodel <- gvLiftLifecycle $ makeReflectingModel $ soupReference dirpath
     (selModel, selnotify) <- gvLiftLifecycle $ makeSharedModel makePremodelSelectNotify
     let
-        withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Unlocked ()) -> GView 'Unlocked ()
+        withSelection :: (Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Unlocked ()) -> GView 'Unlocked ()
         withSelection call = do
             msel <- gvLiftView $ viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
             case msel of
@@ -100,7 +100,7 @@ soupWindow newWindow dirpath = do
                 key <- liftIO randomIO
                 _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditInsertReplace (key, return blankNote)
                 return ()
-        deleteItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Unlocked ()
+        deleteItem :: Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Unlocked ()
         deleteItem imodel =
             gvLiftView $
             viewRunResourceContext imodel $ \unlift iamodel -> do
@@ -122,7 +122,7 @@ soupWindow newWindow dirpath = do
                   , simpleActionMenuEntry "Delete" Nothing $ gvRunUnlocked $ withSelection deleteItem
                   ]
             ]
-        openItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Unlocked ()
+        openItem :: Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Unlocked ()
         openItem imodel = do
             let
                 rowmodel :: Model PossibleNoteUpdate

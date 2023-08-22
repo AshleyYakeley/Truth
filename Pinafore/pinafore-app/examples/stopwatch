@@ -31,9 +31,9 @@ let
         Running.State t => show $ n -.Time t
     end;
 
-    ui: WholeModel +Time -> WholeModel State -> Element =
+    ui: WholeModel +Time -> WholeModel State -> Widget =
     fn now, r =>
-    button.Element {showStopwatch %r %now} {toggleStopwatch now r};
+    button.Widget {showStopwatch %r %now} {toggleStopwatch now r};
 
 in
 do

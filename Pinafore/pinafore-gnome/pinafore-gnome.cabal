@@ -24,9 +24,9 @@ library
   other-modules:
       Pinafore.Language.Library.GIO
       Pinafore.Language.Library.GTK.Context
-      Pinafore.Language.Library.GTK.Element.Context
-      Pinafore.Language.Library.GTK.Element.Drawing
-      Pinafore.Language.Library.GTK.Element
+      Pinafore.Language.Library.GTK.Widget.Context
+      Pinafore.Language.Library.GTK.Widget.Drawing
+      Pinafore.Language.Library.GTK.Widget
       Pinafore.Language.Library.GTK.MenuEntry
       Pinafore.Language.Library.GTK.Clipboard
       Pinafore.Language.Library.GTK.Window

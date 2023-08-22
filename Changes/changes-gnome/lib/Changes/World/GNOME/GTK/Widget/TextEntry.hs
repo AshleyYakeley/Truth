@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.TextEntry
+module Changes.World.GNOME.GTK.Widget.TextEntry
     ( createTextEntry
     ) where
 

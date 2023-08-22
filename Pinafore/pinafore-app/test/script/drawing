@@ -46,9 +46,9 @@ drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
 
 in run $ fn gtk => do
     ref <- newMem.WholeModel;
-    open.Window gtk (300,400) {"Drawing"} $ vertical.Element
+    open.Window gtk (300,400) {"Drawing"} $ vertical.Widget
     [
-        layoutGrow.Element $ draw.Element $ scaleDrawing $ drawing ref,
-        layoutGrow.Element $ draw.Element $ scaleDrawing $ drawing ref
+        layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref,
+        layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref
     ];
     end

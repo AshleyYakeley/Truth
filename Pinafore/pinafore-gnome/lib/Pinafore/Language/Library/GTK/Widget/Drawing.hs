@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.GTK.Element.Drawing
+module Pinafore.Language.Library.GTK.Widget.Drawing
     ( drawingStuff
     ) where
 
@@ -8,7 +8,7 @@ import GI.Gdk as GI
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Element.Context
+import Pinafore.Language.Library.GTK.Widget.Context
 import Pinafore.Language.Library.Media
 import Shapes
 
@@ -32,9 +32,9 @@ handlerGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFami
 instance HasQGroundType '[] LangHandler where
     qGroundType = handlerGroundType
 
-runLangHandler :: ElementContext -> LangHandler -> UIEvents
+runLangHandler :: WidgetContext -> LangHandler -> UIEvents
 runLangHandler ec (MkLangHandler action) =
-    MkUIEvents $ \eb -> gvRunUnlocked $ gvLiftView $ viewRunActionDefault (ecUnlift ec) True $ action eb
+    MkUIEvents $ \eb -> gvRunUnlocked $ gvLiftView $ viewRunActionDefault (wcUnlift ec) True $ action eb
 
 langOnClick :: Action () -> LangHandler
 langOnClick action =
@@ -49,9 +49,9 @@ langOnClick action =
 handlerFallThrough :: LangHandler -> LangHandler
 handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> False) $ uie evt
 
-uiDraw :: ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangElement
+uiDraw :: ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangWidget
 uiDraw model =
-    MkLangElement $ \ec ->
+    MkLangWidget $ \ec ->
         createCairo $
         unWModel $
         immutableWholeModelValue mempty $
@@ -68,5 +68,5 @@ drawingStuff =
           [ valBDS "onClick" "Action to perform on click" langOnClick
           , valBDS "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
           ]
-        , namespaceBDS "Element" [valBDS "draw" "Drawable element" uiDraw]
+        , namespaceBDS "Widget" [valBDS "draw" "Drawable widget" uiDraw]
         ]

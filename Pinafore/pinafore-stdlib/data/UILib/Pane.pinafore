@@ -3,17 +3,17 @@ with GTK. in
 namespace UILib of
 
     ### Useful GTK stuff
-    namespace Element of
-        #| Create a labelled page for use with `notebook.Element.GTK`.
-        page: WholeModel +Text -> Element -> Element *: Element
-        = fn n, ui => (label.Element n,ui);
+    namespace Widget of
+        #| Create a labelled page for use with `notebook.Widget.GTK`.
+        page: WholeModel +Text -> Widget -> Widget *: Widget
+        = fn n, ui => (label.Widget n,ui);
 
         #| Create a labelled layout row.
-        labelled: WholeModel +Text -> Element -> Element
-        = fn n, ui => horizontal.Element [label.Element n, layoutGrow.Element ui];
+        labelled: WholeModel +Text -> Widget -> Widget
+        = fn n, ui => horizontal.Widget [label.Widget n, layoutGrow.Widget ui];
     end;
 
-    #| A pane is a title, GTK element, and menu.
+    #| A pane is a title, GTK widget, and menu.
     datatype Pane of
         Mk of
             titleModel: WholeModel Text;
@@ -21,7 +21,7 @@ namespace UILib of
             extraMenusModel: WholeModel (List MenuEntry)
             = {[]};
 
-            element: Element;
+            widget: Widget;
         end;
     end;
 
@@ -34,13 +34,13 @@ namespace UILib of
         end;
     end;
 
-    #| An element for a set, for a model of the current selection
-    datatype SetElement {-p,+q} of
-        Mk (Maybe (WholeModel {-q,+p}) -> Element);
+    #| A widget for a set, for a model of the current selection
+    datatype SetWidget {-p,+q} of
+        Mk (Maybe (WholeModel {-q,+p}) -> Widget);
     end;
 
-    namespace SetElement of
-        toElement: SetElement {} -> Element
+    namespace SetWidget of
+        toWidget: SetWidget {} -> Widget
         = fn Mk se => se Nothing;
     end;
 
@@ -60,18 +60,18 @@ namespace UILib of
             #| a `Pane` for a individual item
             itemPane: p -> Pane;
 
-            #| a `SetElement` for the set as a whole.
-            setElement: SetElement {-p,+q};
+            #| a `SetWidget` for the set as a whole.
+            setWidget: SetWidget {-p,+q};
         end;
     end;
 
     namespace Pane of
 
-        #| A pane with this title and element
-        simple: Text -> Element -> Pane
+        #| A pane with this title and widget
+        simple: Text -> Widget -> Pane
         = fn title, e => Mk.Pane of
             titleModel = {title};
-            element = e;
+            widget = e;
             end;
 
         #| Create a notebook from a list of panes
@@ -79,15 +79,15 @@ namespace UILib of
         = fn title, panes => do
             tabModel <- newMem.WholeModel;
             pure $ let
-                makePage: Pane -> Element *: Element
-                = fn Mk.Pane => page.Element titleModel element;
+                makePage: Pane -> Widget *: Widget
+                = fn Mk.Pane => page.Widget titleModel widget;
 
                 with WholeModel. end;
                 itemsModel = for panes $ fn Mk.Pane => extraMenusModel;
                 in Mk.Pane of
                     titleModel = immut title;
                     extraMenusModel = fromMaybe {index.List %itemsModel %tabModel};
-                    element = notebook.Element tabModel $ map.List makePage panes;
+                    widget = notebook.Widget tabModel $ map.List makePage panes;
                 end;
             end;
 
@@ -97,7 +97,7 @@ namespace UILib of
                 Mk.Context.UILib;
 
                 #| A window that comes with some menus.
-                stdWindow: WholeModel +Text -> WholeModel +(List MenuEntry) -> Element -> Action Window;
+                stdWindow: WholeModel +Text -> WholeModel +(List MenuEntry) -> Widget -> Action Window;
 
                 #| Open a `Window` with this `Pane`.
                 paneWindow: Pane -> Action Window;
@@ -112,7 +112,7 @@ namespace UILib of
 
         mkContext: Context.UILib -> Context.Pane
         = fn Mk.Context.UILib => let
-            stdWindow: WholeModel +Text -> WholeModel +(List MenuEntry) -> Element -> Action Window
+            stdWindow: WholeModel +Text -> WholeModel +(List MenuEntry) -> Widget -> Action Window
             = fn title, extraMenus, contents => mfix.Action $ fn window => do
                 textsel <- newMem.WholeModel;
                 let
@@ -150,9 +150,9 @@ namespace UILib of
                         end;
                     end;
 
-                    mbar: Element
-                    = dynamic.Element
-                        {menuBar.Element $ with MenuEntry.GTK. in [
+                    mbar: Widget
+                    = dynamic.Widget
+                        {menuBar.Widget $ with MenuEntry.GTK. in [
                             submenu "File"
                             [
                                 action "Close" (Just "Ctrl+W") {close.Window window},
@@ -169,14 +169,14 @@ namespace UILib of
                                 action "Paste" (Just "Ctrl+V") {selPaste}
                             ]
                         ] <>.List %extraMenus};
-                    in open.Window gtk (600,800) title $ vertical.Element [mbar, layoutGrow.Element $ scrolled.Element $ notifySelection.Element notify contents];
+                    in open.Window gtk (600,800) title $ vertical.Widget [mbar, layoutGrow.Widget $ scrolled.Widget $ notifySelection.Widget notify contents];
                 end;
 
                 paneWindow: Pane -> Action Window
-                = fn Mk.Pane => stdWindow titleModel extraMenusModel element;
+                = fn Mk.Pane => stdWindow titleModel extraMenusModel widget;
 
-                presentWithElement: SetPresentation item -> SetElement item -> Action Pane
-                = fn Mk.SetPresentation, Mk.SetElement se => do
+                presentWithWidget: SetPresentation item -> SetWidget item -> Action Pane
+                = fn Mk.SetPresentation, Mk.SetWidget se => do
                     selectionModel <- newMem.WholeModel;
                     pure $ let
                         viewItem: Action Unit
@@ -210,28 +210,28 @@ namespace UILib of
                             ];
                         in Mk.Pane of
                             titleModel = {setName};
-                            element = se $ Just selectionModel;
+                            widget = se $ Just selectionModel;
                             extraMenusModel = {extraMenus};
                         end;
                     end;
 
                 presentSet: SetPresentation item -> Action Pane
-                = fn tp@Mk.SetPresentation => presentWithElement tp setElement;
+                = fn tp@Mk.SetPresentation => presentWithWidget tp setWidget;
 
                 presentSetWithItem: SetPresentation item -> Action Pane
                 = fn tp@Mk.SetPresentation =>
-                    presentWithElement tp $ Mk.SetElement $ fn mSelectionModel => let
-                        sidebarUI: Element
-                        = setElement >- fn Mk.SetElement se => se mSelectionModel;
+                    presentWithWidget tp $ Mk.SetWidget $ fn mSelectionModel => let
+                        sidebarUI: Widget
+                        = setWidget >- fn Mk.SetWidget se => se mSelectionModel;
 
-                        selectedUI: Element
+                        selectedUI: Widget
                         = mSelectionModel >-
                             match
-                                Nothing => blank.Element;
-                                Just selectionModel => dynamic.Element {itemPane %selectionModel >- fn Mk.Pane => element};
+                                Nothing => blank.Widget;
+                                Just selectionModel => dynamic.Widget {itemPane %selectionModel >- fn Mk.Pane => widget};
                             end;
 
-                        in horizontal.Element [sidebarUI, layoutGrow.Element selectedUI];
+                        in horizontal.Widget [sidebarUI, layoutGrow.Widget selectedUI];
 
             in Mk.Context.Pane;
 

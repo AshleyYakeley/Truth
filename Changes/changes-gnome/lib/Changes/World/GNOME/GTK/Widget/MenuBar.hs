@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.MenuBar
+module Changes.World.GNOME.GTK.Widget.MenuBar
     ( KeyboardModifier(..)
     , KeyboardKey
     , MenuAccelerator(..)

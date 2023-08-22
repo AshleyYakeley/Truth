@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Icon
+module Changes.World.GNOME.GTK.Widget.Icon
     ( IconName
     , IconSize
     , createIcon

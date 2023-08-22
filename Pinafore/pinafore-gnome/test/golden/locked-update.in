@@ -14,7 +14,7 @@ messageBracket: Text -> Action a -> Action a
 
 in messageBracket "main" $
 do
-    w <- open.Window gtk (600,800) {"Window"} blank.Element;
+    w <- open.Window gtk (600,800) {"Window"} blank.Widget;
     async.Task $
     messageBracket "thread" $
     do

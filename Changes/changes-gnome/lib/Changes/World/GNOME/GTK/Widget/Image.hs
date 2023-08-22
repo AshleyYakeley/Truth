@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Image
+module Changes.World.GNOME.GTK.Widget.Image
     ( createImage
     ) where
 

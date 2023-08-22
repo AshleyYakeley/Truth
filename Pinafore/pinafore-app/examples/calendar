@@ -7,17 +7,17 @@ let
     dateNotesOf: Property Date Text =
     property @Date @Text !"example.calendar:dateNotes" store;
 
-    ui: WholeModel Date -> Element =
+    ui: WholeModel Date -> Widget =
     fn r =>
-    vertical.Element
+    vertical.Widget
     [
-    horizontal.Element
+    horizontal.Widget
         [
-        button.Element {"<"} {do d <- get r; r := pred.Date d; end},
-        layoutGrow.Element $ label.Element {encode (unixAsText.Date "%A, %B %e, %Y") %r},
-        button.Element {">"} {do d <- get r; r := succ.Date d; end}
+        button.Widget {"<"} {do d <- get r; r := pred.Date d; end},
+        layoutGrow.Widget $ label.Widget {encode (unixAsText.Date "%A, %B %e, %Y") %r},
+        button.Widget {">"} {do d <- get r; r := succ.Date d; end}
         ],
-    layoutGrow.Element $ textArea.Element (fromWhole.TextModel $ dateNotesOf !$ r)
+    layoutGrow.Widget $ textArea.Widget (fromWhole.TextModel $ dateNotesOf !$ r)
     ];
 
 in

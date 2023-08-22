@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Table
+module Changes.World.GNOME.GTK.Widget.Table
     ( TableCellProps(..)
     , plainTableCellProps
     , KeyColumn(..)
@@ -8,8 +8,8 @@ module Changes.World.GNOME.GTK.Element.Table
 
 import Changes.Core
 import Changes.World.GNOME.GI
-import Changes.World.GNOME.GTK.Element.DynamicStore
-import Changes.World.GNOME.GTK.Element.TextStyle
+import Changes.World.GNOME.GTK.Widget.DynamicStore
+import Changes.World.GNOME.GTK.Widget.TextStyle
 import Data.GI.Base.Attributes hiding (get)
 import Data.GI.Gtk hiding (get)
 import Shapes

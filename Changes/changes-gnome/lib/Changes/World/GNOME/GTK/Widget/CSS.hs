@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.CSS
+module Changes.World.GNOME.GTK.Widget.CSS
     ( setCSSName
     , setCSSClass
     , bindCSS

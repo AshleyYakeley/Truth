@@ -1,7 +1,7 @@
 module Soup.Edit
     ( UUID
     , SoupUpdate
-    , UUIDElementUpdate
+    , UUIDWidgetUpdate
     , ReferenceSoupUpdate
     , directorySoup
     , liftSoupLens
@@ -13,9 +13,9 @@ import Data.UUID
 import Shapes
 import System.FilePath
 
-type UUIDElementUpdate update = PairUpdate (ConstWholeUpdate UUID) update
+type UUIDWidgetUpdate update = PairUpdate (ConstWholeUpdate UUID) update
 
-type SoupUpdate update = KeyUpdate [(UUID, UpdateSubject update)] (UUIDElementUpdate update)
+type SoupUpdate update = KeyUpdate [(UUID, UpdateSubject update)] (UUIDWidgetUpdate update)
 
 liftSoupLens ::
        forall updateA updateB.

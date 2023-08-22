@@ -31,14 +31,14 @@ namespace UILib of
                 Mk.Context.Pane;
                 Mk.Props;
 
-                #| A pane for an element, where the title is the name of the element.
-                namedPane: (a -> Element) -> (a & Named) -> Pane;
+                #| A pane for a widget, where the title is the name of the widget.
+                namedPane: (a -> Widget) -> (a & Named) -> Pane;
 
-                #| A "name" column for `listTable.Element`.
+                #| A "name" column for `listTable.Widget`.
                 nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
 
-                #| A `SetElement` for this set that's a list of elements by name.
-                namedTable: FiniteSetModel {a,+Named} -> (a -> Element) -> SetElement {a,-Named};
+                #| A `SetWidget` for this set that's a list of widgets by name.
+                namedTable: FiniteSetModel {a,+Named} -> (a -> Widget) -> SetWidget {a,-Named};
             end;
         end;
 
@@ -48,17 +48,17 @@ namespace UILib of
 
             Mk.Props = mkProps store;
 
-            namedPane = fn itemElement, e => let
+            namedPane = fn itemWidget, e => let
                 titleModel= nameOf !$% {e};
                 extraMenusModel = {[]};
-                element = itemElement e;
+                widget = itemWidget e;
                 in Mk.Pane;
 
             nameColumn = ({"Name"},fn p => nameOf !$ {p});
 
-            namedTable = fn sm, itemElement => Mk.SetElement $ fn msel => exec.Element $ do
+            namedTable = fn sm, itemWidget => Mk.SetWidget $ fn msel => exec.Widget $ do
                 lm <- getList.FiniteSetModel nameOrder sm;
-                pure.Action $ listTable.Element [nameColumn] lm (fn e => paneWindow $ namedPane itemElement e) msel;
+                pure.Action $ listTable.Widget [nameColumn] lm (fn e => paneWindow $ namedPane itemWidget e) msel;
                 end;
 
         in Mk.Context.Named;

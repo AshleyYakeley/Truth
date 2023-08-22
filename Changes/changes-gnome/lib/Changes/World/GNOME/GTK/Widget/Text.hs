@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Text
+module Changes.World.GNOME.GTK.Widget.Text
     ( TextSelection
     , createTextBuffer
     , createTextArea

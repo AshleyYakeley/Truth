@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GTK.Element.Scrolled
+module Changes.World.GNOME.GTK.Widget.Scrolled
     ( createScrolled
     ) where
 

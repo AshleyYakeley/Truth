@@ -24,16 +24,16 @@ let
         countryOf = property @Location @Text !"location.address.country" store;
     end;
 
-    locationUI: WholeModel +Location -> Element =
+    locationUI: WholeModel +Location -> Widget =
     fn loc =>
-    vertical.Element
+    vertical.Widget
     [
-        layoutGrow.Element $ labelled.Element {"Address: "} $ textArea.Element (fromWhole.TextModel $ addressOf.Location !$% loc),
-        labelled.Element {"City: "} $ textEntry.Element $ cityOf.Location !$% loc,
-        labelled.Element {"Postcode/ZIP: "} $ textEntry.Element $ postcodeOf.Location !$% loc,
-        labelled.Element {"State/Province: "} $ textEntry.Element $ provinceOf.Location !$% loc,
-        labelled.Element {"Country: "} $ textEntry.Element $ countryOf.Location !$% loc,
-        labelled.Element {"Phone: "} $ textEntry.Element $ phoneOf.Location !$% loc
+        layoutGrow.Widget $ labelled.Widget {"Address: "} $ textArea.Widget (fromWhole.TextModel $ addressOf.Location !$% loc),
+        labelled.Widget {"City: "} $ textEntry.Widget $ cityOf.Location !$% loc,
+        labelled.Widget {"Postcode/ZIP: "} $ textEntry.Widget $ postcodeOf.Location !$% loc,
+        labelled.Widget {"State/Province: "} $ textEntry.Widget $ provinceOf.Location !$% loc,
+        labelled.Widget {"Country: "} $ textEntry.Widget $ countryOf.Location !$% loc,
+        labelled.Widget {"Phone: "} $ textEntry.Widget $ phoneOf.Location !$% loc
     ];
 
     let rec
@@ -77,59 +77,59 @@ let
 
     let rec
 
-        contactPages: WholeModel +Contact -> List (Element *: Element) =
+        contactPages: WholeModel +Contact -> List (Widget *: Widget) =
         fn er =>
         [
-            page.Element {"Social"} $ vertical.Element
+            page.Widget {"Social"} $ vertical.Widget
             [
-                labelled.Element {"Email: "} $ textEntry.Element $ emailOf !$% er,
-                labelled.Element {"Phone: "} $ textEntry.Element $ phoneOf !$% er
+                labelled.Widget {"Email: "} $ textEntry.Widget $ emailOf !$% er,
+                labelled.Widget {"Phone: "} $ textEntry.Widget $ phoneOf !$% er
             ],
-            page.Element {"Home"} $ locationUI $ homeOf !$% er
+            page.Widget {"Home"} $ locationUI $ homeOf !$% er
         ];
 
-        personPages: WholeModel +Person -> List (Element *: Element) =
+        personPages: WholeModel +Person -> List (Widget *: Widget) =
         fn p =>
         [
-            page.Element {"Work"} $ vertical.Element
+            page.Widget {"Work"} $ vertical.Widget
             [
-                labelled.Element {"Employer: "} $ pick.Element (byName contactSet) $ employerOf !$% p
+                labelled.Widget {"Employer: "} $ pick.Widget (byName contactSet) $ employerOf !$% p
             ],
-            page.Element {"Family"} $ familyUI p
+            page.Widget {"Family"} $ familyUI p
         ];
 
-        familyUI: WholeModel +Person -> Element =
+        familyUI: WholeModel +Person -> Widget =
         fn p =>
-        vertical.Element
+        vertical.Widget
         [
-            labelled.Element {"Birth: "} $ textEntry.Element $ reverse.Prism asText.Date !$ birthDateOf !$% p,
-            labelled.Element {"Death: "} $ textEntry.Element $ reverse.Prism asText.Date !$ deathDateOf !$% p,
-            checkBox.Element {"Married"} $ marriedOf !$% p,
-            labelled.Element {"Mother: "} $ pick.Element (byName peopleSet) $ motherOf !$% p,
-            labelled.Element {"Father: "} $ pick.Element (byName peopleSet) $ fatherOf !$% p,
-            label.Element {"Children:"},
-            layoutGrow.Element $ toElement.SetElement $ namedTable (childrenSet p) contactUI
+            labelled.Widget {"Birth: "} $ textEntry.Widget $ reverse.Prism asText.Date !$ birthDateOf !$% p,
+            labelled.Widget {"Death: "} $ textEntry.Widget $ reverse.Prism asText.Date !$ deathDateOf !$% p,
+            checkBox.Widget {"Married"} $ marriedOf !$% p,
+            labelled.Widget {"Mother: "} $ pick.Widget (byName peopleSet) $ motherOf !$% p,
+            labelled.Widget {"Father: "} $ pick.Widget (byName peopleSet) $ fatherOf !$% p,
+            label.Widget {"Children:"},
+            layoutGrow.Widget $ toWidget.SetWidget $ namedTable (childrenSet p) contactUI
         ];
 
-        organisationPages: WholeModel +Organisation -> List (Element *: Element) =
+        organisationPages: WholeModel +Organisation -> List (Widget *: Widget) =
         fn subj =>
         [
-            page.Element {"Employees"} $ toElement.SetElement $ namedTable (employeeSet subj) contactUI
+            page.Widget {"Employees"} $ toWidget.SetWidget $ namedTable (employeeSet subj) contactUI
         ];
 
-        contactUI: Contact -> Element =
+        contactUI: Contact -> Widget =
         fn c =>
         let
-            pages: List (Element *: Element) =
+            pages: List (Widget *: Widget) =
             contactPages {c} <>.List (c >- match
                 p:? Person => personPages {p};
                 o:? Organisation => organisationPages {o};
                 end);
         in
-        vertical.Element
+        vertical.Widget
         [
-            labelled.Element {"Name: "} $ textEntry.Element $ nameOf !$% {c},
-            layoutGrow.Element $ notebook.Element unknown pages
+            labelled.Widget {"Name: "} $ textEntry.Widget $ nameOf !$% {c},
+            layoutGrow.Widget $ notebook.Widget unknown pages
         ];
     end;
 
@@ -143,7 +143,7 @@ let
             Mk.NewItem of name = "New Organisation"; newItem = new.DynamicEntity @Organisation end
         ];
         itemPane = namedPane contactUI;
-        setElement = namedTable contactSet contactUI;
+        setWidget = namedTable contactSet contactUI;
     end;
 
     contactsWindow: Action Window =

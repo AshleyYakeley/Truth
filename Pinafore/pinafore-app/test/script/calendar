@@ -7,4 +7,4 @@ rdate = pdate !$ {()};
 in
 import "pinafore-gnome" in
 with GTK. in
-run $ fn gtk => open.Window gtk (300,400) {"Test Calendar"} $ vertical.Element [calendar.Element rdate,layoutGrow.Element $ label.Element {show %rdate}]
+run $ fn gtk => open.Window gtk (300,400) {"Test Calendar"} $ vertical.Widget [calendar.Widget rdate,layoutGrow.Widget $ label.Widget {show %rdate}]

@@ -4,15 +4,15 @@ with GTK. in
 run.GTK $ fn gtk =>
 let
 
-    eui: Element
-    = exec.Element $ do
+    eui: Widget
+    = exec.Widget $ do
         sleep $ Seconds 0.2;
-        pure.Action blank.Element;
+        pure.Action blank.Widget;
         end;
 
 in do
     model <- newMem.WholeModel;
-    w <- open.Window gtk (600,800) {"Window"} $ dynamic.Element $ coMap.WholeModel (fn _ => eui) model;
+    w <- open.Window gtk (600,800) {"Window"} $ dynamic.Widget $ coMap.WholeModel (fn _ => eui) model;
     model := ();
     sleep $ Seconds 0.1;
     close.Window w;
