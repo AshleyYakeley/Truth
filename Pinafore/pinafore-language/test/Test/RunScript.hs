@@ -59,11 +59,11 @@ tImport :: [Text] -> ScriptTestTree -> ScriptTestTree
 tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap (pack . show) tt)
 
 tOpenDefaultStore :: ScriptTestTree -> ScriptTestTree
-tOpenDefaultStore = tPrefix "openDefaultStore.Env >>=.Action fn store =>"
+tOpenDefaultStore = tPrefix "openDefault.Store >>=.Action fn store =>"
 
 testOpenUHStore :: ScriptTestTree -> ScriptTestTree
 testOpenUHStore =
-    tPrefix "openDefaultStore.Env >>=.Action fn dstore =>" .
+    tPrefix "openDefault.Store >>=.Action fn dstore =>" .
     tPrefix "new.UndoHandler >>=.Action fn undoHandler =>" .
     tPrefix "handleStore.UndoHandler undoHandler dstore >>=.Action fn store =>"
 

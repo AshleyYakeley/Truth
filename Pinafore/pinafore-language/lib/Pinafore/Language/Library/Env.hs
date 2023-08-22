@@ -2,8 +2,6 @@ module Pinafore.Language.Library.Env
     ( envLibSection
     ) where
 
-import Changes.Core
-import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
@@ -23,11 +21,6 @@ langStdOut = MkLangSink $ hoistSink liftIO $ iiStdOut ?qcontext
 langStdErr :: (?qcontext :: InvocationInfo) => LangSink Text
 langStdErr = MkLangSink $ hoistSink liftIO $ iiStdErr ?qcontext
 
-openDefaultStore :: (?qcontext :: InvocationInfo) => View QStore
-openDefaultStore = do
-    model <- iiDefaultStorageModel ?qcontext
-    liftIO $ mkQStore model
-
 envLibSection :: BindDocStuff InvocationInfo
 envLibSection =
     headingBDS "Env" "The environment in which the script was invoked." $
@@ -46,8 +39,4 @@ envLibSection =
         , valBDS "stderr" "Standard error/diagnostics sink." langStdErr
         , valBDS "outputLn" "Output text and a newline to standard output. Same as `writeLn stdout`." $
           langSinkWriteLn langStdOut
-        , valBDS
-              "openDefaultStore"
-              "Open the default `Store`. Will be closed at the end of the lifecycle."
-              openDefaultStore
         ]

@@ -4,7 +4,9 @@ module Pinafore.Language.Library.Storage
     ( storageLibSection
     ) where
 
+import Changes.Core
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
@@ -23,7 +25,12 @@ storeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[] QStore where
     qGroundType = storeGroundType
 
-storageLibSection :: BindDocStuff context
+openDefaultStore :: (?qcontext :: InvocationInfo) => View QStore
+openDefaultStore = do
+    model <- iiDefaultStorageModel ?qcontext
+    liftIO $ mkQStore model
+
+storageLibSection :: BindDocStuff InvocationInfo
 storageLibSection =
     headingBDS "Storage" "" $
     [ typeBDS "Store" "Storage of information." (MkSomeGroundType storeGroundType) []
@@ -63,5 +70,9 @@ storageLibSection =
                                        cfmap1 (shimToFunction prbCo) property
                                anyval = MkSomeOf typef pinaproperty
                                in return anyval
+          , valBDS
+                "openDefault"
+                "Open the default `Store`. Will be closed at the end of the lifecycle."
+                openDefaultStore
           ]
     ]

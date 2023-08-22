@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 import "pinafore-gnome" in
 with GTK. in
-openDefaultStore.Env >>= fn store =>
+openDefault.Store >>= fn store =>
 run.GTK $ fn gtk =>
 let
 

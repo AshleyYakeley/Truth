@@ -5,7 +5,7 @@ let p = point.OpenEntity @P !"p"
 let q = point.OpenEntity @Q !"q"
 with Attribute
 with Store
-store <- openDefaultStore.Env
+store <- openDefault.Store
 let pp = property @P @P !"pp" store
 let qp = property @Q @P !"qp" store
 :t pp

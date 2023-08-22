@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-openDefaultStore.Env >>= fn store =>
+openDefault.Store >>= fn store =>
 with Store in
 let
 

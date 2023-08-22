@@ -15,7 +15,7 @@ namespace UILib of
         #| Run an action, giving a `Context`.
         run: (Context -> Action a) -> Action a
         = fn call => do
-            dstore <- openDefaultStore.Env;
+            dstore <- openDefault.Store;
             undoHandler <- new.UndoHandler;
             store <- handleStore.UndoHandler undoHandler dstore;
             run.GTK $ fn gtk => call Mk.Context;
