@@ -22,33 +22,31 @@ let
             MkTime t => Mk.Showable $ encode (unixAsText.LocalTime "%F %R") t;
         end;
 
-        getDate: EventTime -> Date =
-        match
-            MkDate d => d;
-            MkTime (DateAndTime d _) => d
-        end;
+        dateOf: Lens EventTime Date =
+        let
+            getDate: EventTime -> Date =
+            match
+                MkDate d => d;
+                MkTime (DateAndTime d _) => d
+            end;
 
-        setDate: Date -> Maybe EventTime -> Maybe EventTime =
-        fn d, et =>
-        Just $ et >-
-        match
-            Just (MkTime (DateAndTime _ t)) => MkTime (DateAndTime d t);
-            _ => MkDate d;
-        end;
-
-        dateModel: WholeModel EventTime -> WholeModel Date =
-        lensMap.WholeModel getDate setDate;
+            setDate: EventTime -> Date -> EventTime =
+            match
+                MkTime (DateAndTime _ t) => fn d => MkTime (DateAndTime d t);
+                _ => MkDate;
+            end;
+        in
+        Mk.Lens getDate setDate;
 
         timeOfDayModel: WholeModel EventTime -> WholeModel TimeOfDay =
-        fn r =>
         let
-            eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay =
+            getTimeOfDay: Maybe EventTime -> Maybe TimeOfDay =
             match
                 Just (MkTime (DateAndTime _ tod)) => Just tod;
                 _ => Nothing;
             end;
 
-            setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime) =
+            setTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime) =
             fn mtod, met =>
             Just $ met >-
             match
@@ -56,11 +54,11 @@ let
                 Just et =>
                     Just $ mtod >-
                     match
-                        Nothing => MkDate $ getDate et;
-                        Just tod => MkTime $ DateAndTime (getDate et) tod;
+                        Nothing => MkDate $ fetch dateOf et;
+                        Just tod => MkTime $ DateAndTime (fetch dateOf et) tod;
                     end;
             end;
-        in maybeLensMap.WholeModel eventTimeTimeOfDay setEventTimeTimeOfDay r;
+        in maybeLensMap.WholeModel getTimeOfDay setTimeOfDay;
 
         # for ordering
         getTime: EventTime -> LocalTime =
@@ -112,7 +110,7 @@ let
 
                 pickCurrent: EventTime *: Text -> Boolean =
                 fn (t,_) =>
-                ge $ calendrical (getDate.EventTime t) today;
+                ge $ calendrical (fetch dateOf.EventTime t) today;
 
                 todayEvent: EventTime *: Text =
                 (MkDate.EventTime today,"Today");
@@ -152,8 +150,8 @@ let
     fn window =>
     open.Window gtk (200,200) {"date of " <>.Text %(nameOf !$% evt)} $ vertical.Widget
     [
-        calendar.Widget $ dateModel.EventTime $ timeOf.Event !$% evt,
-        button.Widget {"Done: " <>.Text show %(dateModel.EventTime $ timeOf.Event !$% evt)} {close.Window window}
+        calendar.Widget $ dateOf.EventTime !$ (timeOf.Event !$% evt),
+        button.Widget {"Done: " <>.Text show %(dateOf.EventTime !$ timeOf.Event !$% evt)} {close.Window window}
     ];
 
     eventUI: Event -> Widget =
@@ -164,7 +162,7 @@ let
         horizontal.Widget
         [
             button.Widget {"cal"} {calendarWindow {evt}},
-            textEntry.Widget $ reverse.Prism asText.Date !$ (dateModel.EventTime $ timeOf.Event !$% {evt}),
+            textEntry.Widget $ reverse.Prism asText.Date !$ (dateOf.EventTime !$ timeOf.Event !$% {evt}),
             textEntry.Widget $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (timeOfDayModel.EventTime $ timeOf.Event !$% {evt})
         ],
         layoutGrow.Widget $ textArea.Widget (fromWhole.TextModel $ notesOf.Event !$% {evt})
