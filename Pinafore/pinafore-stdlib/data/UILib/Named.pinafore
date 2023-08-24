@@ -19,16 +19,21 @@ namespace UILib of
             end;
         end;
 
-        mkProps: Store -> Props
-        = fn store => let
-            nameOf = property @Named @Text !"identify.name" store;
-            nameOrder = on.ModelOrder nameOf alphabetical.Order;
-            byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property nameOf) !$$ model;
-            in Mk.Props;
+        namespace Props of
 
-        datatype Context <: Context.Pane & Props of
+            mk: Store -> Props =
+            fn store =>
+            let
+                nameOf = property @Named @Text !"identify.name" store;
+                nameOrder = on.ModelOrder nameOf alphabetical.Order;
+                byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property nameOf) !$$ model;
+            in Mk;
+
+        end;
+
+        datatype UI <: UI.Pane & Props of
             Mk of
-                Mk.Context.Pane;
+                Mk.UI.Pane;
                 Mk.Props;
 
                 #| A pane for a widget, where the title is the name of the widget.
@@ -42,26 +47,32 @@ namespace UILib of
             end;
         end;
 
-        mkContext: Context.UILib -> Context.Named
-        = fn Mk.Context.UILib => let
-            Mk.Context.Pane = mkContext.Pane Mk.Context.UILib;
+        namespace UI of
 
-            Mk.Props = mkProps store;
+            mk: Context.UILib -> UI.Named =
+            fn context =>
+            let
 
-            namedPane = fn itemWidget, e => let
-                titleModel= nameOf !$% {e};
-                extraMenusModel = {[]};
-                widget = itemWidget e;
-                in Mk.Pane;
+                Mk.Context.UILib = context;
+                Mk.UI.Pane = mk.UI.Pane context;
+                Mk.Props = mk.Props store;
 
-            nameColumn = ({"Name"},fn p => nameOf !$ {p});
+                namedPane = fn itemWidget, e => let
+                    titleModel= nameOf !$% {e};
+                    extraMenusModel = {[]};
+                    widget = itemWidget e;
+                    in Mk.Pane;
 
-            namedTable = fn sm, itemWidget => Mk.SetWidget $ fn msel => exec.Widget $ do
-                lm <- getList.FiniteSetModel nameOrder sm;
-                pure.Action $ listTable.Widget [nameColumn] lm (fn e => paneWindow $ namedPane itemWidget e) msel;
-                end;
+                nameColumn = ({"Name"},fn p => nameOf !$ {p});
 
-        in Mk.Context.Named;
+                namedTable = fn sm, itemWidget => Mk.SetWidget $ fn msel => exec.Widget $ do
+                    lm <- getList.FiniteSetModel nameOrder sm;
+                    pure.Action $ listTable.Widget [nameColumn] lm (fn e => paneWindow $ namedPane itemWidget e) msel;
+                    end;
+
+            in Mk;
+
+        end;
 
     end
 

@@ -4,7 +4,7 @@ with GTK., UILib. in
 run.Context $ fn context =>
 let
 
-    Mk.Context.Named = mkContext.Named context;
+    Mk.UI.Named = mk.UI.Named context;
 
     # something with a lifespan
     opentype Lifespanned;
