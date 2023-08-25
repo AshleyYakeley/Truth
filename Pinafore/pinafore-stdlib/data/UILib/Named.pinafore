@@ -25,7 +25,7 @@ namespace UILib of
             fn store =>
             let
                 nameOf = property @Named @Text !"identify.name" store;
-                nameOrder = on.ModelOrder nameOf alphabetical.Order;
+                nameOrder = on.ModelOrder nameOf order.Text;
                 byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property nameOf) !$$ model;
             in Mk;
 

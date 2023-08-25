@@ -83,7 +83,7 @@ ui_people : FiniteSetModel Person -> Widget
     end;
 
 peopleByName : WholeModel +(List (Person *: Text))
-= toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name alphabetical) $ (id.Property **.Property name) !$$ people;
+= toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (id.Property **.Property name) !$$ people;
 
 ui_person : WholeModel Person -> Widget
 = fn p => vertical.Widget
@@ -228,7 +228,7 @@ window_drawing: WholeModel +Time -> Action Window
 
 window_list: Action Window
 = do
-    peopleList <- getList.FiniteSetModel (on.ModelOrder name alphabetical) people;
+    peopleList <- getList.FiniteSetModel (on.ModelOrder name order.Text) people;
     std_window {"List"} $ list.Widget ui_person peopleList;
     end;
 

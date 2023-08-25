@@ -68,7 +68,7 @@ let
         end;
 
         order: ModelOrder EventTime =
-        map.ModelOrder getTime localChronological;
+        map.ModelOrder getTime order.LocalTime;
 
     end;
 
@@ -110,7 +110,7 @@ let
 
                 pickCurrent: EventTime *: Text -> Boolean =
                 fn (t,_) =>
-                ge $ calendrical (fetch dateOf.EventTime t) today;
+                ge $ order.Date (fetch dateOf.EventTime t) today;
 
                 todayEvent: EventTime *: Text =
                 (MkDate.EventTime today,"Today");

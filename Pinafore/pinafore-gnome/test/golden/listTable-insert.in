@@ -15,7 +15,7 @@ let
 
 in do
     outputLn.Env "Main Start";
-    lm <- getList.FiniteSetModel arbitrary.Order people;
+    lm <- getList.FiniteSetModel order.Entity people;
     w <- open.Window gtk (600,800) {"Test"} $ listTable.Widget [({"Name"},fn p => name !$ {p})] lm (fn _ => pure ()) Nothing;
     async.Task $ do
         outputLn.Env "Thread Start";

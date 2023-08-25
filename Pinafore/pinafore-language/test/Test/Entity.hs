@@ -1714,12 +1714,12 @@ testEntity =
               ]
         , tGroup
               "text-sort"
-              [ testExpectSuccess "testeq {EQ} {alphabetical \"a\" \"a\"}"
-              , testExpectSuccess "testeq {EQ} {alphabetical \"A\" \"A\"}"
-              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"A\"}"
-              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"b\"}"
-              , testExpectSuccess "testeq {LT} {alphabetical \"A\" \"b\"}"
-              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"B\"}"
+              [ testExpectSuccess "testeq {EQ} {order.Text \"a\" \"a\"}"
+              , testExpectSuccess "testeq {EQ} {order.Text \"A\" \"A\"}"
+              , testExpectSuccess "testeq {LT} {order.Text \"a\" \"A\"}"
+              , testExpectSuccess "testeq {LT} {order.Text \"a\" \"b\"}"
+              , testExpectSuccess "testeq {LT} {order.Text \"A\" \"b\"}"
+              , testExpectSuccess "testeq {LT} {order.Text \"a\" \"B\"}"
               ]
         , tGroup
               "applicative-notation"

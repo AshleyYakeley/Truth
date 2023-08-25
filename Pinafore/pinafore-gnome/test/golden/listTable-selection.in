@@ -12,7 +12,7 @@ let
 in do
     outputLn.Env "Start";
     selectionRef <- newMem.WholeModel;
-    lm <- getList.FiniteSetModel arbitrary.Order people;
+    lm <- getList.FiniteSetModel order.Entity people;
     w <- open.Window gtk (600,800) {"Test"} $ listTable.Widget [] lm (fn _ => pure ()) $ Just selectionRef;
 
     people +=.SetModel p;

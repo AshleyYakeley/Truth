@@ -19,4 +19,4 @@ root = point.OpenEntity @Root !"example:root";
 people = property @Person @Root !"example:people" store !@ {root};
 
 in
-get (toList.FiniteSetModel (reverse.ModelOrder alphabetical.Order) (name !$$ people)) >>= fn l => for_ l outputLn.Env
+get (toList.FiniteSetModel (reverse.ModelOrder order.Text) (name !$$ people)) >>= fn l => for_ l outputLn.Env

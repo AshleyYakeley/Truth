@@ -101,18 +101,6 @@ unixFormattingDef lname =
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
 
-lesser :: (A -> A -> Ordering) -> A -> A -> A
-lesser f a b =
-    case f a b of
-        GT -> b
-        _ -> a
-
-greater :: (A -> A -> Ordering) -> A -> A -> A
-greater f a b =
-    case f a b of
-        GT -> a
-        _ -> b
-
 revap :: A -> (A -> B) -> B
 revap x f = f x
 
@@ -122,13 +110,18 @@ append (a :| aa) bb = a :| (aa <> bb)
 mconcat1 :: NonEmpty (NonEmpty A) -> NonEmpty A
 mconcat1 (na :| lna) = append na $ mconcat $ fmap toList lna
 
+orderOn :: (B -> A) -> (A -> A -> Ordering) -> B -> B -> Ordering
+orderOn ba order b1 b2 = order (ba b1) (ba b2)
+
 baseLibSections :: [BindDocStuff context]
 baseLibSections =
     [ headingBDS "Literals & Entities" "" $
       [ typeBDS "Entity" "" (MkSomeGroundType entityGroundType) []
       , namespaceBDS "Entity" $
         fmap addNameInRootBDS (eqEntries @_ @Entity) <>
-        [valBDS "anchor" "The anchor of an entity, as text." entityAnchor]
+        [ valBDS "order" "An arbitrary order on `Entity`." $ compare @Entity
+        , valBDS "anchor" "The anchor of an entity, as text." entityAnchor
+        ]
       , typeBDS "Literal" "" (MkSomeGroundType literalGroundType) []
       , hasSubtypeRelationBDS @Literal @Entity Verify "" $ functionToShim "literalToEntity" literalToEntity
       , headingBDS
@@ -147,7 +140,7 @@ baseLibSections =
             [ typeBDS "Unit" "" (MkSomeGroundType unitGroundType) []
             , literalSubtypeRelationEntry @()
             , showableSubtypeRelationEntry @()
-            , namespaceBDS "Unit" $ monoidEntries @_ @()
+            , namespaceBDS "Unit" $ monoidEntries @_ @() <> eqEntries @_ @()
             ]
       , headingBDS
             "Boolean"
@@ -168,12 +161,12 @@ baseLibSections =
                   ]
             , literalSubtypeRelationEntry @Bool
             , showableSubtypeRelationEntry @Bool
-            , namespaceBDS
-                  "Boolean"
-                  [ addNameInRootBDS $ valBDS "&&" "Boolean AND." (&&)
-                  , addNameInRootBDS $ valBDS "||" "Boolean OR." (||)
-                  , addNameInRootBDS $ valBDS "not" "Boolean NOT." not
-                  ]
+            , namespaceBDS "Boolean" $
+              eqEntries @_ @Bool <>
+              [ addNameInRootBDS $ valBDS "&&" "Boolean AND." (&&)
+              , addNameInRootBDS $ valBDS "||" "Boolean OR." (||)
+              , addNameInRootBDS $ valBDS "not" "Boolean NOT." not
+              ]
             ]
       , headingBDS
             "Ordering"
@@ -200,6 +193,7 @@ baseLibSections =
             , literalSubtypeRelationEntry @Ordering
             , showableSubtypeRelationEntry @Ordering
             , namespaceBDS "Ordering" $
+              ordEntries @_ @Ordering <>
               monoidEntries @_ @Ordering <>
               [ addNameInRootBDS $ valBDS "eq" "Equal." $ (==) EQ
               , addNameInRootBDS $ valBDS "ne" "Not equal." $ (/=) EQ
@@ -208,21 +202,16 @@ baseLibSections =
               , addNameInRootBDS $ valBDS "gt" "Greater than." $ (==) GT
               , addNameInRootBDS $ valBDS "ge" "Greater than or equal to." $ (/=) LT
               ]
-            , namespaceBDS "Order" $
+            ]
+      , headingBDS
+            "Order"
+            ""
+            [ namespaceBDS "Order" $
               monoidEntries @_ @(A -> A -> Ordering) <>
               [ valBDS "reverse" "Reverse an order." $ reverseOrder @A
-              , addNameInRootBDS $ valBDS "lesser" "The lesser of two items." lesser
-              , addNameInRootBDS $ valBDS "greater" "The greater of two items." greater
-              , addNameInRootBDS $
-                valBDS "alphabetical" "Alphabetical first, then lower case before upper, per Unicode normalisation." $
-                Text.Collate.collate Text.Collate.rootCollator
-              , addNameInRootBDS $ valBDS "numerical" "Numerical order." $ compare @Number
-              , addNameInRootBDS $ valBDS "chronological" "Chronological order." $ compare @UTCTime
-              , addNameInRootBDS $ valBDS "durational" "Durational order." $ compare @NominalDiffTime
-              , addNameInRootBDS $ valBDS "calendrical" "Date order." $ compare @Day
-              , addNameInRootBDS $ valBDS "horological" "Time of day order." $ compare @TimeOfDay
-              , addNameInRootBDS $ valBDS "localChronological" "Local time order." $ compare @LocalTime
-              , valBDS "arbitrary" "An arbitrary order on `Entity`." $ compare @Entity
+              , addNameInRootBDS $ valBDS "lesser" "The lesser of two items in this order." $ lesser @A
+              , addNameInRootBDS $ valBDS "greater" "The greater of two items in this order." $ greater @A
+              , addNameInRootBDS $ valBDS "on" "Map an order by a function" orderOn
               ]
             ]
       , headingBDS
@@ -233,6 +222,9 @@ baseLibSections =
             , showableSubtypeRelationEntry @Text
             , namespaceBDS "Text" $
               monoidEntries @_ @Text <>
+              orderEntries
+                  (Text.Collate.collate Text.Collate.rootCollator)
+                  "Order alphabetical first, then lower case before upper, per Unicode normalisation." <>
               [ valBDS "length" "The length of a text." $ olength @Text
               , valBDS
                     "section"
@@ -401,34 +393,33 @@ baseLibSections =
                     ]
               , literalSubtypeRelationEntry @NominalDiffTime
               , showableSubtypeRelationEntry @NominalDiffTime
-              , namespaceBDS
-                    "Duration"
-                  -- plainFormattingDef @NominalDiffTime  "a duration"
-                    [ valBDS "zero" "No duration." $ (0 :: NominalDiffTime)
-                    , valBDS "day" "One day duration." nominalDay
-                    , valBDS "+" "Add durations." $ (+) @NominalDiffTime
-                    , valBDS "-" "Subtract durations." $ (-) @NominalDiffTime
-                    , valBDS "negate" "Negate duration." $ negate @NominalDiffTime
-                    , valBDS "*" "Multiply a duration by a number." $ \(n :: Number) (d :: NominalDiffTime) ->
-                          (realToFrac n) * d
-                    , valBDS "/" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
-                          (realToFrac (a / b) :: Number)
-                    ]
+              , namespaceBDS "Duration" $
+                ordEntries @_ @NominalDiffTime <>
+                [ valBDS "zero" "No duration." $ (0 :: NominalDiffTime)
+                , valBDS "day" "One day duration." nominalDay
+                , valBDS "+" "Add durations." $ (+) @NominalDiffTime
+                , valBDS "-" "Subtract durations." $ (-) @NominalDiffTime
+                , valBDS "negate" "Negate duration." $ negate @NominalDiffTime
+                , valBDS "*" "Multiply a duration by a number." $ \(n :: Number) (d :: NominalDiffTime) ->
+                      (realToFrac n) * d
+                , valBDS "/" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
+                      (realToFrac (a / b) :: Number)
+                ]
               ]
             , headingBDS "Time" "" $
               [ typeBDS "Time" "Absolute time as measured by UTC." (MkSomeGroundType timeGroundType) []
               , literalSubtypeRelationEntry @UTCTime
               , showableSubtypeRelationEntry @UTCTime
-              , namespaceBDS
-                    "Time"
-                    [ plainFormattingDef @UTCTime "a time"
-                    , unixFormattingDef @UTCTime "a time"
-                    , valBDS "+" "Add duration to time." addUTCTime
-                    , valBDS "-" "Difference of times." diffUTCTime
-                    , valBDS "getNow" "Get the current time." $ getCurrentTime
-                    , addNameInRootBDS $
-                      valBDS "newClock" "Make a model of the current time that updates per the given duration." newClock
-                    ]
+              , namespaceBDS "Time" $
+                ordEntries @_ @UTCTime <>
+                [ plainFormattingDef @UTCTime "a time"
+                , unixFormattingDef @UTCTime "a time"
+                , valBDS "+" "Add duration to time." addUTCTime
+                , valBDS "-" "Difference of times." diffUTCTime
+                , valBDS "getNow" "Get the current time." $ getCurrentTime
+                , addNameInRootBDS $
+                  valBDS "newClock" "Make a model of the current time that updates per the given duration." newClock
+                ]
               ]
             , headingBDS "Date" "" $
               [ typeBDS
@@ -448,6 +439,7 @@ baseLibSections =
               , showableSubtypeRelationEntry @Day
               , namespaceBDS "Date" $
                 enumEntries @_ @Day <>
+                ordEntries @_ @Day <>
                 [ plainFormattingDef @Day "a date"
                 , unixFormattingDef @Day "a date"
                 , valBDS "+" "Add count to days to date." addDays
@@ -473,13 +465,13 @@ baseLibSections =
                     ]
               , literalSubtypeRelationEntry @TimeOfDay
               , showableSubtypeRelationEntry @TimeOfDay
-              , namespaceBDS
-                    "TimeOfDay"
-                    [ plainFormattingDef @TimeOfDay "a time of day"
-                    , unixFormattingDef @TimeOfDay "a time of day"
-                    , addNameInRootBDS $ valBDS "midnight" "Midnight." midnight
-                    , addNameInRootBDS $ valBDS "midday" "Midday." midday
-                    ]
+              , namespaceBDS "TimeOfDay" $
+                ordEntries @_ @TimeOfDay <>
+                [ plainFormattingDef @TimeOfDay "a time of day"
+                , unixFormattingDef @TimeOfDay "a time of day"
+                , addNameInRootBDS $ valBDS "midnight" "Midnight." midnight
+                , addNameInRootBDS $ valBDS "midday" "Midday." midday
+                ]
               ]
             , headingBDS "Local Time" "" $
               [ typeBDS
@@ -492,21 +484,21 @@ baseLibSections =
                     ]
               , literalSubtypeRelationEntry @LocalTime
               , showableSubtypeRelationEntry @LocalTime
-              , namespaceBDS
-                    "LocalTime"
-                    [ plainFormattingDef @LocalTime "a local time"
-                    , unixFormattingDef @LocalTime "a local time"
-                    , valBDS "fromTime" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
-                          utcToLocalTime $ minutesToTimeZone i
-                    , valBDS "toTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
-                          localTimeToUTC $ minutesToTimeZone i
-                    , valBDS "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
-                          fmap timeZoneMinutes $ getTimeZone t
-                    , valBDS "getCurrentTimeZone" "Get the current time zone offset in minutes." $
-                      fmap timeZoneMinutes getCurrentTimeZone
-                    , valBDS "getNow" "Get the current local time." getLocalTime
-                    , valBDS "newTimeZoneModel" "The current time zone offset in minutes." newTimeZoneModel
-                    ]
+              , namespaceBDS "LocalTime" $
+                ordEntries @_ @LocalTime <>
+                [ plainFormattingDef @LocalTime "a local time"
+                , unixFormattingDef @LocalTime "a local time"
+                , valBDS "fromTime" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
+                      utcToLocalTime $ minutesToTimeZone i
+                , valBDS "toTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
+                      localTimeToUTC $ minutesToTimeZone i
+                , valBDS "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
+                      fmap timeZoneMinutes $ getTimeZone t
+                , valBDS "getCurrentTimeZone" "Get the current time zone offset in minutes." $
+                  fmap timeZoneMinutes getCurrentTimeZone
+                , valBDS "getNow" "Get the current local time." getLocalTime
+                , valBDS "newTimeZoneModel" "The current time zone offset in minutes." newTimeZoneModel
+                ]
               ]
             ]
       , headingBDS

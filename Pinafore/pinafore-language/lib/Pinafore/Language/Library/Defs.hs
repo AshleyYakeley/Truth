@@ -24,6 +24,9 @@ module Pinafore.Language.Library.Defs
     , pickNamesInRootBDS
     , eqEntries
     , ordEntries
+    , lesser
+    , greater
+    , orderEntries
     , enumEntries
     , functorEntries
     , applicativeEntries
@@ -294,12 +297,41 @@ ordEntries ::
     => [BindDocStuff context]
 ordEntries =
     eqEntries @context @a <>
-    [ valBDS "<" "Strictly less." $ (<) @a
+    [ valBDS "order" "Order" $ compare @a
+    , valBDS "<" "Strictly less." $ (<) @a
     , valBDS "<=" "Less or equal." $ (<=) @a
     , valBDS ">" "Strictly greater." $ (>) @a
     , valBDS ">=" "Greater or equal." $ (>=) @a
     , valBDS "min" "Lesser of two" $ min @a
     , valBDS "max" "Greater of two" $ max @a
+    ]
+
+lesser :: (a -> a -> Ordering) -> a -> a -> a
+lesser f a b =
+    case f a b of
+        GT -> b
+        _ -> a
+
+greater :: (a -> a -> Ordering) -> a -> a -> a
+greater f a b =
+    case f a b of
+        GT -> a
+        _ -> b
+
+orderEntries ::
+       forall context (a :: Type). (Eq a, HasQType 'Positive a, HasQType 'Negative a)
+    => (a -> a -> Ordering)
+    -> RawMarkdown
+    -> [BindDocStuff context]
+orderEntries order doc =
+    eqEntries @context @a <>
+    [ valBDS "order" doc $ order
+    , valBDS "<" "Strictly less." $ \x y -> order x y == LT
+    , valBDS "<=" "Less or equal." $ \x y -> order x y /= GT
+    , valBDS ">" "Strictly greater." $ \x y -> order x y == GT
+    , valBDS ">=" "Greater or equal." $ \x y -> order x y /= LT
+    , valBDS "min" "Lesser of two" $ lesser order
+    , valBDS "max" "Greater of two" $ greater order
     ]
 
 enumEntries ::
