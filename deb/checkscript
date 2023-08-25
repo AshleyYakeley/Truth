@@ -1,7 +1,11 @@
 #!/usr/bin/pinafore
-import "UILib/Named" in # test finding modules
-import "pinafore-gnome" in
-run.GTK $ fn gtk => do
-w <- open.Window.GTK gtk (300,400) {"Test"} $ label.GTK {"Hello"};
-close.Window.GTK w;
+import
+    "UILib/Named", # test finding modules
+    "pinafore-gnome"
+in
+run.GTK $
+fn gtk =>
+do
+    w <- open.Window.GTK gtk (300,400) {"Test"} $ label.Widget.GTK {"Hello"};
+    close.Window.GTK w;
 end
