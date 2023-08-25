@@ -201,11 +201,32 @@ instance Eq subj => MeetSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) whe
 mapMaybeFiniteSetChangeLens ::
        forall a b. (a -> Maybe b) -> (b -> a) -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
 mapMaybeFiniteSetChangeLens amb ba = let
-    mapFiniteSetEdit :: forall p q. (p -> q) -> FiniteSetEdit p -> FiniteSetEdit q
-    mapFiniteSetEdit _ (KeyEditItem _ edit) = never edit
-    mapFiniteSetEdit pq (KeyEditDelete p) = KeyEditDelete $ pq p
-    mapFiniteSetEdit pq (KeyEditInsertReplace p) = KeyEditInsertReplace $ pq p
-    mapFiniteSetEdit _ KeyEditClear = KeyEditClear
+    mapFiniteSetEdit ::
+           forall m. MonadIO m
+        => Readable m (FiniteSetReader a)
+        -> FiniteSetEdit b
+        -> m (Maybe [FiniteSetEdit a])
+    mapFiniteSetEdit _ (KeyEditItem _ edit) = return $ Just [never edit]
+    mapFiniteSetEdit _ (KeyEditDelete b) =
+        return $
+        Just $ let
+            a = ba b
+            in case amb a of
+                   Nothing -> []
+                   Just _ -> [KeyEditDelete a]
+    mapFiniteSetEdit _ (KeyEditInsertReplace b) =
+        return $ do
+            let a = ba b
+            _ <- amb a
+            return [KeyEditInsertReplace a]
+    mapFiniteSetEdit rma KeyEditClear = do
+        aa <- rma KeyReadKeys
+        let
+            mapa :: a -> Maybe (FiniteSetEdit a)
+            mapa a = do
+                _ <- amb a
+                return $ KeyEditDelete a
+        return $ Just $ mapMaybe mapa $ toList aa
     clRead :: ReadFunction (FiniteSetReader a) (FiniteSetReader b)
     clRead mra KeyReadKeys = fmap (mapMaybe amb) $ mra KeyReadKeys
     clRead mra (KeyReadItem b ReadWhole) = fmap (mapMaybe amb) $ mra $ KeyReadItem (ba b) ReadWhole
@@ -226,8 +247,17 @@ mapMaybeFiniteSetChangeLens amb ba = let
         => [FiniteSetEdit b]
         -> Readable m (FiniteSetReader a)
         -> m (Maybe [FiniteSetEdit a])
-    clPutEdits ebs _ = return $ Just $ fmap (mapFiniteSetEdit ba) ebs
+    clPutEdits ebs rma = fmap mconcat $ for ebs $ mapFiniteSetEdit rma
     in MkChangeLens {..}
+
+filterFiniteSetChangeLens :: forall a. (a -> Bool) -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate a)
+filterFiniteSetChangeLens f =
+    mapMaybeFiniteSetChangeLens
+        (\a ->
+             if f a
+                 then Just a
+                 else Nothing)
+        id
 
 bijectionFiniteSetChangeLens :: forall a b. Bijection a b -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
 bijectionFiniteSetChangeLens (MkIsomorphism ab ba) = let

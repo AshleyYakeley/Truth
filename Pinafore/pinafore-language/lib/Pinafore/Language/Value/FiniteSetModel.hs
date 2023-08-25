@@ -41,6 +41,10 @@ langFiniteSetModelValue (MkLangFiniteSetModel tr lv) =
 valueLangFiniteSetModel :: Eq q => WModel (FiniteSetUpdate q) -> LangFiniteSetModel '( q, q)
 valueLangFiniteSetModel lv = MkLangFiniteSetModel identityRange lv
 
+langFiniteSetFilter :: forall ap aq. (aq -> Bool) -> LangFiniteSetModel '( ap, aq) -> LangFiniteSetModel '( ap, aq)
+langFiniteSetFilter f (MkLangFiniteSetModel tr lv) =
+    MkLangFiniteSetModel tr $ eaMap (filterFiniteSetChangeLens $ f . shimToFunction (rangeCo tr)) lv
+
 langFiniteSetMaybeMap ::
        forall ap aq b. (aq -> Maybe b) -> LangFiniteSetModel '( ap, aq) -> LangFiniteSetModel '( MeetType ap b, b)
 langFiniteSetMaybeMap f (MkLangFiniteSetModel (tr :: _ t _) lv) = let
