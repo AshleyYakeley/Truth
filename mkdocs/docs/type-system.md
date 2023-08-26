@@ -1,6 +1,6 @@
 # Type System
 
-The Pinafore type system is based on Stephen Dolan's [Algebraic Subtyping](https://www.cl.cam.ac.uk/~sd601/thesis.pdf), an extension of Hindley-Milner to allow subtyping.
+The Pinafore type system is based on Stephen Dolan's [Algebraic Subtyping](https://www.cs.tufts.edu/~nr/cs257/archive/stephen-dolan/thesis.pdf), an extension of Hindley-Milner to allow subtyping.
 You can see his POPL talk [here](https://www.youtube.com/watch?v=-P1ks4NPIyk).
 Pinafore omits record types.
 
@@ -8,7 +8,7 @@ Familiarity with Hindley-Milner is assumed.
 
 ## Positive and Negative Types
 
-Dolan typing distinguishes *positive* and *negative* types.
+Algebraic subtyping distinguishes *positive* and *negative* types.
 Roughly, a positive type is the type of a value, while a negative type is the type of accepting a value.
 Subtyping relations are of the form `A <: B`, where `A` is a positive type and `B` is a negative type.
 You can read `A <: B` to mean "every A is a B", or that something of type `A` will be accepted as a `B`.
@@ -56,7 +56,7 @@ A value passed to a `P & Q` must be both a `P` and a `Q`.
 
 As in Haskell, the first letter is upper case for type constants, and lower case for type variables.
 
-Type variables play essentially the same role as they do in Hindley-Milner typing, though in the context of Dolan typing they are best understood as connecting (negative) inputs to (positive) outputs.
+Type variables play essentially the same role as they do in Hindley-Milner typing, though in the context of Algebraic subtyping they are best understood as connecting (negative) inputs to (positive) outputs.
 Type variables on only one side can be eliminated.
 
 ## Recursive types

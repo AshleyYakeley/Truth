@@ -24,8 +24,8 @@ Here's an example of a type with two constructors, `Mk1.T` and `Mk2.T`:
 
 ```pinafore
 datatype T of
-    Mk1 (Int -> [Int]);
-    Mk2 Int Text;
+    Mk1 (Integer -> List Integer);
+    Mk2 Integer Text;
 end;
 ```
 ### Record Constructors
@@ -50,38 +50,41 @@ To create a value of the type `T` using its record constructor `Mk.T`, set the m
 
 
 ```pinafore
-t: T = Mk.T of
+t: T =
+Mk.T of
     f = match [] => Nothing; a :: _ => Just a; end;
     g = outputLn.Env.;
     h = (52,1);
-    end;
+end;
 ```
 
 Alternatively, you can omit `of` ... `end` and instead bring values matching its members into scope, like this:
 
 ```pinafore
-t: T = let
+t: T =
+let
     f = match [] => Nothing; a :: _ => Just a; end;
     g = outputLn.Env.;
     h = (52,1);
-    in Mk.T;
+in Mk.T;
 ```
 
 If a member has a default value, then you can omit it:
 
 ```pinafore
-t: T = Mk.T of
+t: T =
+Mk.T of
     f = match [] => Nothing; a :: _ => Just a; end;
     g = outputLn.Env.;
-    end;
+end;
 ```
 
 Values can be retrieved by matching the constructor, like this:
 
 
 ```pinafore
-tg: T -> Text -> Action Unit
-= fn Mk.T => g;
+tg: T -> Text -> Action Unit =
+fn Mk.T => g;
 ```
 
 ### Record Inheritance
@@ -94,7 +97,7 @@ A datatype `T` can inherit from one or more supertypes `S1`, `S2`, etc. provided
 
 This will give `T <: S1`, `T <: S2`, etc.
 However, note that unlike classes in languages such as Java, these conversions are not injective,
-the greatest dynamic supertype of `T` is still `T`, and no downcasting is possible.
+the [greatest dynamic supertype](dynamic-supertypes.md) of `T` is still `T`, and no downcasting is possible.
 
 Here's an example:
 
@@ -346,8 +349,8 @@ datatype storable Patient of
     DeadPatient Person Date Date !"Patient.DeadPatient";
 end;
 
-patientPerson: Patient -> Person
-= match
+patientPerson: Patient -> Person =
+match
     LivingPatient p _ => p;
     DeadPatient p _ _ => p;
 end;
@@ -359,7 +362,7 @@ Constructors can be added or removed from a storable data type without affecting
 Like plain datatypes, storable datatypes permit subtypes in their definitions:
 
 ```pinafore
-rec
+let rec
     datatype storable L +x of
         Nil !"L.Nil";
         subtype datatype storable L1 of
@@ -397,8 +400,8 @@ The [greatest dynamic supertype](dynamic-supertypes.md) of all dynamic entity ty
 So you can use `check`, `coerce`, and pattern-matching to convert between them.
 
 ```pinafore
-describeAnimalType :: Animal -> Text
-= match
+describeAnimalType :: Animal -> Text =
+match
     h:? Human => "Human";
     c:? Cat => "Cat";
     d:? Dog => "Dog";
@@ -441,6 +444,8 @@ If there is a loop of subtype relations, it will simply make those types equival
 
 `-a -> +b`  
 
+As in Haskell, functions are pure.
+
 ## Actions
 
 `Action +a`  
@@ -470,7 +475,7 @@ Models (of the various model types) keep track of updates, and will update user 
 
 A whole model a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
 
-Whole models may be "unknown"
+Whole models may be "unknown", indicating a missing value. Fetching the value with `get` will cause a stop.
 
 ### Set Models
 

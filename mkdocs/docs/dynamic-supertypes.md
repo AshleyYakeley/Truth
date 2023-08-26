@@ -19,8 +19,8 @@ In each case, there is a "check" function that can convert `D(T)` back to `Maybe
 If `pat` is a pattern of type `T`, then `pat:? T` is a pattern of type `D(T)`. Here's an example:
 
 ```pinafore
-showNumberType: Number -> Text
-= match
+showNumberType: Number -> Text =
+match
     i:? Integer => "integer: " <> show i;
     r:? Rational => "rational: " <> show r;
     n => "number: " <> show n;

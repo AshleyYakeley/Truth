@@ -45,12 +45,12 @@ Here's an example:
 ```text
 pinafore> 3 + 4
 7
-pinafore> let p = [5,6,7] ++ [1,1,1]
-pinafore> let f x = x ++ x
+pinafore> let p = [5,6,7] <> [1,1,1]
+pinafore> let f = fn x => x <> x
 pinafore> :type f
-: [a] -> [a]
+: (List1.List a & List a) -> List1.List a
 pinafore> f p
 [5, 6, 7, 1, 1, 1, 5, 6, 7, 1, 1, 1]
 pinafore> :simplify+ (a -> Literal) | ((Text & b) -> a)
-(a & Text) -> Literal | a
+Text -> Literal
 ```

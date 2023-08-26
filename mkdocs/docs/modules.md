@@ -16,15 +16,17 @@ To import the module `my/stuff`, Pinafore will look for a file in these paths in
 3. `/usr/local/share/pinafore/lib/my/stuff.pinafore`
 4. `/usr/share/pinafore/lib/my/stuff.pinafore`
 
-A module file looks something like this (see [syntax](syntax.md)):
+A module file is a list of declarations, though very often it is a single `expose` declaration,
+something like this (see [syntax](syntax.md)):
 
 ```pinafore
-expose sometext, somenumber, X, T, T1, T2 of
-sometext: Text
-= "Hello";
+let
 
-somenumber: Integer
-= 4;
+sometext: Text =
+"Hello";
+
+somenumber: Integer =
+4;
 
 opentype X;
 
@@ -34,8 +36,6 @@ datatype storable T of
 end;
 
 subtype T <: X;
-end
-```
 
-The `expose` statement exposes the given names (values, types, type constructors) that will be available when imported.
-Subtype relations are always exposed.
+in expose sometext, somenumber, X, T, T1, T2
+```
