@@ -32,7 +32,7 @@ newtype RawMarkdown =
     deriving newtype (Eq, Semigroup, Monoid, Show, IsString, ToText)
 
 instance PlainText RawMarkdown where
-    plainText t = asRawMarkdown $ plainText t
+    plainText t = MkRawMarkdown $ toText $ (plainText t :: MarkdownText)
 
 asRawMarkdown :: Markdown -> RawMarkdown
 asRawMarkdown m = MkRawMarkdown $ toText m

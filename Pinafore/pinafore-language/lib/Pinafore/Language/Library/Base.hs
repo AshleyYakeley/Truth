@@ -95,7 +95,9 @@ unixFormattingDef ::
 unixFormattingDef lname =
     valBDS
         (UnqualifiedFullNameRef $ MkName $ "unixAsText")
-        ("Interpret " <> plainText lname <> " model as text, interpreting deleted values as empty text.") $
+        ("Represent " <>
+         plainText lname <>
+         " as text, using the given [UNIX-like format/parsing](https://hackage.haskell.org/package/time-1.12.2/docs/Data-Time-Format.html) string.") $
     unixAsText @t
 
 getLocalTime :: IO LocalTime
