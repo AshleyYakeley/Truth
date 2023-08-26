@@ -13,3 +13,9 @@ let qp = property @Q @P !"qp" store
 :t pp !$ {q}
 :t qp !$ {p}
 :t qp !$ {q}
+:t fn x => x <> x
+let f = fn x => x <> x
+:t f
+:t fn x => x <>.List1 x
+let g = fn x => x <>.List1 x
+:t g

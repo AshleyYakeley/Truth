@@ -52,6 +52,17 @@ actionWit (MkShimWit t (MkPolarMap conv)) =
     mapShimWit (MkPolarMap $ cfmap conv) $
     mkShimWit $ MkDolanGroundedType actionGroundType $ ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments
 
+simplify' ::
+       forall polarity t. Is PolarityType polarity
+    => EndoM (VarRenamerT QTypeSystem QInterpreter) (QShimWit polarity t)
+simplify' =
+    case polarityType @polarity of
+        PositiveType -> simplify @QTypeSystem
+        NegativeType -> simplify @QTypeSystem
+
+interactSimplify :: Is PolarityType polarity => QShimWit polarity t -> Interact (QShimWit polarity t)
+interactSimplify t = interactRunQInterpreter $ runRenamer @QTypeSystem [] [] $ unEndoM simplify' t
+
 interactLoop :: Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
     liftIO $ hPutStr outh "pinafore> "
@@ -103,7 +114,8 @@ interactLoop inh outh echo = do
                                          Just "" -> return ()
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)
                              ShowTypeInteractiveCommand showinfo sexpr -> do
-                                 MkSomeOf (MkPosShimWit t shim) _ <- interactEvalExpression sexpr
+                                 MkSomeOf tw _ <- interactEvalExpression sexpr
+                                 MkPosShimWit t shim <- interactSimplify tw
                                  ntt <- interactRunQInterpreter getRenderFullName
                                  liftIO $
                                      hPutStrLn outh $
@@ -117,17 +129,11 @@ interactLoop inh outh echo = do
                                      case polarity of
                                          Positive -> do
                                              MkSome t <- interactRunQInterpreter $ interpretType @'Positive stype
-                                             t' <-
-                                                 interactRunQInterpreter $
-                                                 runRenamer @QTypeSystem [] [] $
-                                                 unEndoM (simplify @QTypeSystem) (mkShimWit t :: QShimWit 'Positive _)
+                                             t' <- interactSimplify (mkShimWit t :: QShimWit 'Positive _)
                                              return $ exprShow t'
                                          Negative -> do
                                              MkSome t <- interactRunQInterpreter $ interpretType @'Negative stype
-                                             t' <-
-                                                 interactRunQInterpreter $
-                                                 runRenamer @QTypeSystem [] [] $
-                                                 unEndoM (simplify @QTypeSystem) (mkShimWit t :: QShimWit 'Negative _)
+                                             t' <- interactSimplify (mkShimWit t :: QShimWit 'Negative _)
                                              return $ exprShow t'
                                  ntt <- interactRunQInterpreter getRenderFullName
                                  liftIO $ hPutStrLn outh $ unpack $ ntt s

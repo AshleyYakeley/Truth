@@ -21,4 +21,14 @@ pinafore> :t qp !$ {p}
 : WholeModel P
 pinafore> :t qp !$ {q}
 : WholeModel P
+pinafore> :t fn x => x <> x
+: List a -> List a
+pinafore> let f = fn x => x <> x
+pinafore> :t f
+: List a -> List a
+pinafore> :t fn x => x <>.List1 x
+: List1.List a -> List1.List a
+pinafore> let g = fn x => x <>.List1 x
+pinafore> :t g
+: List1.List a -> List1.List a
 pinafore> <END>
