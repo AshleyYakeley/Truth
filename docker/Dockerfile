@@ -1,5 +1,5 @@
-FROM fpco/stack-build-small:lts-21.6
-RUN echo 2023-08-03 > /container.date
+FROM fpco/stack-build-small:lts-21.7
+RUN echo 2023-08-25 > /container.date
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get full-upgrade -y

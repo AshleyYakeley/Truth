@@ -26,6 +26,13 @@ packages:
   original:
     hackage: primitive-serial-0.1
 - completed:
+    hackage: monadology-0.3@sha256:91cfc11801f633800fb352f3dc89c9f878885e627e3d8b2e9ef7eeb9e3b26dc5,5903
+    pantry-tree:
+      sha256: 5d0441ec0130d4e4821557cae6284b90e26f97436aea952f5e7a80297cf35d34
+      size: 4297
+  original:
+    hackage: monadology-0.3
+- completed:
     commit: 9dff0f37cb7cc00129f65c85aa9a820c579472ca
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
@@ -60,7 +67,7 @@ packages:
     git: https://github.com/fpco/ghc-prof-flamegraph.git
 snapshots:
 - completed:
-    sha256: 2e7d4a730d8eb5373b2d383fac84efcf7c81e3b7a5fce71b4c2e19a1768f25a6
-    size: 640239
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/6.yaml
-  original: lts-21.6
+    sha256: 23bb9bb355bfdb1635252e120a29b712f0d5e8a6c6a65c5ab5bd6692f46c438e
+    size: 640457
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/7.yaml
+  original: lts-21.7
