@@ -48,7 +48,7 @@ pinafore> 3 + 4
 pinafore> let p = [5,6,7] <> [1,1,1]
 pinafore> let f = fn x => x <> x
 pinafore> :type f
-: (List1.List a & List a) -> List1.List a
+: List a -> List a
 pinafore> f p
 [5, 6, 7, 1, 1, 1, 5, 6, 7, 1, 1, 1]
 pinafore> :simplify+ (a -> Literal) | ((Text & b) -> a)

@@ -3,18 +3,32 @@
 The syntax of the language is based on Haskell.
 These are the main differences:
 
-* Line comments start with `#`, not `--`.
-* Block comments start with `{#` and end with `#}` (and may be nested).
 * Layout is not significant.
 Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `match` statement, are separated by `;`.
 Also, `match` and `do` statements are terminated with `end`.
-* `:` is used for type signatures, while `::` is used for list construction.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
-* Only one equation is allowed for a function definition. Use `match` to match argument patterns.
-* Haskell's type constructors `Either`, `(,)`, `[]` and `()` become `+:`, `*:`, `List` and `Unit`.
+* There's no "equation syntax" for function definitions. Use `fn`, or `match` to match argument patterns.
 * There's no tuple type bigger than two. The tuple `(a,b,c)` is equivalent to `(a,(b,c))`, etc.
-* Lambda-expressions and case-expressions use `=>` instead of `->`.
+
+| Haskell | Pinafore |
+| ----- | ----- |
+| <code>\-\- comment</code> | <code>\# comment</code> |
+| <code>\{\- comment \-\}</code> | <code>\{\# comment \#\}</code> |
+| `v :: T` | `v : T` |
+| <code>h : t</code> | <code>h :: t</code> |
+| <code>\\x -\> x + 1</code> | <code>fn x =\> x + 1</code> |
+| <code>\\case</code> | `match` |
+| <code>x \& f = f x</code> | <code>x \>- f = f x</code> |
+| <code>case x of</code> | <code>x \>- match</code> |
+| `()` | `Unit` |
+| `Bool` | `Boolean` |
+| `[]` | `List` |
+| `NonEmpty` | `List1` |
+| <code>(P, Q)</code> | <code>P \*: Q</code> |
+| <code>Either P Q</code> | <code>P +: Q</code> |
+| `IO` | `Action` |
+
 
 ## Grammar
 
