@@ -665,7 +665,7 @@ baseLibSections =
           , hasSubtypeRelationBDS @[Entity] @Entity Verify "" $ functionToShim "listEntityConvert" listEntityConvert
           , hasSubtypeRelationBDS @[Showable] @Showable Verify "" $ functionToShim "show" textShowable
           , namespaceBDS "List" $
-            monoidEntries @_ @[A] <>
+            pickNamesInRootBDS ["<>"] (monoidEntries @_ @[A]) <>
             monadEntries @_ @[] <>
             [ valBDS "from" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                   case l of
@@ -686,10 +686,9 @@ baseLibSections =
             ]
           , namespaceBDS "List1" $
             applicativeEntries @_ @NonEmpty <>
-            [ addNameInRootBDS $ valBDS "<>" "Concatenate a non-empty list with a list." append
+            [ valBDS "<>" "Concatenate a non-empty list with a list." append
             , addNameInRootBDS $ valBDS "concat1" "Concatenate a non-empty list of non-empty lists." mconcat1
-            , addNameInRootBDS $
-              valBDS
+            , valBDS
                   "sort"
                   "Sort non-empty list by an order."
                   (sortBy :: (A -> A -> Ordering) -> NonEmpty A -> NonEmpty A)
