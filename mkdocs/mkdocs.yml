@@ -20,6 +20,7 @@ nav:
 - Building: 'building.md'
 - Language:
   - Syntax: 'syntax.md'
+  - Expressions & Patterns: 'expressions.md'
   - Declarations: 'declarations.md'
   - Type System: 'type-system.md'
   - Types: 'types.md'

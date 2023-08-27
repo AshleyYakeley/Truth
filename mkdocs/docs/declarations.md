@@ -108,7 +108,7 @@ let
 in 57 &$$& 22
 ```
 
-The parsing "infixity" of the operator is determined by its name (regardless of namespace) according to [the table](../syntax/#infix-operators),
+The parsing "infixity" of the operator is determined by its name (regardless of namespace) according to [the table](syntax.md#infix-operators),
 and is "(A x B) x C" level 10 for other names.
 
 ### Type & Subtype Declarations

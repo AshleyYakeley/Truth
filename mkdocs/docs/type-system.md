@@ -1,7 +1,7 @@
 # Type System
 
 The Pinafore type system is based on Stephen Dolan's [Algebraic Subtyping](https://www.cs.tufts.edu/~nr/cs257/archive/stephen-dolan/thesis.pdf), an extension of Hindley-Milner to allow subtyping.
-You can see his POPL talk [here](https://www.youtube.com/watch?v=-P1ks4NPIyk).
+You can also see his POPL talk [here](https://www.youtube.com/watch?v=-P1ks4NPIyk).
 Pinafore omits record types.
 
 Familiarity with Hindley-Milner is assumed.

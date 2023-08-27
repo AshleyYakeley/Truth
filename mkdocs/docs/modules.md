@@ -37,5 +37,5 @@ end;
 
 subtype T <: X;
 
-in expose sometext, somenumber, X, T, T1, T2
+in expose sometext, somenumber, X, T, T1, T2;
 ```

@@ -4,5 +4,5 @@
 These are some of the more important pieces of the puzzle:
 
 * Work with external data sources
-* More user interface elements
-* Charts
+* Provide more user interface elements
+* Generate charts

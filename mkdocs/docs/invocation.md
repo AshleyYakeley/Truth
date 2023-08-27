@@ -31,7 +31,7 @@ This may be particularly helpful for understanding the type system.
 At the prompt, you can enter:
 
 * An expression. If this is an action, it will be executed, otherwise its value will be printed.
-* A let-expression, which will add bindings to the context.
+* A let-expression (or other declarator), which will add bindings to the context.
 * A special command:
     * ":doc name" will show the documentation for a name.
     * ":type expression" will show the inferred type of an expression.

@@ -1,10 +1,10 @@
 # Syntax
 
 The syntax of the language is based on Haskell.
-These are the main differences:
+These are the most obvious differences:
 
 * Layout is not significant.
-Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `match` statement, are separated by `;`.
+Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `match` statement, are separated by semicolons.
 Also, `match` and `do` statements are terminated with `end`.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.

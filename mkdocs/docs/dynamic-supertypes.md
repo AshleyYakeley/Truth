@@ -10,6 +10,7 @@ Every ambipolar type `T` has an ambipolar *greatest dynamic supertype* `D(T)`:
 
 - `D(T)` = `Literal` for all literal types
 - `D(T)` = `DynamicEntity` for dynamic entity types (the main use case)
+- `D(T)` = `D(S)`, when `T` is a subtype defined in datatype `S`.
 - `D(T)` = `T` for all other types
 
 In each case, there is a "check" function that can convert `D(T)` back to `Maybe T`.
