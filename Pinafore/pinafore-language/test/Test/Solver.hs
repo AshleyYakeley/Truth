@@ -136,35 +136,38 @@ testSolver =
                  , applyTest "fix-0" "(t -> t) -> t" "(Unit -> Unit)" "Unit."
                  , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
                  , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
-                 , applyTest
-                       "issue-206-1"
-                       "(t -> t) -> t"
-                       "((Maybe a -> Maybe a) -> (a -> a))"
-                       "Any -> (rec a, Maybe. a)"
-                 , applyTest
-                       "issue-206-2"
-                       "(t -> t) -> t"
-                       "((a -> a) -> (Maybe a -> Maybe a))"
-                       "(rec a, Maybe. a) -> Maybe. None"
-                 , unifierTest "rec-0" "rec a, Maybe. a" $ do
-                       ta <- stParseTypeBoth "a"
-                       tma <- stParseTypeBoth "Maybe a"
-                       ((tan, tap), (_tman, tmap)) <- stRename [] FreeName (ta, tma)
-                       stUnify tmap tan
-                       return tap
-                 , unifierTest "rec-1" "None" $ do
-                       ta <- stParseTypeBoth "a"
-                       tma <- stParseTypeBoth "Maybe a"
-                       ((_tan, tap), (tman, _tmap)) <- stRename [] FreeName (ta, tma)
-                       stUnify tap tman
-                       return tap
-                 , unifierTest "rec-2" "rec a, Maybe. a" $ do
-                       ta <- stParseTypeBoth "a"
-                       tma <- stParseTypeBoth "Maybe a"
-                       ((tan, tap), (tman, tmap)) <- stRename [] FreeName (ta, tma)
-                       stUnify tmap tan
-                       stUnify tap tman
-                       return tap
+                 , testTree
+                       "issue-206"
+                       [ unifierTest "rec-0" "rec a, Maybe. a" $ do
+                             ta <- stParseTypeBoth "a"
+                             tma <- stParseTypeBoth "Maybe a"
+                             ((tan, tap), (_tman, tmap)) <- stRename [] FreeName (ta, tma)
+                             stUnify tmap tan
+                             return tap
+                       , unifierTest "rec-1" "None" $ do
+                             ta <- stParseTypeBoth "a"
+                             tma <- stParseTypeBoth "Maybe a"
+                             ((_tan, tap), (tman, _tmap)) <- stRename [] FreeName (ta, tma)
+                             stUnify tap tman
+                             return tap
+                       , unifierTest "rec-2" "rec a, Maybe. a" $ do
+                             ta <- stParseTypeBoth "a"
+                             tma <- stParseTypeBoth "Maybe a"
+                             ((tan, tap), (tman, tmap)) <- stRename [] FreeName (ta, tma)
+                             stUnify tmap tan
+                             stUnify tap tman
+                             return tap
+                       , applyTest
+                             "issue-206-1"
+                             "(t -> t) -> t"
+                             "((Maybe a -> Maybe a) -> (a -> a))"
+                             "Any -> (rec a, Maybe. a)"
+                       , applyTest
+                             "issue-206-2"
+                             "(t -> t) -> t"
+                             "((a -> a) -> (Maybe a -> Maybe a))"
+                             "(rec a, Maybe. a) -> Maybe. None"
+                       ]
                  ]
         , testTree "recursive" $ let
               recursiveTest :: Text -> Text -> Text -> TestTree

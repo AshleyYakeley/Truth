@@ -214,8 +214,8 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt
                     oldvar
                     (return newVarWit)
                     (do
-                         tq <- invertTypeM rigidity ptw
-                         return $ joinMeetShimWit (varDolanShimWit newvar) tq)
+                         ptw' <- invertTypeM rigidity ptw
+                         return $ joinMeetShimWit (varDolanShimWit newvar) ptw')
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar PositiveType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
         tellBisubstitution bisub
@@ -253,8 +253,8 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt
                     oldvar
                     (return newVarWit)
                     (do
-                         tq <- invertTypeM rigidity ptw
-                         return $ joinMeetShimWit (varDolanShimWit newvar) tq)
+                         ptw' <- invertTypeM rigidity ptw
+                         return $ joinMeetShimWit (varDolanShimWit newvar) ptw')
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar NegativeType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
         tellBisubstitution bisub
@@ -300,12 +300,12 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: TypeVarT oldtv) Posit
                         oldvar
                         (return newVarWit)
                         (do
-                             tq <- invertTypeM rigidity ptw
+                             ptw' <- invertTypeM rigidity ptw
                              return $
                                  shimWitToDolan $
                                  recursiveDolanShimWit recvar $
                                  singleBisubstitute oldvar (varDolanShimWit recvar) $
-                                 joinMeetShimWit (varDolanShimWit newvar) tq)
+                                 joinMeetShimWit (varDolanShimWit newvar) ptw')
             expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar PositiveType newvar ptw) expr
             expr'' <- runUnifierExpression expr'
             tellBisubstitution bisub
@@ -351,12 +351,12 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: TypeVarT oldtv) Negat
                         oldvar
                         (return newVarWit)
                         (do
-                             tq <- invertTypeM rigidity ptw
+                             ptw' <- invertTypeM rigidity ptw
                              return $
                                  shimWitToDolan $
                                  recursiveDolanShimWit recvar $
                                  singleBisubstitute oldvar (varDolanShimWit recvar) $
-                                 joinMeetShimWit (varDolanShimWit newvar) tq)
+                                 joinMeetShimWit (varDolanShimWit newvar) ptw')
             expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar NegativeType newvar ptw) expr
             expr'' <- runUnifierExpression expr'
             tellBisubstitution bisub
