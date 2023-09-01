@@ -160,10 +160,18 @@ genNewNamePlain = False
 genNewNameRec :: Bool
 genNewNameRec = False
 
+type ConstraintSolver (ground :: GroundTypeKind) = WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground)
+
+tellBisubstitution ::
+       forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
+    => UnifierBisubstitution ground
+    -> ConstraintSolver ground ()
+tellBisubstitution bisub = tell [bisub]
+
 runUnifierExpression ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanUnifierExpression ground a
-    -> WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground) (TSOpenExpression (DolanTypeSystem ground) a)
+    -> ConstraintSolver ground (TSOpenExpression (DolanTypeSystem ground) a)
 runUnifierExpression (MkSolverExpression texpr vexpr) = do
     expr <- runUnifier texpr
     return $ vexpr <*> expr
@@ -171,7 +179,7 @@ runUnifierExpression (MkSolverExpression texpr vexpr) = do
 runUnifier ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanUnifier ground a
-    -> WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground) (TSOpenExpression (DolanTypeSystem ground) a)
+    -> ConstraintSolver ground (TSOpenExpression (DolanTypeSystem ground) a)
 runUnifier (ClosedExpression a) = return $ pure a
 runUnifier (OpenExpression (LEUnifierConstraint oldvar NegativeType (ptw :: _ pt) False) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -188,7 +196,7 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar NegativeType (ptw :: _ pt
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
         expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa meet2) $ expr''
 runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt) False) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -208,7 +216,7 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt
                          return $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar PositiveType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa meet2) $ expr''
 runUnifier (OpenExpression (GEUnifierConstraint oldvar PositiveType (ptw :: _ pt) False) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -225,7 +233,7 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar PositiveType (ptw :: _ pt
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap join1)
         expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa join2) $ expr''
 runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt) False) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -245,7 +253,7 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt
                          return $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar NegativeType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa join2) $ expr''
 runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: TypeVarT oldtv) NegativeType (ptw :: _ pt) True) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -266,7 +274,7 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: TypeVarT oldtv) Negat
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
         expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa meet2) $ expr''
 runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: TypeVarT oldtv) PositiveType (ptw :: _ pt) True) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -289,7 +297,7 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: TypeVarT oldtv) Posit
                              recursiveRenameDolanShimWit oldvar recvarname $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar PositiveType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa meet2) $ expr''
 runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: TypeVarT oldtv) PositiveType (ptw :: _ pt) True) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -310,7 +318,7 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: TypeVarT oldtv) Posit
                     (return $ shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap join1)
         expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa join2) $ expr''
 runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: TypeVarT oldtv) NegativeType (ptw :: _ pt) True) expr) = do
     MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -333,7 +341,7 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: TypeVarT oldtv) Negat
                              recursiveRenameDolanShimWit oldvar recvarname $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar NegativeType newvar ptw) expr
         expr'' <- runUnifierExpression expr'
-        tell [bisub]
+        tellBisubstitution bisub
         return $ fmap (\sa -> sa join2) $ expr''
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where

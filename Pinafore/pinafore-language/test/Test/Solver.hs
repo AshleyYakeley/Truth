@@ -186,6 +186,12 @@ testSolver =
                  , recursiveTest "a" "Maybe a" "rec a, Maybe a"
                  , recursiveTest "Any" "Integer" "Integer"
                  , recursiveTest "(Text | Integer) -> Any" "a -> a" "a -> (a | (Integer. | Text.))"
+                 , testTree
+                       "issue-229"
+                       [ recursiveTest "a & (a -> b)" "c -> c" "a -> (rec b, a | a -> b)"
+                       , testMark $ recursiveTest "c" "c -> c" "a -> (rec b, a | a -> b)"
+                       , recursiveTest "c -> c" "c" "Unit"
+                       ]
                  ]
         , testTree "subsumer" $ let
               subsumerTest :: String -> [String] -> SubsumerTester () -> TestTree

@@ -4,9 +4,9 @@ module Language.Expression.Dolan.Bisubstitute
     ( DeferredBisubstitution(..)
     , Bisubstitution(..)
     , mkPolarBisubstitution
-    , mkSingleBisubstitution
     , Bisubstitutable(..)
     , bisubstituteType
+    , bothBisubstitute
     , singleBisubstitute
     , bisubstitutesType
     , bisubstitute
@@ -106,16 +106,6 @@ mkPolarBisubstitution isRecursive n a b =
         PositiveType -> MkBisubstitution isRecursive n a b
         NegativeType -> MkBisubstitution isRecursive n b a
 
-mkSingleBisubstitution ::
-       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity m tv.
-       (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity, Applicative m)
-    => Bool
-    -> TypeVarT tv
-    -> m (PShimWit shim (DolanType ground) polarity tv)
-    -> Bisubstitution ground shim m
-mkSingleBisubstitution isRecursive var mw =
-    invertPolarity @polarity $ mkPolarBisubstitution isRecursive var mw $ pure $ varDolanShimWit var
-
 class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type)
     | w -> ground polarity
     where
@@ -136,6 +126,19 @@ bisubstituteType bisub wt =
         MkShimWit wt' fconv <- deferBisubstituteType dbisub wt
         return $ MkShimWit wt' $ applyPolarPolyFuncShim fconv (id, id)
 
+bothBisubstitute ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv t.
+       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+    => TypeVarT tv
+    -> PShimWit (pshim Type) (DolanType ground) polarity tv
+    -> PShimWit (pshim Type) (DolanType ground) (InvertPolarity polarity) tv
+    -> PShimWit (pshim Type) (DolanType ground) polarity t
+    -> PShimWit (pshim Type) (DolanType ground) polarity t
+bothBisubstitute var wa wb (MkShimWit tt conv) = let
+    bisub :: Bisubstitution ground (pshim Type) Identity
+    bisub = invertPolarity @polarity $ mkPolarBisubstitution True var (pure wa) (pure wb)
+    in mapPolarShimWit conv $ runIdentity $ bisubstituteType bisub tt
+
 singleBisubstitute ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv t.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
@@ -143,10 +146,7 @@ singleBisubstitute ::
     -> PShimWit (pshim Type) (DolanType ground) polarity tv
     -> PShimWit (pshim Type) (DolanType ground) polarity t
     -> PShimWit (pshim Type) (DolanType ground) polarity t
-singleBisubstitute var ta (MkShimWit tb conv) = let
-    bisub :: Bisubstitution ground (pshim Type) Identity
-    bisub = mkSingleBisubstitution True var $ return ta
-    in mapPolarShimWit conv $ runIdentity $ bisubstituteType bisub tb
+singleBisubstitute var wa = invertPolarity @polarity $ bothBisubstitute var wa (varDolanShimWit var)
 
 instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( IsDolanGroundType ground
          , BisubstitutablePolyShim pshim

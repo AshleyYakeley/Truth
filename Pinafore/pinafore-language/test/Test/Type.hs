@@ -398,6 +398,7 @@ testType =
                                    ]
                           ]
                     ]
+              , testTree "issue-229" [textTypeTest "(fn x => x x) id" "{} -> rec a, b | b -> a"]
               ]
         , testTree
               "simplify"
