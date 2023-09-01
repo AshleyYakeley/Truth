@@ -1,5 +1,9 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+ -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+
+pinafore (0.4) bookworm; urgency=medium
+
   * Install
     - Debian package works on:
       . Ubuntu 22.04 LTS "jammy"
@@ -72,7 +76,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Fixes
     - fix defect in lexical scoping
 
- -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+ -- Ashley Yakeley <ashley@semantic.org>  Sun, 27 Aug 2023 12:59:37 -0700
 
 pinafore (0.3.1) buster; urgency=medium
 

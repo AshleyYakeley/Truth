@@ -1,14 +1,14 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           changes-core
-version:        0.4
+version:        0.4.1
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
-copyright:      (c) 2017-2022 Ashley Yakeley
+copyright:      (c) 2017-2023 Ashley Yakeley
 license:        GPL-2.0-only
 license-file:   LICENSE
 build-type:     Simple
