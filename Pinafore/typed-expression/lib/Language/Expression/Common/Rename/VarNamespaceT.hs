@@ -16,7 +16,6 @@ import Shapes
 
 class Monad m => RenamerMonad m where
     renamerGenerate :: NameRigidity -> m String
-    renamerRemoveName :: String -> m ()
     renamerGetNameRigidity :: m (String -> NameRigidity)
 
 renamerGenerateFree ::

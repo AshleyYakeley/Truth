@@ -59,6 +59,12 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
         return Refl
     testEquality _ _ = Nothing
 
+instance forall (ground :: GroundTypeKind) polarity t. ( Is PolarityType polarity
+         , forall polarity' t'. Is PolarityType polarity' => Show (DolanType ground polarity' t')
+         ) => Show (RecursiveOrPlainType ground polarity t) where
+    show (PlainType t) = show t
+    show (RecursiveType v t) = "rec " <> show v <> ", " <> show t
+
 unrollRecursiveOrPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => RecursiveOrPlainType ground polarity t

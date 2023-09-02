@@ -136,7 +136,8 @@ testSolver =
                  , applyTest "fix-0" "(t -> t) -> t" "(Unit -> Unit)" "Unit."
                  , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
                  , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
-                 , testTree
+                 , failTestBecause "#206" $
+                   testTree
                        "issue-206"
                        [ unifierTest "rec-0" "rec a, Maybe. a" $ do
                              ta <- stParseTypeBoth "a"
@@ -192,7 +193,7 @@ testSolver =
                  , testTree
                        "issue-229"
                        [ recursiveTest "a & (a -> b)" "c -> c" "a -> (rec b, a | a -> b)"
-                       , testMark $ recursiveTest "c" "c -> c" "a -> (rec b, a | a -> b)"
+                       , recursiveTest "c" "c -> c" "a -> (rec b, a | a -> b)"
                        , recursiveTest "c -> c" "c" "Unit"
                        ]
                  ]

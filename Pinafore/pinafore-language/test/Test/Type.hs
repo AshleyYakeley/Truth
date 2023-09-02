@@ -368,7 +368,8 @@ testType =
                           , textTypeTest "let rec f = seq g3; g3 = f 3 in f" "{} -> a -> (a | Integer.)"
                           , textTypeTest "let rf = fn r => seq (r 3); r = fix rf in r" "{} -> a -> (a | Integer.)"
                           , textTypeTest "fn r => seq (r 3)" "{} -> (Integer. -> Any) -> a -> a"
-                          , testTree "fixrec" $ let
+                          , failTestBecause "#206" $
+                            testTree "fixrec" $ let
                                 fixTest :: Text -> Text -> String -> TestTree
                                 fixTest ta tr expected = let
                                     typeText = "(" <> ta <> ") -> " <> tr

@@ -50,6 +50,11 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEqua
         Refl <- testEquality tb1 tb2
         return Refl
 
+instance forall (ground :: GroundTypeKind) t. (forall polarity t'.
+                                                   Is PolarityType polarity => Show (DolanType ground polarity t')) =>
+             Show (ShimType ground t) where
+    show (MkShimType pa pb ta tb) = "{" <> show ta <> show pa <> "; " <> show tb <> show pb <> "}"
+
 type Solver :: GroundTypeKind -> (Type -> Type) -> Type -> Type
 newtype Solver ground wit a = MkSolver
     { unSolver :: forall (rlist :: [Type]).

@@ -88,8 +88,6 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
                     FreeName -> return ()
                     RigidName -> MkVarRenamerT $ lift $ modify $ \st -> st {rsRigidNames = name : rsRigidNames st}
                 return name
-    renamerRemoveName :: String -> VarRenamerT ts m ()
-    renamerRemoveName _ = return ()
     renamerGetNameRigidity :: VarRenamerT ts m (String -> NameRigidity)
     renamerGetNameRigidity = do
         state <- MkVarRenamerT $ lift get
