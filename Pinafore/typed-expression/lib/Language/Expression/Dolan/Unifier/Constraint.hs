@@ -8,32 +8,30 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
+type FlipType :: GroundTypeKind -> Polarity -> Type -> Type
+data FlipType ground polarity t
+    = NormalFlipType (DolanType ground polarity t)
+    | InvertFlipType (DolanType ground (InvertPolarity polarity) t)
+
 type UnifierConstraint :: GroundTypeKind -> Type -> Type
 data UnifierConstraint ground t where
-    -- | var <: type
-    LEUnifierConstraint
+    MkUnifierConstraint
         :: forall (ground :: GroundTypeKind) polarity tv t.
            TypeVarT tv
         -> PolarityType polarity
-        -> DolanType ground polarity t
+        -> FlipType ground polarity t
         -> Bool
-        -> UnifierConstraint ground (DolanShim ground tv t)
-    -- | var :> type
-    GEUnifierConstraint
-        :: forall (ground :: GroundTypeKind) polarity tv t.
-           TypeVarT tv
-        -> PolarityType polarity
-        -> DolanType ground polarity t
-        -> Bool
-        -> UnifierConstraint ground (DolanShim ground t tv)
+        -> UnifierConstraint ground (PolarMapType (DolanShim ground) polarity t tv)
 
 instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (UnifierConstraint ground t) where
-    show (LEUnifierConstraint var polwit wt recflag) =
-        withRepresentative polwit $
-        mif recflag "REC " <> show var <> " <: " <> showDolanType wt <> " [" <> show polwit <> "]"
-    show (GEUnifierConstraint var polwit wt recflag) =
-        withRepresentative polwit $
-        mif recflag "REC " <> show var <> " :> " <> showDolanType wt <> " [" <> show polwit <> "]"
+    show (MkUnifierConstraint var PositiveType (NormalFlipType wt) recflag) =
+        mif recflag "REC " <> show var <> " :> " <> showDolanType wt <> " [+]"
+    show (MkUnifierConstraint var NegativeType (NormalFlipType wt) recflag) =
+        mif recflag "REC " <> show var <> " <: " <> showDolanType wt <> " [-]"
+    show (MkUnifierConstraint var PositiveType (InvertFlipType wt) recflag) =
+        mif recflag "REC " <> show var <> " :> " <> showDolanType wt <> " [- INV]"
+    show (MkUnifierConstraint var NegativeType (InvertFlipType wt) recflag) =
+        mif recflag "REC " <> show var <> " <: " <> showDolanType wt <> " [+ INV]"
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (UnifierConstraint ground) where
     allConstraint = Dict
@@ -43,14 +41,20 @@ leUnifierConstraint ::
     => TypeVarT tv
     -> DolanType ground polarity p
     -> UnifierConstraint ground (DolanShim ground tv p)
-leUnifierConstraint var pt = LEUnifierConstraint var representative pt (occursInType var pt)
+leUnifierConstraint var pt =
+    case polarityType @polarity of
+        PositiveType -> MkUnifierConstraint var representative (InvertFlipType pt) (occursInType var pt)
+        NegativeType -> MkUnifierConstraint var representative (NormalFlipType pt) (occursInType var pt)
 
 geUnifierConstraint ::
        forall (ground :: GroundTypeKind) polarity tv p. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => TypeVarT tv
     -> DolanType ground polarity p
     -> UnifierConstraint ground (DolanShim ground p tv)
-geUnifierConstraint var pt = GEUnifierConstraint var representative pt (occursInType var pt)
+geUnifierConstraint var pt =
+    case polarityType @polarity of
+        PositiveType -> MkUnifierConstraint var representative (NormalFlipType pt) (occursInType var pt)
+        NegativeType -> MkUnifierConstraint var representative (InvertFlipType pt) (occursInType var pt)
 
 leSingleUnifierConstraint ::
        forall (ground :: GroundTypeKind) polarity tv p. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)

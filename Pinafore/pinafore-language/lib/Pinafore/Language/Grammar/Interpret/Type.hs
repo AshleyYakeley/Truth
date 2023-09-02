@@ -109,7 +109,7 @@ interpretTypeRangeFromType st = do
            => PinaforeTypeM 'Nothing
            -> Some (RangeType QType polarity)
         ff (BothMPolarW atw) =
-            case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
+            case (withInvertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
                 (MkSome tp, MkSome tq) -> MkSome $ MkRangeType tp tq
     return $ toMPolar $ ff t
 
@@ -159,7 +159,7 @@ interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument 
 interpretArgs sgt (ConsListType CoCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         at <- isMPolarity @(InvertPolarity polarity) $ interpretTypeM st
         case fromMPolarSingle at of
             MkSome t -> do

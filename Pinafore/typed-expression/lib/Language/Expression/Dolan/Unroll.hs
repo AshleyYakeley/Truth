@@ -21,7 +21,7 @@ unrollRecursiveType ::
     -> DolanType ground polarity tv
     -> DolanIsoShimWit ground polarity tv
 unrollRecursiveType var pt =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     singleBisubstitute var (shimWitToDolan $ mkPolarShimWit $ RecursiveDolanSingularType var pt) (mkPolarShimWit pt)
 
 unrollSingularType ::

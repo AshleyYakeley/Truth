@@ -117,9 +117,9 @@ getCCRVarAppearances ::
     => CCRPolarArgument (DolanType ground) polarity sv t
     -> ([Appearance ground 'Positive], [Appearance ground 'Negative])
 getCCRVarAppearances (CoCCRPolarArgument t) = getVarAppearances t
-getCCRVarAppearances (ContraCCRPolarArgument t) = invertPolarity @polarity $ getVarAppearances t
+getCCRVarAppearances (ContraCCRPolarArgument t) = withInvertPolarity @polarity $ getVarAppearances t
 getCCRVarAppearances (RangeCCRPolarArgument tp tq) =
-    invertPolarity @polarity $ getVarAppearances tp <> getVarAppearances tq
+    withInvertPolarity @polarity $ getVarAppearances tp <> getVarAppearances tq
 
 instance forall (ground :: GroundTypeKind) polarity cat wit. GetVarUses ground wit =>
              GetVarUses ground (PolarShimWit cat wit polarity) where
@@ -204,9 +204,9 @@ getArgExpressionVars ::
     => CCRPolarArgument (DolanType ground) polarity sv a
     -> ([SomeTypeVarT], [SomeTypeVarT])
 getArgExpressionVars (CoCCRPolarArgument t) = getExpressionVars t
-getArgExpressionVars (ContraCCRPolarArgument t) = invertPolarity @polarity $ getExpressionVars t
+getArgExpressionVars (ContraCCRPolarArgument t) = withInvertPolarity @polarity $ getExpressionVars t
 getArgExpressionVars (RangeCCRPolarArgument tp tq) =
-    invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
+    withInvertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
 
 getArgsExpressionVars ::
        forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)

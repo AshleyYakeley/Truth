@@ -135,7 +135,7 @@ bothBisubstitute ::
     -> PShimWit (pshim Type) (DolanType ground) polarity t
 bothBisubstitute var wa wb (MkShimWit tt conv) = let
     bisub :: Bisubstitution ground (pshim Type) Identity
-    bisub = invertPolarity @polarity $ mkPolarBisubstitution True var (pure wa) (pure wb)
+    bisub = withInvertPolarity @polarity $ mkPolarBisubstitution True var (pure wa) (pure wb)
     in mapPolarShimWit conv $ runIdentity $ bisubstituteType bisub tt
 
 singleBisubstitute ::
@@ -145,7 +145,7 @@ singleBisubstitute ::
     -> PShimWit (pshim Type) (DolanType ground) polarity tv
     -> PShimWit (pshim Type) (DolanType ground) polarity t
     -> PShimWit (pshim Type) (DolanType ground) polarity t
-singleBisubstitute var wa = invertPolarity @polarity $ bothBisubstitute var wa (varDolanShimWit var)
+singleBisubstitute var wa = withInvertPolarity @polarity $ bothBisubstitute var wa (varDolanShimWit var)
 
 instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( IsDolanGroundType ground
          , BisubstitutablePolyShim pshim
@@ -231,7 +231,7 @@ recursiveBisubstitute ::
     -> DolanType ground polarity a
     -> FuncShimWit (pshim Type) (DolanSingularType ground) polarity tv a
 recursiveBisubstitute oldvar recvarname t =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     withDict (reducedBisubstitutablePolyShim @pshim) $
     newTypeVar recvarname $ \(newvar :: TypeVarT newtv) ->
         case polarityType @polarity of

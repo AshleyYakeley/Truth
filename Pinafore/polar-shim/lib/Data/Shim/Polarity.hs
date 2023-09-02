@@ -48,6 +48,10 @@ type family InvertPolarity polarity = (inv :: Polarity) | inv -> polarity where
     InvertPolarity 'Positive = 'Negative
     InvertPolarity 'Negative = 'Positive
 
+invertPolarity :: PolarityType polarity -> PolarityType (InvertPolarity polarity)
+invertPolarity PositiveType = NegativeType
+invertPolarity NegativeType = PositiveType
+
 polarityType ::
        forall (polarity :: Polarity). Is PolarityType polarity
     => PolarityType polarity
@@ -61,11 +65,11 @@ isInvertPolarity =
         PositiveType -> Dict
         NegativeType -> Dict
 
-invertPolarity ::
+withInvertPolarity ::
        forall polarity r. Is PolarityType polarity
     => (Is PolarityType (InvertPolarity polarity) => r)
     -> r
-invertPolarity v =
+withInvertPolarity v =
     case isInvertPolarity @polarity of
         Dict -> v
 

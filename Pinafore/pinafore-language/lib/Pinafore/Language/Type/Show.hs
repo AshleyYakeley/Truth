@@ -41,11 +41,11 @@ saturatedGroundTypeShowPrec avar gt = let
         case avar of
             MkSome var -> call $ CoCCRPolarArgument var
     singleVarArgument ContraCCRVarianceType call =
-        invertPolarity @polarity $
+        withInvertPolarity @polarity $
         case avar of
             MkSome var -> call $ ContraCCRPolarArgument var
     singleVarArgument RangeCCRVarianceType call =
-        invertPolarity @polarity $
+        withInvertPolarity @polarity $
         case (avar, avar) of
             (MkSome var1, MkSome var2) -> call $ RangeCCRPolarArgument var1 var2
     allVarArguments ::
@@ -115,7 +115,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
                 -> [Text]
             getpieces NilDolanType = []
             getpieces (ConsDolanType t tr) = runNamedText ft (exprPrecShow 0 t) : getpieces tr
-            contrapieces = nub $ invertPolarity @polarity $ getpieces t1
+            contrapieces = nub $ withInvertPolarity @polarity $ getpieces t1
             copieces = nub $ getpieces t2
             bothpieces = List.intersect contrapieces copieces
             rcontrapieces = contrapieces \\ bothpieces

@@ -61,8 +61,8 @@ forCCRPolarArgument ::
     -> CCRPolarArgument ft polarity sv t
     -> r
 forCCRPolarArgument call (CoCCRPolarArgument t) = call t
-forCCRPolarArgument call (ContraCCRPolarArgument t) = invertPolarity @polarity $ call t
-forCCRPolarArgument call (RangeCCRPolarArgument p q) = invertPolarity @polarity $ call p <> call q
+forCCRPolarArgument call (ContraCCRPolarArgument t) = withInvertPolarity @polarity $ call t
+forCCRPolarArgument call (RangeCCRPolarArgument p q) = withInvertPolarity @polarity $ call p <> call q
 
 type CCRPolarArgumentShimWit :: (Type -> Type -> Type) -> (Polarity -> Type -> Type) -> Polarity -> CCRArgumentKind
 type CCRPolarArgumentShimWit shim ft polarity sv = CCRArgumentShimWit shim (CCRPolarArgument ft polarity) polarity sv
@@ -94,11 +94,11 @@ mapCCRPolarArgumentShimWit f (CoCCRPolarArgument arg) = do
     tf <- f arg
     return $ unPolarShimWit tf $ \arg' -> MkShimWit (CoCCRPolarArgument arg')
 mapCCRPolarArgumentShimWit f (ContraCCRPolarArgument arg) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit arg' conv <- f arg
         return $ MkShimWit (ContraCCRPolarArgument arg') $ mkContravariantPolarMap conv
 mapCCRPolarArgumentShimWit f (RangeCCRPolarArgument tp tq) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit tp' convp <- f tp
         MkShimWit tq' convq <- f tq
         return $ MkShimWit (RangeCCRPolarArgument tp' tq') $ mkRangevariantPolarMap convp convq
@@ -113,11 +113,11 @@ mapInvertCCRPolarArgumentShimWit f (CoCCRPolarArgument arg) = do
     MkShimWit arg' conv <- f arg
     return $ MkShimWit (CoCCRPolarArgument arg') conv
 mapInvertCCRPolarArgumentShimWit f (ContraCCRPolarArgument arg) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit arg' conv <- f arg
         return $ MkShimWit (ContraCCRPolarArgument arg') $ mkContravariantPolarMap conv
 mapInvertCCRPolarArgumentShimWit f (RangeCCRPolarArgument tp tq) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit tp' convp <- f tp
         MkShimWit tq' convq <- f tq
         return $ MkShimWit (RangeCCRPolarArgument tp' tq') $ mkRangevariantPolarMap convp convq
@@ -141,11 +141,11 @@ mergeCCRPolarArgumentShimWit f (CoCCRPolarArgument arga) (CoCCRPolarArgument arg
     MkShimWit argab conv <- f arga argb
     return $ MkShimWit (CoCCRPolarArgument argab) conv
 mergeCCRPolarArgumentShimWit f (ContraCCRPolarArgument arga) (ContraCCRPolarArgument argb) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit argab conv <- f arga argb
         return $ MkShimWit (ContraCCRPolarArgument argab) $ mkContravariantPolarMap conv
 mergeCCRPolarArgumentShimWit f (RangeCCRPolarArgument tpa tqa) (RangeCCRPolarArgument tpb tqb) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit tpab convp <- f tpa tpb
         MkShimWit tqab convq <- f tqa tqb
         return $ MkShimWit (RangeCCRPolarArgument tpab tqab) $ mkRangevariantPolarMap convp convq
@@ -155,9 +155,9 @@ ccrPolar1 ::
     => CCRVarianceType sv
     -> PolarVarianceMap shim polarity sv a (SVJoinMeetType sv polarity a b)
 ccrPolar1 CoCCRVarianceType = polar1
-ccrPolar1 ContraCCRVarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar1
+ccrPolar1 ContraCCRVarianceType = withInvertPolarity @polarity $ mkContravariantPolarMap polar1
 ccrPolar1 RangeCCRVarianceType =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     case (unsafeTypeIsPair @_ @_ @a, unsafeTypeIsPair @_ @_ @b) of
         (Refl, Refl) -> mkRangevariantPolarMap polar1 polar1
 
@@ -166,8 +166,8 @@ ccrPolar2 ::
     => CCRVarianceType sv
     -> PolarVarianceMap shim polarity sv b (SVJoinMeetType sv polarity a b)
 ccrPolar2 CoCCRVarianceType = polar2
-ccrPolar2 ContraCCRVarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar2
+ccrPolar2 ContraCCRVarianceType = withInvertPolarity @polarity $ mkContravariantPolarMap polar2
 ccrPolar2 RangeCCRVarianceType =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     case (unsafeTypeIsPair @_ @_ @a, unsafeTypeIsPair @_ @_ @b) of
         (Refl, Refl) -> mkRangevariantPolarMap polar2 polar2

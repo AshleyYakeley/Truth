@@ -22,9 +22,9 @@ joinMeetInvertedCombinedType ::
     => InvertedCombinedDolanType ground polarity a
     -> InvertedCombinedDolanType ground polarity b
     -> PolarShimWit (pshim Type) (InvertedCombinedDolanType ground polarity) (InvertPolarity polarity) (JoinMeetType (InvertPolarity polarity) a b)
-joinMeetInvertedCombinedType NilInvertedCombinedDolanType tb = invertPolarity @polarity $ MkShimWit tb iPolarL2
+joinMeetInvertedCombinedType NilInvertedCombinedDolanType tb = withInvertPolarity @polarity $ MkShimWit tb iPolarL2
 joinMeetInvertedCombinedType (ConsInvertedCombinedDolanType ta tr) tb =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     case joinMeetInvertedCombinedType tr tb of
         MkShimWit trb convrb -> MkShimWit (ConsInvertedCombinedDolanType ta trb) $ iPolarPair id convrb . iPolarSwapL
 
@@ -35,4 +35,4 @@ joinMeetInvertedCombinedShimWit ::
     -> PolarShimWit (pshim Type) (InvertedCombinedDolanType ground polarity) (InvertPolarity polarity) b
     -> PolarShimWit (pshim Type) (InvertedCombinedDolanType ground polarity) (InvertPolarity polarity) (JoinMeetType (InvertPolarity polarity) a b)
 joinMeetInvertedCombinedShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
-    invertPolarity @polarity $ ccontramap (iPolarPair conva convb) $ joinMeetInvertedCombinedType ta tb
+    withInvertPolarity @polarity $ ccontramap (iPolarPair conva convb) $ joinMeetInvertedCombinedType ta tb

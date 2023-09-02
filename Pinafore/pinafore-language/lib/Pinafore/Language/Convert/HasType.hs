@@ -67,7 +67,7 @@ instance forall polarity (t :: Type). (Is PolarityType polarity, HasQType (Inver
              HasQArgumentType polarity ContraCCRVariance t where
     qArgumentType :: CCRPolarArgumentShimWit (QPolyShim Type) QType polarity ContraCCRVariance t
     qArgumentType =
-        invertPolarity @polarity $
+        withInvertPolarity @polarity $
         case qType @(InvertPolarity polarity) @t of
             MkShimWit ta conv -> MkShimWit (ContraCCRPolarArgument ta) (MkCatDual $ uninvertPolarMap conv)
 
@@ -75,7 +75,7 @@ instance forall polarity (p :: Type) (q :: Type). (HasQType (InvertPolarity pola
              HasQArgumentType polarity 'RangeCCRVariance '( p, q) where
     qArgumentType :: CCRPolarArgumentShimWit (QPolyShim Type) QType polarity 'RangeCCRVariance '( p, q)
     qArgumentType =
-        invertPolarity @polarity $
+        withInvertPolarity @polarity $
         case qType @(InvertPolarity polarity) @p of
             MkShimWit tp convp ->
                 case qType @polarity @q of

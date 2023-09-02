@@ -33,7 +33,7 @@ joinMeetShimWit = chainPShimWit2 joinMeetType
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (IsDolanGroundType ground, Is PolarityType polarity) =>
              Semigroup (Some (RangeType (DolanType ground) polarity)) where
     MkSome (MkRangeType tp1 tq1) <> MkSome (MkRangeType tp2 tq2) =
-        invertPolarity @polarity $
+        withInvertPolarity @polarity $
         case (MkSome tp1 <> MkSome tp2, MkSome tq1 <> MkSome tq2) of
             (MkSome tp12, MkSome tq12) -> MkSome (MkRangeType tp12 tq12)
 

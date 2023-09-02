@@ -215,7 +215,7 @@ showPrecVariance ::
     => CCRPolarArgument w polarity sv t
     -> PrecNamedText
 showPrecVariance (CoCCRPolarArgument t) = exprShowPrec t
-showPrecVariance (ContraCCRPolarArgument t) = invertPolarity @polarity $ exprShowPrec t
+showPrecVariance (ContraCCRPolarArgument t) = withInvertPolarity @polarity $ exprShowPrec t
 showPrecVariance (RangeCCRPolarArgument p q) = exprShowPrec (MkRangeType p q)
 
 showPrecDolanVariance ::

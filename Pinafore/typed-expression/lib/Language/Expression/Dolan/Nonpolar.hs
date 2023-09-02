@@ -105,11 +105,11 @@ nonpolarToDolanArg (CoNonpolarArgument t) =
     case nonpolarToDolanType t of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv
 nonpolarToDolanArg (ContraNonpolarArgument t) =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     case nonpolarToDolanType t of
         MkShimWit arg conv -> MkShimWit (ContraCCRPolarArgument arg) $ MkCatDual $ uninvertPolarMap conv
 nonpolarToDolanArg (RangeNonpolarArgument p q) =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     case (nonpolarToDolanType p, nonpolarToDolanType q) of
         (MkShimWit argp convp, MkShimWit argq convq) ->
             MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq
@@ -147,11 +147,11 @@ dolanArgToNonpolar (CoCCRPolarArgument t) = do
     MkShimWit arg conv <- dolanTypeToNonpolar t
     return $ MkShimWit (CoNonpolarArgument arg) conv
 dolanArgToNonpolar (ContraCCRPolarArgument t) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit arg conv <- dolanTypeToNonpolar t
         return $ MkShimWit (ContraNonpolarArgument arg) $ MkCatDual $ uninvertPolarMap conv
 dolanArgToNonpolar (RangeCCRPolarArgument p q) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         MkShimWit argp convp <- dolanTypeToNonpolar p
         MkShimWit argq convq <- dolanTypeToNonpolar q
         return $ MkShimWit (RangeNonpolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq

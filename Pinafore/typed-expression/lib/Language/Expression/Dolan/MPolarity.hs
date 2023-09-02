@@ -239,4 +239,4 @@ instance FromMPolar (InvertMPolarW w mpolarity) where
            forall polarity. (Is PolarityType polarity, mpolarity ~ 'Nothing)
         => InvertMPolarW w mpolarity
         -> Some (w (InvertPolarity polarity))
-    fromMPolarBoth (MkInvertMPolarW (BothMPolarW aw)) = invertPolarity @polarity aw
+    fromMPolarBoth (MkInvertMPolarW (BothMPolarW aw)) = withInvertPolarity @polarity aw

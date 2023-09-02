@@ -127,7 +127,7 @@ solveRecursiveTypes ::
     -> RecursiveOrPlainType ground polb b
     -> Solver ground wit (DolanShim ground a b)
 solveRecursiveTypes solvePlainTypes rpta rptb =
-    invertPolarity @polb $
+    withInvertPolarity @polb $
     MkSolver $ do
         let st = MkShimType (polarityType @pola) (polarityType @polb) rpta rptb
         rcs <- ask

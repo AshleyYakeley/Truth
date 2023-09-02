@@ -78,11 +78,11 @@ tParamToPolarArgument (CoCCRTypeParam var) =
     case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv
 tParamToPolarArgument (ContraCCRTypeParam var) =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (ContraCCRPolarArgument arg) $ MkCatDual $ uninvertPolarMap conv
 tParamToPolarArgument (RangeCCRTypeParam varp varq) =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     case ( shimWitToDolan $ mkShimWit $ VarDolanSingularType varp
          , shimWitToDolan $ mkShimWit $ VarDolanSingularType varq) of
         (MkShimWit argp convp, MkShimWit argq convq) ->

@@ -263,7 +263,7 @@ mapInvertArgsTypeF ::
     -> PolarMap (pshim (DolanVarianceKind dv)) (InvertPolarity polarity) gt gt'
     -> m (DolanArgumentsShimWit pshim dv ftb gt' (InvertPolarity polarity) t)
 mapInvertArgsTypeF f dvma dvmb args conv =
-    invertPolarity @polarity $ mapCCRArgumentsFM (mapInvertCCRPolarArgumentShimWit f) dvma dvmb args conv
+    withInvertPolarity @polarity $ mapCCRArgumentsFM (mapInvertCCRPolarArgumentShimWit f) dvma dvmb args conv
 
 mapInvertDolanArgumentsM ::
        forall m (pshim :: PolyShimKind) fta ftb dv polarity gt t.
@@ -283,7 +283,7 @@ mapInvertDolanArgumentsM ::
 mapInvertDolanArgumentsM f dvm args = let
     dvt = ccrArgumentsType args
     in case dolanVarianceCategory @pshim dvt of
-           Dict -> invertPolarity @polarity $ mapInvertArgsTypeF f dvm dvm args id
+           Dict -> withInvertPolarity @polarity $ mapInvertArgsTypeF f dvm dvm args id
 
 mergeArgsTypeF ::
        forall (m :: Type -> Type) (pshim :: PolyShimKind) (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) (ftab :: Polarity -> Type -> Type) (dv :: DolanVariance) (polarity :: Polarity) (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) (gtab :: DolanVarianceKind dv) (ta :: Type) (tb :: Type).

@@ -399,10 +399,10 @@ getCCRArgumentMapping ::
 getCCRArgumentMapping svm (CoCCRPolarArgument t) args =
     mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) $ getVarMapping t
 getCCRArgumentMapping svm (ContraCCRPolarArgument t) args =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa)) $ invertVarMapping $ getVarMapping t
 getCCRArgumentMapping svm (RangeCCRPolarArgument tp tq) args =
-    invertPolarity @polarity $
+    withInvertPolarity @polarity $
     joinVarMapping
         (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq))
         (invertVarMapping $ getVarMapping tp)

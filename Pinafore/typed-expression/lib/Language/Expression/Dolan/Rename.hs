@@ -23,8 +23,9 @@ pureMapDolanArgumentM ::
 pureMapDolanArgumentM f =
     MkEndoM $ \case
         CoCCRPolarArgument q -> fmap CoCCRPolarArgument $ unEndoM f q
-        ContraCCRPolarArgument p -> invertPolarity @polarity $ fmap ContraCCRPolarArgument $ unEndoM f p
-        RangeCCRPolarArgument p q -> invertPolarity @polarity $ liftA2 RangeCCRPolarArgument (unEndoM f p) (unEndoM f q)
+        ContraCCRPolarArgument p -> withInvertPolarity @polarity $ fmap ContraCCRPolarArgument $ unEndoM f p
+        RangeCCRPolarArgument p q ->
+            withInvertPolarity @polarity $ liftA2 RangeCCRPolarArgument (unEndoM f p) (unEndoM f q)
 
 pureMapDolanArgumentsM ::
        forall m ft dv gt. Applicative m

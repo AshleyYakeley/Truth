@@ -45,13 +45,13 @@ subtypeVariance ::
     -> solver (CCRVarianceCategory shim sv a b)
 subtypeVariance sc (CoCCRPolarArgument ta) (CoCCRPolarArgument tb) = subtypeConvert sc ta tb
 subtypeVariance sc (ContraCCRPolarArgument ta) (ContraCCRPolarArgument tb) =
-    invertPolarity @pola $
-    invertPolarity @polb $ do
+    withInvertPolarity @pola $
+    withInvertPolarity @polb $ do
         ba <- subtypeConvert sc tb ta
         return $ MkCatDual ba
 subtypeVariance sc (RangeCCRPolarArgument tpa tqa) (RangeCCRPolarArgument tpb tqb) =
-    invertPolarity @pola $
-    invertPolarity @polb $ do
+    withInvertPolarity @pola $
+    withInvertPolarity @polb $ do
         pba <- subtypeConvert sc tpb tpa
         qab <- subtypeConvert sc tqa tqb
         return $ MkCatRange pba qab
@@ -107,7 +107,7 @@ type DolanSubtypeContext :: GroundTypeKind -> (Type -> Type) -> Type
 type DolanSubtypeContext ground = SubtypeContext (DolanVarID ground) (DolanType ground) (DolanShim ground)
 
 type IsDolanSubtypeGroundType :: GroundTypeKind -> Constraint
-class (IsDolanGroundType ground, Eq (DolanSubtypeHint ground), Semigroup (DolanSubtypeHint ground)) =>
+class (DebugIsDolanGroundType ground, Eq (DolanSubtypeHint ground), Semigroup (DolanSubtypeHint ground)) =>
           IsDolanSubtypeGroundType ground where
     type DolanSubtypeHint ground :: Type
     subtypeGroundedTypes ::
