@@ -232,7 +232,7 @@ subtypeConversion ::
     -> DolanArgumentsShimWit (DolanPolyShim ground) dva (DolanType ground) gta 'Negative a
     -> ground dvb gtb
     -> DolanArgumentsShimWit (DolanPolyShim ground) dvb (DolanType ground) gtb 'Positive b
-    -> TSOpenExpression (DolanTypeSystem ground) (DolanShim ground a b)
+    -> DolanOpenExpression ground (DolanShim ground a b)
     -> SubtypeConversion ground dva gta dvb gtb
 subtypeConversion hint gta (MkShimWit rawargsa (MkPolarMap conva)) gtb (MkShimWit rawargsb (MkPolarMap convb)) convexpr =
     GeneralSubtypeConversion (maybe UnknownSK HintSK hint) $ \sc -> do

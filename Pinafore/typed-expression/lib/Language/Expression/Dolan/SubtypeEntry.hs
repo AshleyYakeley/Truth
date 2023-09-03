@@ -14,7 +14,6 @@ module Language.Expression.Dolan.SubtypeEntry
 
 import Control.Applicative.Wrapped
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -70,7 +69,7 @@ subtypeConversionEntry ::
     -> Maybe (DolanSubtypeHint ground)
     -> DolanGroundedShimWit ground 'Negative a
     -> DolanGroundedShimWit ground 'Positive b
-    -> TSOpenExpression (DolanTypeSystem ground) (DolanShim ground a b)
+    -> DolanOpenExpression ground (DolanShim ground a b)
     -> SubtypeConversionEntry ground
 subtypeConversionEntry trustme hint (MkShimWit (MkDolanGroundedType gta argsa) conva) (MkShimWit (MkDolanGroundedType gtb argsb) convb) conv =
     MkSubtypeConversionEntry trustme gta gtb $

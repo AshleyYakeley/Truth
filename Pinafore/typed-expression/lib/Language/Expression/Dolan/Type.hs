@@ -26,6 +26,7 @@ module Language.Expression.Dolan.Type
     , consDolanShimWit
     , unsafeDeleteVarShimWit
     , singleDolanType
+    , DolanOpenExpression
     , DolanTypeCheckM
     , showDolanType
     ) where
@@ -369,6 +370,9 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityTy
              Monoid (Some (DolanType ground polarity)) where
     mappend = (<>)
     mempty = MkSome NilDolanType
+
+type DolanOpenExpression :: GroundTypeKind -> Type -> Type
+type DolanOpenExpression ground = TSOpenExpression (DolanTypeSystem ground)
 
 type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
 type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)

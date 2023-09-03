@@ -55,10 +55,13 @@ instance forall (ground :: GroundTypeKind) t. (forall polarity t'.
              Show (ShimType ground t) where
     show (MkShimType pa pb ta tb) = "{" <> show ta <> show pa <> "; " <> show tb <> show pb <> "}"
 
+type SolverM :: GroundTypeKind -> [Type] -> Type -> Type
+type SolverM ground rlist = ReaderT (ListType (ShimType ground) rlist) (DolanTypeCheckM ground)
+
 type Solver :: GroundTypeKind -> (Type -> Type) -> Type -> Type
 newtype Solver ground wit a = MkSolver
     { unSolver :: forall (rlist :: [Type]).
-                          ReaderT (ListType (ShimType ground) rlist) (DolanTypeCheckM ground) (DolanSolverExpression ground wit (ListProduct rlist -> a))
+                          SolverM ground rlist (DolanSolverExpression ground wit (ListProduct rlist -> a))
     }
 
 instance forall (ground :: GroundTypeKind) wit. Functor (DolanM ground) => Functor (Solver ground wit) where
@@ -87,7 +90,7 @@ solverLiftTypeExpression ua = solverLiftSolverExpression $ solverExpressionLiftT
 
 solverLiftValueExpression ::
        forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
-    => TSOpenExpression (DolanTypeSystem ground) a
+    => DolanOpenExpression ground a
     -> Solver ground wit a
 solverLiftValueExpression va = solverLiftSolverExpression $ solverExpressionLiftValue va
 
