@@ -1,5 +1,6 @@
 module Language.Expression.Dolan.Unifier.Solver
     ( solvePuzzle
+    , rigidSolvePuzzle
     ) where
 
 import Control.Applicative.Wrapped
@@ -79,4 +80,14 @@ solvePuzzle puzzle = do
     rigidity <- renamerGetNameRigidity
     runSolver $ let
         ?rigidity = rigidity
+        in puzzleSolver puzzle
+
+rigidSolvePuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => Puzzle ground a
+    -> DolanTypeCheckM ground (DolanOpenExpression ground a)
+rigidSolvePuzzle puzzle =
+    fmap fst $
+    runSolver $ let
+        ?rigidity = \_ -> RigidName
         in puzzleSolver puzzle

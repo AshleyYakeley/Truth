@@ -168,10 +168,10 @@ testInvertedCombinedSubtype ::
 testInvertedCombinedSubtype negtype postype =
     fmap exec $
     mcatch $ do
-        (expr, _) <-
+        expr <-
             runVarRenamerT [] [] $ do
                 puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
-                solvePuzzle puzzle
+                rigidSolvePuzzle puzzle
         return $ resultToMaybe $ evalExpressionResult expr
 
 reduceUsageSolution ::

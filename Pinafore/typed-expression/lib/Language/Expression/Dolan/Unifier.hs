@@ -222,7 +222,7 @@ subtypeSingularType ::
     -> DolanSingularType ground polarity b
     -> DolanTypeCheckM ground (DolanPolarMap ground polarity a b)
 subtypeSingularType ta tb = do
-    (oexpr, _) <- rigidVarRenamerT $ solvePuzzle $ puzzleSubsumeSingular ta tb
+    oexpr <- rigidSolvePuzzle $ puzzleSubsumeSingular ta tb
     solveExpression checkSameVar oexpr
 
 invertedPolarSubtype ::

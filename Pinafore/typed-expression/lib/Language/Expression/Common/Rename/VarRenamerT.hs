@@ -2,7 +2,6 @@ module Language.Expression.Common.Rename.VarRenamerT
     ( VarRenamerT
     , runVarRenamerT
     , finalVarRenamerT
-    , rigidVarRenamerT
     ) where
 
 import Language.Expression.Common.Rename.VarNamespaceT
@@ -41,7 +40,7 @@ data RenamerState = MkRenamerState
     }
 
 newtype VarRenamerT (ts :: Type) m a =
-    MkVarRenamerT (ReaderT (Bool, [String]) (StateT RenamerState m) a)
+    MkVarRenamerT (ReaderT [String] (StateT RenamerState m) a)
     deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail)
 
 instance MonadTrans (VarRenamerT ts) where
@@ -63,7 +62,7 @@ runVarRenamerT :: Monad m => [String] -> [String] -> VarRenamerT ts m --> m
 runVarRenamerT rigidFixedNames freeFixedNames (MkVarRenamerT rsma) = let
     rsRigidNames = rigidFixedNames
     rsIndex = 0
-    in evalStateT (runReaderT rsma $ (False, rigidFixedNames <> freeFixedNames)) $ MkRenamerState {..}
+    in evalStateT (runReaderT rsma $ rigidFixedNames <> freeFixedNames) $ MkRenamerState {..}
 
 varName :: Int -> String
 varName i
@@ -81,7 +80,7 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
             i = rsIndex state
             name = debugTagVar $ varName i
         MkVarRenamerT $ lift $ put $ state {rsIndex = succ i}
-        fixedNames <- MkVarRenamerT $ asks snd
+        fixedNames <- MkVarRenamerT ask
         if elem name fixedNames
             then renamerGenerate @(VarRenamerT ts m) rgd
             else do
@@ -91,15 +90,11 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
                 return name
     renamerGetNameRigidity :: VarRenamerT ts m (String -> NameRigidity)
     renamerGetNameRigidity = do
-        allRigid <- MkVarRenamerT $ asks fst
-        if allRigid
-            then return $ \_ -> RigidName
-            else do
-                state <- MkVarRenamerT $ lift get
-                return $ \name ->
-                    if elem name $ rsRigidNames state
-                        then RigidName
-                        else FreeName
+        state <- MkVarRenamerT $ lift get
+        return $ \name ->
+            if elem name $ rsRigidNames state
+                then RigidName
+                else FreeName
 
 finalVarRenamerT :: Monad m => VarRenamerT ts m --> VarRenamerT ts m
 finalVarRenamerT (MkVarRenamerT rsma) =
@@ -109,6 +104,3 @@ finalVarRenamerT (MkVarRenamerT rsma) =
              rs <- get
              lift $ evalStateT sma rs {rsIndex = 0})
         rsma
-
-rigidVarRenamerT :: Monad m => VarRenamerT ts m --> VarRenamerT ts m
-rigidVarRenamerT (MkVarRenamerT ma) = MkVarRenamerT $ withReaderT (\(_, names) -> (True, names)) ma
