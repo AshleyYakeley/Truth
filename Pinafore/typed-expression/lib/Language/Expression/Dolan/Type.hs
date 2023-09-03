@@ -28,6 +28,7 @@ module Language.Expression.Dolan.Type
     , singleDolanType
     , DolanOpenExpression
     , DolanTypeCheckM
+    , showDolanSingularType
     , showDolanType
     ) where
 
@@ -78,6 +79,8 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
       , MonadPlus (DolanM ground)
       , MonadThrow PatternError (DolanM ground)
       , MonadThrow (NamedExpressionError (DolanVarID ground) (DolanShimWit ground 'Negative)) (DolanM ground)
+      , AllConstraint Show (DolanSingularType ground 'Positive)
+      , AllConstraint Show (DolanSingularType ground 'Negative)
       , AllConstraint Show (DolanType ground 'Positive)
       , AllConstraint Show (DolanType ground 'Negative)
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
@@ -383,6 +386,15 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSyst
     type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive
     type TSShim (DolanTypeSystem ground) = DolanShim ground
     type TSVarID (DolanTypeSystem ground) = DolanVarID ground
+
+showDolanSingularType ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanSingularType ground polarity t
+    -> String
+showDolanSingularType =
+    case polarityType @polarity of
+        PositiveType -> allShow
+        NegativeType -> allShow
 
 showDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

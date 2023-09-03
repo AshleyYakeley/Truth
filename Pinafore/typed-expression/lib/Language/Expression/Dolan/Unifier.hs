@@ -15,7 +15,6 @@ import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier.Piece
 import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.Solver
 import Language.Expression.Dolan.Unifier.UnifierM
@@ -180,8 +179,8 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
 
 -- used for simplification, where all vars are fixed
 checkSameVar ::
-       forall (ground :: GroundTypeKind) t. IsDolanSubtypeGroundType ground
-    => PuzzlePiece ground t
+       forall (ground :: GroundTypeKind) wit t. IsDolanSubtypeGroundType ground
+    => wit t
     -> DolanTypeCheckM ground t
 {-
 checkSameVar (MkUnifierConstraint va polwit (NormalFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) _)
@@ -210,7 +209,7 @@ puzzleSubsumeSingular ::
        forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity a
     -> DolanSingularType ground polarity b
-    -> PuzzleExpression ground (DolanPolarMap ground polarity a b)
+    -> Puzzle ground (DolanPolarMap ground polarity a b)
 puzzleSubsumeSingular ta tb =
     case polarityType @polarity of
         PositiveType -> fmap MkPolarMap $ puzzleUnifySingular ta tb
@@ -223,8 +222,8 @@ subtypeSingularType ::
     -> DolanSingularType ground polarity b
     -> DolanTypeCheckM ground (DolanPolarMap ground polarity a b)
 subtypeSingularType ta tb = do
-    puzzle <- evalPuzzleExpression $ puzzleSubsumeSingular ta tb
-    solveExpression checkSameVar puzzle
+    (oexpr, _) <- rigidVarRenamerT $ solvePuzzle $ puzzleSubsumeSingular ta tb
+    solveExpression checkSameVar oexpr
 
 invertedPolarSubtype ::
        forall (ground :: GroundTypeKind) polarity a b. (Is PolarityType polarity, IsDolanSubtypeGroundType ground)

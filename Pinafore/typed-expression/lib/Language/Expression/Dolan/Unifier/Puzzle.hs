@@ -50,10 +50,10 @@ puzzleUnifySingular ::
        (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanSingularType ground pola a
     -> DolanSingularType ground polb b
-    -> PuzzleExpression ground (DolanShim ground a b)
+    -> Puzzle ground (DolanShim ground a b)
 puzzleUnifySingular ta tb =
     fmap (\conv -> iJoinMeetL1 @_ @polb . conv . iJoinMeetR1 @_ @pola) $
-    puzzleExpressionUnify (singleDolanType ta) (singleDolanType tb)
+    puzzleUnify (singleDolanType ta) (singleDolanType tb)
 
 type UnifierBisubstitution :: GroundTypeKind -> Type
 type UnifierBisubstitution ground = Bisubstitution ground (DolanShim ground) (UnifierM ground)

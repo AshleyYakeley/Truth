@@ -254,6 +254,12 @@ instance Is PolarityType polarity => Show (DolanType QGroundType polarity a) whe
 instance Is PolarityType polarity => AllConstraint Show (DolanType QGroundType polarity) where
     allConstraint = Dict
 
+instance Is PolarityType polarity => Show (DolanSingularType QGroundType polarity a) where
+    show t = unpack $ toText $ exprShow t
+
+instance Is PolarityType polarity => AllConstraint Show (DolanSingularType QGroundType polarity) where
+    allConstraint = Dict
+
 instance Is PolarityType polarity => Show (DolanGroundedType QGroundType polarity a) where
     show t = unpack $ toText $ exprShow t
 
