@@ -3,6 +3,7 @@ module Language.Expression.Dolan.Unifier.Solver
     ) where
 
 import Control.Applicative.Wrapped
+import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
@@ -15,8 +16,8 @@ import Shapes
 
 type Solver :: GroundTypeKind -> Type -> Type
 newtype Solver ground a = MkSolver
-    { _unSolver :: forall (rlist :: [Type]).
-                           ReaderT (ListType (PuzzlePiece ground) rlist) (SolverM ground) (DolanOpenExpression ground (ListProduct rlist -> a))
+    { unSolver :: forall (rlist :: [Type]).
+                          ReaderT (ListType (PuzzlePiece ground) rlist) (SolverM ground) (DolanOpenExpression ground (ListProduct rlist -> a))
     }
 
 instance forall (ground :: GroundTypeKind). Functor (DolanM ground) => Functor (Solver ground) where
@@ -45,24 +46,30 @@ runSolver ::
     -> DolanTypeCheckM ground (DolanOpenExpression ground a, [UnifierBisubstitution ground])
 runSolver (MkSolver rma) = runWriterT $ fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
 
-solverLiftExpression ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => DolanOpenExpression ground a
-    -> Solver ground a
-solverLiftExpression expr = MkSolver $ pure $ fmap (\a _ -> a) expr
-
 puzzleSolver ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Puzzle ground a
     -> Solver ground a
 puzzleSolver (ClosedExpression a) = pure a
-puzzleSolver (OpenExpression piece puzzle) =
-    wexec $ do
-        (MkSolverExpression conspuzzle expr, bisubs) <- lift $ solvePiece piece
-        tell bisubs
-        puzzle' <- lift $ lift $ runUnifierM $ bisubstitutesPuzzle bisubs puzzle
-        return $
-            liftA2 (\tt (t, ta) -> ta $ tt t) (solverLiftExpression expr) (puzzleSolver $ liftA2 (,) conspuzzle puzzle')
+puzzleSolver (OpenExpression piece@MkPuzzlePiece {} puzzle) =
+    MkSolver $ do
+        pieces <- ask
+        case lookUpListElement piece pieces of
+            Just lelem -> do
+                oexpr <- unSolver $ puzzleSolver puzzle
+                return $ fmap (\lta l -> lta l (listProductGetElement lelem l)) oexpr
+            Nothing ->
+                withReaderT (\pieces' -> ConsListType piece pieces') $ do
+                    (MkSolverExpression conspuzzle expr, bisubs) <- lift $ lift $ solvePiece piece
+                    lift $ tell bisubs
+                    puzzle' <- lift $ lift $ lift $ runUnifierM $ bisubstitutesPuzzle bisubs puzzle
+                    oexpr <- unSolver $ puzzleSolver $ liftA2 (,) conspuzzle puzzle'
+                    let
+                        fixconv tt f l = let
+                            ~(t, conva) = f (iLazy conv, l)
+                            conv = tt t
+                            in conva conv
+                    return $ liftA2 fixconv expr oexpr
 
 solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

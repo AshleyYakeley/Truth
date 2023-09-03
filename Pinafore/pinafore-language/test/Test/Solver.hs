@@ -136,8 +136,7 @@ testSolver =
                  , applyTest "fix-0" "(t -> t) -> t" "(Unit -> Unit)" "Unit."
                  , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
                  , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
-                 , failTestBecause "#206" $
-                   testTree
+                 , testTree
                        "issue-206"
                        [ unifierTest "rec-0" "rec a, Maybe. a" $ do
                              ta <- stParseTypeBoth "a"
