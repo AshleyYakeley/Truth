@@ -13,6 +13,7 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier
+import Language.Expression.Dolan.Unifier.Solver
 import Shapes
 
 type UsageWitness :: GroundTypeKind -> Type -> Type -> Type
@@ -167,7 +168,10 @@ testInvertedCombinedSubtype ::
 testInvertedCombinedSubtype negtype postype =
     fmap exec $
     mcatch $ do
-        expr <- runVarRenamerT [] [] $ getCompose $ invertedCombinedSubtype @ground negtype postype
+        (expr, _) <-
+            runVarRenamerT [] [] $ do
+                puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
+                solvePuzzle puzzle
         return $ resultToMaybe $ evalExpressionResult expr
 
 reduceUsageSolution ::

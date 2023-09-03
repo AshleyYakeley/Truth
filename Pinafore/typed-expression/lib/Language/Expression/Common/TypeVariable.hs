@@ -86,5 +86,8 @@ data SomeTypeVarT =
 instance Eq SomeTypeVarT where
     MkSomeTypeVarT a == MkSomeTypeVarT b = isJust $ testEquality a b
 
+instance Show SomeTypeVarT where
+    show (MkSomeTypeVarT v) = show v
+
 someTypeVarName :: SomeTypeVarT -> String
 someTypeVarName (MkSomeTypeVarT v) = typeVarName v
