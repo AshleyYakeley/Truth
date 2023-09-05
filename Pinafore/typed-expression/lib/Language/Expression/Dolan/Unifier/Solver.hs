@@ -16,6 +16,7 @@ import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
+import Debug.ThreadTrace
 
 type SolverM :: GroundTypeKind -> Type -> Type
 type SolverM ground = WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground)
@@ -64,6 +65,7 @@ puzzleSolverPiece ::
 puzzleSolverPiece piece puzzlerest =
     MkSolver $ do
         (MkSolverExpression conspuzzle rexpr, substsout, bisubs) <- lift $ lift $ solvePiece piece
+        for_ bisubs $ \bisub -> traceIOM $ "push bisub: " <> show bisub
         lift $ tell bisubs
         puzzlerest' <- lift $ lift $ lift $ runUnifierM $ applySubstsToPuzzle substsout puzzlerest
         oexpr <- unSolver $ puzzleSolver $ liftA2 (,) conspuzzle puzzlerest'
@@ -76,14 +78,17 @@ puzzleSolver ::
 puzzleSolver (ClosedExpression a) = pure a
 puzzleSolver (OpenExpression piece@(WholePiece [] (wconstr@MkWholeConstraint {})) puzzlerest) =
     MkSolver $ do
+        traceIOM $ "piece: " <> show piece
         seen <- ask
         case lookUpListElement wconstr seen of
             Just lelem
                 | solveRecursive -> do
+                    traceIOM $ "already seen: " <> show wconstr
                     oexpr <- unSolver $ puzzleSolver puzzlerest
                     return $ fmap (\lta l -> lta l (listProductGetElement lelem l)) oexpr
             _ ->
                 withReaderT (\seen' -> ConsListType wconstr seen') $ do
+                    traceIOM $ "constraint: " <> show wconstr
                     expr <- unSolver $ puzzleSolverPiece piece $ fmap (\ab a -> (a, ab a)) puzzlerest
                     let
                         fixconv f l = let
@@ -96,20 +101,23 @@ solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a, [UnifierBisubstitution ground])
-solvePuzzle puzzle = do
+solvePuzzle puzzle = traceBracket "SOLVE" $ do
+    traceIOM $ "puzzle: " <> show puzzle
     rigidity <- renamerGetNameRigidity
     (a, subs) <-
         runSolver $ let
             ?rigidity = rigidity
             in puzzleSolver puzzle
+    for_ subs $ \sub -> traceIOM $ "final bisub: " <> show sub
     return (a, subs)
 
 rigidSolvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a)
-rigidSolvePuzzle puzzle =
+rigidSolvePuzzle puzzle = traceBracket "RIGID SOLVE" $ do
+    traceIOM $ "puzzle: " <> show puzzle
     fmap fst $
-    runSolver $ let
-        ?rigidity = \_ -> RigidName
-        in puzzleSolver puzzle
+        runSolver $ let
+            ?rigidity = \_ -> RigidName
+            in puzzleSolver puzzle
