@@ -19,14 +19,17 @@ import Shapes
 type Puzzle :: GroundTypeKind -> Type -> Type
 type Puzzle ground = Expression (Piece ground)
 
-constraintPuzzle :: forall (ground :: GroundTypeKind) a. WholeConstraint ground a -> Puzzle ground a
-constraintPuzzle constr = varExpression $ MkPiece [] constr
+wholeConstraintPuzzle :: forall (ground :: GroundTypeKind) a. WholeConstraint ground a -> Puzzle ground a
+wholeConstraintPuzzle constr = varExpression $ WholePiece [] constr
+
+atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint ground a -> Puzzle ground a
+atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
 
 pieceShimPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => WholeConstraintShim ground a
     -> Puzzle ground a
-pieceShimPuzzle (MkShimWit constr (MkCatDual cconv)) = fmap cconv $ constraintPuzzle constr
+pieceShimPuzzle (MkShimWit constr (MkCatDual cconv)) = fmap cconv $ wholeConstraintPuzzle constr
 
 atomicPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
@@ -39,7 +42,7 @@ flipUnifyPuzzle ::
        FlipType ground 'Positive a
     -> FlipType ground 'Negative b
     -> Puzzle ground (DolanShim ground a b)
-flipUnifyPuzzle fta ftb = constraintPuzzle $ MkWholeConstraint fta ftb
+flipUnifyPuzzle fta ftb = wholeConstraintPuzzle $ MkWholeConstraint fta ftb
 
 puzzleUnify ::
        forall (ground :: GroundTypeKind) pola polb a b. (Is PolarityType pola, Is PolarityType polb)
@@ -165,30 +168,3 @@ bisubstituteSubst ::
     -> Substitution ground
     -> Substitution ground
 bisubstituteSubst _bisub subst = subst -- NYI
-
-applySubstsToPuzzle ::
-       forall (ground :: GroundTypeKind) a. (IsDolanGroundType ground)
-    => [Substitution ground]
-    -> Puzzle ground a
-    -> Puzzle ground a
-applySubstsToPuzzle substs = mapExpressionWitnesses $ \piece call -> call (applySubstsToPiece substs piece) id
-
-instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground) => BisubstituteToPuzzle ground (Piece ground) where
-    bisubstituteToPuzzle bisub (MkPiece substs wc) = do
-        let substs' = fmap (bisubstituteSubst bisub) substs
-        puzzle <- bisubstituteToPuzzle bisub wc
-        return $ applySubstsToPuzzle substs' puzzle
-
-instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground) => BisubstituteToPuzzle ground (Puzzle ground) where
-    bisubstituteToPuzzle _ (ClosedExpression a) = return $ pure a
-    bisubstituteToPuzzle bisub (OpenExpression piece puzzle) = do
-        ps1 <- bisubstituteToPuzzle bisub piece
-        per <- bisubstituteToPuzzle bisub puzzle
-        return $ liftA2 (\t ta -> ta t) ps1 per
-
-bisubstitutesPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [UnifierBisubstitution ground]
-    -> Puzzle ground a
-    -> UnifierM ground (Puzzle ground a)
-bisubstitutesPuzzle bisubs = unEndoM $ mconcat $ fmap (MkEndoM . bisubstituteToPuzzle) bisubs

@@ -15,6 +15,7 @@ import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unifier.Crumble
 import Language.Expression.Dolan.Unifier.FlipType
 import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.Solver

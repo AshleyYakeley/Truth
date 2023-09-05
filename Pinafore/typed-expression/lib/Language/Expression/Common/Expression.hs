@@ -57,15 +57,13 @@ solveExpression _f (ClosedExpression a) = pure a
 solveExpression f (OpenExpression wt expr) = solveExpression f expr <*> f wt
 
 mapExpressionWitnessesM ::
-       Applicative m
-    => (forall t r. w t -> (forall t'. w t' -> (t' -> t) -> m r) -> m r)
-    -> Expression w a
-    -> m (Expression w a)
+       forall m w1 w2 a. Applicative m
+    => (forall t. w1 t -> m (Expression w2 t))
+    -> Expression w1 a
+    -> m (Expression w2 a)
 mapExpressionWitnessesM _ (ClosedExpression a) = pure $ ClosedExpression a
 mapExpressionWitnessesM f (OpenExpression wt expr) =
-    f wt $ \wt' conv -> fmap (OpenExpression wt') $ mapExpressionWitnessesM f $ fmap (\ta -> ta . conv) expr
+    liftA2 (liftA2 $ \t ta -> ta t) (f wt) (mapExpressionWitnessesM f expr)
 
-mapExpressionWitnesses ::
-       (forall t r. w t -> (forall t'. w t' -> (t' -> t) -> r) -> r) -> Expression w a -> Expression w a
-mapExpressionWitnesses m exp =
-    runIdentity $ mapExpressionWitnessesM (\wt call -> Identity $ m wt $ \wt' conv -> runIdentity $ call wt' conv) exp
+mapExpressionWitnesses :: forall w1 w2 a. (forall t. w1 t -> Expression w2 t) -> Expression w1 a -> Expression w2 a
+mapExpressionWitnesses m expr = runIdentity $ mapExpressionWitnessesM (\wt -> Identity $ m wt) expr

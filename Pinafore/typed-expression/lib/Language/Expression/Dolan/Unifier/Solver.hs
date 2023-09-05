@@ -13,8 +13,12 @@ import Language.Expression.Dolan.Unifier.Crumble
 import Language.Expression.Dolan.Unifier.FlipType
 import Language.Expression.Dolan.Unifier.Piece
 import Language.Expression.Dolan.Unifier.Puzzle
+import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
+
+type SolverM :: GroundTypeKind -> Type -> Type
+type SolverM ground = WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground)
 
 type Solver :: GroundTypeKind -> Type -> Type
 newtype Solver ground a = MkSolver
@@ -59,9 +63,10 @@ puzzleSolverPiece ::
     -> Solver ground b
 puzzleSolverPiece piece puzzlerest =
     MkSolver $ do
-        ((MkSolverExpression conspuzzle rexpr, substsout), bisubs) <- lift $ lift $ solvePiece piece
+        (MkSolverExpression conspuzzle rexpr, substsout, bisubs) <- lift $ lift $ solvePiece piece
         lift $ tell bisubs
-        oexpr <- unSolver $ puzzleSolver $ liftA2 (,) conspuzzle (applySubstsToPuzzle substsout puzzlerest)
+        puzzlerest' <- lift $ lift $ lift $ runUnifierM $ applySubstsToPuzzle substsout puzzlerest
+        oexpr <- unSolver $ puzzleSolver $ liftA2 (,) conspuzzle puzzlerest'
         return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
 
 puzzleSolver ::
@@ -69,15 +74,15 @@ puzzleSolver ::
     => Puzzle ground a
     -> Solver ground a
 puzzleSolver (ClosedExpression a) = pure a
-puzzleSolver (OpenExpression piece@(MkPiece substsin wconstr@MkWholeConstraint {}) puzzlerest) =
+puzzleSolver (OpenExpression piece@(WholePiece [] (wconstr@MkWholeConstraint {})) puzzlerest) =
     MkSolver $ do
         seen <- ask
-        case (substsin, lookUpListElement wconstr seen) of
-            ([], Just lelem)
+        case lookUpListElement wconstr seen of
+            Just lelem
                 | solveRecursive -> do
                     oexpr <- unSolver $ puzzleSolver puzzlerest
                     return $ fmap (\lta l -> lta l (listProductGetElement lelem l)) oexpr
-            ([], _) ->
+            _ ->
                 withReaderT (\seen' -> ConsListType wconstr seen') $ do
                     expr <- unSolver $ puzzleSolverPiece piece $ fmap (\ab a -> (a, ab a)) puzzlerest
                     let
@@ -85,7 +90,7 @@ puzzleSolver (OpenExpression piece@(MkPiece substsin wconstr@MkWholeConstraint {
                             ~(conv, a) = f (iLazy conv, l)
                             in a
                     return $ fmap fixconv expr
-            _ -> unSolver $ puzzleSolverPiece piece puzzlerest
+puzzleSolver (OpenExpression piece puzzlerest) = puzzleSolverPiece piece puzzlerest
 
 solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

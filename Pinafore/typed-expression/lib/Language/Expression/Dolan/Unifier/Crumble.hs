@@ -1,7 +1,8 @@
 {-# LANGUAGE ApplicativeDo #-}
 
 module Language.Expression.Dolan.Unifier.Crumble
-    ( SolverM
+    ( applySubstsToPuzzle
+    , bisubstitutesPuzzle
     , solvePiece
     ) where
 
@@ -23,12 +24,67 @@ import Language.Expression.Dolan.Unifier.WholeConstraint
 import Language.Expression.Dolan.Unroll
 import Shapes
 
-type SolverM :: GroundTypeKind -> Type -> Type
-type SolverM ground = WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground)
+applySubstToAtomicConstraint ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => Substitution ground
+    -> AtomicConstraint ground a
+    -> UnifierM ground (Puzzle ground a)
+applySubstToAtomicConstraint subst ac = do
+    mpuzzle <- runSubstitution subst ac
+    case mpuzzle of
+        Just puzzle -> return puzzle
+        Nothing -> return $ atomicConstraintPuzzle ac
+
+applySubstsToAtomicConstraint ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [Substitution ground]
+    -> AtomicConstraint ground a
+    -> UnifierM ground (Puzzle ground a)
+applySubstsToAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
+applySubstsToAtomicConstraint (s:ss) ac = do
+    puzzle <- applySubstToAtomicConstraint s ac
+    applySubstsToPuzzle ss puzzle
+
+applySubstsToPiece ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [Substitution ground]
+    -> Piece ground a
+    -> UnifierM ground (Puzzle ground a)
+applySubstsToPiece newsubsts (WholePiece substs wc) = return $ varExpression $ WholePiece (substs <> newsubsts) wc
+applySubstsToPiece newsubsts (AtomicPiece ac) = applySubstsToAtomicConstraint newsubsts ac
+
+applySubstsToPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [Substitution ground]
+    -> Puzzle ground a
+    -> UnifierM ground (Puzzle ground a)
+applySubstsToPuzzle substs = mapExpressionWitnessesM $ applySubstsToPiece substs
+
+applySubstsToPuzzleExpression ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [Substitution ground]
+    -> PuzzleExpression ground a
+    -> UnifierM ground (PuzzleExpression ground a)
+applySubstsToPuzzleExpression substs (MkSolverExpression puzzle expr) = do
+    puzzle' <- applySubstsToPuzzle substs puzzle
+    return $ MkSolverExpression puzzle' expr
+
+bisubToSubst ::
+       forall (ground :: GroundTypeKind). IsDolanGroundType ground
+    => UnifierBisubstitution ground
+    -> Substitution ground
+bisubToSubst _ = error "NYI: bisubToSubst"
+
+bisubstitutesPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [UnifierBisubstitution ground]
+    -> Puzzle ground a
+    -> UnifierM ground (Puzzle ground a)
+bisubstitutesPuzzle bisubs = applySubstsToPuzzle $ fmap bisubToSubst bisubs
 
 type Crumbler :: GroundTypeKind -> Type -> Type
 newtype Crumbler ground a = MkCrumbler
-    { _unCrumbler :: ReaderT [Substitution ground] (WriterT [Substitution ground] (SolverM ground)) (PuzzleExpression ground a)
+    { runCrumbler :: DolanTypeCheckM ground (PuzzleExpression ground a)
     }
 
 instance forall (ground :: GroundTypeKind). Functor (DolanM ground) => Functor (Crumbler ground) where
@@ -46,16 +102,9 @@ instance forall (ground :: GroundTypeKind). Monad (DolanM ground) => WrappedAppl
     type WAInnerM (Crumbler ground) = DolanTypeCheckM ground
     wexec msa =
         MkCrumbler $ do
-            MkCrumbler sa <- lift $ lift $ lift msa
+            MkCrumbler sa <- msa
             sa
-    whoist mm (MkCrumbler sb) = MkCrumbler $ hoist (hoist (hoist mm)) sb
-
-runCrumbler ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => Crumbler ground a
-    -> [Substitution ground]
-    -> DolanTypeCheckM ground ((PuzzleExpression ground a, [Substitution ground]), [UnifierBisubstitution ground])
-runCrumbler (MkCrumbler rwwma) subsin = runWriterT $ runWriterT $ runReaderT rwwma subsin
+    whoist mm (MkCrumbler sb) = MkCrumbler $ mm sb
 
 crumblerLiftPuzzleExpression ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -101,12 +150,12 @@ genNewName = False
 crumbleNewAtomic ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => AtomicConstraint ground a
-    -> SolverM ground (a, Substitution ground)
+    -> DolanTypeCheckM ground (a, Substitution ground, UnifierBisubstitution ground)
 crumbleNewAtomic (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt) recv) =
     withRepresentative pol $ do
         MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
             if genNewName
-                then lift renamerGenerateFreeUVar
+                then renamerGenerateFreeUVar
                 else return $ MkSomeTypeVarT oldvar
         withInvertPolarity @polarity $
             assignTypeVarT @(JoinMeetType polarity newtv pt) oldvar $ do
@@ -116,7 +165,7 @@ crumbleNewAtomic (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt) r
                 substwit <-
                     if recv
                         then do
-                            MkSomeTypeVarT recvar <- lift renamerGenerateFreeUVar
+                            MkSomeTypeVarT recvar <- renamerGenerateFreeUVar
                             assignSameTypeVarT oldvar recvar $
                                 return $ \ptw' ->
                                     shimWitToDolan $
@@ -132,7 +181,7 @@ crumbleNewAtomic (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt) r
                         InvertFlipType ptw ->
                             case isInvertInvertPolarity @polarity of
                                 Refl -> do
-                                    rigidity <- lift renamerGetNameRigidity
+                                    rigidity <- renamerGetNameRigidity
                                     return $
                                         MkSubstitution
                                             pol
@@ -142,9 +191,9 @@ crumbleNewAtomic (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt) r
                                                  ptw' <- invertTypeM rigidity ptw
                                                  return $ substwit ptw')
                                             (Just ptw)
-                tell [substBisubstitution subst]
-                return (unPolarMap $ polar2 @(DolanShim ground) @polarity @newtv @pt, subst)
+                return (unPolarMap $ polar2 @(DolanShim ground) @polarity @newtv @pt, subst, substBisubstitution subst)
 
+{-
 crumbleAtomic ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => AtomicConstraint ground a
@@ -167,6 +216,12 @@ crumbleAtomic ac =
                 (a, s) <- lift $ lift $ crumbleNewAtomic ac
                 lift $ tell [s]
                 return $ pure a
+-}
+crumbleAtomic ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => AtomicConstraint ground a
+    -> Crumbler ground a
+crumbleAtomic ac = crumblerLiftPuzzle $ atomicConstraintPuzzle ac
 
 crumbleAtomicLE ::
        forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
@@ -381,5 +436,11 @@ crumbleWholeConstraint (MkWholeConstraint (InvertFlipType ta) (InvertFlipType tb
 solvePiece ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Piece ground a
-    -> DolanTypeCheckM ground ((PuzzleExpression ground a, [Substitution ground]), [UnifierBisubstitution ground])
-solvePiece (MkPiece substs constr) = runCrumbler (crumbleWholeConstraint constr) substs
+    -> DolanTypeCheckM ground (PuzzleExpression ground a, [Substitution ground], [UnifierBisubstitution ground])
+solvePiece (WholePiece substs constr) = do
+    pexpr <- runCrumbler $ crumbleWholeConstraint constr
+    pexpr' <- lift $ runUnifierM $ applySubstsToPuzzleExpression substs pexpr
+    return (pexpr', [], [])
+solvePiece (AtomicPiece ac) = do
+    (conv, sub, bisub) <- crumbleNewAtomic ac
+    return (pure conv, [sub], [bisub])
