@@ -22,6 +22,21 @@ data Substitution ground where
         -> Maybe (DolanType ground (InvertPolarity polarity) t)
         -> Substitution ground
 
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Substitution ground) where
+    show (MkSubstitution pol oldvar newvar mt mi) = let
+        invpol = invertPolarity pol
+        st =
+            case mToMaybe mt of
+                Just (MkShimWit t _) -> withRepresentative pol $ showDolanType t
+                Nothing -> "FAILS"
+        si =
+            case mi of
+                Just invtype -> "; INV " <> withRepresentative invpol (showDolanType invtype)
+                Nothing -> ""
+        in "{" <>
+           show oldvar <>
+           show pol <> " => " <> st <> "; " <> show oldvar <> show invpol <> " => " <> show newvar <> si <> "}"
+
 substBisubstitution ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
     => Substitution ground
