@@ -58,6 +58,8 @@ data ErrorType
     | InterpretTypeExprBadJoinMeetError Polarity
     | InterpretTypeRecursionNotCovariant Name
                                          NamedText
+    | InterpretTypeRecursionImmediate Name
+                                      NamedText
     | InterpretTypeNotAmbipolarError NamedText
     | InterpretTypeNotGroundedError NamedText
     | InterpretTypeNotEntityError NamedText
@@ -178,6 +180,8 @@ instance ShowNamedText ErrorType where
     showNamedText (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
     showNamedText (InterpretTypeRecursionNotCovariant var tp) =
         "recursive variable " <> showNamedText var <> " is not covariant in type " <> tp
+    showNamedText (InterpretTypeRecursionImmediate var tp) =
+        "recursive variable " <> showNamedText var <> " is used immediately in type " <> tp
     showNamedText (InterpretTypeNotAmbipolarError t) = t <> " is not an ambipolar type"
     showNamedText (InterpretTypeNotGroundedError t) = t <> " is not a grounded type"
     showNamedText (InterpretTypeNotEntityError t) = t <> " is not an entity type"

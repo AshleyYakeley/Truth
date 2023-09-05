@@ -7,6 +7,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.Occur
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -20,6 +21,9 @@ data RollUp ground where
         => DolanType ground polarity t
         -> DolanIsoShimWit ground polarity t
         -> RollUp ground
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (RollUp ground) where
+    show (MkRollUp unrolled (MkShimWit rolled _)) = showDolanType unrolled <> " => " <> showDolanType rolled
 
 mkRollUp ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) tv. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -87,7 +91,10 @@ getRollUpsInSingularType ::
 getRollUpsInSingularType (VarDolanSingularType _) = []
 getRollUpsInSingularType (GroundedDolanSingularType (MkDolanGroundedType _ args)) =
     forDolanArguments getRollUpsInType args
-getRollUpsInSingularType (RecursiveDolanSingularType var t) = mkRollUp var t : getRollUpsInType t
+getRollUpsInSingularType (RecursiveDolanSingularType var t) =
+    if occursInType var t
+        then mkRollUp var t : getRollUpsInType t
+        else getRollUpsInType t
 
 getRollUpsInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

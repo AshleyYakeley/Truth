@@ -64,3 +64,8 @@ mapExpressionWitnessesM ::
 mapExpressionWitnessesM _ (ClosedExpression a) = pure $ ClosedExpression a
 mapExpressionWitnessesM f (OpenExpression wt expr) =
     f wt $ \wt' conv -> fmap (OpenExpression wt') $ mapExpressionWitnessesM f $ fmap (\ta -> ta . conv) expr
+
+mapExpressionWitnesses ::
+       (forall t r. w t -> (forall t'. w t' -> (t' -> t) -> r) -> r) -> Expression w a -> Expression w a
+mapExpressionWitnesses m exp =
+    runIdentity $ mapExpressionWitnessesM (\wt call -> Identity $ m wt $ \wt' conv -> runIdentity $ call wt' conv) exp

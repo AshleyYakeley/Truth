@@ -431,12 +431,8 @@ testType =
                     ]
               , testTree
                     "recursive"
-                    [ simplifyTypeTest "rec a, a" "None"
-                    , simplifyTypeTest "rec a, (a | Maybe a)" "rec a, Maybe. a"
-                    , simplifyTypeTest "rec a, (a | Integer)" "Integer."
-                    , simplifyTypeTest "rec a, Maybe a" "rec a, Maybe. a"
+                    [ simplifyTypeTest "rec a, Maybe a" "rec a, Maybe. a"
                     , simplifyTypeTest "rec a, Integer" "Integer."
-                    , simplifyTypeTest "Maybe (rec a, a)" "Maybe. None"
                     , simplifyTypeTest "Maybe (rec a, List a)" "Maybe. (rec a, List. a)"
                     , simplifyTypeTest "Maybe (rec a, Integer)" "Maybe. Integer."
                     , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a, rec b, a *: b" "rec b, b *: b"

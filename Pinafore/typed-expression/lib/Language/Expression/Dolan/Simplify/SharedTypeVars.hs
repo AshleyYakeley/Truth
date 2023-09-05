@@ -36,6 +36,6 @@ mergeSharedTypeVars =
                Just (MkSomeTypeVarT (va :: TypeVarT tva), MkSomeTypeVarT (vb :: TypeVarT tvb)) ->
                    assignTypeVarT @tva vb $ let
                        bisub :: Bisubstitution ground (DolanShim ground) Identity
-                       bisub = MkBisubstitution False vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
+                       bisub = MkBisubstitution vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
                        in appEndo (mergeSharedTypeVars @ground <> endoMToEndo (bisubstitutes @ground [bisub])) expr
                Nothing -> expr

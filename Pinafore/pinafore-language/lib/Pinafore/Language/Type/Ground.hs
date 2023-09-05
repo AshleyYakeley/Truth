@@ -66,7 +66,9 @@ getGroundProperty prop gt =
     case qgtProperties gt of
         MkGroundProperties f -> f prop
 
-class ( MonadIO Interpreter
+class ( MonadException Interpreter
+      , Show (Exc Interpreter)
+      , MonadIO Interpreter
       , MonadPlus Interpreter
       , MonadThrow PatternError Interpreter
       , MonadThrow (NamedExpressionError VarID (QShimWit 'Negative)) Interpreter

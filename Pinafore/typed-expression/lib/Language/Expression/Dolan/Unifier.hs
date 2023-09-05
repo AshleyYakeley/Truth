@@ -15,143 +15,13 @@ import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unifier.FlipType
 import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.Solver
 import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Variance
 import Shapes
 
-{-
-type DolanUnifier :: GroundTypeKind -> Type -> Type
-type DolanUnifier ground = Expression (UnifierConstraint ground)
-
-type DolanUnifierExpression :: GroundTypeKind -> Type -> Type
-type DolanUnifierExpression ground = DolanSolverExpression ground (UnifierConstraint ground)
-
-bisubstitutePositiveVar ::
-       forall (ground :: GroundTypeKind) tv t. IsDolanSubtypeGroundType ground
-    => TypeVarT tv
-    -> DolanType ground 'Positive t
-    -> DolanUnifier ground (DolanShim ground t tv)
-bisubstitutePositiveVar _ NilDolanType = pure initf
-bisubstitutePositiveVar vn (ConsDolanType t1 tr) =
-    OpenExpression (geSingleUnifierConstraint vn t1) $
-    fmap (\fr f1 -> joinf (f1 . join1) fr) $ bisubstitutePositiveVar vn tr
-
-bisubstituteNegativeVar ::
-       forall (ground :: GroundTypeKind) tv t. IsDolanSubtypeGroundType ground
-    => TypeVarT tv
-    -> DolanType ground 'Negative t
-    -> DolanUnifier ground (DolanShim ground tv t)
-bisubstituteNegativeVar _ NilDolanType = pure termf
-bisubstituteNegativeVar vn (ConsDolanType t1 tr) =
-    OpenExpression (leSingleUnifierConstraint vn t1) $
-    fmap (\fr f1 -> meetf (meet1 . f1) fr) $ bisubstituteNegativeVar vn tr
-
-bindUnifierMWit ::
-       forall (ground :: GroundTypeKind) polarity wit t r. (IsDolanSubtypeGroundType ground)
-    => UnifierM ground (DolanShimWit ground polarity t)
-    -> (forall t'. DolanType ground polarity t' -> PolarMapType (DolanShim ground) polarity t t' -> Solver ground wit r)
-    -> Solver ground wit r
-bindUnifierMWit mst call = wbindUnifierM mst $ \(MkShimWit wt (MkPolarMap conv)) -> call wt conv
-
-bisubstituteUnifier ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => UnifierBisubstitution ground
-    -> DolanUnifier ground a
-    -> UnifierSolver ground a
-bisubstituteUnifier _ (ClosedExpression a) = pure a
-bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (MkUnifierConstraint vwit PositiveType (NormalFlipType tw) _) expr)
-    | Just Refl <- testEquality vsub vwit =
-        bindUnifierMWit mwq $ \tq convq ->
-            bindUnifierMWit (bisubstituteType bisub tw) $ \tw' convw -> do
-                conv <- unifyTypes tw' tq
-                val' <- bisubstituteUnifier bisub expr
-                pure $ val' $ convq . conv . convw
-bisubstituteUnifier bisub@(MkBisubstitution _ vsub mwp _) (OpenExpression (MkUnifierConstraint vwit NegativeType (NormalFlipType tw) _) expr)
-    | Just Refl <- testEquality vsub vwit =
-        bindUnifierMWit mwp $ \tp convp ->
-            bindUnifierMWit (bisubstituteType bisub tw) $ \tw' convw -> do
-                conv <- unifyTypes tp tw'
-                val' <- bisubstituteUnifier bisub expr
-                pure $ val' $ convw . conv . convp
-bisubstituteUnifier bisub@(MkBisubstitution _ vsub mwp _) (OpenExpression (MkUnifierConstraint vwit NegativeType (InvertFlipType tw) _) expr)
-    | Just Refl <- testEquality vsub vwit =
-        bindUnifierMWit mwp $ \tp convp -> do
-            conv <- unifyTypes tp tw
-            val' <- bisubstituteUnifier bisub expr
-            pure $ val' $ conv . convp
-bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (MkUnifierConstraint vwit PositiveType (InvertFlipType tw) _) expr)
-    | Just Refl <- testEquality vsub vwit =
-        bindUnifierMWit mwq $ \tq convq -> do
-            conv <- unifyTypes tw tq
-            val' <- bisubstituteUnifier bisub expr
-            pure $ val' $ convq . conv
-bisubstituteUnifier bisub (OpenExpression (MkUnifierConstraint vwit PositiveType (NormalFlipType tw) _) expr)
-    | Just (MkShimWit (VarDolanSingularType v) (MkPolarMap conv)) <- dolanToMaybeTypeShim tw
-    , Just Refl <- testEquality v vwit = do
-        val' <- bisubstituteUnifier bisub expr
-        pure $ val' conv
-bisubstituteUnifier bisub (OpenExpression (MkUnifierConstraint vwit NegativeType (NormalFlipType tw) _) expr)
-    | Just (MkShimWit (VarDolanSingularType v) (MkPolarMap conv)) <- dolanToMaybeTypeShim tw
-    , Just Refl <- testEquality v vwit = do
-        val' <- bisubstituteUnifier bisub expr
-        pure $ val' conv
-bisubstituteUnifier bisub (OpenExpression (MkUnifierConstraint vn PositiveType (NormalFlipType tw) _) expr) =
-    bindUnifierMWit (bisubstituteType bisub tw) $ \tp' conv -> do
-        val' <- bisubstituteUnifier bisub expr
-        pv <- solverLiftTypeExpression $ bisubstitutePositiveVar vn tp'
-        pure $ val' $ pv . conv
-bisubstituteUnifier bisub (OpenExpression (MkUnifierConstraint vn NegativeType (NormalFlipType tw) _) expr) =
-    bindUnifierMWit (bisubstituteType bisub tw) $ \tp' conv -> do
-        val' <- bisubstituteUnifier bisub expr
-        pv <- solverLiftTypeExpression $ bisubstituteNegativeVar vn tp'
-        pure $ val' $ conv . pv
-bisubstituteUnifier bisub (OpenExpression subwit expr) = solverOpenExpression subwit $ bisubstituteUnifier bisub expr
-
-type InvertSubstitution :: GroundTypeKind -> Type
-data InvertSubstitution ground where
-    MkInvertSubstitution
-        :: forall (ground :: GroundTypeKind) polarity tv tv' t. (JoinMeetType (InvertPolarity polarity) tv' t ~ tv)
-        => TypeVarT tv
-        -> PolarityType polarity
-        -> TypeVarT tv'
-        -> DolanType ground polarity t
-        -> InvertSubstitution ground
-
-invertSubstitute ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => InvertSubstitution ground
-    -> DolanUnifier ground a
-    -> UnifierSolver ground a
-invertSubstitute _ (ClosedExpression a) = pure a
-invertSubstitute sub@(MkInvertSubstitution oldvar substpol newvar st) (OpenExpression (MkUnifierConstraint depvar unipol fvt recv) expr)
-    | Just Refl <- testEquality oldvar depvar = let
-        solv' = invertSubstitute sub expr
-        in solverOpenExpression (MkUnifierConstraint newvar unipol fvt recv) $
-           case (substpol, unipol) of
-               (PositiveType, PositiveType) -> do
-                   fa <- solv'
-                   convm <-
-                       case fvt of
-                           NormalFlipType vt -> unifyTypes vt st
-                           InvertFlipType vt -> unifyTypes vt st
-                   pure $ \conv -> fa $ meetf conv convm
-               (NegativeType, NegativeType) -> do
-                   fa <- solv'
-                   convm <-
-                       case fvt of
-                           NormalFlipType vt -> unifyTypes st vt
-                           InvertFlipType vt -> unifyTypes st vt
-                   pure $ \conv -> fa $ joinf conv convm
-               (PositiveType, NegativeType) -> do
-                   fa <- solv'
-                   pure $ \conv -> fa $ conv . meet1
-               (NegativeType, PositiveType) -> do
-                   fa <- solv'
-                   pure $ \conv -> fa $ join1 . conv
-invertSubstitute sub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute sub expr
--}
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = Puzzle ground
     type UnifierSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
@@ -168,10 +38,9 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SubsumeTypeSystem (DolanTypeSystem ground) where
     type Subsumer (DolanTypeSystem ground) = Puzzle ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
-    usubSubsumer [] subsumer = return $ solverExpressionLiftType subsumer
-    usubSubsumer (s:ss) subsumer = do
-        subsumer' <- lift $ runUnifierM $ bisubstitutePuzzle s subsumer
-        usubSubsumerExpression @(DolanTypeSystem ground) ss $ solverExpressionLiftType subsumer'
+    usubSubsumer ss subsumer = do
+        subsumer' <- lift $ runUnifierM $ bisubstitutesPuzzle ss subsumer
+        return $ solverExpressionLiftType subsumer'
     solveSubsumer = solvePuzzle
     subsumerPosSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
     subsumerNegSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
@@ -183,13 +52,13 @@ checkSameVar ::
     => wit t
     -> DolanTypeCheckM ground t
 {-
-checkSameVar (MkUnifierConstraint va polwit (NormalFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) _)
+checkSameVar (MkAtomicConstraint va polwit (NormalFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) _)
     | Just Refl <- testEquality va vb =
         return $
         case polwit of
             PositiveType -> iJoinL1
             NegativeType -> iMeetR1
-checkSameVar (MkUnifierConstraint va polwit (InvertFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) _)
+checkSameVar (MkAtomicConstraint va polwit (InvertFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) _)
     | Just Refl <- testEquality va vb =
         return $
         case polwit of
@@ -244,7 +113,7 @@ unifySubtypeContext' = MkSubtypeContext puzzleUnify solverLiftValueExpression
 
 {-
 type UnifierSolver :: GroundTypeKind -> Type -> Type
-type UnifierSolver ground = Solver ground (UnifierConstraint ground)
+type UnifierSolver ground = Solver ground (AtomicConstraint ground)
 
 subtypeConversionAsGeneralAs ::
        forall (ground :: GroundTypeKind) solver (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
@@ -284,5 +153,5 @@ unifierSubtypeConversionAsGeneralAs ::
     => SubtypeConversion ground dva gta dvb gtb
     -> SubtypeConversion ground dva gta dvb gtb
     -> DolanM ground Bool
-unifierSubtypeConversionAsGeneralAs _ _ = return undefined
+unifierSubtypeConversionAsGeneralAs _ _ = return $ error "NYI: unifierSubtypeConversionAsGeneralAs"
     --- = subtypeConversionAsGeneralAs runCheckUnifier unifySubtypeContext'

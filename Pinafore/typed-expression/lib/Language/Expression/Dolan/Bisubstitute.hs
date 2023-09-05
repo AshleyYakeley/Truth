@@ -36,8 +36,7 @@ type DeferredBisubstitution :: (Type -> Type) -> GroundTypeKind -> ShimKind Type
 data DeferredBisubstitution m ground shim tv newtypepos newtypeneg where
     MkDeferredBisubstitution
         :: forall m (ground :: GroundTypeKind) (shim :: ShimKind Type) tv newtypepos newtypeneg.
-           Bool
-        -> TypeVarT tv
+           TypeVarT tv
         -> m (PShimWit shim (DolanType ground) 'Positive newtypepos)
         -> m (PShimWit shim (DolanType ground) 'Negative newtypeneg)
         -> DeferredBisubstitution m ground shim tv newtypepos newtypeneg
@@ -46,15 +45,14 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m oldname new
          , Traversable m
          ) => VarRenameable (DeferredBisubstitution m ground shim oldname newtypepos newtypeneg) where
     varRename ev =
-        MkEndoM $ \(MkDeferredBisubstitution isRecursive var mpos mneg) -> do
+        MkEndoM $ \(MkDeferredBisubstitution var mpos mneg) -> do
             mpos' <- unEndoM (endoFor $ varRename ev) mpos
             mneg' <- unEndoM (endoFor $ varRename ev) mneg
-            return $ MkDeferredBisubstitution isRecursive var mpos' mneg'
+            return $ MkDeferredBisubstitution var mpos' mneg'
 
 type Bisubstitution :: GroundTypeKind -> ShimKind Type -> (Type -> Type) -> Type
 data Bisubstitution ground shim m =
-    forall tv. MkBisubstitution Bool
-                                (TypeVarT tv)
+    forall tv. MkBisubstitution (TypeVarT tv)
                                 (m (PShimWit shim (DolanType ground) 'Positive tv))
                                 (m (PShimWit shim (DolanType ground) 'Negative tv))
 
@@ -62,11 +60,8 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadInn
          , AllConstraint Show (DolanType ground 'Positive)
          , AllConstraint Show (DolanType ground 'Negative)
          ) => Show (Bisubstitution ground shim m) where
-    show (MkBisubstitution isRecursive var mtpos mtneg) = let
-        srec =
-            if isRecursive
-                then " (recursive)"
-                else ""
+    show (MkBisubstitution var mtpos mtneg) = let
+        svar = show var
         spos =
             case mToMaybe mtpos of
                 Just (MkShimWit t _) -> allShow t
@@ -75,35 +70,33 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadInn
             case mToMaybe mtneg of
                 Just (MkShimWit t _) -> allShow t
                 Nothing -> "FAILS"
-        in show var <> srec <> " => " <> "{+ => " <> spos <> "; - => " <> sneg <> "}"
+        in "{" <> svar <> "+ => " <> spos <> "; " <> svar <> "- => " <> sneg <> "}"
 
 deferredBisubstitution ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m r.
        Bisubstitution ground shim m
     -> (forall tv. DeferredBisubstitution m ground shim tv tv tv -> r)
     -> r
-deferredBisubstitution (MkBisubstitution isRecursive var mpos mneg) call =
-    call $ MkDeferredBisubstitution isRecursive var mpos mneg
+deferredBisubstitution (MkBisubstitution var mpos mneg) call = call $ MkDeferredBisubstitution var mpos mneg
 
 instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. (IsDolanGroundType ground, Traversable m) =>
              VarRenameable (Bisubstitution ground shim m) where
     varRename ev =
-        MkEndoM $ \(MkBisubstitution isRecursive var mpos mneg) -> do
+        MkEndoM $ \(MkBisubstitution var mpos mneg) -> do
             mpos' <- unEndoM (endoFor $ varRename ev) mpos
             mneg' <- unEndoM (endoFor $ varRename ev) mneg
-            return $ MkBisubstitution isRecursive var mpos' mneg'
+            return $ MkBisubstitution var mpos' mneg'
 
 mkPolarBisubstitution ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity m tv. Is PolarityType polarity
-    => Bool
-    -> TypeVarT tv
+    => TypeVarT tv
     -> m (PShimWit shim (DolanType ground) polarity tv)
     -> m (PShimWit shim (DolanType ground) (InvertPolarity polarity) tv)
     -> Bisubstitution ground shim m
-mkPolarBisubstitution isRecursive n a b =
+mkPolarBisubstitution n a b =
     case polarityType @polarity of
-        PositiveType -> MkBisubstitution isRecursive n a b
-        NegativeType -> MkBisubstitution isRecursive n b a
+        PositiveType -> MkBisubstitution n a b
+        NegativeType -> MkBisubstitution n b a
 
 class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type)
     | w -> ground polarity
@@ -135,7 +128,7 @@ bothBisubstitute ::
     -> PShimWit (pshim Type) (DolanType ground) polarity t
 bothBisubstitute var wa wb (MkShimWit tt conv) = let
     bisub :: Bisubstitution ground (pshim Type) Identity
-    bisub = withInvertPolarity @polarity $ mkPolarBisubstitution True var (pure wa) (pure wb)
+    bisub = withInvertPolarity @polarity $ mkPolarBisubstitution var (pure wa) (pure wb)
     in mapPolarShimWit conv $ runIdentity $ bisubstituteType bisub tt
 
 singleBisubstitute ::
@@ -151,7 +144,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
          , BisubstitutablePolyShim pshim
          , Is PolarityType polarity
          ) => Bisubstitutable ground pshim polarity (DolanSingularType ground polarity) where
-    deferBisubstituteType (MkDeferredBisubstitution _ n mpos mneg) (VarDolanSingularType n')
+    deferBisubstituteType (MkDeferredBisubstitution n mpos mneg) (VarDolanSingularType n')
         | Just Refl <- testEquality n n' =
             case polarityType @polarity of
                 PositiveType -> do
@@ -160,7 +153,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
                 NegativeType -> do
                     MkShimWit t conv <- mneg
                     return $ MkShimWit t $ mkPolarPolyFuncShim $ \(_, convneg) -> conv . convneg
-    deferBisubstituteType (MkDeferredBisubstitution _ nb _ _) t@(RecursiveDolanSingularType nt _)
+    deferBisubstituteType (MkDeferredBisubstitution nb _ _) t@(RecursiveDolanSingularType nt _)
         | Just Refl <- testEquality nb nt = return $ shimWitToDolan $ mkPolarShimWit t
     deferBisubstituteType sub (RecursiveDolanSingularType recvar pt) = do
         pts <- deferBisubstituteType sub pt
@@ -237,12 +230,7 @@ recursiveBisubstitute oldvar recvarname t =
         case polarityType @polarity of
             PositiveType -> let
                 dbisub :: DeferredBisubstitution Identity ground (ReducedPolyShim pshim Type) tv newtv tv
-                dbisub =
-                    MkDeferredBisubstitution
-                        False
-                        oldvar
-                        (pure $ varDolanShimWit newvar)
-                        (pure $ varDolanShimWit oldvar)
+                dbisub = MkDeferredBisubstitution oldvar (pure $ varDolanShimWit newvar) (pure $ varDolanShimWit oldvar)
                 in case runIdentity $ deferBisubstituteType dbisub t of
                        MkShimWit t' rconv ->
                            assignTypeVarWit newvar t' $
@@ -252,12 +240,7 @@ recursiveBisubstitute oldvar recvarname t =
                                in conv
             NegativeType -> let
                 dbisub :: DeferredBisubstitution Identity ground (ReducedPolyShim pshim Type) tv tv newtv
-                dbisub =
-                    MkDeferredBisubstitution
-                        False
-                        oldvar
-                        (pure $ varDolanShimWit oldvar)
-                        (pure $ varDolanShimWit newvar)
+                dbisub = MkDeferredBisubstitution oldvar (pure $ varDolanShimWit oldvar) (pure $ varDolanShimWit newvar)
                 in case runIdentity $ deferBisubstituteType dbisub t of
                        MkShimWit t' rconv ->
                            assignTypeVarWit newvar t' $

@@ -70,8 +70,6 @@ The essential fact of recursive types is that `rec a, F a` and `F (rec a, F a)` 
 ## Type Simplification
 
 1. Unused recursion is eliminated.  
-`rec a, (a | T)` &rarr; `rec a, T`  
-`rec a, a` &rarr; `Any` or `None`  
 `rec a, T` &rarr; `T` (if `a` does not appear in `T`)
 
 1. Any type variables that are "fully constrained" are eliminated (i.e., replaced with `None` or `Any`).  

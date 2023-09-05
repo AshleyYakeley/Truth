@@ -1,7 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Simplify
-    (
+    ( SimplifierSettings(..)
+    , defaultSimplifierSettings
     ) where
 
 import Language.Expression.Common
@@ -17,6 +18,33 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
+
+data SimplifierSettings = MkSimplifierSettings
+    { simplifyAny :: Bool
+    , simplifyEliminateUnusedRecursion :: Bool
+    , simplifyMergeDuplicateGroundTypes :: Bool
+    , simplifyEliminateOneSidedTypeVars :: Bool
+    , simplifyFullyConstrainedTypeVars :: Bool
+    , simplifyMergeSharedTypeVars :: Bool
+    , simplifyMergeDuplicateTypeVars :: Bool
+    , simplifyRollUpRecursiveTypes :: Bool
+    }
+
+defaultSimplifierSettings :: SimplifierSettings
+defaultSimplifierSettings =
+    MkSimplifierSettings
+        { simplifyAny = True
+        , simplifyEliminateUnusedRecursion = True
+        , simplifyMergeDuplicateGroundTypes = True
+        , simplifyEliminateOneSidedTypeVars = False
+        , simplifyFullyConstrainedTypeVars = True
+        , simplifyMergeSharedTypeVars = True
+        , simplifyMergeDuplicateTypeVars = True
+        , simplifyRollUpRecursiveTypes = True
+        }
+
+simplifierSettings :: SimplifierSettings
+simplifierSettings = defaultSimplifierSettings
 
 -- Simplification:
 --
@@ -50,16 +78,18 @@ dolanSimplifyTypes ::
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
     => EndoM (DolanTypeCheckM ground) a
 dolanSimplifyTypes =
-    mif True $
-    mconcat
-        [ mif True $ endoToEndoM $ eliminateUnusedRecursion @ground
-        , mif True $ mergeDuplicateGroundTypes @ground
-        , mif False $ endoToEndoM $ eliminateOneSidedTypeVars @ground
-        , mif True $ fullyConstrainedTypeVars @ground
-        , mif True $ endoToEndoM $ mergeSharedTypeVars @ground
-        , mif True $ endoToEndoM $ mergeDuplicateTypeVars @ground
-        , mif True $ endoToEndoM $ rollUpRecursiveTypes @ground
-        ]
+    case simplifierSettings of
+        MkSimplifierSettings {..} ->
+            mif simplifyAny $
+            mconcat
+                [ mif simplifyEliminateUnusedRecursion $ endoToEndoM $ eliminateUnusedRecursion @ground
+                , mif simplifyMergeDuplicateGroundTypes $ mergeDuplicateGroundTypes @ground
+                , mif simplifyEliminateOneSidedTypeVars $ endoToEndoM $ eliminateOneSidedTypeVars @ground
+                , mif simplifyFullyConstrainedTypeVars $ fullyConstrainedTypeVars @ground
+                , mif simplifyMergeSharedTypeVars $ endoToEndoM $ mergeSharedTypeVars @ground
+                , mif simplifyMergeDuplicateTypeVars $ endoToEndoM $ mergeDuplicateTypeVars @ground
+                , mif simplifyRollUpRecursiveTypes $ endoToEndoM $ rollUpRecursiveTypes @ground
+                ]
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SimplifyTypeSystem (DolanTypeSystem ground) where

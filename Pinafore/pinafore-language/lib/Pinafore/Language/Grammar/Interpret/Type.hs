@@ -94,8 +94,11 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
             (\(MkSome t) ->
                  assignTypeVarWit var t $
                  case safeRecursiveDolanSingularType var t of
-                     Just rt -> return $ MkSome $ singleDolanType rt
-                     Nothing -> throw $ InterpretTypeRecursionNotCovariant name $ exprShow t)
+                     SuccessResult rt -> return $ MkSome $ singleDolanType rt
+                     FailureResult ImmediateRecursiveTypeError ->
+                         throw $ InterpretTypeRecursionImmediate name $ exprShow t
+                     FailureResult ContravariantRecursiveTypeError ->
+                         throw $ InterpretTypeRecursionNotCovariant name $ exprShow t)
             mt
 
 interpretTypeRangeFromType ::

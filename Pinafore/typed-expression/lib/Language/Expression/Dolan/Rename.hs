@@ -46,7 +46,7 @@ dolanNamespaceRenameArguments = pureMapDolanArgumentsM $ namespaceRenameType @(D
 dolanArgumentsVarRename ::
        forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv) polarity m.
        (IsDolanGroundType ground, Monad m, Is PolarityType polarity)
-    => EndoM' m TypeVarT
+    => RenameSource m
     -> EndoM' m (DolanArguments dv (DolanType ground) gt polarity)
 dolanArgumentsVarRename ev = pureMapDolanArgumentsM $ varRename ev
 
@@ -68,15 +68,8 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
                 newvar <- unEndoM (varRename ev) oldvar
                 return $ VarDolanSingularType newvar
             RecursiveDolanSingularType var st -> do
-                var' <- unEndoM (varRename ev) var
-                let
-                    ev' :: EndoM' _ TypeVarT
-                    ev' =
-                        MkEndoM $ \v ->
-                            case testEquality v var of
-                                Just Refl -> pure var'
-                                Nothing -> unEndoM ev v
-                st' <- unEndoM (varRename ev') st
+                var' <- unEndoM (rsNewVar ev) var
+                st' <- unEndoM (varRename $ addToRenameSource var var' ev) st
                 return $ RecursiveDolanSingularType var' st'
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
@@ -92,7 +85,7 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
     type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
     type RenamerNamespaceT (DolanTypeSystem ground) = VarNamespaceT (DolanTypeSystem ground)
-    namespaceRenameTypeVar = varNamespaceRenameTypeVar
+    namespaceRenameSource = varNamespaceRenameSource
     renameNewFreeVar = do
         n <- renamerGenerateFree
         newTypeVar n $ \v -> return $ MkNewVar (varDolanShimWit v) (varDolanShimWit v)

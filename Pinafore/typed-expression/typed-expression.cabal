@@ -85,8 +85,11 @@ library
       Language.Expression.Dolan.Simplify.RollUpRecursion
       Language.Expression.Dolan.Simplify
       Language.Expression.Dolan.Invert
-      Language.Expression.Dolan.Solver
       Language.Expression.Dolan.Unifier.UnifierM
+      Language.Expression.Dolan.Unifier.FlipType
+      Language.Expression.Dolan.Unifier.AtomicConstraint
+      Language.Expression.Dolan.Unifier.WholeConstraint
+      Language.Expression.Dolan.Unifier.Substitution
       Language.Expression.Dolan.Unifier.Piece
       Language.Expression.Dolan.Unifier.Puzzle
       Language.Expression.Dolan.Unifier.Crumble

@@ -98,7 +98,35 @@ testSolver :: TestTree
 testSolver =
     testTree
         "solver"
-        [ testTree "unifier" $ let
+        [ testTree "renamer" $ let
+              renameTest :: Text -> Text -> TestTree
+              renameTest origtext expectedtext =
+                  testTree (unpack origtext) $
+                  runTester defaultTester $
+                  testerLiftInterpreter $
+                  runUnifierTester $ do
+                      expectedtype <- stParseType @_ @'Positive expectedtext
+                      origtype <- stParseType @_ @'Positive origtext
+                      foundtype <- stRename [] FreeName origtype
+                      liftIO $ assertEqual "" expectedtype foundtype
+              in [renameTest "x -> x" "a -> a", renameTest "rec y, Maybe. y" "rec a, Maybe. a"]
+        , testTree "simplifier" $ let
+              simplifyTest :: Text -> Text -> TestTree
+              simplifyTest origtext expectedtext =
+                  testTree (unpack origtext) $
+                  runTester defaultTester $
+                  testerLiftInterpreter $ do
+                      expectedtype <- parseSomeType @'Positive expectedtext
+                      simplifiedType <- runUnifierTester $ stParseType @_ @'Positive origtext
+                      liftIO $ assertEqual "" expectedtype simplifiedType
+              in [ simplifyTest "x -> x" "a -> a"
+                 , simplifyTest "rec y, Maybe. y" "rec a, Maybe. a"
+                 , simplifyTest "xa -> xa | xa -> xa" "a -> a"
+                 , simplifyTest "rec xa, Unit" "Unit"
+                 , simplifyTest "rec xa, Integer | rec xa, Maybe xa" "Integer | rec a, Maybe a"
+                 , simplifyTest "Maybe Unit | (rec ra, Maybe ra)" "Maybe Unit | (rec a, Maybe a)"
+                 ]
+        , testTree "unifier" $ let
               unifierTest :: String -> Text -> UnifierTester (SomeType 'Positive) -> TestTree
               unifierTest name expectedtext uta =
                   testTree name $
@@ -130,12 +158,31 @@ testSolver =
                             ("let f: " <> ftext <> " = error \"f\"; x: " <> xtext <> " = error \"x\" in f x")
                             ("{} => " <> extext)
                       ]
-              in [ applyTest "function-0" "Number -> Text" "Integer" "Text."
-                 , applyTest "id-0" "t -> t" "Unit" "Unit."
-                 , applyTest "id-1" "t -> t" "(a -> a)" "a -> a"
-                 , applyTest "fix-0" "(t -> t) -> t" "(Unit -> Unit)" "Unit."
-                 , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
-                 , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
+              in [ testTree
+                       "simple"
+                       [ unifierTest "a" "Unit" $ do
+                             tu <- stParseType "Unit"
+                             ta <- stParseTypeBoth "a"
+                             (tan, tap) <- stRename [] FreeName ta
+                             stUnify tu tan
+                             return tap
+                       , unifierTest "a -> a" "Unit" $ do
+                             ta <- stParseType "a"
+                             tua <- stParseType "a -> Unit"
+                             tbb <- stParseType "b -> b"
+                             (ta', (tua', tbb')) <- stRename [] FreeName (ta, (tua, tbb))
+                             stUnify tua' tbb'
+                             return ta'
+                       ]
+                 , testTree
+                       "apply"
+                       [ applyTest "function-0" "Number -> Text" "Integer" "Text."
+                       , applyTest "id-0" "t -> t" "Unit" "Unit."
+                       , applyTest "id-1" "t -> t" "(a -> a)" "a -> a"
+                       , applyTest "fix-0" "(t -> t) -> t" "(Unit -> Unit)" "Unit."
+                       , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
+                       , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
+                       ]
                  , testTree
                        "issue-206"
                        [ unifierTest "rec-0" "rec a, Maybe. a" $ do
