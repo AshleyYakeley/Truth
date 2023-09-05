@@ -95,7 +95,10 @@ puzzleSolver (OpenExpression piece@(WholePiece [] (wconstr@MkWholeConstraint {})
                             ~(conv, a) = f (iLazy conv, l)
                             in a
                     return $ fmap fixconv expr
-puzzleSolver (OpenExpression piece puzzlerest) = puzzleSolverPiece piece puzzlerest
+puzzleSolver (OpenExpression piece puzzlerest) =
+    wexec $ do
+        traceIOM $ "piece: " <> show piece
+        return $ puzzleSolverPiece piece puzzlerest
 
 solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
