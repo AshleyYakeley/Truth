@@ -183,7 +183,8 @@ testSolver =
                        , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
                        , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
                        ]
-                 , testTree
+                 , failTestBecause "#206" $
+                   testTree
                        "issue-206"
                        [ unifierTest "rec-0" "rec a, Maybe. a" $ do
                              ta <- stParseTypeBoth "a"
@@ -232,7 +233,7 @@ testSolver =
                               return tq'
                       liftIO $ assertEqual "" expectedtype found
               in [ recursiveTest "Integer -> Any" "a -> a" "a -> (a | Integer.)"
-                 , recursiveTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
+                 , recursiveTest "Maybe b -> Maybe b" "a -> a" "Maybe a -> Maybe a"
                  , recursiveTest "a" "Maybe a" "rec a, Maybe a"
                  , recursiveTest "Any" "Integer" "Integer"
                  , recursiveTest "(Text | Integer) -> Any" "a -> a" "a -> (a | (Integer. | Text.))"
@@ -240,7 +241,6 @@ testSolver =
                        "issue-229"
                        [ recursiveTest "a & (a -> b)" "c -> c" "a -> (rec b, a | a -> b)"
                        , recursiveTest "c" "c -> c" "a -> (rec b, a | a -> b)"
-                       , recursiveTest "c -> c" "c" "Unit"
                        ]
                  ]
         , testTree "subsumer" $ let

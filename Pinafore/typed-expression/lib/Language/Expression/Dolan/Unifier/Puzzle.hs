@@ -16,8 +16,9 @@ import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
 
 type AtomicChange :: GroundTypeKind -> Type
-newtype AtomicChange ground =
-    MkAtomicChange (forall a. AtomicConstraint ground a -> UnifierM ground (Puzzle ground a))
+newtype AtomicChange ground = MkAtomicChange
+    { runAtomicChange :: forall a. AtomicConstraint ground a -> UnifierM ground (Puzzle ground a)
+    }
 
 bisubstituteAtomicChange ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
@@ -35,12 +36,11 @@ substituteAtomicChange sub = bisubstituteAtomicChange $ substBisubstitution sub
 
 type Piece :: GroundTypeKind -> Type -> Type
 data Piece ground t where
-    WholePiece
-        :: forall (ground :: GroundTypeKind) t. [AtomicChange ground] -> WholeConstraint ground t -> Piece ground t
+    WholePiece :: forall (ground :: GroundTypeKind) t. WholeConstraint ground t -> Piece ground t
     AtomicPiece :: forall (ground :: GroundTypeKind) t. AtomicConstraint ground t -> Piece ground t
 
 instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (Piece ground t) where
-    show (WholePiece substs wc) = "whole: " <> show wc <> " (+" <> show (length substs) <> ")"
+    show (WholePiece wc) = "whole: " <> show wc
     show (AtomicPiece ac) = "atomic: " <> show ac
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (Piece ground) where
@@ -50,7 +50,7 @@ type Puzzle :: GroundTypeKind -> Type -> Type
 type Puzzle ground = Expression (Piece ground)
 
 wholeConstraintPuzzle :: forall (ground :: GroundTypeKind) a. WholeConstraint ground a -> Puzzle ground a
-wholeConstraintPuzzle constr = varExpression $ WholePiece [] constr
+wholeConstraintPuzzle constr = varExpression $ WholePiece constr
 
 atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint ground a -> Puzzle ground a
 atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
@@ -81,12 +81,18 @@ puzzleUnify ta tb = let
 type PuzzleExpression :: GroundTypeKind -> Type -> Type
 type PuzzleExpression ground = TSOpenSolverExpression (DolanTypeSystem ground) (Puzzle ground)
 
+puzzleExpression ::
+       forall (ground :: GroundTypeKind) a. ()
+    => Puzzle ground a
+    -> PuzzleExpression ground a
+puzzleExpression = solverExpressionLiftType
+
 puzzleExpressionUnify ::
        forall (ground :: GroundTypeKind) pola polb a b. (Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola a
     -> DolanType ground polb b
     -> PuzzleExpression ground (DolanShim ground a b)
-puzzleExpressionUnify ta tb = solverExpressionLiftType $ puzzleUnify ta tb
+puzzleExpressionUnify ta tb = puzzleExpression $ puzzleUnify ta tb
 
 puzzleUnifySingular ::
        forall (ground :: GroundTypeKind) pola polb a b.
@@ -122,6 +128,15 @@ bisubSubstitution bisub (MkAtomicConstraint depvar NegativeType (NormalFlipType 
     MkShimWit tp (MkPolarMap conv) <- bisubstituteType bisub tw
     return $ fmap (\pv -> conv . pv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
 bisubSubstitution _ ac = return $ atomicConstraintPuzzle ac
+
+bisubstitutesWholeConstraintPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [UnifierBisubstitution ground]
+    -> WholeConstraint ground a
+    -> UnifierM ground (Puzzle ground a)
+bisubstitutesWholeConstraintPuzzle bisubs wc = do
+    MkShimWit wc' (MkCatDual conv) <- bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
+    return $ fmap conv $ wholeConstraintPuzzle wc'
 
 invertSubstitution ::
        forall (ground :: GroundTypeKind) polarity v t a. (IsDolanGroundType ground)

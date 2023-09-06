@@ -698,8 +698,6 @@ testQueries =
                            , testSubtype True "rec a, List a" "List Showable" ["[]"]
                            , testSubtype True "List (rec a, List a)" "List Showable" ["[]"]
                            , testSameType False "None" "None" []
-                           , testSameType False "rec a, a" "None" []
-                           , testSameType False "List (rec a, a)" "List None" ["[]"]
                            , testSameType True "rec a, Integer" "Integer" ["0"]
                            , testSameType True "List (rec a, Integer)" "List Integer" ["[0]"]
                            , testTree

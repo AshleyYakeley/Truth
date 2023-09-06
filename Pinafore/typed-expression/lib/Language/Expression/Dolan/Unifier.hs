@@ -20,7 +20,6 @@ import Language.Expression.Dolan.Unifier.FlipType
 import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.Solver
 import Language.Expression.Dolan.Unifier.UnifierM
-import Language.Expression.Dolan.Variance
 import Shapes
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
@@ -105,54 +104,3 @@ invertedPolarSubtype ta tb =
     case polarityType @polarity of
         PositiveType -> fmap MkPolarMap $ puzzleExpressionUnify @ground ta tb
         NegativeType -> fmap MkPolarMap $ puzzleExpressionUnify tb ta
-
-{-
-unifySubtypeContext' ::
-       forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
-    => DolanSubtypeContext ground (Puzzle ground)
-unifySubtypeContext' = MkSubtypeContext puzzleUnify solverLiftValueExpression
-
-{-
-type UnifierSolver :: GroundTypeKind -> Type -> Type
-type UnifierSolver ground = Solver ground (AtomicConstraint ground)
-
-subtypeConversionAsGeneralAs ::
-       forall (ground :: GroundTypeKind) solver (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
-       (IsDolanSubtypeGroundType ground, WrappedApplicative solver, WAInnerM solver ~ DolanTypeCheckM ground)
-    => (forall a. solver a -> WAInnerM solver Bool)
-    -> DolanSubtypeContext ground solver
-    -> SubtypeConversion ground dva gta dvb gtb
-    -> SubtypeConversion ground dva gta dvb gtb
-    -> DolanM ground Bool
-
-
-runCheckUnifier ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => UnifierSolver ground a
-    -> DolanTypeCheckM ground Bool
-runCheckUnifier us =
-    altIs $ do
-        MkSolverExpression expr _ <- runSolver us
-        _ <- solveUnifier @(DolanTypeSystem ground) expr
-        return ()
-
--}
-
-
-runCheckUnifier ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => Puzzle ground a
-    -> DolanTypeCheckM ground Bool
-runCheckUnifier puzzle =
-    altIs $ do
-        _ <- solvePuzzle puzzle
-        return ()
--}
-unifierSubtypeConversionAsGeneralAs ::
-       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
-       IsDolanSubtypeGroundType ground
-    => SubtypeConversion ground dva gta dvb gtb
-    -> SubtypeConversion ground dva gta dvb gtb
-    -> DolanM ground Bool
-unifierSubtypeConversionAsGeneralAs _ _ = return $ error "NYI: unifierSubtypeConversionAsGeneralAs"
-    --- = subtypeConversionAsGeneralAs runCheckUnifier unifySubtypeContext'

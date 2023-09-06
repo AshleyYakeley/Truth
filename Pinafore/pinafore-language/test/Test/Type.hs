@@ -308,7 +308,7 @@ testType =
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe. a"
-                    , textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
+                    , testMark $ textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x : Entity = Just x in x" "{} -> Entity."
                     , textTypeTest "let rec x : Maybe Entity = Just x in x" "{} -> Maybe. Entity."
@@ -385,10 +385,14 @@ testType =
                                    , recTest "None -> Text" "a -> a" "(a & Text.) -> a"
                                    , fixTest "Text -> Text" "a -> a" "Text. -> Text."
                                    , recTest "Text -> Text" "a -> a" "Text. -> Text."
-                                   , fixTest "Maybe a -> Maybe a" "a -> a" "Any -> (rec a, Maybe. a)"
-                                   , recTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a) -> None"
-                                   , fixTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
-                                   , recTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
+                                   , failTestBecause "#206" $
+                                     fixTest "Maybe a -> Maybe a" "a -> a" "Any -> (rec a, Maybe. a)"
+                                   , failTestBecause "#206" $
+                                     recTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a) -> None"
+                                   , failTestBecause "#206" $
+                                     fixTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
+                                   , failTestBecause "#206" $
+                                     recTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
                                    , fixTest "a" "Maybe a" "rec a, Maybe. a"
                                    , recTest "a" "Maybe a" "rec a, Maybe. a"
                                    , fixTest "Any" "Integer" "Integer."

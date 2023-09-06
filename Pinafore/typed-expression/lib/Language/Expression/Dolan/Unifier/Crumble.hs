@@ -4,6 +4,9 @@ module Language.Expression.Dolan.Unifier.Crumble
     ( applyChangesToPuzzle
     , bisubstitutesPuzzle
     , solvePiece
+    , solveWholeConstraint
+    , solveAtomicConstraint
+    , unifierSubtypeConversionAsGeneralAs
     ) where
 
 import Control.Applicative.Wrapped
@@ -21,18 +24,19 @@ import Language.Expression.Dolan.Unifier.Substitution
 import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Unifier.WholeConstraint
 import Language.Expression.Dolan.Unroll
+import Language.Expression.Dolan.Variance
 import Shapes
 
 applyChangeToAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => AtomicChange ground
+    => UnifierBisubstitution ground
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-applyChangeToAtomicConstraint (MkAtomicChange change) = change
+applyChangeToAtomicConstraint = bisubSubstitution
 
 applyChangesToAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [AtomicChange ground]
+    => [UnifierBisubstitution ground]
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
 applyChangesToAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
@@ -42,34 +46,25 @@ applyChangesToAtomicConstraint (s:ss) ac = do
 
 applyChangesToPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [AtomicChange ground]
+    => [UnifierBisubstitution ground]
     -> Piece ground a
     -> UnifierM ground (Puzzle ground a)
-applyChangesToPiece newchanges (WholePiece changes wc) = return $ varExpression $ WholePiece (changes <> newchanges) wc
+applyChangesToPiece newchanges (WholePiece wc) = bisubstitutesWholeConstraintPuzzle newchanges wc
 applyChangesToPiece newchanges (AtomicPiece ac) = applyChangesToAtomicConstraint newchanges ac
 
 applyChangesToPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [AtomicChange ground]
+    => [UnifierBisubstitution ground]
     -> Puzzle ground a
     -> UnifierM ground (Puzzle ground a)
 applyChangesToPuzzle substs = mapExpressionWitnessesM $ applyChangesToPiece substs
-
-applyChangesToPuzzleExpression ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [AtomicChange ground]
-    -> PuzzleExpression ground a
-    -> UnifierM ground (PuzzleExpression ground a)
-applyChangesToPuzzleExpression substs (MkSolverExpression puzzle expr) = do
-    puzzle' <- applyChangesToPuzzle substs puzzle
-    return $ MkSolverExpression puzzle' expr
 
 bisubstitutesPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [UnifierBisubstitution ground]
     -> Puzzle ground a
     -> UnifierM ground (Puzzle ground a)
-bisubstitutesPuzzle bisubs = do applyChangesToPuzzle $ fmap bisubstituteAtomicChange bisubs
+bisubstitutesPuzzle = applyChangesToPuzzle
 
 type Crumbler :: GroundTypeKind -> Type -> Type
 newtype Crumbler ground a = MkCrumbler
@@ -105,7 +100,7 @@ crumblerLiftPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> Crumbler ground a
-crumblerLiftPuzzle puzzle = crumblerLiftPuzzleExpression $ solverExpressionLiftType puzzle
+crumblerLiftPuzzle puzzle = crumblerLiftPuzzleExpression $ puzzleExpression puzzle
 
 crumblerLiftExpression ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -398,14 +393,44 @@ crumbleWholeConstraint (MkWholeConstraint (NormalFlipType ta) (InvertFlipType tb
 crumbleWholeConstraint (MkWholeConstraint (InvertFlipType ta) (NormalFlipType tb)) = crumbleTT ta tb
 crumbleWholeConstraint (MkWholeConstraint (InvertFlipType ta) (InvertFlipType tb)) = crumbleTT ta tb
 
+solveWholeConstraint ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => WholeConstraint ground a
+    -> DolanTypeCheckM ground (PuzzleExpression ground a)
+solveWholeConstraint constr = runCrumbler $ crumbleWholeConstraint constr
+
+solveAtomicConstraint ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => AtomicConstraint ground a
+    -> DolanTypeCheckM ground (a, Substitution ground, UnifierBisubstitution ground)
+solveAtomicConstraint = crumbleNewAtomic
+
 solvePiece ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Piece ground a
     -> DolanTypeCheckM ground (PuzzleExpression ground a, [Substitution ground], [UnifierBisubstitution ground])
-solvePiece (WholePiece substs constr) = do
-    pexpr <- runCrumbler $ crumbleWholeConstraint constr
-    pexpr' <- lift $ runUnifierM $ applyChangesToPuzzleExpression substs pexpr
-    return (pexpr', [], [])
+solvePiece (WholePiece constr) = do
+    pexpr <- solveWholeConstraint constr
+    return (pexpr, [], [])
 solvePiece (AtomicPiece ac) = do
     (conv, sub, bisub) <- crumbleNewAtomic ac
     return (pure conv, [sub], [bisub])
+
+runCheckCrumble ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => Crumbler ground a
+    -> DolanTypeCheckM ground Bool
+runCheckCrumble ca =
+    altIs $ do
+        _ <- runCrumbler ca
+        return ()
+
+unifierSubtypeConversionAsGeneralAs ::
+       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       IsDolanSubtypeGroundType ground
+    => SubtypeConversion ground dva gta dvb gtb
+    -> SubtypeConversion ground dva gta dvb gtb
+    -> DolanM ground Bool
+unifierSubtypeConversionAsGeneralAs = let
+    ?rigidity = \_ -> RigidName
+    in subtypeConversionAsGeneralAs runCheckCrumble crumbleSubtypeContext

@@ -9,9 +9,11 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unifier.AtomicConstraint
 import Language.Expression.Dolan.Unifier.Crumble
 import Language.Expression.Dolan.Unifier.FlipType
 import Language.Expression.Dolan.Unifier.Puzzle
+import Language.Expression.Dolan.Unifier.Substitution
 import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
@@ -19,26 +21,32 @@ import Shapes
 type SolverM :: GroundTypeKind -> Type -> Type
 type SolverM ground = WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground)
 
-type Solver :: GroundTypeKind -> Type -> Type
-newtype Solver ground a = MkSolver
-    { unSolver :: forall (rlist :: [Type]).
-                          ReaderT (ListType (WholeConstraint ground) rlist) (SolverM ground) (DolanOpenExpression ground (ListProduct rlist -> a))
+type SolverA :: GroundTypeKind -> (Type -> Type) -> [Type] -> Type -> Type
+type SolverA ground f rlist a
+     = ReaderT (ListType (WholeConstraint ground) rlist) (SolverM ground) (f (ListProduct rlist -> a))
+
+type Solver :: GroundTypeKind -> (Type -> Type) -> [Type] -> Type -> Type
+newtype Solver ground f rlist a = MkSolver
+    { unSolver :: SolverA ground f rlist a
     }
 
-instance forall (ground :: GroundTypeKind). Functor (DolanM ground) => Functor (Solver ground) where
+instance forall (ground :: GroundTypeKind) f rlist. (Functor (DolanM ground), Functor f) =>
+             Functor (Solver ground f rlist) where
     fmap ab (MkSolver ruha) = MkSolver $ (fmap $ fmap $ fmap ab) ruha
 
-instance forall (ground :: GroundTypeKind). Monad (DolanM ground) => Applicative (Solver ground) where
+instance forall (ground :: GroundTypeKind) f rlist. (Monad (DolanM ground), Applicative f) =>
+             Applicative (Solver ground f rlist) where
     pure a = MkSolver $ pure $ pure $ pure a
-    MkSolver ruhab <*> MkSolver ruha =
-        MkSolver $ (\uhab uha -> (\hab ha h -> hab h $ ha h) <$> uhab <*> uha) <$> ruhab <*> ruha
+    MkSolver ruhab <*> MkSolver ruha = MkSolver $ liftA2 (liftA2 (<*>)) ruhab ruha
 
-instance forall (ground :: GroundTypeKind). MonadPlus (DolanM ground) => Alternative (Solver ground) where
+instance forall (ground :: GroundTypeKind) f rlist. (MonadPlus (DolanM ground), Applicative f) =>
+             Alternative (Solver ground f rlist) where
     empty = MkSolver empty
     MkSolver p <|> MkSolver q = MkSolver $ p <|> q
 
-instance forall (ground :: GroundTypeKind). Monad (DolanM ground) => WrappedApplicative (Solver ground) where
-    type WAInnerM (Solver ground) = SolverM ground
+instance forall (ground :: GroundTypeKind) f rlist. (Monad (DolanM ground), Applicative f) =>
+             WrappedApplicative (Solver ground f rlist) where
+    type WAInnerM (Solver ground f rlist) = SolverM ground
     wexec msa =
         MkSolver $ do
             MkSolver sa <- lift $ msa
@@ -46,51 +54,116 @@ instance forall (ground :: GroundTypeKind). Monad (DolanM ground) => WrappedAppl
     whoist mm (MkSolver sb) = MkSolver $ hoist mm sb
 
 runSolver ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => Solver ground a
-    -> DolanTypeCheckM ground (DolanOpenExpression ground a, [UnifierBisubstitution ground])
-runSolver (MkSolver rma) = runWriterT $ fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
+       forall (ground :: GroundTypeKind) f a. (IsDolanSubtypeGroundType ground, Applicative f)
+    => Solver ground f '[] a
+    -> SolverM ground (f a)
+runSolver (MkSolver rma) = fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
+
+solverAsk ::
+       forall (ground :: GroundTypeKind) f rlist a. (IsDolanSubtypeGroundType ground, Applicative f)
+    => ListElementType rlist a
+    -> Solver ground f rlist a
+solverAsk lelem = MkSolver $ return $ pure $ listProductGetElement lelem
+
+addConstraint ::
+       forall (ground :: GroundTypeKind) f rlist t a. (IsDolanSubtypeGroundType ground, Applicative f)
+    => WholeConstraint ground t
+    -> Solver ground f (t ': rlist) a
+    -> Solver ground f rlist (t -> a)
+addConstraint wconstr solver =
+    MkSolver $
+    withReaderT (\seen' -> ConsListType wconstr seen') $ fmap (fmap $ \tla l t -> tla (t, l)) $ unSolver $ solver
+
+addFixConstraint ::
+       forall (ground :: GroundTypeKind) f rlist t a. (IsDolanSubtypeGroundType ground, Applicative f)
+    => WholeConstraint ground t
+    -> Solver ground f (t ': rlist) (t, a)
+    -> Solver ground f rlist a
+addFixConstraint (wconstr@MkWholeConstraint {}) solver = let
+    fixconv f = let
+        ~(conv, a) = f $ iLazy conv
+        in a
+    in fmap fixconv $ addConstraint wconstr solver
+
+applySubstToAtomicPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => Substitution ground
+    -> AtomicPuzzle ground a
+    -> UnifierM ground (Puzzle ground a)
+applySubstToAtomicPuzzle subst puzzle = mapExpressionWitnessesM (runAtomicChange $ substituteAtomicChange subst) puzzle
+
+puzzleSolverPiece ::
+       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => AtomicConstraint ground a
+    -> AtomicPuzzle ground (a -> b)
+    -> SolverM ground (Puzzle ground b)
+puzzleSolverPiece piece puzzlerest = do
+    (a, subst, bisub) <- lift $ solveAtomicConstraint piece
+    tell [bisub]
+    puzzlerest' <- lift $ lift $ runUnifierM $ applySubstToAtomicPuzzle subst puzzlerest
+    return $ fmap (\ab -> ab a) puzzlerest'
+
+puzzleSolver ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => AtomicPuzzle ground a
+    -> SolverM ground (Puzzle ground a)
+puzzleSolver (ClosedExpression a) = return $ pure a
+puzzleSolver (OpenExpression piece puzzlerest) = puzzleSolverPiece piece puzzlerest
+
+type AtomicPuzzle :: GroundTypeKind -> Type -> Type
+type AtomicPuzzle ground = Expression (AtomicConstraint ground)
+
+type AtomicPuzzleExpression :: GroundTypeKind -> Type -> Type
+type AtomicPuzzleExpression ground = TSOpenSolverExpression (DolanTypeSystem ground) (AtomicPuzzle ground)
+
+puzzlePSolver ::
+       forall (ground :: GroundTypeKind) rlist a. IsDolanSubtypeGroundType ground
+    => AtomicPuzzle ground a
+    -> Solver ground (AtomicPuzzleExpression ground) rlist a
+puzzlePSolver puzzle = MkSolver $ pure $ fmap (\a _ -> a) $ solverExpressionLiftType puzzle
+
+crumblePiece ::
+       forall (ground :: GroundTypeKind) rlist a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => Piece ground a
+    -> Solver ground (AtomicPuzzleExpression ground) rlist a
+crumblePiece (WholePiece wconstr) =
+    MkSolver $ do
+        MkSolverExpression puzzle expr <- lift $ lift $ solveWholeConstraint wconstr
+        pexpr <- unSolver $ crumblePuzzle puzzle
+        return $ liftA2 (\lt ta -> ta . lt) pexpr (solverExpressionLiftValue expr)
+crumblePiece (AtomicPiece ac) = puzzlePSolver $ varExpression ac
 
 -- | For debugging only. Switching this off will cause the solver to hang on recursive puzzles.
 solveRecursive :: Bool
 solveRecursive = True
 
-puzzleSolverPiece ::
-       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => Piece ground a
-    -> Puzzle ground (a -> b)
-    -> Solver ground b
-puzzleSolverPiece piece puzzlerest =
-    MkSolver $ do
-        (MkSolverExpression conspuzzle rexpr, substsout, bisubs) <- lift $ lift $ solvePiece piece
-        lift $ tell bisubs
-        puzzlerest' <-
-            lift $ lift $ lift $ runUnifierM $ applyChangesToPuzzle (fmap substituteAtomicChange substsout) puzzlerest
-        oexpr <- unSolver $ puzzleSolver $ liftA2 (,) conspuzzle puzzlerest'
-        return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
-
-puzzleSolver ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+crumblePuzzle ::
+       forall (ground :: GroundTypeKind) rlist a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Puzzle ground a
-    -> Solver ground a
-puzzleSolver (ClosedExpression a) = pure a
-puzzleSolver (OpenExpression piece@(WholePiece [] (wconstr@MkWholeConstraint {})) puzzlerest) =
+    -> Solver ground (AtomicPuzzleExpression ground) rlist a
+crumblePuzzle (ClosedExpression a) = pure a
+crumblePuzzle (OpenExpression piece@(WholePiece wconstr) puzzlerest) =
     MkSolver $ do
         seen <- ask
-        case lookUpListElement wconstr seen of
-            Just lelem
-                | solveRecursive -> do
-                    oexpr <- unSolver $ puzzleSolver puzzlerest
-                    return $ fmap (\lta l -> lta l (listProductGetElement lelem l)) oexpr
-            _ ->
-                withReaderT (\seen' -> ConsListType wconstr seen') $ do
-                    expr <- unSolver $ puzzleSolverPiece piece $ fmap (\ab a -> (a, ab a)) puzzlerest
-                    let
-                        fixconv f l = let
-                            ~(conv, a) = f (iLazy conv, l)
-                            in a
-                    return $ fmap fixconv expr
-puzzleSolver (OpenExpression piece puzzlerest) = puzzleSolverPiece piece puzzlerest
+        unSolver $
+            case lookUpListElement wconstr seen of
+                Just lelem
+                    | solveRecursive -> liftA2 (\conv f -> f conv) (solverAsk lelem) (crumblePuzzle puzzlerest)
+                _ ->
+                    addFixConstraint wconstr $
+                    liftA2 (\t ta -> (t, ta t)) (crumblePiece piece) (crumblePuzzle puzzlerest)
+crumblePuzzle (OpenExpression piece puzzlerest) = liftA2 (\a ab -> ab a) (crumblePiece piece) (crumblePuzzle puzzlerest)
+
+solvePuzzleAll ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => Puzzle ground a
+    -> SolverM ground (DolanOpenExpression ground a)
+solvePuzzleAll (ClosedExpression a) = return $ pure a
+solvePuzzleAll puzzle = do
+    MkSolverExpression ap expr <- runSolver $ crumblePuzzle puzzle
+    puzzle' <- puzzleSolver ap
+    expr' <- solvePuzzleAll puzzle'
+    return $ expr <*> expr'
 
 solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -99,9 +172,9 @@ solvePuzzle ::
 solvePuzzle puzzle = do
     rigidity <- renamerGetNameRigidity
     (a, subs) <-
-        runSolver $ let
+        runWriterT $ let
             ?rigidity = rigidity
-            in puzzleSolver puzzle
+            in solvePuzzleAll puzzle
     return (a, subs)
 
 rigidSolvePuzzle ::
@@ -110,6 +183,6 @@ rigidSolvePuzzle ::
     -> DolanTypeCheckM ground (DolanOpenExpression ground a)
 rigidSolvePuzzle puzzle =
     fmap fst $
-    runSolver $ let
+    runWriterT $ let
         ?rigidity = \_ -> RigidName
-        in puzzleSolver puzzle
+        in solvePuzzleAll puzzle

@@ -5,6 +5,7 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier.FlipType
+import Language.Expression.Dolan.Unifier.UnifierM
 import Shapes
 
 type WholeConstraint :: GroundTypeKind -> Type -> Type
@@ -26,3 +27,30 @@ instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (WholeConstraint ground) where
     allConstraint = Dict
+
+type WholeConstraintShim :: GroundTypeKind -> Type -> Type
+type WholeConstraintShim ground = ShimWit (CatDual (->)) (WholeConstraint ground)
+
+bisubstituteWholeConstraint ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => UnifierBisubstitution ground
+    -> WholeConstraint ground a
+    -> UnifierM ground (WholeConstraintShim ground a)
+bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
+    MkShimWit fta' (MkPolarMap conva) <- bisubstituteFlipType bisub fta
+    MkShimWit ftb' (MkPolarMap convb) <- bisubstituteFlipType bisub ftb
+    return $ MkShimWit (MkWholeConstraint fta' ftb') $ MkCatDual $ \conv -> convb . conv . conva
+
+bisubstituteWholeConstraintShim ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => UnifierBisubstitution ground
+    -> WholeConstraintShim ground a
+    -> UnifierM ground (WholeConstraintShim ground a)
+bisubstituteWholeConstraintShim bisub = chainShimWitM $ bisubstituteWholeConstraint bisub
+
+bisubstitutesWholeConstraintShim ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [UnifierBisubstitution ground]
+    -> WholeConstraintShim ground a
+    -> UnifierM ground (WholeConstraintShim ground a)
+bisubstitutesWholeConstraintShim bisubs = unEndoM $ mconcat $ fmap (MkEndoM . bisubstituteWholeConstraintShim) bisubs
