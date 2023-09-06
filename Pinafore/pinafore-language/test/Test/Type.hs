@@ -308,7 +308,7 @@ testType =
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe. a"
-                    , testMark $ textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
+                    , textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x : Entity = Just x in x" "{} -> Entity."
                     , textTypeTest "let rec x : Maybe Entity = Just x in x" "{} -> Maybe. Entity."

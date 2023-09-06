@@ -1,6 +1,7 @@
 module Language.Expression.Dolan.Unifier.Solver
     ( solvePuzzle
     , rigidSolvePuzzle
+    , unifierSubtypeConversionAsGeneralAs
     ) where
 
 import Control.Applicative.Wrapped
@@ -16,6 +17,7 @@ import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.Substitution
 import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Unifier.WholeConstraint
+import Language.Expression.Dolan.Variance
 import Shapes
 
 type SolverM :: GroundTypeKind -> Type -> Type
@@ -186,3 +188,11 @@ rigidSolvePuzzle puzzle =
     runWriterT $ let
         ?rigidity = \_ -> RigidName
         in solvePuzzleAll puzzle
+
+unifierSubtypeConversionAsGeneralAs ::
+       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       IsDolanSubtypeGroundType ground
+    => SubtypeConversion ground dva gta dvb gtb
+    -> SubtypeConversion ground dva gta dvb gtb
+    -> DolanM ground Bool
+unifierSubtypeConversionAsGeneralAs = makeSCAGA rigidSolvePuzzle

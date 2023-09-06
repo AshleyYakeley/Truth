@@ -1,12 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
 
 module Language.Expression.Dolan.Unifier.Crumble
-    ( applyChangesToPuzzle
-    , bisubstitutesPuzzle
-    , solvePiece
+    ( bisubstitutesPuzzle
     , solveWholeConstraint
     , solveAtomicConstraint
-    , unifierSubtypeConversionAsGeneralAs
+    , makeSCAGA
     ) where
 
 import Control.Applicative.Wrapped
@@ -405,32 +403,24 @@ solveAtomicConstraint ::
     -> DolanTypeCheckM ground (a, Substitution ground, UnifierBisubstitution ground)
 solveAtomicConstraint = crumbleNewAtomic
 
-solvePiece ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => Piece ground a
-    -> DolanTypeCheckM ground (PuzzleExpression ground a, [Substitution ground], [UnifierBisubstitution ground])
-solvePiece (WholePiece constr) = do
-    pexpr <- solveWholeConstraint constr
-    return (pexpr, [], [])
-solvePiece (AtomicPiece ac) = do
-    (conv, sub, bisub) <- crumbleNewAtomic ac
-    return (pure conv, [sub], [bisub])
-
 runCheckCrumble ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => Crumbler ground a
+       forall (ground :: GroundTypeKind) t. IsDolanSubtypeGroundType ground
+    => (forall a. Puzzle ground a -> DolanTypeCheckM ground (DolanOpenExpression ground a))
+    -> Crumbler ground t
     -> DolanTypeCheckM ground Bool
-runCheckCrumble ca =
+runCheckCrumble rigidSolvePuzzle ca =
     altIs $ do
-        _ <- runCrumbler ca
+        MkSolverExpression puzzle _ <- runCrumbler ca
+        _ <- rigidSolvePuzzle puzzle
         return ()
 
-unifierSubtypeConversionAsGeneralAs ::
+makeSCAGA ::
        forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
        IsDolanSubtypeGroundType ground
-    => SubtypeConversion ground dva gta dvb gtb
+    => (forall a. Puzzle ground a -> DolanTypeCheckM ground (DolanOpenExpression ground a))
+    -> SubtypeConversion ground dva gta dvb gtb
     -> SubtypeConversion ground dva gta dvb gtb
     -> DolanM ground Bool
-unifierSubtypeConversionAsGeneralAs = let
+makeSCAGA rigidSolvePuzzle = let
     ?rigidity = \_ -> RigidName
-    in subtypeConversionAsGeneralAs runCheckCrumble crumbleSubtypeContext
+    in subtypeConversionAsGeneralAs (runCheckCrumble rigidSolvePuzzle) crumbleSubtypeContext
