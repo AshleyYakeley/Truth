@@ -90,7 +90,9 @@ library:
       - Language.Expression.Dolan.Unifier.WholeConstraint
       - Language.Expression.Dolan.Unifier.Substitution
       - Language.Expression.Dolan.Unifier.Puzzle
-      - Language.Expression.Dolan.Unifier.Crumble
+      - Language.Expression.Dolan.Unifier.AtomicSubstitute
+      - Language.Expression.Dolan.Unifier.Crumble.Type
+      - Language.Expression.Dolan.Unifier.Crumble.Puzzle
       - Language.Expression.Dolan.Unifier.Solver
       - Language.Expression.Dolan.Unifier
       - Language.Expression.Dolan.Nonpolar
