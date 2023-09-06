@@ -1,7 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Language.Expression.Dolan.Unifier
+module Language.Expression.Dolan.Solver
     ( unifierSubtypeConversionAsGeneralAs
     , invertType
     , subtypeSingularType
@@ -12,13 +12,13 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.Solver.FlipType
+import Language.Expression.Dolan.Solver.Puzzle
+import Language.Expression.Dolan.Solver.Solver
+import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier.FlipType
-import Language.Expression.Dolan.Unifier.Puzzle
-import Language.Expression.Dolan.Unifier.Solver
-import Language.Expression.Dolan.Unifier.UnifierM
 import Shapes
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where

@@ -64,11 +64,11 @@ import Language.Expression.Dolan.PShimWit as I
 import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
+import Language.Expression.Dolan.Solver (invertType)
 import Language.Expression.Dolan.Subtype as I
 import Language.Expression.Dolan.SubtypeEntry as I
 import Language.Expression.Dolan.Type as I
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier (invertType)
 import Language.Expression.Dolan.Unroll
 import Language.Expression.Dolan.Variance
 import Shapes

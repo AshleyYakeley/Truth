@@ -9,11 +9,11 @@ import Language.Expression.Dolan.InvertedCombine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.VarUsage
 import Language.Expression.Dolan.Simplify.VarUses
+import Language.Expression.Dolan.Solver
+import Language.Expression.Dolan.Solver.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier
-import Language.Expression.Dolan.Unifier.Solver
 import Shapes
 
 type UsageWitness :: GroundTypeKind -> Type -> Type -> Type

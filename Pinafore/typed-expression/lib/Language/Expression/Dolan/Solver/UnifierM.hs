@@ -1,4 +1,4 @@
-module Language.Expression.Dolan.Unifier.UnifierM where
+module Language.Expression.Dolan.Solver.UnifierM where
 
 import Data.Shim
 import Language.Expression.Common

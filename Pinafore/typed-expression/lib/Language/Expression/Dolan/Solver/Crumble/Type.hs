@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Dolan.Unifier.Crumble.Type
+module Language.Expression.Dolan.Solver.Crumble.Type
     ( crumbleConstraint
     , makeSCAGA
     ) where
@@ -8,13 +8,13 @@ module Language.Expression.Dolan.Unifier.Crumble.Type
 import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Solver.AtomicConstraint
+import Language.Expression.Dolan.Solver.FlipType
+import Language.Expression.Dolan.Solver.Puzzle
+import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier.AtomicConstraint
-import Language.Expression.Dolan.Unifier.FlipType
-import Language.Expression.Dolan.Unifier.Puzzle
-import Language.Expression.Dolan.Unifier.WholeConstraint
 import Language.Expression.Dolan.Unroll
 import Language.Expression.Dolan.Variance
 import Shapes

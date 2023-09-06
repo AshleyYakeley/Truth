@@ -1,18 +1,18 @@
-module Language.Expression.Dolan.Unifier.Solver
+module Language.Expression.Dolan.Solver.Solver
     ( solvePuzzle
     , rigidSolvePuzzle
     , unifierSubtypeConversionAsGeneralAs
     ) where
 
 import Language.Expression.Common
+import Language.Expression.Dolan.Solver.AtomicSubstitute
+import Language.Expression.Dolan.Solver.Crumble.Puzzle
+import Language.Expression.Dolan.Solver.Crumble.Type
+import Language.Expression.Dolan.Solver.FlipType
+import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier.AtomicSubstitute
-import Language.Expression.Dolan.Unifier.Crumble.Puzzle
-import Language.Expression.Dolan.Unifier.Crumble.Type
-import Language.Expression.Dolan.Unifier.FlipType
-import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Variance
 import Shapes
 

@@ -1,14 +1,14 @@
-module Language.Expression.Dolan.Unifier.FlipType where
+module Language.Expression.Dolan.Solver.FlipType where
 
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Occur
 import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier.UnifierM
 import Shapes
 
 type UnifierBisubstitution :: GroundTypeKind -> Type

@@ -1,17 +1,17 @@
-module Language.Expression.Dolan.Unifier.Crumble.Puzzle
+module Language.Expression.Dolan.Solver.Crumble.Puzzle
     ( crumblePuzzle
     ) where
 
 import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Solver.AtomicConstraint
+import Language.Expression.Dolan.Solver.Crumble.Type
+import Language.Expression.Dolan.Solver.Puzzle
+import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier.AtomicConstraint
-import Language.Expression.Dolan.Unifier.Crumble.Type
-import Language.Expression.Dolan.Unifier.Puzzle
-import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
 
 type PuzzleCrumbler :: GroundTypeKind -> [Type] -> Type -> Type

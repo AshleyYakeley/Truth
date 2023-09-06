@@ -1,15 +1,15 @@
-module Language.Expression.Dolan.Unifier.Puzzle where
+module Language.Expression.Dolan.Solver.Puzzle where
 
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
+import Language.Expression.Dolan.Solver.AtomicConstraint
+import Language.Expression.Dolan.Solver.FlipType
+import Language.Expression.Dolan.Solver.UnifierM
+import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier.AtomicConstraint
-import Language.Expression.Dolan.Unifier.FlipType
-import Language.Expression.Dolan.Unifier.UnifierM
-import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
 
 type Piece :: GroundTypeKind -> Type -> Type

@@ -14,10 +14,10 @@ module Language.Expression.Dolan.SubtypeEntry
 
 import Control.Applicative.Wrapped
 import Data.Shim
+import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unifier
 import Language.Expression.Dolan.Variance
 import Shapes
 
