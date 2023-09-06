@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Language.Expression.Dolan.Unifier.AtomicSubstitute
     ( SolverM
     , substituteAtomicPuzzle
@@ -13,12 +15,78 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier.AtomicConstraint
 import Language.Expression.Dolan.Unifier.FlipType
 import Language.Expression.Dolan.Unifier.Puzzle
-import Language.Expression.Dolan.Unifier.Substitution
 import Language.Expression.Dolan.Unifier.UnifierM
 import Shapes
 
 type SolverM :: GroundTypeKind -> Type -> Type
 type SolverM ground = WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground)
+
+type Substitution :: GroundTypeKind -> Type
+data Substitution ground where
+    MkSubstitution
+        :: forall (ground :: GroundTypeKind) polarity nv t.
+           PolarityType polarity
+        -> TypeVarT (JoinMeetType polarity nv t)
+        -> TypeVarT nv
+        -> UnifierM ground (DolanShimWit ground polarity (JoinMeetType polarity nv t))
+        -> Maybe (DolanType ground (InvertPolarity polarity) t)
+        -> Substitution ground
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Substitution ground) where
+    show (MkSubstitution pol oldvar newvar mt mi) = let
+        invpol = invertPolarity pol
+        st =
+            case mToMaybe mt of
+                Just (MkShimWit t _) -> withRepresentative pol $ showDolanType t
+                Nothing -> "FAILS"
+        si =
+            case mi of
+                Just invtype -> "; INV " <> withRepresentative invpol (showDolanType invtype)
+                Nothing -> ""
+        in "{" <>
+           show oldvar <>
+           show pol <> " => " <> st <> "; " <> show oldvar <> show invpol <> " => " <> show newvar <> si <> "}"
+
+substBisubstitution ::
+       forall (ground :: GroundTypeKind). IsDolanGroundType ground
+    => Substitution ground
+    -> UnifierBisubstitution ground
+substBisubstitution (MkSubstitution (pol :: _ polarity) oldvar newvar mt _) =
+    withRepresentative pol $
+    withInvertPolarity @polarity $ let
+        newVarWit = shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarMap polar1
+        in mkPolarBisubstitution oldvar mt $ return newVarWit
+
+invertSubstitution ::
+       forall (ground :: GroundTypeKind) polarity v t a. (IsDolanGroundType ground)
+    => PolarityType polarity
+    -> TypeVarT (JoinMeetType polarity v t)
+    -> TypeVarT v
+    -> DolanType ground (InvertPolarity polarity) t
+    -> AtomicConstraint ground a
+    -> UnifierM ground (Puzzle ground a)
+invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol fvt recv)
+    | Just Refl <- testEquality oldvar depvar =
+        return $ let
+            p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt recv)
+            p2 =
+                case (substpol, unipol) of
+                    (NegativeType, PositiveType) -> do
+                        convm <-
+                            case fvt of
+                                NormalFlipType vt -> puzzleUnify vt st
+                                InvertFlipType vt -> puzzleUnify vt st
+                        pure $ \conv -> meetf conv convm
+                    (PositiveType, NegativeType) -> do
+                        convm <-
+                            case fvt of
+                                NormalFlipType vt -> puzzleUnify st vt
+                                InvertFlipType vt -> puzzleUnify st vt
+                        pure $ \conv -> joinf conv convm
+                    (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
+                    (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv
+            in liftA2 (\t a -> a t) p1 p2
+invertSubstitution _ _ _ _ ac = return $ atomicConstraintPuzzle ac
 
 substituteAtomicChange ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground

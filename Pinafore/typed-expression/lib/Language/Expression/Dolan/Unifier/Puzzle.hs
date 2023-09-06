@@ -1,5 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-
 module Language.Expression.Dolan.Unifier.Puzzle where
 
 import Data.Shim
@@ -117,37 +115,6 @@ bisubstitutesWholeConstraintPuzzle ::
 bisubstitutesWholeConstraintPuzzle bisubs wc = do
     MkShimWit wc' (MkCatDual conv) <- bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
     return $ fmap conv $ wholeConstraintPuzzle wc'
-
-invertSubstitution ::
-       forall (ground :: GroundTypeKind) polarity v t a. (IsDolanGroundType ground)
-    => PolarityType polarity
-    -> TypeVarT (JoinMeetType polarity v t)
-    -> TypeVarT v
-    -> DolanType ground (InvertPolarity polarity) t
-    -> AtomicConstraint ground a
-    -> UnifierM ground (Puzzle ground a)
-invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol fvt recv)
-    | Just Refl <- testEquality oldvar depvar =
-        return $ let
-            p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt recv)
-            p2 =
-                case (substpol, unipol) of
-                    (NegativeType, PositiveType) -> do
-                        convm <-
-                            case fvt of
-                                NormalFlipType vt -> puzzleUnify vt st
-                                InvertFlipType vt -> puzzleUnify vt st
-                        pure $ \conv -> meetf conv convm
-                    (PositiveType, NegativeType) -> do
-                        convm <-
-                            case fvt of
-                                NormalFlipType vt -> puzzleUnify st vt
-                                InvertFlipType vt -> puzzleUnify st vt
-                        pure $ \conv -> joinf conv convm
-                    (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
-                    (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv
-            in liftA2 (\t a -> a t) p1 p2
-invertSubstitution _ _ _ _ ac = return $ atomicConstraintPuzzle ac
 
 applyChangeToAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground

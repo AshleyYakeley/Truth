@@ -88,7 +88,6 @@ library:
       - Language.Expression.Dolan.Unifier.FlipType
       - Language.Expression.Dolan.Unifier.AtomicConstraint
       - Language.Expression.Dolan.Unifier.WholeConstraint
-      - Language.Expression.Dolan.Unifier.Substitution
       - Language.Expression.Dolan.Unifier.Puzzle
       - Language.Expression.Dolan.Unifier.AtomicSubstitute
       - Language.Expression.Dolan.Unifier.Crumble.Type
