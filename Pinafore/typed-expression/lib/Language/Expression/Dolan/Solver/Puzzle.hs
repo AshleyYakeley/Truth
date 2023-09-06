@@ -107,50 +107,43 @@ bisubSubstitution bisub (MkAtomicConstraint depvar NegativeType (NormalFlipType 
     return $ fmap (\pv -> conv . pv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
 bisubSubstitution _ ac = return $ atomicConstraintPuzzle ac
 
-bisubstitutesWholeConstraintPuzzle ::
+bisubstitutesWholeConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [UnifierBisubstitution ground]
     -> WholeConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-bisubstitutesWholeConstraintPuzzle bisubs wc = do
+bisubstitutesWholeConstraint bisubs wc = do
     MkShimWit wc' (MkCatDual conv) <- bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
     return $ fmap conv $ wholeConstraintPuzzle wc'
 
-applyChangeToAtomicConstraint ::
+bisubstituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => UnifierBisubstitution ground
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-applyChangeToAtomicConstraint = bisubSubstitution
+bisubstituteAtomicConstraint = bisubSubstitution
 
-applyChangesToAtomicConstraint ::
+bisubstitutesAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [UnifierBisubstitution ground]
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-applyChangesToAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
-applyChangesToAtomicConstraint (s:ss) ac = do
-    puzzle <- applyChangeToAtomicConstraint s ac
-    applyChangesToPuzzle ss puzzle
+bisubstitutesAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
+bisubstitutesAtomicConstraint (s:ss) ac = do
+    puzzle <- bisubstituteAtomicConstraint s ac
+    bisubstitutesPuzzle ss puzzle
 
-applyChangesToPiece ::
+bisubstitutesPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [UnifierBisubstitution ground]
     -> Piece ground a
     -> UnifierM ground (Puzzle ground a)
-applyChangesToPiece newchanges (WholePiece wc) = bisubstitutesWholeConstraintPuzzle newchanges wc
-applyChangesToPiece newchanges (AtomicPiece ac) = applyChangesToAtomicConstraint newchanges ac
-
-applyChangesToPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [UnifierBisubstitution ground]
-    -> Puzzle ground a
-    -> UnifierM ground (Puzzle ground a)
-applyChangesToPuzzle substs = mapExpressionWitnessesM $ applyChangesToPiece substs
+bisubstitutesPiece newchanges (WholePiece wc) = bisubstitutesWholeConstraint newchanges wc
+bisubstitutesPiece newchanges (AtomicPiece ac) = bisubstitutesAtomicConstraint newchanges ac
 
 bisubstitutesPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [UnifierBisubstitution ground]
     -> Puzzle ground a
     -> UnifierM ground (Puzzle ground a)
-bisubstitutesPuzzle = applyChangesToPuzzle
+bisubstitutesPuzzle substs = mapExpressionWitnessesM $ bisubstitutesPiece substs
