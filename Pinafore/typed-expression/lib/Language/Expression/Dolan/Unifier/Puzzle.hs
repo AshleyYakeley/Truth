@@ -23,18 +23,14 @@ bisubstituteAtomicChange ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
     => UnifierBisubstitution ground
     -> AtomicChange ground
-bisubstituteAtomicChange bisub = MkAtomicChange $ bisubstituteToPuzzle bisub
+bisubstituteAtomicChange bisub = MkAtomicChange $ bisubSubstitution bisub
 
 substituteAtomicChange ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
     => Substitution ground
     -> AtomicChange ground
 substituteAtomicChange (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just t)) =
-    MkAtomicChange $ \ac -> do
-        mpuzzle <- invertSubstitution pol oldvar newvar t ac
-        case mpuzzle of
-            Just puzzle -> return puzzle
-            Nothing -> return $ atomicConstraintPuzzle ac
+    MkAtomicChange $ invertSubstitution pol oldvar newvar t
 substituteAtomicChange sub = bisubstituteAtomicChange $ substBisubstitution sub
 
 type Piece :: GroundTypeKind -> Type -> Type
@@ -118,26 +114,26 @@ bisubSubstitution ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => UnifierBisubstitution ground
     -> AtomicConstraint ground a
-    -> UnifierM ground (Maybe (Puzzle ground a))
+    -> UnifierM ground (Puzzle ground a)
 bisubSubstitution bisub@(MkBisubstitution oldvar _ mwq) (MkAtomicConstraint depvar PositiveType ftw _)
     | Just Refl <- testEquality oldvar depvar = do
         MkShimWit tq (MkPolarMap convq) <- mwq
         MkShimWit ftw' (MkPolarMap convw) <- bisubstituteFlipType bisub ftw
-        return $ Just $ fmap (\conv -> convq . conv . convw) $ flipUnifyPuzzle ftw' (NormalFlipType tq)
+        return $ fmap (\conv -> convq . conv . convw) $ flipUnifyPuzzle ftw' (NormalFlipType tq)
 bisubSubstitution bisub@(MkBisubstitution oldvar mwp _) (MkAtomicConstraint depvar NegativeType ftw _)
     | Just Refl <- testEquality oldvar depvar = do
         MkShimWit tp (MkPolarMap convp) <- mwp
         MkShimWit ftw' (MkPolarMap convw) <- bisubstituteFlipType bisub ftw
-        return $ Just $ fmap (\conv -> convw . conv . convp) $ flipUnifyPuzzle (NormalFlipType tp) ftw'
+        return $ fmap (\conv -> convw . conv . convp) $ flipUnifyPuzzle (NormalFlipType tp) ftw'
 bisubSubstitution _ ac
-    | Just conv <- isPureAtomicConstraint ac = return $ Just $ pure conv
+    | Just conv <- isPureAtomicConstraint ac = return $ pure conv
 bisubSubstitution bisub (MkAtomicConstraint depvar PositiveType (NormalFlipType tw) _) = do
     MkShimWit tp (MkPolarMap conv) <- bisubstituteType bisub tw
-    return $ Just $ fmap (\pv -> pv . conv) $ atomicPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
+    return $ fmap (\pv -> pv . conv) $ atomicPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
 bisubSubstitution bisub (MkAtomicConstraint depvar NegativeType (NormalFlipType tw) _) = do
     MkShimWit tp (MkPolarMap conv) <- bisubstituteType bisub tw
-    return $ Just $ fmap (\pv -> conv . pv) $ atomicPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
-bisubSubstitution _ _ = return Nothing
+    return $ fmap (\pv -> conv . pv) $ atomicPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
+bisubSubstitution _ ac = return $ atomicConstraintPuzzle ac
 
 invertSubstitution ::
        forall (ground :: GroundTypeKind) polarity v t a. (IsDolanGroundType ground)
@@ -146,11 +142,10 @@ invertSubstitution ::
     -> TypeVarT v
     -> DolanType ground (InvertPolarity polarity) t
     -> AtomicConstraint ground a
-    -> UnifierM ground (Maybe (Puzzle ground a))
+    -> UnifierM ground (Puzzle ground a)
 invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol fvt recv)
     | Just Refl <- testEquality oldvar depvar =
-        return $
-        Just $ let
+        return $ let
             p1 = atomicPuzzle (MkAtomicConstraint newvar unipol fvt recv)
             p2 =
                 case (substpol, unipol) of
@@ -169,28 +164,4 @@ invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol f
                     (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
                     (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv
             in liftA2 (\t a -> a t) p1 p2
-invertSubstitution _ _ _ _ _ = return Nothing
-
-class BisubstituteToPuzzle (ground :: GroundTypeKind) (f :: Type -> Type) where
-    bisubstituteToPuzzle :: forall (a :: Type). UnifierBisubstitution ground -> f a -> UnifierM ground (Puzzle ground a)
-
-instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground) =>
-             BisubstituteToPuzzle ground (WholeConstraint ground) where
-    bisubstituteToPuzzle bisub constr = do
-        constr' <- bisubstituteWholeConstraint bisub constr
-        return $ pieceShimPuzzle constr'
-
-instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground) =>
-             BisubstituteToPuzzle ground (AtomicConstraint ground) where
-    bisubstituteToPuzzle bisub ac = do
-        mp <- bisubSubstitution bisub ac
-        case mp of
-            Just puzzle -> return puzzle
-            Nothing -> return $ atomicPuzzle ac
-
-bisubstituteSubst ::
-       forall (ground :: GroundTypeKind). (IsDolanGroundType ground)
-    => Bisubstitution ground (DolanPolyShim ground Type) (UnifierM ground)
-    -> Substitution ground
-    -> Substitution ground
-bisubstituteSubst _bisub subst = subst -- NYI
+invertSubstitution _ _ _ _ ac = return $ atomicConstraintPuzzle ac
