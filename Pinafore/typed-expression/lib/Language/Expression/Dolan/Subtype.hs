@@ -107,8 +107,11 @@ type DolanSubtypeContext :: GroundTypeKind -> (Type -> Type) -> Type
 type DolanSubtypeContext ground = SubtypeContext (DolanVarID ground) (DolanType ground) (DolanShim ground)
 
 type IsDolanSubtypeGroundType :: GroundTypeKind -> Constraint
-class (DebugIsDolanGroundType ground, Eq (DolanSubtypeHint ground), Semigroup (DolanSubtypeHint ground)) =>
-          IsDolanSubtypeGroundType ground where
+class ( DebugIsDolanGroundType ground
+      , Eq (DolanSubtypeHint ground)
+      , Show (DolanSubtypeHint ground)
+      , Semigroup (DolanSubtypeHint ground)
+      ) => IsDolanSubtypeGroundType ground where
     type DolanSubtypeHint ground :: Type
     subtypeGroundedTypes ::
            forall solver pola polb a b.
@@ -144,6 +147,11 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
     sk <> NeutralSK = sk
     HintSK a <> HintSK b = HintSK $ a <> b
     _ <> _ = UnknownSK
+
+instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Show (SubtypeKnowledge ground) where
+    show UnknownSK = "unknown"
+    show NeutralSK = "neutral"
+    show (HintSK hint) = "hint: " <> show hint
 
 type SubtypeArguments :: GroundTypeKind -> (Type -> Type) -> forall (dva :: DolanVariance) ->
                                                                      DolanVarianceKind dva -> forall (dvb :: DolanVariance) ->
@@ -190,6 +198,12 @@ subtypeConversionKnowledge CoerceSubtypeConversion = NeutralSK
 instance forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb). IsDolanSubtypeGroundType ground =>
              Eq (SubtypeConversion ground dva gta dvb gtb) where
     sc1 == sc2 = subtypeConversionKnowledge sc1 == subtypeConversionKnowledge sc2
+
+instance forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb). IsDolanSubtypeGroundType ground =>
+             Show (SubtypeConversion ground dva gta dvb gtb) where
+    show (GeneralSubtypeConversion sk _) = "general: " <> show sk
+    show IdentitySubtypeConversion = "id"
+    show CoerceSubtypeConversion = "coerce"
 
 identitySubtypeConversion ::
        forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).

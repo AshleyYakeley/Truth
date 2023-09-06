@@ -376,11 +376,12 @@ crumbleTT ::
     => DolanType ground pola a
     -> DolanType ground polb b
     -> Crumbler ground (DolanShim ground a b)
-crumbleTT =
+crumbleTT ta tb =
+    whoist (hoist $ tackOnTypeConvertError ta tb) $
     case (polarityType @pola, polarityType @polb) of
-        (PositiveType, _) -> crumbleTPT
-        (NegativeType, NegativeType) -> crumbleTNTN
-        (NegativeType, PositiveType) -> crumbleTNT
+        (PositiveType, _) -> crumbleTPT ta tb
+        (NegativeType, NegativeType) -> crumbleTNTN ta tb
+        (NegativeType, PositiveType) -> crumbleTNT ta tb
 
 crumbleWholeConstraint ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
@@ -408,10 +409,10 @@ runCheckCrumble ::
     => (forall a. Puzzle ground a -> DolanTypeCheckM ground (DolanOpenExpression ground a))
     -> Crumbler ground t
     -> DolanTypeCheckM ground Bool
-runCheckCrumble rigidSolvePuzzle ca =
+runCheckCrumble solvePuzzle ca = do
     altIs $ do
         MkSolverExpression puzzle _ <- runCrumbler ca
-        _ <- rigidSolvePuzzle puzzle
+        _ <- solvePuzzle puzzle
         return ()
 
 makeSCAGA ::
@@ -421,6 +422,6 @@ makeSCAGA ::
     -> SubtypeConversion ground dva gta dvb gtb
     -> SubtypeConversion ground dva gta dvb gtb
     -> DolanM ground Bool
-makeSCAGA rigidSolvePuzzle = let
+makeSCAGA solvePuzzle = let
     ?rigidity = \_ -> RigidName
-    in subtypeConversionAsGeneralAs (runCheckCrumble rigidSolvePuzzle) crumbleSubtypeContext
+    in subtypeConversionAsGeneralAs (runCheckCrumble solvePuzzle) crumbleSubtypeContext

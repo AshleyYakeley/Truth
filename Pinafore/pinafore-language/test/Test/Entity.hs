@@ -1550,25 +1550,29 @@ testEntity =
                     "preferred"
                     [ testExpectSuccess "pass"
                     , testExpectSuccess "let subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x in pass"
-                    , tDecls
+                    , tModify (testTreeOne "1") $
+                      tDecls
                           [ "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
                           , "subtype trustme B Number <: C = fn Mk.B _ => Mk.C"
                           , "subtype trustme A Any <: C = fn Mk.A _ => Mk.C"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
-                    , tDecls
+                    , tModify (testTreeOne "2") $
+                      tDecls
                           [ "subtype trustme A Any <: C = fn Mk.A _ => Mk.C"
                           , "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
                           , "subtype trustme B Number <: C = fn Mk.B _ => Mk.C"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
-                    , tDecls
+                    , tModify (testTreeOne "3") $
+                      tDecls
                           [ "subtype trustme A a <: B a = fn Mk.A x => Mk.B x"
                           , "subtype trustme B Any <: C = fn Mk.B _ => Mk.C"
                           , "subtype trustme A Number <: C = fn Mk.A _ => Mk.C"
                           ] $
                       subtypeTest False SRSingle "A Unit" "C"
-                    , tDecls
+                    , tModify (testTreeOne "4") $
+                      tDecls
                           [ "subtype trustme A Number <: C = fn Mk.A _ => Mk.C"
                           , "subtype trustme A a <: B a = fn Mk.A x => Mk.B x"
                           , "subtype trustme B Any <: C = fn Mk.B _ => Mk.C"

@@ -195,4 +195,4 @@ unifierSubtypeConversionAsGeneralAs ::
     => SubtypeConversion ground dva gta dvb gtb
     -> SubtypeConversion ground dva gta dvb gtb
     -> DolanM ground Bool
-unifierSubtypeConversionAsGeneralAs = makeSCAGA rigidSolvePuzzle
+unifierSubtypeConversionAsGeneralAs = makeSCAGA (\p -> fmap fst $ solvePuzzle p)
