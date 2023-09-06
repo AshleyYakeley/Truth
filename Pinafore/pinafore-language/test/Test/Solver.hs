@@ -247,23 +247,30 @@ testSolver =
               subsumerTest :: String -> [String] -> SubsumerTester () -> TestTree
               subsumerTest name names stu =
                   testTree name $ runTester defaultTester $ testerLiftInterpreter $ runSubsumerTester names stu
-              in [ subsumerTest "simple-1" [] $ do
-                       tinf <- stParseType "a -> a"
-                       tinf' <- stRename [] FreeName tinf
-                       tdecl <- stParseType "Integer -> Integer"
-                       tdecl' <- stRename [] RigidName tdecl
-                       stSubsume tinf' tdecl'
-                 , subsumerTest "simple-2" ["b"] $ do
-                       tinf <- stParseType "a -> a"
-                       tinf' <- stRename [] FreeName tinf
-                       tdecl <- stParseType "b -> b"
-                       tdecl' <- stRename ["b"] RigidName tdecl
-                       stSubsume tinf' tdecl'
-                 , subsumerTest "simple-3" ["a"] $ do
-                       tinf <- stParseType "a -> a"
-                       tinf' <- stRename [] FreeName tinf
-                       tdecl <- stParseType "Maybe a -> Maybe a"
-                       tdecl' <- stRename ["a"] RigidName tdecl
-                       stSubsume tinf' tdecl'
+              subsumeTest :: String -> Text -> Text -> [String] -> TestTree
+              subsumeTest name sinf sdecl sdeclfreevars =
+                  subsumerTest name sdeclfreevars $ do
+                      tinf <- stParseType sinf
+                      tinf' <- stRename [] FreeName tinf
+                      tdecl <- stParseType sdecl
+                      tdecl' <- stRename sdeclfreevars RigidName tdecl
+                      stSubsume tinf' tdecl'
+              in [ subsumeTest "simple-1" "a -> a" "Integer -> Integer" []
+                 , subsumeTest "simple-2" "a -> a" "b -> b" ["b"]
+                 , subsumeTest "simple-3" "a -> a" "Maybe a -> Maybe a" ["a"]
+                 , testMark $
+                   testTree
+                       "split"
+                       [ testTree
+                             "plain"
+                             [ subsumeTest "fst" "Integer" "Integer | Text" []
+                             , subsumeTest "snd" "Text" "Integer | Text" []
+                             ]
+                       , testTree
+                             "recursive"
+                             [ subsumeTest "fst" "Maybe None" "(rec a, Maybe a) | (rec b, List b)" []
+                             , subsumeTest "snd" "List None" "(rec a, Maybe a) | (rec b, List b)" []
+                             ]
+                       ]
                  ]
         ]
