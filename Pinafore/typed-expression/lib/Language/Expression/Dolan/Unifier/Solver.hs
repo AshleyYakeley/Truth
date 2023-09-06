@@ -11,7 +11,6 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier.Crumble
 import Language.Expression.Dolan.Unifier.FlipType
-import Language.Expression.Dolan.Unifier.Piece
 import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Unifier.WholeConstraint
@@ -65,7 +64,8 @@ puzzleSolverPiece piece puzzlerest =
     MkSolver $ do
         (MkSolverExpression conspuzzle rexpr, substsout, bisubs) <- lift $ lift $ solvePiece piece
         lift $ tell bisubs
-        puzzlerest' <- lift $ lift $ lift $ runUnifierM $ applySubstsToPuzzle substsout puzzlerest
+        puzzlerest' <-
+            lift $ lift $ lift $ runUnifierM $ applyChangesToPuzzle (fmap substituteAtomicChange substsout) puzzlerest
         oexpr <- unSolver $ puzzleSolver $ liftA2 (,) conspuzzle puzzlerest'
         return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
 
