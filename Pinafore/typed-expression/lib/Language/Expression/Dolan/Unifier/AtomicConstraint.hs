@@ -6,7 +6,6 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier.FlipType
-import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
 
 type AtomicConstraint :: GroundTypeKind -> Type -> Type
@@ -72,14 +71,3 @@ isPureAtomicConstraint (MkAtomicConstraint depvar pol (NormalFlipType tw) _) =
                 return conv
             _ -> Nothing
 isPureAtomicConstraint _ = Nothing
-
-atomicWholeConstraint ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => AtomicConstraint ground a
-    -> WholeConstraintShim ground a
-atomicWholeConstraint (MkAtomicConstraint v PositiveType ft _) =
-    unNegShimWit (varDolanShimWit v) $ \vt vconv ->
-        MkShimWit (MkWholeConstraint ft (NormalFlipType vt)) $ MkCatDual $ \conv -> vconv . conv
-atomicWholeConstraint (MkAtomicConstraint v NegativeType ft _) =
-    unPosShimWit (varDolanShimWit v) $ \vt vconv ->
-        MkShimWit (MkWholeConstraint (NormalFlipType vt) ft) $ MkCatDual $ \conv -> conv . vconv

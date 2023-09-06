@@ -55,18 +55,6 @@ wholeConstraintPuzzle constr = varExpression $ WholePiece [] constr
 atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint ground a -> Puzzle ground a
 atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
 
-pieceShimPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => WholeConstraintShim ground a
-    -> Puzzle ground a
-pieceShimPuzzle (MkShimWit constr (MkCatDual cconv)) = fmap cconv $ wholeConstraintPuzzle constr
-
-atomicPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => AtomicConstraint ground a
-    -> Puzzle ground a
-atomicPuzzle ac = pieceShimPuzzle $ atomicWholeConstraint ac
-
 flipUnifyPuzzle ::
        forall (ground :: GroundTypeKind) a b.
        FlipType ground 'Positive a
@@ -129,10 +117,10 @@ bisubSubstitution _ ac
     | Just conv <- isPureAtomicConstraint ac = return $ pure conv
 bisubSubstitution bisub (MkAtomicConstraint depvar PositiveType (NormalFlipType tw) _) = do
     MkShimWit tp (MkPolarMap conv) <- bisubstituteType bisub tw
-    return $ fmap (\pv -> pv . conv) $ atomicPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
+    return $ fmap (\pv -> pv . conv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
 bisubSubstitution bisub (MkAtomicConstraint depvar NegativeType (NormalFlipType tw) _) = do
     MkShimWit tp (MkPolarMap conv) <- bisubstituteType bisub tw
-    return $ fmap (\pv -> conv . pv) $ atomicPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
+    return $ fmap (\pv -> conv . pv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
 bisubSubstitution _ ac = return $ atomicConstraintPuzzle ac
 
 invertSubstitution ::
@@ -146,7 +134,7 @@ invertSubstitution ::
 invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol fvt recv)
     | Just Refl <- testEquality oldvar depvar =
         return $ let
-            p1 = atomicPuzzle (MkAtomicConstraint newvar unipol fvt recv)
+            p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt recv)
             p2 =
                 case (substpol, unipol) of
                     (NegativeType, PositiveType) -> do
