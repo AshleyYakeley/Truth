@@ -134,16 +134,19 @@ testQuery query expected =
     testTree (show $ unpack query) $
     runTester defaultTester $ do
         result <-
-            tryExc $
-            testerLiftInterpreter $ do
+            testerLiftInterpreter $
+            tryExc $ do
                 v <- parseValue query
                 showPinaforeModel v
         liftIO $
             case result of
-                FailureResult e ->
+                FailureResult (Left pe) ->
                     case expected of
                         LRCheckFail -> return ()
-                        _ -> assertFailure $ "check: expected success, found failure: " ++ show e
+                        _ -> assertFailure $ "check: expected success, found Pinafore error: " ++ show pe
+                FailureResult (Right se) ->
+                    case expected of
+                        _ -> assertFailure $ "check: found exception: " ++ show se
                 SuccessResult r -> do
                     me <- catchPureError r
                     case (expected, me) of

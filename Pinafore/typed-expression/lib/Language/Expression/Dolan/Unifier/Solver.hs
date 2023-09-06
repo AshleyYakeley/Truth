@@ -90,7 +90,7 @@ applySubstToAtomicPuzzle ::
     => Substitution ground
     -> AtomicPuzzle ground a
     -> UnifierM ground (Puzzle ground a)
-applySubstToAtomicPuzzle subst puzzle = mapExpressionWitnessesM (runAtomicChange $ substituteAtomicChange subst) puzzle
+applySubstToAtomicPuzzle subst puzzle = mapExpressionWitnessesM (substituteAtomicChange subst) puzzle
 
 puzzleSolverPiece ::
        forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)

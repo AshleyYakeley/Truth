@@ -15,24 +15,14 @@ import Language.Expression.Dolan.Unifier.UnifierM
 import Language.Expression.Dolan.Unifier.WholeConstraint
 import Shapes
 
-type AtomicChange :: GroundTypeKind -> Type
-newtype AtomicChange ground = MkAtomicChange
-    { runAtomicChange :: forall a. AtomicConstraint ground a -> UnifierM ground (Puzzle ground a)
-    }
-
-bisubstituteAtomicChange ::
-       forall (ground :: GroundTypeKind). IsDolanGroundType ground
-    => UnifierBisubstitution ground
-    -> AtomicChange ground
-bisubstituteAtomicChange bisub = MkAtomicChange $ bisubSubstitution bisub
-
 substituteAtomicChange ::
-       forall (ground :: GroundTypeKind). IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => Substitution ground
-    -> AtomicChange ground
+    -> AtomicConstraint ground a
+    -> UnifierM ground (Puzzle ground a)
 substituteAtomicChange (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just t)) =
-    MkAtomicChange $ invertSubstitution pol oldvar newvar t
-substituteAtomicChange sub = bisubstituteAtomicChange $ substBisubstitution sub
+    invertSubstitution pol oldvar newvar t
+substituteAtomicChange sub = bisubSubstitution $ substBisubstitution sub
 
 type Piece :: GroundTypeKind -> Type -> Type
 data Piece ground t where
