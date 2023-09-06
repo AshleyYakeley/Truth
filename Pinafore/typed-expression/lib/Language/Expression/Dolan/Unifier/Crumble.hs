@@ -1,7 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 
 module Language.Expression.Dolan.Unifier.Crumble
-    ( applySubstsToPuzzle
+    ( applyChangesToPuzzle
     , bisubstitutesPuzzle
     , solvePiece
     ) where
@@ -16,7 +16,6 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier.AtomicConstraint
 import Language.Expression.Dolan.Unifier.FlipType
-import Language.Expression.Dolan.Unifier.Piece
 import Language.Expression.Dolan.Unifier.Puzzle
 import Language.Expression.Dolan.Unifier.Substitution
 import Language.Expression.Dolan.Unifier.UnifierM
@@ -24,63 +23,53 @@ import Language.Expression.Dolan.Unifier.WholeConstraint
 import Language.Expression.Dolan.Unroll
 import Shapes
 
-applySubstToAtomicConstraint ::
+applyChangeToAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => Substitution ground
+    => AtomicChange ground
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-applySubstToAtomicConstraint subst ac = do
-    mpuzzle <- runSubstitution subst ac
-    case mpuzzle of
-        Just puzzle -> return puzzle
-        Nothing -> return $ atomicConstraintPuzzle ac
+applyChangeToAtomicConstraint (MkAtomicChange change) = change
 
-applySubstsToAtomicConstraint ::
+applyChangesToAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [Substitution ground]
+    => [AtomicChange ground]
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-applySubstsToAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
-applySubstsToAtomicConstraint (s:ss) ac = do
-    puzzle <- applySubstToAtomicConstraint s ac
-    applySubstsToPuzzle ss puzzle
+applyChangesToAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
+applyChangesToAtomicConstraint (s:ss) ac = do
+    puzzle <- applyChangeToAtomicConstraint s ac
+    applyChangesToPuzzle ss puzzle
 
-applySubstsToPiece ::
+applyChangesToPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [Substitution ground]
+    => [AtomicChange ground]
     -> Piece ground a
     -> UnifierM ground (Puzzle ground a)
-applySubstsToPiece newsubsts (WholePiece substs wc) = return $ varExpression $ WholePiece (substs <> newsubsts) wc
-applySubstsToPiece newsubsts (AtomicPiece ac) = applySubstsToAtomicConstraint newsubsts ac
+applyChangesToPiece newchanges (WholePiece changes wc) = return $ varExpression $ WholePiece (changes <> newchanges) wc
+applyChangesToPiece newchanges (AtomicPiece ac) = applyChangesToAtomicConstraint newchanges ac
 
-applySubstsToPuzzle ::
+applyChangesToPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [Substitution ground]
+    => [AtomicChange ground]
     -> Puzzle ground a
     -> UnifierM ground (Puzzle ground a)
-applySubstsToPuzzle substs = mapExpressionWitnessesM $ applySubstsToPiece substs
+applyChangesToPuzzle substs = mapExpressionWitnessesM $ applyChangesToPiece substs
 
-applySubstsToPuzzleExpression ::
+applyChangesToPuzzleExpression ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [Substitution ground]
+    => [AtomicChange ground]
     -> PuzzleExpression ground a
     -> UnifierM ground (PuzzleExpression ground a)
-applySubstsToPuzzleExpression substs (MkSolverExpression puzzle expr) = do
-    puzzle' <- applySubstsToPuzzle substs puzzle
+applyChangesToPuzzleExpression substs (MkSolverExpression puzzle expr) = do
+    puzzle' <- applyChangesToPuzzle substs puzzle
     return $ MkSolverExpression puzzle' expr
-
-bisubToSubst ::
-       forall (ground :: GroundTypeKind). IsDolanGroundType ground
-    => UnifierBisubstitution ground
-    -> Substitution ground
-bisubToSubst _ = error "NYI: bisubToSubst"
 
 bisubstitutesPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [UnifierBisubstitution ground]
     -> Puzzle ground a
     -> UnifierM ground (Puzzle ground a)
-bisubstitutesPuzzle bisubs = applySubstsToPuzzle $ fmap bisubToSubst bisubs
+bisubstitutesPuzzle bisubs = do applyChangesToPuzzle $ fmap bisubstituteAtomicChange bisubs
 
 type Crumbler :: GroundTypeKind -> Type -> Type
 newtype Crumbler ground a = MkCrumbler
@@ -193,30 +182,6 @@ crumbleNewAtomic (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt) r
                                             (Just ptw)
                 return (unPolarMap $ polar2 @(DolanShim ground) @polarity @newtv @pt, subst, substBisubstitution subst)
 
-{-
-crumbleAtomic ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => AtomicConstraint ground a
-    -> Crumbler ground a
-crumbleAtomic ac =
-    MkCrumbler $ do
-        subsin <- ask
-        case subsin of
-            s:ss -> do
-                mpuzzle <- lift $ lift $ lift $ lift $ runUnifierM $ runSubstitution s ac
-                puzzle <-
-                    case mpuzzle of
-                        Just puzzle -> return puzzle
-                        Nothing -> do
-                            (a, s') <- lift $ lift $ crumbleNewAtomic ac
-                            lift $ tell [s']
-                            return $ pure a
-                return $ solverExpressionLiftType $ applySubstsToPuzzle ss puzzle
-            [] -> do
-                (a, s) <- lift $ lift $ crumbleNewAtomic ac
-                lift $ tell [s]
-                return $ pure a
--}
 crumbleAtomic ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => AtomicConstraint ground a
@@ -439,7 +404,7 @@ solvePiece ::
     -> DolanTypeCheckM ground (PuzzleExpression ground a, [Substitution ground], [UnifierBisubstitution ground])
 solvePiece (WholePiece substs constr) = do
     pexpr <- runCrumbler $ crumbleWholeConstraint constr
-    pexpr' <- lift $ runUnifierM $ applySubstsToPuzzleExpression substs pexpr
+    pexpr' <- lift $ runUnifierM $ applyChangesToPuzzleExpression substs pexpr
     return (pexpr', [], [])
 solvePiece (AtomicPiece ac) = do
     (conv, sub, bisub) <- crumbleNewAtomic ac
