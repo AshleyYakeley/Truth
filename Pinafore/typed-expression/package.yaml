@@ -90,6 +90,7 @@ library:
       - Language.Expression.Dolan.Solver.WholeConstraint
       - Language.Expression.Dolan.Solver.Puzzle
       - Language.Expression.Dolan.Solver.AtomicSubstitute
+      - Language.Expression.Dolan.Solver.Biconstraint
       - Language.Expression.Dolan.Solver.Crumble.Type
       - Language.Expression.Dolan.Solver.Crumble.Puzzle
       - Language.Expression.Dolan.Solver.Solver
