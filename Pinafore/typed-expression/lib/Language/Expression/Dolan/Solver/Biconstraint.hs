@@ -26,8 +26,8 @@ data Biconstraint ground t where
            TypeVarT v
         -> DolanType ground 'Positive na
         -> DolanType ground 'Negative nb
-        -> InvertedCombinedDolanType ground 'Negative ia
-        -> InvertedCombinedDolanType ground 'Positive ib
+        -> InvertedCombinedDolanType ground 'Positive ia
+        -> InvertedCombinedDolanType ground 'Negative ib
         -> Biconstraint ground (ShimPair ground v na nb, ShimPair ground v ia ib)
 
 {-

@@ -90,8 +90,8 @@ buildUsage n t = chainPolarShimWit (buildUsageInside n) $ buildUsageThis n t
 
 type UsageSolution :: GroundTypeKind -> Type -> Type -> Type
 data UsageSolution ground tv t =
-    forall a b. MkUsageSolution (InvertedCombinedDolanType ground 'Negative a)
-                                (InvertedCombinedDolanType ground 'Positive b)
+    forall a b. MkUsageSolution (InvertedCombinedDolanType ground 'Positive a)
+                                (InvertedCombinedDolanType ground 'Negative b)
                                 (DolanShim ground a tv -> DolanShim ground tv b -> t)
 
 instance forall (ground :: GroundTypeKind) tv. Functor (UsageSolution ground tv) where
@@ -145,7 +145,7 @@ invertedSubtype ta tb = fmap unPolarMap $ Compose $ invertedPolarSubtype ta tb
 invertedCombinedSubtype1 ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => DolanType ground 'Negative a
-    -> InvertedCombinedDolanType ground 'Positive b
+    -> InvertedCombinedDolanType ground 'Negative b
     -> Compose (DolanTypeCheckM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
 invertedCombinedSubtype1 _ NilInvertedCombinedDolanType = pure termf
 invertedCombinedSubtype1 ta (ConsInvertedCombinedDolanType t1 tr) =
@@ -153,8 +153,8 @@ invertedCombinedSubtype1 ta (ConsInvertedCombinedDolanType t1 tr) =
 
 invertedCombinedSubtype ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
-    => InvertedCombinedDolanType ground 'Negative a
-    -> InvertedCombinedDolanType ground 'Positive b
+    => InvertedCombinedDolanType ground 'Positive a
+    -> InvertedCombinedDolanType ground 'Negative b
     -> Compose (DolanTypeCheckM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
 invertedCombinedSubtype NilInvertedCombinedDolanType _ = pure initf
 invertedCombinedSubtype (ConsInvertedCombinedDolanType t1 tr) tb =
@@ -162,8 +162,8 @@ invertedCombinedSubtype (ConsInvertedCombinedDolanType t1 tr) tb =
 
 testInvertedCombinedSubtype ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
-    => InvertedCombinedDolanType ground 'Negative a
-    -> InvertedCombinedDolanType ground 'Positive b
+    => InvertedCombinedDolanType ground 'Positive a
+    -> InvertedCombinedDolanType ground 'Negative b
     -> DolanM ground (Maybe (DolanShim ground a b))
 testInvertedCombinedSubtype negtype postype =
     fmap exec $
