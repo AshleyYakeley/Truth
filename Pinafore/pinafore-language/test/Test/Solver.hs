@@ -240,6 +240,8 @@ testSolver =
                  , testTree
                        "issue-229"
                        [ recursiveTest "a & (a -> b)" "c -> c" "a -> (rec b, a | a -> b)"
+                       , recursiveTest "c" "Integer -> c" "rec a, Integer -> a"
+                       , recursiveTest "c" "c -> Integer" "Any -> Integer"
                        , recursiveTest "c" "c -> c" "a -> (rec b, a | a -> b)"
                        ]
                  ]
@@ -258,7 +260,7 @@ testSolver =
               in [ subsumeTest "simple-1" "a -> a" "Integer -> Integer" []
                  , subsumeTest "simple-2" "a -> a" "b -> b" ["b"]
                  , subsumeTest "simple-3" "a -> a" "Maybe a -> Maybe a" ["a"]
-                 , testMark $
+                 , testNoMark $
                    testTree
                        "split"
                        [ testTree

@@ -16,6 +16,7 @@ module Shapes.Test
     , failTestBecause
     , testTreeOne
     , testMark
+    , testNoMark
     -- * Options
     , localOption
     , QuickCheckTests(..)
@@ -163,6 +164,9 @@ testTreeOne name test = testTree name [test]
 
 testMark :: TestTree -> TestTree
 testMark = testTreeOne "MARK"
+
+testNoMark :: TestTree -> TestTree
+testNoMark = id
 
 testHandleVsFile :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
 testHandleVsFile dir testName call = let

@@ -100,3 +100,7 @@ mapExactExpressionWitnessesM f (OpenExpression wt expr) =
 
 mapExactExpressionWitnesses :: forall w1 w2 a. (forall t. w1 t -> w2 t) -> Expression w1 a -> Expression w2 a
 mapExactExpressionWitnesses m expr = runIdentity $ mapExactExpressionWitnessesM (\wt -> Identity $ m wt) expr
+
+reverseExpression :: Expression w a -> Expression w a
+reverseExpression (ClosedExpression a) = ClosedExpression a
+reverseExpression (OpenExpression w expr) = reverseExpression expr <*> varExpression w
