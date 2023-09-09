@@ -82,3 +82,21 @@ mergeExpressionWitnesses newExpr matchExpr = let
             Just fexpr -> liftA2 (\(a, b) f -> f a b) fexpr expr
             Nothing -> OpenExpression wt $ runMerge $ fmap (\f conv t -> f t conv) expr
     in runMerge
+
+combineExpressionWitnesses ::
+       forall w r. (forall a b. w a -> w b -> Maybe (Expression w (a, b))) -> Expression w r -> Expression w r
+combineExpressionWitnesses _ (ClosedExpression a) = ClosedExpression a
+combineExpressionWitnesses f (OpenExpression wt expr) =
+    mergeExpressionWitnesses (varExpression wt) (\wx -> f wx wt) $ combineExpressionWitnesses f expr
+
+mapExactExpressionWitnessesM ::
+       forall m w1 w2 a. Applicative m
+    => (forall t. w1 t -> m (w2 t))
+    -> Expression w1 a
+    -> m (Expression w2 a)
+mapExactExpressionWitnessesM _ (ClosedExpression a) = pure $ ClosedExpression a
+mapExactExpressionWitnessesM f (OpenExpression wt expr) =
+    liftA2 OpenExpression (f wt) (mapExactExpressionWitnessesM f expr)
+
+mapExactExpressionWitnesses :: forall w1 w2 a. (forall t. w1 t -> w2 t) -> Expression w1 a -> Expression w2 a
+mapExactExpressionWitnesses m expr = runIdentity $ mapExactExpressionWitnessesM (\wt -> Identity $ m wt) expr

@@ -31,6 +31,11 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
     testEquality _ _ = Nothing
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
+             FreeTypeVariables (FlipType ground polarity t) where
+    freeTypeVariables (NormalFlipType t) = freeTypeVariables t
+    freeTypeVariables (InvertFlipType t) = freeTypeVariables t
+
+instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              Show (FlipType ground polarity t) where
     show (NormalFlipType t) = showDolanType t
     show (InvertFlipType t) = withInvertPolarity @polarity $ showDolanType t <> " [inv]"

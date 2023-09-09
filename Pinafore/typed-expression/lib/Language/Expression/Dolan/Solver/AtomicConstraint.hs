@@ -77,3 +77,29 @@ type AtomicPuzzle ground = Expression (AtomicConstraint ground)
 
 type AtomicPuzzleExpression :: GroundTypeKind -> Type -> Type
 type AtomicPuzzleExpression ground = TSOpenSolverExpression (DolanTypeSystem ground) (AtomicPuzzle ground)
+
+joinAtomicConstraints ::
+       forall (ground :: GroundTypeKind) a b. IsDolanGroundType ground
+    => AtomicConstraint ground a
+    -> AtomicConstraint ground b
+    -> Maybe (AtomicPuzzle ground (a, b))
+joinAtomicConstraints (MkAtomicConstraint va pa (NormalFlipType ta) ra) (MkAtomicConstraint vb pb (NormalFlipType tb) rb) = do
+    Refl <- testEquality va vb
+    Refl <- testEquality pa pb
+    Just $
+        case pa of
+            PositiveType ->
+                case joinMeetType ta tb of
+                    MkShimWit tab (MkPolarMap conv) -> let
+                        mapconv shimab = let
+                            shconv = shimab . conv
+                            in (shconv . join1, shconv . join2)
+                        in fmap mapconv $ varExpression $ MkAtomicConstraint va pa (NormalFlipType tab) (ra || rb)
+            NegativeType ->
+                case joinMeetType ta tb of
+                    MkShimWit tab (MkPolarMap conv) -> let
+                        mapconv shimab = let
+                            shconv = conv . shimab
+                            in (meet1 . shconv, meet2 . shconv)
+                        in fmap mapconv $ varExpression $ MkAtomicConstraint va pa (NormalFlipType tab) (ra || rb)
+joinAtomicConstraints _ _ = Nothing

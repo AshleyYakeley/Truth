@@ -95,7 +95,7 @@ substituteAtomicChange ::
     -> UnifierM ground (Puzzle ground a)
 substituteAtomicChange (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just t)) =
     invertSubstitution pol oldvar newvar t
-substituteAtomicChange sub = bisubSubstitution $ substBisubstitution sub
+substituteAtomicChange sub = bisubAtomicConstraint $ substBisubstitution sub
 
 -- | For debugging.
 genNewName :: Bool
@@ -165,9 +165,21 @@ substituteAtomicPiece piece puzzlerest = do
     puzzlerest' <- lift $ lift $ runUnifierM $ applySubstToAtomicPuzzle subst puzzlerest
     return $ fmap (\ab -> ab a) puzzlerest'
 
+substituteAtomicPuzzle' ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => AtomicPuzzle ground a
+    -> SolverM ground (Puzzle ground a)
+substituteAtomicPuzzle' (ClosedExpression a) = return $ pure a
+substituteAtomicPuzzle' (OpenExpression piece puzzlerest) = substituteAtomicPiece piece puzzlerest
+
+gatherAtomicPuzzle ::
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+    => AtomicPuzzle ground a
+    -> AtomicPuzzle ground a
+gatherAtomicPuzzle = combineExpressionWitnesses joinAtomicConstraints
+
 substituteAtomicPuzzle ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => AtomicPuzzle ground a
     -> SolverM ground (Puzzle ground a)
-substituteAtomicPuzzle (ClosedExpression a) = return $ pure a
-substituteAtomicPuzzle (OpenExpression piece puzzlerest) = substituteAtomicPiece piece puzzlerest
+substituteAtomicPuzzle puzzle = substituteAtomicPuzzle' $ gatherAtomicPuzzle puzzle
