@@ -29,6 +29,12 @@ instance DolanVarianceCategory JMShim where
         case dolanVarianceCategory @JMShim lt of
             Dict -> Dict
 
+instance forall (pshim :: PolyShimKind). (DolanVarianceCategory pshim) => DolanVarianceCategory (PolyDual pshim) where
+    dolanVarianceCategory NilListType = Dict
+    dolanVarianceCategory (ConsListType _ lt) =
+        case dolanVarianceCategory @pshim lt of
+            Dict -> Dict
+
 instance forall (pshim :: PolyShimKind). (DolanVarianceCategory pshim) => DolanVarianceCategory (PolyIso pshim) where
     dolanVarianceCategory NilListType = Dict
     dolanVarianceCategory (ConsListType _ lt) =

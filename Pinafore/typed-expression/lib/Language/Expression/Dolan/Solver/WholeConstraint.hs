@@ -33,7 +33,7 @@ type WholeConstraintShim ground = ShimWit (CatDual (->)) (WholeConstraint ground
 
 bisubstituteWholeConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => UnifierBisubstitution ground
+    => SolverBisubstitution ground
     -> WholeConstraint ground a
     -> UnifierM ground (WholeConstraintShim ground a)
 bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
@@ -43,14 +43,14 @@ bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
 
 bisubstituteWholeConstraintShim ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => UnifierBisubstitution ground
+    => SolverBisubstitution ground
     -> WholeConstraintShim ground a
     -> UnifierM ground (WholeConstraintShim ground a)
 bisubstituteWholeConstraintShim bisub = chainShimWitM $ bisubstituteWholeConstraint bisub
 
 bisubstitutesWholeConstraintShim ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [UnifierBisubstitution ground]
+    => [SolverBisubstitution ground]
     -> WholeConstraintShim ground a
     -> UnifierM ground (WholeConstraintShim ground a)
 bisubstitutesWholeConstraintShim bisubs = unEndoM $ mconcat $ fmap (MkEndoM . bisubstituteWholeConstraintShim) bisubs

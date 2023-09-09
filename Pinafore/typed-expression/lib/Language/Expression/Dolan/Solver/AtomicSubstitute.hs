@@ -19,7 +19,7 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type SolverM :: GroundTypeKind -> Type -> Type
-type SolverM ground = WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground)
+type SolverM ground = WriterT [SolverBisubstitution ground] (DolanTypeCheckM ground)
 
 type Substitution :: GroundTypeKind -> Type
 data Substitution ground where
@@ -50,7 +50,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Su
 substBisubstitution ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
     => Substitution ground
-    -> UnifierBisubstitution ground
+    -> SolverBisubstitution ground
 substBisubstitution (MkSubstitution (pol :: _ polarity) oldvar newvar mt _) =
     withRepresentative pol $
     withInvertPolarity @polarity $ let

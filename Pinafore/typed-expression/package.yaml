@@ -64,7 +64,6 @@ library:
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
       - Language.Expression.Dolan.Type
-      - Language.Expression.Dolan.Occur
       - Language.Expression.Dolan.Subtype
       - Language.Expression.Dolan.SubtypeEntry
       - Language.Expression.Dolan.Bisubstitute
@@ -90,6 +89,7 @@ library:
       - Language.Expression.Dolan.Solver.WholeConstraint
       - Language.Expression.Dolan.Solver.Puzzle
       - Language.Expression.Dolan.Solver.AtomicSubstitute
+      - Language.Expression.Dolan.Solver.Typeless
       - Language.Expression.Dolan.Solver.Biconstraint
       - Language.Expression.Dolan.Solver.Crumble.Type
       - Language.Expression.Dolan.Solver.Crumble.Puzzle

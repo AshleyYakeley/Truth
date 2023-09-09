@@ -7,7 +7,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.Occur
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -92,7 +92,7 @@ getRollUpsInSingularType (VarDolanSingularType _) = []
 getRollUpsInSingularType (GroundedDolanSingularType (MkDolanGroundedType _ args)) =
     forDolanArguments getRollUpsInType args
 getRollUpsInSingularType (RecursiveDolanSingularType var t) =
-    if occursInType var t
+    if variableOccursIn var t
         then mkRollUp var t : getRollUpsInType t
         else getRollUpsInType t
 

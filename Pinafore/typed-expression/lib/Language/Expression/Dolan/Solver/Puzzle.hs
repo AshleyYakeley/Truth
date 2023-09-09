@@ -84,7 +84,7 @@ puzzleUnifySingular ta tb =
 
 bisubSubstitution ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => UnifierBisubstitution ground
+    => SolverBisubstitution ground
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
 bisubSubstitution bisub@(MkBisubstitution oldvar _ mwq) (MkAtomicConstraint depvar PositiveType ftw _)
@@ -109,7 +109,7 @@ bisubSubstitution _ ac = return $ atomicConstraintPuzzle ac
 
 bisubstitutesWholeConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [UnifierBisubstitution ground]
+    => [SolverBisubstitution ground]
     -> WholeConstraint ground a
     -> UnifierM ground (Puzzle ground a)
 bisubstitutesWholeConstraint bisubs wc = do
@@ -118,14 +118,14 @@ bisubstitutesWholeConstraint bisubs wc = do
 
 bisubstituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => UnifierBisubstitution ground
+    => SolverBisubstitution ground
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
 bisubstituteAtomicConstraint = bisubSubstitution
 
 bisubstitutesAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [UnifierBisubstitution ground]
+    => [SolverBisubstitution ground]
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
 bisubstitutesAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
@@ -135,7 +135,7 @@ bisubstitutesAtomicConstraint (s:ss) ac = do
 
 bisubstitutesPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [UnifierBisubstitution ground]
+    => [SolverBisubstitution ground]
     -> Piece ground a
     -> UnifierM ground (Puzzle ground a)
 bisubstitutesPiece newchanges (WholePiece wc) = bisubstitutesWholeConstraint newchanges wc
@@ -143,7 +143,7 @@ bisubstitutesPiece newchanges (AtomicPiece ac) = bisubstitutesAtomicConstraint n
 
 bisubstitutesPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [UnifierBisubstitution ground]
+    => [SolverBisubstitution ground]
     -> Puzzle ground a
     -> UnifierM ground (Puzzle ground a)
 bisubstitutesPuzzle substs = mapExpressionWitnessesM $ bisubstitutesPiece substs

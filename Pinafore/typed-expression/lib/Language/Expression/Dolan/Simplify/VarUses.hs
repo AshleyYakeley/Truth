@@ -10,7 +10,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
-import Language.Expression.Dolan.Occur
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -54,7 +54,7 @@ removeAppearanceVar ::
     -> Appearance ground polarity
 removeAppearanceVar (MkSomeTypeVarT var) (MkAppearance appr) = let
     notVar :: Some (DolanSingularType ground polarity) -> Bool
-    notVar (MkSome t) = not $ occursInSingularType var t
+    notVar (MkSome t) = not $ variableOccursIn var t
     in MkAppearance $ filter notVar appr
 
 typeToAppearance ::
