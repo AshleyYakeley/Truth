@@ -3,7 +3,7 @@ module Language.Expression.Dolan.Solver.FlipType where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Occur
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Subtype
@@ -11,8 +11,8 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-type UnifierBisubstitution :: GroundTypeKind -> Type
-type UnifierBisubstitution ground = Bisubstitution ground (DolanShim ground) (UnifierM ground)
+type SolverBisubstitution :: GroundTypeKind -> Type
+type SolverBisubstitution ground = Bisubstitution ground (DolanShim ground) (UnifierM ground)
 
 type FlipType :: GroundTypeKind -> Polarity -> Type -> Type
 data FlipType ground polarity t
@@ -44,14 +44,22 @@ occursInFlipType ::
     => TypeVarT tv
     -> FlipType ground polarity a
     -> Bool
-occursInFlipType v (NormalFlipType t) = occursInType v t
-occursInFlipType v (InvertFlipType t) = occursInType v t
+occursInFlipType v (NormalFlipType t) = variableOccursIn v t
+occursInFlipType v (InvertFlipType t) = variableOccursIn v t
+
+unFlipType ::
+       forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+    => FlipType ground polarity a
+    -> UnifierM ground (DolanShimWit ground polarity a)
+unFlipType (NormalFlipType t) = return $ mkPolarShimWit t
+unFlipType (InvertFlipType t) = invertTypeM (\_ -> RigidName) t
 
 bisubstituteFlipType ::
-       forall (ground :: GroundTypeKind) polarity a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => UnifierBisubstitution ground
+       forall (ground :: GroundTypeKind) polarity m (pshim :: PolyShimKind) a.
+       (IsDolanGroundType ground, Is PolarityType polarity, MonadInner m, BisubstitutablePolyShim pshim)
+    => Bisubstitution ground (pshim Type) m
     -> FlipType ground polarity a
-    -> UnifierM ground (PShimWit (DolanShim ground) (FlipType ground) polarity a)
+    -> m (PShimWit (pshim Type) (FlipType ground) polarity a)
 bisubstituteFlipType bisub (NormalFlipType t) = do
     MkShimWit t' conv <- bisubstituteType bisub t
     return $ MkShimWit (NormalFlipType t') conv

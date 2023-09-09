@@ -106,9 +106,9 @@ mapCCRPolarArgumentShimWit f (RangeCCRPolarArgument tp tq) =
 mapInvertCCRPolarArgumentShimWit ::
        forall m shim fta ftb sv polarity t. (Monad m, Is PolarityType polarity)
     => (forall polarity' t'.
-            Is PolarityType polarity' => fta polarity' t' -> m (PShimWit shim ftb (InvertPolarity polarity') t'))
-    -> CCRPolarArgument fta polarity sv t
-    -> m (CCRPolarArgumentShimWit shim ftb (InvertPolarity polarity) sv t)
+            Is PolarityType polarity' => fta (InvertPolarity polarity') t' -> m (PShimWit shim ftb polarity' t'))
+    -> CCRPolarArgument fta (InvertPolarity polarity) sv t
+    -> m (CCRPolarArgumentShimWit shim ftb polarity sv t)
 mapInvertCCRPolarArgumentShimWit f (CoCCRPolarArgument arg) = do
     MkShimWit arg' conv <- f arg
     return $ MkShimWit (CoCCRPolarArgument arg') conv

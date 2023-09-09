@@ -22,3 +22,10 @@ instance FreeTypeVariables t => FreeTypeVariables (Maybe t) where
 
 instance (forall t'. FreeTypeVariables (wit t')) => FreeTypeVariables (ShimWit shim wit t) where
     freeTypeVariables (MkShimWit wt _) = freeTypeVariables wt
+
+variableOccursIn ::
+       forall t tv. (FreeTypeVariables t)
+    => TypeVarT tv
+    -> t
+    -> Bool
+variableOccursIn var t = member (MkSomeTypeVarT var) $ freeTypeVariables t

@@ -91,6 +91,24 @@ class Category shim => JoinMeetIsoCategory (shim :: ShimKind Type) where
     default iMeetSwapR :: JoinMeetCategory shim => shim (MeetType a (MeetType b c)) (MeetType (MeetType a b) c)
     iMeetSwapR = meetf (meetf meet1 (meet1 . meet2)) (meet2 . meet2)
 
+instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (CatDual shim) where
+    iJoinL1 = MkCatDual iJoinR1
+    iJoinL2 = MkCatDual iJoinR2
+    iJoinR1 = MkCatDual iJoinL1
+    iJoinR2 = MkCatDual iJoinL2
+    iJoinPair (MkCatDual a2a1) (MkCatDual b2b1) = MkCatDual (iJoinPair a2a1 b2b1)
+    iJoinSwap = MkCatDual iJoinSwap
+    iJoinSwapL = MkCatDual iJoinSwapR
+    iJoinSwapR = MkCatDual iJoinSwapL
+    iMeetL1 = MkCatDual iMeetR1
+    iMeetL2 = MkCatDual iMeetR2
+    iMeetR1 = MkCatDual iMeetL1
+    iMeetR2 = MkCatDual iMeetL2
+    iMeetPair (MkCatDual a2a1) (MkCatDual b2b1) = MkCatDual (iMeetPair a2a1 b2b1)
+    iMeetSwap = MkCatDual iMeetSwap
+    iMeetSwapL = MkCatDual iMeetSwapR
+    iMeetSwapR = MkCatDual iMeetSwapL
+
 instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (Isomorphism shim) where
     iJoinL1 = MkIsomorphism iJoinL1 iJoinR1
     iJoinL2 = MkIsomorphism iJoinL2 iJoinR2
@@ -206,6 +224,9 @@ class JoinMeetIsoCategory shim => LazyCategory shim where
     iLazy sab = functionToShim "recursive" $ shimToFunction sab
 
 instance LazyCategory (->)
+
+instance LazyCategory shim => LazyCategory (CatDual shim) where
+    iLazy ~(MkCatDual ba) = MkCatDual $ iLazy ba
 
 instance LazyCategory shim => LazyCategory (Isomorphism shim) where
     iLazy ~(MkIsomorphism ab ba) = MkIsomorphism (iLazy ab) (iLazy ba)

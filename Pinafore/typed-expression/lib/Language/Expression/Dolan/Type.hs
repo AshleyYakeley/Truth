@@ -61,6 +61,12 @@ instance forall (pshim :: PolyShimKind). (BisubstitutablePolyShim pshim, LazyCat
         case reducedBisubstitutablePolyShim @pshim of
             Dict -> Dict
 
+instance forall (pshim :: PolyShimKind). (BisubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
+             BisubstitutablePolyShim (PolyDual pshim) where
+    reducedBisubstitutablePolyShim =
+        case reducedBisubstitutablePolyShim @pshim of
+            Dict -> Dict
+
 instance ReduciblePolyShim JMShim where
     type ReducedPolyShim JMShim = JMShim
 

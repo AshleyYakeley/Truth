@@ -30,7 +30,7 @@ processPuzzle puzzle = do
 solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
-    -> DolanTypeCheckM ground (DolanOpenExpression ground a, [UnifierBisubstitution ground])
+    -> DolanTypeCheckM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
 solvePuzzle puzzle = do
     rigidity <- renamerGetNameRigidity
     (a, subs) <-

@@ -28,15 +28,15 @@ runUnifierM (FailureResult (UninvertibleError t)) = throwTypeNotInvertible t
 invertTypeM ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => (String -> NameRigidity)
-    -> DolanType ground polarity a
-    -> UnifierM ground (DolanShimWit ground (InvertPolarity polarity) a)
+    -> DolanType ground (InvertPolarity polarity) a
+    -> UnifierM ground (DolanShimWit ground polarity a)
 invertTypeM rigidity t =
     case invertTypeMaybe rigidity t of
         Just r -> return r
-        Nothing -> FailureResult (UninvertibleError t)
+        Nothing -> withInvertPolarity @polarity $ FailureResult (UninvertibleError t)
 
 invertType ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => DolanType ground polarity a
-    -> DolanM ground (DolanShimWit ground (InvertPolarity polarity) a)
+    => DolanType ground (InvertPolarity polarity) a
+    -> DolanM ground (DolanShimWit ground polarity a)
 invertType t = runUnifierM $ invertTypeM (\_ -> RigidName) t

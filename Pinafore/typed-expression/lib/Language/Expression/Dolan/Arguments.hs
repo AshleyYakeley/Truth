@@ -256,12 +256,12 @@ mapInvertArgsTypeF ::
        , TestEquality (ftb 'Negative)
        )
     => (forall polarity' t'.
-            Is PolarityType polarity' => fta polarity' t' -> m (PShimWit (pshim Type) ftb (InvertPolarity polarity') t'))
+            Is PolarityType polarity' => fta (InvertPolarity polarity') t' -> m (PShimWit (pshim Type) ftb polarity' t'))
     -> DolanVarianceMap dv gt
     -> DolanVarianceMap dv gt'
-    -> DolanArguments dv fta gt polarity t
-    -> PolarMap (pshim (DolanVarianceKind dv)) (InvertPolarity polarity) gt gt'
-    -> m (DolanArgumentsShimWit pshim dv ftb gt' (InvertPolarity polarity) t)
+    -> DolanArguments dv fta gt (InvertPolarity polarity) t
+    -> PolarMap (pshim (DolanVarianceKind dv)) polarity gt gt'
+    -> m (DolanArgumentsShimWit pshim dv ftb gt' polarity t)
 mapInvertArgsTypeF f dvma dvmb args conv =
     withInvertPolarity @polarity $ mapCCRArgumentsFM (mapInvertCCRPolarArgumentShimWit f) dvma dvmb args conv
 
@@ -276,12 +276,12 @@ mapInvertDolanArgumentsM ::
        , TestEquality (ftb 'Negative)
        )
     => (forall polarity' t'.
-            Is PolarityType polarity' => fta polarity' t' -> m (PShimWit (pshim Type) ftb (InvertPolarity polarity') t'))
+            Is PolarityType polarity' => fta (InvertPolarity polarity') t' -> m (PShimWit (pshim Type) ftb polarity' t'))
     -> DolanVarianceMap dv gt
-    -> DolanArguments dv fta gt polarity t
-    -> m (DolanArgumentsShimWit pshim dv ftb gt (InvertPolarity polarity) t)
+    -> DolanArguments dv fta gt (InvertPolarity polarity) t
+    -> m (DolanArgumentsShimWit pshim dv ftb gt polarity t)
 mapInvertDolanArgumentsM f dvm args = let
-    dvt = ccrArgumentsType args
+    dvt = withInvertPolarity @polarity $ ccrArgumentsType args
     in case dolanVarianceCategory @pshim dvt of
            Dict -> withInvertPolarity @polarity $ mapInvertArgsTypeF f dvm dvm args id
 

@@ -16,6 +16,7 @@ import Data.Shim.PolarShimWit as I
 import Data.Shim.PolarVariance as I
 import Data.Shim.Polarity as I
 import Data.Shim.PolyComposeShim as I
+import Data.Shim.PolyDual as I
 import Data.Shim.PolyIso as I
 import Data.Shim.PolyMap as I
 import Data.Shim.PolyShim as I

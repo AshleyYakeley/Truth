@@ -65,7 +65,6 @@ library
       Language.Expression.Dolan.MPolarity
       Language.Expression.Dolan.RangeF
       Language.Expression.Dolan.Type
-      Language.Expression.Dolan.Occur
       Language.Expression.Dolan.Subtype
       Language.Expression.Dolan.SubtypeEntry
       Language.Expression.Dolan.Bisubstitute

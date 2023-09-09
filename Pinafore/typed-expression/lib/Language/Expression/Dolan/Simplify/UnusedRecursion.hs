@@ -6,7 +6,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.Occur
+import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -18,7 +18,7 @@ elimUnusuedInShimWit ::
     -> DolanShimWit ground polarity tv
     -> DolanShimWit ground polarity tv
 elimUnusuedInShimWit var tw@(MkShimWit t _) =
-    if occursInType var t
+    if variableOccursIn var t
         then shimWitToDolan $ recursiveDolanShimWit var tw
         else tw
 

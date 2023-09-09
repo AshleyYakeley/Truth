@@ -23,7 +23,7 @@ import Shapes
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = Puzzle ground
-    type UnifierSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
+    type UnifierSubstitutions (DolanTypeSystem ground) = [SolverBisubstitution ground]
     unifyNegWitnesses ta tb =
         return $ uuLiftNegShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
     unifyPosWitnesses ta tb =
@@ -36,7 +36,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => U
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SubsumeTypeSystem (DolanTypeSystem ground) where
     type Subsumer (DolanTypeSystem ground) = Puzzle ground
-    type SubsumerSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
+    type SubsumerSubstitutions (DolanTypeSystem ground) = [SolverBisubstitution ground]
     usubSubsumer ss subsumer = do
         subsumer' <- lift $ runUnifierM $ bisubstitutesPuzzle ss subsumer
         return $ solverExpressionLiftType subsumer'

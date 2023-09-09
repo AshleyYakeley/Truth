@@ -67,3 +67,18 @@ mapExpressionWitnessesM f (OpenExpression wt expr) =
 
 mapExpressionWitnesses :: forall w1 w2 a. (forall t. w1 t -> Expression w2 t) -> Expression w1 a -> Expression w2 a
 mapExpressionWitnesses m expr = runIdentity $ mapExpressionWitnessesM (\wt -> Identity $ m wt) expr
+
+mergeExpressionWitnesses ::
+       forall w t a.
+       Expression w t
+    -> (forall x. w x -> Maybe (Expression w (x, t)))
+    -> Expression w (t -> a)
+    -> Expression w a
+mergeExpressionWitnesses newExpr matchExpr = let
+    runMerge :: forall r. Expression w (t -> r) -> Expression w r
+    runMerge (ClosedExpression ta) = fmap ta newExpr
+    runMerge (OpenExpression wt expr) =
+        case matchExpr wt of
+            Just fexpr -> liftA2 (\(a, b) f -> f a b) fexpr expr
+            Nothing -> OpenExpression wt $ runMerge $ fmap (\f conv t -> f t conv) expr
+    in runMerge
