@@ -104,3 +104,21 @@ mapExactExpressionWitnesses m expr = runIdentity $ mapExactExpressionWitnessesM 
 reverseExpression :: Expression w a -> Expression w a
 reverseExpression (ClosedExpression a) = ClosedExpression a
 reverseExpression (OpenExpression w expr) = reverseExpression expr <*> varExpression w
+
+-- True in the first expression, False in the second
+partitionExpression ::
+       forall w a r.
+       (forall t. w t -> Bool)
+    -> Expression w a
+    -> (forall b. Expression w (b -> a) -> Expression w b -> r)
+    -> r
+partitionExpression _tst (ClosedExpression a) call = call (pure id) (ClosedExpression a)
+partitionExpression tst (OpenExpression (wt :: w t) expr) call = let
+    trueCall :: forall b. Expression w (b -> t -> a) -> Expression w b -> r
+    trueCall eba eb = call (OpenExpression wt $ fmap (\bta t b -> bta b t) eba) eb
+    falseCall :: forall b. Expression w (b -> t -> a) -> Expression w b -> r
+    falseCall eba eb = call (fmap (\bta (b, t) -> bta b t) eba) (OpenExpression wt $ fmap (\b t -> (b, t)) eb)
+    in partitionExpression tst expr $
+       if tst wt
+           then trueCall
+           else falseCall

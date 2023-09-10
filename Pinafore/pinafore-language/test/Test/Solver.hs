@@ -209,7 +209,7 @@ testSolver =
                              "issue-206-1"
                              "(t -> t) -> t"
                              "((Maybe a -> Maybe a) -> (a -> a))"
-                             "Any -> (rec a, Maybe. a)"
+                             "(rec a, Maybe. a) -> (rec a, Maybe. a)"
                        , applyTest
                              "issue-206-2"
                              "(t -> t) -> t"

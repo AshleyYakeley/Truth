@@ -11,5 +11,8 @@ class (Monad (WAInnerM s), Applicative s) => WrappedApplicative s where
 wbind :: WrappedApplicative s => WAInnerM s a -> (a -> s b) -> s b
 wbind ma asb = wexec $ fmap asb ma
 
+wdo :: WrappedApplicative s => WAInnerM s () -> s a -> s a
+wdo mu sa = wbind mu $ \() -> sa
+
 wlift :: WrappedApplicative s => WAInnerM s a -> s a
 wlift ma = wbind ma pure

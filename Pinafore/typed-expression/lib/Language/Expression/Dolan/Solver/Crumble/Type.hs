@@ -149,6 +149,8 @@ crumbleSS ::
     => DolanSingularType ground pola a
     -> DolanSingularType ground polb b
     -> TypeCrumbler ground (DolanShim ground a b)
+crumbleSS (RecursiveDolanSingularType va pta) stb = crumbleReducedWit (unrollRecursiveType va pta) (typeToDolan stb)
+crumbleSS sta (RecursiveDolanSingularType vb ptb) = crumbleReducedWit (typeToDolan sta) (unrollRecursiveType vb ptb)
 crumbleSS (VarDolanSingularType na) (VarDolanSingularType nb)
     | Just Refl <- testEquality na nb = pure id
 crumbleSS (VarDolanSingularType na) tb
@@ -156,8 +158,6 @@ crumbleSS (VarDolanSingularType na) tb
 crumbleSS ta (VarDolanSingularType nb)
     | isFreeVar nb = fmap (\conv -> conv . toJoinMeetLimit @_ @pola) $ crumbleAtomicGE nb (singleDolanType ta)
 crumbleSS (GroundedDolanSingularType gta) (GroundedDolanSingularType gtb) = crumbleGroundedTypes gta gtb
-crumbleSS (RecursiveDolanSingularType va pta) stb = crumbleReducedWit (unrollRecursiveType va pta) (typeToDolan stb)
-crumbleSS sta (RecursiveDolanSingularType vb ptb) = crumbleReducedWit (typeToDolan sta) (unrollRecursiveType vb ptb)
 crumbleSS _ _ = empty
 
 crumbleSTN ::

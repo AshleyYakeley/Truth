@@ -280,6 +280,10 @@ data RecursiveTypeError
     = ImmediateRecursiveTypeError
     | ContravariantRecursiveTypeError
 
+instance Show RecursiveTypeError where
+    show ImmediateRecursiveTypeError = "immediate"
+    show ContravariantRecursiveTypeError = "contravariant"
+
 safeRecursiveDolanSingularType ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
     => TypeVarT t
