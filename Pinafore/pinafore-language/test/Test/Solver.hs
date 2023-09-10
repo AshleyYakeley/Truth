@@ -183,7 +183,7 @@ testSolver =
                        , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
                        , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
                        ]
-                 , failTestBecause "#206" $
+                 , testNoMark $
                    testTree
                        "issue-206"
                        [ unifierTest "rec-0" "rec a, Maybe. a" $ do
@@ -257,8 +257,8 @@ testSolver =
                       tdecl <- stParseType sdecl
                       tdecl' <- stRename sdeclfreevars RigidName tdecl
                       stSubsume tinf' tdecl'
-              in [ subsumeTest "simple-1" "a -> a" "Integer -> Integer" []
-                 , subsumeTest "simple-2" "a -> a" "b -> b" ["b"]
+              in [ testNoMark $ subsumeTest "simple-1" "a -> a" "Integer -> Integer" []
+                 , testNoMark $ subsumeTest "simple-2" "a -> a" "b -> b" ["b"]
                  , subsumeTest "simple-3" "a -> a" "Maybe a -> Maybe a" ["a"]
                  , testNoMark $
                    testTree

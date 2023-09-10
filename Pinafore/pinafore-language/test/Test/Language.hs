@@ -504,7 +504,7 @@ testQueries =
         , testTree
               "type-signature"
               [ testQuery "let i = fn x => x in i 3" $ LRSuccess "3"
-              , testQuery "let i : tvar -> tvar = fn x => x in i 3" $ LRSuccess "3"
+              , testNoMark $ testQuery "let i : tvar -> tvar = fn x => x in i 3" $ LRSuccess "3"
               , testQuery "let i : a -> a = fn x => x in i 3" $ LRSuccess "3"
               , testQuery "let i : Number -> Number = fn x => x in i 3" $ LRSuccess "3"
               , testQuery "let i : Text -> Text = fn x => x in i 3" $ LRCheckFail
