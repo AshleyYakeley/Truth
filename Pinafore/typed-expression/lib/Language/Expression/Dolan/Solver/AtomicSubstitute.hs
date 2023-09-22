@@ -3,6 +3,11 @@
 module Language.Expression.Dolan.Solver.AtomicSubstitute
     ( SolverM
     , substituteAtomicPuzzle
+    , substituteAtomicConstraint
+    , substituteAtomicChange
+    , bisubstitutesAtomicConstraint
+    , bisubstitutesPuzzle
+    , applySubstsToPuzzle
     ) where
 
 import Data.Shim
@@ -13,6 +18,7 @@ import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.UnifierM
+import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -21,32 +27,6 @@ import Shapes
 type SolverM :: GroundTypeKind -> Type -> Type
 type SolverM ground = WriterT [SolverBisubstitution ground] (DolanTypeCheckM ground)
 
-type Substitution :: GroundTypeKind -> Type
-data Substitution ground where
-    MkSubstitution
-        :: forall (ground :: GroundTypeKind) polarity nv t.
-           PolarityType polarity
-        -> TypeVarT (JoinMeetType polarity nv t)
-        -> TypeVarT nv
-        -> UnifierM ground (DolanShimWit ground polarity (JoinMeetType polarity nv t))
-        -> Maybe (DolanType ground (InvertPolarity polarity) t)
-        -> Substitution ground
-
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Substitution ground) where
-    show (MkSubstitution pol oldvar newvar mt mi) = let
-        invpol = invertPolarity pol
-        st =
-            case mToMaybe mt of
-                Just (MkShimWit t _) -> withRepresentative pol $ showDolanType t
-                Nothing -> "FAILS"
-        si =
-            case mi of
-                Just invtype -> "; INV " <> withRepresentative invpol (showDolanType invtype)
-                Nothing -> ""
-        in "{" <>
-           show oldvar <>
-           show pol <> " => " <> st <> "; " <> show oldvar <> show invpol <> " => " <> show newvar <> si <> "}"
-
 substBisubstitution ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
     => Substitution ground
@@ -54,7 +34,7 @@ substBisubstitution ::
 substBisubstitution (MkSubstitution (pol :: _ polarity) oldvar newvar mt _) =
     withRepresentative pol $
     withInvertPolarity @polarity $ let
-        newVarWit = shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarMap polar1
+        newVarWit = shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarMap $ halfBrokenShim @ground
         in mkPolarBisubstitution oldvar mt $ return newVarWit
 
 invertSubstitution ::
@@ -65,23 +45,23 @@ invertSubstitution ::
     -> DolanType ground (InvertPolarity polarity) t
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol fvt recv)
+invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol fvt)
     | Just Refl <- testEquality oldvar depvar =
         return $ let
-            p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt recv)
+            p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt)
             p2 =
                 case (substpol, unipol) of
                     (NegativeType, PositiveType) -> do
                         convm <-
                             case fvt of
-                                NormalFlipType vt -> puzzleUnify vt st
-                                InvertFlipType vt -> puzzleUnify vt st
+                                NormalFlipType vt -> puzzleUnify False vt st
+                                InvertFlipType vt -> puzzleUnify False vt st
                         pure $ \conv -> meetf conv convm
                     (PositiveType, NegativeType) -> do
                         convm <-
                             case fvt of
-                                NormalFlipType vt -> puzzleUnify st vt
-                                InvertFlipType vt -> puzzleUnify st vt
+                                NormalFlipType vt -> puzzleUnify False st vt
+                                InvertFlipType vt -> puzzleUnify False st vt
                         pure $ \conv -> joinf conv convm
                     (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
                     (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv
@@ -95,7 +75,50 @@ substituteAtomicChange ::
     -> UnifierM ground (Puzzle ground a)
 substituteAtomicChange (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just t)) =
     invertSubstitution pol oldvar newvar t
-substituteAtomicChange sub = bisubAtomicConstraint $ substBisubstitution sub
+substituteAtomicChange sub = bisubstituteAtomicConstraint $ substBisubstitution sub
+
+brokenShim ::
+       forall (shim :: ShimKind Type) a b. FunctionShim shim
+    => shim a b
+brokenShim = functionToShim "BROKEN" $ \_ -> error "broken shim"
+
+{-
+brokenPolarShim ::
+       forall (shim :: ShimKind Type) polarity a b. (FunctionShim shim, Is PolarityType polarity)
+    => PolarMap shim polarity a b
+brokenPolarShim =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap brokenShim
+        NegativeType -> MkPolarMap brokenShim
+-}
+brokenToIsoShim ::
+       forall (shim :: ShimKind Type) a b. FunctionShim shim
+    => shim a b
+    -> Isomorphism shim a b
+brokenToIsoShim conv = MkIsomorphism conv brokenShim
+
+brokenToPolyIsoShim ::
+       forall (pshim :: PolyShimKind) a b. FunctionShim (pshim Type)
+    => pshim Type a b
+    -> PolyIso pshim Type a b
+brokenToPolyIsoShim conv = MkPolyMapT $ brokenToIsoShim conv
+
+brokenPolarToPolyIsoShim ::
+       forall (pshim :: PolyShimKind) polarity a b. (FunctionShim (pshim Type), Is PolarityType polarity)
+    => PolarMap (pshim Type) polarity a b
+    -> PolarMap (PolyIso pshim Type) polarity a b
+brokenPolarToPolyIsoShim (MkPolarMap conv) =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap $ brokenToPolyIsoShim conv
+        NegativeType -> MkPolarMap $ brokenToPolyIsoShim conv
+
+halfBrokenShim ::
+       forall (ground :: GroundTypeKind) polarity a b. (IsDolanGroundType ground, Is PolarityType polarity)
+    => PolarMap (DolanPolyIsoShim ground Type) polarity a (JoinMeetType polarity a b)
+halfBrokenShim =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap $ MkPolyMapT $ MkIsomorphism join1 $ joinf id brokenShim
+        NegativeType -> MkPolarMap $ MkPolyMapT $ MkIsomorphism meet1 $ meetf id brokenShim
 
 -- | For debugging.
 genNewName :: Bool
@@ -105,7 +128,7 @@ substituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => AtomicConstraint ground a
     -> SolverM ground (a, Substitution ground)
-substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt) recv) =
+substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt)) =
     withRepresentative pol $ do
         MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
             if genNewName
@@ -114,10 +137,12 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
         withInvertPolarity @polarity $
             assignTypeVarT @(JoinMeetType polarity newtv pt) oldvar $ do
                 let
-                    newVarWit :: DolanShimWit ground (InvertPolarity polarity) (JoinMeetType polarity newtv pt)
-                    newVarWit = shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarMap polar1
+                    newVarWit :: DolanIsoShimWit ground (InvertPolarity polarity) (JoinMeetType polarity newtv pt)
+                    newVarWit =
+                        shimWitToDolan $
+                        MkShimWit (VarDolanSingularType newvar) $ invertPolarMap $ halfBrokenShim @ground
                 substwit <-
-                    if recv
+                    if occursInFlipType oldvar fptw
                         then do
                             MkSomeTypeVarT recvar <- lift renamerGenerateFreeUVar
                             assignSameTypeVarT oldvar recvar $
@@ -142,8 +167,8 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
                                             oldvar
                                             newvar
                                             (do
-                                                 ptw' <- invertTypeM rigidity ptw
-                                                 return $ substwit ptw')
+                                                 MkShimWit pt conv <- invertTypeM rigidity ptw
+                                                 return $ substwit $ MkShimWit pt $ brokenPolarToPolyIsoShim conv)
                                             (Just ptw)
                 tell [substBisubstitution subst]
                 return (unPolarMap $ polar2 @(DolanShim ground) @polarity @newtv @pt, subst)
@@ -172,14 +197,57 @@ substituteAtomicPuzzle' ::
 substituteAtomicPuzzle' (ClosedExpression a) = return $ pure a
 substituteAtomicPuzzle' (OpenExpression piece puzzlerest) = substituteAtomicPiece piece puzzlerest
 
+{-
 gatherAtomicPuzzle ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => AtomicPuzzle ground a
     -> AtomicPuzzle ground a
 gatherAtomicPuzzle = combineExpressionWitnesses joinAtomicConstraints
-
+-}
 substituteAtomicPuzzle ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => AtomicPuzzle ground a
     -> SolverM ground (Puzzle ground a)
-substituteAtomicPuzzle puzzle = substituteAtomicPuzzle' $ gatherAtomicPuzzle puzzle
+substituteAtomicPuzzle puzzle = substituteAtomicPuzzle' puzzle
+
+bisubstitutesPiece ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [SolverBisubstitution ground]
+    -> Piece ground a
+    -> UnifierM ground (Puzzle ground a)
+bisubstitutesPiece newchanges (WholePiece wc memo) = do
+    MkShimWit wc' conv <- bisubstitutesWholeConstraintShim newchanges $ mkShimWit wc
+    return $ fmap (isoBackwards conv) $ varExpression $ WholePiece wc' memo
+bisubstitutesPiece newchanges (AtomicPiece ac) = bisubstitutesAtomicConstraint newchanges ac
+
+bisubstitutesPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [SolverBisubstitution ground]
+    -> Puzzle ground a
+    -> UnifierM ground (Puzzle ground a)
+bisubstitutesPuzzle substs = mapExpressionWitnessesM $ bisubstitutesPiece substs
+
+bisubstitutesAtomicConstraint ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [SolverBisubstitution ground]
+    -> AtomicConstraint ground a
+    -> UnifierM ground (Puzzle ground a)
+bisubstitutesAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
+bisubstitutesAtomicConstraint (s:ss) ac = do
+    puzzle <- bisubstituteAtomicConstraint s ac
+    bisubstitutesPuzzle ss puzzle
+
+applySubstsToPiece ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [Substitution ground]
+    -> Piece ground a
+    -> UnifierM ground (Puzzle ground a)
+applySubstsToPiece newchanges = bisubstitutesPiece (fmap substBisubstitution newchanges)
+
+applySubstsToPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => [Substitution ground]
+    -> Puzzle ground a
+    -> UnifierM ground (Puzzle ground a)
+applySubstsToPuzzle substs = mapExpressionWitnessesM $ applySubstsToPiece substs
+-- (fmap (\subst -> MkAtomicChange $ substituteAtomicChange subst) substs)

@@ -16,18 +16,15 @@ data AtomicConstraint ground t where
            TypeVarT tv
         -> PolarityType polarity
         -> FlipType ground polarity t
-        -> Bool
         -> AtomicConstraint ground (PolarMapType (DolanShim ground) polarity t tv)
 
 instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (AtomicConstraint ground t) where
-    show (MkAtomicConstraint var PositiveType (NormalFlipType wt) recflag) =
-        mif recflag "REC " <> show var <> " :> " <> showDolanType wt <> " [+]"
-    show (MkAtomicConstraint var NegativeType (NormalFlipType wt) recflag) =
-        mif recflag "REC " <> show var <> " <: " <> showDolanType wt <> " [-]"
-    show (MkAtomicConstraint var PositiveType (InvertFlipType wt) recflag) =
-        mif recflag "REC " <> show var <> " :> " <> showDolanType wt <> " [- INV]"
-    show (MkAtomicConstraint var NegativeType (InvertFlipType wt) recflag) =
-        mif recflag "REC " <> show var <> " <: " <> showDolanType wt <> " [+ INV]"
+    show (MkAtomicConstraint var PositiveType (NormalFlipType wt)) = show var <> " :> " <> showDolanType wt <> " [+]"
+    show (MkAtomicConstraint var NegativeType (NormalFlipType wt)) = show var <> " <: " <> showDolanType wt <> " [-]"
+    show (MkAtomicConstraint var PositiveType (InvertFlipType wt)) =
+        show var <> " :> " <> showDolanType wt <> " [- INV]"
+    show (MkAtomicConstraint var NegativeType (InvertFlipType wt)) =
+        show var <> " <: " <> showDolanType wt <> " [+ INV]"
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (AtomicConstraint ground) where
     allConstraint = Dict
@@ -37,7 +34,7 @@ mkAtomicConstraint ::
     => TypeVarT tv
     -> FlipType ground polarity t
     -> AtomicConstraint ground (PolarMapType (DolanShim ground) polarity t tv)
-mkAtomicConstraint var ft = MkAtomicConstraint var representative ft (occursInFlipType var ft)
+mkAtomicConstraint var ft = MkAtomicConstraint var representative ft
 
 leAtomicConstraint ::
        forall (ground :: GroundTypeKind) polarity tv p. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -63,7 +60,7 @@ isPureAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => AtomicConstraint ground a
     -> Maybe a
-isPureAtomicConstraint (MkAtomicConstraint depvar pol (NormalFlipType tw) _) =
+isPureAtomicConstraint (MkAtomicConstraint depvar pol (NormalFlipType tw)) =
     withRepresentative pol $ do
         MkShimWit t (MkPolarMap conv) <- dolanToMaybeTypeShim tw
         case t of
@@ -84,7 +81,7 @@ joinAtomicConstraints ::
     => AtomicConstraint ground a
     -> AtomicConstraint ground b
     -> Maybe (AtomicPuzzle ground (a, b))
-joinAtomicConstraints (MkAtomicConstraint va pa (NormalFlipType ta) ra) (MkAtomicConstraint vb pb (NormalFlipType tb) rb) = do
+joinAtomicConstraints (MkAtomicConstraint va pa (NormalFlipType ta)) (MkAtomicConstraint vb pb (NormalFlipType tb)) = do
     Refl <- testEquality va vb
     Refl <- testEquality pa pb
     Just $
@@ -95,12 +92,12 @@ joinAtomicConstraints (MkAtomicConstraint va pa (NormalFlipType ta) ra) (MkAtomi
                         mapconv shimab = let
                             shconv = shimab . conv
                             in (shconv . join1, shconv . join2)
-                        in fmap mapconv $ varExpression $ MkAtomicConstraint va pa (NormalFlipType tab) (ra || rb)
+                        in fmap mapconv $ varExpression $ MkAtomicConstraint va pa (NormalFlipType tab)
             NegativeType ->
                 case joinMeetType ta tb of
                     MkShimWit tab (MkPolarMap conv) -> let
                         mapconv shimab = let
                             shconv = conv . shimab
                             in (meet1 . shconv, meet2 . shconv)
-                        in fmap mapconv $ varExpression $ MkAtomicConstraint va pa (NormalFlipType tab) (ra || rb)
+                        in fmap mapconv $ varExpression $ MkAtomicConstraint va pa (NormalFlipType tab)
 joinAtomicConstraints _ _ = Nothing

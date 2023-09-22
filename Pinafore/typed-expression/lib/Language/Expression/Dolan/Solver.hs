@@ -12,6 +12,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.Solver
@@ -20,6 +21,15 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
+
+forwardsShimWit ::
+       forall (pshim :: PolyShimKind) w polarity t. (Is PolarityType polarity)
+    => ShimWit (PolarMap (PolyMapT Isomorphism pshim Type) polarity) w t
+    -> ShimWit (PolarMap (pshim Type) polarity) w t
+forwardsShimWit =
+    case polarityType @polarity of
+        PositiveType -> \(MkShimWit w (MkPolarMap (MkPolyMapT conv))) -> MkShimWit w $ MkPolarMap $ isoForwards conv
+        NegativeType -> \(MkShimWit w (MkPolarMap (MkPolyMapT conv))) -> MkShimWit w $ MkPolarMap $ isoForwards conv
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = Puzzle ground
@@ -30,8 +40,10 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => U
         return $ uuLiftPosShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
     unifyPosNegWitnesses ta tb = pure $ MkComposeShim $ puzzleExpressionUnify ta tb
     solveUnifier = solvePuzzle
-    unifierPosSubstitute bisubs t = lift $ runUnifierM $ bisubstitutesType bisubs t
-    unifierNegSubstitute bisubs t = lift $ runUnifierM $ bisubstitutesType bisubs t
+    unifierPosSubstitute bisubs t =
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType bisubs t
+    unifierNegSubstitute bisubs t =
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType bisubs t
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SubsumeTypeSystem (DolanTypeSystem ground) where
@@ -41,8 +53,10 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
         subsumer' <- lift $ runUnifierM $ bisubstitutesPuzzle ss subsumer
         return $ solverExpressionLiftType subsumer'
     solveSubsumer = solvePuzzle
-    subsumerPosSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
-    subsumerNegSubstitute subs t = lift $ runUnifierM $ bisubstitutesType subs t
+    subsumerPosSubstitute subs t =
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType subs t
+    subsumerNegSubstitute subs t =
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = return $ puzzleExpressionUnify tinf tdecl
 
 -- used for simplification, where all vars are fixed
@@ -51,13 +65,13 @@ checkSameVar ::
     => wit t
     -> DolanTypeCheckM ground t
 {-
-checkSameVar (MkAtomicConstraint va polwit (NormalFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) _)
+checkSameVar (MkAtomicConstraint va polwit (NormalFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) )
     | Just Refl <- testEquality va vb =
         return $
         case polwit of
             PositiveType -> iJoinL1
             NegativeType -> iMeetR1
-checkSameVar (MkAtomicConstraint va polwit (InvertFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) _)
+checkSameVar (MkAtomicConstraint va polwit (InvertFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) )
     | Just Refl <- testEquality va vb =
         return $
         case polwit of

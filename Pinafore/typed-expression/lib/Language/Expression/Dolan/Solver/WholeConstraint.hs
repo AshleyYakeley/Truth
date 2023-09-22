@@ -29,7 +29,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConst
     allConstraint = Dict
 
 type WholeConstraintShim :: GroundTypeKind -> Type -> Type
-type WholeConstraintShim ground = ShimWit (CatDual (->)) (WholeConstraint ground)
+type WholeConstraintShim ground = ShimWit (Isomorphism (->)) (WholeConstraint ground)
 
 bisubstituteWholeConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
@@ -37,9 +37,13 @@ bisubstituteWholeConstraint ::
     -> WholeConstraint ground a
     -> UnifierM ground (WholeConstraintShim ground a)
 bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
-    MkShimWit fta' (MkPolarMap conva) <- bisubstituteFlipType bisub fta
-    MkShimWit ftb' (MkPolarMap convb) <- bisubstituteFlipType bisub ftb
-    return $ MkShimWit (MkWholeConstraint fta' ftb') $ MkCatDual $ \conv -> convb . conv . conva
+    MkShimWit fta' (MkPolarMap (MkPolyMapT conva)) <- bisubstituteFlipType bisub fta
+    MkShimWit ftb' (MkPolarMap (MkPolyMapT convb)) <- bisubstituteFlipType bisub ftb
+    return $
+        MkShimWit (MkWholeConstraint fta' ftb') $
+        MkIsomorphism
+            (\conv -> isoBackwards convb . conv . isoBackwards conva)
+            (\conv -> isoForwards convb . conv . isoForwards conva)
 
 bisubstituteWholeConstraintShim ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground

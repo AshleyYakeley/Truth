@@ -12,7 +12,7 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type SolverBisubstitution :: GroundTypeKind -> Type
-type SolverBisubstitution ground = Bisubstitution ground (DolanShim ground) (UnifierM ground)
+type SolverBisubstitution ground = Bisubstitution ground (DolanPolyIsoShim ground Type) (UnifierM ground)
 
 type FlipType :: GroundTypeKind -> Polarity -> Type -> Type
 data FlipType ground polarity t

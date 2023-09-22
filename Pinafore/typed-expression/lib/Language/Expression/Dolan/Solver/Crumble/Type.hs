@@ -67,7 +67,7 @@ crumbleReduced ::
     => DolanType ground pola a
     -> DolanType ground polb b
     -> TypeCrumbler ground (DolanShim ground a b)
-crumbleReduced ta tb = crumblerLiftPuzzle $ puzzleUnify ta tb
+crumbleReduced ta tb = crumblerLiftPuzzle $ puzzleUnify True ta tb
 
 crumbleReducedWit ::
        forall (ground :: GroundTypeKind) pola polb a b.
@@ -103,7 +103,7 @@ crumbleAtomicGE v t = crumbleAtomic $ geAtomicConstraint v t
 crumbleSubtypeContext ::
        forall (ground :: GroundTypeKind). (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => SubtypeContext (DolanVarID ground) (DolanType ground) (DolanShim ground) (TypeCrumbler ground)
-crumbleSubtypeContext = MkSubtypeContext crumbleReduced crumblerLiftExpression
+crumbleSubtypeContext = MkSubtypeContext crumbleTT crumblerLiftExpression
 
 crumbleGroundedTypes ::
        forall (ground :: GroundTypeKind) pola polb a b.
