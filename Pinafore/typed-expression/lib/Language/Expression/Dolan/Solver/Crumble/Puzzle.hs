@@ -23,7 +23,7 @@ solvePiece ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Piece ground a
     -> SolverM ground (PuzzleExpression ground a)
-solvePiece (WholePiece constr _) = lift $ crumbleConstraint constr
+solvePiece (WholePiece constr) = lift $ crumbleConstraint constr
 solvePiece (AtomicPiece ac) = fmap pure $ substituteAtomicConstraint ac
 
 bisubstituteEachMemo ::
@@ -36,12 +36,12 @@ bisubstituteEachMemo bisubs =
         MkShimWit wc' conv <- lift $ lift $ runUnifierM $ bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
         return $ MkShimWit wc' $ isoForwards conv
 
-processPiece ::
+processPieceAndRest ::
        forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Piece ground a
     -> Puzzle ground (a -> b)
     -> PuzzleCrumbler ground b
-processPiece piece puzzlerest =
+processPieceAndRest piece puzzlerest =
     MkCrumbler $ do
         (MkSolverExpression conspuzzle rexpr, substs) <- lift $ lift $ runWriterT $ solvePiece piece
         lift $ tell substs
@@ -59,19 +59,9 @@ processPuzzle ::
     => Puzzle ground a
     -> PuzzleCrumbler ground a
 processPuzzle (ClosedExpression a) = pure a
-processPuzzle (OpenExpression piece@(WholePiece wconstr@MkWholeConstraint {} True) puzzlerest) =
-    MkCrumbler $ do
-        seen <- ask
-        case lookUpListElement wconstr seen of
-            Just lelem ->
-                fmap (fmap $ \lta -> lta <*> listProductGetElement lelem) $ unCrumbler $ processPuzzle puzzlerest
-            Nothing ->
-                unCrumbler $ let
-                    fixconv f = let
-                        ~(conv, a) = f $ iLazy conv
-                        in a
-                    in fmap fixconv $ addMemo wconstr $ processPiece piece $ fmap (\ta t -> (t, ta t)) puzzlerest
-processPuzzle (OpenExpression piece puzzlerest) = processPiece piece puzzlerest
+processPuzzle (OpenExpression piece@(WholePiece wconstr@MkWholeConstraint {}) puzzlerest) =
+    memoise iLazy wconstr (processPuzzle puzzlerest) $ processPieceAndRest piece $ fmap (\ta t -> (t, ta t)) puzzlerest
+processPuzzle (OpenExpression piece puzzlerest) = processPieceAndRest piece puzzlerest
 
 crumblePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

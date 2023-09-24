@@ -54,14 +54,14 @@ invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol f
                     (NegativeType, PositiveType) -> do
                         convm <-
                             case fvt of
-                                NormalFlipType vt -> puzzleUnify False vt st
-                                InvertFlipType vt -> puzzleUnify False vt st
+                                NormalFlipType vt -> puzzleUnify vt st
+                                InvertFlipType vt -> puzzleUnify vt st
                         pure $ \conv -> meetf conv convm
                     (PositiveType, NegativeType) -> do
                         convm <-
                             case fvt of
-                                NormalFlipType vt -> puzzleUnify False st vt
-                                InvertFlipType vt -> puzzleUnify False st vt
+                                NormalFlipType vt -> puzzleUnify st vt
+                                InvertFlipType vt -> puzzleUnify st vt
                         pure $ \conv -> joinf conv convm
                     (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
                     (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv
@@ -178,9 +178,9 @@ bisubstitutesPiece ::
     => [SolverBisubstitution ground]
     -> Piece ground a
     -> UnifierM ground (Puzzle ground a)
-bisubstitutesPiece newchanges (WholePiece wc memo) = do
+bisubstitutesPiece newchanges (WholePiece wc) = do
     MkShimWit wc' conv <- bisubstitutesWholeConstraintShim newchanges $ mkShimWit wc
-    return $ fmap (isoBackwards conv) $ varExpression $ WholePiece wc' memo
+    return $ fmap (isoBackwards conv) $ varExpression $ WholePiece wc'
 bisubstitutesPiece newchanges (AtomicPiece ac) = bisubstitutesAtomicConstraint newchanges ac
 
 bisubstitutesPuzzle ::
