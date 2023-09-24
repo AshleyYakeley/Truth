@@ -2,12 +2,12 @@
 
 module Language.Expression.Dolan.Solver.AtomicSubstitute
     ( SolverM
-    , substituteAtomicPuzzle
     , substituteAtomicConstraint
     , substituteAtomicChange
     , bisubstitutesAtomicConstraint
     , bisubstitutesPuzzle
     , applySubstsToPuzzle
+    , substBisubstitution
     ) where
 
 import Data.Shim
@@ -25,7 +25,7 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type SolverM :: GroundTypeKind -> Type -> Type
-type SolverM ground = WriterT [SolverBisubstitution ground] (DolanTypeCheckM ground)
+type SolverM ground = WriterT [Substitution ground] (DolanTypeCheckM ground)
 
 substBisubstitution ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
@@ -127,7 +127,7 @@ genNewName = False
 substituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => AtomicConstraint ground a
-    -> SolverM ground (a, Substitution ground)
+    -> SolverM ground a
 substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt)) =
     withRepresentative pol $ do
         MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
@@ -170,45 +170,8 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
                                                  MkShimWit pt conv <- invertTypeM rigidity ptw
                                                  return $ substwit $ MkShimWit pt $ brokenPolarToPolyIsoShim conv)
                                             (Just ptw)
-                tell [substBisubstitution subst]
-                return (unPolarMap $ polar2 @(DolanShim ground) @polarity @newtv @pt, subst)
-
-applySubstToAtomicPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => Substitution ground
-    -> AtomicPuzzle ground a
-    -> UnifierM ground (Puzzle ground a)
-applySubstToAtomicPuzzle subst puzzle = mapExpressionWitnessesM (substituteAtomicChange subst) puzzle
-
-substituteAtomicPiece ::
-       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => AtomicConstraint ground a
-    -> AtomicPuzzle ground (a -> b)
-    -> SolverM ground (Puzzle ground b)
-substituteAtomicPiece piece puzzlerest = do
-    (a, subst) <- substituteAtomicConstraint piece
-    puzzlerest' <- lift $ lift $ runUnifierM $ applySubstToAtomicPuzzle subst puzzlerest
-    return $ fmap (\ab -> ab a) puzzlerest'
-
-substituteAtomicPuzzle' ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => AtomicPuzzle ground a
-    -> SolverM ground (Puzzle ground a)
-substituteAtomicPuzzle' (ClosedExpression a) = return $ pure a
-substituteAtomicPuzzle' (OpenExpression piece puzzlerest) = substituteAtomicPiece piece puzzlerest
-
-{-
-gatherAtomicPuzzle ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => AtomicPuzzle ground a
-    -> AtomicPuzzle ground a
-gatherAtomicPuzzle = combineExpressionWitnesses joinAtomicConstraints
--}
-substituteAtomicPuzzle ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => AtomicPuzzle ground a
-    -> SolverM ground (Puzzle ground a)
-substituteAtomicPuzzle puzzle = substituteAtomicPuzzle' puzzle
+                tell [subst]
+                return $ unPolarMap $ polar2 @(DolanShim ground) @polarity @newtv @pt
 
 bisubstitutesPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
@@ -250,4 +213,3 @@ applySubstsToPuzzle ::
     -> Puzzle ground a
     -> UnifierM ground (Puzzle ground a)
 applySubstsToPuzzle substs = mapExpressionWitnessesM $ applySubstsToPiece substs
--- (fmap (\subst -> MkAtomicChange $ substituteAtomicChange subst) substs)

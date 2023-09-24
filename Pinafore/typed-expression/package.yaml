@@ -91,6 +91,7 @@ library:
       - Language.Expression.Dolan.Solver.Safety
       - Language.Expression.Dolan.Solver.AtomicSubstitute
       - Language.Expression.Dolan.Solver.Crumble.Type
+      - Language.Expression.Dolan.Solver.Crumble.Crumbler
       - Language.Expression.Dolan.Solver.Crumble.Puzzle
       - Language.Expression.Dolan.Solver.Solver
       - Language.Expression.Dolan.Solver

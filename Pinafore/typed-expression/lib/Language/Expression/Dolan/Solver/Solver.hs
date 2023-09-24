@@ -17,12 +17,6 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
 import Shapes
 
-processPuzzle ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => Puzzle ground a
-    -> SolverM ground (DolanOpenExpression ground a)
-processPuzzle = crumblePuzzle
-
 solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
@@ -30,27 +24,16 @@ solvePuzzle ::
 solvePuzzle puzzle =
     partitionExpression purePiece puzzle $ \upuzzle spuzzle -> do
         rigidity <- renamerGetNameRigidity
-    -- (_a, subs) <-
-        (exprba, usubs) <-
-            runWriterT $ let
-                ?rigidity = rigidity
-                in processPuzzle upuzzle
+        (exprba, usubs) <- crumblePuzzle rigidity upuzzle
         spuzzle' <- lift $ runUnifierM $ bisubstitutesPuzzle usubs spuzzle
-        (exprb, ssubs) <-
-            runWriterT $ let
-                ?rigidity = rigidity
-                in processPuzzle spuzzle'
+        (exprb, ssubs) <- crumblePuzzle rigidity spuzzle'
         return (exprba <*> exprb, usubs <> ssubs)
 
 rigidSolvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a)
-rigidSolvePuzzle puzzle =
-    fmap fst $
-    runWriterT $ let
-        ?rigidity = \_ -> RigidName
-        in processPuzzle puzzle
+rigidSolvePuzzle puzzle = fmap fst $ crumblePuzzle (\_ -> RigidName) puzzle
 
 unifierSubtypeConversionAsGeneralAs ::
        forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
