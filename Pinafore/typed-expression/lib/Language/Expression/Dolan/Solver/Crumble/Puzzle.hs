@@ -58,7 +58,7 @@ processPuzzle ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Puzzle ground a
     -> PuzzleCrumbler ground a
-processPuzzle (ClosedExpression a) = pure a
+processPuzzle (ClosedExpression a) = crumblerPure a
 processPuzzle (OpenExpression piece@(WholePiece wconstr@MkWholeConstraint {}) puzzlerest) =
     memoise iLazy wconstr (processPuzzle puzzlerest) $ processPieceAndRest piece $ fmap (\ta t -> (t, ta t)) puzzlerest
 processPuzzle (OpenExpression piece puzzlerest) = processPieceAndRest piece puzzlerest
@@ -71,5 +71,5 @@ crumblePuzzle ::
 crumblePuzzle rigidity puzzle = let
     ?rigidity = rigidity
     in do
-           (a, substs) <- runWriterT $ runCrumbler [] $ processPuzzle puzzle
+           (a, substs) <- runWriterT $ runCrumbler $ processPuzzle puzzle
            return (a, fmap substBisubstitution substs)

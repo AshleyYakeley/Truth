@@ -1,6 +1,5 @@
 module Language.Expression.Dolan.Solver.Crumble.Crumbler where
 
-import Control.Applicative.Wrapped
 import Data.Shim
 import Shapes
 
@@ -12,41 +11,17 @@ newtype Crumbler w m f a = MkCrumbler
 instance forall w m f. (Functor f, Monad m) => Functor (Crumbler w m f) where
     fmap ab (MkCrumbler ruha) = MkCrumbler $ (fmap $ fmap $ fmap ab) ruha
 
-instance forall w m f. (Applicative f, Monad m) => Applicative (Crumbler w m f) where
-    pure a = MkCrumbler $ pure $ pure $ pure a
-    MkCrumbler ruhab <*> MkCrumbler ruha = MkCrumbler $ liftA2 (liftA2 (<*>)) ruhab ruha
-
-instance forall w m f. (Applicative f, MonadPlus m) => Alternative (Crumbler w m f) where
-    empty = MkCrumbler empty
-    MkCrumbler p <|> MkCrumbler q = MkCrumbler $ p <|> q
-
-instance forall w m f. (Applicative f, Monad m) => WrappedApplicative (Crumbler w m f) where
-    type WAInnerM (Crumbler w m f) = m
-    wexec msa =
-        MkCrumbler $ do
-            MkCrumbler sa <- lift msa
-            sa
-    whoist mm (MkCrumbler sb) = MkCrumbler $ hoist mm sb
-
-assembleListProductFor ::
-       forall f w. Applicative f
-    => [SomeFor f w]
-    -> SomeFor f (ListProductType w)
-assembleListProductFor [] = MkSomeFor (MkListProductType NilListType) $ pure ()
-assembleListProductFor (MkSomeFor wt t:ss) =
-    case assembleListProductFor ss of
-        MkSomeFor (MkListProductType lt) tt -> MkSomeFor (MkListProductType $ ConsListType wt lt) $ liftA2 (,) t tt
+crumblerPure ::
+       forall w m f a. (Applicative f, Monad m)
+    => a
+    -> Crumbler w m f a
+crumblerPure a = MkCrumbler $ pure $ pure $ pure a
 
 runCrumbler ::
        forall w m f a. (Applicative f, Monad m)
-    => [SomeOf w]
-    -> Crumbler w m f a
+    => Crumbler w m f a
     -> m (f a)
-runCrumbler memos pca =
-    case assembleListProductFor memos of
-        MkSomeOf (MkListProductType memoLT) items ->
-            case pca of
-                MkCrumbler rma -> fmap (fmap $ \ua -> ua items) $ runReaderT rma memoLT
+runCrumbler (MkCrumbler rma) = fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
 
 dropMemos ::
        forall w m f a. (Applicative f, Monad m)
@@ -80,14 +55,6 @@ memoise lazify wt call1 call2 =
                     ~(t, a) = f $ lazify t
                     in a
                 in unCrumbler $ fmap fixconv $ addMemo wt call2
-
-memoise1 ::
-       forall w m f t. (TestEquality w, Applicative f, MonadIO m)
-    => (t -> t)
-    -> w t
-    -> Crumbler w m f t
-    -> Crumbler w m f t
-memoise1 lazify wt pct = memoise lazify wt (pure id) $ fmap (\t -> (t, t)) pct
 
 mapEachMemo ::
        forall w m f a. (Applicative f, Monad m)
