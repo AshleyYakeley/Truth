@@ -2,6 +2,7 @@ module Debug.ThreadTrace
     ( contextStr
     , traceNameThread
     , traceHide
+    , traceHidePrefix
     , traceIOM
     , traceBracketArgs
     , traceBracket_
@@ -45,12 +46,14 @@ contextStr a b = a ++ ": " ++ b
 data ThreadData = MkThreadData
     { tdName :: String
     , tdHide :: Int
+    , tdHidePrefix :: Int
     }
 
 defaultThreadData :: ThreadData
 defaultThreadData = let
     tdName = ""
     tdHide = 0
+    tdHidePrefix = 0
     in MkThreadData {..}
 
 traceThreadData :: MVar (Map.Map ThreadId ThreadData)
@@ -88,28 +91,37 @@ traceHide mr = do
     liftIO $ threadModifyData $ \tdata -> tdata {tdHide = pred $ tdHide tdata}
     return a
 
+traceHidePrefix :: MonadIO m => m r -> m r
+traceHidePrefix mr = do
+    liftIO $ threadModifyData $ \tdata -> tdata {tdHidePrefix = succ $ tdHidePrefix tdata}
+    a <- mr
+    liftIO $ threadModifyData $ \tdata -> tdata {tdHidePrefix = pred $ tdHidePrefix tdata}
+    return a
+
 traceIOM :: MonadIO m => String -> m ()
 traceIOM msg =
     liftIO $ do
         tdata <- threadGetData
         if tdHide tdata > 0
             then return ()
-            else do
-                MkSystemTime s ns <- getSystemTime
-                tid <- myThreadId
-                let
-                    threadtext =
-                        case show tid of
-                            'T':'h':'r':'e':'a':'d':'I':'d':' ':t -> '#' : t
-                            t -> t
-                    nametxt =
-                        case tdName tdata of
-                            "" -> ""
-                            name -> " (" ++ name ++ ")"
-                    showMod :: Int -> Word32 -> String
-                    showMod 0 _ = ""
-                    showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
-                traceIO $ show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> ": " <> msg
+            else if tdHidePrefix tdata > 0
+                     then traceIO msg
+                     else do
+                         MkSystemTime s ns <- getSystemTime
+                         tid <- myThreadId
+                         let
+                             threadtext =
+                                 case show tid of
+                                     'T':'h':'r':'e':'a':'d':'I':'d':' ':t -> '#' : t
+                                     t -> t
+                             nametxt =
+                                 case tdName tdata of
+                                     "" -> ""
+                                     name -> " (" ++ name ++ ")"
+                             showMod :: Int -> Word32 -> String
+                             showMod 0 _ = ""
+                             showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
+                         traceIO $ show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> ": " <> msg
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
