@@ -15,7 +15,13 @@ else
 JOBFLAGS := --keep-going
 endif
 
-STACKFLAGS := --stack-root $$PWD/.stack-root $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
+ifeq ($(stackroot),1)
+STACKROOTFLAGS := --stack-root $$PWD/.stack-root
+else
+STACKROOTFLAGS :=
+endif
+
+STACKFLAGS := $(STACKROOTFLAGS) $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
 ifeq ($(test),1)
 TESTFLAGS :=
