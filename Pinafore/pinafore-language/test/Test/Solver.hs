@@ -215,6 +215,17 @@ testSolver =
                              "(t -> t) -> t"
                              "((a -> a) -> (Maybe a -> Maybe a))"
                              "(rec a, Maybe. a) -> Maybe. None"
+                       , unifierTest "issue-206-3" "Unit" $ do
+                             tb <- stParseType "b"
+                             tpos <-
+                                 stParseType
+                                     "(rec g, b | Maybe. (rec e, g | Maybe. e)) | Maybe. (rec e, (rec g, b | Maybe. (rec e, g | Maybe. e)) | Maybe. e)"
+                             tneg <-
+                                 stParseType
+                                     "rec d, (rec f, (rec h, (rec i, b & Maybe. (rec d, (rec f, (rec h, i & Maybe. (rec d, (rec f, h & Maybe. (rec d, f & Maybe. d)) & Maybe. d)) & Maybe. (rec d, f & Maybe. d)) & Maybe. d)) & Maybe. (rec d, (rec f, h & Maybe. (rec d, f & Maybe. d)) & Maybe. d)) & Maybe. (rec d, f & Maybe. d)) & Maybe. d"
+                             (tb', (tpos', tneg')) <- stRename [] FreeName (tb, (tpos, tneg))
+                             stUnify tpos' tneg'
+                             return tb'
                        ]
                  ]
         , testTree "recursive" $ let
