@@ -8,10 +8,7 @@ module Language.Expression.Dolan.Simplify.VarUses
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Argument
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.FreeVars
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
@@ -126,7 +123,7 @@ instance forall (ground :: GroundTypeKind) polarity cat wit. GetVarUses ground w
     getVarAppearances (MkShimWit w _) = getVarAppearances w
 
 instance forall (ground :: GroundTypeKind) polarity dv gt. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             GetVarUses ground (DolanArguments dv (DolanType ground) gt polarity) where
+             GetVarUses ground (CCRPolarArguments dv (DolanType ground) gt polarity) where
     getVarAppearances NilCCRArguments = mempty
     getVarAppearances (ConsCCRArguments arg args) =
         getCCRVarAppearances @ground arg <> getVarAppearances @_ @ground args
@@ -210,7 +207,7 @@ getArgExpressionVars (RangeCCRPolarArgument tp tq) =
 
 getArgsExpressionVars ::
        forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanArguments dv (DolanType ground) gt polarity t
+    => CCRPolarArguments dv (DolanType ground) gt polarity t
     -> ([SomeTypeVarT], [SomeTypeVarT])
 getArgsExpressionVars NilCCRArguments = mempty
 getArgsExpressionVars (ConsCCRArguments arg args) =

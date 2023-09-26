@@ -4,6 +4,7 @@ module Language.Expression.Dolan.Solver.Solver
     , unifierSubtypeConversionAsGeneralAs
     ) where
 
+import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Puzzle
@@ -14,7 +15,6 @@ import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Variance
 import Shapes
 
 solvePuzzle ::
@@ -36,7 +36,7 @@ rigidSolvePuzzle ::
 rigidSolvePuzzle puzzle = fmap fst $ crumblePuzzle (\_ -> RigidName) puzzle
 
 unifierSubtypeConversionAsGeneralAs ::
-       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
        IsDolanSubtypeGroundType ground
     => SubtypeConversion ground dva gta dvb gtb
     -> SubtypeConversion ground dva gta dvb gtb

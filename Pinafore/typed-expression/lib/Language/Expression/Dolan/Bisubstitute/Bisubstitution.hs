@@ -2,7 +2,6 @@ module Language.Expression.Dolan.Bisubstitute.Bisubstitution where
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem

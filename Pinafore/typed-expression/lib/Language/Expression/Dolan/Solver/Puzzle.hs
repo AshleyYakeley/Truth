@@ -127,22 +127,22 @@ bisubstituteAtomicConstraint ::
     -> UnifierM ground (Puzzle ground a)
 bisubstituteAtomicConstraint bisub@(MkBisubstitution oldvar _ mwq) (MkAtomicConstraint depvar PositiveType ftw)
     | Just Refl <- testEquality oldvar depvar = do
-        MkShimWit tq (MkPolarMap (MkPolyMapT convq)) <- mwq
-        MkShimWit ftw' (MkPolarMap (MkPolyMapT convw)) <- bisubstituteFlipType bisub ftw
+        MkShimWit tq (MkPolarShim (MkPolyMapT convq)) <- mwq
+        MkShimWit ftw' (MkPolarShim (MkPolyMapT convw)) <- bisubstituteFlipType bisub ftw
         return $ fmap (\conv -> isoForwards convq . conv . isoForwards convw) $ flipUnifyPuzzle ftw' (NormalFlipType tq)
 bisubstituteAtomicConstraint bisub@(MkBisubstitution oldvar mwp _) (MkAtomicConstraint depvar NegativeType ftw)
     | Just Refl <- testEquality oldvar depvar = do
-        MkShimWit tp (MkPolarMap (MkPolyMapT convp)) <- mwp
-        MkShimWit ftw' (MkPolarMap (MkPolyMapT convw)) <- bisubstituteFlipType bisub ftw
+        MkShimWit tp (MkPolarShim (MkPolyMapT convp)) <- mwp
+        MkShimWit ftw' (MkPolarShim (MkPolyMapT convw)) <- bisubstituteFlipType bisub ftw
         return $ fmap (\conv -> isoForwards convw . conv . isoForwards convp) $ flipUnifyPuzzle (NormalFlipType tp) ftw'
 bisubstituteAtomicConstraint _ ac
     | Just conv <- isPureAtomicConstraint ac = return $ pure conv
 bisubstituteAtomicConstraint bisub (MkAtomicConstraint depvar PositiveType (NormalFlipType tw)) = do
-    MkShimWit tp (MkPolarMap (MkPolyMapT conv)) <- bisubstituteType bisub tw
+    MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- bisubstituteType bisub tw
     return $
         fmap (\pv -> pv . isoForwards conv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
 bisubstituteAtomicConstraint bisub (MkAtomicConstraint depvar NegativeType (NormalFlipType tw)) = do
-    MkShimWit tp (MkPolarMap (MkPolyMapT conv)) <- bisubstituteType bisub tw
+    MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- bisubstituteType bisub tw
     return $
         fmap (\pv -> isoForwards conv . pv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
 bisubstituteAtomicConstraint _ ac = return $ atomicConstraintPuzzle ac

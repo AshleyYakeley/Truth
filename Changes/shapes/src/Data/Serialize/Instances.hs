@@ -4,7 +4,7 @@ module Data.Serialize.Instances
     (
     ) where
 
-import Data.Coercion
+import Data.Coerce.Coercion
 import Data.Serializer
 import Data.Time
 import Shapes.Import

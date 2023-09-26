@@ -16,7 +16,6 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
-import Language.Expression.Dolan.Variance
 import Shapes
 
 type TypeCrumbler :: GroundTypeKind -> Type -> Type
@@ -118,7 +117,7 @@ crumbleGroundedTypes ::
 crumbleGroundedTypes = subtypeGroundedTypes crumbleSubtypeContext
 
 fromJoinMeetLimit ::
-       forall (shim :: ShimKind Type) polarity t. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity t. (Is PolarityType polarity, JoinMeetIsoShim shim)
     => shim (JoinMeetType polarity t (LimitType polarity)) t
 fromJoinMeetLimit =
     case polarityType @polarity of
@@ -126,7 +125,7 @@ fromJoinMeetLimit =
         NegativeType -> iMeetL1
 
 toJoinMeetLimit ::
-       forall (shim :: ShimKind Type) polarity t. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity t. (Is PolarityType polarity, JoinMeetIsoShim shim)
     => shim t (JoinMeetType polarity t (LimitType polarity))
 toJoinMeetLimit =
     case polarityType @polarity of
@@ -315,7 +314,7 @@ runCheckCrumble solvePuzzle ca = do
         return ()
 
 makeSCAGA ::
-       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
        IsDolanSubtypeGroundType ground
     => (forall a. Puzzle ground a -> DolanTypeCheckM ground (DolanOpenExpression ground a))
     -> SubtypeConversion ground dva gta dvb gtb

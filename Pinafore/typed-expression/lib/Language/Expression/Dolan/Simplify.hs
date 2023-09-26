@@ -6,7 +6,6 @@ module Language.Expression.Dolan.Simplify
     ) where
 
 import Language.Expression.Common
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
 import Language.Expression.Dolan.Simplify.DuplicateTypeVars
 import Language.Expression.Dolan.Simplify.FullyConstrainedTypeVars

@@ -4,20 +4,17 @@ module Language.Expression.Dolan.Mono
     , nonpolarToMonoType
     ) where
 
-import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
-import Language.Expression.Dolan.Covariance
+import Data.Shim
 import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Variance
 import Shapes
 
 class IsCovaryGroundType (w :: forall k. k -> Type) where
     groundTypeCovaryType ::
            forall (k :: Type) (t :: k) r.
            w t
-        -> (forall (dv :: DolanVariance). k ~ DolanVarianceKind dv => CovaryType dv -> r)
+        -> (forall (dv :: CCRVariances). k ~ CCRVariancesKind dv => CovaryType dv -> r)
         -> r
     groundTypeCovaryMap :: forall k (t :: k). w t -> CovaryMap t
 
@@ -27,7 +24,7 @@ class (IsDolanGroundType ground, IsCovaryGroundType conc) =>
 
 nonpolarToMonoType ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) a. CovarySubtype ground conc
-    => NonpolarDolanType ground a
+    => NonpolarType ground a
     -> Maybe (MonoType conc a)
 nonpolarToMonoType (GroundedNonpolarType gt args) = do
     (lc, ct) <- dolanToMonoGroundType gt

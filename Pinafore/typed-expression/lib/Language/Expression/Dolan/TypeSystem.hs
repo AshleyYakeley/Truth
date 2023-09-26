@@ -1,10 +1,9 @@
 module Language.Expression.Dolan.TypeSystem where
 
 import Data.Shim
-import Language.Expression.Dolan.Variance
 import Shapes
 
-type GroundTypeKind = forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type GroundTypeKind = forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 
 type DolanTypeSystem :: GroundTypeKind -> Type
 data DolanTypeSystem ground
@@ -18,5 +17,5 @@ type DolanShim ground = DolanPolyShim ground Type
 type DolanPolyIsoShim :: GroundTypeKind -> PolyShimKind
 type DolanPolyIsoShim ground = PolyIso (DolanPolyShim ground)
 
-type DolanPolarMap :: GroundTypeKind -> Polarity -> ShimKind Type
-type DolanPolarMap ground = PolarMap (DolanShim ground)
+type DolanPolarShim :: GroundTypeKind -> Polarity -> ShimKind Type
+type DolanPolarShim ground = PolarShim (DolanShim ground)

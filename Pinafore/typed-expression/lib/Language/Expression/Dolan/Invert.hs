@@ -4,7 +4,6 @@ module Language.Expression.Dolan.Invert
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type

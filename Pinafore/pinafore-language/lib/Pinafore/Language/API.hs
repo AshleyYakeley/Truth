@@ -24,9 +24,9 @@ module Pinafore.Language.API
     , HasQGroundType(..)
     , groundQType
     , CCRArguments(..)
-    , DolanArgumentsShimWit
-    , nilDolanArgumentsShimWit
-    , consDolanArgumentsShimWit
+    , CCRPolarArgumentsShimWit
+    , nilCCRPolarArgumentsShimWit
+    , consCCRPolarArgumentsShimWit
     , CCRPolarArgumentShimWit
     , coCCRArgument
     , contraCCRArgument

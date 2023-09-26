@@ -75,13 +75,13 @@ endless2 ::
 endless2 r = iLazy (endless1 @shim r) . justJM r
 
 applyEndless1 ::
-       forall (shim :: ShimKind Type). (LazyCategory shim, FunctionShim shim)
+       forall (shim :: ShimKind Type). (LazyCategory shim, RecoverShim shim)
     => REC
     -> T
 applyEndless1 r = shimToFunction (endless1 @shim r) $ nothingRec r
 
 applyEndless2 ::
-       forall (shim :: ShimKind Type). (LazyCategory shim, FunctionShim shim)
+       forall (shim :: ShimKind Type). (LazyCategory shim, RecoverShim shim)
     => REC
     -> T
 applyEndless2 r = shimToFunction (endless2 @shim r) $ nothingRec r

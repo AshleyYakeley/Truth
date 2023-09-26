@@ -2,7 +2,6 @@ module Language.Expression.Dolan.Bisubstitute.RecM where
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -26,7 +25,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEqua
 data RecMemoValue (ground :: GroundTypeKind) (pshim :: PolyShimKind) (t :: (Type, Polarity, Type)) where
     MkRecMemoValue
         :: forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) tv polarity a.
-           (FuncShimWit (pshim Type) (DolanSingularType ground) polarity tv a)
+           (FuncShimWit (DolanSingularType ground polarity) (PolarShim (pshim Type) polarity) tv a)
         -> RecMemoValue ground pshim '( tv, polarity, a)
 
 type RecMemoTable (ground :: GroundTypeKind) (pshim :: PolyShimKind)
@@ -46,8 +45,8 @@ memoiseRecM ::
        (IsDolanGroundType ground, Is PolarityType polarity)
     => TypeVarT tv
     -> DolanType ground polarity a
-    -> RecM ground pshim (FuncShimWit (pshim Type) (DolanSingularType ground) polarity tv a)
-    -> RecM ground pshim (FuncShimWit (pshim Type) (DolanSingularType ground) polarity tv a)
+    -> RecM ground pshim (FuncShimWit (DolanSingularType ground polarity) (PolarShim (pshim Type) polarity) tv a)
+    -> RecM ground pshim (FuncShimWit (DolanSingularType ground polarity) (PolarShim (pshim Type) polarity) tv a)
 memoiseRecM var t getval
     | doMemoise = do
         let key = MkRecMemoKey var (polarityType @polarity) t

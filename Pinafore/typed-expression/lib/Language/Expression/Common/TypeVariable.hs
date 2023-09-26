@@ -83,11 +83,14 @@ newAssignTypeVar nstr = newUVar nstr $ \vsym -> assignUVar @k @tv vsym $ MkTypeV
 data SomeTypeVarT =
     forall tv. MkSomeTypeVarT (TypeVarT tv)
 
-instance Eq SomeTypeVarT where
-    MkSomeTypeVarT a == MkSomeTypeVarT b = isJust $ testEquality a b
-
-instance Show SomeTypeVarT where
-    show (MkSomeTypeVarT v) = show v
-
 someTypeVarName :: SomeTypeVarT -> String
 someTypeVarName (MkSomeTypeVarT v) = typeVarName v
+
+instance Eq SomeTypeVarT where
+    va == vb = someTypeVarName va == someTypeVarName vb
+
+instance Ord SomeTypeVarT where
+    compare = comparing someTypeVarName
+
+instance Show SomeTypeVarT where
+    show = someTypeVarName

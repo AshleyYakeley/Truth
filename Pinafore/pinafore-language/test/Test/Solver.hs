@@ -4,7 +4,6 @@ module Test.Solver
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan
 import Pinafore
 import Pinafore.Language.API
 import Pinafore.Test

@@ -4,7 +4,6 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
@@ -61,7 +60,7 @@ unFlipType (InvertFlipType t) = invertTypeM (\_ -> RigidName) t
 
 bisubstituteFlipType ::
        forall (ground :: GroundTypeKind) polarity m (pshim :: PolyShimKind) a.
-       (IsDolanGroundType ground, Is PolarityType polarity, MonadInner m, BisubstitutablePolyShim pshim)
+       (IsDolanGroundType ground, Is PolarityType polarity, MonadInner m, SubstitutablePolyShim pshim)
     => Bisubstitution ground (pshim Type) m
     -> FlipType ground polarity a
     -> m (PShimWit (pshim Type) (FlipType ground) polarity a)

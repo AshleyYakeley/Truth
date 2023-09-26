@@ -20,12 +20,9 @@ module Language.Expression.Dolan.Subtype
 import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Argument
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Variance
 import Shapes
 
 type SubtypeContext :: Type -> (Polarity -> Type -> Type) -> ShimKind Type -> (Type -> Type) -> Type
@@ -33,7 +30,7 @@ data SubtypeContext varid w shim solver = MkSubtypeContext
     { subtypeConvert :: forall ta tb pola polb.
                             (Is PolarityType pola, Is PolarityType polb) =>
                                     w pola ta -> w polb tb -> solver (shim ta tb)
-    , subtypeLiftExpression :: forall a. NamedExpression varid (PolarShimWit shim (w 'Negative) 'Negative) a -> solver a
+    , subtypeLiftExpression :: forall a. NamedExpression varid (PShimWit shim w 'Negative) a -> solver a
     }
 
 subtypeVariance ::
@@ -57,8 +54,8 @@ subtypeVariance sc (RangeCCRPolarArgument tpa tqa) (RangeCCRPolarArgument tpb tq
         return $ MkCatRange pba qab
 
 subtypeArguments ::
-       forall varid (w :: Polarity -> Type -> Type) (pshim :: PolyShimKind) solver pola polb dv (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) ta tb.
-       ( DolanVarianceCategory pshim
+       forall varid (w :: Polarity -> Type -> Type) (pshim :: PolyShimKind) solver pola polb dv (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) ta tb.
+       ( CCRVariancesShim pshim
        , Applicative solver
        , Is PolarityType pola
        , Is PolarityType polb
@@ -66,17 +63,17 @@ subtypeArguments ::
        , TestEquality (w 'Negative)
        )
     => SubtypeContext varid w (pshim Type) solver
-    -> DolanVarianceType dv
-    -> DolanVarianceMap dv gta
-    -> DolanVarianceMap dv gtb
-    -> DolanArguments dv w gta pola ta
-    -> DolanArguments dv w gtb polb tb
-    -> solver (pshim (DolanVarianceKind dv) gta gtb -> pshim Type ta tb)
-subtypeArguments _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilCCRArguments NilCCRArguments = pure id
-subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) (ConsCCRArguments sta dta) (ConsCCRArguments stb dtb) =
+    -> CCRVariancesType dv
+    -> CCRVariancesMap dv gta
+    -> CCRVariancesMap dv gtb
+    -> CCRPolarArguments dv w gta pola ta
+    -> CCRPolarArguments dv w gtb polb tb
+    -> solver (pshim (CCRVariancesKind dv) gta gtb -> pshim Type ta tb)
+subtypeArguments _ NilListType NilCCRVariancesMap NilCCRVariancesMap NilCCRArguments NilCCRArguments = pure id
+subtypeArguments sc (ConsListType svt dvt) (ConsCCRVariancesMap ccrva dvma) (ConsCCRVariancesMap ccrvb dvmb) (ConsCCRArguments sta dta) (ConsCCRArguments stb dtb) =
     case ccrVarianceCoercibleKind svt of
         Dict ->
-            case dolanVarianceCategory @pshim dvt of
+            case ccrVariancesCategory @pshim dvt of
                 Dict -> do
                     sfunc <- subtypeVariance @_ @_ @_ @_ @pola @polb sc sta stb
                     f <- subtypeArguments sc dvt dvma dvmb dta dtb
@@ -85,19 +82,19 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap ccrva dvma) (Co
 subtypeDolanArguments ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) solver pola polb dv gt argsa argsb.
        ( IsDolanGroundType ground
-       , DolanVarianceCategory pshim
+       , CCRVariancesShim pshim
        , Applicative solver
        , Is PolarityType pola
        , Is PolarityType polb
        )
     => SubtypeContext (DolanVarID ground) (DolanType ground) (pshim Type) solver
-    -> DolanVarianceMap dv gt
-    -> DolanArguments dv (DolanType ground) gt pola argsa
-    -> DolanArguments dv (DolanType ground) gt polb argsb
+    -> CCRVariancesMap dv gt
+    -> CCRPolarArguments dv (DolanType ground) gt pola argsa
+    -> CCRPolarArguments dv (DolanType ground) gt polb argsb
     -> solver (pshim Type argsa argsb)
 subtypeDolanArguments sc dvm argsa argsb = let
     dvt = ccrArgumentsType argsa
-    in case dolanVarianceCategory @pshim dvt of
+    in case ccrVariancesCategory @pshim dvt of
            Dict -> fmap (\f -> f id) $ subtypeArguments sc dvt dvm dvm argsa argsb
 
 type DolanMappable :: GroundTypeKind -> Type -> Constraint
@@ -153,60 +150,60 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
     show NeutralSK = "neutral"
     show (HintSK hint) = "hint: " <> show hint
 
-type SubtypeArguments :: GroundTypeKind -> (Type -> Type) -> forall (dva :: DolanVariance) ->
-                                                                     DolanVarianceKind dva -> forall (dvb :: DolanVariance) ->
-                                                                                                      DolanVarianceKind dvb -> Type
+type SubtypeArguments :: GroundTypeKind -> (Type -> Type) -> forall (dva :: CCRVariances) ->
+                                                                     CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
+                                                                                                     CCRVariancesKind dvb -> Type
 data SubtypeArguments ground solver dva gta dvb gtb =
-    forall a b. MkSubtypeArguments (DolanVarianceMap dva gta)
-                                   (DolanArguments dva (DolanType ground) gta 'Negative a)
-                                   (DolanVarianceMap dvb gtb)
-                                   (DolanArguments dvb (DolanType ground) gtb 'Positive b)
+    forall a b. MkSubtypeArguments (CCRVariancesMap dva gta)
+                                   (CCRPolarArguments dva (DolanType ground) gta 'Negative a)
+                                   (CCRVariancesMap dvb gtb)
+                                   (CCRPolarArguments dvb (DolanType ground) gtb 'Positive b)
                                    (solver (DolanShim ground a b))
 
-type ConvertSubtype :: GroundTypeKind -> forall (dva :: DolanVariance) ->
-                                                 DolanVarianceKind dva -> forall (dvb :: DolanVariance) ->
-                                                                                  DolanVarianceKind dvb -> Type
+type ConvertSubtype :: GroundTypeKind -> forall (dva :: CCRVariances) ->
+                                                 CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
+                                                                                 CCRVariancesKind dvb -> Type
 type ConvertSubtype ground dva gta dvb gtb
      = forall solver.
            (WrappedApplicative solver, WAInnerM solver ~ DolanTypeCheckM ground) =>
                    DolanSubtypeContext ground solver -> DolanTypeCheckM ground (SubtypeArguments ground solver dva gta dvb gtb)
 
-type SubtypeConversion :: GroundTypeKind -> forall (dva :: DolanVariance) ->
-                                                    DolanVarianceKind dva -> forall (dvb :: DolanVariance) ->
-                                                                                     DolanVarianceKind dvb -> Type
+type SubtypeConversion :: GroundTypeKind -> forall (dva :: CCRVariances) ->
+                                                    CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
+                                                                                    CCRVariancesKind dvb -> Type
 data SubtypeConversion ground dva gta dvb gtb where
     GeneralSubtypeConversion
-        :: forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+        :: forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
            SubtypeKnowledge ground
         -> ConvertSubtype ground dva gta dvb gtb
         -> SubtypeConversion ground dva gta dvb gtb
     IdentitySubtypeConversion
-        :: forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+        :: forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
            SubtypeConversion ground dv gt dv gt
     CoerceSubtypeConversion
         :: forall (ground :: GroundTypeKind) (gta :: Type) (gtb :: Type). Coercible gta gtb
         => SubtypeConversion ground '[] gta '[] gtb
 
 subtypeConversionKnowledge ::
-       forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
        SubtypeConversion ground dva gta dvb gtb
     -> SubtypeKnowledge ground
 subtypeConversionKnowledge (GeneralSubtypeConversion sk _) = sk
 subtypeConversionKnowledge IdentitySubtypeConversion = NeutralSK
 subtypeConversionKnowledge CoerceSubtypeConversion = NeutralSK
 
-instance forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb). IsDolanSubtypeGroundType ground =>
+instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). IsDolanSubtypeGroundType ground =>
              Eq (SubtypeConversion ground dva gta dvb gtb) where
     sc1 == sc2 = subtypeConversionKnowledge sc1 == subtypeConversionKnowledge sc2
 
-instance forall (ground :: GroundTypeKind) (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb). IsDolanSubtypeGroundType ground =>
+instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). IsDolanSubtypeGroundType ground =>
              Show (SubtypeConversion ground dva gta dvb gtb) where
     show (GeneralSubtypeConversion sk _) = "general: " <> show sk
     show IdentitySubtypeConversion = "id"
     show CoerceSubtypeConversion = "coerce"
 
 identitySubtypeConversion ::
-       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
        SubtypeConversion ground dv gt dv gt
 identitySubtypeConversion = IdentitySubtypeConversion
 
@@ -225,12 +222,12 @@ runSubtypeConversion ::
        )
     => DolanSubtypeContext ground solver
     -> SubtypeConversion ground dva gta dvb gtb
-    -> DolanVarianceMap dva gta
-    -> DolanArguments dva (DolanType ground) gta pola a
-    -> DolanArguments dvb (DolanType ground) gtb polb b
+    -> CCRVariancesMap dva gta
+    -> CCRPolarArguments dva (DolanType ground) gta pola a
+    -> CCRPolarArguments dvb (DolanType ground) gtb polb b
     -> DolanTypeCheckM ground (solver (DolanPolyShim ground Type a b))
 runSubtypeConversion sc IdentitySubtypeConversion vma argsa argsb = do return $ subtypeDolanArguments sc vma argsa argsb
-runSubtypeConversion _sc CoerceSubtypeConversion NilDolanVarianceMap NilCCRArguments NilCCRArguments = do
+runSubtypeConversion _sc CoerceSubtypeConversion NilCCRVariancesMap NilCCRArguments NilCCRArguments = do
     return $ pure $ coercionToShim "subtype" MkCoercion
 runSubtypeConversion sc (GeneralSubtypeConversion _ sconv) _ argsa argsb = do
     MkSubtypeArguments vma argsa' vmb argsb' svconv <- sconv sc
@@ -243,12 +240,12 @@ subtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta a dvb gtb b. IsDolanSubtypeGroundType ground
     => Maybe (DolanSubtypeHint ground)
     -> ground dva gta
-    -> DolanArgumentsShimWit (DolanPolyShim ground) dva (DolanType ground) gta 'Negative a
+    -> CCRPolarArgumentsShimWit (DolanPolyShim ground) dva (DolanType ground) gta 'Negative a
     -> ground dvb gtb
-    -> DolanArgumentsShimWit (DolanPolyShim ground) dvb (DolanType ground) gtb 'Positive b
+    -> CCRPolarArgumentsShimWit (DolanPolyShim ground) dvb (DolanType ground) gtb 'Positive b
     -> DolanOpenExpression ground (DolanShim ground a b)
     -> SubtypeConversion ground dva gta dvb gtb
-subtypeConversion hint gta (MkShimWit rawargsa (MkPolarMap conva)) gtb (MkShimWit rawargsb (MkPolarMap convb)) convexpr =
+subtypeConversion hint gta (MkShimWit rawargsa (MkPolarShim conva)) gtb (MkShimWit rawargsb (MkPolarShim convb)) convexpr =
     GeneralSubtypeConversion (maybe UnknownSK HintSK hint) $ \sc -> do
         let
             vma = groundTypeVarianceMap gta
@@ -267,7 +264,7 @@ nilSubtypeConversion ::
     -> SubtypeConversion ground '[] a '[] b
 nilSubtypeConversion hint conv =
     GeneralSubtypeConversion (maybe UnknownSK HintSK hint) $ \_ ->
-        return $ MkSubtypeArguments NilDolanVarianceMap NilCCRArguments NilDolanVarianceMap NilCCRArguments $ pure conv
+        return $ MkSubtypeArguments NilCCRVariancesMap NilCCRArguments NilCCRVariancesMap NilCCRArguments $ pure conv
 
 composeSubtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb dvc gtc. IsDolanSubtypeGroundType ground
@@ -288,20 +285,20 @@ composeSubtypeConversion (GeneralSubtypeConversion hintbc bc) (GeneralSubtypeCon
 composeSubtypeConversion (GeneralSubtypeConversion hint bc) CoerceSubtypeConversion =
     GeneralSubtypeConversion hint $ \sc ->
         fmap
-            (\(MkSubtypeArguments NilDolanVarianceMap NilCCRArguments vmc argsc sconvbc) ->
-                 MkSubtypeArguments NilDolanVarianceMap NilCCRArguments vmc argsc $
+            (\(MkSubtypeArguments NilCCRVariancesMap NilCCRArguments vmc argsc sconvbc) ->
+                 MkSubtypeArguments NilCCRVariancesMap NilCCRArguments vmc argsc $
                  fmap (\conv -> conv . coercionToShim "subtype" MkCoercion) sconvbc) $
         bc sc
 composeSubtypeConversion CoerceSubtypeConversion (GeneralSubtypeConversion hint ab) =
     GeneralSubtypeConversion hint $ \sc ->
         fmap
-            (\(MkSubtypeArguments vma argsa NilDolanVarianceMap NilCCRArguments sconvab) ->
-                 MkSubtypeArguments vma argsa NilDolanVarianceMap NilCCRArguments $
+            (\(MkSubtypeArguments vma argsa NilCCRVariancesMap NilCCRArguments sconvab) ->
+                 MkSubtypeArguments vma argsa NilCCRVariancesMap NilCCRArguments $
                  fmap (\conv -> coercionToShim "subtype" MkCoercion . conv) sconvab) $
         ab sc
 
 subtypeConversionAsGeneralAs ::
-       forall (ground :: GroundTypeKind) solver (dva :: DolanVariance) (gta :: DolanVarianceKind dva) (dvb :: DolanVariance) (gtb :: DolanVarianceKind dvb).
+       forall (ground :: GroundTypeKind) solver (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
        (IsDolanSubtypeGroundType ground, WrappedApplicative solver, WAInnerM solver ~ DolanTypeCheckM ground)
     => (forall a. solver a -> WAInnerM solver Bool)
     -> DolanSubtypeContext ground solver

@@ -9,11 +9,8 @@ module Language.Expression.Dolan.Rename
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Argument
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Variance
 import Shapes
 
 pureMapDolanArgumentM ::
@@ -30,7 +27,7 @@ pureMapDolanArgumentM f =
 pureMapDolanArgumentsM ::
        forall m ft dv gt. Applicative m
     => (forall polarity. Is PolarityType polarity => EndoM' m (ft polarity))
-    -> (forall polarity. Is PolarityType polarity => EndoM' m (DolanArguments dv ft gt polarity))
+    -> (forall polarity. Is PolarityType polarity => EndoM' m (CCRPolarArguments dv ft gt polarity))
 pureMapDolanArgumentsM f =
     MkEndoM $ \case
         NilCCRArguments -> pure NilCCRArguments
@@ -38,16 +35,16 @@ pureMapDolanArgumentsM f =
             liftA2 ConsCCRArguments (unEndoM (pureMapDolanArgumentM f) arg) (unEndoM (pureMapDolanArgumentsM f) args)
 
 dolanNamespaceRenameArguments ::
-       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv) polarity m.
+       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
        (IsDolanGroundType ground, Monad m, Is PolarityType polarity)
-    => EndoM' (VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m)) (DolanArguments dv (DolanType ground) gt polarity)
+    => EndoM' (VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m)) (CCRPolarArguments dv (DolanType ground) gt polarity)
 dolanNamespaceRenameArguments = pureMapDolanArgumentsM $ namespaceRenameType @(DolanTypeSystem ground)
 
 dolanArgumentsVarRename ::
-       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv) polarity m.
+       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
        (IsDolanGroundType ground, Monad m, Is PolarityType polarity)
     => RenameSource m
-    -> EndoM' m (DolanArguments dv (DolanType ground) gt polarity)
+    -> EndoM' m (CCRPolarArguments dv (DolanType ground) gt polarity)
 dolanArgumentsVarRename ev = pureMapDolanArgumentsM $ varRename ev
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>

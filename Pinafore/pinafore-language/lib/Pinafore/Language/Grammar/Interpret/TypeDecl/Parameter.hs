@@ -40,5 +40,5 @@ tParamVars (CoCCRTypeParam t) = [MkSomeTypeVarT t]
 tParamVars (ContraCCRTypeParam t) = [MkSomeTypeVarT t]
 tParamVars (RangeCCRTypeParam p q) = [MkSomeTypeVarT p, MkSomeTypeVarT q]
 
-type CCRTypeParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
+type CCRTypeParams :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type -> Type
 type CCRTypeParams = CCRArguments CCRTypeParam

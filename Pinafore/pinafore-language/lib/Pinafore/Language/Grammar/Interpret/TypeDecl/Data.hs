@@ -80,18 +80,18 @@ tParamToPolarArgument (CoCCRTypeParam var) =
 tParamToPolarArgument (ContraCCRTypeParam var) =
     withInvertPolarity @polarity $
     case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
-        MkShimWit arg conv -> MkShimWit (ContraCCRPolarArgument arg) $ MkCatDual $ uninvertPolarMap conv
+        MkShimWit arg conv -> MkShimWit (ContraCCRPolarArgument arg) $ MkCatDual $ uninvertPolarShim conv
 tParamToPolarArgument (RangeCCRTypeParam varp varq) =
     withInvertPolarity @polarity $
     case ( shimWitToDolan $ mkShimWit $ VarDolanSingularType varp
          , shimWitToDolan $ mkShimWit $ VarDolanSingularType varq) of
         (MkShimWit argp convp, MkShimWit argq convq) ->
-            MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq
+            MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarShim convp) convq
 
-type GenCCRTypeParams dv = forall (gt :: DolanVarianceKind dv). Some (CCRTypeParams dv gt)
+type GenCCRTypeParams dv = forall (gt :: CCRVariancesKind dv). Some (CCRTypeParams dv gt)
 
 data AnyCCRTypeParams where
-    MkAnyCCRTypeParams :: forall (dv :: DolanVariance). GenCCRTypeParams dv -> AnyCCRTypeParams
+    MkAnyCCRTypeParams :: forall (dv :: CCRVariances). GenCCRTypeParams dv -> AnyCCRTypeParams
 
 tParamsVars :: CCRTypeParams dv gt t -> [SomeTypeVarT]
 tParamsVars NilCCRArguments = []
@@ -105,7 +105,7 @@ getAnyCCRTypeParams (sp:spp) =
             MkAnyCCRTypeParams f -> MkAnyCCRTypeParams $ consAnyCCRArguments p f
 
 paramsUnEndo ::
-       forall (t :: Type) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
+       forall (t :: Type) (dv :: CCRVariances) (f :: CCRVariancesKind dv).
        CCRTypeParams dv f t
     -> (t -> t)
     -> KindMorphism (->) f f
@@ -139,7 +139,7 @@ getCCRVariation tname (RangeCCRTypeParam vp vq) vm = do
     return $ \(MkCatRange pp qq) -> runMapping fp pp . runMapping fq qq
 
 paramsCCRVMap ::
-       forall (sv :: CCRVariance) (x :: CCRVarianceKind sv) (t :: Type) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
+       forall (sv :: CCRVariance) (x :: CCRVarianceKind sv) (t :: Type) (dv :: CCRVariances) (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
        CCRTypeParam sv x
     -> (CCRVarianceCategory (->) sv x x -> t -> t)
     -> CCRArguments CCRTypeParam dv (f x) t
@@ -147,49 +147,49 @@ paramsCCRVMap ::
     -> KindMorphism (->) (f a) (f b)
 paramsCCRVMap p ff pp ab = assignCCRTypeParam @sv @a p $ assignCCRTypeParam @sv @b p $ paramsUnEndo pp $ ff ab
 
-assignDolanArgVars :: forall sv dv gt t a. CCRTypeParam sv t -> DolanVarianceMap dv (gt t) -> DolanVarianceMap dv (gt a)
+assignDolanArgVars :: forall sv dv gt t a. CCRTypeParam sv t -> CCRVariancesMap dv (gt t) -> CCRVariancesMap dv (gt a)
 assignDolanArgVars p dvm = assignCCRTypeParam @sv @a p dvm
 
-getDolanVarianceMap :: FullName -> CCRTypeParams dv gt t -> VarMapping t -> QInterpreter (DolanVarianceMap dv gt)
-getDolanVarianceMap _ NilCCRArguments _ = return NilDolanVarianceMap
-getDolanVarianceMap tname (ConsCCRArguments p pp) vm = do
+getCCRVariancesMap :: FullName -> CCRTypeParams dv gt t -> VarMapping t -> QInterpreter (CCRVariancesMap dv gt)
+getCCRVariancesMap _ NilCCRArguments _ = return NilCCRVariancesMap
+getCCRVariancesMap tname (ConsCCRArguments p pp) vm = do
     ff <- getCCRVariation tname p vm
-    args <- getDolanVarianceMap tname pp vm
-    return $ ConsDolanVarianceMap (MkCCRVariation Nothing $ paramsCCRVMap p ff pp) $ assignDolanArgVars p args
+    args <- getCCRVariancesMap tname pp vm
+    return $ ConsCCRVariancesMap (MkCCRVariation Nothing $ paramsCCRVMap p ff pp) $ assignDolanArgVars p args
 
 data TypeConstruction dv gt extra =
-    forall x y. MkTypeConstruction (DolanVarianceMap dv gt -> extra -> QInterpreter x)
+    forall x y. MkTypeConstruction (CCRVariancesMap dv gt -> extra -> QInterpreter x)
                                    (x -> QInterpreter (GroundTypeFromTypeID dv gt y))
                                    (QGroundType dv gt -> y -> QScopeBuilder ())
 
-type GroundTypeFromTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
+type GroundTypeFromTypeID :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type -> Type
 newtype GroundTypeFromTypeID dv gt y = MkGroundTypeFromTypeID
     { unGroundTypeFromTypeID :: forall (tid :: Nat).
-                                    (IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid) =>
+                                    (IdentifiedKind tid ~ CCRVariancesKind dv, gt ~~ Identified tid) =>
                                             FullName -> TypeIDType tid -> (QGroundType dv gt, y)
     }
 
 type GroundTypeMaker extra
-     = forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type).
-           Is DolanVarianceType dv =>
+     = forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (decltype :: Type).
+           Is CCRVariancesType dv =>
                    FullName -> CCRTypeParams dv gt decltype -> TypeConstruction dv gt [( ConstructorCodec decltype
                                                                                        , extra)]
 
-type MatchingTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type MatchingTypeID :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data MatchingTypeID dv t where
     MkMatchingTypeID
-        :: forall tid (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-           (IdentifiedKind tid ~ DolanVarianceKind dv, Identified tid ~~ t)
+        :: forall tid (dv :: CCRVariances) (t :: CCRVariancesKind dv).
+           (IdentifiedKind tid ~ CCRVariancesKind dv, Identified tid ~~ t)
         => TypeIDType tid
         -> MatchingTypeID dv t
 
-instance forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). Eq (MatchingTypeID dv t) where
+instance forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). Eq (MatchingTypeID dv t) where
     MkMatchingTypeID ta == MkMatchingTypeID tb = isJust $ testEquality ta tb
 
-newMatchingTypeID :: forall (dv :: DolanVariance). QInterpreter (Some (MatchingTypeID dv))
+newMatchingTypeID :: forall (dv :: CCRVariances). QInterpreter (Some (MatchingTypeID dv))
 newMatchingTypeID =
     withNewTypeID $ \(typeID :: _ tid) ->
-        case unsafeIdentifyKind @_ @(DolanVarianceKind dv) typeID of
+        case unsafeIdentifyKind @_ @(CCRVariancesKind dv) typeID of
             Identity Refl -> return $ MkSome $ MkMatchingTypeID typeID
 
 data TypeInfo = MkTypeInfo
@@ -216,7 +216,7 @@ tdDoc :: TypeData dv t -> DefDoc
 tdDoc = tiDoc . tdInfo
 
 getConsSubtypeData ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv) extra.
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv) extra.
        TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [TypeData dv t]
@@ -434,7 +434,7 @@ getMatchMemberConvert ta tb =
     listVProductSequence $ mapListVType (\sig -> Compose $ Compose $ pickMember sig $ listVTypeToType ta) tb
 
 makeBox ::
-       forall extra (dv :: DolanVariance). (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
+       forall extra (dv :: CCRVariances). (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
     => GroundTypeMaker extra
     -> [Some (QGroundType '[])]
     -> TypeInfo
@@ -475,7 +475,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                        ()
                                     -> QScopeBuilder ( x
                                                      , ( x
-                                                       , DolanVarianceMap dv maintype
+                                                       , CCRVariancesMap dv maintype
                                                        , FixedList conscount (ConstructorCodec decltype)
                                                        , decltype -> TypeData dv maintype))
                                 mainConstruct () = do
@@ -506,15 +506,15 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                                 InterpretTypeDeclUnboundTypeVariablesError mainTypeName $
                                                 fmap someTypeVarToName vv
                                         Refl <- unsafeGetRefl @Type @structtype @decltype
-                                        dvm :: DolanVarianceMap dv maintype <-
-                                            builderLift $ getDolanVarianceMap @dv mainTypeName tparams vmap
+                                        dvm :: CCRVariancesMap dv maintype <-
+                                            builderLift $ getCCRVariancesMap @dv mainTypeName tparams vmap
                                         x <-
                                             builderLift $
                                             mkx dvm $ toList $ liftA2 (,) codecs $ fmap ctExtra constructorFixedList
                                         return $ (x, (x, dvm, codecs, \t -> ctOuterType $ pickn t constructorFixedList))
                                 mainBox ::
                                        QFixBox () ( x
-                                                  , DolanVarianceMap dv maintype
+                                                  , CCRVariancesMap dv maintype
                                                   , FixedList conscount (ConstructorCodec decltype)
                                                   , decltype -> TypeData dv maintype)
                                 mainBox = mkFixBox mainRegister mainConstruct
@@ -541,7 +541,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                                         Refl ->
                                                             Just $
                                                             MkShimWit (MkDolanGroundedType mainGroundType args) $
-                                                            MkPolarMap $
+                                                            MkPolarShim $
                                                             functionToShim "supertype" $ \t ->
                                                                 if elem (tdID $ picktype t) $ tdSubtypes tdata
                                                                     then Just t
@@ -554,14 +554,14 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                                    }
                                 declTypes ::
                                        QGroundType dv maintype
-                                    -> DolanVarianceMap dv maintype
+                                    -> CCRVariancesMap dv maintype
                                     -> (QGroundedShimWit 'Positive decltype, QGroundedShimWit 'Negative decltype)
                                 declTypes groundType dvm = let
                                     getargs ::
                                            forall polarity. Is PolarityType polarity
-                                        => DolanArgumentsShimWit QPolyShim dv QType maintype polarity decltype
+                                        => CCRPolarArgumentsShimWit QPolyShim dv QType maintype polarity decltype
                                     getargs =
-                                        mapCCRArguments
+                                        mapPolarCCRArguments
                                             @QPolyShim
                                             @CCRTypeParam
                                             @(CCRPolarArgument QType polarity)
@@ -583,7 +583,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                     -> ( QGroundType dv maintype
                                        , decltype -> TypeData dv maintype
                                        , x
-                                       , DolanVarianceMap dv maintype
+                                       , CCRVariancesMap dv maintype
                                        , ConstructorCodec decltype)
                                     -> QScopeBuilder ()
                                 registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor ctype codec) = do
@@ -623,7 +623,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                     -> QFixBox ( QGroundType dv maintype
                                                , decltype -> TypeData dv maintype
                                                , x
-                                               , DolanVarianceMap dv maintype
+                                               , CCRVariancesMap dv maintype
                                                , ConstructorCodec decltype) ()
                                 constructorBox constructor = mkConstructFixBox $ registerConstructor constructor
                                 subtypeRegister ::
@@ -653,7 +653,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                        forall .
                                        (Int, Some (QGroundType '[]))
                                     -> QFixBox ( QGroundType dv maintype
-                                               , DolanVarianceMap dv maintype
+                                               , CCRVariancesMap dv maintype
                                                , FixedList conscount (ConstructorCodec decltype)) ()
                                 supertypeBox (i, MkSome (supergroundtype :: QGroundType '[] supertype)) =
                                     mkRegisterFixBox $ \(~(mainGroundType, dvm, codecs)) -> do
@@ -668,7 +668,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                             getConstypeConvert (MkConstructorType consname (RecordCF rcds) sigs) = let
                                                 rcd = unsafeIndex rcds i
                                                 in case rcdRecordConstructor rcd of
-                                                       MkQRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarMap sgtconv)) _ stcodec
+                                                       MkQRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarShim sgtconv)) _ stcodec
                                                            | Just Refl <- testEquality supergroundtype sgt -> do
                                                                memberconvexpr <-
                                                                    builderLift $ getMatchMemberConvert sigs stmembers
@@ -731,23 +731,23 @@ makeDataTypeBox gmaker storable supertypes name md params syntaxConstructorList 
             makeBox gmaker supertypes (MkTypeInfo name storable params md) syntaxConstructorList gtparams
 
 makePlainGroundType ::
-       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (decltype :: Type). Is CCRVariancesType dv
     => FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, ())]
 makePlainGroundType _ tparams = let
-    dvt :: DolanVarianceType dv
+    dvt :: CCRVariancesType dv
     dvt = ccrArgumentsType tparams
-    mkx :: DolanVarianceMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (DolanVarianceMap dv gt)
+    mkx :: CCRVariancesMap dv gt -> [(ConstructorCodec decltype, ())] -> QInterpreter (CCRVariancesMap dv gt)
     mkx dvm _ = return dvm
-    mkgt :: DolanVarianceMap dv gt -> QInterpreter (GroundTypeFromTypeID dv gt ())
+    mkgt :: CCRVariancesMap dv gt -> QInterpreter (GroundTypeFromTypeID dv gt ())
     mkgt dvm =
         return $
         MkGroundTypeFromTypeID $ \name mainTypeID -> let
             gt =
                 MkQGroundType
                     { qgtVarianceType = dvt
-                    , qgtVarianceMap = lazyDolanVarianceMap dvt dvm
+                    , qgtVarianceMap = lazyCCRVariancesMap dvt dvm
                     , qgtShowType = standardListTypeExprShow @dv $ showNamedText name
                     , qgtFamilyType = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily mainTypeID
                     , qgtSubtypeGroup = Nothing

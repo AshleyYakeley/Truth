@@ -54,7 +54,9 @@ library:
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor
-      - Data.Coercion
+      - Data.Coerce.Coercion
+      - Data.Coerce.Role
+      - Data.Coerce.MaybeRepresentational
       - Data.SameItem
       - Data.HasNewValue
       - Data.Streamable
@@ -63,7 +65,7 @@ library:
       - Data.Lens
       - Data.Store
       - Data.ConstFunction
-      - Data.CoerceFunction
+      - Data.Coerce.Function
       - Data.PurityFunction
       - Data.Codec
       - Data.KeyedOrder

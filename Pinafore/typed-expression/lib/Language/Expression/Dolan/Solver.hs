@@ -24,12 +24,12 @@ import Shapes
 
 forwardsShimWit ::
        forall (pshim :: PolyShimKind) w polarity t. (Is PolarityType polarity)
-    => ShimWit (PolarMap (PolyMapT Isomorphism pshim Type) polarity) w t
-    -> ShimWit (PolarMap (pshim Type) polarity) w t
+    => ShimWit (PolarShim (PolyMapT Isomorphism pshim Type) polarity) w t
+    -> ShimWit (PolarShim (pshim Type) polarity) w t
 forwardsShimWit =
     case polarityType @polarity of
-        PositiveType -> \(MkShimWit w (MkPolarMap (MkPolyMapT conv))) -> MkShimWit w $ MkPolarMap $ isoForwards conv
-        NegativeType -> \(MkShimWit w (MkPolarMap (MkPolyMapT conv))) -> MkShimWit w $ MkPolarMap $ isoForwards conv
+        PositiveType -> \(MkShimWit w (MkPolarShim (MkPolyMapT conv))) -> MkShimWit w $ MkPolarShim $ isoForwards conv
+        NegativeType -> \(MkShimWit w (MkPolarShim (MkPolyMapT conv))) -> MkShimWit w $ MkPolarShim $ isoForwards conv
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = Puzzle ground
@@ -91,18 +91,18 @@ puzzleSubsumeSingular ::
        forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity a
     -> DolanSingularType ground polarity b
-    -> Puzzle ground (DolanPolarMap ground polarity a b)
+    -> Puzzle ground (DolanPolarShim ground polarity a b)
 puzzleSubsumeSingular ta tb =
     case polarityType @polarity of
-        PositiveType -> fmap MkPolarMap $ puzzleUnifySingular ta tb
-        NegativeType -> fmap MkPolarMap $ puzzleUnifySingular tb ta
+        PositiveType -> fmap MkPolarShim $ puzzleUnifySingular ta tb
+        NegativeType -> fmap MkPolarShim $ puzzleUnifySingular tb ta
 
 -- used for simplification, where all vars are fixed
 subtypeSingularType ::
        forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity a
     -> DolanSingularType ground polarity b
-    -> DolanTypeCheckM ground (DolanPolarMap ground polarity a b)
+    -> DolanTypeCheckM ground (DolanPolarShim ground polarity a b)
 subtypeSingularType ta tb = do
     oexpr <- rigidSolvePuzzle $ puzzleSubsumeSingular ta tb
     solveExpression checkSameVar oexpr
@@ -111,9 +111,9 @@ invertedPolarSubtype ::
        forall (ground :: GroundTypeKind) polarity a b. (Is PolarityType polarity, IsDolanSubtypeGroundType ground)
     => DolanType ground (InvertPolarity polarity) a
     -> DolanType ground polarity b
-    -> DolanTypeCheckM ground (Puzzle ground (DolanPolarMap ground polarity a b))
+    -> DolanTypeCheckM ground (Puzzle ground (DolanPolarShim ground polarity a b))
 invertedPolarSubtype ta tb =
     evalPuzzleExpression $
     case polarityType @polarity of
-        PositiveType -> fmap MkPolarMap $ puzzleExpressionUnify @ground ta tb
-        NegativeType -> fmap MkPolarMap $ puzzleExpressionUnify tb ta
+        PositiveType -> fmap MkPolarShim $ puzzleExpressionUnify @ground ta tb
+        NegativeType -> fmap MkPolarShim $ puzzleExpressionUnify tb ta

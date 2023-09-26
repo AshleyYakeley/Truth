@@ -6,14 +6,13 @@ module Language.Expression.Dolan.Combine
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 joinMeetType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity (a :: Type) (b :: Type).
-       (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
+       (JoinMeetIsoShim (pshim Type), Is PolarityType polarity)
     => DolanType ground polarity a
     -> DolanType ground polarity b
     -> PShimWit (pshim Type) (DolanType ground) polarity (JoinMeetType polarity a b)
@@ -24,7 +23,7 @@ joinMeetType (ConsDolanType ta tr) tb =
 
 joinMeetShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (a :: Type) (b :: Type).
-       (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
+       (JoinMeetIsoShim (pshim Type), Is PolarityType polarity)
     => PShimWit (pshim Type) (DolanType ground) polarity a
     -> PShimWit (pshim Type) (DolanType ground) polarity b
     -> PShimWit (pshim Type) (DolanType ground) polarity (JoinMeetType polarity a b)

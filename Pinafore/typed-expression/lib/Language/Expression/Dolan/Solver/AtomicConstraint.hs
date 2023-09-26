@@ -16,7 +16,7 @@ data AtomicConstraint ground t where
            TypeVarT tv
         -> PolarityType polarity
         -> FlipType ground polarity t
-        -> AtomicConstraint ground (PolarMapType (DolanShim ground) polarity t tv)
+        -> AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
 
 instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (AtomicConstraint ground t) where
     show (MkAtomicConstraint var PositiveType (NormalFlipType wt)) = show var <> " :> " <> showDolanType wt <> " [+]"
@@ -33,7 +33,7 @@ mkAtomicConstraint ::
        forall (ground :: GroundTypeKind) polarity tv t. (IsDolanGroundType ground, Is PolarityType polarity)
     => TypeVarT tv
     -> FlipType ground polarity t
-    -> AtomicConstraint ground (PolarMapType (DolanShim ground) polarity t tv)
+    -> AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
 mkAtomicConstraint var ft = MkAtomicConstraint var representative ft
 
 leAtomicConstraint ::
@@ -62,7 +62,7 @@ isPureAtomicConstraint ::
     -> Maybe a
 isPureAtomicConstraint (MkAtomicConstraint depvar pol (NormalFlipType tw)) =
     withRepresentative pol $ do
-        MkShimWit t (MkPolarMap conv) <- dolanToMaybeTypeShim tw
+        MkShimWit t (MkPolarShim conv) <- dolanToMaybeTypeShim tw
         case t of
             VarDolanSingularType v -> do
                 Refl <- testEquality v depvar
@@ -88,14 +88,14 @@ joinAtomicConstraints (MkAtomicConstraint va pa (NormalFlipType ta)) (MkAtomicCo
         case pa of
             PositiveType ->
                 case joinMeetType ta tb of
-                    MkShimWit tab (MkPolarMap conv) -> let
+                    MkShimWit tab (MkPolarShim conv) -> let
                         mapconv shimab = let
                             shconv = shimab . conv
                             in (shconv . join1, shconv . join2)
                         in fmap mapconv $ varExpression $ MkAtomicConstraint va pa (NormalFlipType tab)
             NegativeType ->
                 case joinMeetType ta tb of
-                    MkShimWit tab (MkPolarMap conv) -> let
+                    MkShimWit tab (MkPolarShim conv) -> let
                         mapconv shimab = let
                             shconv = conv . shimab
                             in (meet1 . shconv, meet2 . shconv)

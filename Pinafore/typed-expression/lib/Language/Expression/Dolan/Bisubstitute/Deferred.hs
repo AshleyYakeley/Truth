@@ -6,20 +6,19 @@ module Language.Expression.Dolan.Bisubstitute.Deferred
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute.Bisubstitution
 import Language.Expression.Dolan.Bisubstitute.RecM
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Rename ()
+import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type DeferredShim :: PolyShimKind -> Type -> Type -> Type -> ShimKind Type
 type DeferredShim pshim oldtype newtypepos newtypeneg
-     = PolyFuncShim ( PolarMap (pshim Type) 'Positive oldtype newtypepos
-                    , PolarMap (pshim Type) 'Negative oldtype newtypeneg) pshim Type
+     = PolyFuncShim ( PolarShim (pshim Type) 'Positive oldtype newtypepos
+                    , PolarShim (pshim Type) 'Negative oldtype newtypeneg) pshim Type
 
 type DeferredBisubstitution :: (Type -> Type) -> GroundTypeKind -> ShimKind Type -> Type -> Type -> Type -> Type
 data DeferredBisubstitution m ground shim tv newtypepos newtypeneg where
@@ -49,7 +48,7 @@ class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polari
         -> ComposeInner m (RecM ground (ReducedPolyShim pshim)) (PShimWit (DeferredShim pshim oldtv newtypepos newtypeneg) (DolanType ground) polarity t)
 
 instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( IsDolanGroundType ground
-         , BisubstitutablePolyShim pshim
+         , SubstitutablePolyShim pshim
          , Is PolarityType polarity
          ) => Bisubstitutable ground pshim polarity (DolanSingularType ground polarity) where
     deferBisubstituteType (MkDeferredBisubstitution n mpos mneg) (VarDolanSingularType n')
@@ -73,7 +72,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
         return $ shimWitToDolan t'
 
 instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( IsDolanGroundType ground
-         , BisubstitutablePolyShim pshim
+         , SubstitutablePolyShim pshim
          , Is PolarityType polarity
          ) => Bisubstitutable ground pshim polarity (DolanType ground polarity) where
     deferBisubstituteType _ NilDolanType = return nilDolanShimWit
@@ -82,16 +81,16 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
         tfb <- deferBisubstituteType sub tb
         return $ joinMeetShimWit tfa tfb
 
-reducePolarMap ::
+reducePolarShim ::
        forall (pshim :: PolyShimKind) polarity a b c d. (ReduciblePolyShim pshim, Is PolarityType polarity)
-    => (PolarMap (ReducedPolyShim pshim Type) polarity a b -> PolarMap (ReducedPolyShim pshim Type) polarity c d)
-    -> PolarMap (pshim Type) polarity a b
-    -> PolarMap (pshim Type) polarity c d
-reducePolarMap f (MkPolarMap conv) =
-    MkPolarMap $
+    => (PolarShim (ReducedPolyShim pshim Type) polarity a b -> PolarShim (ReducedPolyShim pshim Type) polarity c d)
+    -> PolarShim (pshim Type) polarity a b
+    -> PolarShim (pshim Type) polarity c d
+reducePolarShim f (MkPolarShim conv) =
+    MkPolarShim $
     case polarityType @polarity of
-        PositiveType -> reduceShim (unPolarMap . f . MkPolarMap) conv
-        NegativeType -> reduceShim (unPolarMap . f . MkPolarMap) conv
+        PositiveType -> reduceShim (unPolarShim . f . MkPolarShim) conv
+        NegativeType -> reduceShim (unPolarShim . f . MkPolarShim) conv
 
 runComposeIdentity :: Monad m => ComposeInner Identity m a -> m a
 runComposeIdentity (MkComposeInner mia) = fmap runIdentity mia
@@ -99,14 +98,14 @@ runComposeIdentity (MkComposeInner mia) = fmap runIdentity mia
 recursiveBisubstitute ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv a.
        ( IsDolanGroundType ground
-       , BisubstitutablePolyShim pshim
+       , SubstitutablePolyShim pshim
        , LazyCategory (pshim Type)
        , ReducedPolyShim pshim Type ~ pshim Type
        , Is PolarityType polarity
        )
     => TypeVarT tv
     -> DolanType ground polarity a
-    -> RecM ground pshim (FuncShimWit (pshim Type) (DolanSingularType ground) polarity tv a)
+    -> RecM ground pshim (FuncShimWit (DolanSingularType ground polarity) (PolarShim (pshim Type) polarity) tv a)
 recursiveBisubstitute oldvar t =
     memoiseRecM oldvar t $
     withInvertPolarity @polarity $
@@ -120,7 +119,7 @@ recursiveBisubstitute oldvar t =
                        assignTypeVarWit newvar t' $
                            return $
                            MkFuncShimWit (RecursiveDolanSingularType newvar t') $ \sconv -> let
-                               conv = lazyPolarMap $ (applyPolarPolyFuncShim rconv (conv, id)) . sconv
+                               conv = lazyPolarShim $ (applyPolarPolyFuncShim rconv (conv, id)) . sconv
                                in conv
             NegativeType -> let
                 dbisub :: DeferredBisubstitution Identity ground (ReducedPolyShim pshim Type) tv tv newtv
@@ -130,23 +129,23 @@ recursiveBisubstitute oldvar t =
                        assignTypeVarWit newvar t' $
                            return $
                            MkFuncShimWit (RecursiveDolanSingularType newvar t') $ \sconv -> let
-                               conv = lazyPolarMap $ (applyPolarPolyFuncShim rconv (id, conv)) . sconv
+                               conv = lazyPolarShim $ (applyPolarPolyFuncShim rconv (id, conv)) . sconv
                                in conv
 
 recursiveBisubstituteReduced ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv a.
-       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+       (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
     => TypeVarT tv
     -> DolanType ground polarity a
-    -> RecM ground (ReducedPolyShim pshim) (FuncShimWit (pshim Type) (DolanSingularType ground) polarity tv a)
+    -> RecM ground (ReducedPolyShim pshim) (FuncShimWit (DolanSingularType ground polarity) (PolarShim (pshim Type) polarity) tv a)
 recursiveBisubstituteReduced oldvar t =
-    withDict (reducedBisubstitutablePolyShim @pshim) $ do
+    withDict (reducedSubstitutablePolyShim @pshim) $ do
         MkFuncShimWit t' conv <- recursiveBisubstitute @ground @(ReducedPolyShim pshim) oldvar t
-        return $ MkFuncShimWit t' (reducePolarMap conv)
+        return $ MkFuncShimWit t' (reducePolarShim conv)
 
 recursiveDolanShimWitRecM ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
-       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+       (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
     => TypeVarT tv
     -> PShimWit (pshim Type) (DolanType ground) polarity tv
     -> RecM ground (ReducedPolyShim pshim) (PShimWit (pshim Type) (DolanSingularType ground) polarity tv)
@@ -156,7 +155,7 @@ recursiveDolanShimWitRecM oldvar (MkShimWit t sconv) = do
 
 recursiveDolanShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
-       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+       (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
     => TypeVarT tv
     -> PShimWit (pshim Type) (DolanType ground) polarity tv
     -> PShimWit (pshim Type) (DolanSingularType ground) polarity tv
@@ -164,7 +163,7 @@ recursiveDolanShimWit oldvar tw = runRecM $ recursiveDolanShimWitRecM oldvar tw
 
 mapDolanGroundedTypeM ::
        forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
-       (Monad m, IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+       (Monad m, IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
     => (forall polarity' t'.
             Is PolarityType polarity' =>
                     DolanType ground polarity' t' -> m (PShimWit (pshim Type) (DolanType ground) polarity' t'))
@@ -176,7 +175,7 @@ mapDolanGroundedTypeM ff (MkDolanGroundedType g args) = do
 
 mapDolanSingularTypeRecM ::
        forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
-       (MonadInner m, IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+       (MonadInner m, IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
     => (forall polarity' t'.
             Is PolarityType polarity' =>
                     DolanType ground polarity' t' -> ComposeInner m (RecM ground (ReducedPolyShim pshim)) (PShimWit (pshim Type) (DolanType ground) polarity' t'))
@@ -191,7 +190,7 @@ mapDolanSingularTypeRecM ff (RecursiveDolanSingularType var t) = do
 
 mapDolanSingularTypeM ::
        forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
-       (Monad m, IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+       (Monad m, IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
     => (forall polarity' t'.
             Is PolarityType polarity' =>
                     DolanType ground polarity' t' -> m (PShimWit (pshim Type) (DolanType ground) polarity' t'))
@@ -213,7 +212,7 @@ deferredBisubstitution (MkBisubstitution var mpos mneg) call = call $ MkDeferred
 
 bisubstituteType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type) m t.
-       (BisubstitutablePolyShim pshim, Bisubstitutable ground pshim polarity w, Is PolarityType polarity, MonadInner m)
+       (SubstitutablePolyShim pshim, Bisubstitutable ground pshim polarity w, Is PolarityType polarity, MonadInner m)
     => Bisubstitution ground (pshim Type) m
     -> w t
     -> m (PShimWit (pshim Type) (DolanType ground) polarity t)

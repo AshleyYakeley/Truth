@@ -17,21 +17,21 @@ module Language.Expression.Dolan
     , GroundTypeKind
     , DolanPolyShim
     , DolanPolyIsoShim
-    , DolanVariance
-    , DolanVarianceKind
-    , DolanVarianceType
-    , DolanVarianceMap(..)
-    , lazyDolanVarianceMap
-    , DolanVarianceCategory(..)
-    , HasDolanVariance(..)
+    , CCRVariances
+    , CCRVariancesKind
+    , CCRVariancesType
+    , CCRVariancesMap(..)
+    , lazyCCRVariancesMap
+    , CCRVariancesShim(..)
+    , HasCCRVariances(..)
     , CovaryType
     , covaryCoercibleKind
     , CovaryMap(..)
     , HasCovaryMap(..)
-    , covaryToDolanVarianceType
-    , dolanVarianceToCovaryType
-    , covaryToDolanVarianceMap
-    , dolanVarianceMapToCovary
+    , covaryToCCRVariancesType
+    , ccrVariancesToCovaryType
+    , covaryToCCRVariancesMap
+    , ccrVariancesMapToCovary
     , DolanGroundedType(..)
     , DolanSingularType(..)
     , DolanType(..)
@@ -52,16 +52,10 @@ module Language.Expression.Dolan
 import Control.Applicative.Wrapped as I
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Argument as I
-import Language.Expression.Dolan.Arguments as I
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.FreeVars as I
-import Language.Expression.Dolan.MPolarity
 import Language.Expression.Dolan.Mono as I
 import Language.Expression.Dolan.Nonpolar as I
-import Language.Expression.Dolan.PShimWit as I
-import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
 import Language.Expression.Dolan.Solver (invertType)
@@ -70,7 +64,6 @@ import Language.Expression.Dolan.SubtypeEntry as I
 import Language.Expression.Dolan.Type as I
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
-import Language.Expression.Dolan.Variance
 import Shapes
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>

@@ -45,6 +45,7 @@ class ( RenameTypeSystem ts
       , MonadThrow PatternError (TSInner ts)
       , Ord (TSVarID ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
+      , RecoverShim (TSShim ts)
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type
     bottomShimWit :: Some (TSPosShimWit ts)
@@ -103,7 +104,7 @@ abstractResult ::
     -> TSOuter ts (AbstractResult ts a)
 abstractResult name expr = do
     MkNewVar vwt0 _ <- renameNewFreeVar @ts
-    abstractNamedExpressionUnifier @ts name vwt0 expr $ \(MkShimWit vwt (MkPolarMap (MkComposeShim uconv))) expr' ->
+    abstractNamedExpressionUnifier @ts name vwt0 expr $ \(MkShimWit vwt (MkPolarShim (MkComposeShim uconv))) expr' ->
         return $
         MkAbstractResult vwt $
         liftA2 (\tb stt a -> tb $ meet2 $ shimToFunction stt a) (solverExpressionLiftValue expr') uconv
@@ -186,7 +187,7 @@ bothSealedPattern spat1 spat2 =
     withTransConstraintTM @Monad $ do
         MkSealedPattern tw1 pat1 <- renameMappableSimple @ts spat1
         MkSealedPattern tw2 pat2 <- renameMappableSimple @ts spat2
-        MkShimWit tr (MkPolarMap uconv) <-
+        MkShimWit tr (MkPolarShim uconv) <-
             unifyUUNegShimWit @ts (uuLiftNegExpressionShimWit @ts tw1) (uuLiftNegExpressionShimWit @ts tw2)
         unifierSolve @ts (uuGetShim @ts uconv) $ \convexpr ->
             return $
@@ -232,7 +233,7 @@ partialExpressionSum ::
     -> TSOuter ts (TSSealedPartialExpression ts)
 partialExpressionSum (MkSealedExpression (MkPartialWit purity1 etype1) expr1) (MkSealedExpression (MkPartialWit purity2 etype2) expr2) =
     purityTypeSum purity1 purity2 $ \purity12 pconv -> do
-        MkShimWit etype12 (MkPolarMap (MkComposeShim uconvexpr)) <-
+        MkShimWit etype12 (MkPolarShim (MkComposeShim uconvexpr)) <-
             unifyUUPosShimWit @ts (uuLiftPosShimWit @ts etype1) (uuLiftPosShimWit @ts etype2)
         unifierSolve @ts uconvexpr $ \convexpr -> let
             sumExpr jshim f1 f2 =

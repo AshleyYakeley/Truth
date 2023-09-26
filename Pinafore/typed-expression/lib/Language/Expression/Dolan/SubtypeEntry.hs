@@ -18,7 +18,6 @@ import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Variance
 import Shapes
 
 partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
@@ -130,7 +129,7 @@ data GreaterConversionWit ground dva gta =
     forall dvb gtb. MkGreaterConversionWit (ground dvb gtb)
                                            (SubtypeConversion ground dva gta dvb gtb)
 
-instance forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv). DebugIsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv). DebugIsDolanGroundType ground =>
              Show (GreaterConversionWit ground dv gt) where
     show (MkGreaterConversionWit gt _) = show gt
 
@@ -142,7 +141,7 @@ data LesserConversionWit ground dvb gtb =
     forall dva gta. MkLesserConversionWit (ground dva gta)
                                           (SubtypeConversion ground dva gta dvb gtb)
 
-instance forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv). DebugIsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv). DebugIsDolanGroundType ground =>
              Show (LesserConversionWit ground dv gt) where
     show (MkLesserConversionWit t _) = show t
 
@@ -150,14 +149,14 @@ mkLesserConversionWit :: forall (ground :: GroundTypeKind) dv gt. ground dv gt -
 mkLesserConversionWit t = MkLesserConversionWit t identitySubtypeConversion
 
 greaterCWGroup ::
-       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
        IsDolanSubtypeEntriesGroundType ground
     => GreaterConversionWit ground dv gt
     -> SomeSubtypeGroup ground
 greaterCWGroup (MkGreaterConversionWit t _) = MkSomeSubtypeGroup $ getSubtypeGroup t
 
 lesserCWGroup ::
-       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
        IsDolanSubtypeEntriesGroundType ground
     => LesserConversionWit ground dv gt
     -> SomeSubtypeGroup ground
@@ -259,7 +258,7 @@ getSubtypeShim entries gta gtb = findGreater entries [] [mkGreaterConversionWit 
 type IsDolanSubtypeEntriesGroundType :: GroundTypeKind -> Constraint
 class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground where
     getSubtypeGroup ::
-           forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). ground dv gt -> SubtypeGroup ground dv gt
+           forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv). ground dv gt -> SubtypeGroup ground dv gt
     getSubtypeGroup = singletonSubtypeGroup
     subtypeConversionEntries :: DolanM ground [SubtypeConversionEntry ground]
     throwNoGroundTypeConversionError :: ground dva gta -> ground dvb gtb -> DolanM ground a

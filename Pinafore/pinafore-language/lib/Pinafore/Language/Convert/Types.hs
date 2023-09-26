@@ -32,8 +32,8 @@ instance (Is PolarityType polarity, KnownSymbol name) => HasQType polarity (Var 
         shimWitToDolan $
         MkShimWit (VarDolanSingularType $ MkTypeVar $ MkSymbolType @name) $
         case polarityType @polarity of
-            PositiveType -> MkPolarMap $ coerceShim "var"
-            NegativeType -> MkPolarMap $ coerceShim "var"
+            PositiveType -> MkPolarShim $ coerceShim "var"
+            NegativeType -> MkPolarShim $ coerceShim "var"
 
 -- (,)
 instance HasQGroundType '[ CoCCRVariance, CoCCRVariance] (,) where

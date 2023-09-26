@@ -9,6 +9,6 @@ module Language.Expression.Dolan.Test
     , runUnifierM
     ) where
 
+import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Solver.UnifierM

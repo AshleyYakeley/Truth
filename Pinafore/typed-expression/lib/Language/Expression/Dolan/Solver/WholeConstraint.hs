@@ -37,8 +37,8 @@ bisubstituteWholeConstraint ::
     -> WholeConstraint ground a
     -> UnifierM ground (WholeConstraintShim ground a)
 bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
-    MkShimWit fta' (MkPolarMap (MkPolyMapT conva)) <- bisubstituteFlipType bisub fta
-    MkShimWit ftb' (MkPolarMap (MkPolyMapT convb)) <- bisubstituteFlipType bisub ftb
+    MkShimWit fta' (MkPolarShim (MkPolyMapT conva)) <- bisubstituteFlipType bisub fta
+    MkShimWit ftb' (MkPolarShim (MkPolyMapT convb)) <- bisubstituteFlipType bisub ftb
     return $
         MkShimWit (MkWholeConstraint fta' ftb') $
         MkIsomorphism

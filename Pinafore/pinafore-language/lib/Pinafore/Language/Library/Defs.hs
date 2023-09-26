@@ -201,7 +201,7 @@ getTypeParameter RangeCCRVarianceType = do
     vp <- newTypeParameter
     return $ RangeSyntaxTypeParameter vn vp
 
-getTypeParameters :: [Name] -> DolanVarianceType dv -> [NamedText]
+getTypeParameters :: [Name] -> CCRVariancesType dv -> [NamedText]
 getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeForList dvt getTypeParameter) supply
 
 nameSupply :: [Name]

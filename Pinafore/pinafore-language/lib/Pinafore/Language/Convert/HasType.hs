@@ -17,39 +17,39 @@ instance {-# OVERLAPPABLE #-} forall polarity (t :: Type). (Is PolarityType pola
                                   HasQType polarity t where
     qType = shimWitToDolan $ runHetQGroundedType (hetQGroundedType @polarity @_ @t) NilCCRArguments
 
-type HetQGroundedType :: Polarity -> DolanVariance -> forall k. k -> Type
+type HetQGroundedType :: Polarity -> CCRVariances -> forall k. k -> Type
 data HetQGroundedType polarity dv f where
     MkHetQGroundedType
-        :: forall polarity dv (f :: DolanVarianceKind dv). HasDolanVariance dv f
-        => (forall a. DolanArguments dv QType f polarity a -> QGroundedShimWit polarity a)
+        :: forall polarity dv (f :: CCRVariancesKind dv). HasCCRVariances dv f
+        => (forall a. CCRPolarArguments dv QType f polarity a -> QGroundedShimWit polarity a)
         -> HetQGroundedType polarity dv f
 
 runHetQGroundedType ::
-       forall polarity dv (f :: DolanVarianceKind dv) a.
+       forall polarity dv (f :: CCRVariancesKind dv) a.
        HetQGroundedType polarity dv f
-    -> DolanArguments dv QType f polarity a
+    -> CCRPolarArguments dv QType f polarity a
     -> QGroundedShimWit polarity a
 runHetQGroundedType (MkHetQGroundedType f) = f
 
-type HetDolanVarianceOf :: forall k. k -> DolanVariance
-type family HetDolanVarianceOf f where
-    HetDolanVarianceOf (f :: Type) = '[]
-    HetDolanVarianceOf (f :: Type -> k) = 'SimpleCCRVariance (VarianceOf f) ': HetDolanVarianceOf (f ())
-    HetDolanVarianceOf (f :: (Type, Type) -> k) = 'RangeCCRVariance ': HetDolanVarianceOf (f '( (), ()))
+type HetCCRVariancesOf :: forall k. k -> CCRVariances
+type family HetCCRVariancesOf f where
+    HetCCRVariancesOf (f :: Type) = '[]
+    HetCCRVariancesOf (f :: Type -> k) = 'SimpleCCRVariance (VarianceOf f) ': HetCCRVariancesOf (f ())
+    HetCCRVariancesOf (f :: (Type, Type) -> k) = 'RangeCCRVariance ': HetCCRVariancesOf (f '( (), ()))
 
 type HasHetQGroundedType :: Polarity -> forall k. k -> Constraint
 class Is PolarityType polarity => HasHetQGroundedType polarity (f :: k) where
-    hetQGroundedType :: HetQGroundedType polarity (HetDolanVarianceOf f) f
+    hetQGroundedType :: HetQGroundedType polarity (HetCCRVariancesOf f) f
 
 instance {-# OVERLAPPABLE #-} forall polarity k (f :: k). ( Is PolarityType polarity
-                              , HetConstraint (HasQGroundType (HetDolanVarianceOf f)) f
+                              , HetConstraint (HasQGroundType (HetCCRVariancesOf f)) f
                               ) => HasHetQGroundedType polarity f where
     hetQGroundedType =
-        case hetConstraint @_ @(HasQGroundType (HetDolanVarianceOf f)) @_ @f of
+        case hetConstraint @_ @(HasQGroundType (HetCCRVariancesOf f)) @_ @f of
             MkHetConstraintWitness -> MkHetQGroundedType $ \args -> mkShimWit $ MkDolanGroundedType qGroundType args
 
-type HasQGroundType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Constraint
-class (CoercibleKind (DolanVarianceKind dv), dv ~ HetDolanVarianceOf f, HasDolanVariance dv f) => HasQGroundType dv f
+type HasQGroundType :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Constraint
+class (CoercibleKind (CCRVariancesKind dv), dv ~ HetCCRVariancesOf f, HasCCRVariances dv f) => HasQGroundType dv f
     | f -> dv
     where
     qGroundType :: QGroundType dv f
@@ -69,7 +69,7 @@ instance forall polarity (t :: Type). (Is PolarityType polarity, HasQType (Inver
     qArgumentType =
         withInvertPolarity @polarity $
         case qType @(InvertPolarity polarity) @t of
-            MkShimWit ta conv -> MkShimWit (ContraCCRPolarArgument ta) (MkCatDual $ uninvertPolarMap conv)
+            MkShimWit ta conv -> MkShimWit (ContraCCRPolarArgument ta) (MkCatDual $ uninvertPolarShim conv)
 
 instance forall polarity (p :: Type) (q :: Type). (HasQType (InvertPolarity polarity) p, HasQType polarity q) =>
              HasQArgumentType polarity 'RangeCCRVariance '( p, q) where
@@ -80,33 +80,33 @@ instance forall polarity (p :: Type) (q :: Type). (HasQType (InvertPolarity pola
             MkShimWit tp convp ->
                 case qType @polarity @q of
                     MkShimWit tq convq ->
-                        MkShimWit (RangeCCRPolarArgument tp tq) $ MkCatRange (uninvertPolarMap convp) convq
+                        MkShimWit (RangeCCRPolarArgument tp tq) $ MkCatRange (uninvertPolarShim convp) convq
 
 instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
-         , Is DolanVarianceType dv
-         , k ~ DolanVarianceKind dv
-         , CoercibleKind (DolanVarianceKind dv)
-         , HetConstraint (HasDolanVariance dv) (f a)
-         , HetDolanVarianceOf f ~ ('SimpleCCRVariance (VarianceOf f) ': dv)
+         , Is CCRVariancesType dv
+         , k ~ CCRVariancesKind dv
+         , CoercibleKind (CCRVariancesKind dv)
+         , HetConstraint (HasCCRVariances dv) (f a)
+         , HetCCRVariancesOf f ~ ('SimpleCCRVariance (VarianceOf f) ': dv)
          , HasHetQGroundedType polarity f
-         , HetDolanVarianceOf (f a) ~ dv
+         , HetCCRVariancesOf (f a) ~ dv
          , HasQArgumentType polarity ('SimpleCCRVariance (VarianceOf f)) a
          , Is PolarityType polarity
          ) => HasHetQGroundedType polarity (f a) where
     hetQGroundedType =
         case hetQGroundedType @polarity @_ @f of
             MkHetQGroundedType toConvertibleType ->
-                case hetConstraint @_ @(HasDolanVariance dv) @_ @(f a) of
+                case hetConstraint @_ @(HasCCRVariances dv) @_ @(f a) of
                     MkHetConstraintWitness -> let
                         hetQGroundedType' ::
-                               forall t. DolanArguments dv QType (f a) polarity t -> QGroundedShimWit polarity t
+                               forall t. CCRPolarArguments dv QType (f a) polarity t -> QGroundedShimWit polarity t
                         hetQGroundedType' args =
-                            case dolanVarianceMap @('SimpleCCRVariance (VarianceOf f) ': dv) @f of
-                                ConsDolanVarianceMap ccrv dvm ->
+                            case ccrVariancesMap @('SimpleCCRVariance (VarianceOf f) ': dv) @f of
+                                ConsCCRVariancesMap ccrv dvm ->
                                     case qArgumentType @polarity @('SimpleCCRVariance (VarianceOf f)) @a of
                                         MkShimWit arg conv ->
                                             case mapDolanArgumentsFM (return . mkShimWit) dvm dvm args $
-                                                 polarMapTypeApply
+                                                 polarShimTypeApply
                                                      (representative
                                                           @_
                                                           @CCRVarianceType
@@ -120,29 +120,29 @@ instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
                         in MkHetQGroundedType hetQGroundedType'
 
 instance forall dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)). ( HasCCRVariance 'RangeCCRVariance f
-         , Is DolanVarianceType dv
-         , CoercibleKind (DolanVarianceKind dv)
-         , HetConstraint (HasDolanVariance dv) (f a)
-         , HetDolanVarianceOf f ~ ('RangeCCRVariance ': dv)
+         , Is CCRVariancesType dv
+         , CoercibleKind (CCRVariancesKind dv)
+         , HetConstraint (HasCCRVariances dv) (f a)
+         , HetCCRVariancesOf f ~ ('RangeCCRVariance ': dv)
          , HasHetQGroundedType polarity f
          , HasQArgumentType polarity 'RangeCCRVariance a
          , Is PolarityType polarity
-         , HetDolanVarianceOf (f a) ~ dv
+         , HetCCRVariancesOf (f a) ~ dv
          ) => HasHetQGroundedType polarity (f a) where
     hetQGroundedType =
         case hetQGroundedType @polarity @_ @f of
             MkHetQGroundedType toConvertibleType ->
-                case hetConstraint @_ @(HasDolanVariance dv) @_ @(f a) of
+                case hetConstraint @_ @(HasCCRVariances dv) @_ @(f a) of
                     MkHetConstraintWitness -> let
                         hetQGroundedType' ::
-                               forall t. DolanArguments dv QType (f a) polarity t -> QGroundedShimWit polarity t
+                               forall t. CCRPolarArguments dv QType (f a) polarity t -> QGroundedShimWit polarity t
                         hetQGroundedType' args =
-                            case dolanVarianceMap @('RangeCCRVariance ': dv) @f of
-                                ConsDolanVarianceMap ccrv dvm ->
+                            case ccrVariancesMap @('RangeCCRVariance ': dv) @f of
+                                ConsCCRVariancesMap ccrv dvm ->
                                     case qArgumentType @polarity @'RangeCCRVariance @a of
                                         MkShimWit arg conv ->
                                             case mapDolanArgumentsFM (return . mkShimWit) dvm dvm args $
-                                                 polarMapTypeApply
+                                                 polarShimTypeApply
                                                      (representative @_ @CCRVarianceType @'RangeCCRVariance)
                                                      ccrv
                                                      ccrv

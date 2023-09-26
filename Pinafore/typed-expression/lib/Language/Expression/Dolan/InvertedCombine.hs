@@ -17,7 +17,7 @@ data InvertedCombinedDolanType ground polarity t where
 
 joinMeetInvertedCombinedType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity (a :: Type) (b :: Type).
-       (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
+       (JoinMeetIsoShim (pshim Type), Is PolarityType polarity)
     => InvertedCombinedDolanType ground polarity a
     -> InvertedCombinedDolanType ground polarity b
     -> PolarShimWit (pshim Type) (InvertedCombinedDolanType ground polarity) polarity (JoinMeetType polarity a b)
@@ -29,7 +29,7 @@ joinMeetInvertedCombinedType (ConsInvertedCombinedDolanType ta tr) tb =
 
 joinMeetInvertedCombinedShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (a :: Type) (b :: Type).
-       (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
+       (JoinMeetIsoShim (pshim Type), Is PolarityType polarity)
     => PolarShimWit (pshim Type) (InvertedCombinedDolanType ground polarity) polarity a
     -> PolarShimWit (pshim Type) (InvertedCombinedDolanType ground polarity) polarity b
     -> PolarShimWit (pshim Type) (InvertedCombinedDolanType ground polarity) polarity (JoinMeetType polarity a b)

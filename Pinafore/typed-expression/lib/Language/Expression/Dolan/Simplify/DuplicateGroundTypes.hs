@@ -3,10 +3,9 @@ module Language.Expression.Dolan.Simplify.DuplicateGroundTypes
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan.Arguments
+import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type

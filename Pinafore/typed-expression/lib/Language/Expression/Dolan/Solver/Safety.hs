@@ -1,7 +1,6 @@
 module Language.Expression.Dolan.Solver.Safety where
 
-import Language.Expression.Dolan.Argument
-import Language.Expression.Dolan.Arguments
+import Data.Shim
 import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Type
@@ -21,7 +20,7 @@ instance forall (ground :: GroundTypeKind) sv polarity t. IsDolanGroundType grou
         checkSafety q
 
 instance forall (ground :: GroundTypeKind) dv gt polarity t. IsDolanGroundType ground =>
-             CheckSafety (DolanArguments dv (DolanType ground) gt polarity t) where
+             CheckSafety (CCRPolarArguments dv (DolanType ground) gt polarity t) where
     checkSafety NilCCRArguments = return ()
     checkSafety (ConsCCRArguments arg args) = do
         checkSafety arg

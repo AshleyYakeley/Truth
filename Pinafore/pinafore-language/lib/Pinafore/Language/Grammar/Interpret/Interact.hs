@@ -47,9 +47,9 @@ interactParse :: Text -> Interact InteractiveCommand
 interactParse t = hoist fromInterpretResult $ parseInteractiveCommand t
 
 actionWit :: QShimWit 'Negative t -> QShimWit 'Negative (Action t)
-actionWit (MkShimWit t (MkPolarMap conv)) =
+actionWit (MkShimWit t (MkPolarShim conv)) =
     shimWitToDolan $
-    mapShimWit (MkPolarMap $ cfmap conv) $
+    mapShimWit (MkPolarShim $ cfmap conv) $
     mkShimWit $ MkDolanGroundedType actionGroundType $ ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments
 
 simplify' ::

@@ -233,7 +233,7 @@ tsVarPattern name =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar vwt twt <- renameNewFreeVar @ts
-        return $ varSealedExpressionPattern name vwt $ mapShimWit (MkPolarMap meet1) twt
+        return $ varSealedExpressionPattern name vwt $ mapShimWit (MkPolarShim meet1) twt
 
 tsAnyPattern ::
        forall ts. CompleteTypeSystem ts

@@ -55,15 +55,8 @@ library
       Language.Expression.Common.Abstract
       Language.Expression.Common.Bindings
       Language.Expression.Common.CompleteTypeSystem
-      Language.Expression.Common.Arguments
       Language.Expression.Dolan.FreeVars
-      Language.Expression.Dolan.PShimWit
-      Language.Expression.Dolan.Covariance
-      Language.Expression.Dolan.Variance
-      Language.Expression.Dolan.Argument
-      Language.Expression.Dolan.Arguments
-      Language.Expression.Dolan.MPolarity
-      Language.Expression.Dolan.RangeF
+      Language.Expression.Dolan.Shim
       Language.Expression.Dolan.Type
       Language.Expression.Dolan.Subtype
       Language.Expression.Dolan.SubtypeEntry

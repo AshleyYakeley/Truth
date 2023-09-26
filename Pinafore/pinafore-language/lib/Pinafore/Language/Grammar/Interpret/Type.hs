@@ -144,11 +144,11 @@ data PinaforeGroundTypeM where
     MkPinaforeGroundTypeM :: Some (QGroundType dv) -> PinaforeGroundTypeM
 
 interpretArgs ::
-       forall polarity dv (gt :: DolanVarianceKind dv). Is PolarityType polarity
+       forall polarity dv (gt :: CCRVariancesKind dv). Is PolarityType polarity
     => SyntaxGroundType
-    -> DolanVarianceType dv
+    -> CCRVariancesType dv
     -> [SyntaxTypeArgument]
-    -> QInterpreter (Some (DolanArguments dv QType gt polarity))
+    -> QInterpreter (Some (CCRPolarArguments dv QType gt polarity))
 interpretArgs _ NilListType [] = return $ MkSome NilCCRArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
