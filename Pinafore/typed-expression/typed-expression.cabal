@@ -68,6 +68,7 @@ library
       Language.Expression.Dolan.Subtype
       Language.Expression.Dolan.SubtypeEntry
       Language.Expression.Dolan.Bisubstitute.Bisubstitution
+      Language.Expression.Dolan.Bisubstitute.RecM
       Language.Expression.Dolan.Bisubstitute.Deferred
       Language.Expression.Dolan.Bisubstitute
       Language.Expression.Dolan.TypeSystem

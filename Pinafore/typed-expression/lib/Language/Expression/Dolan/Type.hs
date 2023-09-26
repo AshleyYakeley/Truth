@@ -47,7 +47,9 @@ type BisubstitutablePolyShim :: PolyShimKind -> Constraint
 class (JoinMeetIsoCategory (pshim Type), IsoMapShim (pshim Type), DolanVarianceCategory pshim, ReduciblePolyShim pshim) =>
           BisubstitutablePolyShim pshim where
     reducedBisubstitutablePolyShim ::
-           Dict (BisubstitutablePolyShim (ReducedPolyShim pshim), LazyCategory (ReducedPolyShim pshim Type))
+           Dict ( BisubstitutablePolyShim (ReducedPolyShim pshim)
+                , LazyCategory (ReducedPolyShim pshim Type)
+                , ReducedPolyShim (ReducedPolyShim pshim) Type ~ ReducedPolyShim pshim Type)
 
 instance forall m (pshim :: PolyShimKind). (Applicative m, BisubstitutablePolyShim pshim) =>
              BisubstitutablePolyShim (PolyComposeShim m pshim) where

@@ -90,3 +90,13 @@ bisubstitutes ::
     => [Bisubstitution ground (pshim Type) m]
     -> EndoM m a
 bisubstitutes subs = mconcat $ fmap bisubstitute subs
+
+mapDolanSingularType ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
+       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+    => (forall polarity' t'.
+            Is PolarityType polarity' =>
+                    DolanType ground polarity' t' -> PShimWit (pshim Type) (DolanType ground) polarity' t')
+    -> DolanSingularType ground polarity t
+    -> PShimWit (pshim Type) (DolanSingularType ground) polarity t
+mapDolanSingularType ff t = runIdentity $ mapDolanSingularTypeM (\t' -> Identity $ ff t') t
