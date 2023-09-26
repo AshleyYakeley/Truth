@@ -31,6 +31,7 @@ bisubstituteEachMemo ::
     => [SolverBisubstitution ground]
     -> PuzzleCrumbler ground a
     -> PuzzleCrumbler ground a
+bisubstituteEachMemo [] = id
 bisubstituteEachMemo bisubs =
     mapEachMemo $ \wc -> do
         MkShimWit wc' conv <- lift $ lift $ runUnifierM $ bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
