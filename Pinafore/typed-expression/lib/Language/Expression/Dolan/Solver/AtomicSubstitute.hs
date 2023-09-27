@@ -34,7 +34,8 @@ substBisubstitution ::
 substBisubstitution (MkSubstitution (pol :: _ polarity) oldvar newvar mt _) =
     withRepresentative pol $
     withInvertPolarity @polarity $ let
-        newVarWit = shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarShim $ halfBrokenShim @ground
+        newVarWit =
+            shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarShim $ isoRetractPolyPolar1 @ground
         in mkPolarBisubstitution oldvar mt $ return newVarWit
 
 invertSubstitution ::
@@ -77,48 +78,22 @@ substituteAtomicChange (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just
     invertSubstitution pol oldvar newvar t
 substituteAtomicChange sub = bisubstituteAtomicConstraint $ substBisubstitution sub
 
-brokenShim ::
-       forall (shim :: ShimKind Type) a b. FunctionShim shim
-    => shim a b
-brokenShim = functionToShim "BROKEN" $ \_ -> error "broken shim"
-
-{-
-brokenPolarShim ::
-       forall (shim :: ShimKind Type) polarity a b. (FunctionShim shim, Is PolarityType polarity)
-    => PolarShim shim polarity a b
-brokenPolarShim =
-    case polarityType @polarity of
-        PositiveType -> MkPolarShim brokenShim
-        NegativeType -> MkPolarShim brokenShim
--}
-brokenToIsoShim ::
-       forall (shim :: ShimKind Type) a b. FunctionShim shim
-    => shim a b
-    -> Isomorphism shim a b
-brokenToIsoShim conv = MkIsomorphism conv brokenShim
-
-brokenToPolyIsoShim ::
-       forall (pshim :: PolyShimKind) a b. FunctionShim (pshim Type)
-    => pshim Type a b
-    -> PolyIso pshim Type a b
-brokenToPolyIsoShim conv = MkPolyMapT $ brokenToIsoShim conv
-
-brokenPolarToPolyIsoShim ::
+isoRetractPolyPolarShim ::
        forall (pshim :: PolyShimKind) polarity a b. (FunctionShim (pshim Type), Is PolarityType polarity)
     => PolarShim (pshim Type) polarity a b
     -> PolarShim (PolyIso pshim Type) polarity a b
-brokenPolarToPolyIsoShim (MkPolarShim conv) =
+isoRetractPolyPolarShim (MkPolarShim conv) =
     case polarityType @polarity of
-        PositiveType -> MkPolarShim $ brokenToPolyIsoShim conv
-        NegativeType -> MkPolarShim $ brokenToPolyIsoShim conv
+        PositiveType -> MkPolarShim $ MkPolyMapT $ isoRetractShim conv
+        NegativeType -> MkPolarShim $ MkPolyMapT $ isoRetractShim conv
 
-halfBrokenShim ::
+isoRetractPolyPolar1 ::
        forall (ground :: GroundTypeKind) polarity a b. (IsDolanGroundType ground, Is PolarityType polarity)
     => PolarShim (DolanPolyIsoShim ground Type) polarity a (JoinMeetType polarity a b)
-halfBrokenShim =
+isoRetractPolyPolar1 =
     case polarityType @polarity of
-        PositiveType -> MkPolarShim $ MkPolyMapT $ MkIsomorphism join1 $ joinf id brokenShim
-        NegativeType -> MkPolarShim $ MkPolyMapT $ MkIsomorphism meet1 $ meetf id brokenShim
+        PositiveType -> MkPolarShim $ MkPolyMapT isoRetractJoin1
+        NegativeType -> MkPolarShim $ MkPolyMapT isoRetractMeet1
 
 -- | For debugging.
 genNewName :: Bool
@@ -140,7 +115,7 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
                     newVarWit :: DolanIsoShimWit ground (InvertPolarity polarity) (JoinMeetType polarity newtv pt)
                     newVarWit =
                         shimWitToDolan $
-                        MkShimWit (VarDolanSingularType newvar) $ invertPolarShim $ halfBrokenShim @ground
+                        MkShimWit (VarDolanSingularType newvar) $ invertPolarShim $ isoRetractPolyPolar1 @ground
                 substwit <-
                     if occursInFlipType oldvar fptw
                         then do
@@ -168,7 +143,7 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
                                             newvar
                                             (do
                                                  MkShimWit pt conv <- invertTypeM rigidity ptw
-                                                 return $ substwit $ MkShimWit pt $ brokenPolarToPolyIsoShim conv)
+                                                 return $ substwit $ MkShimWit pt $ isoRetractPolyPolarShim conv)
                                             (Just ptw)
                 tell [subst]
                 return $ unPolarShim $ polar2 @(DolanShim ground) @polarity @newtv @pt

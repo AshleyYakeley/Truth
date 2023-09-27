@@ -30,6 +30,7 @@ library
       Data.Shim.Mono.PolarJoinMeet
       Data.Shim.Mono.PShimWit
       Data.Shim.Mono.Arguments
+      Data.Shim.Mono.Retract
       Data.Shim.Mono
       Data.Shim.Poly.Shim
       Data.Shim.Poly.Map
