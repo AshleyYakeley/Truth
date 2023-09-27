@@ -103,8 +103,7 @@ testUnifier =
                     "op1"
                     [ testTree
                           "unify"
-                          [ testNoMark $
-                            testUnifyToType @(Text -> (Text -> Text) -> Text) (return $ jmToValue op1) [] $ \found ->
+                          [ testUnifyToType @(Text -> (Text -> Text) -> Text) (return $ jmToValue op1) [] $ \found ->
                                 assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
                           , testUnifyToType @(X -> (X -> X) -> X) (return $ jmToValue op1) [] $ \found ->
                                 assignUVarT @Text (MkSymbolType @"x") $
@@ -266,8 +265,7 @@ testUnifier =
                         if l == [10, 20]
                             then return ()
                             else fail $ "different: " <> show l
-              , testNoMark $
-                testTree "t5" $
+              , testTree "t5" $
                 runTester defaultTester $ do
                     r <- testerLiftAction $ newMemListModel @A
                     (_r' :: LangListModel '( Integer, Integer), wr' :: LangWholeModel '( [Integer], [Integer])) <-

@@ -192,8 +192,7 @@ testSolver =
                        , applyTest "fix-1" "(t -> t) -> t" "(a -> a)" "None"
                        , applyTest "fix-2" "(t -> t) -> t" "((a -> a) -> (a -> a))" "a -> a"
                        ]
-                 , testNoMark $
-                   testTree
+                 , testTree
                        "issue-206"
                        [ unifierTest "rec-0" "rec a, Maybe a" $ do
                              ta <- stParseTypeBoth "a"
@@ -219,7 +218,8 @@ testSolver =
                              "(t -> t) -> t"
                              "((Maybe a -> Maybe a) -> (a -> a))"
                              "(rec a, Maybe a) -> (rec a, Maybe a)"
-                       , applyTest
+                       , failTestBecause "ISSUE #237" $
+                         applyTest
                              "issue-206-2"
                              "(t -> t) -> t"
                              "((a -> a) -> (Maybe a -> Maybe a))"
@@ -237,7 +237,8 @@ testSolver =
                              "concrete"
                              "rec r, Maybe r"
                              "rec d, (rec f, (rec h, (rec i, Maybe (rec d, (rec f, (rec h, i & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d"
-                       , unifierTest "free" "Unit" $ do
+                       , failTestBecause "ISSUE #237" $
+                         unifierTest "free" "Unit" $ do
                              tb <- stParseType "b"
                              tpos <- stParseType "rec r, b | Maybe r"
                              tneg <-
