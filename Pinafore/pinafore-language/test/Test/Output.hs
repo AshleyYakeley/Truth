@@ -12,7 +12,13 @@ testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
-    in testHandleVsFile dir testName $ \hout ->
+    modifier :: TestTree -> TestTree
+    modifier =
+        case testName of
+            "issue-237-sigs" -> failTestBecause "ISSUE #237"
+            _ -> id
+    in modifier $
+       testHandleVsFile dir testName $ \hout ->
            runTester defaultTester {tstOutput = hout} $
            testerLiftView $ do
                action <- qInterpretFile inpath
