@@ -12,7 +12,6 @@ module Language.Expression.Dolan.SubtypeEntry
     , checkSubtypeConsistency
     ) where
 
-import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype

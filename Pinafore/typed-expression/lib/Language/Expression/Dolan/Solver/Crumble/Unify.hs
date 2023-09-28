@@ -1,5 +1,5 @@
-module Language.Expression.Dolan.Solver.Crumble.Puzzle
-    ( crumblePuzzle
+module Language.Expression.Dolan.Solver.Crumble.Unify
+    ( solveUnifyPuzzle
     ) where
 
 import Data.Shim
@@ -16,7 +16,7 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-type PuzzleCrumbler (ground :: GroundTypeKind)
+type UnifyCrumbler (ground :: GroundTypeKind)
      = Crumbler (WholeConstraint ground) (SolverM ground) (DolanOpenExpression ground)
 
 solvePiece ::
@@ -24,13 +24,13 @@ solvePiece ::
     => Piece ground a
     -> SolverM ground (PuzzleExpression ground a)
 solvePiece (WholePiece constr) = lift $ crumbleConstraint constr
-solvePiece (AtomicPiece ac) = fmap pure $ substituteAtomicConstraint ac
+solvePiece (AtomicPiece ac) = fmap pure $ solveAtomicConstraint ac
 
 substituteEachMemo ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => [Substitution ground]
-    -> PuzzleCrumbler ground a
-    -> PuzzleCrumbler ground a
+    -> UnifyCrumbler ground a
+    -> UnifyCrumbler ground a
 substituteEachMemo [] = id
 substituteEachMemo substs = let
     bisubs = fmap substBisubstitution substs
@@ -41,7 +41,7 @@ substituteEachMemo substs = let
 processPiece ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Piece ground a
-    -> PuzzleCrumbler ground a
+    -> UnifyCrumbler ground a
 processPiece piece =
     MkCrumbler $ do
         MkSolverExpression conspuzzle rexpr <- lift $ solvePiece piece
@@ -52,7 +52,7 @@ processRest ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => [Substitution ground]
     -> Puzzle ground a
-    -> PuzzleCrumbler ground a
+    -> UnifyCrumbler ground a
 processRest substs puzzlerest =
     MkCrumbler $ do
         puzzlerest' <- lift $ lift $ lift $ runUnifierM $ applySubstsToPuzzle substs puzzlerest
@@ -64,52 +64,28 @@ monoReaderHoist ::
     -> (ReaderT r ma a -> ReaderT r mb b)
 monoReaderHoist mm (ReaderT rma) = ReaderT $ \r -> mm $ rma r
 
-strict :: Bool
-strict = True
-
-processPieceAndRest ::
-       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => Piece ground a
-    -> Puzzle ground (a -> b)
-    -> PuzzleCrumbler ground b
-processPieceAndRest piece puzzlerest =
-    MkCrumbler $ do
-        (MkSolverExpression conspuzzle rexpr, substs) <- lift $ lift $ runWriterT $ solvePiece piece
-        lift $ tell substs
-        unCrumbler $
-            substituteEachMemo substs $
-            MkCrumbler $ do
-                puzzlerest' <- lift $ lift $ lift $ runUnifierM $ applySubstsToPuzzle substs puzzlerest
-                oexpr <- unCrumbler $ processPuzzle $ liftA2 (,) conspuzzle puzzlerest'
-                return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
-
 processPuzzle ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Puzzle ground a
-    -> PuzzleCrumbler ground a
-processPuzzle (ClosedExpression a) = crumblerPure a
-processPuzzle (OpenExpression piece puzzlerest)
-    | strict =
-        MkCrumbler $ do
-            (aexpr, substs) <-
-                monoReaderHoist listen $
-                unCrumbler $
-                case piece of
-                    WholePiece wconstr@MkWholeConstraint {} ->
-                        memoise iLazy wconstr (crumblerPure id) $ fmap (\t -> (t, t)) $ processPiece piece
-                    _ -> processPiece piece
-            rexpr <- unCrumbler $ processRest substs puzzlerest
-            return $ liftA2 (\lt lta -> lta <*> lt) aexpr rexpr
-processPuzzle (OpenExpression piece@(WholePiece wconstr@MkWholeConstraint {}) puzzlerest) =
-    memoise iLazy wconstr (processPuzzle puzzlerest) $ processPieceAndRest piece $ fmap (\ta t -> (t, ta t)) puzzlerest
-processPuzzle (OpenExpression piece puzzlerest) = processPieceAndRest piece puzzlerest
+    -> UnifyCrumbler ground a
+processPuzzle (ClosedExpression a) = pure a
+processPuzzle (OpenExpression piece puzzlerest) =
+    MkCrumbler $ do
+        (aexpr, substs) <-
+            monoReaderHoist listen $
+            unCrumbler $
+            case piece of
+                WholePiece wconstr@MkWholeConstraint {} -> memoise iLazy wconstr $ processPiece piece
+                _ -> processPiece piece
+        rexpr <- unCrumbler $ processRest substs puzzlerest
+        return $ liftA2 (\lt lta -> lta <*> lt) aexpr rexpr
 
-crumblePuzzle ::
+solveUnifyPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => (String -> NameRigidity)
     -> Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
-crumblePuzzle rigidity puzzle = let
+solveUnifyPuzzle rigidity puzzle = let
     ?rigidity = rigidity
     in do
            (a, substs) <- runWriterT $ runCrumbler $ processPuzzle puzzle

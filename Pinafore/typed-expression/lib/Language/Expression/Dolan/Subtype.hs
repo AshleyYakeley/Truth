@@ -17,7 +17,6 @@ module Language.Expression.Dolan.Subtype
     , subtypeConversionAsGeneralAs
     ) where
 
-import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Rename

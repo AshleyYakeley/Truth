@@ -289,10 +289,12 @@ testSolver =
                       tdecl <- stParseType sdecl
                       tdecl' <- stRename sdeclfreevars RigidName tdecl
                       stSubsume tinf' tdecl'
-              in [ testNoMark $ subsumeTest "simple-1" "a -> a" "Integer -> Integer" []
-                 , testNoMark $ subsumeTest "simple-2" "a -> a" "b -> b" ["b"]
+              in [ subsumeTest "novars" "a -> a" "Integer -> Integer" []
+                 , subsumeTest "var-none" "None" "b" ["b"]
+                 , subsumeTest "var-free" "a" "b" ["b"]
+                 , subsumeTest "vars" "a -> a" "b -> b" ["b"]
                  , subsumeTest "simple-3" "a -> a" "Maybe a -> Maybe a" ["a"]
-                 , testNoMark $
+                 , testMark $
                    testTree
                        "split"
                        [ testTree

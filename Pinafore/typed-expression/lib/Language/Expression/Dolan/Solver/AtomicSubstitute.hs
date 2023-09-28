@@ -1,9 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
 
 module Language.Expression.Dolan.Solver.AtomicSubstitute
-    ( SolverM
+    ( getAtomicConstraint
+    , SolverM
+    , solveAtomicConstraint
     , substituteAtomicConstraint
-    , substituteAtomicChange
     , bisubstitutesAtomicConstraint
     , bisubstitutesPuzzle
     , applySubstsToPuzzle
@@ -69,14 +70,14 @@ invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol f
             in liftA2 (\t a -> a t) p1 p2
 invertSubstitution _ _ _ _ ac = return $ atomicConstraintPuzzle ac
 
-substituteAtomicChange ::
+substituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => Substitution ground
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-substituteAtomicChange (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just t)) =
+substituteAtomicConstraint (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just t)) =
     invertSubstitution pol oldvar newvar t
-substituteAtomicChange sub = bisubstituteAtomicConstraint $ substBisubstitution sub
+substituteAtomicConstraint sub = bisubstituteAtomicConstraint $ substBisubstitution sub
 
 isoRetractPolyPolarShim ::
        forall (pshim :: PolyShimKind) polarity a b. (FunctionShim (pshim Type), Is PolarityType polarity)
@@ -99,15 +100,15 @@ isoRetractPolyPolar1 =
 genNewName :: Bool
 genNewName = False
 
-substituteAtomicConstraint ::
+getAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => AtomicConstraint ground a
-    -> SolverM ground a
-substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt)) =
+    -> DolanTypeCheckM ground (a, Substitution ground)
+getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt)) =
     withRepresentative pol $ do
         MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
             if genNewName
-                then lift renamerGenerateFreeUVar
+                then renamerGenerateFreeUVar
                 else return $ MkSomeTypeVarT oldvar
         withInvertPolarity @polarity $
             assignTypeVarT @(JoinMeetType polarity newtv pt) oldvar $ do
@@ -119,7 +120,7 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
                 substwit <-
                     if occursInFlipType oldvar fptw
                         then do
-                            MkSomeTypeVarT recvar <- lift renamerGenerateFreeUVar
+                            MkSomeTypeVarT recvar <- renamerGenerateFreeUVar
                             assignSameTypeVarT oldvar recvar $
                                 return $ \ptw' ->
                                     shimWitToDolan $
@@ -135,7 +136,7 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
                         InvertFlipType ptw ->
                             case isInvertInvertPolarity @polarity of
                                 Refl -> do
-                                    rigidity <- lift renamerGetNameRigidity
+                                    rigidity <- renamerGetNameRigidity
                                     return $
                                         MkSubstitution
                                             pol
@@ -145,8 +146,16 @@ substituteAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw 
                                                  MkShimWit pt conv <- invertTypeM rigidity ptw
                                                  return $ substwit $ MkShimWit pt $ isoRetractPolyPolarShim conv)
                                             (Just ptw)
-                tell [subst]
-                return $ unPolarShim $ polar2 @(DolanShim ground) @polarity @newtv @pt
+                return (unPolarShim $ polar2 @(DolanShim ground) @polarity @newtv @pt, subst)
+
+solveAtomicConstraint ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => AtomicConstraint ground a
+    -> SolverM ground a
+solveAtomicConstraint ac = do
+    (a, subst) <- lift $ getAtomicConstraint ac
+    tell [subst]
+    return a
 
 bisubstitutesPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground

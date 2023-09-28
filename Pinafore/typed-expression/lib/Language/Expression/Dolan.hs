@@ -49,7 +49,6 @@ module Language.Expression.Dolan
     , IsDolanSubtypeEntriesGroundType(..)
     ) where
 
-import Control.Applicative.Wrapped as I
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Combine

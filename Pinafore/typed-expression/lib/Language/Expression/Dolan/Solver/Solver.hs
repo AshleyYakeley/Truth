@@ -7,8 +7,9 @@ module Language.Expression.Dolan.Solver.Solver
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicSubstitute
-import Language.Expression.Dolan.Solver.Crumble.Puzzle
+import Language.Expression.Dolan.Solver.Crumble.Subsume
 import Language.Expression.Dolan.Solver.Crumble.Type
+import Language.Expression.Dolan.Solver.Crumble.Unify
 import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.UnifierM
@@ -24,16 +25,16 @@ solvePuzzle ::
 solvePuzzle puzzle =
     partitionExpression purePiece puzzle $ \upuzzle spuzzle -> do
         rigidity <- renamerGetNameRigidity
-        (exprba, usubs) <- crumblePuzzle rigidity upuzzle
+        (exprba, usubs) <- solveUnifyPuzzle rigidity upuzzle
         spuzzle' <- lift $ runUnifierM $ bisubstitutesPuzzle usubs spuzzle
-        (exprb, ssubs) <- crumblePuzzle rigidity spuzzle'
+        (exprb, ssubs) <- solveSubsumePuzzle rigidity spuzzle'
         return (exprba <*> exprb, usubs <> ssubs)
 
 rigidSolvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a)
-rigidSolvePuzzle puzzle = fmap fst $ crumblePuzzle (\_ -> RigidName) puzzle
+rigidSolvePuzzle puzzle = fmap fst $ solveUnifyPuzzle (\_ -> RigidName) puzzle
 
 unifierSubtypeConversionAsGeneralAs ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).

@@ -8,14 +8,26 @@ newtype Crumbler w m f a = MkCrumbler
     { unCrumbler :: forall (rlist :: [Type]). ReaderT (ListType w rlist) m (f (ListProduct rlist -> a))
     }
 
-instance forall w m f. (Functor f, Monad m) => Functor (Crumbler w m f) where
+instance forall w m f. (Functor f, Functor m) => Functor (Crumbler w m f) where
     fmap ab (MkCrumbler ruha) = MkCrumbler $ (fmap $ fmap $ fmap ab) ruha
 
-crumblerPure ::
+instance forall w m f. (Applicative f, Applicative m) => Applicative (Crumbler w m f) where
+    pure a = MkCrumbler $ pure $ pure $ pure a
+    liftA2 f (MkCrumbler rma) (MkCrumbler rmb) = MkCrumbler $ liftA2 (liftA2 $ liftA2 f) rma rmb
+
+instance forall w m f. (Applicative f, Monad m) => WrappedApplicative (Crumbler w m f) where
+    type WAInnerM (Crumbler w m f) = m
+    wexec msa =
+        MkCrumbler $ do
+            sa <- lift msa
+            unCrumbler sa
+    whoist f (MkCrumbler rmfa) = MkCrumbler $ hoist f rmfa
+
+crumblerLift ::
        forall w m f a. (Applicative f, Monad m)
-    => a
+    => f a
     -> Crumbler w m f a
-crumblerPure a = MkCrumbler $ pure $ pure $ pure a
+crumblerLift fa = MkCrumbler $ return $ fmap pure fa
 
 runCrumbler ::
        forall w m f a. (Applicative f, Monad m)
@@ -38,23 +50,22 @@ addMemo wt pc =
     MkCrumbler $ withReaderT (\seen' -> ConsListType wt seen') $ fmap (fmap $ \tla l t -> tla (t, l)) $ unCrumbler pc
 
 memoise ::
-       forall w m f t a. (TestEquality w, Applicative f, MonadIO m)
+       forall w m f t. (TestEquality w, Applicative f, MonadIO m)
     => (t -> t)
     -> w t
-    -> Crumbler w m f (t -> a)
-    -> Crumbler w m f (t, a)
-    -> Crumbler w m f a
-memoise lazify wt call1 call2 =
+    -> Crumbler w m f t
+    -> Crumbler w m f t
+memoise lazify wt cma =
     MkCrumbler $ do
         seen <- ask
         case lookUpListElement wt seen of
-            Just lelem -> fmap (fmap $ \lta -> lta <*> listProductGetElement lelem) $ unCrumbler call1
+            Just lelem -> return $ pure $ listProductGetElement lelem
             Nothing -> let
-                fixconv :: (t -> (t, a)) -> a
+                fixconv :: (t -> t) -> t
                 fixconv f = let
-                    ~(t, a) = f $ lazify t
-                    in a
-                in unCrumbler $ fmap fixconv $ addMemo wt call2
+                    t = f $ lazify t
+                    in t
+                in unCrumbler $ fmap fixconv $ addMemo wt cma
 
 mapEachMemo ::
        forall w m f a. (Applicative f, Monad m)

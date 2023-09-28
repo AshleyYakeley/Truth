@@ -6,6 +6,7 @@ import Shapes.Import as I
 import Shapes.Instances ()
 
 -- shapes
+import Control.Applicative.Wrapped as I
 import Control.AsyncRunner as I
 import Control.CallbackLock as I
 import Control.Category.Dual as I

@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Solver.Crumble.Type
     , makeSCAGA
     ) where
 
-import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicConstraint

@@ -17,6 +17,7 @@ library
   exposed-modules:
       Data.Words
       Control.Category.Groupoid
+      Control.Applicative.Wrapped
       Control.FixIO
       Data.CatEndo
       Data.EndoM

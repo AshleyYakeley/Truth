@@ -19,7 +19,6 @@ library:
       - Language.Expression.Dolan
       - Language.Expression.Dolan.Test
     other-modules:
-      - Control.Applicative.Wrapped
       - Language.Expression.Common.Error
       - Language.Expression.Common.WitnessMappable
       - Language.Expression.Common.Witness
@@ -88,7 +87,8 @@ library:
       - Language.Expression.Dolan.Solver.AtomicSubstitute
       - Language.Expression.Dolan.Solver.Crumble.Type
       - Language.Expression.Dolan.Solver.Crumble.Crumbler
-      - Language.Expression.Dolan.Solver.Crumble.Puzzle
+      - Language.Expression.Dolan.Solver.Crumble.Unify
+      - Language.Expression.Dolan.Solver.Crumble.Subsume
       - Language.Expression.Dolan.Solver.Solver
       - Language.Expression.Dolan.Solver
       - Language.Expression.Dolan.Nonpolar

@@ -1,6 +1,6 @@
 module Control.Applicative.Wrapped where
 
-import Shapes
+import Shapes.Import
 
 -- | An 'Applicative' that wraps a 'Monad'.
 class (Monad (WAInnerM s), Applicative s) => WrappedApplicative s where
