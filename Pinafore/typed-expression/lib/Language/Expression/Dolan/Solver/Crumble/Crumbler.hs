@@ -49,6 +49,25 @@ addMemo ::
 addMemo wt pc =
     MkCrumbler $ withReaderT (\seen' -> ConsListType wt seen') $ fmap (fmap $ \tla l t -> tla (t, l)) $ unCrumbler pc
 
+memoiseBranch ::
+       forall w m f t a. (TestEquality w, Applicative f, MonadIO m)
+    => (t -> t)
+    -> w t
+    -> Crumbler w m f (t -> a)
+    -> Crumbler w m f (t, a)
+    -> Crumbler w m f a
+memoiseBranch lazify wt call1 call2 =
+    MkCrumbler $ do
+        seen <- ask
+        case lookUpListElement wt seen of
+            Just lelem -> fmap (fmap $ \lta -> lta <*> listProductGetElement lelem) $ unCrumbler call1
+            Nothing -> let
+                fixconv :: (t -> (t, a)) -> a
+                fixconv f = let
+                    ~(t, a) = f $ lazify t
+                    in a
+                in unCrumbler $ fmap fixconv $ addMemo wt call2
+
 memoise ::
        forall w m f t. (TestEquality w, Applicative f, MonadIO m)
     => (t -> t)
