@@ -39,15 +39,12 @@ substBisubstitution (MkSubstitution (pol :: _ polarity) oldvar newvar mt _) =
             shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarShim $ isoRetractPolyPolar1 @ground
         in mkPolarBisubstitution oldvar mt $ return newVarWit
 
-invertSubstitution ::
-       forall (ground :: GroundTypeKind) polarity v t a. (IsDolanGroundType ground)
-    => PolarityType polarity
-    -> TypeVarT (JoinMeetType polarity v t)
-    -> TypeVarT v
-    -> DolanType ground (InvertPolarity polarity) t
+substituteAtomicConstraint ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => Substitution ground
     -> AtomicConstraint ground a
     -> UnifierM ground (Puzzle ground a)
-invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol fvt)
+substituteAtomicConstraint (MkSubstitution substpol oldvar newvar _ (Just st)) (MkAtomicConstraint depvar unipol fvt)
     | Just Refl <- testEquality oldvar depvar =
         return $ let
             p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt)
@@ -68,16 +65,7 @@ invertSubstitution substpol oldvar newvar st (MkAtomicConstraint depvar unipol f
                     (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
                     (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv
             in liftA2 (\t a -> a t) p1 p2
-invertSubstitution _ _ _ _ ac = return $ atomicConstraintPuzzle ac
-
-substituteAtomicConstraint ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => Substitution ground
-    -> AtomicConstraint ground a
-    -> UnifierM ground (Puzzle ground a)
-substituteAtomicConstraint (MkSubstitution (pol :: _ polarity) oldvar newvar _ (Just t)) =
-    invertSubstitution pol oldvar newvar t
-substituteAtomicConstraint sub = bisubstituteAtomicConstraint $ substBisubstitution sub
+substituteAtomicConstraint sub ac = bisubstituteAtomicConstraint (substBisubstitution sub) ac
 
 isoRetractPolyPolarShim ::
        forall (pshim :: PolyShimKind) polarity a b. (FunctionShim (pshim Type), Is PolarityType polarity)

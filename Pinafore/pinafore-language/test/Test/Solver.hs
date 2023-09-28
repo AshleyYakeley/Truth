@@ -294,15 +294,15 @@ testSolver =
                  , subsumeTest "var-free" "a" "b" ["b"]
                  , subsumeTest "vars" "a -> a" "b -> b" ["b"]
                  , subsumeTest "simple-3" "a -> a" "Maybe a -> Maybe a" ["a"]
-                 , testMark $
-                   testTree
+                 , testTree
                        "split"
                        [ testTree
                              "plain"
                              [ subsumeTest "fst" "Integer" "Integer | Text" []
                              , subsumeTest "snd" "Text" "Integer | Text" []
                              ]
-                       , testTree
+                       , testNoMark $
+                         testTree
                              "recursive"
                              [ subsumeTest "fst" "Maybe None" "(rec a, Maybe a) | (rec b, List b)" []
                              , subsumeTest "snd" "List None" "(rec a, Maybe a) | (rec b, List b)" []

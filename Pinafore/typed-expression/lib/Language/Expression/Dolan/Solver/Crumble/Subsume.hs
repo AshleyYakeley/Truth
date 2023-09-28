@@ -65,6 +65,7 @@ solveSubsumePuzzle ::
     => (String -> NameRigidity)
     -> Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
+solveSubsumePuzzle _ (ClosedExpression a) = return (pure a, [])
 solveSubsumePuzzle rigidity puzzle = let
     ?rigidity = rigidity
     in do
