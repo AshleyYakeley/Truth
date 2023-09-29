@@ -19,19 +19,19 @@ import Shapes
 
 type TypeCrumbler :: GroundTypeKind -> Type -> Type
 newtype TypeCrumbler ground a = MkTypeCrumbler
-    { runTypeCrumbler :: DolanTypeCheckM ground (PuzzleExpression ground a)
+    { runTypeCrumbler :: DolanTypeCheckM ground [PuzzleExpression ground a]
     }
 
 instance forall (ground :: GroundTypeKind). Functor (DolanM ground) => Functor (TypeCrumbler ground) where
-    fmap ab (MkTypeCrumbler mpa) = MkTypeCrumbler $ (fmap $ fmap ab) mpa
+    fmap ab (MkTypeCrumbler mpa) = MkTypeCrumbler $ (fmap $ fmap $ fmap ab) mpa
 
 instance forall (ground :: GroundTypeKind). Monad (DolanM ground) => Applicative (TypeCrumbler ground) where
-    pure a = MkTypeCrumbler $ pure $ pure a
-    MkTypeCrumbler mpab <*> MkTypeCrumbler mpa = MkTypeCrumbler $ liftA2 (<*>) mpab mpa
+    pure a = MkTypeCrumbler $ pure $ pure $ pure a
+    MkTypeCrumbler mpab <*> MkTypeCrumbler mpa = MkTypeCrumbler $ liftA2 (liftA2 $ (<*>)) mpab mpa
 
 instance forall (ground :: GroundTypeKind). MonadPlus (DolanM ground) => Alternative (TypeCrumbler ground) where
-    empty = MkTypeCrumbler empty
-    MkTypeCrumbler p <|> MkTypeCrumbler q = MkTypeCrumbler $ p <|> q
+    empty = MkTypeCrumbler $ pure mempty
+    MkTypeCrumbler p <|> MkTypeCrumbler q = MkTypeCrumbler $ liftA2 (<>) p q
 
 instance forall (ground :: GroundTypeKind). Monad (DolanM ground) => WrappedApplicative (TypeCrumbler ground) where
     type WAInnerM (TypeCrumbler ground) = DolanTypeCheckM ground
@@ -45,7 +45,7 @@ crumblerLiftPuzzleExpression ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => PuzzleExpression ground a
     -> TypeCrumbler ground a
-crumblerLiftPuzzleExpression pexpr = MkTypeCrumbler $ pure pexpr
+crumblerLiftPuzzleExpression pexpr = MkTypeCrumbler $ pure $ pure pexpr
 
 crumblerLiftPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -298,7 +298,7 @@ crumbleWholeConstraint (MkWholeConstraint (InvertFlipType ta) (InvertFlipType tb
 crumbleConstraint ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => WholeConstraint ground a
-    -> DolanTypeCheckM ground (PuzzleExpression ground a)
+    -> DolanTypeCheckM ground [PuzzleExpression ground a]
 crumbleConstraint constr = runTypeCrumbler $ crumbleWholeConstraint constr
 
 runCheckCrumble ::
@@ -307,10 +307,8 @@ runCheckCrumble ::
     -> TypeCrumbler ground t
     -> DolanTypeCheckM ground Bool
 runCheckCrumble solvePuzzle ca = do
-    altIs $ do
-        MkSolverExpression puzzle _ <- runTypeCrumbler ca
-        _ <- solvePuzzle puzzle
-        return ()
+    pexprs <- runTypeCrumbler ca
+    shortOr (\(MkSolverExpression puzzle _) -> altIs $ void $ solvePuzzle puzzle) pexprs
 
 makeSCAGA ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).

@@ -149,6 +149,12 @@ import Data.Type.Witness as I
 import Data.Type.OpenWitness as I
 import Data.Type.OpenWitness.Witnessed as I
 
+liftComposeOuter :: (Functor f, Applicative g) => f a -> Compose f g a
+liftComposeOuter fa = Compose $ fmap pure fa
+
+liftComposeInner :: Applicative f => g a -> Compose f g a
+liftComposeInner ga = Compose $ pure ga
+
 decodeUtf8Lenient :: StrictByteString -> Text
 decodeUtf8Lenient = decodeUtf8With lenientDecode
 
@@ -244,6 +250,14 @@ shortAnd amb (a:aa) = do
     if b
         then shortAnd amb aa
         else return False
+
+forFirst :: Monad m => [a] -> (a -> m (Maybe b)) -> m (Maybe b)
+forFirst [] _ = return Nothing
+forFirst (a:aa) ammb = do
+    mb <- ammb a
+    case mb of
+        Just b -> return $ Just b
+        Nothing -> forFirst aa ammb
 
 mif :: Monoid a => Bool -> a -> a
 mif False _ = mempty

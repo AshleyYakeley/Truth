@@ -38,10 +38,6 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Su
            show oldvar <>
            show pol <> " => " <> st <> "; " <> show oldvar <> show invpol <> " => " <> show newvar <> si <> "}"
 
-type AtomicChange :: GroundTypeKind -> Type
-newtype AtomicChange ground =
-    MkAtomicChange (forall a. AtomicConstraint ground a -> UnifierM ground (Puzzle ground a))
-
 type Piece :: GroundTypeKind -> Type -> Type
 data Piece ground t where
     WholePiece :: forall (ground :: GroundTypeKind) t. WholeConstraint ground t -> Piece ground t

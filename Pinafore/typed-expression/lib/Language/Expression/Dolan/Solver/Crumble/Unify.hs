@@ -23,7 +23,15 @@ solvePiece ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Piece ground a
     -> SolverM ground (PuzzleExpression ground a)
-solvePiece (WholePiece constr) = lift $ crumbleConstraint constr
+solvePiece (WholePiece constr) =
+    lift $ do
+        exprs <- crumbleConstraint constr
+        case exprs of
+            [expr] -> return expr
+            _ ->
+                case constr of
+                    MkWholeConstraint fta ftb ->
+                        flipToType fta $ \ta -> flipToType ftb $ \tb -> lift $ throwTypeConvertError ta tb
 solvePiece (AtomicPiece ac) = fmap pure $ solveAtomicConstraint ac
 
 substituteEachMemo ::

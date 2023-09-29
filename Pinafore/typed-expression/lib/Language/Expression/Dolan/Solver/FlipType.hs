@@ -5,7 +5,6 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Solver.UnifierM
-import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
@@ -43,6 +42,24 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
              AllConstraint Show (FlipType ground polarity) where
     allConstraint = Dict
 
+toFlipType ::
+       forall (ground :: GroundTypeKind) pola polb t.
+       (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
+    => DolanType ground pola t
+    -> FlipType ground polb t
+toFlipType =
+    case samePolarityType (polarityType @pola) (polarityType @polb) of
+        Left Refl -> NormalFlipType
+        Right Refl -> InvertFlipType
+
+flipToType ::
+       forall (ground :: GroundTypeKind) pola t r. (IsDolanGroundType ground, Is PolarityType pola)
+    => FlipType ground pola t
+    -> (forall polb. Is PolarityType polb => DolanType ground polb t -> r)
+    -> r
+flipToType (NormalFlipType t) call = call t
+flipToType (InvertFlipType t) call = withInvertPolarity @pola $ call t
+
 occursInFlipType ::
        forall (ground :: GroundTypeKind) polarity tv a. IsDolanGroundType ground
     => TypeVarT tv
@@ -50,13 +67,6 @@ occursInFlipType ::
     -> Bool
 occursInFlipType v (NormalFlipType t) = variableOccursIn v t
 occursInFlipType v (InvertFlipType t) = variableOccursIn v t
-
-unFlipType ::
-       forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => FlipType ground polarity a
-    -> UnifierM ground (DolanShimWit ground polarity a)
-unFlipType (NormalFlipType t) = return $ mkPolarShimWit t
-unFlipType (InvertFlipType t) = invertTypeM (\_ -> RigidName) t
 
 bisubstituteFlipType ::
        forall (ground :: GroundTypeKind) polarity m (pshim :: PolyShimKind) a.

@@ -51,16 +51,10 @@ substituteAtomicConstraint (MkSubstitution substpol oldvar newvar _ (Just st)) (
             p2 =
                 case (substpol, unipol) of
                     (NegativeType, PositiveType) -> do
-                        convm <-
-                            case fvt of
-                                NormalFlipType vt -> puzzleUnify vt st
-                                InvertFlipType vt -> puzzleUnify vt st
+                        convm <- flipToType fvt $ \vt -> puzzleUnify vt st
                         pure $ \conv -> meetf conv convm
                     (PositiveType, NegativeType) -> do
-                        convm <-
-                            case fvt of
-                                NormalFlipType vt -> puzzleUnify st vt
-                                InvertFlipType vt -> puzzleUnify st vt
+                        convm <- flipToType fvt $ \vt -> puzzleUnify st vt
                         pure $ \conv -> joinf conv convm
                     (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
                     (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv

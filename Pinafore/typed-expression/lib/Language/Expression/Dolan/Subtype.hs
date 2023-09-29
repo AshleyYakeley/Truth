@@ -126,6 +126,11 @@ class ( DebugIsDolanGroundType ground
         -> DolanType ground polb tb
         -> DolanM ground a
         -> DolanM ground a
+    throwTypeConvertError ::
+           (Is PolarityType pola, Is PolarityType polb)
+        => DolanType ground pola ta
+        -> DolanType ground polb tb
+        -> DolanM ground a
     throwTypeNotInvertible :: Is PolarityType polarity => DolanType ground polarity t -> DolanM ground a
 
 data SubtypeKnowledge (ground :: GroundTypeKind)

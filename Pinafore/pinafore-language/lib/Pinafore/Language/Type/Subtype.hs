@@ -35,6 +35,13 @@ instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
                      (exprShow tb)
                      (witnessToValue $ polarityType @polb))
                 pe
+    throwTypeConvertError (ta :: _ pola _) (tb :: _ polb _) =
+        throw $
+        TypeConvertError
+            (exprShow ta)
+            (witnessToValue $ polarityType @pola)
+            (exprShow tb)
+            (witnessToValue $ polarityType @polb)
     throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
 
 instance HasInterpreter => IsDolanSubtypeEntriesGroundType QGroundType where
