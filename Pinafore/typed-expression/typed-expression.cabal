@@ -58,6 +58,9 @@ library
       Language.Expression.Dolan.Shim
       Language.Expression.Dolan.Type
       Language.Expression.Dolan.Subtype
+      Language.Expression.Dolan.SubtypeEntry.Knowledge
+      Language.Expression.Dolan.SubtypeEntry.Group
+      Language.Expression.Dolan.SubtypeEntry.Conversion
       Language.Expression.Dolan.SubtypeEntry
       Language.Expression.Dolan.Bisubstitute.Bisubstitution
       Language.Expression.Dolan.Bisubstitute.RecM

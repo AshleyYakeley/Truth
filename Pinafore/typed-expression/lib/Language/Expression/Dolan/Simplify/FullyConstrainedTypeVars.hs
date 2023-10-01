@@ -168,7 +168,7 @@ testInvertedCombinedSubtype negtype postype =
     fmap exec $
     mcatch $ do
         expr <-
-            runVarRenamerT [] [] $ do
+            runRenamer @(DolanTypeSystem ground) [] [] $ do
                 puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
                 rigidSolvePuzzle puzzle
         return $ resultToMaybe $ evalExpressionResult expr

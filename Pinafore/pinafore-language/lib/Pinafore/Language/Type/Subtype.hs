@@ -21,9 +21,10 @@ funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
         namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
+type instance DolanSubtypeHint QGroundType = QSubtypeHint
+
 instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
-    type DolanSubtypeHint QGroundType = QSubtypeHint
-    subtypeGroundedTypes = entries_subtypeGroundedTypes
+    getSubtypeChain = entries_getSubtypeChain
     tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
         msg <- mkErrorMessage
         catch ma $ \pe ->

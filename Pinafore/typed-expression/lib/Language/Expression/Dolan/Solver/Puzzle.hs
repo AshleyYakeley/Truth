@@ -7,7 +7,6 @@ import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Solver.WholeConstraint
-import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes

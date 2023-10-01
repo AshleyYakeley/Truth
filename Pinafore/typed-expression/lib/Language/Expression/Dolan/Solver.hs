@@ -2,8 +2,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Solver
-    ( unifierSubtypeConversionAsGeneralAs
-    , invertType
+    (
+        -- unifierSubtypeConversionAsGeneralAs,
+      invertType
     , subtypeSingularType
     , invertedPolarSubtype
     ) where

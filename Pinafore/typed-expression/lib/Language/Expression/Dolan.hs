@@ -40,7 +40,6 @@ module Language.Expression.Dolan
     , unToRangeShimWit
     , unFromRangeShimWit
     , biRangeSomeFor
-    , SubtypeContext(..)
     , invertType
     , DolanTypeSystem
     , IsDolanGroundType(..)

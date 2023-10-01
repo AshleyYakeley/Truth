@@ -2,10 +2,16 @@
 
 module Language.Expression.Dolan.SubtypeEntry
     ( TrustOrVerify(..)
+    , DolanSubtypeHint
+    , SubtypeConversion
+    , identitySubtypeConversion
+    , coerceSubtypeConversion
+    , subtypeConversion
+    , singleSubtypeConversion
     , SubtypeConversionEntry(..)
     , subtypeConversionEntry
     , IsDolanSubtypeEntriesGroundType(..)
-    , entries_subtypeGroundedTypes
+    , entries_getSubtypeChain
     , testEqualitySubtypeGroupTest
     , SubtypeGroup(..)
     , singletonSubtypeGroup
@@ -13,8 +19,13 @@ module Language.Expression.Dolan.SubtypeEntry
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan.Solver
+import Language.Expression.Common
+import Language.Expression.Dolan.Rename
+import Language.Expression.Dolan.Solver.Crumble.Type
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeEntry.Conversion
+import Language.Expression.Dolan.SubtypeEntry.Group
+import Language.Expression.Dolan.SubtypeEntry.Knowledge
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
@@ -39,7 +50,7 @@ bestM asGoodAs (a:aa) = do
     rr <- partitionM (asGoodAs a) bb
     case rr of
         ([], bb') -> do
-            has <- shortOr (\b -> asGoodAs b a) bb'
+            has <- shortOr $ fmap (\b -> asGoodAs b a) bb'
             return $
                 if has
                     then bb'
@@ -71,27 +82,7 @@ subtypeConversionEntry ::
     -> SubtypeConversionEntry ground
 subtypeConversionEntry trustme hint (MkShimWit (MkDolanGroundedType gta argsa) conva) (MkShimWit (MkDolanGroundedType gtb argsb) convb) conv =
     MkSubtypeConversionEntry trustme gta gtb $
-    subtypeConversion hint gta (MkShimWit argsa conva) gtb (MkShimWit argsb convb) conv
-
-testEqualitySubtypeGroupTest ::
-       forall (ground :: GroundTypeKind) dv gt. IsDolanGroundType ground
-    => ground dv gt
-    -> ground dv gt
-    -> Bool
-testEqualitySubtypeGroupTest ta tb = isJust $ groundTypeTestEquality ta tb
-
-type SubtypeGroup :: GroundTypeKind -> GroundTypeKind
-data SubtypeGroup ground dv gt = MkSubtypeGroup
-    { sgWitness :: ground dv gt
-    , sgIsSubtype :: ground dv gt -> ground dv gt -> Bool
-    }
-
-subtypeGroupTestEquality ::
-       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
-    => SubtypeGroup ground dva gta
-    -> SubtypeGroup ground dvb gtb
-    -> Maybe (dva :~: dvb, gta :~~: gtb)
-subtypeGroupTestEquality ta tb = groundTypeTestEquality (sgWitness ta) (sgWitness tb)
+    subtypeConversion hint gta (MkShimWit argsa conva) (MkShimWit argsb convb) conv
 
 matchSubtypeGroup ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
@@ -106,22 +97,6 @@ matchSubtypeGroup ta tb = do
     if sgIsSubtype ga ta tb
         then return (Refl, HRefl)
         else Nothing
-
-type SomeSubtypeGroup :: GroundTypeKind -> Type
-data SomeSubtypeGroup ground where
-    MkSomeSubtypeGroup :: forall (ground :: GroundTypeKind) dv gt. SubtypeGroup ground dv gt -> SomeSubtypeGroup ground
-
-instance forall (ground :: GroundTypeKind). IsDolanSubtypeEntriesGroundType ground => Eq (SomeSubtypeGroup ground) where
-    MkSomeSubtypeGroup a == MkSomeSubtypeGroup b = isJust $ subtypeGroupTestEquality a b
-
-instance forall (ground :: GroundTypeKind) dv gt. DebugIsDolanGroundType ground => Show (SubtypeGroup ground dv gt) where
-    show (MkSubtypeGroup t _) = show t
-
-singletonSubtypeGroup ::
-       forall (ground :: GroundTypeKind) dv gt. IsDolanGroundType ground
-    => ground dv gt
-    -> SubtypeGroup ground dv gt
-singletonSubtypeGroup gt = MkSubtypeGroup gt testEqualitySubtypeGroupTest
 
 type GreaterConversionWit :: GroundTypeKind -> GroundTypeKind
 data GreaterConversionWit ground dva gta =
@@ -246,16 +221,20 @@ getAllLessers entries current = let
            [] -> current
            new -> getAllLessers entries $ current <> new
 
-getSubtypeShim ::
+getChains ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
     => [SubtypeConversionEntry ground]
     -> ground dva gta
     -> ground dvb gtb
     -> [SubtypeConversion ground dva gta dvb gtb]
-getSubtypeShim entries gta gtb = findGreater entries [] [mkGreaterConversionWit gta] gtb
+getChains entries gta gtb = findGreater entries [] [mkGreaterConversionWit gta] gtb
 
 type IsDolanSubtypeEntriesGroundType :: GroundTypeKind -> Constraint
-class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground where
+class ( IsDolanSubtypeGroundType ground
+      , Eq (DolanSubtypeHint ground)
+      , Show (DolanSubtypeHint ground)
+      , Semigroup (DolanSubtypeHint ground)
+      ) => IsDolanSubtypeEntriesGroundType ground where
     getSubtypeGroup ::
            forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv). ground dv gt -> SubtypeGroup ground dv gt
     getSubtypeGroup = singletonSubtypeGroup
@@ -263,27 +242,46 @@ class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground 
     throwNoGroundTypeConversionError :: ground dva gta -> ground dvb gtb -> DolanM ground a
     throwIncoherentGroundTypeConversionError :: ground dva gta -> ground dvb gtb -> DolanM ground a
 
-entries_subtypeGroundedTypes ::
-       forall (ground :: GroundTypeKind) solver pola polb a b.
-       ( IsDolanSubtypeEntriesGroundType ground
-       , WrappedApplicative solver
-       , WAInnerM solver ~ DolanTypeCheckM ground
-       , Is PolarityType pola
-       , Is PolarityType polb
-       )
-    => DolanSubtypeContext ground solver
-    -> DolanGroundedType ground pola a
-    -> DolanGroundedType ground polb b
-    -> solver (DolanShim ground a b)
-entries_subtypeGroundedTypes sc (MkDolanGroundedType (ta :: ground dva gta) argsa) (MkDolanGroundedType (tb :: ground dvb gtb) argsb) =
-    wexec $ do
-        entries <- lift subtypeConversionEntries
-        let conversions = getSubtypeShim entries ta tb
-        bestConversions <- lift $ bestM unifierSubtypeConversionAsGeneralAs conversions
-        case bestConversions of
-            [sconv] -> runSubtypeConversion sc sconv (groundTypeVarianceMap ta) argsa argsb
-            [] -> lift $ throwNoGroundTypeConversionError ta tb
-            _ -> lift $ throwIncoherentGroundTypeConversionError ta tb
+subtypeConversionAsGeneralAs ::
+       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
+       (IsDolanSubtypeGroundType ground)
+    => ground dva gta
+    -> ground dvb gtb
+    -> SubtypeConversion ground dva gta dvb gtb
+    -> SubtypeConversion ground dva gta dvb gtb
+    -> DolanM ground Bool
+subtypeConversionAsGeneralAs _ _ (GeneralSubtypeConversion _ NilSubtypeChain) _ = return True
+subtypeConversionAsGeneralAs _ _ _ (GeneralSubtypeConversion _ NilSubtypeChain) = return False
+subtypeConversionAsGeneralAs _ _ CoerceSubtypeConversion _ = return True
+subtypeConversionAsGeneralAs _ _ _ CoerceSubtypeConversion = return False
+subtypeConversionAsGeneralAs ga gb (GeneralSubtypeConversion _ (ConsSubtypeChain link1 chain1)) (GeneralSubtypeConversion _ (ConsSubtypeChain link2 chain2)) =
+    runRenamer @(DolanTypeSystem ground) [] [] $
+    getChainArguments link1 chain1 $ \args1a args1b ->
+        getChainArguments link2 chain2 $ \rawargs2a rawargs2b
+            -- cs1 is as general as cs2 if cs1 can subsume to cs2
+         -> do
+            (args2a, args2b) <-
+                namespace @(DolanTypeSystem ground) [] RigidName $
+                unEndoM (dolanNamespaceRenameArguments <***> dolanNamespaceRenameArguments) (rawargs2a, rawargs2b)
+            shortAnd
+                [ checkCrumbleArguments (groundTypeVarianceMap ga) args2a args1a
+                , checkCrumbleArguments (groundTypeVarianceMap gb) args1b args2b
+                ]
+
+entries_getSubtypeChain ::
+       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
+       IsDolanSubtypeEntriesGroundType ground
+    => ground dva gta
+    -> ground dvb gtb
+    -> DolanM ground (SubtypeChain ground dva gta dvb gtb)
+entries_getSubtypeChain ga gb = do
+    entries <- subtypeConversionEntries
+    let conversions = getChains entries ga gb
+    bestConversions <- bestM (subtypeConversionAsGeneralAs ga gb) conversions
+    case bestConversions of
+        [sconv] -> return $ subtypeConversionChain sconv
+        [] -> throwNoGroundTypeConversionError ga gb
+        _ -> throwIncoherentGroundTypeConversionError ga gb
 
 type SubtypeConversionPair :: GroundTypeKind -> Type
 data SubtypeConversionPair ground =

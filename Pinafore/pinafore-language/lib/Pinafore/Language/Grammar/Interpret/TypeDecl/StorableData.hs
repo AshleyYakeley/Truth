@@ -166,7 +166,7 @@ makeStorableGroundType mainTypeName tparams = let
             (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
             plainStoreAdapter
             storability $ \args eat ->
-            subtypeConversion Nothing gt args entityGroundType nilCCRPolarArgumentsShimWit $
+            subtypeConversion Nothing gt args nilCCRPolarArgumentsShimWit $
             pure $ functionToShim "datatype-storable" $ storeAdapterConvert eat
     in MkTypeConstruction mkx mkgt postregister
 

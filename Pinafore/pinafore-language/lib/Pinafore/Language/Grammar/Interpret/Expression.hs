@@ -630,7 +630,7 @@ interpretOpenEntitySubtypeRelation sta stb = do
                         Just (MkOpenEntityFamily _) -> MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                         Nothing ->
                             MkSubtypeConversionEntry TrustMe gta gtb $
-                            nilSubtypeConversion Nothing $
+                            singleSubtypeConversion Nothing $
                             coerceShim "open entity" .
                             (functionToShim "entityConvert" $
                              storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)

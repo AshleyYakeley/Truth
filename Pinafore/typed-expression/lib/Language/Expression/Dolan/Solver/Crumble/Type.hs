@@ -2,7 +2,7 @@
 
 module Language.Expression.Dolan.Solver.Crumble.Type
     ( crumbleConstraint
-    , makeSCAGA
+    , checkCrumbleArguments
     ) where
 
 import Data.Shim
@@ -98,10 +98,83 @@ crumbleAtomicGE ::
     -> TypeCrumbler ground (DolanShim ground a b)
 crumbleAtomicGE v t = crumbleAtomic $ geAtomicConstraint v t
 
-crumbleSubtypeContext ::
-       forall (ground :: GroundTypeKind). (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
-    => SubtypeContext (DolanVarID ground) (DolanType ground) (DolanShim ground) (TypeCrumbler ground)
-crumbleSubtypeContext = MkSubtypeContext crumbleTT crumblerLiftExpression
+crumbleArgument ::
+       forall (ground :: GroundTypeKind) pola polb sv a b.
+       ( IsDolanSubtypeGroundType ground
+       , Is PolarityType pola
+       , Is PolarityType polb
+       , ?rigidity :: String -> NameRigidity
+       )
+    => CCRPolarArgument (DolanType ground) pola sv a
+    -> CCRPolarArgument (DolanType ground) polb sv b
+    -> TypeCrumbler ground (CCRVarianceCategory (DolanShim ground) sv a b)
+crumbleArgument (CoCCRPolarArgument ta) (CoCCRPolarArgument tb) = crumbleTT ta tb
+crumbleArgument (ContraCCRPolarArgument ta) (ContraCCRPolarArgument tb) =
+    withInvertPolarity @pola $
+    withInvertPolarity @polb $ do
+        ba <- crumbleTT tb ta
+        return $ MkCatDual ba
+crumbleArgument (RangeCCRPolarArgument tpa tqa) (RangeCCRPolarArgument tpb tqb) =
+    withInvertPolarity @pola $
+    withInvertPolarity @polb $ do
+        pba <- crumbleTT tpb tpa
+        qab <- crumbleTT tqa tqb
+        return $ MkCatRange pba qab
+
+crumbleArguments ::
+       forall (ground :: GroundTypeKind) pola polb dv (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) ta tb.
+       ( IsDolanSubtypeGroundType ground
+       , Is PolarityType pola
+       , Is PolarityType polb
+       , ?rigidity :: String -> NameRigidity
+       )
+    => CCRVariancesType dv
+    -> CCRVariancesMap dv gta
+    -> CCRVariancesMap dv gtb
+    -> CCRPolarArguments dv (DolanType ground) gta pola ta
+    -> CCRPolarArguments dv (DolanType ground) gtb polb tb
+    -> TypeCrumbler ground (DolanPolyShim ground (CCRVariancesKind dv) gta gtb -> DolanShim ground ta tb)
+crumbleArguments NilListType NilCCRVariancesMap NilCCRVariancesMap NilCCRArguments NilCCRArguments = pure id
+crumbleArguments (ConsListType svt dvt) (ConsCCRVariancesMap ccrva dvma) (ConsCCRVariancesMap ccrvb dvmb) (ConsCCRArguments sta dta) (ConsCCRArguments stb dtb) =
+    case ccrVarianceCoercibleKind svt of
+        Dict -> do
+            sfunc <- crumbleArgument @ground @pola @polb sta stb
+            f <- crumbleArguments dvt dvma dvmb dta dtb
+            pure $ \conv -> f (applyPolyShim svt ccrva ccrvb conv sfunc)
+
+crumbleDolanArguments ::
+       forall (ground :: GroundTypeKind) pola polb dv gt ta tb.
+       ( IsDolanSubtypeGroundType ground
+       , Is PolarityType pola
+       , Is PolarityType polb
+       , ?rigidity :: String -> NameRigidity
+       )
+    => CCRVariancesMap dv gt
+    -> CCRPolarArguments dv (DolanType ground) gt pola ta
+    -> CCRPolarArguments dv (DolanType ground) gt polb tb
+    -> TypeCrumbler ground (DolanShim ground ta tb)
+crumbleDolanArguments dvm argsa argsb = let
+    dvt = ccrArgumentsType argsa
+    in case ccrVariancesCategory @(DolanPolyShim ground) dvt of
+           Dict -> fmap (\f -> f id) $ crumbleArguments dvt dvm dvm argsa argsb
+
+crumbleSubtypeChain ::
+       forall (ground :: GroundTypeKind) dva gta dvb gtb pola polb ta tb.
+       ( IsDolanSubtypeGroundType ground
+       , Is PolarityType pola
+       , Is PolarityType polb
+       , ?rigidity :: String -> NameRigidity
+       )
+    => SubtypeChain ground dva gta dvb gtb
+    -> CCRVariancesMap dvb gtb
+    -> CCRPolarArguments dva (DolanType ground) gta pola ta
+    -> CCRPolarArguments dvb (DolanType ground) gtb polb tb
+    -> TypeCrumbler ground (DolanShim ground ta tb)
+crumbleSubtypeChain NilSubtypeChain dvm args args' = crumbleDolanArguments dvm args args'
+crumbleSubtypeChain (ConsSubtypeChain (MkSubtypeLink dvmb argsb argsc expr) chain) dvmc argsa argsc' =
+    (\convb convab conva -> convb . convab . conva) <$> (crumbleDolanArguments dvmc argsc argsc') <*>
+    (crumblerLiftExpression expr) <*>
+    (crumbleSubtypeChain chain dvmb argsa argsb)
 
 crumbleGroundedTypes ::
        forall (ground :: GroundTypeKind) pola polb a b.
@@ -113,7 +186,10 @@ crumbleGroundedTypes ::
     => DolanGroundedType ground pola a
     -> DolanGroundedType ground polb b
     -> TypeCrumbler ground (DolanPolyShim ground Type a b)
-crumbleGroundedTypes = subtypeGroundedTypes crumbleSubtypeContext
+crumbleGroundedTypes (MkDolanGroundedType ga argsa) (MkDolanGroundedType gb argsb) =
+    MkTypeCrumbler $ do
+        chain <- getSubtypeChainRenamed ga gb
+        runTypeCrumbler $ crumbleSubtypeChain chain (groundTypeVarianceMap gb) argsa argsb
 
 fromJoinMeetLimit ::
        forall (shim :: ShimKind Type) polarity t. (Is PolarityType polarity, JoinMeetIsoShim shim)
@@ -301,22 +377,15 @@ crumbleConstraint ::
     -> DolanTypeCheckM ground [PuzzleExpression ground a]
 crumbleConstraint constr = runTypeCrumbler $ crumbleWholeConstraint constr
 
-runCheckCrumble ::
-       forall (ground :: GroundTypeKind) t. IsDolanSubtypeGroundType ground
-    => (forall a. Puzzle ground a -> DolanTypeCheckM ground (DolanOpenExpression ground a))
-    -> TypeCrumbler ground t
+checkCrumbleArguments ::
+       forall (ground :: GroundTypeKind) pola polb dv gt ta tb.
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
+    => CCRVariancesMap dv gt
+    -> CCRPolarArguments dv (DolanType ground) gt pola ta
+    -> CCRPolarArguments dv (DolanType ground) gt polb tb
     -> DolanTypeCheckM ground Bool
-runCheckCrumble solvePuzzle ca = do
-    pexprs <- runTypeCrumbler ca
-    shortOr (\(MkSolverExpression puzzle _) -> altIs $ void $ solvePuzzle puzzle) pexprs
-
-makeSCAGA ::
-       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
-       IsDolanSubtypeGroundType ground
-    => (forall a. Puzzle ground a -> DolanTypeCheckM ground (DolanOpenExpression ground a))
-    -> SubtypeConversion ground dva gta dvb gtb
-    -> SubtypeConversion ground dva gta dvb gtb
-    -> DolanM ground Bool
-makeSCAGA solvePuzzle = let
-    ?rigidity = \_ -> RigidName
-    in subtypeConversionAsGeneralAs (runCheckCrumble solvePuzzle) crumbleSubtypeContext
+checkCrumbleArguments dvm argsa argsb = do
+    rigidity <- renamerGetNameRigidity
+    let
+        ?rigidity = rigidity
+        in altIs $ runTypeCrumbler $ crumbleDolanArguments dvm argsa argsb

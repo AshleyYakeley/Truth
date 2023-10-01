@@ -1,14 +1,11 @@
 module Language.Expression.Dolan.Solver.Solver
     ( solvePuzzle
     , rigidSolvePuzzle
-    , unifierSubtypeConversionAsGeneralAs
     ) where
 
-import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Subsume
-import Language.Expression.Dolan.Solver.Crumble.Type
 import Language.Expression.Dolan.Solver.Crumble.Unify
 import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
@@ -35,11 +32,3 @@ rigidSolvePuzzle ::
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a)
 rigidSolvePuzzle puzzle = fmap fst $ solveUnifyPuzzle (\_ -> RigidName) puzzle
-
-unifierSubtypeConversionAsGeneralAs ::
-       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
-       IsDolanSubtypeGroundType ground
-    => SubtypeConversion ground dva gta dvb gtb
-    -> SubtypeConversion ground dva gta dvb gtb
-    -> DolanM ground Bool
-unifierSubtypeConversionAsGeneralAs = makeSCAGA (\p -> fmap fst $ solvePuzzle p)
