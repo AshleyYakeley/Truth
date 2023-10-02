@@ -12,12 +12,12 @@ import Pinafore.Test
 import Shapes
 import Test.RunScript
 
-type PinaforeBisubstitution = Bisubstitution QGroundType (QPolyShim Type) (UnifierM QGroundType)
+type PinaforeBisubstitution = Bisubstitution QGroundType (QPolyShim Type) (TypeResult QGroundType)
 
 pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> QInterpreter QValue
 pinaforeBisubstitutes bisubs val = do
     liftIO $ traceIO $ "bisubstitute: before: " <> showValType val
-    val' <- runUnifierM @QGroundType $ unEndoM (bisubstitutes @QGroundType bisubs) val
+    val' <- runTypeResult @QGroundType $ unEndoM (bisubstitutes @QGroundType bisubs) val
     liftIO $ traceIO $ "bisubstitute: after: " <> showValType val'
     return val'
 

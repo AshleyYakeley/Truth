@@ -14,8 +14,8 @@ data PolyGreatestDynamicSupertype ground dv gt where
     SimplePolyGreatestDynamicSupertype
         :: forall (ground :: GroundTypeKind) (dt :: Type) (gt :: Type).
            ground '[] dt
-        -> DolanPolyShim ground Type dt (Maybe gt)
-        -> DolanPolyShim ground Type gt dt
+        -> DolanShim ground dt (Maybe gt)
+        -> DolanShim ground gt dt
         -> PolyGreatestDynamicSupertype ground '[] gt
 
 nullPolyGreatestDynamicSupertype ::

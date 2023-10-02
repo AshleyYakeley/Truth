@@ -7,12 +7,11 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
 import Language.Expression.Dolan.Solver.Crumble.Type
-import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
-import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -27,11 +26,10 @@ solvePiece (WholePiece constr) =
     lift $ do
         exprs <- crumbleConstraint constr
         case exprs of
-            [expr] -> return expr
+            expr :| [] -> return expr
             _ ->
                 case constr of
-                    MkWholeConstraint fta ftb ->
-                        flipToType fta $ \ta -> flipToType ftb $ \tb -> lift $ throwTypeConvertError ta tb
+                    MkWholeConstraint fta ftb -> throw $ ConvertTypeError fta ftb
 solvePiece (AtomicPiece ac) = fmap pure $ solveAtomicConstraint ac
 
 substituteEachMemo ::
@@ -43,7 +41,7 @@ substituteEachMemo [] = id
 substituteEachMemo substs = let
     bisubs = fmap substBisubstitution substs
     in mapEachMemo $ \wc -> do
-           MkShimWit wc' conv <- lift $ lift $ runUnifierM $ bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
+           MkShimWit wc' conv <- lift $ liftResultToCrumbleM $ bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
            return $ MkShimWit wc' $ isoForwards conv
 
 processPiece ::
@@ -63,7 +61,7 @@ processRest ::
     -> UnifyCrumbler ground a
 processRest substs puzzlerest =
     MkCrumbler $ do
-        puzzlerest' <- lift $ lift $ lift $ runUnifierM $ applySubstsToPuzzle substs puzzlerest
+        puzzlerest' <- lift $ lift $ liftResultToCrumbleM $ applySubstsToPuzzle substs puzzlerest
         unCrumbler $ substituteEachMemo substs $ processPuzzle puzzlerest'
 
 monoReaderHoist ::
@@ -87,7 +85,7 @@ processPieceAndRest piece puzzlerest =
         unCrumbler $
             substituteEachMemo substs $
             MkCrumbler $ do
-                puzzlerest' <- lift $ lift $ lift $ runUnifierM $ applySubstsToPuzzle substs puzzlerest
+                puzzlerest' <- lift $ lift $ liftResultToCrumbleM $ applySubstsToPuzzle substs puzzlerest
                 oexpr <- unCrumbler $ processPuzzle $ liftA2 (,) conspuzzle puzzlerest'
                 return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
 
@@ -120,5 +118,5 @@ solveUnifyPuzzle ::
 solveUnifyPuzzle rigidity puzzle = let
     ?rigidity = rigidity
     in do
-           (a, substs) <- runWriterT $ runCrumbler $ processPuzzle puzzle
+           (a, substs) <- runCrumbleM $ runWriterT $ runCrumbler $ processPuzzle puzzle
            return (a, fmap substBisubstitution substs)

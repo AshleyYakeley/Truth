@@ -1,7 +1,7 @@
 module Language.Expression.Dolan.Solver.Safety where
 
 import Data.Shim
-import Language.Expression.Dolan.Solver.FlipType
+import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem

@@ -4,6 +4,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -84,26 +85,32 @@ class (DebugIsDolanGroundType ground) => IsDolanSubtypeGroundType ground where
            forall (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
            ground dva gta
         -> ground dvb gtb
-        -> DolanM ground (SubtypeChain ground dva gta dvb gtb)
-    tackOnTypeConvertError ::
-           (Is PolarityType pola, Is PolarityType polb)
-        => DolanType ground pola ta
-        -> DolanType ground polb tb
-        -> DolanM ground a
-        -> DolanM ground a
-    throwTypeConvertError ::
-           (Is PolarityType pola, Is PolarityType polb)
-        => DolanType ground pola ta
-        -> DolanType ground polb tb
-        -> DolanM ground a
-    throwTypeNotInvertible :: Is PolarityType polarity => DolanType ground polarity t -> DolanM ground a
+        -> DolanM ground (TypeResult ground (SubtypeChain ground dva gta dvb gtb))
+    throwTypeError :: TypeError ground -> DolanM ground a
+
+runTypeResult ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => TypeResult ground a
+    -> DolanM ground a
+runTypeResult (SuccessResult a) = return a
+runTypeResult (FailureResult err) = throwTypeError err
+
+runCrumbleM ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => CrumbleM ground a
+    -> DolanTypeCheckM ground a
+runCrumbleM cra = do
+    rea <- runCrumbleMResult cra
+    lift $ runTypeResult rea
 
 getSubtypeChainRenamed ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
        IsDolanSubtypeGroundType ground
     => ground dva gta
     -> ground dvb gtb
-    -> DolanTypeCheckM ground (SubtypeChain ground dva gta dvb gtb)
-getSubtypeChainRenamed ga gb = do
-    chain <- lift $ getSubtypeChain ga gb
-    unEndoM (renameType @(DolanTypeSystem ground) [] FreeName) chain
+    -> CrumbleM ground (SubtypeChain ground dva gta dvb gtb)
+getSubtypeChainRenamed ga gb =
+    MkCrumbleM $
+    MkComposeInner $ do
+        rchain <- lift $ getSubtypeChain ga gb
+        for rchain $ unEndoM (renameType @(DolanTypeSystem ground) [] FreeName)

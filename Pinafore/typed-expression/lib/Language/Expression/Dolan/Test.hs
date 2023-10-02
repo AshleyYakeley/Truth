@@ -5,10 +5,11 @@ module Language.Expression.Dolan.Test
     , PShimWitMappable
     , bisubstitute
     , bisubstitutes
-    , UnifierM
-    , runUnifierM
+    , TypeResult
+    , runTypeResult
     ) where
 
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Solver.UnifierM
+import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.TypeResult

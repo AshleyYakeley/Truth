@@ -7,9 +7,8 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Subsume
 import Language.Expression.Dolan.Solver.Crumble.Unify
-import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
-import Language.Expression.Dolan.Solver.UnifierM
+import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -23,7 +22,7 @@ solvePuzzle puzzle =
     partitionExpression purePiece puzzle $ \upuzzle spuzzle -> do
         rigidity <- renamerGetNameRigidity
         (exprba, usubs) <- solveUnifyPuzzle rigidity upuzzle
-        spuzzle' <- lift $ runUnifierM $ bisubstitutesPuzzle usubs spuzzle
+        spuzzle' <- lift $ runTypeResult $ bisubstitutesPuzzle usubs spuzzle
         (exprb, ssubs) <- solveSubsumePuzzle rigidity spuzzle'
         return (exprba <*> exprb, usubs <> ssubs)
 

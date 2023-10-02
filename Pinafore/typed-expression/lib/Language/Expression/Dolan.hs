@@ -15,7 +15,9 @@ module Language.Expression.Dolan
     , forMPolarW
     , fromMPolarSingle
     , GroundTypeKind
+    , TypeError(..)
     , DolanPolyShim
+    , DolanShim
     , DolanPolyIsoShim
     , CCRVariances
     , CCRVariancesKind
@@ -35,6 +37,9 @@ module Language.Expression.Dolan
     , DolanGroundedType(..)
     , DolanSingularType(..)
     , DolanType(..)
+    , FlipType(..)
+    , toFlipType
+    , flipToType
     , joinMeetShimWit
     , unrollRecursiveType
     , unToRangeShimWit
@@ -51,15 +56,17 @@ module Language.Expression.Dolan
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.FreeVars as I
+import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Mono as I
 import Language.Expression.Dolan.Nonpolar as I
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
-import Language.Expression.Dolan.Solver (invertType)
 import Language.Expression.Dolan.Subtype as I
 import Language.Expression.Dolan.SubtypeEntry as I
 import Language.Expression.Dolan.Type as I
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
 import Shapes

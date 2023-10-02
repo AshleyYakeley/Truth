@@ -1,16 +1,12 @@
-module Language.Expression.Dolan.Solver.FlipType where
+module Language.Expression.Dolan.FlipType where
 
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
-import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
-
-type SolverBisubstitution :: GroundTypeKind -> Type
-type SolverBisubstitution ground = Bisubstitution ground (DolanPolyIsoShim ground Type) (UnifierM ground)
 
 type FlipType :: GroundTypeKind -> Polarity -> Type -> Type
 data FlipType ground polarity t

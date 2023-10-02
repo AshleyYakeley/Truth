@@ -70,11 +70,11 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => IsCCRArg
         return Refl
 
 type NonpolarShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type NonpolarShimWit ground polarity = PolarShimWit (DolanPolyShim ground Type) (NonpolarType ground) polarity
+type NonpolarShimWit ground polarity = PolarShimWit (DolanShim ground) (NonpolarType ground) polarity
 
 type NonpolarArgumentShimWit :: GroundTypeKind -> Polarity -> CCRArgumentKind
 type NonpolarArgumentShimWit ground polarity sv
-     = CCRArgumentShimWit (DolanPolyShim ground Type) (NonpolarArgument ground) polarity sv
+     = CCRArgumentShimWit (DolanShim ground) (NonpolarArgument ground) polarity sv
 
 type NonpolarArguments :: GroundTypeKind -> forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type -> Type
 type NonpolarArguments ground = CCRArguments (NonpolarArgument ground)
@@ -92,7 +92,7 @@ instance forall (ground :: GroundTypeKind) t. FreeTypeVariables (NonpolarType gr
 nonpolarToDolanArg ::
        forall (ground :: GroundTypeKind) polarity sv t. (IsDolanGroundType ground, Is PolarityType polarity)
     => NonpolarArgument ground sv t
-    -> CCRArgumentShimWit (DolanPolyShim ground Type) (CCRPolarArgument (DolanType ground) polarity) polarity sv t
+    -> CCRArgumentShimWit (DolanShim ground) (CCRPolarArgument (DolanType ground) polarity) polarity sv t
 nonpolarToDolanArg (CoNonpolarArgument t) =
     case nonpolarToDolanType t of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv

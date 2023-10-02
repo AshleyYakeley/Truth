@@ -1,0 +1,495 @@
+pinafore-language
+  type
+    read
+      let-binding
+        recursive
+          fixrec
+            fix (undefined: (Maybe a -> Maybe a) -> a -> a):                                                                                                                                                                                                                                                                                          FAIL (0.06s)
+              test/Test/Type.hs:98:
+              expected: "{} -> Any -> (rec a, Maybe. a)"
+               but got: "{} -> (rec a, (rec b, c & Maybe. (rec d, b & Maybe. d)) & Maybe. a) -> (rec e, (rec f, c | Maybe. (rec g, f | Maybe. g)) | Maybe. e)"
+              Use -p '/fix (undefined: (Maybe a -> Maybe a) -> a -> a)/' to rerun this test only.
+            let rec f: (Maybe a -> Maybe a) -> a -> a = f; x = f x in x:                                                                                                                                                                                                                                                                              FAIL (0.03s)
+              test/Test/Type.hs:98:
+              expected: "{} -> (rec a, Maybe. a) -> None"
+               but got: "{} -> (rec a, (rec b, c & Maybe. (rec d, b & Maybe. d)) & Maybe. a) -> (rec e, (rec f, c | Maybe. (rec g, f | Maybe. g)) | Maybe. e)"
+              Use -p '/let rec f: (Maybe a -> Maybe a) -> a -> a = f; x = f x in x/' to rerun this test only.
+            fix (undefined: (Maybe b -> Maybe b) -> a -> a):                                                                                                                                                                                                                                                                                          FAIL
+              test/Test/Type.hs:98:
+              expected: "{} -> (a & Maybe. b) -> (a | Maybe. b)"
+               but got: "{} -> Maybe. a -> Maybe. a"
+              Use -p '/fix (undefined: (Maybe b -> Maybe b) -> a -> a)/' to rerun this test only.
+            let rec f: (Maybe b -> Maybe b) -> a -> a = f; x = f x in x:                                                                                                                                                                                                                                                                              FAIL
+              test/Test/Type.hs:98:
+              expected: "{} -> (a & Maybe. b) -> (a | Maybe. b)"
+               but got: "{} -> Maybe. a -> Maybe. a"
+              Use -p '/let rec f: (Maybe b -> Maybe b) -> a -> a = f; x = f x in x/' to rerun this test only.
+  language
+    queries
+      type-signature
+        polar
+          "let x : Text | Number = 3 in x":                                                                                                                                                                                                                                                                                                           FAIL
+            test/Test/Language.hs:146:
+            check: expected success, found error: <input>:1:5: no ground conversion for Integer <: Text
+            Use -p '/"let x : Text | Number = 3 in x"/' to rerun this test only.
+      subsume
+        "let rec a: Integer|Text = a in ()":                                                                                                                                                                                                                                                                                                          FAIL
+          test/Test/Language.hs:146:
+          check: expected success, found error: <input>:1:1: no ground conversion for Text <: Integer
+          Use -p '/"let rec a: Integer|Text = a in ()"/' to rerun this test only.
+        "let a: Integer|Text = 3 in ()":                                                                                                                                                                                                                                                                                                              FAIL (0.01s)
+          test/Test/Language.hs:146:
+          check: expected success, found error: <input>:1:5: no ground conversion for Integer <: Text
+          Use -p '/"let a: Integer|Text = 3 in ()"/' to rerun this test only.
+        "let a: Integer|Text = 3; b: Integer|Text = 3 in ()":                                                                                                                                                                                                                                                                                         FAIL
+          test/Test/Language.hs:146:
+          check: expected success, found error: <input>:1:5: no ground conversion for Integer <: Text
+          Use -p '/"let a: Integer|Text = 3; b: Integer|Text = 3 in ()"/' to rerun this test only.
+        "let a: Integer|Text = 3; b: Integer|Text = a in ()":                                                                                                                                                                                                                                                                                         FAIL (0.01s)
+          test/Test/Language.hs:146:
+          check: expected success, found error: <input>:1:5: no ground conversion for Integer <: Text
+          Use -p '/"let a: Integer|Text = 3; b: Integer|Text = a in ()"/' to rerun this test only.
+        "let rec r = a; a: Integer|Text = r in ()":                                                                                                                                                                                                                                                                                                   FAIL
+          test/Test/Language.hs:146:
+          check: expected success, found error: <input>:1:1: no ground conversion for Integer <: Text
+          Use -p '/"let rec r = a; a: Integer|Text = r in ()"/' to rerun this test only.
+        "List (Integer|Text) = List (Integer|Text)"
+          subsume
+            plain:                                                                                                                                                                                                                                                                                                                                    FAIL
+              test/Test/Language.hs:146:
+              check: expected success, found error: <input>:1:42: no ground conversion for Integer <: Text
+              Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List (Integer|Text)\".subsume.plain"' to rerun this test only.
+            let-1
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:39: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List (Integer|Text)\".subsume.let-1.\"[]\""' to rerun this test only.
+            let-2
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:35: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List (Integer|Text)\".subsume.let-2.\"[]\""' to rerun this test only.
+          subsume
+            plain:                                                                                                                                                                                                                                                                                                                                    FAIL
+              test/Test/Language.hs:146:
+              check: expected success, found error: <input>:1:42: no ground conversion for Integer <: Text
+              Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List (Integer|Text)\".subsume.plain"' to rerun this test only.
+            let-1
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:39: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List (Integer|Text)\".subsume.let-1.\"[]\""' to rerun this test only.
+            let-2
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:35: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List (Integer|Text)\".subsume.let-2.\"[]\""' to rerun this test only.
+        "List Integer | List Text = List Integer | List Text"
+          subsume
+            plain:                                                                                                                                                                                                                                                                                                                                    FAIL
+              test/Test/Language.hs:146:
+              check: expected success, found error: <input>:1:47: no ground conversion for Integer <: Text
+              Use -p '$0=="pinafore-language.language.queries.subsume.\"List Integer | List Text = List Integer | List Text\".subsume.plain"' to rerun this test only.
+            let-1
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:44: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List Integer | List Text = List Integer | List Text\".subsume.let-1.\"[]\""' to rerun this test only.
+            let-2
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:40: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List Integer | List Text = List Integer | List Text\".subsume.let-2.\"[]\""' to rerun this test only.
+          subsume
+            plain:                                                                                                                                                                                                                                                                                                                                    FAIL
+              test/Test/Language.hs:146:
+              check: expected success, found error: <input>:1:47: no ground conversion for Integer <: Text
+              Use -p '$0=="pinafore-language.language.queries.subsume.\"List Integer | List Text = List Integer | List Text\".subsume.plain"' to rerun this test only.
+            let-1
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:44: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List Integer | List Text = List Integer | List Text\".subsume.let-1.\"[]\""' to rerun this test only.
+            let-2
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:40: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List Integer | List Text = List Integer | List Text\".subsume.let-2.\"[]\""' to rerun this test only.
+        "List (Integer|Text) = List Integer | List Text"
+          subsume
+            plain:                                                                                                                                                                                                                                                                                                                                    FAIL
+              test/Test/Language.hs:146:
+              check: expected success, found error: <input>:1:42: no ground conversion for Integer <: Text
+              Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List Integer | List Text\".subsume.plain"' to rerun this test only.
+            let-1
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:39: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List Integer | List Text\".subsume.let-1.\"[]\""' to rerun this test only.
+            let-2
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:35: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List Integer | List Text\".subsume.let-2.\"[]\""' to rerun this test only.
+          subsume
+            plain:                                                                                                                                                                                                                                                                                                                                    FAIL
+              test/Test/Language.hs:146:
+              check: expected success, found error: <input>:1:47: no ground conversion for Integer <: Text
+              Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List Integer | List Text\".subsume.plain"' to rerun this test only.
+            let-1
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:44: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List Integer | List Text\".subsume.let-1.\"[]\""' to rerun this test only.
+            let-2
+              "[]":                                                                                                                                                                                                                                                                                                                                   FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:40: no ground conversion for Integer <: Text
+                Use -p '$0=="pinafore-language.language.queries.subsume.\"List (Integer|Text) = List Integer | List Text\".subsume.let-2.\"[]\""' to rerun this test only.
+        "let a: Integer|Text = 3; b: List Integer | List Text = [a] in b":                                                                                                                                                                                                                                                                            FAIL
+          test/Test/Language.hs:146:
+          check: expected success, found error: <input>:1:5: no ground conversion for Integer <: Text
+          Use -p '/"let a: Integer|Text = 3; b: List Integer | List Text = [a] in b"/' to rerun this test only.
+      recursive
+        equivalence
+          "rec a, Maybe a <: rec a, (Maybe a | List a)"
+            subsume
+              plain:                                                                                                                                                                                                                                                                                                                                  FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:37: no ground conversion for Maybe _ <: List _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".subsume.plain"' to rerun this test only.
+              let-1
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:39: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".subsume.let-1.\"Nothing\""' to rerun this test only.
+                "Just Nothing":                                                                                                                                                                                                                                                                                                                       FAIL (0.01s)
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:44: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".subsume.let-1.\"Just Nothing\""' to rerun this test only.
+              let-2
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:35: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".subsume.let-2.\"Nothing\""' to rerun this test only.
+                "Just Nothing":                                                                                                                                                                                                                                                                                                                       FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:40: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".subsume.let-2.\"Just Nothing\""' to rerun this test only.
+            function
+              id:                                                                                                                                                                                                                                                                                                                                     FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:13: no ground conversion for Maybe _ <: List _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".function.id"' to rerun this test only.
+              let:                                                                                                                                                                                                                                                                                                                                    FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:5: no ground conversion for Maybe _ <: List _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".function.let"' to rerun this test only.
+              vars
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".function.vars.\"Nothing\""' to rerun this test only.
+                "Just Nothing":                                                                                                                                                                                                                                                                                                                       FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"rec a, Maybe a <: rec a, (Maybe a | List a)\".function.vars.\"Just Nothing\""' to rerun this test only.
+          "Maybe None <: rec a, (Maybe a | List a)"
+            subsume
+              plain:                                                                                                                                                                                                                                                                                                                                  FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:33: no ground conversion for Maybe _ <: List _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None <: rec a, (Maybe a | List a)\".subsume.plain"' to rerun this test only.
+              let-1
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:35: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None <: rec a, (Maybe a | List a)\".subsume.let-1.\"Nothing\""' to rerun this test only.
+              let-2
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:31: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None <: rec a, (Maybe a | List a)\".subsume.let-2.\"Nothing\""' to rerun this test only.
+          "List None <: rec a, (Maybe a | List a)"
+            subsume
+              plain:                                                                                                                                                                                                                                                                                                                                  FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:32: no ground conversion for List _ <: Maybe _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"List None <: rec a, (Maybe a | List a)\".subsume.plain"' to rerun this test only.
+              let-1
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:29: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"List None <: rec a, (Maybe a | List a)\".subsume.let-1.\"[]\""' to rerun this test only.
+              let-2
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:25: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"List None <: rec a, (Maybe a | List a)\".subsume.let-2.\"[]\""' to rerun this test only.
+          "Maybe None | List None <: rec a, (Maybe a | List a)"
+            subsume
+              plain:                                                                                                                                                                                                                                                                                                                                  FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:45: no ground conversion for List _ <: Maybe _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None | List None <: rec a, (Maybe a | List a)\".subsume.plain"' to rerun this test only.
+              let-1
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None | List None <: rec a, (Maybe a | List a)\".subsume.let-1.\"[]\""' to rerun this test only.
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None | List None <: rec a, (Maybe a | List a)\".subsume.let-1.\"Nothing\""' to rerun this test only.
+              let-2
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None | List None <: rec a, (Maybe a | List a)\".subsume.let-2.\"[]\""' to rerun this test only.
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for Maybe _ <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"Maybe None | List None <: rec a, (Maybe a | List a)\".subsume.let-2.\"Nothing\""' to rerun this test only.
+          "List None <: (rec a, Maybe a) | (rec b, List b)"
+            subsume
+              plain:                                                                                                                                                                                                                                                                                                                                  FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:32: no ground conversion for List _ <: Maybe _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"List None <: (rec a, Maybe a) | (rec b, List b)\".subsume.plain"' to rerun this test only.
+              let-1
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL (0.02s)
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:29: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"List None <: (rec a, Maybe a) | (rec b, List b)\".subsume.let-1.\"[]\""' to rerun this test only.
+              let-2
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:25: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"List None <: (rec a, Maybe a) | (rec b, List b)\".subsume.let-2.\"[]\""' to rerun this test only.
+          "(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)"
+            subsume
+              plain:                                                                                                                                                                                                                                                                                                                                  FAIL
+                test/Test/Language.hs:146:
+                check: expected success, found error: <input>:1:57: no ground conversion for List _ <: Maybe _
+                Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.plain"' to rerun this test only.
+              let-1
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-1.\"[]\""' to rerun this test only.
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:59: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-1.\"Nothing\""' to rerun this test only.
+                "Just Nothing":                                                                                                                                                                                                                                                                                                                       FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:64: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-1.\"Just Nothing\""' to rerun this test only.
+                "[[]]":                                                                                                                                                                                                                                                                                                                               FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for List1.List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-1.\"[[]]\""' to rerun this test only.
+              let-2
+                "[]":                                                                                                                                                                                                                                                                                                                                 FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-2.\"[]\""' to rerun this test only.
+                "Nothing":                                                                                                                                                                                                                                                                                                                            FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:55: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-2.\"Nothing\""' to rerun this test only.
+                "Just Nothing":                                                                                                                                                                                                                                                                                                                       FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:60: no ground conversion for List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-2.\"Just Nothing\""' to rerun this test only.
+                "[[]]":                                                                                                                                                                                                                                                                                                                               FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:5: no ground conversion for List1.List _ <: Maybe _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.\"(rec a, Maybe a) | (rec b, List b) <: rec a, (Maybe a | List a)\".subsume.let-2.\"[[]]\""' to rerun this test only.
+          unroll
+            "rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer"
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:46: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Integer
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-1.\"[]\""' to rerun this test only.
+                let-2
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Integer
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-2.\"[]\""' to rerun this test only.
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:61: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Integer
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-1.\"[]\""' to rerun this test only.
+                let-2
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for List _ <: Integer
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-2.\"[]\""' to rerun this test only.
+            "rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer"
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:46: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.plain"' to rerun this test only.
+                let-1
+                  "2":                                                                                                                                                                                                                                                                                                                                FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-1.\"2\""' to rerun this test only.
+                let-2
+                  "2":                                                                                                                                                                                                                                                                                                                                FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-2.\"2\""' to rerun this test only.
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:61: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.plain"' to rerun this test only.
+                let-1
+                  "2":                                                                                                                                                                                                                                                                                                                                FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-1.\"2\""' to rerun this test only.
+                let-2
+                  "2":                                                                                                                                                                                                                                                                                                                                FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, (List a|Integer) = List (rec a, (List a|Integer))|Integer\".subsume.let-2.\"2\""' to rerun this test only.
+            "rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)"
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:46: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:43: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-1.\"[]\""' to rerun this test only.
+                let-2
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:39: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-2.\"[]\""' to rerun this test only.
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:63: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:60: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-1.\"[]\""' to rerun this test only.
+                let-2
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:56: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-2.\"[]\""' to rerun this test only.
+            "rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)"
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:46: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-1.\"[3]\""' to rerun this test only.
+                let-2
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-2.\"[3]\""' to rerun this test only.
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:63: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-1.\"[3]\""' to rerun this test only.
+                let-2
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List ((rec a, List (a|Integer))|Integer)\".subsume.let-2.\"[3]\""' to rerun this test only.
+            "rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))"
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:46: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:43: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-1.\"[]\""' to rerun this test only.
+                let-2
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL (0.02s)
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:39: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-2.\"[]\""' to rerun this test only.
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:63: no ground conversion for List _ <: Integer
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:60: no ground conversion for List _ <: Integer
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-1.\"[]\""' to rerun this test only.
+                let-2
+                  "[]":                                                                                                                                                                                                                                                                                                                               FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:56: no ground conversion for List _ <: Integer
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-2.\"[]\""' to rerun this test only.
+            "rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))"
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:46: no ground conversion for Integer <: List _
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-1.\"[3]\""' to rerun this test only.
+                let-2
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-2.\"[3]\""' to rerun this test only.
+              subsume
+                plain:                                                                                                                                                                                                                                                                                                                                FAIL
+                  test/Test/Language.hs:146:
+                  check: expected success, found error: <input>:1:63: no ground conversion for List _ <: Integer
+                  Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.plain"' to rerun this test only.
+                let-1
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-1.\"[3]\""' to rerun this test only.
+                let-2
+                  "[3]":                                                                                                                                                                                                                                                                                                                              FAIL
+                    test/Test/Language.hs:146:
+                    check: expected success, found error: <input>:1:5: no ground conversion for Integer <: List _
+                    Use -p '$0=="pinafore-language.language.queries.recursive.equivalence.unroll.\"rec a, List (a|Integer) = List (rec a, (List (a|Integer)|Integer))\".subsume.let-2.\"[3]\""' to rerun this test only.

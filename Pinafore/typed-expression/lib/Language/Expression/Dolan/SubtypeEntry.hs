@@ -27,6 +27,7 @@ import Language.Expression.Dolan.SubtypeEntry.Conversion
 import Language.Expression.Dolan.SubtypeEntry.Group
 import Language.Expression.Dolan.SubtypeEntry.Knowledge
 import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -239,8 +240,6 @@ class ( IsDolanSubtypeGroundType ground
            forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv). ground dv gt -> SubtypeGroup ground dv gt
     getSubtypeGroup = singletonSubtypeGroup
     subtypeConversionEntries :: DolanM ground [SubtypeConversionEntry ground]
-    throwNoGroundTypeConversionError :: ground dva gta -> ground dvb gtb -> DolanM ground a
-    throwIncoherentGroundTypeConversionError :: ground dva gta -> ground dvb gtb -> DolanM ground a
 
 subtypeConversionAsGeneralAs ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
@@ -273,15 +272,15 @@ entries_getSubtypeChain ::
        IsDolanSubtypeEntriesGroundType ground
     => ground dva gta
     -> ground dvb gtb
-    -> DolanM ground (SubtypeChain ground dva gta dvb gtb)
+    -> DolanM ground (TypeResult ground (SubtypeChain ground dva gta dvb gtb))
 entries_getSubtypeChain ga gb = do
     entries <- subtypeConversionEntries
     let conversions = getChains entries ga gb
     bestConversions <- bestM (subtypeConversionAsGeneralAs ga gb) conversions
     case bestConversions of
-        [sconv] -> return $ subtypeConversionChain sconv
-        [] -> throwNoGroundTypeConversionError ga gb
-        _ -> throwIncoherentGroundTypeConversionError ga gb
+        [sconv] -> return $ return $ subtypeConversionChain sconv
+        [] -> return $ throw $ NoGroundConvertTypeError ga gb
+        _ -> return $ throw $ IncoherentGroundConvertTypeError ga gb
 
 type SubtypeConversionPair :: GroundTypeKind -> Type
 data SubtypeConversionPair ground =

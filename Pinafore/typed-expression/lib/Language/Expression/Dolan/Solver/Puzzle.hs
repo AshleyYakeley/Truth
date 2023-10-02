@@ -3,11 +3,11 @@ module Language.Expression.Dolan.Solver.Puzzle where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
+import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Solver.AtomicConstraint
-import Language.Expression.Dolan.Solver.FlipType
-import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -18,7 +18,7 @@ data Substitution ground where
            PolarityType polarity
         -> TypeVarT (JoinMeetType polarity nv t)
         -> TypeVarT nv
-        -> UnifierM ground (DolanIsoShimWit ground polarity (JoinMeetType polarity nv t))
+        -> TypeResult ground (DolanIsoShimWit ground polarity (JoinMeetType polarity nv t))
         -> Maybe (DolanType ground (InvertPolarity polarity) t)
         -> Substitution ground
 
@@ -119,7 +119,7 @@ bisubstituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => SolverBisubstitution ground
     -> AtomicConstraint ground a
-    -> UnifierM ground (Puzzle ground a)
+    -> TypeResult ground (Puzzle ground a)
 bisubstituteAtomicConstraint bisub@(MkBisubstitution oldvar _ mwq) (MkAtomicConstraint depvar PositiveType ftw)
     | Just Refl <- testEquality oldvar depvar = do
         MkShimWit tq (MkPolarShim (MkPolyMapT convq)) <- mwq

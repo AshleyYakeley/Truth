@@ -4,16 +4,16 @@ module Language.Expression.Dolan.Solver.Crumble.Subsume
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
 import Language.Expression.Dolan.Solver.Crumble.Type
-import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
-import Language.Expression.Dolan.Solver.UnifierM
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -30,7 +30,7 @@ processPiece (WholePiece constr@MkWholeConstraint {}) =
     MkCrumbler $ do
         pexprs <- lift $ lift $ crumbleConstraint constr
         fmap Compose $
-            forFirst pexprs $ \(MkSolverExpression puzzle expr) -> do
+            forFirst (toList pexprs) $ \(MkSolverExpression puzzle expr) -> do
                 Compose moexpr <- unCrumbler $ processPuzzle puzzle
                 return $ fmap (liftA2 (\ts lt l -> ts $ lt l) (solverExpressionLiftValue expr)) moexpr
 
@@ -46,9 +46,9 @@ substPuzzle ::
     -> SolverM ground (Puzzle ground a)
 substPuzzle (ClosedExpression a) = return $ pure a
 substPuzzle (OpenExpression ac expr) = do
-    (t, subst) <- lift $ getAtomicConstraint ac
+    (t, subst) <- lift $ liftToCrumbleM $ getAtomicConstraint ac
     tell [subst]
-    puzzle <- mapExpressionWitnessesM (\ac' -> lift $ lift $ runUnifierM $ substituteAtomicConstraint subst ac') expr
+    puzzle <- mapExpressionWitnessesM (\ac' -> lift $ liftResultToCrumbleM $ substituteAtomicConstraint subst ac') expr
     return $ fmap (\ta -> ta t) puzzle
 
 completePuzzle ::
@@ -65,18 +65,14 @@ completePuzzle puzzle@(OpenExpression piece _) = do
             return $ expr <*> oexpr
         Nothing ->
             lift $
-            lift $
             case piece of
-                WholePiece (MkWholeConstraint fta ftb) ->
-                    flipToType fta $ \ta -> flipToType ftb $ \tb -> throwTypeConvertError ta tb
+                WholePiece (MkWholeConstraint fta ftb) -> throw $ ConvertTypeError fta ftb
                 AtomicPiece (MkAtomicConstraint var pol ft) ->
                     case pol of
                         PositiveType ->
-                            flipToType ft $ \t ->
-                                throwTypeConvertError t (singleDolanType @ground @'Negative $ VarDolanSingularType var)
+                            throw $ ConvertTypeError ft (NormalFlipType $ singleDolanType $ VarDolanSingularType var)
                         NegativeType ->
-                            flipToType ft $ \t ->
-                                throwTypeConvertError (singleDolanType @ground @'Positive $ VarDolanSingularType var) t
+                            throw $ ConvertTypeError (NormalFlipType $ singleDolanType $ VarDolanSingularType var) ft
 
 solveSubsumePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -87,5 +83,5 @@ solveSubsumePuzzle _ (ClosedExpression a) = return (pure a, [])
 solveSubsumePuzzle rigidity puzzle = let
     ?rigidity = rigidity
     in do
-           (a, substs) <- runWriterT $ completePuzzle puzzle
+           (a, substs) <- runCrumbleM $ runWriterT $ completePuzzle puzzle
            return (a, fmap substBisubstitution substs)

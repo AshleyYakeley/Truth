@@ -2,10 +2,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Solver
-    (
-        -- unifierSubtypeConversionAsGeneralAs,
-      invertType
-    , subtypeSingularType
+    ( subtypeSingularType
     , invertedPolarSubtype
     ) where
 
@@ -14,10 +11,9 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Solver.AtomicSubstitute
-import Language.Expression.Dolan.Solver.FlipType
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.Solver
-import Language.Expression.Dolan.Solver.UnifierM
+import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -42,22 +38,22 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => U
     unifyPosNegWitnesses ta tb = pure $ MkComposeShim $ puzzleExpressionUnify ta tb
     solveUnifier = solvePuzzle
     unifierPosSubstitute bisubs t =
-        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType bisubs t
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runTypeResult $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t =
-        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType bisubs t
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runTypeResult $ bisubstitutesType bisubs t
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SubsumeTypeSystem (DolanTypeSystem ground) where
     type Subsumer (DolanTypeSystem ground) = Puzzle ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [SolverBisubstitution ground]
     usubSubsumer ss subsumer = do
-        subsumer' <- lift $ runUnifierM $ bisubstitutesPuzzle ss subsumer
+        subsumer' <- lift $ runTypeResult $ bisubstitutesPuzzle ss subsumer
         return $ solverExpressionLiftType subsumer'
     solveSubsumer = solvePuzzle
     subsumerPosSubstitute subs t =
-        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType subs t
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runTypeResult $ bisubstitutesType subs t
     subsumerNegSubstitute subs t =
-        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runUnifierM $ bisubstitutesType subs t
+        lift $ fmap (forwardsShimWit @(DolanPolyShim ground)) $ runTypeResult $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = return $ puzzleExpressionUnify tinf tdecl
 
 -- used for simplification, where all vars are fixed
