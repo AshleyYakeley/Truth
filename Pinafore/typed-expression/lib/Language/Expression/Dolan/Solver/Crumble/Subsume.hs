@@ -4,7 +4,6 @@ module Language.Expression.Dolan.Solver.Crumble.Subsume
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
@@ -18,21 +17,22 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type SubsumeCrumbler (ground :: GroundTypeKind)
-     = Crumbler (WholeConstraint ground) (SolverM ground) (Compose Maybe (AtomicPuzzleExpression ground))
+     = Crumbler (WholeConstraint ground) (CrumbleM ground) (AtomicPuzzleExpression ground)
 
 processPiece ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
     => Piece ground a
     -> SubsumeCrumbler ground a
-processPiece (AtomicPiece ac) = crumblerLift $ liftComposeInner $ solverExpressionLiftType $ varExpression ac
+processPiece (AtomicPiece ac) = crumblerLift $ solverExpressionLiftType $ varExpression ac
 processPiece (WholePiece constr@MkWholeConstraint {}) =
     memoise iLazy constr $
     MkCrumbler $ do
-        pexprs <- lift $ lift $ crumbleConstraint constr
-        fmap Compose $
-            forFirst (toList pexprs) $ \(MkSolverExpression puzzle expr) -> do
-                Compose moexpr <- unCrumbler $ processPuzzle puzzle
-                return $ fmap (liftA2 (\ts lt l -> ts $ lt l) (solverExpressionLiftValue expr)) moexpr
+        pexprs <- lift $ crumbleConstraint constr
+        MkWUnlift unlift <- askUnlift
+        lift $
+            forFirstCrumbleM pexprs $ \(MkSolverExpression puzzle expr) -> do
+                oexpr <- unlift $ unCrumbler $ processPuzzle puzzle
+                return $ liftA2 (\ts lt l -> ts $ lt l) (solverExpressionLiftValue expr) oexpr
 
 processPuzzle ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
@@ -56,23 +56,11 @@ completePuzzle ::
     => Puzzle ground a
     -> SolverM ground (DolanOpenExpression ground a)
 completePuzzle (ClosedExpression a) = return $ pure a
-completePuzzle puzzle@(OpenExpression piece _) = do
-    Compose mpexpr <- runCrumbler $ processPuzzle puzzle
-    case mpexpr of
-        Just (MkSolverExpression ap expr) -> do
-            puzzle' <- substPuzzle ap
-            oexpr <- completePuzzle puzzle'
-            return $ expr <*> oexpr
-        Nothing ->
-            lift $
-            case piece of
-                WholePiece (MkWholeConstraint fta ftb) -> throw $ ConvertTypeError fta ftb
-                AtomicPiece (MkAtomicConstraint var pol ft) ->
-                    case pol of
-                        PositiveType ->
-                            throw $ ConvertTypeError ft (NormalFlipType $ singleDolanType $ VarDolanSingularType var)
-                        NegativeType ->
-                            throw $ ConvertTypeError (NormalFlipType $ singleDolanType $ VarDolanSingularType var) ft
+completePuzzle puzzle = do
+    MkSolverExpression ap expr <- lift $ runCrumbler $ processPuzzle puzzle
+    puzzle' <- substPuzzle ap
+    oexpr <- completePuzzle puzzle'
+    return $ expr <*> oexpr
 
 solveSubsumePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

@@ -604,7 +604,7 @@ testEntity =
                           ]
                     , tGroup
                           "models"
-                          [ subtypeTest False SRSingle "ListModel a" "WholeModel (List a)"
+                          [ tModify testNoMark $ subtypeTest False SRSingle "ListModel a" "WholeModel (List a)"
                           , subtypeTest False SRSingle "ListModel Integer" "WholeModel (List Integer)"
                           , subtypeTest False SRSingle "ListModel Integer" "WholeModel {-List Integer,+List Integer}"
                           , subtypeTest

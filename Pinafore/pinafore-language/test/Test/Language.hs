@@ -701,7 +701,7 @@ testQueries =
                            , testSubtype False "List None" "rec a, (Maybe a | List a)" ["[]"]
                            , testSubtype False "Maybe None | List None" "rec a, (Maybe a | List a)" ["[]", "Nothing"]
                            , testSubtype False "Maybe None" "(rec a, Maybe a) | (rec b, List b)" ["Nothing"]
-                           , testSubtype False "List None" "(rec a, Maybe a) | (rec b, List b)" ["[]"]
+                           , testMark $ testSubtype False "List None" "(rec a, Maybe a) | (rec b, List b)" ["[]"]
                            , testSubtype
                                  False
                                  "(rec a, Maybe a) | (rec b, List b)"

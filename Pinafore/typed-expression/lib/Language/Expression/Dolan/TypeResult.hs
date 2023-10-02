@@ -22,8 +22,18 @@ data TypeError ground where
         -> FlipType ground 'Negative tb
         -> TypeError ground
 
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (TypeError ground) where
+    show (UninvertibleTypeError _) = "uninvertible"
+    show (NoGroundConvertTypeError _ _) = "no ground conversion"
+    show (IncoherentGroundConvertTypeError _ _) = "incoherent ground conversions"
+    show (ConvertTypeError _ _) = "no conversion"
+
 type TypeResult :: GroundTypeKind -> Type -> Type
 type TypeResult ground = Result (TypeError ground)
+
+joinFirstResult :: Result err a -> Result err a -> Result err a
+joinFirstResult (FailureResult _) r = r
+joinFirstResult (SuccessResult a) _ = SuccessResult a
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
              MonadThrow (TypeError ground) (TypeResult ground) where
@@ -44,6 +54,11 @@ deriving newtype instance
 deriving newtype instance
          forall (ground :: GroundTypeKind) . IsDolanGroundType ground =>
                                              Monad (CrumbleM ground)
+
+deriving newtype instance
+         forall (ground :: GroundTypeKind) . (IsDolanGroundType ground,
+                                              MonadException (DolanM ground)) =>
+                                             MonadException (CrumbleM ground)
 
 deriving newtype instance
          forall (ground :: GroundTypeKind) . (IsDolanGroundType ground,
@@ -72,3 +87,25 @@ crumbleMGetResult ::
     => CrumbleM ground a
     -> CrumbleM ground (TypeResult ground a)
 crumbleMGetResult ca = liftToCrumbleM $ runCrumbleMResult ca
+
+joinFirstCrumbleM ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => CrumbleM ground a
+    -> CrumbleM ground a
+    -> CrumbleM ground a
+joinFirstCrumbleM (MkCrumbleM (MkComposeInner ma)) (MkCrumbleM (MkComposeInner mb)) =
+    MkCrumbleM $ MkComposeInner $ liftA2 joinFirstResult ma mb
+
+firstCrumbleM ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => NonEmpty (CrumbleM ground a)
+    -> CrumbleM ground a
+firstCrumbleM (ca :| []) = ca
+firstCrumbleM (ca :| (b:bb)) = joinFirstCrumbleM ca $ firstCrumbleM $ b :| bb
+
+forFirstCrumbleM ::
+       forall (ground :: GroundTypeKind) a b. IsDolanGroundType ground
+    => NonEmpty a
+    -> (a -> CrumbleM ground b)
+    -> CrumbleM ground b
+forFirstCrumbleM l f = firstCrumbleM $ fmap f l

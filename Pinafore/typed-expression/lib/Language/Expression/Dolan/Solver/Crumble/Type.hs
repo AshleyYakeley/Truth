@@ -22,10 +22,10 @@ newtype TypeCrumbler (ground :: GroundTypeKind) a = MkTypeCrumbler
     { unTypeCrumbler :: ReaderT (TypeError ground) (CrumbleM ground) (NonEmpty (PuzzleExpression ground a))
     }
 
-joinResults :: Result err (NonEmpty a) -> Result err (NonEmpty a) -> Result err (NonEmpty a)
-joinResults (FailureResult _) r = r
-joinResults r (FailureResult _) = r
-joinResults (SuccessResult a) (SuccessResult b) = SuccessResult $ a <> b
+concatResults :: Result err (NonEmpty a) -> Result err (NonEmpty a) -> Result err (NonEmpty a)
+concatResults (FailureResult _) r = r
+concatResults r (FailureResult _) = r
+concatResults (SuccessResult a) (SuccessResult b) = SuccessResult $ a <> b
 
 instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, Functor (DolanM ground)) =>
              Functor (TypeCrumbler ground) where
@@ -43,7 +43,8 @@ instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, Monad (Do
         MkTypeCrumbler $
         ReaderT $ \r ->
             MkCrumbleM $
-            MkComposeInner $ liftA2 joinResults (unComposeInner $ unCrumbleM $ p r) (unComposeInner $ unCrumbleM $ q r)
+            MkComposeInner $
+            liftA2 concatResults (unComposeInner $ unCrumbleM $ p r) (unComposeInner $ unCrumbleM $ q r)
 
 instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, Monad (DolanM ground)) =>
              WrappedApplicative (TypeCrumbler ground) where
