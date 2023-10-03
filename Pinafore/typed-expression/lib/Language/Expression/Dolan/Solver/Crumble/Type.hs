@@ -9,6 +9,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Solver.AtomicConstraint
+import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
@@ -41,10 +42,7 @@ instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, Monad (Do
     empty = MkTypeCrumbler $ ReaderT throw
     MkTypeCrumbler (ReaderT p) <|> MkTypeCrumbler (ReaderT q) =
         MkTypeCrumbler $
-        ReaderT $ \r ->
-            MkCrumbleM $
-            MkComposeInner $
-            liftA2 concatResults (unComposeInner $ unCrumbleM $ p r) (unComposeInner $ unCrumbleM $ q r)
+        ReaderT $ \r -> liftFullToCrumbleMWithUnlift $ \unlift -> liftA2 concatResults (unlift $ p r) (unlift $ q r)
 
 instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, Monad (DolanM ground)) =>
              WrappedApplicative (TypeCrumbler ground) where
@@ -384,11 +382,14 @@ crumbleWholeConstraint (MkWholeConstraint (InvertFlipType ta) (NormalFlipType tb
 crumbleWholeConstraint (MkWholeConstraint (InvertFlipType ta) (InvertFlipType tb)) = crumbleTT ta tb
 
 crumbleConstraint ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
     => WholeConstraint ground a
     -> CrumbleM ground (NonEmpty (PuzzleExpression ground a))
-crumbleConstraint constr@(MkWholeConstraint fta ftb) =
-    runReaderT (unTypeCrumbler $ crumbleWholeConstraint constr) $ ConvertTypeError fta ftb
+crumbleConstraint constr@(MkWholeConstraint fta ftb) = do
+    rigidity <- crumbleMRigidity
+    let
+        ?rigidity = rigidity
+        in runReaderT (unTypeCrumbler $ crumbleWholeConstraint constr) $ ConvertTypeError fta ftb
 
 checkCrumbleArguments ::
        forall (ground :: GroundTypeKind) pola polb dv gt ta tb.
@@ -399,13 +400,11 @@ checkCrumbleArguments ::
     -> DolanTypeCheckM ground Bool
 checkCrumbleArguments dvm argsa argsb = do
     rigidity <- renamerGetNameRigidity
-    let
-        ?rigidity = rigidity
-        in do
-               rpexprs <-
-                   runCrumbleMResult $
-                   runReaderT (unTypeCrumbler $ crumbleDolanArguments dvm argsa argsb) $ error "bad type crumble"
-               return $
-                   case rpexprs of
-                       SuccessResult _ -> True
-                       FailureResult _ -> False
+    rpexprs <-
+        runCrumbleMResult rigidity $ let
+            ?rigidity = rigidity
+            in runReaderT (unTypeCrumbler $ crumbleDolanArguments dvm argsa argsb) $ error "bad type crumble"
+    return $
+        case rpexprs of
+            SuccessResult _ -> True
+            FailureResult _ -> False

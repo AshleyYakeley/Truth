@@ -18,6 +18,7 @@ import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Solver.AtomicConstraint
+import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype

@@ -83,6 +83,7 @@ library:
       - Language.Expression.Dolan.Invert
       - Language.Expression.Dolan.TypeResult
       - Language.Expression.Dolan.FlipType
+      - Language.Expression.Dolan.Solver.CrumbleM
       - Language.Expression.Dolan.Solver.AtomicConstraint
       - Language.Expression.Dolan.Solver.WholeConstraint
       - Language.Expression.Dolan.Solver.Puzzle

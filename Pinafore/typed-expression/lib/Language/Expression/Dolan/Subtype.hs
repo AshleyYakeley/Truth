@@ -3,6 +3,7 @@ module Language.Expression.Dolan.Subtype where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Rename
+import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -97,10 +98,11 @@ runTypeResult (FailureResult err) = throwTypeError err
 
 runCrumbleM ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => CrumbleM ground a
+    => (String -> NameRigidity)
+    -> CrumbleM ground a
     -> DolanTypeCheckM ground a
-runCrumbleM cra = do
-    rea <- runCrumbleMResult cra
+runCrumbleM rigidity cra = do
+    rea <- runCrumbleMResult rigidity cra
     lift $ runTypeResult rea
 
 getSubtypeChainRenamed ::
@@ -110,7 +112,6 @@ getSubtypeChainRenamed ::
     -> ground dvb gtb
     -> CrumbleM ground (SubtypeChain ground dva gta dvb gtb)
 getSubtypeChainRenamed ga gb =
-    MkCrumbleM $
-    MkComposeInner $ do
+    liftFullToCrumbleMWithUnlift $ \_ -> do
         rchain <- lift $ getSubtypeChain ga gb
         for rchain $ unEndoM (renameType @(DolanTypeSystem ground) [] FreeName)

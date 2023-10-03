@@ -7,6 +7,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
 import Language.Expression.Dolan.Solver.Crumble.Type
+import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
@@ -19,7 +20,7 @@ type UnifyCrumbler (ground :: GroundTypeKind)
      = Crumbler (WholeConstraint ground) (SolverM ground) (DolanOpenExpression ground)
 
 solvePiece ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
     => Piece ground a
     -> SolverM ground (PuzzleExpression ground a)
 solvePiece (WholePiece constr) =
@@ -45,7 +46,7 @@ substituteEachMemo substs = let
            return $ MkShimWit wc' $ isoForwards conv
 
 processPiece ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
     => Piece ground a
     -> UnifyCrumbler ground a
 processPiece piece =
@@ -55,7 +56,7 @@ processPiece piece =
         return $ liftA2 (\ta lt l -> ta $ lt l) rexpr oexpr
 
 processRest ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
     => [Substitution ground]
     -> Puzzle ground a
     -> UnifyCrumbler ground a
@@ -74,7 +75,7 @@ strict :: Bool
 strict = True
 
 processPieceAndRest ::
-       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground)
     => Piece ground a
     -> Puzzle ground (a -> b)
     -> UnifyCrumbler ground b
@@ -90,7 +91,7 @@ processPieceAndRest piece puzzlerest =
                 return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
 
 processPuzzle ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground, ?rigidity :: String -> NameRigidity)
+       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
     => Puzzle ground a
     -> UnifyCrumbler ground a
 processPuzzle (ClosedExpression a) = pure a
@@ -112,11 +113,8 @@ processPuzzle (OpenExpression piece puzzlerest) = processPieceAndRest piece puzz
 
 solveUnifyPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => (String -> NameRigidity)
-    -> Puzzle ground a
-    -> DolanTypeCheckM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
-solveUnifyPuzzle rigidity puzzle = let
-    ?rigidity = rigidity
-    in do
-           (a, substs) <- runCrumbleM $ runWriterT $ runCrumbler $ processPuzzle puzzle
-           return (a, fmap substBisubstitution substs)
+    => Puzzle ground a
+    -> CrumbleM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
+solveUnifyPuzzle puzzle = do
+    (a, substs) <- runWriterT $ runCrumbler $ processPuzzle puzzle
+    return (a, fmap substBisubstitution substs)

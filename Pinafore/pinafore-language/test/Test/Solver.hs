@@ -301,8 +301,7 @@ testSolver =
                              [ subsumeTest "fst" "Integer" "Integer | Text" []
                              , subsumeTest "snd" "Text" "Integer | Text" []
                              ]
-                       , testNoMark $
-                         testTree
+                       , testTree
                              "recursive"
                              [ subsumeTest "fst" "Maybe None" "(rec a, Maybe a) | (rec b, List b)" []
                              , subsumeTest "snd" "List None" "(rec a, Maybe a) | (rec b, List b)" []

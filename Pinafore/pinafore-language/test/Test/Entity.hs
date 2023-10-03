@@ -612,7 +612,8 @@ testEntity =
                                 SRSingle
                                 "ListModel {-(a & Integer),+(a | Integer)}"
                                 "WholeModel (List Integer)"
-                          , subtypeTest
+                          , tModify testMark $
+                            subtypeTest
                                 True
                                 SRSingle
                                 "ListModel {-(a & Entity),+(a | Integer)}"
