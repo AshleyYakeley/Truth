@@ -336,4 +336,22 @@ testUnifier =
                 testExpectSuccess
                     "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
               ]
+        , testTree
+              "recursive-shims"
+              [ testMark $
+                testTree "rs1" $
+                runTester defaultTester $ do
+                    tval :: [Integer] <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "let\n" <>
+                                "let rec fromRec = match Nothing => []; Just (t,tt) => t :: fromRec tt end end;\n" <>
+                                "in fromRec $ Just (5,Just (3,Nothing))"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    if tval == [5, 3]
+                        then return ()
+                        else fail "different"
+              ]
         ]
