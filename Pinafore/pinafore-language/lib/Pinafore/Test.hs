@@ -42,6 +42,9 @@ module Pinafore.Test
     , makeTestInvocationInfo
     , TesterOptions(..)
     , defaultTester
+    , addTesterLibrary
+    , SomeValue(..)
+    , bindsLibrary
     , Tester
     , runTester
     , testerLiftView
@@ -54,15 +57,14 @@ module Pinafore.Test
 
 import Changes.Core
 import Pinafore
+import Pinafore.Language.API
 import Pinafore.Language.DefDoc
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
 import Pinafore.Language.Grammar.Interpret.Interact
 import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Shim
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 import Pinafore.Language.VarID
 import Shapes
 
@@ -116,6 +118,18 @@ defaultTester = let
     tstFetchModule = mempty
     tstOutput = stdout
     in MkTesterOptions {..}
+
+addTesterLibrary :: LibraryModule () -> TesterOptions -> TesterOptions
+addTesterLibrary lm topts = topts {tstFetchModule = tstFetchModule topts <> libraryFetchModule [lm]}
+
+data SomeValue =
+    forall t. HasQType 'Positive t => MkSomeValue t
+
+bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule ()
+bindsLibrary mname binds =
+    MkLibraryModule mname $
+    MkTree (MkBindDoc Nothing $ MkDefDoc (HeadingDocItem "") "") $
+    mconcat $ fmap (\(name, MkSomeValue val) -> valBDS (fullNameRef name) "" val) binds
 
 data TesterContext = MkTesterContext
     { tcInvocationInfo :: InvocationInfo

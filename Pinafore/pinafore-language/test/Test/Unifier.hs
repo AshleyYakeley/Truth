@@ -338,20 +338,39 @@ testUnifier =
               ]
         , testTree
               "recursive-shims"
-              [ testMark $
-                testTree "rs1" $
+              [ testTree "rs1" $
                 runTester defaultTester $ do
                     tval :: [Integer] <-
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "let\n" <>
-                                "let rec fromRec = match Nothing => []; Just (t,tt) => t :: fromRec tt end end;\n" <>
+                                "let rec\n" <>
+                                "fromRec = match Nothing => []; Just (t,tt) => t :: fromRec tt end;\n" <>
                                 "in fromRec $ Just (5,Just (3,Nothing))"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     if tval == [5, 3]
                         then return ()
                         else fail "different"
+              , testMark $
+                testTree "rs2" $ let
+                    f :: (A -> [Integer]) -> Maybe (Integer, A) -> [Integer]
+                    f r =
+                        \case
+                            Nothing -> []
+                            Just (t, tt) -> t : r tt
+                    lib = bindsLibrary "test" [("f", MkSomeValue f)]
+                    in runTester (addTesterLibrary lib defaultTester) $ do
+                           tval :: [Integer] <-
+                               testerLiftInterpreter $ do
+                                   expr <-
+                                       parseTopExpression $
+                                       "import \"test\" in let rec\n" <>
+                                       "fromRec = f fromRec;\n" <> "in fromRec $ Just (5,Just (3,Nothing))"
+                                   val <- qEvalExpr expr
+                                   qUnifyValue val
+                           if tval == [5, 3]
+                               then return ()
+                               else fail "different"
               ]
         ]
