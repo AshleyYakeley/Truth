@@ -45,6 +45,24 @@ substituteEachMemo substs = let
            MkShimWit wc' conv <- lift $ liftResultToCrumbleM $ bisubstitutesWholeConstraintShim bisubs $ mkShimWit wc
            return $ MkShimWit wc' $ isoForwards conv
 
+isWholePiece ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => Piece ground a
+    -> Bool
+isWholePiece (WholePiece _) = True
+isWholePiece (AtomicPiece _) = False
+
+sortUnifyINTERNAL :: Bool
+sortUnifyINTERNAL = True
+
+sortPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => Puzzle ground a
+    -> Puzzle ground a
+sortPuzzle puzzle
+    | sortUnifyINTERNAL = partitionExpression isWholePiece puzzle (<*>)
+sortPuzzle puzzle = puzzle
+
 processPiece ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
     => Piece ground a
@@ -52,7 +70,7 @@ processPiece ::
 processPiece piece =
     MkCrumbler $ do
         MkSolverExpression conspuzzle rexpr <- lift $ solvePiece piece
-        oexpr <- unCrumbler $ processPuzzle conspuzzle
+        oexpr <- unCrumbler $ processPuzzle $ sortPuzzle conspuzzle
         return $ liftA2 (\ta lt l -> ta $ lt l) rexpr oexpr
 
 processRest ::
