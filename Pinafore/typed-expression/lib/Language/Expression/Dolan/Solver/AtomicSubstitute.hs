@@ -81,8 +81,8 @@ isoRetractPolyPolar1 =
         NegativeType -> MkPolarShim $ MkPolyMapT isoRetractMeet1
 
 -- | For debugging.
-genNewName :: Bool
-genNewName = False
+genNewNameINTERNAL :: Bool
+genNewNameINTERNAL = False
 
 getAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -91,7 +91,7 @@ getAtomicConstraint ::
 getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt)) =
     withRepresentative pol $ do
         MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
-            if genNewName
+            if genNewNameINTERNAL
                 then renamerGenerateFreeUVar
                 else return $ MkSomeTypeVarT oldvar
         withInvertPolarity @polarity $

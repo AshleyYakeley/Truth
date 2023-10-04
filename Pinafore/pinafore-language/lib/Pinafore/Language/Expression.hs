@@ -171,6 +171,11 @@ qUnifyValue ::
     -> QInterpreter t
 qUnifyValue = tsUnifyValue @QTypeSystem
 
+qExactValue :: QType 'Positive t -> QValue -> Maybe t
+qExactValue wt (MkSomeOf (MkShimWit wt' (MkPolarShim conv)) v) = do
+    Refl <- testEquality wt wt'
+    return $ shimToFunction conv v
+
 qUnifyF :: forall f. (forall t. QShimWit 'Negative t -> QShimWit 'Negative (f t)) -> QValue -> QInterpreter (QValueF f)
 qUnifyF = tsUnifyF @QTypeSystem
 

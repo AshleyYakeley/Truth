@@ -42,8 +42,8 @@ defaultSimplifierSettings =
         , simplifyRollUpRecursiveTypes = True
         }
 
-simplifierSettings :: SimplifierSettings
-simplifierSettings = defaultSimplifierSettings
+simplifierSettingsINTERNAL :: SimplifierSettings
+simplifierSettingsINTERNAL = defaultSimplifierSettings
 
 -- Simplification:
 --
@@ -77,7 +77,7 @@ dolanSimplifyTypes ::
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
     => EndoM (DolanTypeCheckM ground) a
 dolanSimplifyTypes =
-    case simplifierSettings of
+    case simplifierSettingsINTERNAL of
         MkSimplifierSettings {..} ->
             mif simplifyAny $
             mconcat

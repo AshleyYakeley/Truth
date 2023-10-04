@@ -71,8 +71,8 @@ monoReaderHoist ::
     -> (ReaderT r ma a -> ReaderT r mb b)
 monoReaderHoist mm (ReaderT rma) = ReaderT $ \r -> mm $ rma r
 
-strict :: Bool
-strict = True
+strictUnifyINTERNAL :: Bool
+strictUnifyINTERNAL = True
 
 processPieceAndRest ::
        forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground)
@@ -96,7 +96,7 @@ processPuzzle ::
     -> UnifyCrumbler ground a
 processPuzzle (ClosedExpression a) = pure a
 processPuzzle (OpenExpression piece puzzlerest)
-    | strict =
+    | strictUnifyINTERNAL =
         MkCrumbler $ do
             (aexpr, substs) <-
                 monoReaderHoist listen $

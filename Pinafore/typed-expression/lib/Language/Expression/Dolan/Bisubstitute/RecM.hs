@@ -37,8 +37,8 @@ runRecM :: forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a. RecM gro
 runRecM ra = evalState ra mempty
 
 -- Turning this off will make recursive substitution much slower
-doMemoise :: Bool
-doMemoise = True
+doMemoiseINTERNAL :: Bool
+doMemoiseINTERNAL = True
 
 memoiseRecM ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) tv polarity a.
@@ -48,7 +48,7 @@ memoiseRecM ::
     -> RecM ground pshim (FuncShimWit (DolanSingularType ground polarity) (PolarShim (pshim Type) polarity) tv a)
     -> RecM ground pshim (FuncShimWit (DolanSingularType ground polarity) (PolarShim (pshim Type) polarity) tv a)
 memoiseRecM var t getval
-    | doMemoise = do
+    | doMemoiseINTERNAL = do
         let key = MkRecMemoKey var (polarityType @polarity) t
         memos <- get
         case witnessMapForLookup key memos of
