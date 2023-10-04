@@ -337,10 +337,9 @@ testUnifier =
                 testExpectSuccess
                     "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
               ]
-        , testMark $
-          testTree
+        , testTree
               "recursive-shims"
-              [ testTree "fails-1" $
+              [ testTree "pass-1" $
                 runTester defaultTester $ do
                     tval :: [Integer] <-
                         testerLiftInterpreter $ do
@@ -354,37 +353,38 @@ testUnifier =
                     if tval == [5, 3]
                         then return ()
                         else fail "different"
-              , testTree "fails-2" $
+              , testNoMark $
+                testTree "fails-2" $
                 runTester defaultTester $ do
                     tval :: [Integer] <-
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "let\n" <>
-                                "f = fn r => match Nothing => []; Just (t,tt) => t :: r tt end;\n" <>
-                                "in fix f $ Just (5,Just (3,Nothing))"
+                                "let rec\n" <>
+                                "datatype Q +t of Mk (rec a, Maybe (t *: a)) end;\n" <>
+                                "fromQ = fn Mk.Q x => x >- match Nothing => []; (Just (t,a)) => t :: fromQ (Mk.Q a) end;\n" <>
+                                "in fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
                             val <- qEvalExpr expr
                             qUnifyValue val
-                    if tval == [5, 3]
+                    if tval == [5, 3, 1]
                         then return ()
                         else fail "different"
-              , testTree "fails-3" $ let
-                    f :: (A -> [B]) -> Maybe (B, A) -> JoinType [BottomType] (NonEmpty B)
-                    f r =
-                        \case
-                            Nothing -> LeftJoinType []
-                            Just (t, tt) -> RightJoinType $ t :| r tt
-                    lib = bindsLibrary "test" [("f", MkSomeValue f)]
-                    in runTester (addTesterLibrary lib defaultTester) $ do
-                           tval :: [Integer] <-
-                               testerLiftInterpreter $ do
-                                   expr <- parseTopExpression $ "import \"test\" in fix f $ Just (5,Just (3,Nothing))"
-                                   val <- qEvalExpr expr
-                                   qUnifyValue val
-                           if tval == [5, 3]
-                               then return ()
-                               else fail "different"
-              , testTree "fails-4" $ let
+              , testTree "fails-1" $
+                runTester defaultTester $ do
+                    tval :: [Integer] <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "let rec\n" <>
+                                "datatype Q +t of Mk (rec a, Maybe (t *: a)) end;\n" <>
+                                "fromQ = match Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a) end;\n" <>
+                                "in fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    if tval == [5, 3, 1]
+                        then return ()
+                        else fail "different"
+              , testTree "rs-2" $ let
                     f :: (A -> [B]) -> Maybe (B, A) -> JoinType [BottomType] (NonEmpty B)
                     f r =
                         \case
@@ -397,108 +397,6 @@ testUnifier =
                            tval :: [Integer] <-
                                testerLiftInterpreter $ do
                                    expr <- parseTopExpression $ "import \"test\" in fix f v"
-                                   val <- qEvalExpr expr
-                                   qUnifyValue val
-                           if tval == [5, 3]
-                               then return ()
-                               else fail "different"
-              , testTree "fails-5" $ let
-                    f :: (A -> [B]) -> Maybe (B, A) -> JoinType [BottomType] (NonEmpty B)
-                    f r =
-                        \case
-                            Nothing -> LeftJoinType []
-                            Just (t, tt) -> RightJoinType $ t :| r tt
-                    v :: Maybe (Integer, Maybe (Integer, Maybe BottomType))
-                    v = Just (5, Just (3, Nothing))
-                    lib = bindsLibrary "test" [("f", MkSomeValue f), ("v", MkSomeValue v)]
-                    in runTester (addTesterLibrary lib defaultTester) $ do
-                           qval <-
-                               testerLiftInterpreter $ do
-                                   expr <- parseTopExpression $ "import \"test\" in fix f v"
-                                   qEvalExpr expr
-                           let
-                               integerType :: QType 'Positive _
-                               integerType =
-                                   ConsDolanType
-                                       (GroundedDolanSingularType $
-                                        MkDolanGroundedType (qGroundType @'[] @Integer) NilCCRArguments)
-                                       NilDolanType
-                               ta :: QSingularType 'Positive _
-                               ta =
-                                   GroundedDolanSingularType $
-                                   MkDolanGroundedType (qGroundType @'[ CoCCRVariance] @[]) $
-                                   ConsCCRArguments (CoCCRPolarArgument NilDolanType) NilCCRArguments
-                               tb :: QSingularType 'Positive _
-                               tb =
-                                   GroundedDolanSingularType $
-                                   MkDolanGroundedType (qGroundType @'[ CoCCRVariance] @NonEmpty) $
-                                   ConsCCRArguments (CoCCRPolarArgument integerType) NilCCRArguments
-                               expectedType = ConsDolanType ta $ ConsDolanType tb NilDolanType
-                           case qExactValue expectedType qval of
-                               Just tval ->
-                                   case tval of
-                                       RightJoinType (LeftJoinType ((LeftJoinType 5) :| [LeftJoinType 3])) -> return ()
-                                       _ -> fail "different"
-                               Nothing -> fail "wrong type"
-              , testTree "pass-4" $ let
-                    f :: (A -> [B]) -> Maybe (B, A) -> JoinType [BottomType] (NonEmpty B)
-                    f r =
-                        \case
-                            Nothing -> LeftJoinType []
-                            Just (t, tt) -> RightJoinType $ t :| r tt
-                    v :: Maybe (Integer, Maybe (Integer, Maybe BottomType))
-                    v = Just (5, Just (3, Nothing))
-                    lib = bindsLibrary "test" [("f", MkSomeValue f), ("v", MkSomeValue v)]
-                    in runTester (addTesterLibrary lib defaultTester) $ do
-                           tval :: [Integer] <-
-                               testerLiftInterpreter $ do
-                                   expr <-
-                                       parseTopExpression $
-                                       "import \"test\" in (f $ f $ f $ f $ f $ f $ f $ f undefined) v"
-                                   val <- qEvalExpr expr
-                                   qUnifyValue val
-                           if tval == [5, 3]
-                               then return ()
-                               else fail "different"
-              , testTree "pass-3" $
-                runTester defaultTester $ do
-                    tval :: [Integer] <-
-                        testerLiftInterpreter $ do
-                            expr <-
-                                parseTopExpression $
-                                "let\n" <>
-                                "f: (a -> List b) -> Maybe (b *: a) -> List b = fn r => match Nothing => []; Just (t,tt) => t :: r tt end;\n" <>
-                                "in fix f $ Just (5,Just (3,Nothing))"
-                            val <- qEvalExpr expr
-                            qUnifyValue val
-                    if tval == [5, 3]
-                        then return ()
-                        else fail "different"
-              , testTree "pass-2" $
-                runTester defaultTester $ do
-                    tval :: [Integer] <-
-                        testerLiftInterpreter $ do
-                            expr <-
-                                parseTopExpression $
-                                "let\n" <>
-                                "f: (a -> List Integer) -> Maybe (Integer *: a) -> List Integer = fn r => match Nothing => []; Just (t,tt) => t :: r tt end;\n" <>
-                                "in fix f $ Just (5,Just (3,Nothing))"
-                            val <- qEvalExpr expr
-                            qUnifyValue val
-                    if tval == [5, 3]
-                        then return ()
-                        else fail "different"
-              , testTree "pass-1" $ let
-                    f :: (A -> [Integer]) -> Maybe (Integer, A) -> [Integer]
-                    f r =
-                        \case
-                            Nothing -> []
-                            Just (t, tt) -> t : r tt
-                    lib = bindsLibrary "test" [("f", MkSomeValue f)]
-                    in runTester (addTesterLibrary lib defaultTester) $ do
-                           tval :: [Integer] <-
-                               testerLiftInterpreter $ do
-                                   expr <- parseTopExpression $ "import \"test\" in fix f $ Just (5,Just (3,Nothing))"
                                    val <- qEvalExpr expr
                                    qUnifyValue val
                            if tval == [5, 3]

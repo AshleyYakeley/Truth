@@ -385,7 +385,7 @@ testType =
                                    , recTest "None -> Text" "a -> a" "(a & Text.) -> a"
                                    , fixTest "Text -> Text" "a -> a" "Text. -> Text."
                                    , recTest "Text -> Text" "a -> a" "Text. -> Text."
-                                   , fixTest "Maybe a -> Maybe a" "a -> a" "Any -> (rec a, Maybe. a)"
+                                   , testMark $ fixTest "Maybe a -> Maybe a" "a -> a" "Any -> (rec a, Maybe. a)"
                                    , recTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a) -> None"
                                    , fixTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
                                    , recTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
