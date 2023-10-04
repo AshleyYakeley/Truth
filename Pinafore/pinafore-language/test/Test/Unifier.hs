@@ -337,7 +337,8 @@ testUnifier =
                 testExpectSuccess
                     "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
               ]
-        , testTree
+        , testMark $
+          testTree
               "recursive-shims"
               [ testTree "fails-1" $
                 runTester defaultTester $ do
@@ -401,8 +402,7 @@ testUnifier =
                            if tval == [5, 3]
                                then return ()
                                else fail "different"
-              , testMark $
-                testTree "fails-5" $ let
+              , testTree "fails-5" $ let
                     f :: (A -> [B]) -> Maybe (B, A) -> JoinType [BottomType] (NonEmpty B)
                     f r =
                         \case

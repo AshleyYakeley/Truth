@@ -135,9 +135,11 @@ bisubstituteAtomicConstraint _ ac
 bisubstituteAtomicConstraint bisub (MkAtomicConstraint depvar PositiveType (NormalFlipType tw)) = do
     MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- bisubstituteType bisub tw
     return $
-        fmap (\pv -> pv . isoForwards conv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
+        fmap (\pv -> iMeetL1 . pv . isoForwards conv) $
+        flipUnifyPuzzle (NormalFlipType tp) (NormalFlipType $ singleDolanType $ VarDolanSingularType depvar)
 bisubstituteAtomicConstraint bisub (MkAtomicConstraint depvar NegativeType (NormalFlipType tw)) = do
     MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- bisubstituteType bisub tw
     return $
-        fmap (\pv -> isoForwards conv . pv) $ atomicConstraintPuzzle $ mkAtomicConstraint depvar $ NormalFlipType tp
+        fmap (\pv -> isoForwards conv . pv . iJoinR1) $
+        flipUnifyPuzzle (NormalFlipType $ singleDolanType $ VarDolanSingularType depvar) (NormalFlipType tp)
 bisubstituteAtomicConstraint _ ac = return $ atomicConstraintPuzzle ac
