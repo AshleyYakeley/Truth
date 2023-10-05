@@ -6,6 +6,7 @@ import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Simplify.AutomateRecursion
 import Language.Expression.Dolan.Solver.AtomicConstraint
+import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
@@ -64,13 +65,14 @@ type Puzzle ground = Expression (Piece ground)
 wholeConstraintPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => WholeConstraint ground a
-    -> Puzzle ground a
-wholeConstraintPuzzle (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb)) =
-    case (automateRecursionInType ta, automateRecursionInType tb) of
-        (MkPosShimWit ta' conva, MkNegShimWit tb' convb) ->
-            fmap (\conv -> convb . conv . conva) $
-            varExpression $ WholePiece $ MkWholeConstraint (NormalFlipType ta') (NormalFlipType tb')
-wholeConstraintPuzzle constr = varExpression $ WholePiece constr
+    -> DolanTypeCheckM ground (Puzzle ground a)
+wholeConstraintPuzzle (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb)) = do
+    MkShimWit ta' (MkPolarShim conva) <- automateRecursionInType ta
+    MkShimWit tb' (MkPolarShim convb) <- automateRecursionInType tb
+    return $
+        fmap (\conv -> convb . conv . conva) $
+        varExpression $ WholePiece $ MkWholeConstraint (NormalFlipType ta') (NormalFlipType tb')
+wholeConstraintPuzzle constr = return $ varExpression $ WholePiece constr
 
 atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint ground a -> Puzzle ground a
 atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
@@ -79,7 +81,7 @@ flipUnifyPuzzle ::
        forall (ground :: GroundTypeKind) a b. IsDolanGroundType ground
     => FlipType ground 'Positive a
     -> FlipType ground 'Negative b
-    -> Puzzle ground (DolanShim ground a b)
+    -> DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
 flipUnifyPuzzle fta ftb = wholeConstraintPuzzle $ MkWholeConstraint fta ftb
 
 puzzleUnify ::
@@ -87,7 +89,7 @@ puzzleUnify ::
        (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola a
     -> DolanType ground polb b
-    -> Puzzle ground (DolanShim ground a b)
+    -> DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
 puzzleUnify ta tb = let
     fta =
         case polarityType @pola of
@@ -113,44 +115,48 @@ puzzleExpressionUnify ::
        (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola a
     -> DolanType ground polb b
-    -> PuzzleExpression ground (DolanShim ground a b)
-puzzleExpressionUnify ta tb = puzzleExpression $ puzzleUnify ta tb
+    -> DolanTypeCheckM ground (PuzzleExpression ground (DolanShim ground a b))
+puzzleExpressionUnify ta tb = fmap puzzleExpression $ puzzleUnify ta tb
 
 puzzleUnifySingular ::
        forall (ground :: GroundTypeKind) pola polb a b.
        (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanSingularType ground pola a
     -> DolanSingularType ground polb b
-    -> Puzzle ground (DolanShim ground a b)
+    -> DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
 puzzleUnifySingular ta tb =
-    fmap (\conv -> iJoinMeetL1 @_ @polb . conv . iJoinMeetR1 @_ @pola) $
+    fmap (fmap (\conv -> iJoinMeetL1 @_ @polb . conv . iJoinMeetR1 @_ @pola)) $
     puzzleUnify (singleDolanType ta) (singleDolanType tb)
 
 bisubstituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => SolverBisubstitution ground
     -> AtomicConstraint ground a
-    -> TypeResult ground (Puzzle ground a)
+    -> CrumbleM ground (Puzzle ground a)
 bisubstituteAtomicConstraint bisub@(MkBisubstitution oldvar _ mwq) (MkAtomicConstraint depvar PositiveType ftw)
     | Just Refl <- testEquality oldvar depvar = do
-        MkShimWit tq (MkPolarShim (MkPolyMapT convq)) <- mwq
-        MkShimWit ftw' (MkPolarShim (MkPolyMapT convw)) <- bisubstituteFlipType bisub ftw
-        return $ fmap (\conv -> isoForwards convq . conv . isoForwards convw) $ flipUnifyPuzzle ftw' (NormalFlipType tq)
+        MkShimWit tq (MkPolarShim (MkPolyMapT convq)) <- liftResultToCrumbleM mwq
+        MkShimWit ftw' (MkPolarShim (MkPolyMapT convw)) <- liftResultToCrumbleM $ bisubstituteFlipType bisub ftw
+        puzzle <- liftToCrumbleM $ flipUnifyPuzzle ftw' (NormalFlipType tq)
+        return $ fmap (\conv -> isoForwards convq . conv . isoForwards convw) puzzle
 bisubstituteAtomicConstraint bisub@(MkBisubstitution oldvar mwp _) (MkAtomicConstraint depvar NegativeType ftw)
     | Just Refl <- testEquality oldvar depvar = do
-        MkShimWit tp (MkPolarShim (MkPolyMapT convp)) <- mwp
-        MkShimWit ftw' (MkPolarShim (MkPolyMapT convw)) <- bisubstituteFlipType bisub ftw
-        return $ fmap (\conv -> isoForwards convw . conv . isoForwards convp) $ flipUnifyPuzzle (NormalFlipType tp) ftw'
+        MkShimWit tp (MkPolarShim (MkPolyMapT convp)) <- liftResultToCrumbleM mwp
+        MkShimWit ftw' (MkPolarShim (MkPolyMapT convw)) <- liftResultToCrumbleM $ bisubstituteFlipType bisub ftw
+        puzzle <- liftToCrumbleM $ flipUnifyPuzzle (NormalFlipType tp) ftw'
+        return $ fmap (\conv -> isoForwards convw . conv . isoForwards convp) puzzle
 bisubstituteAtomicConstraint _ ac
     | Just conv <- isPureAtomicConstraint ac = return $ pure conv
 bisubstituteAtomicConstraint bisub (MkAtomicConstraint depvar PositiveType (NormalFlipType tw)) = do
-    MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- bisubstituteType bisub tw
-    return $
-        fmap (\pv -> iMeetL1 . pv . isoForwards conv) $
+    MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- liftResultToCrumbleM $ bisubstituteType bisub tw
+    puzzle <-
+        liftToCrumbleM $
         flipUnifyPuzzle (NormalFlipType tp) (NormalFlipType $ singleDolanType $ VarDolanSingularType depvar)
+    return $ fmap (\pv -> iMeetL1 . pv . isoForwards conv) puzzle
 bisubstituteAtomicConstraint bisub (MkAtomicConstraint depvar NegativeType (NormalFlipType tw)) = do
-    MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- bisubstituteType bisub tw
-    return $
-        fmap (\pv -> isoForwards conv . pv . iJoinR1) $
+    MkShimWit tp (MkPolarShim (MkPolyMapT conv)) <- liftResultToCrumbleM $ bisubstituteType bisub tw
+    puzzle <-
+        liftToCrumbleM $
         flipUnifyPuzzle (NormalFlipType $ singleDolanType $ VarDolanSingularType depvar) (NormalFlipType tp)
+    return $ fmap (\pv -> isoForwards conv . pv . iJoinR1) puzzle
 bisubstituteAtomicConstraint _ ac = return $ atomicConstraintPuzzle ac

@@ -80,7 +80,7 @@ processRest ::
     -> UnifyCrumbler ground a
 processRest substs puzzlerest =
     MkCrumbler $ do
-        puzzlerest' <- lift $ lift $ liftResultToCrumbleM $ applySubstsToPuzzle substs puzzlerest
+        puzzlerest' <- lift $ lift $ applySubstsToPuzzle substs puzzlerest
         unCrumbler $ substituteEachMemo substs $ processPuzzle puzzlerest'
 
 monoReaderHoist ::
@@ -104,7 +104,7 @@ processPieceAndRest piece puzzlerest =
         unCrumbler $
             substituteEachMemo substs $
             MkCrumbler $ do
-                puzzlerest' <- lift $ lift $ liftResultToCrumbleM $ applySubstsToPuzzle substs puzzlerest
+                puzzlerest' <- lift $ lift $ applySubstsToPuzzle substs puzzlerest
                 oexpr <- unCrumbler $ processPuzzle $ liftA2 (,) conspuzzle puzzlerest'
                 return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
 

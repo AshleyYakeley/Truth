@@ -47,7 +47,7 @@ substPuzzle (ClosedExpression a) = return $ pure a
 substPuzzle (OpenExpression ac expr) = do
     (t, subst) <- lift $ liftToCrumbleM $ getAtomicConstraint ac
     tell [subst]
-    puzzle <- mapExpressionWitnessesM (\ac' -> lift $ liftResultToCrumbleM $ substituteAtomicConstraint subst ac') expr
+    puzzle <- mapExpressionWitnessesM (\ac' -> lift $ substituteAtomicConstraint subst ac') expr
     return $ fmap (\ta -> ta t) puzzle
 
 puzzleStep ::

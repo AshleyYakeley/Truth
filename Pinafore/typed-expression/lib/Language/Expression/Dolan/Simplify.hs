@@ -93,7 +93,7 @@ dolanSimplifyTypes =
                 , mif simplifyFullyConstrainedTypeVars $ fullyConstrainedTypeVars @ground
                 , mif simplifyMergeSharedTypeVars $ endoToEndoM $ mergeSharedTypeVars @ground
                 , mif simplifyMergeDuplicateTypeVars $ endoToEndoM $ mergeDuplicateTypeVars @ground
-                , mif simplifyAutomateRecursion $ endoToEndoM $ automateRecursion @ground
+                , mif simplifyAutomateRecursion $ automateRecursion @ground
                 , mif simplifyRollUpRecursiveTypes $ endoToEndoM $ rollUpRecursiveTypes @ground
                 ]
 

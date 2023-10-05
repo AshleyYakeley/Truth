@@ -77,7 +77,7 @@ crumbleReduced ::
     => DolanType ground pola ta
     -> DolanType ground polb tb
     -> TypeCrumbler ground (DolanShim ground ta tb)
-crumbleReduced ta tb = crumblerLiftPuzzle $ puzzleUnify ta tb
+crumbleReduced ta tb = MkTypeCrumbler $ lift $ liftToCrumbleM $ fmap (pure . puzzleExpression) $ puzzleUnify ta tb
 
 crumbleReducedWit ::
        forall (ground :: GroundTypeKind) pola polb ta tb.

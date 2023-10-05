@@ -96,14 +96,22 @@ runTypeResult ::
 runTypeResult (SuccessResult a) = return a
 runTypeResult (FailureResult err) = throwTypeError err
 
-runCrumbleM ::
+runCrumbleMRigidity ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => (String -> NameRigidity)
     -> CrumbleM ground a
     -> DolanTypeCheckM ground a
-runCrumbleM rigidity cra = do
+runCrumbleMRigidity rigidity cra = do
     rea <- runCrumbleMResult rigidity cra
     lift $ runTypeResult rea
+
+runCrumbleM ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => CrumbleM ground a
+    -> DolanTypeCheckM ground a
+runCrumbleM cra = do
+    rigidity <- renamerGetNameRigidity
+    runCrumbleMRigidity rigidity cra
 
 getSubtypeChainRenamed ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).

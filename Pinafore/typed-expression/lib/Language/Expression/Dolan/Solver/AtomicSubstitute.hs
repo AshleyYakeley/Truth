@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Solver.AtomicSubstitute
     , SolverM
     , solveAtomicConstraint
     , substituteAtomicConstraint
-    , bisubstitutesAtomicConstraint
     , bisubstitutesPuzzle
     , applySubstsToPuzzle
     , substBisubstitution
@@ -23,7 +22,6 @@ import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
-import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -45,22 +43,24 @@ substituteAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => Substitution ground
     -> AtomicConstraint ground a
-    -> TypeResult ground (Puzzle ground a)
+    -> CrumbleM ground (Puzzle ground a)
 substituteAtomicConstraint (MkSubstitution substpol oldvar newvar _ (Just st)) (MkAtomicConstraint depvar unipol fvt)
     | Just Refl <- testEquality oldvar depvar =
-        return $ let
-            p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt)
-            p2 =
+        liftToCrumbleM $ do
+            let p1 = atomicConstraintPuzzle (MkAtomicConstraint newvar unipol fvt)
+            p2 <-
                 case (substpol, unipol) of
-                    (NegativeType, PositiveType) -> do
-                        convm <- flipToType fvt $ \vt -> puzzleUnify vt st
-                        pure $ \conv -> meetf conv convm
-                    (PositiveType, NegativeType) -> do
-                        convm <- flipToType fvt $ \vt -> puzzleUnify st vt
-                        pure $ \conv -> joinf conv convm
-                    (NegativeType, NegativeType) -> pure $ \conv -> conv . meet1
-                    (PositiveType, PositiveType) -> pure $ \conv -> join1 . conv
-            in liftA2 (\t a -> a t) p1 p2
+                    (NegativeType, PositiveType) ->
+                        flipToType fvt $ \vt -> do
+                            puzzle <- puzzleUnify vt st
+                            return $ fmap (\convm conv -> meetf conv convm) puzzle
+                    (PositiveType, NegativeType) ->
+                        flipToType fvt $ \vt -> do
+                            puzzle <- puzzleUnify st vt
+                            return $ fmap (\convm conv -> joinf conv convm) puzzle
+                    (NegativeType, NegativeType) -> return $ pure $ \conv -> conv . meet1
+                    (PositiveType, PositiveType) -> return $ pure $ \conv -> join1 . conv
+            return $ liftA2 (\t a -> a t) p1 p2
 substituteAtomicConstraint sub ac = bisubstituteAtomicConstraint (substBisubstitution sub) ac
 
 isoRetractPolyPolarShim ::
@@ -145,9 +145,9 @@ bisubstitutesPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [SolverBisubstitution ground]
     -> Piece ground a
-    -> TypeResult ground (Puzzle ground a)
+    -> CrumbleM ground (Puzzle ground a)
 bisubstitutesPiece newchanges (WholePiece wc) = do
-    MkShimWit wc' conv <- bisubstitutesWholeConstraintShim newchanges $ mkShimWit wc
+    MkShimWit wc' conv <- liftResultToCrumbleM $ bisubstitutesWholeConstraintShim newchanges $ mkShimWit wc
     return $ fmap (isoBackwards conv) $ varExpression $ WholePiece wc'
 bisubstitutesPiece newchanges (AtomicPiece ac) = bisubstitutesAtomicConstraint newchanges ac
 
@@ -155,14 +155,14 @@ bisubstitutesPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [SolverBisubstitution ground]
     -> Puzzle ground a
-    -> TypeResult ground (Puzzle ground a)
+    -> CrumbleM ground (Puzzle ground a)
 bisubstitutesPuzzle substs = mapExpressionWitnessesM $ bisubstitutesPiece substs
 
 bisubstitutesAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [SolverBisubstitution ground]
     -> AtomicConstraint ground a
-    -> TypeResult ground (Puzzle ground a)
+    -> CrumbleM ground (Puzzle ground a)
 bisubstitutesAtomicConstraint [] ac = return $ atomicConstraintPuzzle ac
 bisubstitutesAtomicConstraint (s:ss) ac = do
     puzzle <- bisubstituteAtomicConstraint s ac
@@ -172,12 +172,12 @@ applySubstsToPiece ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [Substitution ground]
     -> Piece ground a
-    -> TypeResult ground (Puzzle ground a)
+    -> CrumbleM ground (Puzzle ground a)
 applySubstsToPiece newchanges = bisubstitutesPiece (fmap substBisubstitution newchanges)
 
 applySubstsToPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => [Substitution ground]
     -> Puzzle ground a
-    -> TypeResult ground (Puzzle ground a)
+    -> CrumbleM ground (Puzzle ground a)
 applySubstsToPuzzle substs = mapExpressionWitnessesM $ applySubstsToPiece substs

@@ -23,7 +23,7 @@ crumblePuzzle (ClosedExpression a) = return (pure a, [])
 crumblePuzzle puzzle =
     partitionExpression purePiece puzzle $ \upuzzle spuzzle -> do
         (exprba, usubs) <- solveUnifyPuzzle upuzzle
-        spuzzle' <- liftResultToCrumbleM $ bisubstitutesPuzzle usubs spuzzle
+        spuzzle' <- bisubstitutesPuzzle usubs spuzzle
         (MkSolverExpression spuzzle'' exprb, ssubs) <- subsumePuzzleStep spuzzle'
         (exprc, rsubs) <- crumblePuzzle spuzzle''
         return (exprba <*> (exprb <*> exprc), usubs <> ssubs <> rsubs)
@@ -32,12 +32,10 @@ solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
-solvePuzzle puzzle = do
-    rigidity <- renamerGetNameRigidity
-    runCrumbleM rigidity $ crumblePuzzle puzzle
+solvePuzzle puzzle = runCrumbleM $ crumblePuzzle puzzle
 
 rigidSolvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a)
-rigidSolvePuzzle puzzle = fmap fst $ runCrumbleM (\_ -> RigidName) $ solveUnifyPuzzle puzzle
+rigidSolvePuzzle puzzle = fmap fst $ runCrumbleMRigidity (\_ -> RigidName) $ solveUnifyPuzzle puzzle
