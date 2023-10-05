@@ -79,6 +79,7 @@ library
       Language.Expression.Dolan.Simplify.DuplicateGroundTypes
       Language.Expression.Dolan.Simplify.SharedTypeVars
       Language.Expression.Dolan.Simplify.DuplicateTypeVars
+      Language.Expression.Dolan.Simplify.AutomateRecursion
       Language.Expression.Dolan.Simplify.RollUpRecursion
       Language.Expression.Dolan.Simplify
       Language.Expression.Dolan.Invert

@@ -6,6 +6,7 @@ module Language.Expression.Dolan.Simplify
     ) where
 
 import Language.Expression.Common
+import Language.Expression.Dolan.Simplify.AutomateRecursion
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
 import Language.Expression.Dolan.Simplify.DuplicateTypeVars
 import Language.Expression.Dolan.Simplify.FullyConstrainedTypeVars
@@ -26,6 +27,7 @@ data SimplifierSettings = MkSimplifierSettings
     , simplifyFullyConstrainedTypeVars :: Bool
     , simplifyMergeSharedTypeVars :: Bool
     , simplifyMergeDuplicateTypeVars :: Bool
+    , simplifyAutomateRecursion :: Bool
     , simplifyRollUpRecursiveTypes :: Bool
     }
 
@@ -39,6 +41,7 @@ defaultSimplifierSettings =
         , simplifyFullyConstrainedTypeVars = True
         , simplifyMergeSharedTypeVars = True
         , simplifyMergeDuplicateTypeVars = True
+        , simplifyAutomateRecursion = True
         , simplifyRollUpRecursiveTypes = True
         }
 
@@ -70,6 +73,9 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 -- mergeDuplicateTypeVars: merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"
 --
+-- automateRecursion: simplify complex recursive types using automata
+-- e.g. "rec a, Maybe. (rec b, a | Maybe. b)" => "rec a, Maybe a"
+--
 -- rollUpRecursiveTypes: roll up recursive types
 -- e.g. "F (rec a, F a)" => "rec a, F a"
 dolanSimplifyTypes ::
@@ -87,6 +93,7 @@ dolanSimplifyTypes =
                 , mif simplifyFullyConstrainedTypeVars $ fullyConstrainedTypeVars @ground
                 , mif simplifyMergeSharedTypeVars $ endoToEndoM $ mergeSharedTypeVars @ground
                 , mif simplifyMergeDuplicateTypeVars $ endoToEndoM $ mergeDuplicateTypeVars @ground
+                , mif simplifyAutomateRecursion $ endoToEndoM $ automateRecursion @ground
                 , mif simplifyRollUpRecursiveTypes $ endoToEndoM $ rollUpRecursiveTypes @ground
                 ]
 

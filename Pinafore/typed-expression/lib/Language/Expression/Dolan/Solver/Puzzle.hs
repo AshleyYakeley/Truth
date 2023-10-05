@@ -4,6 +4,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FlipType
+import Language.Expression.Dolan.Simplify.AutomateRecursion
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Type
@@ -60,21 +61,30 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConst
 type Puzzle :: GroundTypeKind -> Type -> Type
 type Puzzle ground = Expression (Piece ground)
 
-wholeConstraintPuzzle :: forall (ground :: GroundTypeKind) a. WholeConstraint ground a -> Puzzle ground a
+wholeConstraintPuzzle ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => WholeConstraint ground a
+    -> Puzzle ground a
+wholeConstraintPuzzle (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb)) =
+    case (automateRecursionInType ta, automateRecursionInType tb) of
+        (MkPosShimWit ta' conva, MkNegShimWit tb' convb) ->
+            fmap (\conv -> convb . conv . conva) $
+            varExpression $ WholePiece $ MkWholeConstraint (NormalFlipType ta') (NormalFlipType tb')
 wholeConstraintPuzzle constr = varExpression $ WholePiece constr
 
 atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint ground a -> Puzzle ground a
 atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
 
 flipUnifyPuzzle ::
-       forall (ground :: GroundTypeKind) a b.
-       FlipType ground 'Positive a
+       forall (ground :: GroundTypeKind) a b. IsDolanGroundType ground
+    => FlipType ground 'Positive a
     -> FlipType ground 'Negative b
     -> Puzzle ground (DolanShim ground a b)
 flipUnifyPuzzle fta ftb = wholeConstraintPuzzle $ MkWholeConstraint fta ftb
 
 puzzleUnify ::
-       forall (ground :: GroundTypeKind) pola polb a b. (Is PolarityType pola, Is PolarityType polb)
+       forall (ground :: GroundTypeKind) pola polb a b.
+       (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola a
     -> DolanType ground polb b
     -> Puzzle ground (DolanShim ground a b)
@@ -99,7 +109,8 @@ puzzleExpression ::
 puzzleExpression = solverExpressionLiftType
 
 puzzleExpressionUnify ::
-       forall (ground :: GroundTypeKind) pola polb a b. (Is PolarityType pola, Is PolarityType polb)
+       forall (ground :: GroundTypeKind) pola polb a b.
+       (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola a
     -> DolanType ground polb b
     -> PuzzleExpression ground (DolanShim ground a b)
