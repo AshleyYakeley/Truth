@@ -276,14 +276,6 @@ dolanSingularTypeToNonpolar (RecursiveDolanSingularType v t) = do
     nw <- dolanTypeToNonpolar t
     return $ recursiveNonpolarShimWit v nw
 
-{-
-recursiveDolanShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
-       (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
-    => TypeVarT tv
-    -> PShimWit (pshim Type) (DolanType ground) polarity tv
-    -> PShimWit (pshim Type) (DolanSingularType ground) polarity tv
--}
 dolanTypeToNonpolar ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t

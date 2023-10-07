@@ -81,7 +81,7 @@ linkSubtypeChain ::
 linkSubtypeChain vmap argsa argsb expr = ConsSubtypeChain (MkSubtypeLink vmap argsa argsb expr) NilSubtypeChain
 
 type IsDolanSubtypeGroundType :: GroundTypeKind -> Constraint
-class (DebugIsDolanGroundType ground) => IsDolanSubtypeGroundType ground where
+class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
     getSubtypeChain ::
            forall (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
            ground dva gta

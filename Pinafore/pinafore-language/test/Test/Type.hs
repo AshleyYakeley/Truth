@@ -111,7 +111,7 @@ runSimplify ::
        forall a. TSMappable TS a
     => a
     -> TSOuter TS a
-runSimplify = unEndoM $ simplify @TS
+runSimplify = unEndoM $ simplify @TS <> finalRenameMappable @TS
 
 simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
@@ -122,8 +122,10 @@ simplifyTypeTest text e =
                 mt <- parseType @'Positive text
                 case mt of
                     MkSome t ->
-                        runRenamer @TS [] [] $
-                        runSimplify @PExpression $ MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
+                        runRenamer @TS [] [] $ do
+                            t' <- unEndoM (renameType @TS [] FreeName) t
+                            runSimplify @PExpression $
+                                MkSealedExpression (mkPolarShimWit t') $ ClosedExpression undefined
         liftIO $
             case simpexpr of
                 MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ toText $ exprShow t'
@@ -308,7 +310,7 @@ testType =
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe. a"
-                    , textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
+                    , testMark $ textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x : Entity = Just x in x" "{} -> Entity."
                     , textTypeTest "let rec x : Maybe Entity = Just x in x" "{} -> Maybe. Entity."
@@ -385,7 +387,7 @@ testType =
                                    , recTest "None -> Text" "a -> a" "(a & Text.) -> a"
                                    , fixTest "Text -> Text" "a -> a" "Text. -> Text."
                                    , recTest "Text -> Text" "a -> a" "Text. -> Text."
-                                   , testMark $ fixTest "Maybe a -> Maybe a" "a -> a" "Any -> (rec a, Maybe. a)"
+                                   , testNoMark $ fixTest "Maybe a -> Maybe a" "a -> a" "Any -> (rec a, Maybe. a)"
                                    , recTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a) -> None"
                                    , fixTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
                                    , recTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. b) -> (a | Maybe. b)"
@@ -435,11 +437,12 @@ testType =
                     , simplifyTypeTest "rec a, Integer" "Integer."
                     , simplifyTypeTest "Maybe (rec a, List a)" "Maybe. (rec a, List. a)"
                     , simplifyTypeTest "Maybe (rec a, Integer)" "Maybe. Integer."
-                    , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a, rec b, a *: b" "rec b, b *: b"
-                    , expectFailBecause "ISSUE #61" $
-                      simplifyTypeTest "(rec a, Maybe a) | (rec b, List b)" "rec a, Maybe. a | List. a"
-                    , expectFailBecause "ISSUE #61" $
-                      simplifyTypeTest "(rec a, Maybe a) | (rec a, List a)" "rec a, Maybe. a | List. a"
+                    , testNoMark $ testTree "issue-62" [simplifyTypeTest "rec a, rec b, a *: b" "rec a, a *: a"]
+                    , testTree
+                          "issue-234"
+                          [ testNoMark $ simplifyTypeTest "rec b, Maybe. (rec c, b | Maybe. c)" "rec a, Maybe. a"
+                          , simplifyTypeTest "rec a, (rec b, Maybe. (rec c, b | Maybe. c)) | Maybe. a" "rec a, Maybe. a"
+                          ]
                     , testTree
                           "roll"
                           [ simplifyTypeTest "Maybe (rec a, Maybe a)" "rec a, Maybe. a"
@@ -454,7 +457,7 @@ testType =
                     , simplifyTypeTest "(rec a, Maybe a) | d" "rec a, Maybe. a"
                     , simplifyTypeTest "rec a, (Maybe a | d)" "rec a, Maybe. a"
                     , simplifyTypeTest "Maybe (rec a, Maybe a | d)" "rec a, Maybe. a"
-                    , simplifyTypeTest "d -> Maybe (rec a, Maybe a | d)" "d -> Maybe. (rec a, Maybe. a | d)"
+                    , simplifyTypeTest "d -> Maybe (rec a, Maybe a | d)" "a -> Maybe. (rec b, a | Maybe. b)"
                     , simplifyTypeTest "(a -> Literal) | ((Text & b) -> a)" "Text. -> Literal."
                     , simplifyTypeTest "(a & Text) -> (Literal | a)" "Text. -> Literal."
                     ]

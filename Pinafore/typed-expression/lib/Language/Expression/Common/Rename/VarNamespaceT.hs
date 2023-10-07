@@ -3,6 +3,7 @@ module Language.Expression.Common.Rename.VarNamespaceT
     , RenamerMonad(..)
     , renamerGenerateFree
     , renamerGenerateFreeUVar
+    , renamerGenerateAssign
     , fixedRenameSource
     , VarNamespaceT
     , runVarNamespaceT
@@ -32,15 +33,15 @@ renamerGenerateFreeUVar = do
     newname <- renamerGenerateFree
     return $ newTypeVar newname MkSomeTypeVarT
 
+renamerGenerateAssign ::
+       forall m tv. RenamerMonad m
+    => m (TypeVarT tv)
+renamerGenerateAssign = do
+    newname <- renamerGenerateFree
+    return $ newAssignTypeVar newname
+
 fixedRenameSource :: RenamerMonad m => RenameSource m
-fixedRenameSource =
-    MkRenameSource
-        { rsNewVar =
-              MkEndoM $ \_ -> do
-                  newname <- renamerGenerateFree
-                  return $ newAssignTypeVar newname
-        , rsRenameVar = mempty
-        }
+fixedRenameSource = MkRenameSource {rsNewVar = MkEndoM $ \_ -> renamerGenerateAssign, rsRenameVar = mempty}
 
 data VNContext = MkVNContext
     { vncFixedNames :: [String]

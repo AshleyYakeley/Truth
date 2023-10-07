@@ -91,7 +91,9 @@ runSubsumerTester names sta =
     runRenamer @QTypeSystem names [] $ do
         (a, se) <- runWriterT sta
         (_expr, ssubs) <- solveSubsumerExpression @QTypeSystem se
-        unEndoM (mconcat [subsumerSubstitute @QTypeSystem ssubs, simplify @QTypeSystem]) a {-, finalRenameMappable @QTypeSystem -}
+        unEndoM
+            (mconcat [subsumerSubstitute @QTypeSystem ssubs, simplify @QTypeSystem, finalRenameMappable @QTypeSystem])
+            a
 
 testSolver :: TestTree
 testSolver =

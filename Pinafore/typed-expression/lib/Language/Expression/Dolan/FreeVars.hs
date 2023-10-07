@@ -35,7 +35,7 @@ instance forall (w :: CCRArgumentKind) dv gt t. (forall sv a. FreeTypeVariables 
     freeTypeVariables (ConsCCRArguments arg1 argr) = freeTypeVariables arg1 <> freeTypeVariables argr
 
 variableOccursIn ::
-       forall t tv. (FreeTypeVariables t)
+       forall t tv. FreeTypeVariables t
     => TypeVarT tv
     -> t
     -> Bool

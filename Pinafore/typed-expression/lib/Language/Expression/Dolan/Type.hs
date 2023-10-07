@@ -70,8 +70,7 @@ instance forall (ground :: GroundTypeKind). DebugIsDolanGroundType ground => Sho
     show (MkSomeGroundType t) = show t
 
 type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
-class ( IsDolanGroundType ground
-      , MonadException (DolanM ground)
+class ( MonadException (DolanM ground)
       , Show (Exc (DolanM ground))
       , MonadIO (DolanM ground)
       , forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
@@ -79,8 +78,7 @@ class ( IsDolanGroundType ground
       , forall polarity t. Is PolarityType polarity => Show (DolanGroundedType ground polarity t)
       ) => DebugIsDolanGroundType ground
 
-instance forall (ground :: GroundTypeKind). ( IsDolanGroundType ground
-         , MonadException (DolanM ground)
+instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
          , Show (Exc (DolanM ground))
          , MonadIO (DolanM ground)
          , forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)

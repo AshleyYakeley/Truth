@@ -21,13 +21,13 @@ import Shapes
 
 data SimplifierSettings = MkSimplifierSettings
     { simplifyAny :: Bool
+    , simplifyAutomateRecursion :: Bool
     , simplifyEliminateUnusedRecursion :: Bool
     , simplifyMergeDuplicateGroundTypes :: Bool
     , simplifyEliminateOneSidedTypeVars :: Bool
     , simplifyFullyConstrainedTypeVars :: Bool
     , simplifyMergeSharedTypeVars :: Bool
     , simplifyMergeDuplicateTypeVars :: Bool
-    , simplifyAutomateRecursion :: Bool
     , simplifyRollUpRecursiveTypes :: Bool
     }
 
@@ -35,13 +35,13 @@ defaultSimplifierSettings :: SimplifierSettings
 defaultSimplifierSettings =
     MkSimplifierSettings
         { simplifyAny = True
-        , simplifyEliminateUnusedRecursion = True
+        , simplifyAutomateRecursion = True
+        , simplifyEliminateUnusedRecursion = False
         , simplifyMergeDuplicateGroundTypes = True
         , simplifyEliminateOneSidedTypeVars = False
         , simplifyFullyConstrainedTypeVars = True
         , simplifyMergeSharedTypeVars = True
         , simplifyMergeDuplicateTypeVars = True
-        , simplifyAutomateRecursion = True
         , simplifyRollUpRecursiveTypes = True
         }
 
@@ -50,9 +50,13 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 
 -- Simplification:
 --
+-- automateRecursion: simplify complex recursive types using automata
+-- e.g. "rec a, Maybe. (rec b, a | Maybe. b)" => "rec a, Maybe a"
+--
 -- eliminateUnusedRecursion: remove unused recursion & eliminate immediate recursion
 -- e.g. "rec a, Integer" => "Integer"
 -- e.g. "rec a, a" => "Any"/"None"
+-- This is usually switched off since automateRecursion does this.
 --
 -- mergeDuplicateGroundTypes: merge duplicate ground types in join/meet (on each type)
 -- e.g. "[a]|[b]" => "[a|b]"
@@ -73,9 +77,6 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 -- mergeDuplicateTypeVars: merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"
 --
--- automateRecursion: simplify complex recursive types using automata
--- e.g. "rec a, Maybe. (rec b, a | Maybe. b)" => "rec a, Maybe a"
---
 -- rollUpRecursiveTypes: roll up recursive types
 -- e.g. "F (rec a, F a)" => "rec a, F a"
 dolanSimplifyTypes ::
@@ -87,13 +88,13 @@ dolanSimplifyTypes =
         MkSimplifierSettings {..} ->
             mif simplifyAny $
             mconcat
-                [ mif simplifyEliminateUnusedRecursion $ endoToEndoM $ eliminateUnusedRecursion @ground
+                [ mif simplifyAutomateRecursion $ automateRecursion @ground
+                , mif simplifyEliminateUnusedRecursion $ endoToEndoM $ eliminateUnusedRecursion @ground
                 , mif simplifyMergeDuplicateGroundTypes $ mergeDuplicateGroundTypes @ground
                 , mif simplifyEliminateOneSidedTypeVars $ endoToEndoM $ eliminateOneSidedTypeVars @ground
                 , mif simplifyFullyConstrainedTypeVars $ fullyConstrainedTypeVars @ground
                 , mif simplifyMergeSharedTypeVars $ endoToEndoM $ mergeSharedTypeVars @ground
                 , mif simplifyMergeDuplicateTypeVars $ endoToEndoM $ mergeDuplicateTypeVars @ground
-                , mif simplifyAutomateRecursion $ automateRecursion @ground
                 , mif simplifyRollUpRecursiveTypes $ endoToEndoM $ rollUpRecursiveTypes @ground
                 ]
 
