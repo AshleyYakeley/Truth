@@ -40,7 +40,6 @@ module Language.Expression.Dolan
     , FlipType(..)
     , toFlipType
     , flipToType
-    , joinMeetShimWit
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
@@ -55,7 +54,6 @@ module Language.Expression.Dolan
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.FreeVars as I
 import Language.Expression.Dolan.Invert

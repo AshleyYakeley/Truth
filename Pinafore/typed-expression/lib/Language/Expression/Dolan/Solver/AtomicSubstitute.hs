@@ -13,7 +13,6 @@ module Language.Expression.Dolan.Solver.AtomicSubstitute
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Solver.AtomicConstraint

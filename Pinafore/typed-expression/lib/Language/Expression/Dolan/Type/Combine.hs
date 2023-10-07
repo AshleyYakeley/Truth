@@ -1,12 +1,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Language.Expression.Dolan.Combine
+module Language.Expression.Dolan.Type.Combine
     ( joinMeetType
     , joinMeetShimWit
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.Type.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 

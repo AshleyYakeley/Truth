@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Simplify.UnusedRecursion
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem

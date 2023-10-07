@@ -8,7 +8,6 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute.Bisubstitution
 import Language.Expression.Dolan.Bisubstitute.RecM
-import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Type

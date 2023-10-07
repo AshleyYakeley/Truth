@@ -6,7 +6,6 @@ module Language.Expression.Dolan.Simplify.AutomateRecursion
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Type
@@ -48,7 +47,7 @@ data Equation (ground :: GroundTypeKind) where
         -> Equation ground
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Equation ground) where
-    show (MkEquation pol var t) = withRepresentative pol $ show var <> " = " <> show t <> " " <> show pol
+    show (MkEquation pol var t) = withRepresentative pol $ show var <> " = " <> showDolanType t <> " " <> show pol
 
 lookupEquation ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

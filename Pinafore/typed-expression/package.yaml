@@ -55,6 +55,9 @@ library:
       - Language.Expression.Common.CompleteTypeSystem
       - Language.Expression.Dolan.FreeVars
       - Language.Expression.Dolan.Shim
+      - Language.Expression.Dolan.Type.Type
+      - Language.Expression.Dolan.Type.Equality
+      - Language.Expression.Dolan.Type.Combine
       - Language.Expression.Dolan.Type
       - Language.Expression.Dolan.Subtype
       - Language.Expression.Dolan.SubtypeEntry.Knowledge
@@ -67,9 +70,8 @@ library:
       - Language.Expression.Dolan.Bisubstitute
       - Language.Expression.Dolan.TypeSystem
       - Language.Expression.Dolan.Rename
-      - Language.Expression.Dolan.Combine
       - Language.Expression.Dolan.Unroll
-      - Language.Expression.Dolan.InvertedCombine
+      - Language.Expression.Dolan.Type.InvertedCombine
       - Language.Expression.Dolan.Simplify.UnusedRecursion
       - Language.Expression.Dolan.Simplify.VarUses
       - Language.Expression.Dolan.Simplify.VarUsage

@@ -50,7 +50,7 @@ addMemo wt pc =
     MkCrumbler $ withReaderT (\seen' -> ConsListType wt seen') $ fmap (fmap $ \tla l t -> tla (t, l)) $ unCrumbler pc
 
 memoiseBranch ::
-       forall w m f t a. (TestEquality w, Applicative f, MonadIO m)
+       forall w m f t a. (TestEquality w, Applicative f, Monad m)
     => (t -> t)
     -> w t
     -> Crumbler w m f (t -> a)
@@ -69,7 +69,7 @@ memoiseBranch lazify wt call1 call2 =
                 in unCrumbler $ fmap fixconv $ addMemo wt call2
 
 memoise ::
-       forall w m f t. (TestEquality w, Applicative f, MonadIO m)
+       forall w m f t. (TestEquality w, Applicative f, Monad m)
     => (t -> t)
     -> w t
     -> Crumbler w m f t

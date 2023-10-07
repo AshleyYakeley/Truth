@@ -9,7 +9,6 @@ module Language.Expression.Dolan.Solver
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.Solver

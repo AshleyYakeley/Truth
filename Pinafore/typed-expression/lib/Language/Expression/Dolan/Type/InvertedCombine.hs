@@ -1,7 +1,7 @@
-module Language.Expression.Dolan.InvertedCombine where
+module Language.Expression.Dolan.Type.InvertedCombine where
 
 import Data.Shim
-import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.Type.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 

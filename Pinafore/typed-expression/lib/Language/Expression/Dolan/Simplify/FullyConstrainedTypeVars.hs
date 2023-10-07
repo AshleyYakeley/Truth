@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Simplify.FullyConstrainedTypeVars
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.InvertedCombine
 import Language.Expression.Dolan.Simplify.VarUsage
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Solver
