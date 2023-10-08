@@ -20,7 +20,7 @@ type UnifyCrumbler (ground :: GroundTypeKind)
      = Crumbler (WholeConstraint ground) (SolverM ground) (DolanOpenExpression ground)
 
 solvePiece ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Piece ground a
     -> SolverM ground (PuzzleExpression ground a)
 solvePiece (WholePiece constr) =
@@ -64,7 +64,7 @@ sortPuzzle puzzle
 sortPuzzle puzzle = puzzle
 
 processPiece ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Piece ground a
     -> UnifyCrumbler ground a
 processPiece piece =
@@ -74,7 +74,7 @@ processPiece piece =
         return $ liftA2 (\ta lt l -> ta $ lt l) rexpr oexpr
 
 processRest ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => [Substitution ground]
     -> Puzzle ground a
     -> UnifyCrumbler ground a
@@ -93,7 +93,7 @@ strictUnifyINTERNAL :: Bool
 strictUnifyINTERNAL = True
 
 processPieceAndRest ::
-       forall (ground :: GroundTypeKind) a b. (IsDolanSubtypeGroundType ground)
+       forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => Piece ground a
     -> Puzzle ground (a -> b)
     -> UnifyCrumbler ground b
@@ -109,7 +109,7 @@ processPieceAndRest piece puzzlerest =
                 return $ liftA2 (\tt f l -> snd (f l) $ tt $ fst $ f l) rexpr oexpr
 
 processPuzzle ::
-       forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> UnifyCrumbler ground a
 processPuzzle (ClosedExpression a) = pure a

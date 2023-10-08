@@ -99,7 +99,42 @@ testSolver :: TestTree
 testSolver =
     testTree
         "solver"
-        [ testTree "renamer" $ let
+        [ testTree "equality" $ let
+              equalityTest :: Bool -> Text -> Text -> TestTree
+              equalityTest expectEqual sta stb =
+                  testTree
+                      (unpack $
+                       sta <>
+                       (if expectEqual
+                            then " = "
+                            else " /= ") <>
+                       stb) $
+                  runTester defaultTester $
+                  testerLiftInterpreter $
+                  runUnifierTester $ do
+                      MkSomeType ta <- stParseType @_ @'Positive sta
+                      MkSomeType tb <- stParseType @_ @'Positive stb
+                      liftIO $
+                          case testEquality ta tb of
+                              Just Refl ->
+                                  if expectEqual
+                                      then return ()
+                                      else assertFailure "not equal"
+                              Nothing ->
+                                  if expectEqual
+                                      then assertFailure "equal"
+                                      else return ()
+              in [ equalityTest True "Unit" "Unit"
+                 , equalityTest False "Unit" "Integer"
+                 , equalityTest False "a" "b"
+                 , equalityTest True "a" "a"
+                 , equalityTest True "rec a, Maybe a" "rec a, Maybe a"
+                 , equalityTest True "rec a, Maybe a" "rec b, Maybe b"
+                 , equalityTest True "rec a, List (rec b, Maybe b) | Maybe a" "rec b, List (rec a, Maybe a) | Maybe b"
+                 , equalityTest True "(rec a, Maybe a) *: (rec a, List a)" "(rec a, Maybe a) *: (rec b, List b)"
+                 , equalityTest True "Maybe (rec r, Maybe r | a) | a" "Maybe (rec s, Maybe s | a) | a"
+                 ]
+        , testTree "renamer" $ let
               renameTest :: Text -> Text -> TestTree
               renameTest origtext expectedtext =
                   testTree (unpack origtext) $
@@ -225,7 +260,7 @@ testSolver =
                              "issue-206-2"
                              "(t -> t) -> t"
                              "((a -> a) -> (Maybe a -> Maybe a))"
-                             "(rec a, Maybe a) -> Maybe None"
+                             "Maybe. a -> Maybe. (rec b, Maybe. b | a)"
                        ]
                  , testTree
                        "issue-234"
@@ -240,7 +275,7 @@ testSolver =
                              "rec r, Maybe r"
                              "rec d, (rec f, (rec h, (rec i, Maybe (rec d, (rec f, (rec h, i & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d"
                        , failTestBecause "ISSUE #237" $
-                         unifierTest "free" "Unit" $ do
+                         unifierTest "free" "rec a, Maybe. a" $ do
                              tb <- stParseType "b"
                              tpos <- stParseType "rec r, b | Maybe r"
                              tneg <-
