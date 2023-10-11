@@ -253,17 +253,7 @@ instance Exception PinaforeError
 
 newtype InterpretResult a =
     MkInterpretResult (ResultT PinaforeError IO a)
-    deriving ( Functor
-             , Applicative
-             , Alternative
-             , Monad
-             , MonadException
-             , MonadPlus
-             , MonadIO
-             , MonadFix
-             , MonadHoistIO
-             , MonadTunnelIO
-             )
+    deriving (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
 
 instance MonadThrow PinaforeError InterpretResult where
     throw e = throwExc $ Left e

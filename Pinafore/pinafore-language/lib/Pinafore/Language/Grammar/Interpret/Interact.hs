@@ -38,10 +38,9 @@ interactEvalExpression sexpr =
 runValue :: Handle -> QValue -> Interact (Action ())
 runValue outh val =
     interactRunQInterpreter $
-    (qUnifyValue val) <|>
-    (do
-         s <- showPinaforeModel val
-         return $ liftIO $ hPutStrLn outh s)
+    catchExc (qUnifyValue val) $ \_ -> do
+        s <- showPinaforeModel val
+        return $ liftIO $ hPutStrLn outh s
 
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = hoist fromInterpretResult $ parseInteractiveCommand t

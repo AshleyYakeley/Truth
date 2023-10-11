@@ -8,7 +8,8 @@ import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Simplify.VarUsage
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Solver
-import Language.Expression.Dolan.Solver.Solver
+import Language.Expression.Dolan.Solver.CrumbleM
+import Language.Expression.Dolan.Solver.Solve
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -163,14 +164,14 @@ testInvertedCombinedSubtype ::
     => InvertedCombinedDolanType ground 'Positive a
     -> InvertedCombinedDolanType ground 'Negative b
     -> DolanM ground (Maybe (DolanShim ground a b))
-testInvertedCombinedSubtype negtype postype =
-    fmap exec $
-    mcatch $ do
-        expr <-
-            runRenamer @(DolanTypeSystem ground) [] [] $ do
-                puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
-                rigidSolvePuzzle puzzle
-        return $ resultToMaybe $ evalExpressionResult expr
+testInvertedCombinedSubtype negtype postype = do
+    mexpr <-
+        runRenamer @(DolanTypeSystem ground) [] [] $ do
+            puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
+            runCrumbleMCheck $ fmap fst $ solvePuzzle puzzle
+    return $ do
+        expr <- mexpr
+        resultToMaybe $ evalExpressionResult expr
 
 reduceUsageSolution ::
        forall (ground :: GroundTypeKind) tv t. IsDolanSubtypeGroundType ground

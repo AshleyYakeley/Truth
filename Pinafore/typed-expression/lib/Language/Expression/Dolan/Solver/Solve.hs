@@ -1,6 +1,5 @@
-module Language.Expression.Dolan.Solver.Solver
+module Language.Expression.Dolan.Solver.Solve
     ( solvePuzzle
-    , rigidSolvePuzzle
     ) where
 
 import Language.Expression.Common
@@ -24,31 +23,15 @@ separatePiece piece =
         SuccessResult upuzzle -> Left upuzzle
         FailureResult _ -> Right $ varExpression piece
 
-crumblePuzzle ::
+solvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> CrumbleM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
-crumblePuzzle (ClosedExpression a) = return (pure a, [])
-crumblePuzzle puzzle =
+solvePuzzle (ClosedExpression a) = return (pure a, [])
+solvePuzzle puzzle =
     partitionExpression separatePiece puzzle $ \upuzzle spuzzle -> do
         (exprba, usubs) <- solveUnifyPuzzle upuzzle
         spuzzle' <- bisubstitutesPuzzle usubs spuzzle
         (MkSolverExpression spuzzle'' exprb, ssubs) <- subsumePuzzleStep spuzzle'
-        (exprc, rsubs) <- crumblePuzzle spuzzle''
+        (exprc, rsubs) <- solvePuzzle spuzzle''
         return (exprba <*> (exprb <*> exprc), usubs <> ssubs <> rsubs)
-
-solvePuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => Puzzle ground a
-    -> DolanTypeCheckM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
-solvePuzzle puzzle = runCrumbleM $ crumblePuzzle puzzle
-
-rigidSolvePuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => Puzzle ground a
-    -> DolanTypeCheckM ground (DolanOpenExpression ground a)
-rigidSolvePuzzle puzzle =
-    fmap fst $
-    runCrumbleMRigidity (\_ -> RigidName) $ do
-        upuzzle <- liftResultToCrumbleM $ mapExpressionM pieceToUnify puzzle
-        solveUnifyPuzzle upuzzle

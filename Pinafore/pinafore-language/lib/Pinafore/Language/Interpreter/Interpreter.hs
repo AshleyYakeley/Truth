@@ -65,10 +65,8 @@ newtype QInterpreter a = MkQInterpreter
     { unInterpreter :: ReaderT InterpretContext (WriterT InterpretOutput (StateT InterpretState InterpretResult)) a
     } deriving ( Functor
                , Applicative
-               , Alternative
                , Monad
                , MonadIO
-               , MonadPlus
                , MonadFix
                , MonadException
                , MonadThrow PinaforeError

@@ -69,7 +69,6 @@ getGroundProperty prop gt =
 class ( MonadException Interpreter
       , Show (Exc Interpreter)
       , MonadIO Interpreter
-      , MonadPlus Interpreter
       , MonadThrow PatternError Interpreter
       , MonadThrow (NamedExpressionError VarID (QShimWit 'Negative)) Interpreter
       , MonadThrow ErrorType Interpreter

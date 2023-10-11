@@ -41,7 +41,6 @@ import Shapes
 class ( IsDolanPolyShim (DolanPolyShim ground)
       , Ord (DolanVarID ground)
       , Show (DolanVarID ground)
-      , MonadPlus (DolanM ground)
       , MonadThrow PatternError (DolanM ground)
       , MonadThrow (NamedExpressionError (DolanVarID ground) (DolanShimWit ground 'Negative)) (DolanM ground)
       , AllConstraint Show (DolanSingularType ground 'Positive)

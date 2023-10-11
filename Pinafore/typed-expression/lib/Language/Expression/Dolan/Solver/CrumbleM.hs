@@ -35,6 +35,14 @@ deriving newtype instance
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => MonadThrow (TypeError ground) (CrumbleM ground) where
     throw err = liftResultToCrumbleM $ throw err
 
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => MonadCatch (TypeError ground) (CrumbleM ground) where
+    catch ma ema =
+        liftFullToCrumbleMWithUnlift $ \unlift -> do
+            tra <- unlift ma
+            case tra of
+                SuccessResult _ -> return tra
+                FailureResult e -> unlift $ ema e
+
 liftFullToCrumbleMWithUnlift ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => ((forall r. CrumbleM ground r -> DolanTypeCheckM ground (TypeResult ground r)) -> DolanTypeCheckM ground (TypeResult ground a))
@@ -60,6 +68,14 @@ runCrumbleMResult ::
     -> CrumbleM ground a
     -> DolanTypeCheckM ground (TypeResult ground a)
 runCrumbleMResult rigidity ca = unComposeInner $ runReaderT (unCrumbleM ca) rigidity
+
+runCrumbleMCheck ::
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => CrumbleM ground a
+    -> DolanTypeCheckM ground (Maybe a)
+runCrumbleMCheck ca = do
+    ta <- runCrumbleMResult (\_ -> RigidName) ca
+    return $ resultToMaybe ta
 
 joinFirstCrumbleM ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
