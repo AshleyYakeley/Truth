@@ -2,7 +2,6 @@ module Language.Expression.Dolan.Solver.WholeConstraint where
 
 import Data.Shim
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -32,7 +31,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConst
     allConstraint = Dict
 
 type WholeConstraintShim :: GroundTypeKind -> Type -> Type
-type WholeConstraintShim ground = ShimWit (Isomorphism (->)) (WholeConstraint ground)
+type WholeConstraintShim ground = ShimWit (CatDual (->)) (WholeConstraint ground)
 
 bisubstituteWholeConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
@@ -42,11 +41,7 @@ bisubstituteWholeConstraint ::
 bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
     MkShimWit fta' (MkPolarShim (MkPolyMapT conva)) <- bisubstituteFlipType bisub fta
     MkShimWit ftb' (MkPolarShim (MkPolyMapT convb)) <- bisubstituteFlipType bisub ftb
-    return $
-        MkShimWit (MkWholeConstraint fta' ftb') $
-        MkIsomorphism
-            (\conv -> isoBackwards convb . conv . isoBackwards conva)
-            (\conv -> isoForwards convb . conv . isoForwards conva)
+    return $ MkShimWit (MkWholeConstraint fta' ftb') $ MkCatDual $ \conv -> isoForwards convb . conv . isoForwards conva
 
 bisubstituteWholeConstraintShim ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground

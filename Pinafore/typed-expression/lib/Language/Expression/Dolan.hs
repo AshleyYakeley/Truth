@@ -37,9 +37,6 @@ module Language.Expression.Dolan
     , DolanGroundedType(..)
     , DolanSingularType(..)
     , DolanType(..)
-    , FlipType(..)
-    , toFlipType
-    , flipToType
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
@@ -54,7 +51,6 @@ module Language.Expression.Dolan
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.FreeVars as I
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Mono as I

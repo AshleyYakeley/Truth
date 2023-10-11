@@ -2,7 +2,6 @@ module Language.Expression.Dolan.Solver.AtomicConstraint where
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes

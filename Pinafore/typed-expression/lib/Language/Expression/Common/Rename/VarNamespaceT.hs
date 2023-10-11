@@ -2,7 +2,7 @@ module Language.Expression.Common.Rename.VarNamespaceT
     ( NameRigidity(..)
     , RenamerMonad(..)
     , renamerGenerateFree
-    , renamerGenerateFreeUVar
+    , renamerGenerateFreeTypeVarT
     , renamerGenerateAssign
     , fixedRenameSource
     , VarNamespaceT
@@ -26,10 +26,10 @@ renamerGenerateFree ::
     => m String
 renamerGenerateFree = renamerGenerate FreeName
 
-renamerGenerateFreeUVar ::
+renamerGenerateFreeTypeVarT ::
        forall m. RenamerMonad m
     => m SomeTypeVarT
-renamerGenerateFreeUVar = do
+renamerGenerateFreeTypeVarT = do
     newname <- renamerGenerateFree
     return $ newTypeVar newname MkSomeTypeVarT
 

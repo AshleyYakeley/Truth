@@ -15,13 +15,22 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
+separatePiece ::
+       forall (ground :: GroundTypeKind) t. IsDolanGroundType ground
+    => Piece ground t
+    -> Either (UnifyPuzzle ground t) (Puzzle ground t)
+separatePiece piece =
+    case pieceToUnify piece of
+        SuccessResult upuzzle -> Left upuzzle
+        FailureResult _ -> Right $ varExpression piece
+
 crumblePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> CrumbleM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
 crumblePuzzle (ClosedExpression a) = return (pure a, [])
 crumblePuzzle puzzle =
-    partitionExpression purePiece puzzle $ \upuzzle spuzzle -> do
+    partitionExpression separatePiece puzzle $ \upuzzle spuzzle -> do
         (exprba, usubs) <- solveUnifyPuzzle upuzzle
         spuzzle' <- bisubstitutesPuzzle usubs spuzzle
         (MkSolverExpression spuzzle'' exprb, ssubs) <- subsumePuzzleStep spuzzle'
@@ -38,4 +47,8 @@ rigidSolvePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Puzzle ground a
     -> DolanTypeCheckM ground (DolanOpenExpression ground a)
-rigidSolvePuzzle puzzle = fmap fst $ runCrumbleMRigidity (\_ -> RigidName) $ solveUnifyPuzzle puzzle
+rigidSolvePuzzle puzzle =
+    fmap fst $
+    runCrumbleMRigidity (\_ -> RigidName) $ do
+        upuzzle <- liftResultToCrumbleM $ mapExpressionM pieceToUnify puzzle
+        solveUnifyPuzzle upuzzle

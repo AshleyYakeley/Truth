@@ -13,7 +13,6 @@ module Language.Expression.Dolan.Solver.AtomicSubstitute
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.CrumbleM
@@ -91,7 +90,7 @@ getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt
     withRepresentative pol $ do
         MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
             if genNewNameINTERNAL
-                then renamerGenerateFreeUVar
+                then renamerGenerateFreeTypeVarT
                 else return $ MkSomeTypeVarT oldvar
         withInvertPolarity @polarity $
             assignTypeVarT @(JoinMeetType polarity newtv pt) oldvar $ do
@@ -103,7 +102,7 @@ getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt
                 substwit <-
                     if occursInFlipType oldvar fptw
                         then do
-                            MkSomeTypeVarT recvar <- renamerGenerateFreeUVar
+                            MkSomeTypeVarT recvar <- renamerGenerateFreeTypeVarT
                             assignSameTypeVarT oldvar recvar $
                                 return $ \ptw' ->
                                     shimWitToDolan $
@@ -146,8 +145,8 @@ bisubstitutesPiece ::
     -> Piece ground a
     -> CrumbleM ground (Puzzle ground a)
 bisubstitutesPiece newchanges (WholePiece wc) = do
-    MkShimWit wc' conv <- liftResultToCrumbleM $ bisubstitutesWholeConstraintShim newchanges $ mkShimWit wc
-    return $ fmap (isoBackwards conv) $ varExpression $ WholePiece wc'
+    MkShimWit wc' (MkCatDual conv) <- liftResultToCrumbleM $ bisubstitutesWholeConstraintShim newchanges $ mkShimWit wc
+    return $ fmap conv $ varExpression $ WholePiece wc'
 bisubstitutesPiece newchanges (AtomicPiece ac) = bisubstitutesAtomicConstraint newchanges ac
 
 bisubstitutesPuzzle ::
@@ -155,7 +154,7 @@ bisubstitutesPuzzle ::
     => [SolverBisubstitution ground]
     -> Puzzle ground a
     -> CrumbleM ground (Puzzle ground a)
-bisubstitutesPuzzle substs = mapExpressionWitnessesM $ bisubstitutesPiece substs
+bisubstitutesPuzzle substs = mapExpressionM $ bisubstitutesPiece substs
 
 bisubstitutesAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
@@ -179,4 +178,4 @@ applySubstsToPuzzle ::
     => [Substitution ground]
     -> Puzzle ground a
     -> CrumbleM ground (Puzzle ground a)
-applySubstsToPuzzle substs = mapExpressionWitnessesM $ applySubstsToPiece substs
+applySubstsToPuzzle substs = mapExpressionM $ applySubstsToPiece substs

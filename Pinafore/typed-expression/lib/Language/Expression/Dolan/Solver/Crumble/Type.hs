@@ -7,7 +7,6 @@ module Language.Expression.Dolan.Solver.Crumble.Type
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle

@@ -1,13 +1,13 @@
 module Language.Expression.Dolan.TypeResult where
 
 import Data.Shim
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type TypeError :: GroundTypeKind -> Type
 data TypeError ground where
+    InternalTypeError :: forall (ground :: GroundTypeKind). Text -> TypeError ground
     UninvertibleTypeError
         :: forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
         => DolanType ground polarity t
@@ -23,6 +23,7 @@ data TypeError ground where
         -> TypeError ground
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (TypeError ground) where
+    show (InternalTypeError _) = "INTERNAL"
     show (UninvertibleTypeError _) = "uninvertible"
     show (NoGroundConvertTypeError _ _) = "no ground conversion"
     show (IncoherentGroundConvertTypeError _ _) = "incoherent ground conversions"

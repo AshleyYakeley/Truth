@@ -6,5 +6,6 @@ module Language.Expression.Dolan.Type
 
 import Language.Expression.Dolan.Type.Combine as I
 import Language.Expression.Dolan.Type.Equality ()
+import Language.Expression.Dolan.Type.FlipType as I
 import Language.Expression.Dolan.Type.InvertedCombine as I
 import Language.Expression.Dolan.Type.Type as I

@@ -4,9 +4,11 @@ module Language.Expression.Dolan.Bisubstitute
     ( Bisubstitution(..)
     , mkPolarBisubstitution
     , bisubstituteType
+    , bisubstituteFlipType
     , bothBisubstitute
     , singleBisubstitute
     , bisubstitutesType
+    , funcBisubstituteType
     , bisubstitute
     , bisubstitutes
     , SubstitutablePolyShim
@@ -100,3 +102,14 @@ mapDolanSingularType ::
     -> DolanSingularType ground polarity t
     -> PShimWit (pshim Type) (DolanSingularType ground) polarity t
 mapDolanSingularType ff t = runIdentity $ mapDolanSingularTypeM (\t' -> Identity $ ff t') t
+
+bisubstituteFlipType ::
+       forall (ground :: GroundTypeKind) polarity m (pshim :: PolyShimKind) a.
+       (IsDolanGroundType ground, Is PolarityType polarity, MonadInner m, SubstitutablePolyShim pshim)
+    => Bisubstitution ground (pshim Type) m
+    -> FlipType ground polarity a
+    -> m (PShimWit (pshim Type) (FlipType ground) polarity a)
+bisubstituteFlipType bisub (NormalFlipType t) = do
+    MkShimWit t' conv <- bisubstituteType bisub t
+    return $ MkShimWit (NormalFlipType t') conv
+bisubstituteFlipType _bisub (InvertFlipType t) = return $ mkShimWit $ InvertFlipType t

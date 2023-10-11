@@ -10,8 +10,8 @@ import Text.Parsec.Error
 import Text.Parsec.Pos
 
 data ErrorType
-    = KnownIssueError Int
-                      NamedText
+    = InternalError (Maybe Int)
+                    NamedText
     | UnicodeDecodeError NamedText
     | ParserError [Message]
     | PatternErrorError PatternError
@@ -86,11 +86,13 @@ data ErrorType
     | ModuleCycleError (NonEmpty ModuleName)
 
 instance ShowNamedText ErrorType where
-    showNamedText (KnownIssueError n nt) =
+    showNamedText (InternalError mn nt) =
         bindNamedText nt $ \t ->
-            case t of
-                "" -> "issue #" <> showNamedText n
-                _ -> toNamedText t <> " (issue #" <> showNamedText n <> ")"
+            case (mn, t) of
+                (Just n, "") -> "INTERNAL ERROR: issue #" <> showNamedText n
+                (Just n, _) -> "INTERNAL ERROR: " <> toNamedText t <> " (issue #" <> showNamedText n <> ")"
+                (Nothing, "") -> "INTERNAL ERROR"
+                (Nothing, _) -> "INTERNAL ERROR: " <> toNamedText t
     showNamedText (UnicodeDecodeError t) = "Unicode decode error: " <> t
     showNamedText (ParserError msgs) = let
         getMsgs :: (Message -> Maybe String) -> [Text]

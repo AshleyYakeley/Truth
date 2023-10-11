@@ -3,7 +3,6 @@ module Language.Expression.Dolan.Solver.Puzzle where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.FlipType
 import Language.Expression.Dolan.Simplify.AutomateRecursion
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.CrumbleM
@@ -43,14 +42,6 @@ type Piece :: GroundTypeKind -> Type -> Type
 data Piece ground t where
     WholePiece :: forall (ground :: GroundTypeKind) t. WholeConstraint ground t -> Piece ground t
     AtomicPiece :: forall (ground :: GroundTypeKind) t. AtomicConstraint ground t -> Piece ground t
-
-purePiece ::
-       forall (ground :: GroundTypeKind) t. IsDolanGroundType ground
-    => Piece ground t
-    -> Bool
-purePiece (WholePiece (MkWholeConstraint (NormalFlipType _) (NormalFlipType _))) = True
-purePiece (AtomicPiece (MkAtomicConstraint _ _ (NormalFlipType _))) = True
-purePiece _ = False
 
 instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (Piece ground t) where
     show (WholePiece wc) = "whole: " <> show wc

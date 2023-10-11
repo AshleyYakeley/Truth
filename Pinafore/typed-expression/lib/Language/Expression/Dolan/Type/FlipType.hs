@@ -1,10 +1,10 @@
-module Language.Expression.Dolan.FlipType where
+module Language.Expression.Dolan.Type.FlipType where
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
-import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.Type.Equality ()
+import Language.Expression.Dolan.Type.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -63,14 +63,3 @@ occursInFlipType ::
     -> Bool
 occursInFlipType v (NormalFlipType t) = variableOccursIn v t
 occursInFlipType v (InvertFlipType t) = variableOccursIn v t
-
-bisubstituteFlipType ::
-       forall (ground :: GroundTypeKind) polarity m (pshim :: PolyShimKind) a.
-       (IsDolanGroundType ground, Is PolarityType polarity, MonadInner m, SubstitutablePolyShim pshim)
-    => Bisubstitution ground (pshim Type) m
-    -> FlipType ground polarity a
-    -> m (PShimWit (pshim Type) (FlipType ground) polarity a)
-bisubstituteFlipType bisub (NormalFlipType t) = do
-    MkShimWit t' conv <- bisubstituteType bisub t
-    return $ MkShimWit (NormalFlipType t') conv
-bisubstituteFlipType _bisub (InvertFlipType t) = return $ mkShimWit $ InvertFlipType t
