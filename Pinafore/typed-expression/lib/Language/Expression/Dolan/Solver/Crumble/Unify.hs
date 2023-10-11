@@ -29,6 +29,12 @@ data UnifyWholeConstraint (ground :: GroundTypeKind) t where
         -> DolanType ground 'Negative b
         -> UnifyWholeConstraint ground (DolanShim ground a b)
 
+instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (UnifyWholeConstraint ground t) where
+    show (MkUnifyWholeConstraint tp tn) = allShow tp <> " <: " <> allShow tn
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (UnifyWholeConstraint ground) where
+    allConstraint = Dict
+
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEquality (UnifyWholeConstraint ground) where
     testEquality (MkUnifyWholeConstraint ta1 tb1) (MkUnifyWholeConstraint ta2 tb2) = do
         Refl <- testEquality ta1 ta2
@@ -43,6 +49,13 @@ data UnifyVariableConstraint (ground :: GroundTypeKind) t where
         -> DolanType ground 'Negative tb
         -> UnifyVariableConstraint ground (DolanShim ground ta tb -> (DolanShim ground ta tv, DolanShim ground tv tb))
 
+instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (UnifyVariableConstraint ground t) where
+    show (MkUnifyVariableConstraint var tp tn) = allShow tp <> " <: " <> show var <> " <: " <> allShow tn
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
+             AllConstraint Show (UnifyVariableConstraint ground) where
+    allConstraint = Dict
+
 data UnifyPiece (ground :: GroundTypeKind) t where
     WholeUnifyPiece :: forall (ground :: GroundTypeKind) t. UnifyWholeConstraint ground t -> UnifyPiece ground t
     AtomicUnifyPiece
@@ -52,6 +65,15 @@ data UnifyPiece (ground :: GroundTypeKind) t where
         -> DolanType ground 'Negative tb
         -> UnifyPiece ground (DolanShim ground ta tv, DolanShim ground tv tb)
     VariableUnifyPiece :: forall (ground :: GroundTypeKind) t. UnifyVariableConstraint ground t -> UnifyPiece ground t
+
+instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (UnifyPiece ground t) where
+    show (WholeUnifyPiece wc) = "whole: " <> show wc
+    show (AtomicUnifyPiece var tp tn) =
+        "atomic: " <> showDolanType tp <> " <: " <> show var <> " <: " <> showDolanType tn
+    show (VariableUnifyPiece vc) = "variable: " <> show vc
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (UnifyPiece ground) where
+    allConstraint = Dict
 
 matchWholeUnifyPiece ::
        forall (ground :: GroundTypeKind) t. IsDolanGroundType ground

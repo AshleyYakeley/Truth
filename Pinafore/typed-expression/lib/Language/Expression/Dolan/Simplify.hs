@@ -46,7 +46,8 @@ defaultSimplifierSettings =
         }
 
 simplifierSettingsINTERNAL :: SimplifierSettings
-simplifierSettingsINTERNAL = defaultSimplifierSettings
+simplifierSettingsINTERNAL =
+    defaultSimplifierSettings {simplifyAutomateRecursion = False, simplifyEliminateUnusedRecursion = True}
 
 -- Simplification:
 --

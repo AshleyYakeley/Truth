@@ -686,7 +686,14 @@ testQueries =
               ]
         , testTree
               "recursive"
-              [ testQuery "let x : rec a, List a = [] in x" $ LRSuccess "[]"
+              [ testNoMark $
+                testTree
+                    "automaton"
+                    [ testQuery "Nothing: Maybe (rec a, List a)" $ LRSuccess "Nothing"
+                    , testQuery "Nothing: Maybe (rec a, Maybe a)" $ LRSuccess "Nothing"
+                    , testQuery "Nothing: rec a, Maybe a" $ LRSuccess "Nothing"
+                    , testQuery "[]: rec a, List a" $ LRSuccess "[]"
+                    ]
               , let
                     atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
                     in testTree

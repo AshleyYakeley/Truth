@@ -155,8 +155,14 @@ qEvalExpr ::
     -> m QValue
 qEvalExpr expr = tsEval @QTypeSystem expr
 
-typedAnyToVal :: forall t. QShimWit 'Negative t -> QValue -> QInterpreter t
-typedAnyToVal = tsUnifyValueTo @QTypeSystem
+qUnifyValueTo :: forall t. QShimWit 'Negative t -> QValue -> QInterpreter t
+qUnifyValueTo = tsUnifyValueTo @QTypeSystem
+
+qValue ::
+       forall t. HasQType 'Positive t
+    => t
+    -> QValue
+qValue v = MkSomeOf toPolarShimWit v
 
 typedUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
 typedUnifyExpressionToOpen = tsUnifyExpressionTo @QTypeSystem

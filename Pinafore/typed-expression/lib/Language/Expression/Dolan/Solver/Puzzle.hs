@@ -53,16 +53,20 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConst
 type Puzzle :: GroundTypeKind -> Type -> Type
 type Puzzle ground = Expression (Piece ground)
 
+simplifyPuzzleTypesINTERNAL :: Bool
+simplifyPuzzleTypesINTERNAL = False
+
 wholeConstraintPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
     => WholeConstraint ground a
     -> DolanTypeCheckM ground (Puzzle ground a)
-wholeConstraintPuzzle (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb)) = do
-    MkShimWit ta' (MkPolarShim conva) <- automateRecursionInType ta
-    MkShimWit tb' (MkPolarShim convb) <- automateRecursionInType tb
-    return $
-        fmap (\conv -> convb . conv . conva) $
-        varExpression $ WholePiece $ MkWholeConstraint (NormalFlipType ta') (NormalFlipType tb')
+wholeConstraintPuzzle (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb))
+    | simplifyPuzzleTypesINTERNAL = do
+        MkShimWit ta' (MkPolarShim conva) <- automateRecursionInType ta
+        MkShimWit tb' (MkPolarShim convb) <- automateRecursionInType tb
+        return $
+            fmap (\conv -> convb . conv . conva) $
+            varExpression $ WholePiece $ MkWholeConstraint (NormalFlipType ta') (NormalFlipType tb')
 wholeConstraintPuzzle constr = return $ varExpression $ WholePiece constr
 
 atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint ground a -> Puzzle ground a
