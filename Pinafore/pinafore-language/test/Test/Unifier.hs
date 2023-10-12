@@ -338,6 +338,33 @@ testUnifier =
                     "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
               ]
         , testTree
+              "retraction"
+              [ testNoMark $
+                testTree "list-1" $
+                runTester defaultTester $
+                testerLiftInterpreter $ do
+                    expr <- parseTopExpression "[1,2]"
+                    val <- qEvalExpr expr
+                    tval :: Showable <- qUnifyValue val
+                    liftIO $ assertEqual "" "[1, 2]" $ textShow tval
+              , testNoMark $
+                testTree "list-2" $
+                runTester defaultTester $
+                testerLiftInterpreter $ do
+                    expr <- parseTopExpression "[1,2]"
+                    val <- qEvalExpr expr
+                    tval :: NonEmpty Integer <- qUnifyValue val
+                    liftIO $ assertEqual "" (1 :| [2]) tval
+              , testMark $
+                testTree "list-3" $
+                runTester defaultTester $
+                testerLiftInterpreter $ do
+                    expr <- parseTopExpression "1 :: (2 :: [])"
+                    val <- qEvalExpr expr
+                    tval :: NonEmpty Integer <- qUnifyValue val
+                    liftIO $ assertEqual "" (1 :| [2]) tval
+              ]
+        , testTree
               "recursive-shims"
               [ testTree "pass-1" $
                 runTester defaultTester $ do

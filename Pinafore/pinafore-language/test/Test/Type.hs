@@ -422,7 +422,7 @@ testType =
                     , simplifyTypeTest "Integer | Boolean" "Integer. | Boolean."
                     , simplifyTypeTest "(Boolean & Integer) -> Unit" "(Boolean. & Integer.) -> Unit."
                     , simplifyTypeTest "(Integer & Boolean) -> Unit" "(Integer. & Boolean.) -> Unit."
-                    , testNoMark $ simplifyTypeTest "Literal | Integer" "Literal."
+                    , simplifyTypeTest "Literal | Integer" "Literal."
                     , simplifyTypeTest "Integer | Literal" "Literal."
                     , simplifyTypeTest "List Literal | List Integer" "List. Literal."
                     , simplifyTypeTest "List Integer | List Literal" "List. Literal."

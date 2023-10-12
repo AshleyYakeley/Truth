@@ -33,8 +33,7 @@ substBisubstitution ::
 substBisubstitution (MkSubstitution (pol :: _ polarity) oldvar newvar mt _) =
     withRepresentative pol $
     withInvertPolarity @polarity $ let
-        newVarWit =
-            shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarShim $ isoRetractPolyPolar1 @ground
+        newVarWit = shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarShim polar1
         in mkPolarBisubstitution oldvar mt $ return newVarWit
 
 substituteAtomicConstraint ::
@@ -61,23 +60,6 @@ substituteAtomicConstraint (MkSubstitution substpol oldvar newvar _ (Just st)) (
             return $ liftA2 (\t a -> a t) p1 p2
 substituteAtomicConstraint sub ac = bisubstituteAtomicConstraint (substBisubstitution sub) ac
 
-isoRetractPolyPolarShim ::
-       forall (pshim :: PolyShimKind) polarity a b. (FunctionShim (pshim Type), Is PolarityType polarity)
-    => PolarShim (pshim Type) polarity a b
-    -> PolarShim (PolyIso pshim Type) polarity a b
-isoRetractPolyPolarShim (MkPolarShim conv) =
-    case polarityType @polarity of
-        PositiveType -> MkPolarShim $ MkPolyMapT $ isoRetractShim conv
-        NegativeType -> MkPolarShim $ MkPolyMapT $ isoRetractShim conv
-
-isoRetractPolyPolar1 ::
-       forall (ground :: GroundTypeKind) polarity a b. (IsDolanGroundType ground, Is PolarityType polarity)
-    => PolarShim (DolanPolyIsoShim ground Type) polarity a (JoinMeetType polarity a b)
-isoRetractPolyPolar1 =
-    case polarityType @polarity of
-        PositiveType -> MkPolarShim $ MkPolyMapT isoRetractJoin1
-        NegativeType -> MkPolarShim $ MkPolyMapT isoRetractMeet1
-
 -- | For debugging.
 genNewNameINTERNAL :: Bool
 genNewNameINTERNAL = False
@@ -95,10 +77,8 @@ getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt
         withInvertPolarity @polarity $
             assignTypeVarT @(JoinMeetType polarity newtv pt) oldvar $ do
                 let
-                    newVarWit :: DolanIsoShimWit ground (InvertPolarity polarity) (JoinMeetType polarity newtv pt)
-                    newVarWit =
-                        shimWitToDolan $
-                        MkShimWit (VarDolanSingularType newvar) $ invertPolarShim $ isoRetractPolyPolar1 @ground
+                    newVarWit :: DolanShimWit ground (InvertPolarity polarity) (JoinMeetType polarity newtv pt)
+                    newVarWit = shimWitToDolan $ MkShimWit (VarDolanSingularType newvar) $ invertPolarShim polar1
                 substwit <-
                     if occursInFlipType oldvar fptw
                         then do
@@ -124,9 +104,7 @@ getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt
                                             pol
                                             oldvar
                                             newvar
-                                            (do
-                                                 MkShimWit pt conv <- invertTypeM rigidity ptw
-                                                 return $ substwit $ MkShimWit pt $ isoRetractPolyPolarShim conv)
+                                            (fmap substwit $ invertTypeM rigidity ptw)
                                             (Just ptw)
                 return (unPolarShim $ polar2 @(DolanShim ground) @polarity @newtv @pt, subst)
 

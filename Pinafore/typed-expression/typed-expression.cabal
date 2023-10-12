@@ -95,6 +95,7 @@ library
       Language.Expression.Dolan.Solver.AtomicSubstitute
       Language.Expression.Dolan.Solver.Crumble.Type
       Language.Expression.Dolan.Solver.Crumble.Crumbler
+      Language.Expression.Dolan.Solver.Crumble.Presubstitution
       Language.Expression.Dolan.Solver.Crumble.Unify
       Language.Expression.Dolan.Solver.Crumble.Subsume
       Language.Expression.Dolan.Solver.Solve

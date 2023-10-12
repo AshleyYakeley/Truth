@@ -8,10 +8,9 @@ module Language.Expression.Dolan.Solver.Crumble.Unify
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
+import Language.Expression.Dolan.Solver.Crumble.Presubstitution
 import Language.Expression.Dolan.Solver.Crumble.Type
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
@@ -218,96 +217,43 @@ processPuzzle puzzle =
                    Just vpuzzle -> crumblerLift $ solverExpressionLiftType vpuzzle
                    Nothing -> processPuzzle puzzle'
 
--- | For debugging.
-genNewNameINTERNAL :: Bool
-genNewNameINTERNAL = False
+constraintToPresub ::
+       forall (ground :: GroundTypeKind) t. IsDolanGroundType ground
+    => UnifyVariableConstraint ground t
+    -> WriterT [Presubstitution ground] (DolanTypeCheckM ground) t
+constraintToPresub (MkUnifyVariableConstraint var ta tb) = do
+    (presub, t) <- lift $ assignPresubstitution var ta tb
+    tell [presub]
+    return t
 
-createBisubstitution ::
-       forall (ground :: GroundTypeKind) v a b. IsDolanGroundType ground
-    => TypeVarT v
-    -> DolanType ground 'Positive a
-    -> DolanType ground 'Negative b
-    -> DolanTypeCheckM ground ( SolverBisubstitution ground
-                              , DolanShim ground a b -> (DolanShim ground a v, DolanShim ground v b))
-createBisubstitution oldvar ta tb = do
-    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
-        if genNewNameINTERNAL
-            then renamerGenerateFreeTypeVarT
-            else return $ MkSomeTypeVarT oldvar
-    assignTypeVarT @(MeetType (JoinType newtv a) b) oldvar $ do
-        ftwa :: (DolanIsoShimWit ground 'Positive (MeetType (JoinType newtv a) b) -> DolanIsoShimWit ground 'Negative (MeetType (JoinType newtv a) b)) -> DolanIsoShimWit ground 'Positive (MeetType (JoinType newtv a) b) <- let
-            tconv :: PolarShim (DolanPolyIsoShim ground Type) 'Positive (MeetType (JoinType tv a) b) (JoinType tv a)
-            tconv = MkPolarShim $ MkPolyMapT isoRetractMeet1
-            in if variableOccursIn oldvar ta
-                   then do
-                       MkSomeTypeVarT recvar <- renamerGenerateFreeTypeVarT
-                       assignTypeVarT @(JoinType newtv a) recvar $ let
-                           recwit = mapShimWit tconv $ varDolanShimWit recvar
-                           in return $ \twb ->
-                                  mapShimWit tconv $
-                                  shimWitToDolan $
-                                  recursiveDolanShimWit recvar $
-                                  joinMeetShimWit
-                                      (varDolanShimWit newvar)
-                                      (bothBisubstitute oldvar recwit (twb recwit) (mkShimWit ta))
-                   else return $ \_ -> let
-                            ta' = ConsDolanType (VarDolanSingularType newvar) ta
-                            in MkShimWit ta' tconv
-        ftwb :: (DolanIsoShimWit ground 'Negative (MeetType (JoinType newtv a) b) -> DolanIsoShimWit ground 'Positive (MeetType (JoinType newtv a) b)) -> DolanIsoShimWit ground 'Negative (MeetType (JoinType newtv a) b) <- let
-            tconv :: PolarShim (DolanPolyIsoShim ground Type) 'Negative (MeetType (JoinType tv a) b) (MeetType tv b)
-            tconv = MkPolarShim $ iMeetPair (MkPolyMapT isoRetractJoin1) id
-            in if variableOccursIn oldvar tb
-                   then do
-                       MkSomeTypeVarT recvar <- renamerGenerateFreeTypeVarT
-                       assignTypeVarT @(MeetType newtv b) recvar $ let
-                           recwit = mapShimWit tconv $ varDolanShimWit recvar
-                           in return $ \twa ->
-                                  mapShimWit tconv $
-                                  shimWitToDolan $
-                                  recursiveDolanShimWit recvar $
-                                  joinMeetShimWit
-                                      (varDolanShimWit newvar)
-                                      (bothBisubstitute oldvar recwit (twa recwit) (mkShimWit tb))
-                   else return $ \_ -> let
-                            tb' = ConsDolanType (VarDolanSingularType newvar) tb
-                            in MkShimWit tb' tconv
-        let
-            twa :: DolanIsoShimWit ground 'Positive (MeetType (JoinType newtv a) b)
-            twa = ftwa $ \rv -> ftwb $ \_ -> rv
-            twb :: DolanIsoShimWit ground 'Negative (MeetType (JoinType newtv a) b)
-            twb = ftwb $ \rv -> ftwa $ \_ -> rv
-        return (MkBisubstitution oldvar (pure twa) (pure twb), \convab -> (meetf join2 convab, meet2))
-
-substVConstraint ::
-       forall (ground :: GroundTypeKind) t. IsDolanSubtypeGroundType ground
-    => SolverBisubstitution ground
-    -> UnifyVariableConstraint ground t
-    -> TypeResult ground (VarPuzzle ground t)
-substVConstraint bisub (MkUnifyVariableConstraint var tp tq) = do
-    MkShimWit tp' (MkPolarShim (MkPolyMapT (MkIsomorphism convp convp'))) <- bisubstituteType bisub tp
-    MkShimWit tq' (MkPolarShim (MkPolyMapT (MkIsomorphism convq convq'))) <- bisubstituteType bisub tq
-    return $
-        OpenExpression (MkUnifyVariableConstraint var tp' tq') $
-        ClosedExpression $ \fconv convab -> let
-            (conva1, convb1) = fconv $ convq' . convab . convp'
-            in (conva1 . convp, convq . convb1)
+applyEachEvery ::
+       forall (ground :: GroundTypeKind). IsDolanGroundType ground
+    => [Presubstitution ground]
+    -> DolanTypeCheckM ground [Presubstitution ground]
+applyEachEvery [] = return []
+applyEachEvery (p:pp) = do
+    pp1 <- applyEachEvery pp
+    pp2 <- for pp1 $ presubstitute p
+    p1 <- unEndoM (mconcat $ fmap (\p1 -> MkEndoM $ presubstitute p1) pp2) p
+    return $ p1 : pp2
 
 solveVPuzzle ::
-       forall (ground :: GroundTypeKind) t. IsDolanSubtypeGroundType ground
+       forall (ground :: GroundTypeKind) t. IsDolanGroundType ground
     => VarPuzzle ground t
-    -> CrumbleM ground (t, [SolverBisubstitution ground])
+    -> DolanTypeCheckM ground (t, [SolverBisubstitution ground])
 solveVPuzzle (ClosedExpression a) = return (a, [])
-solveVPuzzle (OpenExpression (MkUnifyVariableConstraint var tp tq) puzzle) = do
-    (bisub, a) <- liftToCrumbleM $ createBisubstitution var tp tq
-    puzzle' <- liftResultToCrumbleM $ mapExpressionM (substVConstraint bisub) puzzle
-    (ab, bisubs) <- solveVPuzzle puzzle'
-    return (ab a, bisub : bisubs)
+solveVPuzzle vpuzzle = do
+    (t, presubs) <- runWriterT $ solveExpression constraintToPresub vpuzzle
+    presubs' <- applyEachEvery presubs
+    bisubs <- for presubs' preBisubstitution
+    return $ (t, bisubs)
 
 solveUnifyPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => UnifyPuzzle ground a
     -> CrumbleM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
+solveUnifyPuzzle (ClosedExpression a) = return (pure a, [])
 solveUnifyPuzzle puzzle = do
     MkSolverExpression vpuzzle expr <- runCrumbler $ processPuzzle puzzle
-    (t, bisubs) <- solveVPuzzle vpuzzle
+    (t, bisubs) <- liftToCrumbleM $ solveVPuzzle vpuzzle
     return $ (fmap (\ta -> ta t) expr, bisubs)

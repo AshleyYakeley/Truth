@@ -259,10 +259,15 @@ testQueries =
                 LRSuccess "\"!F332D47A-3C96F533-854E5116-EC65D65E-5279826F-25EE1F57-E925B6C3-076D3BEC\""
               ]
         , testTree
-              "list construction"
+              "construction"
               [ testQuery "[]" $ LRSuccess $ show @[Text] []
               , testQuery "[1]" $ LRSuccess $ "[1]"
-              , testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
+              , testQuery "(1,2)" $ LRSuccess $ "(1, 2)"
+              , testQuery "(1,2,3)" $ LRSuccess $ "(1, (2, 3))"
+              , testQuery "Left 4" $ LRSuccess $ "Left 4"
+              , testQuery "Right 5" $ LRSuccess $ "Right 5"
+              , testNoMark $ testQuery "[1,2]" $ LRSuccess $ "[1, 2]"
+              , testNoMark $ testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
               ]
         , testTree
               "functions"

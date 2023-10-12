@@ -8,7 +8,7 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type SolverBisubstitution :: GroundTypeKind -> Type
-type SolverBisubstitution ground = Bisubstitution ground (DolanPolyIsoShim ground Type) (TypeResult ground)
+type SolverBisubstitution ground = Bisubstitution ground (DolanShim ground) (TypeResult ground)
 
 type WholeConstraint :: GroundTypeKind -> Type -> Type
 data WholeConstraint ground t where
@@ -39,9 +39,9 @@ bisubstituteWholeConstraint ::
     -> WholeConstraint ground a
     -> TypeResult ground (WholeConstraintShim ground a)
 bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
-    MkShimWit fta' (MkPolarShim (MkPolyMapT conva)) <- bisubstituteFlipType bisub fta
-    MkShimWit ftb' (MkPolarShim (MkPolyMapT convb)) <- bisubstituteFlipType bisub ftb
-    return $ MkShimWit (MkWholeConstraint fta' ftb') $ MkCatDual $ \conv -> isoForwards convb . conv . isoForwards conva
+    MkShimWit fta' (MkPolarShim conva) <- bisubstituteFlipType bisub fta
+    MkShimWit ftb' (MkPolarShim convb) <- bisubstituteFlipType bisub ftb
+    return $ MkShimWit (MkWholeConstraint fta' ftb') $ MkCatDual $ \conv -> convb . conv . conva
 
 bisubstituteWholeConstraintShim ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
