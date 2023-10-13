@@ -396,8 +396,7 @@ testUnifier =
               ]
         , testTree
               "recursive-shims"
-              [ testMARK $
-                testTree "pass-1" $
+              [ testTree "pass-1" $
                 runTester defaultTester $ do
                     tval :: [Integer] <-
                         testerLiftInterpreter $ do

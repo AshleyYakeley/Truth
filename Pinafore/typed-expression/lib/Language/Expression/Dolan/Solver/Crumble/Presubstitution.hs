@@ -52,11 +52,58 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Pr
         show newvar <>
         " | " <> showDolanType ta <> "; " <> show oldvar <> "- => " <> show newvar <> " & " <> showDolanType tb <> "}"
 
+isCleanType ::
+       forall (ground :: GroundTypeKind) polarity oldtv a. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT oldtv
+    -> DolanType ground polarity a
+    -> Bool
+isCleanType _ NilDolanType = True
+isCleanType var (ConsDolanType (VarDolanSingularType v) _)
+    | Just Refl <- testEquality var v = False
+isCleanType var (ConsDolanType _ t) = isCleanType var t
+
+toVarType ::
+       forall (ground :: GroundTypeKind) polarity oldtv a r. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT oldtv
+    -> DolanType ground polarity a
+    -> (forall a'.
+                DolanType ground polarity a' -> DolanPolarShim ground polarity a (JoinMeetType polarity a' oldtv) -> r)
+    -> r
+toVarType _ NilDolanType call = call NilDolanType polar1
+toVarType var (ConsDolanType (VarDolanSingularType v) t) call
+    | Just Refl <- testEquality var v = toVarType var t $ \t' conv -> call t' $ polarF polar2 conv
+toVarType var (ConsDolanType st t) call =
+    toVarType var t $ \t' conv -> call (ConsDolanType st t') $ iPolarSwapR . iPolarPair id conv
+
+cleanType ::
+       forall (ground :: GroundTypeKind) polarity oldtv newtv a r. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT oldtv
+    -> DolanType ground polarity a
+    -> DolanPolarShim ground polarity oldtv (JoinMeetType polarity newtv a)
+    -> (forall a'.
+                DolanType ground polarity a' -> DolanPolarShim ground polarity oldtv (JoinMeetType polarity newtv a') -> r)
+    -> r
+cleanType var t conv call =
+    if isCleanType var t
+        then call t conv
+        else toVarType var t $ \t' vconv -> let
+                 rconv = polarF polar1 (polarF polar2 (lazyPolarShim rconv) . vconv) . conv
+                 in call t' rconv
+
+cleanPresubstitution ::
+       forall (ground :: GroundTypeKind). IsDolanGroundType ground
+    => Presubstitution ground
+    -> Presubstitution ground
+cleanPresubstitution (MkPresubstitution oldvar newvar ta tb conva convb) =
+    cleanType oldvar ta (MkPolarShim conva) $ \ta' (MkPolarShim conva') ->
+        cleanType oldvar tb (MkPolarShim convb) $ \tb' (MkPolarShim convb') ->
+            MkPresubstitution oldvar newvar ta' tb' conva' convb'
+
 preBisubstitution ::
        forall (ground :: GroundTypeKind) m. (IsDolanGroundType ground, Applicative m)
     => Presubstitution ground
     -> DolanTypeCheckM ground (Bisubstitution ground (DolanShim ground) m)
-preBisubstitution (MkPresubstitution (oldvar :: _ oldtv) (newvar :: _ newtv) (ta :: _ a) (tb :: _ b) conva convb) = do
+preBisubstitution (cleanPresubstitution -> MkPresubstitution (oldvar :: _ oldtv) (newvar :: _ newtv) (ta :: _ a) (tb :: _ b) conva convb) = do
     ftwa <-
         if variableOccursIn oldvar ta
             then do
