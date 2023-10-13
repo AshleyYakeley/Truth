@@ -437,12 +437,12 @@ testType =
                     , simplifyTypeTest "rec a, Integer" "Integer."
                     , simplifyTypeTest "Maybe (rec a, List a)" "Maybe. (rec a, List. a)"
                     , simplifyTypeTest "Maybe (rec a, Integer)" "Maybe. Integer."
-                    , testMark $ testTree "issue-62" [simplifyTypeTest "rec a, rec b, a *: b" "rec a, a *: a"]
-                    , testMark $
+                    , testNoMARK $ testTree "issue-62" [simplifyTypeTest "rec a, rec b, a *: b" "rec a, a *: a"]
+                    , testNoMARK $
                       simplifyTypeTest "Maybe. (b | Maybe. (rec u, b | Maybe. (b | Maybe. u)))" "rec b, Maybe b"
                     , testTree
                           "issue-234"
-                          [ testMark $ simplifyTypeTest "rec b, Maybe. (rec c, b | Maybe. c)" "rec a, Maybe. a"
+                          [ testNoMARK $ simplifyTypeTest "rec b, Maybe. (rec c, b | Maybe. c)" "rec a, Maybe. a"
                           , simplifyTypeTest "rec a, (rec b, Maybe. (rec c, b | Maybe. c)) | Maybe. a" "rec a, Maybe. a"
                           ]
                     , testTree

@@ -94,6 +94,13 @@ testLib = let
        , valBDS "op4" "TEST" op4
        ]
 
+_traceLib :: LibraryModule context
+_traceLib = let
+    libTracePure :: Text -> A -> A
+    --libTracePure t = tracePure $ unpack t
+    libTracePure _t = id
+    in MkLibraryModule "TRACE" $ headingBDT "TRACE" "" $ [valBDS "tracePure" "TRACE" libTracePure]
+
 testUnifier :: TestTree
 testUnifier =
     testTree
@@ -387,10 +394,10 @@ testUnifier =
                             qUnifyValue val
                     testerRunAction $ langWholeModelSet (rval smodel) $ Known 345
               ]
-        , failTestBecause "hangs" $
-          testTree
+        , testTree
               "recursive-shims"
-              [ testTree "pass-1" $
+              [ testMARK $
+                testTree "pass-1" $
                 runTester defaultTester $ do
                     tval :: [Integer] <-
                         testerLiftInterpreter $ do
@@ -404,8 +411,7 @@ testUnifier =
                     if tval == [5, 3]
                         then return ()
                         else fail "different"
-              , testMark $
-                testTree "fails-2" $
+              , testTree "fails-2" $
                 runTester defaultTester $ do
                     tval :: [Integer] <-
                         testerLiftInterpreter $ do

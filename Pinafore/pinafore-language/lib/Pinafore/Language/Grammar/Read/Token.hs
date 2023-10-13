@@ -18,8 +18,8 @@ import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
 
-debugSyntax :: Bool
-debugSyntax = False
+debugSyntaxINTERNAL :: Bool
+debugSyntaxINTERNAL = False
 
 data Comment
     = BlockComment String
@@ -353,7 +353,7 @@ checkKeyword "except" = return $ MkSomeOf TokExcept ()
 checkKeyword "namespace" = return $ MkSomeOf TokNamespace ()
 checkKeyword "with" = return $ MkSomeOf TokWith ()
 checkKeyword "debug"
-    | debugSyntax = return $ MkSomeOf TokDebug ()
+    | debugSyntaxINTERNAL = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
 
 allKeywords :: [(Text, Text)]

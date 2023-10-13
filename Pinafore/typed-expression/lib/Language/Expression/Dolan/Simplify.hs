@@ -5,6 +5,7 @@ module Language.Expression.Dolan.Simplify
     , defaultSimplifierSettings
     ) where
 
+import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Simplify.AutomateRecursion
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
@@ -14,13 +15,16 @@ import Language.Expression.Dolan.Simplify.OneSidedTypeVars
 import Language.Expression.Dolan.Simplify.RollUpRecursion
 import Language.Expression.Dolan.Simplify.SharedTypeVars
 import Language.Expression.Dolan.Simplify.UnusedRecursion
+import Language.Expression.Dolan.Solver.Safety
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 data SimplifierSettings = MkSimplifierSettings
     { simplifyAny :: Bool
+    , simplifyCheckSafetyBefore :: Bool
     , simplifyAutomateRecursion :: Bool
     , simplifyEliminateUnusedRecursion :: Bool
     , simplifyMergeDuplicateGroundTypes :: Bool
@@ -29,12 +33,14 @@ data SimplifierSettings = MkSimplifierSettings
     , simplifyMergeSharedTypeVars :: Bool
     , simplifyMergeDuplicateTypeVars :: Bool
     , simplifyRollUpRecursiveTypes :: Bool
+    , simplifyCheckSafetyAfter :: Bool
     }
 
 defaultSimplifierSettings :: SimplifierSettings
 defaultSimplifierSettings =
     MkSimplifierSettings
         { simplifyAny = True
+        , simplifyCheckSafetyBefore = False
         , simplifyAutomateRecursion = True
         , simplifyEliminateUnusedRecursion = False
         , simplifyMergeDuplicateGroundTypes = True
@@ -43,11 +49,38 @@ defaultSimplifierSettings =
         , simplifyMergeSharedTypeVars = True
         , simplifyMergeDuplicateTypeVars = True
         , simplifyRollUpRecursiveTypes = True
+        , simplifyCheckSafetyAfter = False
         }
 
 simplifierSettingsINTERNAL :: SimplifierSettings
 simplifierSettingsINTERNAL =
-    defaultSimplifierSettings {simplifyAutomateRecursion = False, simplifyEliminateUnusedRecursion = True}
+    defaultSimplifierSettings
+        { simplifyCheckSafetyBefore = True
+        , simplifyAutomateRecursion = False
+        , simplifyEliminateUnusedRecursion = True
+        , simplifyCheckSafetyAfter = True
+        }
+
+checkSafetyInType ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+    => Text
+    -> DolanType ground polarity t
+    -> DolanTypeCheckM ground (DolanShimWit ground polarity t)
+checkSafetyInType msg t = do
+    case checkSafety t of
+        SuccessResult () -> return $ mkShimWit t
+        FailureResult err ->
+            lift $
+            throwTypeError @ground $
+            InternalTypeError $
+            msg <> " simplification: " <> pack (show err) <> " recursive type: " <> pack (showDolanType t)
+
+checkSafetyMappable ::
+       forall (ground :: GroundTypeKind) a.
+       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
+    => Text
+    -> EndoM (DolanTypeCheckM ground) a
+checkSafetyMappable msg = mapPShimWitsM (checkSafetyInType msg) (checkSafetyInType msg)
 
 -- Simplification:
 --
@@ -89,7 +122,8 @@ dolanSimplifyTypes =
         MkSimplifierSettings {..} ->
             mif simplifyAny $
             mconcat
-                [ mif simplifyAutomateRecursion $ automateRecursion @ground
+                [ mif simplifyCheckSafetyBefore $ checkSafetyMappable @ground "before"
+                , mif simplifyAutomateRecursion $ automateRecursion @ground
                 , mif simplifyEliminateUnusedRecursion $ endoToEndoM $ eliminateUnusedRecursion @ground
                 , mif simplifyMergeDuplicateGroundTypes $ mergeDuplicateGroundTypes @ground
                 , mif simplifyEliminateOneSidedTypeVars $ endoToEndoM $ eliminateOneSidedTypeVars @ground
@@ -97,6 +131,7 @@ dolanSimplifyTypes =
                 , mif simplifyMergeSharedTypeVars $ endoToEndoM $ mergeSharedTypeVars @ground
                 , mif simplifyMergeDuplicateTypeVars $ endoToEndoM $ mergeDuplicateTypeVars @ground
                 , mif simplifyRollUpRecursiveTypes $ endoToEndoM $ rollUpRecursiveTypes @ground
+                , mif simplifyCheckSafetyAfter $ checkSafetyMappable @ground "after"
                 ]
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
