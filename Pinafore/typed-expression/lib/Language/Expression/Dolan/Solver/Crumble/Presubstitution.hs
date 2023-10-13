@@ -44,6 +44,14 @@ data Presubstitution (ground :: GroundTypeKind) where
         -> DolanShim ground (MeetType newtv b) oldtv
         -> Presubstitution ground
 
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Presubstitution ground) where
+    show (MkPresubstitution oldvar newvar ta tb _ _) =
+        "{" <>
+        show oldvar <>
+        "+ => " <>
+        show newvar <>
+        " | " <> showDolanType ta <> "; " <> show oldvar <> "- => " <> show newvar <> " & " <> showDolanType tb <> "}"
+
 preBisubstitution ::
        forall (ground :: GroundTypeKind) m. (IsDolanGroundType ground, Applicative m)
     => Presubstitution ground

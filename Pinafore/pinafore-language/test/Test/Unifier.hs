@@ -339,24 +339,21 @@ testUnifier =
               ]
         , testTree
               "retraction"
-              [ testNoMark $
-                testTree "list-1" $
+              [ testTree "list-1" $
                 runTester defaultTester $
                 testerLiftInterpreter $ do
                     expr <- parseTopExpression "[1,2]"
                     val <- qEvalExpr expr
                     tval :: Showable <- qUnifyValue val
                     liftIO $ assertEqual "" "[1, 2]" $ textShow tval
-              , testNoMark $
-                testTree "list-2" $
+              , testTree "list-2" $
                 runTester defaultTester $
                 testerLiftInterpreter $ do
                     expr <- parseTopExpression "[1,2]"
                     val <- qEvalExpr expr
                     tval :: NonEmpty Integer <- qUnifyValue val
                     liftIO $ assertEqual "" (1 :| [2]) tval
-              , testMark $
-                testTree "list-3" $
+              , testTree "list-3" $
                 runTester defaultTester $
                 testerLiftInterpreter $ do
                     expr <- parseTopExpression "1 :: (2 :: [])"
@@ -365,6 +362,33 @@ testUnifier =
                     liftIO $ assertEqual "" (1 :| [2]) tval
               ]
         , testTree
+              "action"
+              [ testTree "1" $
+                runTester defaultTester $ do
+                    smodel <- testerGetDefaultStore
+                    action :: QStore -> Action () <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "fn store => let opentype E in\n" <>
+                                "property @E @Integer !\"r\" store !$ {point.OpenEntity @E !\"p\"} := 456"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    testerRunAction $ action smodel
+              , testTree "2" $
+                runTester defaultTester $ do
+                    smodel <- testerGetDefaultStore
+                    rval :: QStore -> LangWholeModel '( Integer, Integer) <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "fn store => let opentype E in property @E @Integer !\"r\" store !$ {point.OpenEntity @E !\"p\"}"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    testerRunAction $ langWholeModelSet (rval smodel) $ Known 345
+              ]
+        , failTestBecause "HANGS" $
+          testTree
               "recursive-shims"
               [ testTree "pass-1" $
                 runTester defaultTester $ do
@@ -380,7 +404,7 @@ testUnifier =
                     if tval == [5, 3]
                         then return ()
                         else fail "different"
-              , testNoMark $
+              , testMark $
                 testTree "fails-2" $
                 runTester defaultTester $ do
                     tval :: [Integer] <-

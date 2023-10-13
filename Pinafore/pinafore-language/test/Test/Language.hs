@@ -266,8 +266,8 @@ testQueries =
               , testQuery "(1,2,3)" $ LRSuccess $ "(1, (2, 3))"
               , testQuery "Left 4" $ LRSuccess $ "Left 4"
               , testQuery "Right 5" $ LRSuccess $ "Right 5"
-              , testNoMark $ testQuery "[1,2]" $ LRSuccess $ "[1, 2]"
-              , testNoMark $ testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
+              , testQuery "[1,2]" $ LRSuccess $ "[1, 2]"
+              , testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
               ]
         , testTree
               "functions"
@@ -691,8 +691,7 @@ testQueries =
               ]
         , testTree
               "recursive"
-              [ testNoMark $
-                testTree
+              [ testTree
                     "automaton"
                     [ testQuery "Nothing: Maybe (rec a, List a)" $ LRSuccess "Nothing"
                     , testQuery "Nothing: Maybe (rec a, Maybe a)" $ LRSuccess "Nothing"

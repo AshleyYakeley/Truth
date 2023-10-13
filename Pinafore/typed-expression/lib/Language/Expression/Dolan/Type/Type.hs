@@ -47,7 +47,7 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
       , AllConstraint Show (DolanSingularType ground 'Negative)
       , AllConstraint Show (DolanType ground 'Positive)
       , AllConstraint Show (DolanType ground 'Negative)
-      --, DebugIsDolanGroundType ground
+      , DebugIsDolanGroundType ground
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
     type DolanVarID ground :: Type
     type DolanM ground :: Type -> Type

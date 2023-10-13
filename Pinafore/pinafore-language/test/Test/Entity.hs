@@ -892,8 +892,7 @@ testEntity =
                       tGroup
                           "Pair"
                           [ testExpectSuccess "pass"
-                          , tModify testNoMark $
-                            testExpectSuccess "testeqval [5,3,1] $ fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
+                          , testExpectSuccess "testeqval [5,3,1] $ fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
                           , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ toQ [8,12,27,45]"
                           , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ Mk.Q $ toR [8,12,27,45]"
                           , testExpectSuccess "testeqval [8,12,27,45] $ fromR $ toQ [8,12,27,45] >- fn Mk.Q a => a"

@@ -310,7 +310,7 @@ testType =
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe. a"
-                    , testNoMark $ textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
+                    , testMark $ textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x : Entity = Just x in x" "{} -> Entity."
                     , textTypeTest "let rec x : Maybe Entity = Just x in x" "{} -> Maybe. Entity."
@@ -387,7 +387,7 @@ testType =
                                    , recTest "None -> Text" "a -> a" "(a & Text.) -> a"
                                    , fixTest "Text -> Text" "a -> a" "(a & Text.) -> a"
                                    , recTest "Text -> Text" "a -> a" "(a & Text.) -> a"
-                                   , testNoMark $ fixTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a & b) -> b"
+                                   , testMark $ fixTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a & b) -> b"
                                    , recTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a & b) -> b"
                                    , fixTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. Any) -> a"
                                    , recTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. Any) -> a"
@@ -437,12 +437,12 @@ testType =
                     , simplifyTypeTest "rec a, Integer" "Integer."
                     , simplifyTypeTest "Maybe (rec a, List a)" "Maybe. (rec a, List. a)"
                     , simplifyTypeTest "Maybe (rec a, Integer)" "Maybe. Integer."
-                    , testNoMark $ testTree "issue-62" [simplifyTypeTest "rec a, rec b, a *: b" "rec a, a *: a"]
-                    , testNoMark $
+                    , testMark $ testTree "issue-62" [simplifyTypeTest "rec a, rec b, a *: b" "rec a, a *: a"]
+                    , testMark $
                       simplifyTypeTest "Maybe. (b | Maybe. (rec u, b | Maybe. (b | Maybe. u)))" "rec b, Maybe b"
                     , testTree
                           "issue-234"
-                          [ testNoMark $ simplifyTypeTest "rec b, Maybe. (rec c, b | Maybe. c)" "rec a, Maybe. a"
+                          [ testMark $ simplifyTypeTest "rec b, Maybe. (rec c, b | Maybe. c)" "rec a, Maybe. a"
                           , simplifyTypeTest "rec a, (rec b, Maybe. (rec c, b | Maybe. c)) | Maybe. a" "rec a, Maybe. a"
                           ]
                     , testTree

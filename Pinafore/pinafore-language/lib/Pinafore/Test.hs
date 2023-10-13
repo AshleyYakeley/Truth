@@ -51,6 +51,7 @@ module Pinafore.Test
     , testerLiftAction
     , testerRunAction
     , testerLiftInterpreter
+    , testerGetDefaultStore
     , testerGetTableState
     , showPinaforeModel
     ) where
@@ -166,6 +167,12 @@ testerLiftAction pa = testerLiftView $ unliftActionOrFail pa
 
 testerLiftInterpreter :: forall a. ((?library :: LibraryContext) => QInterpreter a) -> Tester a
 testerLiftInterpreter pia = testerLiftView $ fromInterpretResult $ runPinaforeScoped "<input>" pia
+
+testerGetDefaultStore :: Tester QStore
+testerGetDefaultStore = do
+    ii <- MkTester $ asks tcInvocationInfo
+    model <- testerLiftView $ iiDefaultStorageModel ii
+    liftIO $ mkQStore model
 
 testerGetTableState :: Tester QTableSubject
 testerGetTableState =

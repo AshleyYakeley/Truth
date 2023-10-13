@@ -231,11 +231,11 @@ applyEachEvery ::
     => [Presubstitution ground]
     -> DolanTypeCheckM ground [Presubstitution ground]
 applyEachEvery [] = return []
-applyEachEvery (p:pp) = do
+applyEachEvery (x:pp) = do
     pp1 <- applyEachEvery pp
-    pp2 <- for pp1 $ presubstitute p
-    p1 <- unEndoM (mconcat $ fmap (\p1 -> MkEndoM $ presubstitute p1) pp2) p
-    return $ p1 : pp2
+    x1 <- unEndoM (mconcat $ fmap (\p -> MkEndoM $ presubstitute p) pp1) x
+    pp2 <- for pp1 $ presubstitute x1
+    return $ x1 : pp2
 
 solveVPuzzle ::
        forall (ground :: GroundTypeKind) t. IsDolanGroundType ground
