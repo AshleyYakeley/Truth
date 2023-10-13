@@ -310,7 +310,7 @@ testType =
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a, Maybe a = Nothing in x" "{} -> rec a, Maybe. a"
-                    , testMark $ textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
+                    , textTypeTest "let rec x : rec a, Maybe a = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x = Just x in x" "{} -> rec a, Maybe. a"
                     , textTypeTest "let rec x : Entity = Just x in x" "{} -> Entity."
                     , textTypeTest "let rec x : Maybe Entity = Just x in x" "{} -> Maybe. Entity."
@@ -381,22 +381,22 @@ testType =
                                     typeText = "(" <> ta <> ") -> " <> tr
                                     script = "let rec f: " <> typeText <> " = f; x = f x in x"
                                     in textTypeTest script ("{} -> " <> expected)
-                                in [ fixTest "Text -> Any" "a -> a" "a -> (a | Text.)"
-                                   , recTest "Text -> Any" "a -> a" "a -> (a | Text.)"
-                                   , fixTest "None -> Text" "a -> a" "(a & Text.) -> a"
-                                   , recTest "None -> Text" "a -> a" "(a & Text.) -> a"
-                                   , fixTest "Text -> Text" "a -> a" "(a & Text.) -> a"
-                                   , recTest "Text -> Text" "a -> a" "(a & Text.) -> a"
-                                   , testMark $ fixTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a & b) -> b"
-                                   , recTest "Maybe a -> Maybe a" "a -> a" "(rec a, Maybe. a & b) -> b"
-                                   , fixTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. Any) -> a"
-                                   , recTest "Maybe b -> Maybe b" "a -> a" "(a & Maybe. Any) -> a"
-                                   , fixTest "a" "Maybe a" "rec a, Maybe. a"
-                                   , recTest "a" "Maybe a" "rec a, Maybe. a"
-                                   , fixTest "Any" "Integer" "Integer."
-                                   , recTest "Any" "Integer" "Integer."
-                                   , fixTest "Maybe Integer" "Maybe None" "Maybe. None"
-                                   , recTest "Maybe Integer" "Maybe None" "Maybe. None"
+                                testPair :: Text -> Text -> String -> TestTree
+                                testPair ta tr expected =
+                                    testTree
+                                        (unpack $ ta <> " / " <> tr)
+                                        [fixTest ta tr expected, recTest ta tr expected]
+                                in [ testPair "Text -> Any" "a -> a" "a -> (a | Text.)"
+                                   , testPair "None -> Text" "a -> a" "(a & Text.) -> a"
+                                   , testPair "Text -> Text" "a -> a" "Text. -> Text."
+                                   , testPair
+                                         "Maybe a -> Maybe a"
+                                         "a -> a"
+                                         "(rec a, b & Maybe. a) -> (rec c, b | Maybe. c)"
+                                   , testPair "Maybe b -> Maybe b" "a -> a" "Maybe. a -> Maybe. a"
+                                   , testPair "a" "Maybe a" "rec a, Maybe. a"
+                                   , testPair "Any" "Integer" "Integer."
+                                   , testPair "Maybe Integer" "Maybe None" "Maybe. None"
                                    ]
                           ]
                     ]

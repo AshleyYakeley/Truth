@@ -387,7 +387,7 @@ testUnifier =
                             qUnifyValue val
                     testerRunAction $ langWholeModelSet (rval smodel) $ Known 345
               ]
-        , failTestBecause "HANGS" $
+        , failTestBecause "hangs" $
           testTree
               "recursive-shims"
               [ testTree "pass-1" $
