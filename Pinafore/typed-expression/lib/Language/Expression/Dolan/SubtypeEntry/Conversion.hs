@@ -44,7 +44,7 @@ instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVari
 instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). ( IsDolanGroundType ground
          , Show (DolanSubtypeHint ground)
          ) => Show (SubtypeConversion ground dva gta dvb gtb) where
-    show (GeneralSubtypeConversion sk _) = "general: " <> show sk
+    show (GeneralSubtypeConversion sk chain) = "general (" <> show sk <> "): " <> show chain
     show CoerceSubtypeConversion = "coerce"
 
 identitySubtypeConversion ::

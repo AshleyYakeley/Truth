@@ -3,10 +3,11 @@ module Language.Expression.Dolan.Solver.Puzzle where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Simplify.AutomateRecursion
+import Language.Expression.Dolan.Simplify.Solve
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.WholeConstraint
+import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -53,17 +54,17 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConst
 type Puzzle :: GroundTypeKind -> Type -> Type
 type Puzzle ground = Expression (Piece ground)
 
-simplifyPuzzleTypesINTERNAL :: Bool
-simplifyPuzzleTypesINTERNAL = False
+simplifyWholeConstraintINTERNAL :: Bool
+simplifyWholeConstraintINTERNAL = False
 
 wholeConstraintPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => WholeConstraint ground a
     -> DolanTypeCheckM ground (Puzzle ground a)
 wholeConstraintPuzzle (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb))
-    | simplifyPuzzleTypesINTERNAL = do
-        MkShimWit ta' (MkPolarShim conva) <- automateRecursionInType ta
-        MkShimWit tb' (MkPolarShim convb) <- automateRecursionInType tb
+    | simplifyWholeConstraintINTERNAL = do
+        MkShimWit ta' (MkPolarShim conva) <- solveSimplify ta
+        MkShimWit tb' (MkPolarShim convb) <- solveSimplify tb
         return $
             fmap (\conv -> convb . conv . conva) $
             varExpression $ WholePiece $ MkWholeConstraint (NormalFlipType ta') (NormalFlipType tb')
@@ -73,7 +74,7 @@ atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint 
 atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
 
 flipUnifyPuzzle ::
-       forall (ground :: GroundTypeKind) a b. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => FlipType ground 'Positive a
     -> FlipType ground 'Negative b
     -> DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
@@ -81,7 +82,7 @@ flipUnifyPuzzle fta ftb = wholeConstraintPuzzle $ MkWholeConstraint fta ftb
 
 puzzleUnify ::
        forall (ground :: GroundTypeKind) pola polb a b.
-       (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola a
     -> DolanType ground polb b
     -> DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
@@ -107,7 +108,7 @@ puzzleExpression = solverExpressionLiftType
 
 puzzleExpressionUnify ::
        forall (ground :: GroundTypeKind) pola polb a b.
-       (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola a
     -> DolanType ground polb b
     -> DolanTypeCheckM ground (PuzzleExpression ground (DolanShim ground a b))
@@ -115,7 +116,7 @@ puzzleExpressionUnify ta tb = fmap puzzleExpression $ puzzleUnify ta tb
 
 puzzleUnifySingular ::
        forall (ground :: GroundTypeKind) pola polb a b.
-       (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanSingularType ground pola a
     -> DolanSingularType ground polb b
     -> DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
@@ -124,7 +125,7 @@ puzzleUnifySingular ta tb =
     puzzleUnify (singleDolanType ta) (singleDolanType tb)
 
 bisubstituteAtomicConstraint ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => SolverBisubstitution ground
     -> AtomicConstraint ground a
     -> CrumbleM ground (Puzzle ground a)

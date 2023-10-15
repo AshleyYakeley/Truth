@@ -442,8 +442,30 @@ testType =
                       simplifyTypeTest "Maybe. (b | Maybe. (rec u, b | Maybe. (b | Maybe. u)))" "rec b, Maybe b"
                     , testTree
                           "issue-234"
-                          [ testNoMARK $ simplifyTypeTest "rec b, Maybe. (rec c, b | Maybe. c)" "rec a, Maybe. a"
+                          [ simplifyTypeTest "rec b, Maybe. (rec c, b | Maybe. c)" "rec a, Maybe. a"
                           , simplifyTypeTest "rec a, (rec b, Maybe. (rec c, b | Maybe. c)) | Maybe. a" "rec a, Maybe. a"
+                          , simplifyTypeTest
+                                "b -> (Maybe. (rec w, b | Maybe. w) | (Maybe. (rec an, b | Maybe. an) | Maybe. f))"
+                                "a -> Maybe. (rec b, a | Maybe. b)"
+                          , testNoMARK $
+                            simplifyTypeTest
+                                "b -> f -> Maybe. (Maybe. (rec ue, Maybe. (Maybe. ue | b) | b) | (b | f))"
+                                "Unit"
+                          , simplifyTypeTest "a -> (rec r, Maybe. r | a)" "a -> (rec b, Maybe. b | a)"
+                          , simplifyTypeTest
+                                "a -> ((rec r, Maybe. r | a) | (rec r, Maybe. r | a))"
+                                "a -> (rec b, Maybe. b | a)"
+                          , simplifyTypeTest
+                                "a -> (Maybe. (rec r, Maybe. r | a) | Maybe. (rec r, Maybe. r | a))"
+                                "a -> Maybe. (rec b, Maybe. b | a)"
+                          , testNoMARK $
+                            simplifyTypeTest
+                                "a -> b -> (b | (rec r, Maybe. r | a) | (rec r, Maybe. r | a) | b)"
+                                "a -> b -> ((rec c, a | Maybe. c) | b)"
+                          , testNoMARK $
+                            simplifyTypeTest
+                                "a -> b -> (Maybe. b | (Maybe. (rec r, Maybe. r | a)) | (Maybe. (rec r, Maybe. r | a)) | Maybe. b)"
+                                "a -> b -> Maybe. ((rec c, a | Maybe. c) | b)"
                           ]
                     , testTree
                           "roll"

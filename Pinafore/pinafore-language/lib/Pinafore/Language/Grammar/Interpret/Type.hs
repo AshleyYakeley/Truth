@@ -95,9 +95,9 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
                  assignTypeVarWit var t $
                  case safeRecursiveDolanSingularType var t of
                      SuccessResult rt -> return $ MkSome $ singleDolanType rt
-                     FailureResult ImmediateRecursiveTypeError ->
+                     FailureResult (ImmediateRecursiveTypeError _) ->
                          throw $ InterpretTypeRecursionImmediate name $ exprShow t
-                     FailureResult ContravariantRecursiveTypeError ->
+                     FailureResult (ContravariantRecursiveTypeError _) ->
                          throw $ InterpretTypeRecursionNotCovariant name $ exprShow t)
             mt
 

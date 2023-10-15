@@ -57,6 +57,9 @@ type TypeVarT = TypeVar
 instance Show (TypeVar tv) where
     show (MkTypeVar t) = show t
 
+instance AllConstraint Show TypeVar where
+    allConstraint = Dict
+
 instance TestEquality TypeVar where
     testEquality (MkTypeVar a) (MkTypeVar b) = do
         Refl <- testEquality a b

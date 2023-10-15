@@ -8,6 +8,7 @@ module Language.Expression.Dolan.Solver.Crumble.Unify
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Simplify.Solve
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
 import Language.Expression.Dolan.Solver.Crumble.Presubstitution
@@ -65,6 +66,21 @@ data UnifyPiece (ground :: GroundTypeKind) t where
         -> UnifyPiece ground (DolanShim ground ta tv, DolanShim ground tv tb)
     VariableUnifyPiece :: forall (ground :: GroundTypeKind) t. UnifyVariableConstraint ground t -> UnifyPiece ground t
 
+simplifyWholeUnifyPieceINTERNAL :: Bool
+simplifyWholeUnifyPieceINTERNAL = True
+
+mkWholeUnifyPiece ::
+       forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
+    => DolanType ground 'Positive a
+    -> DolanType ground 'Negative b
+    -> DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+mkWholeUnifyPiece ta tb
+    | simplifyWholeUnifyPieceINTERNAL = do
+        MkShimWit ta' (MkPolarShim conva) <- solveSimplify ta
+        MkShimWit tb' (MkPolarShim convb) <- solveSimplify tb
+        return $ fmap (\conv -> convb . conv . conva) $ varExpression $ WholeUnifyPiece $ MkUnifyWholeConstraint ta' tb'
+mkWholeUnifyPiece ta tb = return $ varExpression $ WholeUnifyPiece $ MkUnifyWholeConstraint ta tb
+
 instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (UnifyPiece ground t) where
     show (WholeUnifyPiece wc) = "whole: " <> show wc
     show (AtomicUnifyPiece var tp tn) =
@@ -94,16 +110,16 @@ type UnifyCrumbler (ground :: GroundTypeKind)
      = Crumbler (UnifyWholeConstraint ground) (CrumbleM ground) (VarPuzzleExpression ground)
 
 pieceToUnify ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Piece ground a
-    -> TypeResult ground (UnifyPuzzle ground a)
+    -> CrumbleM ground (UnifyPuzzle ground a)
 pieceToUnify (WholePiece (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb))) =
-    return $ varExpression $ WholeUnifyPiece $ MkUnifyWholeConstraint ta tb
+    liftToCrumbleM $ mkWholeUnifyPiece ta tb
 pieceToUnify (AtomicPiece (MkAtomicConstraint var PositiveType (NormalFlipType t))) =
     return $ fmap fst $ varExpression $ AtomicUnifyPiece var t NilDolanType
 pieceToUnify (AtomicPiece (MkAtomicConstraint var NegativeType (NormalFlipType t))) =
     return $ fmap snd $ varExpression $ AtomicUnifyPiece var NilDolanType t
-pieceToUnify _ = throwExc $ InternalTypeError "inverted solver piece"
+pieceToUnify _ = liftResultToCrumbleM $ throwExc $ InternalTypeError "inverted solver piece"
 
 solveWholeConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -113,19 +129,20 @@ solveWholeConstraint (MkUnifyWholeConstraint (NormalFlipType -> fta) (NormalFlip
     exprs <- crumbleConstraint $ MkWholeConstraint fta ftb
     case exprs of
         MkSolverExpression puzzle dexpr :| [] -> do
-            vexpr <- liftResultToCrumbleM $ mapExpressionM pieceToUnify puzzle
+            vexpr <- mapExpressionM pieceToUnify puzzle
             return $ MkSolverExpression vexpr dexpr
         _ -> throw $ ConvertTypeError fta ftb
 
 mergeAtomicPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => UnifyPuzzle ground a
-    -> UnifyPuzzle ground a
+    -> DolanTypeCheckM ground (UnifyPuzzle ground a)
 mergeAtomicPuzzle =
-    combineExpressionWitnesses $ \wa wb ->
+    combineExpressionWitnessesM $ \wa wb ->
         case (wa, wb) of
             (AtomicUnifyPiece vara tpa tqa, AtomicUnifyPiece varb tpb tqb)
                 | Just Refl <- testEquality vara varb ->
+                    return $
                     Just $
                     case (joinMeetType tpa tpb, joinMeetType tqa tqb) of
                         (MkShimWit tpab (MkPolarShim convp), MkShimWit tqab (MkPolarShim convq)) ->
@@ -135,44 +152,45 @@ mergeAtomicPuzzle =
                                      , (convp1 . convp . join2, meet2 . convq . convq1))) $
                             varExpression $ AtomicUnifyPiece vara tpab tqab
             (VariableUnifyPiece (MkUnifyVariableConstraint vara tpa tqa), VariableUnifyPiece (MkUnifyVariableConstraint varb tpb tqb))
-                | Just Refl <- testEquality vara varb ->
-                    Just $ let
-                        twpab = joinMeetType @ground @(DolanPolyIsoShim ground) tpa tpb
-                        twqab = joinMeetType @ground @(DolanPolyIsoShim ground) tqa tqb
-                        in case (twpab, twqab) of
-                               (MkShimWit tpab convp, MkShimWit tqab convq) -> let
-                                   vc = varExpression $ VariableUnifyPiece $ MkUnifyVariableConstraint vara tpab tqab
-                                   wcpaqa = varExpression $ WholeUnifyPiece $ MkUnifyWholeConstraint tpa tqa -- already memoised
-                                   wcpaqb = varExpression $ WholeUnifyPiece $ MkUnifyWholeConstraint tpa tqb
-                                   wcpbqa = varExpression $ WholeUnifyPiece $ MkUnifyWholeConstraint tpb tqa
-                                   wcpbqb = varExpression $ WholeUnifyPiece $ MkUnifyWholeConstraint tpb tqb -- already memoised
-                                   in (\cvc cpaqa cpaqb cpbqa cpbqb -> let
-                                           cpq =
-                                               polarPolyIsoPositive convq .
-                                               meetf (joinf cpaqa cpbqa) (joinf cpaqb cpbqb) .
-                                               polarPolyIsoNegative convp
-                                           (cp, cq) = cvc cpq
-                                           convpp = cp . polarPolyIsoPositive convp
-                                           convqq = polarPolyIsoNegative convq . cq
-                                           in ( \_ -> (convpp . join1, meet1 . convqq)
-                                              , \_ -> (convpp . join2, meet2 . convqq))) <$>
-                                      vc <*>
-                                      wcpaqa <*>
-                                      wcpaqb <*>
-                                      wcpbqa <*>
-                                      wcpbqb
-            _ -> Nothing
+                | Just Refl <- testEquality vara varb -> let
+                    twpab = joinMeetType @ground @(DolanPolyIsoShim ground) tpa tpb
+                    twqab = joinMeetType @ground @(DolanPolyIsoShim ground) tqa tqb
+                    in case (twpab, twqab) of
+                           (MkShimWit tpab convp, MkShimWit tqab convq) -> do
+                               let vc = varExpression $ VariableUnifyPiece $ MkUnifyVariableConstraint vara tpab tqab
+                               wcpaqa <- mkWholeUnifyPiece tpa tqa -- already memoised
+                               wcpaqb <- mkWholeUnifyPiece tpa tqb
+                               wcpbqa <- mkWholeUnifyPiece tpb tqa
+                               wcpbqb <- mkWholeUnifyPiece tpb tqb -- already memoised
+                               return $
+                                   Just $
+                                   (\cvc cpaqa cpaqb cpbqa cpbqb -> let
+                                        cpq =
+                                            polarPolyIsoPositive convq .
+                                            meetf (joinf cpaqa cpbqa) (joinf cpaqb cpbqb) . polarPolyIsoNegative convp
+                                        (cp, cq) = cvc cpq
+                                        convpp = cp . polarPolyIsoPositive convp
+                                        convqq = polarPolyIsoNegative convq . cq
+                                        in ( \_ -> (convpp . join1, meet1 . convqq)
+                                           , \_ -> (convpp . join2, meet2 . convqq))) <$>
+                                   vc <*>
+                                   wcpaqa <*>
+                                   wcpaqb <*>
+                                   wcpbqa <*>
+                                   wcpbqb
+            _ -> return Nothing
 
 atomicToVariablePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => UnifyPuzzle ground a
-    -> UnifyPuzzle ground a
+    -> DolanTypeCheckM ground (UnifyPuzzle ground a)
 atomicToVariablePuzzle =
-    mapExpression $ \case
-        AtomicUnifyPiece var tp tq ->
-            varExpression (VariableUnifyPiece (MkUnifyVariableConstraint var tp tq)) <*>
-            varExpression (WholeUnifyPiece $ MkUnifyWholeConstraint tp tq)
-        piece -> varExpression piece
+    mapExpressionM $ \case
+        AtomicUnifyPiece var tp tq -> do
+            let vp = varExpression (VariableUnifyPiece (MkUnifyVariableConstraint var tp tq))
+            wp <- mkWholeUnifyPiece tp tq
+            return $ vp <*> wp
+        piece -> return $ varExpression piece
 
 toPureVariablePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -211,11 +229,14 @@ processPuzzle (ClosedExpression a) = pure a
 processPuzzle puzzle =
     case findFirstExpression matchWholeUnifyPiece puzzle processWholeConstraint of
         Just r -> r
-        Nothing -> let
-            puzzle' = atomicToVariablePuzzle $ mergeAtomicPuzzle puzzle
-            in case toPureVariablePuzzle puzzle' of
-                   Just vpuzzle -> crumblerLift $ solverExpressionLiftType vpuzzle
-                   Nothing -> processPuzzle puzzle'
+        Nothing ->
+            wbind
+                (liftToCrumbleM $ do
+                     apuzzle <- mergeAtomicPuzzle puzzle
+                     atomicToVariablePuzzle apuzzle) $ \puzzle' ->
+                case toPureVariablePuzzle puzzle' of
+                    Just vpuzzle -> crumblerLift $ solverExpressionLiftType vpuzzle
+                    Nothing -> processPuzzle puzzle'
 
 constraintToPresub ::
        forall (ground :: GroundTypeKind) t. IsDolanGroundType ground

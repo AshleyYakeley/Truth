@@ -26,6 +26,10 @@ instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVari
             argsb' <- unEndoM (dolanArgumentsVarRename rs) argsb
             return $ MkSubtypeLink dvma argsa' argsb' expr
 
+instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). (IsDolanGroundType ground) =>
+             Show (SubtypeLink ground dva gta dvb gtb) where
+    show (MkSubtypeLink _ _ _ _) = "link"
+
 type SubtypeChain :: GroundTypeKind -> forall (dva :: CCRVariances) ->
                                                CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
                                                                                CCRVariancesKind dvb -> Type
@@ -38,6 +42,11 @@ data SubtypeChain ground dva gta dvb gtb where
            SubtypeLink ground dvb gtb dvc gtc
         -> SubtypeChain ground dva gta dvb gtb
         -> SubtypeChain ground dva gta dvc gtc
+
+instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). (IsDolanGroundType ground) =>
+             Show (SubtypeChain ground dva gta dvb gtb) where
+    show NilSubtypeChain = ""
+    show (ConsSubtypeChain link chain) = show link <> "; " <> show chain
 
 getChainArguments ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb) (dvc :: CCRVariances) (gtc :: CCRVariancesKind dvc) r.

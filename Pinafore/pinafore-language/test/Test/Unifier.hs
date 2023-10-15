@@ -395,6 +395,19 @@ testUnifier =
                     testerRunAction $ langWholeModelSet (rval smodel) $ Known 345
               ]
         , testTree
+              "recursive-automaton"
+              [ testTree "1" $
+                runTester defaultTester $ do
+                    rval :: Maybe TopType <-
+                        testerLiftInterpreter $ do
+                            expr <- parseTopExpression "Nothing: rec a, Maybe a"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    case rval of
+                        Nothing -> return ()
+                        _ -> fail "different"
+              ]
+        , testTree
               "recursive-shims"
               [ testTree "pass-1" $
                 runTester defaultTester $ do

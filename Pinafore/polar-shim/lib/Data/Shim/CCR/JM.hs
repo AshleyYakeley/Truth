@@ -1,5 +1,7 @@
 module Data.Shim.CCR.JM
     ( JMShim
+    , showJMShim
+    , goodJMShim
     ) where
 
 import Data.Shim.CCR.Apply
@@ -37,22 +39,47 @@ data JMShim k a b where
         -> JMShim (CCRVarianceKind v -> k) f g
         -> CCRVarianceCategory (JMShim Type) v a b
         -> JMShim k (f a) (g b)
+    LazyJMShim :: forall k (a :: k) (b :: k). JMShim k a b -> JMShim k a b
+
+goodJMShim :: Int -> JMShim k a b -> Bool
+goodJMShim 0 _ = False
+goodJMShim i (ComposeJMShim s1 s2) = goodJMShim i s1 && goodJMShim i s2
+goodJMShim i (Join1JMShim s) = goodJMShim i s
+goodJMShim i (Join2JMShim s) = goodJMShim i s
+goodJMShim i (JoinFJMShim s1 s2) = goodJMShim i s1 && goodJMShim i s2
+goodJMShim i (Meet1JMShim s) = goodJMShim i s
+goodJMShim i (Meet2JMShim s) = goodJMShim i s
+goodJMShim i (MeetFJMShim s1 s2) = goodJMShim i s1 && goodJMShim i s2
+goodJMShim i (LazyJMShim f) = goodJMShim (pred i) f
+goodJMShim _ _ = True
+
+ccrVarianceCategoryShowJMShim ::
+       forall (sv :: CCRVariance) a b. CCRVarianceType sv -> Int -> CCRVarianceCategory (JMShim Type) sv a b -> String
+ccrVarianceCategoryShowJMShim CoCCRVarianceType i f = showJMShim i f
+ccrVarianceCategoryShowJMShim ContraCCRVarianceType i (MkCatDual f) = showJMShim i f
+ccrVarianceCategoryShowJMShim RangeCCRVarianceType i (MkCatRange pp qq) =
+    "(" <> showJMShim i pp <> "," <> showJMShim i qq <> ")"
+
+showJMShim :: Int -> JMShim k a b -> String
+showJMShim 0 _ = "..."
+showJMShim _ (FuncJMShim t _) = "[func " <> t <> "]"
+showJMShim _ IdentityJMShim = "id"
+showJMShim _ (CoerceJMShim t _) = "[coerce " <> t <> "]"
+showJMShim i (ComposeJMShim s1 s2) = "(compose " <> showJMShim i s1 <> " " <> showJMShim i s2 <> ")"
+showJMShim _ InitFJMShim = "initf"
+showJMShim _ TermFJMShim = "termf"
+showJMShim i (Join1JMShim s) = "(join1 " <> showJMShim i s <> ")"
+showJMShim i (Join2JMShim s) = "(join2 " <> showJMShim i s <> ")"
+showJMShim i (JoinFJMShim s1 s2) = "(joinf " <> showJMShim i s1 <> " " <> showJMShim i s2 <> ")"
+showJMShim i (Meet1JMShim s) = "(meet1 " <> showJMShim i s <> ")"
+showJMShim i (Meet2JMShim s) = "(meet2 " <> showJMShim i s <> ")"
+showJMShim i (MeetFJMShim s1 s2) = "(meetf " <> showJMShim i s1 <> " " <> showJMShim i s2 <> ")"
+showJMShim i (ConsJMShim vt _ _ s1 s2) =
+    "(" <> show vt <> " " <> showJMShim i s1 <> " " <> ccrVarianceCategoryShowJMShim vt i s2 <> ")"
+showJMShim i (LazyJMShim f) = "(lazy " <> showJMShim (pred i) f <> ")"
 
 instance Show (JMShim k a b) where
-    show (FuncJMShim t _) = "[func " <> t <> "]"
-    show IdentityJMShim = "id"
-    show (CoerceJMShim t _) = "[coerce " <> t <> "]"
-    show (ComposeJMShim s1 s2) = "(compose " <> show s1 <> " " <> show s2 <> ")"
-    show InitFJMShim = "initf"
-    show TermFJMShim = "termf"
-    show (Join1JMShim s) = "(join1 " <> show s <> ")"
-    show (Join2JMShim s) = "(join2 " <> show s <> ")"
-    show (JoinFJMShim s1 s2) = "(joinf " <> show s1 <> " " <> show s2 <> ")"
-    show (Meet1JMShim s) = "(meet1 " <> show s <> ")"
-    show (Meet2JMShim s) = "(meet2 " <> show s <> ")"
-    show (MeetFJMShim s1 s2) = "(meetf " <> show s1 <> " " <> show s2 <> ")"
-    show (ConsJMShim vt _ _ s1 s2) =
-        "(" <> show vt <> " " <> show s1 <> " " <> ccrVarianceCategoryShow @(JMShim Type) vt s2 <> ")"
+    show = showJMShim 1
 
 instance CoercibleKind k => Category (JMShim k) where
     id = IdentityJMShim
@@ -184,8 +211,10 @@ instance CoercibleKind k => RecoverShim (JMShim k) where
             case shimToFunction jmf' of
                 MkNestedMorphism ff -> ccrvMap ccrvg' (MkCatRange (shimToFunction jma1) (shimToFunction jma2)) . ff
         in fromCon vt ccrvg jmf jma
+    shimToFunction (LazyJMShim f) = shimToFunction f
 
-instance LazyCategory (JMShim Type)
+instance LazyCategory (JMShim Type) where
+    iLazy = LazyJMShim
 
 instance CartesianShim (JMShim Type) where
     funcShim ab pq = applyCoPolyShim ccrVariation ccrVariation (applyContraPolyShim ccrVariation ccrVariation id ab) pq

@@ -10,6 +10,7 @@ library:
     dependencies:
       - base >= 4.16
       - shapes
+      - thread-trace
     exposed-modules:
       - Data.Shim
     other-modules:

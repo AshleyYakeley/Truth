@@ -76,6 +76,7 @@ class ( MonadException (DolanM ground)
       , forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
       , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
       , forall polarity t. Is PolarityType polarity => Show (DolanGroundedType ground polarity t)
+      , DolanPolyShim ground Type ~ JMShim Type
       ) => DebugIsDolanGroundType ground
 
 instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
@@ -84,6 +85,7 @@ instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
          , forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
          , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
          , forall polarity t. Is PolarityType polarity => Show (DolanGroundedType ground polarity t)
+         , DolanPolyShim ground Type ~ JMShim Type
          ) => DebugIsDolanGroundType ground
 
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
@@ -201,12 +203,12 @@ instance forall (ground :: GroundTypeKind) polarity. Is PolarityType polarity =>
     dolanToMaybeType _ = Nothing
 
 data RecursiveTypeError
-    = ImmediateRecursiveTypeError
-    | ContravariantRecursiveTypeError
+    = ImmediateRecursiveTypeError (Some TypeVarT)
+    | ContravariantRecursiveTypeError (Some TypeVarT)
 
 instance Show RecursiveTypeError where
-    show ImmediateRecursiveTypeError = "immediate"
-    show ContravariantRecursiveTypeError = "contravariant"
+    show (ImmediateRecursiveTypeError v) = "immediate " <> show v
+    show (ContravariantRecursiveTypeError v) = "contravariant " <> show v
 
 safeRecursiveDolanSingularType ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
@@ -250,7 +252,7 @@ safeRecursiveDolanSingularType var tt = do
             checkType contrv tr
     case checkType False tt of
         Just () -> return ()
-        Nothing -> throwExc ContravariantRecursiveTypeError
+        Nothing -> throwExc $ ContravariantRecursiveTypeError $ MkSome var
     let
         checkImmediateSingular :: forall a. DolanSingularType ground polarity a -> Maybe ()
         checkImmediateSingular (VarDolanSingularType v)
@@ -264,7 +266,7 @@ safeRecursiveDolanSingularType var tt = do
             checkImmediateUses tr
     case checkImmediateUses tt of
         Just () -> return ()
-        Nothing -> throwExc ImmediateRecursiveTypeError
+        Nothing -> throwExc $ ImmediateRecursiveTypeError $ MkSome var
     return $ RecursiveDolanSingularType var tt
 
 singularsToAnyType ::

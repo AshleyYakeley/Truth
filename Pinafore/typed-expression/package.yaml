@@ -72,6 +72,7 @@ library:
       - Language.Expression.Dolan.Rename
       - Language.Expression.Dolan.Unroll
       - Language.Expression.Dolan.Type.InvertedCombine
+      - Language.Expression.Dolan.Simplify.Safety
       - Language.Expression.Dolan.Simplify.UnusedRecursion
       - Language.Expression.Dolan.Simplify.VarUses
       - Language.Expression.Dolan.Simplify.VarUsage
@@ -82,6 +83,7 @@ library:
       - Language.Expression.Dolan.Simplify.DuplicateTypeVars
       - Language.Expression.Dolan.Simplify.AutomateRecursion
       - Language.Expression.Dolan.Simplify.RollUpRecursion
+      - Language.Expression.Dolan.Simplify.Solve
       - Language.Expression.Dolan.Simplify
       - Language.Expression.Dolan.Invert
       - Language.Expression.Dolan.TypeResult

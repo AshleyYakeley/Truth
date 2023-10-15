@@ -89,4 +89,5 @@ library
   build-depends:
       base >=4.16
     , shapes
+    , thread-trace
   default-language: GHC2021

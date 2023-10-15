@@ -37,7 +37,7 @@ substBisubstitution (MkSubstitution (pol :: _ polarity) oldvar newvar mt _) =
         in mkPolarBisubstitution oldvar mt $ return newVarWit
 
 substituteAtomicConstraint ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => Substitution ground
     -> AtomicConstraint ground a
     -> CrumbleM ground (Puzzle ground a)
@@ -118,7 +118,7 @@ solveAtomicConstraint ac = do
     return a
 
 bisubstitutesPiece ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => [SolverBisubstitution ground]
     -> Piece ground a
     -> CrumbleM ground (Puzzle ground a)
@@ -128,14 +128,14 @@ bisubstitutesPiece newchanges (WholePiece wc) = do
 bisubstitutesPiece newchanges (AtomicPiece ac) = bisubstitutesAtomicConstraint newchanges ac
 
 bisubstitutesPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => [SolverBisubstitution ground]
     -> Puzzle ground a
     -> CrumbleM ground (Puzzle ground a)
 bisubstitutesPuzzle substs = mapExpressionM $ bisubstitutesPiece substs
 
 bisubstitutesAtomicConstraint ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => [SolverBisubstitution ground]
     -> AtomicConstraint ground a
     -> CrumbleM ground (Puzzle ground a)
@@ -145,14 +145,14 @@ bisubstitutesAtomicConstraint (s:ss) ac = do
     bisubstitutesPuzzle ss puzzle
 
 applySubstsToPiece ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => [Substitution ground]
     -> Piece ground a
     -> CrumbleM ground (Puzzle ground a)
 applySubstsToPiece newchanges = bisubstitutesPiece (fmap substBisubstitution newchanges)
 
 applySubstsToPuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => [Substitution ground]
     -> Puzzle ground a
     -> CrumbleM ground (Puzzle ground a)

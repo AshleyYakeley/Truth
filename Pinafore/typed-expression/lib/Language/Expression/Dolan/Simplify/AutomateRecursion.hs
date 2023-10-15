@@ -142,19 +142,31 @@ mergeGroundeds (VarDolanSingularType v1) (VarDolanSingularType v2)
     | Just Refl <- testEquality v1 v2 = Just $ MkShimWit (VarDolanSingularType v1) $ polarF id id
 mergeGroundeds _ _ = Nothing
 
+mergeGroundMaybe ::
+       forall (ground :: GroundTypeKind) polarity t1 tr. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanSingularType ground polarity t1
+    -> DolanType ground polarity tr
+    -> Maybe (DolanShimWit ground polarity (JoinMeetType polarity t1 tr))
+mergeGroundMaybe _ NilDolanType = Nothing
+mergeGroundMaybe ts (ConsDolanType t1 tr) =
+    case mergeGroundeds ts t1 of
+        Nothing ->
+            case mergeGroundMaybe ts tr of
+                Just (MkShimWit tsr conv) ->
+                    Just $
+                    MkShimWit (ConsDolanType t1 tsr) $ polarF (polar2 . conv . polar1) (iPolarPair id $ conv . polar2)
+                Nothing -> Nothing
+        Just (MkShimWit ts1 conv1) -> Just $ mapPolarShimWit (iPolarPair conv1 id . iPolarSwapR) $ mergeGround ts1 tr
+
 mergeGround ::
        forall (ground :: GroundTypeKind) polarity t1 tr. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t1
     -> DolanType ground polarity tr
     -> DolanShimWit ground polarity (JoinMeetType polarity t1 tr)
-mergeGround ts NilDolanType = mkPolarShimWit $ ConsDolanType ts NilDolanType
-mergeGround ts (ConsDolanType t1 tr) =
-    case mergeGroundeds ts t1 of
-        Nothing ->
-            case mergeGround ts tr of
-                MkShimWit tsr conv ->
-                    MkShimWit (ConsDolanType t1 tsr) $ polarF (polar2 . conv . polar1) (iPolarPair id $ conv . polar2)
-        Just (MkShimWit ts1 conv1) -> mapPolarShimWit (iPolarPair conv1 id . iPolarSwapR) $ mergeGround ts1 tr
+mergeGround st t =
+    case mergeGroundMaybe st t of
+        Just t' -> t'
+        Nothing -> mkShimWit $ ConsDolanType st t
 
 mergeGrounds ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -163,7 +175,7 @@ mergeGrounds ::
 mergeGrounds NilDolanType = nilDolanShimWit
 mergeGrounds (ConsDolanType t1 tr) =
     case mergeGrounds tr of
-        MkShimWit tr' conv -> mapShimWit (iPolarPair id conv) (mergeGround t1 tr')
+        MkShimWit tr' conv -> mapShimWit (iPolarPair id conv) $ mergeGround t1 tr'
 
 automatonGroundedType ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
