@@ -20,7 +20,7 @@ import Shapes
 import System.IO.Error
 
 showPinaforeModel :: QValue -> QInterpreter String
-showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: PinaforeError) -> return "<?>")
+showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT QInterpreter View)
 
@@ -137,7 +137,7 @@ interactLoop inh outh echo = do
                                  ntt <- interactRunQInterpreter getRenderFullName
                                  liftIO $ hPutStrLn outh $ unpack $ ntt s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
-                    [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
+                    [ Handler $ \(err :: QError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "! error: " <> ioeGetErrorString err
                     ]
             interactLoop inh outh echo

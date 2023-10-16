@@ -69,22 +69,21 @@ newtype QInterpreter a = MkQInterpreter
                , MonadIO
                , MonadFix
                , MonadException
-               , MonadThrow PinaforeError
-               , MonadCatch PinaforeError
-               , MonadThrow ErrorMessage
+               , MonadThrow QError
+               , MonadCatch QError
                , MonadHoistIO
                , MonadTunnelIO
                )
 
-instance MonadThrow ErrorType QInterpreter where
+instance MonadThrow QErrorType QInterpreter where
     throw err = do
         em <- mkErrorMessage
-        throw $ em err mempty
+        throw $ em err
 
 instance MonadThrow PatternError QInterpreter where
     throw err = throw $ PatternErrorError err
 
-nameWitnessErrorType :: NonEmpty (Some (NameWitness VarID (QShimWit 'Negative))) -> ErrorType
+nameWitnessErrorType :: NonEmpty (Some (NameWitness VarID (QShimWit 'Negative))) -> QErrorType
 nameWitnessErrorType ww = let
     nwToPair :: Some (NameWitness VarID (QShimWit 'Negative)) -> (FullNameRef, NamedText)
     nwToPair (MkSome (MkNameWitness varid (MkShimWit w _))) = let
@@ -110,7 +109,7 @@ instance HasInterpreter where
     mkErrorMessage = do
         spos <- paramAsk sourcePosParam
         ntt <- getRenderFullName
-        return $ MkErrorMessage spos ntt
+        return $ MkQError spos ntt
     getSubtypeConversions = fmap (toList . scopeSubtypes) $ paramAsk scopeParam
 
 contextParam :: Param QInterpreter InterpretContext

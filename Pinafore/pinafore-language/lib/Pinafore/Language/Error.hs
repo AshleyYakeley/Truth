@@ -9,7 +9,7 @@ import Shapes.Numeric
 import Text.Parsec.Error
 import Text.Parsec.Pos
 
-data ErrorType
+data QErrorType
     = InternalError (Maybe Int)
                     NamedText
     | UnicodeDecodeError NamedText
@@ -85,7 +85,7 @@ data ErrorType
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
-instance ShowNamedText ErrorType where
+instance ShowNamedText QErrorType where
     showNamedText (InternalError mn nt) =
         bindNamedText nt $ \t ->
             case (mn, t) of
@@ -213,65 +213,45 @@ instance ShowNamedText ErrorType where
     showNamedText (ModuleNotFoundError mname) = "can't find module " <> showNamedText mname
     showNamedText (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
 
-data ErrorMessage =
-    MkErrorMessage SourcePos
-                   (NamedText -> Text)
-                   ErrorType
-                   PinaforeError
+data QError =
+    MkQError SourcePos
+             (NamedText -> Text)
+             QErrorType
 
 showSourceError :: SourcePos -> Text -> Text
 showSourceError spos s =
     toText (sourceName spos) <>
     ":" <> toText (show (sourceLine spos)) <> ":" <> toText (show (sourceColumn spos)) <> ": " <> s
 
-showIndentErrorMessage :: Int -> ErrorMessage -> Text
-showIndentErrorMessage n (MkErrorMessage spos ntt err pe) =
-    replicate n ' ' <> (showSourceError spos $ ntt (showNamedText err) <> showIndentPinaforeError (succ n) pe)
+instance ShowText QError where
+    showText (MkQError spos ntt err) = showSourceError spos $ ntt $ showNamedText err
 
-showIndentPinaforeError :: Int -> PinaforeError -> Text
-showIndentPinaforeError n (MkPinaforeError ems) = let
-    showMsg em = "\n" <> showIndentErrorMessage n em
-    in mconcat $ fmap showMsg ems
+parseErrorMessage :: ParseError -> QError
+parseErrorMessage err = MkQError (errorPos err) toText (ParserError $ errorMessages err)
 
-instance ShowText ErrorMessage where
-    showText = showIndentErrorMessage 0
-
-parseErrorMessage :: ParseError -> ErrorMessage
-parseErrorMessage err = MkErrorMessage (errorPos err) toText (ParserError $ errorMessages err) mempty
-
-newtype PinaforeError =
-    MkPinaforeError [ErrorMessage]
-    deriving (Semigroup, Monoid)
-
-instance ShowText PinaforeError where
-    showText (MkPinaforeError msgs) = intercalate "\n" $ fmap showText msgs
-
-instance Show PinaforeError where
+instance Show QError where
     show = unpack . showText
 
-instance Exception PinaforeError
+instance Exception QError
 
 newtype InterpretResult a =
-    MkInterpretResult (ResultT PinaforeError IO a)
+    MkInterpretResult (ResultT QError IO a)
     deriving (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
 
-instance MonadThrow PinaforeError InterpretResult where
+instance MonadThrow QError InterpretResult where
     throw e = throwExc $ Left e
 
-instance MonadCatch PinaforeError InterpretResult where
+instance MonadCatch QError InterpretResult where
     catch ma ema =
         catchSomeExc ma $ \case
             Left e -> fmap Just $ ema e
             Right _ -> return Nothing
 
-instance MonadThrow ErrorMessage InterpretResult where
-    throw err = throw $ MkPinaforeError [err]
-
-runInterpretResult :: MonadIO m => InterpretResult a -> m (Result PinaforeError a)
+runInterpretResult :: MonadIO m => InterpretResult a -> m (Result QError a)
 runInterpretResult (MkInterpretResult ir) = liftIO $ runResultT ir
 
 fromInterpretResult ::
-       forall m a. (MonadThrow PinaforeError m, MonadIO m)
+       forall m a. (MonadThrow QError m, MonadIO m)
     => InterpretResult a
     -> m a
 fromInterpretResult ir = do

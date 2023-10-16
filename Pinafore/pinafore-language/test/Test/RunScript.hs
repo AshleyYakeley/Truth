@@ -106,7 +106,7 @@ testScriptCatchStop :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> Scri
 testScriptCatchStop name script = testScript name $ "onStop.Action. (" <> script <> ") (fail.Action. \"stopped\")"
 
 data ScriptExpectation
-    = ScriptExpectRejection (PinaforeError -> Bool)
+    = ScriptExpectRejection (QError -> Bool)
     | ScriptExpectRuntimeException (IOException -> Bool)
     | ScriptExpectStop
     | ScriptExpectSuccess

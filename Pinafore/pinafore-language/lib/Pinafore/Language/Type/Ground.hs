@@ -71,13 +71,13 @@ class ( MonadException Interpreter
       , MonadIO Interpreter
       , MonadThrow PatternError Interpreter
       , MonadThrow (NamedExpressionError VarID (QShimWit 'Negative)) Interpreter
-      , MonadThrow ErrorType Interpreter
-      , MonadThrow ErrorMessage Interpreter
-      , MonadCatch PinaforeError Interpreter
+      , MonadThrow QErrorType Interpreter
+      , MonadThrow QError Interpreter
+      , MonadCatch QError Interpreter
       ) => HasInterpreter where
     type Interpreter :: Type -> Type
     getSubtypeConversions :: Interpreter [QSubtypeConversionEntry]
-    mkErrorMessage :: Interpreter (ErrorType -> PinaforeError -> ErrorMessage)
+    mkErrorMessage :: Interpreter (QErrorType -> QError)
 
 instance HasInterpreter => ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType

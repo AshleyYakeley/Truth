@@ -50,7 +50,7 @@ import Shapes hiding (try)
 import qualified Text.Parsec as P
 
 newtype Parser a =
-    MkParser (ReaderT Namespace (P.ParsecT [(SourcePos, SomeOf Token)] () (Result PinaforeError)) a)
+    MkParser (ReaderT Namespace (P.ParsecT [(SourcePos, SomeOf Token)] () (Result QError)) a)
     deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFail)
 
 getPosition :: Parser SourcePos
@@ -115,10 +115,10 @@ readToken stok = let
             Nothing -> Nothing
     in MkParser $ lift $ P.tokenPrim showToken nextpos test
 
-instance MonadThrow ErrorType Parser where
+instance MonadThrow QErrorType Parser where
     throw err = do
         spos <- getPosition
-        MkParser $ lift $ lift $ throwExc $ MkPinaforeError $ pure $ MkErrorMessage spos toText err mempty
+        MkParser $ lift $ lift $ throwExc $ MkQError spos toText err
 
 readComments :: Parser [Comment]
 readComments = many $ readToken TokComment

@@ -9,7 +9,7 @@ module Pinafore.Language
     , LibraryContext(..)
     , mkLibraryContext
     , QSpecialVals(..)
-    , PinaforeError
+    , QError
     , InterpretResult
     , fromInterpretResult
     , runInterpretResult
