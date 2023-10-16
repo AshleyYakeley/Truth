@@ -15,7 +15,6 @@ testFile inpath = let
     modifier :: TestTree -> TestTree
     modifier =
         case testName of
-            "issue-237-sigs" -> failTestBecause "hangs"
             _ -> id
     in modifier $
        testHandleVsFile dir testName $ \hout ->

@@ -254,12 +254,12 @@ testSolver =
                              "issue-206-1"
                              "(t -> t) -> t"
                              "((Maybe a -> Maybe a) -> (a -> a))"
-                             "(rec a, Maybe a) -> (rec a, Maybe a)"
+                             "(rec a, b & Maybe. a) -> (rec c, b | Maybe. c)"
                        , applyTest
                              "issue-206-2"
                              "(t -> t) -> t"
                              "((a -> a) -> (Maybe a -> Maybe a))"
-                             "Maybe. a -> Maybe. (rec b, Maybe. b | a)"
+                             "Maybe. (rec a, b & Maybe. a) -> Maybe. (rec c, b | Maybe. c)"
                        ]
                  , testTree
                        "issue-234"

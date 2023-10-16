@@ -18,13 +18,8 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
 import Shapes
 
-data BreakStrategy
-    = BreakGrounded
-    | BreakRecursive
-    deriving (Eq)
-
 newtype TypeCrumbler (ground :: GroundTypeKind) a = MkTypeCrumbler
-    { unTypeCrumbler :: ReaderT (BreakStrategy, TypeError ground) (CrumbleM ground) (NonEmpty (PuzzleExpression ground a))
+    { unTypeCrumbler :: ReaderT (Bool, TypeError ground) (CrumbleM ground) (NonEmpty (PuzzleExpression ground a))
     }
 
 concatResults :: Result err (NonEmpty a) -> Result err (NonEmpty a) -> Result err (NonEmpty a)
@@ -50,7 +45,7 @@ instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, Monad (Do
 
 instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, Monad (DolanM ground)) =>
              WrappedApplicative (TypeCrumbler ground) where
-    type WAInnerM (TypeCrumbler ground) = ReaderT (BreakStrategy, TypeError ground) (CrumbleM ground)
+    type WAInnerM (TypeCrumbler ground) = ReaderT (Bool, TypeError ground) (CrumbleM ground)
     wexec msa =
         MkTypeCrumbler $ do
             MkTypeCrumbler sa <- msa
@@ -82,16 +77,10 @@ crumbleBreak ::
        , Is PolarityType polb
        , ?rigidity :: String -> NameRigidity
        )
-    => BreakStrategy
-    -> DolanType ground pola ta
+    => DolanType ground pola ta
     -> DolanType ground polb tb
     -> TypeCrumbler ground (DolanShim ground ta tb)
-crumbleBreak strat ta tb =
-    MkTypeCrumbler $ do
-        curstrat <- asks fst
-        if strat == curstrat
-            then lift $ liftToCrumbleM $ fmap (pure . puzzleExpression) $ puzzleUnify ta tb
-            else unTypeCrumbler $ crumbleTT ta tb
+crumbleBreak ta tb = MkTypeCrumbler $ lift $ liftToCrumbleM $ fmap (pure . puzzleExpression) $ puzzleUnify ta tb
 
 crumbleTTWit ::
        forall (ground :: GroundTypeKind) pola polb ta tb.
@@ -106,7 +95,7 @@ crumbleTTWit ::
 crumbleTTWit (MkShimWit ta iconva) (MkShimWit tb iconvb) = let
     conva = polarPolyIsoPositive iconva
     convb = polarPolyIsoNegative iconvb
-    in fmap (\conv -> convb . conv . conva) $ crumbleBreak BreakRecursive ta tb
+    in fmap (\conv -> convb . conv . conva) $ crumbleTT ta tb
 
 crumbleAtomic ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -138,17 +127,17 @@ crumbleArgument ::
     => CCRPolarArgument (DolanType ground) pola sv ta
     -> CCRPolarArgument (DolanType ground) polb sv tb
     -> TypeCrumbler ground (CCRVarianceCategory (DolanShim ground) sv ta tb)
-crumbleArgument (CoCCRPolarArgument ta) (CoCCRPolarArgument tb) = crumbleBreak BreakGrounded ta tb
+crumbleArgument (CoCCRPolarArgument ta) (CoCCRPolarArgument tb) = crumbleTT ta tb
 crumbleArgument (ContraCCRPolarArgument ta) (ContraCCRPolarArgument tb) =
     withInvertPolarity @pola $
     withInvertPolarity @polb $ do
-        ba <- crumbleBreak BreakGrounded tb ta
+        ba <- crumbleTT tb ta
         return $ MkCatDual ba
 crumbleArgument (RangeCCRPolarArgument tpa tqa) (RangeCCRPolarArgument tpb tqb) =
     withInvertPolarity @pola $
     withInvertPolarity @polb $ do
-        pba <- crumbleBreak BreakGrounded tpb tpa
-        qab <- crumbleBreak BreakGrounded tqa tqb
+        pba <- crumbleTT tpb tpa
+        qab <- crumbleTT tqa tqb
         return $ MkCatRange pba qab
 
 crumbleArguments ::
@@ -220,6 +209,24 @@ crumbleGroundedTypes (MkDolanGroundedType ga argsa) (MkDolanGroundedType gb args
     wbind (lift $ getSubtypeChainRenamed ga gb) $ \chain ->
         crumbleSubtypeChain chain (groundTypeVarianceMap gb) argsa argsb
 
+crumbleGG ::
+       forall (ground :: GroundTypeKind) pola polb a b.
+       ( IsDolanSubtypeGroundType ground
+       , Is PolarityType pola
+       , Is PolarityType polb
+       , ?rigidity :: String -> NameRigidity
+       )
+    => DolanGroundedType ground pola a
+    -> DolanGroundedType ground polb b
+    -> TypeCrumbler ground (DolanShim ground a b)
+crumbleGG ta tb =
+    wbind (asks fst) $ \cf ->
+        if cf
+            then MkTypeCrumbler $ local (\(_, err) -> (False, err)) $ unTypeCrumbler $ crumbleGroundedTypes ta tb
+            else case (typeToDolanPositive ta, typeToDolanNegative tb) of
+                     (MkShimWit ta' conva, MkShimWit tb' (MkCatDual convb)) ->
+                         fmap (\conv -> convb . conv . conva) $ crumbleBreak ta' tb'
+
 fromJoinMeetLimit ::
        forall (shim :: ShimKind Type) polarity t. (Is PolarityType polarity, JoinMeetIsoShim shim)
     => shim (JoinMeetType polarity t (LimitType polarity)) t
@@ -260,7 +267,7 @@ crumbleSS (VarDolanSingularType na) tb
     | isFreeVar na = fmap (\conv -> fromJoinMeetLimit @_ @polb . conv) $ crumbleAtomicLE na (singleDolanType tb)
 crumbleSS ta (VarDolanSingularType nb)
     | isFreeVar nb = fmap (\conv -> conv . toJoinMeetLimit @_ @pola) $ crumbleAtomicGE nb (singleDolanType ta)
-crumbleSS (GroundedDolanSingularType gta) (GroundedDolanSingularType gtb) = crumbleGroundedTypes gta gtb
+crumbleSS (GroundedDolanSingularType gta) (GroundedDolanSingularType gtb) = crumbleGG gta gtb
 crumbleSS _ _ = empty
 
 crumbleSTN ::
@@ -407,7 +414,7 @@ crumbleConstraint constr@(MkWholeConstraint fta ftb) = do
     rigidity <- crumbleMRigidity
     let
         ?rigidity = rigidity
-        in runReaderT (unTypeCrumbler $ crumbleWholeConstraint constr) $ (BreakGrounded, ConvertTypeError fta ftb)
+        in runReaderT (unTypeCrumbler $ crumbleWholeConstraint constr) $ (True, ConvertTypeError fta ftb)
 
 checkCrumbleArguments ::
        forall (ground :: GroundTypeKind) pola polb dv gt ta tb.
@@ -422,7 +429,7 @@ checkCrumbleArguments dvm argsa argsb = do
         runCrumbleMResult rigidity $ let
             ?rigidity = rigidity
             in runReaderT (unTypeCrumbler $ crumbleDolanArguments dvm argsa argsb) $
-               (BreakRecursive, InternalTypeError "bad type crumble")
+               (True, InternalTypeError "bad type crumble")
     return $
         case rpexprs of
             SuccessResult _ -> True
