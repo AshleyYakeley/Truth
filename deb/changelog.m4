@@ -1,5 +1,11 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  * Language
+    - improve recursive type simplification
+  * Fixes
+    - fix type solver
+    - reject "rec a, a" types
+
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
 pinafore (0.4) bookworm; urgency=medium
