@@ -17,7 +17,7 @@ testFile inpath = let
         case testName of
             _ -> id
     in modifier $
-       testHandleVsFile dir testName $ \hout ->
+       testHandleVsFileInDir dir testName $ \hout ->
            runTester defaultTester {tstOutput = hout} $
            testerLiftView $ do
                action <- qInterpretFile inpath

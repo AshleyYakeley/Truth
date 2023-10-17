@@ -40,6 +40,7 @@ module Shapes.Test
     , ioProperty
     -- * Golden
     , testHandleVsFile
+    , testHandleVsFileInDir
     , findByExtension
     , (</>)
     ) where
@@ -168,15 +169,20 @@ testMARK = testTreeOne "MARK"
 testNoMARK :: TestTree -> TestTree
 testNoMARK = id
 
-testHandleVsFile :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
-testHandleVsFile dir testName call = let
+testHandleVsFile :: TestName -> FilePath -> FilePath -> (Handle -> IO ()) -> TestTree
+testHandleVsFile testName refPath outPath call =
+    goldenVsFile testName refPath outPath $
+    withBinaryFile outPath WriteMode $ \h -> do
+        hSetBuffering h NoBuffering
+        call h
+
+testHandleVsFileInDir :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
+testHandleVsFileInDir dir testName call = let
     refPath = dir </> testName <.> "ref"
     outPath = dir </> testName <.> "out"
-    in goldenVsFile testName refPath outPath $ do
+    in testHandleVsFile testName refPath outPath $ \hout -> do
            createDirectoryIfMissing True dir
-           withBinaryFile outPath WriteMode $ \h -> do
-               hSetBuffering h NoBuffering
-               call h
+           call hout
 
 assertThrowsException ::
        forall ex a. Exception ex

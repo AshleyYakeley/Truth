@@ -18,6 +18,7 @@ extra-doc-files:
     examples/contacts
     examples/events
     examples/fake-theme-system-journal
+    examples/quine
     examples/stopwatch
 
 flag gitversion

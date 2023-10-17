@@ -13,7 +13,7 @@ testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
-    in testHandleVsFile dir testName $ \outh ->
+    in testHandleVsFileInDir dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
                runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary, tstOutput = outh} $ do
                    testerLiftView $ qInteractHandles inh outh True
