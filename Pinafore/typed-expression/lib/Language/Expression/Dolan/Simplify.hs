@@ -52,12 +52,7 @@ defaultSimplifierSettings =
 
 simplifierSettingsINTERNAL :: SimplifierSettings
 simplifierSettingsINTERNAL =
-    defaultSimplifierSettings
-        { simplifyCheckSafetyBefore = True
-        , simplifyAutomateRecursion = True
-        , simplifyEliminateUnusedRecursion = False
-        , simplifyCheckSafetyAfter = True
-        }
+    defaultSimplifierSettings {simplifyCheckSafetyBefore = True, simplifyCheckSafetyAfter = True}
 
 -- Simplification:
 --
@@ -107,6 +102,7 @@ dolanSimplifyTypes =
                 , mif simplifyFullyConstrainedTypeVars $ fullyConstrainedTypeVars @ground
                 , mif simplifyMergeSharedTypeVars $ endoToEndoM $ mergeSharedTypeVars @ground
                 , mif simplifyMergeDuplicateTypeVars $ endoToEndoM $ mergeDuplicateTypeVars @ground
+                , mif simplifyCheckSafetyBefore $ checkSafetyMappable @ground "middle"
                 , mif simplifyRollUpRecursiveTypes $ endoToEndoM $ rollUpRecursiveTypes @ground
                 , mif simplifyCheckSafetyAfter $ checkSafetyMappable @ground "after"
                 ]

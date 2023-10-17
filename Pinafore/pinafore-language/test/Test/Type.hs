@@ -93,9 +93,11 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testTree (unpack text) $
-    runTester defaultTester $ do
-        expr <- testerLiftInterpreter $ parseTopExpression text
-        liftIO $ assertEqual "" r $ showTypes expr
+    runTester defaultTester $
+    testerLiftInterpreter $ do
+        expr <- parseTopExpression text
+        expr' <- runRenamer @TS [] [] $ unEndoM (finalRenameMappable @TS) expr
+        liftIO $ assertEqual "" r $ showTypes expr'
 
 rejectionTest :: Text -> TestTree
 rejectionTest text =
@@ -248,7 +250,7 @@ testType =
               , testTree
                     "function"
                     [ textTypeTest "let i: tvar -> tvar = id.Function in i" "{} -> a -> a"
-                    , textTypeTest "id.Function: tvar -> tvar" "{} -> tvar -> tvar"
+                    , textTypeTest "id.Function: tvar -> tvar" "{} -> a -> a"
                     , textTypeTest "let i = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : a -> a = fn x => x in i" "{} -> a -> a"
                     , textTypeTest "let i : tvar -> tvar = fn x => x in i" "{} -> a -> a"

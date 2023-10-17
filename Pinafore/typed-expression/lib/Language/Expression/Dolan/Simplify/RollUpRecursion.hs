@@ -57,7 +57,7 @@ rollUpChildrenType ::
 rollUpChildrenType _rr NilDolanType = return $ nilDolanShimWit
 rollUpChildrenType rr (ConsDolanType t1 tr) = do
     t1' <- mapDolanSingularTypeM (rollUpAllType rr) t1
-    tr' <- rollUpChildrenType rr tr
+    tr' <- rollUpAllType rr tr
     return $ joinMeetShimWit (shimWitToDolan t1') tr'
 
 rollUpAllType ::

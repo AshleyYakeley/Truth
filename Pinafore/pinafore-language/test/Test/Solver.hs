@@ -160,7 +160,7 @@ testSolver =
                  , simplifyTest "xa -> xa | xa -> xa" "a -> a"
                  , simplifyTest "rec xa, Unit" "Unit"
                  , simplifyTest "rec xa, Integer | rec xa, Maybe xa" "Integer | rec a, Maybe a"
-                 , simplifyTest "Maybe Unit | (rec ra, Maybe ra)" "Maybe Unit | (rec a, Maybe a)"
+                 , simplifyTest "Maybe Unit | (rec ra, Maybe ra)" "Maybe. (Unit. | (rec a, Maybe. a))"
                  ]
         , testTree "unifier" $ let
               unifierTest :: String -> Text -> UnifierTester (SomeType 'Positive) -> TestTree
