@@ -10,6 +10,7 @@ import Changes.Core
 import Changes.World.Clock
 import qualified Data.Text
 import Data.Time
+import Data.Time.Clock.POSIX
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
@@ -97,7 +98,7 @@ unixFormattingDef lname =
         (UnqualifiedFullNameRef $ MkName $ "unixAsText")
         ("Represent " <>
          plainText lname <>
-         " as text, using the given [UNIX-like format/parsing](https://hackage.haskell.org/package/time-1.12.2/docs/Data-Time-Format.html) string.") $
+         " as text, using the given [Unix-like format/parsing](https://hackage.haskell.org/package/time-1.12.2/docs/Data-Time-Format.html) string.") $
     unixAsText @t
 
 getLocalTime :: IO LocalTime
@@ -409,7 +410,26 @@ baseLibSections =
                 ]
               ]
             , headingBDS "Time" "" $
-              [ typeBDS "Time" "Absolute time as measured by UTC." (MkSomeGroundType timeGroundType) []
+              [ typeBDS
+                    "Time"
+                    "Absolute time as measured by UTC."
+                    (MkSomeGroundType timeGroundType)
+                    [ addNameInRootBDS $
+                      valPatBDS
+                          "UTCDateAndSinceMidnight"
+                          "Construct a `Time` from a `Date` and a `Duration` since UTC midnight."
+                          UTCTime $
+                      PureFunction $ \(UTCTime d t) -> (d, (t, ()))
+                    , addNameInRootBDS $
+                      valPatBDS "UTC" "Construct a `Time` from a `LocalTime` in UTC." (localTimeToUTC utc) $
+                      PureFunction $ \d -> (utcToLocalTime utc d, ())
+                    , addNameInRootBDS $
+                      valPatBDS
+                          "SinceUnixEpoch"
+                          "Construct a `Time` from a `Duration` since the Unix epoch (beginning of 1970 UTC)."
+                          posixSecondsToUTCTime $
+                      PureFunction $ \d -> (utcTimeToPOSIXSeconds d, ())
+                    ]
               , literalSubtypeRelationEntry @UTCTime
               , showableSubtypeRelationEntry @UTCTime
               , namespaceBDS "Time" $

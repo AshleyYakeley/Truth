@@ -235,6 +235,13 @@ instance HasResolution r => HasQType 'Positive (Fixed r) where
 instance HasResolution r => HasQType 'Negative (Fixed r) where
     qType = mapNegShimWit (functionToShim "fromRational" fromRational) qType
 
+-- DiffTime
+instance HasQType 'Positive DiffTime where
+    qType = mapPosShimWit (functionToShim "realToFrac" realToFrac) (qType :: _ NominalDiffTime)
+
+instance HasQType 'Negative DiffTime where
+    qType = mapNegShimWit (functionToShim "realToFrac" realToFrac) (qType :: _ NominalDiffTime)
+
 -- Vector
 instance HasQType 'Positive a => HasQType 'Positive (Vector a) where
     qType = mapPosShimWit (functionToShim "toList" toList) qType

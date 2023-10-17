@@ -3,6 +3,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Language
     - improve recursive type simplification
     - clean up error messages
+  * Library
+    - add constructors for Time type
   * Fixes
     - fix type solver
     - reject "rec a, a" types

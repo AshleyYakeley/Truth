@@ -13,7 +13,7 @@ Use `--data` to specify a different directory.
 
 To just parse and type-check a file without running it, use `-n` or `--no-run`.
 
-If you want to make a script executable from the command line, you can put this at the top, in the usual UNIX fashion:
+If you want to make a script executable from the command line, you can put this at the top, in the usual Unix fashion:
 
 ```text
 #!/usr/bin/pinafore
