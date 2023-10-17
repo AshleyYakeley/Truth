@@ -35,36 +35,41 @@ Before release:
 
 7. Use latest stack
 
-    stack upgrade
+    stack upgrade  # if not using nix
     stack --version
 
-8. Commit and push changes to repo
+8. Update flake.lock
+
+    rm flake.lock
+    nix flake lock
+
+9. Commit and push changes to repo
 
     git commit -a
     git push
 
-9. Build & test
+10. Build & test
 
     make full-clean && make haddock=1 test=1 bench=1 full ; bin/reportstatus $?
 
-10. Run test UI
+11. Run test UI
 
     testpinafore Pinafore/pinafore-app/test/script/test
 
-11. Tag commit
+12. Tag commit
 
     git tag -a -s v<VERSION> -m "Version <VERSION>"
     git push --tags
 
-12. Upload to Github
+13. Upload to Github
 
     https://github.com/AshleyYakeley/Truth/releases
 
-13. Upload documentation to pinafore.info
+14. Upload documentation to pinafore.info
 
     (use script)
     https://pinafore.info/
 
-14. Close completed milestone
+15. Close completed milestone
 
     https://github.com/AshleyYakeley/Truth/milestones
