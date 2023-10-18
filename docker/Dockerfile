@@ -1,5 +1,5 @@
-FROM fpco/stack-build-small:lts-21.7
-RUN echo 2023-08-27 > /container.date
+FROM fpco/stack-build-small:lts-21.16
+RUN echo 2023-10-17 > /container.date
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get full-upgrade -y
@@ -18,7 +18,9 @@ RUN cd mkdocs-plugin-commonmark && git fetch && git checkout 1033d5dfc0223fd499e
 RUN pip3 install ./mkdocs-plugin-commonmark
 #RUN apt-get install -y r-base-core
 #RUN R -e "install.packages(c('shiny','ggplot2','plotly','optparse','shinyWidgets'),dependencies=TRUE, repos='http://cran.rstudio.com/')"
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_21.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+RUN apt-get update
 RUN apt-get install -y nodejs
 RUN npm --global install @vscode/vsce
 RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
