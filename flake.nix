@@ -72,6 +72,19 @@
                     ''
                     ${pinaforeDocPackage}/bin/pinafore-doc --syntax-data > $out
                     '';
+                vscePackage = pkgs.runCommand "pinafore-vscode-extension" {}
+                    ''
+                    mkdir -p out/support
+                    cp ${syntaxDataPackage} out/support/syntax-data.json
+                    cp ${./.}/support/vsc-extension/transform.yq ./
+                    cp -r ${./.}/support/vsc-extension/vsce ./
+                    chmod -R u+w vsce
+                    ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/package.yaml > vsce/package.json
+                    ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/language-configuration.yaml > vsce/language-configuration.json
+                    ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/syntaxes/pinafore.tmLanguage.yaml > vsce/syntaxes/pinafore.tmLanguage.json
+                    PATH=$PATH:${pkgs.nodejs_20}/bin
+                    cd vsce && ${pkgs.vsce}/bin/vsce package -o $out
+                    '';
             in flake //
             {
                 packages =
@@ -80,6 +93,7 @@
                     pinafore = pinaforePackage;
                     pinafore-doc = pinaforeDocPackage;
                     syntax-data = syntaxDataPackage;
+                    vscode-extension = vscePackage;
                 };
             }
         );
