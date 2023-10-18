@@ -67,13 +67,19 @@
                         stdLibPackage
                     ];
                 };
+                pinaforeDocPackage = flake.packages."pinafore-app:exe:pinafore-doc";
+                syntaxDataPackage = pkgs.runCommand "pinafore-syntax-data" {}
+                    ''
+                    ${pinaforeDocPackage}/bin/pinafore-doc --syntax-data > $out
+                    '';
             in flake //
             {
                 packages =
                 {
                     default = pinaforePackage;
                     pinafore = pinaforePackage;
-                    pinafore-doc = flake.packages."pinafore-app:exe:pinafore-doc";
+                    pinafore-doc = pinaforeDocPackage;
+                    syntax-data = syntaxDataPackage;
                 };
             }
         );
