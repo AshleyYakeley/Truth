@@ -1,5 +1,5 @@
-local/
-out/
+/local/
+/out/
 .build
 .stack-root
 .stack-work
