@@ -22,4 +22,7 @@ testFile inpath = let
 getTestInteractive :: IO TestTree
 getTestInteractive = do
     inpaths <- findByExtension [".in"] $ "test" </> "interactive"
+    case inpaths of
+        [] -> fail "wrong directory"
+        _ -> return ()
     return $ testTree "interactive" $ fmap testFile inpaths

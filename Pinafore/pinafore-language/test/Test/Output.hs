@@ -26,4 +26,7 @@ testFile inpath = let
 getTestOutput :: IO TestTree
 getTestOutput = do
     inpaths <- findByExtension [".in"] $ "test" </> "output"
+    case inpaths of
+        [] -> fail "wrong directory"
+        _ -> return ()
     return $ testTree "output" $ fmap testFile inpaths
