@@ -1,5 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  * Install
+    - Nix flake output for VS Code extension
   * Language
     - improve recursive type simplification
     - clean up error messages
