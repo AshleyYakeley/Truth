@@ -95,6 +95,7 @@
                         vscodeExtPublisher = "Pinafore";
                         vscodeExtName = "Pinafore";
                         vscodeExtUniqueId = "Pinafore.pinafore";
+                        version = "0.4.1";
                     };
             in flake //
             {
