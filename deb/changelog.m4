@@ -11,6 +11,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Fixes
     - fix type solver
     - reject "rec a, a" types
+    - fix fromList.Map
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

@@ -728,7 +728,7 @@ baseLibSections =
             , valBDS "single" "A map with one element." $ langMapSingle @A
             , valBDS "keys" "The keys of the map." $ langMapKeys @TopType
             , valBDS "values" "The values of the map." $ langMapValues @A
-            , valBDS "fromList" "Construct from list." $ langMapToList @A
+            , valBDS "fromList" "Construct from list." $ langMapFromList @A
             , valBDS "toList" "Convert to list." $ langMapToList @A
             ]
           ]
