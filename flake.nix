@@ -87,10 +87,13 @@
                     '';
                 vscePackage = pkgs.runCommand "pinafore-vscode-extension" {}
                     ''
-                    mkdir -p $out/share/vscode/extensions/pinafore.pinafore
+                    mkdir -p $out/share/vscode/extensions/Pinafore.pinafore
                     ${pkgs.unzip}/bin/unzip ${vsceFilePackage}
-                    cp -r extension/* $out/share/vscode/extensions/pinafore.pinafore/
-                    '';
+                    cp -r extension/* $out/share/vscode/extensions/Pinafore.pinafore/
+                    '' //
+                    {
+                        vscodeExtUniqueId = "Pinafore.pinafore";
+                    };
             in flake //
             {
                 packages =
