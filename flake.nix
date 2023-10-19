@@ -92,6 +92,8 @@
                     cp -r extension/* $out/share/vscode/extensions/Pinafore.pinafore/
                     '' //
                     {
+                        vscodeExtPublisher = "Pinafore";
+                        vscodeExtName = "Pinafore";
                         vscodeExtUniqueId = "Pinafore.pinafore";
                     };
             in flake //
