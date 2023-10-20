@@ -39,8 +39,13 @@ uuLiftNegExpressionShimWit (MkExpressionWitness (MkNegShimWit tt conv) expr) =
     MkNegShimWit tt $
     MkComposeShim $ solverExpressionLiftValue $ fmap (\r -> functionToShim "ttr" (\t -> MkMeetType (t, r)) . conv) expr
 
-class (TypeSystem ts, Applicative (Unifier ts), CartesianShim (TSShim ts), Show (UnifierSubstitutions ts)) =>
-          UnifyTypeSystem (ts :: Type) where
+class ( TypeSystem ts
+      , Applicative (Unifier ts)
+      , JoinMeetShim (TSShim ts)
+      , FunctionShim (TSShim ts)
+      , CartesianShim (TSShim ts)
+      , Show (UnifierSubstitutions ts)
+      ) => UnifyTypeSystem (ts :: Type) where
     type Unifier ts :: Type -> Type
     type UnifierSubstitutions ts :: Type
     unifyNegWitnesses :: TSNegWitness ts a -> TSNegWitness ts b -> TSOuter ts (UUNegShimWit ts (MeetType a b))

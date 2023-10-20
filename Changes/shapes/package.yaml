@@ -48,13 +48,16 @@ library:
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid
+      - Control.Applicative.Wrapped
       - Control.FixIO
       - Data.CatEndo
       - Data.EndoM
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor
-      - Data.Coercion
+      - Data.Coerce.Coercion
+      - Data.Coerce.Role
+      - Data.Coerce.MaybeRepresentational
       - Data.SameItem
       - Data.HasNewValue
       - Data.Streamable
@@ -63,7 +66,7 @@ library:
       - Data.Lens
       - Data.Store
       - Data.ConstFunction
-      - Data.CoerceFunction
+      - Data.Coerce.Function
       - Data.PurityFunction
       - Data.Codec
       - Data.KeyedOrder

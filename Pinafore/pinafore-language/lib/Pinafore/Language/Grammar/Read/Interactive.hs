@@ -63,7 +63,7 @@ readInteractiveCommand :: Parser InteractiveCommand
 readInteractiveCommand =
     (do
          readThis TokTypeJudge
-         MkName cmd <- readLName
+         cmd <- (readLName >>= \(MkName cmd) -> return cmd) <|> (readThis TokType >> return "type")
          readSpecialCommand cmd) <|>
     (readEnd >> return NullInteractiveCommand) <|>
     (try $ do

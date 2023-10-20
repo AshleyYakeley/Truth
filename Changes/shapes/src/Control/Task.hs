@@ -129,4 +129,4 @@ raceTasks tt = do
                 _ <- tryPutMVar var a
                 return ()
         return ()
-    return MkTask {taskIsDone = shortOr taskIsDone tt, taskWait = liftTunnelIO $ takeMVar var}
+    return MkTask {taskIsDone = shortOr $ fmap taskIsDone tt, taskWait = liftTunnelIO $ takeMVar var}

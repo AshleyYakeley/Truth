@@ -5,6 +5,7 @@ module Test.Unifier
 import Data.Shim
 import Debug.Trace.Null
 import Language.Expression.Common
+import Language.Expression.Dolan
 import Language.Expression.Dolan.Test
 import Pinafore
 import Pinafore.Language.API
@@ -12,12 +13,12 @@ import Pinafore.Test
 import Shapes
 import Test.RunScript
 
-type PinaforeBisubstitution = Bisubstitution QGroundType (QPolyShim Type) (UnifierM QGroundType)
+type PinaforeBisubstitution = Bisubstitution QGroundType (QPolyShim Type) (TypeResult QGroundType)
 
 pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> QInterpreter QValue
 pinaforeBisubstitutes bisubs val = do
     liftIO $ traceIO $ "bisubstitute: before: " <> showValType val
-    val' <- runUnifierM @QGroundType $ unEndoM (bisubstitutes @QGroundType bisubs) val
+    val' <- runTypeResult @QGroundType $ unEndoM (bisubstitutes @QGroundType bisubs) val
     liftIO $ traceIO $ "bisubstitute: after: " <> showValType val'
     return val'
 
@@ -92,6 +93,13 @@ testLib = let
        , valBDS "op3" "TEST" op3
        , valBDS "op4" "TEST" op4
        ]
+
+_traceLib :: LibraryModule context
+_traceLib = let
+    libTracePure :: Text -> A -> A
+    --libTracePure t = tracePure $ unpack t
+    libTracePure _t = id
+    in MkLibraryModule "TRACE" $ headingBDT "TRACE" "" $ [valBDS "tracePure" "TRACE" libTracePure]
 
 testUnifier :: TestTree
 testUnifier =
@@ -335,5 +343,133 @@ testUnifier =
               , runScriptTestTree $
                 testExpectSuccess
                     "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
+              ]
+        , testTree
+              "retraction"
+              [ testTree "list-1" $
+                runTester defaultTester $
+                testerLiftInterpreter $ do
+                    expr <- parseTopExpression "[1,2]"
+                    val <- qEvalExpr expr
+                    tval :: Showable <- qUnifyValue val
+                    liftIO $ assertEqual "" "[1, 2]" $ textShow tval
+              , testTree "list-2" $
+                runTester defaultTester $
+                testerLiftInterpreter $ do
+                    expr <- parseTopExpression "[1,2]"
+                    val <- qEvalExpr expr
+                    tval :: NonEmpty Integer <- qUnifyValue val
+                    liftIO $ assertEqual "" (1 :| [2]) tval
+              , testTree "list-3" $
+                runTester defaultTester $
+                testerLiftInterpreter $ do
+                    expr <- parseTopExpression "1 :: (2 :: [])"
+                    val <- qEvalExpr expr
+                    tval :: NonEmpty Integer <- qUnifyValue val
+                    liftIO $ assertEqual "" (1 :| [2]) tval
+              ]
+        , testTree
+              "action"
+              [ testTree "1" $
+                runTester defaultTester $ do
+                    smodel <- testerGetDefaultStore
+                    action :: QStore -> Action () <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "fn store => let opentype E in\n" <>
+                                "property @E @Integer !\"r\" store !$ {point.OpenEntity @E !\"p\"} := 456"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    testerRunAction $ action smodel
+              , testTree "2" $
+                runTester defaultTester $ do
+                    smodel <- testerGetDefaultStore
+                    rval :: QStore -> LangWholeModel '( Integer, Integer) <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "fn store => let opentype E in property @E @Integer !\"r\" store !$ {point.OpenEntity @E !\"p\"}"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    testerRunAction $ langWholeModelSet (rval smodel) $ Known 345
+              ]
+        , testTree
+              "recursive-automaton"
+              [ testTree "1" $
+                runTester defaultTester $ do
+                    rval :: Maybe TopType <-
+                        testerLiftInterpreter $ do
+                            expr <- parseTopExpression "Nothing: rec a, Maybe a"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    case rval of
+                        Nothing -> return ()
+                        _ -> fail "different"
+              ]
+        , testTree
+              "recursive-shims"
+              [ testTree "pass-1" $
+                runTester defaultTester $ do
+                    tval :: [Integer] <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "let rec\n" <>
+                                "fromRec = match Nothing => []; Just (t,tt) => t :: fromRec tt end;\n" <>
+                                "in fromRec $ Just (5,Just (3,Nothing))"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    if tval == [5, 3]
+                        then return ()
+                        else fail "different"
+              , testTree "fails-2" $
+                runTester defaultTester $ do
+                    tval :: [Integer] <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "let rec\n" <>
+                                "datatype Q +t of Mk (rec a, Maybe (t *: a)) end;\n" <>
+                                "fromQ = fn Mk.Q x => x >- match Nothing => []; (Just (t,a)) => t :: fromQ (Mk.Q a) end;\n" <>
+                                "in fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    if tval == [5, 3, 1]
+                        then return ()
+                        else fail "different"
+              , testTree "fails-1" $
+                runTester defaultTester $ do
+                    tval :: [Integer] <-
+                        testerLiftInterpreter $ do
+                            expr <-
+                                parseTopExpression $
+                                "let rec\n" <>
+                                "datatype Q +t of Mk (rec a, Maybe (t *: a)) end;\n" <>
+                                "fromQ = match Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a) end;\n" <>
+                                "in fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
+                            val <- qEvalExpr expr
+                            qUnifyValue val
+                    if tval == [5, 3, 1]
+                        then return ()
+                        else fail "different"
+              , testTree "rs-2" $ let
+                    f :: (A -> [B]) -> Maybe (B, A) -> JoinType [BottomType] (NonEmpty B)
+                    f r =
+                        \case
+                            Nothing -> LeftJoinType []
+                            Just (t, tt) -> RightJoinType $ t :| r tt
+                    v :: Maybe (Integer, Maybe (Integer, Maybe BottomType))
+                    v = Just (5, Just (3, Nothing))
+                    lib = bindsLibrary "test" [("f", MkSomeValue f), ("v", MkSomeValue v)]
+                    in runTester (addTesterLibrary lib defaultTester) $ do
+                           tval :: [Integer] <-
+                               testerLiftInterpreter $ do
+                                   expr <- parseTopExpression $ "import \"test\" in fix f v"
+                                   val <- qEvalExpr expr
+                                   qUnifyValue val
+                           if tval == [5, 3]
+                               then return ()
+                               else fail "different"
               ]
         ]

@@ -15,12 +15,12 @@ import Shapes
 
 pfmap ::
        (HasVariance f, VarianceOf f ~ 'Covariance)
-    => PolarMap (QPolyShim Type) 'Negative a b
-    -> PolarMap (QPolyShim Type) 'Negative (f a) (f b)
-pfmap (MkPolarMap mp) = MkPolarMap $ cfmap mp
+    => PolarShim (QPolyShim Type) 'Negative a b
+    -> PolarShim (QPolyShim Type) 'Negative (f a) (f b)
+pfmap (MkPolarShim mp) = MkPolarShim $ cfmap mp
 
-zip2 :: PolarMap (QPolyShim Type) 'Negative (Maybe (MeetType a b)) (MeetType (Maybe a) (Maybe b))
-zip2 = MkPolarMap $ functionToShim "zip2" $ \(BothMeetType a b) -> liftA2 BothMeetType a b
+zip2 :: PolarShim (QPolyShim Type) 'Negative (Maybe (MeetType a b)) (MeetType (Maybe a) (Maybe b))
+zip2 = MkPolarShim $ functionToShim "zip2" $ \(BothMeetType a b) -> liftA2 BothMeetType a b
 
 getOptSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Maybe (QShimWit 'Negative (Maybe t))
 getOptSingleGreatestDynamicSupertype (GroundedDolanSingularType (MkDolanGroundedType gt args)) = do
@@ -37,11 +37,11 @@ getSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> QShimWit 'Nega
 getSingleGreatestDynamicSupertype t =
     case getOptSingleGreatestDynamicSupertype t of
         Just t' -> t'
-        Nothing -> mapPolarShimWit (MkPolarMap $ functionToShim "Just" Just) $ typeToDolan t
+        Nothing -> mapPolarShimWit (MkPolarShim $ functionToShim "Just" Just) $ typeToDolan t
 
 getGreatestDynamicSupertype :: QType 'Negative t -> QShimWit 'Negative (Maybe t)
 getGreatestDynamicSupertype NilDolanType =
-    mapPolarShimWit (MkPolarMap $ functionToShim "Just" Just) $ mkShimWit NilDolanType
+    mapPolarShimWit (MkPolarShim $ functionToShim "Just" Just) $ mkShimWit NilDolanType
 getGreatestDynamicSupertype (ConsDolanType t1 NilDolanType) =
     mapShimWit (pfmap iPolarL1) $ getSingleGreatestDynamicSupertype t1
 getGreatestDynamicSupertype (ConsDolanType t1 tr) =

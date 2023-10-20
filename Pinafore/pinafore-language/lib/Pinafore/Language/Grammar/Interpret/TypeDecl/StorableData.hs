@@ -17,7 +17,7 @@ type CovParam :: CCRArgumentKind
 data CovParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
     MkCovParam :: TypeVarT tv -> CovParam CoCCRVariance tv
 
-type CovParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
+type CovParams :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type -> Type
 type CovParams = CCRArguments CovParam
 
 paramsToCovParams :: CovaryType dv -> CCRTypeParams dv gt decltype -> CovParams dv gt decltype
@@ -30,7 +30,7 @@ newtype WithArgs f gt =
     MkWithArgs (forall (ta :: Type). Arguments StoreAdapter gt ta -> f ta)
 
 assignArgumentParams ::
-       forall (f :: Type -> Type) dv (gt :: DolanVarianceKind dv) (decltype :: Type) (ta :: Type).
+       forall (f :: Type -> Type) dv (gt :: CCRVariancesKind dv) (decltype :: Type) (ta :: Type).
        CovParams dv gt decltype
     -> Arguments f gt ta
     -> decltype :~: ta
@@ -45,7 +45,7 @@ data Thing x decltype ta =
             (decltype :~: ta)
 
 matchParamArgs ::
-       forall f dv (gt1 :: DolanVarianceKind dv) (gt2 :: DolanVarianceKind dv) ta.
+       forall f dv (gt1 :: CCRVariancesKind dv) (gt2 :: CCRVariancesKind dv) ta.
        CovParams dv gt1 ta
     -> Arguments f gt2 ta
     -> gt1 :~: gt2
@@ -55,7 +55,7 @@ matchParamArgs (ConsCCRArguments _ args) (ConsArguments _ args') =
         Refl -> Refl
 
 lookupVar ::
-       forall f dv (gt :: DolanVarianceKind dv) tv ta.
+       forall f dv (gt :: CCRVariancesKind dv) tv ta.
        CovParams dv gt ta
     -> TypeVarT tv
     -> QInterpreter (Arguments f gt ta -> f tv)
@@ -113,44 +113,44 @@ makeTypeAdapter params conss = do
     return $ MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullStoreAdapter
 
 makeStorableGroundType ::
-       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (decltype :: Type). Is CCRVariancesType dv
     => FullName
     -> CCRTypeParams dv gt decltype
     -> TypeConstruction dv gt [(ConstructorCodec decltype, Anchor)]
 makeStorableGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
-    mkx :: DolanVarianceMap dv gt
+    mkx :: CCRVariancesMap dv gt
         -> [(ConstructorCodec decltype, Anchor)]
-        -> QInterpreter (DolanVarianceMap dv gt, WithArgs StoreAdapter gt)
+        -> QInterpreter (CCRVariancesMap dv gt, WithArgs StoreAdapter gt)
     mkx dvm conss = do
         cvt <-
-            case dolanVarianceToCovaryType dvt of
+            case ccrVariancesToCovaryType dvt of
                 Just cvt -> return cvt
                 Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError mainTypeName
         let cparams = paramsToCovParams cvt tparams
         adapter <- makeTypeAdapter cparams conss
         return (dvm, adapter)
     mkgt ::
-           (DolanVarianceMap dv gt, WithArgs StoreAdapter gt)
+           (CCRVariancesMap dv gt, WithArgs StoreAdapter gt)
         -> QInterpreter (GroundTypeFromTypeID dv gt (Storability dv gt))
     mkgt ~(dvm, ~(MkWithArgs stbAdapter)) = do
         cvt <-
-            case dolanVarianceToCovaryType dvt of
+            case ccrVariancesToCovaryType dvt of
                 Just cvt -> return cvt
                 Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError mainTypeName
         return $
             MkGroundTypeFromTypeID $ \subTypeName tidsym -> let
                 stbKind :: CovaryType dv
                 stbKind = cvt
-                stbCovaryMap = dolanVarianceMapToCovary cvt $ lazyDolanVarianceMap dvt dvm
+                stbCovaryMap = ccrVariancesMapToCovary cvt $ lazyCCRVariancesMap dvt dvm
                 showType = standardListTypeExprShow @dv $ exprShow subTypeName
                 storability :: Storability dv gt
                 storability = MkStorability {..}
                 gt :: QGroundType dv gt
                 gt =
                     MkQGroundType
-                        { qgtVarianceType = covaryToDolanVarianceType stbKind
-                        , qgtVarianceMap = covaryToDolanVarianceMap stbKind stbCovaryMap
+                        { qgtVarianceType = covaryToCCRVariancesType stbKind
+                        , qgtVarianceMap = covaryToCCRVariancesMap stbKind stbCovaryMap
                         , qgtShowType = showType
                         , qgtFamilyType = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily tidsym
                         , qgtSubtypeGroup = Nothing
@@ -166,7 +166,7 @@ makeStorableGroundType mainTypeName tparams = let
             (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
             plainStoreAdapter
             storability $ \args eat ->
-            subtypeConversion Nothing gt args entityGroundType nilDolanArgumentsShimWit $
+            subtypeConversion Nothing gt args nilCCRPolarArgumentsShimWit $
             pure $ functionToShim "datatype-storable" $ storeAdapterConvert eat
     in MkTypeConstruction mkx mkgt postregister
 

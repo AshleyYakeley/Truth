@@ -21,6 +21,14 @@ testCheckScript fpath name =
         _ <- testerLiftView $ qInterpretFile fpath
         return ()
 
+testQuine :: TestName -> FilePath -> FilePath -> TestTree
+testQuine name fpath outpath =
+    testHandleVsFile name fpath outpath $ \hout ->
+        runTester defaultTester {tstOutput = hout} $
+        testerLiftView $ do
+            action <- qInterpretFile fpath
+            action
+
 testScripts :: TestTree
 testScripts =
     testTree
@@ -32,5 +40,6 @@ testScripts =
         , testTree "example" $
           fmap
               (\name -> testCheckScript ("examples" </> name) name)
-              ["stopwatch", "calendar", "contacts", "events", "clock", "fake-theme-system-journal"]
+              ["stopwatch", "calendar", "contacts", "events", "clock", "quine", "fake-theme-system-journal"]
+        , testQuine "quine" "examples/quine" "test/out/quine.out"
         ]

@@ -13,7 +13,7 @@ testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
-    in testHandleVsFile dir testName $ \outh ->
+    in testHandleVsFileInDir dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
                runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary, tstOutput = outh} $ do
                    testerLiftView $ qInteractHandles inh outh True
@@ -22,4 +22,7 @@ testFile inpath = let
 getTestInteractive :: IO TestTree
 getTestInteractive = do
     inpaths <- findByExtension [".in"] $ "test" </> "interactive"
+    case inpaths of
+        [] -> fail "wrong directory"
+        _ -> return ()
     return $ testTree "interactive" $ fmap testFile inpaths

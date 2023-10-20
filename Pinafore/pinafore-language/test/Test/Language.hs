@@ -129,21 +129,24 @@ goodLangResult :: Bool -> LangResult -> LangResult
 goodLangResult True lr = lr
 goodLangResult False _ = LRCheckFail
 
-testQuery :: Text -> LangResult -> TestTree
-testQuery query expected =
-    testTree (show $ unpack query) $
+testNamedQuery :: String -> Text -> LangResult -> TestTree
+testNamedQuery name query expected =
+    testTree name $
     runTester defaultTester $ do
         result <-
-            tryExc $
-            testerLiftInterpreter $ do
+            testerLiftInterpreter $
+            tryExc $ do
                 v <- parseValue query
                 showPinaforeModel v
         liftIO $
             case result of
-                FailureResult e ->
+                FailureResult (Left pe) ->
                     case expected of
                         LRCheckFail -> return ()
-                        _ -> assertFailure $ "check: expected success, found failure: " ++ show e
+                        _ -> assertFailure $ "check: expected success, found error: " ++ show pe
+                FailureResult (Right se) ->
+                    case expected of
+                        _ -> assertFailure $ "check: found exception: " ++ show se
                 SuccessResult r -> do
                     me <- catchPureError r
                     case (expected, me) of
@@ -153,44 +156,56 @@ testQuery query expected =
                         (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
                         (LRSuccess s, Nothing) -> assertEqual "result" s r
 
-testSubsumeSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
-testSubsumeSubtype good t1 t2 vs =
-    [testQuery ("let x : " <> t1 <> " = undefined; y : " <> t2 <> " = x in ()") $ goodLangResult good $ LRSuccess "()"] <>
-    fmap
-        (\v ->
-             testQuery ("let x : " <> t1 <> " = " <> v <> " in x : " <> t2) $ goodLangResult good $ LRSuccess $ unpack v)
-        vs <>
-    fmap
-        (\v ->
-             testQuery ("let x : " <> t1 <> " = " <> v <> "; y : " <> t2 <> " = x in y") $
-             goodLangResult good $ LRSuccess $ unpack v)
-        vs
+testQuery :: Text -> LangResult -> TestTree
+testQuery query = testNamedQuery (show query) query
 
-testFunctionSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
+testSubsumeSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
+testSubsumeSubtype good t1 t2 vs =
+    testTree "subsume" $
+    [ testNamedQuery "plain" ("let x : " <> t1 <> " = undefined; y : " <> t2 <> " = x in ()") $
+      goodLangResult good $ LRSuccess "()"
+    , testTree "let-1" $
+      fmap
+          (\v ->
+               testNamedQuery (show v) ("let x : " <> t1 <> " = " <> v <> " in x : " <> t2) $
+               goodLangResult good $ LRSuccess $ unpack v)
+          vs
+    , testTree "let-2" $
+      fmap
+          (\v ->
+               testNamedQuery (show v) ("let x : " <> t1 <> " = " <> v <> "; y : " <> t2 <> " = x in y") $
+               goodLangResult good $ LRSuccess $ unpack v)
+          vs
+    ]
+
+testFunctionSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
 testFunctionSubtype good t1 t2 vs =
-    [ testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f") $ goodLangResult good $ LRSuccess "<?>"
-    , testQuery ("(fn x => x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
-    ] <>
-    fmap
-        (\v ->
-             testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f " <> v) $
-             goodLangResult good $ LRSuccess $ unpack v)
-        vs
+    testTree "function" $
+    [ testNamedQuery "id" ("(fn x => x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
+    , testNamedQuery "let" ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f") $
+      goodLangResult good $ LRSuccess "<?>"
+    , testTree "vars" $
+      fmap
+          (\v ->
+               testNamedQuery (show v) ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f (" <> v <> ")") $
+               goodLangResult good $ LRSuccess $ unpack v)
+          vs
+    ]
 
 testSubtype1 :: Bool -> Bool -> Text -> Text -> [Text] -> [TestTree]
 testSubtype1 good b t1 t2 vs =
-    testSubsumeSubtype good t1 t2 vs <>
+    [testSubsumeSubtype good t1 t2 vs] <>
     if b
-        then testFunctionSubtype good t1 t2 vs
+        then [testFunctionSubtype good t1 t2 vs]
         else []
 
 testSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
 testSubtype b t1 t2 vs =
-    testTree (unpack $ t1 <> " <: " <> t2) $ testSubtype1 True b t1 t2 vs <> testSubtype1 False b t2 t1 vs
+    testTree (show $ t1 <> " <: " <> t2) $ testSubtype1 True b t1 t2 vs <> testSubtype1 False b t2 t1 vs
 
 testSameType :: Bool -> Text -> Text -> [Text] -> TestTree
 testSameType b t1 t2 vs =
-    testTree (unpack $ t1 <> " = " <> t2) $ testSubtype1 True b t1 t2 vs <> testSubtype1 True b t2 t1 vs
+    testTree (show $ t1 <> " = " <> t2) $ testSubtype1 True b t1 t2 vs <> testSubtype1 True b t2 t1 vs
 
 testQueries :: TestTree
 testQueries =
@@ -244,9 +259,14 @@ testQueries =
                 LRSuccess "\"!F332D47A-3C96F533-854E5116-EC65D65E-5279826F-25EE1F57-E925B6C3-076D3BEC\""
               ]
         , testTree
-              "list construction"
+              "construction"
               [ testQuery "[]" $ LRSuccess $ show @[Text] []
               , testQuery "[1]" $ LRSuccess $ "[1]"
+              , testQuery "(1,2)" $ LRSuccess $ "(1, 2)"
+              , testQuery "(1,2,3)" $ LRSuccess $ "(1, (2, 3))"
+              , testQuery "Left 4" $ LRSuccess $ "Left 4"
+              , testQuery "Right 5" $ LRSuccess $ "Right 5"
+              , testQuery "[1,2]" $ LRSuccess $ "[1, 2]"
               , testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
               ]
         , testTree
@@ -671,7 +691,13 @@ testQueries =
               ]
         , testTree
               "recursive"
-              [ testQuery "let x : rec a, List a = [] in x" $ LRSuccess "[]"
+              [ testTree
+                    "automaton"
+                    [ testQuery "Nothing: Maybe (rec a, List a)" $ LRSuccess "Nothing"
+                    , testQuery "Nothing: Maybe (rec a, Maybe a)" $ LRSuccess "Nothing"
+                    , testQuery "Nothing: rec a, Maybe a" $ LRSuccess "Nothing"
+                    , testQuery "[]: rec a, List a" $ LRSuccess "[]"
+                    ]
               , let
                     atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
                     in testTree
@@ -681,25 +707,22 @@ testQueries =
                            , testSameType True "List Integer" "List (rec a, Integer)" ["[0]"]
                            , testSameType True "rec a, List a" "rec a, List a" atree
                            , testSameType True "rec a, List a" "rec a, List (List a)" atree
-                           , ignoreTestBecause "ISSUE #61" $
-                             testSameType
+                           , testSubtype True "rec a, Maybe a" "rec a, (Maybe a | List a)" ["Nothing", "Just Nothing"]
+                           , testSubtype False "Maybe None" "rec a, (Maybe a | List a)" ["Nothing"]
+                           , testSubtype False "List None" "rec a, (Maybe a | List a)" ["[]"]
+                           , testSubtype False "Maybe None | List None" "rec a, (Maybe a | List a)" ["[]", "Nothing"]
+                           , testSubtype False "Maybe None" "(rec a, Maybe a) | (rec b, List b)" ["Nothing"]
+                           , testSubtype False "List None" "(rec a, Maybe a) | (rec b, List b)" ["[]"]
+                           , testSubtype
                                  False
-                                 "rec a, (Maybe a | List a)"
                                  "(rec a, Maybe a) | (rec b, List b)"
-                                 ["[]", "Nothing", "Just []", "[[]]"]
-                           , ignoreTestBecause "ISSUE #61" $
-                             testSameType
-                                 False
                                  "rec a, (Maybe a | List a)"
-                                 "(rec a, Maybe a) | (rec a, List a)"
-                                 ["[]", "Nothing", "Just []", "[[]]"]
+                                 ["[]", "Nothing", "Just Nothing", "[[]]"]
                            , testSubtype True "rec a, List a" "Showable" []
                            , testSubtype True "List (rec a, List a)" "Showable" []
                            , testSubtype True "rec a, List a" "List Showable" ["[]"]
                            , testSubtype True "List (rec a, List a)" "List Showable" ["[]"]
                            , testSameType False "None" "None" []
-                           , testSameType False "rec a, a" "None" []
-                           , testSameType False "List (rec a, a)" "List None" ["[]"]
                            , testSameType True "rec a, Integer" "Integer" ["0"]
                            , testSameType True "List (rec a, Integer)" "List Integer" ["[0]"]
                            , testTree

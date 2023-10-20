@@ -56,11 +56,98 @@ solveExpression :: Applicative m => (forall t. w t -> m t) -> Expression w a -> 
 solveExpression _f (ClosedExpression a) = pure a
 solveExpression f (OpenExpression wt expr) = solveExpression f expr <*> f wt
 
-mapExpressionWitnessesM ::
-       Applicative m
-    => (forall t r. w t -> (forall t'. w t' -> (t' -> t) -> m r) -> m r)
-    -> Expression w a
+mapExpressionM ::
+       forall m w1 w2 a. Applicative m
+    => (forall t. w1 t -> m (Expression w2 t))
+    -> Expression w1 a
+    -> m (Expression w2 a)
+mapExpressionM _ (ClosedExpression a) = pure $ ClosedExpression a
+mapExpressionM f (OpenExpression wt expr) = liftA2 (liftA2 $ \t ta -> ta t) (f wt) (mapExpressionM f expr)
+
+mapExpression :: forall w1 w2 a. (forall t. w1 t -> Expression w2 t) -> Expression w1 a -> Expression w2 a
+mapExpression m expr = runIdentity $ mapExpressionM (\wt -> Identity $ m wt) expr
+
+mergeExpressionWitnessesM ::
+       forall m w t a. Monad m
+    => Expression w t
+    -> (forall x. w x -> m (Maybe (Expression w (x, t))))
+    -> Expression w (t -> a)
     -> m (Expression w a)
-mapExpressionWitnessesM _ (ClosedExpression a) = pure $ ClosedExpression a
-mapExpressionWitnessesM f (OpenExpression wt expr) =
-    f wt $ \wt' conv -> fmap (OpenExpression wt') $ mapExpressionWitnessesM f $ fmap (\ta -> ta . conv) expr
+mergeExpressionWitnessesM newExpr matchExpr = let
+    runMerge :: forall r. Expression w (t -> r) -> m (Expression w r)
+    runMerge (ClosedExpression ta) = return $ fmap ta newExpr
+    runMerge (OpenExpression wt expr) = do
+        mfexpr <- matchExpr wt
+        case mfexpr of
+            Just fexpr -> return $ liftA2 (\(a, b) f -> f a b) fexpr expr
+            Nothing -> do
+                rexpr <- runMerge $ fmap (\f conv t -> f t conv) expr
+                return $ OpenExpression wt rexpr
+    in runMerge
+
+combineExpressionWitnessesM ::
+       forall m w r. Monad m
+    => (forall a b. w a -> w b -> m (Maybe (Expression w (a, b))))
+    -> Expression w r
+    -> m (Expression w r)
+combineExpressionWitnessesM _ (ClosedExpression a) = return $ ClosedExpression a
+combineExpressionWitnessesM f (OpenExpression wt expr) = do
+    expr1 <- combineExpressionWitnessesM f expr
+    mergeExpressionWitnessesM (varExpression wt) (\wx -> f wx wt) expr1
+
+mapExactExpressionM ::
+       forall m w1 w2 a. Applicative m
+    => (forall t. w1 t -> m (w2 t))
+    -> Expression w1 a
+    -> m (Expression w2 a)
+mapExactExpressionM _ (ClosedExpression a) = pure $ ClosedExpression a
+mapExactExpressionM f (OpenExpression wt expr) = liftA2 OpenExpression (f wt) (mapExactExpressionM f expr)
+
+mapExactExpression :: forall w1 w2 a. (forall t. w1 t -> w2 t) -> Expression w1 a -> Expression w2 a
+mapExactExpression m expr = runIdentity $ mapExactExpressionM (\wt -> Identity $ m wt) expr
+
+reverseExpression :: Expression w a -> Expression w a
+reverseExpression (ClosedExpression a) = ClosedExpression a
+reverseExpression (OpenExpression w expr) = reverseExpression expr <*> varExpression w
+
+partitionExpressionM ::
+       forall m w1 w2 w3 a r. Monad m
+    => (forall t. w1 t -> m (Either (Expression w2 t) (Expression w3 t)))
+    -> Expression w1 a
+    -> (forall b. Expression w2 (b -> a) -> Expression w3 b -> m r)
+    -> m r
+partitionExpressionM _tst (ClosedExpression a) call = call (pure id) (ClosedExpression a)
+partitionExpressionM tst (OpenExpression (wt :: w1 t) expr) call =
+    partitionExpressionM tst expr $ \eba eb -> do
+        eexpr <- tst wt
+        case eexpr of
+            Left ex -> call (liftA2 (\t bta b -> bta b t) ex eba) eb
+            Right ex -> call (fmap (\bta (t, b) -> bta b t) eba) (liftA2 (,) ex eb)
+
+-- True in the first expression, False in the second
+partitionIfExpressionM ::
+       forall m w a r. Monad m
+    => (forall t. w t -> m Bool)
+    -> Expression w a
+    -> (forall b. Expression w (b -> a) -> Expression w b -> m r)
+    -> m r
+partitionIfExpressionM tst =
+    partitionExpressionM $ \wt -> do
+        b <- tst wt
+        return $
+            if b
+                then Left $ varExpression wt
+                else Right $ varExpression wt
+
+findFirstExpression ::
+       forall w1 w2 a r.
+       (forall t. w1 t -> Maybe (w2 t))
+    -> Expression w1 a
+    -> (forall b. w2 b -> Expression w1 (b -> a) -> r)
+    -> Maybe r
+findFirstExpression _ (ClosedExpression _) _ = Nothing
+findFirstExpression tst (OpenExpression wt expr) call =
+    case tst wt of
+        Just wt' -> Just $ call wt' expr
+        Nothing ->
+            findFirstExpression tst expr $ \wt' expr' -> call wt' $ OpenExpression wt $ fmap (\bta t b -> bta b t) expr'

@@ -1,7 +1,6 @@
 module Pinafore.Language.Type.Storable.Type where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Interpreter ()
@@ -11,7 +10,7 @@ import Pinafore.Language.Type.Ground
 import Pinafore.Text
 import Shapes
 
-type Storability :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type Storability :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data Storability dv gt = MkStorability
     { stbKind :: CovaryType dv
     , stbCovaryMap :: CovaryMap gt
@@ -22,25 +21,25 @@ storabilityProperty :: IOWitness (Storability '[] ())
 storabilityProperty = $(iowitness [t|Storability '[] ()|])
 
 saturateStoreAdapter ::
-       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) a r.
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) a r.
        QShimWit 'Negative a
     -> StoreAdapter a
     -> CovaryType dv
     -> CovaryMap gt
     -> (forall t. QArgumentsShimWit dv gt 'Negative t -> Arguments StoreAdapter gt t -> r)
     -> r
-saturateStoreAdapter _ _ NilListType NilCovaryMap call = call nilDolanArgumentsShimWit NilArguments
+saturateStoreAdapter _ _ NilListType NilCovaryMap call = call nilCCRPolarArgumentsShimWit NilArguments
 saturateStoreAdapter tt adapter (ConsListType Refl ct) (ConsCovaryMap ccrv cvm) call =
     saturateStoreAdapter tt adapter ct cvm $ \cta ctaa ->
         call
-            (consDolanArgumentsShimWit
-                 (ConsDolanVarianceMap ccrv $ covaryToDolanVarianceMap ct cvm)
+            (consCCRPolarArgumentsShimWit
+                 (ConsCCRVariancesMap ccrv $ covaryToCCRVariancesMap ct cvm)
                  (coCCRArgument tt)
                  cta)
             (ConsArguments adapter ctaa)
 
 storabilitySaturatedAdapter ::
-       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) a r.
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) a r.
        QShimWit 'Negative a
     -> StoreAdapter a
     -> Storability dv gt
@@ -52,7 +51,7 @@ storabilitySaturatedAdapter tt adapter MkStorability {..} call =
 type SealedStorability :: forall k. k -> Type
 data SealedStorability gt where
     MkSealedStorability
-        :: forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+        :: forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
            ListTypeExprShow dv
         -> Storability dv gt
         -> SealedStorability gt
@@ -61,7 +60,7 @@ data StorableGroundType :: forall k. k -> Type where
     MkStorableGroundType :: forall k (gt :: k). FamilialType gt -> SealedStorability gt -> StorableGroundType gt
 
 sameDV ::
-       forall dva dvb. (DolanVarianceKind dva ~ DolanVarianceKind dvb)
+       forall dva dvb. (CCRVariancesKind dva ~ CCRVariancesKind dvb)
     => CovaryType dva
     -> CovaryType dvb
     -> dva :~: dvb
@@ -77,7 +76,7 @@ instance IsCovaryGroundType StorableGroundType where
     groundTypeCovaryType ::
            forall (k :: Type) (t :: k) r.
            StorableGroundType t
-        -> (forall (dv :: DolanVariance). k ~ DolanVarianceKind dv => CovaryType dv -> r)
+        -> (forall (dv :: CCRVariances). k ~ CCRVariancesKind dv => CovaryType dv -> r)
         -> r
     groundTypeCovaryType (MkStorableGroundType _ (MkSealedStorability _ storability)) cont = cont $ stbKind storability
     groundTypeCovaryMap :: forall k (t :: k). StorableGroundType t -> CovaryMap t
@@ -90,7 +89,7 @@ storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storabi
 type MonoStorableType = MonoType StorableGroundType
 
 showEntityType ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv) a.
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv) a.
        CovaryType dv
     -> ListTypeExprShow dv
     -> Arguments MonoStorableType t a

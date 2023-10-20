@@ -3,7 +3,6 @@ module Language.Expression.Common
     ) where
 
 import Language.Expression.Common.Abstract as I
-import Language.Expression.Common.Arguments as I
 import Language.Expression.Common.Bindings as I
 import Language.Expression.Common.CompleteTypeSystem as I
 import Language.Expression.Common.Error as I

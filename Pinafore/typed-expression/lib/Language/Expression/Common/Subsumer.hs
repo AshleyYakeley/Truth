@@ -1,7 +1,6 @@
 module Language.Expression.Common.Subsumer
     ( SubsumeTypeSystem(..)
     , solveSubsumerExpression
-    , usubSubsumerExpression
     , usubSolveSubsumer
     , subsumePosShimWit
     , solveSubsumeShimWit
@@ -24,7 +23,8 @@ import Shapes
 
 type OpenSubsumerExpression ts = TSOpenSolverExpression ts (Subsumer ts)
 
-class (UnifyTypeSystem ts, Applicative (Subsumer ts), Show (SubsumerSubstitutions ts)) => SubsumeTypeSystem ts where
+class (UnifyTypeSystem ts, Applicative (Subsumer ts), Show (SubsumerSubstitutions ts), RecoverShim (TSShim ts)) =>
+          SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
     usubSubsumer :: forall a. UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (OpenSubsumerExpression ts a)
@@ -44,15 +44,6 @@ solveSubsumerExpression ::
 solveSubsumerExpression (MkSolverExpression texpr vexpr) = do
     (expr, subs) <- solveSubsumer @ts texpr
     return (vexpr <*> expr, subs)
-
-usubSubsumerExpression ::
-       forall ts a. SubsumeTypeSystem ts
-    => UnifierSubstitutions ts
-    -> OpenSubsumerExpression ts a
-    -> TSOuter ts (OpenSubsumerExpression ts a)
-usubSubsumerExpression subs (MkSolverExpression texpr vexpr) = do
-    sexpr <- usubSubsumer @ts subs texpr
-    return $ solverExpressionLiftValue vexpr <*> sexpr
 
 usubSolveSubsumer ::
        forall ts a. SubsumeTypeSystem ts

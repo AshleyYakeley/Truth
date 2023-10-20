@@ -20,7 +20,7 @@ import Shapes
 import System.IO.Error
 
 showPinaforeModel :: QValue -> QInterpreter String
-showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: PinaforeError) -> return "<?>")
+showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT QInterpreter View)
 
@@ -38,18 +38,17 @@ interactEvalExpression sexpr =
 runValue :: Handle -> QValue -> Interact (Action ())
 runValue outh val =
     interactRunQInterpreter $
-    (qUnifyValue val) <|>
-    (do
-         s <- showPinaforeModel val
-         return $ liftIO $ hPutStrLn outh s)
+    catchExc (qUnifyValue val) $ \_ -> do
+        s <- showPinaforeModel val
+        return $ liftIO $ hPutStrLn outh s
 
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = hoist fromInterpretResult $ parseInteractiveCommand t
 
 actionWit :: QShimWit 'Negative t -> QShimWit 'Negative (Action t)
-actionWit (MkShimWit t (MkPolarMap conv)) =
+actionWit (MkShimWit t (MkPolarShim conv)) =
     shimWitToDolan $
-    mapShimWit (MkPolarMap $ cfmap conv) $
+    mapShimWit (MkPolarShim $ cfmap conv) $
     mkShimWit $ MkDolanGroundedType actionGroundType $ ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments
 
 simplify' ::
@@ -138,7 +137,7 @@ interactLoop inh outh echo = do
                                  ntt <- interactRunQInterpreter getRenderFullName
                                  liftIO $ hPutStrLn outh $ unpack $ ntt s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
-                    [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
+                    [ Handler $ \(err :: QError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "! error: " <> ioeGetErrorString err
                     ]
             interactLoop inh outh echo

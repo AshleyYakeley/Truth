@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Simplify.VarUsage
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
@@ -13,16 +12,16 @@ import Shapes
 type TVarUsage :: GroundTypeKind -> Polarity -> Type -> Type -> Type
 data TVarUsage ground polarity tv a =
     forall b. MkTVarUsage (DolanShimWit ground polarity b)
-                          (DolanPolarMap ground polarity a (JoinMeetType polarity tv b))
+                          (DolanPolarShim ground polarity a (JoinMeetType polarity tv b))
 
 swapC ::
-       forall shim polarity a b c. (JoinMeetIsoCategory shim, Is PolarityType polarity)
-    => PolarMap shim polarity (JoinMeetType polarity a (JoinMeetType polarity b c)) (JoinMeetType polarity (JoinMeetType polarity b a) c)
+       forall shim polarity a b c. (JoinMeetIsoShim shim, Is PolarityType polarity)
+    => PolarShim shim polarity (JoinMeetType polarity a (JoinMeetType polarity b c)) (JoinMeetType polarity (JoinMeetType polarity b a) c)
 swapC = iPolarPair iPolarSwap id . iPolarSwapR
 
 swapAB ::
-       forall shim polarity a b c. (JoinMeetIsoCategory shim, Is PolarityType polarity)
-    => PolarMap shim polarity (JoinMeetType polarity a (JoinMeetType polarity b c)) (JoinMeetType polarity b (JoinMeetType polarity a c))
+       forall shim polarity a b c. (JoinMeetIsoShim shim, Is PolarityType polarity)
+    => PolarShim shim polarity (JoinMeetType polarity a (JoinMeetType polarity b c)) (JoinMeetType polarity b (JoinMeetType polarity a c))
 swapAB = iPolarSwapL . swapC
 
 getTVarUsage' ::

@@ -8,9 +8,7 @@ pinafore> let fq : Q -> Boolean = fn _ => True
 pinafore> fp p
 True
 pinafore> fp q
-<input>:1:1: cannot convert P -> Boolean+ <: Q -> a-
- <input>:1:1: cannot convert Q+ <: P-
-  <input>:1:1: no ground conversion for Q <: P
+<input>:1:1: no ground conversion for Q <: P
 pinafore> fq p
 True
 pinafore> fq q

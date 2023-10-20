@@ -1,14 +1,14 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           typed-expression
-version:        0.4
+version:        0.4.1
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
-copyright:      (c) 2017-2022 Ashley Yakeley
+copyright:      (c) 2017-2023 Ashley Yakeley
 license:        GPL-2.0-only
 license-file:   LICENSE
 build-type:     Simple
@@ -20,7 +20,6 @@ library
       Language.Expression.Dolan
       Language.Expression.Dolan.Test
   other-modules:
-      Control.Applicative.Wrapped
       Language.Expression.Common.Error
       Language.Expression.Common.WitnessMappable
       Language.Expression.Common.Witness
@@ -55,25 +54,28 @@ library
       Language.Expression.Common.Abstract
       Language.Expression.Common.Bindings
       Language.Expression.Common.CompleteTypeSystem
-      Language.Expression.Common.Arguments
       Language.Expression.Dolan.FreeVars
-      Language.Expression.Dolan.PShimWit
-      Language.Expression.Dolan.Covariance
-      Language.Expression.Dolan.Variance
-      Language.Expression.Dolan.Argument
-      Language.Expression.Dolan.Arguments
-      Language.Expression.Dolan.MPolarity
-      Language.Expression.Dolan.RangeF
+      Language.Expression.Dolan.Shim
+      Language.Expression.Dolan.Type.Type
+      Language.Expression.Dolan.Type.ShimWit
+      Language.Expression.Dolan.Type.Equality
+      Language.Expression.Dolan.Type.Combine
+      Language.Expression.Dolan.Type.FlipType
+      Language.Expression.Dolan.Type.InvertedCombine
       Language.Expression.Dolan.Type
-      Language.Expression.Dolan.Occur
       Language.Expression.Dolan.Subtype
+      Language.Expression.Dolan.SubtypeEntry.Knowledge
+      Language.Expression.Dolan.SubtypeEntry.Group
+      Language.Expression.Dolan.SubtypeEntry.Conversion
       Language.Expression.Dolan.SubtypeEntry
+      Language.Expression.Dolan.Bisubstitute.Bisubstitution
+      Language.Expression.Dolan.Bisubstitute.RecM
+      Language.Expression.Dolan.Bisubstitute.Deferred
       Language.Expression.Dolan.Bisubstitute
       Language.Expression.Dolan.TypeSystem
       Language.Expression.Dolan.Rename
-      Language.Expression.Dolan.Combine
       Language.Expression.Dolan.Unroll
-      Language.Expression.Dolan.InvertedCombine
+      Language.Expression.Dolan.Simplify.Safety
       Language.Expression.Dolan.Simplify.UnusedRecursion
       Language.Expression.Dolan.Simplify.VarUses
       Language.Expression.Dolan.Simplify.VarUsage
@@ -82,14 +84,25 @@ library
       Language.Expression.Dolan.Simplify.DuplicateGroundTypes
       Language.Expression.Dolan.Simplify.SharedTypeVars
       Language.Expression.Dolan.Simplify.DuplicateTypeVars
+      Language.Expression.Dolan.Simplify.AutomateRecursion
       Language.Expression.Dolan.Simplify.RollUpRecursion
+      Language.Expression.Dolan.Simplify.Solve
       Language.Expression.Dolan.Simplify
       Language.Expression.Dolan.Invert
+      Language.Expression.Dolan.TypeResult
+      Language.Expression.Dolan.Solver.CrumbleM
+      Language.Expression.Dolan.Solver.AtomicConstraint
+      Language.Expression.Dolan.Solver.WholeConstraint
+      Language.Expression.Dolan.Solver.Puzzle
+      Language.Expression.Dolan.Solver.Safety
+      Language.Expression.Dolan.Solver.AtomicSubstitute
+      Language.Expression.Dolan.Solver.Crumble.Type
+      Language.Expression.Dolan.Solver.Crumble.Crumbler
+      Language.Expression.Dolan.Solver.Crumble.Presubstitution
+      Language.Expression.Dolan.Solver.Crumble.Unify
+      Language.Expression.Dolan.Solver.Crumble.Subsume
+      Language.Expression.Dolan.Solver.Solve
       Language.Expression.Dolan.Solver
-      Language.Expression.Dolan.Unifier.UnifierM
-      Language.Expression.Dolan.Unifier.Constraint
-      Language.Expression.Dolan.Unifier.Build
-      Language.Expression.Dolan.Unifier
       Language.Expression.Dolan.Nonpolar
       Language.Expression.Dolan.Mono
   hs-source-dirs:

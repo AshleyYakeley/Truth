@@ -67,13 +67,46 @@
                         stdLibPackage
                     ];
                 };
+                pinaforeDocPackage = flake.packages."pinafore-app:exe:pinafore-doc";
+                syntaxDataPackage = pkgs.runCommand "pinafore-syntax-data" {}
+                    ''
+                    ${pinaforeDocPackage}/bin/pinafore-doc --syntax-data > $out
+                    '';
+                vsceFilePackage = pkgs.runCommand "pinafore-vscode-extension-file" {}
+                    ''
+                    mkdir -p out/support
+                    cp ${syntaxDataPackage} out/support/syntax-data.json
+                    cp ${./.}/support/vsc-extension/transform.yq ./
+                    cp -r ${./.}/support/vsc-extension/vsce ./
+                    chmod -R u+w vsce
+                    ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/package.yaml > vsce/package.json
+                    ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/language-configuration.yaml > vsce/language-configuration.json
+                    ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/syntaxes/pinafore.tmLanguage.yaml > vsce/syntaxes/pinafore.tmLanguage.json
+                    PATH=$PATH:${pkgs.nodejs_20}/bin
+                    cd vsce && ${pkgs.vsce}/bin/vsce package -o $out
+                    '';
+                vscePackage = pkgs.runCommand "pinafore-vscode-extension" {}
+                    ''
+                    mkdir -p $out/share/vscode/extensions/Pinafore.pinafore
+                    ${pkgs.unzip}/bin/unzip ${vsceFilePackage}
+                    cp -r extension/* $out/share/vscode/extensions/Pinafore.pinafore/
+                    '' //
+                    {
+                        vscodeExtPublisher = "Pinafore";
+                        vscodeExtName = "Pinafore";
+                        vscodeExtUniqueId = "Pinafore.pinafore";
+                        version = "0.4.1";
+                    };
             in flake //
             {
                 packages =
                 {
                     default = pinaforePackage;
                     pinafore = pinaforePackage;
-                    pinafore-doc = flake.packages."pinafore-app:exe:pinafore-doc";
+                    pinafore-doc = pinaforeDocPackage;
+                    syntax-data = syntaxDataPackage;
+                    vscode-extension-file = vsceFilePackage;
+                    vscode-extension = vscePackage;
                 };
             }
         );

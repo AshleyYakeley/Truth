@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Simplify.OneSidedTypeVars
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -18,11 +17,10 @@ eliminationBisubs ::
 eliminationBisubs (posvars, negvars) = let
     posbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
     posbisub (MkSomeTypeVarT var) =
-        assignTypeVarT @BottomType var $
-        MkBisubstitution False var (return nilDolanShimWit) (return $ varDolanShimWit var)
+        assignTypeVarT @BottomType var $ MkBisubstitution var (return nilDolanShimWit) (return $ varDolanShimWit var)
     negbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
     negbisub (MkSomeTypeVarT var) =
-        assignTypeVarT @TopType var $ MkBisubstitution False var (return $ varDolanShimWit var) (return nilDolanShimWit)
+        assignTypeVarT @TopType var $ MkBisubstitution var (return $ varDolanShimWit var) (return nilDolanShimWit)
     in (fmap posbisub $ toList posvars) <> (fmap negbisub $ toList negvars)
 
 eliminateVars ::

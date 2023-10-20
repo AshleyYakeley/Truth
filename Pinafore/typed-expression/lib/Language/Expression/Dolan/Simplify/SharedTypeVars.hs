@@ -4,7 +4,6 @@ module Language.Expression.Dolan.Simplify.SharedTypeVars
 
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -36,6 +35,6 @@ mergeSharedTypeVars =
                Just (MkSomeTypeVarT (va :: TypeVarT tva), MkSomeTypeVarT (vb :: TypeVarT tvb)) ->
                    assignTypeVarT @tva vb $ let
                        bisub :: Bisubstitution ground (DolanShim ground) Identity
-                       bisub = MkBisubstitution False vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
+                       bisub = MkBisubstitution vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
                        in appEndo (mergeSharedTypeVars @ground <> endoMToEndo (bisubstitutes @ground [bisub])) expr
                Nothing -> expr

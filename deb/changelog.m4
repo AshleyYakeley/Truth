@@ -1,6 +1,23 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Install
+    - Nix flake outputs for VS Code extension
+  * Language
+    - improve recursive type simplification
+    - clean up error messages
+    - reserve "type" keyword
+  * Library
+    - add constructors for Time type
+  * Fixes
+    - fix type solver
+    - reject "rec a, a" types
+    - fix fromList.Map
+
+ -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+
+pinafore (0.4) bookworm; urgency=medium
+
+  * Install
     - Debian package works on:
       . Ubuntu 22.04 LTS "jammy"
       . Debian 12 "bookworm"
@@ -72,7 +89,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Fixes
     - fix defect in lexical scoping
 
- -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+ -- Ashley Yakeley <ashley@semantic.org>  Sun, 27 Aug 2023 12:59:37 -0700
 
 pinafore (0.3.1) buster; urgency=medium
 

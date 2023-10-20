@@ -1,13 +1,14 @@
 module Language.Expression.Dolan.Invert
-    ( invertTypeMaybe
+    ( invertTypeM
+    , invertType
     ) where
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -74,18 +75,34 @@ invertNegativeType _ = Nothing
 invertPolarType ::
        forall (ground :: GroundTypeKind) polarity a.
        (IsDolanSubtypeGroundType ground, Is PolarityType polarity, ?rigidity :: String -> NameRigidity)
-    => DolanType ground polarity a
-    -> Maybe (DolanShimWit ground (InvertPolarity polarity) a)
+    => DolanType ground (InvertPolarity polarity) a
+    -> Maybe (DolanShimWit ground polarity a)
 invertPolarType =
     case polarityType @polarity of
-        PositiveType -> invertNegativeType @ground
-        NegativeType -> invertPositiveType @ground
+        PositiveType -> invertPositiveType @ground
+        NegativeType -> invertNegativeType @ground
 
 invertTypeMaybe ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => (String -> NameRigidity)
-    -> DolanType ground polarity a
-    -> Maybe (DolanShimWit ground (InvertPolarity polarity) a)
+    -> DolanType ground (InvertPolarity polarity) a
+    -> Maybe (DolanShimWit ground polarity a)
 invertTypeMaybe rigidity = let
     ?rigidity = rigidity
     in invertPolarType @ground
+
+invertTypeM ::
+       forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+    => (String -> NameRigidity)
+    -> DolanType ground (InvertPolarity polarity) a
+    -> TypeResult ground (DolanShimWit ground polarity a)
+invertTypeM rigidity t =
+    case invertTypeMaybe rigidity t of
+        Just r -> return r
+        Nothing -> withInvertPolarity @polarity $ throw $ UninvertibleTypeError t
+
+invertType ::
+       forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+    => DolanType ground (InvertPolarity polarity) a
+    -> DolanM ground (DolanShimWit ground polarity a)
+invertType t = runTypeResult $ invertTypeM (\_ -> RigidName) t

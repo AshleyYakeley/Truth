@@ -41,7 +41,7 @@ data RenamerState = MkRenamerState
 
 newtype VarRenamerT (ts :: Type) m a =
     MkVarRenamerT (ReaderT [String] (StateT RenamerState m) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail)
+    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadException)
 
 instance MonadTrans (VarRenamerT ts) where
     lift ma = MkVarRenamerT $ lift $ lift ma
@@ -88,8 +88,6 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
                     FreeName -> return ()
                     RigidName -> MkVarRenamerT $ lift $ modify $ \st -> st {rsRigidNames = name : rsRigidNames st}
                 return name
-    renamerRemoveName :: String -> VarRenamerT ts m ()
-    renamerRemoveName _ = return ()
     renamerGetNameRigidity :: VarRenamerT ts m (String -> NameRigidity)
     renamerGetNameRigidity = do
         state <- MkVarRenamerT $ lift get

@@ -22,7 +22,7 @@ entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamil
 
 instance CovarySubtype QGroundType StorableGroundType where
     dolanToMonoGroundType ::
-           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+           forall (dv :: CCRVariances) (t :: CCRVariancesKind dv).
            QGroundType dv t
         -> Maybe (CovaryType dv, StorableGroundType t)
     dolanToMonoGroundType agt = do

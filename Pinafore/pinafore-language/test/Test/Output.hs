@@ -12,7 +12,12 @@ testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
-    in testHandleVsFile dir testName $ \hout ->
+    modifier :: TestTree -> TestTree
+    modifier =
+        case testName of
+            _ -> id
+    in modifier $
+       testHandleVsFileInDir dir testName $ \hout ->
            runTester defaultTester {tstOutput = hout} $
            testerLiftView $ do
                action <- qInterpretFile inpath
@@ -21,4 +26,7 @@ testFile inpath = let
 getTestOutput :: IO TestTree
 getTestOutput = do
     inpaths <- findByExtension [".in"] $ "test" </> "output"
+    case inpaths of
+        [] -> fail "wrong directory"
+        _ -> return ()
     return $ testTree "output" $ fmap testFile inpaths

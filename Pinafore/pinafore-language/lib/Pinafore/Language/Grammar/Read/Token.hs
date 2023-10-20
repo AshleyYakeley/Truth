@@ -18,8 +18,8 @@ import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
 
-debugSyntax :: Bool
-debugSyntax = False
+debugSyntaxINTERNAL :: Bool
+debugSyntaxINTERNAL = False
 
 data Comment
     = BlockComment String
@@ -94,6 +94,7 @@ data Token t where
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
+    TokType :: Token ()
     TokDataType :: Token ()
     TokOpenType :: Token ()
     TokSubtype :: Token ()
@@ -155,6 +156,7 @@ instance TestEquality Token where
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
+    testEquality TokType TokType = Just Refl
     testEquality TokDataType TokDataType = Just Refl
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
@@ -208,6 +210,7 @@ instance Show (Token t) where
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
+    show TokType = show ("type" :: String)
     show TokDataType = show ("datatype" :: String)
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
@@ -340,6 +343,7 @@ checkKeyword "end" = return $ MkSomeOf TokEnd ()
 checkKeyword "if" = return $ MkSomeOf TokIf ()
 checkKeyword "then" = return $ MkSomeOf TokThen ()
 checkKeyword "else" = return $ MkSomeOf TokElse ()
+checkKeyword "type" = return $ MkSomeOf TokType ()
 checkKeyword "datatype" = return $ MkSomeOf TokDataType ()
 checkKeyword "opentype" = return $ MkSomeOf TokOpenType ()
 checkKeyword "subtype" = return $ MkSomeOf TokSubtype ()
@@ -353,7 +357,7 @@ checkKeyword "except" = return $ MkSomeOf TokExcept ()
 checkKeyword "namespace" = return $ MkSomeOf TokNamespace ()
 checkKeyword "with" = return $ MkSomeOf TokWith ()
 checkKeyword "debug"
-    | debugSyntax = return $ MkSomeOf TokDebug ()
+    | debugSyntaxINTERNAL = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
 
 allKeywords :: [(Text, Text)]
@@ -369,6 +373,7 @@ allKeywords =
     , ("if", "keyword.control.pinafore")
     , ("then", "keyword.control.pinafore")
     , ("else", "keyword.control.pinafore")
+    , ("type", "keyword.declaration.pinafore")
     , ("datatype", "keyword.declaration.pinafore")
     , ("opentype", "keyword.declaration.pinafore")
     , ("subtype", "keyword.declaration.pinafore")

@@ -2,7 +2,7 @@
 
 module Language.Expression.Common.WitnessMappable where
 
---import Data.Shim
+import Data.Shim
 import Shapes
 
 class WitnessMappable (poswit :: k -> Type) (negwit :: k -> Type) (a :: Type) where
@@ -55,3 +55,20 @@ instance (forall a. WitnessMappable poswit negwit (w a)) => WitnessMappable posw
             NilListType -> pure NilListType
             ConsListType wa la ->
                 ConsListType <$> unEndoM (mapWitnessesM mapPos mapNeg) wa <*> unEndoM (mapWitnessesM mapPos mapNeg) la
+
+type PShimWitMappable (shim :: ShimKind k) (wit :: Polarity -> k -> Type)
+     = WitnessMappable (PShimWit shim wit 'Positive) (PShimWit shim wit 'Negative)
+
+mapPShimWitsM ::
+       forall m shim wit a. (Category shim, Applicative m, PShimWitMappable shim wit a)
+    => (forall t. wit 'Positive t -> m (PShimWit shim wit 'Positive t))
+    -> (forall t. wit 'Negative t -> m (PShimWit shim wit 'Negative t))
+    -> EndoM m a
+mapPShimWitsM mapPos mapNeg = mapWitnessesM (MkEndoM $ chainPolarShimWitM mapPos) (MkEndoM $ chainPolarShimWitM mapNeg)
+
+mapPShimWits ::
+       forall shim wit a. (Category shim, PShimWitMappable shim wit a)
+    => (forall t. wit 'Positive t -> PShimWit shim wit 'Positive t)
+    -> (forall t. wit 'Negative t -> PShimWit shim wit 'Negative t)
+    -> Endo a
+mapPShimWits mapPos mapNeg = mapWitnesses (Endo $ chainPolarShimWit mapPos) (Endo $ chainPolarShimWit mapNeg)

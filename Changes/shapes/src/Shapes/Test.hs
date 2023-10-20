@@ -14,7 +14,9 @@ module Shapes.Test
     , ignoreTestBecause
     , expectFailBecause
     , failTestBecause
-    , testMark
+    , testTreeOne
+    , testMARK
+    , testNoMARK
     -- * Options
     , localOption
     , QuickCheckTests(..)
@@ -38,6 +40,7 @@ module Shapes.Test
     , ioProperty
     -- * Golden
     , testHandleVsFile
+    , testHandleVsFileInDir
     , findByExtension
     , (</>)
     ) where
@@ -157,18 +160,29 @@ instance BuildTestTree Property where
 instance (Arbitrary a, Show a, Testable b) => BuildTestTree (a -> b) where
     testTree name = testTree name . property
 
-testMark :: TestTree -> TestTree
-testMark test = testTree "MARK" [test]
+testTreeOne :: String -> TestTree -> TestTree
+testTreeOne name test = testTree name [test]
 
-testHandleVsFile :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
-testHandleVsFile dir testName call = let
+testMARK :: TestTree -> TestTree
+testMARK = testTreeOne "MARK"
+
+testNoMARK :: TestTree -> TestTree
+testNoMARK = id
+
+testHandleVsFile :: TestName -> FilePath -> FilePath -> (Handle -> IO ()) -> TestTree
+testHandleVsFile testName refPath outPath call =
+    goldenVsFile testName refPath outPath $
+    withBinaryFile outPath WriteMode $ \h -> do
+        hSetBuffering h NoBuffering
+        call h
+
+testHandleVsFileInDir :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
+testHandleVsFileInDir dir testName call = let
     refPath = dir </> testName <.> "ref"
     outPath = dir </> testName <.> "out"
-    in goldenVsFile testName refPath outPath $ do
+    in testHandleVsFile testName refPath outPath $ \hout -> do
            createDirectoryIfMissing True dir
-           withBinaryFile outPath WriteMode $ \h -> do
-               hSetBuffering h NoBuffering
-               call h
+           call hout
 
 assertThrowsException ::
        forall ex a. Exception ex

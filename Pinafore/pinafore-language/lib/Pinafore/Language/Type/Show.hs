@@ -18,7 +18,7 @@ class GroundExprShow ground where
            , forall a polarity'. Is PolarityType polarity' => ExprShow (RangeType w polarity' a)
            )
         => ground dv f
-        -> DolanArguments dv w f polarity t
+        -> CCRPolarArguments dv w f polarity t
         -> PrecNamedText
 
 saturatedGroundTypeShowPrec ::
@@ -41,17 +41,17 @@ saturatedGroundTypeShowPrec avar gt = let
         case avar of
             MkSome var -> call $ CoCCRPolarArgument var
     singleVarArgument ContraCCRVarianceType call =
-        invertPolarity @polarity $
+        withInvertPolarity @polarity $
         case avar of
             MkSome var -> call $ ContraCCRPolarArgument var
     singleVarArgument RangeCCRVarianceType call =
-        invertPolarity @polarity $
+        withInvertPolarity @polarity $
         case (avar, avar) of
             (MkSome var1, MkSome var2) -> call $ RangeCCRPolarArgument var1 var2
     allVarArguments ::
            forall polarity dv' f' r. Is PolarityType polarity
-        => DolanVarianceType dv'
-        -> (forall t. DolanArguments dv' w f' polarity t -> r)
+        => CCRVariancesType dv'
+        -> (forall t. CCRPolarArguments dv' w f' polarity t -> r)
         -> r
     allVarArguments NilListType call = call NilCCRArguments
     allVarArguments (ConsListType svt dvt) call =
@@ -115,7 +115,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
                 -> [Text]
             getpieces NilDolanType = []
             getpieces (ConsDolanType t tr) = runNamedText ft (exprPrecShow 0 t) : getpieces tr
-            contrapieces = nub $ invertPolarity @polarity $ getpieces t1
+            contrapieces = nub $ withInvertPolarity @polarity $ getpieces t1
             copieces = nub $ getpieces t2
             bothpieces = List.intersect contrapieces copieces
             rcontrapieces = contrapieces \\ bothpieces
@@ -130,11 +130,11 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
             in text
 
 instance forall (ground :: GroundTypeKind) t. (IsDolanGroundType ground, GroundExprShow ground) =>
-             ExprShow (NonpolarDolanType ground t) where
+             ExprShow (NonpolarType ground t) where
     exprShowPrec npt =
         case nonpolarToPositive @(DolanTypeSystem ground) npt of
             MkShimWit pt _ -> exprShowPrec pt
 
 instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, GroundExprShow ground) =>
-             AllConstraint ExprShow (NonpolarDolanType ground) where
+             AllConstraint ExprShow (NonpolarType ground) where
     allConstraint = Dict

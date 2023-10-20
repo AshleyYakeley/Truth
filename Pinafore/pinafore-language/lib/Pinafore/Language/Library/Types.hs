@@ -31,7 +31,7 @@ eitherShimWit swa swb =
 funcShimWit ::
        forall polarity (pshim :: PolyShimKind) a b.
        ( ApplyPolyShim pshim
-       , JoinMeetIsoCategory (pshim Type)
+       , JoinMeetIsoShim (pshim Type)
        , CatFunctor (CatDual (pshim Type)) (pshim (Type -> Type)) (->)
        , Is PolarityType polarity
        )
@@ -43,12 +43,12 @@ funcShimWit (MkShimWit ta conva) (MkShimWit tb convb) = let
         case polarityType @polarity of
             PositiveType ->
                 case (conva, convb) of
-                    (MkPolarMap shima, MkPolarMap shimb) ->
-                        MkPolarMap $ applyCoPolyShim ccrVariation ccrVariation (ccontramap shima) shimb
+                    (MkPolarShim shima, MkPolarShim shimb) ->
+                        MkPolarShim $ applyCoPolyShim ccrVariation ccrVariation (ccontramap shima) shimb
             NegativeType ->
                 case (conva, convb) of
-                    (MkPolarMap shima, MkPolarMap shimb) ->
-                        MkPolarMap $ applyCoPolyShim ccrVariation ccrVariation (ccontramap shima) shimb
+                    (MkPolarShim shima, MkPolarShim shimb) ->
+                        MkPolarShim $ applyCoPolyShim ccrVariation ccrVariation (ccontramap shima) shimb
     in mapPolarShimWit fshim $
        typeToDolan $
        MkDolanGroundedType funcGroundType $

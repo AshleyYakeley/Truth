@@ -10,26 +10,45 @@ library:
     dependencies:
       - base >= 4.16
       - shapes
+      - thread-trace
     exposed-modules:
       - Data.Shim
     other-modules:
-      - Data.Shim.MaybeRepresentational
-      - Data.Shim.PolyMap
-      - Data.Shim.ComposeShim
-      - Data.Shim.Polarity
-      - Data.Shim.PolarMap
-      - Data.Shim.Variance
-      - Data.Shim.CCRVariance
-      - Data.Shim.PolarVariance
-      - Data.Shim.ShimWit
-      - Data.Shim.PolarShimWit
+      - Data.Shim.Polar.Polarity
+      - Data.Shim.Polar.JoinMeet
+      - Data.Shim.Polar.MPolarity
+      - Data.Shim.Polar
+      - Data.Shim.Mono.General
+      - Data.Shim.Mono.Compose
+      - Data.Shim.Mono.Polar
+      - Data.Shim.Mono.Variance
+      - Data.Shim.Mono.ShimWit
+      - Data.Shim.Mono.PolarShimWit
+      - Data.Shim.Mono.PolarJoinMeet
+      - Data.Shim.Mono.PShimWit
+      - Data.Shim.Mono.Arguments
+      - Data.Shim.Mono.Retract
+      - Data.Shim.Mono
+      - Data.Shim.Poly.Shim
+      - Data.Shim.Poly.Map
+      - Data.Shim.Poly.Identity
+      - Data.Shim.Poly.Neutral
+      - Data.Shim.Poly.Dual
+      - Data.Shim.Poly.Iso
+      - Data.Shim.Poly.Compose
+      - Data.Shim.Poly.Null
+      - Data.Shim.Poly
+      - Data.Shim.Range.Range
+      - Data.Shim.Range.RangeType
+      - Data.Shim.Range.CatRange
       - Data.Shim.Range
-      - Data.Shim.CatRange
-      - Data.Shim.JoinMeet
-      - Data.Shim.NeutralShim
-      - Data.Shim.PolarJoinMeet
-      - Data.Shim.PolyShim
-      - Data.Shim.JMShim
-      - Data.Shim.PolyIso
-      - Data.Shim.PolyComposeShim
-      - Data.Shim.JMShimWit
+      - Data.Shim.CCR.PolarVariance
+      - Data.Shim.CCR.JM
+      - Data.Shim.CCR.JMShimWit
+      - Data.Shim.CCR.Variance
+      - Data.Shim.CCR.Covariance
+      - Data.Shim.CCR.Variances
+      - Data.Shim.CCR.Apply
+      - Data.Shim.CCR.Argument
+      - Data.Shim.CCR.Arguments
+      - Data.Shim.CCR

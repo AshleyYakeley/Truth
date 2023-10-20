@@ -556,16 +556,20 @@ interpretExpression' (SEDebug t sexpr) = do
 checkExprVars :: QExpression -> QInterpreter ()
 checkExprVars (MkSealedExpression _ expr) = do
     let
-        getBadVarErrors :: forall t. NameWitness VarID (QShimWit 'Negative) t -> QInterpreter (Maybe ErrorMessage)
+        getBadVarErrors ::
+               forall t.
+               NameWitness VarID (QShimWit 'Negative) t
+            -> QInterpreter (Maybe (SourcePos, Some (NameWitness VarID (QShimWit 'Negative))))
         getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
-            paramWith sourcePosParam spos $ do
-                em <- mkErrorMessage
-                return $ Just $ em (nameWitnessErrorType $ pure $ MkSome w) mempty
+            paramWith sourcePosParam spos $ return $ Just $ (spos, MkSome w)
         getBadVarErrors _ = return Nothing
     errorMessages <- sequenceA $ expressionFreeWitnesses getBadVarErrors expr
-    case catMaybes errorMessages of
-        [] -> return ()
-        errs -> throw $ MkPinaforeError errs
+    case nonEmpty $ catMaybes errorMessages of
+        Nothing -> return ()
+        Just ww@((spos, _) :| _) ->
+            paramWith sourcePosParam spos $ do
+                em <- mkErrorMessage
+                throw $ em $ nameWitnessErrorType $ fmap snd ww
 
 interpretClosedExpression :: SyntaxExpression -> QInterpreter QExpression
 interpretClosedExpression sexpr = do
@@ -630,7 +634,7 @@ interpretOpenEntitySubtypeRelation sta stb = do
                         Just (MkOpenEntityFamily _) -> MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                         Nothing ->
                             MkSubtypeConversionEntry TrustMe gta gtb $
-                            nilSubtypeConversion Nothing $
+                            singleSubtypeConversion Nothing $
                             coerceShim "open entity" .
                             (functionToShim "entityConvert" $
                              storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)

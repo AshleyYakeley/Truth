@@ -1,14 +1,14 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           polar-shim
-version:        0.4
+version:        0.4.1
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
-copyright:      (c) 2017-2022 Ashley Yakeley
+copyright:      (c) 2017-2023 Ashley Yakeley
 license:        GPL-2.0-only
 license-file:   LICENSE
 build-type:     Simple
@@ -17,26 +17,44 @@ library
   exposed-modules:
       Data.Shim
   other-modules:
-      Data.Shim.MaybeRepresentational
-      Data.Shim.PolyMap
-      Data.Shim.ComposeShim
-      Data.Shim.Polarity
-      Data.Shim.PolarMap
-      Data.Shim.Variance
-      Data.Shim.CCRVariance
-      Data.Shim.PolarVariance
-      Data.Shim.ShimWit
-      Data.Shim.PolarShimWit
+      Data.Shim.Polar.Polarity
+      Data.Shim.Polar.JoinMeet
+      Data.Shim.Polar.MPolarity
+      Data.Shim.Polar
+      Data.Shim.Mono.General
+      Data.Shim.Mono.Compose
+      Data.Shim.Mono.Polar
+      Data.Shim.Mono.Variance
+      Data.Shim.Mono.ShimWit
+      Data.Shim.Mono.PolarShimWit
+      Data.Shim.Mono.PolarJoinMeet
+      Data.Shim.Mono.PShimWit
+      Data.Shim.Mono.Arguments
+      Data.Shim.Mono.Retract
+      Data.Shim.Mono
+      Data.Shim.Poly.Shim
+      Data.Shim.Poly.Map
+      Data.Shim.Poly.Identity
+      Data.Shim.Poly.Neutral
+      Data.Shim.Poly.Dual
+      Data.Shim.Poly.Iso
+      Data.Shim.Poly.Compose
+      Data.Shim.Poly.Null
+      Data.Shim.Poly
+      Data.Shim.Range.Range
+      Data.Shim.Range.RangeType
+      Data.Shim.Range.CatRange
       Data.Shim.Range
-      Data.Shim.CatRange
-      Data.Shim.JoinMeet
-      Data.Shim.NeutralShim
-      Data.Shim.PolarJoinMeet
-      Data.Shim.PolyShim
-      Data.Shim.JMShim
-      Data.Shim.PolyIso
-      Data.Shim.PolyComposeShim
-      Data.Shim.JMShimWit
+      Data.Shim.CCR.PolarVariance
+      Data.Shim.CCR.JM
+      Data.Shim.CCR.JMShimWit
+      Data.Shim.CCR.Variance
+      Data.Shim.CCR.Covariance
+      Data.Shim.CCR.Variances
+      Data.Shim.CCR.Apply
+      Data.Shim.CCR.Argument
+      Data.Shim.CCR.Arguments
+      Data.Shim.CCR
   hs-source-dirs:
       lib
   default-extensions:
@@ -71,4 +89,5 @@ library
   build-depends:
       base >=4.16
     , shapes
+    , thread-trace
   default-language: GHC2021

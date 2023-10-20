@@ -94,8 +94,11 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
             (\(MkSome t) ->
                  assignTypeVarWit var t $
                  case safeRecursiveDolanSingularType var t of
-                     Just rt -> return $ MkSome $ singleDolanType rt
-                     Nothing -> throw $ InterpretTypeRecursionNotCovariant name $ exprShow t)
+                     SuccessResult rt -> return $ MkSome $ singleDolanType rt
+                     FailureResult (ImmediateRecursiveTypeError _) ->
+                         throw $ InterpretTypeRecursionImmediate name $ exprShow t
+                     FailureResult (ContravariantRecursiveTypeError _) ->
+                         throw $ InterpretTypeRecursionNotCovariant name $ exprShow t)
             mt
 
 interpretTypeRangeFromType ::
@@ -109,7 +112,7 @@ interpretTypeRangeFromType st = do
            => PinaforeTypeM 'Nothing
            -> Some (RangeType QType polarity)
         ff (BothMPolarW atw) =
-            case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
+            case (withInvertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
                 (MkSome tp, MkSome tq) -> MkSome $ MkRangeType tp tq
     return $ toMPolar $ ff t
 
@@ -141,11 +144,11 @@ data PinaforeGroundTypeM where
     MkPinaforeGroundTypeM :: Some (QGroundType dv) -> PinaforeGroundTypeM
 
 interpretArgs ::
-       forall polarity dv (gt :: DolanVarianceKind dv). Is PolarityType polarity
+       forall polarity dv (gt :: CCRVariancesKind dv). Is PolarityType polarity
     => SyntaxGroundType
-    -> DolanVarianceType dv
+    -> CCRVariancesType dv
     -> [SyntaxTypeArgument]
-    -> QInterpreter (Some (DolanArguments dv QType gt polarity))
+    -> QInterpreter (Some (CCRPolarArguments dv QType gt polarity))
 interpretArgs _ NilListType [] = return $ MkSome NilCCRArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
@@ -159,7 +162,7 @@ interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument 
 interpretArgs sgt (ConsListType CoCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
-    invertPolarity @polarity $ do
+    withInvertPolarity @polarity $ do
         at <- isMPolarity @(InvertPolarity polarity) $ interpretTypeM st
         case fromMPolarSingle at of
             MkSome t -> do

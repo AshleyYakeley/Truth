@@ -1,5 +1,9 @@
 default: full
 
+PINAFOREVERSION := 0.4.1
+
+# must be three numbers, add .0 as necessary
+PINAFOREVERSIONABC := $(PINAFOREVERSION)
 
 ### Flags for stack
 
@@ -15,7 +19,13 @@ else
 JOBFLAGS := --keep-going
 endif
 
-STACKFLAGS := --stack-root $$PWD/.stack-root $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
+ifeq ($(stackroot),1)
+STACKROOTFLAGS := --stack-root $$PWD/.stack-root
+else
+STACKROOTFLAGS :=
+endif
+
+STACKFLAGS := $(STACKROOTFLAGS) $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
 ifeq ($(test),1)
 TESTFLAGS :=
@@ -107,7 +117,7 @@ exe: ${BINPATH}/pinafore
 ### Debian package
 
 PACKAGENAME := pinafore
-PACKAGEVERSION := 0.4
+PACKAGEVERSION := $(PINAFOREVERSION)
 PACKAGEREVISION := 1
 PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
@@ -203,7 +213,7 @@ out/support/syntax-data.json: ${BINPATH}/pinafore-doc out/support
 
 ### Pygments lexer
 
-PYGLEXERVERSION := $(PACKAGEVERSION).0
+PYGLEXERVERSION := $(PINAFOREVERSIONABC)
 
 support/pygments-lexer/pinafore_lexer/syntax-data.json: out/support/syntax-data.json
 	cp $< $@
@@ -264,7 +274,7 @@ docs: \
 
 ### VSCode extension
 
-VSCXVERSION := $(PACKAGEVERSION).0
+VSCXVERSION := $(PINAFOREVERSIONABC)
 
 support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/support/syntax-data.json
 	stack $(STACKFLAGS) exec -- yq --from-file support/vsc-extension/transform.yq -o json $< > $@

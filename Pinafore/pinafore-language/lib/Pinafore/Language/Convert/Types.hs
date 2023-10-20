@@ -32,8 +32,8 @@ instance (Is PolarityType polarity, KnownSymbol name) => HasQType polarity (Var 
         shimWitToDolan $
         MkShimWit (VarDolanSingularType $ MkTypeVar $ MkSymbolType @name) $
         case polarityType @polarity of
-            PositiveType -> MkPolarMap $ coerceShim "var"
-            NegativeType -> MkPolarMap $ coerceShim "var"
+            PositiveType -> MkPolarShim $ coerceShim "var"
+            NegativeType -> MkPolarShim $ coerceShim "var"
 
 -- (,)
 instance HasQGroundType '[ CoCCRVariance, CoCCRVariance] (,) where
@@ -234,6 +234,13 @@ instance HasResolution r => HasQType 'Positive (Fixed r) where
 
 instance HasResolution r => HasQType 'Negative (Fixed r) where
     qType = mapNegShimWit (functionToShim "fromRational" fromRational) qType
+
+-- DiffTime
+instance HasQType 'Positive DiffTime where
+    qType = mapPosShimWit (functionToShim "realToFrac" realToFrac) (qType :: _ NominalDiffTime)
+
+instance HasQType 'Negative DiffTime where
+    qType = mapNegShimWit (functionToShim "realToFrac" realToFrac) (qType :: _ NominalDiffTime)
 
 -- Vector
 instance HasQType 'Positive a => HasQType 'Positive (Vector a) where

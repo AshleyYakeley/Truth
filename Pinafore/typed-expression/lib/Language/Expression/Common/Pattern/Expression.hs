@@ -23,7 +23,7 @@ type SealedExpressionPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> 
      = SealedPattern name vw (NamedExpressionWitness name tw)
 
 liftExpressionShimWit ::
-       (Applicative expr, JoinMeetCategory shim) => ShimWit shim wit t -> ShimWit shim (ExpressionWitness wit expr) t
+       (Applicative expr, JoinMeetShim shim) => ShimWit shim wit t -> ShimWit shim (ExpressionWitness wit expr) t
 liftExpressionShimWit (MkShimWit wtt conv) = MkShimWit (MkExpressionWitness wtt $ pure MkTopType) $ meetf conv termf
 
 instance WitnessMappable poswit negwit (SealedExpressionPattern name poswit negwit) where

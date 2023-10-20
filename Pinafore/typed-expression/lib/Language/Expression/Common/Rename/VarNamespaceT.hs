@@ -2,21 +2,23 @@ module Language.Expression.Common.Rename.VarNamespaceT
     ( NameRigidity(..)
     , RenamerMonad(..)
     , renamerGenerateFree
-    , renamerGenerateFreeUVar
+    , renamerGenerateFreeTypeVarT
+    , renamerGenerateAssign
+    , fixedRenameSource
     , VarNamespaceT
     , runVarNamespaceT
     , varNamespaceTRename
-    , varNamespaceRenameTypeVar
+    , varNamespaceRenameSource
     ) where
 
 import Language.Expression.Common.Rename.RenameTypeSystem
 import Language.Expression.Common.Rename.Rigidity
+import Language.Expression.Common.Rename.VarRenameable
 import Language.Expression.Common.TypeVariable
 import Shapes
 
 class Monad m => RenamerMonad m where
     renamerGenerate :: NameRigidity -> m String
-    renamerRemoveName :: String -> m ()
     renamerGetNameRigidity :: m (String -> NameRigidity)
 
 renamerGenerateFree ::
@@ -24,12 +26,22 @@ renamerGenerateFree ::
     => m String
 renamerGenerateFree = renamerGenerate FreeName
 
-renamerGenerateFreeUVar ::
+renamerGenerateFreeTypeVarT ::
        forall m. RenamerMonad m
     => m SomeTypeVarT
-renamerGenerateFreeUVar = do
+renamerGenerateFreeTypeVarT = do
     newname <- renamerGenerateFree
     return $ newTypeVar newname MkSomeTypeVarT
+
+renamerGenerateAssign ::
+       forall m tv. RenamerMonad m
+    => m (TypeVarT tv)
+renamerGenerateAssign = do
+    newname <- renamerGenerateFree
+    return $ newAssignTypeVar newname
+
+fixedRenameSource :: RenamerMonad m => RenameSource m
+fixedRenameSource = MkRenameSource {rsNewVar = MkEndoM $ \_ -> renamerGenerateAssign, rsRenameVar = mempty}
 
 data VNContext = MkVNContext
     { vncFixedNames :: [String]
@@ -73,10 +85,18 @@ varNamespaceTRename oldname = do
                  Just newname -> return newname
                  Nothing -> varNamespaceTAddName oldname
 
-varNamespaceRenameTypeVar ::
+varNamespaceRenameSource ::
        forall ts m. (RenameTypeSystem ts, RenamerMonad (RenamerT ts m), Monad m)
-    => EndoM' (VarNamespaceT ts (RenamerT ts m)) TypeVarT
-varNamespaceRenameTypeVar =
-    MkEndoM $ \(MkTypeVar oldvar) -> do
-        newname <- varNamespaceTRename $ uVarName oldvar
-        return $ newAssignTypeVar newname
+    => RenameSource (VarNamespaceT ts (RenamerT ts m))
+varNamespaceRenameSource = let
+    rsNewVar :: EndoM' (VarNamespaceT ts (RenamerT ts m)) TypeVarT
+    rsNewVar =
+        MkEndoM $ \(MkTypeVar _) -> do
+            newname <- lift renamerGenerateFree
+            return $ newAssignTypeVar newname
+    rsRenameVar :: EndoM' (VarNamespaceT ts (RenamerT ts m)) TypeVarT
+    rsRenameVar =
+        MkEndoM $ \(MkTypeVar oldvar) -> do
+            newname <- varNamespaceTRename $ uVarName oldvar
+            return $ newAssignTypeVar newname
+    in MkRenameSource {..}

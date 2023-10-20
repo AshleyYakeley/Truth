@@ -55,7 +55,7 @@ registerMatchBindings match = do
                 return (vn, MkDefDoc (ValueDocItem (pure $ fullNameRef vn) "") "lambda", expr)
     case rbb of
         SuccessResult bb -> registerLetBindings bb
-        FailureResult fn -> builderLift $ throw $ KnownIssueError 0 $ "bad match var: " <> showNamedText fn
+        FailureResult fn -> builderLift $ throw $ InternalError Nothing $ "bad match var: " <> showNamedText fn
 
 registerBoundType :: FullName -> DefDoc -> QSomeGroundType -> QScopeBuilder ()
 registerBoundType name doc t = do

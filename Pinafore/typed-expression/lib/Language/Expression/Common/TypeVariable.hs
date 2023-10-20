@@ -9,6 +9,7 @@ module Language.Expression.Common.TypeVariable
     , typeVarName
     , newTypeVar
     , assignTypeVarT
+    , assignSameTypeVarT
     , assignTypeVarWit
     , newAssignTypeVar
     , SomeTypeVarT(..)
@@ -56,6 +57,9 @@ type TypeVarT = TypeVar
 instance Show (TypeVar tv) where
     show (MkTypeVar t) = show t
 
+instance AllConstraint Show TypeVar where
+    allConstraint = Dict
+
 instance TestEquality TypeVar where
     testEquality (MkTypeVar a) (MkTypeVar b) = do
         Refl <- testEquality a b
@@ -70,6 +74,9 @@ newTypeVar name call = newUVar name $ \vsym -> call $ MkTypeVar vsym
 assignTypeVarT :: forall (ta :: Type) tv r. TypeVarT tv -> (tv ~ ta => r) -> r
 assignTypeVarT (MkTypeVar vsym) call = assignUVarT @ta vsym call
 
+assignSameTypeVarT :: forall (ta :: Type) tv r. TypeVarT ta -> TypeVarT tv -> (tv ~ ta => r) -> r
+assignSameTypeVarT _ = assignTypeVarT
+
 assignTypeVarWit :: forall (k :: Type) (t :: k) (tv :: k) (w :: k -> Type) r. TypeVar tv -> w t -> (tv ~ t => r) -> r
 assignTypeVarWit (MkTypeVar vsym) w call = assignUVarWit vsym w call
 
@@ -79,8 +86,14 @@ newAssignTypeVar nstr = newUVar nstr $ \vsym -> assignUVar @k @tv vsym $ MkTypeV
 data SomeTypeVarT =
     forall tv. MkSomeTypeVarT (TypeVarT tv)
 
-instance Eq SomeTypeVarT where
-    MkSomeTypeVarT a == MkSomeTypeVarT b = isJust $ testEquality a b
-
 someTypeVarName :: SomeTypeVarT -> String
 someTypeVarName (MkSomeTypeVarT v) = typeVarName v
+
+instance Eq SomeTypeVarT where
+    va == vb = someTypeVarName va == someTypeVarName vb
+
+instance Ord SomeTypeVarT where
+    compare = comparing someTypeVarName
+
+instance Show SomeTypeVarT where
+    show = someTypeVarName

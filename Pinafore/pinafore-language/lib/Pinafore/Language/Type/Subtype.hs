@@ -21,21 +21,25 @@ funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
         namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
+type instance DolanSubtypeHint QGroundType = QSubtypeHint
+
 instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
-    type DolanSubtypeHint QGroundType = QSubtypeHint
-    subtypeGroundedTypes = entries_subtypeGroundedTypes
-    tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
-        msg <- mkErrorMessage
-        catch ma $ \pe ->
-            throw $
-            msg
-                (TypeConvertError
-                     (exprShow ta)
-                     (witnessToValue $ polarityType @pola)
-                     (exprShow tb)
-                     (witnessToValue $ polarityType @polb))
-                pe
-    throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
+    getSubtypeChain = entries_getSubtypeChain
+    throwTypeError (InternalTypeError msg) = throw $ InternalError Nothing $ toNamedText msg
+    throwTypeError (UninvertibleTypeError t) = throw $ TypeNotInvertibleError $ exprShow t
+    throwTypeError (NoGroundConvertTypeError ga gb) =
+        throw $ NoGroundTypeConversionError (showGroundType ga) (showGroundType gb)
+    throwTypeError (IncoherentGroundConvertTypeError ga gb) =
+        throw $ IncoherentGroundTypeConversionError (showGroundType ga) (showGroundType gb)
+    throwTypeError (ConvertTypeError fta ftb) =
+        flipToType fta $ \(ta :: _ pola _) ->
+            flipToType ftb $ \(tb :: _ polb _) ->
+                throw $
+                TypeConvertError
+                    (exprShow ta)
+                    (witnessToValue $ polarityType @pola)
+                    (exprShow tb)
+                    (witnessToValue $ polarityType @polb)
 
 instance HasInterpreter => IsDolanSubtypeEntriesGroundType QGroundType where
     subtypeConversionEntries = getSubtypeConversions
@@ -43,9 +47,6 @@ instance HasInterpreter => IsDolanSubtypeEntriesGroundType QGroundType where
         case qgtSubtypeGroup t of
             Just sg -> sg
             Nothing -> singletonSubtypeGroup t
-    throwNoGroundTypeConversionError ta tb = throw $ NoGroundTypeConversionError (showGroundType ta) (showGroundType tb)
-    throwIncoherentGroundTypeConversionError ta tb =
-        throw $ IncoherentGroundTypeConversionError (showGroundType ta) (showGroundType tb)
 
 instance HasInterpreter => IsDolanFunctionGroundType QGroundType where
     functionGroundType = funcGroundType

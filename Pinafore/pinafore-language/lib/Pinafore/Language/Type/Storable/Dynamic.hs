@@ -12,7 +12,6 @@ module Pinafore.Language.Type.Storable.Dynamic
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error

@@ -36,11 +36,10 @@ newtype QScopeBuilder a =
              , Monad
              , MonadIO
              , MonadException
-             , MonadThrow PinaforeError
-             , MonadCatch PinaforeError
-             , MonadThrow ErrorMessage
+             , MonadThrow QError
+             , MonadCatch QError
              , MonadThrow PatternError
-             , MonadThrow ErrorType
+             , MonadThrow QErrorType
              )
 
 instance Semigroup a => Semigroup (QScopeBuilder a) where

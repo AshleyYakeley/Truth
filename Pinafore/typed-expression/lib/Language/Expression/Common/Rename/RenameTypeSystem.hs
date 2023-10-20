@@ -13,7 +13,6 @@ import Data.Shim
 import Language.Expression.Common.Rename.Rigidity
 import Language.Expression.Common.Rename.VarRenameable
 import Language.Expression.Common.TypeSystem
-import Language.Expression.Common.TypeVariable
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -30,9 +29,9 @@ class ( TypeSystem ts
       ) => RenameTypeSystem (ts :: Type) where
     type RenamerT ts :: (Type -> Type) -> (Type -> Type)
     type RenamerNamespaceT ts :: (Type -> Type) -> (Type -> Type)
-    namespaceRenameTypeVar ::
+    namespaceRenameSource ::
            forall m. Monad m
-        => EndoM' (RenamerNamespaceT ts (RenamerT ts m)) TypeVarT
+        => RenameSource (RenamerNamespaceT ts (RenamerT ts m))
     renameNewFreeVar ::
            forall m. Monad m
         => RenamerT ts m (NewVar ts)
@@ -57,7 +56,7 @@ namespaceRenameType =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
-                Dict -> varRename $ namespaceRenameTypeVar @ts
+                Dict -> varRename $ namespaceRenameSource @ts
 
 finalRenameMappable ::
        forall ts m a. (RenameTypeSystem ts, Monad m, TSMappable ts a)

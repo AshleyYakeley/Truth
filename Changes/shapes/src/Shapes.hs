@@ -6,6 +6,7 @@ import Shapes.Import as I
 import Shapes.Instances ()
 
 -- shapes
+import Control.Applicative.Wrapped as I
 import Control.AsyncRunner as I
 import Control.CallbackLock as I
 import Control.Category.Dual as I
@@ -18,8 +19,10 @@ import Control.Task as I
 import Data.CatEndo as I
 import Data.CatFunctor as I
 import Data.Codec as I
-import Data.CoerceFunction as I
-import Data.Coercion as I
+import Data.Coerce.Coercion as I
+import Data.Coerce.Function as I
+import Data.Coerce.MaybeRepresentational as I
+import Data.Coerce.Role as I
 import Data.EndoM as I
 import Data.Filterable as I
 import Data.FiniteSet as I

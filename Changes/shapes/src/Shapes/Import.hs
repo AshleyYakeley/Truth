@@ -149,6 +149,12 @@ import Data.Type.Witness as I
 import Data.Type.OpenWitness as I
 import Data.Type.OpenWitness.Witnessed as I
 
+liftComposeOuter :: (Functor f, Applicative g) => f a -> Compose f g a
+liftComposeOuter fa = Compose $ fmap pure fa
+
+liftComposeInner :: Applicative f => g a -> Compose f g a
+liftComposeInner ga = Compose $ pure ga
+
 decodeUtf8Lenient :: StrictByteString -> Text
 decodeUtf8Lenient = decodeUtf8With lenientDecode
 
@@ -229,21 +235,32 @@ mFindIndex test = let
             else findI (succ i) aa
     in findI 0
 
-shortOr :: Monad m => (a -> m Bool) -> [a] -> m Bool
-shortOr _ [] = return False
-shortOr amb (a:aa) = do
-    b <- amb a
+shortOr :: Monad m => [m Bool] -> m Bool
+shortOr [] = return False
+shortOr (mb:mbb) = do
+    b <- mb
     if b
         then return True
-        else shortOr amb aa
+        else shortOr mbb
 
-shortAnd :: Monad m => (a -> m Bool) -> [a] -> m Bool
-shortAnd _ [] = return True
-shortAnd amb (a:aa) = do
-    b <- amb a
+shortAnd :: Monad m => [m Bool] -> m Bool
+shortAnd [] = return True
+shortAnd (mb:mbb) = do
+    b <- mb
     if b
-        then shortAnd amb aa
+        then shortAnd mbb
         else return False
+
+shortFirst :: Monad m => [m (Maybe a)] -> m (Maybe a)
+shortFirst [] = return Nothing
+shortFirst (mma:aa) = do
+    ma <- mma
+    case ma of
+        Just a -> return $ Just a
+        Nothing -> shortFirst aa
+
+forFirst :: Monad m => [a] -> (a -> m (Maybe b)) -> m (Maybe b)
+forFirst l f = shortFirst $ fmap f l
 
 mif :: Monoid a => Bool -> a -> a
 mif False _ = mempty

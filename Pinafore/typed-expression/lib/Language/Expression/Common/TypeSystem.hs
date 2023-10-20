@@ -19,7 +19,7 @@ class ( Monad (TSOuter ts)
     type TSOuter ts :: Type -> Type
     type TSNegWitness ts :: Type -> Type
     type TSPosWitness ts :: Type -> Type
-    type TSShim ts :: Type -> Type -> Type
+    type TSShim ts :: ShimKind Type
     type TSVarID ts :: Type
 
 type TSWitness :: Type -> Polarity -> Type -> Type

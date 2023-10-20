@@ -1,10 +1,10 @@
-- &changes_version "0.4"
+- &changes_version "0.4.1"
 
-- &pinafore_version "0.4"
+- &pinafore_version "0.4.1"
 
 - &author
     author: Ashley Yakeley
-    copyright: (c) 2017-2022 Ashley Yakeley
+    copyright: (c) 2017-2023 Ashley Yakeley
     license: GPL-2.0-only
     license-file: LICENSE
     maintainer: <ashley@semantic.org>
