@@ -36,7 +36,7 @@ type RecM (ground :: GroundTypeKind) (pshim :: PolyShimKind) = State (RecMemoTab
 runRecM :: forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a. RecM ground pshim a -> a
 runRecM ra = evalState ra mempty
 
--- Turning this off will make recursive substitution much slower
+-- Turning this off will make recursive substitution slower
 doMemoiseINTERNAL :: Bool
 doMemoiseINTERNAL = True
 

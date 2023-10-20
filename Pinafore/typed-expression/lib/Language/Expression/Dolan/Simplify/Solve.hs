@@ -11,7 +11,7 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 simplifySafetyINTERNAL :: Bool
-simplifySafetyINTERNAL = True
+simplifySafetyINTERNAL = False
 
 solveSimplify ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)

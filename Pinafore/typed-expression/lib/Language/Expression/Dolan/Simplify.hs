@@ -51,8 +51,7 @@ defaultSimplifierSettings =
         }
 
 simplifierSettingsINTERNAL :: SimplifierSettings
-simplifierSettingsINTERNAL =
-    defaultSimplifierSettings {simplifyCheckSafetyBefore = True, simplifyCheckSafetyAfter = True}
+simplifierSettingsINTERNAL = defaultSimplifierSettings
 
 -- Simplification:
 --
