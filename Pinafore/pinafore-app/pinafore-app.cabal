@@ -306,5 +306,6 @@ benchmark benchmark
     , criterion
     , pinafore-app
     , pinafore-language
+    , pinafore-stdlib
     , shapes
   default-language: GHC2021

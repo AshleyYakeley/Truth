@@ -102,6 +102,7 @@ benchmarks:
           - shapes
           - changes-core
           - pinafore-language
+          - pinafore-stdlib
           - pinafore-app
           - criterion
         main: Main.hs

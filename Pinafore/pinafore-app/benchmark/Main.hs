@@ -4,6 +4,7 @@ module Main
 
 import Changes.Core
 import Criterion.Main
+import Paths_pinafore_stdlib
 import Pinafore
 import Pinafore.Libs
 import Pinafore.Test
@@ -126,5 +127,27 @@ benchUpdates =
               "let id = fn x => x in do ref <- newMem.WholeModel; pure (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
         ]
 
+benchInterpretFile :: FilePath -> Benchmark
+benchInterpretFile fpath =
+    bench fpath $
+    nfIO $ do
+        libDir <- getDataDir
+        let
+            testerOptions =
+                defaultTester {tstFetchModule = libraryFetchModule extraLibrary <> directoryFetchModule libDir}
+        runTester testerOptions $
+            testerLiftView $ do
+                _ <- qInterpretFile fpath
+                return ()
+
+benchFiles :: Benchmark
+benchFiles =
+    bgroup
+        "file"
+        [ benchInterpretFile "examples/events"
+        , benchInterpretFile "examples/contacts"
+        , benchInterpretFile "examples/clock"
+        ]
+
 main :: IO ()
-main = defaultMain [benchHashes, benchScripts, benchUpdates]
+main = defaultMain [benchHashes, benchScripts, benchUpdates, benchFiles]
