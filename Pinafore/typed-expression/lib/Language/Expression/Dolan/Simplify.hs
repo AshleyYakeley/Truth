@@ -60,7 +60,6 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 --
 -- eliminateUnusedRecursion: remove unused recursion & eliminate immediate recursion
 -- e.g. "rec a, Integer" => "Integer"
--- e.g. "rec a, a" => "Any"/"None"
 -- This is usually switched off since automateRecursion does this.
 --
 -- mergeDuplicateGroundTypes: merge duplicate ground types in join/meet (on each type)
