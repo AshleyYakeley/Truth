@@ -60,20 +60,13 @@ substituteAtomicConstraint (MkSubstitution substpol oldvar newvar _ (Just st)) (
             return $ liftA2 (\t a -> a t) p1 p2
 substituteAtomicConstraint sub ac = bisubstituteAtomicConstraint (substBisubstitution sub) ac
 
--- | For debugging.
-genNewNameINTERNAL :: Bool
-genNewNameINTERNAL = False
-
 getAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => AtomicConstraint ground a
     -> DolanTypeCheckM ground (a, Substitution ground)
 getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt)) =
     withRepresentative pol $ do
-        MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
-            if genNewNameINTERNAL
-                then renamerGenerateFreeTypeVarT
-                else return $ MkSomeTypeVarT oldvar
+        MkSomeTypeVarT (newvar :: TypeVarT newtv) <- renamerGenerateFreeTypeVarT
         withInvertPolarity @polarity $
             assignTypeVarT @(JoinMeetType polarity newtv pt) oldvar $ do
                 let

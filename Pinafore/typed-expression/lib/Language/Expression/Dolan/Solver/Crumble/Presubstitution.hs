@@ -13,10 +13,6 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
--- | For debugging.
-genNewNameINTERNAL :: Bool
-genNewNameINTERNAL = True
-
 assignPresubstitution ::
        forall (ground :: GroundTypeKind) v a b. IsDolanGroundType ground
     => TypeVarT v
@@ -25,10 +21,7 @@ assignPresubstitution ::
     -> DolanTypeCheckM ground ( Presubstitution ground
                               , DolanShim ground a b -> (DolanShim ground a v, DolanShim ground v b))
 assignPresubstitution oldvar ta tb = do
-    MkSomeTypeVarT (newvar :: TypeVarT newtv) <-
-        if genNewNameINTERNAL
-            then renamerGenerateFreeTypeVarT
-            else return $ MkSomeTypeVarT oldvar
+    MkSomeTypeVarT (newvar :: TypeVarT newtv) <- renamerGenerateFreeTypeVarT
     assignTypeVarT @(MeetType (JoinType newtv a) b) oldvar $ do
         return
             (MkPresubstitution oldvar newvar ta tb meet1 (iMeetPair join1 id), \convab -> (meetf join2 convab, meet2))
