@@ -2,6 +2,7 @@ module Debug.ThreadTrace
     ( contextStr
     , traceNameThread
     , traceHide
+    , traceShow
     , traceHidePrefix
     , traceIOM
     , traceBracketArgs
@@ -34,7 +35,7 @@ import qualified Data.Map as Map
 import Data.Time.Clock.System
 import Data.Word
 import Debug.ThreadTrace.Lookup
-import Debug.Trace
+import Debug.Trace (traceIO)
 import GHC.Conc
 import Prelude
 import System.IO.Unsafe
@@ -45,15 +46,15 @@ contextStr a b = a ++ ": " ++ b
 
 data ThreadData = MkThreadData
     { tdName :: String
-    , tdHide :: Int
-    , tdHidePrefix :: Int
+    , tdShow :: Bool
+    , tdShowPrefix :: Bool
     }
 
 defaultThreadData :: ThreadData
 defaultThreadData = let
     tdName = ""
-    tdHide = 0
-    tdHidePrefix = 0
+    tdShow = True
+    tdShowPrefix = True
     in MkThreadData {..}
 
 traceThreadData :: MVar (Map.Map ThreadId ThreadData)
@@ -84,29 +85,38 @@ threadModifyData m = do
 traceNameThread :: String -> IO ()
 traceNameThread name = threadModifyData $ \tdata -> tdata {tdName = name}
 
-traceHide :: MonadIO m => m r -> m r
-traceHide mr = do
-    liftIO $ threadModifyData $ \tdata -> tdata {tdHide = succ $ tdHide tdata}
+traceSaveData :: MonadIO m => m r -> m r
+traceSaveData mr = do
+    tdata <- liftIO threadGetData
     a <- mr
-    liftIO $ threadModifyData $ \tdata -> tdata {tdHide = pred $ tdHide tdata}
+    liftIO $ threadModifyData $ \_ -> tdata
     return a
 
+traceHide :: MonadIO m => m r -> m r
+traceHide mr =
+    traceSaveData $ do
+        liftIO $ threadModifyData $ \tdata -> tdata {tdShow = False}
+        mr
+
+traceShow :: MonadIO m => m r -> m r
+traceShow mr =
+    traceSaveData $ do
+        liftIO $ threadModifyData $ \tdata -> tdata {tdShow = True}
+        mr
+
 traceHidePrefix :: MonadIO m => m r -> m r
-traceHidePrefix mr = do
-    liftIO $ threadModifyData $ \tdata -> tdata {tdHidePrefix = succ $ tdHidePrefix tdata}
-    a <- mr
-    liftIO $ threadModifyData $ \tdata -> tdata {tdHidePrefix = pred $ tdHidePrefix tdata}
-    return a
+traceHidePrefix mr =
+    traceSaveData $ do
+        liftIO $ threadModifyData $ \tdata -> tdata {tdShowPrefix = False}
+        mr
 
 traceIOM :: MonadIO m => String -> m ()
 traceIOM msg =
     liftIO $ do
         tdata <- threadGetData
-        if tdHide tdata > 0
-            then return ()
-            else if tdHidePrefix tdata > 0
-                     then traceIO msg
-                     else do
+        if tdShow tdata
+            then if tdShowPrefix tdata
+                     then do
                          MkSystemTime s ns <- getSystemTime
                          tid <- myThreadId
                          let
@@ -122,6 +132,8 @@ traceIOM msg =
                              showMod 0 _ = ""
                              showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
                          traceIO $ show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> ": " <> msg
+                     else traceIO msg
+            else return ()
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
