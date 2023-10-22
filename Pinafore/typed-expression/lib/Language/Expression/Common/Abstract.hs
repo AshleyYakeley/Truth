@@ -59,11 +59,15 @@ type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosS
 
 type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
+finalRenameINTERNAL :: Bool
+finalRenameINTERNAL = True
+
 unifierSubstituteSimplifyFinalRename ::
        forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
     => UnifierSubstitutions ts
     -> EndoM (TSOuter ts) a
-unifierSubstituteSimplifyFinalRename subs = mconcat [unifierSubstitute @ts subs, simplify @ts, finalRenameMappable @ts]
+unifierSubstituteSimplifyFinalRename subs =
+    mconcat [unifierSubstitute @ts subs, simplify @ts, mif finalRenameINTERNAL (finalRenameMappable @ts)]
 
 unifierSolve ::
        forall ts a b. (AbstractTypeSystem ts, TSMappable ts b)
