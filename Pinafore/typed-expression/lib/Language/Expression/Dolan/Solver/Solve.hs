@@ -3,11 +3,11 @@ module Language.Expression.Dolan.Solver.Solve
     ) where
 
 import Language.Expression.Common
-import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Subsume
 import Language.Expression.Dolan.Solver.Crumble.Unify
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
+import Language.Expression.Dolan.Solver.Substitute
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type

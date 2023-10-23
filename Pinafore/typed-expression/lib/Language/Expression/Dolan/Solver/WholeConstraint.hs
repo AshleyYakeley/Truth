@@ -29,30 +29,3 @@ instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (WholeConstraint ground) where
     allConstraint = Dict
-
-type WholeConstraintShim :: GroundTypeKind -> Type -> Type
-type WholeConstraintShim ground = ShimWit (CatDual (->)) (WholeConstraint ground)
-
-bisubstituteWholeConstraint ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => SolverBisubstitution ground
-    -> WholeConstraint ground a
-    -> TypeResult ground (WholeConstraintShim ground a)
-bisubstituteWholeConstraint bisub (MkWholeConstraint fta ftb) = do
-    MkShimWit fta' (MkPolarShim conva) <- bisubstituteFlipType bisub fta
-    MkShimWit ftb' (MkPolarShim convb) <- bisubstituteFlipType bisub ftb
-    return $ MkShimWit (MkWholeConstraint fta' ftb') $ MkCatDual $ \conv -> convb . conv . conva
-
-bisubstituteWholeConstraintShim ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => SolverBisubstitution ground
-    -> WholeConstraintShim ground a
-    -> TypeResult ground (WholeConstraintShim ground a)
-bisubstituteWholeConstraintShim bisub = chainShimWitM $ bisubstituteWholeConstraint bisub
-
-bisubstitutesWholeConstraintShim ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => [SolverBisubstitution ground]
-    -> WholeConstraintShim ground a
-    -> TypeResult ground (WholeConstraintShim ground a)
-bisubstitutesWholeConstraintShim bisubs = unEndoM $ mconcat $ fmap (MkEndoM . bisubstituteWholeConstraintShim) bisubs

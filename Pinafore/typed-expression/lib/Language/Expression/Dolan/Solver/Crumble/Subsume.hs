@@ -5,11 +5,11 @@ module Language.Expression.Dolan.Solver.Crumble.Subsume
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Solver.AtomicConstraint
-import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.Crumble.Crumbler
 import Language.Expression.Dolan.Solver.Crumble.Type
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
+import Language.Expression.Dolan.Solver.Substitute
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.TypeSystem
@@ -47,7 +47,7 @@ substPuzzle (ClosedExpression a) = return $ pure a
 substPuzzle (OpenExpression ac expr) = do
     (t, subst) <- lift $ liftToCrumbleM $ getAtomicConstraint ac
     tell [subst]
-    puzzle <- mapExpressionM (\ac' -> lift $ substituteAtomicConstraint subst ac') expr
+    puzzle <- mapExpressionM (\ac' -> lift $ applySubstToAtomicConstraint subst ac') expr
     return $ fmap (\ta -> ta t) puzzle
 
 puzzleStep ::

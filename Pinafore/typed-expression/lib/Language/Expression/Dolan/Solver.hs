@@ -10,10 +10,10 @@ module Language.Expression.Dolan.Solver
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Solver.AtomicSubstitute
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.Solve
+import Language.Expression.Dolan.Solver.Substitute
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
@@ -38,7 +38,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
     type Subsumer (DolanTypeSystem ground) = Puzzle ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [SolverBisubstitution ground]
     usubSubsumer ss subsumer = do
-        subsumer' <- runCrumbleM $ bisubstitutesPuzzle ss subsumer
+        subsumer' <- runCrumbleM $ applyBisubsToPuzzle ss subsumer
         return $ solverExpressionLiftType subsumer'
     solveSubsumer puzzle = runCrumbleM $ solvePuzzle puzzle
     subsumerPosSubstitute subs t = lift $ runTypeResult $ bisubstitutesType subs t

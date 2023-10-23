@@ -20,6 +20,10 @@ instance FreeTypeVariables t => FreeTypeVariables (Maybe t) where
     freeTypeVariables (Just x) = freeTypeVariables x
     freeTypeVariables Nothing = mempty
 
+instance FreeTypeVariables t => FreeTypeVariables (Result e t) where
+    freeTypeVariables (SuccessResult x) = freeTypeVariables x
+    freeTypeVariables (FailureResult _) = mempty
+
 instance (forall t'. FreeTypeVariables (wit t')) => FreeTypeVariables (ShimWit shim wit t) where
     freeTypeVariables (MkShimWit wt _) = freeTypeVariables wt
 
