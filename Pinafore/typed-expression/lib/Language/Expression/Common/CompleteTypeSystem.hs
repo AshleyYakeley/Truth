@@ -123,7 +123,10 @@ tsSubsume ::
     => TSPosShimWit ts inf
     -> TSPosWitness ts decl
     -> TSInner ts (TSOpenExpression ts (TSShim ts inf decl))
-tsSubsume winf tdecl = runRenamer @ts (renameableVars tdecl) [] $ solveSubsumeShimWit @ts winf tdecl
+tsSubsume winf tdecl =
+    runRenamer @ts (renameableVars tdecl) [] $ do
+        winf' <- renameMappableSimple @ts winf
+        solveSubsumeShimWit @ts winf' tdecl
 
 tsSubsumeValue ::
        forall ts t. CompleteTypeSystem ts

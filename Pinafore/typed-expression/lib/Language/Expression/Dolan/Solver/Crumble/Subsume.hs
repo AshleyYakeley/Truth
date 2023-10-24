@@ -39,12 +39,12 @@ processPuzzle ::
     -> SubsumeCrumbler ground a
 processPuzzle = solveExpression processPiece
 
-substPuzzle ::
+substAtomicPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => Expression (AtomicConstraint ground) a
+    => AtomicPuzzle ground a
     -> SolverM ground (Puzzle ground a)
-substPuzzle (ClosedExpression a) = return $ pure a
-substPuzzle (OpenExpression ac expr) = do
+substAtomicPuzzle (ClosedExpression a) = return $ pure a
+substAtomicPuzzle (OpenExpression ac expr) = do
     (t, subst) <- lift $ liftToCrumbleM $ getAtomicConstraint ac
     tell [subst]
     puzzle <- mapExpressionM (\ac' -> lift $ applySubstToAtomicConstraint subst ac') expr
@@ -56,7 +56,7 @@ puzzleStep ::
     -> SolverM ground (PuzzleExpression ground a)
 puzzleStep puzzle = do
     MkSolverExpression ap expr <- lift $ runCrumbler $ processPuzzle puzzle
-    puzzle' <- substPuzzle ap
+    puzzle' <- substAtomicPuzzle ap
     return $ MkSolverExpression puzzle' expr
 
 subsumePuzzleStep ::
