@@ -11,6 +11,7 @@ library:
       - base >= 4.16
       - shapes
       - time
+      - containers
       - thread-trace
       - polar-shim
     exposed-modules:
