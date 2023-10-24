@@ -1,0 +1,17 @@
+#!/usr/bin/pinafore
+let
+    datatype T -p of
+        Mk of
+            m1: SetModel (p & Text);
+            m2: p -> Unit;
+        end;
+    end;
+
+    m2: Entity -> Unit = undefined;
+in do
+model: FiniteSetModel Text <- newMem.FiniteSetModel;
+m1: FiniteSetModel Text <- pure model;
+(Mk.T: T Text) >- fn (Mk.T: T Text) => m1 +=.SetModel "text";
+r <- get $ single.FiniteSetModel model;
+outputLn.Env r;
+end
