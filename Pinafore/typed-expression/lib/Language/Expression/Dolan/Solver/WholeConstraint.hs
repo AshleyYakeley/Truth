@@ -24,8 +24,8 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEqua
         Refl <- testEquality tb1 tb2
         return Refl
 
-instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (WholeConstraint ground t) where
+instance forall (ground :: GroundTypeKind) t. ShowGroundType ground => Show (WholeConstraint ground t) where
     show (MkWholeConstraint ta tb) = allShow ta <> " <: " <> allShow tb
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (WholeConstraint ground) where
+instance forall (ground :: GroundTypeKind). ShowGroundType ground => AllConstraint Show (WholeConstraint ground) where
     allConstraint = Dict

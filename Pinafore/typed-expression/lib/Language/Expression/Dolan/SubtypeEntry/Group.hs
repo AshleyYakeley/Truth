@@ -24,7 +24,7 @@ data SomeSubtypeGroup ground where
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Eq (SomeSubtypeGroup ground) where
     MkSomeSubtypeGroup a == MkSomeSubtypeGroup b = isJust $ subtypeGroupTestEquality a b
 
-instance forall (ground :: GroundTypeKind) dv gt. DebugIsDolanGroundType ground => Show (SubtypeGroup ground dv gt) where
+instance forall (ground :: GroundTypeKind) dv gt. ShowGroundType ground => Show (SubtypeGroup ground dv gt) where
     show (MkSubtypeGroup t _) = show t
 
 testEqualitySubtypeGroupTest ::

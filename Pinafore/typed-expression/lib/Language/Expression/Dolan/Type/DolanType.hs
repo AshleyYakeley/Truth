@@ -1,9 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Language.Expression.Dolan.Type.Type
+module Language.Expression.Dolan.Type.DolanType
     ( IsDolanGroundType(..)
     , SomeGroundType(..)
-    , DebugIsDolanGroundType
+    , ShowGroundType
     , DolanShimWit
     , DolanIsoShimWit
     , DolanType(..)
@@ -16,8 +16,6 @@ module Language.Expression.Dolan.Type.Type
     , typeToAnySingulars
     , DolanOpenExpression
     , DolanTypeCheckM
-    , showDolanSingularType
-    , showDolanType
     ) where
 
 import Data.Shim
@@ -29,14 +27,9 @@ import Shapes
 
 class ( IsDolanPolyShim (DolanPolyShim ground)
       , Ord (DolanVarID ground)
-      , Show (DolanVarID ground)
       , MonadThrow PatternError (DolanM ground)
       , MonadThrow (NamedExpressionError (DolanVarID ground) (DolanShimWit ground 'Negative)) (DolanM ground)
-      , AllConstraint Show (DolanSingularType ground 'Positive)
-      , AllConstraint Show (DolanSingularType ground 'Negative)
-      , AllConstraint Show (DolanType ground 'Positive)
-      , AllConstraint Show (DolanType ground 'Negative)
-      --, DebugIsDolanGroundType ground
+      --, DebugGroundType ground
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
     type DolanVarID ground :: Type
     type DolanM ground :: Type -> Type
@@ -55,27 +48,36 @@ data SomeGroundType ground =
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Eq (SomeGroundType ground) where
     MkSomeGroundType ta == MkSomeGroundType tb = isJust $ groundTypeTestEquality ta tb
 
-instance forall (ground :: GroundTypeKind). DebugIsDolanGroundType ground => Show (SomeGroundType ground) where
+instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (SomeGroundType ground) where
     show (MkSomeGroundType t) = show t
 
-type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
+type ShowGroundType :: GroundTypeKind -> Constraint
+class ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
+      , Show (DolanVarID ground)
+      , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
+      , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
+      ) => ShowGroundType ground
+
+instance forall (ground :: GroundTypeKind). ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
+         , Show (DolanVarID ground)
+         , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
+         , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
+         ) => ShowGroundType ground
+
+type DebugGroundType :: GroundTypeKind -> Constraint
 class ( MonadException (DolanM ground)
       , Show (Exc (DolanM ground))
       , MonadIO (DolanM ground)
-      , forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
-      , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
-      , forall polarity t. Is PolarityType polarity => Show (DolanGroundedType ground polarity t)
       , DolanPolyShim ground Type ~ JMShim Type
-      ) => DebugIsDolanGroundType ground
+      , ShowGroundType ground
+      ) => DebugGroundType ground
 
 instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
          , Show (Exc (DolanM ground))
          , MonadIO (DolanM ground)
-         , forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
-         , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
-         , forall polarity t. Is PolarityType polarity => Show (DolanGroundedType ground polarity t)
          , DolanPolyShim ground Type ~ JMShim Type
-         ) => DebugIsDolanGroundType ground
+         , ShowGroundType ground
+         ) => DebugGroundType ground
 
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanShimWit ground polarity = PShimWit (DolanShim ground) (DolanType ground) polarity
@@ -239,24 +241,6 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSyst
     type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive
     type TSShim (DolanTypeSystem ground) = DolanShim ground
     type TSVarID (DolanTypeSystem ground) = DolanVarID ground
-
-showDolanSingularType ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanSingularType ground polarity t
-    -> String
-showDolanSingularType =
-    case polarityType @polarity of
-        PositiveType -> allShow
-        NegativeType -> allShow
-
-showDolanType ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanType ground polarity t
-    -> String
-showDolanType =
-    case polarityType @polarity of
-        PositiveType -> allShow
-        NegativeType -> allShow
 
 getCCRArgumentMapping ::
        forall (ground :: GroundTypeKind) (t :: Type) polarity (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).

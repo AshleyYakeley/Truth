@@ -7,7 +7,7 @@ module Language.Expression.Dolan.Solver.Crumble.Type
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Solver.AtomicConstraint
+import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
@@ -97,25 +97,37 @@ crumbleTTWit (MkShimWit ta iconva) (MkShimWit tb iconvb) = let
     convb = polarPolyIsoNegative iconvb
     in fmap (\conv -> convb . conv . conva) $ crumbleTT ta tb
 
-crumbleAtomic ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => AtomicConstraint ground a
-    -> TypeCrumbler ground a
-crumbleAtomic ac = crumblerLiftPuzzle $ atomicConstraintPuzzle ac
-
 crumbleAtomicLE ::
        forall (ground :: GroundTypeKind) polarity ta tb. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => TypeVarT ta
     -> DolanType ground polarity tb
     -> TypeCrumbler ground (DolanShim ground ta tb)
-crumbleAtomicLE v t = crumbleAtomic $ leAtomicConstraint v t
+crumbleAtomicLE var t =
+    case polarityType @polarity of
+        PositiveType ->
+            wbind (lift crumbleMRigidity) $ \rigidity ->
+                crumblerLiftPuzzle $
+                case invertTypeM rigidity t of
+                    SuccessResult (MkShimWit invt (MkPolarShim conv)) ->
+                        fmap (\fconv -> conv . fconv) $ atomicPuzzle var $ NormalFlipType invt
+                    FailureResult _ -> atomicPuzzle var $ InvertFlipType t
+        NegativeType -> crumblerLiftPuzzle $ atomicPuzzle var $ NormalFlipType t
 
 crumbleAtomicGE ::
        forall (ground :: GroundTypeKind) polarity ta tb. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => TypeVarT tb
     -> DolanType ground polarity ta
     -> TypeCrumbler ground (DolanShim ground ta tb)
-crumbleAtomicGE v t = crumbleAtomic $ geAtomicConstraint v t
+crumbleAtomicGE var t =
+    case polarityType @polarity of
+        PositiveType -> crumblerLiftPuzzle $ atomicPuzzle var $ NormalFlipType t
+        NegativeType ->
+            wbind (lift crumbleMRigidity) $ \rigidity ->
+                crumblerLiftPuzzle $
+                case invertTypeM rigidity t of
+                    SuccessResult (MkShimWit invt (MkPolarShim conv)) ->
+                        fmap (\fconv -> fconv . conv) $ atomicPuzzle var $ NormalFlipType invt
+                    FailureResult _ -> atomicPuzzle var $ InvertFlipType t
 
 crumbleArgument ::
        forall (ground :: GroundTypeKind) pola polb sv ta tb.

@@ -15,15 +15,13 @@ data AtomicConstraint ground t where
         -> FlipType ground polarity t
         -> AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
 
-instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (AtomicConstraint ground t) where
-    show (MkAtomicConstraint var PositiveType (NormalFlipType wt)) = show var <> " :> " <> showDolanType wt <> " [+]"
-    show (MkAtomicConstraint var NegativeType (NormalFlipType wt)) = show var <> " <: " <> showDolanType wt <> " [-]"
-    show (MkAtomicConstraint var PositiveType (InvertFlipType wt)) =
-        show var <> " :> " <> showDolanType wt <> " [- INV]"
-    show (MkAtomicConstraint var NegativeType (InvertFlipType wt)) =
-        show var <> " <: " <> showDolanType wt <> " [+ INV]"
+instance forall (ground :: GroundTypeKind) t. ShowGroundType ground => Show (AtomicConstraint ground t) where
+    show (MkAtomicConstraint var PositiveType (NormalFlipType wt)) = show var <> " :> " <> allShow wt <> " [+]"
+    show (MkAtomicConstraint var NegativeType (NormalFlipType wt)) = show var <> " <: " <> allShow wt <> " [-]"
+    show (MkAtomicConstraint var PositiveType (InvertFlipType wt)) = show var <> " :> " <> allShow wt <> " [- INV]"
+    show (MkAtomicConstraint var NegativeType (InvertFlipType wt)) = show var <> " <: " <> allShow wt <> " [+ INV]"
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (AtomicConstraint ground) where
+instance forall (ground :: GroundTypeKind). ShowGroundType ground => AllConstraint Show (AtomicConstraint ground) where
     allConstraint = Dict
 
 mkAtomicConstraint ::
@@ -32,26 +30,6 @@ mkAtomicConstraint ::
     -> FlipType ground polarity t
     -> AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
 mkAtomicConstraint var ft = MkAtomicConstraint var representative ft
-
-leAtomicConstraint ::
-       forall (ground :: GroundTypeKind) polarity tv p. (IsDolanGroundType ground, Is PolarityType polarity)
-    => TypeVarT tv
-    -> DolanType ground polarity p
-    -> AtomicConstraint ground (DolanShim ground tv p)
-leAtomicConstraint var pt =
-    case polarityType @polarity of
-        PositiveType -> mkAtomicConstraint var (InvertFlipType pt)
-        NegativeType -> mkAtomicConstraint var (NormalFlipType pt)
-
-geAtomicConstraint ::
-       forall (ground :: GroundTypeKind) polarity tv p. (IsDolanGroundType ground, Is PolarityType polarity)
-    => TypeVarT tv
-    -> DolanType ground polarity p
-    -> AtomicConstraint ground (DolanShim ground p tv)
-geAtomicConstraint var pt =
-    case polarityType @polarity of
-        PositiveType -> mkAtomicConstraint var (NormalFlipType pt)
-        NegativeType -> mkAtomicConstraint var (InvertFlipType pt)
 
 isPureAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground

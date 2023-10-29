@@ -23,10 +23,10 @@ data UsageWitness ground tv a where
         -> DolanType ground polarity a
         -> UsageWitness ground tv (DolanPolarShim ground polarity tv a)
 
-instance forall (ground :: GroundTypeKind) tv a. IsDolanGroundType ground => Show (UsageWitness ground tv a) where
-    show (MkUsageWitness p t) = show p <> withDict (getRepWitness p) (showDolanType t)
+instance forall (ground :: GroundTypeKind) tv a. ShowGroundType ground => Show (UsageWitness ground tv a) where
+    show (MkUsageWitness p t) = show p <> withDict (getRepWitness p) (allShow t)
 
-instance forall (ground :: GroundTypeKind) tv. IsDolanGroundType ground => AllConstraint Show (UsageWitness ground tv) where
+instance forall (ground :: GroundTypeKind) tv. ShowGroundType ground => AllConstraint Show (UsageWitness ground tv) where
     allConstraint = Dict
 
 type ExpressionPolyShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
@@ -89,19 +89,19 @@ buildUsage n t = chainPolarShimWit (buildUsageInside n) $ buildUsageThis n t
 
 type UsageSolution :: GroundTypeKind -> Type -> Type -> Type
 data UsageSolution ground tv t =
-    forall a b. MkUsageSolution (InvertedCombinedDolanType ground 'Positive a)
-                                (InvertedCombinedDolanType ground 'Negative b)
+    forall a b. MkUsageSolution (InvertedType ground 'Positive a)
+                                (InvertedType ground 'Negative b)
                                 (DolanShim ground a tv -> DolanShim ground tv b -> t)
 
 instance forall (ground :: GroundTypeKind) tv. Functor (UsageSolution ground tv) where
     fmap c (MkUsageSolution n p f) = MkUsageSolution n p $ \nconv pconv -> c $ f nconv pconv
 
 instance forall (ground :: GroundTypeKind) tv. IsDolanGroundType ground => Applicative (UsageSolution ground tv) where
-    pure a = MkUsageSolution NilInvertedCombinedDolanType NilInvertedCombinedDolanType $ \_ _ -> a
+    pure a = MkUsageSolution NilInvertedType NilInvertedType $ \_ _ -> a
     liftA2 c (MkUsageSolution na pa fa) (MkUsageSolution nb pb fb) =
-        case joinMeetInvertedCombinedType na nb of
+        case joinMeetInvertedType na nb of
             MkShimWit nab (MkPolarShim convn) ->
-                case joinMeetInvertedCombinedType pa pb of
+                case joinMeetInvertedType pa pb of
                     MkShimWit pab (MkPolarShim convp) ->
                         MkUsageSolution nab pab $ \nconv pconv ->
                             c
@@ -113,11 +113,9 @@ solveUsageWitness ::
     => UsageWitness ground tv t
     -> UsageSolution ground tv t
 solveUsageWitness (MkUsageWitness PositiveType tw) =
-    MkUsageSolution NilInvertedCombinedDolanType (ConsInvertedCombinedDolanType tw NilInvertedCombinedDolanType) $ \_ conv ->
-        MkPolarShim $ meet1 . conv
+    MkUsageSolution NilInvertedType (ConsInvertedType tw NilInvertedType) $ \_ conv -> MkPolarShim $ meet1 . conv
 solveUsageWitness (MkUsageWitness NegativeType tw) =
-    MkUsageSolution (ConsInvertedCombinedDolanType tw NilInvertedCombinedDolanType) NilInvertedCombinedDolanType $ \conv _ ->
-        MkPolarShim $ conv . join1
+    MkUsageSolution (ConsInvertedType tw NilInvertedType) NilInvertedType $ \conv _ -> MkPolarShim $ conv . join1
 
 solveUsageExpression ::
        forall (ground :: GroundTypeKind) tv t. IsDolanGroundType ground
@@ -144,27 +142,27 @@ invertedSubtype ta tb = fmap unPolarShim $ Compose $ invertedPolarSubtype ta tb
 invertedCombinedSubtype1 ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => DolanType ground 'Negative a
-    -> InvertedCombinedDolanType ground 'Negative b
+    -> InvertedType ground 'Negative b
     -> Compose (DolanTypeCheckM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
-invertedCombinedSubtype1 _ NilInvertedCombinedDolanType = pure termf
-invertedCombinedSubtype1 ta (ConsInvertedCombinedDolanType t1 tr) =
+invertedCombinedSubtype1 _ NilInvertedType = pure termf
+invertedCombinedSubtype1 ta (ConsInvertedType t1 tr) =
     liftA2 meetf (invertedSubtype ta t1) (invertedCombinedSubtype1 ta tr)
 
 invertedCombinedSubtype ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
-    => InvertedCombinedDolanType ground 'Positive a
-    -> InvertedCombinedDolanType ground 'Negative b
+    => InvertedType ground 'Positive a
+    -> InvertedType ground 'Negative b
     -> Compose (DolanTypeCheckM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
-invertedCombinedSubtype NilInvertedCombinedDolanType _ = pure initf
-invertedCombinedSubtype (ConsInvertedCombinedDolanType t1 tr) tb =
+invertedCombinedSubtype NilInvertedType _ = pure initf
+invertedCombinedSubtype (ConsInvertedType t1 tr) tb =
     liftA2 joinf (invertedCombinedSubtype1 t1 tb) (invertedCombinedSubtype tr tb)
 
-testInvertedCombinedSubtype ::
+testInvertedSubtype ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
-    => InvertedCombinedDolanType ground 'Positive a
-    -> InvertedCombinedDolanType ground 'Negative b
+    => InvertedType ground 'Positive a
+    -> InvertedType ground 'Negative b
     -> DolanM ground (Maybe (DolanShim ground a b))
-testInvertedCombinedSubtype negtype postype = do
+testInvertedSubtype negtype postype = do
     mexpr <-
         runRenamer @(DolanTypeSystem ground) [] [] $ do
             puzzle <- getCompose $ invertedCombinedSubtype @ground negtype postype
@@ -179,7 +177,7 @@ reduceUsageSolution ::
     -> UsageSolution ground tv t
     -> DolanM ground (Maybe t)
 reduceUsageSolution var (MkUsageSolution (n :: _ a) p f) = do
-    mconv <- testInvertedCombinedSubtype n p
+    mconv <- testInvertedSubtype n p
     return $ fmap (\conv -> assignTypeVarT @a var $ f id conv) mconv
 
 eliminateVariable ::

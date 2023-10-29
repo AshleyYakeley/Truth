@@ -70,7 +70,7 @@ data SubtypeConversionEntry ground =
                                                      (ground dvb gtb)
                                                      (SubtypeConversion ground dva gta dvb gtb)
 
-instance forall (ground :: GroundTypeKind). DebugIsDolanGroundType ground => Show (SubtypeConversionEntry ground) where
+instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (SubtypeConversionEntry ground) where
     show (MkSubtypeConversionEntry _ ta tb _) = show ta <> " <: " <> show tb
 
 subtypeConversionEntry ::
@@ -104,7 +104,7 @@ data GreaterConversionWit ground dva gta =
     forall dvb gtb. MkGreaterConversionWit (ground dvb gtb)
                                            (SubtypeConversion ground dva gta dvb gtb)
 
-instance forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv). DebugIsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv). ShowGroundType ground =>
              Show (GreaterConversionWit ground dv gt) where
     show (MkGreaterConversionWit gt _) = show gt
 
@@ -116,7 +116,7 @@ data LesserConversionWit ground dvb gtb =
     forall dva gta. MkLesserConversionWit (ground dva gta)
                                           (SubtypeConversion ground dva gta dvb gtb)
 
-instance forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv). DebugIsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv). ShowGroundType ground =>
              Show (LesserConversionWit ground dv gt) where
     show (MkLesserConversionWit t _) = show t
 

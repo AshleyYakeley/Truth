@@ -111,6 +111,14 @@ iPolarSwapR =
         PositiveType -> MkPolarShim iJoinSwapR
         NegativeType -> MkPolarShim iMeetSwapL
 
+iPolarSwap4 ::
+       forall (shim :: ShimKind Type) polarity a b c d. (JoinMeetIsoShim shim, Is PolarityType polarity)
+    => PolarShim shim polarity (JoinMeetType polarity (JoinMeetType polarity a b) (JoinMeetType polarity c d)) (JoinMeetType polarity (JoinMeetType polarity a c) (JoinMeetType polarity b d))
+iPolarSwap4 =
+    case polarityType @polarity of
+        PositiveType -> MkPolarShim iJoinSwap4
+        NegativeType -> MkPolarShim iMeetSwap4
+
 polarLimit ::
        forall (shim :: ShimKind Type) polarity a. (Is PolarityType polarity, JoinMeetShim shim)
     => PolarShim shim polarity (LimitType polarity) a

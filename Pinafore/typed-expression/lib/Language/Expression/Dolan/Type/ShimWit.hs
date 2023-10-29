@@ -2,7 +2,7 @@ module Language.Expression.Dolan.Type.ShimWit where
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Type.Type
+import Language.Expression.Dolan.Type.DolanType
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 

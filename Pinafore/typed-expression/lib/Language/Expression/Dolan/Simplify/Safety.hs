@@ -17,11 +17,7 @@ checkSafetyInType ::
 checkSafetyInType msg t = do
     case checkSafety t of
         SuccessResult () -> return $ mkShimWit t
-        FailureResult err ->
-            lift $
-            throwTypeError @ground $
-            InternalTypeError $
-            msg <> " simplification: " <> pack (show err) <> " recursive type: " <> pack (showDolanType t)
+        FailureResult err -> lift $ throwTypeError @ground $ InternalSafetyError msg err t
 
 checkSafetyMappable ::
        forall (ground :: GroundTypeKind) a.

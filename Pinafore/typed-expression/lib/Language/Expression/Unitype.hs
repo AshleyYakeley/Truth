@@ -46,12 +46,14 @@ instance (Monad m, Eq name, Show name) => SimplifyTypeSystem (Unitype m name val
 instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val) where
     type Subsumer (Unitype m name val) = Identity
     type SubsumerSubstitutions (Unitype m name val) = ()
-    showSubsumer _ = ""
     usubSubsumer () ia = lift $ return $ pure $ runIdentity ia
     solveSubsumer ia = pure $ (pure $ runIdentity ia, ())
     subsumerPosSubstitute () Refl = return unitypeShimWit
     subsumerNegSubstitute () Refl = return unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
+
+instance (Monad m, Eq name, Show name) => ShowSubsumeTypeSystem (Unitype m name val) where
+    showSubsumer _ = ""
 
 instance (Monad m, MonadThrow PatternError m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
     type TSInner (Unitype m name val) = m

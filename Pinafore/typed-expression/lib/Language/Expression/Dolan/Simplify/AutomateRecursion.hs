@@ -46,8 +46,8 @@ data Equation (ground :: GroundTypeKind) where
         -> DolanType ground polarity t
         -> Equation ground
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Equation ground) where
-    show (MkEquation pol var t) = withRepresentative pol $ show var <> " = " <> showDolanType t <> " " <> show pol
+instance forall (ground :: GroundTypeKind). (ShowGroundType ground, IsDolanGroundType ground) => Show (Equation ground) where
+    show (MkEquation pol var t) = withRepresentative pol $ show var <> " = " <> allShow t <> " " <> show pol
 
 lookupEquation ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

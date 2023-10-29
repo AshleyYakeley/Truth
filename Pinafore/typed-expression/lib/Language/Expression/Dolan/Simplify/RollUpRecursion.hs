@@ -19,8 +19,8 @@ data RollUp ground where
         -> DolanIsoShimWit ground polarity t
         -> RollUp ground
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (RollUp ground) where
-    show (MkRollUp unrolled (MkShimWit rolled _)) = showDolanType unrolled <> " => " <> showDolanType rolled
+instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (RollUp ground) where
+    show (MkRollUp unrolled (MkShimWit rolled _)) = allShow unrolled <> " => " <> allShow rolled
 
 mkRollUp ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) tv. (IsDolanGroundType ground, Is PolarityType polarity)

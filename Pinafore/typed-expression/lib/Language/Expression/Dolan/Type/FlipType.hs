@@ -3,8 +3,8 @@ module Language.Expression.Dolan.Type.FlipType where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.FreeVars
+import Language.Expression.Dolan.Type.DolanType
 import Language.Expression.Dolan.Type.Equality ()
-import Language.Expression.Dolan.Type.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -29,12 +29,12 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
     freeTypeVariables (NormalFlipType t) = freeTypeVariables t
     freeTypeVariables (InvertFlipType t) = freeTypeVariables t
 
-instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
+instance forall (ground :: GroundTypeKind) polarity t. (ShowGroundType ground, Is PolarityType polarity) =>
              Show (FlipType ground polarity t) where
-    show (NormalFlipType t) = showDolanType t
-    show (InvertFlipType t) = withInvertPolarity @polarity $ showDolanType t <> " [inv]"
+    show (NormalFlipType t) = allShow t
+    show (InvertFlipType t) = withInvertPolarity @polarity $ allShow t <> " [inv]"
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
+instance forall (ground :: GroundTypeKind) polarity. (ShowGroundType ground, Is PolarityType polarity) =>
              AllConstraint Show (FlipType ground polarity) where
     allConstraint = Dict
 

@@ -30,6 +30,7 @@ instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, Joi
     iJoinSwap = MkComposeShim $ pure iJoinSwap
     iJoinSwapL = MkComposeShim $ pure iJoinSwapL
     iJoinSwapR = MkComposeShim $ pure iJoinSwapR
+    iJoinSwap4 = MkComposeShim $ pure iJoinSwap4
     iMeetL1 = MkComposeShim $ pure iMeetL1
     iMeetL2 = MkComposeShim $ pure iMeetL2
     iMeetR1 = MkComposeShim $ pure iMeetR1
@@ -38,6 +39,7 @@ instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, Joi
     iMeetSwap = MkComposeShim $ pure iMeetSwap
     iMeetSwapL = MkComposeShim $ pure iMeetSwapL
     iMeetSwapR = MkComposeShim $ pure iMeetSwapR
+    iMeetSwap4 = MkComposeShim $ pure iMeetSwap4
 
 instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, JoinMeetShim shim) =>
              JoinMeetShim (ComposeShim m shim) where

@@ -144,7 +144,7 @@ abstractSealedExpression absw name sexpr =
         unifierSolve @ts uexpr' $ \rexpr -> return $ MkSealedExpression (absw (mkShimWit vwt) twt) rexpr
 
 applySealedExpression ::
-       forall ts. (AllConstraint Show (TSPosWitness ts), AllConstraint Show (TSNegWitness ts), AbstractTypeSystem ts)
+       forall ts. AbstractTypeSystem ts
     => UnifierFunctionNegWitness ts
     -> TSSealedExpression ts
     -> TSSealedExpression ts

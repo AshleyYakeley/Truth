@@ -56,12 +56,13 @@ library
       Language.Expression.Common.CompleteTypeSystem
       Language.Expression.Dolan.FreeVars
       Language.Expression.Dolan.Shim
-      Language.Expression.Dolan.Type.Type
+      Language.Expression.Dolan.Type.DolanType
       Language.Expression.Dolan.Type.ShimWit
       Language.Expression.Dolan.Type.Equality
       Language.Expression.Dolan.Type.Combine
       Language.Expression.Dolan.Type.FlipType
-      Language.Expression.Dolan.Type.InvertedCombine
+      Language.Expression.Dolan.Type.InvertedType
+      Language.Expression.Dolan.Type.MixedType
       Language.Expression.Dolan.Type
       Language.Expression.Dolan.Subtype
       Language.Expression.Dolan.SubtypeEntry.Knowledge
@@ -100,7 +101,6 @@ library
       Language.Expression.Dolan.Solver.Crumble.Crumbler
       Language.Expression.Dolan.Solver.Crumble.Presubstitution
       Language.Expression.Dolan.Solver.Crumble.Unify
-      Language.Expression.Dolan.Solver.Crumble.Subsume
       Language.Expression.Dolan.Solver.Solve
       Language.Expression.Dolan.Solver
       Language.Expression.Dolan.Nonpolar
@@ -138,7 +138,6 @@ library
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
   build-depends:
       base >=4.16
-    , containers
     , polar-shim
     , shapes
     , thread-trace

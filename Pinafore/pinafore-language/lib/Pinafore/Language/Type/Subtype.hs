@@ -26,6 +26,10 @@ type instance DolanSubtypeHint QGroundType = QSubtypeHint
 instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
     getSubtypeChain = entries_getSubtypeChain
     throwTypeError (InternalTypeError msg) = throw $ InternalError Nothing $ toNamedText msg
+    throwTypeError (InternalSafetyError msg err t) =
+        throw $
+        InternalError Nothing $
+        toNamedText msg <> " simplification: " <> showNamedText err <> " recursive type: " <> showNamedText t
     throwTypeError (UninvertibleTypeError t) = throw $ TypeNotInvertibleError $ exprShow t
     throwTypeError (NoGroundConvertTypeError ga gb) =
         throw $ NoGroundTypeConversionError (showGroundType ga) (showGroundType gb)

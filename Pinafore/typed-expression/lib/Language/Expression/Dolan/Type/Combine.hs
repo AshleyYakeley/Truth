@@ -6,7 +6,7 @@ module Language.Expression.Dolan.Type.Combine
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan.Type.Type
+import Language.Expression.Dolan.Type.DolanType
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 

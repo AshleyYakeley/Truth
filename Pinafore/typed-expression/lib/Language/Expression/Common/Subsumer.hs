@@ -1,5 +1,6 @@
 module Language.Expression.Common.Subsumer
     ( SubsumeTypeSystem(..)
+    , ShowSubsumeTypeSystem(..)
     , solveSubsumerExpression
     , usubSolveSubsumer
     , subsumePosShimWit
@@ -23,19 +24,20 @@ import Shapes
 
 type OpenSubsumerExpression ts = TSOpenSolverExpression ts (Subsumer ts)
 
-class (UnifyTypeSystem ts, Applicative (Subsumer ts), Show (SubsumerSubstitutions ts), RecoverShim (TSShim ts)) =>
-          SubsumeTypeSystem ts where
+class (UnifyTypeSystem ts, Applicative (Subsumer ts), RecoverShim (TSShim ts)) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
     usubSubsumer :: forall a. UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (OpenSubsumerExpression ts a)
     solveSubsumer :: forall a. Subsumer ts a -> TSOuter ts (TSOpenExpression ts a, SubsumerSubstitutions ts)
-    showSubsumer :: forall a. Subsumer ts a -> String
-    default showSubsumer :: AllConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
-    showSubsumer = allShow
     subsumerPosSubstitute :: SubsumerSubstitutions ts -> TSPosWitness ts t -> TSOuter ts (TSPosShimWit ts t)
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
     subsumePosWitnesses ::
            TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (OpenSubsumerExpression ts (TSShim ts inf decl))
+
+class (ShowTypeSystem ts, Show (SubsumerSubstitutions ts)) => ShowSubsumeTypeSystem ts where
+    showSubsumer :: forall a. Subsumer ts a -> String
+    default showSubsumer :: AllConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
+    showSubsumer = allShow
 
 solveSubsumerExpression ::
        forall ts a. SubsumeTypeSystem ts
@@ -88,7 +90,7 @@ data SealedSubsumerExpression ts =
     forall tdecl. MkSealedSubsumerExpression (TSPosShimWit ts tdecl)
                                              (OpenSubsumerExpression ts tdecl)
 
-instance SubsumeTypeSystem ts => Show (SealedSubsumerExpression ts) where
+instance (ShowSubsumeTypeSystem ts, SubsumeTypeSystem ts) => Show (SealedSubsumerExpression ts) where
     show (MkSealedSubsumerExpression t (MkSolverExpression subs expr)) =
         showSubsumer @ts subs <> "/" <> allShow expr <> " => " <> show t
 

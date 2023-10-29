@@ -22,16 +22,16 @@ data Substitution ground where
         -> Maybe (DolanType ground (InvertPolarity polarity) t)
         -> Substitution ground
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (Substitution ground) where
+instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (Substitution ground) where
     show (MkSubstitution pol oldvar newvar mt mi) = let
         invpol = invertPolarity pol
         st =
             case mToMaybe mt of
-                Just (MkShimWit t _) -> withRepresentative pol $ showDolanType t
+                Just (MkShimWit t _) -> withRepresentative pol $ allShow t
                 Nothing -> "FAILS"
         si =
             case mi of
-                Just invtype -> "; INV " <> withRepresentative invpol (showDolanType invtype)
+                Just invtype -> "; INV " <> withRepresentative invpol (allShow invtype)
                 Nothing -> ""
         in "{" <>
            show oldvar <>
@@ -42,11 +42,11 @@ data Piece ground t where
     WholePiece :: forall (ground :: GroundTypeKind) t. WholeConstraint ground t -> Piece ground t
     AtomicPiece :: forall (ground :: GroundTypeKind) t. AtomicConstraint ground t -> Piece ground t
 
-instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (Piece ground t) where
+instance forall (ground :: GroundTypeKind) t. ShowGroundType ground => Show (Piece ground t) where
     show (WholePiece wc) = "whole: " <> show wc
     show (AtomicPiece ac) = "atomic: " <> show ac
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (Piece ground) where
+instance forall (ground :: GroundTypeKind). ShowGroundType ground => AllConstraint Show (Piece ground) where
     allConstraint = Dict
 
 type Puzzle :: GroundTypeKind -> Type -> Type
@@ -70,6 +70,13 @@ wholeConstraintPuzzle constr = return $ varExpression $ WholePiece constr
 
 atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint ground a -> Puzzle ground a
 atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
+
+atomicPuzzle ::
+       forall (ground :: GroundTypeKind) polarity v t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => TypeVarT v
+    -> FlipType ground polarity t
+    -> Puzzle ground (PolarShimType (DolanShim ground) polarity t v)
+atomicPuzzle var ft = atomicConstraintPuzzle $ mkAtomicConstraint var ft
 
 flipUnifyPuzzle ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground

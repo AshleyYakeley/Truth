@@ -44,7 +44,6 @@ class ( TypeSystem ts
       , JoinMeetShim (TSShim ts)
       , FunctionShim (TSShim ts)
       , CartesianShim (TSShim ts)
-      , Show (UnifierSubstitutions ts)
       ) => UnifyTypeSystem (ts :: Type) where
     type Unifier ts :: Type -> Type
     type UnifierSubstitutions ts :: Type

@@ -8,6 +8,12 @@ import Shapes
 type TypeError :: GroundTypeKind -> Type
 data TypeError ground where
     InternalTypeError :: forall (ground :: GroundTypeKind). Text -> TypeError ground
+    InternalSafetyError
+        :: forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
+        => Text
+        -> RecursiveTypeError
+        -> DolanType ground polarity t
+        -> TypeError ground
     UninvertibleTypeError
         :: forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
         => DolanType ground polarity t
@@ -24,6 +30,7 @@ data TypeError ground where
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (TypeError ground) where
     show (InternalTypeError _) = "INTERNAL"
+    show (InternalSafetyError _ _ _) = "INTERNAL safety"
     show (UninvertibleTypeError _) = "uninvertible"
     show (NoGroundConvertTypeError _ _) = "no ground conversion"
     show (IncoherentGroundConvertTypeError _ _) = "incoherent ground conversions"

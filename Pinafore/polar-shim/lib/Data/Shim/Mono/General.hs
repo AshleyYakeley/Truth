@@ -30,6 +30,10 @@ class Category shim => JoinMeetIsoShim (shim :: ShimKind Type) where
     iJoinSwapR :: shim (JoinType a (JoinType b c)) (JoinType (JoinType a b) c)
     default iJoinSwapR :: JoinMeetShim shim => shim (JoinType a (JoinType b c)) (JoinType (JoinType a b) c)
     iJoinSwapR = joinf (join1 . join1) (joinf (join1 . join2) join2)
+    iJoinSwap4 :: shim (JoinType (JoinType a b) (JoinType c d)) (JoinType (JoinType a c) (JoinType b d))
+    default iJoinSwap4 ::
+        JoinMeetShim shim => shim (JoinType (JoinType a b) (JoinType c d)) (JoinType (JoinType a c) (JoinType b d))
+    iJoinSwap4 = joinf (joinf (join1 . join1) (join2 . join1)) (joinf (join1 . join2) (join2 . join2))
     iMeetL1 :: shim (MeetType a TopType) a
     default iMeetL1 :: JoinMeetShim shim => shim (MeetType a TopType) a
     iMeetL1 = meet1
@@ -54,6 +58,10 @@ class Category shim => JoinMeetIsoShim (shim :: ShimKind Type) where
     iMeetSwapR :: shim (MeetType a (MeetType b c)) (MeetType (MeetType a b) c)
     default iMeetSwapR :: JoinMeetShim shim => shim (MeetType a (MeetType b c)) (MeetType (MeetType a b) c)
     iMeetSwapR = meetf (meetf meet1 (meet1 . meet2)) (meet2 . meet2)
+    iMeetSwap4 :: shim (MeetType (MeetType a b) (MeetType c d)) (MeetType (MeetType a c) (MeetType b d))
+    default iMeetSwap4 ::
+        JoinMeetShim shim => shim (MeetType (MeetType a b) (MeetType c d)) (MeetType (MeetType a c) (MeetType b d))
+    iMeetSwap4 = meetf (meetf (meet1 . meet1) (meet1 . meet2)) (meetf (meet2 . meet1) (meet2 . meet2))
 
 instance JoinMeetIsoShim shim => JoinMeetIsoShim (CatDual shim) where
     iJoinL1 = MkCatDual iJoinR1
@@ -64,6 +72,7 @@ instance JoinMeetIsoShim shim => JoinMeetIsoShim (CatDual shim) where
     iJoinSwap = MkCatDual iJoinSwap
     iJoinSwapL = MkCatDual iJoinSwapR
     iJoinSwapR = MkCatDual iJoinSwapL
+    iJoinSwap4 = MkCatDual iJoinSwap4
     iMeetL1 = MkCatDual iMeetR1
     iMeetL2 = MkCatDual iMeetR2
     iMeetR1 = MkCatDual iMeetL1
@@ -72,6 +81,7 @@ instance JoinMeetIsoShim shim => JoinMeetIsoShim (CatDual shim) where
     iMeetSwap = MkCatDual iMeetSwap
     iMeetSwapL = MkCatDual iMeetSwapR
     iMeetSwapR = MkCatDual iMeetSwapL
+    iMeetSwap4 = MkCatDual iMeetSwap4
 
 instance JoinMeetIsoShim shim => JoinMeetIsoShim (Isomorphism shim) where
     iJoinL1 = MkIsomorphism iJoinL1 iJoinR1
@@ -83,6 +93,7 @@ instance JoinMeetIsoShim shim => JoinMeetIsoShim (Isomorphism shim) where
     iJoinSwap = MkIsomorphism iJoinSwap iJoinSwap
     iJoinSwapL = MkIsomorphism iJoinSwapL iJoinSwapR
     iJoinSwapR = MkIsomorphism iJoinSwapR iJoinSwapL
+    iJoinSwap4 = MkIsomorphism iJoinSwap4 iJoinSwap4
     iMeetL1 = MkIsomorphism iMeetL1 iMeetR1
     iMeetL2 = MkIsomorphism iMeetL2 iMeetR2
     iMeetR1 = MkIsomorphism iMeetR1 iMeetL1
@@ -92,6 +103,7 @@ instance JoinMeetIsoShim shim => JoinMeetIsoShim (Isomorphism shim) where
     iMeetSwap = MkIsomorphism iMeetSwap iMeetSwap
     iMeetSwapL = MkIsomorphism iMeetSwapL iMeetSwapR
     iMeetSwapR = MkIsomorphism iMeetSwapR iMeetSwapL
+    iMeetSwap4 = MkIsomorphism iMeetSwap4 iMeetSwap4
 
 class JoinMeetIsoShim shim => JoinMeetShim (shim :: ShimKind Type) where
     initf :: shim BottomType a

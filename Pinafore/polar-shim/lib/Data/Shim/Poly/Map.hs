@@ -28,6 +28,7 @@ instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind
     iJoinSwap = MkPolyMapT iJoinSwap
     iJoinSwapL = MkPolyMapT iJoinSwapL
     iJoinSwapR = MkPolyMapT iJoinSwapR
+    iJoinSwap4 = MkPolyMapT iJoinSwap4
     iMeetL1 = MkPolyMapT iMeetL1
     iMeetL2 = MkPolyMapT iMeetL2
     iMeetR1 = MkPolyMapT iMeetR1
@@ -36,6 +37,7 @@ instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind
     iMeetSwap = MkPolyMapT iMeetSwap
     iMeetSwapL = MkPolyMapT iMeetSwapL
     iMeetSwapR = MkPolyMapT iMeetSwapR
+    iMeetSwap4 = MkPolyMapT iMeetSwap4
 
 instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind). JoinMeetShim (f (pshim Type)) =>
              JoinMeetShim (PolyMapT f pshim Type) where
