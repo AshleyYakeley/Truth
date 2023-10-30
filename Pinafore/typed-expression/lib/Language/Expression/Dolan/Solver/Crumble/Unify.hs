@@ -176,14 +176,12 @@ pieceToUnify (AtomicPiece (MkAtomicConstraint var NegativeType ft)) =
 solveWholeConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => WholeConstraint ground a
-    -> CrumbleM ground (UnifyPuzzleExpression ground a)
-solveWholeConstraint wc@(MkWholeConstraint fta ftb) = do
+    -> CrumbleM ground (NonEmpty (UnifyPuzzleExpression ground a))
+solveWholeConstraint wc = do
     exprs <- crumbleConstraint wc
-    case exprs of
-        MkSolverExpression puzzle dexpr :| [] -> do
-            vexpr <- mapExpressionM pieceToUnify puzzle
-            return $ MkSolverExpression vexpr dexpr
-        _ -> throw $ ConvertTypeError fta ftb
+    for exprs $ \(MkSolverExpression puzzle dexpr) -> do
+        vexpr <- mapExpressionM pieceToUnify puzzle
+        return $ MkSolverExpression vexpr dexpr
 
 mergeAtomicPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -253,6 +251,14 @@ toPureVariablePuzzle =
         VariableUnifyPiece vconstr -> Just vconstr
         _ -> Nothing
 
+firstSuccess ::
+       forall e m a b. MonadCatch e m
+    => NonEmpty a
+    -> (a -> m b)
+    -> m b
+firstSuccess (a0 :| []) amb = amb a0
+firstSuccess (a0 :| (a1:aa)) amb = catch (amb a0) (\(_ :: e) -> firstSuccess @e (a1 :| aa) amb)
+
 processWholeConstraint ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => WholeConstraint ground a
@@ -261,17 +267,18 @@ processWholeConstraint ::
 processWholeConstraint wconstr@MkWholeConstraint {} puzzlerest =
     memoiseBranch iLazy wconstr (processPuzzle puzzlerest) $
     MkCrumbler $ do
-        MkSolverExpression puzzle1 dexpr1 <- lift $ solveWholeConstraint wconstr
-        MkSolverExpression puzzle2 dexpr2 <- unCrumbler $ processPuzzle $ liftA2 (,) puzzle1 puzzlerest
-        return $
-            MkSolverExpression puzzle2 $
-            liftA2
-                (\tc tla t1 l -> let
-                     (t, cb) = tla t1 l
-                     c = tc t
-                     in (c, cb c))
-                dexpr1
-                dexpr2
+        upexprs <- lift $ solveWholeConstraint wconstr
+        firstSuccess @(TypeError ground) upexprs $ \(MkSolverExpression puzzle1 dexpr1) -> do
+            MkSolverExpression puzzle2 dexpr2 <- unCrumbler $ processPuzzle $ liftA2 (,) puzzle1 puzzlerest
+            return $
+                MkSolverExpression puzzle2 $
+                liftA2
+                    (\tc tla t1 l -> let
+                         (t, cb) = tla t1 l
+                         c = tc t
+                         in (c, cb c))
+                    dexpr1
+                    dexpr2
 
 processPuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

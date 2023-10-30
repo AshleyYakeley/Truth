@@ -672,6 +672,7 @@ testQueries =
               , testQuery "let a: List (Integer|Text) = [] in a" $ LRSuccess "[]"
               , testQuery "let a: List Integer | List Text = [] in a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
+              , testSameType False "Integer|Text" "Integer|Text" []
               , testSameType False "List (Integer|Text)" "List (Integer|Text)" ["[]"]
               , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
               , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]

@@ -330,6 +330,11 @@ testSolver =
                  , subsumeTest "vars" "a -> a" "b -> b" ["b"]
                  , subsumeTest "simple-3" "a -> a" "Maybe a -> Maybe a" ["a"]
                  , testTree
+                       "union"
+                       [ subsumeTest "plain" "Integer | Text" "Integer | Text" []
+                       , subsumeTest "list" "List (Integer | Text)" "List (Integer | Text)" []
+                       ]
+                 , testTree
                        "split"
                        [ testTree
                              "plain"
