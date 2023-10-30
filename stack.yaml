@@ -30,7 +30,7 @@ packages:
 - Pinafore/pinafore-stdlib
 - Pinafore/pinafore-app
 
-resolver: lts-21.16
+resolver: lts-21.18
 
 allow-newer: true
 
