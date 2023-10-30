@@ -1,16 +1,16 @@
 ---
 name: pinafore
-version: 0.4.1
-license: SEE LICENSE IN LICENSE
-publisher: Pinafore
-displayName: Pinafore
-description: Pinafore language support
+version: "0.4.1"
+license: "SEE LICENSE IN LICENSE"
+publisher: "Pinafore"
+displayName: "Pinafore"
+description: "Pinafore language support"
 
 engines:
   vscode: "^1.29.0"
 
 categories:
-- Programming Languages
+- "Programming Languages"
 
 contributes:
   languages:
@@ -29,6 +29,6 @@ contributes:
 
 repository:
   type: git
-  url: https://github.com/AshleyYakeley/Truth.git
+  url: "https://github.com/AshleyYakeley/Truth.git"
 
-homepage: https://pinafore.info/
+homepage: "https://pinafore.info/"
