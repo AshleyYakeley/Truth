@@ -54,7 +54,8 @@ Before release:
 
 11. Run test UI
 
-    testpinafore Pinafore/pinafore-app/test/script/test
+    bin/testpinafore Pinafore/pinafore-app/test/script/test
+    # time zone in stack's docker containter will be UTC
 
 12. Tag commit
 
