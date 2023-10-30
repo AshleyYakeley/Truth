@@ -313,7 +313,7 @@ testimages: docker-image \
 ### Full build, clean
 
 .PHONY: full
-full: testimages format deb nix-docker-flake deps licensing docs vsc-extension
+full: testimages format deb nix-docker-flake deps licensing docs pyg-lexer vsc-extension
 
 .PHONY: clean
 clean:
