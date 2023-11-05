@@ -1,6 +1,6 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
-  * (no changes)
+  * updates to UILib
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
