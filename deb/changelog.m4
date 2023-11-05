@@ -1,5 +1,11 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  * (no changes)
+
+ -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+
+pinafore (0.4.1) bookworm; urgency=medium
+
   * Install
     - Nix flake outputs for VS Code extension
   * Language
@@ -13,7 +19,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - reject "rec a, a" types
     - fix fromList.Map
 
- -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+ -- Ashley Yakeley <ashley@semantic.org>  Mon, 30 Oct 2023 14:29:57 -0700
 
 pinafore (0.4) bookworm; urgency=medium
 

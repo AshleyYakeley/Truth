@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="pinafore-lexer"
-version="0.4.1"
+version="0.4.2"
 description="Pygments lexer for Pinafore"
 authors=[{name="Ashley Yakeley",email="ashley@semantic.org"}]
 dependencies=["Pygments>=2.0.1"]

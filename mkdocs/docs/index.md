@@ -1,4 +1,4 @@
-# Pinafore 0.4.1
+# Pinafore 0.4.2
 
 Pinafore is a language that allows you to structure and store information, and create user interfaces for it.
 

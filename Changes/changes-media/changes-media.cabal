@@ -1,11 +1,11 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           changes-media
-version:        0.4.1
+version:        0.4.2
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
 copyright:      (c) 2017-2023 Ashley Yakeley
