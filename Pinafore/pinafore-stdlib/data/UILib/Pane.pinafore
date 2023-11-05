@@ -59,6 +59,10 @@ namespace UILib of
             newItems: List (NewItem q)
             = [];
 
+            #| extra menus
+            extraMenus: List MenuEntry
+            = [];
+
             #| a `Pane` for a individual item
             itemPane: p -> Pane;
 
@@ -231,7 +235,7 @@ namespace UILib of
                             end
                         };
 
-                        extraMenus: List MenuEntry =
+                        allExtraMenus: List MenuEntry =
                         with MenuEntry.GTK. in
                         [
                             submenu "Selection" $ map.List newItemToMenuEntry newItems <>.List
@@ -239,13 +243,13 @@ namespace UILib of
                                 action "View" Nothing {viewItem},
                                 action "Delete" Nothing {deleteItem}
                             ]
-                        ];
+                        ] <> extraMenus;
 
                     in
                     Mk.Pane of
                         titleModel = {setName};
                         widget = se $ Just selectionModel;
-                        extraMenusModel = {extraMenus};
+                        extraMenusModel = {allExtraMenus};
                     end;
                 end;
 
