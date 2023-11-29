@@ -1,5 +1,7 @@
 # Pinafore 0.4.1
 
+*(For an overview of what makes Pinafore unique, see [Sixteen Unusual Things About Pinafore](https://semantic.org/post/sixteen-unusual-things-about-pinafore/).)*
+
 Pinafore is a language that allows you to structure and store information, and create user interfaces for it.
 
 ![Information](img/information.png)
