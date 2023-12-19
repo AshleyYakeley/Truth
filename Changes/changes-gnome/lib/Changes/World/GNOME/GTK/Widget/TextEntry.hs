@@ -21,10 +21,7 @@ createTextEntry rmod = do
         changedSignal <-
             gvOnSignal entry #changed $ do
                 st <- gvLiftIO $ get entry #text
-                succeeded <-
-                    gvRunUnlocked $
-                    gvLiftView $
-                    viewRunResource rmod $ \asub -> pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
+                succeeded <- gvRunUnlocked $ gvSetWholeModel rmod esrc st
                 setValidState succeeded
         return $ do
             gvBindWholeModel rmod (Just esrc) $ \newtext ->

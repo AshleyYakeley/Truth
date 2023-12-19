@@ -83,11 +83,7 @@ cboxFromStore whichModel esrc store =
                     (True, iter) -> do
                         i <- seqStoreIterToIndex iter
                         (t, _) <- seqStoreGetValue store i
-                        _ <-
-                            gvRunUnlocked $
-                            gvLiftView $
-                            viewRunResource whichModel $ \asub ->
-                                pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit t
+                        _ <- gvRunUnlocked $ gvSetWholeModel whichModel esrc t
                         return ()
                     (False, _) -> return ()
         let

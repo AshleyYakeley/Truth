@@ -1,6 +1,10 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
-  * updates to UILib
+  * Library
+    - GTK
+      . allow checkbox menus
+    - UILib
+      . update
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

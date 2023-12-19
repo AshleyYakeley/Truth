@@ -41,7 +41,7 @@ main = do
                             wsTitle = constantModel "Images"
                             setFileRef :: FilePath -> MenuEntry
                             setFileRef filename =
-                                ActionMenuEntry (pack filename) Nothing $
+                                ActionMenuEntry (constantModel (pack filename, Nothing)) $
                                 constantModel $
                                 Just $ do
                                     bs <- liftIO $ readFile $ imagedir </> filename

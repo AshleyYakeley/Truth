@@ -14,18 +14,18 @@ ui_labelled = fn n, ui => horizontal.Widget [label.Widget n, layoutGrow.Widget  
 std_window: WholeModel +Text -> Widget -> Action Window
 = fn title, contents => mfix.Action $ fn window => let
     mbar: Widget
-    = menuBar.Widget
+    = menuBar.Widget $ with MenuEntry.GTK. in
         [
-            submenu.MenuEntry "File"
+            submenu "File"
             [
-                action.MenuEntry "Close" (Just "Ctrl+W") {close.Window window},
-                separator.MenuEntry,
-                action.MenuEntry "Exit" (Just "Ctrl+Q") {exit gtk}
+                action {("Close" ,Just "Ctrl+W")} {close.Window window},
+                separator,
+                action {("Exit" ,Just "Ctrl+Q")} {exit gtk}
             ],
-            submenu.MenuEntry "Edit"
+            submenu "Edit"
             [
-                action.MenuEntry "Undo" (Just "Ctrl+Z") {queueUndo.UndoHandler uh},
-                action.MenuEntry "Redo" (Just "Ctrl+Y") {queueRedo.UndoHandler uh}
+                action {("Undo" ,Just "Ctrl+Z")} {queueUndo.UndoHandler uh},
+                action {("Redo" ,Just "Ctrl+Y")} {queueRedo.UndoHandler uh}
             ]
         ]
     in open.Window gtk (400,600) title $ vertical.Widget [mbar, layoutGrow.Widget $ scrolled.Widget contents];

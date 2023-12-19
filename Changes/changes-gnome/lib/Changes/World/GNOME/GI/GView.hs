@@ -33,6 +33,7 @@ module Changes.World.GNOME.GI.GView
     , gvBindModel
     , gvBindWholeModel
     , gvBindReadOnlyWholeModel
+    , gvSetWholeModel
     , gvDynamic
     , gvReplaceDynamicView
     , gvSwitch
@@ -248,6 +249,10 @@ gvBindWholeModel ::
        forall t. Model (WholeUpdate t) -> Maybe EditSource -> (t -> GView 'Unlocked ()) -> GView 'Unlocked ()
 gvBindWholeModel model mesrc call =
     gvLiftViewWithUnlift $ \unlift -> viewBindWholeModel model mesrc $ \_finit t -> unlift $ call t
+
+gvSetWholeModel :: forall t. Model (WholeUpdate t) -> EditSource -> t -> GView 'Unlocked Bool
+gvSetWholeModel model esrc v =
+    gvLiftView $ viewRunResource model $ \asub -> pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit v
 
 gvBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (t -> GView 'Unlocked ()) -> GView 'Unlocked ()
 gvBindReadOnlyWholeModel model call =

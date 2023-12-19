@@ -27,11 +27,8 @@ createCalendar rmod = do
             onChanged :: GView 'Locked ()
             onChanged = do
                 st <- getDay
-                gvRunUnlocked $
-                    gvLiftView $
-                    viewRunResource rmod $ \asub -> do
-                        _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
-                        return ()
+                _ <- gvRunUnlocked $ gvSetWholeModel rmod esrc st
+                return ()
         sig1 <- gvOnSignal calendar #daySelected onChanged
         sig2 <- gvOnSignal calendar #monthChanged onChanged
         return $ do

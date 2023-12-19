@@ -39,12 +39,24 @@ interpretAccelerator ('A':'l':'t':'+':s) = do
     return $ MkMenuAccelerator (KMAlt : mods) c
 interpretAccelerator _ = Nothing
 
-menuAction :: Text -> Maybe Text -> ImmutableWholeModel (Action TopType) -> LangMenuEntry
-menuAction label maccelStr raction = let
-    maccel = do
-        accelStr <- maccelStr
-        interpretAccelerator $ unpack accelStr
-    in MkLangMenuEntry $ \unlift -> ActionMenuEntry label maccel $ unWModel $ actionRef unlift raction
+getLabelAccelModel :: ImmutableWholeModel (Text, Maybe Text) -> Model (ROWUpdate (Text, Maybe MenuAccelerator))
+getLabelAccelModel labelAccel = let
+    ff (Known (t, maccelStr)) =
+        ( t
+        , do
+              accelStr <- maccelStr
+              interpretAccelerator $ unpack accelStr)
+    ff Unknown = ("", Nothing)
+    in unWModel $ eaMapReadOnlyWhole ff $ immutableModelToReadOnlyModel labelAccel
+
+menuAction :: ImmutableWholeModel (Text, Maybe Text) -> ImmutableWholeModel (Action TopType) -> LangMenuEntry
+menuAction labelAccel raction =
+    MkLangMenuEntry $ \unlift -> ActionMenuEntry (getLabelAccelModel labelAccel) $ unWModel $ actionRef unlift raction
+
+menuChecked :: ImmutableWholeModel (Text, Maybe Text) -> WModel (WholeUpdate (Know Bool)) -> LangMenuEntry
+menuChecked labelAccel val =
+    MkLangMenuEntry $ \_ ->
+        CheckedMenuEntry (getLabelAccelModel labelAccel) $ unWModel $ eaMap (unknownValueChangeLens False) val
 
 menuSubmenu :: Text -> [LangMenuEntry] -> LangMenuEntry
 menuSubmenu name entries =
@@ -65,6 +77,7 @@ menuEntryStuff =
               [ valBDS "separator" "Separator menu item." $ MkLangMenuEntry $ \_ -> SeparatorMenuEntry
               , valBDS "submenu" "Submenu menu item." menuSubmenu
               , valBDS "action" "Action menu item. Item will be disabled if the action reference is unknown." menuAction
+              , valBDS "checked" "Checked menu item." menuChecked
               ]
         , namespaceBDS "Widget" [valBDS "menuBar" "Menu bar widget" uiMenuBar]
         ]

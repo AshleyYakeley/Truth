@@ -18,11 +18,8 @@ createCheckButton label rmod = do
         changedSignal <-
             gvOnSignal button #clicked $ do
                 st <- gvLiftIO $ Gtk.get button #active
-                gvRunUnlocked $
-                    gvLiftView $
-                    viewRunResource rmod $ \asub -> do
-                        _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
-                        return ()
+                _ <- gvRunUnlocked $ gvSetWholeModel rmod esrc st
+                return ()
         return $ do
             gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ set button [#label := val]
             gvBindWholeModel rmod (Just esrc) $ \st ->
@@ -58,11 +55,7 @@ createMaybeCheckButton label rmod = do
                                 if elem ModifierTypeShiftMask modifiers
                                     then Nothing
                                     else Just (oldst /= Just True)
-                        _ <-
-                            gvRunUnlocked $
-                            gvLiftView $
-                            viewRunResource rmod $ \asub ->
-                                pushEdit noEditSource $ aModelEdit asub $ pure $ MkWholeReaderEdit newst
+                        _ <- gvRunUnlocked $ gvSetWholeModel rmod noEditSource newst
                         return True
                     _ -> return False
         return $ do

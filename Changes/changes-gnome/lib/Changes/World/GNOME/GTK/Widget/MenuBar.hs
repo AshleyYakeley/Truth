@@ -26,18 +26,55 @@ data MenuAccelerator =
     MkMenuAccelerator [KeyboardModifier]
                       KeyboardKey
 
+actionMenuItem ::
+       (IsMenuShell menushell, IsMenuItem menuitem, IsAccelGroup ag)
+    => ag
+    -> menushell
+    -> GView 'Locked menuitem
+    -> Model (ROWUpdate (Text, Maybe MenuAccelerator))
+    -> (menuitem -> GView 'Locked ())
+    -> GView 'Unlocked menuitem
+actionMenuItem ag ms mkitem rtext meaction = do
+    (item, menuitem) <-
+        gvRunLocked $ do
+            item <- mkitem
+            menuitem <- toMenuItem item
+            menuShellAppend ms item
+            _ <- gvOnSignal menuitem #activate $ meaction item
+            return (item, menuitem)
+    gvBindReadOnlyWholeModel rtext $ \(label, maccel) ->
+        gvRunLocked $ do
+            set menuitem [#label := label] -- creates child if not present
+            mc <- binGetChild menuitem
+            for_ mc $ \c -> do
+                ml <- liftIO $ castTo AccelLabel c
+                for_ ml $ \l -> do
+                    case maccel of
+                        Nothing -> liftIO $ accelLabelSetAccel l 0 []
+                        Just (MkMenuAccelerator mods key) -> do
+                            let
+                                keyw :: Word32
+                                keyw = fromIntegral $ ord key
+                                gmods :: [ModifierType]
+                                gmods = fmap toModifierType mods
+                            liftIO $ accelLabelSetAccel l keyw gmods
+                            accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ meaction item
+    return item
+
 data MenuEntry
     = SeparatorMenuEntry
-    | ActionMenuEntry Text
-                      (Maybe MenuAccelerator)
+    | ActionMenuEntry (Model (ROWUpdate (Text, Maybe MenuAccelerator)))
                       (Model (ROWUpdate (Maybe (GView 'Locked ()))))
+    | CheckedMenuEntry (Model (ROWUpdate (Text, Maybe MenuAccelerator)))
+                       (Model (WholeUpdate Bool))
     | SubMenuEntry Text
                    [MenuEntry]
 
 type MenuBar = [MenuEntry]
 
 simpleActionMenuEntry :: Text -> Maybe MenuAccelerator -> GView 'Locked () -> MenuEntry
-simpleActionMenuEntry label maccel action = ActionMenuEntry label maccel $ constantModel $ Just action
+simpleActionMenuEntry label maccel action =
+    ActionMenuEntry (constantModel (label, maccel)) (constantModel $ Just action)
 
 toModifierType :: KeyboardModifier -> ModifierType
 toModifierType KMShift = ModifierTypeShiftMask
@@ -58,39 +95,27 @@ accelGroupConnection ag key mods flags action = do
         return ()
 
 attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> GView 'Unlocked ()
-attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
+attachMenuEntry ag ms (ActionMenuEntry rtext raction) = do
     aref <- gvLiftIONoUI $ newIORef Nothing
-    item <-
-        gvRunLocked $ do
-            item <- menuItemNew
-            menuShellAppend ms item
-            let
-                meaction :: GView 'Locked ()
-                meaction = do
-                    maction <- liftIO $ readIORef aref
-                    case maction of
-                        Nothing -> return ()
-                        Just action -> action
-            set item [#label := label] -- creates child if not present
-            mc <- binGetChild item
-            for_ mc $ \c -> do
-                ml <- liftIO $ castTo AccelLabel c
-                for_ ml $ \l -> do
-                    case maccel of
-                        Nothing -> liftIO $ accelLabelSetAccel l 0 []
-                        Just (MkMenuAccelerator mods key) -> do
-                            let
-                                keyw :: Word32
-                                keyw = fromIntegral $ ord key
-                                gmods :: [ModifierType]
-                                gmods = fmap toModifierType mods
-                            liftIO $ accelLabelSetAccel l keyw gmods
-                            accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
-            _ <- gvOnSignal item #activate meaction
-            return item
+    let
+        meaction :: GView 'Locked ()
+        meaction = do
+            maction <- liftIO $ readIORef aref
+            case maction of
+                Nothing -> return ()
+                Just action -> action
+    item <- actionMenuItem ag ms menuItemNew rtext $ \_ -> meaction
     gvBindReadOnlyWholeModel raction $ \maction -> do
         gvLiftIONoUI $ writeIORef aref maction
         gvRunLocked $ set item [#sensitive := isJust maction]
+attachMenuEntry ag ms (CheckedMenuEntry rtext rchecked) = do
+    esrc <- gvNewEditSource
+    item <-
+        actionMenuItem ag ms checkMenuItemNew rtext $ \item -> do
+            checked <- checkMenuItemGetActive item
+            _ <- gvRunUnlocked $ gvSetWholeModel rchecked esrc checked
+            return ()
+    gvBindWholeModel rchecked (Just esrc) $ \checked -> gvRunLocked $ set item [#active := checked]
 attachMenuEntry ag ms (SubMenuEntry name entries) = do
     menu <-
         gvRunLocked $ do

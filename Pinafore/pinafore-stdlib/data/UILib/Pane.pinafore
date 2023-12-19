@@ -176,18 +176,18 @@ namespace UILib of
                             [
                                 submenu "File"
                                 [
-                                    action "Close" (Just "Ctrl+W") {close.Window window},
+                                    action {("Close", Just "Ctrl+W")} {close.Window window},
                                     separator,
-                                    action "Exit" (Just "Ctrl+Q") {exit gtk}
+                                    action {("Exit" ,Just "Ctrl+Q")} {exit gtk}
                                 ],
                                 submenu "Edit"
                                 [
-                                    action "Undo" (Just "Ctrl+Z") {queueUndo undoHandler},
-                                    action "Redo" (Just "Ctrl+Y") {queueRedo undoHandler},
+                                    action {("Undo" ,Just "Ctrl+Z")} {queueUndo undoHandler},
+                                    action {("Redo" ,Just "Ctrl+Y")} {queueRedo undoHandler},
                                     separator,
-                                    action "Cut" (Just "Ctrl+X") {selCut},
-                                    action "Copy" (Just "Ctrl+C") {selCopy},
-                                    action "Paste" (Just "Ctrl+V") {selPaste}
+                                    action {("Cut" ,Just "Ctrl+X")} {selCut},
+                                    action {("Copy" ,Just "Ctrl+C")} {selCopy},
+                                    action {("Paste" ,Just "Ctrl+V")} {selPaste}
                                 ]
                             ] <>.List %extraMenus
                         };
@@ -226,7 +226,7 @@ namespace UILib of
 
                         newItemToMenuEntry =
                         fn Mk.NewItem =>
-                        action.MenuEntry name mkey
+                        action.MenuEntry {(name, mkey)}
                         {
                             do
                                 item <- newItem;
@@ -240,8 +240,8 @@ namespace UILib of
                         [
                             submenu "Selection" $ map.List newItemToMenuEntry newItems <>.List
                             [
-                                action "View" Nothing {viewItem},
-                                action "Delete" Nothing {deleteItem}
+                                action {("View", Nothing)} {viewItem},
+                                action {("Delete", Nothing)} {deleteItem}
                             ]
                         ] <> extraMenus;
 
