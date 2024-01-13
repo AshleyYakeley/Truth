@@ -27,7 +27,7 @@ main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
     runLifecycle $
         runGTK $ \gtkContext ->
-            runNewView $
+            runView $
             runGView gtkContext $ do
                 for_ paths $ \path -> do
                     let

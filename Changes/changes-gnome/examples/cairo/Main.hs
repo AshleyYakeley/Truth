@@ -39,7 +39,7 @@ main :: IO ()
 main = do
     runLifecycle $
         runGTK $ \gtkContext ->
-            runNewView $
+            runView $
             runGView gtkContext $ do
                 (clockModel, ()) <-
                     gvLiftLifecycle $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1

@@ -16,7 +16,7 @@ main = do
     (dirpaths, double) <- O.execParser (O.info optParser mempty)
     runLifecycle $
         runGTK $ \gtkContext ->
-            runNewView $
+            runView $
             runGView gtkContext $
             for_ dirpaths $ \dirpath -> do
                 let action = soupWindow createWindow dirpath

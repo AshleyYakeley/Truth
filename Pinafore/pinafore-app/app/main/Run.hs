@@ -11,7 +11,7 @@ import System.Environment
 runFiles :: Foldable t => (StorageModelOptions, ModuleOptions) -> Bool -> t (FilePath, [String]) -> IO ()
 runFiles (smopts, modopts) fNoRun scripts =
     runLifecycle $
-    runNewView $
+    runView $
     for_ scripts $ \(fpath, iiScriptArguments) -> do
         let
             iiScriptName = fpath
@@ -29,7 +29,7 @@ runFiles (smopts, modopts) fNoRun scripts =
 runInteractive :: (StorageModelOptions, ModuleOptions) -> IO ()
 runInteractive (smopts, modopts) =
     runLifecycle $
-    runNewView $ do
+    runView $ do
         let
             iiScriptName = ""
             iiScriptArguments = []

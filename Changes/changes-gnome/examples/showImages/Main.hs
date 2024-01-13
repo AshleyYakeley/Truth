@@ -21,7 +21,7 @@ main = do
     --(paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
     runLifecycle $
         runGTK $ \gtkContext ->
-            runNewView $
+            runView $
             runGView gtkContext $ do
                 -- fileReference :: FilePath -> Reference ByteStringEdit
                 imageRef <-

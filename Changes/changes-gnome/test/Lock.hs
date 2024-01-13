@@ -13,7 +13,7 @@ lockTest name setup action =
         task <-
             runLifecycle $
             runGTK $ \gtkc -> do
-                runNewView $ do
+                runView $ do
                     a <- runGView gtkc setup
                     viewLiftLifecycle $
                         liftIOWithUnlift $ \unlift -> forkTask $ unlift $ runView $ runGView gtkc $ action a

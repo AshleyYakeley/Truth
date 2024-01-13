@@ -18,7 +18,6 @@ module Changes.Core.UI.View.View
     , viewGetResourceContext
     , viewWaitUpdates
     , runView
-    , runNewView
     , viewBindModelUpdates
     , viewBindModel
     , viewFloatMap
@@ -128,9 +127,6 @@ runView :: View --> Lifecycle
 runView = let
     vcResourceContext = emptyResourceContext
     in runViewFromContext MkViewContext {..}
-
-runNewView :: View --> Lifecycle
-runNewView = runView
 
 viewBindModelUpdates ::
        forall update a.
