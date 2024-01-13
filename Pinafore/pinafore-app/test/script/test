@@ -306,6 +306,23 @@ window_cairoimage: Action Window
         layoutGrow $ styleSheet {"* {border: solid 5px black;padding: 5px;}"} $ image {toImage dimensions $ drawing dimensions}
     ];
 
+### Menus
+window_menus: Action Window =
+do
+    value <- newMem.WholeModel;
+
+    mfix.Action $ fn window => with Widget in
+        let
+        mbar: Widget = menuBar $ with MenuEntry in
+            [
+                submenu "Menu"
+                [
+                    checked {("Value",Nothing)} value
+                ]
+            ]
+        in open.Window gtk (400,600) {"Menus"} $ vertical.Widget [mbar, layoutGrow $ checkBox {"Value"} value];
+end;
+
 ### Start Window
 
 let rec
@@ -337,6 +354,7 @@ window_start : Action Window
             button.Widget {"Unowned self"} {window_start},
             owned.Widget $ button.Widget {"Owned Self"} {window_start},
             button.Widget {"Cairo Image"} {window_cairoimage},
+            button.Widget {"Menus"} {window_menus},
             layoutGrow.Widget $ blank.Widget
         ];
         end;
