@@ -239,6 +239,8 @@ modelLibSection =
                           (contraRangeLift :: (B -> A) -> LangFiniteSetModel '( A, C) -> LangFiniteSetModel '( B, C))
                     , valBDS "filter" "Filter a finite set." $ langFiniteSetFilter @AP @AQ
                     , valBDS "maybeMap" "Map and filter a function on a finite set." $ langFiniteSetMaybeMap @AP @AQ @B
+                    , valBDS "collect" "Map and filter a function from a model on a finite set." $
+                      langFiniteSetCollect @AP @AQ @B
                     , addNameInRootBDS $
                       valBDS "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
                       langFiniteSetModelSetIntersect @A @B

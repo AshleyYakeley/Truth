@@ -250,6 +250,10 @@ mapMaybeFiniteSetChangeLens amb ba = let
     clPutEdits ebs rma = fmap mconcat $ for ebs $ mapFiniteSetEdit rma
     in MkChangeLens {..}
 
+collectFiniteSetChangeLens ::
+       (b -> a) -> ChangeLens (PairUpdate (ROWUpdate (a -> Maybe b)) (FiniteSetUpdate a)) (FiniteSetUpdate b)
+collectFiniteSetChangeLens ba = bindChangeLens $ \amb -> mapMaybeFiniteSetChangeLens amb ba
+
 filterFiniteSetChangeLens :: forall a. (a -> Bool) -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate a)
 filterFiniteSetChangeLens f =
     mapMaybeFiniteSetChangeLens

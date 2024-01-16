@@ -293,3 +293,31 @@ readOnlyPairChangeLens = let
     clUpdate (MkTupleUpdate SelectSecond (MkReadOnlyUpdate update)) _ =
         return [MkReadOnlyUpdate $ MkTupleUpdate SelectSecond update]
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
+
+bindChangeLens ::
+       forall x updateA updateB. FullUpdate updateB
+    => (x -> ChangeLens updateA updateB)
+    -> ChangeLens (PairUpdate (ROWUpdate x) updateA) updateB
+bindChangeLens xlens = let
+    g :: ReadFunction (PairUpdateReader (ROWUpdate x) updateA) (UpdateReader updateB)
+    g mra rb = do
+        x <- firstReadFunction mra ReadWhole
+        clRead (xlens x) (secondReadFunction mra) rb
+    u :: forall m. MonadIO m
+      => PairUpdate (ROWUpdate x) updateA
+      -> Readable m (PairUpdateReader (ROWUpdate x) updateA)
+      -> m [updateB]
+    u (MkTupleUpdate SelectFirst (MkReadOnlyUpdate (MkWholeUpdate x))) mra =
+        getReplaceUpdates $ clRead (xlens x) (secondReadFunction mra)
+    u (MkTupleUpdate SelectSecond updateA) mra = do
+        x <- firstReadFunction mra ReadWhole
+        clUpdate (xlens x) updateA (secondReadFunction mra)
+    pe :: forall m. MonadIO m
+       => [UpdateEdit updateB]
+       -> Readable m (PairUpdateReader (ROWUpdate x) updateA)
+       -> m (Maybe [PairUpdateEdit (ROWUpdate x) updateA])
+    pe editsB mra = do
+        x <- firstReadFunction mra ReadWhole
+        meditsA <- clPutEdits (xlens x) editsB (secondReadFunction mra)
+        return $ fmap (fmap $ MkTupleUpdateEdit SelectSecond) meditsA
+    in MkChangeLens g u pe

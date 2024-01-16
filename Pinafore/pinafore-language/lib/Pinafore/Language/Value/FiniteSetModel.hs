@@ -56,6 +56,22 @@ langFiniteSetMaybeMap f (MkLangFiniteSetModel (tr :: _ t _) lv) = let
         return $ BothMeetType t b
     in MkLangFiniteSetModel tr' $ eaMap (mapMaybeFiniteSetChangeLens amb meet1) lv
 
+langFiniteSetCollect ::
+       forall ap aq b.
+       ImmutableWholeModel (aq -> Maybe b)
+    -> LangFiniteSetModel '( ap, aq)
+    -> LangFiniteSetModel '( MeetType ap b, b)
+langFiniteSetCollect (MkImmutableWholeModel mf) (MkLangFiniteSetModel (tr :: _ t _) lv) = let
+    tr' :: Range (QPolyShim Type) (MeetType t b) '( MeetType ap b, b)
+    tr' = MkRange (iMeetPair (rangeContra tr) id) meet2
+    amb :: Know (aq -> Maybe b) -> (t -> Maybe (MeetType t b))
+    amb Unknown _ = Nothing
+    amb (Known f) t = do
+        b <- f $ shimToFunction (rangeCo tr) t
+        return $ BothMeetType t b
+    mf' = eaMapReadOnlyWhole amb mf
+    in MkLangFiniteSetModel tr' $ eaMap (collectFiniteSetChangeLens meet1) $ eaPair mf' lv
+
 langFiniteSetModelMeetValue ::
        LangFiniteSetModel '( t, MeetType Entity t) -> WModel (FiniteSetUpdate (MeetType Entity t))
 langFiniteSetModelMeetValue (MkLangFiniteSetModel tr lv) =
