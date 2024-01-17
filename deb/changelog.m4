@@ -3,6 +3,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Library
     - built-in
       . add collect.FiniteSetModel
+      . improve type of getList.FiniteSetModel
     - GTK
       . allow checkbox menus
     - UILib

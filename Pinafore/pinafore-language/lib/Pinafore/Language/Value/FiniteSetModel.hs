@@ -12,10 +12,6 @@ import Shapes
 data LangFiniteSetModel pq where
     MkLangFiniteSetModel :: Eq t => Range (QPolyShim Type) t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq
 
-unLangFiniteSetModel :: LangFiniteSetModel '( p, p) -> WModel (FiniteSetUpdate p)
-unLangFiniteSetModel (MkLangFiniteSetModel tr lv) =
-    eaMap (bijectionFiniteSetChangeLens $ isoMapCat shimToFunction $ rangeBijection tr) lv
-
 instance CatFunctor (CatRange (->)) (->) LangFiniteSetModel where
     cfmap f (MkLangFiniteSetModel r v) = MkLangFiniteSetModel (cfmap f r) v
 

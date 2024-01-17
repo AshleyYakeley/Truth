@@ -80,24 +80,26 @@ setentity model val = langWholeModelSet model $ Known val
 deleteentity :: LangWholeModel '( BottomType, TopType) -> Action ()
 deleteentity model = langWholeModelSet model Unknown
 
-getFiniteSetModelList :: LangModelOrder A -> LangFiniteSetModel '( A, EnA) -> View (LangListModel '( TopType, A))
-getFiniteSetModelList order val =
+getFiniteSetModelList :: LangModelOrder A -> LangFiniteSetModel '( BottomType, A) -> View (LangListModel '( TopType, A))
+getFiniteSetModelList order (MkLangFiniteSetModel r (val :: WModel (FiniteSetUpdate t))) =
     modelOrderUpdateOrder order $ \(model :: Model update) uorder -> do
         let
-            uo :: UpdateOrder (ContextUpdate update (ConstWholeUpdate EnA))
+            conv :: t -> A
+            conv = shimToFunction $ rangeCo r
+            uo :: UpdateOrder (ContextUpdate update (ConstWholeUpdate t))
             uo =
                 mapUpdateOrder
-                    (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2))
+                    (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . conv))
                     uorder
-            rows :: Model (FiniteSetUpdate EnA)
-            rows = unWModel $ unLangFiniteSetModel $ contraRangeLift meet2 val
-            pkSub :: Model (ContextUpdate update (FiniteSetUpdate EnA))
+            rows :: Model (FiniteSetUpdate t)
+            rows = unWModel val
+            pkSub :: Model (ContextUpdate update (FiniteSetUpdate t))
             pkSub = contextModels model rows
-        colSub :: Model (ContextUpdate update (OrderedListUpdate (ConstWholeUpdate EnA))) <-
+        colSub :: Model (ContextUpdate update (OrderedListUpdate (ConstWholeUpdate t))) <-
             viewFloatMapModel (contextOrderedSetLens uo) pkSub
         return $
             OrderedLangListModel $
-            eaMap (liftOrderedListChangeLens (constWholeChangeLens meet2) . tupleChangeLens SelectContent) $
+            eaMap (liftOrderedListChangeLens (constWholeChangeLens conv) . tupleChangeLens SelectContent) $
             MkWModel colSub
 
 modelLibSection :: BindDocStuff context
