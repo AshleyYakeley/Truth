@@ -42,7 +42,7 @@ main = do
             runView $
             runGView gtkContext $ do
                 (clockModel, ()) <-
-                    gvLiftLifecycle $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1
+                    gvLiftLifecycle $ makeSharedModel $ regularClockPremodel zeroTime $ secondsToNominalDiffTime 1
                 tz <- gvLiftIONoUI getCurrentTimeZone
                 rec
                     (_, closer) <-

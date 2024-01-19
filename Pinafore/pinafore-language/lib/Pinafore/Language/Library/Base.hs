@@ -47,7 +47,17 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
 newClock :: NominalDiffTime -> Action (ImmutableWholeModel UTCTime)
 newClock duration = do
-    (clockOM, ()) <- actionLiftLifecycle $ makeSharedModel $ clockPremodel zeroTime duration
+    (clockOM, ()) <- actionLiftLifecycle $ makeSharedModel $ regularClockPremodel zeroTime duration
+    return $ functionImmutableModel $ MkWModel $ clockOM
+
+newClockUTC :: Action (ImmutableWholeModel Day)
+newClockUTC = do
+    (clockOM, ()) <- actionLiftLifecycle $ makeSharedModel utcDayClockPremodel
+    return $ functionImmutableModel $ MkWModel $ clockOM
+
+newClockLocal :: Action (ImmutableWholeModel Day)
+newClockLocal = do
+    (clockOM, ()) <- actionLiftLifecycle $ makeSharedModel localDayClockPremodel
     return $ functionImmutableModel $ MkWModel $ clockOM
 
 newTimeZoneModel :: ImmutableWholeModel UTCTime -> Action (ImmutableWholeModel Int)
@@ -468,6 +478,8 @@ baseLibSections =
                 , valBDS "-" "Difference of days between dates." diffDays
                 , valBDS "getNowUTC" "Get the current UTC date." $ fmap utctDay getCurrentTime
                 , valBDS "getNowLocal" "Get the current local date." $ fmap localDay getLocalTime
+                , valBDS "newClockUTC" "Get a whole model for the current UTC date." newClockUTC
+                , valBDS "newClockLocal" "Get a whole model for the current local date." newClockLocal
                 ]
               ]
             , headingBDS "Time of Day" "" $

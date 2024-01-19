@@ -17,11 +17,11 @@ testFastClock =
         ref <- newIORef False
         runLifecycle $ do
             _ <-
-                clock baseTime 0.1 $ \_ -> do
+                clock (regularClockMachine baseTime 0.1) $ \_ -> do
                     writeIORef ref True
-                    threadDelay 1000000
+                    threadSleep 1
                     writeIORef ref False
-            liftIO $ threadDelay 500000
+            liftIO $ threadSleep 0.5
         bad <- readIORef ref
         if bad
             then assertFailure "bad async exception"
@@ -31,7 +31,7 @@ testSlowClock :: TestTree
 testSlowClock =
     testTree "slow" $
     runLifecycle $ do
-        _ <- clock baseTime (5000 * nominalDay) $ \_ -> return ()
+        _ <- clock (regularClockMachine baseTime (5000 * nominalDay)) $ \_ -> return ()
         return ()
 
 testClock :: TestTree

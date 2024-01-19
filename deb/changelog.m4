@@ -3,6 +3,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Library
     - built-in
       . add collect.FiniteSetModel
+      . add newClockUTC.Date, newClockLocal.Date
       . improve type of getList.FiniteSetModel
     - GTK
       . allow checkbox menus

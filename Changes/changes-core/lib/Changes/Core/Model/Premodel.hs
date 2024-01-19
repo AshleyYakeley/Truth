@@ -1,6 +1,7 @@
 module Changes.Core.Model.Premodel
     ( PremodelResult(..)
     , Premodel
+    , execPremodel
     , reflectingPremodel
     , notifyingPremodel
     , mapPremodel
@@ -27,6 +28,11 @@ instance Functor (PremodelResult edit) where
 
 type Premodel update a
      = Task IO () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> Lifecycle (PremodelResult (UpdateEdit update) a)
+
+execPremodel :: Lifecycle (Premodel update a) -> Premodel update a
+execPremodel mpm utask recv = do
+    pm <- mpm
+    pm utask recv
 
 reflectingPremodel ::
        forall update. IsUpdate update
