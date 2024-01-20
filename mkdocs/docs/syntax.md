@@ -173,20 +173,22 @@ All declarations, including type declarations, are local to a `let` block.
 
 <match> ::= <comma-separated(<pattern>)> "=>" <expression>
 
-<do-line> = <expression> | <pattern-1> "<-" <expression>
+<do-line> ::=
+    <expression> |
+    <pattern-1> "<-" <expression>
 
 <declarator> ::=
-    "let" <semicolon-separated(<declaration>)>
-    "let" "rec" <semicolon-separated(<direct-declaration>)>
+    "let" <semicolon-separated(<declaration>)> |
+    "let" "rec" <semicolon-separated(<direct-declaration>)> |
     "import" <comma-separated(<module-name>)> |
-    "with" <comma-separated(<namespace> <with-names> <optional("as" <namespace>)>)> |
+    "with" <comma-separated(<namespace> <with-names> <optional("as" <namespace>)>)>
 
 <declaration> ::=
     direct-declaration |
     "namespace" uname <of(<declaration>)> |
     "expose" <name-list> |
-    <declarator> "end"
-    <declarator> "in" <declaration> "end"
+    <declarator> "end" |
+    <declarator> "in" <declaration>
 
 <direct-declaration> ::=
     "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <of(<plain-datatype-constructor>)> |
