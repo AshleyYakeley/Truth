@@ -1,15 +1,15 @@
 pinafore> )
 <input>:1:1: unexpected: ")"; expecting: end of input, pattern, expression
 pinafore> (
-<input>:1:1: unexpected: "("; expecting: end of input, expression
+<input>:1:1: expecting: expression
 pinafore> in
 <input>:1:1: unexpected: "in"; expecting: end of input, pattern, expression
 pinafore> a
 <input>:2:1: undefined: a: a
 pinafore> a
 <input>:2:1: undefined: a: a
-pinafore> let p = q
-<input>:1:9: undefined: q: a
+pinafore> p = q
+<input>:1:5: undefined: q: a
 pinafore> p
 <input>:2:1: undefined: p: a
 pinafore> a
@@ -18,18 +18,18 @@ pinafore> p
 <input>:2:1: undefined: p: a
 pinafore> point.OpenEntity @X !"x"
 <input>:1:19: undefined: X
-pinafore> let y = point.OpenEntity @Y !"y"
-<input>:1:27: undefined: Y
+pinafore> y = point.OpenEntity @Y !"y"
+<input>:1:23: undefined: Y
 pinafore> 35
 35
 pinafore> x +.Integer 1
 <input>:3:1: undefined: x: Integer
 pinafore> x +.Integer y
 <input>:3:1: undefined: x: Integer, y: Integer
-pinafore> let datatype D1 +a of MkD1 b end
-<input>:2:5: unbound type variables in declaration of D1: b
-pinafore> let datatype D2 +a +a of MkD2 end
-<input>:2:5: duplicate type variables in declaration of D2: a
-pinafore> let datatype D3 +a -a of MkD3 end
-<input>:2:5: duplicate type variables in declaration of D3: a
+pinafore> datatype D1 +a of MkD1 b end
+<input>:1:1: unbound type variables in declaration of D1: b
+pinafore> datatype D2 +a +a of MkD2 end
+<input>:1:1: duplicate type variables in declaration of D2: a
+pinafore> datatype D3 +a -a of MkD3 end
+<input>:1:1: duplicate type variables in declaration of D3: a
 pinafore> <END>

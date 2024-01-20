@@ -1,7 +1,7 @@
-pinafore> let x = 75
+pinafore> x = 75
 pinafore> x
 75
-pinafore> let y: var -> var = fn x => x
+pinafore> y: var -> var = fn x => x
 pinafore> :t y
 : a -> a
 pinafore> <END>

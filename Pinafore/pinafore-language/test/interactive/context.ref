@@ -1,10 +1,10 @@
-pinafore> let opentype P
-pinafore> let opentype Q
-pinafore> let subtype P <: Q
-pinafore> let p = point.OpenEntity @P !"p"
-pinafore> let q = point.OpenEntity @Q !"q"
-pinafore> let fp : P -> Boolean = fn _ => True
-pinafore> let fq : Q -> Boolean = fn _ => True
+pinafore> opentype P
+pinafore> opentype Q
+pinafore> subtype P <: Q
+pinafore> p = point.OpenEntity @P !"p"
+pinafore> q = point.OpenEntity @Q !"q"
+pinafore> fp : P -> Boolean = fn _ => True
+pinafore> fq : Q -> Boolean = fn _ => True
 pinafore> fp p
 True
 pinafore> fp q

@@ -1,5 +1,5 @@
-pinafore> let f: ((a -> a) & b) -> Maybe b = Just
-pinafore> let i: a -> a = fn x => x;
+pinafore> f: ((a -> a) & b) -> Maybe b = Just
+pinafore> i: a -> a = fn x => x
 pinafore> :type f
 : (a -> a & b) -> Maybe b
 pinafore> :type i
@@ -7,14 +7,14 @@ pinafore> :type i
 pinafore> :type f i
 : Maybe (a -> a)
 pinafore> 
-pinafore> let g: ((a -> a) & b) -> b = fn x => x
+pinafore> g: ((a -> a) & b) -> b = fn x => x
 pinafore> :type g
 : (a -> a & b) -> b
 pinafore> :type g i
 : a -> a
 pinafore> 
-pinafore> with Action
-pinafore> let ur: WholeModel a -> Unit = fn _ => ()
+pinafore> with Action end
+pinafore> ur: WholeModel a -> Unit = fn _ => ()
 pinafore> :type ur
 : WholeModel a -> Unit
 pinafore> :type newMem.WholeModel >>= fn model => pure (model, ())

@@ -1,21 +1,21 @@
 :doc length.Text
 :doc Time
 :doc Just
-import "pinafore-gnome"
-import "pinafore-media"
-with Cairo
+import "pinafore-gnome" end
+import "pinafore-media" end
+with Cairo end
 :doc paintAlpha.Drawing
 :doc Widget.GTK
 :doc textArea.Widget.GTK
 :doc notfound
-let aa = 8
+aa = 8
 :doc aa
-let {#| doc 1 xx #} xx: Integer = 45
+{#| doc 1 xx #} xx: Integer = 45
 :doc xx
-let {#| doc 2 yy #} yy = 57
+{#| doc 2 yy #} yy = 57
 :doc yy
 :doc xx
-let {# plain comment #} zz = 12
+{# plain comment #} zz = 12
 :doc zz
-let {#| doc 3 T #} opentype T
+{#| doc 3 T #} opentype T
 :doc T

@@ -1,5 +1,5 @@
-pinafore> let opentype A
-pinafore> let opentype B
-pinafore> let opentype A
-<input>:3:5: duplicate binding: A
+pinafore> opentype A
+pinafore> opentype B
+pinafore> opentype A
+<input>:1:1: duplicate binding: A
 pinafore> <END>

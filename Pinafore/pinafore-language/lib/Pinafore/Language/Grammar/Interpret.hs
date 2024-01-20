@@ -1,7 +1,7 @@
 module Pinafore.Language.Grammar.Interpret
-    ( interpretTopExpression
+    ( interpretExpression
     , interpretModule
-    , interpretTopDeclarations
+    , interpretDeclarationWith
     , interpretType
     , interpretImportDeclaration
     , runInteract

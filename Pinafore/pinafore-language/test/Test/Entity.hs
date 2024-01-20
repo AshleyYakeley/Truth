@@ -124,6 +124,9 @@ testEntity =
               , testExpectSuccess "do pure (); end"
               , testExpectSuccess "do testeqval 3 3 end"
               , testExpectSuccess "do a <- pure 3; testeqval 3 a end"
+              , testExpectSuccess "do a = 3; testeqval 3 a end"
+              , testExpectSuccess "do {# comment #} a = 3; testeqval 3 a end"
+              , testExpectSuccess "do {#| doc a #} a = 3; testeqval 3 a end"
               , testExpectSuccess "do a <- pure 3; b <- pure $ a +.Integer a; testeqval 6 b end"
               ]
         , tDecls ["flagRef = do r <- newMem.WholeModel; r := False; pure r; end"] $

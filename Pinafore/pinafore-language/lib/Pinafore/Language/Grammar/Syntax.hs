@@ -12,6 +12,9 @@ data WithSourcePos t =
                     t
     deriving (Eq)
 
+getSourcePos :: WithSourcePos t -> SourcePos
+getSourcePos (MkWithSourcePos spos _) = spos
+
 instance ExprShow t => ExprShow (WithSourcePos t) where
     exprShowPrec (MkWithSourcePos _ expr) = exprShowPrec expr
 
@@ -334,16 +337,3 @@ type SyntaxExpression = WithSourcePos SyntaxExpression'
 
 data SyntaxModule =
     MkSyntaxModule [SyntaxDeclaration]
-
-data SyntaxTopDeclarations =
-    MkSyntaxTopDeclarations SourcePos
-                            SyntaxDeclarator
-
-class HasSourcePos t where
-    getSourcePos :: t -> SourcePos
-
-instance HasSourcePos (WithSourcePos t) where
-    getSourcePos (MkWithSourcePos spos _) = spos
-
-instance HasSourcePos SyntaxTopDeclarations where
-    getSourcePos (MkSyntaxTopDeclarations spos _) = spos

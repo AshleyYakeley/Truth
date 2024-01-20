@@ -1,7 +1,7 @@
 module Pinafore.Language.Grammar.Interpret.Expression
-    ( interpretTopExpression
+    ( interpretExpression
     , interpretModule
-    , interpretTopDeclarations
+    , interpretDeclarationWith
     , interpretType
     , interpretImportDeclaration
     , interpretPattern
@@ -264,7 +264,7 @@ interpretRecursiveDocDeclarations ddecls = do
                     return (mempty, mempty, binds)
     (typeDecls, subtypeSB, bindingDecls) <- fmap mconcat $ for ddecls interp
     let
-        ?interpretExpression = interpretTopExpression
+        ?interpretExpression = interpretExpression
         in interpretRecursiveTypeDeclarations typeDecls
     subtypeSB
     interpretRecursiveLetBindings bindingDecls
@@ -279,7 +279,7 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
     scopeSetSourcePos spos
     case decl of
         DirectSyntaxDeclaration (TypeSyntaxDeclaration name defn) -> let
-            ?interpretExpression = interpretTopExpression
+            ?interpretExpression = interpretExpression
             in interpretSequentialTypeDeclaration name doc defn
         DirectSyntaxDeclaration (SubtypeSyntaxDeclaration trustme sta stb mbody) -> do
             interpretSubtypeRelation trustme sta stb mbody doc
@@ -583,12 +583,10 @@ interpretBinding sb@MkSingleBinding {..} = do
     expr <- interpretClosedExpression sbBody
     return $ qBindExpr sbVarID (sbDefDoc sb) mtype expr
 
-interpretTopDeclarations :: SyntaxTopDeclarations -> QInterpreter --> QInterpreter
-interpretTopDeclarations (MkSyntaxTopDeclarations spos declarator) ma =
-    paramWith sourcePosParam spos $ interpretDeclaratorWith declarator ma
-
-interpretTopExpression :: SyntaxExpression -> QInterpreter QExpression
-interpretTopExpression sexpr = interpretExpression sexpr
+interpretDeclarationWith :: SyntaxDeclaration -> QInterpreter --> QInterpreter
+interpretDeclarationWith sdecl ma = do
+    sd <- runScopeBuilder $ interpretDeclaration sdecl
+    withScopeDocs sd ma
 
 interpretGeneralSubtypeRelation ::
        TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> QInterpreter QSubtypeConversionEntry
@@ -602,7 +600,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody = do
                     let
                         funcWit :: QIsoShimWit 'Positive _
                         funcWit = funcShimWit (mkShimWit ta) (mkShimWit tb)
-                    body <- interpretTopExpression sbody
+                    body <- interpretExpression sbody
                     case funcWit of
                         MkShimWit funcType iconv -> do
                             convexpr <- typedSubsumeExpressionToOpen mempty funcType body

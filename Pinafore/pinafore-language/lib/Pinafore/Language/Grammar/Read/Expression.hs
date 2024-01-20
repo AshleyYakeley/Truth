@@ -1,7 +1,6 @@
 module Pinafore.Language.Grammar.Read.Expression
     ( readExpression
     , readModule
-    , readTopDeclarations
     , operatorFixity
     , DoLine(..)
     , readDoLine
@@ -237,12 +236,6 @@ readDeclaration =
         , readNamespaceDecl
         ]
 
-readTopDeclarations :: Parser SyntaxTopDeclarations
-readTopDeclarations = do
-    spos <- getPosition
-    sdecls <- readDeclarator
-    return $ MkSyntaxTopDeclarations spos sdecls
-
 readSubsumedExpression :: SyntaxExpression -> Parser SyntaxExpression
 readSubsumedExpression expr = do
     mt <-
@@ -339,6 +332,7 @@ readModule = do
 
 data DoLine
     = ExpressionDoLine SyntaxExpression
+    | DeclarationDoLine SyntaxDeclaration
     | BindDoLine SyntaxPattern
                  SyntaxExpression
 
@@ -349,13 +343,16 @@ readDoLine =
          readThis TokBackMap
          expr <- readExpression
          return $ BindDoLine pat expr) <|>
+    (try $ do
+         decl <- readDeclaration
+         return $ DeclarationDoLine decl) <|>
     (do
          expr <- readExpression
          return $ ExpressionDoLine expr)
 
 doLines :: DoLine -> [DoLine] -> Parser SyntaxExpression
 doLines (ExpressionDoLine expr) [] = return expr
-doLines (BindDoLine _ _) [] = fail "last line of do block not expression"
+doLines _ [] = fail "last line of do block not expression"
 doLines (ExpressionDoLine expra) (l:ll) = do
     exprb <- doLines l ll
     var <- readMkVar $ UnqualifiedFullNameRef ">>"
@@ -368,6 +365,9 @@ doLines (BindDoLine pat expra) (l:ll) = do
             (getSourcePos expra)
             (MkWithSourcePos (getSourcePos exprb) var)
             [expra, seAbstract (getSourcePos pat) pat exprb]
+doLines (DeclarationDoLine sdecl@(MkSyntaxWithDoc _ (MkWithSourcePos spos _))) (l:ll) = do
+    exprb <- doLines l ll
+    return $ MkWithSourcePos spos $ SEDecl (SDLetSeq [sdecl]) exprb
 
 readMulticase :: Parser (Some SyntaxMulticase)
 readMulticase = do

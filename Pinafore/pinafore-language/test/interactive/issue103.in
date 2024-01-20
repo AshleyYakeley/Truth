@@ -1,15 +1,15 @@
-let f: ((a -> a) & b) -> Maybe b = Just
-let i: a -> a = fn x => x;
+f: ((a -> a) & b) -> Maybe b = Just
+i: a -> a = fn x => x
 :type f
 :type i
 :type f i
 
-let g: ((a -> a) & b) -> b = fn x => x
+g: ((a -> a) & b) -> b = fn x => x
 :type g
 :type g i
 
-with Action
-let ur: WholeModel a -> Unit = fn _ => ()
+with Action end
+ur: WholeModel a -> Unit = fn _ => ()
 :type ur
 :type newMem.WholeModel >>= fn model => pure (model, ())
 :type newMem.WholeModel >>= fn model => pure (model, ((fn _ => ()) : WholeModel a -> Unit) model)

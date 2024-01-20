@@ -1,4 +1,4 @@
-let x = 75
+x = 75
 x
-let y: var -> var = fn x => x
+y: var -> var = fn x => x
 :t y

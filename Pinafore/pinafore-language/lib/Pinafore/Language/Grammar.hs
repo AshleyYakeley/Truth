@@ -21,7 +21,7 @@ import Pinafore.Language.Type
 import Shapes
 
 parseTopExpression :: Text -> QInterpreter QExpression
-parseTopExpression = parseScopedReaderWhole $ fmap interpretTopExpression readExpression
+parseTopExpression = parseScopedReaderWhole $ fmap interpretExpression readExpression
 
 parseModule :: ModuleName -> Text -> QInterpreter QModule
 parseModule modname =

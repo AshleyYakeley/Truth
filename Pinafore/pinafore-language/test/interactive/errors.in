@@ -3,15 +3,15 @@
 in
 a
 a
-let p = q
+p = q
 p
 a
 p
 point.OpenEntity @X !"x"
-let y = point.OpenEntity @Y !"y"
+y = point.OpenEntity @Y !"y"
 35
 x +.Integer 1
 x +.Integer y
-let datatype D1 +a of MkD1 b end
-let datatype D2 +a +a of MkD2 end
-let datatype D3 +a -a of MkD3 end
+datatype D1 +a of MkD1 b end
+datatype D2 +a +a of MkD2 end
+datatype D3 +a -a of MkD3 end

@@ -1,6 +1,6 @@
 3 +.Integer 4
-let p = [5,6,7] <>.List [1,1,1]
-let f = fn x => x <>.List x
+p = [5,6,7] <>.List [1,1,1]
+f = fn x => x <>.List x
 :type f
 f p
 :simplify+ (a -> Literal) | ((Text & b) -> a)

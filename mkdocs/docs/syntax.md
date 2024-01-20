@@ -47,7 +47,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <qname> ::= quname | qlname
 
-<interactive> ::= <do-line> | <declarator> | ":" <interactive-command>
+<interactive> ::= <do-line> | ":" <interactive-command>
 
 <interactive-command> ::=
     "doc" <qname> |
@@ -175,6 +175,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <do-line> ::=
     <expression> |
+    <declaration> |
     <pattern-1> "<-" <expression>
 
 <declarator> ::=

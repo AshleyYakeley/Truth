@@ -1,13 +1,13 @@
-pinafore> let opentype P
-pinafore> let opentype Q
-pinafore> let subtype P <: Q
-pinafore> let p = point.OpenEntity @P !"p"
-pinafore> let q = point.OpenEntity @Q !"q"
-pinafore> with Attribute
-pinafore> with Store
+pinafore> opentype P
+pinafore> opentype Q
+pinafore> subtype P <: Q
+pinafore> p = point.OpenEntity @P !"p"
+pinafore> q = point.OpenEntity @Q !"q"
+pinafore> with Attribute end
+pinafore> with Store end
 pinafore> store <- openDefault.Store
-pinafore> let pp = property @P @P !"pp" store
-pinafore> let qp = property @Q @P !"qp" store
+pinafore> pp = property @P @P !"pp" store
+pinafore> qp = property @Q @P !"qp" store
 pinafore> :t pp
 : Property P P
 pinafore> :t pp !$ {p}
@@ -20,12 +20,12 @@ pinafore> :t qp !$ {q}
 : WholeModel P
 pinafore> :t fn x => x <> x
 : List a -> List a
-pinafore> let f = fn x => x <> x
+pinafore> f = fn x => x <> x
 pinafore> :t f
 : List a -> List a
 pinafore> :t fn x => x <>.List1 x
 : List1.List a -> List1.List a
-pinafore> let g = fn x => x <>.List1 x
+pinafore> g = fn x => x <>.List1 x
 pinafore> :t g
 : List1.List a -> List1.List a
 pinafore> <END>

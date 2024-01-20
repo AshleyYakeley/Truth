@@ -32,7 +32,7 @@ interactRunQInterpreter sa = do
 interactEvalExpression :: SyntaxExpression -> Interact QValue
 interactEvalExpression sexpr =
     interactRunQInterpreter $ do
-        expr <- interpretTopExpression sexpr
+        expr <- interpretExpression sexpr
         qEvalExpr expr
 
 runValue :: Handle -> QValue -> Interact (Action ())
@@ -80,10 +80,10 @@ interactLoop inh outh echo = do
                          p <- interactParse $ pack inputstr
                          case p of
                              NullInteractiveCommand -> return ()
-                             LetInteractiveCommand stdecls -> do
+                             LetInteractiveCommand stdecl -> do
                                  let
                                      bind :: QInterpreter --> QInterpreter
-                                     bind = interpretTopDeclarations stdecls
+                                     bind = interpretDeclarationWith stdecl
                                  interactRunQInterpreter $ bind $ return () -- check errors
                                  lift $ readerStateUpdate bind
                              ExpressionInteractiveCommand sexpr -> do

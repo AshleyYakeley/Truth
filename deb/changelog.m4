@@ -1,5 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  * Language
+    - allow decarations in do-blocks
   * Library
     - built-in
       . add collect.FiniteSetModel

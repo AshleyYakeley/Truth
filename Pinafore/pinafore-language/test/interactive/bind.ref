@@ -1,4 +1,4 @@
-pinafore> let x = 34
+pinafore> x = 34
 pinafore> x
 34
 pinafore> y <- pure 75

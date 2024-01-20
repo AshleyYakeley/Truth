@@ -15,7 +15,7 @@ import Shapes hiding (try)
 
 data InteractiveCommand
     = NullInteractiveCommand
-    | LetInteractiveCommand SyntaxTopDeclarations
+    | LetInteractiveCommand SyntaxDeclaration
     | ExpressionInteractiveCommand SyntaxExpression
     | BindActionInteractiveCommand SyntaxPattern
                                    SyntaxExpression
@@ -65,16 +65,14 @@ readInteractiveCommand =
          readThis TokTypeJudge
          cmd <- (readLName >>= \(MkName cmd) -> return cmd) <|> (readThis TokType >> return "type")
          readSpecialCommand cmd) <|>
-    (readEnd >> return NullInteractiveCommand) <|>
-    (try $ do
+    (try $ readEnd >> return NullInteractiveCommand) <|>
+    (do
          dl <- readDoLine
          return $
              case dl of
                  ExpressionDoLine sexpr -> ExpressionInteractiveCommand sexpr
-                 BindDoLine spat sexpr -> BindActionInteractiveCommand spat sexpr) <|>
-    (do
-         stdecls <- readTopDeclarations
-         return $ LetInteractiveCommand stdecls)
+                 BindDoLine spat sexpr -> BindActionInteractiveCommand spat sexpr
+                 DeclarationDoLine sdecl -> LetInteractiveCommand sdecl)
 
 parseInteractiveCommand :: Text -> StateT SourcePos InterpretResult InteractiveCommand
 parseInteractiveCommand = parseReader readInteractiveCommand
