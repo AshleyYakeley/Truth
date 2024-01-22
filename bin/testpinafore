@@ -1,5 +1,7 @@
 #!/usr/bin/env -S bash -e
 STDERR=/dev/stderr
+ARGS=
+DATA=test/pinafore
 while [[ ! -z "$1" ]]; do
     case "$1" in
         --build)
@@ -14,8 +16,16 @@ while [[ ! -z "$1" ]]; do
             STDERR="$2"
             shift 2
             ;;
+        -I)
+            ARGS="$ARGS -I $2"
+            shift 2
+            ;;
+        --data)
+            DATA="$2"
+            shift 2
+            ;;
         -i)
-            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data --data test/pinafore -i 2> "$STDERR"
+            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data $ARGS --data $DATA -i 2> "$STDERR"
             shift 1
             ;;
         -*)
@@ -23,7 +33,7 @@ while [[ ! -z "$1" ]]; do
             exit 1
             ;;
         *)
-            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data --data test/pinafore "$1" 2> "$STDERR"
+            stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data $ARGS --data $DATA "$1" 2> "$STDERR"
             shift 1
             ;;
     esac
