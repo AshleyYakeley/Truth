@@ -10,6 +10,7 @@ module Changes.World.GNOME.GTK.Widget.MenuBar
 
 import Changes.Core
 import Changes.World.GNOME.GI
+import Data.GI.Base.Signals
 import Data.IORef
 import GI.Gdk
 import GI.Gtk hiding (MenuBar)
@@ -33,15 +34,15 @@ actionMenuItem ::
     -> GView 'Locked menuitem
     -> Model (ROWUpdate (Text, Maybe MenuAccelerator))
     -> (menuitem -> GView 'Locked ())
-    -> GView 'Unlocked menuitem
+    -> GView 'Unlocked (menuitem, SignalHandlerId)
 actionMenuItem ag ms mkitem rtext meaction = do
-    (item, menuitem) <-
+    (item, menuitem, changedSignal) <-
         gvRunLocked $ do
             item <- mkitem
             menuitem <- toMenuItem item
             menuShellAppend ms item
-            _ <- gvOnSignal menuitem #activate $ meaction item
-            return (item, menuitem)
+            changedSignal <- gvOnSignal menuitem #activate $ meaction item
+            return (item, menuitem, changedSignal)
     gvBindReadOnlyWholeModel rtext $ \(label, maccel) ->
         gvRunLocked $ do
             set menuitem [#label := label] -- creates child if not present
@@ -59,7 +60,7 @@ actionMenuItem ag ms mkitem rtext meaction = do
                                 gmods = fmap toModifierType mods
                             liftIO $ accelLabelSetAccel l keyw gmods
                             accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ meaction item
-    return item
+    return (item, changedSignal)
 
 data MenuEntry
     = SeparatorMenuEntry
@@ -104,18 +105,19 @@ attachMenuEntry ag ms (ActionMenuEntry rtext raction) = do
             case maction of
                 Nothing -> return ()
                 Just action -> action
-    item <- actionMenuItem ag ms menuItemNew rtext $ \_ -> meaction
+    (item, _) <- actionMenuItem ag ms menuItemNew rtext $ \_ -> meaction
     gvBindReadOnlyWholeModel raction $ \maction -> do
         gvLiftIONoUI $ writeIORef aref maction
         gvRunLocked $ set item [#sensitive := isJust maction]
 attachMenuEntry ag ms (CheckedMenuEntry rtext rchecked) = do
     esrc <- gvNewEditSource
-    item <-
+    (item, changedSignal) <-
         actionMenuItem ag ms checkMenuItemNew rtext $ \item -> do
             checked <- checkMenuItemGetActive item
             _ <- gvRunUnlocked $ gvSetWholeModel rchecked esrc checked
             return ()
-    gvBindWholeModel rchecked (Just esrc) $ \checked -> gvRunLocked $ set item [#active := checked]
+    gvBindWholeModel rchecked (Just esrc) $ \checked ->
+        gvRunLocked $ withSignalBlocked item changedSignal $ set item [#active := checked]
 attachMenuEntry ag ms (SubMenuEntry name entries) = do
     menu <-
         gvRunLocked $ do
