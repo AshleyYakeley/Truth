@@ -1,5 +1,6 @@
 module Changes.World.GNOME.GI.Trace
-    ( gvTraceSignal
+    ( gvTraceBracket
+    , gvTraceSignal
     , gvObjectTraceSignal
     , gvObjectTraceAllSignals
     , gvObjectReportAllSignals
@@ -12,6 +13,9 @@ import Changes.World.GNOME.GI.Type
 import Data.GI.Base
 import GI.GObject
 import Shapes
+
+gvTraceBracket :: String -> GView ls --> GView ls
+gvTraceBracket s = gvHoistView $ traceBracket s
 
 getTypeSignalIDs :: MonadIO m => GType -> m [Word32]
 getTypeSignalIDs t = do
