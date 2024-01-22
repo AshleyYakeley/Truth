@@ -9,7 +9,7 @@ while [[ ! -z "$1" ]]; do
             shift 1
             ;;
         --clear)
-            rm -f test/pinafore/tables.sqlite3
+            rm -f $DATA/tables.sqlite3
             shift 1
             ;;
         --log)
