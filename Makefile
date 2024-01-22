@@ -237,39 +237,39 @@ LIBMODULEDOCS := \
     pinafore-gnome \
 	UILib
 
-mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
-	mkdir -p mkdocs/docs/library
+website/src/library/%.md: ${BINPATH}/pinafore-doc
+	mkdir -p website/src/library
 	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/pinafore-stdlib/data > $@
 
-mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
-	mkdir -p mkdocs/generated
+website/generated/infix.md: ${BINPATH}/pinafore-doc
+	mkdir -p website/generated
 	stack $(STACKFLAGS) exec -- $< --infix > $@
 
-mkdocs/generated/type-infix.md: ${BINPATH}/pinafore-doc
-	mkdir -p mkdocs/generated
+website/generated/type-infix.md: ${BINPATH}/pinafore-doc
+	mkdir -p website/generated
 	stack $(STACKFLAGS) exec -- $< --infix-type > $@
 
 .PHONY: scour
-scour: mkdocs/docs/img/information.svg docker-image
+scour: website/src/img/information.svg docker-image
 	stack $(STACKFLAGS) exec -- scour $< | stack $(STACKFLAGS) exec -- sponge $<
 
-mkdocs/generated/img/information.png: mkdocs/docs/img/information.png
-	mkdir -p mkdocs/generated/img
+website/generated/img/information.png: website/src/img/information.png
+	mkdir -p website/generated/img
 	cp $< $@
 
 .PHONY: docs
 docs: \
- $(foreach f,$(LIBMODULEDOCS),mkdocs/docs/library/$f.md) \
- mkdocs/generated/infix.md \
- mkdocs/generated/type-infix.md \
- mkdocs/generated/img/information.png \
+ $(foreach f,$(LIBMODULEDOCS),website/src/library/$f.md) \
+ website/generated/infix.md \
+ website/generated/type-infix.md \
+ website/generated/img/information.png \
  out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz \
  docker-image
-	mkdir -p mkdocs/generated/examples
-	cp Pinafore/pinafore-app/examples/* mkdocs/generated/examples/
+	mkdir -p website/generated/examples
+	cp Pinafore/pinafore-app/examples/* website/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz
 	mkdir -p out/website
-	stack $(STACKFLAGS) exec --cwd mkdocs -- mkdocs build --site-dir ../out/website
+	stack $(STACKFLAGS) exec --cwd website -- /extra/mdbook build --dest-dir ../out/website
 
 
 ### VSCode extension
@@ -319,8 +319,8 @@ full: testimages format deb nix-docker-flake deps licensing docs pyg-lexer vsc-e
 clean:
 	rm -rf .build
 	rm -rf out
-	rm -rf mkdocs/generated
-	rm -rf mkdocs/docs/library
+	rm -rf website/generated
+	rm -rf website/src/library
 	rm -rf Changes/changes-gnome/examples/showImages/images
 	rm -rf support/vsc-extension/*.json
 	rm -rf support/vsc-extension/*/*.json

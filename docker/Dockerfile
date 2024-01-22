@@ -16,18 +16,19 @@ RUN chmod +x /usr/local/bin/yq
 
 # various Python stuff
 RUN pip3 install --upgrade pip
-RUN pip3 install mkdocs==1.4.3 markdown-include Pygments scour build
+RUN pip3 install Pygments scour build
+
+# dir for extra stuff
 RUN mkdir /extra
 WORKDIR /extra
+
+# mdbook
+RUN wget https://github.com/rust-lang/mdBook/releases/download/v0.4.36/mdbook-v0.4.36-x86_64-unknown-linux-gnu.tar.gz
+RUN tar zxvf mdbook-v0.4.36-x86_64-unknown-linux-gnu.tar.gz
 
 # lintian
 RUN curl -O http://http.us.debian.org/debian/pool/main/l/lintian/lintian_2.116.3_all.deb
 RUN apt install -y /extra/lintian_2.116.3_all.deb
-
-# mkdocs-plugin-commonmark
-RUN git clone -n https://github.com/AshleyYakeley/mkdocs-plugin-commonmark.git
-RUN cd mkdocs-plugin-commonmark && git fetch && git checkout 1033d5dfc0223fd499e73adb1aa1be7f99269b4a
-RUN pip3 install ./mkdocs-plugin-commonmark
 
 # R
 #RUN apt-get install -y r-base-core
