@@ -25,8 +25,11 @@ import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-class ( IsDolanPolyShim (DolanPolyShim ground)
+class ( FunctionShim (DolanShim ground)
+      , IsDolanPolyShim (DolanPolyShim ground)
+      , Eq (DolanVarID ground)
       , Ord (DolanVarID ground)
+      , Monad (DolanM ground)
       , MonadThrow PatternError (DolanM ground)
       , MonadThrow (NamedExpressionError (DolanVarID ground) (DolanShimWit ground 'Negative)) (DolanM ground)
       --, DebugGroundType ground

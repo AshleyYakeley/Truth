@@ -96,7 +96,6 @@ library
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -157,7 +156,6 @@ executable changes-cairo
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -208,7 +206,6 @@ executable changes-gio
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -261,7 +258,6 @@ executable changes-showImages
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -312,7 +308,6 @@ executable changes-soup
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -364,7 +359,6 @@ executable changes-text
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -417,7 +411,6 @@ test-suite test
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns

@@ -81,7 +81,6 @@ library
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns

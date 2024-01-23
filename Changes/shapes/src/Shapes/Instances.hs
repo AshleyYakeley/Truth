@@ -23,6 +23,3 @@ instance Empty a => Empty (NonEmpty a) where
 deriving instance Semigroup (m b) => Semigroup (Kleisli m a b)
 
 deriving instance Monoid (m b) => Monoid (Kleisli m a b)
-
-deriving instance
-         Eq (outer (inner a)) => Eq (Compose outer inner a)

@@ -136,7 +136,6 @@ library
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -183,7 +182,6 @@ test-suite test
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns

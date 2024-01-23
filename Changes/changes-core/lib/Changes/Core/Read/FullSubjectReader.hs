@@ -4,7 +4,7 @@ import Changes.Core.Import
 import Changes.Core.Read.Readable
 import Changes.Core.Read.SubjectReader
 
-class (SubjectReader reader) => FullSubjectReader (reader :: Type -> Type) where
+class SubjectReader reader => FullSubjectReader (reader :: Type -> Type) where
     readableToSubject ::
            forall m. MonadIO m
         => Readable m reader

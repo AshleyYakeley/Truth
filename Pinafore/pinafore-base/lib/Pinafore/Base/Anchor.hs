@@ -24,7 +24,8 @@ class IsHash h where
 
 instance IsHash Anchor where
     hashSize = fromIntegral $ typeValue @_ @NaturalType @BLAKE3.DEFAULT_DIGEST_LEN -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
-    hashByteStrings f = MkAnchor $ convert $ BLAKE3.hash @BLAKE3.DEFAULT_DIGEST_LEN f
+    hashByteStrings f =
+        MkAnchor $ convert $ BLAKE3.hash @BLAKE3.DEFAULT_DIGEST_LEN @(BLAKE3.Digest BLAKE3.DEFAULT_DIGEST_LEN) Nothing f
 
 anchorSize :: Int
 anchorSize = hashSize @Anchor

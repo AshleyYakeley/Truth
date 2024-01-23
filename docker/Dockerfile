@@ -1,5 +1,5 @@
-FROM fpco/stack-build-small:lts-21.25
-RUN echo 2024-01-13 > /container.date
+FROM fpco/stack-build-small:lts-22.7
+RUN echo 2024-01-22 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND noninteractive

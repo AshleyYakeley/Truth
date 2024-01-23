@@ -31,8 +31,12 @@ instance (ApplicableEdit ea, ApplicableEdit eb, InvertibleEdit ea, InvertibleEdi
     invertEdit (SumEditLeft edit) mr = fmap (fmap SumEditLeft) $ invertEdit edit mr
     invertEdit (SumEditRight edit) mr = fmap (fmap SumEditRight) $ invertEdit edit mr
 
-instance (FullSubjectReader (EditReader ea), ApplicableEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) =>
-             SubjectMapEdit (SumEdit ea eb)
+instance ( FullSubjectReader (EditReader ea)
+         , ApplicableEdit ea
+         , ApplicableEdit eb
+         , SubjectReader (EditReader ea)
+         , EditReader ea ~ EditReader eb
+         ) => SubjectMapEdit (SumEdit ea eb)
 
 instance (FullEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb) where
     replaceEdit mr write = replaceEdit mr (\edit -> write $ SumEditLeft edit)

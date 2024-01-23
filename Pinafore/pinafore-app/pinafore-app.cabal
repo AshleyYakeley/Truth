@@ -60,7 +60,6 @@ library
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -112,7 +111,6 @@ executable pinafore
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -157,7 +155,6 @@ executable pinafore-doc
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -203,7 +200,6 @@ test-suite app
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -248,7 +244,6 @@ test-suite test
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
@@ -296,7 +291,6 @@ benchmark benchmark
       TemplateHaskell
       TypeFamilies
       TypeFamilyDependencies
-      TypeInType
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
