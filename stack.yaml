@@ -30,7 +30,7 @@ packages:
 - Pinafore/pinafore-stdlib
 - Pinafore/pinafore-app
 
-resolver: lts-22.7
+resolver: lts-22.14
 
 allow-newer: true
 
@@ -53,6 +53,8 @@ flags:
 docker:
     enable: true
     image: "local-build"
+
+notify-if-nix-on-path: false
 
 nix:
     enable: false
