@@ -2,8 +2,6 @@ module Pinafore.Language.VarID
     ( VarID(..)
     , varIdNameRef
     , VarIDState
-    , firstVarIDState
-    , nextVarIDState
     , mkVarID
     , mkUniqueVarID
     , mkBadVarID
@@ -15,12 +13,7 @@ import Text.Parsec (SourcePos)
 
 newtype VarIDState =
     MkVarIDState Int
-
-firstVarIDState :: VarIDState
-firstVarIDState = MkVarIDState 0
-
-nextVarIDState :: VarIDState -> VarIDState
-nextVarIDState (MkVarIDState i) = MkVarIDState $ succ i
+    deriving newtype (Sequential)
 
 data VarID
     = GoodVarID Int

@@ -49,7 +49,7 @@ boolExpr :: PExpression
 boolExpr = typeFConstExpression toJMShimWit False
 
 varExpr :: PExpression
-varExpr = tsVar @TS $ mkVarID firstVarIDState "v"
+varExpr = tsVar @TS $ mkVarID szero "v"
 
 ifelseExpr :: PExpression
 ifelseExpr =

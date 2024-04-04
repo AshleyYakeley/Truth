@@ -6,7 +6,7 @@ module Pinafore.Test
     , Name
     , VarID
     , mkVarID
-    , firstVarIDState
+    , szero
     , UVar
     , Var(..)
     , QGroundType(..)

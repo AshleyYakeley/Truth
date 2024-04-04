@@ -1,7 +1,5 @@
 module Pinafore.Language.Type.Identified
     ( TypeID
-    , zeroTypeID
-    , succTypeID
     , TypeIDType
     , IdentifiedKind
     , Identified
@@ -15,13 +13,7 @@ import Shapes.Unsafe (unsafeGetRefl)
 
 newtype TypeID =
     MkTypeID Natural
-    deriving (Eq)
-
-zeroTypeID :: TypeID
-zeroTypeID = MkTypeID 0
-
-succTypeID :: TypeID -> TypeID
-succTypeID (MkTypeID n) = MkTypeID $ succ n
+    deriving newtype (Eq, Sequential)
 
 newtype TypeIDType (bn :: Nat) =
     MkTypeIDType (NaturalType bn)

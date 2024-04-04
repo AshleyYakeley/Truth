@@ -88,7 +88,7 @@ scopeSetSourcePos = refPut (builderLiftRef sourcePosParam)
 
 allocateVar :: Maybe FullName -> QScopeBuilder (FullName, VarID)
 allocateVar mname = do
-    vs <- refGet varIDStateRef
+    vs <- refSucc varIDStateRef
     let
         (vid, name) =
             case mname of
@@ -98,7 +98,6 @@ allocateVar mname = do
         biDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
         biValue = ValueBinding (tsVar @QTypeSystem vid) Nothing
         insertScope = MkQScope (bindingInfoToMap (name, MkQBindingInfo {..})) mempty
-    refPut varIDStateRef $ nextVarIDState vs
     refModifyM scopeRef $ \oldScope -> builderLift $ joinScopes oldScope insertScope
     return (name, vid)
 

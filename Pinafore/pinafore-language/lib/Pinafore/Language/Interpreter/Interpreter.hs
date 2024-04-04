@@ -53,9 +53,9 @@ data InterpretState = MkInterpretState
 
 emptyInterpretState :: InterpretState
 emptyInterpretState = let
-    isTypeID = zeroTypeID
+    isTypeID = szero
     isModules = mempty
-    isAppNotationVar = firstVarIDState
+    isAppNotationVar = szero
     in MkInterpretState {..}
 
 type InterpretOutput = [(VarID, QExpression)]
@@ -163,7 +163,7 @@ appNotationVarRef =
 runInterpreter ::
        SourcePos -> (ModuleName -> QInterpreter (Maybe QModule)) -> QSpecialVals -> QInterpreter a -> InterpretResult a
 runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
-    icVarIDState = firstVarIDState
+    icVarIDState = szero
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace
@@ -283,8 +283,7 @@ getSubtypeScope sce = do
 
 newTypeID :: QInterpreter (Some TypeIDType)
 newTypeID = do
-    tid <- refGet typeIDRef
-    refPut typeIDRef $ succTypeID tid
+    tid <- refSucc typeIDRef
     return $ valueToSome tid
 
 withNewTypeID :: (forall tid. TypeIDType tid -> QInterpreter a) -> QInterpreter a

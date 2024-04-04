@@ -13,8 +13,7 @@ import Shapes
 
 allocateAppNotationVar :: FullName -> QInterpreter VarID
 allocateAppNotationVar name = do
-    i <- refGet appNotationVarRef
-    refPut appNotationVarRef $ nextVarIDState i
+    i <- refSucc appNotationVarRef
     return $ mkVarID i name
 
 appNotationUnquote :: QInterpreter QExpression -> QInterpreter QExpression

@@ -16,6 +16,7 @@ build-type:     Simple
 library
   exposed-modules:
       Data.Words
+      Data.Sequential
       Control.Category.Groupoid
       Control.Applicative.Wrapped
       Control.FixIO
