@@ -3,12 +3,15 @@ module Pinafore.Language.Type.Storable.Dynamic
     , mkConcreteDynamicType
     , DynamicTypeSet
     , DynamicEntity(..)
+    , AbstractDynamicEntityFamily(..)
     , ConcreteDynamicEntityFamily(..)
     , dynamicStoreAdapter
     , dynamicStorableGroundType
     , abstractDynamicStorableGroundType
     , concreteDynamicStorableGroundType
     , getConcreteDynamicEntityType
+    , abstractDynamicStorableFamilyWitness
+    , concreteDynamicStorableFamilyWitness
     ) where
 
 import Data.Shim

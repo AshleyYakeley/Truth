@@ -617,8 +617,8 @@ nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
 
-interpretOpenEntitySubtypeRelation :: SyntaxType -> SyntaxType -> QInterpreter QSubtypeConversionEntry
-interpretOpenEntitySubtypeRelation sta stb = do
+interpretIdentitySubtypeRelation :: SyntaxType -> SyntaxType -> QInterpreter QSubtypeConversionEntry
+interpretIdentitySubtypeRelation sta stb = do
     ata <- interpretNonpolarType sta
     atb <- interpretNonpolarType stb
     case (ata, atb) of
@@ -636,7 +636,18 @@ interpretOpenEntitySubtypeRelation sta stb = do
                             coerceShim "open entity" .
                             (functionToShim "entityConvert" $
                              storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)
-                Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
+                Nothing ->
+                    case getGroundFamily abstractDynamicStorableFamilyWitness gtb of
+                        Just (MkAbstractDynamicEntityFamily _ _) ->
+                            case getGroundFamily abstractDynamicStorableFamilyWitness gta of
+                                Just (MkAbstractDynamicEntityFamily _ _) ->
+                                    return $ MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion
+                                Nothing ->
+                                    case getGroundFamily concreteDynamicStorableFamilyWitness gta of
+                                        Just (MkConcreteDynamicEntityFamily _ _) ->
+                                            return $ MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion
+                                        Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow ta
+                        Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
 interpretSubtypeRelation ::
        TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> RawMarkdown -> QScopeBuilder ()
@@ -645,7 +656,7 @@ interpretSubtypeRelation trustme sta stb mbody docDescription = do
         builderLift $
         case mbody of
             Just body -> interpretGeneralSubtypeRelation trustme sta stb body
-            Nothing -> interpretOpenEntitySubtypeRelation sta stb
+            Nothing -> interpretIdentitySubtypeRelation sta stb
     registerSubtypeConversion sce
     let
         diSubtype = exprShow sta
