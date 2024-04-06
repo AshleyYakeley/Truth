@@ -22,7 +22,7 @@ makeAbstractDynamicEntityTypeBox name md =
                 t = abstractDynamicStorableGroundType name tidsym mempty
             registerType name doc t
             registerSubtypeConversion $
-                MkSubtypeConversionEntry Verify t dynamicStorableGroundType identitySubtypeConversion
+                MkSubtypeConversionEntry Verify t dynamicEntityStorableGroundType identitySubtypeConversion
         in return $ mkRegisterFixBox register
 
 makeConcreteDynamicEntityTypeBox :: FullName -> RawMarkdown -> Anchor -> QInterpreter (QFixBox () ())
@@ -34,5 +34,5 @@ makeConcreteDynamicEntityTypeBox name md anchor = let
             t = concreteDynamicStorableGroundType name (mkConcreteDynamicType anchor)
         registerType name doc t
         registerSubtypeConversion $
-            MkSubtypeConversionEntry Verify t dynamicStorableGroundType identitySubtypeConversion
+            MkSubtypeConversionEntry Verify t dynamicEntityStorableGroundType identitySubtypeConversion
     in return $ mkRegisterFixBox register

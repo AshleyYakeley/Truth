@@ -24,4 +24,4 @@ instance HasQGroundType '[] Entity where
 
 -- DynamicEntity
 instance HasQGroundType '[] DynamicEntity where
-    qGroundType = dynamicStorableGroundType
+    qGroundType = dynamicEntityStorableGroundType

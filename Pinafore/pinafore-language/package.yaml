@@ -87,6 +87,11 @@ library:
       - Pinafore.Language.Type.Subtype.Hint
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Storable.Type
+      - Pinafore.Language.Type.Storable.Dynamic.Entity
+      - Pinafore.Language.Type.Storable.Dynamic.Storability
+      - Pinafore.Language.Type.Storable.Dynamic.DynamicEntity
+      - Pinafore.Language.Type.Storable.Dynamic.Concrete
+      - Pinafore.Language.Type.Storable.Dynamic.Abstract
       - Pinafore.Language.Type.Storable.Dynamic
       - Pinafore.Language.Type.Storable.Open
       - Pinafore.Language.Type.Storable
