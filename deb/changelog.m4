@@ -1,6 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Language
+    - redesign dynamic types
     - allow decarations in do-blocks
   * Library
     - built-in

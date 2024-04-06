@@ -9,9 +9,9 @@ import Shapes
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openStorableGroundType tp) NilCCRArguments
 
-dynamicEntityShimWit :: FullName -> DynamicType -> QShimWit 'Positive DynamicEntity
-dynamicEntityShimWit n dt =
-    typeToDolan $ MkDolanGroundedType (aDynamicStorableGroundType n $ singletonSet dt) NilCCRArguments
+concreteDynamicEntityShimWit :: FullName -> ConcreteDynamicType -> QShimWit 'Positive DynamicEntity
+concreteDynamicEntityShimWit n dt =
+    typeToDolan $ MkDolanGroundedType (concreteDynamicStorableGroundType n dt) NilCCRArguments
 
 maybeShimWit :: forall a. QShimWit 'Positive a -> QShimWit 'Positive (Maybe a)
 maybeShimWit swa =

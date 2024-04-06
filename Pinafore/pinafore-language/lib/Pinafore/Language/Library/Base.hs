@@ -582,7 +582,7 @@ baseLibSections =
                     MkQSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
                         (n, dt) <- getConcreteDynamicEntityType t
                         let
-                            typef = dynamicEntityShimWit n dt
+                            typef = concreteDynamicEntityShimWit n dt
                             pt :: DynamicEntity
                             pt = MkDynamicEntity dt $ MkEntity anchor
                         return $ MkSomeOf typef pt
@@ -599,7 +599,7 @@ baseLibSections =
                                 liftIO $ do
                                     e <- newKeyContainerItem @(FiniteSet Entity)
                                     return $ MkDynamicEntity dt e
-                            typef = actionShimWit $ dynamicEntityShimWit n dt
+                            typef = actionShimWit $ concreteDynamicEntityShimWit n dt
                         return $ MkSomeOf typef pt
                   ]
             ]

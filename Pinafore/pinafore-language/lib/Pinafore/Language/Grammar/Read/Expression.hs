@@ -140,20 +140,20 @@ readDataTypeDeclaration = do
                 return $
                     TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters msupertype constructors
 
-readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
-readDynamicTypeConstructor =
-    fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|> do
-        ns <- readAskNamespace
-        nref <- readTypeFullNameRef
-        return $ NameSyntaxDynamicEntityConstructor ns nref
+readDynamicTypeBody :: Parser SyntaxTypeDeclaration
+readDynamicTypeBody =
+    (do
+         readThis TokAssign
+         anchor <- readThis TokAnchor
+         return $ ConcreteDynamicEntitySyntaxTypeDeclaration anchor) <|>
+    (return AbstractDynamicEntitySyntaxTypeDeclaration)
 
 readDynamicTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDynamicTypeDeclaration = do
     readThis TokDynamicType
     name <- readTypeNewName
-    readThis TokAssign
-    tcons <- readSeparated1 (readThis TokOr) $ fmap pure readDynamicTypeConstructor
-    return $ TypeSyntaxDeclaration name $ DynamicEntitySyntaxTypeDeclaration tcons
+    body <- readDynamicTypeBody
+    return $ TypeSyntaxDeclaration name body
 
 readTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readTypeDeclaration =

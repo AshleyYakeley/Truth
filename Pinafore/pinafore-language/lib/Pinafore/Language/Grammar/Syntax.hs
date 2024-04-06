@@ -61,12 +61,6 @@ instance ExprShow SyntaxTypeParameter where
 
 type SyntaxPlainDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
-data SyntaxDynamicEntityConstructor
-    = AnchorSyntaxDynamicEntityConstructor Anchor
-    | NameSyntaxDynamicEntityConstructor Namespace
-                                         FullNameRef
-    deriving (Eq)
-
 data SyntaxTypeDeclaration
     = StorableDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
                                             [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
@@ -74,7 +68,8 @@ data SyntaxTypeDeclaration
                                          (Maybe SyntaxType)
                                          [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
-    | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
+    | ConcreteDynamicEntitySyntaxTypeDeclaration Anchor
+    | AbstractDynamicEntitySyntaxTypeDeclaration
     deriving (Eq)
 
 data SyntaxRecursiveDeclaration'

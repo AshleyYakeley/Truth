@@ -196,7 +196,7 @@ All declarations, including type declarations, are local to a `let` block.
     "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
     "opentype" <type-const> |
     "subtype" <optional("trustme")> <type> "<:" <type> <optional("=" <expression>)> |
-    "dynamictype" <type-const> "=" <dynamictype-constructors> |
+    "dynamictype" <type-const> <dynamictype-body> |
     <binding>
 
 <name-item> ::= <name> | "namespace" <name>
@@ -236,11 +236,7 @@ All declarations, including type declarations, are local to a `let` block.
     uname <types> anchor |
     "subtype" "datatype" "storable" <type-const> <of(<storable-datatype-constructor>)>
 
-<dynamictype-constructors> ::=
-    <dynamictype-constructor> |
-    <dynamictype-constructor> "|" <dynamictype-constructors>
-
-<dynamictype-constructor> ::= <type-const> | <anchor>
+<dynamictype-body> ::=  | <anchor>
 
 <types> ::=  | <type-3> <types>
 

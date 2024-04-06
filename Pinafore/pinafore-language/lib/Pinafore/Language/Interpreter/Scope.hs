@@ -67,6 +67,7 @@ bindingInfosToScope bis = emptyScope {scopeBindings = bindingInfosToMap bis}
 data QScope = MkQScope
     { scopeBindings :: QBindingMap
     , scopeSubtypes :: HashMap Unique QSubtypeConversionEntry
+    --, scopeDynamicSubtypes :: HashMap TypeID [Either TypeID ConcreteDynamicType]
     }
 
 emptyScope :: QScope

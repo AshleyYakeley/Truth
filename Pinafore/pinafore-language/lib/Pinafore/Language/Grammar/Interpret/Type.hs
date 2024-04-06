@@ -24,7 +24,7 @@ interpretType st = do
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretConcreteDynamicEntityType :: SyntaxType -> QInterpreter (FullName, DynamicType)
+interpretConcreteDynamicEntityType :: SyntaxType -> QInterpreter (FullName, ConcreteDynamicType)
 interpretConcreteDynamicEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of

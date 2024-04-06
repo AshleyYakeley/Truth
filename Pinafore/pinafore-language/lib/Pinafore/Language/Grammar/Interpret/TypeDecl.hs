@@ -3,7 +3,6 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl
     , interpretRecursiveTypeDeclarations
     ) where
 
-import Data.Graph (SCC(..), stronglyConnComp)
 import Pinafore.Language.Error
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
@@ -45,27 +44,9 @@ typeDeclarationTypeBox name doc (PlainDatatypeSyntaxTypeDeclaration params msst 
             case st of
                 MkSome t -> getGroundTypes t
     makePlainDataTypeBox (fromMaybe [] mstl) name doc params sconss
-typeDeclarationTypeBox name doc (DynamicEntitySyntaxTypeDeclaration stcons) = makeDynamicEntityTypeBox name doc stcons
-
-checkDynamicTypeCycles :: [(SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)] -> QInterpreter ()
-checkDynamicTypeCycles decls = let
-    constructorName :: SyntaxDynamicEntityConstructor -> Maybe FullName
-    constructorName (NameSyntaxDynamicEntityConstructor ns nref) = Just $ namespaceConcatFullName ns nref
-    constructorName _ = Nothing
-    getDynamicTypeReferences ::
-           (SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)
-        -> Maybe ((SourcePos, FullName), FullName, [FullName])
-    getDynamicTypeReferences (spos, n, _, DynamicEntitySyntaxTypeDeclaration cs) =
-        Just $ ((spos, n), n, mapMaybe constructorName $ toList cs)
-    getDynamicTypeReferences _ = Nothing
-    sccs :: [SCC (SourcePos, FullName)]
-    sccs = stronglyConnComp $ mapMaybe getDynamicTypeReferences decls
-    sccNames :: forall a. SCC a -> Maybe (NonEmpty a)
-    sccNames (CyclicSCC (n:nn)) = Just $ n :| nn
-    sccNames _ = Nothing
-    in case mapMaybe sccNames sccs of
-           [] -> return ()
-           (nn@((spos, _) :| _):_) -> paramWith sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
+typeDeclarationTypeBox name doc AbstractDynamicEntitySyntaxTypeDeclaration = makeAbstractDynamicEntityTypeBox name doc
+typeDeclarationTypeBox name doc (ConcreteDynamicEntitySyntaxTypeDeclaration anchor) =
+    makeConcreteDynamicEntityTypeBox name doc anchor
 
 interpretSequentialTypeDeclaration ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
@@ -83,7 +64,6 @@ interpretRecursiveTypeDeclarations ::
     => [(SourcePos, FullName, RawMarkdown, SyntaxTypeDeclaration)]
     -> QScopeBuilder ()
 interpretRecursiveTypeDeclarations decls = do
-    builderLift $ checkDynamicTypeCycles decls
     wfs <-
         for decls $ \(spos, name, doc, tdecl) -> do
             wf <- builderLift $ paramWith sourcePosParam spos $ typeDeclarationTypeBox name doc tdecl
