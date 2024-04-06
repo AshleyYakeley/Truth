@@ -726,33 +726,89 @@ testEntity =
                     ]
               , tGroup "dynamic" $
                 [ tGroup "DynamicEntity <: Entity" $ strictSubtypeTests "DynamicEntity" "Entity"
-                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                , tDecls
+                      [ "dynamictype P1 = !\"P1\""
+                      , "dynamictype P2 = !\"P2\""
+                      , "dynamictype Q"
+                      , "subtype P1 <: Q"
+                      , "subtype P2 <: Q"
+                      ] $
                   tGroup "P1 <: DynamicEntity" $ strictSubtypeTests "P1" "DynamicEntity"
-                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                , tDecls
+                      [ "dynamictype P1 = !\"P1\""
+                      , "dynamictype P2 = !\"P2\""
+                      , "dynamictype Q"
+                      , "subtype P1 <: Q"
+                      , "subtype P2 <: Q"
+                      ] $
                   tGroup "Q <: DynamicEntity" $ strictSubtypeTests "Q" "DynamicEntity"
-                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                , tDecls
+                      [ "dynamictype P1 = !\"P1\""
+                      , "dynamictype P2 = !\"P2\""
+                      , "dynamictype Q"
+                      , "subtype P1 <: Q"
+                      , "subtype P2 <: Q"
+                      ] $
                   tGroup "P1 <: Entity" $ strictSubtypeTests "P1" "Entity"
-                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                , tDecls
+                      [ "dynamictype P1 = !\"P1\""
+                      , "dynamictype P2 = !\"P2\""
+                      , "dynamictype Q"
+                      , "subtype P1 <: Q"
+                      , "subtype P2 <: Q"
+                      ] $
                   tGroup "Q <: Entity" $ strictSubtypeTests "Q" "Entity"
-                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                , tDecls
+                      [ "dynamictype P1 = !\"P1\""
+                      , "dynamictype P2 = !\"P2\""
+                      , "dynamictype Q"
+                      , "subtype P1 <: Q"
+                      , "subtype P2 <: Q"
+                      ] $
                   tGroup "seq" $ strictSubtypeTests "P1" "Q"
                 , tGroup "recursive" $ let
                       pqtests =
                           [subtypeTest False SRNot "P1" "P2", subtypeTest False SRNot "P2" "P1"] <>
                           strictSubtypeTests "P1" "Q" <> strictSubtypeTests "P2" "Q"
                       in [ tDeclsRec ["dynamictype P1 = !\"P1\""] $ subtypeTest False SRSingle "P1" "P1"
-                         , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                         , tDeclsRec
+                               [ "dynamictype P1 = !\"P1\""
+                               , "dynamictype P2 = !\"P2\""
+                               , "dynamictype Q"
+                               , "subtype P1 <: Q"
+                               , "subtype P2 <: Q"
+                               ] $
                            tGroup "rec 1" pqtests
-                         , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
+                         , tDeclsRec
+                               [ "dynamictype P1 = !\"P1\""
+                               , "dynamictype Q"
+                               , "subtype P1 <: Q"
+                               , "subtype P2 <: Q"
+                               , "dynamictype P2 = !\"P2\""
+                               ] $
                            tGroup "rec 2" pqtests
-                         , tDeclsRec ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
+                         , tDeclsRec
+                               [ "dynamictype Q"
+                               , "subtype P1 <: Q"
+                               , "subtype P2 <: Q"
+                               , "dynamictype P1 = !\"P1\""
+                               , "dynamictype P2 = !\"P2\""
+                               ] $
                            tGroup "rec 3" pqtests
                          , tDeclsRec
                                [ "opentype T"
                                , "subtype QA <: T"
-                               , "dynamictype QA = P1 | P2 | P3"
-                               , "dynamictype QB = P2 | P3 | P1"
-                               , "dynamictype QC = P2 | P3"
+                               , "dynamictype QA"
+                               , "subtype P1 <: QA"
+                               , "subtype P2 <: QA"
+                               , "subtype P3 <: QA"
+                               , "dynamictype QB"
+                               , "subtype P2 <: QB"
+                               , "subtype P3 <: QB"
+                               , "subtype P1 <: QB"
+                               , "dynamictype QC"
+                               , "subtype P2 <: QC"
+                               , "subtype P3 <: QC"
                                , "dynamictype P1 = !\"P1\""
                                , "dynamictype P2 = !\"P2\""
                                , "dynamictype P3 = !\"P3\""
@@ -819,7 +875,9 @@ testEntity =
         , tDecls
               [ "dynamictype P1 = !\"P1\""
               , "dynamictype P2 = !\"P2\""
-              , "dynamictype Q = P1 | P2"
+              , "dynamictype Q"
+              , "subtype P1 <: Q"
+              , "subtype P2 <: Q"
               , "e1 = point.DynamicEntity @P1 !\"e1\""
               ] $
           tGroup
