@@ -36,9 +36,9 @@ let
         labelled.Widget {"Phone: "} $ textEntry.Widget $ phoneOf.Location !$% loc
     ];
 
-    let rec
+    let
         # a person or organisation
-        dynamictype Contact = Person | Organisation;
+        dynamictype Contact;
         subtype Contact <: Named;
         subtype Contact <: Lifespanned;
 
@@ -51,6 +51,7 @@ let
 
         # a person
         dynamictype Person = !"type.person";
+        subtype Person <: Contact;
 
         peopleSet: FiniteSetModel Person =
         maybeMap.FiniteSetModel (check @Person) contactSet;
@@ -69,6 +70,7 @@ let
 
         # an organisation
         dynamictype Organisation = !"type.organisation";
+        subtype Organisation <: Contact;
         organisationSet: FiniteSetModel Organisation =
         property @Organisation @Unit !"type.organisation" store !@ {()};
     end;
