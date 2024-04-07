@@ -891,6 +891,20 @@ testEntity =
               , testExpectSuccess "testeq {True} {e1 >- match _:? Q => True; _ => False end}"
               , testExpectSuccess "testeq {e1} {coerce @P1 e1}"
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
+              , tDecls
+                    [ "dynamictype R"
+                    , "subtype Q <: R"
+                    , "dynamictype P3 = !\"P3\""
+                    , "e3 = point.DynamicEntity @P3 !\"e3\""
+                    , "subtype P3 <: Q"
+                    ] $
+                tGroup
+                    "transitive"
+                    [ testExpectSuccess "pass"
+                    , testExpectSuccess "testeq {Just e1} {check @R e1}"
+                    , testExpectSuccess "testeq {Just e3} {check @Q e3}"
+                    , testExpectSuccess "testeq {Just e3} {check @R e3}"
+                    ]
               ]
         , tDecls
               [ "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeModel {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
