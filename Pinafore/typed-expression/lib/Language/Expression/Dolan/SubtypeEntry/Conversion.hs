@@ -93,3 +93,10 @@ subtypeConversion ::
 subtypeConversion hint ga (MkShimWit argsa (MkPolarShim conva)) (MkShimWit argsb (MkPolarShim convb)) convexpr =
     GeneralSubtypeConversion (maybe UnknownSK HintSK hint) $
     linkSubtypeChain (groundTypeVarianceMap ga) argsa argsb $ fmap (\conv -> convb . conv . conva) convexpr
+
+matchIdentitySubtypeConversion ::
+       forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
+       SubtypeConversion ground dva gta dvb gtb
+    -> Maybe (dva :~: dvb, gta :~~: gtb)
+matchIdentitySubtypeConversion (GeneralSubtypeConversion _ NilSubtypeChain) = Just (Refl, HRefl)
+matchIdentitySubtypeConversion _ = Nothing

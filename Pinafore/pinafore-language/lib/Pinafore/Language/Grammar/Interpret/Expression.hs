@@ -617,12 +617,50 @@ nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
 
-getDynamicSupertypes ::
-       QGroundType '[] DynamicEntity -> QInterpreter [(FullName, AbstractDynamicEntityFamily DynamicEntity)]
-getDynamicSupertypes _ = return [] -- NYI
+getGraph ::
+       forall m a. (Monad m, Eq a)
+    => (a -> m (FiniteSet a))
+    -> a
+    -> m (FiniteSet a)
+getGraph getIm a = getGraph1 getIm mempty $ opoint a
 
-addDynamicSupertypes :: DynamicTypeSet -> (FullName, AbstractDynamicEntityFamily DynamicEntity) -> QScopeBuilder ()
-addDynamicSupertypes cdts (name, MkAbstractDynamicEntityFamily tid tset) =
+getGraph1 ::
+       forall m a. (Monad m, Eq a)
+    => (a -> m (FiniteSet a))
+    -> FiniteSet a
+    -> FiniteSet a
+    -> m (FiniteSet a)
+getGraph1 getIm olddoneset currentset =
+    if onull currentset
+        then return olddoneset
+        else do
+            let newdoneset = union olddoneset currentset
+            newsets <- for currentset getIm
+            let
+                newset = mconcat $ toList newsets
+                diffset = difference newset newdoneset
+            getGraph1 getIm newdoneset diffset
+
+getImmediateDynamicSupertypes ::
+       AbstractDynamicEntityFamily DynamicEntity -> QInterpreter (FiniteSet (AbstractDynamicEntityFamily DynamicEntity))
+getImmediateDynamicSupertypes fama = do
+    let
+        matchSCE :: QSubtypeConversionEntry -> Maybe (AbstractDynamicEntityFamily DynamicEntity)
+        matchSCE (MkSubtypeConversionEntry _ gta gtb conv) = do
+            sfama@MkAbstractDynamicEntityFamily {} <- getGroundFamily abstractDynamicStorableFamilyWitness gta
+            altIf $ fama == sfama
+            sfamb@MkAbstractDynamicEntityFamily {} <- getGroundFamily abstractDynamicStorableFamilyWitness gtb
+            (Refl, HRefl) <- matchIdentitySubtypeConversion conv
+            return sfamb
+    entries <- getSubtypeConversions
+    return $ setFromList $ mapMaybe matchSCE entries
+
+getDynamicSupertypes ::
+       AbstractDynamicEntityFamily DynamicEntity -> QInterpreter (FiniteSet (AbstractDynamicEntityFamily DynamicEntity))
+getDynamicSupertypes = getGraph getImmediateDynamicSupertypes
+
+addDynamicSupertypes :: DynamicTypeSet -> AbstractDynamicEntityFamily DynamicEntity -> QScopeBuilder ()
+addDynamicSupertypes cdts (MkAbstractDynamicEntityFamily name tid tset) =
     reregisterGroundType (fullNameRef name) $ abstractDynamicStorableGroundType name tid $ union cdts tset
 
 interpretIdentitySubtypeRelation :: SyntaxType -> SyntaxType -> QScopeBuilder ()
@@ -649,11 +687,11 @@ interpretIdentitySubtypeRelation sta stb =
                                  storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)
                     Nothing ->
                         case getGroundFamily abstractDynamicStorableFamilyWitness gtb of
-                            Just (MkAbstractDynamicEntityFamily _ _) -> do
-                                supertypes <- getDynamicSupertypes gtb
+                            Just famb@(MkAbstractDynamicEntityFamily _ _ _) -> do
+                                supertypes <- getDynamicSupertypes famb
                                 return $
                                     case getGroundFamily abstractDynamicStorableFamilyWitness gta of
-                                        Just (MkAbstractDynamicEntityFamily _ cdts) -> do
+                                        Just (MkAbstractDynamicEntityFamily _ _ cdts) -> do
                                             for_ supertypes $ addDynamicSupertypes cdts
                                             registerSubtypeConversion $
                                                 MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion

@@ -8,6 +8,7 @@ module Language.Expression.Dolan.SubtypeEntry
     , coerceSubtypeConversion
     , subtypeConversion
     , singleSubtypeConversion
+    , matchIdentitySubtypeConversion
     , SubtypeConversionEntry(..)
     , subtypeConversionEntry
     , IsDolanSubtypeEntriesGroundType(..)

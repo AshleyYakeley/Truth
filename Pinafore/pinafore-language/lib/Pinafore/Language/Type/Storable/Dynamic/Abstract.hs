@@ -17,12 +17,16 @@ import Pinafore.Language.Type.Storable.Type
 import Shapes
 
 data AbstractDynamicEntityFamily :: FamilyKind where
-    MkAbstractDynamicEntityFamily :: TypeIDType tid -> DynamicTypeSet -> AbstractDynamicEntityFamily DynamicEntity
+    MkAbstractDynamicEntityFamily
+        :: FullName -> TypeIDType tid -> DynamicTypeSet -> AbstractDynamicEntityFamily DynamicEntity
 
 instance TestHetEquality AbstractDynamicEntityFamily where
-    testHetEquality (MkAbstractDynamicEntityFamily t1 _) (MkAbstractDynamicEntityFamily t2 _) = do
+    testHetEquality (MkAbstractDynamicEntityFamily _ t1 _) (MkAbstractDynamicEntityFamily _ t2 _) = do
         Refl <- testEquality t1 t2
         return HRefl
+
+instance Eq (AbstractDynamicEntityFamily t) where
+    f1 == f2 = isJust $ testHetEquality f1 f2
 
 abstractDynamicStorableFamilyWitness :: IOWitness ('MkWitKind AbstractDynamicEntityFamily)
 abstractDynamicStorableFamilyWitness = $(iowitness [t|'MkWitKind AbstractDynamicEntityFamily|])
@@ -31,7 +35,7 @@ abstractDynamicStorableGroundType :: FullName -> TypeIDType tid -> DynamicTypeSe
 abstractDynamicStorableGroundType name tid dts = let
     props = singleGroundProperty storabilityProperty $ dynamicEntityStorability $ Just dts
     in (singleGroundType'
-            (MkFamilialType abstractDynamicStorableFamilyWitness $ MkAbstractDynamicEntityFamily tid dts)
+            (MkFamilialType abstractDynamicStorableFamilyWitness $ MkAbstractDynamicEntityFamily name tid dts)
             props $
         exprShowPrec name)
            { qgtGreatestDynamicSupertype =
