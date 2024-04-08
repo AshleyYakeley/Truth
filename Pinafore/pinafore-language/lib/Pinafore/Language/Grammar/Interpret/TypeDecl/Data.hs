@@ -469,7 +469,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                 mainRegister x = do
                                     MkGroundTypeFromTypeID gttid <- builderLift $ mkgt x
                                     let (gt, y) = gttid mainTypeName mainTypeID
-                                    registerType mainTypeName (tdDoc mainTypeData) gt
+                                    registerGroundType mainTypeName (tdDoc mainTypeData) gt
                                     postregister gt y
                                 mainConstruct ::
                                        ()
@@ -635,7 +635,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                     let
                                         subGroundType :: QGroundType dv maintype
                                         subGroundType = getGroundType mainGroundType picktype gttid tdata
-                                    registerType (tdName tdata) (tdDoc tdata) subGroundType
+                                    registerGroundType (tdName tdata) (tdDoc tdata) subGroundType
                                     for_ (tdSupertype tdata) $ \supertdata -> let
                                         superGroundType :: QGroundType dv maintype
                                         superGroundType = getGroundType mainGroundType picktype gttid supertdata

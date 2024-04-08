@@ -20,7 +20,7 @@ makeAbstractDynamicEntityTypeBox name md =
             let
                 doc = MkDefDoc (typeDocItem name True []) md
                 t = abstractDynamicStorableGroundType name tidsym mempty
-            registerType name doc t
+            registerGroundType name doc t
             registerSubtypeConversion $
                 MkSubtypeConversionEntry Verify t dynamicEntityStorableGroundType identitySubtypeConversion
         in return $ mkRegisterFixBox register
@@ -32,7 +32,7 @@ makeConcreteDynamicEntityTypeBox name md anchor = let
         let
             doc = MkDefDoc (typeDocItem name True []) md
             t = concreteDynamicStorableGroundType name (mkConcreteDynamicType anchor)
-        registerType name doc t
+        registerGroundType name doc t
         registerSubtypeConversion $
             MkSubtypeConversionEntry Verify t dynamicEntityStorableGroundType identitySubtypeConversion
     in return $ mkRegisterFixBox register

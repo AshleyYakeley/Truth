@@ -4,10 +4,11 @@ module Pinafore.Language.Interpreter.Register
     , registerLetBindings
     , registerLetBinding
     , registerMatchBindings
-    , registerType
+    , registerGroundType
     , registerPatternConstructor
     , registerRecord
     , registerSubtypeConversion
+    , reregisterGroundType
     ) where
 
 import Language.Expression.Common
@@ -57,15 +58,26 @@ registerMatchBindings match = do
         SuccessResult bb -> registerLetBindings bb
         FailureResult fn -> builderLift $ throw $ InternalError Nothing $ "bad match var: " <> showNamedText fn
 
-registerBoundType :: FullName -> DefDoc -> QSomeGroundType -> QScopeBuilder ()
-registerBoundType name doc t = do
+registerSelector :: BindingSelector t -> FullName -> DefDoc -> t -> QScopeBuilder ()
+registerSelector bst name doc t = do
     builderLift $ checkNameForRegister name
-    registerBinding name $ MkQBindingInfo name doc $ TypeBinding t
+    registerBinding name $ MkQBindingInfo name doc $ bsEncode bst t
 
-registerType :: forall dv t. FullName -> DefDoc -> QGroundType dv t -> QScopeBuilder ()
-registerType name doc t = do
-    builderLift $ checkNameForRegister name
-    registerBoundType name doc $ MkSomeGroundType t
+reregisterSelector :: BindingSelector t -> FullNameRef -> (t -> t) -> QScopeBuilder ()
+reregisterSelector bst nameref f = do
+    (name, bi) <- builderLift $ lookupBindingInfo nameref
+    case bsDecode bst $ biValue bi of
+        Just oldt -> registerBinding name $ bi {biValue = bsEncode bst $ f oldt}
+        Nothing -> throw $ bsError bst nameref
+
+reregisterGroundType :: FullNameRef -> QGroundType dv t -> QScopeBuilder ()
+reregisterGroundType nameref t = reregisterSelector typeBindingSelector nameref $ \_ -> MkSomeGroundType t
+
+registerType :: FullName -> DefDoc -> QSomeGroundType -> QScopeBuilder ()
+registerType = registerSelector typeBindingSelector
+
+registerGroundType :: forall dv t. FullName -> DefDoc -> QGroundType dv t -> QScopeBuilder ()
+registerGroundType name doc t = do registerType name doc $ MkSomeGroundType t
 
 registerPatternConstructor :: FullName -> DefDoc -> QExpression -> QPatternConstructor -> QScopeBuilder ()
 registerPatternConstructor name doc exp pc = do
@@ -73,9 +85,7 @@ registerPatternConstructor name doc exp pc = do
     registerBinding name $ MkQBindingInfo name doc $ ValueBinding exp $ Just pc
 
 registerRecord :: FullName -> DefDoc -> QRecordConstructor -> QScopeBuilder ()
-registerRecord name doc rc = do
-    builderLift $ checkNameForRegister name
-    registerBinding name $ MkQBindingInfo name doc $ RecordConstructorBinding rc
+registerRecord = registerSelector recordConstructorBindingSelector
 
 registerSubtypeConversion :: QSubtypeConversionEntry -> QScopeBuilder ()
 registerSubtypeConversion sce = do

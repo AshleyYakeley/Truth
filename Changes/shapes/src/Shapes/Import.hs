@@ -347,3 +347,24 @@ lifecycleOnAllDone onzero = do
 
 threadSleep :: NominalDiffTime -> IO ()
 threadSleep d = threadDelay $ truncate $ (nominalDiffTimeToSeconds d) * 1E6
+
+liftWithFinal ::
+       forall m1 m2 a. Monad m2
+    => (m1 --> m2)
+    -> m1 (m2 a)
+    -> m2 a
+liftWithFinal lft call = do
+    ma <- lft call
+    ma
+
+liftWithDefer ::
+       forall m1 m2 a. (MonadIO m1, MonadIO m2)
+    => (m1 --> m2)
+    -> ((m2 () -> m1 ()) -> m1 a)
+    -> m2 a
+liftWithDefer lft call = do
+    var <- liftIO $ newMVar (return ())
+    a <- lft $ call $ \tmu -> liftIO $ modifyMVar_ var $ \oldval -> return $ oldval >> tmu
+    tmu <- liftIO $ takeMVar var
+    tmu
+    return a

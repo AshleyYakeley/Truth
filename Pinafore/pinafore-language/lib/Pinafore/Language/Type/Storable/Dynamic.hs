@@ -1,6 +1,7 @@
 module Pinafore.Language.Type.Storable.Dynamic
     ( ConcreteDynamicType
     , mkConcreteDynamicType
+    , DynamicTypeSet
     , DynamicEntity(..)
     , dynamicStoreAdapter
     , dynamicEntityStorableGroundType

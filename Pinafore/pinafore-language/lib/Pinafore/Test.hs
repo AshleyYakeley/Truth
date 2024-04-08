@@ -28,7 +28,7 @@ module Pinafore.Test
     , QScopeBuilder
     , withScopeBuilder
     , module Pinafore.Language.DefDoc
-    , registerType
+    , registerGroundType
     , registerLetBindings
     , registerLetBinding
     , registerPatternConstructor

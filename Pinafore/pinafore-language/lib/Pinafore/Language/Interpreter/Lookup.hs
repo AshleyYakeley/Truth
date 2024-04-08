@@ -1,7 +1,9 @@
 module Pinafore.Language.Interpreter.Lookup
     ( getBindingLookup
     , checkNameForRegister
+    , lookupBindingInfo
     , lookupDebugBindingInfo
+    , lookupSelector
     , lookupBoundType
     , lookupPatternConstructor
     , lookupRecordConstructor
@@ -33,24 +35,32 @@ checkNameForRegister name = do
 
 rnuToInterpreter :: FullNameRef -> Maybe a -> QInterpreter a
 rnuToInterpreter _ (Just a) = return a
-rnuToInterpreter name Nothing = throw $ LookupNotDefinedError name
+rnuToInterpreter nameref Nothing = throw $ LookupNotDefinedError nameref
 
 lookupBinding :: FullNameRef -> QInterpreter QInterpreterBinding
-lookupBinding name = do
+lookupBinding nameref = do
     bindmap <- getBindingLookup
-    rnuToInterpreter name $ bindmap name
+    rnuToInterpreter nameref $ bindmap nameref
+
+lookupBindingInfo :: FullNameRef -> QInterpreter (FullName, QBindingInfo)
+lookupBindingInfo nameref = do
+    bindmap <- getBindingInfoLookup
+    rnuToInterpreter nameref $ bindmap nameref
 
 lookupDebugBindingInfo :: FullNameRef -> QInterpreter (Maybe (FullName, String))
 lookupDebugBindingInfo nameref = do
     bindmap <- getBindingInfoLookup
     return $ fmap (\(name, b) -> (name, show $ biValue b)) $ bindmap nameref
 
-lookupBoundType :: FullNameRef -> QInterpreter QSomeGroundType
-lookupBoundType name = do
+lookupSelector :: BindingSelector t -> FullNameRef -> QInterpreter t
+lookupSelector bst name = do
     b <- lookupBinding name
-    case b of
-        TypeBinding t -> return t
-        _ -> throw $ LookupNotTypeError name
+    case bsDecode bst b of
+        Just t -> return t
+        Nothing -> throw $ bsError bst name
+
+lookupBoundType :: FullNameRef -> QInterpreter QSomeGroundType
+lookupBoundType = lookupSelector typeBindingSelector
 
 lookupPatternConstructor :: FullNameRef -> QInterpreter (Either QPatternConstructor QRecordConstructor)
 lookupPatternConstructor name = do
@@ -61,18 +71,10 @@ lookupPatternConstructor name = do
         _ -> throw $ LookupNotConstructorError name
 
 lookupRecordConstructor :: FullNameRef -> QInterpreter QRecordConstructor
-lookupRecordConstructor name = do
-    b <- lookupBinding name
-    case b of
-        RecordConstructorBinding rc -> return rc
-        _ -> throw $ LookupNotRecordConstructorError name
+lookupRecordConstructor = lookupSelector recordConstructorBindingSelector
 
 lookupSpecialForm :: FullNameRef -> QInterpreter QSpecialForm
-lookupSpecialForm name = do
-    b <- lookupBinding name
-    case b of
-        SpecialFormBinding sf -> return sf
-        _ -> throw $ LookupNotSpecialFormError name
+lookupSpecialForm = lookupSelector specialFormBindingSelector
 
 data QBoundValue
     = ValueBoundValue QExpression

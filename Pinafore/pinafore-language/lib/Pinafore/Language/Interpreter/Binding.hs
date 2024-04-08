@@ -5,12 +5,17 @@ module Pinafore.Language.Interpreter.Binding
     , QSpecialForm(..)
     , QInterpreterBinding(..)
     , QBindingInfo(..)
+    , BindingSelector(..)
+    , typeBindingSelector
+    , recordConstructorBindingSelector
+    , specialFormBindingSelector
     ) where
 
 import Data.Shim
 import Language.Expression.Common
 import Pinafore.Base
 import Pinafore.Language.DefDoc
+import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Ground
@@ -63,3 +68,33 @@ data QBindingInfo = MkQBindingInfo
     , biDocumentation :: DefDoc
     , biValue :: QInterpreterBinding
     }
+
+data BindingSelector t = MkBindingSelector
+    { bsEncode :: t -> QInterpreterBinding
+    , bsDecode :: QInterpreterBinding -> Maybe t
+    , bsError :: FullNameRef -> QErrorType
+    }
+
+typeBindingSelector :: BindingSelector QSomeGroundType
+typeBindingSelector = let
+    bsEncode = TypeBinding
+    bsDecode (TypeBinding t) = Just t
+    bsDecode _ = Nothing
+    bsError = LookupNotTypeError
+    in MkBindingSelector {..}
+
+recordConstructorBindingSelector :: BindingSelector QRecordConstructor
+recordConstructorBindingSelector = let
+    bsEncode = RecordConstructorBinding
+    bsDecode (RecordConstructorBinding t) = Just t
+    bsDecode _ = Nothing
+    bsError = LookupNotRecordConstructorError
+    in MkBindingSelector {..}
+
+specialFormBindingSelector :: BindingSelector QSpecialForm
+specialFormBindingSelector = let
+    bsEncode = SpecialFormBinding
+    bsDecode (SpecialFormBinding t) = Just t
+    bsDecode _ = Nothing
+    bsError = LookupNotSpecialFormError
+    in MkBindingSelector {..}

@@ -142,7 +142,7 @@ testPolyDependentFunction =
 
 registerT1Stuff :: QScopeBuilder ()
 registerT1Stuff = do
-    registerType "T1." emptyDefDoc t1GroundType
+    registerGroundType "T1." emptyDefDoc t1GroundType
     registerPatternConstructor "MkT1." emptyDefDoc (MkSealedExpression (qType :: _ (AP -> T1 AP)) $ pure MkT1) $
         qToPatternConstructor $ PureFunction $ \(MkT1 (a :: AQ)) -> (a, ())
 

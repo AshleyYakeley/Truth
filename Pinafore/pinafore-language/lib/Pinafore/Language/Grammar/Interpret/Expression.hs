@@ -617,47 +617,67 @@ nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
 
-interpretIdentitySubtypeRelation :: SyntaxType -> SyntaxType -> QInterpreter QSubtypeConversionEntry
-interpretIdentitySubtypeRelation sta stb = do
-    ata <- interpretNonpolarType sta
-    atb <- interpretNonpolarType stb
-    case (ata, atb) of
-        (MkSome ta, MkSome tb) -> do
-            (gta, tea) <- nonpolarSimpleEntityType ta
-            (gtb, _) <- nonpolarSimpleEntityType tb
-            case getGroundFamily openStorableFamilyWitness gtb of
-                Just (MkOpenEntityFamily _) ->
-                    return $
-                    case getGroundFamily openStorableFamilyWitness gta of
-                        Just (MkOpenEntityFamily _) -> MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
-                        Nothing ->
-                            MkSubtypeConversionEntry TrustMe gta gtb $
-                            singleSubtypeConversion Nothing $
-                            coerceShim "open entity" .
-                            (functionToShim "entityConvert" $
-                             storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)
-                Nothing ->
-                    case getGroundFamily abstractDynamicStorableFamilyWitness gtb of
-                        Just (MkAbstractDynamicEntityFamily _ _) ->
-                            case getGroundFamily abstractDynamicStorableFamilyWitness gta of
-                                Just (MkAbstractDynamicEntityFamily _ _) ->
-                                    return $ MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion
-                                Nothing ->
-                                    case getGroundFamily concreteDynamicStorableFamilyWitness gta of
-                                        Just (MkConcreteDynamicEntityFamily _ _) ->
-                                            return $ MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion
-                                        Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow ta
-                        Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
+getDynamicSupertypes ::
+       QGroundType '[] DynamicEntity -> QInterpreter [(FullName, AbstractDynamicEntityFamily DynamicEntity)]
+getDynamicSupertypes _ = return [] -- NYI
+
+addDynamicSupertypes :: DynamicTypeSet -> (FullName, AbstractDynamicEntityFamily DynamicEntity) -> QScopeBuilder ()
+addDynamicSupertypes cdts (name, MkAbstractDynamicEntityFamily tid tset) =
+    reregisterGroundType (fullNameRef name) $ abstractDynamicStorableGroundType name tid $ union cdts tset
+
+interpretIdentitySubtypeRelation :: SyntaxType -> SyntaxType -> QScopeBuilder ()
+interpretIdentitySubtypeRelation sta stb =
+    liftWithFinal builderLift $ do
+        ata <- interpretNonpolarType sta
+        atb <- interpretNonpolarType stb
+        case (ata, atb) of
+            (MkSome ta, MkSome tb) -> do
+                (gta, tea) <- nonpolarSimpleEntityType ta
+                (gtb, _) <- nonpolarSimpleEntityType tb
+                case getGroundFamily openStorableFamilyWitness gtb of
+                    Just (MkOpenEntityFamily _) ->
+                        return $
+                        registerSubtypeConversion $
+                        case getGroundFamily openStorableFamilyWitness gta of
+                            Just (MkOpenEntityFamily _) ->
+                                MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
+                            Nothing ->
+                                MkSubtypeConversionEntry TrustMe gta gtb $
+                                singleSubtypeConversion Nothing $
+                                coerceShim "open entity" .
+                                (functionToShim "entityConvert" $
+                                 storeAdapterConvert $ storableGroundTypeAdapter tea NilArguments)
+                    Nothing ->
+                        case getGroundFamily abstractDynamicStorableFamilyWitness gtb of
+                            Just (MkAbstractDynamicEntityFamily _ _) -> do
+                                supertypes <- getDynamicSupertypes gtb
+                                return $
+                                    case getGroundFamily abstractDynamicStorableFamilyWitness gta of
+                                        Just (MkAbstractDynamicEntityFamily _ cdts) -> do
+                                            for_ supertypes $ addDynamicSupertypes cdts
+                                            registerSubtypeConversion $
+                                                MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion
+                                        Nothing ->
+                                            case getGroundFamily concreteDynamicStorableFamilyWitness gta of
+                                                Just (MkConcreteDynamicEntityFamily _ cdt) -> do
+                                                    for_ supertypes $ addDynamicSupertypes $ opoint cdt
+                                                    registerSubtypeConversion $
+                                                        MkSubtypeConversionEntry
+                                                            Verify
+                                                            gta
+                                                            gtb
+                                                            identitySubtypeConversion
+                                                Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow ta
+                            Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
 interpretSubtypeRelation ::
        TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> RawMarkdown -> QScopeBuilder ()
 interpretSubtypeRelation trustme sta stb mbody docDescription = do
-    sce <-
-        builderLift $
-        case mbody of
-            Just body -> interpretGeneralSubtypeRelation trustme sta stb body
-            Nothing -> interpretIdentitySubtypeRelation sta stb
-    registerSubtypeConversion sce
+    case mbody of
+        Just body -> do
+            sce <- builderLift $ interpretGeneralSubtypeRelation trustme sta stb body
+            registerSubtypeConversion sce
+        Nothing -> interpretIdentitySubtypeRelation sta stb
     let
         diSubtype = exprShow sta
         diSupertype = exprShow stb
