@@ -2,6 +2,7 @@
 
 module Pinafore.Language.Type.Storable
     ( Storability(..)
+    , pureStorabilityAdapter
     , storabilityProperty
     , entityGroundType
     , getMonoStorableType

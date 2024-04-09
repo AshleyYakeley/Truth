@@ -766,13 +766,13 @@ baseLibSections =
             , addNameInRootBDS $
               specialFormBDS "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
               MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                  let dtw = getGreatestDynamicSupertype tn
+                  dtw <- getGreatestDynamicSupertype tn
                   tpw <- invertType tn
                   return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
             , addNameInRootBDS $
               specialFormBDS "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
               MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                  let dtw = getGreatestDynamicSupertype tn
+                  dtw <- getGreatestDynamicSupertype tn
                   tpw <- invertType tn
                   return $
                       MkSomeOf (funcShimWit dtw tpw) $ \case

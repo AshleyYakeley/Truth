@@ -82,7 +82,8 @@ nonpolarToStoreAdapter params (GroundedNonpolarType ground args) = do
             Nothing -> throw $ InterpretTypeNotEntityError $ showGroundType ground
             Just x -> return x
     aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToStoreAdapter params arg) cvt args
-    return $ Compose $ \eargs -> stbAdapter storability $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
+    MkAllFor stba <- stbAdapter storability
+    return $ Compose $ \eargs -> stba $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
 nonpolarToStoreAdapter _ t@(RecursiveNonpolarType {}) = throw $ InterpretTypeNotEntityError $ exprShow t
 
 makeConstructorAdapter ::
@@ -133,7 +134,7 @@ makeStorableGroundType mainTypeName tparams = let
     mkgt ::
            (CCRVariancesMap dv gt, WithArgs StoreAdapter gt)
         -> QInterpreter (GroundTypeFromTypeID dv gt (Storability dv gt))
-    mkgt ~(dvm, ~(MkWithArgs stbAdapter)) = do
+    mkgt ~(dvm, ~(MkWithArgs stba)) = do
         cvt <-
             case ccrVariancesToCovaryType dvt of
                 Just cvt -> return cvt
@@ -144,6 +145,7 @@ makeStorableGroundType mainTypeName tparams = let
                 stbKind = cvt
                 stbCovaryMap = ccrVariancesMapToCovary cvt $ lazyCCRVariancesMap dvt dvm
                 showType = standardListTypeExprShow @dv $ exprShow subTypeName
+                stbAdapter = return $ MkAllFor stba
                 storability :: Storability dv gt
                 storability = MkStorability {..}
                 gt :: QGroundType dv gt
@@ -159,15 +161,18 @@ makeStorableGroundType mainTypeName tparams = let
                         }
                 in (gt, storability)
     postregister :: QGroundType dv gt -> Storability dv gt -> QScopeBuilder ()
-    postregister gt storability =
-        registerSubtypeConversion $
-        MkSubtypeConversionEntry TrustMe gt entityGroundType $
-        storabilitySaturatedAdapter
-            (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
-            plainStoreAdapter
-            storability $ \args eat ->
-            subtypeConversion Nothing gt args nilCCRPolarArgumentsShimWit $
-            pure $ functionToShim "datatype-storable" $ storeAdapterConvert eat
+    postregister gt storability = do
+        sce <-
+            builderLift $
+            storabilitySaturatedAdapter
+                (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
+                plainStoreAdapter
+                storability $ \args eat ->
+                return $
+                MkSubtypeConversionEntry TrustMe gt entityGroundType $
+                subtypeConversion Nothing gt args nilCCRPolarArgumentsShimWit $
+                pure $ functionToShim "datatype-storable" $ storeAdapterConvert eat
+        registerSubtypeConversion sce
     in MkTypeConstruction mkx mkgt postregister
 
 makeStorableDataTypeBox ::

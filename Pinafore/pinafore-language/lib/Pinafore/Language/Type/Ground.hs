@@ -96,7 +96,7 @@ type QNonpolarType :: Type -> Type
 type QNonpolarType = NonpolarType QGroundType
 
 singleGroundType' ::
-       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). HasCCRVariances dv t
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). (HasInterpreter, HasCCRVariances dv t)
     => FamilialType t
     -> GroundProperties dv t
     -> ListTypeExprShow dv
@@ -113,7 +113,7 @@ singleGroundType' ft props showexp =
         }
 
 singleGroundType ::
-       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). HasCCRVariances dv t
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). (HasInterpreter, HasCCRVariances dv t)
     => IOWitness ('MkWitKind (SingletonFamily t))
     -> ListTypeExprShow dv
     -> QGroundType dv t
@@ -130,7 +130,7 @@ standardListTypeExprShow = let
     in sh 0 $ representative @_ @_ @dv
 
 stdSingleGroundType ::
-       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). HasCCRVariances dv t
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). (HasInterpreter, HasCCRVariances dv t)
     => IOWitness ('MkWitKind (SingletonFamily t))
     -> FullName
     -> QGroundType dv t

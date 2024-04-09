@@ -8,7 +8,6 @@ module Pinafore.Language.Interpreter.Register
     , registerPatternConstructor
     , registerRecord
     , registerSubtypeConversion
-    , reregisterGroundType
     ) where
 
 import Language.Expression.Common
@@ -62,16 +61,6 @@ registerSelector :: BindingSelector t -> FullName -> DefDoc -> t -> QScopeBuilde
 registerSelector bst name doc t = do
     builderLift $ checkNameForRegister name
     registerBinding name $ MkQBindingInfo name doc $ bsEncode bst t
-
-reregisterSelector :: BindingSelector t -> FullNameRef -> (t -> t) -> QScopeBuilder ()
-reregisterSelector bst nameref f = do
-    (name, bi) <- builderLift $ lookupBindingInfo nameref
-    case bsDecode bst $ biValue bi of
-        Just oldt -> registerBinding name $ bi {biValue = bsEncode bst $ f oldt}
-        Nothing -> throw $ bsError bst nameref
-
-reregisterGroundType :: FullNameRef -> QGroundType dv t -> QScopeBuilder ()
-reregisterGroundType nameref t = reregisterSelector typeBindingSelector nameref $ \_ -> MkSomeGroundType t
 
 registerType :: FullName -> DefDoc -> QSomeGroundType -> QScopeBuilder ()
 registerType = registerSelector typeBindingSelector

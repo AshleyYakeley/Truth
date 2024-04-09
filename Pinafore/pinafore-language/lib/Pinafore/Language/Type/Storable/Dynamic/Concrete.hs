@@ -34,16 +34,15 @@ concreteDynamicStorableFamilyWitness = $(iowitness [t|'MkWitKind ConcreteDynamic
 
 concreteDynamicStorableGroundType :: FullName -> ConcreteDynamicType -> QGroundType '[] DynamicEntity
 concreteDynamicStorableGroundType name cdt = let
-    props = singleGroundProperty storabilityProperty $ dynamicEntityStorability $ Just $ opoint cdt
+    props = singleGroundProperty storabilityProperty $ dynamicEntityStorability $ return $ Just $ opoint cdt
     in (singleGroundType'
             (MkFamilialType concreteDynamicStorableFamilyWitness $ MkConcreteDynamicEntityFamily name cdt)
             props $
         exprShowPrec name)
            { qgtGreatestDynamicSupertype =
-                 SimplePolyGreatestDynamicSupertype
+                 simplePolyGreatestDynamicSupertype
                      dynamicEntityStorableGroundType
                      (functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (dt == cdt) de)
-                     id
            }
 
 getConcreteDynamicEntityType :: Some (QType 'Positive) -> QInterpreter (FullName, ConcreteDynamicType)

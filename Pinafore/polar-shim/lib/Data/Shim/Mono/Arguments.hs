@@ -27,6 +27,10 @@ instance forall (w :: forall k. k -> Type). TestHetEquality w => TestEquality (M
         Refl <- testEquality args1 args2
         return Refl
 
+mapArgumentsM :: Applicative m => (forall a. w1 a -> m (w2 a)) -> Arguments w1 f t -> m (Arguments w2 f t)
+mapArgumentsM _ NilArguments = pure NilArguments
+mapArgumentsM ff (ConsArguments w args) = ConsArguments <$> (ff w) <*> mapArgumentsM ff args
+
 mapArguments :: (forall a. w1 a -> w2 a) -> Arguments w1 f t -> Arguments w2 f t
 mapArguments _ NilArguments = NilArguments
 mapArguments ff (ConsArguments w args) = ConsArguments (ff w) $ mapArguments ff args

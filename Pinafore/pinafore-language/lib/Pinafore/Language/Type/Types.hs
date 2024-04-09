@@ -51,8 +51,7 @@ maybeGroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapter :: forall t. Arguments StoreAdapter Maybe t -> StoreAdapter t
-        stbAdapter (ConsArguments t NilArguments) = maybeStoreAdapter t
+        stbAdapter = pureStorabilityAdapter @Maybe $ \(ConsArguments t NilArguments) -> maybeStoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe") {qgtProperties = props}
@@ -92,8 +91,7 @@ listGroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapter :: forall t. Arguments StoreAdapter [] t -> StoreAdapter t
-        stbAdapter (ConsArguments t NilArguments) = listStoreAdapter t
+        stbAdapter = pureStorabilityAdapter @[] $ \(ConsArguments t NilArguments) -> listStoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List") {qgtProperties = props}
@@ -104,16 +102,15 @@ list1GroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapter :: forall t. Arguments StoreAdapter NonEmpty t -> StoreAdapter t
-        stbAdapter (ConsArguments t NilArguments) = list1StoreAdapter t
+        stbAdapter = pureStorabilityAdapter @NonEmpty $ \(ConsArguments t NilArguments) -> list1StoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1.List.")
            { qgtProperties = props
            , qgtGreatestDynamicSupertype =
-                 GeneralPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
+                 MkPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
                      tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
-                     in Just $ MkShimWit tt (MkPolarShim $ functionToShim "nonEmpty" nonEmpty)
+                     in return $ Just $ MkShimWit tt (MkPolarShim $ functionToShim "nonEmpty" nonEmpty)
            }
 
 eitherStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Either ta tb)
@@ -137,8 +134,9 @@ eitherGroundType = let
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapter :: forall t. Arguments StoreAdapter Either t -> StoreAdapter t
-        stbAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherStoreAdapter ta tb
+        stbAdapter =
+            pureStorabilityAdapter @Either $ \(ConsArguments ta (ConsArguments tb NilArguments)) ->
+                eitherStoreAdapter ta tb
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     showtype :: ListTypeExprShow '[ CoCCRVariance, CoCCRVariance]
@@ -164,8 +162,8 @@ pairGroundType = let
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapter :: forall t. Arguments StoreAdapter (,) t -> StoreAdapter t
-        stbAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = pairStoreAdapter ta tb
+        stbAdapter =
+            pureStorabilityAdapter @(,) $ \(ConsArguments ta (ConsArguments tb NilArguments)) -> pairStoreAdapter ta tb
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     showtype :: ListTypeExprShow '[ CoCCRVariance, CoCCRVariance]
@@ -181,8 +179,7 @@ mapGroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapter :: forall t. Arguments StoreAdapter LangMap t -> StoreAdapter t
-        stbAdapter (ConsArguments t NilArguments) = mapStoreAdapter t
+        stbAdapter = pureStorabilityAdapter @LangMap $ \(ConsArguments t NilArguments) -> mapStoreAdapter t
         in MkStorability {..}
     props :: GroundProperties '[ CoCCRVariance] LangMap
     props = singleGroundProperty storabilityProperty storability

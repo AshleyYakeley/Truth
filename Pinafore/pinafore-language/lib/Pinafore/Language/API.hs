@@ -13,6 +13,8 @@ module Pinafore.Language.API
     , SingletonFamily
     , QGroundType(..)
     , PolyGreatestDynamicSupertype(..)
+    , simpleMPolyGreatestDynamicSupertype
+    , simplePolyGreatestDynamicSupertype
     , literalSubtypeRelationEntry
     , mkLiteralGroundType
     , showableSubtypeRelationEntry

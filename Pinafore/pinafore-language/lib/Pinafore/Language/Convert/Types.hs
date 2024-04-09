@@ -97,7 +97,7 @@ mkLiteralGroundType wit name = let
         MkStorability
             { stbKind = NilListType
             , stbCovaryMap = covarymap
-            , stbAdapter = \NilArguments -> literalStoreAdapter literalCodec
+            , stbAdapter = pureStorabilityAdapter $ \NilArguments -> literalStoreAdapter literalCodec
             }
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType wit name)
@@ -108,10 +108,7 @@ literalGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFami
 
 literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
 literalGreatestDynamicSupertype =
-    SimplePolyGreatestDynamicSupertype
-        literalGroundType
-        (functionToShim "fromLiteral" fromLiteral)
-        (functionToShim "toLiteral" toLiteral)
+    simplePolyGreatestDynamicSupertype literalGroundType (functionToShim "fromLiteral" fromLiteral)
 
 instance HasQGroundType '[] Literal where
     qGroundType = literalGroundType

@@ -6,6 +6,7 @@ module Pinafore.Language.Type.Storable.Dynamic.Storability
 
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Storable.Dynamic.Entity
 import Pinafore.Language.Type.Storable.Type
 import Shapes
@@ -36,11 +37,12 @@ dynamicStoreAdapter mdt =
         dynamicAnchor
         (ConsListType (typeStoreAdapter mdt) $ ConsListType plainStoreAdapter NilListType)
 
-dynamicEntityStorability :: Maybe DynamicTypeSet -> Storability '[] DynamicEntity
-dynamicEntityStorability mdts = let
+dynamicEntityStorability :: Interpreter (Maybe DynamicTypeSet) -> Storability '[] DynamicEntity
+dynamicEntityStorability imdts = let
     stbKind = NilListType
     stbCovaryMap :: CovaryMap DynamicEntity
     stbCovaryMap = covarymap
-    stbAdapter :: forall ta. Arguments StoreAdapter DynamicEntity ta -> StoreAdapter ta
-    stbAdapter NilArguments = dynamicStoreAdapter mdts
+    stbAdapter = do
+        mdts <- imdts
+        return $ MkAllFor $ \NilArguments -> dynamicStoreAdapter mdts
     in MkStorability {..}

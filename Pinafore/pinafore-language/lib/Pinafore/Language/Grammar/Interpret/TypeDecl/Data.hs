@@ -536,9 +536,10 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                             (baseGroundType, _) = gttid (tdName tdata) typeID
                                             gds :: PinaforePolyGreatestDynamicSupertype dv maintype
                                             gds =
-                                                GeneralPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
+                                                MkPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
                                                     case unsafeRefl @Type @decltype @argstype of
                                                         Refl ->
+                                                            return $
                                                             Just $
                                                             MkShimWit (MkDolanGroundedType mainGroundType args) $
                                                             MkPolarShim $

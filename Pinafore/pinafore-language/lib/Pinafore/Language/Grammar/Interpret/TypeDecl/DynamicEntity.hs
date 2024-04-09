@@ -19,7 +19,7 @@ makeAbstractDynamicEntityTypeBox name md =
         register _ = do
             let
                 doc = MkDefDoc (typeDocItem name True []) md
-                t = abstractDynamicStorableGroundType name tidsym mempty
+                t = abstractDynamicStorableGroundType name tidsym
             registerGroundType name doc t
             registerSubtypeConversion $
                 MkSubtypeConversionEntry Verify t dynamicEntityStorableGroundType identitySubtypeConversion

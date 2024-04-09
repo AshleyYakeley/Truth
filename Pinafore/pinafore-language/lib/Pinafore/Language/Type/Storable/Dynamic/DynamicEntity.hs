@@ -12,4 +12,4 @@ import Shapes
 dynamicEntityStorableGroundType :: QGroundType '[] DynamicEntity
 dynamicEntityStorableGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily DynamicEntity)|]) "DynamicEntity")
-        {qgtProperties = singleGroundProperty storabilityProperty $ dynamicEntityStorability Nothing}
+        {qgtProperties = singleGroundProperty storabilityProperty $ dynamicEntityStorability $ return Nothing}

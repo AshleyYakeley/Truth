@@ -16,7 +16,7 @@ import Pinafore.Language.Type.Show
 import Pinafore.Language.Type.Subtype.Hint
 import Shapes
 
-funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
+funcGroundType :: HasInterpreter => QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
         namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb

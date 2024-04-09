@@ -46,6 +46,8 @@ storageLibSection =
                 (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
                 eta <- getMonoStorableType ta
                 etb <- getMonoStorableType tb
+                saa <- monoStoreAdapter eta
+                sab <- monoStoreAdapter etb
                 let
                     bta = biRangeSomeFor (nonpolarToNegative @QTypeSystem ta, nonpolarToPositive @QTypeSystem ta)
                     btb = biRangeSomeFor (nonpolarToNegative @QTypeSystem tb, nonpolarToPositive @QTypeSystem tb)
@@ -58,8 +60,7 @@ storageLibSection =
                                    ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
                                typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
                                typef = qFunctionPosWitness typeStorage typem
-                               property =
-                                   predicateProperty (monoStoreAdapter eta) (monoStoreAdapter etb) (MkPredicate anchor)
+                               property = predicateProperty saa sab (MkPredicate anchor)
                                pinaproperty =
                                    \qstore ->
                                        MkLangProperty $

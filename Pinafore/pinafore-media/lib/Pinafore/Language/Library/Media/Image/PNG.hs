@@ -24,10 +24,7 @@ pngImageGroundType :: QGroundType '[] LangPNGImage
 pngImageGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPNGImage)|]) "PNG.Image.")
         { qgtGreatestDynamicSupertype =
-              SimplePolyGreatestDynamicSupertype
-                  qGroundType
-                  (functionToShim "fromLiteral" literalToDataLiteral)
-                  (functionToShim "pngLiteral" idlLiteral)
+              simplePolyGreatestDynamicSupertype qGroundType (functionToShim "fromLiteral" literalToDataLiteral)
         }
 
 instance HasQGroundType '[] LangPNGImage where

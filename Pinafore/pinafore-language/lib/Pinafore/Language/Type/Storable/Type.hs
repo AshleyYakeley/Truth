@@ -14,8 +14,14 @@ type Storability :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data Storability dv gt = MkStorability
     { stbKind :: CovaryType dv
     , stbCovaryMap :: CovaryMap gt
-    , stbAdapter :: forall t. Arguments StoreAdapter gt t -> StoreAdapter t
+    , stbAdapter :: Interpreter (AllFor StoreAdapter (Arguments StoreAdapter gt))
     }
+
+pureStorabilityAdapter ::
+       forall gt.
+       (forall ta. Arguments StoreAdapter gt ta -> StoreAdapter ta)
+    -> Interpreter (AllFor StoreAdapter (Arguments StoreAdapter gt))
+pureStorabilityAdapter f = return $ MkAllFor f
 
 storabilityProperty :: IOWitness (Storability '[] ())
 storabilityProperty = $(iowitness [t|Storability '[] ()|])
@@ -43,10 +49,11 @@ storabilitySaturatedAdapter ::
        QShimWit 'Negative a
     -> StoreAdapter a
     -> Storability dv gt
-    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> StoreAdapter t -> r)
-    -> r
-storabilitySaturatedAdapter tt adapter MkStorability {..} call =
-    saturateStoreAdapter tt adapter stbKind stbCovaryMap $ \args eargs -> call args (stbAdapter eargs)
+    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> StoreAdapter t -> Interpreter r)
+    -> Interpreter r
+storabilitySaturatedAdapter tt adapter MkStorability {..} call = do
+    MkAllFor stba <- stbAdapter
+    saturateStoreAdapter tt adapter stbKind stbCovaryMap $ \args eargs -> call args $ stba eargs
 
 type SealedStorability :: forall k. k -> Type
 data SealedStorability gt where
@@ -82,9 +89,12 @@ instance IsCovaryGroundType StorableGroundType where
     groundTypeCovaryMap :: forall k (t :: k). StorableGroundType t -> CovaryMap t
     groundTypeCovaryMap (MkStorableGroundType _ (MkSealedStorability _ storability)) = stbCovaryMap storability
 
-storableGroundTypeAdapter :: forall f t. StorableGroundType f -> Arguments MonoStorableType f t -> StoreAdapter t
-storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storability)) args =
-    stbAdapter storability $ mapArguments monoStoreAdapter args
+storableGroundTypeAdapter ::
+       forall f t. StorableGroundType f -> Arguments MonoStorableType f t -> Interpreter (StoreAdapter t)
+storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storability)) args = do
+    MkAllFor stba <- stbAdapter storability
+    args' <- mapArgumentsM monoStoreAdapter args
+    return $ stba args'
 
 type MonoStorableType = MonoType StorableGroundType
 
@@ -104,5 +114,5 @@ instance ExprShow (MonoStorableType t) where
 instance Show (MonoStorableType t) where
     show t = unpack $ toText $ exprShow t
 
-monoStoreAdapter :: forall t. MonoStorableType t -> StoreAdapter t
+monoStoreAdapter :: forall t. MonoStorableType t -> Interpreter (StoreAdapter t)
 monoStoreAdapter (MkMonoType gt args) = storableGroundTypeAdapter gt args
