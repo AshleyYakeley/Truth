@@ -24,7 +24,7 @@ evalLibSection =
                 \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\
                 \The local scope is not in any way transmitted to the evaluation."
               ["@A"]
-              "Text -> Action (Either Text A)" $
+              "Text. -> Action. (Text. +: A)" $
           MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
               spvals <- getSpecialVals
               let

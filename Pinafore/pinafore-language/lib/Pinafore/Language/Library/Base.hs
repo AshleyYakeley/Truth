@@ -562,7 +562,7 @@ baseLibSections =
                                     pt :: OpenEntity tid
                                     pt = MkOpenEntity $ MkEntity anchor
                                     in MkSomeOf typef pt
-                  , specialFormBDS "new" "Generate an open entity. `A` is an open entity type." ["@A"] "Action A" $
+                  , specialFormBDS "new" "Generate an open entity. `A` is an open entity type." ["@A"] "Action. A" $
                     MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                         mtp <- getOpenEntityType t
                         return $
@@ -598,7 +598,7 @@ baseLibSections =
                         "new"
                         "Generate a dynamic entity. `A` is a concrete dynamic entity type."
                         ["@A"]
-                        "Action A" $
+                        "Action. A" $
                     MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                         (n, dt) <- getConcreteDynamicEntityType t
                         let
@@ -627,7 +627,7 @@ baseLibSections =
                         "fromType"
                         "The dynamic type of `A`, a concrete dynamic entity type."
                         ["@A"]
-                        "DynamicType" $
+                        "DynamicType." $
                     MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                         (_, dt) <- getConcreteDynamicEntityType t
                         return $ jmToValue dt
@@ -635,7 +635,7 @@ baseLibSections =
                         "fromAbstract"
                         "The dynamic types of `A`, a dynamic entity type."
                         ["@A"]
-                        "List DynamicType" $
+                        "List. DynamicType." $
                     MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                         dts <- getDynamicEntityType t
                         return $ jmToValue $ toList dts
@@ -643,7 +643,7 @@ baseLibSections =
                         "subtype"
                         "Whether this type is in `A`, a dynamic entity type."
                         ["@A"]
-                        "DynamicType -> Boolean" $
+                        "DynamicType. -> Boolean." $
                     MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                         dts <- getDynamicEntityType t
                         return $ jmToValue $ \a -> member a dts
@@ -810,7 +810,7 @@ baseLibSections =
                   "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
                   (seq :: TopType -> A -> A)
             , addNameInRootBDS $
-              specialFormBDS "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
+              specialFormBDS "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe. A" $
               MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                   dtw <- getGreatestDynamicSupertype tn
                   tpw <- invertType tn
