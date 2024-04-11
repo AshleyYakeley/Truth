@@ -8,7 +8,7 @@ name:           pinafore-stdlib
 version:        0.4.2
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
-copyright:      (c) 2017-2023 Ashley Yakeley
+copyright:      (c) 2017-2024 Ashley Yakeley
 license:        GPL-2.0-only
 license-file:   LICENSE
 build-type:     Simple
