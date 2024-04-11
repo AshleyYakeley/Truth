@@ -1,4 +1,4 @@
-# Pinafore 0.4.2
+# Pinafore 0.5
 
 *(For an overview of what makes Pinafore unique, see [Sixteen Unusual Things About Pinafore](https://semantic.org/post/sixteen-unusual-things-about-pinafore/).)*
 

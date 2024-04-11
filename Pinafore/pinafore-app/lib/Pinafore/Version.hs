@@ -10,7 +10,7 @@ import GitHash
 import Shapes
 
 pinaforeVersion :: String
-pinaforeVersion = "0.4.2"
+pinaforeVersion = "0.5"
 
 extraVersion :: String
 extraVersion =

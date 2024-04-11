@@ -1,9 +1,9 @@
 default: full
 
-PINAFOREVERSION := 0.4.2
+PINAFOREVERSION := 0.5
 
 # must be three numbers, add .0 as necessary
-PINAFOREVERSIONABC := $(PINAFOREVERSION)
+PINAFOREVERSIONABC := $(PINAFOREVERSION).0
 
 ### Flags for stack
 
