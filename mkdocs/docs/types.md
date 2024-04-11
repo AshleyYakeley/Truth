@@ -404,7 +404,7 @@ If there is a loop of subtype relations, it will simply make those types equival
 ### Dynamic Entity Types
 
 A dynamic entity is an entity that stores its own "concrete type" (as an anchor).
-You can think of the `DynamicEntity` type as a `(concretetype, value)` pair of anchors.
+You can think of the `DynamicEntity` type as a `(DynamicType, value)` pair of anchors.
 
 Dynamic entity types are subtypes of `DynamicEntity`, declared by the `dynamictype` keyword.
 Each one represents a set of concrete types.

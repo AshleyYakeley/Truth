@@ -8,6 +8,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add collect.FiniteSetModel
       . add newClockUTC.Date, newClockLocal.Date
       . improve type of getList.FiniteSetModel
+      . add DynamicType and functions
     - GTK
       . allow checkbox menus
     - UILib

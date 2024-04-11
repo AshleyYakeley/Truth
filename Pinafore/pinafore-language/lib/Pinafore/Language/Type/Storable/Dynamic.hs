@@ -1,5 +1,5 @@
 module Pinafore.Language.Type.Storable.Dynamic
-    ( ConcreteDynamicType
+    ( ConcreteDynamicType(..)
     , mkConcreteDynamicType
     , DynamicTypeSet
     , DynamicEntity(..)
@@ -8,6 +8,7 @@ module Pinafore.Language.Type.Storable.Dynamic
     , abstractDynamicStorableGroundType
     , concreteDynamicStorableGroundType
     , getConcreteDynamicEntityType
+    , getDynamicEntityType
     , AbstractDynamicEntityFamily(..)
     , ConcreteDynamicEntityFamily(..)
     , abstractDynamicStorableFamilyWitness

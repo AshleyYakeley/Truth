@@ -126,6 +126,14 @@ mconcat1 (na :| lna) = append na $ mconcat $ fmap toList lna
 orderOn :: (B -> A) -> (A -> A -> Ordering) -> B -> B -> Ordering
 orderOn ba order b1 b2 = order (ba b1) (ba b2)
 
+-- ConcreteDynamicType
+dynamicTypeStorableGroundType :: QGroundType '[] ConcreteDynamicType
+dynamicTypeStorableGroundType =
+    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ConcreteDynamicType)|]) "DynamicType"
+
+instance HasQGroundType '[] ConcreteDynamicType where
+    qGroundType = dynamicTypeStorableGroundType
+
 baseLibSections :: [BindDocStuff context]
 baseLibSections =
     [ headingBDS "Literals & Entities" "" $
@@ -536,7 +544,7 @@ baseLibSections =
               ]
             ]
       , headingBDS
-            "Open Entity Types"
+            "Open Entities"
             ""
             [ namespaceBDS
                   "OpenEntity"
@@ -567,7 +575,7 @@ baseLibSections =
                   ]
             ]
       , headingBDS
-            "Dynamic Entity Types"
+            "Dynamic Entities"
             ""
             [ typeBDS "DynamicEntity" "" (MkSomeGroundType dynamicEntityStorableGroundType) []
             , hasSubtypeRelationBDS @DynamicEntity @Entity Verify "" $
@@ -601,6 +609,44 @@ baseLibSections =
                                     return $ MkDynamicEntity dt e
                             typef = actionShimWit $ concreteDynamicEntityShimWit n dt
                         return $ MkSomeOf typef pt
+                  ]
+            ]
+      , headingBDS
+            "Dynamic Types"
+            ""
+            [ typeBDS "DynamicType" "" (MkSomeGroundType dynamicTypeStorableGroundType) []
+            , hasSubtypeRelationBDS @ConcreteDynamicType @Entity Verify "" $
+              functionToShim "unConcreteDynamicType" $ \(MkConcreteDynamicType entity) -> entity
+            , namespaceBDS
+                  "DynamicType"
+                  [ valBDS "fromEntity" "The type of this dynamic entity." $ \(MkDynamicEntity dt _) -> dt
+                  , valBDS "newEntity" "Generate a dynamic entity of this type." $ \dt -> do
+                        e <- newKeyContainerItem @(FiniteSet Entity)
+                        return $ MkDynamicEntity dt e
+                  , specialFormBDS
+                        "fromType"
+                        "The dynamic type of `A`, a concrete dynamic entity type."
+                        ["@A"]
+                        "DynamicType" $
+                    MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+                        (_, dt) <- getConcreteDynamicEntityType t
+                        return $ jmToValue dt
+                  , specialFormBDS
+                        "fromAbstract"
+                        "The dynamic types of `A`, a dynamic entity type."
+                        ["@A"]
+                        "List DynamicType" $
+                    MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+                        dts <- getDynamicEntityType t
+                        return $ jmToValue $ toList dts
+                  , specialFormBDS
+                        "subtype"
+                        "Whether this type is in `A`, a dynamic entity type."
+                        ["@A"]
+                        "DynamicType -> Boolean" $
+                    MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+                        dts <- getDynamicEntityType t
+                        return $ jmToValue $ \a -> member a dts
                   ]
             ]
       ]

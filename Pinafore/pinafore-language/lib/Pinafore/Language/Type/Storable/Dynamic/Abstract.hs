@@ -2,11 +2,14 @@ module Pinafore.Language.Type.Storable.Dynamic.Abstract
     ( AbstractDynamicEntityFamily(..)
     , abstractDynamicStorableGroundType
     , abstractDynamicStorableFamilyWitness
+    , getDynamicEntityType
     ) where
 
 import Data.Shim
 import Language.Expression.Dolan
+import Pinafore.Language.Error
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -81,20 +84,36 @@ getImmediateConcreteDynamicSubtypes entries famb = let
         return cdt
     in mapMaybe matchSCE entries
 
+getTypeSet :: AbstractDynamicEntityFamily DynamicEntity -> Interpreter DynamicTypeSet
+getTypeSet fam = do
+    entries <- getSubtypeConversions
+    return $ let
+        abss = getGraph (getImmediateAbstractDynamicSubtypes entries) fam
+        in setFromList $ mconcat $ fmap (getImmediateConcreteDynamicSubtypes entries) $ toList abss
+
 abstractDynamicStorableGroundType :: FullName -> TypeIDType tid -> QGroundType '[] DynamicEntity
 abstractDynamicStorableGroundType name tid = let
     fam :: AbstractDynamicEntityFamily DynamicEntity
     fam = MkAbstractDynamicEntityFamily tid
-    getTypeSet :: Interpreter DynamicTypeSet
-    getTypeSet = do
-        entries <- getSubtypeConversions
-        return $ let
-            abss = getGraph (getImmediateAbstractDynamicSubtypes entries) fam
-            in setFromList $ mconcat $ fmap (getImmediateConcreteDynamicSubtypes entries) $ toList abss
-    props = singleGroundProperty storabilityProperty $ dynamicEntityStorability $ fmap Just getTypeSet
+    props = singleGroundProperty storabilityProperty $ dynamicEntityStorability $ fmap Just $ getTypeSet fam
     in (singleGroundType' (MkFamilialType abstractDynamicStorableFamilyWitness fam) props $ exprShowPrec name)
            { qgtGreatestDynamicSupertype =
                  simpleMPolyGreatestDynamicSupertype dynamicEntityStorableGroundType $ do
-                     dts <- getTypeSet
+                     dts <- getTypeSet fam
                      return $ functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de
            }
+
+getMaybeAbstractDynamicEntityType :: QType 'Positive t -> Maybe (AbstractDynamicEntityFamily DynamicEntity)
+getMaybeAbstractDynamicEntityType tm = do
+    MkShimWit (MkDolanGroundedType gt NilCCRArguments) _ <- dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm
+    fam@MkAbstractDynamicEntityFamily {} <- getGroundFamily abstractDynamicStorableFamilyWitness gt
+    return fam
+
+getDynamicEntityType :: Some (QType 'Positive) -> Interpreter DynamicTypeSet
+getDynamicEntityType (MkSome tm) =
+    case getMaybeConcreteDynamicEntityType tm of
+        Just (_, cdt) -> return $ opoint cdt
+        Nothing ->
+            case getMaybeAbstractDynamicEntityType tm of
+                Just fam -> getTypeSet fam
+                Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow tm

@@ -2,6 +2,7 @@ module Pinafore.Language.Type.Storable.Dynamic.Concrete
     ( ConcreteDynamicEntityFamily(..)
     , concreteDynamicStorableFamilyWitness
     , concreteDynamicStorableGroundType
+    , getMaybeConcreteDynamicEntityType
     , getConcreteDynamicEntityType
     ) where
 
@@ -45,10 +46,14 @@ concreteDynamicStorableGroundType name cdt = let
                      (functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (dt == cdt) de)
            }
 
+getMaybeConcreteDynamicEntityType :: QType 'Positive t -> Maybe (FullName, ConcreteDynamicType)
+getMaybeConcreteDynamicEntityType tm = do
+    MkShimWit (MkDolanGroundedType gt NilCCRArguments) _ <- dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm
+    MkConcreteDynamicEntityFamily name cdt <- getGroundFamily concreteDynamicStorableFamilyWitness gt
+    return (name, cdt)
+
 getConcreteDynamicEntityType :: Some (QType 'Positive) -> QInterpreter (FullName, ConcreteDynamicType)
 getConcreteDynamicEntityType (MkSome tm) =
-    case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
-        Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
-            | Just (MkConcreteDynamicEntityFamily name cdt) <- getGroundFamily concreteDynamicStorableFamilyWitness gt ->
-                return (name, cdt)
-        _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
+    case getMaybeConcreteDynamicEntityType tm of
+        Just nct -> return nct
+        Nothing -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
