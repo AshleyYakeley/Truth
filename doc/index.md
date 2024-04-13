@@ -5,9 +5,36 @@ getting-started
 invocation
 future-plans
 building
-language
-library
-examples/index
+```
+```{toctree}
+:hidden:
+:caption: Language
+syntax
+expressions
+declarations
+type-system
+types
+dynamic-supertypes
+do-notation
+applicative-notation
+modules
+```
+```{toctree}
+:hidden:
+:caption: Library
+generated/library/pinafore
+generated/library/pinafore-media
+generated/library/pinafore-gnome
+generated/library/UILib
+```
+```{toctree}
+:hidden:
+:caption: Examples
+examples/stopwatch
+examples/calendar
+examples/contacts
+examples/events
+examples/quine
 ```
 # Pinafore 0.5
 
