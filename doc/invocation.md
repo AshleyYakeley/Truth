@@ -19,7 +19,7 @@ If you want to make a script executable from the command line, you can put this 
 #!/usr/bin/pinafore
 ```
 
-### Interactive Mode
+## Interactive Mode
 
 ```text
 pinafore [--data PATH] [-I|--include PATH] (-i|--interactive)
