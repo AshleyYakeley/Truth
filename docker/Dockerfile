@@ -16,7 +16,7 @@ RUN chmod +x /usr/local/bin/yq
 
 # various Python stuff
 RUN pip3 install --upgrade pip
-RUN pip3 install sphinx sphinxcontrib-fulltoc myst-parser Pygments scour build
+RUN pip3 install sphinx myst-parser sphinx_rtd_theme Pygments scour build
 RUN mkdir /extra
 WORKDIR /extra
 
