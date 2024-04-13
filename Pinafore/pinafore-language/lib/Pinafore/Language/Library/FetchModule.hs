@@ -34,22 +34,22 @@ instance Monoid (FetchModule context) where
 instance Contravariant FetchModule where
     contramap ab (MkFetchModule f) = MkFetchModule $ f . ab
 
-loadModuleFromText :: ModuleName -> Text -> QInterpreter QModule
-loadModuleFromText modname text = do
+loadModuleFromText :: Text -> QInterpreter QModule
+loadModuleFromText text = do
     sd <- interpretImportDeclaration builtInModuleName
-    withScopeDocs sd $ parseModule modname text
+    withScopeDocs sd $ parseModule text
 
-loadModuleFromByteString :: ModuleName -> LazyByteString -> QInterpreter QModule
-loadModuleFromByteString modname bs =
+loadModuleFromByteString :: LazyByteString -> QInterpreter QModule
+loadModuleFromByteString bs =
     case eitherToResult $ decodeUtf8' $ toStrict bs of
-        SuccessResult text -> loadModuleFromText modname text
+        SuccessResult text -> loadModuleFromText text
         FailureResult err -> throw $ UnicodeDecodeError $ showNamedText err
 
 textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule context
 textFetchModule getText =
     MkFetchModule $ \_ modname -> do
         mtext <- liftIO $ getText modname
-        for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText modname text
+        for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText text
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName t) = unpack $ t <> ".pinafore"
@@ -63,7 +63,7 @@ directoryFetchModule dirpath =
             False -> return Nothing
             True -> do
                 bs <- liftIO $ readFile fpath
-                mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString modname bs
+                mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString bs
                 return $ Just mm
 
 getLibraryModuleModule :: forall context. context -> LibraryModule context -> QInterpreter QModule

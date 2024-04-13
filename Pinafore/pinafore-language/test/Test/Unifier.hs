@@ -84,7 +84,7 @@ testLib = let
             then return ()
             else fail "different"
     in MkLibraryModule "TEST" $
-       headingBDT "TEST" "" $
+       mconcat $
        [ valBDS "idText" "TEST" idText
        , valBDS "testSameT" "TEST" testSameT
        , valBDS "testSameI" "TEST" testSameI
@@ -99,7 +99,7 @@ _traceLib = let
     libTracePure :: Text -> A -> A
     --libTracePure t = tracePure $ unpack t
     libTracePure _t = id
-    in MkLibraryModule "TRACE" $ headingBDT "TRACE" "" $ [valBDS "tracePure" "TRACE" libTracePure]
+    in MkLibraryModule "TRACE" $ valBDS "tracePure" "TRACE" libTracePure
 
 testUnifier :: TestTree
 testUnifier =

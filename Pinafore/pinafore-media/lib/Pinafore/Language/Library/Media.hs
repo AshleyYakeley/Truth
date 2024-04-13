@@ -11,5 +11,4 @@ import Pinafore.Language.Library.Media.Image
 import Shapes
 
 mediaLibrary :: [LibraryModule ()]
-mediaLibrary =
-    pure $ MkLibraryModule "pinafore-media" $ headingBDT "pinafore-media" "" [colourStuff, imageStuff, cairoStuff]
+mediaLibrary = pure $ MkLibraryModule "pinafore-media" $ mconcat [colourStuff, imageStuff, cairoStuff]
