@@ -1,6 +1,6 @@
 ```{toctree}
 :hidden:
-index
+Home<self>
 getting-started
 invocation
 future-plans
