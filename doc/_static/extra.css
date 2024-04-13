@@ -1,4 +1,4 @@
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6, .rst-content h1, .rst-content h2, .rst-content h3, .rst-content h4, .rst-content h5, .rst-content h6 {
     margin-top: 20px;
     margin-bottom: 0;
 }
@@ -33,7 +33,7 @@ footer {
     margin-top: 24px;
 }
 
-code, .rst-content code {
+code, .rst-content code, .rst-content code.literal {
     background: unset;
     border: unset;
     padding: unset;
@@ -41,7 +41,7 @@ code, .rst-content code {
     color: darkred;
 }
 
-.codehilite {
+.highlight {
     background: white;
     border: solid 1px lightgrey;
     padding: 10px;
@@ -49,34 +49,34 @@ code, .rst-content code {
     margin-bottom: 8px;
 }
 
-.codehilite .c1 {
+.highlight .c1 {
     font-style: normal;
     color: grey;
 }
 
-.codehilite .k {
+.highlight .k {
     font-weight: normal;
     color: blue;
 }
 
-.codehilite .kd {
+.highlight .kd {
     font-weight: normal;
     color: blue;
 }
 
-.codehilite .kt {
+.highlight .kt {
     font-weight: normal;
     color: darkred;
 }
 
-.codehilite .s {
+.highlight .s {
     color: darkblue;
 }
 
-.codehilite .l-Anchor {
+.highlight .l-Anchor {
     color: green;
 }
 
-.codehilite .o {
+.highlight .o {
     font-weight: normal;
 }
