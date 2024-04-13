@@ -128,9 +128,7 @@ data SomeValue =
 
 bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule ()
 bindsLibrary mname binds =
-    MkLibraryModule mname $
-    MkTree (MkBindDoc Nothing $ MkDefDoc (HeadingDocItem "") "") $
-    mconcat $ fmap (\(name, MkSomeValue val) -> valBDS (fullNameRef name) "" val) binds
+    MkLibraryModule mname $ mconcat $ fmap (\(name, MkSomeValue val) -> valBDS (fullNameRef name) "" val) binds
 
 data TesterContext = MkTesterContext
     { tcInvocationInfo :: InvocationInfo

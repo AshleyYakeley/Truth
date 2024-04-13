@@ -124,6 +124,6 @@ joinAllScopes [] = return emptyScope
 joinAllScopes (s:ss) = joinAllScopesTo s ss
 
 data QModule = MkQModule
-    { moduleDoc :: Tree DefDoc
+    { moduleDoc :: Forest DefDoc
     , moduleScope :: QScope
     }

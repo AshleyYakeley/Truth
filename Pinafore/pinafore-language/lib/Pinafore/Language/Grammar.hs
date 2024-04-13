@@ -16,18 +16,17 @@ import Pinafore.Language.Grammar.Read.Token as I (allKeywords)
 import Pinafore.Language.Grammar.Read.Type
 import Pinafore.Language.Grammar.Syntax as I (FixAssoc(..), Fixity(..), typeOperatorFixity)
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
 parseTopExpression :: Text -> QInterpreter QExpression
 parseTopExpression = parseScopedReaderWhole $ fmap interpretExpression readExpression
 
-parseModule :: ModuleName -> Text -> QInterpreter QModule
-parseModule modname =
+parseModule :: Text -> QInterpreter QModule
+parseModule =
     parseScopedReaderWhole $ do
         smod <- readModule
-        return $ interpretModule modname smod
+        return $ interpretModule smod
 
 parseType ::
        forall polarity. Is PolarityType polarity

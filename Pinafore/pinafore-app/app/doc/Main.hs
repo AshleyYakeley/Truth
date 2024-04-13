@@ -107,7 +107,13 @@ printModuleDoc modopts tmodname = do
                         HeadingDocItem {} -> (succ hlevel, ilevel)
                         _ -> (hlevel, succ ilevel)
             for_ children $ runDocTree hlevel' ilevel'
-    runDocTree 1 0 $ trimDoc $ deepMergeTree (eqMergeOn docItem) $ moduleDoc pmodule
+        headingTitle :: MarkdownText
+        headingTitle = plainText $ "import \"" <> tmodname <> "\""
+        headingItem :: DefDoc
+        headingItem = MkDefDoc (HeadingDocItem headingTitle) ""
+        tree :: Tree DefDoc
+        tree = MkTree headingItem $ moduleDoc pmodule
+    runDocTree 1 0 $ trimDoc $ deepMergeTree (eqMergeOn docItem) tree
 
 printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
 printInfixOperatorTable fixities = do

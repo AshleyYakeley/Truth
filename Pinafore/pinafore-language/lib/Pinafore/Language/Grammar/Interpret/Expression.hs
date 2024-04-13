@@ -274,7 +274,7 @@ interpretRecursiveDocDeclarations ddecls = do
 interpretImportDeclaration :: ModuleName -> QInterpreter QScopeDocs
 interpretImportDeclaration modname = do
     newmod <- getModule modname
-    return $ MkQScopeDocs [moduleScope newmod] $ treeBranches $ moduleDoc newmod
+    return $ MkQScopeDocs [moduleScope newmod] $ moduleDoc newmod
 
 interpretDeclaration :: SyntaxDeclaration -> QScopeBuilder ()
 interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
@@ -667,9 +667,8 @@ interpretSubtypeRelation trustme sta stb mbody docDescription = do
         docItem = SubtypeRelationDocItem {..}
     registerDocs $ pure MkDefDoc {..}
 
-interpretModule :: ModuleName -> SyntaxModule -> QInterpreter QModule
-interpretModule mname (MkSyntaxModule sdecls) = do
+interpretModule :: SyntaxModule -> QInterpreter QModule
+interpretModule (MkSyntaxModule sdecls) = do
     MkQScopeDocs scopes docs <- runScopeBuilder $ for_ sdecls interpretDeclaration
     scope <- joinAllScopes scopes
-    let doc = MkTree (MkDefDoc (HeadingDocItem (plainText $ showText mname)) "") docs
-    return $ MkQModule doc scope
+    return $ MkQModule docs scope

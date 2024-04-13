@@ -80,7 +80,7 @@ singleBindDoc bd tt = pureForest $ MkTree bd $ mconcat tt
 
 data LibraryModule context = MkLibraryModule
     { lmName :: ModuleName
-    , lmContents :: Tree (BindDoc context)
+    , lmContents :: Forest (BindDoc context)
     }
 
 instance Contravariant LibraryModule where
@@ -89,7 +89,7 @@ instance Contravariant LibraryModule where
 libraryModuleEntries :: LibraryModule context -> [BindDoc context]
 libraryModuleEntries (MkLibraryModule _ lmod) = toList lmod
 
-libraryModuleDocumentation :: LibraryModule context -> Tree DefDoc
+libraryModuleDocumentation :: LibraryModule context -> Forest DefDoc
 libraryModuleDocumentation (MkLibraryModule _ lmod) = fmap bdDoc lmod
 
 type EnA = MeetType Entity A
