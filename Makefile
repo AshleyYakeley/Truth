@@ -268,7 +268,8 @@ docs: \
 	mkdir -p doc/generated/examples
 	cp Pinafore/pinafore-app/examples/* doc/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz
-	mkdir -p out/website
+	rm -rf out/doc
+	mkdir -p out/doc
 	stack $(STACKFLAGS) exec -- sphinx-build -M dirhtml doc out/doc
 
 
