@@ -108,7 +108,10 @@ printModuleDoc modopts tmodname = do
                         _ -> (hlevel, succ ilevel)
             for_ children $ runDocTree hlevel' ilevel'
         headingTitle :: MarkdownText
-        headingTitle = plainText $ "import \"" <> tmodname <> "\""
+        headingTitle =
+            case tmodname of
+                "pinafore" -> plainText "Built In"
+                _ -> plainText $ "import \"" <> tmodname <> "\""
         headingItem :: DefDoc
         headingItem = MkDefDoc (HeadingDocItem headingTitle) ""
         tree :: Tree DefDoc
