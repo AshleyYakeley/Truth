@@ -22,10 +22,10 @@ modules
 ```{toctree}
 :hidden:
 :caption: Library
-generated/library/pinafore
-generated/library/pinafore-media
-generated/library/pinafore-gnome
-generated/library/UILib
+library/pinafore
+library/pinafore-media
+library/pinafore-gnome
+library/UILib
 ```
 ```{toctree}
 :hidden:

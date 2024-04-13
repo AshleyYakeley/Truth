@@ -237,8 +237,8 @@ LIBMODULEDOCS := \
     pinafore-gnome \
 	UILib
 
-doc/generated/library/%.md: ${BINPATH}/pinafore-doc
-	mkdir -p doc/generated/library
+doc/library/%.md: ${BINPATH}/pinafore-doc
+	mkdir -p doc/library
 	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/pinafore-stdlib/data > $@
 
 doc/generated/infix.md: ${BINPATH}/pinafore-doc
@@ -259,7 +259,7 @@ doc/generated/img/information.png: doc/img/information.png
 
 .PHONY: docs
 docs: \
- $(foreach f,$(LIBMODULEDOCS),doc/generated/library/$f.md) \
+ $(foreach f,$(LIBMODULEDOCS),doc/library/$f.md) \
  doc/generated/infix.md \
  doc/generated/type-infix.md \
  doc/generated/img/information.png \
