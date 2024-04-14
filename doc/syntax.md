@@ -272,11 +272,13 @@ All declarations, including type declarations, are local to a `let` block.
 
 ## Type Infix Operators
 
-{!type-infix.md!}
+```{include} generated/type-infix.md
+```
 
 ## Infix Operators
 
-{!infix.md!}
+```{include} generated/infix.md
+```
 
 ## Lexical
 
