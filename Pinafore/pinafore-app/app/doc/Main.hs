@@ -111,7 +111,7 @@ printModuleDoc modopts tmodname = do
         headingTitle =
             case tmodname of
                 "pinafore" -> plainText "Built In"
-                _ -> plainText $ "import \"" <> tmodname <> "\""
+                _ -> plainText $ "import \\\"" <> tmodname <> "\\\""
         headingItem :: DefDoc
         headingItem = MkDefDoc (HeadingDocItem headingTitle) ""
         tree :: Tree DefDoc

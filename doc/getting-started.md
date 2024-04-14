@@ -25,11 +25,13 @@ For Nix, use this flake: `git+https://github.com/AshleyYakeley/Truth?tag=v0.4.1`
 
 Try running one of the example files. Copy/paste [this example](examples/contacts.md) to `contacts` and run this:
 
-    :::text
-    chmod 755 contacts
-    ./contacts
+```text
+chmod 755 contacts
+./contacts
+```
 
 Alternatively, if you're curious about the type system, try running in [interactive mode](invocation.md#interactive-mode).
 
-    :::text
-    pinafore -i
+```text
+pinafore -i
+```
