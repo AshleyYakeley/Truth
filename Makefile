@@ -321,6 +321,7 @@ clean:
 	rm -rf .build
 	rm -rf out
 	rm -rf doc/generated
+	rm -rf doc/library
 	rm -rf Changes/changes-gnome/examples/showImages/images
 	rm -rf support/vsc-extension/*.json
 	rm -rf support/vsc-extension/*/*.json
