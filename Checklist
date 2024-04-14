@@ -16,7 +16,8 @@ Before release:
     support/vsc-extension/vsce/package.yaml
     support/pygments-lexer/pyproject.toml
     Pinafore/pinafore-app/lib/Version.hs
-    mkdocs/docs/index.md
+    doc/index.md
+    doc/getting-started.md (flake ref)
 
 4. Update changelogs
 

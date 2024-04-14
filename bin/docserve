@@ -1,3 +1,0 @@
-#!/usr/bin/env -S bash -e
-make docs
-stack exec --cwd mkdocs -- mkdocs serve
