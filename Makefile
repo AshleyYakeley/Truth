@@ -218,7 +218,7 @@ PYGLEXERVERSION := $(PINAFOREVERSIONABC)
 support/pygments-lexer/pinafore_lexer/syntax-data.json: out/support/syntax-data.json
 	cp $< $@
 
-out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz: \
+out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz: \
  out/support \
  support/pygments-lexer/pyproject.toml \
  support/pygments-lexer/pinafore_lexer/__init__.py \
@@ -226,7 +226,7 @@ out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz: \
 	stack $(STACKFLAGS) exec -- python3 -m build -o out/support/ support/pygments-lexer/
 
 .PHONY: pyg-lexer
-pyg-lexer: out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz
+pyg-lexer: out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 
 
 ### Website
@@ -263,11 +263,11 @@ docs: \
  doc/generated/infix.md \
  doc/generated/type-infix.md \
  doc/generated/img/information.png \
- out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz \
+ out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz \
  docker-image
 	mkdir -p doc/generated/examples
 	cp Pinafore/pinafore-app/examples/* doc/generated/examples/
-	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz
+	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 	rm -rf out/doc
 	mkdir -p out/doc
 	stack $(STACKFLAGS) exec -- sphinx-build -W --keep-going -b dirhtml doc out/doc/dirhtml

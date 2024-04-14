@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="pinafore-lexer"
+name="pinafore_lexer"
 version="0.5.0"
 description="Pygments lexer for Pinafore"
 authors=[{name="Ashley Yakeley",email="ashley@semantic.org"}]
