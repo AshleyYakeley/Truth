@@ -77,7 +77,7 @@ in fact 12
 ### "With" Declarators
 
 "With" declarators copy bindings from a given namespace into the current namespace.
-See [Namespaces](#namespaces-amp-namespace-declarations) below.
+See [Namespaces](#namespaces--namespace-declarations) below.
 
 ### "Import" Declarators
 

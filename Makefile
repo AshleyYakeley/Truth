@@ -270,7 +270,7 @@ docs: \
 	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore-lexer-$(PYGLEXERVERSION).tar.gz
 	rm -rf out/doc
 	mkdir -p out/doc
-	stack $(STACKFLAGS) exec -- sphinx-build -M dirhtml doc out/doc
+	stack $(STACKFLAGS) exec -- sphinx-build -W --keep-going -b dirhtml doc out/doc/dirhtml
 
 
 ### VSCode extension

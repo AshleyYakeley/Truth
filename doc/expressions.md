@@ -27,4 +27,4 @@ Patterns are for matching against values in function cases (`fn` and `match`) an
 * The form `P@Q` matches when both patterns `P` and `Q` match.
 * The form `P : T` matches when `P` matches. Pinafore will reject this if pattern `P` cannot be subsumed to type `T`.
 * The form `P :? T` matches when the value can be [dynamically cast](dynamic-supertypes.md) to `T`, and `P` matches that.
-* The form `P as N` matches when `P` matches. Names matched in `P` will be put in [namespace](declarations.md#namespaces-amp-namespace-declarations) `N`.
+* The form `P as N` matches when `P` matches. Names matched in `P` will be put in [namespace](declarations.md#namespaces--namespace-declarations) `N`.
