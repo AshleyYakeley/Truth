@@ -1,4 +1,4 @@
-# import "test"
+# import \"test\"
 
 <code>type </code>**<code>A\.</code>**<code> {\-q,\+p} \+r \-s</code>
 
