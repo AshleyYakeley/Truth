@@ -1,5 +1,11 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  *
+
+ -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+
+pinafore (0.5) bookworm; urgency=medium
+
   * Language
     - redesign dynamic types
     - allow decarations in do-blocks
@@ -14,7 +20,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - UILib
       . update
 
- -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+ -- Ashley Yakeley <ashley@semantic.org>  Sun, 14 Apr 2024 13:57:24 -0700
 
 pinafore (0.4.1) bookworm; urgency=medium
 
