@@ -111,7 +111,8 @@ data SyntaxNamespaceWith =
 data SyntaxDeclarator
     = SDLetSeq [SyntaxDeclaration]
     | SDLetRec [SyntaxRecursiveDeclaration]
-    | SDImport [ModuleName]
+    | SDImport (Maybe Name)
+               [Text]
     | SDWith [SyntaxNamespaceWith]
     deriving (Eq)
 

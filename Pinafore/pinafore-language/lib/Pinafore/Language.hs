@@ -49,7 +49,7 @@ import Shapes
 runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename ma =
     runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $ do
-        sd <- interpretImportDeclaration builtInModuleName
+        sd <- interpretImportPinaforeDeclaration builtInModuleName
         withScopeDocs sd ma
 
 spvals :: (?library :: LibraryContext) => QSpecialVals

@@ -36,7 +36,7 @@ instance Contravariant FetchModule where
 
 loadModuleFromText :: Text -> QInterpreter QModule
 loadModuleFromText text = do
-    sd <- interpretImportDeclaration builtInModuleName
+    sd <- interpretImportPinaforeDeclaration builtInModuleName
     withScopeDocs sd $ parseModule text
 
 loadModuleFromByteString :: LazyByteString -> QInterpreter QModule

@@ -181,7 +181,7 @@ All declarations, including type declarations, are local to a `let` block.
 <declarator> ::=
     "let" <semicolon-separated(<declaration>)> |
     "let" "rec" <semicolon-separated(<direct-declaration>)> |
-    "import" <comma-separated(<module-name>)> |
+    "import" <optional(lname)> <comma-separated(<module-name>)> |
     "with" <comma-separated(<namespace> <with-names> <optional("as" <namespace>)>)>
 
 <declaration> ::=

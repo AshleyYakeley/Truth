@@ -408,8 +408,9 @@ readDeclarator =
          return $ SDWith snws) <|>
     (do
          readThis TokImport
-         simps <- readCommaList readModuleName
-         return $ SDImport simps)
+         mqual <- optional readLName
+         simps <- readCommaList $ readThis TokString
+         return $ SDImport mqual simps)
 
 readExpression1 :: Parser SyntaxExpression
 readExpression1 =

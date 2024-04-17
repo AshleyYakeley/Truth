@@ -62,8 +62,8 @@ instance SyntaxFreeVariables SyntaxMulticaseList where
 instance SyntaxFreeVariables SyntaxDeclarator where
     syntaxFreeVariables (SDLetSeq sdecls) = syntaxFreeVariables sdecls
     syntaxFreeVariables (SDLetRec sdecls) = syntaxFreeVariables sdecls
-    syntaxFreeVariables (SDImport _) = mempty
-    syntaxFreeVariables (SDWith _) = mempty
+    syntaxFreeVariables SDImport {} = mempty
+    syntaxFreeVariables SDWith {} = mempty
 
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
@@ -140,8 +140,8 @@ instance SyntaxBindingVariables SyntaxRecursiveDeclaration' where
 instance SyntaxBindingVariables SyntaxDeclarator where
     syntaxBindingVariables (SDLetSeq sdecls) = syntaxBindingVariables sdecls
     syntaxBindingVariables (SDLetRec sdecls) = syntaxBindingVariables sdecls
-    syntaxBindingVariables (SDImport _) = mempty
-    syntaxBindingVariables (SDWith _) = mempty
+    syntaxBindingVariables SDImport {} = mempty
+    syntaxBindingVariables SDWith {} = mempty
 
 instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind

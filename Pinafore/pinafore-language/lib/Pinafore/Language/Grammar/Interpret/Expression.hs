@@ -3,7 +3,7 @@ module Pinafore.Language.Grammar.Interpret.Expression
     , interpretModule
     , interpretDeclarationWith
     , interpretType
-    , interpretImportDeclaration
+    , interpretImportPinaforeDeclaration
     , interpretPattern
     ) where
 
@@ -271,10 +271,14 @@ interpretRecursiveDocDeclarations ddecls = do
     subtypeSB
     interpretRecursiveLetBindings bindingDecls
 
-interpretImportDeclaration :: ModuleName -> QInterpreter QScopeDocs
-interpretImportDeclaration modname = do
+interpretImportPinaforeDeclaration :: ModuleName -> QInterpreter QScopeDocs
+interpretImportPinaforeDeclaration modname = do
     newmod <- getModule modname
     return $ MkQScopeDocs [moduleScope newmod] $ moduleDoc newmod
+
+interpretImportDeclaration :: Maybe Name -> Text -> QInterpreter QScopeDocs
+interpretImportDeclaration Nothing mname = interpretImportPinaforeDeclaration $ MkModuleName mname
+interpretImportDeclaration (Just mtype) _ = throw $ ImportTypeUnknown mtype
 
 interpretDeclaration :: SyntaxDeclaration -> QScopeBuilder ()
 interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
@@ -493,8 +497,8 @@ interpretDeclarator (SDLetRec sdecls) = runScopeBuilder $ interpretRecursiveDocD
 interpretDeclarator (SDWith swns) = do
     scopes <- for swns interpretNamespaceWith
     return $ MkQScopeDocs scopes mempty
-interpretDeclarator (SDImport simps) = do
-    scopedocs <- for simps $ \modname -> interpretImportDeclaration modname
+interpretDeclarator (SDImport imptype simps) = do
+    scopedocs <- for simps $ \modname -> interpretImportDeclaration imptype modname
     return $ mconcat scopedocs
 
 interpretDeclaratorWith :: SyntaxDeclarator -> QInterpreter --> QInterpreter
