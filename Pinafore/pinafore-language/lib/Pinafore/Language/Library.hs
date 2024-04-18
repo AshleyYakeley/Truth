@@ -58,8 +58,8 @@ builtInLibrary =
 
 type ImportTranslatorOptions = [(Name, ImportTranslator)]
 
-mkLibraryContext :: InvocationInfo -> FetchModule InvocationInfo -> ImportTranslatorOptions -> LibraryContext
+mkLibraryContext :: InvocationInfo -> FetchModule -> ImportTranslatorOptions -> LibraryContext
 mkLibraryContext context fetchModule itranss = let
     lcImportTranslators = mapFromList itranss
-    lcLoadModule = runFetchModule (libraryFetchModule builtInLibrary <> fetchModule) context
+    lcLoadModule = runFetchModule $ libraryFetchModule context builtInLibrary <> fetchModule
     in MkLibraryContext {..}

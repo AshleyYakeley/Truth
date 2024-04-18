@@ -31,13 +31,13 @@ import Shapes.Test
 import Shapes.Test.Context
 
 data ScriptContext = MkScriptContext
-    { scFetchModule :: FetchModule ()
+    { scFetchModule :: FetchModule
     , scPrefix :: Text
     }
 
 type ScriptTestTree = ContextTestTree ScriptContext
 
-tFetchModule :: FetchModule () -> ScriptTestTree -> ScriptTestTree
+tFetchModule :: FetchModule -> ScriptTestTree -> ScriptTestTree
 tFetchModule fm = tContext $ \sc -> sc {scFetchModule = fm <> scFetchModule sc}
 
 tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
@@ -77,7 +77,7 @@ tModule name script =
             else Nothing
 
 tLibrary :: LibraryModule () -> ScriptTestTree -> ScriptTestTree
-tLibrary libm = tFetchModule $ libraryFetchModule [libm]
+tLibrary libm = tFetchModule $ libraryFetchModule () [libm]
 
 runScriptTestTree :: ScriptTestTree -> TestTree
 runScriptTestTree =

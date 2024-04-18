@@ -18,7 +18,7 @@ testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $ do
         libDir <- getDataDir
-        runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary <> directoryFetchModule libDir} $ do
+        runTester defaultTester {tstFetchModule = libraryFetchModule () extraLibrary <> directoryFetchModule libDir} $ do
             mm <- testerLiftInterpreter $ lcLoadModule ?library $ fromString name
             case mm of
                 Just _ -> return ()

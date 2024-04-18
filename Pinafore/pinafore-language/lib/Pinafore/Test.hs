@@ -110,7 +110,7 @@ makeTestInvocationInfo hout = do
     return (ii, getTableState)
 
 data TesterOptions = MkTesterOptions
-    { tstFetchModule :: FetchModule ()
+    { tstFetchModule :: FetchModule
     , tstImportTranslators :: ImportTranslatorOptions
     , tstOutput :: Handle
     }
@@ -123,7 +123,7 @@ defaultTester = let
     in MkTesterOptions {..}
 
 addTesterLibrary :: LibraryModule () -> TesterOptions -> TesterOptions
-addTesterLibrary lm topts = topts {tstFetchModule = tstFetchModule topts <> libraryFetchModule [lm]}
+addTesterLibrary lm topts = topts {tstFetchModule = tstFetchModule topts <> libraryFetchModule () [lm]}
 
 data SomeValue =
     forall t. HasQType 'Positive t => MkSomeValue t
@@ -149,7 +149,7 @@ runTester :: TesterOptions -> Tester () -> IO ()
 runTester MkTesterOptions {..} (MkTester ta) =
     runLifecycle $ do
         (ii, getTableState) <- makeTestInvocationInfo tstOutput
-        let library = mkLibraryContext ii (contramap (\_ -> ()) tstFetchModule) tstImportTranslators
+        let library = mkLibraryContext ii tstFetchModule tstImportTranslators
         runView $ runReaderT ta $ MkTesterContext ii library getTableState
 
 testerLiftView :: forall a. ((?library :: LibraryContext) => View a) -> Tester a
