@@ -6,7 +6,7 @@ module Pinafore.Language.Library
     , directoryFetchModule
     , textFetchModule
     , libraryFetchModule
-    , LibraryContext(..)
+    , ImportTranslatorOptions
     , mkLibraryContext
     , nameIsInfix
     ) where
@@ -56,10 +56,10 @@ builtInLibrary =
     , debugLibSection
     ]
 
-data LibraryContext = MkLibraryContext
-    { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
-    }
+type ImportTranslatorOptions = [(Name, ImportTranslator)]
 
-mkLibraryContext :: InvocationInfo -> FetchModule InvocationInfo -> LibraryContext
-mkLibraryContext context fetchModule =
-    MkLibraryContext $ runFetchModule (libraryFetchModule builtInLibrary <> fetchModule) context
+mkLibraryContext :: InvocationInfo -> FetchModule InvocationInfo -> ImportTranslatorOptions -> LibraryContext
+mkLibraryContext context fetchModule itranss = let
+    lcImportTranslators = mapFromList itranss
+    lcLoadModule = runFetchModule (libraryFetchModule builtInLibrary <> fetchModule) context
+    in MkLibraryContext {..}

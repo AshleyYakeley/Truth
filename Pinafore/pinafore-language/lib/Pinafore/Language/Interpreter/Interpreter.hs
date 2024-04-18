@@ -9,12 +9,15 @@ module Pinafore.Language.Interpreter.Interpreter
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
+    , ImportTranslator
+    , LibraryContext(..)
     , runInterpreter
     , getRenderFullName
     , getBindingInfoLookup
     , getNamespaceWithScope
     , getSpecialVals
     , exportScope
+    , translateImport
     , getModule
     , getSubtypeScope
     , newTypeID
@@ -35,6 +38,8 @@ import Pinafore.Language.VarID
 import Shapes
 import Text.Parsec.Pos (SourcePos, initialPos)
 
+type ImportTranslator = Text -> ResultT Text IO ModuleName
+
 data InterpretContext = MkInterpretContext
     { icSourcePos :: SourcePos
     , icVarIDState :: VarIDState
@@ -42,6 +47,7 @@ data InterpretContext = MkInterpretContext
     , icCurrentNamespace :: Namespace
     , icSpecialVals :: QSpecialVals
     , icModulePath :: [ModuleName]
+    , icImportTranslators :: Map Name ImportTranslator
     , icLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
     }
 
@@ -137,6 +143,10 @@ specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ 
 modulePathParam :: Param QInterpreter [ModuleName]
 modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
 
+importTranslatorsParam :: Param QInterpreter (Map Name ImportTranslator)
+importTranslatorsParam =
+    lensMapParam (\bfb a -> fmap (\b -> a {icImportTranslators = b}) $ bfb $ icImportTranslators a) contextParam
+
 loadModuleParam :: Param QInterpreter (ModuleName -> QInterpreter (Maybe QModule))
 loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
 
@@ -160,13 +170,19 @@ appNotationVarRef :: Ref QInterpreter VarIDState
 appNotationVarRef =
     lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
 
-runInterpreter ::
-       SourcePos -> (ModuleName -> QInterpreter (Maybe QModule)) -> QSpecialVals -> QInterpreter a -> InterpretResult a
-runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
+data LibraryContext = MkLibraryContext
+    { lcImportTranslators :: Map Name ImportTranslator
+    , lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
+    }
+
+runInterpreter :: SourcePos -> LibraryContext -> QSpecialVals -> QInterpreter a -> InterpretResult a
+runInterpreter icSourcePos MkLibraryContext {..} icSpecialVals qa = let
     icVarIDState = szero
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace
+    icImportTranslators = lcImportTranslators
+    icLoadModule = lcLoadModule
     in evalStateT (evalWriterT $ runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
 firstOf :: [a] -> (a -> Maybe b) -> Maybe b
@@ -250,6 +266,17 @@ getCycle _ [] = Nothing
 getCycle mn (n:nn)
     | mn == n = Just $ n :| nn
 getCycle mn (_:nn) = getCycle mn nn
+
+translateImport :: Name -> Text -> QInterpreter ModuleName
+translateImport transname t = do
+    importTranslators <- paramAsk importTranslatorsParam
+    case lookup transname importTranslators of
+        Nothing -> throw $ ImportTranslatorUnknown transname
+        Just tl -> do
+            ren <- liftIO $ runResultT $ tl t
+            case ren of
+                FailureResult err -> throw $ ImportTranslatorError $ toNamedText err
+                SuccessResult mn -> return mn
 
 loadModuleInScope :: ModuleName -> QInterpreter (Maybe QModule)
 loadModuleInScope mname =

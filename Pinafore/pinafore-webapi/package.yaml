@@ -1,0 +1,15 @@
+_common: !include "../../common.yaml"
+name: pinafore-webapi
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.16
+      - shapes
+      - pinafore-language
+    exposed-modules:
+      - Pinafore.WebAPI

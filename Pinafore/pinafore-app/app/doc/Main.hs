@@ -34,7 +34,7 @@ trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 printModuleDoc :: ModuleOptions -> Text -> IO ()
 printModuleDoc modopts tmodname = do
     let fmodule = standardFetchModule modopts
-    let ?library = mkLibraryContext nullInvocationInfo fmodule
+    let ?library = mkLibraryContext nullInvocationInfo fmodule mempty
     let modname = MkModuleName tmodname
     mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
     pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod

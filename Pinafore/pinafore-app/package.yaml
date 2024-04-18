@@ -24,6 +24,7 @@ library:
       - pinafore-language
       - pinafore-media
       - pinafore-gnome
+      - pinafore-webapi
     when:
       - condition: flag(gitversion)
         dependencies:

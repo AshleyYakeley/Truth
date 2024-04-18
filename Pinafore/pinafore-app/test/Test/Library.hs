@@ -18,7 +18,7 @@ testLibrary =
         moduleNames :: [ModuleName]
         moduleNames = builtInModuleName : fmap lmName extraLibrary
         in let
-               ?library = mkLibraryContext nullInvocationInfo fmodule
+               ?library = mkLibraryContext nullInvocationInfo fmodule mempty
                in for_ moduleNames $ \modname -> do
                       mmod <- fromInterpretResult $ runPinaforeScoped (show modname) $ lcLoadModule ?library modname
                       pmodule <- maybeToM (show modname <> ": not found") mmod

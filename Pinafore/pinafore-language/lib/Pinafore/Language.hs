@@ -6,7 +6,9 @@ module Pinafore.Language
     , textFetchModule
     , libraryFetchModule
     , QModule(..)
+    , ImportTranslator
     , LibraryContext(..)
+    , ImportTranslatorOptions
     , mkLibraryContext
     , QSpecialVals(..)
     , QError
@@ -48,7 +50,7 @@ import Shapes
 
 runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename ma =
-    runInterpreter (initialPos sourcename) (lcLoadModule ?library) spvals $ do
+    runInterpreter (initialPos sourcename) ?library spvals $ do
         sd <- interpretImportPinaforeDeclaration builtInModuleName
         withScopeDocs sd ma
 

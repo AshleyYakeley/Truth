@@ -71,6 +71,7 @@ library
     , pinafore-gnome
     , pinafore-language
     , pinafore-media
+    , pinafore-webapi
     , shapes
     , time
     , xdg-basedir

@@ -27,6 +27,7 @@ packages:
 - Pinafore/pinafore-language
 - Pinafore/pinafore-media
 - Pinafore/pinafore-gnome
+- Pinafore/pinafore-webapi
 - Pinafore/pinafore-stdlib
 - Pinafore/pinafore-app
 

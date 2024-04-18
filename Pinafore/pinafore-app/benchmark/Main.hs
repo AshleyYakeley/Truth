@@ -32,7 +32,7 @@ getBenchEnv = do
     (library, _) <-
         getLifeState $ do
             (ii, _) <- makeTestInvocationInfo stdout
-            return $ mkLibraryContext ii $ libraryFetchModule $ fmap (contramap $ \_ -> ()) extraLibrary
+            return $ mkLibraryContext ii (libraryFetchModule $ fmap (contramap $ \_ -> ()) extraLibrary) mempty
     return $ \() -> library
 
 benchScript :: Text -> Benchmark

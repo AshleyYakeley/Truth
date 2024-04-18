@@ -82,7 +82,8 @@ data QErrorType
     | InterpretTypeDeclTypeStorableRecord
     | InterpretSubtypeInconsistent NamedText
                                    NamedText
-    | ImportTypeUnknown Name
+    | ImportTranslatorUnknown Name
+    | ImportTranslatorError NamedText
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
@@ -213,7 +214,8 @@ instance ShowNamedText QErrorType where
         "subtype relation is inconsistent with existing subtype relation " <> ta <> " <: " <> tb
     showNamedText (ModuleNotFoundError mname) = "can't find module " <> showNamedText mname
     showNamedText (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
-    showNamedText (ImportTypeUnknown mtype) = "import type unknown: " <> showNamedText mtype
+    showNamedText (ImportTranslatorUnknown tname) = "unknown import translator: " <> showNamedText tname
+    showNamedText (ImportTranslatorError t) = "import translator error: " <> t
 
 data QError =
     MkQError SourcePos

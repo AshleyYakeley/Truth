@@ -278,7 +278,9 @@ interpretImportPinaforeDeclaration modname = do
 
 interpretImportDeclaration :: Maybe Name -> Text -> QInterpreter QScopeDocs
 interpretImportDeclaration Nothing mname = interpretImportPinaforeDeclaration $ MkModuleName mname
-interpretImportDeclaration (Just mtype) _ = throw $ ImportTypeUnknown mtype
+interpretImportDeclaration (Just tname) t = do
+    mname <- translateImport tname t
+    interpretImportPinaforeDeclaration mname
 
 interpretDeclaration :: SyntaxDeclaration -> QScopeBuilder ()
 interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
