@@ -9,7 +9,6 @@ module Pinafore.Language.Interpreter.Interpreter
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
-    , ImportTranslator
     , LibraryContext(..)
     , runInterpreter
     , getRenderFullName
@@ -17,7 +16,6 @@ module Pinafore.Language.Interpreter.Interpreter
     , getNamespaceWithScope
     , getSpecialVals
     , exportScope
-    , translateImport
     , getModule
     , getSubtypeScope
     , newTypeID
@@ -38,8 +36,6 @@ import Pinafore.Language.VarID
 import Shapes
 import Text.Parsec.Pos (SourcePos, initialPos)
 
-type ImportTranslator = Text -> ResultT Text IO ModuleName
-
 data InterpretContext = MkInterpretContext
     { icSourcePos :: SourcePos
     , icVarIDState :: VarIDState
@@ -47,13 +43,13 @@ data InterpretContext = MkInterpretContext
     , icCurrentNamespace :: Namespace
     , icSpecialVals :: QSpecialVals
     , icModulePath :: [ModuleName]
-    , icImportTranslators :: Map Name ImportTranslator
+    , icImporters :: Map Name (Text -> QInterpreter QModule)
     , icLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
     }
 
 data InterpretState = MkInterpretState
     { isTypeID :: TypeID
-    , isModules :: Map ModuleName QModule
+    , isModules :: Map ModuleSpec QModule
     , isAppNotationVar :: VarIDState
     }
 
@@ -143,9 +139,8 @@ specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ 
 modulePathParam :: Param QInterpreter [ModuleName]
 modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
 
-importTranslatorsParam :: Param QInterpreter (Map Name ImportTranslator)
-importTranslatorsParam =
-    lensMapParam (\bfb a -> fmap (\b -> a {icImportTranslators = b}) $ bfb $ icImportTranslators a) contextParam
+importersParam :: Param QInterpreter (Map Name (Text -> QInterpreter QModule))
+importersParam = lensMapParam (\bfb a -> fmap (\b -> a {icImporters = b}) $ bfb $ icImporters a) contextParam
 
 loadModuleParam :: Param QInterpreter (ModuleName -> QInterpreter (Maybe QModule))
 loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
@@ -163,7 +158,7 @@ appNotationBindsProd = let
 typeIDRef :: Ref QInterpreter TypeID
 typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
 
-modulesRef :: Ref QInterpreter (Map ModuleName QModule)
+modulesRef :: Ref QInterpreter (Map ModuleSpec QModule)
 modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) interpretStateRef
 
 appNotationVarRef :: Ref QInterpreter VarIDState
@@ -171,7 +166,7 @@ appNotationVarRef =
     lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
 
 data LibraryContext = MkLibraryContext
-    { lcImportTranslators :: Map Name ImportTranslator
+    { lcImporters :: Map Name (Text -> QInterpreter QModule)
     , lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
     }
 
@@ -181,7 +176,7 @@ runInterpreter icSourcePos MkLibraryContext {..} icSpecialVals qa = let
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace
-    icImportTranslators = lcImportTranslators
+    icImporters = lcImporters
     icLoadModule = lcLoadModule
     in evalStateT (evalWriterT $ runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
@@ -261,22 +256,11 @@ exportScope nsns names = do
         docs = fmap (biDocumentation . snd) binds
     return (scope, docs)
 
-getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
+getCycle :: Eq t => t -> [t] -> Maybe (NonEmpty t)
 getCycle _ [] = Nothing
 getCycle mn (n:nn)
     | mn == n = Just $ n :| nn
 getCycle mn (_:nn) = getCycle mn nn
-
-translateImport :: Name -> Text -> QInterpreter ModuleName
-translateImport transname t = do
-    importTranslators <- paramAsk importTranslatorsParam
-    case lookup transname importTranslators of
-        Nothing -> throw $ ImportTranslatorUnknown transname
-        Just tl -> do
-            ren <- liftIO $ runResultT $ tl t
-            case ren of
-                FailureResult err -> throw $ ImportTranslatorError $ toNamedText err
-                SuccessResult mn -> return mn
 
 loadModuleInScope :: ModuleName -> QInterpreter (Maybe QModule)
 loadModuleInScope mname =
@@ -286,22 +270,30 @@ loadModuleInScope mname =
         loadModule <- paramAsk loadModuleParam
         loadModule mname
 
-getModule :: ModuleName -> QInterpreter QModule
-getModule mname = do
+getModule :: ModuleSpec -> QInterpreter QModule
+getModule mspec = do
     mods <- refGet modulesRef
-    case lookup mname mods of
+    case lookup mspec mods of
         Just m -> return m
         Nothing -> do
-            mpath <- paramAsk modulePathParam
-            case getCycle mname mpath of
-                Just mnames -> throw $ ModuleCycleError mnames
-                Nothing -> do
-                    mm <- loadModuleInScope mname
-                    case mm of
-                        Just m -> do
-                            refModify modulesRef $ insertMap mname m
-                            return m
-                        Nothing -> throw $ ModuleNotFoundError mname
+            m <-
+                case mspec of
+                    PlainModuleSpec mname -> do
+                        mpath <- paramAsk modulePathParam
+                        case getCycle mname mpath of
+                            Just mnames -> throw $ ModuleCycleError mnames
+                            Nothing -> do
+                                mm <- loadModuleInScope mname
+                                case mm of
+                                    Just m -> return m
+                                    Nothing -> throw $ ModuleNotFoundError mname
+                    SpecialModuleSpec impname uri -> do
+                        importers <- paramAsk importersParam
+                        case lookup impname importers of
+                            Nothing -> throw $ ImporterUnknown impname
+                            Just importer -> importer uri
+            refModify modulesRef $ insertMap mspec m
+            return m
 
 getSubtypeScope :: QSubtypeConversionEntry -> QInterpreter QScope
 getSubtypeScope sce = do

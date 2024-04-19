@@ -6,7 +6,7 @@ module Pinafore.Language.Library
     , directoryFetchModule
     , textFetchModule
     , libraryFetchModule
-    , ImportTranslatorOptions
+    , Importer(..)
     , mkLibraryContext
     , nameIsInfix
     ) where
@@ -56,10 +56,8 @@ builtInLibrary =
     , debugLibSection
     ]
 
-type ImportTranslatorOptions = [(Name, ImportTranslator)]
-
-mkLibraryContext :: InvocationInfo -> FetchModule -> ImportTranslatorOptions -> LibraryContext
-mkLibraryContext context fetchModule itranss = let
-    lcImportTranslators = mapFromList itranss
+mkLibraryContext :: InvocationInfo -> FetchModule -> [Importer] -> LibraryContext
+mkLibraryContext context fetchModule imps = let
+    lcImporters = getImporters imps
     lcLoadModule = runFetchModule $ libraryFetchModule context builtInLibrary <> fetchModule
     in MkLibraryContext {..}

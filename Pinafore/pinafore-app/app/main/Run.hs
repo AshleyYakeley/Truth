@@ -8,12 +8,7 @@ import Pinafore
 import Shapes
 import System.Environment
 
-runFiles ::
-       Foldable t
-    => (StorageModelOptions, ModuleOptions, ImportTranslatorOptions)
-    -> Bool
-    -> t (FilePath, [String])
-    -> IO ()
+runFiles :: Foldable t => (StorageModelOptions, ModuleOptions, [Importer]) -> Bool -> t (FilePath, [String]) -> IO ()
 runFiles (smopts, modopts, itopts) fNoRun scripts =
     runLifecycle $
     runView $
@@ -31,7 +26,7 @@ runFiles (smopts, modopts, itopts) fNoRun scripts =
             then return ()
             else action
 
-runInteractive :: (StorageModelOptions, ModuleOptions, ImportTranslatorOptions) -> IO ()
+runInteractive :: (StorageModelOptions, ModuleOptions, [Importer]) -> IO ()
 runInteractive (smopts, modopts, itopts) =
     runLifecycle $
     runView $ do

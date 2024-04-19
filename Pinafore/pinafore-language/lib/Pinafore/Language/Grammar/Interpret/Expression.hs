@@ -3,7 +3,7 @@ module Pinafore.Language.Grammar.Interpret.Expression
     , interpretModule
     , interpretDeclarationWith
     , interpretType
-    , interpretImportPinaforeDeclaration
+    , interpretImportDeclaration
     , interpretPattern
     ) where
 
@@ -271,16 +271,10 @@ interpretRecursiveDocDeclarations ddecls = do
     subtypeSB
     interpretRecursiveLetBindings bindingDecls
 
-interpretImportPinaforeDeclaration :: ModuleName -> QInterpreter QScopeDocs
-interpretImportPinaforeDeclaration modname = do
-    newmod <- getModule modname
+interpretImportDeclaration :: ModuleSpec -> QInterpreter QScopeDocs
+interpretImportDeclaration mspec = do
+    newmod <- getModule mspec
     return $ MkQScopeDocs [moduleScope newmod] $ moduleDoc newmod
-
-interpretImportDeclaration :: Maybe Name -> Text -> QInterpreter QScopeDocs
-interpretImportDeclaration Nothing mname = interpretImportPinaforeDeclaration $ MkModuleName mname
-interpretImportDeclaration (Just tname) t = do
-    mname <- translateImport tname t
-    interpretImportPinaforeDeclaration mname
 
 interpretDeclaration :: SyntaxDeclaration -> QScopeBuilder ()
 interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
@@ -499,8 +493,13 @@ interpretDeclarator (SDLetRec sdecls) = runScopeBuilder $ interpretRecursiveDocD
 interpretDeclarator (SDWith swns) = do
     scopes <- for swns interpretNamespaceWith
     return $ MkQScopeDocs scopes mempty
-interpretDeclarator (SDImport imptype simps) = do
-    scopedocs <- for simps $ \modname -> interpretImportDeclaration imptype modname
+interpretDeclarator (SDImport mimportername tt) = do
+    let
+        mkspec t =
+            case mimportername of
+                Just importername -> SpecialModuleSpec importername t
+                Nothing -> PlainModuleSpec $ MkModuleName t
+    scopedocs <- for tt $ \t -> interpretImportDeclaration $ mkspec t
     return $ mconcat scopedocs
 
 interpretDeclaratorWith :: SyntaxDeclarator -> QInterpreter --> QInterpreter

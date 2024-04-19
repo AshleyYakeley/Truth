@@ -3,7 +3,7 @@ module Pinafore.Language.Grammar.Interpret
     , interpretModule
     , interpretDeclarationWith
     , interpretType
-    , interpretImportPinaforeDeclaration
+    , interpretImportDeclaration
     , runInteract
     ) where
 

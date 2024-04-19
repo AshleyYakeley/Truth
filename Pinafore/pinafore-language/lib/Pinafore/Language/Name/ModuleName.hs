@@ -1,5 +1,6 @@
 module Pinafore.Language.Name.ModuleName where
 
+import Pinafore.Language.Name.Name
 import Pinafore.Text
 import Shapes
 
@@ -18,3 +19,9 @@ instance IsString ModuleName where
 
 builtInModuleName :: ModuleName
 builtInModuleName = MkModuleName "pinafore"
+
+data ModuleSpec
+    = PlainModuleSpec ModuleName
+    | SpecialModuleSpec Name
+                        Text
+    deriving (Eq, Ord)

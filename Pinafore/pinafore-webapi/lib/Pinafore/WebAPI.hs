@@ -1,8 +1,8 @@
 module Pinafore.WebAPI
-    ( webAPIImportTranslators
+    ( webAPIImporters
     ) where
 
 import Pinafore.Language
 
-webAPIImportTranslators :: ImportTranslatorOptions
-webAPIImportTranslators = []
+webAPIImporters :: [Importer]
+webAPIImporters = []

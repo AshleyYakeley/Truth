@@ -4,6 +4,8 @@ module Pinafore.Language.Library.FetchModule
     , directoryFetchModule
     , libraryFetchModule
     , textFetchModule
+    , Importer(..)
+    , getImporters
     ) where
 
 import Pinafore.Language.DefDoc
@@ -33,7 +35,7 @@ instance Monoid FetchModule where
 
 loadModuleFromText :: Text -> QInterpreter QModule
 loadModuleFromText text = do
-    sd <- interpretImportPinaforeDeclaration builtInModuleName
+    sd <- interpretImportDeclaration $ PlainModuleSpec builtInModuleName
     withScopeDocs sd $ parseModule text
 
 loadModuleFromByteString :: LazyByteString -> QInterpreter QModule
@@ -63,11 +65,11 @@ directoryFetchModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString bs
                 return $ Just mm
 
-getLibraryModuleModule :: forall context. context -> LibraryModule context -> QInterpreter QModule
-getLibraryModuleModule context libmod = do
+getLibraryContentsModule :: forall context. context -> LibraryContents context -> QInterpreter QModule
+getLibraryContentsModule context libmod = do
     let
         bindDocs :: [(ScopeEntry context, DefDoc)]
-        bindDocs = mapMaybe (\MkBindDoc {..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryModuleEntries libmod
+        bindDocs = mapMaybe (\MkBindDoc {..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryContentsEntries libmod
         bscope :: QScope
         bscope =
             bindingInfosToScope $ do
@@ -87,10 +89,24 @@ getLibraryModuleModule context libmod = do
                 BindScopeEntry _ _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
     scope <- joinAllScopes $ bscope : dscopes
-    return $ MkQModule (libraryModuleDocumentation libmod) scope
+    return $ MkQModule (libraryContentsDocumentation libmod) scope
 
 libraryFetchModule :: forall context. context -> [LibraryModule context] -> FetchModule
 libraryFetchModule context lmods = let
-    m :: Map ModuleName (LibraryModule context)
-    m = mapFromList $ fmap (\libmod -> (lmName libmod, libmod)) lmods
-    in MkFetchModule $ \mname -> for (lookup mname m) $ getLibraryModuleModule context
+    m :: Map ModuleName (LibraryContents context)
+    m = mapFromList $ fmap (\MkLibraryModule {..} -> (lmName, lmContents)) lmods
+    in MkFetchModule $ \mname -> for (lookup mname m) $ getLibraryContentsModule context
+
+data Importer =
+    MkImporter Name
+               (Text -> ResultT Text IO (LibraryContents ()))
+
+processImporter :: ResultT Text IO (LibraryContents ()) -> QInterpreter QModule
+processImporter f = do
+    ren <- liftIO $ runResultT f
+    case ren of
+        FailureResult err -> throw $ ImporterError $ toNamedText err
+        SuccessResult lc -> getLibraryContentsModule () lc
+
+getImporters :: [Importer] -> Map Name (Text -> QInterpreter QModule)
+getImporters ii = mapFromList $ fmap (\(MkImporter name f) -> (name, \t -> processImporter $ f t)) ii

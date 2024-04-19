@@ -5,9 +5,10 @@ module Pinafore.Language.Library.Defs
     ( ScopeEntry(..)
     , BindDoc(..)
     , BindDocStuff
+    , LibraryContents
+    , libraryContentsEntries
+    , libraryContentsDocumentation
     , LibraryModule(..)
-    , libraryModuleEntries
-    , libraryModuleDocumentation
     , EnA
     , qPositiveTypeDescription
     , qNegativeTypeDescription
@@ -78,19 +79,21 @@ type BindDocStuff context = Forest (BindDoc context)
 singleBindDoc :: BindDoc context -> [BindDocStuff context] -> BindDocStuff context
 singleBindDoc bd tt = pureForest $ MkTree bd $ mconcat tt
 
+type LibraryContents context = Forest (BindDoc context)
+
+libraryContentsEntries :: LibraryContents context -> [BindDoc context]
+libraryContentsEntries = toList
+
+libraryContentsDocumentation :: LibraryContents context -> Forest DefDoc
+libraryContentsDocumentation = fmap bdDoc
+
 data LibraryModule context = MkLibraryModule
     { lmName :: ModuleName
-    , lmContents :: Forest (BindDoc context)
+    , lmContents :: LibraryContents context
     }
 
 instance Contravariant LibraryModule where
     contramap ab (MkLibraryModule n c) = MkLibraryModule n $ fmap (contramap ab) c
-
-libraryModuleEntries :: LibraryModule context -> [BindDoc context]
-libraryModuleEntries (MkLibraryModule _ lmod) = toList lmod
-
-libraryModuleDocumentation :: LibraryModule context -> Forest DefDoc
-libraryModuleDocumentation (MkLibraryModule _ lmod) = fmap bdDoc lmod
 
 type EnA = MeetType Entity A
 

@@ -6,7 +6,7 @@ module Pinafore.Language.Grammar
     ) where
 
 import Pinafore.Language.Grammar.Docs as I (Docs)
-import Pinafore.Language.Grammar.Interpret as I (interpretImportPinaforeDeclaration)
+import Pinafore.Language.Grammar.Interpret as I (interpretImportDeclaration)
 import Pinafore.Language.Grammar.Interpret
 import Pinafore.Language.Grammar.Read as I
 import Pinafore.Language.Grammar.Read.Expression as I (operatorFixity)

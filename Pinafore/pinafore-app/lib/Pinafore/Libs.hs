@@ -20,5 +20,5 @@ getPinaforeDir mdirpath = do
 extraLibrary :: [LibraryModule ()]
 extraLibrary = mediaLibrary <> gnomeLibrary
 
-importTranslatorOptions :: ImportTranslatorOptions
-importTranslatorOptions = webAPIImportTranslators
+importers :: [Importer]
+importers = webAPIImporters
