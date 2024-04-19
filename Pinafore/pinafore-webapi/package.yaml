@@ -13,3 +13,6 @@ library:
       - pinafore-language
     exposed-modules:
       - Pinafore.WebAPI
+    other-modules:
+      - Pinafore.WebAPI.Fetch
+      - Pinafore.WebAPI.OpenAPI

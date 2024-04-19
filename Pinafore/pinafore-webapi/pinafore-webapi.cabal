@@ -17,9 +17,8 @@ library
   exposed-modules:
       Pinafore.WebAPI
   other-modules:
-      Paths_pinafore_webapi
-  autogen-modules:
-      Paths_pinafore_webapi
+      Pinafore.WebAPI.Fetch
+      Pinafore.WebAPI.OpenAPI
   hs-source-dirs:
       lib
   default-extensions:

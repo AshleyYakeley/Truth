@@ -3,6 +3,7 @@ module Pinafore.WebAPI
     ) where
 
 import Pinafore.Language
+import Pinafore.WebAPI.OpenAPI
 
 webAPIImporters :: [Importer]
-webAPIImporters = []
+webAPIImporters = [openAPIImporter]
