@@ -1,5 +1,6 @@
 module Pinafore.Language.Library
     ( DefDoc(..)
+    , LibraryContents
     , LibraryModule
     , builtInLibrary
     , FetchModule
