@@ -14,6 +14,7 @@ import Pinafore.Language.Grammar
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Name
+import Pinafore.Text
 import Shapes
 import System.Directory (doesFileExist)
 import System.FilePath
@@ -103,10 +104,11 @@ data Importer =
 
 processImporter :: ResultT Text IO (LibraryStuff ()) -> QInterpreter QModule
 processImporter f = do
-    ren <- liftIO $ runResultT f
+    ren <- liftIO $ tryExc $ runResultT f
     case ren of
-        FailureResult err -> throw $ ImporterError $ toNamedText err
-        SuccessResult lc -> getLibraryContentsModule () lc
+        FailureResult err -> throw $ ImporterError $ toNamedText $ showText err
+        SuccessResult (FailureResult err) -> throw $ ImporterError $ toNamedText err
+        SuccessResult (SuccessResult lc) -> getLibraryContentsModule () lc
 
 getImporters :: [Importer] -> Map Name (Text -> QInterpreter QModule)
 getImporters ii = mapFromList $ fmap (\(MkImporter name f) -> (name, \t -> processImporter $ f t)) ii

@@ -107,9 +107,10 @@ instance ShowNamedText QErrorType where
                          then Nothing
                          else return $ toText s)
                 msgs
-        msgsSysUnExpect =
+        msgsUnExpect =
             getMsgs $ \case
                 SysUnExpect s -> Just s
+                UnExpect s -> Just s
                 _ -> Nothing
         msgsExpect =
             getMsgs $ \case
@@ -124,7 +125,7 @@ instance ShowNamedText QErrorType where
         semicolon a "" = a
         semicolon a b = a <> "; " <> b
         strUnexpected =
-            case msgsSysUnExpect of
+            case msgsUnExpect of
                 [] -> ""
                 s -> "unexpected: " <> intercalate ", " s
         strExpecting =
@@ -132,7 +133,7 @@ instance ShowNamedText QErrorType where
                 [] -> ""
                 s -> "expecting: " <> intercalate ", " s
         strMessage = intercalate "; " msgsMessage
-        in toNamedText $ strUnexpected `semicolon` strExpecting `semicolon` strMessage
+        in "syntax error: " <> (toNamedText $ strUnexpected `semicolon` strExpecting `semicolon` strMessage)
     showNamedText (PatternErrorError e) = showNamedText e
     showNamedText (ExpressionErrorError nn) =
         "undefined: " <>

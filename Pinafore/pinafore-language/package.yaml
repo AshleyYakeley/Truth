@@ -24,6 +24,7 @@ library:
       - changes-world
       - pinafore-base
     exposed-modules:
+      - Pinafore.Text
       - Pinafore.Language
       - Pinafore.Language.API
       - Pinafore.Documentation
@@ -33,7 +34,6 @@ library:
     other-modules:
       - Pinafore.Text.ToText
       - Pinafore.Text.Markdown
-      - Pinafore.Text
       - Pinafore.Context
       - Pinafore.Language.Debug
       - Pinafore.Language.Value.Instances

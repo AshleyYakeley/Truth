@@ -9,6 +9,7 @@ library:
     source-dirs: lib
     dependencies:
       - base >= 4.16
+      - insert-ordered-containers
       - network-uri
       - aeson
       - openapi3
@@ -19,3 +20,14 @@ library:
     other-modules:
       - Pinafore.WebAPI.Fetch
       - Pinafore.WebAPI.OpenAPI
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.16
+          - shapes
+          - pinafore-language
+          - pinafore-webapi
+        main: Main.hs
+        ghc-options: -threaded
