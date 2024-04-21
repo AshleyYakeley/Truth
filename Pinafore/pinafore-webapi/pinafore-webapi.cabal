@@ -50,7 +50,10 @@ library
       ViewPatterns
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
   build-depends:
-      base >=4.16
+      aeson
+    , base >=4.16
+    , network-uri
+    , openapi3
     , pinafore-language
     , shapes
   default-language: GHC2021

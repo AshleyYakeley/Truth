@@ -9,6 +9,9 @@ library:
     source-dirs: lib
     dependencies:
       - base >= 4.16
+      - network-uri
+      - aeson
+      - openapi3
       - shapes
       - pinafore-language
     exposed-modules:
