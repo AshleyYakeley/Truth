@@ -37,7 +37,7 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = unWRaised objRun $ refRead ReadByteStringLength
 -}
-fileLibEntries :: [BindDocStuff context]
+fileLibEntries :: [LibraryStuff context]
 fileLibEntries =
     [ headingBDS
           "File Storage"

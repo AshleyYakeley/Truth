@@ -21,7 +21,7 @@ langStdOut = MkLangSink $ hoistSink liftIO $ iiStdOut ?qcontext
 langStdErr :: (?qcontext :: InvocationInfo) => LangSink Text
 langStdErr = MkLangSink $ hoistSink liftIO $ iiStdErr ?qcontext
 
-envLibSection :: BindDocStuff InvocationInfo
+envLibSection :: LibraryStuff InvocationInfo
 envLibSection =
     headingBDS "Env" "The environment in which the script was invoked." $
     pure $

@@ -1,6 +1,6 @@
 module Pinafore.Language
     ( module Pinafore.Language.Name
-    , LibraryContents
+    , LibraryStuff
     , LibraryModule
     , FetchModule
     , directoryFetchModule

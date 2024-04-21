@@ -47,7 +47,7 @@ pngEncode mdata image = bytesToDataLiteral $ pngEncodeToBytes mdata image
 pngMetadata :: LangPNGImage -> LangHasMetadata
 pngMetadata image = keyMapToMetadata $ fst $ idlData image
 
-pngStuff :: BindDocStuff ()
+pngStuff :: LibraryStuff ()
 pngStuff =
     headingBDS
         "PNG"

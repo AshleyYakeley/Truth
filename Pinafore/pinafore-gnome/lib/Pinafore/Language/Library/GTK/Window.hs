@@ -83,7 +83,7 @@ run call =
             unlift $
                 call $ MkLangContext {lcGTKContext = gtkc, lcOtherContext = MkOtherContext {ocClipboard = clipboard}}
 
-windowStuff :: BindDocStuff ()
+windowStuff :: LibraryStuff ()
 windowStuff =
     headingBDS
         "Windows"
@@ -108,7 +108,7 @@ langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Boo
 langChooseFile action lc test =
     actionLiftViewKnow $ fmap maybeToKnow $ runGView (lcGTKContext lc) $ gvRunLocked $ chooseFile action test
 
-dialogStuff :: BindDocStuff ()
+dialogStuff :: LibraryStuff ()
 dialogStuff =
     headingBDS
         "Dialogs"

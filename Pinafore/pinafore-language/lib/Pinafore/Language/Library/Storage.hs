@@ -30,7 +30,7 @@ openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
 
-storageLibSection :: BindDocStuff InvocationInfo
+storageLibSection :: LibraryStuff InvocationInfo
 storageLibSection =
     headingBDS "Storage" "" $
     [ typeBDS "Store" "Storage of information." (MkSomeGroundType storeGroundType) []

@@ -57,7 +57,7 @@ uiDraw model =
         immutableWholeModelValue mempty $
         fmap (\d p -> fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $ unLangDrawing (d p)) model
 
-drawingStuff :: BindDocStuff ()
+drawingStuff :: LibraryStuff ()
 drawingStuff =
     headingBDS
         "Drawing"

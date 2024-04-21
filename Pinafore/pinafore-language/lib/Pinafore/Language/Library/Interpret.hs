@@ -33,7 +33,7 @@ interpretGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFa
 instance HasQGroundType '[ CoCCRVariance] Interpret where
     qGroundType = interpretGroundType
 
-interpretLibSection :: BindDocStuff context
+interpretLibSection :: LibraryStuff context
 interpretLibSection =
     headingBDS
         "Interpretation"

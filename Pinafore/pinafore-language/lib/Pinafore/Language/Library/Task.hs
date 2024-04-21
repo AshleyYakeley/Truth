@@ -59,7 +59,7 @@ langDurationTask d = fmap liftTask $ durationTask d
 langRaceTasks :: forall a. [LangTask a] -> Action (LangTask a)
 langRaceTasks tasks = fmap MkLangTask $ raceTasks $ fmap unLangTask tasks
 
-taskLibSection :: BindDocStuff context
+taskLibSection :: LibraryStuff context
 taskLibSection =
     headingBDS "Task" "" $
     [ typeBDS "Task" "A task is something that can be waited for to give a result." (MkSomeGroundType taskGroundType) []

@@ -9,7 +9,7 @@ import Pinafore.Language.API
 import Pinafore.WebAPI.Fetch
 import Shapes
 
-importOpenAPI :: Text -> ResultT Text IO (LibraryContents ())
+importOpenAPI :: Text -> ResultT Text IO (LibraryStuff ())
 importOpenAPI t = do
     bs <- lift $ fetch t
     jsonval <-

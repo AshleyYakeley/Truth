@@ -28,7 +28,7 @@ debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeModelMapModel (Identi
 gtkLock :: LangContext -> Action A -> Action A
 gtkLock lc = actionHoistView $ \va -> runGView (lcGTKContext lc) $ gvRunLocked $ gvRunUnlocked $ gvLiftView va
 
-gtkDebugStuff :: BindDocStuff ()
+gtkDebugStuff :: LibraryStuff ()
 gtkDebugStuff =
     headingBDS "GTK.Debug" "Functions for GTK debugging." $
     pure $

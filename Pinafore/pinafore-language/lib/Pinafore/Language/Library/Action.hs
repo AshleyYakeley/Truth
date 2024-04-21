@@ -24,7 +24,7 @@ tryStop action = actionLiftView $ fmap knowToMaybe $ unliftAction action
 tryStop_ :: Action () -> Action ()
 tryStop_ action = actionLiftView $ fmap (\_ -> ()) $ unliftAction action
 
-actionLibSection :: BindDocStuff context
+actionLibSection :: LibraryStuff context
 actionLibSection =
     headingBDS
         "Action"

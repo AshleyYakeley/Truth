@@ -12,7 +12,7 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Shapes
 
-evalLibSection :: BindDocStuff context
+evalLibSection :: LibraryStuff context
 evalLibSection =
     headingBDS "Eval" "" $
     pure $

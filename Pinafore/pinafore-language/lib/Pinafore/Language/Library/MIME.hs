@@ -23,7 +23,7 @@ instance HasQGroundType '[] MIME where
 textMIME :: LangPrism' MIME Text
 textMIME = prism mimeToText textToMIME
 
-mimeLibSection :: BindDocStuff context
+mimeLibSection :: LibraryStuff context
 mimeLibSection =
     headingBDS
         "MIME"

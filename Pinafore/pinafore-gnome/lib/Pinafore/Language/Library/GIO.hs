@@ -57,7 +57,7 @@ fileMakeRef f = do
         actionLiftLifecycle $ makeSharedModel $ reflectingPremodel fref
     return $ wModelToWholeModel $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
 
-gioStuff :: BindDocStuff ()
+gioStuff :: LibraryStuff ()
 gioStuff =
     headingBDS "GIO" "GNOME file access." $
     pure $

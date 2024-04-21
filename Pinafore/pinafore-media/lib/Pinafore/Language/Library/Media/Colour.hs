@@ -142,7 +142,7 @@ opaque = MkOpaqueAlphaColour
 transparent :: LangAlphaColour
 transparent = MkAlphaColour16 0 $ fromSVGColor black
 
-mkNamedColourEntry :: (String, Color (SRGB 'NonLinear) Word8) -> BindDocStuff ()
+mkNamedColourEntry :: (String, Color (SRGB 'NonLinear) Word8) -> LibraryStuff ()
 mkNamedColourEntry (name, colour) = let
     ColorSRGB r g b = colour
     tr = pack $ show r
@@ -157,7 +157,7 @@ mkNamedColourEntry (name, colour) = let
         " SRGB16 " <> plainText tr <> "*257 " <> plainText tg <> "*257 " <> plainText tb <> "*257"
     in valBDS (fromString name) (asRawMarkdown desc) $ fromSVGColor colour
 
-colourStuff :: BindDocStuff ()
+colourStuff :: LibraryStuff ()
 colourStuff =
     headingBDS "Colour" "" $
     [ typeBDS

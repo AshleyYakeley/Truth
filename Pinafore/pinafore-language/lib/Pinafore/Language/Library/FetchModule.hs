@@ -65,7 +65,7 @@ directoryFetchModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString bs
                 return $ Just mm
 
-getLibraryContentsModule :: forall context. context -> LibraryContents context -> QInterpreter QModule
+getLibraryContentsModule :: forall context. context -> LibraryStuff context -> QInterpreter QModule
 getLibraryContentsModule context libmod = do
     let
         bindDocs :: [(ScopeEntry context, DefDoc)]
@@ -93,15 +93,15 @@ getLibraryContentsModule context libmod = do
 
 libraryFetchModule :: forall context. context -> [LibraryModule context] -> FetchModule
 libraryFetchModule context lmods = let
-    m :: Map ModuleName (LibraryContents context)
+    m :: Map ModuleName (LibraryStuff context)
     m = mapFromList $ fmap (\MkLibraryModule {..} -> (lmName, lmContents)) lmods
     in MkFetchModule $ \mname -> for (lookup mname m) $ getLibraryContentsModule context
 
 data Importer =
     MkImporter Name
-               (Text -> ResultT Text IO (LibraryContents ()))
+               (Text -> ResultT Text IO (LibraryStuff ()))
 
-processImporter :: ResultT Text IO (LibraryContents ()) -> QInterpreter QModule
+processImporter :: ResultT Text IO (LibraryStuff ()) -> QInterpreter QModule
 processImporter f = do
     ren <- liftIO $ runResultT f
     case ren of
