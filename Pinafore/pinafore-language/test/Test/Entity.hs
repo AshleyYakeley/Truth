@@ -1781,7 +1781,8 @@ testEntity =
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"let x = 5 in x\""
               , testExpectSuccess
                     "do ar <- evaluate @(Integer -> Integer) \"fn x => x +.Integer 1\"; ar >- match Left err => fail err; Right f => testeqval 8 $ f 7 end end"
-              , testExpectSuccess "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
+              , testExpectSuccess
+                    "testaction (Left \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate @Integer \"\""
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
