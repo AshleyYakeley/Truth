@@ -1,6 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
-  *
+  * Install
+    - rename executable pinafore-doc to pinadoc
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

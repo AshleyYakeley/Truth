@@ -80,6 +80,50 @@ library
     build-depends:
         githash
 
+executable pinadoc
+  main-is: Main.hs
+  other-modules:
+      Options
+  hs-source-dirs:
+      app/doc
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  build-depends:
+      aeson
+    , base >=4.16
+    , filepath
+    , optparse-applicative
+    , pinafore-app
+    , pinafore-language
+    , shapes
+  default-language: GHC2021
+
 executable pinafore
   main-is: Main.hs
   other-modules:
@@ -123,50 +167,6 @@ executable pinafore
     , pinafore-language
     , shapes
     , thread-trace
-  default-language: GHC2021
-
-executable pinafore-doc
-  main-is: Main.hs
-  other-modules:
-      Options
-  hs-source-dirs:
-      app/doc
-  default-extensions:
-      AllowAmbiguousTypes
-      Arrows
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DerivingStrategies
-      FunctionalDependencies
-      GADTs
-      ImplicitParams
-      NoImplicitPrelude
-      LambdaCase
-      OverloadedLabels
-      OverloadedStrings
-      PartialTypeSignatures
-      PatternSynonyms
-      QuantifiedConstraints
-      RecordWildCards
-      RecursiveDo
-      RoleAnnotations
-      NoStarIsType
-      TemplateHaskell
-      TypeFamilies
-      TypeFamilyDependencies
-      UndecidableInstances
-      UndecidableSuperClasses
-      ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
-  build-depends:
-      aeson
-    , base >=4.16
-    , filepath
-    , optparse-applicative
-    , pinafore-app
-    , pinafore-language
-    , shapes
   default-language: GHC2021
 
 test-suite app

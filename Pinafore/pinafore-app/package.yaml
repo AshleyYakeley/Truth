@@ -50,7 +50,7 @@ executables:
           - Options
           - Run
         ghc-options: -threaded
-    pinafore-doc:
+    pinadoc:
         source-dirs: app/doc
         dependencies:
           - base >= 4.16

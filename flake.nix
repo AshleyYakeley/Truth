@@ -67,10 +67,10 @@
                         stdLibPackage
                     ];
                 };
-                pinaforeDocPackage = flake.packages."pinafore-app:exe:pinafore-doc";
+                pinadocPackage = flake.packages."pinafore-app:exe:pinadoc";
                 syntaxDataPackage = pkgs.runCommand "pinafore-syntax-data" {}
                     ''
-                    ${pinaforeDocPackage}/bin/pinafore-doc --syntax-data > $out
+                    ${pinadocPackage}/bin/pinadoc --syntax-data > $out
                     '';
                 vsceFilePackage = pkgs.runCommand "pinafore-vscode-extension-file" {}
                     ''
@@ -103,7 +103,7 @@
                 {
                     default = pinaforePackage;
                     pinafore = pinaforePackage;
-                    pinafore-doc = pinaforeDocPackage;
+                    pinadoc = pinadocPackage;
                     syntax-data = syntaxDataPackage;
                     vscode-extension-file = vsceFilePackage;
                     vscode-extension = vscePackage;

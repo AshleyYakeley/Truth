@@ -85,7 +85,7 @@ licensing: out/licensing
 
 ### Executables
 
-${BINPATH}/pinafore ${BINPATH}/pinafore-doc &: out docker-image
+${BINPATH}/pinafore ${BINPATH}/pinadoc &: out docker-image
 ifeq ($(nodocker),1)
 else
 	rm -rf out/logs
@@ -97,8 +97,8 @@ endif
 	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
 	strip --remove-section=.comment ${BINPATH}/pinafore
 ifeq ($(test),1)
-	stack $(STACKFLAGS) exec -- ${BINPATH}/pinafore-doc --include Pinafore/pinafore-app/test/pinafore-doc --module test > Pinafore/pinafore-app/test/pinafore-doc/test.out.md
-	diff -u Pinafore/pinafore-app/test/pinafore-doc/test.ref.md Pinafore/pinafore-app/test/pinafore-doc/test.out.md
+	stack $(STACKFLAGS) exec -- ${BINPATH}/pinadoc --include Pinafore/pinafore-app/test/pinadoc --module test > Pinafore/pinafore-app/test/pinadoc/test.out.md
+	diff -u Pinafore/pinafore-app/test/pinadoc/test.ref.md Pinafore/pinafore-app/test/pinadoc/test.out.md
 endif
 ifeq ($(nodocker),1)
 else
@@ -207,7 +207,7 @@ nix-docker-flake: nix-docker-image
 out/support:
 	mkdir -p $@
 
-out/support/syntax-data.json: ${BINPATH}/pinafore-doc out/support
+out/support/syntax-data.json: ${BINPATH}/pinadoc out/support
 	stack $(STACKFLAGS) exec -- $< --syntax-data > $@
 
 
@@ -237,15 +237,15 @@ LIBMODULEDOCS := \
     pinafore-gnome \
 	UILib
 
-doc/library/%.md: ${BINPATH}/pinafore-doc
+doc/library/%.md: ${BINPATH}/pinadoc
 	mkdir -p doc/library
 	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/pinafore-stdlib/data > $@
 
-doc/generated/infix.md: ${BINPATH}/pinafore-doc
+doc/generated/infix.md: ${BINPATH}/pinadoc
 	mkdir -p doc/generated
 	stack $(STACKFLAGS) exec -- $< --infix > $@
 
-doc/generated/type-infix.md: ${BINPATH}/pinafore-doc
+doc/generated/type-infix.md: ${BINPATH}/pinadoc
 	mkdir -p doc/generated
 	stack $(STACKFLAGS) exec -- $< --infix-type > $@
 
