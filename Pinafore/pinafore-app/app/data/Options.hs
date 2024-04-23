@@ -9,18 +9,18 @@ import Shapes
 
 data Options
     = ShowVersionOption
-    | ModuleDocOption [FilePath]
-                      Text
+    | SyntaxDataDocOption
+    | InfixDocOption
+    | TypeInfixDocOption
     deriving (Eq, Show)
-
-optIncludes :: Parser [FilePath]
-optIncludes = many $ strOption $ long "include" <> short 'I' <> metavar "PATH"
 
 optParser :: Parser Options
 optParser =
     choice
         [ flag' ShowVersionOption $ long "version" <> short 'v'
-        , ModuleDocOption <$> optIncludes <*> (strOption $ long "module" <> metavar "MODULENAME")
+        , flag' SyntaxDataDocOption $ long "syntax-data"
+        , flag' InfixDocOption $ long "infix"
+        , flag' TypeInfixDocOption $ long "infix-type"
         ]
 
 optParserInfo :: ParserInfo Options

@@ -85,7 +85,7 @@ licensing: out/licensing
 
 ### Executables
 
-${BINPATH}/pinafore ${BINPATH}/pinadoc &: out docker-image
+${BINPATH}/pinafore ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
 ifeq ($(nodocker),1)
 else
 	rm -rf out/logs
@@ -210,7 +210,7 @@ nix-docker-flake: nix-docker-image
 out/support:
 	mkdir -p $@
 
-out/support/syntax-data.json: ${BINPATH}/pinadoc out/support
+out/support/syntax-data.json: ${BINPATH}/pinadata out/support
 	stack $(STACKFLAGS) exec -- $< --syntax-data > $@
 
 
@@ -244,11 +244,11 @@ doc/library/%.md: ${BINPATH}/pinadoc
 	mkdir -p doc/library
 	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/pinafore-stdlib/data > $@
 
-doc/generated/infix.md: ${BINPATH}/pinadoc
+doc/generated/infix.md: ${BINPATH}/pinadata
 	mkdir -p doc/generated
 	stack $(STACKFLAGS) exec -- $< --infix > $@
 
-doc/generated/type-infix.md: ${BINPATH}/pinadoc
+doc/generated/type-infix.md: ${BINPATH}/pinadata
 	mkdir -p doc/generated
 	stack $(STACKFLAGS) exec -- $< --infix-type > $@
 
