@@ -118,9 +118,6 @@ main :: IO ()
 main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
-        ModuleDocOption roIncludeDirs modname -> do
-            let
-                roCache = False
-                roDataDir = Nothing
-            (_, modopts) <- getStorageModelOptions MkRunOptions {..}
+        ModuleDocOption ropts modname -> do
+            (_, modopts) <- getStorageModelOptions ropts
             printModuleDoc modopts modname
