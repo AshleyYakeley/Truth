@@ -58,19 +58,21 @@
                     mkdir -p $out/share/pinafore/lib
                     cp -r $libdir/* $out/share/pinafore/lib/
                     '';
+                pinadataPackage = flake.packages."pinafore-app:exe:pinadata";
+                pinadocPackage = flake.packages."pinafore-app:exe:pinadoc";
                 pinaforePackage = pkgs.symlinkJoin
                 {
                     name = "pinafore";
                     paths =
                     [
                         exePackage
+                        pinadocPackage
                         stdLibPackage
                     ];
                 };
-                pinaforeDocPackage = flake.packages."pinafore-app:exe:pinafore-doc";
                 syntaxDataPackage = pkgs.runCommand "pinafore-syntax-data" {}
                     ''
-                    ${pinaforeDocPackage}/bin/pinafore-doc --syntax-data > $out
+                    ${pinadataPackage}/bin/pinadata --syntax-data > $out
                     '';
                 vsceFilePackage = pkgs.runCommand "pinafore-vscode-extension-file" {}
                     ''
@@ -99,14 +101,23 @@
                     };
             in flake //
             {
-                packages =
+                packages = flake.packages //
                 {
                     default = pinaforePackage;
                     pinafore = pinaforePackage;
-                    pinafore-doc = pinaforeDocPackage;
-                    syntax-data = syntaxDataPackage;
-                    vscode-extension-file = vsceFilePackage;
                     vscode-extension = vscePackage;
+                };
+                apps =
+                {
+                    default = flake.apps."pinafore-app:exe:pinafore";
+                    pinafore = flake.apps."pinafore-app:exe:pinafore";
+                    pinadoc = flake.apps."pinafore-app:exe:pinadoc";
+                    pinadata = flake.apps."pinafore-app:exe:pinadata";
+                };
+                files =
+                {
+                    syntax-data = syntaxDataPackage;
+                    vscode-extension = vsceFilePackage;
                 };
             }
         );

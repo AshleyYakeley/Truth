@@ -1,32 +1,37 @@
 module Options
     ( Options(..)
+    , RunOptions(..)
     , getOptions
     , optParserInfo
     ) where
 
 import Options.Applicative as OA
+import Pinafore.Options
 import Shapes
 
 data Options
     = ShowVersionOption
-    | SyntaxDataDocOption
-    | ModuleDocOption [FilePath]
+    | ModuleDocOption RunOptions
                       Text
-    | InfixDocOption
-    | TypeInfixDocOption
     deriving (Eq, Show)
 
 optIncludes :: Parser [FilePath]
 optIncludes = many $ strOption $ long "include" <> short 'I' <> metavar "PATH"
 
+optDataPath :: Parser (Maybe FilePath)
+optDataPath = optional $ strOption $ long "data" <> metavar "PATH"
+
+optCache :: Parser Bool
+optCache = pure False
+
+optRunOptions :: Parser RunOptions
+optRunOptions = MkRunOptions <$> optCache <*> optIncludes <*> optDataPath
+
 optParser :: Parser Options
 optParser =
     choice
         [ flag' ShowVersionOption $ long "version" <> short 'v'
-        , flag' SyntaxDataDocOption $ long "syntax-data"
-        , ModuleDocOption <$> optIncludes <*> (strOption $ long "module" <> metavar "MODULENAME")
-        , flag' InfixDocOption $ long "infix"
-        , flag' TypeInfixDocOption $ long "infix-type"
+        , ModuleDocOption <$> optRunOptions <*> (strArgument $ metavar "MODULENAME")
         ]
 
 optParserInfo :: ParserInfo Options

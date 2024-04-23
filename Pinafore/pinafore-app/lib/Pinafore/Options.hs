@@ -15,10 +15,10 @@ data RunOptions = MkRunOptions
     , roDataDir :: Maybe FilePath
     } deriving (Eq, Show)
 
-getApplicationOptions :: MonadIO m => RunOptions -> m (StorageModelOptions, ModuleOptions, [Importer])
+getApplicationOptions :: RunOptions -> IO (StorageModelOptions, ModuleOptions, [Importer])
 getApplicationOptions MkRunOptions {..} = do
     smoDataDir <- getPinaforeDir roDataDir
-    sysIncludeDirs <- liftIO $ getSystemDataDirs "pinafore/lib"
+    sysIncludeDirs <- getSystemDataDirs "pinafore/lib"
     let
         smoCache = roCache
         moExtraLibrary = extraLibrary
