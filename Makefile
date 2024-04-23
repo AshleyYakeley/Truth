@@ -96,6 +96,7 @@ endif
 	xhost +si:localuser:$${USER}
 	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
 	strip --remove-section=.comment ${BINPATH}/pinafore
+	strip --remove-section=.comment ${BINPATH}/pinadoc
 ifeq ($(test),1)
 	stack $(STACKFLAGS) exec -- ${BINPATH}/pinadoc --include Pinafore/pinafore-app/test/pinadoc --module test > Pinafore/pinafore-app/test/pinadoc/test.out.md
 	diff -u Pinafore/pinafore-app/test/pinadoc/test.ref.md Pinafore/pinafore-app/test/pinadoc/test.out.md
@@ -131,6 +132,7 @@ LIBMODULEFILES := \
 
 .build/deb/$(PACKAGEFULLNAME).deb: \
 		${BINPATH}/pinafore \
+		${BINPATH}/pinadoc \
 		$(foreach I,$(LIBMODULEFILES),Pinafore/pinafore-stdlib/data/$(I).pinafore) \
 		deb/copyright \
 		deb/control.m4 \
@@ -138,6 +140,7 @@ LIBMODULEFILES := \
 	rm -rf $(PACKAGEDIR)
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
+	cp ${BINPATH}/pinadoc $(PACKAGEDIR)/usr/bin/
 	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UILib
 	for i in $(LIBMODULEFILES); do cp Pinafore/pinafore-stdlib/data/$$i.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/$$i.pinafore; done
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore

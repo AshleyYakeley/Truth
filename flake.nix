@@ -58,16 +58,17 @@
                     mkdir -p $out/share/pinafore/lib
                     cp -r $libdir/* $out/share/pinafore/lib/
                     '';
+                pinadocPackage = flake.packages."pinafore-app:exe:pinadoc";
                 pinaforePackage = pkgs.symlinkJoin
                 {
                     name = "pinafore";
                     paths =
                     [
                         exePackage
+                        pinadocPackage
                         stdLibPackage
                     ];
                 };
-                pinadocPackage = flake.packages."pinafore-app:exe:pinadoc";
                 syntaxDataPackage = pkgs.runCommand "pinafore-syntax-data" {}
                     ''
                     ${pinadocPackage}/bin/pinadoc --syntax-data > $out
@@ -99,14 +100,22 @@
                     };
             in flake //
             {
-                packages =
+                packages = flake.packages //
                 {
                     default = pinaforePackage;
                     pinafore = pinaforePackage;
-                    pinadoc = pinadocPackage;
-                    syntax-data = syntaxDataPackage;
-                    vscode-extension-file = vsceFilePackage;
                     vscode-extension = vscePackage;
+                };
+                apps =
+                {
+                    default = flake.apps."pinafore-app:exe:pinafore";
+                    pinafore = flake.apps."pinafore-app:exe:pinafore";
+                    pinadoc = flake.apps."pinafore-app:exe:pinadoc";
+                };
+                files =
+                {
+                    syntax-data = syntaxDataPackage;
+                    vscode-extension = vsceFilePackage;
                 };
             }
         );
