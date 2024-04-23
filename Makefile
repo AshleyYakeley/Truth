@@ -98,7 +98,7 @@ endif
 	strip --remove-section=.comment ${BINPATH}/pinafore
 	strip --remove-section=.comment ${BINPATH}/pinadoc
 ifeq ($(test),1)
-	stack $(STACKFLAGS) exec -- ${BINPATH}/pinadoc --include Pinafore/pinafore-app/test/pinadoc --module test > Pinafore/pinafore-app/test/pinadoc/test.out.md
+	stack $(STACKFLAGS) exec -- ${BINPATH}/pinadoc --include Pinafore/pinafore-app/test/pinadoc test > Pinafore/pinafore-app/test/pinadoc/test.out.md
 	diff -u Pinafore/pinafore-app/test/pinadoc/test.ref.md Pinafore/pinafore-app/test/pinadoc/test.out.md
 endif
 ifeq ($(nodocker),1)
@@ -242,7 +242,7 @@ LIBMODULEDOCS := \
 
 doc/library/%.md: ${BINPATH}/pinadoc
 	mkdir -p doc/library
-	stack $(STACKFLAGS) exec -- $< --module $(subst .,/,$*) --include Pinafore/pinafore-stdlib/data > $@
+	stack $(STACKFLAGS) exec -- $< $(subst .,/,$*) --include Pinafore/pinafore-stdlib/data > $@
 
 doc/generated/infix.md: ${BINPATH}/pinadata
 	mkdir -p doc/generated

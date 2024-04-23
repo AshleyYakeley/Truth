@@ -20,7 +20,7 @@ optParser :: Parser Options
 optParser =
     choice
         [ flag' ShowVersionOption $ long "version" <> short 'v'
-        , ModuleDocOption <$> optIncludes <*> (strOption $ long "module" <> metavar "MODULENAME")
+        , ModuleDocOption <$> optIncludes <*> (strArgument $ metavar "MODULENAME")
         ]
 
 optParserInfo :: ParserInfo Options
