@@ -9,8 +9,8 @@ import qualified Data.Aeson.Text as JSON
 import Options
 import Pinafore.Documentation
 import Pinafore.Language
-import Pinafore.Libs
 import Pinafore.Main
+import Pinafore.Options
 import Pinafore.Version
 import Shapes
 
@@ -167,9 +167,12 @@ main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
         SyntaxDataDocOption -> putStrLn $ unpack $ JSON.encodeToLazyText $ syntaxData
-        ModuleDocOption moModuleDirs modname -> let
-            moExtraLibrary = extraLibrary
-            in printModuleDoc MkModuleOptions {..} modname
+        ModuleDocOption roIncludeDirs modname -> do
+            let
+                roCache = False
+                roDataDir = Nothing
+            (_, modopts) <- getStorageModelOptions MkRunOptions {..}
+            printModuleDoc modopts modname
         InfixDocOption ->
             printInfixOperatorTable $
             fmap (\n -> (n, operatorFixity n)) $
