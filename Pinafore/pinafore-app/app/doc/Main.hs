@@ -119,5 +119,5 @@ main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
         ModuleDocOption ropts modname -> do
-            (_, modopts) <- getStorageModelOptions ropts
+            (_, modopts, _) <- getApplicationOptions ropts
             printModuleDoc modopts modname
