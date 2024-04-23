@@ -7,6 +7,7 @@ module Pinafore.Language
     , textFetchModule
     , libraryFetchModule
     , QModule(..)
+    , getModule
     , Importer(..)
     , LibraryContext(..)
     , mkLibraryContext

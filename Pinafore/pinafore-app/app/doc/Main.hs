@@ -27,13 +27,11 @@ trimDocChildren children = bindForest children trimDocL
 trimDoc :: Tree DefDoc -> Tree DefDoc
 trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 
-printModuleDoc :: ModuleOptions -> Text -> IO ()
-printModuleDoc modopts tmodname = do
+printModuleDoc :: ModuleOptions -> ModuleSpec -> IO ()
+printModuleDoc modopts modspec = do
     let fmodule = standardFetchModule modopts
     let ?library = mkLibraryContext nullInvocationInfo fmodule mempty
-    let modname = MkModuleName tmodname
-    mmod <- fromInterpretResult $ runPinaforeScoped (unpack tmodname) $ lcLoadModule ?library modname
-    pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
+    qmodule <- fromInterpretResult $ runPinaforeScoped "<doc>" $ getModule modspec
     let
         runDocTree :: Int -> Int -> Tree DefDoc -> IO ()
         runDocTree hlevel ilevel (MkTree MkDefDoc {..} (MkForest children)) = do
@@ -105,19 +103,20 @@ printModuleDoc modopts tmodname = do
             for_ children $ runDocTree hlevel' ilevel'
         headingTitle :: MarkdownText
         headingTitle =
-            case tmodname of
-                "pinafore" -> plainText "Built In"
-                _ -> plainText $ "import \\\"" <> tmodname <> "\\\""
+            case modspec of
+                PlainModuleSpec "pinafore" -> plainText "Built In"
+                PlainModuleSpec modname -> plainText $ "import \\\"" <> showText modname <> "\\\""
+                SpecialModuleSpec iname uri -> plainText $ "import " <> showText iname <> " \\\"" <> uri <> "\\\""
         headingItem :: DefDoc
         headingItem = MkDefDoc (HeadingDocItem headingTitle) ""
         tree :: Tree DefDoc
-        tree = MkTree headingItem $ moduleDoc pmodule
+        tree = MkTree headingItem $ moduleDoc qmodule
     runDocTree 1 0 $ trimDoc $ deepMergeTree (eqMergeOn docItem) tree
 
 main :: IO ()
 main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
-        ModuleDocOption ropts modname -> do
+        ModuleDocOption ropts modspec -> do
             (_, modopts, _) <- getApplicationOptions ropts
-            printModuleDoc modopts modname
+            printModuleDoc modopts modspec
