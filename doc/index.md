@@ -3,6 +3,7 @@
 Home<self>
 getting-started
 invocation
+module-documentation
 future-plans
 building
 ```
