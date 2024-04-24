@@ -14,4 +14,4 @@ main =
         ShowVersionOption -> printVersion
         ModuleDocOption ropts modname -> do
             (_, modopts) <- getStorageModelOptions ropts
-            generateCommonMarkDoc modopts modname
+            generateCommonMarkDoc stdout modopts modname

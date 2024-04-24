@@ -24,8 +24,8 @@ trimDocChildren children = bindForest children trimDocL
 trimDoc :: Tree DefDoc -> Tree DefDoc
 trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 
-generateCommonMarkDoc :: ModuleOptions -> Text -> IO ()
-generateCommonMarkDoc modopts tmodname = do
+generateCommonMarkDoc :: Handle -> ModuleOptions -> Text -> IO ()
+generateCommonMarkDoc outh modopts tmodname = do
     let fmodule = standardFetchModule modopts
     let ?library = mkLibraryContext nullInvocationInfo fmodule
     let modname = MkModuleName tmodname
@@ -36,7 +36,7 @@ generateCommonMarkDoc modopts tmodname = do
         runDocTree hlevel ilevel (MkTree MkDefDoc {..} (MkForest children)) = do
             let
                 putMarkdown :: Markdown -> IO ()
-                putMarkdown m = hPutStr stdout $ unpack $ toText m
+                putMarkdown m = hPutStr outh $ unpack $ toText m
                 putIndentMarkdown :: Markdown -> IO ()
                 putIndentMarkdown m = putMarkdown $ indentMarkdownN ilevel m
                 mapFullNameRef :: FullNameRef -> FullName

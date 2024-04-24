@@ -27,3 +27,16 @@ executables:
         other-modules:
           - Options
         ghc-options: -threaded
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.16
+          - shapes
+          - filepath
+          - pinafore-language
+          - pinafore-app
+          - pinafore-docgen
+        main: Main.hs
+        ghc-options: -threaded
