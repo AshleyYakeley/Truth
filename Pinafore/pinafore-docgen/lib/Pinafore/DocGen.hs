@@ -1,13 +1,10 @@
-module Main
-    ( main
+module Pinafore.DocGen
+    ( generateCommonMarkDoc
     ) where
 
-import Options
 import Pinafore.Documentation
 import Pinafore.Language
 import Pinafore.Main
-import Pinafore.Options
-import Pinafore.Version
 import Shapes
 
 isSubtypeRel :: Tree DefDoc -> Bool
@@ -27,8 +24,8 @@ trimDocChildren children = bindForest children trimDocL
 trimDoc :: Tree DefDoc -> Tree DefDoc
 trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 
-printModuleDoc :: ModuleOptions -> ModuleSpec -> IO ()
-printModuleDoc modopts modspec = do
+generateCommonMarkDoc :: Handle -> ModuleOptions -> ModuleSpec -> IO ()
+generateCommonMarkDoc outh modopts modspec = do
     let fmodule = standardFetchModule modopts
     let ?library = mkLibraryContext nullInvocationInfo fmodule mempty
     qmodule <- fromInterpretResult $ runPinaforeScoped "<doc>" $ getModule modspec
@@ -37,7 +34,7 @@ printModuleDoc modopts modspec = do
         runDocTree hlevel ilevel (MkTree MkDefDoc {..} (MkForest children)) = do
             let
                 putMarkdown :: Markdown -> IO ()
-                putMarkdown m = hPutStr stdout $ unpack $ toText m
+                putMarkdown m = hPutStr outh $ unpack $ toText m
                 putIndentMarkdown :: Markdown -> IO ()
                 putIndentMarkdown m = putMarkdown $ indentMarkdownN ilevel m
                 mapFullNameRef :: FullNameRef -> FullName
@@ -112,11 +109,3 @@ printModuleDoc modopts modspec = do
         tree :: Tree DefDoc
         tree = MkTree headingItem $ moduleDoc qmodule
     runDocTree 1 0 $ trimDoc $ deepMergeTree (eqMergeOn docItem) tree
-
-main :: IO ()
-main =
-    getOptions >>= \case
-        ShowVersionOption -> printVersion
-        ModuleDocOption ropts modspec -> do
-            (_, modopts, _) <- getApplicationOptions ropts
-            printModuleDoc modopts modspec

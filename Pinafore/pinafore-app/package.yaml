@@ -65,19 +65,6 @@ executables:
         other-modules:
           - Options
         ghc-options: -threaded
-    pinadoc:
-        source-dirs: app/doc
-        dependencies:
-          - base >= 4.16
-          - shapes
-          - filepath
-          - optparse-applicative
-          - pinafore-language
-          - pinafore-app
-        main: Main.hs
-        other-modules:
-          - Options
-        ghc-options: -threaded
 
 tests:
     test:

@@ -30,6 +30,7 @@ packages:
 - Pinafore/pinafore-webapi
 - Pinafore/pinafore-stdlib
 - Pinafore/pinafore-app
+- Pinafore/pinafore-docgen
 
 resolver: lts-22.16
 
