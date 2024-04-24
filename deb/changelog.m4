@@ -1,7 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Install
-    - rename executable pinafore-doc to pinadoc
+    - rename executable pinafore-docgen to pinadoc
     - include pinadoc in Debian and Nix packages
     - clean up Nix flake outputs
 

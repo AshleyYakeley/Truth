@@ -1,13 +1,10 @@
-module Main
-    ( main
+module Pinafore.DocGen
+    ( generateCommonMarkDoc
     ) where
 
-import Options
 import Pinafore.Documentation
 import Pinafore.Language
 import Pinafore.Main
-import Pinafore.Options
-import Pinafore.Version
 import Shapes
 
 isSubtypeRel :: Tree DefDoc -> Bool
@@ -27,8 +24,8 @@ trimDocChildren children = bindForest children trimDocL
 trimDoc :: Tree DefDoc -> Tree DefDoc
 trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 
-printModuleDoc :: ModuleOptions -> Text -> IO ()
-printModuleDoc modopts tmodname = do
+generateCommonMarkDoc :: ModuleOptions -> Text -> IO ()
+generateCommonMarkDoc modopts tmodname = do
     let fmodule = standardFetchModule modopts
     let ?library = mkLibraryContext nullInvocationInfo fmodule
     let modname = MkModuleName tmodname
@@ -113,11 +110,3 @@ printModuleDoc modopts tmodname = do
         tree :: Tree DefDoc
         tree = MkTree headingItem $ moduleDoc pmodule
     runDocTree 1 0 $ trimDoc $ deepMergeTree (eqMergeOn docItem) tree
-
-main :: IO ()
-main =
-    getOptions >>= \case
-        ShowVersionOption -> printVersion
-        ModuleDocOption ropts modname -> do
-            (_, modopts) <- getStorageModelOptions ropts
-            printModuleDoc modopts modname

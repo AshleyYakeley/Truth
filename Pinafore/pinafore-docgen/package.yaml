@@ -1,0 +1,29 @@
+_common: !include "../../common.yaml"
+name: pinafore-docgen
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.16
+      - shapes
+      - pinafore-language
+    exposed-modules:
+      - Pinafore.DocGen
+
+executables:
+    pinadoc:
+        source-dirs: app
+        dependencies:
+          - base >= 4.16
+          - shapes
+          - optparse-applicative
+          - pinafore-app
+          - pinafore-docgen
+        main: Main.hs
+        other-modules:
+          - Options
+        ghc-options: -threaded

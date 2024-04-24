@@ -29,6 +29,7 @@ packages:
 - Pinafore/pinafore-gnome
 - Pinafore/pinafore-stdlib
 - Pinafore/pinafore-app
+- Pinafore/pinafore-docgen
 
 resolver: lts-22.16
 
