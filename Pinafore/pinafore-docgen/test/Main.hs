@@ -10,32 +10,50 @@ import Shapes
 import Shapes.Test
 import System.FilePath
 
-testFile :: ModuleOptions -> FilePath -> TestTree
-testFile mo inpath = let
+getPlainTestPaths :: IO [FilePath]
+getPlainTestPaths = do
+    paths <- findByExtension [".pinafore"] $ "test" </> "golden"
+    case paths of
+        [] -> fail "wrong directory"
+        _ -> return ()
+    return paths
+
+testPlainFile :: ModuleOptions -> FilePath -> TestTree
+testPlainFile mo inpath = let
     dir = takeDirectory inpath
     modName = takeBaseName inpath
     in testHandleVsFileInDir dir modName $ \outh ->
            generateCommonMarkDoc outh mo $ PlainModuleSpec $ MkModuleName $ pack modName
 
-getTestPaths :: IO [FilePath]
-getTestPaths = do
-    inpaths <- findByExtension [".pinafore"] $ "test" </> "golden"
-    case inpaths of
+getOpenAPITestPaths :: IO [FilePath]
+getOpenAPITestPaths = do
+    paths <- findByExtension [".json"] $ "test" </> "golden" </> "openapi"
+    case paths of
         [] -> fail "wrong directory"
         _ -> return ()
-    return inpaths
+    return paths
+
+testOpenAPIFile :: ModuleOptions -> FilePath -> TestTree
+testOpenAPIFile mo inpath = let
+    dir = takeDirectory inpath
+    testName = takeBaseName inpath
+    in testHandleVsFileInDir dir testName $ \outh ->
+           generateCommonMarkDoc outh mo $ SpecialModuleSpec "openapi" $ "file:" <> pack inpath
 
 main :: IO ()
 main = do
-    inpaths <- getTestPaths
+    plainpaths <- getPlainTestPaths
+    openapipaths <- getOpenAPITestPaths
     let
         roCache = False
         roIncludeDirs = ["test" </> "golden"]
         roDataDir = Nothing
     mo <- getModelOptions MkRunOptions {..}
     let
-        testGolden :: TestTree
-        testGolden = testTree "golden" $ fmap (testFile mo) inpaths
+        testPlain :: TestTree
+        testPlain = testTree "plain" $ fmap (testPlainFile mo) plainpaths
+        testOpenAPI :: TestTree
+        testOpenAPI = testTree "openapi" $ fmap (testOpenAPIFile mo) openapipaths
         tests :: TestTree
-        tests = testTree "pinafore-docgen" [testGolden]
+        tests = testTree "pinafore-docgen" [testPlain, testOpenAPI]
     testMainNoSignalHandler tests

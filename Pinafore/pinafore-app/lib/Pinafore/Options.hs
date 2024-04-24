@@ -23,9 +23,10 @@ getModelOptions MkRunOptions {..} = do
     let
         moExtraLibrary = extraLibrary
         moModuleDirs = roIncludeDirs <> [smoDataDir </> "lib"] <> sysIncludeDirs
+        moImporters = importers
     return MkModuleOptions {..}
 
-getApplicationOptions :: RunOptions -> IO (StorageModelOptions, ModuleOptions, [Importer])
+getApplicationOptions :: RunOptions -> IO (StorageModelOptions, ModuleOptions)
 getApplicationOptions MkRunOptions {..} = do
     smoDataDir <- ensurePinaforeDir roDataDir
     sysIncludeDirs <- getSystemDataDirs "pinafore/lib"
@@ -33,4 +34,5 @@ getApplicationOptions MkRunOptions {..} = do
         smoCache = roCache
         moExtraLibrary = extraLibrary
         moModuleDirs = roIncludeDirs <> [smoDataDir </> "lib"] <> sysIncludeDirs
-    return (MkStorageModelOptions {..}, MkModuleOptions {..}, importers)
+        moImporters = importers
+    return (MkStorageModelOptions {..}, MkModuleOptions {..})

@@ -1,0 +1,10 @@
+# import openapi \\"file:test/golden/openapi/petstore\-expanded\.json\\"
+
+**<code>schemas\.</code>**<code> : List\. Text\.</code>
+
+**<code>servers\.</code>**<code> : List\. Text\.</code>
+
+**<code>paths\.</code>**<code> : List\. Text\.</code>
+
+**<code>functions\.</code>**<code> : List\. Text\.</code>
+

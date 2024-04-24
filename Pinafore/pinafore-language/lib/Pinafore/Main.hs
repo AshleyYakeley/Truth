@@ -1,6 +1,6 @@
 module Pinafore.Main
     ( ModuleOptions(..)
-    , standardFetchModule
+    , standardLibraryContext
     , nullInvocationInfo
     , StorageModelOptions(..)
     , standardStorageModel
@@ -29,6 +29,7 @@ data StorageModelOptions = MkStorageModelOptions
 data ModuleOptions = MkModuleOptions
     { moExtraLibrary :: [LibraryModule ()]
     , moModuleDirs :: [FilePath]
+    , moImporters :: [Importer]
     }
 
 standardStorageModel :: StorageModelOptions -> View (Model QStorageUpdate)
@@ -53,6 +54,9 @@ standardFetchModule MkModuleOptions {..} = let
     dirFetchModule :: FetchModule
     dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
     in extraLibFetchModule <> dirFetchModule
+
+standardLibraryContext :: InvocationInfo -> ModuleOptions -> LibraryContext
+standardLibraryContext ii modopts = mkLibraryContext ii (standardFetchModule modopts) (moImporters modopts)
 
 sqliteQDumpTable :: FilePath -> IO ()
 sqliteQDumpTable dirpath = do
