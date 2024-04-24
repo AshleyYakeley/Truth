@@ -8,11 +8,12 @@ import System.Directory
 import System.Environment.XDG.BaseDir
 
 getPinaforeDir :: Maybe FilePath -> IO FilePath
-getPinaforeDir mdirpath = do
-    pinaforedir <-
-        case mdirpath of
-            Just pinaforedir -> return pinaforedir
-            Nothing -> getUserDataDir "pinafore"
+getPinaforeDir (Just pinaforedir) = return pinaforedir
+getPinaforeDir Nothing = getUserDataDir "pinafore"
+
+ensurePinaforeDir :: Maybe FilePath -> IO FilePath
+ensurePinaforeDir mdirpath = do
+    pinaforedir <- getPinaforeDir mdirpath
     createDirectoryIfMissing True pinaforedir
     return pinaforedir
 

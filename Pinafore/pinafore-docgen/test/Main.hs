@@ -30,7 +30,7 @@ main = do
         roCache = False
         roIncludeDirs = ["test" </> "golden"]
         roDataDir = Nothing
-    (_, mo) <- getStorageModelOptions MkRunOptions {..}
+    mo <- getModelOptions MkRunOptions {..}
     let
         testGolden :: TestTree
         testGolden = testTree "golden" $ fmap (testFile mo) inpaths

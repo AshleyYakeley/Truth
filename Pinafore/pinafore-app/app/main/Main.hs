@@ -15,7 +15,7 @@ main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
         DumpTableOption mdirpath -> do
-            pinaforedir <- getPinaforeDir mdirpath
+            pinaforedir <- ensurePinaforeDir mdirpath
             sqliteQDumpTable pinaforedir
         RunFileOption ropts fNoRun fscript -> do
             copts <- getStorageModelOptions ropts

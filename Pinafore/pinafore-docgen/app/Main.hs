@@ -13,5 +13,5 @@ main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
         ModuleDocOption ropts modname -> do
-            (_, modopts) <- getStorageModelOptions ropts
+            modopts <- getModelOptions ropts
             generateCommonMarkDoc stdout modopts modname
