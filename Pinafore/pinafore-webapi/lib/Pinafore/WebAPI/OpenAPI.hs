@@ -4,7 +4,7 @@ module Pinafore.WebAPI.OpenAPI
 
 import Data.Aeson hiding (Result)
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
-import Data.OpenApi hiding (items)
+import Data.OpenApi hiding (items, name)
 import Pinafore.Language
 import Pinafore.Language.API
 import Pinafore.WebAPI.Fetch
@@ -29,9 +29,12 @@ pathItemOperations PathItem {..} = let
 
 type M = Result Text
 
-runM :: M Text -> Text
-runM (SuccessResult t) = t
-runM (FailureResult err) = "<error: " <> err <> ">"
+runM :: M a -> ResultT Text IO a
+runM = liftInner
+
+runMText :: M Text -> Text
+runMText (SuccessResult t) = t
+runMText (FailureResult err) = "<error: " <> err <> ">"
 
 getReferenced :: Referenced a -> M a
 getReferenced =
@@ -39,15 +42,15 @@ getReferenced =
         Ref ref -> throwExc $ "missing reference " <> getReference ref
         Inline a -> return a
 
-mangle :: Text -> Text
+mangle :: Text -> Name
 mangle = let
     m :: Char -> String
     m ' ' = "__"
     m '_' = "_U"
     m c = pure c
-    in mconcat . fmap (pack . m) . unpack
+    in MkName . mconcat . fmap (pack . m) . unpack
 
-operationToFunction :: Operation -> M (Text, [Param])
+operationToFunction :: Operation -> M (Name, [Param])
 operationToFunction Operation {..} = do
     case _operationDeprecated of
         Just True -> throwExc "deprecated"
@@ -81,7 +84,7 @@ showSchema _ = throwExc "missing _schemaType"
 showParam :: Param -> Text
 showParam Param {..} = let
     sig =
-        runM $ do
+        runMText $ do
             ref <- maybeToM "missing _paramSchema" _paramSchema
             sch <- getReferenced ref
             t <- showSchema sch
@@ -91,7 +94,7 @@ showParam Param {..} = let
 showOperation :: Operation -> M Text
 showOperation op = do
     (opid, params) <- operationToFunction op
-    return $ opid <> "(" <> intercalate ", " (fmap showParam params) <> ")"
+    return $ showText opid <> "(" <> intercalate ", " (fmap showParam params) <> ")"
 
 importOpenAPI :: Text -> ResultT Text IO (LibraryStuff ())
 importOpenAPI t = do
@@ -104,16 +107,33 @@ importOpenAPI t = do
         case fromJSON jsonval of
             Error err -> liftInner $ FailureResult $ pack err
             Success val -> return val
+    let
+        operations :: [(Operation, Text, Text)]
+        operations = do
+            (path, pathitem) <- InsOrd.toList $ _openApiPaths root
+            (opname, op) <- pathItemOperations pathitem
+            return (op, opname, pack path)
+        mkOperationFunction :: (Operation, Text, Text) -> M (LibraryStuff ())
+        mkOperationFunction (op, opname, path) = do
+            (name, params) <- operationToFunction op
+            let
+                val :: Text
+                val = "(" <> intercalate ", " (fmap showParam params) <> ")" <> " = " <> opname <> " " <> path
+            return $ valBDS (UnqualifiedFullNameRef name) (MkRawMarkdown $ fromMaybe "" $ _operationDescription op) val
+    functions <- runM $ for operations mkOperationFunction
     return $
-        mconcat
-            [ valBDS "schemas" "" $ fmap showText $ InsOrd.toList $ _componentsSchemas $ _openApiComponents root
-            , valBDS "servers" "" $ fmap showText $ _openApiServers root
-            , valBDS "paths" "" $ fmap showText $ InsOrd.toList $ _openApiPaths root
-            , valBDS "functions" "" $ do
-                  (path, pathitem) <- InsOrd.toList $ _openApiPaths root
-                  (opname, op) <- pathItemOperations pathitem
-                  return $ runM (showOperation op) <> " = " <> opname <> " " <> pack path
-            ]
+        mconcat $
+        [ namespaceBDS
+              "Info"
+              [ valBDS "schemas" "" $ fmap showText $ InsOrd.toList $ _componentsSchemas $ _openApiComponents root
+              , valBDS "servers" "" $ fmap showText $ _openApiServers root
+              , valBDS "paths" "" $ fmap showText $ InsOrd.toList $ _openApiPaths root
+              , valBDS "functions" "" $ do
+                    (op, opname, path) <- operations
+                    return $ runMText (showOperation op) <> " = " <> opname <> " " <> path
+              ]
+        ] <>
+        functions
 
 openAPIImporter :: Importer
 openAPIImporter = MkImporter "openapi" importOpenAPI

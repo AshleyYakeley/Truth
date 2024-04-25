@@ -1,6 +1,6 @@
 module Pinafore.Text.Markdown
     ( PlainText(..)
-    , RawMarkdown
+    , RawMarkdown(..)
     , asRawMarkdown
     , MarkdownText
     , rawMarkdown
