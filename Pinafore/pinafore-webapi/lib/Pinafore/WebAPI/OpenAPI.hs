@@ -2,9 +2,12 @@ module Pinafore.WebAPI.OpenAPI
     ( openAPIImporter
     ) where
 
-import Data.Aeson hiding (Result)
+import Data.Aeson as Aeson hiding (Result)
+import qualified Data.Aeson.Key as Aeson
+import qualified Data.Aeson.KeyMap as Aeson
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import Data.OpenApi hiding (items, name)
+import Data.Shim
 import Pinafore.Language
 import Pinafore.Language.API
 import Pinafore.WebAPI.Fetch
@@ -96,6 +99,22 @@ showOperation op = do
     (opid, params) <- operationToFunction op
     return $ showText opid <> "(" <> intercalate ", " (fmap showParam params) <> ")"
 
+data Func r where
+    MkFunc :: QShimWit 'Positive t -> ((Object -> IO r) -> t) -> Func r
+
+mkParam :: Param -> QShimWit 'Negative Value
+mkParam _ = mapShimWit (MkPolarShim $ functionToShim "param" String) qType
+
+mkFunc :: QShimWit 'Positive r -> [Param] -> Func r
+mkFunc tr [] = MkFunc (actionShimWit tr) $ \call -> liftIO $ call mempty
+mkFunc tr (p:pp) =
+    case mkParam p of
+        MkShimWit ta (MkPolarShim pf) ->
+            case mkFunc tr pp of
+                MkFunc tf f ->
+                    MkFunc (funcShimWit (mkShimWit ta) tf) $ \call a ->
+                        f $ \obj -> call $ Aeson.insert (Aeson.fromText $ _paramName p) (shimToFunction pf a) obj
+
 importOpenAPI :: Text -> ResultT Text IO (LibraryStuff ())
 importOpenAPI t = do
     bs <- fetch t
@@ -117,9 +136,18 @@ importOpenAPI t = do
         mkOperationFunction (op, opname, path) = do
             (name, params) <- operationToFunction op
             let
-                val :: Text
-                val = "(" <> intercalate ", " (fmap showParam params) <> ")" <> " = " <> opname <> " " <> path
-            return $ valBDS (UnqualifiedFullNameRef name) (MkRawMarkdown $ fromMaybe "" $ _operationDescription op) val
+                func :: Func Text
+                func = mkFunc qType params
+                call :: Object -> IO Text
+                call _ = return $ opname <> " " <> path
+            return $
+                case func of
+                    MkFunc qt f ->
+                        valWitBDS
+                            (UnqualifiedFullNameRef name)
+                            (MkRawMarkdown $ fromMaybe "" $ _operationDescription op)
+                            qt $
+                        f call
     functions <- runM $ for operations mkOperationFunction
     return $
         mconcat $

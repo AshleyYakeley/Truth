@@ -14,6 +14,7 @@ module Pinafore.Language.Library.Defs
     , headingBDT
     , headingBDS
     , namespaceBDS
+    , valWitBDS
     , valBDS
     , typeBDS
     , subtypeRelationBDS
@@ -94,6 +95,9 @@ instance Contravariant LibraryModule where
 
 type EnA = MeetType Entity A
 
+qPositiveShimWitDescription :: forall t. QShimWit 'Positive t -> NamedText
+qPositiveShimWitDescription (MkShimWit w _) = exprShow w
+
 qPositiveTypeDescription ::
        forall t. HasQType 'Positive t
     => NamedText
@@ -162,23 +166,32 @@ headingBDS name desc tree = pureForest $ headingBDT name desc tree
 namespaceBDS :: NamespaceRef -> [LibraryStuff context] -> LibraryStuff context
 namespaceBDS name tree = namespaceConcat name $ mconcat tree
 
+valWitBDS ::
+       forall context t.
+       FullNameRef
+    -> RawMarkdown
+    -> QShimWit 'Positive t
+    -> ((?qcontext :: context) => t)
+    -> LibraryStuff context
+valWitBDS name docDescription qt val = let
+    bdScopeEntry =
+        pure $
+        BindScopeEntry name [] $ \context -> let
+            ?qcontext = context
+            in ValueBinding (qConstExprAny $ MkSomeOf qt val) Nothing
+    diNames = pure name
+    diType = qPositiveShimWitDescription qt
+    docItem = ValueDocItem {..}
+    bdDoc = MkDefDoc {..}
+    in singleBindDoc MkBindDoc {..} []
+
 valBDS ::
        forall context t. HasQType 'Positive t
     => FullNameRef
     -> RawMarkdown
     -> ((?qcontext :: context) => t)
     -> LibraryStuff context
-valBDS name docDescription val = let
-    bdScopeEntry =
-        pure $
-        BindScopeEntry name [] $ \context -> let
-            ?qcontext = context
-            in ValueBinding (qConstExprAny $ jmToValue val) Nothing
-    diNames = pure name
-    diType = qPositiveTypeDescription @t
-    docItem = ValueDocItem {..}
-    bdDoc = MkDefDoc {..}
-    in singleBindDoc MkBindDoc {..} []
+valBDS name docDescription = valWitBDS name docDescription qType
 
 newTypeParameter :: State [Name] Name
 newTypeParameter = do

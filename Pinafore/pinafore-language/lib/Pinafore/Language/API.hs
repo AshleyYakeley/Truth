@@ -3,6 +3,7 @@ module Pinafore.Language.API
     , module Pinafore.Language.Name
     , module Pinafore.Language.Var
     , module Pinafore.Language.Library.Defs
+    , module Pinafore.Language.Library.Types
     , module Pinafore.Context
     , WitKind(..)
     , FamilialType(..)
@@ -11,6 +12,7 @@ module Pinafore.Language.API
     , StorableGroundType(..)
     , FamilyKind
     , SingletonFamily
+    , QShimWit
     , QGroundType(..)
     , PolyGreatestDynamicSupertype(..)
     , simpleMPolyGreatestDynamicSupertype
@@ -45,6 +47,7 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.MIME ()
 import Pinafore.Language.Library.Model ()
+import Pinafore.Language.Library.Types
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
