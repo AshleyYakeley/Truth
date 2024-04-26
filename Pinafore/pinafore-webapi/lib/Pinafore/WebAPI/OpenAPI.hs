@@ -100,40 +100,94 @@ showOperation op = do
     return $ showText opid <> "(" <> intercalate ", " (fmap showParam params) <> ")"
 
 data Func r where
-    MkFunc :: QShimWit 'Positive t -> ((Object -> IO r) -> t) -> Func r
+    MkFunc :: QShimWit 'Positive t -> ((Object -> r) -> t) -> Func r
+
+data IOShimWit v where
+    MkIOShimWit :: QShimWit 'Positive t -> (v -> IO t) -> IOShimWit v
 
 tupleParamList :: [QShimWit 'Negative Value] -> QShimWit 'Negative [Value]
 tupleParamList (w:ww) = mapNegShimWit (functionToShim "cons" $ \(a, aa) -> a : aa) $ pairShimWit w (tupleParamList ww)
 tupleParamList [] = mapNegShimWit (functionToShim "nil" $ \() -> []) nullShimWit
 
+tupleResponseList :: [IOShimWit Value] -> IOShimWit [Value]
+tupleResponseList [] =
+    MkIOShimWit nullShimWit $ \case
+        [] -> return ()
+        _ -> fail "tuple too long"
+tupleResponseList (MkIOShimWit t1 f1:ww) =
+    case tupleResponseList ww of
+        MkIOShimWit tr fr ->
+            MkIOShimWit (pairShimWit t1 tr) $ \case
+                v1:vr -> liftA2 (,) (f1 v1) (fr vr)
+                _ -> fail "tuple too short"
+
+mkResponse :: Schema -> M (IOShimWit Value)
+mkResponse Schema {..} = do
+    t <- maybeToM "missing _schemaType" _schemaType
+    case t of
+        OpenApiArray -> do
+            items <- maybeToM "missing _schemaItems" _schemaItems
+            MkIOShimWit tl fl <-
+                case items of
+                    OpenApiItemsObject rs -> do
+                        itemschema <- getReferenced rs
+                        MkIOShimWit itemp vt <- mkResponse itemschema
+                        return $ MkIOShimWit (listShimWit itemp) $ \vv -> for vv vt
+                    OpenApiItemsArray rss -> do
+                        pp <-
+                            for rss $ \rs -> do
+                                itemschema <- getReferenced rs
+                                mkResponse itemschema
+                        return $ tupleResponseList pp
+            return $
+                MkIOShimWit tl $ \case
+                    Array x -> fl $ toList x
+                    _ -> fail "not List"
+        OpenApiString ->
+            return $
+            MkIOShimWit qType $ \case
+                String x -> return x
+                _ -> fail "not Text"
+        OpenApiBoolean ->
+            return $
+            MkIOShimWit qType $ \case
+                Bool x -> return x
+                _ -> fail "not Boolean"
+        OpenApiNull ->
+            return $
+            MkIOShimWit qType $ \case
+                Null -> return ()
+                _ -> fail "not Unit"
+        -- OpenApiInteger -> return $ mapPosShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
+        _ -> throwExc $ "unknown _schemaType: " <> showText t
+
 mkParam :: Schema -> M (QShimWit 'Negative Value)
-mkParam Schema {..}
-    | Just t <- _schemaType =
-        case t of
-            OpenApiArray -> do
-                items <- maybeToM "missing _schemaItems" _schemaItems
-                itemlist <-
-                    case items of
-                        OpenApiItemsObject rs -> do
-                            itemschema <- getReferenced rs
-                            itemp <- mkParam itemschema
-                            return $ listShimWit itemp
-                        OpenApiItemsArray rss -> do
-                            pp <-
-                                for rss $ \rs -> do
-                                    itemschema <- getReferenced rs
-                                    mkParam itemschema
-                            return $ tupleParamList pp
-                return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) itemlist
-            OpenApiString -> return $ mapNegShimWit (functionToShim "JSON.String" String) qType
-            OpenApiInteger -> return $ mapNegShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
-            OpenApiBoolean -> return $ mapNegShimWit (functionToShim "JSON.Bool" Bool) qType
-            OpenApiNull -> return $ mapNegShimWit (functionToShim "JSON.Null" $ \() -> Null) qType
-            _ -> throwExc $ "unknown _schemaType: " <> showText t
-mkParam _ = throwExc "missing _schemaType"
+mkParam Schema {..} = do
+    t <- maybeToM "missing _schemaType" _schemaType
+    case t of
+        OpenApiArray -> do
+            items <- maybeToM "missing _schemaItems" _schemaItems
+            itemlist <-
+                case items of
+                    OpenApiItemsObject rs -> do
+                        itemschema <- getReferenced rs
+                        itemp <- mkParam itemschema
+                        return $ listShimWit itemp
+                    OpenApiItemsArray rss -> do
+                        pp <-
+                            for rss $ \rs -> do
+                                itemschema <- getReferenced rs
+                                mkParam itemschema
+                        return $ tupleParamList pp
+            return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) itemlist
+        OpenApiString -> return $ mapNegShimWit (functionToShim "JSON.String" String) qType
+        OpenApiInteger -> return $ mapNegShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
+        OpenApiBoolean -> return $ mapNegShimWit (functionToShim "JSON.Bool" Bool) qType
+        OpenApiNull -> return $ mapNegShimWit (functionToShim "JSON.Null" $ \() -> Null) qType
+        _ -> throwExc $ "unknown _schemaType: " <> showText t
 
 mkFunc :: QShimWit 'Positive r -> [Param] -> M (Func r)
-mkFunc tr [] = return $ MkFunc (actionShimWit tr) $ \call -> liftIO $ call mempty
+mkFunc tr [] = return $ MkFunc tr $ \call -> call mempty
 mkFunc tr (p:pp) = do
     ref <- maybeToM "missing _paramSchema" $ _paramSchema p
     sch <- getReferenced ref
@@ -167,10 +221,18 @@ importOpenAPI t = do
         mkOperationFunction :: (Operation, Text, Text) -> M (LibraryStuff ())
         mkOperationFunction (op, opname, path) = do
             (name, params) <- operationToFunction op
-            func <- mkFunc qType params
+            responseref <-
+                maybeToM "no default response" $ InsOrd.lookup 200 $ _responsesResponses $ _operationResponses op
+            response <- getReferenced responseref
+            mto <-
+                maybeToM "no known response content-type" $ InsOrd.lookup "application/json" $ _responseContent response
+            rschemaref <- maybeToM "no response schema" $ _mediaTypeObjectSchema mto
+            rschema <- getReferenced rschemaref
+            MkIOShimWit responseType responseF <- mkResponse rschema
+            func <- mkFunc (actionShimWit responseType) params
             let
-                call :: Object -> IO Text
-                call _ = return $ opname <> " " <> path
+                call :: Object -> IO Value
+                call _ = return $ String $ opname <> " " <> path
             return $
                 case func of
                     MkFunc qt f ->
@@ -178,7 +240,10 @@ importOpenAPI t = do
                             (UnqualifiedFullNameRef name)
                             (MkRawMarkdown $ fromMaybe "" $ _operationDescription op)
                             qt $
-                        f call
+                        f $ \paramobj ->
+                            liftIO $ do
+                                respvalue <- call paramobj
+                                responseF respvalue
     functions <- runM $ for operations mkOperationFunction
     return $
         mconcat $
