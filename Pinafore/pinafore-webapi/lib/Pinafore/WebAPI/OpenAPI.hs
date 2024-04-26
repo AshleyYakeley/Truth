@@ -35,10 +35,6 @@ type M = Result Text
 runM :: M a -> ResultT Text IO a
 runM = liftInner
 
-runMText :: M Text -> Text
-runMText (SuccessResult t) = t
-runMText (FailureResult err) = "<error: " <> err <> ">"
-
 getReferenced :: Referenced a -> M a
 getReferenced =
     \case
@@ -61,43 +57,6 @@ operationToFunction Operation {..} = do
     opid <- maybeToM "missing _operationOperationId" _operationOperationId
     params <- for _operationParameters getReferenced
     return (mangle opid, params)
-
-showSchema :: Schema -> M Text
-showSchema Schema {..}
-    | Just t <- _schemaType =
-        case t of
-            OpenApiArray -> do
-                items <- maybeToM "missing _schemaItems" _schemaItems
-                case items of
-                    OpenApiItemsObject rs -> do
-                        itemschema <- getReferenced rs
-                        itemtext <- showSchema itemschema
-                        return $ "List " <> itemtext
-                    OpenApiItemsArray rss -> do
-                        sct <-
-                            for rss $ \rs -> do
-                                itemschema <- getReferenced rs
-                                showSchema itemschema
-                        return $ intercalate " *: " sct
-            OpenApiString -> return "Text"
-            OpenApiInteger -> return "Integer"
-            _ -> return $ showText t
-showSchema _ = throwExc "missing _schemaType"
-
-showParam :: Param -> Text
-showParam Param {..} = let
-    sig =
-        runMText $ do
-            ref <- maybeToM "missing _paramSchema" _paramSchema
-            sch <- getReferenced ref
-            t <- showSchema sch
-            return $ ": " <> t
-    in _paramName <> sig
-
-showOperation :: Operation -> M Text
-showOperation op = do
-    (opid, params) <- operationToFunction op
-    return $ showText opid <> "(" <> intercalate ", " (fmap showParam params) <> ")"
 
 data Func r where
     MkFunc :: QShimWit 'Positive t -> ((Object -> r) -> t) -> Func r
@@ -252,9 +211,6 @@ importOpenAPI t = do
               [ valBDS "schemas" "" $ fmap showText $ InsOrd.toList $ _componentsSchemas $ _openApiComponents root
               , valBDS "servers" "" $ fmap showText $ _openApiServers root
               , valBDS "paths" "" $ fmap showText $ InsOrd.toList $ _openApiPaths root
-              , valBDS "functions" "" $ do
-                    (op, opname, path) <- operations
-                    return $ runMText (showOperation op) <> " = " <> opname <> " " <> path
               ]
         ] <>
         functions
