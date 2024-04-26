@@ -102,18 +102,50 @@ showOperation op = do
 data Func r where
     MkFunc :: QShimWit 'Positive t -> ((Object -> IO r) -> t) -> Func r
 
-mkParam :: Param -> QShimWit 'Negative Value
-mkParam _ = mapShimWit (MkPolarShim $ functionToShim "param" String) qType
+tupleParamList :: [QShimWit 'Negative Value] -> QShimWit 'Negative [Value]
+tupleParamList (w:ww) = mapNegShimWit (functionToShim "cons" $ \(a, aa) -> a : aa) $ pairShimWit w (tupleParamList ww)
+tupleParamList [] = mapNegShimWit (functionToShim "nil" $ \() -> []) nullShimWit
 
-mkFunc :: QShimWit 'Positive r -> [Param] -> Func r
-mkFunc tr [] = MkFunc (actionShimWit tr) $ \call -> liftIO $ call mempty
-mkFunc tr (p:pp) =
-    case mkParam p of
-        MkShimWit ta (MkPolarShim pf) ->
-            case mkFunc tr pp of
-                MkFunc tf f ->
-                    MkFunc (funcShimWit (mkShimWit ta) tf) $ \call a ->
-                        f $ \obj -> call $ Aeson.insert (Aeson.fromText $ _paramName p) (shimToFunction pf a) obj
+mkParam :: Schema -> M (QShimWit 'Negative Value)
+mkParam Schema {..}
+    | Just t <- _schemaType =
+        case t of
+            OpenApiArray -> do
+                items <- maybeToM "missing _schemaItems" _schemaItems
+                itemlist <-
+                    case items of
+                        OpenApiItemsObject rs -> do
+                            itemschema <- getReferenced rs
+                            itemp <- mkParam itemschema
+                            return $ listShimWit itemp
+                        OpenApiItemsArray rss -> do
+                            pp <-
+                                for rss $ \rs -> do
+                                    itemschema <- getReferenced rs
+                                    mkParam itemschema
+                            return $ tupleParamList pp
+                return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) itemlist
+            OpenApiString -> return $ mapNegShimWit (functionToShim "JSON.String" String) qType
+            OpenApiInteger -> return $ mapNegShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
+            OpenApiBoolean -> return $ mapNegShimWit (functionToShim "JSON.Bool" Bool) qType
+            OpenApiNull -> return $ mapNegShimWit (functionToShim "JSON.Null" $ \() -> Null) qType
+            _ -> throwExc $ "unknown _schemaType: " <> showText t
+mkParam _ = throwExc "missing _schemaType"
+
+mkFunc :: QShimWit 'Positive r -> [Param] -> M (Func r)
+mkFunc tr [] = return $ MkFunc (actionShimWit tr) $ \call -> liftIO $ call mempty
+mkFunc tr (p:pp) = do
+    ref <- maybeToM "missing _paramSchema" $ _paramSchema p
+    sch <- getReferenced ref
+    pw <- mkParam sch
+    func <- mkFunc tr pp
+    return $
+        case pw of
+            MkShimWit ta (MkPolarShim pf) ->
+                case func of
+                    MkFunc tf f ->
+                        MkFunc (funcShimWit (mkShimWit ta) tf) $ \call a ->
+                            f $ \obj -> call $ Aeson.insert (Aeson.fromText $ _paramName p) (shimToFunction pf a) obj
 
 importOpenAPI :: Text -> ResultT Text IO (LibraryStuff ())
 importOpenAPI t = do
@@ -135,9 +167,8 @@ importOpenAPI t = do
         mkOperationFunction :: (Operation, Text, Text) -> M (LibraryStuff ())
         mkOperationFunction (op, opname, path) = do
             (name, params) <- operationToFunction op
+            func <- mkFunc qType params
             let
-                func :: Func Text
-                func = mkFunc qType params
                 call :: Object -> IO Text
                 call _ = return $ opname <> " " <> path
             return $
