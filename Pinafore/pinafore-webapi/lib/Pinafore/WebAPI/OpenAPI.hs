@@ -11,7 +11,8 @@ import Data.Shim
 import Pinafore.Language
 import Pinafore.Language.API
 import Pinafore.WebAPI.Fetch
-import qualified Shapes
+import Pinafore.WebAPI.JSONType
+import Pinafore.WebAPI.OpenAPI.Schema
 import Shapes hiding (Param)
 
 pathItemOperations :: PathItem -> [(Text, Operation)]
@@ -30,37 +31,6 @@ pathItemOperations PathItem {..} = let
            , ("PATCH", _pathItemPatch)
            , ("TRACE", _pathItemTrace)
            ]
-
-type M = ReaderT (Components, [Reference]) (Result Text)
-
-componentsParam :: Shapes.Param M Components
-componentsParam = lensMapParam (lensToVL fstLens) readerParam
-
-stackParam :: Shapes.Param M [Reference]
-stackParam = lensMapParam (lensToVL sndLens) readerParam
-
-runM :: Components -> M a -> ResultT Text IO a
-runM c ma = liftInner $ runReaderT ma (c, [])
-
-getReferenced :: (Components -> Definitions a) -> Referenced a -> M a
-getReferenced _ (Inline a) = return a
-getReferenced sel (Ref ref) = do
-    comps <- paramAsk componentsParam
-    case InsOrd.lookup (getReference ref) $ sel comps of
-        Just a -> return a
-        Nothing -> throwExc $ "missing reference: " <> getReference ref
-
-withReferenced :: (Components -> Definitions a) -> Referenced a -> (a -> M b) -> M b
-withReferenced _ (Inline a) call = call a
-withReferenced sel (Ref ref) call = do
-    stack <- paramAsk stackParam
-    if elem ref stack
-        then throwExc $ "reference loop: " <> intercalate ", " (fmap getReference stack)
-        else do
-            comps <- paramAsk componentsParam
-            case InsOrd.lookup (getReference ref) $ sel comps of
-                Just a -> paramLocal stackParam (\s -> ref : s) $ call a
-                Nothing -> throwExc $ "missing reference: " <> getReference ref
 
 mangle :: Text -> Name
 mangle = let
@@ -101,73 +71,62 @@ tupleResponseList (MkIOShimWit t1 f1:ww) =
                 v1:vr -> liftA2 (,) (f1 v1) (fr vr)
                 _ -> fail "tuple too short"
 
-mkResponse :: Schema -> M (IOShimWit Value)
-mkResponse schema =
-    case _schemaType schema of
-        Just t ->
-            case t of
-                OpenApiArray -> do
-                    items <- maybeToM "missing _schemaItems" $ _schemaItems schema
-                    MkIOShimWit tl fl <-
-                        case items of
-                            OpenApiItemsObject rs -> do
-                                MkIOShimWit itemp vt <- withReferenced _componentsSchemas rs mkResponse
-                                return $ MkIOShimWit (listShimWit itemp) $ \vv -> for vv vt
-                            OpenApiItemsArray rss -> do
-                                pp <- for rss $ \rs -> withReferenced _componentsSchemas rs mkResponse
-                                return $ tupleResponseList pp
+mkResponse :: JSONType -> M (IOShimWit Value)
+mkResponse =
+    \case
+        NullJSONType ->
+            return $
+            MkIOShimWit qType $ \case
+                Null -> return ()
+                _ -> fail "not Unit"
+        BoolJSONType ->
+            return $
+            MkIOShimWit qType $ \case
+                Bool x -> return x
+                _ -> fail "not Boolean"
+        StringJSONType ->
+            return $
+            MkIOShimWit qType $ \case
+                String x -> return x
+                _ -> fail "not Text"
+        ListArrayJSONType t -> do
+            MkIOShimWit itemp vt <- mkResponse t
+            return $
+                MkIOShimWit (listShimWit itemp) $ \case
+                    Array x -> for (toList x) vt
+                    _ -> fail "not List"
+        TupleArrayJSONType tt -> do
+            pp <- for tt mkResponse
+            case tupleResponseList pp of
+                MkIOShimWit tl fl ->
                     return $
-                        MkIOShimWit tl $ \case
-                            Array x -> fl $ toList x
-                            _ -> fail "not List"
-                OpenApiString ->
-                    return $
-                    MkIOShimWit qType $ \case
-                        String x -> return x
-                        _ -> fail "not Text"
-                OpenApiBoolean ->
-                    return $
-                    MkIOShimWit qType $ \case
-                        Bool x -> return x
-                        _ -> fail "not Boolean"
-                OpenApiNull ->
-                    return $
-                    MkIOShimWit qType $ \case
-                        Null -> return ()
-                        _ -> fail "not Unit"
-            -- OpenApiInteger -> return $ mapPosShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
-                _ -> throwExc $ "unknown _schemaType: " <> showText t
-        Nothing -> throwExc $ "unsupported _schema: " <> showText schema
+                    MkIOShimWit tl $ \case
+                        Array x -> fl $ toList x
+                        _ -> fail "not List"
+        t -> throwExc $ "response NYI: " <> showText t
 
-mkParam :: Schema -> M (QShimWit 'Negative Value)
-mkParam schema =
-    case _schemaType schema of
-        Just t ->
-            case t of
-                OpenApiArray -> do
-                    items <- maybeToM "missing _schemaItems" $ _schemaItems schema
-                    itemlist <-
-                        case items of
-                            OpenApiItemsObject rs -> do
-                                itemp <- withReferenced _componentsSchemas rs mkParam
-                                return $ listShimWit itemp
-                            OpenApiItemsArray rss -> do
-                                pp <- for rss $ \rs -> withReferenced _componentsSchemas rs mkParam
-                                return $ tupleParamList pp
-                    return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) itemlist
-                OpenApiString -> return $ mapNegShimWit (functionToShim "JSON.String" String) qType
-                OpenApiInteger -> return $ mapNegShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
-                OpenApiBoolean -> return $ mapNegShimWit (functionToShim "JSON.Bool" Bool) qType
-                OpenApiNull -> return $ mapNegShimWit (functionToShim "JSON.Null" $ \() -> Null) qType
-                _ -> throwExc $ "unsupported _schemaType: " <> showText t
-        Nothing -> throwExc $ "unsupported _schema: " <> showText schema
+mkParam :: JSONType -> M (QShimWit 'Negative Value)
+mkParam =
+    \case
+        NullJSONType -> return $ mapNegShimWit (functionToShim "JSON.Null" $ \() -> Null) qType
+        BoolJSONType -> return $ mapNegShimWit (functionToShim "JSON.Bool" Bool) qType
+        IntegerJSONType -> return $ mapNegShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
+        StringJSONType -> return $ mapNegShimWit (functionToShim "JSON.String" String) qType
+        ListArrayJSONType t -> do
+            itemp <- mkParam t
+            return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) $ listShimWit itemp
+        TupleArrayJSONType tt -> do
+            pp <- for tt mkParam
+            return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) $ tupleParamList pp
+        t -> throwExc $ "param NYI: " <> showText t
 
 mkFunc :: QShimWit 'Positive r -> [Param] -> M (Func r)
 mkFunc tr [] = return $ MkFunc tr $ \call -> call mempty
 mkFunc tr (p:pp) = do
     ref <- maybeToM "missing _paramSchema" $ _paramSchema p
     sch <- getReferenced _componentsSchemas ref
-    pw <- mkParam sch
+    pjt <- schemaToJSONType sch
+    pw <- mkParam pjt
     func <- mkFunc tr pp
     return $
         case pw of
@@ -204,7 +163,8 @@ importOpenAPI t = do
                 maybeToM "no known response content-type" $ InsOrd.lookup "application/json" $ _responseContent response
             rschemaref <- maybeToM "no response schema" $ _mediaTypeObjectSchema mto
             rschema <- getReferenced _componentsSchemas rschemaref
-            MkIOShimWit responseType responseF <- mkResponse rschema
+            rjt <- schemaToJSONType rschema
+            MkIOShimWit responseType responseF <- mkResponse rjt
             func <- mkFunc (actionShimWit responseType) params
             let
                 call :: Object -> IO Value
