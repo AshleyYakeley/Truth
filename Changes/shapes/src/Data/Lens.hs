@@ -78,19 +78,19 @@ instance (Traversable f, Applicative f, Applicative m) => CatFunctor (Lens' m) (
     cfmap lens =
         MkLens {lensGet = fmap (lensGet lens), lensPutback = \fb fa -> sequenceA (liftA2 (lensPutback lens) fb fa)}
 
-fstLens :: Lens' Identity (a, b) a
+fstLens :: PureLens (a, b) a
 fstLens = let
     lensGet = fst
     lensPutback a (_, b) = Identity (a, b)
     in MkLens {..}
 
-sndLens :: Lens' Identity (a, b) b
+sndLens :: PureLens (a, b) b
 sndLens = let
     lensGet = snd
     lensPutback b (a, _) = Identity (a, b)
     in MkLens {..}
 
-pickLens :: (Eq p) => p -> Lens' Identity (p -> a) a
+pickLens :: (Eq p) => p -> PureLens (p -> a) a
 pickLens p =
     MkLens
         { lensGet = \pa -> pa p
@@ -103,24 +103,36 @@ pickLens p =
                                else pa p')
         }
 
-defaultLens :: a -> Lens' Identity (Maybe a) a
+defaultLens :: a -> PureLens (Maybe a) a
 defaultLens def = MkLens (fromMaybe def) $ \a _ -> Identity $ Just a
 
-bijectionLens :: Bijection a b -> Lens' Identity a b
+bijectionLens :: Bijection a b -> PureLens a b
 bijectionLens (MkIsomorphism ab ba) = MkLens ab (\b _ -> return (ba b))
 
 injectionLens :: Injection' m a b -> Lens' m a b
 injectionLens lens = MkLens {lensGet = injForwards lens, lensPutback = \b -> pure (injBackwards lens b)}
 
-hashMapLens :: (Eq key, Hashable key) => key -> Lens' Identity (HashMap key value) (Maybe value)
+hashMapLens :: (Eq key, Hashable key) => key -> PureLens (HashMap key value) (Maybe value)
 hashMapLens key = let
     lensGet = lookup key
     lensPutback Nothing hm = Identity $ deleteMap key hm
     lensPutback (Just value) hm = Identity $ insertMap key value hm
     in MkLens {..}
 
-lensStateT :: Functor m => Lens' Identity a b -> StateT b m r -> StateT a m r
+lensStateT :: Functor m => PureLens a b -> StateT b m r -> StateT a m r
 lensStateT (MkLens g p) (StateT bmrb) =
     StateT $ \olda -> let
         mrb = bmrb $ g olda
         in fmap (\(r, b) -> (r, runIdentity $ p b olda)) mrb
+
+lensToVL :: forall a b. PureLens a b -> forall f. Functor f => (b -> f b) -> (a -> f a)
+lensToVL MkLens {..} bfb a = fmap (\b -> runIdentity $ lensPutback b a) $ bfb $ lensGet a
+
+vlToLens ::
+       forall m a b. Applicative m
+    => (forall f. Functor f => (b -> f b) -> (a -> f a))
+    -> Lens' m a b
+vlToLens f = let
+    lensGet a = getConst $ f Const a
+    lensPutback b a = f (\_ -> pure b) a
+    in MkLens {..}

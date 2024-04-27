@@ -31,12 +31,12 @@ makeStateExpLens ::
        StateChangeLens lin s updateA updateB
     -> ExpFloatingChangeLens lin (StateLensVar s) updateA updateB
 makeStateExpLens MkStateChangeLens {..} = let
-    tempLens :: Lens' Identity (s, s) s
+    tempLens :: PureLens (s, s) s
     tempLens = let
         lensGet (_, s) = s
         lensPutback snew (sold, _) = Identity (sold, snew)
         in MkLens {..}
-    permLens :: Lens' Identity (s, s) s
+    permLens :: PureLens (s, s) s
     permLens = let
         lensGet (s, _) = s
         lensPutback s _ = Identity (s, s)

@@ -9,7 +9,7 @@ import Shapes
 jsonCodec :: ReasonCodec LazyByteString JSON.Value
 jsonCodec = MkCodec (resultFromMaybe (fromString "fail to decode to JSON") . JSON.decode) JSON.encode
 
-propertyLens :: Text -> Lens' Identity JSON.Object (Maybe JSON.Value)
+propertyLens :: Text -> PureLens JSON.Object (Maybe JSON.Value)
 propertyLens (JSON.fromText -> key) = let
     lensGet = JSON.lookup key
     lensPutback Nothing hm = Identity $ JSON.delete key hm

@@ -6,11 +6,12 @@ import Data.Aeson as Aeson hiding (Result)
 import qualified Data.Aeson.Key as Aeson
 import qualified Data.Aeson.KeyMap as Aeson
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
-import Data.OpenApi hiding (items, name)
+import Data.OpenApi hiding (items, name, schema)
 import Data.Shim
 import Pinafore.Language
 import Pinafore.Language.API
 import Pinafore.WebAPI.Fetch
+import qualified Shapes
 import Shapes hiding (Param)
 
 pathItemOperations :: PathItem -> [(Text, Operation)]
@@ -30,16 +31,36 @@ pathItemOperations PathItem {..} = let
            , ("TRACE", _pathItemTrace)
            ]
 
-type M = Result Text
+type M = ReaderT (Components, [Reference]) (Result Text)
 
-runM :: M a -> ResultT Text IO a
-runM = liftInner
+componentsParam :: Shapes.Param M Components
+componentsParam = lensMapParam (lensToVL fstLens) readerParam
 
-getReferenced :: Referenced a -> M a
-getReferenced =
-    \case
-        Ref ref -> throwExc $ "missing reference " <> getReference ref
-        Inline a -> return a
+stackParam :: Shapes.Param M [Reference]
+stackParam = lensMapParam (lensToVL sndLens) readerParam
+
+runM :: Components -> M a -> ResultT Text IO a
+runM c ma = liftInner $ runReaderT ma (c, [])
+
+getReferenced :: (Components -> Definitions a) -> Referenced a -> M a
+getReferenced _ (Inline a) = return a
+getReferenced sel (Ref ref) = do
+    comps <- paramAsk componentsParam
+    case InsOrd.lookup (getReference ref) $ sel comps of
+        Just a -> return a
+        Nothing -> throwExc $ "missing reference: " <> getReference ref
+
+withReferenced :: (Components -> Definitions a) -> Referenced a -> (a -> M b) -> M b
+withReferenced _ (Inline a) call = call a
+withReferenced sel (Ref ref) call = do
+    stack <- paramAsk stackParam
+    if elem ref stack
+        then throwExc $ "reference loop: " <> intercalate ", " (fmap getReference stack)
+        else do
+            comps <- paramAsk componentsParam
+            case InsOrd.lookup (getReference ref) $ sel comps of
+                Just a -> paramLocal stackParam (\s -> ref : s) $ call a
+                Nothing -> throwExc $ "missing reference: " <> getReference ref
 
 mangle :: Text -> Name
 mangle = let
@@ -55,7 +76,7 @@ operationToFunction Operation {..} = do
         Just True -> throwExc "deprecated"
         _ -> return ()
     opid <- maybeToM "missing _operationOperationId" _operationOperationId
-    params <- for _operationParameters getReferenced
+    params <- for _operationParameters $ getReferenced _componentsParameters
     return (mangle opid, params)
 
 data Func r where
@@ -81,75 +102,71 @@ tupleResponseList (MkIOShimWit t1 f1:ww) =
                 _ -> fail "tuple too short"
 
 mkResponse :: Schema -> M (IOShimWit Value)
-mkResponse Schema {..} = do
-    t <- maybeToM "missing _schemaType" _schemaType
-    case t of
-        OpenApiArray -> do
-            items <- maybeToM "missing _schemaItems" _schemaItems
-            MkIOShimWit tl fl <-
-                case items of
-                    OpenApiItemsObject rs -> do
-                        itemschema <- getReferenced rs
-                        MkIOShimWit itemp vt <- mkResponse itemschema
-                        return $ MkIOShimWit (listShimWit itemp) $ \vv -> for vv vt
-                    OpenApiItemsArray rss -> do
-                        pp <-
-                            for rss $ \rs -> do
-                                itemschema <- getReferenced rs
-                                mkResponse itemschema
-                        return $ tupleResponseList pp
-            return $
-                MkIOShimWit tl $ \case
-                    Array x -> fl $ toList x
-                    _ -> fail "not List"
-        OpenApiString ->
-            return $
-            MkIOShimWit qType $ \case
-                String x -> return x
-                _ -> fail "not Text"
-        OpenApiBoolean ->
-            return $
-            MkIOShimWit qType $ \case
-                Bool x -> return x
-                _ -> fail "not Boolean"
-        OpenApiNull ->
-            return $
-            MkIOShimWit qType $ \case
-                Null -> return ()
-                _ -> fail "not Unit"
-        -- OpenApiInteger -> return $ mapPosShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
-        _ -> throwExc $ "unknown _schemaType: " <> showText t
+mkResponse schema =
+    case _schemaType schema of
+        Just t ->
+            case t of
+                OpenApiArray -> do
+                    items <- maybeToM "missing _schemaItems" $ _schemaItems schema
+                    MkIOShimWit tl fl <-
+                        case items of
+                            OpenApiItemsObject rs -> do
+                                MkIOShimWit itemp vt <- withReferenced _componentsSchemas rs mkResponse
+                                return $ MkIOShimWit (listShimWit itemp) $ \vv -> for vv vt
+                            OpenApiItemsArray rss -> do
+                                pp <- for rss $ \rs -> withReferenced _componentsSchemas rs mkResponse
+                                return $ tupleResponseList pp
+                    return $
+                        MkIOShimWit tl $ \case
+                            Array x -> fl $ toList x
+                            _ -> fail "not List"
+                OpenApiString ->
+                    return $
+                    MkIOShimWit qType $ \case
+                        String x -> return x
+                        _ -> fail "not Text"
+                OpenApiBoolean ->
+                    return $
+                    MkIOShimWit qType $ \case
+                        Bool x -> return x
+                        _ -> fail "not Boolean"
+                OpenApiNull ->
+                    return $
+                    MkIOShimWit qType $ \case
+                        Null -> return ()
+                        _ -> fail "not Unit"
+            -- OpenApiInteger -> return $ mapPosShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
+                _ -> throwExc $ "unknown _schemaType: " <> showText t
+        Nothing -> throwExc $ "unsupported _schema: " <> showText schema
 
 mkParam :: Schema -> M (QShimWit 'Negative Value)
-mkParam Schema {..} = do
-    t <- maybeToM "missing _schemaType" _schemaType
-    case t of
-        OpenApiArray -> do
-            items <- maybeToM "missing _schemaItems" _schemaItems
-            itemlist <-
-                case items of
-                    OpenApiItemsObject rs -> do
-                        itemschema <- getReferenced rs
-                        itemp <- mkParam itemschema
-                        return $ listShimWit itemp
-                    OpenApiItemsArray rss -> do
-                        pp <-
-                            for rss $ \rs -> do
-                                itemschema <- getReferenced rs
-                                mkParam itemschema
-                        return $ tupleParamList pp
-            return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) itemlist
-        OpenApiString -> return $ mapNegShimWit (functionToShim "JSON.String" String) qType
-        OpenApiInteger -> return $ mapNegShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
-        OpenApiBoolean -> return $ mapNegShimWit (functionToShim "JSON.Bool" Bool) qType
-        OpenApiNull -> return $ mapNegShimWit (functionToShim "JSON.Null" $ \() -> Null) qType
-        _ -> throwExc $ "unknown _schemaType: " <> showText t
+mkParam schema =
+    case _schemaType schema of
+        Just t ->
+            case t of
+                OpenApiArray -> do
+                    items <- maybeToM "missing _schemaItems" $ _schemaItems schema
+                    itemlist <-
+                        case items of
+                            OpenApiItemsObject rs -> do
+                                itemp <- withReferenced _componentsSchemas rs mkParam
+                                return $ listShimWit itemp
+                            OpenApiItemsArray rss -> do
+                                pp <- for rss $ \rs -> withReferenced _componentsSchemas rs mkParam
+                                return $ tupleParamList pp
+                    return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) itemlist
+                OpenApiString -> return $ mapNegShimWit (functionToShim "JSON.String" String) qType
+                OpenApiInteger -> return $ mapNegShimWit (functionToShim "JSON.Number" $ Number . fromInteger) qType
+                OpenApiBoolean -> return $ mapNegShimWit (functionToShim "JSON.Bool" Bool) qType
+                OpenApiNull -> return $ mapNegShimWit (functionToShim "JSON.Null" $ \() -> Null) qType
+                _ -> throwExc $ "unsupported _schemaType: " <> showText t
+        Nothing -> throwExc $ "unsupported _schema: " <> showText schema
 
 mkFunc :: QShimWit 'Positive r -> [Param] -> M (Func r)
 mkFunc tr [] = return $ MkFunc tr $ \call -> call mempty
 mkFunc tr (p:pp) = do
     ref <- maybeToM "missing _paramSchema" $ _paramSchema p
-    sch <- getReferenced ref
+    sch <- getReferenced _componentsSchemas ref
     pw <- mkParam sch
     func <- mkFunc tr pp
     return $
@@ -182,11 +199,11 @@ importOpenAPI t = do
             (name, params) <- operationToFunction op
             responseref <-
                 maybeToM "no default response" $ InsOrd.lookup 200 $ _responsesResponses $ _operationResponses op
-            response <- getReferenced responseref
+            response <- getReferenced _componentsResponses responseref
             mto <-
                 maybeToM "no known response content-type" $ InsOrd.lookup "application/json" $ _responseContent response
             rschemaref <- maybeToM "no response schema" $ _mediaTypeObjectSchema mto
-            rschema <- getReferenced rschemaref
+            rschema <- getReferenced _componentsSchemas rschemaref
             MkIOShimWit responseType responseF <- mkResponse rschema
             func <- mkFunc (actionShimWit responseType) params
             let
@@ -203,7 +220,7 @@ importOpenAPI t = do
                             liftIO $ do
                                 respvalue <- call paramobj
                                 responseF respvalue
-    functions <- runM $ for operations mkOperationFunction
+    functions <- runM (_openApiComponents root) $ for operations mkOperationFunction
     return $
         mconcat $
         [ namespaceBDS
