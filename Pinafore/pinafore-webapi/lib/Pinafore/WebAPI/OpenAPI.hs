@@ -6,9 +6,11 @@ import Data.Aeson as Aeson hiding (Result)
 import qualified Data.Aeson.Key as Aeson
 import qualified Data.Aeson.KeyMap as Aeson
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
-import Data.OpenApi hiding (items, name, schema)
+import Data.OpenApi hiding (items, name, schema, server)
 import qualified Data.Scientific as Scientific
 import Data.Shim
+import qualified Network.HTTP.Simple as HTTP
+import qualified Network.HTTP.Types as HTTP (statusCode)
 import Pinafore.Language
 import Pinafore.Language.API
 import Pinafore.WebAPI.Fetch
@@ -202,6 +204,10 @@ importOpenAPI t = do
         case fromJSON jsonval of
             Error err -> liftInner $ FailureResult $ pack err
             Success val -> return val
+    server <-
+        case _openApiServers root of
+            (s:_) -> return $ _serverUrl s
+            [] -> liftInner $ FailureResult "no servers"
     let
         operations :: [(Operation, Text, Text)]
         operations = do
@@ -214,9 +220,9 @@ importOpenAPI t = do
             let lookupResponse code = InsOrd.lookup code $ _responsesResponses $ _operationResponses op
             responseref <-
                 maybeToM "no default response" $ lookupResponse 200 <|> lookupResponse 201 <|> lookupResponse 204
-            response <- getReferenced _componentsResponses responseref
+            responseT <- getReferenced _componentsResponses responseref
             rjt <-
-                case InsOrd.lookup "application/json" $ _responseContent response of
+                case InsOrd.lookup "application/json" $ _responseContent responseT of
                     Just mto -> do
                         rschemaref <- maybeToM "no response schema" $ _mediaTypeObjectSchema mto
                         rschema <- getReferenced _componentsSchemas rschemaref
@@ -226,7 +232,18 @@ importOpenAPI t = do
             func <- mkFunc (actionShimWit responseType) params
             let
                 call :: Object -> IO Value
-                call _ = return $ String $ opname <> " " <> path
+                call obj = do
+                    plainRequest <- HTTP.parseRequest $ unpack $ server <> path
+                    let
+                        request :: HTTP.Request
+                        request = HTTP.setRequestBodyJSON obj $ HTTP.setRequestMethod (encodeUtf8 opname) plainRequest
+                    response <- HTTP.httpJSON request
+                    case HTTP.statusCode $ HTTP.getResponseStatus response of
+                        200 -> return ()
+                        201 -> return ()
+                        204 -> return ()
+                        i -> fail $ "bad status: " <> show i
+                    return $ HTTP.getResponseBody response
             return $
                 case func of
                     MkFunc qt f ->

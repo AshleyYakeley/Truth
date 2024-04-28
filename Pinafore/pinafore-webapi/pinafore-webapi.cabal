@@ -54,6 +54,8 @@ library
   build-depends:
       aeson
     , base >=4.16
+    , http-conduit
+    , http-types
     , insert-ordered-containers
     , network-uri
     , openapi3

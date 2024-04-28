@@ -13,6 +13,8 @@ library:
       - network-uri
       - scientific
       - aeson
+      - http-types
+      - http-conduit
       - openapi3
       - shapes
       - polar-shim

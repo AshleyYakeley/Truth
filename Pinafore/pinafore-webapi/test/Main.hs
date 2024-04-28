@@ -15,7 +15,7 @@ testSchema =
         sctext :: [Text] <-
             testerLiftInterpreter $
             -- https://github.com/OAI/OpenAPI-Specification/blob/main/examples/v3.0/petstore-expanded.json
-            parseValueUnify "import openapi \"file:test/schema/petstore-expanded.json\" in functions.Info."
+            parseValueUnify "import openapi \"file:test/schema/petstore-expanded.json\" in servers.Info."
         liftIO $ assertEqual "" [] sctext
 
 tests :: [TestTree]
