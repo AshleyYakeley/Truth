@@ -211,14 +211,17 @@ importOpenAPI t = do
         mkOperationFunction :: (Operation, Text, Text) -> M (LibraryStuff ())
         mkOperationFunction (op, opname, path) = do
             (name, params) <- operationToFunction op
+            let lookupResponse code = InsOrd.lookup code $ _responsesResponses $ _operationResponses op
             responseref <-
-                maybeToM "no default response" $ InsOrd.lookup 200 $ _responsesResponses $ _operationResponses op
+                maybeToM "no default response" $ lookupResponse 200 <|> lookupResponse 201 <|> lookupResponse 204
             response <- getReferenced _componentsResponses responseref
-            mto <-
-                maybeToM "no known response content-type" $ InsOrd.lookup "application/json" $ _responseContent response
-            rschemaref <- maybeToM "no response schema" $ _mediaTypeObjectSchema mto
-            rschema <- getReferenced _componentsSchemas rschemaref
-            rjt <- schemaToJSONType rschema
+            rjt <-
+                case InsOrd.lookup "application/json" $ _responseContent response of
+                    Just mto -> do
+                        rschemaref <- maybeToM "no response schema" $ _mediaTypeObjectSchema mto
+                        rschema <- getReferenced _componentsSchemas rschemaref
+                        schemaToJSONType rschema
+                    Nothing -> return NullJSONType
             MkIOShimWit responseType responseF <- mkResponse rjt
             func <- mkFunc (actionShimWit responseType) params
             let
