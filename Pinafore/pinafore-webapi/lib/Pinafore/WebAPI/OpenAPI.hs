@@ -50,7 +50,7 @@ operationToFunction Operation {..} = do
     return (mangle opid, params)
 
 data Func r where
-    MkFunc :: QShimWit 'Positive t -> ((Object -> r) -> t) -> Func r
+    MkFunc :: QShimWit 'Positive t -> (([(Text, Value)] -> r) -> t) -> Func r
 
 data IOShimWit v where
     MkIOShimWit :: QShimWit 'Positive t -> (v -> IO t) -> IOShimWit v
@@ -58,6 +58,16 @@ data IOShimWit v where
 tupleParamList :: [QShimWit 'Negative Value] -> QShimWit 'Negative [Value]
 tupleParamList (w:ww) = mapNegShimWit (functionToShim "cons" $ \(a, aa) -> a : aa) $ pairShimWit w (tupleParamList ww)
 tupleParamList [] = mapNegShimWit (functionToShim "nil" $ \() -> []) nullShimWit
+
+objectFromList :: [(Text, Value)] -> Object
+objectFromList = Aeson.fromList . fmap (\(t, v) -> (Aeson.fromText t, v))
+
+objectParamList :: [(Text, QShimWit 'Negative (Maybe Value))] -> QShimWit 'Negative [(Text, Value)]
+objectParamList ((k, w):ww) = let
+    ff (Nothing, o) = o
+    ff (Just v, o) = (k, v) : o
+    in mapNegShimWit (functionToShim "cons" ff) $ pairShimWit w (objectParamList ww)
+objectParamList [] = mapNegShimWit (functionToShim "nil" $ \() -> []) nullShimWit
 
 tupleResponseList :: [IOShimWit Value] -> IOShimWit [Value]
 tupleResponseList [] =
@@ -70,6 +80,16 @@ tupleResponseList (MkIOShimWit t1 f1:ww) =
             MkIOShimWit (pairShimWit t1 tr) $ \case
                 v1:vr -> liftA2 (,) (f1 v1) (fr vr)
                 _ -> fail "tuple too short"
+
+objectResponseList :: [(Text, IOShimWit (Maybe Value))] -> IOShimWit Object
+objectResponseList [] = MkIOShimWit nullShimWit $ \_ -> return ()
+objectResponseList ((k, MkIOShimWit w1 f1):ww) =
+    case objectResponseList ww of
+        MkIOShimWit wr fr ->
+            MkIOShimWit (pairShimWit w1 wr) $ \obj -> do
+                t1 <- f1 $ Aeson.lookup (Aeson.fromText k) obj
+                tr <- fr obj
+                return (t1, tr)
 
 mkResponse :: JSONType -> M (IOShimWit Value)
 mkResponse =
@@ -97,13 +117,32 @@ mkResponse =
                     _ -> fail "not List"
         TupleArrayJSONType tt -> do
             pp <- for tt mkResponse
-            case tupleResponseList pp of
-                MkIOShimWit tl fl ->
-                    return $
-                    MkIOShimWit tl $ \case
-                        Array x -> fl $ toList x
-                        _ -> fail "not List"
+            MkIOShimWit tl fl <- return $ tupleResponseList pp
+            return $
+                MkIOShimWit tl $ \case
+                    Array x -> fl $ toList x
+                    _ -> fail "not List"
+        ObjectJSONType tt -> do
+            pp <- for tt mkParamResponse
+            MkIOShimWit tl fl <- return $ objectResponseList pp
+            return $
+                MkIOShimWit tl $ \case
+                    Object x -> fl x
+                    _ -> fail "not List"
         t -> throwExc $ "response NYI: " <> showText t
+
+mkParamResponse :: JSONParamType -> M (Text, IOShimWit (Maybe Value))
+mkParamResponse (MkJSONParamType k (MkJSONOptType opt jt)) = do
+    MkIOShimWit t f <- mkResponse jt
+    let
+        w =
+            case opt of
+                Required ->
+                    MkIOShimWit t $ \case
+                        Just v -> f v
+                        Nothing -> fail $ "missing key: " <> unpack k
+                Optional -> MkIOShimWit (maybeShimWit t) $ \mv -> for mv f
+    return (k, w)
 
 mkParam :: JSONType -> M (QShimWit 'Negative Value)
 mkParam =
@@ -118,10 +157,20 @@ mkParam =
         TupleArrayJSONType tt -> do
             pp <- for tt mkParam
             return $ mapNegShimWit (functionToShim "JSON.Array" $ Array . fromList) $ tupleParamList pp
-        t -> throwExc $ "param NYI: " <> showText t
+        ObjectJSONType tt -> do
+            pp <-
+                for tt $ \(MkJSONParamType k (MkJSONOptType o t)) -> do
+                    p <- mkParam t
+                    let
+                        mp =
+                            case o of
+                                Optional -> maybeShimWit p
+                                Required -> mapNegShimWit (functionToShim "Just" Just) p
+                    return (k, mp)
+            return $ mapNegShimWit (functionToShim "JSON.Object" $ Object . objectFromList) $ objectParamList pp
 
 mkFunc :: QShimWit 'Positive r -> [Param] -> M (Func r)
-mkFunc tr [] = return $ MkFunc tr $ \call -> call mempty
+mkFunc tr [] = return $ MkFunc tr $ \call -> call []
 mkFunc tr (p:pp) = do
     ref <- maybeToM "missing _paramSchema" $ _paramSchema p
     sch <- getReferenced _componentsSchemas ref
@@ -134,7 +183,7 @@ mkFunc tr (p:pp) = do
                 case func of
                     MkFunc tf f ->
                         MkFunc (funcShimWit (mkShimWit ta) tf) $ \call a ->
-                            f $ \obj -> call $ Aeson.insert (Aeson.fromText $ _paramName p) (shimToFunction pf a) obj
+                            f $ \obj -> call $ (_paramName p, shimToFunction pf a) : obj
 
 importOpenAPI :: Text -> ResultT Text IO (LibraryStuff ())
 importOpenAPI t = do
@@ -178,7 +227,7 @@ importOpenAPI t = do
                             qt $
                         f $ \paramobj ->
                             liftIO $ do
-                                respvalue <- call paramobj
+                                respvalue <- call $ objectFromList paramobj
                                 responseF respvalue
     functions <- runM (_openApiComponents root) $ for operations mkOperationFunction
     return $
