@@ -7,6 +7,7 @@ import qualified Data.Aeson.Key as Aeson
 import qualified Data.Aeson.KeyMap as Aeson
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import Data.OpenApi hiding (items, name, schema)
+import qualified Data.Scientific as Scientific
 import Data.Shim
 import Pinafore.Language
 import Pinafore.Language.API
@@ -104,6 +105,12 @@ mkResponse =
             MkIOShimWit qType $ \case
                 Bool x -> return x
                 _ -> fail "not Boolean"
+        IntegerJSONType ->
+            return $
+            MkIOShimWit qType $ \case
+                Number x
+                    | Just (i :: Int64) <- Scientific.toBoundedInteger x -> return $ toInteger i
+                _ -> fail "not Integer"
         StringJSONType ->
             return $
             MkIOShimWit qType $ \case
@@ -129,7 +136,6 @@ mkResponse =
                 MkIOShimWit tl $ \case
                     Object x -> fl x
                     _ -> fail "not List"
-        t -> throwExc $ "response NYI: " <> showText t
 
 mkParamResponse :: JSONParamType -> M (Text, IOShimWit (Maybe Value))
 mkParamResponse (MkJSONParamType k (MkJSONOptType opt jt)) = do

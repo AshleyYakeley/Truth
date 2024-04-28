@@ -59,6 +59,7 @@ library
     , openapi3
     , pinafore-language
     , polar-shim
+    , scientific
     , shapes
   default-language: GHC2021
 
