@@ -23,6 +23,7 @@ library:
       - Pinafore.WebAPI
     other-modules:
       - Pinafore.WebAPI.JSONType
+      - Pinafore.WebAPI.HTTP
       - Pinafore.WebAPI.Fetch
       - Pinafore.WebAPI.OpenAPI.Schema
       - Pinafore.WebAPI.OpenAPI

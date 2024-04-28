@@ -9,11 +9,10 @@ import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import Data.OpenApi hiding (items, name, schema, server)
 import qualified Data.Scientific as Scientific
 import Data.Shim
-import qualified Network.HTTP.Simple as HTTP
-import qualified Network.HTTP.Types as HTTP (statusCode)
 import Pinafore.Language
 import Pinafore.Language.API
 import Pinafore.WebAPI.Fetch
+import Pinafore.WebAPI.HTTP
 import Pinafore.WebAPI.JSONType
 import Pinafore.WebAPI.OpenAPI.Schema
 import Shapes hiding (Param)
@@ -230,20 +229,6 @@ importOpenAPI t = do
                     Nothing -> return NullJSONType
             MkIOShimWit responseType responseF <- mkResponse rjt
             func <- mkFunc (actionShimWit responseType) params
-            let
-                call :: Object -> IO Value
-                call obj = do
-                    plainRequest <- HTTP.parseRequest $ unpack $ server <> path
-                    let
-                        request :: HTTP.Request
-                        request = HTTP.setRequestBodyJSON obj $ HTTP.setRequestMethod (encodeUtf8 opname) plainRequest
-                    response <- HTTP.httpJSON request
-                    case HTTP.statusCode $ HTTP.getResponseStatus response of
-                        200 -> return ()
-                        201 -> return ()
-                        204 -> return ()
-                        i -> fail $ "bad status: " <> show i
-                    return $ HTTP.getResponseBody response
             return $
                 case func of
                     MkFunc qt f ->
@@ -253,7 +238,7 @@ importOpenAPI t = do
                             qt $
                         f $ \paramobj ->
                             liftIO $ do
-                                respvalue <- call $ objectFromList paramobj
+                                respvalue <- callHTTP opname (server <> path) $ Object $ objectFromList paramobj
                                 responseF respvalue
     functions <- runM (_openApiComponents root) $ for operations mkOperationFunction
     return $
