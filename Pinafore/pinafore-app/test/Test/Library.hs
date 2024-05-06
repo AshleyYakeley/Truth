@@ -14,11 +14,10 @@ testLibrary =
     testTree "library" $ let
         moExtraLibrary = extraLibrary
         moModuleDirs = []
-        fmodule = standardFetchModule MkModuleOptions {..}
         moduleNames :: [ModuleName]
         moduleNames = builtInModuleName : fmap lmName extraLibrary
         in let
-               ?library = mkLibraryContext nullInvocationInfo fmodule
+               ?library = standardLibraryContext nullInvocationInfo MkModuleOptions {..}
                in for_ moduleNames $ \modname -> do
                       mmod <- fromInterpretResult $ runPinaforeScoped (show modname) $ lcLoadModule ?library modname
                       pmodule <- maybeToM (show modname <> ": not found") mmod

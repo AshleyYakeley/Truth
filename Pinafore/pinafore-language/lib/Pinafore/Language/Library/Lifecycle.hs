@@ -9,7 +9,7 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Var
 import Shapes
 
-lifecycleLibSection :: BindDocStuff context
+lifecycleLibSection :: LibraryStuff context
 lifecycleLibSection =
     headingBDS
         "Lifecycles"

@@ -20,7 +20,7 @@ runFiles (smopts, modopts) fNoRun scripts =
             iiStdErr = stderrTextSink
             iiDefaultStorageModel = standardStorageModel smopts
         iiEnvironment <- liftIO getEnvironment
-        let ?library = mkLibraryContext MkInvocationInfo {..} $ standardFetchModule modopts
+        let ?library = standardLibraryContext MkInvocationInfo {..} modopts
         action <- qInterpretFile fpath
         if fNoRun
             then return ()
@@ -38,5 +38,5 @@ runInteractive (smopts, modopts) =
             iiStdErr = stderrTextSink
             iiDefaultStorageModel = standardStorageModel smopts
         iiEnvironment <- liftIO getEnvironment
-        let ?library = mkLibraryContext MkInvocationInfo {..} $ standardFetchModule modopts
+        let ?library = standardLibraryContext MkInvocationInfo {..} modopts
         qInteract

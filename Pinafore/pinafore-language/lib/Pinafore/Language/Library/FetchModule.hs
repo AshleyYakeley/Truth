@@ -16,23 +16,20 @@ import Shapes
 import System.Directory (doesFileExist)
 import System.FilePath
 
-newtype FetchModule context = MkFetchModule
-    { runFetchModule :: context -> ModuleName -> QInterpreter (Maybe QModule)
+newtype FetchModule = MkFetchModule
+    { runFetchModule :: ModuleName -> QInterpreter (Maybe QModule)
     }
 
-instance Semigroup (FetchModule context) where
+instance Semigroup FetchModule where
     MkFetchModule fma <> MkFetchModule fmb =
-        MkFetchModule $ \context mname -> do
-            mrr <- fma context mname
+        MkFetchModule $ \mname -> do
+            mrr <- fma mname
             case mrr of
                 Just rr -> return $ Just rr
-                Nothing -> fmb context mname
+                Nothing -> fmb mname
 
-instance Monoid (FetchModule context) where
-    mempty = MkFetchModule $ \_ _ -> return Nothing
-
-instance Contravariant FetchModule where
-    contramap ab (MkFetchModule f) = MkFetchModule $ f . ab
+instance Monoid FetchModule where
+    mempty = MkFetchModule $ \_ -> return Nothing
 
 loadModuleFromText :: Text -> QInterpreter QModule
 loadModuleFromText text = do
@@ -45,18 +42,18 @@ loadModuleFromByteString bs =
         SuccessResult text -> loadModuleFromText text
         FailureResult err -> throw $ UnicodeDecodeError $ showNamedText err
 
-textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule context
+textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule
 textFetchModule getText =
-    MkFetchModule $ \_ modname -> do
+    MkFetchModule $ \modname -> do
         mtext <- liftIO $ getText modname
         for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText text
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName t) = unpack $ t <> ".pinafore"
 
-directoryFetchModule :: FilePath -> FetchModule context
+directoryFetchModule :: FilePath -> FetchModule
 directoryFetchModule dirpath =
-    MkFetchModule $ \_ modname -> do
+    MkFetchModule $ \modname -> do
         let fpath = dirpath </> moduleRelativePath modname
         found <- liftIO $ doesFileExist fpath
         case found of
@@ -66,11 +63,11 @@ directoryFetchModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString bs
                 return $ Just mm
 
-getLibraryModuleModule :: forall context. context -> LibraryModule context -> QInterpreter QModule
-getLibraryModuleModule context libmod = do
+getLibraryContentsModule :: forall context. context -> LibraryStuff context -> QInterpreter QModule
+getLibraryContentsModule context libmod = do
     let
         bindDocs :: [(ScopeEntry context, DefDoc)]
-        bindDocs = mapMaybe (\MkBindDoc {..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryModuleEntries libmod
+        bindDocs = mapMaybe (\MkBindDoc {..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryContentsEntries libmod
         bscope :: QScope
         bscope =
             bindingInfosToScope $ do
@@ -90,10 +87,10 @@ getLibraryModuleModule context libmod = do
                 BindScopeEntry _ _ _ -> return emptyScope
                 SubtypeScopeEntry entry -> getSubtypeScope entry
     scope <- joinAllScopes $ bscope : dscopes
-    return $ MkQModule (libraryModuleDocumentation libmod) scope
+    return $ MkQModule (libraryContentsDocumentation libmod) scope
 
-libraryFetchModule :: forall context. [LibraryModule context] -> FetchModule context
-libraryFetchModule lmods = let
-    m :: Map ModuleName (LibraryModule context)
-    m = mapFromList $ fmap (\libmod -> (lmName libmod, libmod)) lmods
-    in MkFetchModule $ \context mname -> for (lookup mname m) $ getLibraryModuleModule context
+libraryFetchModule :: forall context. context -> [LibraryModule context] -> FetchModule
+libraryFetchModule context lmods = let
+    m :: Map ModuleName (LibraryStuff context)
+    m = mapFromList $ fmap (\MkLibraryModule {..} -> (lmName, lmContents)) lmods
+    in MkFetchModule $ \mname -> for (lookup mname m) $ getLibraryContentsModule context

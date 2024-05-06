@@ -47,7 +47,7 @@ jpegEncode q mdata image = bytesToDataLiteral $ jpegEncodeToBytes q mdata image
 jpegMetadata :: LangJPEGImage -> LangHasMetadata
 jpegMetadata image = keyMapToMetadata $ fst $ idlData image
 
-jpegStuff :: BindDocStuff ()
+jpegStuff :: LibraryStuff ()
 jpegStuff =
     headingBDS
         "JPEG"

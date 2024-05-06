@@ -1,7 +1,7 @@
 module Pinafore.Options
     ( RunOptions(..)
     , getModelOptions
-    , getStorageModelOptions
+    , getApplicationOptions
     ) where
 
 import Pinafore
@@ -25,8 +25,8 @@ getModelOptions MkRunOptions {..} = do
         moModuleDirs = roIncludeDirs <> [smoDataDir </> "lib"] <> sysIncludeDirs
     return MkModuleOptions {..}
 
-getStorageModelOptions :: RunOptions -> IO (StorageModelOptions, ModuleOptions)
-getStorageModelOptions MkRunOptions {..} = do
+getApplicationOptions :: RunOptions -> IO (StorageModelOptions, ModuleOptions)
+getApplicationOptions MkRunOptions {..} = do
     smoDataDir <- ensurePinaforeDir roDataDir
     sysIncludeDirs <- getSystemDataDirs "pinafore/lib"
     let

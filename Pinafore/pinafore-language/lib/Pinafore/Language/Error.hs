@@ -130,7 +130,7 @@ instance ShowNamedText QErrorType where
                 [] -> ""
                 s -> "expecting: " <> intercalate ", " s
         strMessage = intercalate "; " msgsMessage
-        in toNamedText $ strUnexpected `semicolon` strExpecting `semicolon` strMessage
+        in "syntax: " <> (toNamedText $ strUnexpected `semicolon` strExpecting `semicolon` strMessage)
     showNamedText (PatternErrorError e) = showNamedText e
     showNamedText (ExpressionErrorError nn) =
         "undefined: " <>

@@ -19,7 +19,7 @@ debugLiteralLength = olength . unLiteral
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 
-debugLibSection :: BindDocStuff context
+debugLibSection :: LibraryStuff context
 debugLibSection =
     headingBDS "Debug" "Functions for debugging." $
     pure $

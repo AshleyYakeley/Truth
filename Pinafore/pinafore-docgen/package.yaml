@@ -21,6 +21,7 @@ executables:
           - base >= 4.16
           - shapes
           - optparse-applicative
+          - pinafore-language
           - pinafore-app
           - pinafore-docgen
         main: Main.hs

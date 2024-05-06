@@ -270,7 +270,7 @@ langImage ref =
         unWModel $
         eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableModelToReadOnlyModel ref
 
-widgetStuff :: BindDocStuff ()
+widgetStuff :: LibraryStuff ()
 widgetStuff =
     headingBDS
         "Widget"

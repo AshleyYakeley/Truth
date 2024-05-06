@@ -114,7 +114,7 @@ lineBufferSource (MkLangSource source) = do
 langListSource :: forall a. [a] -> IO (LangSource a)
 langListSource aa = fmap liftSource $ listSource aa
 
-streamLibSection :: BindDocStuff context
+streamLibSection :: LibraryStuff context
 streamLibSection =
     headingBDS
         "Stream"

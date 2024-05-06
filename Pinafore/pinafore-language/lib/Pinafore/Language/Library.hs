@@ -1,12 +1,12 @@
 module Pinafore.Language.Library
     ( DefDoc(..)
+    , LibraryStuff
     , LibraryModule
     , builtInLibrary
     , FetchModule
     , directoryFetchModule
     , textFetchModule
     , libraryFetchModule
-    , LibraryContext(..)
     , mkLibraryContext
     , nameIsInfix
     ) where
@@ -56,10 +56,7 @@ builtInLibrary =
     , debugLibSection
     ]
 
-data LibraryContext = MkLibraryContext
-    { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
-    }
-
-mkLibraryContext :: InvocationInfo -> FetchModule InvocationInfo -> LibraryContext
-mkLibraryContext context fetchModule =
-    MkLibraryContext $ runFetchModule (libraryFetchModule builtInLibrary <> fetchModule) context
+mkLibraryContext :: InvocationInfo -> FetchModule -> LibraryContext
+mkLibraryContext context fetchModule = let
+    lcLoadModule = runFetchModule $ libraryFetchModule context builtInLibrary <> fetchModule
+    in MkLibraryContext {..}

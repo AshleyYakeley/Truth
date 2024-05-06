@@ -13,7 +13,7 @@ import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
 
-modelOrderLibSection :: BindDocStuff context
+modelOrderLibSection :: LibraryStuff context
 modelOrderLibSection =
     headingBDS
         "ModelOrder"

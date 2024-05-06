@@ -9,6 +9,7 @@ module Pinafore.Language.Interpreter.Interpreter
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
+    , LibraryContext(..)
     , runInterpreter
     , getRenderFullName
     , getBindingInfoLookup
@@ -160,13 +161,17 @@ appNotationVarRef :: Ref QInterpreter VarIDState
 appNotationVarRef =
     lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
 
-runInterpreter ::
-       SourcePos -> (ModuleName -> QInterpreter (Maybe QModule)) -> QSpecialVals -> QInterpreter a -> InterpretResult a
-runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
+data LibraryContext = MkLibraryContext
+    { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
+    }
+
+runInterpreter :: SourcePos -> LibraryContext -> QSpecialVals -> QInterpreter a -> InterpretResult a
+runInterpreter icSourcePos MkLibraryContext {..} icSpecialVals qa = let
     icVarIDState = szero
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace
+    icLoadModule = lcLoadModule
     in evalStateT (evalWriterT $ runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
 firstOf :: [a] -> (a -> Maybe b) -> Maybe b
@@ -245,7 +250,7 @@ exportScope nsns names = do
         docs = fmap (biDocumentation . snd) binds
     return (scope, docs)
 
-getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
+getCycle :: Eq t => t -> [t] -> Maybe (NonEmpty t)
 getCycle _ [] = Nothing
 getCycle mn (n:nn)
     | mn == n = Just $ n :| nn

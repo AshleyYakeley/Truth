@@ -3,6 +3,7 @@ module Main
     ) where
 
 import Pinafore.DocGen
+import Pinafore.Language
 import Pinafore.Main
 import Pinafore.Options
 import Shapes
@@ -13,7 +14,7 @@ testFile :: ModuleOptions -> FilePath -> TestTree
 testFile mo inpath = let
     dir = takeDirectory inpath
     modName = takeBaseName inpath
-    in testHandleVsFileInDir dir modName $ \outh -> do generateCommonMarkDoc outh mo $ pack modName
+    in testHandleVsFileInDir dir modName $ \outh -> do generateCommonMarkDoc outh mo $ MkModuleName $ pack modName
 
 getTestPaths :: IO [FilePath]
 getTestPaths = do

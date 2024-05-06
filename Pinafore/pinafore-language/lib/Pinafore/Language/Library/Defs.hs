@@ -4,16 +4,17 @@
 module Pinafore.Language.Library.Defs
     ( ScopeEntry(..)
     , BindDoc(..)
-    , BindDocStuff
+    , LibraryStuff
+    , libraryContentsEntries
+    , libraryContentsDocumentation
     , LibraryModule(..)
-    , libraryModuleEntries
-    , libraryModuleDocumentation
     , EnA
     , qPositiveTypeDescription
     , qNegativeTypeDescription
     , headingBDT
     , headingBDS
     , namespaceBDS
+    , valWitBDS
     , valBDS
     , typeBDS
     , subtypeRelationBDS
@@ -73,26 +74,29 @@ bindDocNames bd = mapMaybe scopeEntryName $ bdScopeEntry bd
 instance Contravariant BindDoc where
     contramap ab (MkBindDoc se d) = MkBindDoc (fmap (contramap ab) $ se) d
 
-type BindDocStuff context = Forest (BindDoc context)
+type LibraryStuff context = Forest (BindDoc context)
 
-singleBindDoc :: BindDoc context -> [BindDocStuff context] -> BindDocStuff context
+singleBindDoc :: BindDoc context -> [LibraryStuff context] -> LibraryStuff context
 singleBindDoc bd tt = pureForest $ MkTree bd $ mconcat tt
+
+libraryContentsEntries :: LibraryStuff context -> [BindDoc context]
+libraryContentsEntries = toList
+
+libraryContentsDocumentation :: LibraryStuff context -> Forest DefDoc
+libraryContentsDocumentation = fmap bdDoc
 
 data LibraryModule context = MkLibraryModule
     { lmName :: ModuleName
-    , lmContents :: Forest (BindDoc context)
+    , lmContents :: LibraryStuff context
     }
 
 instance Contravariant LibraryModule where
     contramap ab (MkLibraryModule n c) = MkLibraryModule n $ fmap (contramap ab) c
 
-libraryModuleEntries :: LibraryModule context -> [BindDoc context]
-libraryModuleEntries (MkLibraryModule _ lmod) = toList lmod
-
-libraryModuleDocumentation :: LibraryModule context -> Forest DefDoc
-libraryModuleDocumentation (MkLibraryModule _ lmod) = fmap bdDoc lmod
-
 type EnA = MeetType Entity A
+
+qPositiveShimWitDescription :: forall t. QShimWit 'Positive t -> NamedText
+qPositiveShimWitDescription (MkShimWit w _) = exprShow w
 
 qPositiveTypeDescription ::
        forall t. HasQType 'Positive t
@@ -142,10 +146,10 @@ instance AddNameInRoot DefDoc where
 instance AddNameInRoot (BindDoc context) where
     addNameInRoot (MkBindDoc entries doc) = MkBindDoc (addNameInRoot entries) (addNameInRoot doc)
 
-addNameInRootBDS :: BindDocStuff context -> BindDocStuff context
+addNameInRootBDS :: LibraryStuff context -> LibraryStuff context
 addNameInRootBDS bdt = fmap addNameInRoot bdt
 
-pickNamesInRootBDS :: [FullNameRef] -> [BindDocStuff context] -> [BindDocStuff context]
+pickNamesInRootBDS :: [FullNameRef] -> [LibraryStuff context] -> [LibraryStuff context]
 pickNamesInRootBDS names =
     fmap $
     fmap $ \d ->
@@ -153,32 +157,41 @@ pickNamesInRootBDS names =
             then addNameInRoot d
             else d
 
-headingBDT :: MarkdownText -> RawMarkdown -> [BindDocStuff context] -> Tree (BindDoc context)
+headingBDT :: MarkdownText -> RawMarkdown -> [LibraryStuff context] -> Tree (BindDoc context)
 headingBDT name desc tree = MkTree (MkBindDoc Nothing $ MkDefDoc (HeadingDocItem name) desc) $ mconcat tree
 
-headingBDS :: MarkdownText -> RawMarkdown -> [BindDocStuff context] -> BindDocStuff context
+headingBDS :: MarkdownText -> RawMarkdown -> [LibraryStuff context] -> LibraryStuff context
 headingBDS name desc tree = pureForest $ headingBDT name desc tree
 
-namespaceBDS :: NamespaceRef -> [BindDocStuff context] -> BindDocStuff context
+namespaceBDS :: NamespaceRef -> [LibraryStuff context] -> LibraryStuff context
 namespaceBDS name tree = namespaceConcat name $ mconcat tree
+
+valWitBDS ::
+       forall context t.
+       FullNameRef
+    -> RawMarkdown
+    -> QShimWit 'Positive t
+    -> ((?qcontext :: context) => t)
+    -> LibraryStuff context
+valWitBDS name docDescription qt val = let
+    bdScopeEntry =
+        pure $
+        BindScopeEntry name [] $ \context -> let
+            ?qcontext = context
+            in ValueBinding (qConstExprAny $ MkSomeOf qt val) Nothing
+    diNames = pure name
+    diType = qPositiveShimWitDescription qt
+    docItem = ValueDocItem {..}
+    bdDoc = MkDefDoc {..}
+    in singleBindDoc MkBindDoc {..} []
 
 valBDS ::
        forall context t. HasQType 'Positive t
     => FullNameRef
     -> RawMarkdown
     -> ((?qcontext :: context) => t)
-    -> BindDocStuff context
-valBDS name docDescription val = let
-    bdScopeEntry =
-        pure $
-        BindScopeEntry name [] $ \context -> let
-            ?qcontext = context
-            in ValueBinding (qConstExprAny $ jmToValue val) Nothing
-    diNames = pure name
-    diType = qPositiveTypeDescription @t
-    docItem = ValueDocItem {..}
-    bdDoc = MkDefDoc {..}
-    in singleBindDoc MkBindDoc {..} []
+    -> LibraryStuff context
+valBDS name docDescription = valWitBDS name docDescription qType
 
 newTypeParameter :: State [Name] Name
 newTypeParameter = do
@@ -208,7 +221,7 @@ nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
 typeBDS ::
-       forall context. FullNameRef -> RawMarkdown -> QSomeGroundType -> [BindDocStuff context] -> BindDocStuff context
+       forall context. FullNameRef -> RawMarkdown -> QSomeGroundType -> [LibraryStuff context] -> LibraryStuff context
 typeBDS name docDescription t bdChildren = let
     bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> TypeBinding t
     diNames = pure name
@@ -229,7 +242,7 @@ subtypeRelationBDS ::
     -> QGroundedShimWit 'Negative a
     -> QGroundedShimWit 'Positive b
     -> QPolyShim Type a b
-    -> BindDocStuff context
+    -> LibraryStuff context
 subtypeRelationBDS trustme docDescription ta tb conv = let
     diSubtype = exprShow ta
     diSupertype = exprShow tb
@@ -243,7 +256,7 @@ hasSubtypeRelationBDS ::
     => TrustOrVerify
     -> RawMarkdown
     -> QPolyShim Type a b
-    -> BindDocStuff context
+    -> LibraryStuff context
 hasSubtypeRelationBDS trustme doc conv = let
     ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)
@@ -256,7 +269,7 @@ valPatBDS ::
     -> RawMarkdown
     -> t
     -> PurityFunction Maybe v (ListProduct lt)
-    -> BindDocStuff context
+    -> LibraryStuff context
 valPatBDS name docDescription val pat = let
     bdScopeEntry =
         pure $
@@ -274,7 +287,7 @@ specialFormBDS ::
     -> [NamedText]
     -> NamedText
     -> ((?qcontext :: context) => QSpecialForm)
-    -> BindDocStuff context
+    -> LibraryStuff context
 specialFormBDS name docDescription params diType sf = let
     bdScopeEntry =
         pure $
@@ -289,12 +302,12 @@ specialFormBDS name docDescription params diType sf = let
 
 eqEntries ::
        forall context (a :: Type). (Eq a, HasQType 'Positive a, HasQType 'Negative a)
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 eqEntries = [valBDS "==" "Equal." $ (==) @a, valBDS "/=" "Not equal." $ (/=) @a]
 
 ordEntries ::
        forall context (a :: Type). (Ord a, HasQType 'Positive a, HasQType 'Negative a)
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 ordEntries =
     eqEntries @context @a <>
     [ valBDS "order" "Order" $ compare @a
@@ -322,7 +335,7 @@ orderEntries ::
        forall context (a :: Type). (Eq a, HasQType 'Positive a, HasQType 'Negative a)
     => (a -> a -> Ordering)
     -> RawMarkdown
-    -> [BindDocStuff context]
+    -> [LibraryStuff context]
 orderEntries order doc =
     eqEntries @context @a <>
     [ valBDS "order" doc $ order
@@ -336,7 +349,7 @@ orderEntries order doc =
 
 enumEntries ::
        forall context (a :: Type). (Enum a, HasQType 'Positive a, HasQType 'Negative a)
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 enumEntries = [valBDS "pred" "Previous value." $ pred @a, valBDS "succ" "Next value." $ succ @a]
 
 functorEntries ::
@@ -347,7 +360,7 @@ functorEntries ::
        , HasQType 'Positive (f B)
        , HasQType 'Negative (f B)
        )
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 functorEntries = [valBDS "map" "" (fmap :: (A -> B) -> f A -> f B)]
 
 applicativeEntries ::
@@ -363,7 +376,7 @@ applicativeEntries ::
        , HasQType 'Positive (f (A, B))
        , HasQType 'Negative (f (A -> B))
        )
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 applicativeEntries =
     functorEntries @context @f <>
     [ valBDS "pure" "" (pure :: A -> f A)
@@ -386,15 +399,15 @@ monadEntries ::
        , HasQType 'Positive (f (A, B))
        , HasQType 'Negative (f (A -> B))
        )
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 monadEntries = applicativeEntries @context @f <> [valBDS ">>=" "" ((>>=) :: f A -> (A -> f B) -> f B)]
 
 semigroupEntries ::
        forall context (a :: Type). (Semigroup a, HasQType 'Positive a, HasQType 'Negative a)
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 semigroupEntries = [valBDS "<>" "" $ (<>) @a, valBDS "concat1" "" $ sconcat @a]
 
 monoidEntries ::
        forall context (a :: Type). (Monoid a, HasQType 'Positive a, HasQType 'Negative a)
-    => [BindDocStuff context]
+    => [LibraryStuff context]
 monoidEntries = semigroupEntries @context @a <> [valBDS "empty" "" $ mempty @a, valBDS "concat" "" $ mconcat @a]

@@ -15,7 +15,7 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFileInDir dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary, tstOutput = outh} $ do
+               runTester defaultTester {tstFetchModule = libraryFetchModule () extraLibrary, tstOutput = outh} $ do
                    testerLiftView $ qInteractHandles inh outh True
                    liftIO $ hPutStrLn outh "<END>"
 

@@ -102,7 +102,7 @@ getFiniteSetModelList order (MkLangFiniteSetModel r (val :: WModel (FiniteSetUpd
             eaMap (liftOrderedListChangeLens (constWholeChangeLens conv) . tupleChangeLens SelectContent) $
             MkWModel colSub
 
-modelLibSection :: BindDocStuff context
+modelLibSection :: LibraryStuff context
 modelLibSection =
     headingBDS
         "Models"

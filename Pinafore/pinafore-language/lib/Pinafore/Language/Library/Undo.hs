@@ -42,7 +42,7 @@ handleSetModel uh model = handleModel uh $ contramap meet2 model
 handleStore :: UndoHandler -> QStore -> IO QStore
 handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreGetModel store
 
-undoLibSection :: BindDocStuff context
+undoLibSection :: LibraryStuff context
 undoLibSection =
     headingBDS "Undo" "Undo and redo changes to models." $
     [ typeBDS "UndoHandler" "A queue of undo (and redo) actions." (MkSomeGroundType undoHandlerGroundType) []

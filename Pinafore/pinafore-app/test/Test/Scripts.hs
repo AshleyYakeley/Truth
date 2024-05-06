@@ -17,7 +17,7 @@ libDir = unsafePerformIO getDataDir
 testCheckScript :: FilePath -> String -> TestTree
 testCheckScript fpath name =
     testTree name $
-    runTester defaultTester {tstFetchModule = libraryFetchModule extraLibrary <> directoryFetchModule libDir} $ do
+    runTester defaultTester {tstFetchModule = libraryFetchModule () extraLibrary <> directoryFetchModule libDir} $ do
         _ <- testerLiftView $ qInterpretFile fpath
         return ()
 

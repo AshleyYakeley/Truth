@@ -31,12 +31,12 @@ import qualified Text.Collate
 
 showableSubtypeRelationEntry ::
        forall a context. (HasQType 'Negative a, TextShow a)
-    => BindDocStuff context
+    => LibraryStuff context
 showableSubtypeRelationEntry = hasSubtypeRelationBDS @a @Showable Verify "" $ functionToShim "textShowable" textShowable
 
 literalSubtypeRelationEntry ::
        forall a context. (HasQType 'Negative a, AsLiteral a)
-    => BindDocStuff context
+    => LibraryStuff context
 literalSubtypeRelationEntry = hasSubtypeRelationBDS @a @Literal Verify "" $ functionToShim "toLiteral" toLiteral
 
 entityAnchor :: Entity -> Text
@@ -76,7 +76,7 @@ asTextPrism = prism (readMaybe . unpack) textShow
 plainFormattingDef ::
        forall t context. (HasQType 'Positive t, HasQType 'Negative t, Read t, TextShow t)
     => Text
-    -> BindDocStuff context
+    -> LibraryStuff context
 plainFormattingDef lname = valBDS "asText" ("Represent " <> plainText lname <> " as text.") $ asTextPrism @t
 
 unixFormat ::
@@ -102,7 +102,7 @@ unixAsText fmt = prism (unixParse fmt) (unixFormat fmt)
 unixFormattingDef ::
        forall t context. (HasQType 'Positive t, HasQType 'Negative t, FormatTime t, ParseTime t)
     => Text
-    -> BindDocStuff context
+    -> LibraryStuff context
 unixFormattingDef lname =
     valBDS
         (UnqualifiedFullNameRef $ MkName $ "unixAsText")
@@ -134,7 +134,7 @@ dynamicTypeStorableGroundType =
 instance HasQGroundType '[] ConcreteDynamicType where
     qGroundType = dynamicTypeStorableGroundType
 
-baseLibSections :: [BindDocStuff context]
+baseLibSections :: [LibraryStuff context]
 baseLibSections =
     [ headingBDS "Literals & Entities" "" $
       [ typeBDS "Entity" "" (MkSomeGroundType entityGroundType) []

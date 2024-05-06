@@ -1,6 +1,6 @@
 module Pinafore.Main
     ( ModuleOptions(..)
-    , standardFetchModule
+    , standardLibraryContext
     , nullInvocationInfo
     , StorageModelOptions(..)
     , standardStorageModel
@@ -46,13 +46,16 @@ standardStorageModel MkStorageModelOptions {..} = do
         (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
         return model
 
-standardFetchModule :: forall context. ModuleOptions -> FetchModule context
+standardFetchModule :: ModuleOptions -> FetchModule
 standardFetchModule MkModuleOptions {..} = let
-    extraLibFetchModule :: FetchModule context
-    extraLibFetchModule = contramap (\_ -> ()) $ libraryFetchModule moExtraLibrary
-    dirFetchModule :: FetchModule context
+    extraLibFetchModule :: FetchModule
+    extraLibFetchModule = libraryFetchModule () moExtraLibrary
+    dirFetchModule :: FetchModule
     dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
     in extraLibFetchModule <> dirFetchModule
+
+standardLibraryContext :: InvocationInfo -> ModuleOptions -> LibraryContext
+standardLibraryContext ii modopts = mkLibraryContext ii (standardFetchModule modopts)
 
 sqliteQDumpTable :: FilePath -> IO ()
 sqliteQDumpTable dirpath = do

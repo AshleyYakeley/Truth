@@ -4,6 +4,7 @@ module Main
 
 import Options
 import Pinafore.DocGen
+import Pinafore.Language
 import Pinafore.Options
 import Pinafore.Version
 import Shapes
@@ -14,4 +15,4 @@ main =
         ShowVersionOption -> printVersion
         ModuleDocOption ropts modname -> do
             modopts <- getModelOptions ropts
-            generateCommonMarkDoc stdout modopts modname
+            generateCommonMarkDoc stdout modopts $ MkModuleName modname

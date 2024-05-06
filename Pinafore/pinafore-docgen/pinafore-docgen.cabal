@@ -95,6 +95,7 @@ executable pinadoc
     , optparse-applicative
     , pinafore-app
     , pinafore-docgen
+    , pinafore-language
     , shapes
   default-language: GHC2021
 
