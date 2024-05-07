@@ -11,6 +11,8 @@ module Debug.ThreadTrace
     , DebugMonadIO
     , traceBracket
     , traceTime
+    , traceCost
+    , traceCosts
     , traceThread
     , traceForkIO
     , traceEvaluate
@@ -31,13 +33,17 @@ import Control.Concurrent
 import Control.Monad.IO.Class
 import Control.Monad.Ology
 import Data.Fixed
+import Data.Foldable
+import Data.List (sortOn)
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Time.Clock.System
 import Data.Word
 import Debug.ThreadTrace.Lookup
 import Debug.Trace (traceIO)
 import GHC.Conc
 import Prelude
+import qualified System.Clock as Clock
 import System.IO.Unsafe
 
 contextStr :: String -> String -> String
@@ -48,6 +54,8 @@ data ThreadData = MkThreadData
     { tdName :: String
     , tdShow :: Bool
     , tdShowPrefix :: Bool
+    , tdShowCosts :: Bool
+    , tdCosts :: Map.Map String Nano
     }
 
 defaultThreadData :: ThreadData
@@ -55,6 +63,8 @@ defaultThreadData = let
     tdName = ""
     tdShow = True
     tdShowPrefix = True
+    tdShowCosts = False
+    tdCosts = mempty
     in MkThreadData {..}
 
 traceThreadData :: MVar (Map.Map ThreadId ThreadData)
@@ -167,15 +177,20 @@ type DebugMonadIO m = (MonadException m, Show (Exc m), MonadIO m)
 
 getSeconds :: IO Nano
 getSeconds = do
-    MkSystemTime s ns <- getSystemTime
+    Clock.TimeSpec s ns <- Clock.getTime Clock.ProcessCPUTime
     return $ fromIntegral s + fromIntegral ns / 1000000000
 
-traceTime :: MonadIO m => m r -> m r
-traceTime ma = do
+getCost :: MonadIO m => m r -> m (Nano, r)
+getCost ma = do
     t0 <- liftIO getSeconds
     a <- ma
     t1 <- liftIO getSeconds
-    traceIOM $ "timed: " <> show (t1 - t0) <> "s"
+    return (t1 - t0, a)
+
+traceTime :: MonadIO m => m r -> m r
+traceTime ma = do
+    (c, a) <- getCost ma
+    traceIOM $ "timed: " <> show c <> "s"
     return a
 
 traceBracket :: DebugMonadIO m => String -> m r -> m r
@@ -188,6 +203,33 @@ traceBracket s ma = do
              return a) $ \e -> do
         traceIOM $ s ++ " ! " ++ show e
         throwExc e
+
+addCost :: (Ord key, Num cc) => key -> cc -> Map.Map key cc -> Map.Map key cc
+addCost k c m = let
+    oldc = fromMaybe 0 $ Map.lookup k m
+    newc = c + oldc
+    in Map.insert k newc m
+
+traceCost :: MonadIO m => String -> m r -> m r
+traceCost key ma = do
+    oldtdata <- liftIO $ threadGetData
+    let
+        w =
+            if tdShowCosts oldtdata
+                then traceBracket_ ("COST: " <> key)
+                else id
+    w $ do
+        (c, a) <- getCost ma
+        liftIO $ threadModifyData $ \tdata -> tdata {tdCosts = addCost key c (tdCosts tdata)}
+        return a
+
+traceCosts :: MonadIO m => Bool -> m r -> m r
+traceCosts sh ma = do
+    liftIO $ threadModifyData $ \tdata -> tdata {tdShowCosts = sh, tdCosts = mempty}
+    a <- ma
+    tdata <- liftIO $ threadGetData
+    for_ (sortOn fst $ Map.toList $ tdCosts tdata) $ \(k, c) -> traceIOM $ k <> ": " <> show c <> "s"
+    return a
 
 traceThread :: String -> IO r -> IO r
 traceThread name ma = do

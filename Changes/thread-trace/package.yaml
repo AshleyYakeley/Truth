@@ -10,6 +10,7 @@ library:
     dependencies:
       - base >= 4.16
       - time
+      - clock
       - containers
       - monadology
       - open-witness
