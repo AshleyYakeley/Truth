@@ -1,6 +1,5 @@
 module Language.Expression.Dolan.Solver.Crumble.Crumbler where
 
-import Data.Shim
 import Shapes
 
 type Crumbler :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Type -> Type
@@ -35,12 +34,6 @@ runCrumbler ::
     -> m (f a)
 runCrumbler (MkCrumbler rma) = fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
 
-dropMemos ::
-       forall w m f a. (Applicative f, Monad m)
-    => Crumbler w m f a
-    -> Crumbler w m f a
-dropMemos pc = MkCrumbler $ withReaderT (\_ -> NilListType) $ fmap (fmap $ \ua _ -> ua ()) $ unCrumbler pc
-
 addMemo ::
        forall w m f t a. (Applicative f, Monad m)
     => w t
@@ -67,38 +60,3 @@ memoiseBranch lazify wt call1 call2 =
                     ~(t, a) = f $ lazify t
                     in a
                 in unCrumbler $ fmap fixconv $ addMemo wt call2
-
-memoise ::
-       forall w m f t. (TestEquality w, Applicative f, Monad m)
-    => (t -> t)
-    -> w t
-    -> Crumbler w m f t
-    -> Crumbler w m f t
-memoise lazify wt cma =
-    MkCrumbler $ do
-        seen <- ask
-        case lookUpListElement wt seen of
-            Just lelem -> return $ pure $ listProductGetElement lelem
-            Nothing -> let
-                fixconv :: (t -> t) -> t
-                fixconv f = let
-                    t = f $ lazify t
-                    in t
-                in unCrumbler $ fmap fixconv $ addMemo wt cma
-
-mapEachMemo ::
-       forall w m f a. (Applicative f, Monad m)
-    => (forall t. w t -> m (ShimWit (->) w t))
-    -> Crumbler w m f a
-    -> Crumbler w m f a
-mapEachMemo ff = let
-    mapInside ::
-           forall b.
-           (forall rlist. ListType w rlist -> m (f (ListProduct rlist -> b)))
-        -> (forall rlist. ListType w rlist -> m (f (ListProduct rlist -> b)))
-    mapInside sma NilListType = sma NilListType
-    mapInside sma (ConsListType w ww) = do
-        MkShimWit w' conv <- ff w
-        fmap (fmap $ \lta (a, l) -> lta l $ conv a) $
-            mapInside (\ww' -> fmap (fmap $ \tla l t -> tla (t, l)) $ sma $ ConsListType w' ww') ww
-    in \rma -> MkCrumbler $ ReaderT $ mapInside $ runReaderT $ unCrumbler rma
