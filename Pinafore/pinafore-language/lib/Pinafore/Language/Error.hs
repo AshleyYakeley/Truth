@@ -234,9 +234,13 @@ instance Show QError where
 
 instance Exception QError
 
-newtype InterpretResult a =
-    MkInterpretResult (ResultT QError IO a)
-    deriving (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
+newtype InterpretResult a = MkInterpretResult
+    { unInterpretResult :: ResultT QError IO a
+    } deriving (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
+
+instance MonadCoroutine InterpretResult where
+    coroutineSuspend pqmr =
+        hoist MkInterpretResult $ coroutineSuspend $ \pmq -> unInterpretResult $ pqmr $ \p -> MkInterpretResult $ pmq p
 
 instance MonadThrow QError InterpretResult where
     throw e = throwExc $ Left e

@@ -8,7 +8,7 @@ packages:
 #- external/witness
 #- external/open-witness
 #- external/type-rig
-#- external/monadology
+- external/monadology
 #- external/primitive-serial
 
 # Changes

@@ -76,6 +76,10 @@ newtype QInterpreter a = MkQInterpreter
                , MonadTunnelIO
                )
 
+instance MonadCoroutine QInterpreter where
+    coroutineSuspend pqmr =
+        hoist MkQInterpreter $ coroutineSuspend $ \pmq -> unInterpreter $ pqmr $ \p -> MkQInterpreter $ pmq p
+
 instance MonadThrow QErrorType QInterpreter where
     throw err = do
         em <- mkErrorMessage
