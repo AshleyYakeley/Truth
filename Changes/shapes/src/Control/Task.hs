@@ -9,6 +9,8 @@ module Control.Task
     , timeTask
     , durationTask
     , raceTasks
+    , parallelFor
+    , parallelFor_
     ) where
 
 import Shapes.Import
@@ -130,3 +132,13 @@ raceTasks tt = do
                 return ()
         return ()
     return MkTask {taskIsDone = shortOr $ fmap taskIsDone tt, taskWait = liftTunnelIO $ takeMVar var}
+
+parallelFor :: (Traversable t, MonadTunnelIO m) => t a -> (a -> m b) -> m (t b)
+parallelFor ta amb = do
+    tasks <- for ta $ \a -> forkTask $ amb a
+    for tasks taskWait
+
+parallelFor_ :: (Traversable t, MonadTunnelIO m) => t a -> (a -> m ()) -> m ()
+parallelFor_ ta amb = do
+    tasks <- for ta $ \a -> forkTask $ amb a
+    for_ tasks taskWait
