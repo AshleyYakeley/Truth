@@ -13,7 +13,7 @@
       "group": "build",
       "label": "Format",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make format ; bin/reportstatus $?",
+      "command": "cd ${workspaceRoot} && make top-format",
       "problemMatcher": [
         {
           "owner": "hindent",
@@ -34,7 +34,7 @@
       "group": "build",
       "label": "Full Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make clean && make stackroot=1 haddock=1 test=1 bench=1 full ; bin/reportstatus $?",
+      "command": "cd ${workspaceRoot} && make top-full",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -75,7 +75,7 @@
       },
       "label": "Quick Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make single=1 exe ; bin/reportstatus $?",
+      "command": "cd ${workspaceRoot} && make top-single-build",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -100,7 +100,7 @@
       "group": "test",
       "label": "Format & Quick Test",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make test=1 format exe ; bin/reportstatus $?",
+      "command": "cd ${workspaceRoot} && make top-format-test",
       "problemMatcher": [
         {
           "owner": "stack",

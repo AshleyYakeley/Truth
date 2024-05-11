@@ -39,10 +39,9 @@ Before release:
     stack upgrade  # if not using nix
     stack --version
 
-8. Update flake.lock
+8. Update locks
 
-    rm flake.lock
-    nix flake lock
+    make update-locks
 
 9. Commit and push changes to repo
 
@@ -51,7 +50,7 @@ Before release:
 
 10. Build & test
 
-    make full-clean && make haddock=1 test=1 bench=1 full ; bin/reportstatus $?
+    make top-release
 
 11. Run test UI
 

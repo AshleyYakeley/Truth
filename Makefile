@@ -332,7 +332,37 @@ clean:
 	rm -rf */*/test/*/*.out
 	rm -rf */*/test/*/*/*.out
 	rm -rf result
-
-.PHONY: full-clean
-full-clean: clean
+ifeq ($(stackroot),1)
 	rm -rf .stack-root
+endif
+
+.PHONY: update-locks
+update-locks:
+	rm -f stack.yaml.lock
+	stack exec -- echo -n
+	rm -f flake.lock
+	nix flake lock
+
+
+### Top
+
+top-format:
+	make format; bin/reportstatus $$?
+
+top-build:
+	make exe; bin/reportstatus $$?
+
+top-single-build:
+	make single=1 exe; bin/reportstatus $$?
+
+top-format-test:
+	make test=1 format exe; bin/reportstatus $$?
+
+top-full-resume:
+	make haddock=1 test=1 bench=1 full; bin/reportstatus $$?
+
+top-full:
+	make haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
+
+top-release:
+	make stackroot=1 haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
