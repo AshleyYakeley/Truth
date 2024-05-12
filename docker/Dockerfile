@@ -1,4 +1,4 @@
-FROM fpco/stack-build-small:lts-22.16
+FROM fpco/stack-build-small:lts-22.21
 RUN echo 2024-04-14 > /container.date
 
 # Debian upgrade
