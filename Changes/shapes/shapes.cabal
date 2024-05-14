@@ -50,6 +50,7 @@ library
       Data.Serialize.Instances
       Data.ReadShow
       Data.Witness.ListVProduct
+      Data.Text.Markup
       Control.Category.Dual
       Control.Category.Lifted
       Control.Clock
