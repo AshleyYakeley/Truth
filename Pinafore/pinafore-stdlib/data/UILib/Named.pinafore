@@ -1,4 +1,7 @@
-import "pinafore-gnome", "UILib/Context", "UILib/Pane" in
+import
+    "pinafore-gnome",
+    "UILib/Pane"
+in
 with GTK in
 namespace UILib of
 
@@ -7,70 +10,43 @@ namespace UILib of
 
     namespace Named of
 
-        #| "name" property for a given store, etc.
-        datatype Props of
-            Mk of
-                #| A name is a text that identifies (in some sense) an entity.
-                nameOf: Property Named Text;
-                #| Order alphabetically (case-insensitive) by name
-                nameOrder: ModelOrder Named;
-                #| Order a set of entities by their names.
-                byName: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text));
-            end;
-        end;
+        #| A name is a text that identifies (in some sense) an entity.
+        nameOf: Property Named Text =
+            property @Named @Text !"identify.name" ?store;
 
-        namespace Props of
+        #| Order alphabetically (case-insensitive) by name
+        nameOrder: ModelOrder Named =
+            on.ModelOrder nameOf order.Text;
 
-            mk: Store -> Props =
-            fn store =>
-            let
-                nameOf = property @Named @Text !"identify.name" store;
-                nameOrder = on.ModelOrder nameOf order.Text;
-                byName = fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property nameOf) !$$ model;
-            in Mk;
-
-        end;
-
-        datatype UI <: UI.Pane & Props of
-            Mk of
-                Mk.UI.Pane;
-                Mk.Props;
-
-                #| A pane for a widget, where the title is the name of the widget.
-                namedPane: (a -> Widget) -> (a & Named) -> Pane;
-
-                #| A "name" column for `listTable.Widget`.
-                nameColumn: WholeModel +Text *: (Named -> WholeModel Text);
-
-                #| A `SetWidget` for this set that's a list of widgets by name.
-                namedTable: FiniteSetModel {a,+Named} -> (a -> Widget) -> SetWidget {a,-Named};
-            end;
-        end;
+        #| Order a set of entities by their names.
+        byName: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text)) =
+            fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property nameOf) !$$ model;
 
         namespace UI of
 
-            mk: Context.UILib -> UI.Named =
-            fn context =>
-            let
-
-                Mk.Context.UILib = context;
-                Mk.UI.Pane = mk.UI.Pane context;
-                Mk.Props = mk.Props store;
-
-                namedPane = fn itemWidget, e => let
+            #| A pane for a widget, where the title is the name of the widget.
+            namedPane: (a -> Widget) -> (a & Named) -> Pane =
+                fn itemWidget, e =>
+                let
                     titleModel= nameOf !$% {e};
                     extraMenusModel = {[]};
                     widget = itemWidget e;
-                    in Mk.Pane;
+                in Mk.Pane;
 
-                nameColumn = ({"Name"},fn p => nameOf !$ {p});
+            #| A "name" column for `listTable.Widget`.
+            nameColumn: WholeModel +Text *: (Named -> WholeModel Text) =
+                ({"Name"},fn p => nameOf !$ {p});
 
-                namedTable = fn sm, itemWidget => Mk.SetWidget $ fn msel => exec.Widget $ do
+            #| A `SetWidget` for this set that's a list of widgets by name.
+            namedTable: FiniteSetModel {a,+Named} -> (a -> Widget) -> SetWidget {a,-Named} =
+                fn sm, itemWidget =>
+                Mk.SetWidget $
+                fn msel =>
+                exec.Widget $
+                do
                     lm <- getList.FiniteSetModel nameOrder sm;
-                    pure.Action $ listTable.Widget [nameColumn] lm (fn e => paneWindow $ namedPane itemWidget e) msel;
-                    end;
-
-            in Mk;
+                    pure.Action $ listTable.Widget [nameColumn] lm (fn e => paneWindow.Pane $ namedPane itemWidget e) msel;
+                end;
 
         end;
 

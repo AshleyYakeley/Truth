@@ -1,10 +1,19 @@
 #!/usr/bin/pinafore
 import "pinafore-gnome", "UILib" in
-with GTK., UILib. in
-run.Context $ fn context =>
+with
+    GTK.,
+    UILib.,
+    Pane.UILib.,
+    Named.UILib.,
+    UI.Named.UILib.
+in
+run.Context $ fn Mk.Context =>
+imply
+    ?gtk = gtk;
+    ?undoHandler = undoHandler;
+    ?store = store;
+in
 let
-
-    Mk.UI.Named = mk.UI.Named context;
 
     ### EventTime
 
@@ -80,11 +89,11 @@ let
     namespace Event of
 
         eventSet: FiniteSetModel Event =
-        property @Event @Unit !"type.event" store !@ {()};
+        property @Event @Unit !"type.event" ?store !@ {()};
 
-        timeOf = property @Event @EventTime !"event.time" store;
+        timeOf = property @Event @EventTime !"event.time" ?store;
 
-        notesOf = property @Event @Text !"item.description" store;
+        notesOf = property @Event @Text !"item.description" ?store;
 
         order: ModelOrder Event =
         on.ModelOrder timeOf order.EventTime;

@@ -1,18 +1,25 @@
 #!/usr/bin/pinafore
 import "pinafore-gnome", "UILib" in
-with GTK., UILib. in
-run.Context $ fn context =>
+with
+    GTK.,
+    UILib.,
+    Pane.UILib.,
+    Named.UILib.,
+    UI.Named.UILib.
+in
+run.Context $ fn Mk.Context =>
+imply
+    ?gtk = gtk;
+    ?undoHandler = undoHandler;
+    ?store = store;
+in
 let
 
-    Mk.UI.Named = mk.UI.Named context;
-
-    with Store end;
-
     years: FiniteSetModel Integer =
-    property @Integer @Unit !"FTSJ.years" store !@ {()};
+    property @Integer @Unit !"FTSJ.years" ?store !@ {()};
 
     yearTheme: Property Integer Text =
-    property @Integer @Text !"FTSJ.yearTheme" store;
+    property @Integer @Text !"FTSJ.yearTheme" ?store;
 
     frontCoverPane: Pane =
     simple.Pane "Cover" $ styleSheet.Widget {"* {font-size: 32pt;}"} $ label.Widget {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
