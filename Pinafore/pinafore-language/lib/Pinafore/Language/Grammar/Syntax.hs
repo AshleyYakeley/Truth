@@ -102,6 +102,14 @@ data SyntaxDeclaration'
 
 type SyntaxDeclaration = SyntaxWithDoc (WithSourcePos SyntaxDeclaration')
 
+data SyntaxModuleDeclaration =
+    MkSyntaxModuleDeclaration [SyntaxGiven]
+                              SyntaxDeclaration
+
+data SyntaxGiven =
+    MkSyntaxGiven FullName
+                  (Maybe SyntaxType)
+
 data SyntaxNamespaceWith =
     MkSyntaxNamespaceWith Namespace
                           (Maybe (Bool, [SyntaxNameRefItem]))
@@ -331,4 +339,4 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
 data SyntaxModule =
-    MkSyntaxModule [SyntaxDeclaration]
+    MkSyntaxModule [SyntaxModuleDeclaration]

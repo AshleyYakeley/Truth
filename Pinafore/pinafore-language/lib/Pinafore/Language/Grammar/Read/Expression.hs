@@ -325,9 +325,30 @@ readExpression = do
     expr <- readInfixed expressionFixityReader readExpression1
     readSubsumedExpression expr
 
+readGiven :: Parser SyntaxGiven
+readGiven = do
+    ns <- readAskNamespace
+    name <- readLName
+    mtype <-
+        optional $ do
+            readThis TokTypeJudge
+            readType
+    return $ MkSyntaxGiven (MkFullName name ns) mtype
+
+readModuleDeclaration :: Parser SyntaxModuleDeclaration
+readModuleDeclaration = do
+    mgivens <-
+        optional $ do
+            readThis TokGiven
+            givens <- readLines readGiven
+            readThis TokIn
+            return givens
+    decl <- readDeclaration
+    return $ MkSyntaxModuleDeclaration (fromMaybe [] mgivens) decl
+
 readModule :: Parser SyntaxModule
 readModule = do
-    sdecls <- readLines readDeclaration
+    sdecls <- readLines readModuleDeclaration
     return $ MkSyntaxModule sdecls
 
 data DoLine

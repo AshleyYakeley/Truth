@@ -87,6 +87,7 @@ data Token t where
     TokUnquote :: Token ()
     TokRec :: Token ()
     TokLet :: Token ()
+    TokGiven :: Token ()
     TokIn :: Token ()
     TokDo :: Token ()
     TokOf :: Token ()
@@ -149,6 +150,7 @@ instance TestEquality Token where
     testEquality TokUnquote TokUnquote = Just Refl
     testEquality TokRec TokRec = Just Refl
     testEquality TokLet TokLet = Just Refl
+    testEquality TokGiven TokGiven = Just Refl
     testEquality TokIn TokIn = Just Refl
     testEquality TokDo TokDo = Just Refl
     testEquality TokOf TokOf = Just Refl
@@ -203,6 +205,7 @@ instance Show (Token t) where
     show TokUnquote = "unquote"
     show TokRec = show ("rec" :: String)
     show TokLet = show ("let" :: String)
+    show TokGiven = show ("given" :: String)
     show TokIn = show ("in" :: String)
     show TokDo = show ("do" :: String)
     show TokOf = show ("of" :: String)
@@ -336,6 +339,7 @@ checkKeyword "fn" = return $ MkSomeOf TokFn ()
 checkKeyword "match" = return $ MkSomeOf TokMatch ()
 checkKeyword "rec" = return $ MkSomeOf TokRec ()
 checkKeyword "let" = return $ MkSomeOf TokLet ()
+checkKeyword "given" = return $ MkSomeOf TokGiven ()
 checkKeyword "in" = return $ MkSomeOf TokIn ()
 checkKeyword "do" = return $ MkSomeOf TokDo ()
 checkKeyword "of" = return $ MkSomeOf TokOf ()

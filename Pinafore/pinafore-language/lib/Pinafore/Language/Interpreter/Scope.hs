@@ -21,6 +21,7 @@ import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
+import Pinafore.Language.VarID
 import Shapes
 
 newtype QBindingMap =
@@ -137,5 +138,6 @@ joinAllScopes (s:ss) = joinAllScopesTo s ss
 
 data QModule = MkQModule
     { moduleDoc :: Forest DefDoc
+    , moduleGivens :: [(FullName, VarID)]
     , moduleScope :: QScope
     }

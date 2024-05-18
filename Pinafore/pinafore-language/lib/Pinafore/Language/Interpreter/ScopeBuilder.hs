@@ -3,6 +3,7 @@ module Pinafore.Language.Interpreter.ScopeBuilder
     , builderLift
     , withScopeBuilder
     , runScopeBuilder
+    , runScopeBuilder_
     , scopeRef
     , builderScopeDocsProd
     , builderDocsProd
@@ -53,8 +54,11 @@ instance Monoid a => Monoid (QScopeBuilder a) where
 withScopeBuilder :: QScopeBuilder a -> (a -> QInterpreter b) -> QInterpreter b
 withScopeBuilder (MkQScopeBuilder wsb) aib = unWithT (runWriterT wsb) $ \(a, _) -> aib a
 
-runScopeBuilder :: QScopeBuilder () -> QInterpreter QScopeDocs
-runScopeBuilder (MkQScopeBuilder wsb) = unWithT (runWriterT wsb) $ \((), sd) -> return sd
+runScopeBuilder :: QScopeBuilder a -> QInterpreter (a, QScopeDocs)
+runScopeBuilder (MkQScopeBuilder wsb) = unWithT (runWriterT wsb) return
+
+runScopeBuilder_ :: QScopeBuilder () -> QInterpreter QScopeDocs
+runScopeBuilder_ sb = fmap snd $ runScopeBuilder sb
 
 builderScopeDocsProd :: Prod QScopeBuilder QScopeDocs
 builderScopeDocsProd =
@@ -81,15 +85,12 @@ scopeRef = builderLiftRef scopeParam
 currentNamespaceRef :: Ref QScopeBuilder Namespace
 currentNamespaceRef = builderLiftRef currentNamespaceParam
 
-varIDStateRef :: Ref QScopeBuilder VarIDState
-varIDStateRef = builderLiftRef varIDStateParam
-
 scopeSetSourcePos :: SourcePos -> QScopeBuilder ()
 scopeSetSourcePos = refPut (builderLiftRef sourcePosParam)
 
 allocateVar :: Maybe FullName -> QScopeBuilder (FullName, VarID)
 allocateVar mname = do
-    vs <- refSucc varIDStateRef
+    vs <- builderLift $ refSucc varIDStateRef
     let
         (vid, name) =
             case mname of

@@ -39,7 +39,7 @@ All declarations, including type declarations, are local to a `let` block.
 ```text
 <script> ::= <expression>
 
-<module> ::= <semicolon-separated(<declaration>)>
+<module> ::= <semicolon-separated(<module-declaration>)>
 
 <names> ::= <comma-separated(<name>)>
 
@@ -185,11 +185,17 @@ All declarations, including type declarations, are local to a `let` block.
     "with" <comma-separated(<namespace> <with-names> <optional("as" <namespace>)>)>
 
 <declaration> ::=
-    direct-declaration |
+    <direct-declaration> |
     "namespace" uname <of(<declaration>)> |
     "expose" <name-list> |
     <declarator> "end" |
     <declarator> "in" <declaration>
+
+<module-declaration> ::=
+    <declaration> |
+    "given" <semicolon-separated(<given>)> "in" <declaration>
+
+<given> ::= lname <optional(":" <type>)>
 
 <direct-declaration> ::=
     "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <of(<plain-datatype-constructor>)> |

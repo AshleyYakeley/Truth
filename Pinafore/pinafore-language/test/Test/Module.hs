@@ -50,4 +50,11 @@ testModule =
               , testExpectSuccess "import \"n\", \"m\" in let f: P -> Q = fn x => x in pure ()"
               , testExpectSuccess "import \"m\" in let import \"n\" in expose; f: P -> Q = fn x => x in pure ()"
               ]
+        , tGroup
+              "pass-in"
+              [ tModule "m" "y = x" $
+                testExpectReject "let x=4 in import \"m\" in if y == 4 then pure () else fail \"wrong\""
+              , tModule "m" "given x in y = x" $
+                testExpectSuccess "let x=4 in import \"m\" in if y == 4 then pure () else fail \"wrong\""
+              ]
         ]

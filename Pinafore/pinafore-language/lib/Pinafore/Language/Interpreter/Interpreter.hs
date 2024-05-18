@@ -4,7 +4,7 @@ module Pinafore.Language.Interpreter.Interpreter
     ( QInterpreter
     , nameWitnessErrorType
     , sourcePosParam
-    , varIDStateParam
+    , varIDStateRef
     , scopeParam
     , currentNamespaceParam
     , appNotationVarRef
@@ -38,7 +38,6 @@ import Text.Parsec.Pos (SourcePos, initialPos)
 
 data InterpretContext = MkInterpretContext
     { icSourcePos :: SourcePos
-    , icVarIDState :: VarIDState
     , icScope :: QScope
     , icCurrentNamespace :: Namespace
     , icSpecialVals :: QSpecialVals
@@ -47,13 +46,15 @@ data InterpretContext = MkInterpretContext
     }
 
 data InterpretState = MkInterpretState
-    { isTypeID :: TypeID
+    { isVarIDState :: VarIDState
+    , isTypeID :: TypeID
     , isModules :: Map ModuleName QModule
     , isAppNotationVar :: VarIDState
     }
 
 emptyInterpretState :: InterpretState
 emptyInterpretState = let
+    isVarIDState = szero
     isTypeID = szero
     isModules = mempty
     isAppNotationVar = szero
@@ -123,9 +124,6 @@ contextParam = MkParam (MkQInterpreter ask) $ \a (MkQInterpreter m) -> MkQInterp
 sourcePosParam :: Param QInterpreter SourcePos
 sourcePosParam = lensMapParam (\bfb a -> fmap (\b -> a {icSourcePos = b}) $ bfb $ icSourcePos a) contextParam
 
-varIDStateParam :: Param QInterpreter VarIDState
-varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bfb $ icVarIDState a) contextParam
-
 scopeParam :: Param QInterpreter QScope
 scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) contextParam
 
@@ -155,6 +153,9 @@ appNotationBindsProd = let
     prod = liftProd writerProd
     in MkProd (\a -> MkQInterpreter $ prodTell prod a) (\(MkQInterpreter mr) -> MkQInterpreter $ prodCollect prod mr)
 
+varIDStateRef :: Ref QInterpreter VarIDState
+varIDStateRef = lensMapRef (\bfb a -> fmap (\b -> a {isVarIDState = b}) $ bfb $ isVarIDState a) interpretStateRef
+
 typeIDRef :: Ref QInterpreter TypeID
 typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
 
@@ -171,7 +172,6 @@ data LibraryContext = MkLibraryContext
 
 runInterpreter :: SourcePos -> LibraryContext -> QSpecialVals -> QInterpreter a -> InterpretResult a
 runInterpreter icSourcePos MkLibraryContext {..} icSpecialVals qa = let
-    icVarIDState = szero
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace

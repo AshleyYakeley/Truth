@@ -273,8 +273,22 @@ interpretRecursiveDocDeclarations ddecls = do
 
 interpretImportDeclaration :: ModuleName -> QInterpreter QScopeDocs
 interpretImportDeclaration modname = do
-    newmod <- getModule modname
-    return $ MkQScopeDocs [moduleScope newmod] $ moduleDoc newmod
+    MkQModule {..} <- getModule modname
+    scope <-
+        case moduleGivens of
+            [] -> return moduleScope
+            givens -> do
+                substs <-
+                    for givens $ \(name, varid) -> do
+                        expr <- qName $ fullNameRef name
+                        return (varid, expr)
+                let
+                    substM :: VarID -> Maybe QExpression
+                    substM v = lookup v substs
+                unEndoM
+                    (traverseExpressionsM @QTypeSystem (MkEndoM $ qSubstitute substM) (MkEndoM $ qOpenSubstitute substM))
+                    moduleScope
+    return $ MkQScopeDocs [scope] moduleDoc
 
 interpretDeclaration :: SyntaxDeclaration -> QScopeBuilder ()
 interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
@@ -292,7 +306,7 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             sd <- builderLift $ interpretDeclarator declarator
             registerScopeDocs sd
         DeclaratorInSyntaxDeclaration declarator declaration -> do
-            sd <- builderLift $ interpretDeclaratorWith declarator $ runScopeBuilder $ interpretDeclaration declaration
+            sd <- builderLift $ interpretDeclaratorWith declarator $ runScopeBuilder_ $ interpretDeclaration declaration
             registerScopeDocs sd
         ExposeDeclaration items -> do
             sd <- builderLift $ interpretExpose items
@@ -488,8 +502,8 @@ interpretExpose items = do
     return $ MkQScopeDocs {sdScopes = [scope], sdDocs = MkForest $ fmap pure docs}
 
 interpretDeclarator :: SyntaxDeclarator -> QInterpreter QScopeDocs
-interpretDeclarator (SDLetSeq sdecls) = runScopeBuilder $ for_ sdecls interpretDeclaration
-interpretDeclarator (SDLetRec sdecls) = runScopeBuilder $ interpretRecursiveDocDeclarations sdecls
+interpretDeclarator (SDLetSeq sdecls) = runScopeBuilder_ $ for_ sdecls interpretDeclaration
+interpretDeclarator (SDLetRec sdecls) = runScopeBuilder_ $ interpretRecursiveDocDeclarations sdecls
 interpretDeclarator (SDWith swns) = do
     scopes <- for swns interpretNamespaceWith
     return $ MkQScopeDocs scopes mempty
@@ -587,7 +601,7 @@ interpretBinding sb@MkSingleBinding {..} = do
 
 interpretDeclarationWith :: SyntaxDeclaration -> QInterpreter --> QInterpreter
 interpretDeclarationWith sdecl ma = do
-    sd <- runScopeBuilder $ interpretDeclaration sdecl
+    sd <- runScopeBuilder_ $ interpretDeclaration sdecl
     withScopeDocs sd ma
 
 interpretGeneralSubtypeRelation ::
@@ -667,8 +681,14 @@ interpretSubtypeRelation trustme sta stb mbody docDescription = do
         docItem = SubtypeRelationDocItem {..}
     registerDocs $ pure MkDefDoc {..}
 
+interpretModuleDeclaration :: SyntaxModuleDeclaration -> QScopeBuilder [(FullName, VarID)]
+interpretModuleDeclaration (MkSyntaxModuleDeclaration givens decl) = do
+    pairs <- for givens $ \(MkSyntaxGiven name _) -> allocateVar $ Just name
+    interpretDeclaration decl
+    return pairs
+
 interpretModule :: SyntaxModule -> QInterpreter QModule
 interpretModule (MkSyntaxModule sdecls) = do
-    MkQScopeDocs scopes docs <- runScopeBuilder $ for_ sdecls interpretDeclaration
+    (pairss, MkQScopeDocs scopes docs) <- runScopeBuilder $ for sdecls interpretModuleDeclaration
     scope <- joinAllScopes scopes
-    return $ MkQModule docs scope
+    return $ MkQModule docs (mconcat pairss) scope
