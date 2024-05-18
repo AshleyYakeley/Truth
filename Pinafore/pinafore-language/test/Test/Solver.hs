@@ -303,7 +303,7 @@ testSolver =
                  , recursiveTest "Maybe b -> Maybe b" "a -> a" "Maybe a -> Maybe a"
                  , recursiveTest "a" "Maybe a" "rec a, Maybe a"
                  , recursiveTest "Any" "Integer" "Integer"
-                 , recursiveTest "(Text | Integer) -> Any" "a -> a" "a -> (a | (Integer. | Text.))"
+                 , recursiveTest "(Text | Integer) -> Any" "a -> a" "a -> (a | (Text. | Integer.))"
                  , testTree
                        "issue-229"
                        [ recursiveTest "a & (a -> b)" "c -> c" "a -> (rec b, a | a -> b)"

@@ -41,31 +41,30 @@ expressionFreeWitnessCount :: Expression w a -> Int
 expressionFreeWitnessCount (ClosedExpression _) = 0
 expressionFreeWitnessCount (OpenExpression _ expr) = succ $ expressionFreeWitnessCount expr
 
-evalExpressionResult :: Expression w a -> Result (ExpressionError w) a
+evalExpressionResult :: Expression w --> Result (ExpressionError w)
 evalExpressionResult (ClosedExpression a) = return a
 evalExpressionResult (OpenExpression wt expr) =
     throwExc $ UndefinedBindingsError $ MkSome wt :| expressionFreeWitnesses MkSome expr
 
-evalExpression :: MonadThrow (ExpressionError w) m => Expression w a -> m a
+evalExpression :: MonadThrow (ExpressionError w) m => Expression w --> m
 evalExpression expr = fromResult $ evalExpressionResult expr
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id
 
-solveExpression :: Applicative m => (forall t. w t -> m t) -> Expression w a -> m a
-solveExpression _f (ClosedExpression a) = pure a
-solveExpression f (OpenExpression wt expr) = solveExpression f expr <*> f wt
+runExpression ::
+       forall m w. Applicative m
+    => (w --> m)
+    -> Expression w --> m
+runExpression _f (ClosedExpression a) = pure a
+runExpression f (OpenExpression wt expr) = runExpression f expr <*> f wt
 
-mapExpressionM ::
-       forall m w1 w2 a. Applicative m
-    => (forall t. w1 t -> m (Expression w2 t))
-    -> Expression w1 a
-    -> m (Expression w2 a)
-mapExpressionM _ (ClosedExpression a) = pure $ ClosedExpression a
-mapExpressionM f (OpenExpression wt expr) = liftA2 (liftA2 $ \t ta -> ta t) (f wt) (mapExpressionM f expr)
-
-mapExpression :: forall w1 w2 a. (forall t. w1 t -> Expression w2 t) -> Expression w1 a -> Expression w2 a
-mapExpression m expr = runIdentity $ mapExpressionM (\wt -> Identity $ m wt) expr
+runExpressionM ::
+       forall m w f a. (Applicative m, Applicative f)
+    => (forall t. w t -> m (f t))
+    -> Expression w a
+    -> m (f a)
+runExpressionM f expr = getCompose $ runExpression (Compose . f) expr
 
 mergeExpressionWitnessesM ::
        forall m w t a. Monad m

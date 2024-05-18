@@ -18,5 +18,5 @@ solvePuzzle ::
     -> CrumbleM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
 solvePuzzle (ClosedExpression a) = return (pure a, [])
 solvePuzzle puzzle = do
-    upuzzle <- mapExpressionM pieceToUnify puzzle
+    upuzzle <- runExpressionM pieceToUnify puzzle
     solveUnifyPuzzle upuzzle

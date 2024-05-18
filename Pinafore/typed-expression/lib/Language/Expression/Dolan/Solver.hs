@@ -92,7 +92,7 @@ subtypeSingularType ::
 subtypeSingularType ta tb = do
     puzzle <- liftToCrumbleM $ puzzleSubsumeSingular ta tb
     (oexpr, _) <- solvePuzzle puzzle
-    solveExpression checkSameVar oexpr
+    runExpression checkSameVar oexpr
 
 invertedPolarSubtype ::
        forall (ground :: GroundTypeKind) polarity a b. (Is PolarityType polarity, IsDolanSubtypeGroundType ground)

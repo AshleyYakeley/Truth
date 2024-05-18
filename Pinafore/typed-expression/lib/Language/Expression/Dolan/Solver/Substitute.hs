@@ -101,7 +101,7 @@ applyBisubsToPuzzle ::
     => [SolverBisubstitution ground]
     -> Puzzle ground a
     -> CrumbleM ground (Puzzle ground a)
-applyBisubsToPuzzle substs = mapExpressionM $ applyBisubsToPiece substs
+applyBisubsToPuzzle substs = runExpressionM $ applyBisubsToPiece substs
 
 applyBisubToAtomicConstraint ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

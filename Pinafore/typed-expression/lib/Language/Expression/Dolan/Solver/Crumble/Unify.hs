@@ -180,7 +180,7 @@ solveWholeConstraint ::
 solveWholeConstraint wc = do
     exprs <- crumbleConstraint wc
     for exprs $ \(MkSolverExpression puzzle dexpr) -> do
-        vexpr <- mapExpressionM pieceToUnify puzzle
+        vexpr <- runExpressionM pieceToUnify puzzle
         return $ MkSolverExpression vexpr dexpr
 
 mergeAtomicPuzzle ::
@@ -235,7 +235,7 @@ atomicToVariablePuzzle ::
     => UnifyPuzzle ground a
     -> DolanTypeCheckM ground (UnifyPuzzle ground a)
 atomicToVariablePuzzle =
-    mapExpressionM $ \case
+    runExpressionM $ \case
         AtomicUnifyPiece var tp tq -> do
             let vp = varExpression (VariableUnifyPiece (MkUnifyVariableConstraint var tp tq))
             wp <- unifyMixedTypes tp tq
@@ -323,7 +323,7 @@ solveVPuzzle ::
     -> DolanTypeCheckM ground (t, [SolverBisubstitution ground])
 solveVPuzzle (ClosedExpression a) = return (a, [])
 solveVPuzzle vpuzzle = do
-    (t, presubs) <- runWriterT $ solveExpression constraintToPresub vpuzzle
+    (t, presubs) <- runWriterT $ runExpression constraintToPresub vpuzzle
     presubs' <- applyEachEvery presubs
     bisubs <- for presubs' preBisubstitution
     return $ (t, bisubs)

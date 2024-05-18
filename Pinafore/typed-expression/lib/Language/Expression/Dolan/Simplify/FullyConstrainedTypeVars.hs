@@ -121,7 +121,7 @@ solveUsageExpression ::
        forall (ground :: GroundTypeKind) tv t. IsDolanGroundType ground
     => Expression (UsageWitness ground tv) t
     -> UsageSolution ground tv t
-solveUsageExpression expr = solveExpression solveUsageWitness expr
+solveUsageExpression expr = runExpression solveUsageWitness expr
 
 getUsageSolution ::
        forall (ground :: GroundTypeKind) polarity tv a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
