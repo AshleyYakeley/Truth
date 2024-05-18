@@ -87,6 +87,7 @@ data Token t where
     TokUnquote :: Token ()
     TokRec :: Token ()
     TokLet :: Token ()
+    TokImply :: Token ()
     TokIn :: Token ()
     TokDo :: Token ()
     TokOf :: Token ()
@@ -109,6 +110,7 @@ data Token t where
     TokWith :: Token ()
     TokNamesUpper :: Token TokenNames
     TokNamesLower :: Token TokenNames
+    TokImplicitName :: Token Name
     TokUnderscore :: Token ()
     TokFn :: Token ()
     TokMatch :: Token ()
@@ -149,6 +151,7 @@ instance TestEquality Token where
     testEquality TokUnquote TokUnquote = Just Refl
     testEquality TokRec TokRec = Just Refl
     testEquality TokLet TokLet = Just Refl
+    testEquality TokImply TokImply = Just Refl
     testEquality TokIn TokIn = Just Refl
     testEquality TokDo TokDo = Just Refl
     testEquality TokOf TokOf = Just Refl
@@ -171,6 +174,7 @@ instance TestEquality Token where
     testEquality TokWith TokWith = Just Refl
     testEquality TokNamesUpper TokNamesUpper = Just Refl
     testEquality TokNamesLower TokNamesLower = Just Refl
+    testEquality TokImplicitName TokImplicitName = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
     testEquality TokFn TokFn = Just Refl
     testEquality TokMatch TokMatch = Just Refl
@@ -203,6 +207,7 @@ instance Show (Token t) where
     show TokUnquote = "unquote"
     show TokRec = show ("rec" :: String)
     show TokLet = show ("let" :: String)
+    show TokImply = show ("imply" :: String)
     show TokIn = show ("in" :: String)
     show TokDo = show ("do" :: String)
     show TokOf = show ("of" :: String)
@@ -225,6 +230,7 @@ instance Show (Token t) where
     show TokWith = show ("with" :: String)
     show TokNamesUpper = "unames"
     show TokNamesLower = "lnames"
+    show TokImplicitName = "implicit name"
     show TokUnderscore = show ("_" :: String)
     show TokFn = show ("fn" :: String)
     show TokMatch = show ("match" :: String)
@@ -336,6 +342,7 @@ checkKeyword "fn" = return $ MkSomeOf TokFn ()
 checkKeyword "match" = return $ MkSomeOf TokMatch ()
 checkKeyword "rec" = return $ MkSomeOf TokRec ()
 checkKeyword "let" = return $ MkSomeOf TokLet ()
+checkKeyword "imply" = return $ MkSomeOf TokImply ()
 checkKeyword "in" = return $ MkSomeOf TokIn ()
 checkKeyword "do" = return $ MkSomeOf TokDo ()
 checkKeyword "of" = return $ MkSomeOf TokOf ()
@@ -366,6 +373,7 @@ allKeywords =
     , ("match", "keyword.control.pinafore")
     , ("rec", "keyword.other.pinafore")
     , ("let", "keyword.other.pinafore")
+    , ("imply", "keyword.other.pinafore")
     , ("in", "keyword.other.pinafore")
     , ("do", "keyword.control.pinafore")
     , ("of", "keyword.other.pinafore")
@@ -439,6 +447,14 @@ readHexAnchor = do
         octets <- fromHex $ filter isHexDigit cs
         decode anchorCodec $ fromList octets
 
+readImplicitName :: Parser (SomeOf Token)
+readImplicitName =
+    try $ do
+        readChar '?'
+        (u, name) <- readName
+        altIf $ not u
+        return $ MkSomeOf TokImplicitName name
+
 readOpToken :: Parser (SomeOf Token)
 readOpToken = do
     name <-
@@ -507,6 +523,7 @@ readToken = do
         try readNumber <|>
         fmap (MkSomeOf TokString) readQuotedString <|>
         readTextToken <|>
+        readImplicitName <|>
         readOpToken
     readWS
     return (pos, t)

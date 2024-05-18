@@ -431,6 +431,18 @@ readExpression1 =
                      return $ SEMatches $ MkSyntaxMulticaseList n smm) <|>
     readWithSourcePos
         (do
+             readThis TokImply
+             sdecls <-
+                 readLines $ do
+                     name <- readThis TokImplicitName
+                     readThis TokAssign
+                     defn <- readExpression
+                     return (name, defn)
+             readThis TokIn
+             sbody <- readExpression
+             return $ SEImply sdecls sbody) <|>
+    readWithSourcePos
+        (do
              sdecl <- readDeclarator
              readThis TokIn
              sbody <- readExpression
@@ -482,6 +494,10 @@ readAnnotation =
 
 readExpression3 :: Parser SyntaxExpression
 readExpression3 =
+    readWithSourcePos
+        (do
+             name <- readThis TokImplicitName
+             return $ SEImplicitVar name) <|>
     readWithSourcePos
         (do
              name <- readFullLName

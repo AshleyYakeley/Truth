@@ -298,6 +298,7 @@ data SyntaxExpression'
     | SEConst SyntaxConstant
     | SEVar Namespace
             FullNameRef
+    | SEImplicitVar Name
     | SESpecialForm FullNameRef
                     (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
@@ -308,6 +309,8 @@ data SyntaxExpression'
     | SEMatches SyntaxMulticaseList
     | SEAppQuote SyntaxExpression
     | SEAppUnquote SyntaxExpression
+    | SEImply [(Name, SyntaxExpression)]
+              SyntaxExpression
     | SEDecl SyntaxDeclarator
              SyntaxExpression
     | SEList [SyntaxExpression]

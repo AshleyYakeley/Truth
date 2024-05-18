@@ -526,6 +526,16 @@ interpretExpression' (SEAbstracts (MkSome multimatch@(MkSyntaxMulticase spats _)
         pexpr <- interpretMulticase varids multimatch
         multiAbstractExpr varids $ partialToSealedExpression pexpr
 interpretExpression' (SEDecl declarator sbody) = interpretDeclaratorWith declarator $ interpretExpression sbody
+interpretExpression' (SEImply binds sbody) = do
+    bexpr <- interpretExpression sbody
+    substs <-
+        for binds $ \(n, sexpr) -> do
+            expr <- interpretExpression sexpr
+            return (n, expr)
+    let
+        substf (ImplicitVarID vn) = lookup vn substs
+        substf _ = Nothing
+    qSubstitute substf bexpr
 interpretExpression' (SEMatch scases) =
     withAllocateNewVar Nothing $ \varid -> do
         pexprs <- for scases $ interpretCase varid
@@ -542,6 +552,7 @@ interpretExpression' (SEApply sf sarg) = do
     qApplyExpr f arg
 interpretExpression' (SEConst c) = interpretConstant c
 interpretExpression' (SEVar _ name) = qName name
+interpretExpression' (SEImplicitVar name) = return $ qVarExpr $ ImplicitVarID name
 interpretExpression' (SESpecialForm name annots) = do
     val <- interpretSpecialForm name annots
     return $ qConstExprAny val

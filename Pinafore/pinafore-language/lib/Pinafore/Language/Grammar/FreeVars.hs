@@ -68,6 +68,7 @@ instance SyntaxFreeVariables SyntaxDeclarator where
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
     syntaxFreeVariables (SEConst _) = mempty
+    syntaxFreeVariables (SEImplicitVar _) = mempty
     syntaxFreeVariables (SEVar ns name) = opoint $ namespaceConcatFullName ns name
     syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
@@ -77,6 +78,8 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEMatches match) = syntaxFreeVariables match
     syntaxFreeVariables (SEAppQuote expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEAppUnquote expr) = syntaxFreeVariables expr
+    syntaxFreeVariables (SEImply binds expr) =
+        mconcat (fmap (\(_, e) -> syntaxFreeVariables e) binds) <> syntaxFreeVariables expr
     syntaxFreeVariables (SEDecl decl expr) =
         difference
             (syntaxFreeVariables decl <> syntaxFreeVariables expr)

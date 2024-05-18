@@ -41,8 +41,11 @@ qNameWithDefault :: Maybe QExpression -> FullNameRef -> QInterpreter QExpression
 qNameWithDefault (Just defexpr) name = qNameWith name $ return defexpr
 qNameWithDefault Nothing name = qName name
 
+qSubstitute :: (VarID -> Maybe QExpression) -> QExpression -> QInterpreter QExpression
+qSubstitute = tsSubstitute @QTypeSystem
+
 qAbstractExpr :: VarID -> QExpression -> QInterpreter QExpression
-qAbstractExpr name expr = tsAbstract @QTypeSystem name expr
+qAbstractExpr = tsAbstract @QTypeSystem
 
 qAbstractsExpr :: [VarID] -> QExpression -> QInterpreter QExpression
 qAbstractsExpr [] e = return e
