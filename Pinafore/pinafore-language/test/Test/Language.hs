@@ -422,6 +422,12 @@ testQueries =
               , testQuery "let rec a=1;b=a;a=3 in b" $ LRCheckFail
               ]
         , testTree
+              "implicit parameters"
+              [ testQuery "let x = ?p in x" $ LRCheckFail
+              , testQuery "let x = ?p in imply ?p = 5 in x" $ LRSuccess "5"
+              , testQuery "let x : Integer = ?p in imply ?p = 43 in x" $ LRSuccess "43"
+              ]
+        , testTree
               "operator"
               [ testQuery "0 ==.Entity 1" $ LRSuccess "False"
               , testQuery "1 ==.Entity 1" $ LRSuccess "True"

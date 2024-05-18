@@ -13,6 +13,7 @@ building
 syntax
 expressions
 declarations
+implicit-parameters
 type-system
 types
 dynamic-supertypes

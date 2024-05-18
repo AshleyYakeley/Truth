@@ -127,6 +127,7 @@ All declarations, including type declarations, are local to a `let` block.
 <expression-1> ::=
     "fn" <match> |
     "match" <semicolon-separated(<match>)> "end" |
+    "imply" <semicolon-separated(<implication>)> "in" <expression> |
     <declarator> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "do" <optional("." <namespace>)> <semicolon-separated(<do-line>)> <expression> "end" |
@@ -143,6 +144,7 @@ All declarations, including type declarations, are local to a `let` block.
     "%" <expression-3> |
     <expression-specialform> |
     <expression-var> |
+    implicit-name |
     <constructor-expression> |
     <literal> |
     "[" <comma-separated(<expression>)> "]" |
@@ -150,6 +152,8 @@ All declarations, including type declarations, are local to a `let` block.
     "(" <expression> "," <comma-separated-1(<expression>)> ")" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
+
+<implication> ::= implicit-name "=" <expression>
 
 <constructor-expression> ::= <constructor> <optional(<of(<name> "=" <expression>)>)>
 
@@ -185,7 +189,7 @@ All declarations, including type declarations, are local to a `let` block.
     "with" <comma-separated(<namespace> <with-names> <optional("as" <namespace>)>)>
 
 <declaration> ::=
-    direct-declaration |
+    <direct-declaration> |
     "namespace" uname <of(<declaration>)> |
     "expose" <name-list> |
     <declarator> "end" |
@@ -298,6 +302,8 @@ quname ::= uname ("." uname)*
 lname ::= lower ("-" | "_" | alnum)*
 
 qlname ::= lname ("." uname)*
+
+implicit-name ::= "?" lname
 
 literal-number ::=
     "-"? digit+ ("." digit* ("_" digit*)?)? |
