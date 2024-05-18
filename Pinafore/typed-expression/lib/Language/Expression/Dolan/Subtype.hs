@@ -30,6 +30,11 @@ instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVari
              Show (SubtypeLink ground dva gta dvb gtb) where
     show (MkSubtypeLink _ _ _ _) = "link"
 
+instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). TraverseExpressions (DolanTypeSystem ground) (SubtypeLink ground dva gta dvb gtb) where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \(MkSubtypeLink dvma args argsb expr) ->
+            fmap (MkSubtypeLink dvma args argsb) $ unEndoM (traverseExpressionsM @(DolanTypeSystem ground) fs fo) expr
+
 type SubtypeChain :: GroundTypeKind -> forall (dva :: CCRVariances) ->
                                                CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
                                                                                CCRVariancesKind dvb -> Type
@@ -47,6 +52,14 @@ instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVari
              Show (SubtypeChain ground dva gta dvb gtb) where
     show NilSubtypeChain = ""
     show (ConsSubtypeChain link chain) = show link <> "; " <> show chain
+
+instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). TraverseExpressions (DolanTypeSystem ground) (SubtypeChain ground dva gta dvb gtb) where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \case
+            NilSubtypeChain -> pure NilSubtypeChain
+            ConsSubtypeChain sl sc ->
+                ConsSubtypeChain <$> unEndoM (traverseExpressionsM @(DolanTypeSystem ground) fs fo) sl <*>
+                unEndoM (traverseExpressionsM @(DolanTypeSystem ground) fs fo) sc
 
 getChainArguments ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb) (dvc :: CCRVariances) (gtc :: CCRVariancesKind dvc) r.

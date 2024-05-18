@@ -56,6 +56,13 @@ data QInterpreterBinding
     | RecordConstructorBinding QRecordConstructor
     | SpecialFormBinding QSpecialForm
 
+instance TraverseExpressions QTypeSystem QInterpreterBinding where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \case
+            ValueBinding expr mpc ->
+                fmap (\expr' -> ValueBinding expr' mpc) $ unEndoM (traverseExpressionsM @QTypeSystem fs fo) expr
+            binding -> pure binding
+
 instance HasInterpreter => Show QInterpreterBinding where
     show (ValueBinding e Nothing) = "val: " <> show e
     show (ValueBinding e (Just _)) = "val+pat: " <> show e
@@ -68,6 +75,11 @@ data QBindingInfo = MkQBindingInfo
     , biDocumentation :: DefDoc
     , biValue :: QInterpreterBinding
     }
+
+instance TraverseExpressions QTypeSystem QBindingInfo where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \(MkQBindingInfo n d v) ->
+            fmap (MkQBindingInfo n d) $ unEndoM (traverseExpressionsM @QTypeSystem fs fo) v
 
 data BindingSelector t = MkBindingSelector
     { bsEncode :: t -> QInterpreterBinding

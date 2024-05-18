@@ -13,6 +13,7 @@ module Pinafore.Language.Interpreter.Scope
     , QModule(..)
     ) where
 
+import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
@@ -24,6 +25,11 @@ import Shapes
 
 newtype QBindingMap =
     MkQBindingMap (Map FullName QBindingInfo)
+
+instance TraverseExpressions QTypeSystem QBindingMap where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \(MkQBindingMap m) ->
+            fmap MkQBindingMap $ unEndoM (endoFor $ traverseExpressionsM @QTypeSystem fs fo) m
 
 instance Semigroup QBindingMap where
     MkQBindingMap nsa <> MkQBindingMap nsb = let
@@ -69,6 +75,12 @@ data QScope = MkQScope
     , scopeSubtypes :: HashMap Unique QSubtypeConversionEntry
     --, scopeDynamicSubtypes :: HashMap TypeID [Either TypeID ConcreteDynamicType]
     }
+
+instance TraverseExpressions QTypeSystem QScope where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \(MkQScope b s) ->
+            MkQScope <$> unEndoM (traverseExpressionsM @QTypeSystem fs fo) b <*>
+            unEndoM (traverseExpressionsM @QTypeSystem fs fo) s
 
 emptyScope :: QScope
 emptyScope = MkQScope mempty mempty

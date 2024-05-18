@@ -12,6 +12,8 @@ module Language.Expression.Common.Abstract
     , FunctionWitness
     , UnifierFunctionPosWitness
     , UnifierFunctionNegWitness
+    , substituteOpenExpression
+    , substituteSealedExpression
     , abstractSealedExpression
     , applySealedExpression
     , letSealedExpression
@@ -129,6 +131,41 @@ type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 type UnifierFunctionPosWitness ts = FunctionWitness (TSNegShimWit ts) (TSPosShimWit ts)
 
 type UnifierFunctionNegWitness ts = FunctionWitness (TSPosShimWit ts) (TSNegShimWit ts)
+
+uSubstitute ::
+       forall ts t. AbstractTypeSystem ts
+    => (TSVarID ts -> Maybe (TSSealedExpression ts))
+    -> TSOpenExpression ts t
+    -> TSOuter ts (UnifierExpression ts t)
+uSubstitute subst =
+    runExpressionM $ \w@(MkNameWitness var vwt) ->
+        case subst var of
+            Nothing -> return $ solverExpressionLiftValue $ varExpression w
+            Just (MkSealedExpression twt expr) -> do
+                uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts twt) (uuLiftNegShimWit @ts vwt)
+                return $ liftA2 shimToFunction uconv (solverExpressionLiftValue expr)
+
+substituteOpenExpression ::
+       forall ts t. AbstractTypeSystem ts
+    => (TSVarID ts -> Maybe (TSSealedExpression ts))
+    -> TSOpenExpression ts t
+    -> TSInner ts (TSOpenExpression ts t)
+substituteOpenExpression subst expr =
+    runRenamer @ts [] [] $
+    withTransConstraintTM @Monad $ do
+        uexpr <- uSubstitute @ts subst expr
+        unifierSolve @ts uexpr return
+
+substituteSealedExpression ::
+       forall ts. AbstractTypeSystem ts
+    => (TSVarID ts -> Maybe (TSSealedExpression ts))
+    -> TSSealedExpression ts
+    -> TSInner ts (TSSealedExpression ts)
+substituteSealedExpression subst (MkSealedExpression twt expr) =
+    runRenamer @ts [] [] $
+    withTransConstraintTM @Monad $ do
+        uexpr <- uSubstitute @ts subst expr
+        unifierSolve @ts uexpr $ \expr' -> return $ MkSealedExpression twt expr'
 
 abstractSealedExpression ::
        forall ts. AbstractTypeSystem ts

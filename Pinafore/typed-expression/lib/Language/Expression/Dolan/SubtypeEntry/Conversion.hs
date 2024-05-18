@@ -1,6 +1,7 @@
 module Language.Expression.Dolan.SubtypeEntry.Conversion where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.SubtypeEntry.Knowledge
 import Language.Expression.Dolan.Type
@@ -19,6 +20,13 @@ data SubtypeConversion ground dva gta dvb gtb where
     CoerceSubtypeConversion
         :: forall (ground :: GroundTypeKind) (gta :: Type) (gtb :: Type). Coercible gta gtb
         => SubtypeConversion ground '[] gta '[] gtb
+
+instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb). TraverseExpressions (DolanTypeSystem ground) (SubtypeConversion ground dva gta dvb gtb) where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \case
+            GeneralSubtypeConversion sk sc ->
+                fmap (GeneralSubtypeConversion sk) $ unEndoM (traverseExpressionsM @(DolanTypeSystem ground) fs fo) sc
+            sc -> pure sc
 
 subtypeConversionChain ::
        forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).

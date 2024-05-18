@@ -145,6 +145,20 @@ tsApply ::
     -> TSInner ts (TSSealedExpression ts)
 tsApply = applySealedExpression @ts (tsFunctionNegShimWit @ts)
 
+tsOpenSubstitute ::
+       forall ts t. CompleteTypeSystem ts
+    => (TSVarID ts -> Maybe (TSSealedExpression ts))
+    -> TSOpenExpression ts t
+    -> TSInner ts (TSOpenExpression ts t)
+tsOpenSubstitute = substituteOpenExpression @ts
+
+tsSubstitute ::
+       forall ts. CompleteTypeSystem ts
+    => (TSVarID ts -> Maybe (TSSealedExpression ts))
+    -> TSSealedExpression ts
+    -> TSInner ts (TSSealedExpression ts)
+tsSubstitute = substituteSealedExpression @ts
+
 tsAbstract ::
        forall ts. CompleteTypeSystem ts
     => TSVarID ts

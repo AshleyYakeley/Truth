@@ -71,6 +71,11 @@ data SubtypeConversionEntry ground =
                                                      (ground dvb gtb)
                                                      (SubtypeConversion ground dva gta dvb gtb)
 
+instance forall (ground :: GroundTypeKind). TraverseExpressions (DolanTypeSystem ground) (SubtypeConversionEntry ground) where
+    traverseExpressionsM fs fo =
+        MkEndoM $ \(MkSubtypeConversionEntry vf ta tb sc) ->
+            fmap (MkSubtypeConversionEntry vf ta tb) $ unEndoM (traverseExpressionsM @(DolanTypeSystem ground) fs fo) sc
+
 instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (SubtypeConversionEntry ground) where
     show (MkSubtypeConversionEntry _ ta tb _) = show ta <> " <: " <> show tb
 

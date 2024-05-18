@@ -60,3 +60,20 @@ type TSOpenSolverExpression ts typeexpr
      = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenExpression ts)
 
 type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)
+
+class TraverseExpressions (ts :: Type) (a :: Type) where
+    traverseExpressionsM ::
+           forall m. Applicative m
+        => EndoM m (TSSealedExpression ts)
+        -> EndoM' m (TSOpenExpression ts)
+        -> EndoM m a
+
+instance TraverseExpressions ts val => TraverseExpressions ts (HashMap key val) where
+    traverseExpressionsM fs fo = endoFor $ traverseExpressionsM @ts fs fo
+
+instance (varid ~ TSVarID ts, nw ~ TSNegShimWit ts) => TraverseExpressions ts (NamedExpression varid nw t) where
+    traverseExpressionsM _ fo = fo
+
+instance (varid ~ TSVarID ts, nw ~ TSNegShimWit ts, pw ~ TSPosShimWit ts) =>
+             TraverseExpressions ts (SealedExpression varid nw pw) where
+    traverseExpressionsM fs _ = fs
