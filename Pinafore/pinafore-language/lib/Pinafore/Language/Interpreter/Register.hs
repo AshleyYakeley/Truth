@@ -48,14 +48,11 @@ registerLetBinding name doc expr = registerLetBindings $ pure (name, doc, expr)
 
 registerMatchBindings :: QMatch -> QScopeBuilder ()
 registerMatchBindings match = do
-    let
-        rbb =
-            for (tsMatchBindings @QTypeSystem match) $ \(wvar, expr) -> do
-                vn <- varIdNameRef wvar
-                return (vn, MkDefDoc (ValueDocItem (pure $ fullNameRef vn) "") "lambda", expr)
-    case rbb of
-        SuccessResult bb -> registerLetBindings bb
-        FailureResult fn -> builderLift $ throw $ InternalError Nothing $ "bad match var: " <> showNamedText fn
+    bb <-
+        for (tsMatchBindings @QTypeSystem match) $ \case
+            (GoodVarID _ vn, expr) -> return (vn, MkDefDoc (ValueDocItem (pure $ fullNameRef vn) "") "lambda", expr)
+            (v, _) -> builderLift $ throw $ InternalError Nothing $ "bad match var: " <> showNamedText v
+    registerLetBindings bb
 
 registerSelector :: BindingSelector t -> FullName -> DefDoc -> t -> QScopeBuilder ()
 registerSelector bst name doc t = do

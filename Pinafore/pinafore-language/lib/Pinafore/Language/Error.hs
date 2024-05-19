@@ -15,7 +15,8 @@ data QErrorType
     | UnicodeDecodeError NamedText
     | ParserError [Message]
     | PatternErrorError PatternError
-    | ExpressionErrorError (NonEmpty (FullNameRef, NamedText))
+    | ExpressionUndefinedError (NonEmpty (FullNameRef, NamedText))
+    | ExpressionUnimpliedError (NonEmpty (ImplicitName, NamedText))
     | LookupNamesUndefinedError (NonEmpty FullNameRef)
     | LookupNotDefinedError FullNameRef
     | LookupNotTypeError FullNameRef
@@ -132,8 +133,13 @@ instance ShowNamedText QErrorType where
         strMessage = intercalate "; " msgsMessage
         in "syntax: " <> (toNamedText $ strUnexpected `semicolon` strExpecting `semicolon` strMessage)
     showNamedText (PatternErrorError e) = showNamedText e
-    showNamedText (ExpressionErrorError nn) =
+    showNamedText (ExpressionUndefinedError nn) =
         "undefined: " <>
+        intercalate
+            ", "
+            (fmap (\(n, t) -> showNamedText n <> ": " <> toNamedText t) $ nubBy (\x y -> fst x == fst y) $ toList nn)
+    showNamedText (ExpressionUnimpliedError nn) =
+        "unimplied: " <>
         intercalate
             ", "
             (fmap (\(n, t) -> showNamedText n <> ": " <> toNamedText t) $ nubBy (\x y -> fst x == fst y) $ toList nn)

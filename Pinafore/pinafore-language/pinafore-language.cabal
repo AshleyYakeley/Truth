@@ -42,6 +42,7 @@ library
       Pinafore.Language.Value.ModelOrder
       Pinafore.Language.Value
       Pinafore.Language.Name.Name
+      Pinafore.Language.Name.ImplicitName
       Pinafore.Language.Name.Namespace
       Pinafore.Language.Name.FullName
       Pinafore.Language.Name.NamespaceRef

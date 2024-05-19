@@ -1,6 +1,5 @@
 module Pinafore.Language.VarID
     ( VarID(..)
-    , varIdNameRef
     , VarIDState
     , mkVarID
     , mkUniqueVarID
@@ -18,7 +17,7 @@ newtype VarIDState =
 data VarID
     = GoodVarID Int
                 FullName
-    | ImplicitVarID Name
+    | ImplicitVarID ImplicitName
     | BadVarID SourcePos
                FullNameRef
 
@@ -44,13 +43,8 @@ instance ExprShow VarID where
 
 instance Show VarID where
     show (GoodVarID _ n) = show n
-    show (ImplicitVarID n) = "?" <> show n
+    show (ImplicitVarID n) = show n
     show (BadVarID _ n) = show n
-
-varIdNameRef :: VarID -> Result FullNameRef FullName
-varIdNameRef (GoodVarID _ n) = SuccessResult n
-varIdNameRef (ImplicitVarID n) = FailureResult $ UnqualifiedFullNameRef n
-varIdNameRef (BadVarID _ n) = FailureResult n
 
 mkVarID :: VarIDState -> FullName -> VarID
 mkVarID (MkVarIDState s) = GoodVarID s

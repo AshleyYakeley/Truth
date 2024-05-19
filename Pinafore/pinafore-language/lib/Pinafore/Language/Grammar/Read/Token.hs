@@ -110,7 +110,7 @@ data Token t where
     TokWith :: Token ()
     TokNamesUpper :: Token TokenNames
     TokNamesLower :: Token TokenNames
-    TokImplicitName :: Token Name
+    TokImplicitName :: Token ImplicitName
     TokUnderscore :: Token ()
     TokFn :: Token ()
     TokMatch :: Token ()
@@ -453,7 +453,7 @@ readImplicitName =
         readChar '?'
         (u, name) <- readName
         altIf $ not u
-        return $ MkSomeOf TokImplicitName name
+        return $ MkSomeOf TokImplicitName $ MkImplicitName name
 
 readOpToken :: Parser (SomeOf Token)
 readOpToken = do

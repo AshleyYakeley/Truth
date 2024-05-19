@@ -88,16 +88,27 @@ instance MonadThrow QErrorType QInterpreter where
 instance MonadThrow PatternError QInterpreter where
     throw err = throw $ PatternErrorError err
 
+-- Left if at least one a
+splitNonEmpty :: NonEmpty (Either a b) -> Either (NonEmpty a) (NonEmpty b)
+splitNonEmpty (Left a :| r) = Left $ a :| lefts r
+splitNonEmpty (Right b :| r) =
+    case nonEmpty $ lefts r of
+        Just na -> Left na
+        Nothing -> Right $ b :| rights r
+
 nameWitnessErrorType :: NonEmpty (Some (NameWitness VarID (QShimWit 'Negative))) -> QErrorType
 nameWitnessErrorType ww = let
-    nwToPair :: Some (NameWitness VarID (QShimWit 'Negative)) -> (FullNameRef, NamedText)
+    nwToPair ::
+           Some (NameWitness VarID (QShimWit 'Negative)) -> Either (FullNameRef, NamedText) (ImplicitName, NamedText)
     nwToPair (MkSome (MkNameWitness varid (MkShimWit w _))) = let
-        name =
-            case varIdNameRef varid of
-                FailureResult fnr -> fnr
-                SuccessResult fn -> fullNameRef fn
-        in withAllConstraint @Type @ShowNamedText w (name, showNamedText w)
-    in ExpressionErrorError $ fmap nwToPair ww
+        tnt = withAllConstraint @Type @ShowNamedText w $ showNamedText w
+        in case varid of
+               GoodVarID _ fn -> Left (fullNameRef fn, tnt)
+               ImplicitVarID n -> Right (n, tnt)
+               BadVarID _ fnr -> Left (fnr, tnt)
+    in case splitNonEmpty $ fmap nwToPair ww of
+           Left pp -> ExpressionUndefinedError pp
+           Right pp -> ExpressionUnimpliedError pp
 
 instance (vw ~ QShimWit 'Negative) => MonadThrow (NamedExpressionError VarID vw) QInterpreter where
     throw (UndefinedBindingsError ww) = throw $ nameWitnessErrorType ww

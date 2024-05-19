@@ -5,6 +5,7 @@ module Pinafore.Language.Name
 import Pinafore.Language.Name.ExprShow as I
 import Pinafore.Language.Name.FullName as I
 import Pinafore.Language.Name.FullNameRef as I
+import Pinafore.Language.Name.ImplicitName as I
 import Pinafore.Language.Name.ModuleName as I
 import Pinafore.Language.Name.Name as I
 import Pinafore.Language.Name.NamedText as I

@@ -4,6 +4,7 @@ import Data.Shim
 import Language.Expression.Common
 import Pinafore.Language.Name.FullName
 import Pinafore.Language.Name.FullNameRef
+import Pinafore.Language.Name.ImplicitName
 import Pinafore.Language.Name.Name
 import Pinafore.Language.Name.NamedText
 import Pinafore.Language.Name.Namespace
@@ -35,6 +36,8 @@ instance ExprShow NamespaceRef
 instance ExprShow FullName
 
 instance ExprShow FullNameRef
+
+instance ExprShow ImplicitName
 
 instance ExprShow (SymbolType name)
 
