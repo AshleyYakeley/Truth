@@ -28,4 +28,12 @@ pinafore> :t fn x => x <>.List1 x
 pinafore> g = fn x => x <>.List1 x
 pinafore> :t g
 : List1.List a -> List1.List a
+pinafore> :t uu
+: uu: a, a
+pinafore> :t uu + 1
+: uu: Integer, Integer
+pinafore> :t ?uu
+: ?uu: a, a
+pinafore> :t ?uu + 1
+: ?uu: Integer, Integer
 pinafore> <END>

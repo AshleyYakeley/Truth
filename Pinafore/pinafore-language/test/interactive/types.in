@@ -19,3 +19,7 @@ f = fn x => x <> x
 :t fn x => x <>.List1 x
 g = fn x => x <>.List1 x
 :t g
+:t uu
+:t uu + 1
+:t ?uu
+:t ?uu + 1

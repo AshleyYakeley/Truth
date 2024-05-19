@@ -12,4 +12,26 @@ in
 imply ?y = 2 in x + 3 
 ```
 
-Note that the type of an expression with an implicit parameter does not mention the parameter.
+## Type
+
+An implicit parameter is essentially a kind of free variable of an expression, that is bound using `imply` rather than under lexical scope.
+Using `:type` in Pinafore's interactive mode will show the type of an expression, along with the names and types of all free variables.
+For example:
+
+```
+pinafore> :type 3
+: Integer
+pinafore> :type ?x + 3
+: ?x: Integer, Integer
+pinafore> :type x + 3
+: x: Integer, Integer
+```
+
+However, this form is only for presentation. The types of implicit parameters or other free variables cannot be specified in type signatures.
+
+```
+pinafore> :type ?x : Integer
+: ?x: Integer, Integer
+pinafore> :type ?x : ?x:Integer,Integer
+<input>:5:9: syntax: unexpected: implicit name
+```

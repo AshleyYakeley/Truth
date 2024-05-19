@@ -9,6 +9,7 @@ import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
+import Language.Expression.Common.Simplifier
 import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.TypeVariable
@@ -17,6 +18,7 @@ import Shapes
 
 class ( AbstractTypeSystem ts
       , SubsumeTypeSystem ts
+      , SimplifyTypeSystem ts
       , MonadThrow (NamedExpressionError (TSVarID ts) (TSNegShimWit ts)) (TSInner ts)
       ) => CompleteTypeSystem (ts :: Type) where
     tsFunctionPosWitness :: forall a b. TSNegWitness ts a -> TSPosWitness ts b -> TSPosShimWit ts (a -> b)
@@ -158,6 +160,12 @@ tsAbstract ::
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 tsAbstract = abstractSealedExpression @ts (tsFunctionPosShimWit @ts)
+
+tsSimplify ::
+       forall ts a. (CompleteTypeSystem ts, TSMappable ts a)
+    => a
+    -> TSInner ts a
+tsSimplify a = runRenamer @ts [] [] $ unEndoM (simplify @ts) a
 
 tsVar ::
        forall ts. CompleteTypeSystem ts

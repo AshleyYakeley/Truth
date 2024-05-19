@@ -53,6 +53,12 @@ qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
+qSimplify ::
+       forall a. TSMappable QTypeSystem a
+    => a
+    -> QInterpreter a
+qSimplify = tsSimplify @QTypeSystem
+
 qVarPattern :: VarID -> QPattern
 qVarPattern = tsVarPattern @QTypeSystem
 

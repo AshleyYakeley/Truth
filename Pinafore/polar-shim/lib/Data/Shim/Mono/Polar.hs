@@ -13,6 +13,10 @@ newtype PolarShim shim polarity a b = MkPolarShim
     { unPolarShim :: PolarShimType shim polarity a b
     }
 
+instance forall polarity k (shim :: ShimKind k) (a :: k) (b :: k). Show (PolarShimType shim polarity a b) =>
+             Show (PolarShim shim polarity a b) where
+    show (MkPolarShim shim) = show shim
+
 instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, Category shim) =>
              Category (PolarShim shim polarity) where
     id =

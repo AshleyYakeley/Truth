@@ -113,15 +113,18 @@ interactLoop inh outh echo = do
                                          Just "" -> return ()
                                          Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)
                              ShowTypeInteractiveCommand showinfo sexpr -> do
-                                 MkSomeOf tw _ <- interactEvalExpression sexpr
-                                 MkPosShimWit t shim <- interactSimplify tw
-                                 ntt <- interactRunQInterpreter getRenderFullName
+                                 (tt, tshim) <-
+                                     interactRunQInterpreter $ do
+                                         expr <- interpretExpression sexpr
+                                         expr'@(MkSealedExpression (MkShimWit _ shim) _) <- qSimplify expr
+                                         ntt <- getRenderFullName
+                                         return (ntt $ exprShow expr', show shim)
                                  liftIO $
                                      hPutStrLn outh $
                                      ": " <>
-                                     unpack (ntt $ exprShow t) <>
+                                     unpack tt <>
                                      if showinfo
-                                         then " # " <> show shim
+                                         then " # " <> tshim
                                          else ""
                              SimplifyTypeInteractiveCommand polarity stype -> do
                                  s :: NamedText <-
