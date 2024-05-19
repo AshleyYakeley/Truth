@@ -15,3 +15,5 @@ x +.Integer y
 datatype D1 +a of MkD1 b end
 datatype D2 +a +a of MkD2 end
 datatype D3 +a -a of MkD3 end
+?param
+?pp + 2

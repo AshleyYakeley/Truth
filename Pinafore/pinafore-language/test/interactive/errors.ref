@@ -32,4 +32,8 @@ pinafore> datatype D2 +a +a of MkD2 end
 <input>:1:1: duplicate type variables in declaration of D2: a
 pinafore> datatype D3 +a -a of MkD3 end
 <input>:1:1: duplicate type variables in declaration of D3: a
+pinafore> ?param
+<input>:3:1: unimplied: ?param: a
+pinafore> ?pp + 2
+<input>:3:1: unimplied: ?pp: Integer
 pinafore> <END>
