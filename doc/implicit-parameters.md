@@ -1,7 +1,7 @@
 # Implicit Parameters
 
+An implicit parameter is a kind of free variable of an expression, that can be bound at a later point using `imply` rather than under its own lexical scope.
 You can create an implicit parameter using a question mark followed by an lname, for example, `?store`, `?gtk`, `?myParam` etc.
-
 Expressions can include implicit parameters, and they can be discharged with the `imply` keyword.
 
 For example:
@@ -14,7 +14,6 @@ imply ?y = 2 in x + 3
 
 ## Type
 
-An implicit parameter is essentially a kind of free variable of an expression, that is bound using `imply` rather than under lexical scope.
 Using `:type` in Pinafore's interactive mode will show the type of an expression, along with the names and types of all free variables.
 For example:
 

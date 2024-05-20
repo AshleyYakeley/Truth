@@ -2,6 +2,7 @@ module Pinafore.Language.Interpreter.Register
     ( registerScope
     , registerDocs
     , registerLetBindings
+    , registerLetBindingsDocs
     , registerLetBinding
     , registerMatchBindings
     , registerGroundType
@@ -42,6 +43,11 @@ registerBinding name db = registerBindings $ singletonMap name db
 registerLetBindings :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindings bb =
     registerBindings $ fmap (\(fname, doc, exp) -> (fname, MkQBindingInfo fname doc $ ValueBinding exp Nothing)) bb
+
+registerLetBindingsDocs :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
+registerLetBindingsDocs bb = do
+    registerLetBindings bb
+    registerDocs $ mconcat $ fmap (\(_, doc, _) -> pure doc) bb
 
 registerLetBinding :: FullName -> DefDoc -> QExpression -> QScopeBuilder ()
 registerLetBinding name doc expr = registerLetBindings $ pure (name, doc, expr)

@@ -166,12 +166,6 @@ data SingleBinding = MkSingleBinding
     , sbDoc :: RawMarkdown
     }
 
-sbDefDoc :: SingleBinding -> DefDoc
-sbDefDoc MkSingleBinding {..} = let
-    docItem = valueDocItem sbName sbType
-    docDescription = sbDoc
-    in MkDefDoc {..}
-
 -- isRecursive flag is to fix issue #199
 buildSingleBinding ::
        Maybe (FullName, Bool)
@@ -221,20 +215,23 @@ sbNode sb = (sb, sbName sb, sbRefVars sb)
 clumpBindings :: [SingleBinding] -> [[SingleBinding]]
 clumpBindings sbb = fmap flattenSCC $ stronglyConnComp $ fmap sbNode sbb
 
-mapVarID :: Map VarID (DefDoc, expr) -> [(FullName, VarID)] -> [(FullName, DefDoc, expr)]
+mapVarID :: Map VarID (DefDoc, QExpression) -> [(FullName, VarID)] -> [(FullName, DefDoc, QExpression)]
 mapVarID mm =
     mapMaybe $ \(n, v) -> do
         (d, e) <- lookup v mm
         return (n, d, e)
 
+registerMapSingleBindings :: Map VarID (DefDoc, QExpression) -> [SingleBinding] -> QScopeBuilder ()
+registerMapSingleBindings bmap sbinds =
+    registerLetBindingsDocs $ mapVarID bmap $ fmap (\sb -> (sbName sb, sbVarID sb)) sbinds
+
 interpretRecursiveLetBindingsClump :: [SingleBinding] -> QScopeBuilder ()
 interpretRecursiveLetBindingsClump sbinds = do
     bmap <-
         builderLift $ do
-            bl <- for sbinds interpretBinding
-            qUncheckedBindingsRecursiveLetExpr bl
-    let nvs = fmap (\sb -> (sbName sb, sbVarID sb)) sbinds
-    registerLetBindings $ mapVarID bmap nvs
+            bb <- for sbinds interpretBinding
+            qUncheckedBindingsRecursiveLetExpr bb
+    registerMapSingleBindings bmap sbinds
 
 interpretRecursiveLetBindings :: [SingleBinding] -> QScopeBuilder ()
 interpretRecursiveLetBindings sbinds = do
@@ -242,14 +239,14 @@ interpretRecursiveLetBindings sbinds = do
         Nothing -> return ()
         Just b -> throw $ InterpretBindingsDuplicateError b
     for_ (clumpBindings sbinds) interpretRecursiveLetBindingsClump
-    for_ sbinds $ \sbind -> registerDocs $ pure $ sbDefDoc sbind
 
 interpretSequentialLetBinding :: SingleBinding -> QScopeBuilder ()
 interpretSequentialLetBinding sbind = do
-    b <- builderLift $ interpretBinding sbind
-    bmap <- builderLift $ qBindingSequentialLetExpr b
-    registerLetBindings $ mapVarID bmap $ pure (sbName sbind, sbVarID sbind)
-    registerDocs $ pure $ sbDefDoc sbind
+    bmap <-
+        builderLift $ do
+            b <- interpretBinding sbind
+            qBindingSequentialLetExpr b
+    registerMapSingleBindings bmap $ pure sbind
 
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> QScopeBuilder ()
 interpretRecursiveDocDeclarations ddecls = do
@@ -591,10 +588,15 @@ interpretClosedExpression sexpr = do
     return expr
 
 interpretBinding :: SingleBinding -> QInterpreter QBinding
-interpretBinding sb@MkSingleBinding {..} = do
+interpretBinding MkSingleBinding {..} = do
+    let
+        bdf fexpr = let
+            docItem = valueDocItem sbName $ Just fexpr
+            docDescription = sbDoc
+            in MkDefDoc {..}
     mtype <- for sbType interpretType
     expr <- interpretClosedExpression sbBody
-    return $ qBindExpr sbVarID (sbDefDoc sb) mtype expr
+    return $ qBindExpr sbVarID bdf mtype expr
 
 interpretDeclarationWith :: SyntaxDeclaration -> QInterpreter --> QInterpreter
 interpretDeclarationWith sdecl ma = do

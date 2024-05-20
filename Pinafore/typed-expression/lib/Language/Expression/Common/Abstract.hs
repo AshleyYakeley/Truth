@@ -6,6 +6,7 @@ module Language.Expression.Common.Abstract
     , TSMatch
     , TSSealedExpressionPattern
     , TSExpressionPatternConstructor
+    , simplifyFinalRename
     , unifierSubstituteSimplifyFinalRename
     , unifierSolve
     , abstractExpression
@@ -63,12 +64,16 @@ type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID t
 finalRenameINTERNAL :: Bool
 finalRenameINTERNAL = True
 
+simplifyFinalRename ::
+       forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
+    => EndoM (TSOuter ts) a
+simplifyFinalRename = simplify @ts <> mif finalRenameINTERNAL (finalRenameMappable @ts)
+
 unifierSubstituteSimplifyFinalRename ::
        forall ts a. (AbstractTypeSystem ts, TSMappable ts a)
     => UnifierSubstitutions ts
     -> EndoM (TSOuter ts) a
-unifierSubstituteSimplifyFinalRename subs =
-    mconcat [unifierSubstitute @ts subs, simplify @ts, mif finalRenameINTERNAL (finalRenameMappable @ts)]
+unifierSubstituteSimplifyFinalRename subs = unifierSubstitute @ts subs <> simplifyFinalRename @ts
 
 unifierSolve ::
        forall ts a b. (AbstractTypeSystem ts, TSMappable ts b)

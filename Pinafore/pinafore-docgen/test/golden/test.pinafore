@@ -49,6 +49,32 @@ x: Text = "x";
 #| doc:y
 y: Text -> Text = fn _ => "y";
 
+#| doc:pz
+pz = ?z;
+
+#| doc:pzi
+pzi: Integer = ?z;
+
+#| doc:pz1
+pz1 = ?z + 1;
+
+let rec
+    #| doc:rx
+    rx: Text = "x";
+
+    #| doc:ry
+    ry: Text -> Text = fn _ => "y";
+
+    #| doc:rpz
+    rpz = ?z;
+
+    #| doc:rpzi
+    rpzi: Integer = ?z;
+
+    #| doc:rpz1
+    rpz1 = ?z + 1;
+end;
+
 #| doc:N
 namespace N of
     #| doc:N.q

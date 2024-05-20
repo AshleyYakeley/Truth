@@ -60,23 +60,55 @@
 > > 
 > > > doc:rq
 > > > 
-**<code>x\.</code>**<code> : Text</code>
+**<code>x\.</code>**<code> : Text\.</code>
 
 > doc:x
 > 
-**<code>y\.</code>**<code> : Text \-\> Text</code>
+**<code>y\.</code>**<code> : Text\. \-\> Text\.</code>
 
 > doc:y
+> 
+**<code>pz\.</code>**<code> : ?z: a, a</code>
+
+> doc:pz
+> 
+**<code>pzi\.</code>**<code> : ?z: Integer\., Integer\.</code>
+
+> doc:pzi
+> 
+**<code>pz1\.</code>**<code> : ?z: Integer\., Integer\.</code>
+
+> doc:pz1
+> 
+**<code>ry\.</code>**<code> : Text\. \-\> Text\.</code>
+
+> doc:ry
+> 
+**<code>rx\.</code>**<code> : Text\.</code>
+
+> doc:rx
+> 
+**<code>rpzi\.</code>**<code> : ?z: Integer\., Integer\.</code>
+
+> doc:rpzi
+> 
+**<code>rpz1\.</code>**<code> : ?z: Integer\., Integer\.</code>
+
+> doc:rpz1
+> 
+**<code>rpz\.</code>**<code> : ?z: a, a</code>
+
+> doc:rpz
 > 
 ## N\.
 
 > doc:N
 > 
-**<code>q\.N\.</code>**<code> : Integer</code>
+**<code>q\.N\.</code>**<code> : Integer\.</code>
 
 > doc:N.q
 > 
-**<code>xx\.N\.</code>**<code> : Text</code>
+**<code>xx\.N\.</code>**<code> : Text\.</code>
 
 > doc:N.xx
 > 
@@ -142,7 +174,7 @@
 > > > 
 ### NN\.N\.
 
-**<code>xyz\.NN\.N\.</code>**<code> : Unit</code>
+**<code>xyz\.NN\.N\.</code>**<code> : Unit\.</code>
 
 > doc:N.NN.xyz
 > 

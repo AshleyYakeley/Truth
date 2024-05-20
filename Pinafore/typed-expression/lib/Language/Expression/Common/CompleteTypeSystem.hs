@@ -195,12 +195,12 @@ tsLet n expv expb = letSealedExpression @ts n expv expb
 tsSingleBinding ::
        forall ts. CompleteTypeSystem ts
     => TSVarID ts
-    -> TSBindingData ts
+    -> (TSSealedExpression ts -> TSBindingData ts)
     -> Maybe (Some (TSPosWitness ts))
     -> TSSealedExpression ts
     -> TSBinding ts
-tsSingleBinding name bd madecltype expr =
-    singleBinding name bd (isJust madecltype) $ do
+tsSingleBinding name bdf madecltype expr =
+    singleBinding name bdf (isJust madecltype) $ do
         madecltype' <- unEndoM (endoFor $ renameTypeSignature @ts) madecltype
         expr' <- renameMappableSimple @ts expr
         subsumerExpression madecltype' expr'

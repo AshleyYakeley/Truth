@@ -63,7 +63,7 @@ typeDeclDoc mtname defn docDescription = let
     docItem = typeDocItem mtname storable tparams
     in MkTree MkDefDoc {..} items
 
-valueDocItem :: FullName -> Maybe SyntaxType -> DocItem
+valueDocItem :: ExprShow vtype => FullName -> Maybe vtype -> DocItem
 valueDocItem name stype = let
     diNames = pure $ fullNameRef name
     diType = fromMaybe "" $ fmap exprShow stype

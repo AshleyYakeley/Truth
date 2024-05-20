@@ -143,7 +143,7 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-qBindExpr :: VarID -> DefDoc -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
+qBindExpr :: VarID -> (QExpression -> DefDoc) -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
 qBindExpr = tsSingleBinding @QTypeSystem
 
 qSubsumeExpr :: Some (QType 'Positive) -> QExpression -> QInterpreter QExpression

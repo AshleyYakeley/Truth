@@ -22,9 +22,19 @@ type TSBindingData :: Type -> Type
 type family TSBindingData ts
 
 data TSBinding (ts :: Type) where
-    MkTSBinding :: TSVarID ts -> TSBindingData ts -> Bool -> TSOuter ts (SealedSubsumerExpression ts) -> TSBinding ts
+    MkTSBinding
+        :: TSVarID ts
+        -> (TSSealedExpression ts -> TSBindingData ts)
+        -> Bool
+        -> TSOuter ts (SealedSubsumerExpression ts)
+        -> TSBinding ts
 
-singleBinding :: TSVarID ts -> TSBindingData ts -> Bool -> TSOuter ts (SealedSubsumerExpression ts) -> TSBinding ts
+singleBinding ::
+       TSVarID ts
+    -> (TSSealedExpression ts -> TSBindingData ts)
+    -> Bool
+    -> TSOuter ts (SealedSubsumerExpression ts)
+    -> TSBinding ts
 singleBinding = MkTSBinding
 
 type BindMap ts = Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts)
@@ -70,7 +80,7 @@ singleBound ::
        forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
     => TSBinding ts
     -> TSOuter ts (Bound ts)
-singleBound (MkTSBinding name bd hasTypeSig mexpr) = do
+singleBound (MkTSBinding name bdf hasTypeSig mexpr) = do
     MkSealedSubsumerExpression (decltype :: _ tdecl) subsexpr <- mexpr
     decltype' <-
         if hasTypeSig
@@ -87,7 +97,7 @@ singleBound (MkTSBinding name bd hasTypeSig mexpr) = do
         getbinds usubs ssubs fexpr = do
             fexpr' <- unEndoM (subsumerSubstitute @ts ssubs) fexpr
             expr <- unEndoM (unifierSubstituteSimplifyFinalRename @ts usubs) $ MkSealedExpression decltype fexpr'
-            return $ singletonMap name (bd, expr)
+            return $ singletonMap name (bdf expr, expr)
     return $ MkBound abstractNames subsexpr getbinds
 
 boundToMapRecursive ::
@@ -114,12 +124,13 @@ bindingSequentialLetSealedExpression ::
        forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
     => TSBinding ts
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
-bindingSequentialLetSealedExpression (MkTSBinding name bd _ mexpr) =
+bindingSequentialLetSealedExpression (MkTSBinding name bdf _ mexpr) =
     runRenamer @ts [] [] $ do
         MkSealedSubsumerExpression tdecl sexpr <- mexpr
-        (expr, ssubs) <- solveSubsumerExpression @ts sexpr
-        expr' <- unEndoM (subsumerSubstitute @ts ssubs) expr
-        return $ singletonMap name (bd, MkSealedExpression tdecl $ expr')
+        (oexpr, ssubs) <- solveSubsumerExpression @ts sexpr
+        oexpr' <- unEndoM (subsumerSubstitute @ts ssubs) oexpr
+        expr <- unEndoM (simplifyFinalRename @ts) $ MkSealedExpression tdecl oexpr'
+        return $ singletonMap name (bdf expr, expr)
 
 bindingsNames :: [TSBinding ts] -> [TSVarID ts]
 bindingsNames bindings = fmap (\(MkTSBinding name _ _ _) -> name) bindings

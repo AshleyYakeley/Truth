@@ -272,7 +272,7 @@ testType =
                     , rejectionTest "fn x => let y : (b -> b) *: (Boolean | Number) = x in y"
                     , textTypeTest
                           "fn x => let y: Boolean *: Number = (x,x) in y"
-                          "{} -> (Number. & Boolean.) -> Boolean. *: Number."
+                          "{} -> (Boolean. & Number.) -> Boolean. *: Number."
                     , textTypeTest
                           "fn x1 => fn x2 => let y: Boolean *: Number = (x1,x2) in y"
                           "{} -> Boolean. -> Number. -> Boolean. *: Number."
