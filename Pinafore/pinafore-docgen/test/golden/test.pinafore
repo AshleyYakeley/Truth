@@ -58,6 +58,9 @@ pzi: Integer = ?z;
 #| doc:pz1
 pz1 = ?z + 1;
 
+#| doc:pzz1
+pzz1 = ?z + ?z + 1;
+
 let rec
     #| doc:rx
     rx: Text = "x";
@@ -73,6 +76,9 @@ let rec
 
     #| doc:rpz1
     rpz1 = ?z + 1;
+
+    #| doc:rpzz1
+    rpzz1 = ?z + ?z + 1;
 end;
 
 #| doc:N
