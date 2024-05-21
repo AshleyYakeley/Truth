@@ -69,6 +69,17 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              AbstractTypeSystem (DolanTypeSystem ground) where
     type TSInner (DolanTypeSystem ground) = DolanM ground
     bottomShimWit = MkSome $ mkShimWit NilDolanType
+    cleanOpenExpression expr@(ClosedExpression _) = return expr
+    cleanOpenExpression expr@(OpenExpression _ (ClosedExpression _)) = return expr
+    cleanOpenExpression expr = do
+        let
+            combineWits (MkNameWitness na ta) (MkNameWitness nb tb) =
+                return $
+                if na == nb
+                    then Just $ fmap (\(MkMeetType ab) -> ab) $ varExpression $ MkNameWitness na $ joinMeetShimWit ta tb
+                    else Nothing
+        expr' <- combineExpressionWitnessesM combineWits expr
+        return $ reverseExpression expr'
 
 class (Eq (DolanVarID ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
     functionGroundType :: ground '[ ContraCCRVariance, CoCCRVariance] (->)

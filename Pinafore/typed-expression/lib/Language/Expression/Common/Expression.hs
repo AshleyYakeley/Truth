@@ -89,7 +89,7 @@ combineExpressionWitnessesM ::
     => (forall a b. w a -> w b -> m (Maybe (Expression w (a, b))))
     -> Expression w r
     -> m (Expression w r)
-combineExpressionWitnessesM _ (ClosedExpression a) = return $ ClosedExpression a
+combineExpressionWitnessesM _ expr@(ClosedExpression _) = return expr
 combineExpressionWitnessesM f (OpenExpression wt expr) = do
     expr1 <- combineExpressionWitnessesM f expr
     mergeExpressionWitnessesM (varExpression wt) (\wx -> f wx wt) expr1

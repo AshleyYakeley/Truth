@@ -51,6 +51,16 @@ class ( RenameTypeSystem ts
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type
     bottomShimWit :: Some (TSPosShimWit ts)
+    cleanOpenExpression :: forall a. TSOpenExpression ts a -> TSOuter ts (TSOpenExpression ts a)
+    cleanOpenExpression = return
+
+cleanSealedExpression ::
+       forall ts. AbstractTypeSystem ts
+    => TSSealedExpression ts
+    -> TSOuter ts (TSSealedExpression ts)
+cleanSealedExpression (MkSealedExpression t oexpr) = do
+    oexpr' <- cleanOpenExpression @ts oexpr
+    return $ MkSealedExpression t oexpr'
 
 type TSOpenPattern :: Type -> Type -> Type -> Type
 type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
@@ -173,6 +183,9 @@ abstractSealedExpression absw name sexpr =
         MkAbstractResult vwt uexpr' <- abstractResult @ts name expr
         unifierSolve @ts uexpr' $ \rexpr -> return $ MkSealedExpression (absw (mkShimWit vwt) twt) rexpr
 
+cleanExprINTERNAL :: Bool
+cleanExprINTERNAL = True
+
 applySealedExpression ::
        forall ts. AbstractTypeSystem ts
     => UnifierFunctionNegWitness ts
@@ -187,13 +200,16 @@ applySealedExpression appw sexprf sexpra =
         MkNewVar vx tx <- renameNewFreeVar @ts
         let vax = appw ta vx
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts tf) (uuLiftNegShimWit @ts vax)
-        unifierSolve @ts uconv $ \convexpr ->
-            return $
-            case convexpr of
-                ClosedExpression conv ->
-                    shimExtractFunction conv $ \fconv tconv ->
-                        MkSealedExpression (mapPosShimWit tconv tx) $ shimToFunction fconv <$> exprf <*> expra
-                _ -> MkSealedExpression tx $ shimToFunction <$> convexpr <*> exprf <*> expra
+        unifierSolve @ts uconv $ \convexpr -> let
+            rexpr =
+                case convexpr of
+                    ClosedExpression conv ->
+                        shimExtractFunction conv $ \fconv tconv ->
+                            MkSealedExpression (mapPosShimWit tconv tx) $ shimToFunction fconv <$> exprf <*> expra
+                    _ -> MkSealedExpression tx $ shimToFunction <$> convexpr <*> exprf <*> expra
+            in if cleanExprINTERNAL
+                   then cleanSealedExpression @ts rexpr
+                   else return rexpr
 
 -- | not recursive
 letSealedExpression ::
