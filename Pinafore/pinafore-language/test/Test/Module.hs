@@ -36,7 +36,6 @@ testModule =
               , testExpectSuccess "let import \"m\" in expose T1.T       in let f = T1.T in pure ()"
               , testExpectReject " let import \"m\" in expose T2.T       in let f = T1.T in pure ()"
               ]
-        , tModule "m" "a = b" $ testExpectReject "import \"m\" in pure ()"
         , tModule "m" "opentype T" $
           tGroup "opentype" [testExpectSuccess "import \"m\" in let datatype D of MkD T end; in pure ()"]
         , tModule "m" "opentype P; opentype Q" $
@@ -49,5 +48,16 @@ testModule =
               , testExpectSuccess "import \"m\", \"n\" in let f: P -> Q = fn x => x in pure ()"
               , testExpectSuccess "import \"n\", \"m\" in let f: P -> Q = fn x => x in pure ()"
               , testExpectSuccess "import \"m\" in let import \"n\" in expose; f: P -> Q = fn x => x in pure ()"
+              ]
+        , tGroup
+              "purity"
+              [ tModule "m" "a = 1" $ testExpectSuccess "import \"m\" in pure ()"
+              , tModule "m" "a = b" $ testExpectReject "import \"m\" in pure ()"
+              , tModule "m" "a = ?b" $ testExpectSuccess "import \"m\" in pure ()"
+              , testExpectSuccess "let f = fn x => let y = x in y in pure ()"
+              , testExpectSuccess "let f = fn x => let let y = x in expose y in y in pure ()"
+              , testExpectReject "let f = fn x => let let y = z in expose y in y in pure ()"
+              , testExpectSuccess "let y = ?x in pure ()"
+              , testExpectSuccess "let let y = ?x in expose y in pure ()"
               ]
         ]

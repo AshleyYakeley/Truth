@@ -218,15 +218,6 @@ getNamespaceWithScope sourcens destns ff = do
     bmap <- paramAsk bindingsParam
     return $ emptyScope {scopeBindings = bindingMapNamespaceWith sourcens destns ff bmap}
 
-checkPureExpression :: QExpression -> QInterpreter ()
-checkPureExpression expr = do
-    _ <- tsEval @QTypeSystem expr
-    return ()
-
-checkPureBinding :: QInterpreterBinding -> QInterpreter ()
-checkPureBinding (ValueBinding expr _) = checkPureExpression expr
-checkPureBinding _ = return ()
-
 exportNames :: [FullNameRef] -> QInterpreter [(FullName, QBindingInfo)]
 exportNames names = do
     bindmap <- getBindingInfoLookup
@@ -259,7 +250,6 @@ exportScope nsns names = do
     let
         binds :: [(FullName, QBindingInfo)]
         binds = nsbindss <> nbinds
-    for_ binds $ \bi -> checkPureBinding $ biValue $ snd bi
     let
         scope = MkQScope (bindingInfosToMap binds) subtypes
         docs = fmap (biDocumentation . snd) binds

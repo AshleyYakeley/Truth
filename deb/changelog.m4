@@ -6,6 +6,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - rename executable pinafore-docgen to pinadoc
     - include pinadoc in Debian and Nix packages
     - clean up Nix flake outputs
+  * Fixes
+    - fix defect with expressions with free variables in expose declarations
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
