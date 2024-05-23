@@ -6,6 +6,7 @@ module Pinafore.API
     , module Pinafore.Language.Var
     , module Pinafore.Language.Library.Defs
     , module Pinafore.Language.Library.Types
+    , module Pinafore.Language.Value
     , WitKind(..)
     , FamilialType(..)
     , SomeGroundType(..)
@@ -28,16 +29,7 @@ module Pinafore.API
     , HasQType(..)
     , HasQGroundType(..)
     , groundQType
-    , CCRArguments(..)
-    , CCRPolarArgumentsShimWit
-    , nilCCRPolarArgumentsShimWit
-    , consCCRPolarArgumentsShimWit
-    , CCRPolarArgumentShimWit
-    , coCCRArgument
-    , contraCCRArgument
-    , rangeCCRArgument
     , TrustOrVerify(..)
-    , module Pinafore.Language.Value
     , Interpret(..)
     ) where
 
