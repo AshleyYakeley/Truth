@@ -1,5 +1,7 @@
 module Pinafore.Test.Internal
-    ( module Pinafore
+    ( module Pinafore.Syntax
+    , module Pinafore.Language
+    , module Pinafore.Language.Expression
     , module Pinafore.API
     , module Pinafore.Test
     , parseType
@@ -31,21 +33,25 @@ module Pinafore.Test.Internal
     , QSubtypeHint
     , QSubtypeConversionEntry
     , registerSubtypeConversion
-    , module Pinafore.Language.Expression
     , SomeValue(..)
     , bindsLibrary
     , showPinaforeModel
+    , qInterpretText
+    , qInteractHandles
     ) where
 
 import Import
-import Pinafore
 import Pinafore.API
+import Pinafore.Language
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
 import Pinafore.Language.Grammar.Interpret.Interact
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
+import Pinafore.Main
+import Pinafore.Storage
+import Pinafore.Syntax
 import Pinafore.Test
 
 data SomeValue =

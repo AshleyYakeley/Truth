@@ -42,9 +42,9 @@ module Pinafore.API
     ) where
 
 import Import
-import Pinafore
 import Pinafore.Base
 import Pinafore.Context
+import Pinafore.Language
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Defs

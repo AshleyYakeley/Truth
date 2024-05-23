@@ -22,8 +22,11 @@ module Pinafore.Test
     ) where
 
 import Import
-import Pinafore
+import Pinafore.Context
+import Pinafore.Language
 import Pinafore.Language.Interpreter
+import Pinafore.Main
+import Pinafore.Storage
 
 moduleScopeEntries :: QModule -> [(FullName, QBindingInfo)]
 moduleScopeEntries qmod = bindingMapEntries $ scopeBindings $ moduleScope qmod

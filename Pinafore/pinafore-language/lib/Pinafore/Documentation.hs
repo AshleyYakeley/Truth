@@ -14,7 +14,8 @@ module Pinafore.Documentation
     ) where
 
 import Import
-import Pinafore
+import Pinafore.Context
+import Pinafore.Language
 import Pinafore.Language.Library
 import Pinafore.Language.Library.Defs
 import Pinafore.Main

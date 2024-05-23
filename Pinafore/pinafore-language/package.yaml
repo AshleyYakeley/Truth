@@ -120,7 +120,6 @@ library:
       - Pinafore.Language.Library.Debug
       - Pinafore.Language.Library
       - Pinafore.Language
-      - Pinafore
 
 tests:
     test:

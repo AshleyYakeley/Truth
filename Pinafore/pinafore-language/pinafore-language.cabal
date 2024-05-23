@@ -111,7 +111,6 @@ library
       Pinafore.Language.Library.Debug
       Pinafore.Language.Library
       Pinafore.Language
-      Pinafore
   hs-source-dirs:
       lib
   default-extensions:
