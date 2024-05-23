@@ -1,7 +1,6 @@
 module Pinafore.Language.Var where
 
-import Pinafore.Language.Type
-import Shapes
+import Import
 
 newtype Var (name :: Symbol) = MkVar
     { unVar :: UVarT name

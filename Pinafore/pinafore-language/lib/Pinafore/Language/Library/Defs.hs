@@ -36,18 +36,13 @@ module Pinafore.Language.Library.Defs
     , monoidEntries
     ) where
 
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert
-import Pinafore.Language.DefDoc
 import Pinafore.Language.Expression
-import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Pinafore.Text
-import Shapes
 
 data ScopeEntry context
     = BindScopeEntry FullNameRef

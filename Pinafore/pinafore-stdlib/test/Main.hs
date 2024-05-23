@@ -3,7 +3,7 @@ module Main
     ) where
 
 import Paths_pinafore_stdlib
-import Pinafore
+import Pinafore.API
 import Pinafore.Language.Library.GNOME
 import Pinafore.Language.Library.Media
 import Pinafore.Test

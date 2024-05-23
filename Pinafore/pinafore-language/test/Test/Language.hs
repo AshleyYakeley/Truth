@@ -5,9 +5,8 @@ module Test.Language
     ) where
 
 import Data.Shim
-import Pinafore
 import Pinafore.Documentation
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Prelude (read)
 import Shapes
 import Shapes.Numeric

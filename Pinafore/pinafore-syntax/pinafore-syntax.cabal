@@ -1,0 +1,97 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           pinafore-syntax
+version:        0.5
+author:         Ashley Yakeley
+maintainer:     <ashley@semantic.org>
+copyright:      (c) 2017-2024 Ashley Yakeley
+license:        GPL-2.0-only
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Pinafore.Syntax.Text
+      Pinafore.Syntax.Name
+      Pinafore.Syntax.Syntax
+      Pinafore.Syntax.Parse
+      Pinafore.Syntax.Doc
+      Pinafore.Syntax
+  other-modules:
+      Pinafore.Syntax.Text.ToText
+      Pinafore.Syntax.Text.Markdown
+      Pinafore.Syntax.Name.Name
+      Pinafore.Syntax.Name.ImplicitName
+      Pinafore.Syntax.Name.Namespace
+      Pinafore.Syntax.Name.FullName
+      Pinafore.Syntax.Name.NamespaceRef
+      Pinafore.Syntax.Name.FullNameRef
+      Pinafore.Syntax.Name.NamespaceConcat
+      Pinafore.Syntax.Name.ModuleName
+      Pinafore.Syntax.Name.NamedText
+      Pinafore.Syntax.Name.PrecNamedText
+      Pinafore.Syntax.Name.ExprShow
+      Pinafore.Syntax.Parse.Token
+      Pinafore.Syntax.Parse.Error
+      Pinafore.Syntax.Parse.Parser
+      Pinafore.Syntax.Parse.Basic
+      Pinafore.Syntax.Parse.Type
+      Pinafore.Syntax.Parse.Infix
+      Pinafore.Syntax.Parse.Constructor
+      Pinafore.Syntax.Parse.Pattern
+      Pinafore.Syntax.Parse.Expression
+      Pinafore.Syntax.Parse.Interactive
+      Pinafore.Syntax.Doc.DefDoc
+      Pinafore.Syntax.Doc.Docs
+      Pinafore.Syntax.Doc.SyntaxDoc
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      Arrows
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FunctionalDependencies
+      GADTs
+      ImplicitParams
+      NoImplicitPrelude
+      LambdaCase
+      OverloadedLabels
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      NoStarIsType
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      UndecidableInstances
+      UndecidableSuperClasses
+      ViewPatterns
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  build-depends:
+      base >=4.16
+    , changes-core
+    , changes-world
+    , containers
+    , directory
+    , filepath
+    , parsec
+    , pinafore-base
+    , polar-shim
+    , shapes
+    , text
+    , thread-trace
+    , time
+    , typed-expression
+    , unicode-collation
+  default-language: GHC2021

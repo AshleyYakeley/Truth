@@ -1,10 +1,7 @@
 module Pinafore.Language.SpecialForm where
 
-import Data.Shim
-import Language.Expression.Common
-import Pinafore.Base
+import Import
 import Pinafore.Language.Type.Ground
-import Shapes
 
 type QAnnotation :: Type -> Type
 data QAnnotation t where

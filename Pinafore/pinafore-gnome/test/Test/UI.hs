@@ -5,7 +5,7 @@ module Test.UI
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Changes.World.GNOME.GTK.Test
-import Pinafore
+import Pinafore.API
 import Pinafore.Language.Library.GNOME
 import Pinafore.Test
 import Shapes hiding (get)

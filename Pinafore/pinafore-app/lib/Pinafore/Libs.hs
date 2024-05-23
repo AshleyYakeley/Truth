@@ -1,6 +1,6 @@
 module Pinafore.Libs where
 
-import Pinafore
+import Pinafore.API
 import Pinafore.Language.Library.GNOME
 import Pinafore.Language.Library.Media
 import Shapes

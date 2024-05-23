@@ -4,8 +4,7 @@ module Pinafore.Language.Type.Storable.Dynamic.Entity
     , DynamicEntity(..)
     ) where
 
-import Pinafore.Base
-import Shapes
+import Import
 
 newtype ConcreteDynamicType =
     MkConcreteDynamicType Entity

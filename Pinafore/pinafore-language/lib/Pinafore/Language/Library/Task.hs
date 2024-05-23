@@ -5,13 +5,12 @@ module Pinafore.Language.Library.Task
     , awaitTask
     ) where
 
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Shapes
 
 -- Task
 newtype LangTask a = MkLangTask

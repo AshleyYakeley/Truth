@@ -73,7 +73,6 @@ library
     , gi-gdk
     , gi-gio
     , gi-gtk
-    , pinafore-base
     , pinafore-language
     , pinafore-media
     , polar-shim

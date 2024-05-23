@@ -1,26 +1,26 @@
 module Pinafore.Documentation
-    ( module Pinafore.Text
-    , DefDoc(..)
-    , DocItem(..)
+    ( module Pinafore.Syntax.Text
+    , module Pinafore.Syntax.Name
+    , module Pinafore.Syntax.Doc
+    , module Pinafore.Main
+    , getModuleDocs
     , operatorFixity
     , typeOperatorFixity
     , Fixity(..)
     , FixAssoc(..)
-    , Name(..)
-    , ToText(..)
-    , nameIsInfix
     , allKeywords
     , allOperatorNames
     , allTypeNames
     ) where
 
-import Pinafore.Language.DefDoc
-import Pinafore.Language.Grammar
+import Import
+import Pinafore
 import Pinafore.Language.Library
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Name
-import Pinafore.Text
-import Shapes
+import Pinafore.Main
+import Pinafore.Syntax.Doc
+import Pinafore.Syntax.Name
+import Pinafore.Syntax.Text
 
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
@@ -46,3 +46,8 @@ libraryTypeNames lm = toList (lmContents lm) >>= bindDocTypeName
 
 allTypeNames :: [Name]
 allTypeNames = filter (not . nameIsInfix) $ sort $ nub $ builtInLibrary >>= libraryTypeNames
+
+getModuleDocs :: (?library :: LibraryContext) => ModuleName -> IO Docs
+getModuleDocs modname = do
+    qmodule <- fromInterpretResult $ runPinaforeScoped "<doc>" $ getModule modname
+    return $ moduleDoc qmodule

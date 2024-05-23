@@ -2,8 +2,7 @@ module Pinafore.Language.Library.Media.Image.Image where
 
 import Changes.World.MIME
 import Data.Media.Image
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Shapes
 
 -- LangImage

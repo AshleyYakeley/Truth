@@ -29,7 +29,6 @@ library:
       - changes-world
       - changes-media
       - changes-gnome
-      - pinafore-base
       - pinafore-language
       - pinafore-media
     exposed-modules:

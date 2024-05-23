@@ -2,8 +2,8 @@ module Test.Interactive
     ( getTestInteractive
     ) where
 
-import Pinafore
 import Pinafore.Libs
+import Pinafore.Main
 import Pinafore.Test
 import Shapes hiding ((.))
 import Shapes.Test

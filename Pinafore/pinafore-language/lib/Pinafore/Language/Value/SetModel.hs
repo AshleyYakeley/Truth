@@ -1,11 +1,8 @@
 module Pinafore.Language.Value.SetModel where
 
-import Changes.Core
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
-import Shapes
 
 data LangSetModel a =
     MkLangSetModel (a -> a -> Bool)

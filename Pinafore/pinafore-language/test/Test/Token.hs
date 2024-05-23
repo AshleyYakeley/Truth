@@ -2,15 +2,14 @@ module Test.Token
     ( testToken
     ) where
 
-import Pinafore
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 
 testTokens :: Text -> Text -> TestTree
 testTokens input expected =
     testTree (unpack input) $ do
-        pairs <- fromInterpretResult $ evalStateT (parseTokens input) $ initialPos "<input>"
+        pairs <- fromParseResult $ evalStateT (runTokens input) $ initialPos "<input>"
         let found = pack $ intercalate " " $ fmap (show . snd) pairs
         assertEqual "tokens" expected found
 

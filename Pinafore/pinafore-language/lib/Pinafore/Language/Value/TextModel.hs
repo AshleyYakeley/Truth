@@ -1,10 +1,8 @@
 module Pinafore.Language.Value.TextModel where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
-import Shapes
 
 newtype LangTextModel =
     MkLangTextModel (WModel (StringUpdate Text))

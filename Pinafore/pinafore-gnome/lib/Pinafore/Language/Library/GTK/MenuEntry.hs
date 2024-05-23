@@ -9,8 +9,7 @@ module Pinafore.Language.Library.GTK.MenuEntry
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.GTK.Widget
 import Shapes
 

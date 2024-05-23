@@ -8,27 +8,21 @@ module Pinafore.Language.Grammar.Interpret.Expression
     ) where
 
 import Data.Graph hiding (Forest, Tree)
-import Pinafore.Base
+import Import
 import Pinafore.Language.Debug
-import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.FreeVars
 import Pinafore.Language.Grammar.Interpret.AppNotation
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl
-import Pinafore.Language.Grammar.Syntax
-import Pinafore.Language.Grammar.SyntaxDoc
 import Pinafore.Language.If
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
-import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
-import Pinafore.Text
-import Shapes
 
 interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordConstructor)
 interpretPatternConstructor (SLNamedConstructor name _) = lookupPatternConstructor name

@@ -3,8 +3,8 @@ module Main
     ) where
 
 import Options
-import Pinafore
 import Pinafore.Libs
+import Pinafore.Main
 import Pinafore.Options
 import Pinafore.Version
 import Run

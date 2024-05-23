@@ -3,13 +3,12 @@ module Pinafore.Language.Grammar.Interpret.AppNotation
     , appNotationQuote
     ) where
 
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
-import Shapes
 
 allocateAppNotationVar :: FullName -> QInterpreter VarID
 allocateAppNotationVar name = do

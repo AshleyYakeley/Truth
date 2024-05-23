@@ -3,7 +3,7 @@ module Test.ReadType
     ) where
 
 import Data.Shim
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 

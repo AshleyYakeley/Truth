@@ -4,7 +4,7 @@ module Pinafore.Language.Library.GNOME
     , LangContext(..)
     ) where
 
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.GIO
 import Pinafore.Language.Library.GTK
 import Shapes

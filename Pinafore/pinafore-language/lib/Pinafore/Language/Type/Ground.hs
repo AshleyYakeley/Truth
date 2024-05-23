@@ -1,18 +1,12 @@
 module Pinafore.Language.Type.Ground where
 
-import Data.Shim
-import Language.Expression.Common
-import Language.Expression.Dolan
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Show
 import Pinafore.Language.VarID
-import Pinafore.Text
-import Shapes
 
 type GroundProperties :: GroundTypeKind
 newtype GroundProperties dv gt =

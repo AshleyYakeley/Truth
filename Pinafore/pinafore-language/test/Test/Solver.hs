@@ -4,9 +4,7 @@ module Test.Solver
 
 import Data.Shim
 import Language.Expression.Common
-import Pinafore
-import Pinafore.Language.API
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 import Test.RunScript
 

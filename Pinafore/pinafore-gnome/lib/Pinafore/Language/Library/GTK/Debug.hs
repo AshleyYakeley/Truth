@@ -4,8 +4,7 @@ module Pinafore.Language.Library.GTK.Debug
 
 import Changes.Core
 import Changes.World.GNOME.GTK
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Window ()
 import Shapes

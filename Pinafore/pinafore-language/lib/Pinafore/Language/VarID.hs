@@ -6,9 +6,7 @@ module Pinafore.Language.VarID
     , mkBadVarID
     ) where
 
-import Pinafore.Language.Name
-import Shapes
-import Text.Parsec (SourcePos)
+import Import
 
 newtype VarIDState =
     MkVarIDState Int

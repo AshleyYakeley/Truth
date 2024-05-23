@@ -4,12 +4,10 @@ module Pinafore.Language.Grammar.Interpret.Type
     , interpretNonpolarType
     ) where
 
+import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Shapes
 
 type PinaforeTypeM = MPolarW QType
 

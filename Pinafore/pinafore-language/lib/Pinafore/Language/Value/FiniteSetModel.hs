@@ -1,13 +1,10 @@
 module Pinafore.Language.Value.FiniteSetModel where
 
-import Changes.Core
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Language.Shim
 import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.SetModel
 import Pinafore.Language.Value.WholeModel
-import Shapes
 
 data LangFiniteSetModel pq where
     MkLangFiniteSetModel :: Eq t => Range (QPolyShim Type) t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq

@@ -1,7 +1,7 @@
 module Pinafore.Language.Type.Family where
 
+import Import
 import Pinafore.Language.Type.Identified
-import Shapes
 
 type FamilyKind = forall (k :: Type). k -> Type
 

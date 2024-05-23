@@ -9,7 +9,7 @@ import Data.Media.Image
 import Data.Shim
 import Graphics.Cairo.Functional
 import Graphics.Cairo.Image
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.Media.Colour
 import Pinafore.Language.Library.Media.Image
 import Shapes hiding (rotate)

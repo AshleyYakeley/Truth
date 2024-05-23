@@ -1,10 +1,9 @@
 module Pinafore.Language.Interpreter.ScopeDocs where
 
-import Pinafore.Language.Grammar.Docs
+import Import
 import Pinafore.Language.Interpreter.Interpreter
 import Pinafore.Language.Interpreter.Scope
 import Pinafore.Language.Type.Subtype ()
-import Shapes
 
 data QScopeDocs = MkQScopeDocs
     { sdScopes :: [QScope]

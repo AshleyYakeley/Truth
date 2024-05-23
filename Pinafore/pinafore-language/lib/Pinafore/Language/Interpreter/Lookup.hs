@@ -13,13 +13,12 @@ module Pinafore.Language.Interpreter.Lookup
     , lookupMaybeValue
     ) where
 
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Interpreter.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
-import Shapes
 
 getBindingLookup :: QInterpreter (FullNameRef -> Maybe QInterpreterBinding)
 getBindingLookup = do

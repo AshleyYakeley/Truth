@@ -2,12 +2,12 @@ module Pinafore.Language.Library.Env
     ( envLibSection
     ) where
 
+import Import
 import Pinafore.Context
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Storage ()
 import Pinafore.Language.Library.Stream
-import Shapes
 
 getVar :: (?qcontext :: InvocationInfo) => Text -> Maybe Text
 getVar n = fmap pack $ lookup (unpack n) $ iiEnvironment ?qcontext

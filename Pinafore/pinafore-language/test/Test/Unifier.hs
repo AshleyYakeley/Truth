@@ -7,9 +7,7 @@ import Debug.Trace.Null
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Language.Expression.Dolan.Test
-import Pinafore
-import Pinafore.Language.API
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 import Test.RunScript
 

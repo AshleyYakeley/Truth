@@ -9,4 +9,4 @@ import Pinafore.Language.Interpreter.Register as I
 import Pinafore.Language.Interpreter.Scope as I
 import Pinafore.Language.Interpreter.ScopeBuilder as I
 import Pinafore.Language.Interpreter.ScopeDocs as I
-import Text.Parsec.Pos as I (SourcePos, initialPos)
+import Pinafore.Syntax as I (SourcePos, initialPos)

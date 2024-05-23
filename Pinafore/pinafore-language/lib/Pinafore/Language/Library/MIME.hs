@@ -4,14 +4,13 @@ module Pinafore.Language.Library.MIME
     ( mimeLibSection
     ) where
 
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert.HasType
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Type
 import Pinafore.Language.Value
-import Shapes
 
 -- MIME
 mimeGroundType :: QGroundType '[] MIME

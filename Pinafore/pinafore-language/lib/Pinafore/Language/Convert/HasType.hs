@@ -2,9 +2,9 @@
 
 module Pinafore.Language.Convert.HasType where
 
+import Import
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
-import Shapes
 
 type HasQType :: Polarity -> Type -> Constraint
 class Is PolarityType polarity => HasQType polarity t where

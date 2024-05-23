@@ -1,6 +1,5 @@
 module Pinafore.Language
-    ( module Pinafore.Language.Name
-    , LibraryStuff
+    ( LibraryStuff
     , LibraryModule
     , FetchModule
     , directoryFetchModule
@@ -12,6 +11,7 @@ module Pinafore.Language
     , mkLibraryContext
     , QSpecialVals(..)
     , QError
+    , fromParseResult
     , InterpretResult
     , fromInterpretResult
     , runInterpretResult
@@ -34,8 +34,7 @@ module Pinafore.Language
     , runPinaforeScoped
     ) where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
@@ -43,10 +42,8 @@ import Pinafore.Language.Grammar
 import Pinafore.Language.Grammar.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library
-import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Shapes
 
 runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename ma =

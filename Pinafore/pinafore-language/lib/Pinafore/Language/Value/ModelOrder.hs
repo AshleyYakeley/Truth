@@ -1,12 +1,9 @@
 module Pinafore.Language.Value.ModelOrder where
 
-import Changes.Core
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Language.Value.Attribute
 import Pinafore.Language.Value.FiniteSetModel
 import Pinafore.Language.Value.WholeModel
-import Shapes
 
 newtype LangModelOrder a =
     MkLangModelOrder (ModelModelOrder a)

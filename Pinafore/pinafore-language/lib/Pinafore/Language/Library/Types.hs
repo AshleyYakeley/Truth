@@ -11,12 +11,10 @@ module Pinafore.Language.Library.Types
     , actionShimWit
     ) where
 
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Convert ()
-import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Shapes
 
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openStorableGroundType tp) NilCCRArguments

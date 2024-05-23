@@ -3,19 +3,15 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl
     , interpretRecursiveTypeDeclarations
     ) where
 
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
-import Pinafore.Language.Grammar.Syntax
-import Pinafore.Language.Grammar.SyntaxDoc
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Text
-import Shapes
 
 getGroundType :: QSingularType 'Negative t -> QInterpreter (Some (QGroundType '[]))
 getGroundType (GroundedDolanSingularType (MkDolanGroundedType gt NilCCRArguments)) = return $ MkSome gt

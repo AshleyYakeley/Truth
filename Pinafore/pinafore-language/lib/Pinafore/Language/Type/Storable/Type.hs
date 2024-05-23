@@ -1,14 +1,9 @@
 module Pinafore.Language.Type.Storable.Type where
 
-import Data.Shim
-import Language.Expression.Dolan
-import Pinafore.Base
+import Import
 import Pinafore.Language.Interpreter ()
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
-import Pinafore.Text
-import Shapes
 
 type Storability :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data Storability dv gt = MkStorability

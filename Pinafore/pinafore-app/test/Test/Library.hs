@@ -2,10 +2,9 @@ module Test.Library
     ( testLibrary
     ) where
 
-import Pinafore
-import Pinafore.Language.API
 import Pinafore.Libs
-import Pinafore.Test
+import Pinafore.Main
+import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 

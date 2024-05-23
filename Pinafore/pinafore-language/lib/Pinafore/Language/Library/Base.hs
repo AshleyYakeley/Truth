@@ -6,12 +6,11 @@ module Pinafore.Language.Library.Base
     , literalSubtypeRelationEntry
     ) where
 
-import Changes.Core
 import Changes.World.Clock
 import qualified Data.Text
 import Data.Time
 import Data.Time.Clock.POSIX
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Interpreter
@@ -19,13 +18,10 @@ import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Library.Types
-import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Text
-import Shapes
 import Shapes.Numeric
 import qualified Text.Collate
 

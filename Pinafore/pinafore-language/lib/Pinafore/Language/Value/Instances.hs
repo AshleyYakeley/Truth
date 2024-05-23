@@ -2,9 +2,7 @@
 
 module Pinafore.Language.Value.Instances where
 
-import Data.Shim
-import Pinafore.Base
-import Shapes
+import Import
 
 instance MaybeRepresentational Know where
     maybeRepresentational = Just Dict

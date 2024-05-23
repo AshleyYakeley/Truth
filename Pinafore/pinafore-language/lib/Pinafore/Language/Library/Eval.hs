@@ -2,7 +2,7 @@ module Pinafore.Language.Library.Eval
     ( evalLibSection
     ) where
 
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
@@ -10,7 +10,6 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
-import Shapes
 
 evalLibSection :: LibraryStuff context
 evalLibSection =

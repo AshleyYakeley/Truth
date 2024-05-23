@@ -1,8 +1,6 @@
 module Pinafore.Language.Value.Map where
 
-import Data.Shim
-import Pinafore.Base
-import Shapes
+import Import
 
 newtype LangMap (v :: Type) = MkLangMap
     { unLangMap :: Map Entity v

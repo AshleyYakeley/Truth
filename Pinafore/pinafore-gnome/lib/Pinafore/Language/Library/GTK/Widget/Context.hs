@@ -2,7 +2,7 @@ module Pinafore.Language.Library.GTK.Widget.Context where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.GTK.Context
 import Shapes
 

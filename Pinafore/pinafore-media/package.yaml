@@ -19,7 +19,6 @@ library:
       - changes-media
       - polar-shim
       - typed-expression
-      - pinafore-base
       - pinafore-language
     exposed-modules:
       - Pinafore.Language.Library.Media

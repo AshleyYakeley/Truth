@@ -3,7 +3,6 @@ module Test.Scripts
     ) where
 
 import Paths_pinafore_stdlib
-import Pinafore
 import Pinafore.Libs
 import Pinafore.Test
 import Shapes

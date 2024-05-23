@@ -1,19 +1,12 @@
 module Pinafore.Language.Error where
 
-import Data.Shim
-import Language.Expression.Common
-import Pinafore.Language.Name
-import Pinafore.Text
-import Shapes
-import Shapes.Numeric
-import Text.Parsec.Error
-import Text.Parsec.Pos
+import Import
 
 data QErrorType
     = InternalError (Maybe Int)
                     NamedText
     | UnicodeDecodeError NamedText
-    | ParserError [Message]
+    | ParserError ParseErrorType
     | PatternErrorError PatternError
     | ExpressionUndefinedError (NonEmpty (FullNameRef, NamedText))
     | ExpressionUnimpliedError (NonEmpty (ImplicitName, NamedText))
@@ -29,7 +22,6 @@ data QErrorType
     | DeclareBindingDuplicateError FullName
     | DeclareConstructorDuplicateError FullNameRef
     | DeclareDynamicTypeCycleError (NonEmpty FullName)
-    | DeclareDatatypeStorableSupertypeError FullName
     | DeclareDatatypeBadSupertypeError NamedText
     | DeclareDatatypeConstructorNotSupertypeError FullNameRef
                                                   NamedText
@@ -53,8 +45,6 @@ data QErrorType
                                           NamedText
     | TypeNotInvertibleError NamedText
     | NotationBareUnquoteError
-    | MatchesDifferentCount Natural
-                            Natural
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
     | InterpretTypeRecursionNotCovariant Name
@@ -95,43 +85,7 @@ instance ShowNamedText QErrorType where
                 (Nothing, "") -> "INTERNAL ERROR"
                 (Nothing, _) -> "INTERNAL ERROR: " <> toNamedText t
     showNamedText (UnicodeDecodeError t) = "Unicode decode error: " <> t
-    showNamedText (ParserError msgs) = let
-        getMsgs :: (Message -> Maybe String) -> [Text]
-        getMsgs getm =
-            nub $
-            mapMaybe
-                (\msg -> do
-                     s <- getm msg
-                     if s == ""
-                         then Nothing
-                         else return $ toText s)
-                msgs
-        msgsSysUnExpect =
-            getMsgs $ \case
-                SysUnExpect s -> Just s
-                _ -> Nothing
-        msgsExpect =
-            getMsgs $ \case
-                Expect s -> Just s
-                _ -> Nothing
-        msgsMessage =
-            getMsgs $ \case
-                Message s -> Just s
-                _ -> Nothing
-        semicolon :: Text -> Text -> Text
-        semicolon "" b = b
-        semicolon a "" = a
-        semicolon a b = a <> "; " <> b
-        strUnexpected =
-            case msgsSysUnExpect of
-                [] -> ""
-                s -> "unexpected: " <> intercalate ", " s
-        strExpecting =
-            case msgsExpect of
-                [] -> ""
-                s -> "expecting: " <> intercalate ", " s
-        strMessage = intercalate "; " msgsMessage
-        in "syntax: " <> (toNamedText $ strUnexpected `semicolon` strExpecting `semicolon` strMessage)
+    showNamedText (ParserError err) = showNamedText err
     showNamedText (PatternErrorError e) = showNamedText e
     showNamedText (ExpressionUndefinedError nn) =
         "undefined: " <>
@@ -157,7 +111,6 @@ instance ShowNamedText QErrorType where
     showNamedText (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> showNamedText n
     showNamedText (DeclareDynamicTypeCycleError nn) =
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
-    showNamedText (DeclareDatatypeStorableSupertypeError n) = "datatype storable has supertypes: " <> showNamedText n
     showNamedText (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> t
     showNamedText (DeclareDatatypeConstructorNotSupertypeError c t ss) =
         "constructor " <> showNamedText c <> ": " <> t <> " is not from supertypes " <> (intercalate " & " ss)
@@ -179,9 +132,6 @@ instance ShowNamedText QErrorType where
         "incoherent ground conversions for " <> ta <> " <: " <> tb
     showNamedText (TypeNotInvertibleError t) = "cannot invert type " <> t
     showNamedText NotationBareUnquoteError = "unquote outside WholeModel quote"
-    showNamedText (MatchesDifferentCount expected found) =
-        "different number of patterns in match, expected " <>
-        showNamedText expected <> ", found " <> showNamedText found
     showNamedText (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
     showNamedText (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     showNamedText (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
@@ -219,26 +169,15 @@ instance ShowNamedText QErrorType where
     showNamedText (ModuleNotFoundError mname) = "can't find module " <> showNamedText mname
     showNamedText (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
 
-data QError =
-    MkQError SourcePos
-             (NamedText -> Text)
-             QErrorType
-
-showSourceError :: SourcePos -> Text -> Text
-showSourceError spos s =
-    toText (sourceName spos) <>
-    ":" <> toText (show (sourceLine spos)) <> ":" <> toText (show (sourceColumn spos)) <> ": " <> s
-
-instance ShowText QError where
-    showText (MkQError spos ntt err) = showSourceError spos $ ntt $ showNamedText err
-
-parseErrorMessage :: ParseError -> QError
-parseErrorMessage err = MkQError (errorPos err) toText (ParserError $ errorMessages err)
+type QError = SourceError QErrorType
 
 instance Show QError where
     show = unpack . showText
 
 instance Exception QError
+
+fromParseResult :: MonadThrow QError m => ParseResult --> m
+fromParseResult pr = fromResult $ mapResultFailure (fmap ParserError) pr
 
 newtype InterpretResult a = MkInterpretResult
     { unInterpretResult :: ResultT QError IO a

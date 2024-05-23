@@ -11,8 +11,8 @@ module Pinafore.Language.Library
     , nameIsInfix
     ) where
 
+import Import
 import Pinafore.Context
-import Pinafore.Language.DefDoc
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Action
 import Pinafore.Language.Library.Base
@@ -31,8 +31,6 @@ import Pinafore.Language.Library.Storage
 import Pinafore.Language.Library.Stream
 import Pinafore.Language.Library.Task
 import Pinafore.Language.Library.Undo
-import Pinafore.Language.Name
-import Shapes
 
 builtInLibrary :: [LibraryModule InvocationInfo]
 builtInLibrary =

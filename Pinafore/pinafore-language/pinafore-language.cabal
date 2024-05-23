@@ -15,16 +15,13 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Pinafore.Text
-      Pinafore.Language
-      Pinafore.Language.API
+      Pinafore.API
       Pinafore.Documentation
       Pinafore.Main
-      Pinafore
       Pinafore.Test
+      Pinafore.Test.Internal
   other-modules:
-      Pinafore.Text.ToText
-      Pinafore.Text.Markdown
+      Import
       Pinafore.Context
       Pinafore.Language.Debug
       Pinafore.Language.Value.Instances
@@ -41,18 +38,6 @@ library
       Pinafore.Language.Value.Property
       Pinafore.Language.Value.ModelOrder
       Pinafore.Language.Value
-      Pinafore.Language.Name.Name
-      Pinafore.Language.Name.ImplicitName
-      Pinafore.Language.Name.Namespace
-      Pinafore.Language.Name.FullName
-      Pinafore.Language.Name.NamespaceRef
-      Pinafore.Language.Name.FullNameRef
-      Pinafore.Language.Name.NamespaceConcat
-      Pinafore.Language.Name.ModuleName
-      Pinafore.Language.Name.NamedText
-      Pinafore.Language.Name.PrecNamedText
-      Pinafore.Language.Name.ExprShow
-      Pinafore.Language.Name
       Pinafore.Language.Shim
       Pinafore.Language.If
       Pinafore.Language.Type.Family
@@ -89,20 +74,7 @@ library
       Pinafore.Language.Type.Storable
       Pinafore.Language.Type.DynamicSupertype
       Pinafore.Language.Type
-      Pinafore.Language.DefDoc
-      Pinafore.Language.Grammar.Syntax
       Pinafore.Language.Grammar.FreeVars
-      Pinafore.Language.Grammar.SyntaxDoc
-      Pinafore.Language.Grammar.Read.Token
-      Pinafore.Language.Grammar.Read.Parser
-      Pinafore.Language.Grammar.Read.Type
-      Pinafore.Language.Grammar.Read.Infix
-      Pinafore.Language.Grammar.Read.Constructor
-      Pinafore.Language.Grammar.Read.Pattern
-      Pinafore.Language.Grammar.Read.Expression
-      Pinafore.Language.Grammar.Read.Interactive
-      Pinafore.Language.Grammar.Read
-      Pinafore.Language.Grammar.Docs
       Pinafore.Language.Grammar.Interpret.AppNotation
       Pinafore.Language.Grammar.Interpret.Type
       Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
@@ -138,6 +110,8 @@ library
       Pinafore.Language.Library.Eval
       Pinafore.Language.Library.Debug
       Pinafore.Language.Library
+      Pinafore.Language
+      Pinafore
   hs-source-dirs:
       lib
   default-extensions:
@@ -175,8 +149,8 @@ library
     , containers
     , directory
     , filepath
-    , parsec
     , pinafore-base
+    , pinafore-syntax
     , polar-shim
     , shapes
     , text

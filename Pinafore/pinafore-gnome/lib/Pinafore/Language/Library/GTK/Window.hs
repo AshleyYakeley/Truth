@@ -9,8 +9,7 @@ import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
 import GI.Gtk as GI hiding (Action)
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.GIO
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Widget

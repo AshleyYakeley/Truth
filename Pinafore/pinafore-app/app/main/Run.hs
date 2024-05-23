@@ -4,7 +4,7 @@ module Run
     ) where
 
 import Changes.Core
-import Pinafore
+import Pinafore.Main
 import Shapes
 import System.Environment
 

@@ -3,7 +3,7 @@ module Pinafore.Language.Library.GTK
     , LangContext(..)
     ) where
 
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.GTK.Clipboard
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Debug

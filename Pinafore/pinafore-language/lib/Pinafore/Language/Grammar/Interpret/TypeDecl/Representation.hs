@@ -14,8 +14,7 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
     , getPreferredTypeRepresentationEq
     ) where
 
-import Language.Expression.Common
-import Shapes
+import Import
 
 type TypeRepresentation :: [Type] -> Type -> Type
 data TypeRepresentation lt t = MkTypeRepresentation

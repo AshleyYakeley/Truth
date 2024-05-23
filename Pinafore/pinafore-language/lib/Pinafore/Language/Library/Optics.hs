@@ -5,6 +5,7 @@ module Pinafore.Language.Library.Optics
     , propertyGroundType
     ) where
 
+import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
@@ -12,7 +13,6 @@ import Pinafore.Language.Library.Model ()
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Shapes
 
 -- LangAttribute
 attributeGroundType :: QGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangAttribute

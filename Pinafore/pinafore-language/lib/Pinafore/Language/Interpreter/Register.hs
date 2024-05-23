@@ -11,22 +11,17 @@ module Pinafore.Language.Interpreter.Register
     , registerSubtypeConversion
     ) where
 
-import Language.Expression.Common
-import Language.Expression.Dolan
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar.Docs
 import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Interpreter.Interpreter
 import Pinafore.Language.Interpreter.Lookup
 import Pinafore.Language.Interpreter.Scope
 import Pinafore.Language.Interpreter.ScopeBuilder
 import Pinafore.Language.Interpreter.ScopeDocs
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
-import Shapes
 
 registerScope :: QScope -> QScopeBuilder ()
 registerScope scope = registerScopeDocs $ mempty {sdScopes = [scope]}

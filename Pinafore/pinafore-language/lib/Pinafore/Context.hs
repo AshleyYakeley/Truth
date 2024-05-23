@@ -1,8 +1,6 @@
 module Pinafore.Context where
 
-import Changes.Core
-import Pinafore.Base
-import Shapes
+import Import
 
 data InvocationInfo = MkInvocationInfo
     { iiScriptName :: String

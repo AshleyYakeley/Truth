@@ -4,8 +4,7 @@ module Pinafore.Language.Library.Storage
     ( storageLibSection
     ) where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
@@ -16,7 +15,6 @@ import Pinafore.Language.Library.Optics
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
-import Shapes
 
 -- QStore
 storeGroundType :: QGroundType '[] QStore

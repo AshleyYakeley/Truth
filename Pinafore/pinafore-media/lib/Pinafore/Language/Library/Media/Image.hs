@@ -4,7 +4,7 @@ module Pinafore.Language.Library.Media.Image
     ) where
 
 import Data.Media.Image
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.Media.Colour
 import Pinafore.Language.Library.Media.Image.Image
 import Pinafore.Language.Library.Media.Image.JPEG

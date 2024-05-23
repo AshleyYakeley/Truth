@@ -6,13 +6,11 @@ module Pinafore.Language.Library.FetchModule
     , textFetchModule
     ) where
 
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Grammar
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Name
-import Shapes
 import System.Directory (doesFileExist)
 import System.FilePath
 

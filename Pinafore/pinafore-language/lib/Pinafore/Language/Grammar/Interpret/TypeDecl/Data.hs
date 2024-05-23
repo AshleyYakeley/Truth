@@ -9,20 +9,15 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     , makePlainDataTypeBox
     ) where
 
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
-import Pinafore.Language.Grammar.Syntax
-import Pinafore.Language.Grammar.SyntaxDoc
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
-import Pinafore.Text
-import Shapes
 import Shapes.Unsafe (unsafeGetRefl, unsafeRefl)
 
 data ConstructorFlavour (w :: Type -> Type) where

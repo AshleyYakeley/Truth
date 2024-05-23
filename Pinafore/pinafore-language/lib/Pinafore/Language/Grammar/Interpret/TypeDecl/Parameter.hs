@@ -1,7 +1,6 @@
 module Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter where
 
-import Pinafore.Language.Type
-import Shapes
+import Import
 
 type CCRTypeParam :: CCRArgumentKind
 data CCRTypeParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where

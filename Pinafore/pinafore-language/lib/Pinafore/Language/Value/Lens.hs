@@ -1,7 +1,6 @@
 module Pinafore.Language.Value.Lens where
 
-import Data.Shim
-import Shapes
+import Import
 
 data LangLens (a :: (Type, Type)) (b :: (Type, Type)) = MkLangLens
     { langLensGet :: Contra a -> Co b

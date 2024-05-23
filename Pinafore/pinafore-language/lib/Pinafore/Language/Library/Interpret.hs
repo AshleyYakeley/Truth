@@ -3,12 +3,12 @@ module Pinafore.Language.Library.Interpret
     , interpretLibSection
     ) where
 
+import Import
 import Pinafore.Language.Convert.HasType
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Shapes
 
 newtype Interpret a = MkInterpret
     { interpret :: a

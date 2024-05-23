@@ -3,11 +3,7 @@
 module Pinafore.Language.Type.Show where
 
 import qualified Data.List as List
-import Data.Shim
-import Language.Expression.Common
-import Language.Expression.Dolan
-import Pinafore.Language.Name
-import Shapes
+import Import
 
 type GroundExprShow :: GroundTypeKind -> Constraint
 class GroundExprShow ground where

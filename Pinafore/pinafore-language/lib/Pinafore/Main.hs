@@ -1,5 +1,6 @@
 module Pinafore.Main
     ( ModuleOptions(..)
+    , InvocationInfo(..)
     , standardLibraryContext
     , nullInvocationInfo
     , StorageModelOptions(..)
@@ -12,13 +13,10 @@ module Pinafore.Main
     , qInteract
     ) where
 
-import Changes.Core
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Storage
-import Shapes
 import System.FilePath
 
 data StorageModelOptions = MkStorageModelOptions

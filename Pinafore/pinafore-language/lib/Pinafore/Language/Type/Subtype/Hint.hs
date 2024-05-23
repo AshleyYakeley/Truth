@@ -3,8 +3,7 @@ module Pinafore.Language.Type.Subtype.Hint
     , mkQSubtypeHint
     ) where
 
-import Pinafore.Language.Name
-import Shapes
+import Import
 
 data QSubtypeHint = MkQSubtypeHint
     { dhDomain :: [Name]

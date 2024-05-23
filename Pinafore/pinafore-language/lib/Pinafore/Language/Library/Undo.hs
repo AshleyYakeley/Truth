@@ -4,15 +4,13 @@ module Pinafore.Language.Library.Undo
     ( undoLibSection
     ) where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Storage ()
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Shapes
 
 -- UndoHandler
 undoHandlerGroundType :: QGroundType '[] UndoHandler

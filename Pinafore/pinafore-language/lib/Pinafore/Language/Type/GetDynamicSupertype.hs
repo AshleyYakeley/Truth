@@ -4,14 +4,12 @@ module Pinafore.Language.Type.GetDynamicSupertype
     , getOptGreatestDynamicSupertypeSW
     ) where
 
-import Data.Shim
-import Language.Expression.Dolan
+import Import
 import Pinafore.Language.Interpreter ()
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
-import Shapes
 
 pfmap ::
        (HasVariance f, VarianceOf f ~ 'Covariance)

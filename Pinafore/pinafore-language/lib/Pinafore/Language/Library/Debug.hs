@@ -2,11 +2,10 @@ module Pinafore.Language.Library.Debug
     ( debugLibSection
     ) where
 
-import Pinafore.Base
+import Import
 import Pinafore.Language.Debug
 import Pinafore.Language.Library.Base ()
 import Pinafore.Language.Library.Defs
-import Shapes
 
 debugCheckEntity :: Text -> Entity -> IO ()
 debugCheckEntity t e = do

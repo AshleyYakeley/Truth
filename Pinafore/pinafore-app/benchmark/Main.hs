@@ -5,9 +5,8 @@ module Main
 import Changes.Core
 import Criterion.Main
 import Paths_pinafore_stdlib
-import Pinafore
 import Pinafore.Libs
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 
 nullViewIO :: View --> IO

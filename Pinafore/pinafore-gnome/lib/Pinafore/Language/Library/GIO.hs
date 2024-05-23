@@ -9,8 +9,7 @@ import Changes.Core
 import Changes.World.GNOME.GIO
 import Changes.World.MIME
 import qualified GI.Gio as GI
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Shapes
 import Shapes.Unsafe
 

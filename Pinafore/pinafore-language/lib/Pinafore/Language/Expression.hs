@@ -2,15 +2,13 @@
 
 module Pinafore.Language.Expression where
 
+import Import
 import Pinafore.Language.Convert
-import Pinafore.Language.DefDoc
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
-import Shapes
 
 qConstExprAny :: QValue -> QExpression
 qConstExprAny = tsConst @QTypeSystem

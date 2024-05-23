@@ -5,8 +5,7 @@ module Test.Type
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
-import Pinafore
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 

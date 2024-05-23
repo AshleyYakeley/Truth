@@ -7,18 +7,14 @@ module Pinafore.Language.Type.Storable.Open
     , getOpenEntityType
     ) where
 
-import Data.Shim
-import Language.Expression.Dolan
-import Pinafore.Base
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Storable.Type
-import Shapes
 
 type OpenEntityType :: Nat -> Type
 data OpenEntityType tid =

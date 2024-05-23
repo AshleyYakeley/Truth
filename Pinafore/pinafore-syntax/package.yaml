@@ -1,0 +1,59 @@
+_common: !include "../../common.yaml"
+name: pinafore-syntax
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.16
+      - shapes
+      - time
+      - filepath
+      - directory
+      - parsec
+      - containers
+      - text
+      - unicode-collation
+      - thread-trace
+      - polar-shim
+      - typed-expression
+      - changes-core
+      - changes-world
+      - pinafore-base
+    exposed-modules:
+      - Pinafore.Syntax.Text
+      - Pinafore.Syntax.Name
+      - Pinafore.Syntax.Syntax
+      - Pinafore.Syntax.Parse
+      - Pinafore.Syntax.Doc
+      - Pinafore.Syntax
+    other-modules:
+      - Pinafore.Syntax.Text.ToText
+      - Pinafore.Syntax.Text.Markdown
+      - Pinafore.Syntax.Name.Name
+      - Pinafore.Syntax.Name.ImplicitName
+      - Pinafore.Syntax.Name.Namespace
+      - Pinafore.Syntax.Name.FullName
+      - Pinafore.Syntax.Name.NamespaceRef
+      - Pinafore.Syntax.Name.FullNameRef
+      - Pinafore.Syntax.Name.NamespaceConcat
+      - Pinafore.Syntax.Name.ModuleName
+      - Pinafore.Syntax.Name.NamedText
+      - Pinafore.Syntax.Name.PrecNamedText
+      - Pinafore.Syntax.Name.ExprShow
+      - Pinafore.Syntax.Parse.Token
+      - Pinafore.Syntax.Parse.Error
+      - Pinafore.Syntax.Parse.Parser
+      - Pinafore.Syntax.Parse.Basic
+      - Pinafore.Syntax.Parse.Type
+      - Pinafore.Syntax.Parse.Infix
+      - Pinafore.Syntax.Parse.Constructor
+      - Pinafore.Syntax.Parse.Pattern
+      - Pinafore.Syntax.Parse.Expression
+      - Pinafore.Syntax.Parse.Interactive
+      - Pinafore.Syntax.Doc.DefDoc
+      - Pinafore.Syntax.Doc.Docs
+      - Pinafore.Syntax.Doc.SyntaxDoc

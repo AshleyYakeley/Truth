@@ -11,18 +11,12 @@ module Pinafore.Language.Interpreter.Binding
     , specialFormBindingSelector
     ) where
 
-import Data.Shim
-import Language.Expression.Common
-import Pinafore.Base
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Subtype ()
-import Pinafore.Text
-import Shapes
 
 newtype QSpecialVals = MkQSpecialVals
     { specialEvaluate :: forall t. QType 'Positive t -> Text -> Action (Either Text t)

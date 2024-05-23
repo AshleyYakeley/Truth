@@ -7,7 +7,7 @@ module Pinafore.Language.Type.Identified
     , unsafeIdentify
     ) where
 
-import Shapes
+import Import
 import Shapes.Numeric
 import Shapes.Unsafe (unsafeGetRefl)
 

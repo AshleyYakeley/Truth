@@ -3,8 +3,7 @@ module Main
     ) where
 
 import Pinafore.DocGen
-import Pinafore.Language
-import Pinafore.Main
+import Pinafore.Documentation
 import Pinafore.Options
 import Shapes
 import Shapes.Test

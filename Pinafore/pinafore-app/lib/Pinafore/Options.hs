@@ -4,8 +4,8 @@ module Pinafore.Options
     , getApplicationOptions
     ) where
 
-import Pinafore
 import Pinafore.Libs
+import Pinafore.Main
 import Shapes
 import System.Environment.XDG.BaseDir
 import System.FilePath

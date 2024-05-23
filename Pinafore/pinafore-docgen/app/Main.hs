@@ -4,7 +4,7 @@ module Main
 
 import Options
 import Pinafore.DocGen
-import Pinafore.Language
+import Pinafore.Documentation
 import Pinafore.Options
 import Pinafore.Version
 import Shapes

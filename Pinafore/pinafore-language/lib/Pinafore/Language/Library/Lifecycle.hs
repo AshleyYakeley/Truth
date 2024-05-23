@@ -2,12 +2,10 @@ module Pinafore.Language.Library.Lifecycle
     ( lifecycleLibSection
     ) where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Var
-import Shapes
 
 lifecycleLibSection :: LibraryStuff context
 lifecycleLibSection =

@@ -13,14 +13,11 @@ module Pinafore.Language.Interpreter.Scope
     , QModule(..)
     ) where
 
-import Language.Expression.Dolan
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter.Binding
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
-import Shapes
 
 newtype QBindingMap =
     MkQBindingMap (Map FullName QBindingInfo)

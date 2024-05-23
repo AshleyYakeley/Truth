@@ -3,14 +3,9 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
     , makeConcreteDynamicEntityTypeBox
     ) where
 
-import Pinafore.Base
-import Pinafore.Language.DefDoc
-import Pinafore.Language.Grammar.SyntaxDoc
+import Import
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Text
-import Shapes
 
 makeAbstractDynamicEntityTypeBox :: FullName -> RawMarkdown -> QInterpreter (QFixBox () ())
 makeAbstractDynamicEntityTypeBox name md =

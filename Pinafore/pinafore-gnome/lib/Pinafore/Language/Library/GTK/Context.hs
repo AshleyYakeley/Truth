@@ -4,8 +4,7 @@ module Pinafore.Language.Library.GTK.Context where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Shapes
 
 data OtherContext = MkOtherContext

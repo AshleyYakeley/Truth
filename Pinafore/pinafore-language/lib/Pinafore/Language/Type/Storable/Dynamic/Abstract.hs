@@ -5,10 +5,8 @@ module Pinafore.Language.Type.Storable.Dynamic.Abstract
     , getDynamicEntityType
     ) where
 
-import Data.Shim
-import Language.Expression.Dolan
+import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
@@ -19,7 +17,6 @@ import Pinafore.Language.Type.Storable.Dynamic.DynamicEntity
 import Pinafore.Language.Type.Storable.Dynamic.Entity
 import Pinafore.Language.Type.Storable.Dynamic.Storability
 import Pinafore.Language.Type.Storable.Type
-import Shapes
 
 data AbstractDynamicEntityFamily :: FamilyKind where
     MkAbstractDynamicEntityFamily :: TypeIDType tid -> AbstractDynamicEntityFamily DynamicEntity

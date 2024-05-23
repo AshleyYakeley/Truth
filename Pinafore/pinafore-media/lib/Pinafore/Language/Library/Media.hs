@@ -4,7 +4,7 @@ module Pinafore.Language.Library.Media
     , LangImage(..)
     ) where
 
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.Media.Cairo
 import Pinafore.Language.Library.Media.Colour
 import Pinafore.Language.Library.Media.Image

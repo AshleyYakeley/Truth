@@ -3,20 +3,13 @@ module Pinafore.Language.Grammar.Interpret.Interact
     , showPinaforeModel
     ) where
 
-import Changes.Core
 import Control.Exception (Handler(..), catches)
-import Pinafore.Base
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Expression
-import Pinafore.Language.Grammar.Read
-import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Text
-import Shapes
 import System.IO.Error
 
 showPinaforeModel :: QValue -> QInterpreter String
@@ -43,7 +36,7 @@ runValue outh val =
         return $ liftIO $ hPutStrLn outh s
 
 interactParse :: Text -> Interact InteractiveCommand
-interactParse t = hoist fromInterpretResult $ parseInteractiveCommand t
+interactParse t = hoist fromParseResult $ parseInteractiveCommand t
 
 actionWit :: QShimWit 'Negative t -> QShimWit 'Negative (Action t)
 actionWit (MkShimWit t (MkPolarShim conv)) =

@@ -2,15 +2,12 @@
 
 module Pinafore.Language.Convert.Types where
 
-import Changes.Core
 import Data.Time
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert.HasType
-import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Shapes
 import Shapes.Numeric
 
 -- top, bottom, join, meet

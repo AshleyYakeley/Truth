@@ -1,50 +1,11 @@
 module Pinafore.Test
-    ( parseTokens
-    , parseType
-    , runInterpreter
-    , QTypeSystem
-    , Name
-    , VarID
-    , mkVarID
-    , szero
-    , UVar
-    , Var(..)
-    , QGroundType(..)
-    , StorableGroundType(..)
-    , QValue
-    , QType
-    , QPolyShim
-    , QOpenExpression
-    , QExpression
-    , QShimWit
-    , QSingularType
-    , QSingularShimWit
-    , QBindingInfo(..)
-    , SomeGroundType(..)
-    , QInterpreterBinding(..)
-    , QInterpreter
-    , toJMShimWit
-    , allocateVar
-    , QScopeBuilder
-    , withScopeBuilder
-    , module Pinafore.Language.DefDoc
-    , registerGroundType
-    , registerLetBindings
-    , registerLetBinding
-    , registerPatternConstructor
-    , QSubtypeHint
-    , QSubtypeConversionEntry
-    , registerSubtypeConversion
-    , module Pinafore.Language.Expression
-    , moduleScopeEntries
+    ( moduleScopeEntries
     , checkUpdateEditor
     , QTableSubject(..)
     , makeTestInvocationInfo
     , TesterOptions(..)
     , defaultTester
     , addTesterLibrary
-    , SomeValue(..)
-    , bindsLibrary
     , Tester
     , runTester
     , testerLiftView
@@ -53,21 +14,16 @@ module Pinafore.Test
     , testerLiftInterpreter
     , testerGetDefaultStore
     , testerGetTableState
-    , showPinaforeModel
+    , libraryFetchModule
+    , directoryFetchModule
+    , lcLoadModule
+    , qInterpretFile
+    , qInterpretTextAtType
     ) where
 
-import Changes.Core
+import Import
 import Pinafore
-import Pinafore.Language.API
-import Pinafore.Language.DefDoc
-import Pinafore.Language.Expression
-import Pinafore.Language.Grammar
-import Pinafore.Language.Grammar.Interpret.Interact
-import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Type
-import Pinafore.Language.VarID
-import Shapes
 
 moduleScopeEntries :: QModule -> [(FullName, QBindingInfo)]
 moduleScopeEntries qmod = bindingMapEntries $ scopeBindings $ moduleScope qmod
@@ -122,13 +78,6 @@ defaultTester = let
 
 addTesterLibrary :: LibraryModule () -> TesterOptions -> TesterOptions
 addTesterLibrary lm topts = topts {tstFetchModule = tstFetchModule topts <> libraryFetchModule () [lm]}
-
-data SomeValue =
-    forall t. HasQType 'Positive t => MkSomeValue t
-
-bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule ()
-bindsLibrary mname binds =
-    MkLibraryModule mname $ mconcat $ fmap (\(name, MkSomeValue val) -> valBDS (fullNameRef name) "" val) binds
 
 data TesterContext = MkTesterContext
     { tcInvocationInfo :: InvocationInfo

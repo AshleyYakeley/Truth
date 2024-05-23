@@ -4,8 +4,7 @@ module Test.Entity
     ) where
 
 import Changes.Core
-import Pinafore
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 import Test.RunScript
 

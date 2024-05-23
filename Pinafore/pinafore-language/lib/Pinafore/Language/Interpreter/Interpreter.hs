@@ -22,19 +22,14 @@ module Pinafore.Language.Interpreter.Interpreter
     , withNewTypeID
     ) where
 
-import Data.Shim
-import Language.Expression.Common
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Interpreter.Scope
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
-import Shapes
-import Text.Parsec.Pos (SourcePos, initialPos)
 
 data InterpretContext = MkInterpretContext
     { icSourcePos :: SourcePos
@@ -125,7 +120,7 @@ instance HasInterpreter where
     mkErrorMessage = do
         spos <- paramAsk sourcePosParam
         ntt <- getRenderFullName
-        return $ MkQError spos ntt
+        return $ MkSourceError spos ntt
     getSubtypeConversions = fmap (toList . scopeSubtypes) $ paramAsk scopeParam
 
 contextParam :: Param QInterpreter InterpretContext

@@ -1,13 +1,10 @@
 module Pinafore.Language.Value.Attribute where
 
-import Changes.Core
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Language.Value.FiniteSetModel
 import Pinafore.Language.Value.Lens
 import Pinafore.Language.Value.Prism
 import Pinafore.Language.Value.WholeModel
-import Shapes
 
 newtype LangAttribute (a :: (Type, Type)) (b :: (Type, Type)) =
     MkLangAttribute (ModelAttribute (Contra a) (Co a) (Contra b) (Co b))

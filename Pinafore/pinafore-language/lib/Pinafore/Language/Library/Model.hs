@@ -6,8 +6,7 @@ module Pinafore.Language.Library.Model
     , modelOrderGroundType
     ) where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Convert ()
@@ -15,7 +14,6 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Shapes
 
 -- LangModel
 modelGroundType :: QGroundType '[] LangModel

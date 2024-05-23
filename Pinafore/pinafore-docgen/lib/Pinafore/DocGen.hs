@@ -3,8 +3,6 @@ module Pinafore.DocGen
     ) where
 
 import Pinafore.Documentation
-import Pinafore.Language
-import Pinafore.Main
 import Shapes
 
 isSubtypeRel :: Tree DefDoc -> Bool
@@ -27,7 +25,7 @@ trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 generateCommonMarkDoc :: Handle -> ModuleOptions -> ModuleName -> IO ()
 generateCommonMarkDoc outh modopts modname = do
     let ?library = standardLibraryContext nullInvocationInfo modopts
-    qmodule <- fromInterpretResult $ runPinaforeScoped "<doc>" $ getModule modname
+    docs <- getModuleDocs modname
     let
         runDocTree :: Int -> Int -> Tree DefDoc -> IO ()
         runDocTree hlevel ilevel (MkTree MkDefDoc {..} (MkForest children)) = do
@@ -105,5 +103,5 @@ generateCommonMarkDoc outh modopts modname = do
         headingItem :: DefDoc
         headingItem = MkDefDoc (HeadingDocItem headingTitle) ""
         tree :: Tree DefDoc
-        tree = MkTree headingItem $ moduleDoc qmodule
+        tree = MkTree headingItem docs
     runDocTree 1 0 $ trimDoc $ deepMergeTree (eqMergeOn docItem) tree

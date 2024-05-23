@@ -7,8 +7,7 @@ module Pinafore.Language.Library.Media.Image.Metadata
     ) where
 
 import Data.Media.Image
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Shapes
 
 newtype LangHasMetadata =

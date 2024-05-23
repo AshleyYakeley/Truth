@@ -14,16 +14,12 @@ module Pinafore.Language.Type.Types
     , eitherEntityConvert
     ) where
 
-import Data.Shim
-import Language.Expression.Dolan
-import Pinafore.Base
-import Pinafore.Language.Name
+import Import
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Storable
 import Pinafore.Language.Value
-import Shapes
 
 actionGroundType :: QGroundType '[ CoCCRVariance] Action
 actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Action)|]) "Action"

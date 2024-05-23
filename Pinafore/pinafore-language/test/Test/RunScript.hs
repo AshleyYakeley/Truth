@@ -24,8 +24,7 @@ module Test.RunScript
     ) where
 
 import Data.Shim
-import Pinafore
-import Pinafore.Test
+import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 import Shapes.Test.Context

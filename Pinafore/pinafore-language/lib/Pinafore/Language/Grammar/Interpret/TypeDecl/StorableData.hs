@@ -2,16 +2,12 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
     ( makeStorableDataTypeBox
     ) where
 
-import Pinafore.Base
+import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
-import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Text
-import Shapes
 
 type CovParam :: CCRArgumentKind
 data CovParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where

@@ -1,8 +1,6 @@
 module Pinafore.Language.Type.DynamicSupertype where
 
-import Data.Shim
-import Language.Expression.Dolan
-import Shapes
+import Import
 
 type PolyGreatestDynamicSupertype :: GroundTypeKind -> forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data PolyGreatestDynamicSupertype ground dv gt where

@@ -14,20 +14,15 @@ module Pinafore.Language.Interpreter.ScopeBuilder
     , withCurrentNamespaceScope
     ) where
 
-import Language.Expression.Common
-import Pinafore.Language.DefDoc
+import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar.Docs
 import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Interpreter.Interpreter
 import Pinafore.Language.Interpreter.Scope
 import Pinafore.Language.Interpreter.ScopeDocs
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
-import Shapes
-import Text.Parsec.Pos (SourcePos)
 
 newtype QScopeBuilder a =
     MkQScopeBuilder (WriterT QScopeDocs (WithT QInterpreter) a)

@@ -7,8 +7,7 @@ module Pinafore.Language.Library.Media.Image.JPEG
 import Changes.World.MIME
 import Data.Media.Image
 import Data.Shim
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Pinafore.Language.Library.Media.Image.Image
 import Pinafore.Language.Library.Media.Image.Metadata
 import Shapes

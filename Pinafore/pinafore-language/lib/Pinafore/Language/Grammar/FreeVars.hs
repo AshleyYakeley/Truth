@@ -3,9 +3,7 @@ module Pinafore.Language.Grammar.FreeVars
     , syntaxPatternBindingVariables
     ) where
 
-import Pinafore.Language.Grammar.Syntax
-import Pinafore.Language.Name
-import Shapes
+import Import
 
 -- | Actually a superset, some of these might not be free.
 syntaxExpressionFreeVariables :: SyntaxExpression -> [FullName]

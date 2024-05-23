@@ -1,6 +1,6 @@
 module Pinafore.Language.Shim where
 
-import Data.Shim
+import Import
 
 type QPolyShim :: PolyShimKind
 type QPolyShim = JMShim

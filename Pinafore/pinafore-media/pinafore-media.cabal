@@ -62,7 +62,6 @@ library
     , changes-media
     , changes-world
     , gi-cairo-render
-    , pinafore-base
     , pinafore-language
     , polar-shim
     , shapes

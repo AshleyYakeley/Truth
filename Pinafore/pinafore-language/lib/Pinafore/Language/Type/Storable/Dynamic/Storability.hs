@@ -4,12 +4,10 @@ module Pinafore.Language.Type.Storable.Dynamic.Storability
     , dynamicEntityStorability
     ) where
 
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Storable.Dynamic.Entity
 import Pinafore.Language.Type.Storable.Type
-import Shapes
 
 type DynamicTypeSet = HashSet ConcreteDynamicType
 

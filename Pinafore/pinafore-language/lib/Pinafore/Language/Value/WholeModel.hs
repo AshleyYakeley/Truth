@@ -1,11 +1,8 @@
 module Pinafore.Language.Value.WholeModel where
 
-import Changes.Core
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Language.Value.Instances ()
 import Pinafore.Language.Value.Model
-import Shapes
 
 data LangWholeModel (pq :: (Type, Type)) where
     MutableLangWholeModel :: WModel (BiWholeUpdate (Know p) (Know q)) -> LangWholeModel '( p, q)

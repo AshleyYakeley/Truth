@@ -16,8 +16,7 @@ module Pinafore.Language.Library.Media.Colour
 import Data.Shim
 import Graphics.Color.Space
 import Graphics.Color.Standard.SVG
-import Pinafore.Base
-import Pinafore.Language.API
+import Pinafore.API
 import Shapes
 import Shapes.Numeric
 

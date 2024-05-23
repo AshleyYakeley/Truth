@@ -6,15 +6,12 @@ module Pinafore.Language.Type.Subtype
     , module Pinafore.Language.Type.Subtype.Hint
     ) where
 
-import Data.Shim
-import Language.Expression.Dolan
+import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Type.Subtype.Hint
-import Shapes
 
 funcGroundType :: HasInterpreter => QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =

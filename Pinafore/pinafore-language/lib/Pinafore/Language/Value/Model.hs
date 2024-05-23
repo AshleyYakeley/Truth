@@ -1,9 +1,7 @@
 module Pinafore.Language.Value.Model where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Language.Value.Instances ()
-import Shapes
 
 type InvertibleModelLens t
      = forall m.

@@ -4,11 +4,9 @@ module Pinafore.Language.Library.Convert
     (
     ) where
 
-import Changes.Core
-import Pinafore.Base
+import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Type
-import Shapes
 
 -- IO
 instance (HasQType 'Positive a) => HasQType 'Positive (IO a) where

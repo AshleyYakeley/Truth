@@ -1,7 +1,6 @@
 module Pinafore.Language.Value.Prism where
 
-import Data.Shim
-import Shapes
+import Import
 
 data LangPrism (a :: (Type, Type)) (b :: (Type, Type)) =
     MkLangPrism (Contra a -> Either (Co a) (Co b))

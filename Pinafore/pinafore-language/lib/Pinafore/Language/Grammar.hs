@@ -2,22 +2,20 @@ module Pinafore.Language.Grammar
     ( parseTopExpression
     , parseModule
     , parseType
-    , module I
+    , interpretImportDeclaration
     ) where
 
-import Pinafore.Language.Grammar.Docs as I (Docs)
-import Pinafore.Language.Grammar.Interpret as I (interpretImportDeclaration)
+import Import
+import Pinafore.Language.Error
 import Pinafore.Language.Grammar.Interpret
-import Pinafore.Language.Grammar.Read as I
-import Pinafore.Language.Grammar.Read.Expression as I (operatorFixity)
-import Pinafore.Language.Grammar.Read.Expression
-import Pinafore.Language.Grammar.Read.Parser
-import Pinafore.Language.Grammar.Read.Token as I (allKeywords)
-import Pinafore.Language.Grammar.Read.Type
-import Pinafore.Language.Grammar.Syntax as I (FixAssoc(..), Fixity(..), typeOperatorFixity)
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
-import Shapes
+
+parseScopedReaderWhole :: Parser (QInterpreter t) -> Text -> QInterpreter t
+parseScopedReaderWhole parser text = do
+    spos <- paramAsk sourcePosParam
+    ma <- fromParseResult $ evalStateT (runParser parser text) spos
+    ma
 
 parseTopExpression :: Text -> QInterpreter QExpression
 parseTopExpression = parseScopedReaderWhole $ fmap interpretExpression readExpression

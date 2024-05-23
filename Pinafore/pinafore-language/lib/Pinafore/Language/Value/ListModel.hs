@@ -1,11 +1,8 @@
 module Pinafore.Language.Value.ListModel where
 
-import Changes.Core
-import Data.Shim
-import Pinafore.Base
+import Import
 import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
-import Shapes
 
 type LangListModel :: (Type, Type) -> Type
 data LangListModel pq where

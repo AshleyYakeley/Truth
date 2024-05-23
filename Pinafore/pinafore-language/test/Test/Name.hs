@@ -2,7 +2,7 @@ module Test.Name
     ( testNames
     ) where
 
-import Pinafore
+import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 
