@@ -8,7 +8,7 @@ module Pinafore.Language.Library.FetchModule
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar
+import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import System.Directory (doesFileExist)

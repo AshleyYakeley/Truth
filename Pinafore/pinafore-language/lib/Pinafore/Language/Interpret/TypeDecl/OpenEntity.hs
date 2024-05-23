@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
+module Pinafore.Language.Interpret.TypeDecl.OpenEntity
     ( makeOpenEntityTypeBox
     ) where
 

@@ -1,15 +1,15 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl
+module Pinafore.Language.Interpret.TypeDecl
     ( interpretSequentialTypeDeclaration
     , interpretRecursiveTypeDeclarations
     ) where
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar.Interpret.Type
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
-import Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
-import Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
-import Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
+import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Interpret.TypeDecl.Data
+import Pinafore.Language.Interpret.TypeDecl.DynamicEntity
+import Pinafore.Language.Interpret.TypeDecl.OpenEntity
+import Pinafore.Language.Interpret.TypeDecl.StorableData
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 

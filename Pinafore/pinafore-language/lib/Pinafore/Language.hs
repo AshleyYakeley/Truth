@@ -38,8 +38,7 @@ import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Grammar
-import Pinafore.Language.Grammar.Interpret
+import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library
 import Pinafore.Language.Type

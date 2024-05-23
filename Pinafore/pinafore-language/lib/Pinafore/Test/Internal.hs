@@ -44,8 +44,7 @@ import Import
 import Pinafore.API
 import Pinafore.Language
 import Pinafore.Language.Expression
-import Pinafore.Language.Grammar
-import Pinafore.Language.Grammar.Interpret.Interact
+import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Pinafore.Language.VarID

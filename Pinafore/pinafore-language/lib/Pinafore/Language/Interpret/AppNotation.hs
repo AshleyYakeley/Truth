@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.AppNotation
+module Pinafore.Language.Interpret.AppNotation
     ( appNotationUnquote
     , appNotationQuote
     ) where

@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
+module Pinafore.Language.Interpret.TypeDecl.Representation
     ( MaybeUnitWitness(..)
     , EqWitness
     , leftCodec

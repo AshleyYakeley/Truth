@@ -1,11 +1,11 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
+module Pinafore.Language.Interpret.TypeDecl.StorableData
     ( makeStorableDataTypeBox
     ) where
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
+import Pinafore.Language.Interpret.TypeDecl.Data
+import Pinafore.Language.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 

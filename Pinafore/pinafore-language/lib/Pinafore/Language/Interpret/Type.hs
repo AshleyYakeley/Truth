@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.Type
+module Pinafore.Language.Interpret.Type
     ( interpretType
     , interpretConcreteDynamicEntityType
     , interpretNonpolarType

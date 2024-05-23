@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.Interact
+module Pinafore.Language.Interpret.Interact
     ( runInteract
     , showPinaforeModel
     ) where
@@ -7,7 +7,7 @@ import Control.Exception (Handler(..), catches)
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Grammar.Interpret.Expression
+import Pinafore.Language.Interpret.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import System.IO.Error

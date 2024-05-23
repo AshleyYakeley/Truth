@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.Expression
+module Pinafore.Language.Interpret.Expression
     ( interpretExpression
     , interpretModule
     , interpretDeclarationWith
@@ -12,11 +12,11 @@ import Import
 import Pinafore.Language.Debug
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Grammar.FreeVars
-import Pinafore.Language.Grammar.Interpret.AppNotation
-import Pinafore.Language.Grammar.Interpret.Type
-import Pinafore.Language.Grammar.Interpret.TypeDecl
 import Pinafore.Language.If
+import Pinafore.Language.Interpret.AppNotation
+import Pinafore.Language.Interpret.FreeVars
+import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm

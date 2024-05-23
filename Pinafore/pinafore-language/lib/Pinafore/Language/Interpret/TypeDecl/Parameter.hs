@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter where
+module Pinafore.Language.Interpret.TypeDecl.Parameter where
 
 import Import
 

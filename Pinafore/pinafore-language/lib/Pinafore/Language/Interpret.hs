@@ -1,13 +1,16 @@
-module Pinafore.Language.Grammar
+module Pinafore.Language.Interpret
     ( parseTopExpression
     , parseModule
     , parseType
     , interpretImportDeclaration
+    , runInteract
+    , showPinaforeModel
     ) where
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Grammar.Interpret
+import Pinafore.Language.Interpret.Expression
+import Pinafore.Language.Interpret.Interact
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 

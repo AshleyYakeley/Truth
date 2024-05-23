@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.FreeVars
+module Pinafore.Language.Interpret.FreeVars
     ( syntaxExpressionFreeVariables
     , syntaxPatternBindingVariables
     ) where

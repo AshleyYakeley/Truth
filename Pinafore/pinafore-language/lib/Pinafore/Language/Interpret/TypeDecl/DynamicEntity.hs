@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
+module Pinafore.Language.Interpret.TypeDecl.DynamicEntity
     ( makeAbstractDynamicEntityTypeBox
     , makeConcreteDynamicEntityTypeBox
     ) where

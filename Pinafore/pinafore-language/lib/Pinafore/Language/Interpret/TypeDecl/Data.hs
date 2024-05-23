@@ -1,4 +1,4 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
+module Pinafore.Language.Interpret.TypeDecl.Data
     ( ConstructorFlavour(..)
     , ConstructorType(..)
     , ConstructorCodec
@@ -12,9 +12,9 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Grammar.Interpret.Type
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
+import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Interpret.TypeDecl.Parameter
+import Pinafore.Language.Interpret.TypeDecl.Representation
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
