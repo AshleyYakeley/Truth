@@ -5,27 +5,27 @@ in
 with GTK in
 namespace UILib of
 
-    #| An open entity type; something with a name
-    opentype Named;
+    docsec "Named" of
 
-    namespace Named of
+        #| An open entity type; something with a name
+        opentype Named;
 
-        #| A name is a text that identifies (in some sense) an entity.
-        nameOf: Property Named Text =
-            property @Named @Text !"identify.name" ?store;
+        namespace Named of
 
-        #| Order alphabetically (case-insensitive) by name
-        nameOrder: ModelOrder Named =
-            on.ModelOrder nameOf order.Text;
+            #| A name is a text that identifies (in some sense) an entity.
+            nameOf: Property Named Text =
+                property @Named @Text !"identify.name" ?store;
 
-        #| Order a set of entities by their names.
-        byName: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text)) =
-            fn model => toList.FiniteSetModel (map.ModelOrder fst.Product nameOrder) $ (id.Property **.Property nameOf) !$$ model;
+            #| Order alphabetically (case-insensitive) by name
+            order: ModelOrder Named =
+                on.ModelOrder nameOf order.Text;
 
-        namespace UI of
+            #| Order a set of entities by their names.
+            toList: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text)) =
+                fn model => toList.FiniteSetModel (map.ModelOrder fst.Product order) $ (id.Property **.Property nameOf) !$$ model;
 
             #| A pane for a widget, where the title is the name of the widget.
-            namedPane: (a -> Widget) -> (a & Named) -> Pane =
+            pane: (a -> Widget) -> (a & Named) -> Pane =
                 fn itemWidget, e =>
                 let
                     titleModel= nameOf !$% {e};
@@ -34,22 +34,22 @@ namespace UILib of
                 in Mk.Pane;
 
             #| A "name" column for `listTable.Widget`.
-            nameColumn: WholeModel +Text *: (Named -> WholeModel Text) =
+            column: WholeModel +Text *: (Named -> WholeModel Text) =
                 ({"Name"},fn p => nameOf !$ {p});
 
             #| A `SetWidget` for this set that's a list of widgets by name.
-            namedTable: FiniteSetModel {a,+Named} -> (a -> Widget) -> SetWidget {a,-Named} =
+            table: FiniteSetModel {a,+Named} -> (a -> Widget) -> SetWidget {a,-Named} =
                 fn sm, itemWidget =>
                 Mk.SetWidget $
                 fn msel =>
                 exec.Widget $
                 do
-                    lm <- getList.FiniteSetModel nameOrder sm;
-                    pure.Action $ listTable.Widget [nameColumn] lm (fn e => paneWindow.Pane $ namedPane itemWidget e) msel;
+                    lm <- getList.FiniteSetModel order sm;
+                    pure.Action $ listTable.Widget [column.Named] lm (fn e => paneWindow.Pane $ pane.Named itemWidget e) msel;
                 end;
 
         end;
 
-    end
+    end;
 
 end;

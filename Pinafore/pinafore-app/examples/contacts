@@ -2,10 +2,7 @@
 import "pinafore-gnome", "UILib" in
 with
     GTK.,
-    UILib.,
-    Pane.UILib.,
-    Named.UILib.,
-    UI.Named.UILib.
+    UILib.
 in
 run.Context $ fn Mk.Context =>
 imply
@@ -104,7 +101,7 @@ let
         [
             page.Widget {"Work"} $ vertical.Widget
             [
-                labelled.Widget {"Employer: "} $ pick.Widget (byName contactSet) $ employerOf !$% p
+                labelled.Widget {"Employer: "} $ pick.Widget (toList.Named contactSet) $ employerOf !$% p
             ],
             page.Widget {"Family"} $ familyUI p
         ];
@@ -116,16 +113,16 @@ let
             labelled.Widget {"Birth: "} $ textEntry.Widget $ reverse.Prism asText.Date !$ birthDateOf !$% p,
             labelled.Widget {"Death: "} $ textEntry.Widget $ reverse.Prism asText.Date !$ deathDateOf !$% p,
             checkBox.Widget {"Married"} $ marriedOf !$% p,
-            labelled.Widget {"Mother: "} $ pick.Widget (byName peopleSet) $ motherOf !$% p,
-            labelled.Widget {"Father: "} $ pick.Widget (byName peopleSet) $ fatherOf !$% p,
+            labelled.Widget {"Mother: "} $ pick.Widget (toList.Named peopleSet) $ motherOf !$% p,
+            labelled.Widget {"Father: "} $ pick.Widget (toList.Named peopleSet) $ fatherOf !$% p,
             label.Widget {"Children:"},
-            layoutGrow.Widget $ toWidget.SetWidget $ namedTable (childrenSet p) contactUI
+            layoutGrow.Widget $ toWidget.SetWidget $ table.Named (childrenSet p) contactUI
         ];
 
         organisationPages: WholeModel +Organisation -> List (Widget *: Widget) =
         fn subj =>
         [
-            page.Widget {"Employees"} $ toWidget.SetWidget $ namedTable (employeeSet subj) contactUI
+            page.Widget {"Employees"} $ toWidget.SetWidget $ table.Named (employeeSet subj) contactUI
         ];
 
         contactUI: Contact -> Widget =
@@ -139,7 +136,7 @@ let
         in
         vertical.Widget
         [
-            labelled.Widget {"Name: "} $ textEntry.Widget $ nameOf !$% {c},
+            labelled.Widget {"Name: "} $ textEntry.Widget $ nameOf.Named !$% {c},
             layoutGrow.Widget $ notebook.Widget unknown pages
         ];
     end;
@@ -153,14 +150,14 @@ let
             Mk.NewItem of name = "New Person"; mkey = Just "Ctrl+K"; newItem = new.DynamicEntity @Person end,
             Mk.NewItem of name = "New Organisation"; newItem = new.DynamicEntity @Organisation end
         ];
-        itemPane = namedPane contactUI;
-        setWidget = namedTable contactSet contactUI;
+        itemPane = pane.Named contactUI;
+        setWidget = table.Named contactSet contactUI;
     end;
 
     contactsWindow: Action Window =
     do
-        p <- presentSetWithItem contactsPresentation;
-        paneWindow p;
+        p <- presentWithItem.SetPresentation contactsPresentation;
+        paneWindow.Pane p;
     end;
 
 in contactsWindow

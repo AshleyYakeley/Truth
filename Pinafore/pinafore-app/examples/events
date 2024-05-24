@@ -2,10 +2,7 @@
 import "pinafore-gnome", "UILib" in
 with
     GTK.,
-    UILib.,
-    Pane.UILib.,
-    Named.UILib.,
-    UI.Named.UILib.
+    UILib.
 in
 run.Context $ fn Mk.Context =>
 imply
@@ -102,7 +99,7 @@ let
         let
 
             eventData: FiniteSetModel (EventTime *: Text) =
-            (timeOf.Event **.Property nameOf) !$$ eventSet;
+            (timeOf.Event **.Property nameOf.Named) !$$ eventSet;
 
             eventDataOrder: ModelOrder (EventTime *: Text) =
             map.ModelOrder fst order.EventTime;
@@ -157,7 +154,7 @@ let
     fn evt =>
     mfix $
     fn window =>
-    open.Window gtk (200,200) {"date of " <>.Text %(nameOf !$% evt)} $ vertical.Widget
+    open.Window gtk (200,200) {"date of " <>.Text %(nameOf.Named !$% evt)} $ vertical.Widget
     [
         calendar.Widget $ dateOf.EventTime !$ (timeOf.Event !$% evt),
         button.Widget {"Done: " <>.Text show %(dateOf.EventTime !$ timeOf.Event !$% evt)} {close.Window window}
@@ -167,7 +164,7 @@ let
     fn evt =>
     vertical.Widget
     [
-        textEntry.Widget $ nameOf !$% {evt},
+        textEntry.Widget $ nameOf.Named !$% {evt},
         horizontal.Widget
         [
             button.Widget {"cal"} {calendarWindow {evt}},
@@ -179,14 +176,14 @@ let
 
     eventWindow: Event -> Action Window =
     fn evt =>
-    paneWindow $ namedPane eventUI evt;
+    paneWindow.Pane $ pane.Named eventUI evt;
 
     newEvent: Action Event =
     do
         item <- new.OpenEntity @Event;
         day <- getNowLocal.Date;
         timeOf.Event !$ {item} := MkDate.EventTime day;
-        nameOf !$ {item} := "";
+        nameOf.Named !$ {item} := "";
         pure item;
     end;
 
@@ -198,10 +195,10 @@ let
         let
             timeColumn: WholeModel +Text *: (Event -> WholeModel Text)
             = ({"When"},fn e => {show $ %(timeOf.Event !$ {e})});
-            nameColumn: WholeModel +Text *: (Event -> WholeModel Text)
-            = ({"What"},fn e => nameOf !$ {e});
+            column: WholeModel +Text *: (Event -> WholeModel Text)
+            = ({"What"},fn e => nameOf.Named !$ {e});
         in
-        [timeColumn,nameColumn];
+        [timeColumn,column];
     in
     exec.Widget $
     do
@@ -221,13 +218,13 @@ let
                 newItem = newEvent;
             end
         ];
-        itemPane = namedPane eventUI;
+        itemPane = pane.Named eventUI;
         setWidget = eventsTableUI;
     end;
 
 in
 do
-    eventsPane <- presentSetWithItem eventsPresentation;
+    eventsPane <- presentWithItem.SetPresentation eventsPresentation;
     p <- notebook.Pane {"Events"} [overviewPane,eventsPane];
-    paneWindow p
+    paneWindow.Pane p
 end

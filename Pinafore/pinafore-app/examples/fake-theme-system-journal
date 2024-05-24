@@ -2,10 +2,7 @@
 import "pinafore-gnome", "UILib" in
 with
     GTK.,
-    UILib.,
-    Pane.UILib.,
-    Named.UILib.,
-    UI.Named.UILib.
+    UILib.
 in
 run.Context $ fn Mk.Context =>
 imply
@@ -39,5 +36,5 @@ let
 in
 do
     mainPane <- createMainPane;
-    paneWindow mainPane;
+    paneWindow.Pane mainPane;
 end
