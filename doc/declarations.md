@@ -259,6 +259,29 @@ At the point at which `q.B.A.` is declared, references such as `x` will be searc
 * `x.A.` (parent of the above)
 * `x.` (parent of the above)
 
+### Documentation Section Declarations
+
+For modules, you can organise the generated documentation of your declarations into sections using `docsec` declarations.
+
+```pinafore
+#| Some multiples of integers.
+docsec "Multiples" of
+    double: Integer -> Integer = fn x => x * 2;
+    triple: Integer -> Integer = fn x => x * 3;
+end;
+```
+
+You can also add the `docsec` modifier to a namespace declaration: this will create a documentation section with the name of the namespace.
+
+```pinafore
+namespace docsec A of
+    p = 3;
+    q = 4;
+end;
+```
+
+Use of `docsec` doesn't affect program semantics, it only changes the output of documentation generation.
+
 ### Expose Declarations
 
 Expose declarations provide a simple way of hiding declarations.

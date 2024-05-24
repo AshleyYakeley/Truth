@@ -1,7 +1,8 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Language
-    - implicit parameters
+    - support implicit parameters
+    - allow documentation sections in declarations
   * Install
     - rename executable pinafore-docgen to pinadoc
     - include pinadoc in Debian and Nix packages

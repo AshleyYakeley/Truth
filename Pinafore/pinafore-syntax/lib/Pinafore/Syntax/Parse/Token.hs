@@ -106,6 +106,7 @@ data Token t where
     TokAs :: Token ()
     TokExcept :: Token ()
     TokNamespace :: Token ()
+    TokDocSec :: Token ()
     TokWith :: Token ()
     TokNamesUpper :: Token TokenNames
     TokNamesLower :: Token TokenNames
@@ -170,6 +171,7 @@ instance TestEquality Token where
     testEquality TokAs TokAs = Just Refl
     testEquality TokExcept TokExcept = Just Refl
     testEquality TokNamespace TokNamespace = Just Refl
+    testEquality TokDocSec TokDocSec = Just Refl
     testEquality TokWith TokWith = Just Refl
     testEquality TokNamesUpper TokNamesUpper = Just Refl
     testEquality TokNamesLower TokNamesLower = Just Refl
@@ -226,6 +228,7 @@ instance Show (Token t) where
     show TokAs = show ("as" :: String)
     show TokExcept = show ("except" :: String)
     show TokNamespace = show ("namespace" :: String)
+    show TokDocSec = show ("docsec" :: String)
     show TokWith = show ("with" :: String)
     show TokNamesUpper = "unames"
     show TokNamesLower = "lnames"
@@ -361,6 +364,7 @@ checkKeyword "import" = return $ MkSomeOf TokImport ()
 checkKeyword "as" = return $ MkSomeOf TokAs ()
 checkKeyword "except" = return $ MkSomeOf TokExcept ()
 checkKeyword "namespace" = return $ MkSomeOf TokNamespace ()
+checkKeyword "docsec" = return $ MkSomeOf TokDocSec ()
 checkKeyword "with" = return $ MkSomeOf TokWith ()
 checkKeyword "debug"
     | debugSyntaxINTERNAL = return $ MkSomeOf TokDebug ()
@@ -393,6 +397,7 @@ allKeywords =
     , ("as", "keyword.other.pinafore")
     , ("except", "keyword.other.pinafore")
     , ("namespace", "keyword.declaration.pinafore")
+    , ("docsec", "keyword.declaration.pinafore")
     , ("with", "keyword.declaration.pinafore")
     ]
 

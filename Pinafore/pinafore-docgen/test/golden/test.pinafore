@@ -82,44 +82,54 @@ let rec
 end;
 
 #| doc:N
-namespace N of
+namespace docsec N of
     #| doc:N.q
     q: Integer = 45;
     #| doc:N.xx
     xx: Text = "Hello";
 
-    #| doc:NmA
-    datatype NmA {+p,-q} +r -s of
-        #| doc:Mk1.NmA
-        Mk1 (q -> s -> p) r;
-        #| doc:Mk2.NmA
-        Mk2 p (s -> r);
-    end;
+    #| doc: Section
+    docsec "Some Section" of
 
-    #| doc:NmB
-    datatype NmB of
-        #| doc:Mk.NmB
-        Mk Integer;
-    end;
-
-    subtype NmA Integer Unit Unit <: NmB = fn _ => Mk.NmB 17;
-
-    let rec
-        #| doc:NmRecA
-        datatype NmRecA {+p,-q} +r -s of
-            #| doc:Mk1.NmRecA
+        #| doc:NmA
+        datatype NmA {+p,-q} +r -s of
+            #| doc:Mk1.NmA
             Mk1 (q -> s -> p) r;
-            #| doc:Mk2.NmRecA
+            #| doc:Mk2.NmA
             Mk2 p (s -> r);
         end;
 
-        #| doc:NmRecB
-        datatype NmRecB of
-            #| doc:Mk.NmRecB
-            Mk Integer;
+        #| doc: Subsection
+        docsec "Subsection" of
+
+            #| doc:NmB
+            datatype NmB of
+                #| doc:Mk.NmB
+                Mk Integer;
+            end;
+
         end;
 
-        subtype NmRecA Integer Unit Unit <: NmRecB = fn _ => Mk.NmRecB 17;
+        subtype NmA Integer Unit Unit <: NmB = fn _ => Mk.NmB 17;
+
+        let rec
+            #| doc:NmRecA
+            datatype NmRecA {+p,-q} +r -s of
+                #| doc:Mk1.NmRecA
+                Mk1 (q -> s -> p) r;
+                #| doc:Mk2.NmRecA
+                Mk2 p (s -> r);
+            end;
+
+            #| doc:NmRecB
+            datatype NmRecB of
+                #| doc:Mk.NmRecB
+                Mk Integer;
+            end;
+
+            subtype NmRecA Integer Unit Unit <: NmRecB = fn _ => Mk.NmRecB 17;
+        end;
+
     end;
 
     #| doc:NmR
@@ -133,9 +143,13 @@ namespace N of
         end;
     end;
 
+    #| doc:NN
     namespace NN of
-        #| doc:N.NN.xyz
-        xyz: Unit = ();
+        #| doc:N.NN.xyz1
+        xyz1: Unit = ();
+
+        #| doc:N.NN.xyz2
+        xyz2: Unit = ();
     end;
 
 end;

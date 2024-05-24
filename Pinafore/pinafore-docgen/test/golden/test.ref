@@ -120,6 +120,10 @@
 
 > doc:N.xx
 > 
+### Some Section
+
+> doc: Section
+> 
 <code>type </code>**<code>NmA\.N\.</code>**<code> {\-q,\+p} \+r \-s</code>
 
 > doc:NmA
@@ -132,6 +136,10 @@
 > 
 > > doc:Mk2.NmA
 > > 
+#### Subsection
+
+> doc: Subsection
+> 
 <code>type </code>**<code>NmB\.N\.</code>**
 
 > doc:NmB
@@ -180,9 +188,11 @@
 > > 
 > > > doc:nmrq
 > > > 
-### NN\.N\.
+**<code>xyz1\.NN\.N\.</code>**<code> : Unit\.</code>
 
-**<code>xyz\.NN\.N\.</code>**<code> : Unit\.</code>
+> doc:N.NN.xyz1
+> 
+**<code>xyz2\.NN\.N\.</code>**<code> : Unit\.</code>
 
-> doc:N.NN.xyz
+> doc:N.NN.xyz2
 > 

@@ -267,6 +267,10 @@ interpretImportDeclaration modname = do
     newmod <- getModule modname
     return $ MkQScopeDocs [moduleScope newmod] $ moduleDoc newmod
 
+sectionHeading :: Text -> RawMarkdown -> QScopeBuilder --> QScopeBuilder
+sectionHeading heading doc =
+    prodCensor builderDocsProd $ \docs -> pureForest $ MkTree (MkDefDoc (HeadingDocItem $ plainText heading) doc) docs
+
 interpretDeclaration :: SyntaxDeclaration -> QScopeBuilder ()
 interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
     scopeSetSourcePos spos
@@ -288,12 +292,13 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         ExposeDeclaration items -> do
             sd <- builderLift $ interpretExpose items
             outputScopeDocs sd
-        NamespaceSyntaxDeclaration nsn decls ->
+        NamespaceSyntaxDeclaration makeSection nsn decls ->
             withCurrentNamespaceScope nsn $
-            prodCensor
-                builderDocsProd
-                (\docs -> pureForest $ MkTree (MkDefDoc (HeadingDocItem $ plainText $ showText nsn) doc) docs) $
+            (if makeSection
+                 then sectionHeading (showText nsn) doc
+                 else id) $
             for_ decls interpretDeclaration
+        DocSectionSyntaxDeclaration heading decls -> sectionHeading heading doc $ for_ decls interpretDeclaration
         DebugSyntaxDeclaration nameref -> do
             mfd <- builderLift $ lookupDebugBindingInfo nameref
             liftIO $

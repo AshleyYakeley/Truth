@@ -185,11 +185,19 @@ readNamespaceWith = do
 readNamespaceDecl :: Parser SyntaxDeclaration'
 readNamespaceDecl = do
     readThis TokNamespace
+    msect <- optional $ readThis TokDocSec
     curns <- readAskNamespace
     name <- readUName
     let ns = namespaceAppend [name] curns
     decls <- readWithNamespace ns $ readOf readDeclaration
-    return $ NamespaceSyntaxDeclaration ns decls
+    return $ NamespaceSyntaxDeclaration (isJust msect) ns decls
+
+readDocSectionDecl :: Parser SyntaxDeclaration'
+readDocSectionDecl = do
+    readThis TokDocSec
+    heading <- readThis TokString
+    decls <- readOf readDeclaration
+    return $ DocSectionSyntaxDeclaration heading decls
 
 readNameRefItem :: Parser SyntaxNameRefItem
 readNameRefItem =
@@ -235,6 +243,7 @@ readDeclaration =
         , readDeclaratorDeclaration
         , fmap DirectSyntaxDeclaration readDirectDeclaration
         , readNamespaceDecl
+        , readDocSectionDecl
         ]
 
 readSubsumedExpression :: SyntaxExpression -> Parser SyntaxExpression

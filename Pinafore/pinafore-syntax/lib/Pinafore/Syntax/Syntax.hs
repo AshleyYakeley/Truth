@@ -95,8 +95,11 @@ data SyntaxDeclaration'
     | DeclaratorInSyntaxDeclaration SyntaxDeclarator
                                     SyntaxDeclaration
     | ExposeDeclaration [SyntaxNameRefItem]
-    | NamespaceSyntaxDeclaration Namespace
+    | NamespaceSyntaxDeclaration Bool
+                                 Namespace
                                  [SyntaxDeclaration]
+    | DocSectionSyntaxDeclaration Text
+                                  [SyntaxDeclaration]
     | DebugSyntaxDeclaration FullNameRef
     deriving (Eq)
 

@@ -97,7 +97,7 @@ instance SyntaxFreeVariables SyntaxRecursiveDeclaration' where
 
 instance SyntaxFreeVariables SyntaxDeclaration' where
     syntaxFreeVariables (DirectSyntaxDeclaration bind) = syntaxFreeVariables bind
-    syntaxFreeVariables (NamespaceSyntaxDeclaration _ decls) = syntaxFreeVariables decls
+    syntaxFreeVariables (NamespaceSyntaxDeclaration _ _ decls) = syntaxFreeVariables decls
     syntaxFreeVariables _ = mempty
 
 class SyntaxBindingVariables t where
