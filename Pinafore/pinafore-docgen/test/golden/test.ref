@@ -1,54 +1,54 @@
 # import \\"test\\"
 
-<code>type </code>**<code>A\.</code>**<code> {\-q,\+p} \+r \-s</code>
+<code>type </code>**<code>A</code>**<code> {\-q,\+p} \+r \-s</code>
 
 > doc:A
 > 
-> **<code>Mk1\.A\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> A\.</code>
+> **<code>Mk1\.A</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> A</code>
 > 
 > > doc:Mk1.A
 > > 
-> **<code>Mk2\.A\.</code>**<code> : p \-\> (s \-\> r) \-\> A\.</code>
+> **<code>Mk2\.A</code>**<code> : p \-\> (s \-\> r) \-\> A</code>
 > 
 > > doc:Mk2.A
 > > 
-<code>type </code>**<code>B\.</code>**
+<code>type </code>**<code>B</code>**
 
 > doc:B
 > 
-> **<code>Mk\.B\.</code>**<code> : Integer \-\> B\.</code>
+> **<code>Mk\.B</code>**<code> : Integer \-\> B</code>
 > 
 > > doc:Mk.B
 > > 
 <code>subtype A Integer Unit Unit \<: B</code>
 
-<code>type </code>**<code>RecA\.</code>**<code> {\-q,\+p} \+r \-s</code>
+<code>type </code>**<code>RecA</code>**<code> {\-q,\+p} \+r \-s</code>
 
 > doc:RecA
 > 
-> **<code>Mk1\.RecA\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> RecA\.</code>
+> **<code>Mk1\.RecA</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> RecA</code>
 > 
 > > doc:Mk1.RecA
 > > 
-> **<code>Mk2\.RecA\.</code>**<code> : p \-\> (s \-\> r) \-\> RecA\.</code>
+> **<code>Mk2\.RecA</code>**<code> : p \-\> (s \-\> r) \-\> RecA</code>
 > 
 > > doc:Mk2.RecA
 > > 
-<code>type </code>**<code>RecB\.</code>**
+<code>type </code>**<code>RecB</code>**
 
 > doc:RecB
 > 
-> **<code>Mk\.RecB\.</code>**<code> : Integer \-\> RecB\.</code>
+> **<code>Mk\.RecB</code>**<code> : Integer \-\> RecB</code>
 > 
 > > doc:Mk.RecB
 > > 
 <code>subtype RecA Integer Unit Unit \<: RecB</code>
 
-<code>type </code>**<code>R\.</code>**
+<code>type </code>**<code>R</code>**
 
 > doc:R
 > 
-> **<code>Mk\.R\.</code>**<code> : R\.</code>
+> **<code>Mk\.R</code>**<code> : R</code>
 > 
 > > doc:Mk.R
 > > 
@@ -60,51 +60,51 @@
 > > 
 > > > doc:rq
 > > > 
-**<code>x\.</code>**<code> : Text\.</code>
+**<code>x</code>**<code> : Text</code>
 
 > doc:x
 > 
-**<code>y\.</code>**<code> : Text\. \-\> Text\.</code>
+**<code>y</code>**<code> : Text \-\> Text</code>
 
 > doc:y
 > 
-**<code>pz\.</code>**<code> : ?z: a, a</code>
+**<code>pz</code>**<code> : ?z: a, a</code>
 
 > doc:pz
 > 
-**<code>pzi\.</code>**<code> : ?z: Integer\., Integer\.</code>
+**<code>pzi</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:pzi
 > 
-**<code>pz1\.</code>**<code> : ?z: Integer\., Integer\.</code>
+**<code>pz1</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:pz1
 > 
-**<code>pzz1\.</code>**<code> : ?z: Integer\., Integer\.</code>
+**<code>pzz1</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:pzz1
 > 
-**<code>ry\.</code>**<code> : Text\. \-\> Text\.</code>
+**<code>ry</code>**<code> : Text \-\> Text</code>
 
 > doc:ry
 > 
-**<code>rx\.</code>**<code> : Text\.</code>
+**<code>rx</code>**<code> : Text</code>
 
 > doc:rx
 > 
-**<code>rpzz1\.</code>**<code> : ?z: Integer\., Integer\.</code>
+**<code>rpzz1</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:rpzz1
 > 
-**<code>rpzi\.</code>**<code> : ?z: Integer\., Integer\.</code>
+**<code>rpzi</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:rpzi
 > 
-**<code>rpz1\.</code>**<code> : ?z: Integer\., Integer\.</code>
+**<code>rpz1</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:rpz1
 > 
-**<code>rpz\.</code>**<code> : ?z: a, a</code>
+**<code>rpz</code>**<code> : ?z: a, a</code>
 
 > doc:rpz
 > 
@@ -112,11 +112,11 @@
 
 > doc:N
 > 
-**<code>q\.N\.</code>**<code> : Integer\.</code>
+**<code>q\.N</code>**<code> : Integer</code>
 
 > doc:N.q
 > 
-**<code>xx\.N\.</code>**<code> : Text\.</code>
+**<code>xx\.N</code>**<code> : Text</code>
 
 > doc:N.xx
 > 
@@ -124,15 +124,15 @@
 
 > doc: Section
 > 
-<code>type </code>**<code>NmA\.N\.</code>**<code> {\-q,\+p} \+r \-s</code>
+<code>type </code>**<code>NmA\.N</code>**<code> {\-q,\+p} \+r \-s</code>
 
 > doc:NmA
 > 
-> **<code>Mk1\.NmA\.N\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmA\.N\.</code>
+> **<code>Mk1\.NmA\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmA\.N</code>
 > 
 > > doc:Mk1.NmA
 > > 
-> **<code>Mk2\.NmA\.N\.</code>**<code> : p \-\> (s \-\> r) \-\> NmA\.N\.</code>
+> **<code>Mk2\.NmA\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmA\.N</code>
 > 
 > > doc:Mk2.NmA
 > > 
@@ -140,43 +140,43 @@
 
 > doc: Subsection
 > 
-<code>type </code>**<code>NmB\.N\.</code>**
+<code>type </code>**<code>NmB\.N</code>**
 
 > doc:NmB
 > 
-> **<code>Mk\.NmB\.N\.</code>**<code> : Integer \-\> NmB\.N\.</code>
+> **<code>Mk\.NmB\.N</code>**<code> : Integer \-\> NmB\.N</code>
 > 
 > > doc:Mk.NmB
 > > 
 <code>subtype NmA Integer Unit Unit \<: NmB</code>
 
-<code>type </code>**<code>NmRecA\.N\.</code>**<code> {\-q,\+p} \+r \-s</code>
+<code>type </code>**<code>NmRecA\.N</code>**<code> {\-q,\+p} \+r \-s</code>
 
 > doc:NmRecA
 > 
-> **<code>Mk1\.NmRecA\.N\.</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmRecA\.N\.</code>
+> **<code>Mk1\.NmRecA\.N</code>**<code> : (q \-\> s \-\> p) \-\> r \-\> NmRecA\.N</code>
 > 
 > > doc:Mk1.NmRecA
 > > 
-> **<code>Mk2\.NmRecA\.N\.</code>**<code> : p \-\> (s \-\> r) \-\> NmRecA\.N\.</code>
+> **<code>Mk2\.NmRecA\.N</code>**<code> : p \-\> (s \-\> r) \-\> NmRecA\.N</code>
 > 
 > > doc:Mk2.NmRecA
 > > 
-<code>type </code>**<code>NmRecB\.N\.</code>**
+<code>type </code>**<code>NmRecB\.N</code>**
 
 > doc:NmRecB
 > 
-> **<code>Mk\.NmRecB\.N\.</code>**<code> : Integer \-\> NmRecB\.N\.</code>
+> **<code>Mk\.NmRecB\.N</code>**<code> : Integer \-\> NmRecB\.N</code>
 > 
 > > doc:Mk.NmRecB
 > > 
 <code>subtype NmRecA Integer Unit Unit \<: NmRecB</code>
 
-<code>type </code>**<code>NmR\.N\.</code>**
+<code>type </code>**<code>NmR\.N</code>**
 
 > doc:NmR
 > 
-> **<code>Mk\.NmR\.N\.</code>**<code> : NmR\.N\.</code>
+> **<code>Mk\.NmR\.N</code>**<code> : NmR\.N</code>
 > 
 > > doc:Mk.NmR
 > > 
@@ -188,11 +188,11 @@
 > > 
 > > > doc:nmrq
 > > > 
-**<code>xyz1\.NN\.N\.</code>**<code> : Unit\.</code>
+**<code>xyz1\.NN\.N</code>**<code> : Unit</code>
 
 > doc:N.NN.xyz1
 > 
-**<code>xyz2\.NN\.N\.</code>**<code> : Unit\.</code>
+**<code>xyz2\.NN\.N</code>**<code> : Unit</code>
 
 > doc:N.NN.xyz2
 > 

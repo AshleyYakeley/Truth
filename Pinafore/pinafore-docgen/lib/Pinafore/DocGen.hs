@@ -37,7 +37,7 @@ generateCommonMarkDoc outh modopts modname = do
                 mapFullNameRef :: FullNameRef -> FullName
                 mapFullNameRef fn = namespaceConcatFullName RootNamespace fn
                 toMarkdown :: NamedText -> MarkdownText
-                toMarkdown = plainText . toText
+                toMarkdown = plainText . runRelativeNamedText [RootNamespace]
                 showMarkdown ::
                        forall a. ShowNamedText a
                     => a
