@@ -636,7 +636,7 @@ baseLibSections =
                         dts <- getDynamicEntityType t
                         return $ jmToValue $ toList dts
                   , specialFormBDS
-                        "subtype"
+                        "isSubtype"
                         "Whether this type is in `A`, a dynamic entity type."
                         ["@A"]
                         "DynamicType. -> Boolean." $

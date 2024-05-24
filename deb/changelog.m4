@@ -8,6 +8,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - clean up Nix flake outputs
   * Fixes
     - fix defect with expressions with free variables in expose declarations
+    - fix library names that were keywords
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
