@@ -1,1 +1,5 @@
 home/
+docker/flake.nix
+docker/flake.lock
+docker/stack.yaml
+docker/stack.yaml.lock

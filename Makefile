@@ -193,12 +193,28 @@ deb: out/$(PACKAGEFULLNAME).deb
 nix-flake: out
 	nix flake check .?submodules=1
 
-nix-docker-image:
+nix/docker/flake.nix: flake.nix
+	cp $< $@
+
+nix/docker/flake.lock: flake.lock
+	cp $< $@
+
+nix/docker/stack.yaml: stack.yaml
+	stack $(STACKFLAGS) exec -- yq '.packages=[]' $< > $@
+
+nix/docker/stack.yaml.lock: stack.yaml.lock
+	cp $< $@
+
+nix-docker-image: nix/docker/flake.nix nix/docker/flake.lock nix/docker/stack.yaml nix/docker/stack.yaml.lock
 	docker build -t nix-build nix/docker
 
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
 	docker run --rm -v `pwd`:/workspace -ti nix-build nix flake check .?submodules=1
+
+nix-docker-shell: nix-docker-image
+	mkdir -p nix/home
+	docker run --rm -v `pwd`:/workspace -ti nix-build bash
 
 
 ### Support data
@@ -322,6 +338,10 @@ clean:
 	rm -rf doc/generated
 	rm -rf doc/library
 	rm -rf Changes/changes-gnome/examples/showImages/images
+	rm -rf nix/docker/flake.nix
+	rm -rf nix/docker/flake.lock
+	rm -rf nix/docker/stack.yaml
+	rm -rf nix/docker/stack.yaml.lock
 	rm -rf support/vsc-extension/*.json
 	rm -rf support/vsc-extension/*/*.json
 	rm -rf support/vsc-extension/*/*/*.json
