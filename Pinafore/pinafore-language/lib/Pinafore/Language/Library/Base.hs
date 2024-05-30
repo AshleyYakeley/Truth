@@ -133,14 +133,31 @@ instance HasQGroundType '[] ConcreteDynamicType where
 baseLibSections :: [LibraryStuff context]
 baseLibSections =
     [ headingBDS "Literals & Entities" "" $
-      [ typeBDS "Entity" "" (MkSomeGroundType entityGroundType) []
-      , namespaceBDS "Entity" $
-        fmap addNameInRootBDS (eqEntries @_ @Entity) <>
-        [ valBDS "order" "An arbitrary order on `Entity`." $ compare @Entity
-        , valBDS "anchor" "The anchor of an entity, as text." entityAnchor
-        ]
-      , typeBDS "Literal" "" (MkSomeGroundType literalGroundType) []
-      , hasSubtypeRelationBDS @Literal @Entity Verify "" $ functionToShim "literalToEntity" literalToEntity
+      [ headingBDS
+            "Entity"
+            ""
+            [ typeBDS
+                  "Entity"
+                  "Something that can be identified by a 256-bit anchor."
+                  (MkSomeGroundType entityGroundType)
+                  []
+            , namespaceBDS "Entity" $
+              fmap addNameInRootBDS (eqEntries @_ @Entity) <>
+              [ valBDS "order" "An arbitrary order on `Entity`." $ compare @Entity
+              , valBDS "anchor" "The anchor of an entity, as text." entityAnchor
+              ]
+            ]
+      , headingBDS
+            "Literal"
+            ""
+            [ typeBDS
+                  "Literal"
+                  "Something that can be represented as a byte list."
+                  (MkSomeGroundType literalGroundType)
+                  []
+            , hasSubtypeRelationBDS @Literal @Entity Verify "Hash with BLAKE3." $
+              functionToShim "literalToEntity" literalToEntity
+            ]
       , headingBDS
             "Showable"
             ""
