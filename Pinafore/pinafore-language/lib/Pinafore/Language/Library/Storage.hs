@@ -39,7 +39,7 @@ storageLibSection =
                 "property"
                 "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
                 ["@A", "@B", "<anchor>"]
-                "Store. -> Property. A B" $
+                "Store -> Property A B" $
             MkQSpecialForm
                 (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
                 eta <- getMonoStorableType ta
