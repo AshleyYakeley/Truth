@@ -1,33 +1,16 @@
-module Pinafore.Language.Library.FetchModule
-    ( FetchModule
-    , runFetchModule
-    , directoryFetchModule
-    , libraryFetchModule
-    , textFetchModule
+module Pinafore.Language.Library.LoadModule
+    ( directoryLoadModule
+    , libraryLoadModule
+    , textLoadModule
     ) where
 
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 import System.Directory (doesFileExist)
 import System.FilePath
-
-newtype FetchModule = MkFetchModule
-    { runFetchModule :: ModuleName -> QInterpreter (Maybe QModule)
-    }
-
-instance Semigroup FetchModule where
-    MkFetchModule fma <> MkFetchModule fmb =
-        MkFetchModule $ \mname -> do
-            mrr <- fma mname
-            case mrr of
-                Just rr -> return $ Just rr
-                Nothing -> fmb mname
-
-instance Monoid FetchModule where
-    mempty = MkFetchModule $ \_ -> return Nothing
 
 loadModuleFromText :: Text -> QInterpreter QModule
 loadModuleFromText text = do
@@ -40,18 +23,18 @@ loadModuleFromByteString bs =
         SuccessResult text -> loadModuleFromText text
         FailureResult err -> throw $ UnicodeDecodeError $ showNamedText err
 
-textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule
-textFetchModule getText =
-    MkFetchModule $ \modname -> do
+textLoadModule :: (ModuleName -> IO (Maybe Text)) -> LoadModule
+textLoadModule getText =
+    MkLoadModule $ \modname -> do
         mtext <- liftIO $ getText modname
         for mtext $ \text -> paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText text
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName t) = unpack $ t <> ".pinafore"
 
-directoryFetchModule :: FilePath -> FetchModule
-directoryFetchModule dirpath =
-    MkFetchModule $ \modname -> do
+directoryLoadModule :: FilePath -> LoadModule
+directoryLoadModule dirpath =
+    MkLoadModule $ \modname -> do
         let fpath = dirpath </> moduleRelativePath modname
         found <- liftIO $ doesFileExist fpath
         case found of
@@ -87,8 +70,8 @@ getLibraryContentsModule context libmod = do
     scope <- joinAllScopes $ bscope : dscopes
     return $ MkQModule (libraryContentsDocumentation libmod) scope
 
-libraryFetchModule :: forall context. context -> [LibraryModule context] -> FetchModule
-libraryFetchModule context lmods = let
+libraryLoadModule :: forall context. context -> [LibraryModule context] -> LoadModule
+libraryLoadModule context lmods = let
     m :: Map ModuleName (LibraryStuff context)
     m = mapFromList $ fmap (\MkLibraryModule {..} -> (lmName, lmContents)) lmods
-    in MkFetchModule $ \mname -> for (lookup mname m) $ getLibraryContentsModule context
+    in MkLoadModule $ \mname -> for (lookup mname m) $ getLibraryContentsModule context

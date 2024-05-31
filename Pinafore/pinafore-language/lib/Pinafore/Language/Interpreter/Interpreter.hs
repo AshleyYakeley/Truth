@@ -2,6 +2,7 @@
 
 module Pinafore.Language.Interpreter.Interpreter
     ( QInterpreter
+    , LoadModule(..)
     , nameWitnessErrorType
     , sourcePosParam
     , varIDStateParam
@@ -31,6 +32,21 @@ import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
 
+newtype LoadModule = MkLoadModule
+    { runLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
+    }
+
+instance Semigroup LoadModule where
+    MkLoadModule fma <> MkLoadModule fmb =
+        MkLoadModule $ \mname -> do
+            mrr <- fma mname
+            case mrr of
+                Just rr -> return $ Just rr
+                Nothing -> fmb mname
+
+instance Monoid LoadModule where
+    mempty = MkLoadModule $ \_ -> return Nothing
+
 data InterpretContext = MkInterpretContext
     { icSourcePos :: SourcePos
     , icVarIDState :: VarIDState
@@ -38,7 +54,7 @@ data InterpretContext = MkInterpretContext
     , icCurrentNamespace :: Namespace
     , icSpecialVals :: QSpecialVals
     , icModulePath :: [ModuleName]
-    , icLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
+    , icLoadModule :: LoadModule
     }
 
 data InterpretState = MkInterpretState
@@ -148,7 +164,7 @@ specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ 
 modulePathParam :: Param QInterpreter [ModuleName]
 modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
 
-loadModuleParam :: Param QInterpreter (ModuleName -> QInterpreter (Maybe QModule))
+loadModuleParam :: Param QInterpreter LoadModule
 loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
 
 interpretStateRef :: Ref QInterpreter InterpretState
@@ -172,7 +188,7 @@ appNotationVarRef =
     lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
 
 data LibraryContext = MkLibraryContext
-    { lcLoadModule :: ModuleName -> QInterpreter (Maybe QModule)
+    { lcLoadModule :: LoadModule
     }
 
 runInterpreter :: SourcePos -> LibraryContext -> QSpecialVals -> QInterpreter a -> InterpretResult a
@@ -262,7 +278,7 @@ loadModuleInScope mname =
     paramWith scopeParam emptyScope $
     paramLocal modulePathParam (\path -> path <> [mname]) $ do
         loadModule <- paramAsk loadModuleParam
-        loadModule mname
+        runLoadModule loadModule mname
 
 getModule :: ModuleName -> QInterpreter QModule
 getModule mname = do

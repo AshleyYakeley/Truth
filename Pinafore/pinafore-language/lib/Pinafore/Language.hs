@@ -1,10 +1,10 @@
 module Pinafore.Language
     ( LibraryStuff
-    , LibraryModule
-    , FetchModule
-    , directoryFetchModule
-    , textFetchModule
-    , libraryFetchModule
+    , LibraryModule(..)
+    , LoadModule
+    , directoryLoadModule
+    , textLoadModule
+    , libraryLoadModule
     , QModule(..)
     , getModule
     , LibraryContext(..)

@@ -6,6 +6,7 @@ import Import
 import Pinafore.Language.Debug
 import Pinafore.Language.Library.Base ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 
 debugCheckEntity :: Text -> Entity -> IO ()
 debugCheckEntity t e = do

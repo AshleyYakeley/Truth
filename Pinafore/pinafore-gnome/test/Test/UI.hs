@@ -14,7 +14,8 @@ import Test.Context
 
 runUIAction :: GView 'Unlocked () -> Text -> IO ()
 runUIAction testaction script =
-    runTester defaultTester {tstFetchModule = libraryFetchModule () gnomeLibrary} $ do
+    runTester defaultTester $
+    testerLoadLibrary gnomeLibrary $ do
         scriptaction <- testerLiftView $ qInterpretTextAtType @((LangContext -> View ()) -> Action ()) "<test>" script
         donevar <- liftIO newEmptyMVar
         testerLiftAction $

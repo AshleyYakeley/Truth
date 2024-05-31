@@ -4,7 +4,7 @@ module Test.RunScript
     , ScriptTestTree
     , tDecls
     , tDeclsRec
-    , tFetchModule
+    , tLoadModule
     , tPrefix
     , tDeclarator
     , tWith
@@ -30,14 +30,14 @@ import Shapes.Test
 import Shapes.Test.Context
 
 data ScriptContext = MkScriptContext
-    { scFetchModule :: FetchModule
+    { scLoadModule :: LoadModule
     , scPrefix :: Text
     }
 
 type ScriptTestTree = ContextTestTree ScriptContext
 
-tFetchModule :: FetchModule -> ScriptTestTree -> ScriptTestTree
-tFetchModule fm = tContext $ \sc -> sc {scFetchModule = fm <> scFetchModule sc}
+tLoadModule :: LoadModule -> ScriptTestTree -> ScriptTestTree
+tLoadModule fm = tContext $ \sc -> sc {scLoadModule = fm <> scLoadModule sc}
 
 tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
 tPrefix t = tContext $ \sc -> sc {scPrefix = scPrefix sc <> t <> "\n"}
@@ -68,20 +68,20 @@ testOpenUHStore =
 
 tModule :: Text -> Text -> ScriptTestTree -> ScriptTestTree
 tModule name script =
-    tFetchModule $
-    textFetchModule $ \n ->
+    tLoadModule $
+    textLoadModule $ \n ->
         return $
         if pack (show n) == name
             then Just script
             else Nothing
 
 tLibrary :: LibraryModule () -> ScriptTestTree -> ScriptTestTree
-tLibrary libm = tFetchModule $ libraryFetchModule () [libm]
+tLibrary libm = tLoadModule $ libraryLoadModule () [libm]
 
 runScriptTestTree :: ScriptTestTree -> TestTree
 runScriptTestTree =
     runContextTestTree $ let
-        scFetchModule = mempty
+        scLoadModule = mempty
         scPrefix = mempty
         in MkScriptContext {..}
 
@@ -95,8 +95,8 @@ testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
             fullscript = scPrefix <> script
-            in runTester defaultTester {tstFetchModule = scFetchModule} $ do
-                   call $ testerLiftInterpreter $ parseValueUnify fullscript
+            in runTester defaultTester $
+               testerLoad scLoadModule $ do call $ testerLiftInterpreter $ parseValueUnify fullscript
 
 testScript :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> ScriptTestTree
 testScript = testExpression @(Action ())

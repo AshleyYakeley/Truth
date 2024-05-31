@@ -5,6 +5,7 @@ module Pinafore.API
     , module Pinafore.Context
     , module Pinafore.Language.Var
     , module Pinafore.Language.Library.Defs
+    , module Pinafore.Language.Library.LibraryModule
     , module Pinafore.Language.Library.Types
     , module Pinafore.Language.Value
     , WitKind(..)
@@ -41,6 +42,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Interpret
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.MIME ()
 import Pinafore.Language.Library.Model ()
 import Pinafore.Language.Library.Types

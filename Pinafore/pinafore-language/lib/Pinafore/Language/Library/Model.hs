@@ -11,6 +11,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var

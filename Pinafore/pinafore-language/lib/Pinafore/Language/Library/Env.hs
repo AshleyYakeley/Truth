@@ -6,6 +6,7 @@ import Import
 import Pinafore.Context
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Storage ()
 import Pinafore.Language.Library.Stream
 

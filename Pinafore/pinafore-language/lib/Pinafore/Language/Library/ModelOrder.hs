@@ -7,6 +7,7 @@ module Pinafore.Language.Library.ModelOrder
 import Import
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Value

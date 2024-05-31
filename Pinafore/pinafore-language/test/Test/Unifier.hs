@@ -460,7 +460,8 @@ testUnifier =
                     v :: Maybe (Integer, Maybe (Integer, Maybe BottomType))
                     v = Just (5, Just (3, Nothing))
                     lib = bindsLibrary "test" [("f", MkSomeValue f), ("v", MkSomeValue v)]
-                    in runTester (addTesterLibrary lib defaultTester) $ do
+                    in runTester defaultTester $
+                       testerLoadLibrary [lib] $ do
                            tval :: [Integer] <-
                                testerLiftInterpreter $ do
                                    expr <- parseTopExpression $ "import \"test\" in fix f v"

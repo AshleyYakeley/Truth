@@ -3,6 +3,7 @@ module Pinafore.Language.Library.File
     ) where
 
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 
 --import Changes.World.File
 {-

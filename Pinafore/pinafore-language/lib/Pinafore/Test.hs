@@ -5,7 +5,9 @@ module Pinafore.Test
     , makeTestInvocationInfo
     , TesterOptions(..)
     , defaultTester
-    , addTesterLibrary
+    , LoadModule(..)
+    , testerLoad
+    , testerLoadLibrary
     , Tester
     , runTester
     , testerLiftView
@@ -14,8 +16,8 @@ module Pinafore.Test
     , testerLiftInterpreter
     , testerGetDefaultStore
     , testerGetTableState
-    , libraryFetchModule
-    , directoryFetchModule
+    , libraryLoadModule
+    , directoryLoadModule
     , lcLoadModule
     , qInterpretFile
     , qInterpretTextAtType
@@ -69,18 +71,13 @@ makeTestInvocationInfo hout = do
     return (ii, getTableState)
 
 data TesterOptions = MkTesterOptions
-    { tstFetchModule :: FetchModule
-    , tstOutput :: Handle
+    { tstOutput :: Handle
     }
 
 defaultTester :: TesterOptions
 defaultTester = let
-    tstFetchModule = mempty
     tstOutput = stdout
     in MkTesterOptions {..}
-
-addTesterLibrary :: LibraryModule () -> TesterOptions -> TesterOptions
-addTesterLibrary lm topts = topts {tstFetchModule = tstFetchModule topts <> libraryFetchModule () [lm]}
 
 data TesterContext = MkTesterContext
     { tcInvocationInfo :: InvocationInfo
@@ -99,8 +96,27 @@ runTester :: TesterOptions -> Tester () -> IO ()
 runTester MkTesterOptions {..} (MkTester ta) =
     runLifecycle $ do
         (ii, getTableState) <- makeTestInvocationInfo tstOutput
-        let library = mkLibraryContext ii tstFetchModule
+        let library = mkLibraryContext ii mempty
         runView $ runReaderT ta $ MkTesterContext ii library getTableState
+
+contextParam :: Param Tester TesterContext
+contextParam = MkParam (MkTester ask) $ \a (MkTester m) -> MkTester $ with a m
+
+testerWithLoadModule :: (InvocationInfo -> LoadModule) -> Tester --> Tester
+testerWithLoadModule iifm =
+    paramLocal contextParam $ \tc ->
+        tc
+            { tcLibrary =
+                  let
+                      tcl = tcLibrary tc
+                      in tcl {lcLoadModule = lcLoadModule tcl <> iifm (tcInvocationInfo tc)}
+            }
+
+testerLoad :: LoadModule -> Tester --> Tester
+testerLoad lm = testerWithLoadModule $ \_ -> lm
+
+testerLoadLibrary :: [LibraryModule ()] -> Tester --> Tester
+testerLoadLibrary lms = testerLoad $ libraryLoadModule () lms
 
 testerLiftView :: forall a. ((?library :: LibraryContext) => View a) -> Tester a
 testerLiftView va =

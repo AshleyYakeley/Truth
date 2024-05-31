@@ -14,7 +14,8 @@ testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFileInDir dir testName $ \hout ->
-           runTester defaultTester {tstFetchModule = libraryFetchModule () gnomeLibrary, tstOutput = hout} $ do
+           runTester defaultTester {tstOutput = hout} $
+           testerLoadLibrary gnomeLibrary $ do
                testerLiftView $ do
                    action <- qInterpretFile inpath
                    action

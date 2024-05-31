@@ -7,6 +7,7 @@ module Pinafore.Language.Library.Undo
 import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Storage ()
 import Pinafore.Language.Type
 import Pinafore.Language.Value

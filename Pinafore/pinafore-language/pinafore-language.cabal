@@ -88,7 +88,8 @@ library
       Pinafore.Language.Interpret.Interact
       Pinafore.Language.Interpret
       Pinafore.Language.Expression
-      Pinafore.Language.Library.FetchModule
+      Pinafore.Language.Library.LibraryModule
+      Pinafore.Language.Library.LoadModule
       Pinafore.Language.Library.Defs
       Pinafore.Language.Library.Convert
       Pinafore.Language.Library.Types

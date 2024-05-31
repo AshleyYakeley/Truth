@@ -1,12 +1,12 @@
 module Pinafore.Language.Library
     ( DefDoc(..)
     , LibraryStuff
-    , LibraryModule
+    , LibraryModule(..)
     , builtInLibrary
-    , FetchModule
-    , directoryFetchModule
-    , textFetchModule
-    , libraryFetchModule
+    , LoadModule
+    , directoryLoadModule
+    , textLoadModule
+    , libraryLoadModule
     , mkLibraryContext
     , nameIsInfix
     ) where
@@ -17,12 +17,12 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Action
 import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Debug
-import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Env
 import Pinafore.Language.Library.Eval
-import Pinafore.Language.Library.FetchModule
 import Pinafore.Language.Library.Interpret
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Lifecycle
+import Pinafore.Language.Library.LoadModule
 import Pinafore.Language.Library.MIME
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.ModelOrder
@@ -54,7 +54,10 @@ builtInLibrary =
     , debugLibSection
     ]
 
-mkLibraryContext :: InvocationInfo -> FetchModule -> LibraryContext
-mkLibraryContext context fetchModule = let
-    lcLoadModule = runFetchModule $ libraryFetchModule context builtInLibrary <> fetchModule
+builtInLoadModule :: InvocationInfo -> LoadModule
+builtInLoadModule ii = libraryLoadModule ii builtInLibrary
+
+mkLibraryContext :: InvocationInfo -> LoadModule -> LibraryContext
+mkLibraryContext ii lm = let
+    lcLoadModule = builtInLoadModule ii <> lm
     in MkLibraryContext {..}

@@ -17,7 +17,7 @@ import Import
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Library
-import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Main
 import Pinafore.Syntax.Doc
 import Pinafore.Syntax.Name

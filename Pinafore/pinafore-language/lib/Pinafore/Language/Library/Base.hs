@@ -16,6 +16,7 @@ import Pinafore.Language.Convert.Types
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm

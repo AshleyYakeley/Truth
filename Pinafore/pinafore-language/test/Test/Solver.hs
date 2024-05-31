@@ -6,7 +6,7 @@ import Data.Shim
 import Language.Expression.Common
 import Pinafore.Test.Internal
 import Shapes
-import Test.RunScript
+import Shapes.Test
 
 data SomeType polarity =
     forall a. MkSomeType (QType polarity a)

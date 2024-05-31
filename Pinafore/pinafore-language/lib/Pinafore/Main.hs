@@ -44,16 +44,16 @@ standardStorageModel MkStorageModelOptions {..} = do
         (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
         return model
 
-standardFetchModule :: ModuleOptions -> FetchModule
-standardFetchModule MkModuleOptions {..} = let
-    extraLibFetchModule :: FetchModule
-    extraLibFetchModule = libraryFetchModule () moExtraLibrary
-    dirFetchModule :: FetchModule
-    dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
-    in extraLibFetchModule <> dirFetchModule
+standardLoadModule :: ModuleOptions -> LoadModule
+standardLoadModule MkModuleOptions {..} = let
+    extraLibLoadModule :: LoadModule
+    extraLibLoadModule = libraryLoadModule () moExtraLibrary
+    dirLoadModule :: LoadModule
+    dirLoadModule = mconcat $ fmap directoryLoadModule moModuleDirs
+    in extraLibLoadModule <> dirLoadModule
 
 standardLibraryContext :: InvocationInfo -> ModuleOptions -> LibraryContext
-standardLibraryContext ii modopts = mkLibraryContext ii (standardFetchModule modopts)
+standardLibraryContext ii modopts = mkLibraryContext ii $ standardLoadModule modopts
 
 sqliteQDumpTable :: FilePath -> IO ()
 sqliteQDumpTable dirpath = do

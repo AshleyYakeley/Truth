@@ -3,7 +3,6 @@ module Main
     ) where
 
 import Paths_pinafore_stdlib
-import Pinafore.API
 import Pinafore.Language.Library.GNOME
 import Pinafore.Language.Library.Media
 import Pinafore.Test
@@ -11,18 +10,17 @@ import Shapes
 import Shapes.Test
 import System.Directory
 
-extraLibrary :: [LibraryModule ()]
-extraLibrary = mediaLibrary <> gnomeLibrary
-
 testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $ do
         libDir <- getDataDir
-        runTester defaultTester {tstFetchModule = libraryFetchModule () extraLibrary <> directoryFetchModule libDir} $ do
-            mm <- testerLiftInterpreter $ lcLoadModule ?library $ fromString name
-            case mm of
-                Just _ -> return ()
-                Nothing -> fail "module not found"
+        runTester defaultTester $
+            testerLoadLibrary (mediaLibrary <> gnomeLibrary) $
+            testerLoad (directoryLoadModule libDir) $ do
+                mm <- testerLiftInterpreter $ runLoadModule (lcLoadModule ?library) $ fromString name
+                case mm of
+                    Just _ -> return ()
+                    Nothing -> fail "module not found"
 
 testRelPath :: FilePath -> Maybe TestTree
 testRelPath relpath = do

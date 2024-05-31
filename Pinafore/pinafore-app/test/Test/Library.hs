@@ -21,7 +21,9 @@ testLibrary =
         in let
                ?library = standardLibraryContext nullInvocationInfo MkModuleOptions {..}
                in for_ moduleNames $ \modname -> do
-                      mmod <- fromInterpretResult $ runPinaforeScoped (show modname) $ lcLoadModule ?library modname
+                      mmod <-
+                          fromInterpretResult $
+                          runPinaforeScoped (show modname) $ runLoadModule (lcLoadModule ?library) modname
                       pmodule <- maybeToM (show modname <> ": not found") mmod
                       for_ (moduleScopeEntries pmodule) $ \(_, binfo) -> do
                           let oname = biOriginalName binfo

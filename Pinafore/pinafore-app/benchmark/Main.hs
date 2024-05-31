@@ -31,7 +31,7 @@ getBenchEnv = do
     (library, _) <-
         getLifeState $ do
             (ii, _) <- makeTestInvocationInfo stdout
-            return $ mkLibraryContext ii (libraryFetchModule () extraLibrary)
+            return $ mkLibraryContext ii (libraryLoadModule () extraLibrary)
     return $ \() -> library
 
 benchScript :: Text -> Benchmark
@@ -131,10 +131,9 @@ benchInterpretFile fpath =
     bench fpath $
     nfIO $ do
         libDir <- getDataDir
-        let
-            testerOptions =
-                defaultTester {tstFetchModule = libraryFetchModule () extraLibrary <> directoryFetchModule libDir}
-        runTester testerOptions $
+        runTester defaultTester $
+            testerLoadLibrary extraLibrary $
+            testerLoad (directoryLoadModule libDir) $
             testerLiftView $ do
                 _ <- qInterpretFile fpath
                 return ()
