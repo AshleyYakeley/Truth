@@ -103,6 +103,7 @@ library:
       - Pinafore.Language.Library.Convert
       - Pinafore.Language.Library.Types
       - Pinafore.Language.Library.Base
+      - Pinafore.Language.Library.Result
       - Pinafore.Language.Library.Action
       - Pinafore.Language.Library.Lifecycle
       - Pinafore.Language.Library.Interpret

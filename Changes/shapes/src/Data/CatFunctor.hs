@@ -41,6 +41,12 @@ instance CatFunctor (->) (NestedMorphism (->)) Either where
             Left a -> Left $ ab a
             Right p -> Right p
 
+instance CatFunctor (->) (NestedMorphism (->)) Result where
+    cfmap ab =
+        MkNestedMorphism $ \case
+            FailureResult a -> FailureResult $ ab a
+            SuccessResult p -> SuccessResult p
+
 cfmap1 ::
        forall catp (catq :: Type -> Type -> Type) f a b p. (CatFunctor catp (NestedMorphism catq) f)
     => catp a b

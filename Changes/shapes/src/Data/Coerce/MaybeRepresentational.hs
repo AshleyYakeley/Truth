@@ -30,6 +30,9 @@ instance MaybeRepresentational ((,) a) where
 instance MaybeRepresentational (Either a) where
     maybeRepresentational = Just Dict
 
+instance MaybeRepresentational (Result a) where
+    maybeRepresentational = Just Dict
+
 instance MaybeRepresentational (->) where
     maybeRepresentational = Just Dict
 
@@ -37,6 +40,9 @@ instance MaybeRepresentational (,) where
     maybeRepresentational = Just Dict
 
 instance MaybeRepresentational Either where
+    maybeRepresentational = Just Dict
+
+instance MaybeRepresentational Result where
     maybeRepresentational = Just Dict
 
 instance MaybeRepresentational Vector where

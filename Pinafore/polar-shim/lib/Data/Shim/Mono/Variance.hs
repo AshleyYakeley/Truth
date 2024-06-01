@@ -65,6 +65,9 @@ instance HasVariance ((,) a) where
 instance HasVariance (Either a) where
     type VarianceOf (Either a) = 'Covariance
 
+instance HasVariance (Result e) where
+    type VarianceOf (Result e) = 'Covariance
+
 instance HasVariance (->) where
     type VarianceOf (->) = 'Contravariance
 
@@ -73,6 +76,9 @@ instance HasVariance (,) where
 
 instance HasVariance Either where
     type VarianceOf Either = 'Covariance
+
+instance HasVariance Result where
+    type VarianceOf Result = 'Covariance
 
 instance HasVariance Vector where
     type VarianceOf Vector = 'Covariance

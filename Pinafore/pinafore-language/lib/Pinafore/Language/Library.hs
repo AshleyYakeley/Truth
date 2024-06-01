@@ -27,6 +27,7 @@ import Pinafore.Language.Library.MIME
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.ModelOrder
 import Pinafore.Language.Library.Optics
+import Pinafore.Language.Library.Result
 import Pinafore.Language.Library.Storage
 import Pinafore.Language.Library.Stream
 import Pinafore.Language.Library.Task
@@ -38,7 +39,8 @@ builtInLibrary =
     MkLibraryModule builtInModuleName $
     mconcat $
     baseLibSections <>
-    [ actionLibSection
+    [ resultLibSection
+    , actionLibSection
     , lifecycleLibSection
     , interpretLibSection
     , mimeLibSection

@@ -146,8 +146,6 @@ modelLibSection =
                 , valBDS "lensMap" "Map getter & pushback functions on a whole model." $ fLensLangWholeModel @AP @AQ @B
                 , valBDS "toMaybe" "Map known/unknown to `Maybe` for a whole model." $ langToMaybeWholeModel @A @B
                 , valBDS "fromMaybe" "Map `Maybe` to known/unknown for a whole model." $ langFromMaybeWholeModel @A @B
-                , valBDS "for" "Traverse a list to make a model of a list." $
-                  (for :: [A] -> (A -> ImmutableWholeModel B) -> ImmutableWholeModel [B])
                 , valBDS "product" "Combine whole models." $ langPairWholeModels @AP @AQ @BP @BQ
                 , addNameInRootBDS $
                   valBDS

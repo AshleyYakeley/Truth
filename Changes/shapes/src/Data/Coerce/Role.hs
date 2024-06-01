@@ -79,6 +79,12 @@ instance RepresentationalRole Either where
 instance RepresentationalRole (Either a) where
     representationalCoercion MkCoercion = MkCoercion
 
+instance RepresentationalRole Result where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole (Result e) where
+    representationalCoercion MkCoercion = MkCoercion
+
 instance RepresentationalRole Vector where
     representationalCoercion MkCoercion = MkCoercion
 

@@ -313,6 +313,8 @@ applicativeEntries ::
        forall context (f :: Type -> Type).
        ( Applicative f
        , HasQType 'Negative (f TopType)
+       , HasQType 'Negative (f ())
+       , HasQType 'Positive (f ())
        , HasQType 'Positive (f A)
        , HasQType 'Negative (f A)
        , HasQType 'Positive (f B)
@@ -320,6 +322,7 @@ applicativeEntries ::
        , HasQType 'Positive (f C)
        , HasQType 'Negative (f C)
        , HasQType 'Positive (f (A, B))
+       , HasQType 'Positive (f [B])
        , HasQType 'Negative (f (A -> B))
        )
     => [LibraryStuff context]
@@ -330,12 +333,16 @@ applicativeEntries =
     , valBDS "liftA2" "" (liftA2 :: (A -> B -> C) -> f A -> f B -> f C)
     , valBDS "**" "" (liftA2 (,) :: f A -> f B -> f (A, B))
     , valBDS ">>" "" ((*>) :: f TopType -> f A -> f A)
+    , valBDS "for_" "Perform on each value of a list." (for_ :: [A] -> (A -> f ()) -> f ())
+    , valBDS "for" "Perform on each value of a list, returning a list." (for :: [A] -> (A -> f B) -> f [B])
     ]
 
 monadEntries ::
        forall context (f :: Type -> Type).
        ( Monad f
        , HasQType 'Negative (f TopType)
+       , HasQType 'Negative (f ())
+       , HasQType 'Positive (f ())
        , HasQType 'Positive (f A)
        , HasQType 'Negative (f A)
        , HasQType 'Positive (f B)
@@ -343,6 +350,7 @@ monadEntries ::
        , HasQType 'Positive (f C)
        , HasQType 'Negative (f C)
        , HasQType 'Positive (f (A, B))
+       , HasQType 'Positive (f [B])
        , HasQType 'Negative (f (A -> B))
        )
     => [LibraryStuff context]

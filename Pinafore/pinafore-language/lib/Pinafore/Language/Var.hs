@@ -12,6 +12,10 @@ type B = Var "b"
 
 type C = Var "c"
 
+type D = Var "d"
+
+type E = Var "e"
+
 type X = Var "x"
 
 type Y = Var "y"

@@ -53,13 +53,6 @@ actionLibSection =
           , addNameInRootBDS $
             valBDS "tryStop_" "Run action. If it stops, catch and return `()`.  \nSame as `fn x => onStop x $ pure ()`." $
             tryStop_
-          , addNameInRootBDS $
-            valBDS "for_" "Perform an action on each value of a list." (for_ :: [A] -> (A -> Action ()) -> Action ())
-          , addNameInRootBDS $
-            valBDS
-                "for"
-                "Perform an action on each value of a list, returning a list."
-                (for :: [A] -> (A -> Action B) -> Action [B])
           , addNameInRootBDS $ valBDS "sleep" "Do nothing for this duration." threadSleep
           ]
         ]
