@@ -1,9 +1,7 @@
 #!/usr/bin/pinafore
 openDefault.Store >>= fn store =>
 let
-
-pdate = property @Unit @Date !"calendar-test" store;
-rdate = pdate !$ {()};
+    rdate = cell.Store @Date !"calendar-test" store;
 in
 import "pinafore-gnome" in
 with GTK. in

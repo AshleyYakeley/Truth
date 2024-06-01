@@ -4,6 +4,7 @@ module Pinafore.Base.Storable.StoreAdapter
     , storeAdapterConvert
     , plainStoreAdapter
     , literalStoreAdapter
+    , asLiteralStoreAdapter
     , constructorStoreAdapter
     ) where
 
@@ -69,6 +70,11 @@ literalStoreAdapter codec = let
     storeAdapterToDefinition :: t -> SomeOf (EntityStorer 'SingleMode)
     storeAdapterToDefinition t = MkSomeOf (MkEntityStorer LiteralConstructorStorer) $ encode codec t
     in MkStoreAdapter {..}
+
+asLiteralStoreAdapter ::
+       forall t. AsLiteral t
+    => StoreAdapter t
+asLiteralStoreAdapter = literalStoreAdapter literalCodec
 
 hashedPredicate :: Anchor -> Int -> Int -> Predicate
 hashedPredicate anchor n i = MkPredicate $ hashToAnchor $ \call -> [call anchor, call $ show n, call $ show i]

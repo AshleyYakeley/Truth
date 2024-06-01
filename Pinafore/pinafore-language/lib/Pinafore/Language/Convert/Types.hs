@@ -94,7 +94,7 @@ mkLiteralGroundType wit name = let
         MkStorability
             { stbKind = NilListType
             , stbCovaryMap = covarymap
-            , stbAdapter = pureStorabilityAdapter $ \NilArguments -> literalStoreAdapter literalCodec
+            , stbAdapter = pureStorabilityAdapter $ \NilArguments -> asLiteralStoreAdapter
             }
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType wit name)

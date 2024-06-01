@@ -386,6 +386,12 @@ testEntity =
                     [ testExpectSuccess
                           "eta !@ {\"hello\"} += e1 >> clear.FiniteSetModel (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
                     ]
+              , tDecls ["c1 = cell @Boolean !\"c1\" store"] $
+                tGroup
+                    "cell"
+                    [ testExpectSuccess "c1 := True >> testeq {True} c1"
+                    , testExpectSuccess "c1 := False >> testeq {False} c1"
+                    ]
               , tGroup
                     "literal storage"
                     [ tGroup
