@@ -4,6 +4,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - support implicit parameters
     - allow documentation sections in declarations
   * Library
+    - built-in
+      . add cell.Store, set.Store
     - UILib
       . update
   * Install

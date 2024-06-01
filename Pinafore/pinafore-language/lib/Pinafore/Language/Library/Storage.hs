@@ -13,6 +13,7 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.Optics
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
@@ -93,9 +94,43 @@ storageLibSection =
                             lprop =
                                 MkLangProperty $
                                 storageModelBased qstore $
-                                cfmap3 (\() -> MkTopType) $
+                                cfmap3 (termf @(->)) $
                                 cfmap2 (MkCatDual $ shimToFunction praContra) $ cfmap1 (shimToFunction praCo) property
                             in applyLangAttributeModel (langPropertyAttribute lprop) $ immutableToWholeModel $ pure ()
+                return $ MkSomeOf stype sval
+          , specialFormBDS
+                "set"
+                "Storage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @A @Unit <anchor> store !@ {()}`"
+                ["@A", "<anchor>"]
+                "Store -> FiniteSetModel {-Entity,A}" $
+            MkQSpecialForm (ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome (ta :: _ a), (anchor, ())) -> do
+                eta <- getMonoStorableType ta
+                saa <- monoStoreAdapter eta
+                MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
+                MkShimWit rtaq (MkPolarShim praCo) <- return $ nonpolarToPositive @QTypeSystem ta
+                MkShimWit rtaep (MkPolarShim econv) <-
+                    return $ joinMeetShimWit (qType @Negative @Entity) (mkShimWit rtap)
+                let
+                    typem =
+                        typeToDolan $
+                        MkDolanGroundedType finiteSetModelGroundType $
+                        ConsCCRArguments (RangeCCRPolarArgument rtaep rtaq) NilCCRArguments
+                    typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
+                    stype = qFunctionPosWitness typeStorage typem
+                    property :: StorageLensProperty a a () () QStorageUpdate
+                    property = predicateProperty saa (asLiteralStoreAdapter @()) (MkPredicate anchor)
+                    sval =
+                        \qstore -> let
+                            lprop :: LangProperty '( a, MeetType Entity a) '( (), TopType)
+                            lprop =
+                                MkLangProperty $
+                                storageModelBased qstore $
+                                cfmap3 (meetf (storeAdapterConvert saa) id) $ cfmap1 (termf @(->)) property
+                            lfsm :: LangFiniteSetModel '( MeetType Entity a, a)
+                            lfsm = inverseApplyLangPropertyImmutModel lprop $ pure ()
+                            in cfmap
+                                   (MkCatRange (shimToFunction $ iMeetPair id praContra . econv) (shimToFunction praCo))
+                                   lfsm
                 return $ MkSomeOf stype sval
           , valBDS
                 "openDefault"

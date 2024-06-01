@@ -3,6 +3,7 @@
 
 module Pinafore.Language.Library.Model
     ( modelLibSection
+    , finiteSetModelGroundType
     , modelOrderGroundType
     ) where
 

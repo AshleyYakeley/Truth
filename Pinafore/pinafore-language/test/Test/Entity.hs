@@ -392,6 +392,13 @@ testEntity =
                     [ testExpectSuccess "c1 := True >> testeq {True} c1"
                     , testExpectSuccess "c1 := False >> testeq {False} c1"
                     ]
+              , tDecls ["s1 = set @Integer !\"s1\" store"] $
+                tGroup
+                    "set"
+                    [ testExpectSuccess "testeq {[]} (toList.FiniteSetModel order.Integer s1)"
+                    , testExpectSuccess "s1 += 2 >> testeq {[2]} (toList.FiniteSetModel order.Integer s1)"
+                    , testExpectSuccess "s1 += 5 >> s1 += 3 >> testeq {[3,5]} (toList.FiniteSetModel order.Integer s1)"
+                    ]
               , tGroup
                     "literal storage"
                     [ tGroup
