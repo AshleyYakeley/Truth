@@ -47,29 +47,28 @@ storageLibSection =
                 etb <- getMonoStorableType tb
                 saa <- monoStoreAdapter eta
                 sab <- monoStoreAdapter etb
+                MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
+                MkShimWit rtaq (MkPolarShim praCo) <- return $ nonpolarToPositive @QTypeSystem ta
+                MkShimWit rtbp (MkPolarShim prbContra) <- return $ nonpolarToNegative @QTypeSystem tb
+                MkShimWit rtbq (MkPolarShim prbCo) <- return $ nonpolarToPositive @QTypeSystem tb
                 let
-                    bta = biRangeSomeFor (nonpolarToNegative @QTypeSystem ta, nonpolarToPositive @QTypeSystem ta)
-                    btb = biRangeSomeFor (nonpolarToNegative @QTypeSystem tb, nonpolarToPositive @QTypeSystem tb)
-                    in case (bta, btb) of
-                           (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
-                               typem =
-                                   typeToDolan $
-                                   MkDolanGroundedType propertyGroundType $
-                                   ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
-                                   ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
-                               typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
-                               typef = qFunctionPosWitness typeStorage typem
-                               property = predicateProperty saa sab (MkPredicate anchor)
-                               pinaproperty =
-                                   \qstore ->
-                                       MkLangProperty $
-                                       storageModelBased qstore $
-                                       cfmap4 (MkCatDual $ shimToFunction praContra) $
-                                       cfmap3 (shimToFunction praCo) $
-                                       cfmap2 (MkCatDual $ shimToFunction prbContra) $
-                                       cfmap1 (shimToFunction prbCo) property
-                               anyval = MkSomeOf typef pinaproperty
-                               in return anyval
+                    typem =
+                        typeToDolan $
+                        MkDolanGroundedType propertyGroundType $
+                        ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
+                        ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
+                    typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
+                    typef = qFunctionPosWitness typeStorage typem
+                    property = predicateProperty saa sab (MkPredicate anchor)
+                    pinaproperty =
+                        \qstore ->
+                            MkLangProperty $
+                            storageModelBased qstore $
+                            cfmap4 (MkCatDual $ shimToFunction praContra) $
+                            cfmap3 (shimToFunction praCo) $
+                            cfmap2 (MkCatDual $ shimToFunction prbContra) $ cfmap1 (shimToFunction prbCo) property
+                    anyval = MkSomeOf typef pinaproperty
+                return anyval
           , valBDS
                 "openDefault"
                 "Open the default `Store`. Will be closed at the end of the lifecycle."

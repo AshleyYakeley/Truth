@@ -40,7 +40,6 @@ module Language.Expression.Dolan
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
-    , biRangeSomeFor
     , invertType
     , DolanTypeSystem
     , IsDolanGroundType(..)
