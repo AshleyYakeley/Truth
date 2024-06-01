@@ -53,7 +53,7 @@ let
         homeOf = property @Contact @Location !"being.location" ?store;
 
         contactSet: FiniteSetModel Contact =
-        property @Contact @Unit !"type.legalentity" ?store !@ {()};
+        set.Store @Contact !"type.legalentity" ?store;
 
         # a person
         dynamictype Person = !"type.person";
@@ -78,7 +78,7 @@ let
         dynamictype Organisation = !"type.organisation";
         subtype Organisation <: Contact;
         organisationSet: FiniteSetModel Organisation =
-        property @Organisation @Unit !"type.organisation" ?store !@ {()};
+            set.Store @Organisation !"type.organisation" ?store;
     end;
 
     ### User Interface

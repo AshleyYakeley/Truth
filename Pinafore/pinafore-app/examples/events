@@ -86,7 +86,7 @@ let
     namespace Event of
 
         eventSet: FiniteSetModel Event =
-        property @Event @Unit !"type.event" ?store !@ {()};
+        set.Store @Event !"type.event" ?store;
 
         timeOf = property @Event @EventTime !"event.time" ?store;
 

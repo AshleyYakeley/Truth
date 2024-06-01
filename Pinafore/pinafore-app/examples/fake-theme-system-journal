@@ -13,7 +13,7 @@ in
 let
 
     years: FiniteSetModel Integer =
-    property @Integer @Unit !"FTSJ.years" ?store !@ {()};
+    set.Store @Integer !"FTSJ.years" ?store;
 
     yearTheme: Property Integer Text =
     property @Integer @Text !"FTSJ.yearTheme" ?store;

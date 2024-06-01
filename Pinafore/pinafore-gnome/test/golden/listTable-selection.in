@@ -7,7 +7,7 @@ let
 
     dynamictype Person = !"TP";
     p = point.DynamicEntity @Person !"p";
-    people: FiniteSetModel Person = property @Person @Unit !"T" store !@ {()};
+    people: FiniteSetModel Person = set.Store @Person !"T" store;
 
 in do
     outputLn.Env "Start";

@@ -8,7 +8,7 @@ let
     # a person
     dynamictype Person = !"type.person";
     people: FiniteSetModel Person
-    = property @Person @Unit !"p" store !@ {()};
+    = set.Store @Person !"p" store;
 
     name: Property Person Text
     = property @Person @Text !"identify.name" store;
