@@ -1,5 +1,6 @@
 module Pinafore.Syntax.Name.NamedText where
 
+import Pinafore.Base
 import Pinafore.Syntax.Name.FullName
 import Pinafore.Syntax.Name.FullNameRef
 import Pinafore.Syntax.Name.Namespace

@@ -5,6 +5,7 @@ module Pinafore.Syntax.Parse.Error
     , ParseResult
     ) where
 
+import Pinafore.Base
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Text
 import Shapes hiding (try)

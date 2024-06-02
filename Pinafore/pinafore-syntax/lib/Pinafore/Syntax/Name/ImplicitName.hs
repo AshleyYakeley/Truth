@@ -1,7 +1,7 @@
 module Pinafore.Syntax.Name.ImplicitName where
 
+import Pinafore.Base
 import Pinafore.Syntax.Name.Name
-import Pinafore.Syntax.Text
 import Shapes
 
 newtype ImplicitName =

@@ -183,14 +183,14 @@ showDecimalRational maxDigits r = let
                      in (i, '.' : (take maxDigits $ predigits ++ repeating))
     in pack $ sign ++ show i' ++ decimal'
 
-instance TextShow Number where
-    textShow (ExactNumber r) = textShow (SRNumber r)
-    textShow (InexactNumber d)
-        | isNaN d = textShow SRNaN
-    textShow (InexactNumber d) = "~" <> textShow d
+instance ShowText Number where
+    showText (ExactNumber r) = showText (SRNumber r)
+    showText (InexactNumber d)
+        | isNaN d = showText SRNaN
+    showText (InexactNumber d) = "~" <> showText d
 
 instance Show Number where
-    show v = unpack $ textShow v
+    show v = unpack $ showText v
 
 readNumberLiteral :: String -> Maybe Number
 readNumberLiteral = runReadPrec readPrec

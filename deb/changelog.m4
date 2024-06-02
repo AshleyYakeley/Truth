@@ -5,6 +5,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - allow documentation sections in declarations
   * Library
     - built-in
+      . Showable subtypes: don't put spaces in for list and product types
       . add Result type
       . add cell.Store, set.Store
     - UILib

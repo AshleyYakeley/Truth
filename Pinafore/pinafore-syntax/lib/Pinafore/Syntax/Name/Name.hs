@@ -1,7 +1,7 @@
 module Pinafore.Syntax.Name.Name where
 
 import Language.Expression.Common
-import Pinafore.Syntax.Text
+import Pinafore.Base
 import Shapes
 
 allowedAlphaNameFirstChar :: Char -> Bool

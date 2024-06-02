@@ -1,6 +1,6 @@
 module Pinafore.Syntax.Name.ModuleName where
 
-import Pinafore.Syntax.Text
+import Pinafore.Base
 import Shapes
 
 newtype ModuleName =

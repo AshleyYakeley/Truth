@@ -350,7 +350,7 @@ testUnifier =
                     expr <- parseTopExpression "[1,2]"
                     val <- qEvalExpr expr
                     tval :: Showable <- qUnifyValue val
-                    liftIO $ assertEqual "" "[1, 2]" $ textShow tval
+                    liftIO $ assertEqual "" "[1,2]" $ showText tval
               , testTree "list-2" $
                 runTester defaultTester $
                 testerLiftInterpreter $ do

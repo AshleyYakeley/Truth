@@ -261,12 +261,12 @@ testQueries =
               "construction"
               [ testQuery "[]" $ LRSuccess $ show @[Text] []
               , testQuery "[1]" $ LRSuccess $ "[1]"
-              , testQuery "(1,2)" $ LRSuccess $ "(1, 2)"
-              , testQuery "(1,2,3)" $ LRSuccess $ "(1, (2, 3))"
+              , testQuery "(1,2)" $ LRSuccess $ "(1,2)"
+              , testQuery "(1,2,3)" $ LRSuccess $ "(1,(2,3))"
               , testQuery "Left 4" $ LRSuccess $ "Left 4"
               , testQuery "Right 5" $ LRSuccess $ "Right 5"
-              , testQuery "[1,2]" $ LRSuccess $ "[1, 2]"
-              , testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
+              , testQuery "[1,2]" $ LRSuccess $ "[1,2]"
+              , testQuery "[1,2,3]" $ LRSuccess "[1,2,3]"
               ]
         , testTree
               "functions"
@@ -331,33 +331,33 @@ testQueries =
                     , testTree
                           "polymorphism"
                           [ testQuery "let rec i = fn x => x in (succ.Integer $.Function i 1, i False)" $
-                            LRSuccess "(2, False)"
+                            LRSuccess "(2,False)"
                           , testQuery "let rec i = fn x => x; r = (succ.Integer $.Function i 1, i False) in r" $
-                            LRSuccess "(2, False)"
+                            LRSuccess "(2,False)"
                           , testQuery "let rec r = (succ.Integer $.Function i 1, i False); i = fn x => x in r" $
-                            LRSuccess "(2, False)"
+                            LRSuccess "(2,False)"
                           ]
                     ]
               , testTree
                     "pattern"
                     [ testQuery "let (a,b) = (3,4) in a" $ LRSuccess "3"
                     , testQuery "let (a,b) = (3,4) in b" $ LRSuccess "4"
-                    , testQuery "let (a,b): Integer *: Integer = (3,4) in (b,a)" $ LRSuccess "(4, 3)"
-                    , testQuery "let rec (a,b): Integer *: Integer = (3,a +.Integer 4) in (b,a)" $ LRSuccess "(7, 3)"
-                    , testQuery "let rec (a,b) = (3,a +.Integer 4) in (b,a)" $ LRSuccess "(7, 3)"
+                    , testQuery "let (a,b): Integer *: Integer = (3,4) in (b,a)" $ LRSuccess "(4,3)"
+                    , testQuery "let rec (a,b): Integer *: Integer = (3,a +.Integer 4) in (b,a)" $ LRSuccess "(7,3)"
+                    , testQuery "let rec (a,b) = (3,a +.Integer 4) in (b,a)" $ LRSuccess "(7,3)"
                     , testQuery "let rec (a,b) = (3,a +.Integer 4); (c,d) = (8,c +.Integer 1) in (a,b,c,d)" $
-                      LRSuccess "(3, (7, (8, 9)))"
+                      LRSuccess "(3,(7,(8,9)))"
                     , testQuery "let rec (a,b) = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
-                      LRSuccess "(3, (7, (24, 25)))"
+                      LRSuccess "(3,(7,(24,25)))"
                     , testQuery
                           "let rec (a,b) = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
-                      LRSuccess "(3, (7, (24, 25)))"
+                      LRSuccess "(3,(7,(24,25)))"
                     , testQuery
                           "let rec (a,b): Integer *: Integer = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
-                      LRSuccess "(3, (7, (24, 25)))"
+                      LRSuccess "(3,(7,(24,25)))"
                     , testQuery
                           "let rec (a,b): Integer *: Integer = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
-                      LRSuccess "(3, (7, (24, 25)))"
+                      LRSuccess "(3,(7,(24,25)))"
                     ]
               , testTree
                     "rename"
@@ -507,9 +507,9 @@ testQueries =
         , testTree
               "sum"
               [ testQuery "from.Sum (fn a => (\"Left\",a)) (fn a => (\"Right\",a)) $.Function Left \"x\"" $
-                LRSuccess "(\"Left\", \"x\")"
+                LRSuccess "(\"Left\",\"x\")"
               , testQuery "from.Sum (fn a => (\"Left\",a)) (fn a => (\"Right\",a)) $.Function Right \"x\"" $
-                LRSuccess "(\"Right\", \"x\")"
+                LRSuccess "(\"Right\",\"x\")"
               ]
         , testTree
               "type-signature"
@@ -534,8 +534,8 @@ testQueries =
                     [ testQuery "let x : Text | Number = 3 in x" $ LRSuccess "3"
                     , testQuery "let f : Any -> Integer = fn _ => 3 in f ()" $ LRSuccess "3"
                     , testQuery "(fn x => (x,x)) : ((a & Number) -> Showable *: a)" $ LRSuccess "<?>"
-                    , testQuery "let f = (fn x => (x,x)) : (a & Number) -> Showable *: a in f 3" $ LRSuccess "(3, 3)"
-                    , testQuery "let f : (a & Number) -> Showable *: a = fn x => (x,x) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "let f = (fn x => (x,x)) : (a & Number) -> Showable *: a in f 3" $ LRSuccess "(3,3)"
+                    , testQuery "let f : (a & Number) -> Showable *: a = fn x => (x,x) in f 3" $ LRSuccess "(3,3)"
                     ]
               ]
         , testTree
@@ -549,8 +549,8 @@ testQueries =
               , testQuery "let Just a = Just 73 in a" $ LRSuccess "73"
               , testTree
                     "at"
-                    [ testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "(2, 2)"
-                    , testQuery "(fn (Just a)@(Just b) => (a,b)) (Just 578)" $ LRSuccess "(578, 578)"
+                    [ testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "(2,2)"
+                    , testQuery "(fn (Just a)@(Just b) => (a,b)) (Just 578)" $ LRSuccess "(578,578)"
                     , testQuery "(fn (Nothing)@Nothing => 345) Nothing" $ LRSuccess "345"
                     , testQuery "(fn Nothing@Nothing => 345) Nothing" $ LRSuccess "345"
                     ]
@@ -565,7 +565,7 @@ testQueries =
                     , testQuery "2 >-.Function match a => a end" $ LRSuccess "2"
                     , testQuery "2 >-.Function match _ => 5 end" $ LRSuccess "5"
                     , testQuery "2 >-.Function match _ => 5; _ => 3 end" $ LRSuccess "5"
-                    , testQuery "2 >-.Function match a@b => (a,b) end" $ LRSuccess "(2, 2)"
+                    , testQuery "2 >-.Function match a@b => (a,b) end" $ LRSuccess "(2,2)"
                     ]
               , testTree
                     "Boolean"
@@ -607,13 +607,13 @@ testQueries =
                     , testQuery "[] >-.Function match _::_ => True; _ => False end" $ LRSuccess "False"
                     , testQuery "[1,2] >-.Function match [] => True; _ => False end" $ LRSuccess "False"
                     , testQuery "[3,4] >-.Function match _::_ => True; _ => False end" $ LRSuccess "True"
-                    , testQuery "[3] >-.Function match a::b => (a,b) end" $ LRSuccess "(3, [])"
-                    , testQuery "[3,4] >-.Function match a::b => (a,b) end" $ LRSuccess "(3, [4])"
-                    , testQuery "[3,4,5] >-.Function match a::b => (a,b) end" $ LRSuccess "(3, [4, 5])"
+                    , testQuery "[3] >-.Function match a::b => (a,b) end" $ LRSuccess "(3,[])"
+                    , testQuery "[3,4] >-.Function match a::b => (a,b) end" $ LRSuccess "(3,[4])"
+                    , testQuery "[3,4,5] >-.Function match a::b => (a,b) end" $ LRSuccess "(3,[4,5])"
                     , testQuery "[3] >-.Function match [a,b] => 1; _ => 2 end" $ LRSuccess "2"
                     , testQuery "[3,4] >-.Function match [a,b] => 1; _ => 2 end" $ LRSuccess "1"
                     , testQuery "[3,4,5] >-.Function match [a,b] => 1; _ => 2 end" $ LRSuccess "2"
-                    , testQuery "[3,4] >-.Function match [a,b] => (a,b) end" $ LRSuccess "(3, 4)"
+                    , testQuery "[3,4] >-.Function match [a,b] => (a,b) end" $ LRSuccess "(3,4)"
                     ]
               ]
         , testTree
@@ -624,7 +624,7 @@ testQueries =
               , testQuery "(match a => a end) 2" $ LRSuccess "2"
               , testQuery "(match _ => 5 end) 2" $ LRSuccess "5"
               , testQuery "(match _ => 5; _ => 3 end) 2" $ LRSuccess "5"
-              , testQuery "(match a@b => (a,b) end) 2" $ LRSuccess "(2, 2)"
+              , testQuery "(match a@b => (a,b) end) 2" $ LRSuccess "(2,2)"
               ]
         , testTree
               "matches"
@@ -650,7 +650,7 @@ testQueries =
                     True
                     "Integer *: Boolean *: Integer *: Boolean"
                     "Integer *: (Boolean *: (Integer *: Boolean))"
-                    ["(3, (True, (7, False)))"]
+                    ["(3,(True,(7,False)))"]
               ]
         , testTree
               "subtype"
@@ -705,7 +705,7 @@ testQueries =
                     , testQuery "[]: rec a, List a" $ LRSuccess "[]"
                     ]
               , let
-                    atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
+                    atree = ["[]", "[[]]", "[[[[]]]]", "[[],[[]]]"]
                     in testTree
                            "equivalence"
                            [ testSameType True "Integer" "Integer" ["0"]

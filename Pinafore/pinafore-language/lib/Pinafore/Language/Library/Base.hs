@@ -27,7 +27,7 @@ import Shapes.Numeric
 import qualified Text.Collate
 
 showableSubtypeRelationEntry ::
-       forall a context. (HasQType 'Negative a, TextShow a)
+       forall a context. (HasQType 'Negative a, ShowText a)
     => LibraryStuff context
 showableSubtypeRelationEntry = hasSubtypeRelationBDS @a @Showable Verify "" $ functionToShim "textShowable" textShowable
 
@@ -66,12 +66,12 @@ newTimeZoneModel now = do
     return $ fmap timeZoneMinutes $ MkImmutableWholeModel model
 
 asTextPrism ::
-       forall a. (Read a, TextShow a)
+       forall a. (Read a, ShowText a)
     => LangPrism '( Text, Text) '( a, a)
-asTextPrism = prism (readMaybe . unpack) textShow
+asTextPrism = prism (readMaybe . unpack) showText
 
 plainFormattingDef ::
-       forall t context. (HasQType 'Positive t, HasQType 'Negative t, Read t, TextShow t)
+       forall t context. (HasQType 'Positive t, HasQType 'Negative t, Read t, ShowText t)
     => Text
     -> LibraryStuff context
 plainFormattingDef lname = valBDS "asText" ("Represent " <> plainText lname <> " as text.") $ asTextPrism @t
@@ -167,7 +167,7 @@ baseLibSections =
                   "Something that can be represented as `Text`."
                   (MkSomeGroundType showableGroundType)
                   [valPatBDS "Mk" "" MkShowable $ PureFunction $ \(MkShowable t) -> (t, ())]
-            , namespaceBDS "Showable" [addNameInRootBDS $ valBDS "show" "Show something as `Text`" $ textShow @Showable]
+            , namespaceBDS "Showable" [addNameInRootBDS $ valBDS "show" "Show something as `Text`" $ showText @Showable]
             ]
       , headingBDS
             "Unit"

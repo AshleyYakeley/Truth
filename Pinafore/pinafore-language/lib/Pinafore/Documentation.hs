@@ -1,5 +1,6 @@
 module Pinafore.Documentation
     ( module Pinafore.Syntax.Text
+    , ShowText(..)
     , module Pinafore.Syntax.Name
     , module Pinafore.Syntax.Doc
     , module Pinafore.Main

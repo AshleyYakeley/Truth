@@ -17,17 +17,17 @@ instance Eq SafeRational where
     SRNumber a == SRNumber b = a == b
     _ == _ = False
 
-instance TextShow SafeRational where
-    textShow SRNaN = "NaN"
-    textShow (SRNumber r) = let
+instance ShowText SafeRational where
+    showText SRNaN = "NaN"
+    showText (SRNumber r) = let
         n = numerator r
         d = denominator r
         in if d == 1
-               then textShow n
-               else textShow n <> "/" <> textShow d
+               then showText n
+               else showText n <> "/" <> showText d
 
 instance Show SafeRational where
-    show v = unpack $ textShow v
+    show v = unpack $ showText v
 
 instance Read SafeRational where
     readPrec = let

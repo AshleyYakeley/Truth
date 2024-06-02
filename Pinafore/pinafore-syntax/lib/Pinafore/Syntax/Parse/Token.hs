@@ -11,7 +11,6 @@ module Pinafore.Syntax.Parse.Token
 
 import Pinafore.Base
 import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 import Shapes hiding (try)
 import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)

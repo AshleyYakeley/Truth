@@ -1,8 +1,8 @@
 module Pinafore.Syntax.Name.FullName where
 
+import Pinafore.Base
 import Pinafore.Syntax.Name.Name
 import Pinafore.Syntax.Name.Namespace
-import Pinafore.Syntax.Text
 import Shapes
 
 data FullName = MkFullName

@@ -1030,7 +1030,7 @@ testEntity =
                                 , "di: D Integer = Mk1.D [576,469,12]"
                                 , "sdi: Text = showD di"
                                 ] $
-                            testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
+                            testExpectSuccess "if sdi == \"[576,469,12]\" then pass else fail sdi"
                           , tDecls
                                 [ "datatype D -a of Mk1 (a -> Integer); Mk2 (a -> a -> Text) end"
                                 , "dShow: D Number = Mk2.D $ fn a, b => show a <>.Text \",\" <>.Text show b"
@@ -1252,7 +1252,7 @@ testEntity =
                           , testExpectSuccess
                                 "let r1: R Integer = mkR [57]; r2: R Showable = r1 in testeq {\"[57]\"} {rShow r2}"
                           , testExpectSuccess
-                                "let r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1 in testeq {\"[12, 10, 57]\"} {rShow r2}"
+                                "let r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1 in testeq {\"[12,10,57]\"} {rShow r2}"
                           ]
                     , tDecls
                           [ "datatype Rec +a of Mk of rval: rec r, Maybe (a *: r) end end"
