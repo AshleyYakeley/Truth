@@ -10,18 +10,9 @@ library:
     dependencies:
       - base >= 4.16
       - shapes
-      - time
-      - filepath
-      - directory
       - parsec
-      - containers
-      - text
-      - unicode-collation
-      - thread-trace
       - polar-shim
       - typed-expression
-      - changes-core
-      - changes-world
       - pinafore-base
     exposed-modules:
       - Pinafore.Syntax.Text
