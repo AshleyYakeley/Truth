@@ -5,6 +5,7 @@ module Pinafore.Language.Library.Types
     , listShimWit
     , list1ShimWit
     , eitherShimWit
+    , resultShimWit
     , nullShimWit
     , pairShimWit
     , funcShimWit
@@ -102,6 +103,13 @@ eitherShimWit ::
     -> QShimWit polarity b
     -> QShimWit polarity (Either a b)
 eitherShimWit = cocoFShimWit eitherGroundType
+
+resultShimWit ::
+       forall polarity a b. Is PolarityType polarity
+    => QShimWit polarity a
+    -> QShimWit polarity b
+    -> QShimWit polarity (Result a b)
+resultShimWit = cocoFShimWit resultGroundType
 
 nullShimWit ::
        forall polarity. Is PolarityType polarity

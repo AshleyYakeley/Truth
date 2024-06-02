@@ -42,10 +42,7 @@ instance CatFunctor (->) (NestedMorphism (->)) Either where
             Right p -> Right p
 
 instance CatFunctor (->) (NestedMorphism (->)) Result where
-    cfmap ab =
-        MkNestedMorphism $ \case
-            FailureResult a -> FailureResult $ ab a
-            SuccessResult p -> SuccessResult p
+    cfmap ab = MkNestedMorphism $ mapResultFailure ab
 
 cfmap1 ::
        forall catp (catq :: Type -> Type -> Type) f a b p. (CatFunctor catp (NestedMorphism catq) f)

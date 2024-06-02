@@ -40,6 +40,10 @@ instance HasQGroundType '[ CoCCRVariance, CoCCRVariance] (,) where
 instance HasQGroundType '[ CoCCRVariance, CoCCRVariance] Either where
     qGroundType = eitherGroundType
 
+-- Result
+instance HasQGroundType '[ CoCCRVariance, CoCCRVariance] Result where
+    qGroundType = resultGroundType
+
 -- (->)
 instance HasQGroundType '[ ContraCCRVariance, CoCCRVariance] (->) where
     qGroundType = funcGroundType
@@ -63,6 +67,11 @@ instance HasQGroundType '[ CoCCRVariance] LangMap where
 -- Showable
 instance HasQGroundType '[] Showable where
     qGroundType = showableGroundType
+
+showableShimWit ::
+       forall polarity. Is PolarityType polarity
+    => QShimWit polarity Showable
+showableShimWit = typeToDolan $ MkDolanGroundedType showableGroundType NilCCRArguments
 
 -- Action
 instance HasQGroundType '[ CoCCRVariance] Action where

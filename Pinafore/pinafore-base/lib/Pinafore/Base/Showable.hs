@@ -48,6 +48,10 @@ instance (TextShow a, TextShow b) => TextShow (Either a b) where
     textShow (Left a) = "Left " <> textShow a
     textShow (Right b) = "Right " <> textShow b
 
+instance (TextShow a, TextShow b) => TextShow (Result a b) where
+    textShow (FailureResult a) = "Failure " <> textShow a
+    textShow (SuccessResult b) = "Success " <> textShow b
+
 newtype Showable =
     MkShowable Text
 
