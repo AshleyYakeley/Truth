@@ -21,14 +21,18 @@ evalLibSection =
         [ specialFormBDS
               "evaluate"
               "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
-                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\
                 \The local scope is not in any way transmitted to the evaluation."
               ["@A"]
-              "Text -> Action (Text +: A)" $
-          MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
+              "Text -> Action (Result Text A)" $
+          MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome (tp :: _ t), ()) -> do
               spvals <- getSpecialVals
               let
-                  valShimWit :: forall t. QShimWit 'Positive t -> QShimWit 'Positive (Text -> Action (Either Text t))
-                  valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
-              return $ MkSomeOf (valShimWit $ mkPolarShimWit tp) $ specialEvaluate spvals tp
+                  stype :: QShimWit 'Positive (Text -> Action (Result Text t))
+                  stype = funcShimWit textShimWit $ actionShimWit $ resultShimWit textShimWit $ mkPolarShimWit tp
+                  sval :: Text -> Action (Result Text t)
+                  sval src =
+                      liftIO $ do
+                          result <- specialEvaluate spvals tp src
+                          return $ mapResultFailure showText result
+              return $ MkSomeOf stype sval
         ]

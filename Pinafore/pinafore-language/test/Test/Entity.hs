@@ -1781,27 +1781,27 @@ testEntity =
                     "do r <- newMem.WholeModel; reverse.Prism asText.Date !$ r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
               ]
         , tDecls
-              [ "runresult = fn ar, arg => ar >- match Left err => fail err; Right f => f arg end"
+              [ "runresult = fn ar, arg => ar >- match Failure err => fail err; Success f => f arg end"
               , "testaction = fn expected, action => do found <- action; testeqval expected found end"
-              , "testleft = fn action => do found <- action; found >- match Left _ => pass; Right _ => fail \"not Left\" end end"
+              , "testFailure = fn action => do found <- action; found >- match Failure _ => pass; Success _ => fail \"not Failure\" end end"
               ] $
           tWith ["Eval"] $
           tGroup
               "evaluate"
-              [ testExpectSuccess "testaction (Right True) $ evaluate @Boolean \"True\""
-              , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"5\""
-              , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"let x = 5 in x\""
+              [ testExpectSuccess "testaction (Success True) $ evaluate @Boolean \"True\""
+              , testExpectSuccess "testaction (Success 5) $ evaluate @Integer \"5\""
+              , testExpectSuccess "testaction (Success 5) $ evaluate @Integer \"let x = 5 in x\""
               , testExpectSuccess
-                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x +.Integer 1\"; ar >- match Left err => fail err; Right f => testeqval 8 $ f 7 end end"
+                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x +.Integer 1\"; ar >- match Failure err => fail err; Success f => testeqval 8 $ f 7 end end"
               , testExpectSuccess
-                    "testaction (Left \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate @Integer \"\""
-              , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
-              , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
+                    "testaction (Failure \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate @Integer \"\""
+              , testExpectSuccess "testaction (Failure \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
+              , testExpectSuccess "testFailure $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
                     "do r <- newMem.WholeModel; ar <- evaluate @(WholeModel Integer -> Action Unit) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
-              , testExpectSuccess "testaction 569 $ evaluate @(a -> a) \"fn x => x\" >>= fn Right f => pure $ f 569"
+              , testExpectSuccess "testaction 569 $ evaluate @(a -> a) \"fn x => x\" >>= fn Success f => pure $ f 569"
               , testExpectSuccess
-                    "testaction 570 $  evaluate @(Integer -> Integer) \"fn x => x\" >>= fn Right f => pure $ f 570"
+                    "testaction 570 $  evaluate @(Integer -> Integer) \"fn x => x\" >>= fn Success f => pure $ f 570"
               ]
         , tGroup
               "text-sort"

@@ -52,14 +52,10 @@ runPinaforeScoped sourcename ma =
 
 spvals :: (?library :: LibraryContext) => QSpecialVals
 spvals = let
-    specialEvaluate :: forall t. QType 'Positive t -> Text -> Action (Either Text t)
+    specialEvaluate :: forall t. QType 'Positive t -> Text -> IO (Result QError t)
     specialEvaluate t text = do
-        ier <- liftIO $ evaluate $ runPinaforeScoped "<evaluate>" $ parseValueSubsume t text
-        result <- runInterpretResult ier
-        return $
-            case result of
-                SuccessResult r -> Right r
-                FailureResult err -> Left $ pack $ show err
+        ier <- evaluate $ runPinaforeScoped "<evaluate>" $ parseValueSubsume t text
+        runInterpretResult ier
     in MkQSpecialVals {..}
 
 parseValue :: Text -> QInterpreter QValue

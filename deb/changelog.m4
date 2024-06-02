@@ -5,6 +5,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - allow documentation sections in declarations
   * Library
     - built-in
+      . add Result type
       . add cell.Store, set.Store
     - UILib
       . update

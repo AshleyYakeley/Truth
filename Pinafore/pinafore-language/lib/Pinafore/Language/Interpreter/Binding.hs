@@ -19,8 +19,8 @@ import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Subtype ()
 
 newtype QSpecialVals = MkQSpecialVals
-    { specialEvaluate :: forall t. QType 'Positive t -> Text -> Action (Either Text t)
-        -- ^ in Action because this can do things like import files
+    { specialEvaluate :: forall t. QType 'Positive t -> Text -> IO (Result QError t)
+        -- ^ in IO because this can do things like import files
     }
 
 data QSignature (polarity :: Polarity) (t :: Type) =
