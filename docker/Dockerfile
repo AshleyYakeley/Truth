@@ -1,5 +1,5 @@
 FROM fpco/stack-build-small:lts-22.21
-RUN echo 2024-04-14 > /container.date
+RUN echo 2024-06-02 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND noninteractive
@@ -8,7 +8,9 @@ RUN apt-get full-upgrade -y
 RUN apt autoremove --purge -y
 
 # various APT stuff
-RUN apt-get install -y sudo git curl m4 libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev python3-pip python3-venv imagemagick moreutils
+RUN apt-get install -y sudo git curl m4 imagemagick moreutils python3-pip python3-venv lintian
+RUN apt-get install -y \
+    libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev
 
 # yq
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
@@ -19,10 +21,6 @@ RUN pip3 install --upgrade pip
 RUN pip3 install sphinx myst-parser sphinx_rtd_theme Pygments scour build
 RUN mkdir /extra
 WORKDIR /extra
-
-# lintian
-RUN curl -O http://http.us.debian.org/debian/pool/main/l/lintian/lintian_2.116.3_all.deb
-RUN apt install -y /extra/lintian_2.116.3_all.deb
 
 # R
 #RUN apt-get install -y r-base-core
