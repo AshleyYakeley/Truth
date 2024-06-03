@@ -11,7 +11,7 @@ pinafore> :doc paintAlpha.Drawing
 #| Paint everywhere with this alpha (within the clip)
 pinafore> :doc Widget.GTK
 #| A user interface widget is something that goes inside a window.
-pinafore> :doc textArea.Widget.GTK
+pinafore> :doc textView.Widget.GTK
 #| Text area, unknown reference will be interpreted as empty text, but the widget will not delete the reference.
 pinafore> :doc notfound
 ! notfound undefined

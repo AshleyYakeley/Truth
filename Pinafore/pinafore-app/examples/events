@@ -171,7 +171,7 @@ let
             textEntry.Widget $ reverse.Prism asText.Date !$ (dateOf.EventTime !$ timeOf.Event !$% {evt}),
             textEntry.Widget $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (timeOfDayModel.EventTime $ timeOf.Event !$% {evt})
         ],
-        layoutGrow.Widget $ textArea.Widget (fromWhole.TextModel $ notesOf.Event !$% {evt})
+        layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ notesOf.Event !$% {evt})
     ];
 
     eventWindow: Event -> Action Window =

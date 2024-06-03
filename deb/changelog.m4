@@ -8,6 +8,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . Showable subtypes: don't put spaces in for list and product types
       . add Result type
       . add cell.Store, set.Store
+    - pinafore-gnome
+      . rename textArea.Widget to textView.Widget, wrap text
     - UILib
       . update
   * Install

@@ -34,7 +34,7 @@ let
     fn loc =>
     vertical.Widget
     [
-        layoutGrow.Widget $ labelled.Widget {"Address: "} $ textArea.Widget (fromWhole.TextModel $ addressOf.Location !$% loc),
+        layoutGrow.Widget $ labelled.Widget {"Address: "} $ textView.Widget (fromWhole.TextModel $ addressOf.Location !$% loc),
         labelled.Widget {"City: "} $ textEntry.Widget $ cityOf.Location !$% loc,
         labelled.Widget {"Postcode/ZIP: "} $ textEntry.Widget $ postcodeOf.Location !$% loc,
         labelled.Widget {"State/Province: "} $ textEntry.Widget $ provinceOf.Location !$% loc,

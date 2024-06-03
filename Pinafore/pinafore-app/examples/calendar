@@ -17,7 +17,7 @@ let
         layoutGrow.Widget $ label.Widget {encode (unixAsText.Date "%A, %B %e, %Y") %r},
         button.Widget {">"} {do d <- get r; r := succ.Date d; end}
         ],
-    layoutGrow.Widget $ textArea.Widget (fromWhole.TextModel $ dateNotesOf !$ r)
+    layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ dateNotesOf !$ r)
     ];
 
 in

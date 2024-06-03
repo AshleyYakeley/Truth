@@ -231,10 +231,10 @@ uiStyleClass sclass (MkLangWidget mw) =
         gvRunLocked $ setCSSClass sclass widget
         return widget
 
-uiTextArea :: LangTextModel -> LangWidget
-uiTextArea (MkLangTextModel model) =
+uiTextView :: LangTextModel -> LangWidget
+uiTextView (MkLangTextModel model) =
     MkLangWidget $ \ec ->
-        createTextArea (unWModel model) $
+        createTextView (unWModel model) $
         contramap (\tsel -> fmap (TextSelectionModel . MkLangTextModel) $ viewFloatMap tsel model) $
         viewLiftSelectNotify $ wcSelectNotify ec
 
@@ -297,9 +297,9 @@ widgetStuff =
                     "Text entry, unknown reference will be interpreted as empty text, but the widget will not delete the reference."
                     uiTextEntry
               , valBDS
-                    "textArea"
+                    "textView"
                     "Text area, unknown reference will be interpreted as empty text, but the widget will not delete the reference." $
-                uiTextArea
+                uiTextView
               , valBDS "label" "Label." uiLabel
               , valBDS "horizontal" "Widgets laid out horizontally." $ uiLayout OrientationHorizontal
               , valBDS "vertical" "Widgets laid out vertically." $ uiLayout OrientationVertical

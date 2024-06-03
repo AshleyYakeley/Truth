@@ -58,7 +58,7 @@ main = do
                                                 _ <- makeWindow "section" subSub Nothing appui
                                                 return ()
                                 rTextSpec :: Result Text (Model (StringUpdate Text)) -> GView 'Unlocked Widget
-                                rTextSpec (SuccessResult sub) = createTextArea sub setsel
+                                rTextSpec (SuccessResult sub) = createTextView sub setsel
                                 rTextSpec (FailureResult err) = createLabel $ constantModel err
                                 makeSpecs sub = do
                                     viewButton <-

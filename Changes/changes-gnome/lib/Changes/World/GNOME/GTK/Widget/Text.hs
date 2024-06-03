@@ -1,7 +1,7 @@
 module Changes.World.GNOME.GTK.Widget.Text
     ( TextSelection
     , createTextBuffer
-    , createTextArea
+    , createTextView
     ) where
 
 import Changes.Core
@@ -88,9 +88,10 @@ createTextBuffer rmod (MkSelectNotify setsel) = do
     gvBindModel rmod (Just esrc) initV mempty recvV
     return buffer
 
-createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Unlocked Widget
-createTextArea rmod seln = do
+createTextView :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Unlocked Widget
+createTextView rmod seln = do
     buffer <- createTextBuffer rmod seln
     gvRunLocked $ do
         widget <- gvNew TextView [#buffer := buffer]
+        textViewSetWrapMode widget WrapModeWordChar
         toWidget widget

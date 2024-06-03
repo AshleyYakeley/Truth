@@ -85,7 +85,7 @@ noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> GView 'Unlocke
 noteEditSpec sub sel = do
     titleUI <- createTextEntry $ mapModel (tupleChangeLens NoteTitle) sub
     pastUI <- createCheckButton (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub
-    textUI <- createTextArea (mapModel (tupleChangeLens NoteText) sub) sel
+    textUI <- createTextView (mapModel (tupleChangeLens NoteText) sub) sel
     createLayout
         OrientationVertical
         [ (defaultLayoutOptions, titleUI)

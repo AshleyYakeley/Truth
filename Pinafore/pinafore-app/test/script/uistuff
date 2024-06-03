@@ -6,5 +6,5 @@ import "UILib";
 in do
     tref1 <- newMem.TextModel;
     tref2 <- newMem.TextModel;
-    paneWindow.Pane gtk $ simple.Pane "Text" $ vertical [layoutGrow $ textArea tref1, layoutGrow $ textArea tref2];
+    paneWindow.Pane gtk $ simple.Pane "Text" $ vertical [layoutGrow $ textView tref1, layoutGrow $ textView tref2];
     end

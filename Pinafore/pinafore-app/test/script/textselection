@@ -11,9 +11,9 @@ in run.GTK $ \gtk => do
     sel <- newMem.WholeModel;
     open.Window.GTK gtk (400,500) {"Text Selection"} $ styleSheet.GTK {"* {padding: 2pt;}"} $ vertical.GTK
     [
-        textArea.GTK tref1 sel,
-        textArea.GTK tref2 sel,
-        textArea.GTK tref3 sel,
-        dynamic.GTK {exec.GTK $ mapAction (\tref => textArea.GTK tref unknown) %sel}
+        textView.GTK tref1 sel,
+        textView.GTK tref2 sel,
+        textView.GTK tref3 sel,
+        dynamic.GTK {exec.GTK $ mapAction (\tref => textView.GTK tref unknown) %sel}
     ];
     end

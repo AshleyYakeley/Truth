@@ -98,7 +98,7 @@ ui_person : WholeModel Person -> Widget
         ],
         ui_page {"Home"} $ let homep = home !$ p in vertical.Widget
         [
-            ui_labelled {"Address: "} $ textArea.Widget (fromWhole.TextModel $ address !$ homep),
+            ui_labelled {"Address: "} $ textView.Widget (fromWhole.TextModel $ address !$ homep),
             ui_labelled {"City: "} $ textEntry.Widget $ city !$ homep,
             ui_labelled {"Postcode/ZIP: "} $ textEntry.Widget $ postcode !$ homep,
             ui_labelled {"State/Province: "} $ textEntry.Widget $ province !$ homep,
@@ -157,7 +157,7 @@ window_switch : Action Window
     [
         #textEntry.Widget sw_pick),
         checkBox.Widget {"pick"} sw_pick,
-        layoutGrow.Widget $ dynamic.Widget {if %sw_pick then textArea.Widget (fromWhole.TextModel sw_val1) else textArea.Widget (fromWhole.TextModel sw_val2)}
+        layoutGrow.Widget $ dynamic.Widget {if %sw_pick then textView.Widget (fromWhole.TextModel sw_val1) else textView.Widget (fromWhole.TextModel sw_val2)}
     ];
 
 ### Imported Files
@@ -184,7 +184,7 @@ window_constant : Action Window
     checkBox.Widget {"off"} {False},
     checkBox.Widget {"on"} {True},
     textEntry.Widget {"constant"},
-    layoutGrow.Widget $ textArea.Widget (fromWhole.TextModel $ {"constant"})
+    layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ {"constant"})
 ];
 
 ### CSS
@@ -199,7 +199,7 @@ window_css: Action Window
             styleClass.Widget "x" $ name.Widget "A" $ checkBox.Widget {"Box"} {True},
             styleClass.Widget "x" $ name.Widget "B" $ button.Widget {"Button"} {do pure () end},
             styleClass.Widget "x" $ name.Widget "C" $ textEntry.Widget sometext,
-            layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textArea.Widget cssref,
+            layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textView.Widget cssref,
             styleClass.Widget "y" $ name.Widget "E" $ label.Widget {"Some Text"}
         ];
     end;
@@ -247,10 +247,10 @@ window_textselection: Action Window
         = fn atref => sel := atref;
     in std_window {"Text Selection"} $ styleSheet.Widget {"* {padding: 2pt;}"} $ vertical.Widget
     [
-        notifySelection.Widget notify $ textArea.Widget tref1,
-        notifySelection.Widget notify $ textArea.Widget tref2,
-        notifySelection.Widget notify $ textArea.Widget tref3,
-        dynamic.Widget {exec.Widget $ map.Action (fn tref => textArea.Widget (fromWhole.TextModel tref)) %sel}
+        notifySelection.Widget notify $ textView.Widget tref1,
+        notifySelection.Widget notify $ textView.Widget tref2,
+        notifySelection.Widget notify $ textView.Widget tref3,
+        dynamic.Widget {exec.Widget $ map.Action (fn tref => textView.Widget (fromWhole.TextModel tref)) %sel}
     ];
     end;
 
