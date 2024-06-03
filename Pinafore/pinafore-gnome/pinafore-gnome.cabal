@@ -32,6 +32,7 @@ library
       Pinafore.Language.Library.GTK.Window
       Pinafore.Language.Library.GTK.Debug
       Pinafore.Language.Library.GTK
+      Pinafore.Language.Library.WebKit
   hs-source-dirs:
       lib
   default-extensions:
@@ -73,6 +74,7 @@ library
     , gi-gdk
     , gi-gio
     , gi-gtk
+    , gi-webkit2
     , pinafore-language
     , pinafore-media
     , polar-shim

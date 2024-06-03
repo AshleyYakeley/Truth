@@ -10,7 +10,7 @@ RUN apt autoremove --purge -y
 # various APT stuff
 RUN apt-get install -y sudo git curl m4 imagemagick moreutils python3-pip python3-venv lintian
 RUN apt-get install -y \
-    libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev
+    libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev libjavascriptcoregtk-4.0-dev libsoup-gnome2.4-dev libwebkit2gtk-4.0-dev
 
 # yq
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq

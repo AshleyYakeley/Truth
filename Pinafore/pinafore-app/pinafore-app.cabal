@@ -20,6 +20,7 @@ extra-doc-files:
     examples/fake-theme-system-journal
     examples/quine
     examples/stopwatch
+    examples/webkit
 
 flag gitversion
   manual: True

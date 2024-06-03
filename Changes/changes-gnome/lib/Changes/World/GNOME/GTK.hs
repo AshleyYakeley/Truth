@@ -28,5 +28,6 @@ import Changes.World.GNOME.GTK.Widget.Table as I
 import Changes.World.GNOME.GTK.Widget.Text as I
 import Changes.World.GNOME.GTK.Widget.TextEntry as I
 import Changes.World.GNOME.GTK.Widget.TextStyle as I
+import Changes.World.GNOME.GTK.Widget.WebView as I
 import Changes.World.GNOME.GTK.Window as I
 import GI.Gtk as I (AccelGroup, GError, Widget)

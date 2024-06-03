@@ -1,0 +1,14 @@
+#!/usr/bin/pinafore
+import "pinafore-gnome" in
+with GTK. in
+do
+    r <- newMem.WholeModel;
+    run $
+        fn gtk =>
+        open.Window gtk (150,40) {"WebKit"} $
+            notebook.Widget unknown.WholeModel
+            [
+                (label.Widget {"HTML Text"},textArea.Widget $ fromWhole.TextModel r),
+                (label.Widget {"Rendered"},webView.WebKit r)
+            ];
+end

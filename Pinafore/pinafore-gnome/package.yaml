@@ -24,6 +24,7 @@ library:
       - gi-gio
       - gi-gdk
       - gi-gtk
+      - gi-webkit2
       - thread-trace
       - changes-core
       - changes-world
@@ -44,6 +45,7 @@ library:
       - Pinafore.Language.Library.GTK.Window
       - Pinafore.Language.Library.GTK.Debug
       - Pinafore.Language.Library.GTK
+      - Pinafore.Language.Library.WebKit
 
 tests:
     test:

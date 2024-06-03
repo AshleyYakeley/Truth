@@ -41,6 +41,6 @@ testScripts =
         , testTree "example" $
           fmap
               (\name -> testCheckScript ("examples" </> name) name)
-              ["stopwatch", "calendar", "contacts", "events", "clock", "quine", "fake-theme-system-journal"]
+              ["stopwatch", "calendar", "contacts", "events", "clock", "quine", "fake-theme-system-journal", "webkit"]
         , testQuine "quine" "examples/quine" "test/out/quine.out"
         ]

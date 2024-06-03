@@ -35,6 +35,7 @@ library:
       - gi-pango
       - gi-gtk
       - gi-gtk-hs
+      - gi-webkit2
       - thread-trace
       - shapes
       - cairo-functional
@@ -81,6 +82,7 @@ library:
       - Changes.World.GNOME.GTK.Widget.MenuBar
       - Changes.World.GNOME.GTK.Widget.Scrolled
       - Changes.World.GNOME.GTK.Widget.Calendar
+      - Changes.World.GNOME.GTK.Widget.WebView
       - Changes.World.GNOME.GTK.ChooseFile
       - Changes.World.GNOME.GTK.Clipboard
       - Changes.World.GNOME.GTK.Window
