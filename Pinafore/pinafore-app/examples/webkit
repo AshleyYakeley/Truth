@@ -5,10 +5,10 @@ do
     r <- newMem.WholeModel;
     run $
         fn gtk =>
-        open.Window gtk (150,40) {"WebKit"} $
+        open.Window gtk (400,600) {"WebKit"} $
             notebook.Widget unknown.WholeModel
             [
-                (label.Widget {"HTML Text"},textView.Widget $ fromWhole.TextModel r),
+                (label.Widget {"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel r),
                 (label.Widget {"Rendered"},webView.WebKit r)
             ];
 end

@@ -10,6 +10,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add cell.Store, set.Store
     - pinafore-gnome
       . rename textArea.Widget to textView.Widget, wrap text
+      . add WebView.WebKit GTK element
     - UILib
       . update
   * Install
