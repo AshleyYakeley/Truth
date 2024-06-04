@@ -39,8 +39,8 @@ import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Convert
-import Pinafore.Language.Library.Base
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Entity
 import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.MIME ()

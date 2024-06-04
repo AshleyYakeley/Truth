@@ -93,7 +93,13 @@ library
       Pinafore.Language.Library.Defs
       Pinafore.Language.Library.Convert
       Pinafore.Language.Library.Types
-      Pinafore.Language.Library.Base
+      Pinafore.Language.Library.Entity
+      Pinafore.Language.Library.Maybe
+      Pinafore.Language.Library.Product
+      Pinafore.Language.Library.Sum
+      Pinafore.Language.Library.List
+      Pinafore.Language.Library.Map
+      Pinafore.Language.Library.Function
       Pinafore.Language.Library.Result
       Pinafore.Language.Library.Action
       Pinafore.Language.Library.Lifecycle
