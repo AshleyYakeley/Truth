@@ -23,9 +23,8 @@ library:
       - Changes.World.File
       - Changes.World.FileSystem
       - Changes.World.ReferenceStore
-      - Changes.World.MIME
+      - Changes.World.Media
+      - Changes.World.Media.Type
       - Changes.World.JSON
       - Changes.World.SQLite
       - Changes.World.SQLite.Schema
-    other-modules:
-      - Changes.World.MIME.ContentType

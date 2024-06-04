@@ -48,8 +48,8 @@ alphaCodec =
 
 instance AsLiteral LangAlphaColour
 
-instance AsMIMELiteral LangAlphaColour where
-    literalMimeType = vndMIMEType "colour"
+instance AsMediaLiteral LangAlphaColour where
+    literalMediaType = vndMediaType "colour"
     literalContentSerializer = let
         fromT (r, (g, (b, a))) = Alpha (ColorSRGB r g b) a
         toT (Alpha (ColorSRGB r g b) a) = (r, (g, (b, a)))

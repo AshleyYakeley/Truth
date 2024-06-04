@@ -1,21 +1,21 @@
 module Pinafore.Base.Literal
     ( Literal(..)
     , AsLiteral(..)
-    , literalToMIME
-    , mimeToLiteral
-    , pattern MkMIMELiteral
+    , literalToMedia
+    , mediaToLiteral
+    , pattern MkMediaLiteral
     , toLiteral
     , fromLiteral
     , literalToEntity
     , entityToLiteral
-    , AsMIMELiteral(..)
+    , AsMediaLiteral(..)
     ) where
 
-import Changes.World.MIME
+import Changes.World.Media.Type
 import Data.Time
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
-import Pinafore.Base.MIME
+import Pinafore.Base.Media
 import Pinafore.Base.Number
 import Pinafore.Base.SafeRational
 import Shapes
@@ -28,68 +28,68 @@ newtype Literal = MkLiteral
 instance Show Literal where
     show (MkLiteral t) = show t
 
-mimeCompress :: [(MIMEContentType, [Word8])]
-mimeCompress =
-    [ (vndMIMEType "unit", [0x75]) -- [u]
-    , (vndMIMEType "boolean", [0x62]) -- [b]
-    , (octetStreamMIMEType, [0x61]) -- [a]
-    , (plainTextMIMEType, [0x74]) -- [t]
-    , (vndMIMEType "ordering", [0x6F]) -- [o]
-    , (vndMIMEType "rational", [0x72]) -- [r]
-    , (vndMIMEType "double", [0x64]) -- [d]
-    , (vndMIMEType "day", [0x54, 0x64]) -- [Td]
-    , (vndMIMEType "timeofday", [0x54, 0x6F]) -- [To]
-    , (vndMIMEType "localtime", [0x54, 0x6C]) -- [Tl]
-    , (vndMIMEType "time", [0x54, 0x75]) -- [Tu]
-    , (vndMIMEType "duration", [0x54, 0x6E]) -- [Tn]
-    , (vndMIMEType "colour", [0x63]) -- [c]
+mediaTypeCompress :: [(MediaType, [Word8])]
+mediaTypeCompress =
+    [ (vndMediaType "unit", [0x75]) -- [u]
+    , (vndMediaType "boolean", [0x62]) -- [b]
+    , (octetStreamMediaType, [0x61]) -- [a]
+    , (plainTextMediaType, [0x74]) -- [t]
+    , (vndMediaType "ordering", [0x6F]) -- [o]
+    , (vndMediaType "rational", [0x72]) -- [r]
+    , (vndMediaType "double", [0x64]) -- [d]
+    , (vndMediaType "day", [0x54, 0x64]) -- [Td]
+    , (vndMediaType "timeofday", [0x54, 0x6F]) -- [To]
+    , (vndMediaType "localtime", [0x54, 0x6C]) -- [Tl]
+    , (vndMediaType "time", [0x54, 0x75]) -- [Tu]
+    , (vndMediaType "duration", [0x54, 0x6E]) -- [Tn]
+    , (vndMediaType "colour", [0x63]) -- [c]
     ]
 
-addSerializer :: (MIMEContentType, [Word8]) -> Serializer MIMEContentType -> Serializer MIMEContentType
+addSerializer :: (MediaType, [Word8]) -> Serializer MediaType -> Serializer MediaType
 addSerializer (t, bcode) s = let
-    fromE :: Either () MIMEContentType -> MIMEContentType
+    fromE :: Either () MediaType -> MediaType
     fromE (Left ()) = t
     fromE (Right t') = t'
-    toE :: MIMEContentType -> Either () MIMEContentType
+    toE :: MediaType -> Either () MediaType
     toE t'
         | t' == t = Left ()
     toE t' = Right t'
     in invmap fromE toE (rLiteralBytes bcode <+++> s)
 
-rawMIMETypeSerializer :: Serializer MIMEContentType
-rawMIMETypeSerializer = rLiteralBytes [0x6D] ***> serializer
+rawMediaTypeSerializer :: Serializer MediaType
+rawMediaTypeSerializer = rLiteralBytes [0x6D] ***> serializer
 
-headerSerializer :: Serializer MIMEContentType
-headerSerializer = foldr addSerializer rawMIMETypeSerializer mimeCompress
+headerSerializer :: Serializer MediaType
+headerSerializer = foldr addSerializer rawMediaTypeSerializer mediaTypeCompress
 
-givenMIMETypeSerializer :: MIMEContentType -> Serializer ()
-givenMIMETypeSerializer t =
-    case lookup t mimeCompress of
+givenMediaTypeSerializer :: MediaType -> Serializer ()
+givenMediaTypeSerializer t =
+    case lookup t mediaTypeCompress of
         Just bcode -> rLiteralBytes bcode
-        Nothing -> rExact t rawMIMETypeSerializer
+        Nothing -> rExact t rawMediaTypeSerializer
 
-mimeToLiteralRaw :: MIMEContentType -> StrictByteString -> Literal
-mimeToLiteralRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> rWhole) (t, b)
+mediaToLiteralRaw :: MediaType -> StrictByteString -> Literal
+mediaToLiteralRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> rWhole) (t, b)
 
-mimeToLiteral :: MIME -> Literal
-mimeToLiteral (MkMIME t b) =
+mediaToLiteral :: Media -> Literal
+mediaToLiteral (MkMedia t b) =
     case t of
-        MkMIMEContentType TextMimeType "plain" [] -> mimeToLiteralRaw plainTextMIMEType b
-        _ -> mimeToLiteralRaw t b
+        MkMediaType TextMediaType "plain" [] -> mediaToLiteralRaw plainTextMediaType b
+        _ -> mediaToLiteralRaw t b
 
-literalToMIME :: Literal -> Maybe MIME
-literalToMIME (MkLiteral bs) = do
+literalToMedia :: Literal -> Maybe Media
+literalToMedia (MkLiteral bs) = do
     (t, b) <- serializerStrictDecode (headerSerializer <***> rWhole) bs
-    return $ MkMIME t b
+    return $ MkMedia t b
 
-pattern MkMIMELiteral :: MIME -> Literal
+pattern MkMediaLiteral :: Media -> Literal
 
-pattern MkMIMELiteral m <- (literalToMIME -> Just m)
-  where MkMIMELiteral m = mimeToLiteral m
+pattern MkMediaLiteral m <- (literalToMedia -> Just m)
+  where MkMediaLiteral m = mediaToLiteral m
 
 class Eq t => AsLiteral t where
     literalCodec :: Codec Literal t
-    default literalCodec :: AsMIMELiteral t => Codec Literal t
+    default literalCodec :: AsMediaLiteral t => Codec Literal t
     literalCodec = serializerStrictCodec literalSerializer . bijectionCodec coerceIsomorphism
 
 toLiteral :: AsLiteral t => t -> Literal
@@ -101,14 +101,14 @@ fromLiteral = decode literalCodec
 literalToEntity :: AsLiteral t => t -> Entity
 literalToEntity v = MkEntity $ byteStringToAnchor $ unLiteral $ toLiteral v
 
-class AsLiteral t => AsMIMELiteral t where
-    literalMimeType :: MIMEContentType
+class AsLiteral t => AsMediaLiteral t where
+    literalMediaType :: MediaType
     literalContentSerializer :: Serializer t
 
 literalSerializer ::
-       forall t. AsMIMELiteral t
+       forall t. AsMediaLiteral t
     => Serializer t
-literalSerializer = givenMIMETypeSerializer (literalMimeType @t) ***> literalContentSerializer
+literalSerializer = givenMediaTypeSerializer (literalMediaType @t) ***> literalContentSerializer
 
 entityToLiteral :: Entity -> Maybe Literal
 entityToLiteral (MkEntity anchor) = do
@@ -123,14 +123,14 @@ instance AsLiteral Void where
 
 instance AsLiteral StrictByteString
 
-instance AsMIMELiteral StrictByteString where
-    literalMimeType = octetStreamMIMEType
+instance AsMediaLiteral StrictByteString where
+    literalMediaType = octetStreamMediaType
     literalContentSerializer = serializer
 
 instance AsLiteral Text
 
-instance AsMIMELiteral Text where
-    literalMimeType = plainTextMIMEType
+instance AsMediaLiteral Text where
+    literalMediaType = plainTextMediaType
     literalContentSerializer = codecMap' utf8Codec rWhole
 
 instance AsLiteral String where
@@ -138,20 +138,20 @@ instance AsLiteral String where
 
 instance AsLiteral ()
 
-instance AsMIMELiteral () where
-    literalMimeType = vndMIMEType "unit"
+instance AsMediaLiteral () where
+    literalMediaType = vndMediaType "unit"
     literalContentSerializer = rUnit
 
 instance AsLiteral Bool
 
-instance AsMIMELiteral Bool where
-    literalMimeType = vndMIMEType "boolean"
+instance AsMediaLiteral Bool where
+    literalMediaType = vndMediaType "boolean"
     literalContentSerializer = serializer
 
 instance AsLiteral Ordering
 
-instance AsMIMELiteral Ordering where
-    literalMimeType = vndMIMEType "ordering"
+instance AsMediaLiteral Ordering where
+    literalMediaType = vndMediaType "ordering"
     literalContentSerializer = codecMap readShowCodec serializer
 
 instance AsLiteral Number where
@@ -166,14 +166,14 @@ instance AsLiteral Number where
 
 instance AsLiteral Rational
 
-instance AsMIMELiteral Rational where
-    literalMimeType = vndMIMEType "rational"
+instance AsMediaLiteral Rational where
+    literalMediaType = vndMediaType "rational"
     literalContentSerializer = serializer
 
 instance AsLiteral Double
 
-instance AsMIMELiteral Double where
-    literalMimeType = vndMIMEType "double"
+instance AsMediaLiteral Double where
+    literalMediaType = vndMediaType "double"
     literalContentSerializer = serializer
 
 instance AsLiteral SafeRational where
@@ -184,30 +184,30 @@ instance AsLiteral Integer where
 
 instance AsLiteral Day
 
-instance AsMIMELiteral Day where
-    literalMimeType = vndMIMEType "day"
+instance AsMediaLiteral Day where
+    literalMediaType = vndMediaType "day"
     literalContentSerializer = serializer
 
 instance AsLiteral TimeOfDay
 
-instance AsMIMELiteral TimeOfDay where
-    literalMimeType = vndMIMEType "timeofday"
+instance AsMediaLiteral TimeOfDay where
+    literalMediaType = vndMediaType "timeofday"
     literalContentSerializer = serializer
 
 instance AsLiteral LocalTime
 
-instance AsMIMELiteral LocalTime where
-    literalMimeType = vndMIMEType "localtime"
+instance AsMediaLiteral LocalTime where
+    literalMediaType = vndMediaType "localtime"
     literalContentSerializer = serializer
 
 instance AsLiteral UTCTime
 
-instance AsMIMELiteral UTCTime where
-    literalMimeType = vndMIMEType "time"
+instance AsMediaLiteral UTCTime where
+    literalMediaType = vndMediaType "time"
     literalContentSerializer = serializer
 
 instance AsLiteral NominalDiffTime
 
-instance AsMIMELiteral NominalDiffTime where
-    literalMimeType = vndMIMEType "duration"
+instance AsMediaLiteral NominalDiffTime where
+    literalMediaType = vndMediaType "duration"
     literalContentSerializer = serializer

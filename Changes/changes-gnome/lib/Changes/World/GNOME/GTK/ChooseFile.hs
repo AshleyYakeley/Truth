@@ -16,8 +16,8 @@ chooseFile action test =
             mtype <- getFileFilterInfoMimeType finfo
             return $
                 test $ do
-                    mimetype <- mtype
-                    case splitWhen ((==) '/') mimetype of
+                    mediatype <- mtype
+                    case splitWhen ((==) '/') mediatype of
                         [t, s] -> return (t, s)
                         _ -> Nothing
         fileChooserAddFilter dialog ffilter

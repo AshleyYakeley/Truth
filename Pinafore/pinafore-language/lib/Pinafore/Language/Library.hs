@@ -25,9 +25,9 @@ import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Lifecycle
 import Pinafore.Language.Library.List
 import Pinafore.Language.Library.LoadModule
-import Pinafore.Language.Library.MIME
 import Pinafore.Language.Library.Map
 import Pinafore.Language.Library.Maybe
+import Pinafore.Language.Library.Media
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.ModelOrder
 import Pinafore.Language.Library.Optics
@@ -55,7 +55,7 @@ builtInLibrary =
     , actionLibSection
     , lifecycleLibSection
     , interpretLibSection
-    , mimeLibSection
+    , mediaLibSection
     , modelLibSection
     , opticsLibSection
     , modelOrderLibSection

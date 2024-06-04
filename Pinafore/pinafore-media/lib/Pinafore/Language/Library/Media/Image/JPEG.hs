@@ -4,7 +4,7 @@ module Pinafore.Language.Library.Media.Image.JPEG
     ( jpegStuff
     ) where
 
-import Changes.World.MIME
+import Changes.World.Media
 import Data.Media.Image
 import Data.Shim
 import Pinafore.API
@@ -29,12 +29,12 @@ jpegImageGroundType =
 instance HasQGroundType '[] LangJPEGImage where
     qGroundType = jpegImageGroundType
 
-instance DecodeMIME JPEGData where
-    dmMatchContentType :: MIMEContentType -> Bool
-    dmMatchContentType (MkMIMEContentType "image" "jpeg" _) = True
+instance DecodeMedia JPEGData where
+    dmMatchContentType :: MediaType -> Bool
+    dmMatchContentType (MkMediaType "image" "jpeg" _) = True
     dmMatchContentType _ = False
     dmDecode bs = resultToMaybe $ decode (jpegFormat 0) $ fromStrict bs
-    dmLiteralContentType = MkMIMEContentType "image" "jpeg" []
+    dmLiteralContentType = MkMediaType "image" "jpeg" []
 
 jpegEncodeToBytes :: Integer -> [(Text, Literal)] -> LangImage -> StrictByteString
 jpegEncodeToBytes q mdata (MkLangImage image) =
@@ -59,6 +59,6 @@ jpegStuff =
         , namespaceBDS
               "JPEG"
               [ valBDS "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
-              , valBDS "jpegMIME" "" $ dataLiteralMIMEPrism @LangJPEGImage
+              , valBDS "jpegMedia" "" $ dataLiteralMediaPrism @LangJPEGImage
               ]
         ]

@@ -4,7 +4,7 @@ module Pinafore.Language.Library.Media.Image.PNG
     ( pngStuff
     ) where
 
-import Changes.World.MIME
+import Changes.World.Media
 import Data.Media.Image
 import Data.Shim
 import Pinafore.API
@@ -29,12 +29,12 @@ pngImageGroundType =
 instance HasQGroundType '[] LangPNGImage where
     qGroundType = pngImageGroundType
 
-instance DecodeMIME PNGData where
-    dmMatchContentType :: MIMEContentType -> Bool
-    dmMatchContentType (MkMIMEContentType "image" "png" _) = True
+instance DecodeMedia PNGData where
+    dmMatchContentType :: MediaType -> Bool
+    dmMatchContentType (MkMediaType "image" "png" _) = True
     dmMatchContentType _ = False
     dmDecode bs = resultToMaybe $ decode pngFormat $ fromStrict bs
-    dmLiteralContentType = MkMIMEContentType "image" "png" []
+    dmLiteralContentType = MkMediaType "image" "png" []
 
 pngEncodeToBytes :: [(Text, Literal)] -> LangImage -> StrictByteString
 pngEncodeToBytes mdata (MkLangImage image) =
@@ -59,6 +59,6 @@ pngStuff =
         , namespaceBDS
               "PNG"
               [ valBDS "encode" "Encode an image as PNG, with given metadata." pngEncode
-              , valBDS "pngMIME" "" $ dataLiteralMIMEPrism @LangPNGImage
+              , valBDS "pngMedia" "" $ dataLiteralMediaPrism @LangPNGImage
               ]
         ]

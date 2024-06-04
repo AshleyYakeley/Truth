@@ -262,7 +262,7 @@ The `Entity` type represents a 256-bit hash (using the BLAKE3 hashing algorithm)
 
 ### Literals
 
-The `Literal` type represents a byte-array in which MIME-type and contents are encoded.
+The `Literal` type represents a byte-array in which type and contents are encoded.
 Thus, at run-time ("dynamically") it is possible to enquire into the subtype of a `Literal`, using the greatest-dynamic-supertype mechanism.
 
 `Literal <: Entity`

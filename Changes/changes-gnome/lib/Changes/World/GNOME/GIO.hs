@@ -33,14 +33,14 @@ setLength h len = GI.seekableTruncate h len noCancellable
 seek :: MonadIO m => GI.FileIOStream -> Int64 -> m ()
 seek h i = GI.seekableSeek h i GI.SeekTypeSet noCancellable
 
-getMIMEType :: MonadIO m => GI.FileIOStream -> GI.File -> m Text
-getMIMEType _h path = do
+getMediaType :: MonadIO m => GI.FileIOStream -> GI.File -> m Text
+getMediaType _h path = do
     info <- GI.fileQueryInfo path GI.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE [GI.FileQueryInfoFlagsNone] noCancellable
     mtype <- GI.fileInfoGetContentType info
     return $ giToText mtype
 
-setMIMEType :: MonadIO m => GI.FileIOStream -> GI.File -> Text -> m ()
-setMIMEType _h path val =
+setMediaType :: MonadIO m => GI.FileIOStream -> GI.File -> Text -> m ()
+setMediaType _h path val =
     GI.fileSetAttributeString path GI.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE val [GI.FileQueryInfoFlagsNone] noCancellable
 
 type T = StateT (Maybe GI.FileIOStream)
@@ -67,7 +67,7 @@ giFileReference path = do
         refRead ReadHasOne = fmap (fmap (\_ -> ())) get
         refRead (ReadOne (MkTupleUpdateReader SelectFirst ReadWhole)) = do
             mh <- get
-            for mh $ \h -> getMIMEType h path
+            for mh $ \h -> getMediaType h path
         refRead (ReadOne (MkTupleUpdateReader SelectSecond ReadByteStringLength)) = do
             mh <- get
             for mh $ \h -> getLength h path
@@ -82,7 +82,7 @@ giFileReference path = do
         objOneEdit :: MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate) -> EditSource -> M ()
         objOneEdit (SuccessFullResultOneEdit (MkTupleUpdateEdit SelectFirst (MkWholeReaderEdit val))) _ = do
             mh <- get
-            for_ mh $ \h -> setMIMEType h path val
+            for_ mh $ \h -> setMediaType h path val
         objOneEdit (SuccessFullResultOneEdit (MkTupleUpdateEdit SelectSecond (ByteStringSetLength len))) _ = do
             mh <- get
             for_ mh $ \h -> setLength h len
@@ -105,7 +105,7 @@ giFileReference path = do
                     GI.fileDelete path noCancellable
                     put Nothing
                 Nothing -> return ()
-        objOneEdit (NewFullResultOneEdit (Just (mimetype, bs))) _ = do
+        objOneEdit (NewFullResultOneEdit (Just (mediatype, bs))) _ = do
             mh <- get
             h <-
                 case mh of
@@ -118,7 +118,7 @@ giFileReference path = do
             st <- GI.iOStreamGetOutputStream h
             _ <- GI.outputStreamWrite st (toStrict bs) noCancellable
             setLength h $ fromIntegral $ olength bs
-            setMIMEType h path mimetype
+            setMediaType h path mediatype
         refEdit ::
                NonEmpty (MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate))
             -> M (Maybe (EditSource -> M ()))

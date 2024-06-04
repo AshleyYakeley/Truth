@@ -7,7 +7,7 @@ module Pinafore.Language.Library.GIO
 
 import Changes.Core
 import Changes.World.GNOME.GIO
-import Changes.World.MIME
+import Changes.World.Media.Type
 import qualified GI.Gio as GI
 import Pinafore.API
 import Shapes
@@ -34,22 +34,22 @@ pathToFile t = unsafePerformIO $ GI.fileNewForPath $ unpack t
 fileToPath :: LangFile -> Maybe Text
 fileToPath f = fmap pack $ unsafePerformIO $ GI.fileGetPath f
 
-literalConv :: Bijection (Maybe (Text, LazyByteString)) (Maybe MIME)
+literalConv :: Bijection (Maybe (Text, LazyByteString)) (Maybe Media)
 literalConv =
     MkIsomorphism
         { isoForwards =
               \mtb -> do
-                  (mimetype, b) <- mtb
-                  case splitWhen ((==) '/') mimetype of
-                      [t, s] -> return $ MkMIME (MkMIMEContentType t s []) $ toStrict b
+                  (mediatype, b) <- mtb
+                  case splitWhen ((==) '/') mediatype of
+                      [t, s] -> return $ MkMedia (MkMediaType t s []) $ toStrict b
                       _ -> Nothing
         , isoBackwards =
               \ml -> do
-                  MkMIME (MkMIMEContentType t s _) b <- ml
+                  MkMedia (MkMediaType t s _) b <- ml
                   return (t <> "/" <> s, fromStrict b)
         }
 
-fileMakeRef :: LangFile -> Action (LangWholeModel '( MIME, MIME))
+fileMakeRef :: LangFile -> Action (LangWholeModel '( Media, Media))
 fileMakeRef f = do
     fref <- liftIO $ giFileReference f
     (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-

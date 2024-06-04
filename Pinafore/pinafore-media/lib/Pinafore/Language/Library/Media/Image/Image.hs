@@ -1,6 +1,6 @@
 module Pinafore.Language.Library.Media.Image.Image where
 
-import Changes.World.MIME
+import Changes.World.Media.Type
 import Data.Media.Image
 import Pinafore.API
 import Shapes
@@ -16,24 +16,24 @@ imageGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[] LangImage where
     qGroundType = imageGroundType
 
-class DecodeMIME t where
-    dmMatchContentType :: MIMEContentType -> Bool
+class DecodeMedia t where
+    dmMatchContentType :: MediaType -> Bool
     dmDecode :: StrictByteString -> Maybe t
-    dmLiteralContentType :: MIMEContentType
+    dmLiteralContentType :: MediaType
 
-dmFromMIME ::
-       forall t. DecodeMIME t
-    => MIME
+dmFromMedia ::
+       forall t. DecodeMedia t
+    => Media
     -> Maybe t
-dmFromMIME (MkMIME mt bs)
+dmFromMedia (MkMedia mt bs)
     | dmMatchContentType @t mt = dmDecode bs
-dmFromMIME _ = Nothing
+dmFromMedia _ = Nothing
 
 dmFromLiteral ::
-       forall t. DecodeMIME t
+       forall t. DecodeMedia t
     => Literal
     -> Maybe t
-dmFromLiteral (MkMIMELiteral m) = dmFromMIME m
+dmFromLiteral (MkMediaLiteral m) = dmFromMedia m
 dmFromLiteral _ = Nothing
 
 data DataLiteral t = MkDataLiteral
@@ -41,20 +41,20 @@ data DataLiteral t = MkDataLiteral
     , dlData :: t
     }
 
-class (DecodeMIME (LiteralData dl)) => IsDataLiteral (dl :: Type) where
+class (DecodeMedia (LiteralData dl)) => IsDataLiteral (dl :: Type) where
     type LiteralData dl :: Type
     mkDataLiteral :: Literal -> LiteralData dl -> dl
     idlLiteral :: dl -> Literal
     idlData :: dl -> LiteralData dl
 
-instance DecodeMIME t => IsDataLiteral (DataLiteral t) where
+instance DecodeMedia t => IsDataLiteral (DataLiteral t) where
     type LiteralData (DataLiteral t) = t
     mkDataLiteral = MkDataLiteral
     idlLiteral = dlLiteral
     idlData = dlData
 
-idlMIME :: IsDataLiteral dl => dl -> Maybe MIME
-idlMIME = literalToMIME . idlLiteral
+idlMedia :: IsDataLiteral dl => dl -> Maybe Media
+idlMedia = literalToMedia . idlLiteral
 
 dmMkDataLiteral ::
        forall dl. IsDataLiteral dl
@@ -62,21 +62,21 @@ dmMkDataLiteral ::
     -> LiteralData dl
     -> dl
 dmMkDataLiteral bs idata = let
-    lit = MkMIMELiteral $ MkMIME (dmLiteralContentType @(LiteralData dl)) bs
+    lit = MkMediaLiteral $ MkMedia (dmLiteralContentType @(LiteralData dl)) bs
     in mkDataLiteral lit idata
 
-mimeToDataLiteral ::
+mediaToDataLiteral ::
        forall dl. IsDataLiteral dl
-    => MIME
+    => Media
     -> Maybe dl
-mimeToDataLiteral m = do
-    idata <- dmFromMIME m
-    return $ dmMkDataLiteral (mimeContent m) idata
+mediaToDataLiteral m = do
+    idata <- dmFromMedia m
+    return $ dmMkDataLiteral (mediaContent m) idata
 
-dataLiteralMIMEPrism ::
+dataLiteralMediaPrism ::
        forall dl. IsDataLiteral dl
-    => LangPrism' MIME dl
-dataLiteralMIMEPrism = prism mimeToDataLiteral $ fromJust . idlMIME
+    => LangPrism' Media dl
+dataLiteralMediaPrism = prism mediaToDataLiteral $ fromJust . idlMedia
 
 literalToDataLiteral ::
        forall dl. IsDataLiteral dl

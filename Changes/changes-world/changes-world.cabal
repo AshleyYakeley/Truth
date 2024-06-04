@@ -20,12 +20,15 @@ library
       Changes.World.File
       Changes.World.FileSystem
       Changes.World.ReferenceStore
-      Changes.World.MIME
+      Changes.World.Media
+      Changes.World.Media.Type
       Changes.World.JSON
       Changes.World.SQLite
       Changes.World.SQLite.Schema
   other-modules:
-      Changes.World.MIME.ContentType
+      Paths_changes_world
+  autogen-modules:
+      Paths_changes_world
   hs-source-dirs:
       lib
   default-extensions:

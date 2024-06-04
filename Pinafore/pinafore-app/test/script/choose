@@ -10,7 +10,7 @@ let rec
             _ => False;
             end;
         ref <- makeRef.File.GIO file;
-        jpeg <- get $ jpegMIME.JPEG.Image !$ ref;
+        jpeg <- get $ jpegMedia.JPEG.Image !$ ref;
         let
         path = file >- match
                 Path.File.GIO path => path;

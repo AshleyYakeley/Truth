@@ -43,7 +43,7 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity
 import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.LibraryModule
-import Pinafore.Language.Library.MIME ()
+import Pinafore.Language.Library.Media ()
 import Pinafore.Language.Library.Model ()
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Shim

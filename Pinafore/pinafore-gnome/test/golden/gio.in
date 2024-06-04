@@ -4,7 +4,7 @@ with GIO in
 do
     mref <- makeRef.File $ Path.File "test/somefile";
     mf <- get mref;
-    decode text.MIME mf >-
+    decode text.Media mf >-
         match
             Just t => write.Sink stdout.Env t;
             Nothing => writeLn.Sink stdout.Env "not text";
