@@ -5,8 +5,9 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - allow documentation sections in declarations
   * Library
     - built-in
+      . add Blob type and functions
       . Showable subtypes: don't put spaces in for list and product types
-      . add Result type
+      . add Result type and functions
       . add cell.Store, set.Store
     - pinafore-gnome
       . rename textArea.Widget to textView.Widget, wrap text

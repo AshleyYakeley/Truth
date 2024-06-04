@@ -26,11 +26,10 @@ blobEntityLibSection =
         [ typeBDS "Blob" "" (MkSomeGroundType blobGroundType) []
         , literalSubtypeRelationEntry @StrictByteString
         , showableSubtypeRelationEntry @StrictByteString
-        , namespaceBDS "Text" $
-          monoidEntries @_ @StrictByteString <>
-          orderEntries (compare @StrictByteString) "" <>
-          [ valBDS "length" "The length of a blob." $ olength @StrictByteString
-          , valBDS "section" "`section start len blob` is the section of `blob` beginning at `start` of length `len`." $ \start len (x :: StrictByteString) ->
-                take len $ drop start x
-          ]
+        , namespaceBDS "Blob" $
+          mconcat
+              [ monoidEntries @_ @StrictByteString
+              , orderEntries (compare @StrictByteString) ""
+              , sequenceEntries @_ @StrictByteString
+              ]
         ]

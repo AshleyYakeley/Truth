@@ -28,6 +28,7 @@ module Pinafore.Language.Library.Defs
     , monadEntries
     , semigroupEntries
     , monoidEntries
+    , sequenceEntries
     ) where
 
 import Import
@@ -365,3 +366,14 @@ monoidEntries ::
        forall context (a :: Type). (Monoid a, HasQType 'Positive a, HasQType 'Negative a)
     => [LibraryStuff context]
 monoidEntries = semigroupEntries @context @a <> [valBDS "empty" "" $ mempty @a, valBDS "concat" "" $ mconcat @a]
+
+sequenceEntries ::
+       forall context (a :: Type). (IsSequence a, Index a ~ Int, HasQType 'Positive a, HasQType 'Negative a)
+    => [LibraryStuff context]
+sequenceEntries =
+    [ valBDS "length" "The number of elements." $ olength @a
+    , valBDS "section" "`section start len x` is the section of `x` beginning at `start` of length `len`." $ \start len (x :: a) ->
+          take len $ drop start x
+    , valBDS "take" "Take the first n elements." (take :: Int -> a -> a)
+    , valBDS "drop" "Drop the first n elements." (drop :: Int -> a -> a)
+    ]

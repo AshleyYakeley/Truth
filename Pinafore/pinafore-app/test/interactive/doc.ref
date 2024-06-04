@@ -1,5 +1,5 @@
 pinafore> :doc length.Text
-#| The length of a text.
+#| The number of elements.
 pinafore> :doc Time
 #| Absolute time as measured by UTC.
 pinafore> :doc Just

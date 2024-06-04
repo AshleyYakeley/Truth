@@ -53,6 +53,9 @@ listLibSection =
           , addNameInRootBDS $ valBDS "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
           , addNameInRootBDS $ valBDS "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
           , addNameInRootBDS $ valBDS "maybeMap" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
+          , addNameInRootBDS $
+            valBDS "section" "`section start len x` is the section of `x` beginning at `start` of length `len`." $ \start len (x :: [A]) ->
+                take len $ drop start x
           , addNameInRootBDS $ valBDS "take" "Take the first n elements." (take :: Int -> [A] -> [A])
           , addNameInRootBDS $ valBDS "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
           , addNameInRootBDS $
