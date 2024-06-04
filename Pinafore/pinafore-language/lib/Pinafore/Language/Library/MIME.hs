@@ -6,7 +6,6 @@ module Pinafore.Language.Library.MIME
 
 import Import
 import Pinafore.Language.Convert.HasType
-import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
