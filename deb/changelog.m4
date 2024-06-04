@@ -21,6 +21,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Fixes
     - fix defect with expressions with free variables in expose declarations
     - fix library names that were keywords
+    - make PNGImage & JPEGImage types storable as they should be
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

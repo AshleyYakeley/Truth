@@ -17,11 +17,13 @@ module Pinafore.API
     , SingletonFamily
     , QShimWit
     , QGroundType(..)
+    , GroundProperties
     , PolyGreatestDynamicSupertype(..)
     , simpleMPolyGreatestDynamicSupertype
     , simplePolyGreatestDynamicSupertype
     , literalSubtypeRelationEntry
     , mkLiteralGroundType
+    , literalStorabilityProp
     , showableSubtypeRelationEntry
     , stdSingleGroundType
     , QSingularType
@@ -32,6 +34,12 @@ module Pinafore.API
     , groundQType
     , TrustOrVerify(..)
     , Interpret(..)
+    , DecodeMedia(..)
+    , DataLiteral
+    , dataLiteralMediaCodec
+    , dlData
+    , bytesToDataLiteralM
+    , bytesToDataLiteral
     ) where
 
 import Import

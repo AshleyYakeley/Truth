@@ -17,34 +17,35 @@ type JPEGData = (WitnessMapOf ImageDataKey, SomeFor Image JPEGPixelType)
 -- LangJPEGImage
 newtype LangJPEGImage =
     MkLangJPEGImage (DataLiteral JPEGData)
-    deriving (IsDataLiteral)
+    deriving newtype (Eq)
+
+instance AsLiteral LangJPEGImage where
+    literalCodec = coerceCodec . literalCodec @(DataLiteral JPEGData)
 
 jpegImageGroundType :: QGroundType '[] LangJPEGImage
-jpegImageGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangJPEGImage)|]) "JPEG.Image.")
-        { qgtGreatestDynamicSupertype =
-              simplePolyGreatestDynamicSupertype qGroundType (functionToShim "fromLiteral" literalToDataLiteral)
-        }
+jpegImageGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangJPEGImage)|]) "JPEG.Image."
 
 instance HasQGroundType '[] LangJPEGImage where
     qGroundType = jpegImageGroundType
 
 instance DecodeMedia JPEGData where
+    dmContentType = MkMediaType "image" "jpeg" []
     dmMatchContentType :: MediaType -> Bool
     dmMatchContentType (MkMediaType "image" "jpeg" _) = True
     dmMatchContentType _ = False
     dmDecode bs = resultToMaybe $ decode (jpegFormat 0) $ fromStrict bs
-    dmLiteralContentType = MkMediaType "image" "jpeg" []
-
-jpegEncodeToBytes :: Integer -> [(Text, Literal)] -> LangImage -> StrictByteString
-jpegEncodeToBytes q mdata (MkLangImage image) =
-    toStrict $ encode (jpegFormat $ fromInteger q) (metadataToKeyMap mdata, someConvertImage image)
 
 jpegEncode :: Integer -> [(Text, Literal)] -> LangImage -> LangJPEGImage
-jpegEncode q mdata image = bytesToDataLiteral $ jpegEncodeToBytes q mdata image
+jpegEncode q mdata (MkLangImage image) = let
+    dt = (metadataToKeyMap mdata, someConvertImage image)
+    bs = toStrict $ encode (jpegFormat $ fromInteger q) dt
+    in MkLangJPEGImage $ bytesToDataLiteral bs
 
 jpegMetadata :: LangJPEGImage -> LangHasMetadata
-jpegMetadata image = keyMapToMetadata $ fst $ idlData image
+jpegMetadata (MkLangJPEGImage dl) = keyMapToMetadata $ fst $ dlData dl
+
+jpegImage :: LangJPEGImage -> LangImage
+jpegImage (MkLangJPEGImage dl) = MkLangImage $ mapSome toPixelType $ snd $ dlData dl
 
 jpegStuff :: LibraryStuff ()
 jpegStuff =
@@ -53,12 +54,13 @@ jpegStuff =
         ""
         [ typeBDS "JPEG" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
         , hasSubtypeRelationBDS @LangJPEGImage @(Interpret LangImage) Verify "" $
-          functionToShim "jpegImage" $ MkInterpret . MkLangImage . mapSome toPixelType . snd . idlData
-        , hasSubtypeRelationBDS @LangJPEGImage @Literal Verify "" $ functionToShim "jpegLiteral" idlLiteral
+          functionToShim "jpegImage" $ MkInterpret . jpegImage
+        , literalSubtypeRelationEntry @LangJPEGImage
         , hasSubtypeRelationBDS @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
         , namespaceBDS
               "JPEG"
               [ valBDS "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
-              , valBDS "jpegMedia" "" $ dataLiteralMediaPrism @LangJPEGImage
+              , valBDS "jpegMedia" "" $
+                codecToPrism $ coerceCodec @_ @(DataLiteral JPEGData) @LangJPEGImage . dataLiteralMediaCodec
               ]
         ]

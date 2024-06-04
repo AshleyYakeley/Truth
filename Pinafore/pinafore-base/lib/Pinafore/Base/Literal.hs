@@ -1,9 +1,7 @@
 module Pinafore.Base.Literal
     ( Literal(..)
     , AsLiteral(..)
-    , literalToMedia
-    , mediaToLiteral
-    , pattern MkMediaLiteral
+    , literalMediaCodec
     , toLiteral
     , fromLiteral
     , literalToEntity
@@ -68,24 +66,20 @@ givenMediaTypeSerializer t =
         Just bcode -> rLiteralBytes bcode
         Nothing -> rExact t rawMediaTypeSerializer
 
-mediaToLiteralRaw :: MediaType -> StrictByteString -> Literal
-mediaToLiteralRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> rWhole) (t, b)
-
-mediaToLiteral :: Media -> Literal
-mediaToLiteral (MkMedia t b) =
-    case t of
-        MkMediaType TextMediaType "plain" [] -> mediaToLiteralRaw plainTextMediaType b
-        _ -> mediaToLiteralRaw t b
-
-literalToMedia :: Literal -> Maybe Media
-literalToMedia (MkLiteral bs) = do
-    (t, b) <- serializerStrictDecode (headerSerializer <***> rWhole) bs
-    return $ MkMedia t b
-
-pattern MkMediaLiteral :: Media -> Literal
-
-pattern MkMediaLiteral m <- (literalToMedia -> Just m)
-  where MkMediaLiteral m = mediaToLiteral m
+literalMediaCodec :: Codec Literal Media
+literalMediaCodec = let
+    encodeRaw :: MediaType -> StrictByteString -> Literal
+    encodeRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> rWhole) (t, b)
+    encode :: Media -> Literal
+    encode (MkMedia t b) =
+        case t of
+            MkMediaType TextMediaType "plain" [] -> encodeRaw plainTextMediaType b
+            _ -> encodeRaw t b
+    decode :: Literal -> Maybe Media
+    decode (MkLiteral bs) = do
+        (t, b) <- serializerStrictDecode (headerSerializer <***> rWhole) bs
+        return $ MkMedia t b
+    in MkCodec {..}
 
 class Eq t => AsLiteral t where
     literalCodec :: Codec Literal t

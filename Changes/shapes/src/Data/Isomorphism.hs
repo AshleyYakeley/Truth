@@ -30,6 +30,11 @@ instance CatFunctor (CatDual catp) catq f =>
     cfmap (MkCatDual bi) =
         MkIsomorphism {isoForwards = ccontramap (isoForwards bi), isoBackwards = ccontramap (isoBackwards bi)}
 
+coerceBijection ::
+       forall a b. Coercible a b
+    => Bijection a b
+coerceBijection = MkIsomorphism coerce coerce
+
 isoMapCat ::
        forall k (cat1 :: k -> k -> Type) (cat2 :: k -> k -> Type) (p :: k) (q :: k).
        (forall (a :: k) (b :: k). cat1 a b -> cat2 a b)

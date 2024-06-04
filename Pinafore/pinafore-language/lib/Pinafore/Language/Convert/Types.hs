@@ -5,6 +5,7 @@ module Pinafore.Language.Convert.Types where
 import Data.Time
 import Import
 import Pinafore.Language.Convert.HasType
+import Pinafore.Language.Convert.Literal
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -90,34 +91,6 @@ instance (HasQType 'Negative a) => HasQType 'Negative (ImmutableWholeModel a) wh
 
 instance (HasQType 'Positive a) => HasQType 'Positive (ImmutableWholeModel a) where
     qType = mapPosShimWit (functionToShim "immutableToWholeModel" immutableToWholeModel) qType
-
--- Literal types
-mkLiteralGroundType ::
-       forall (t :: Type). AsLiteral t
-    => IOWitness ('MkWitKind (SingletonFamily t))
-    -> FullName
-    -> QGroundType '[] t
-mkLiteralGroundType wit name = let
-    storability :: Storability '[] t
-    storability =
-        MkStorability
-            { stbKind = NilListType
-            , stbCovaryMap = covarymap
-            , stbAdapter = pureStorabilityAdapter $ \NilArguments -> asLiteralStoreAdapter
-            }
-    props = singleGroundProperty storabilityProperty storability
-    in (stdSingleGroundType wit name)
-           {qgtProperties = props, qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-literalGroundType :: QGroundType '[] Literal
-literalGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
-
-literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
-literalGreatestDynamicSupertype =
-    simplePolyGreatestDynamicSupertype literalGroundType (functionToShim "fromLiteral" fromLiteral)
-
-instance HasQGroundType '[] Literal where
-    qGroundType = literalGroundType
 
 unitGroundType :: QGroundType '[] ()
 unitGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit"
