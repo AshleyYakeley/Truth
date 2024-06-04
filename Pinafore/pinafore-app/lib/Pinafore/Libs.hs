@@ -1,8 +1,8 @@
 module Pinafore.Libs where
 
 import Pinafore.API
-import Pinafore.Language.Library.GNOME
-import Pinafore.Language.Library.Media
+import Pinafore.Library.GNOME
+import Pinafore.Library.Media
 import Shapes
 import System.Directory
 import System.Environment.XDG.BaseDir

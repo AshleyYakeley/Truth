@@ -1,13 +1,13 @@
-module Pinafore.Language.Library.Media
+module Pinafore.Library.Media
     ( mediaLibrary
     , LangDrawing(..)
     , LangImage(..)
     ) where
 
 import Pinafore.API
-import Pinafore.Language.Library.Media.Cairo
-import Pinafore.Language.Library.Media.Colour
-import Pinafore.Language.Library.Media.Image
+import Pinafore.Library.Media.Cairo
+import Pinafore.Library.Media.Colour
+import Pinafore.Library.Media.Image
 import Shapes
 
 mediaLibrary :: [LibraryModule ()]

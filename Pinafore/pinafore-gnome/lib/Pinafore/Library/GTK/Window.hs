@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.GTK.Window
+module Pinafore.Library.GTK.Window
     ( windowStuff
     , dialogStuff
     ) where
@@ -10,9 +10,9 @@ import Changes.World.GNOME.GTK
 import Data.Shim
 import GI.Gtk as GI hiding (Action)
 import Pinafore.API
-import Pinafore.Language.Library.GIO
-import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Widget
+import Pinafore.Library.GIO
+import Pinafore.Library.GTK.Context
+import Pinafore.Library.GTK.Widget
 import Shapes
 
 -- LangWindow

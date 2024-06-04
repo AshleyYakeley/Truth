@@ -20,19 +20,19 @@ flag test-X11
 
 library
   exposed-modules:
-      Pinafore.Language.Library.GNOME
+      Pinafore.Library.GNOME
   other-modules:
-      Pinafore.Language.Library.GIO
-      Pinafore.Language.Library.GTK.Context
-      Pinafore.Language.Library.GTK.Widget.Context
-      Pinafore.Language.Library.GTK.Widget.Drawing
-      Pinafore.Language.Library.GTK.Widget
-      Pinafore.Language.Library.GTK.MenuEntry
-      Pinafore.Language.Library.GTK.Clipboard
-      Pinafore.Language.Library.GTK.Window
-      Pinafore.Language.Library.GTK.Debug
-      Pinafore.Language.Library.GTK
-      Pinafore.Language.Library.WebKit
+      Pinafore.Library.GIO
+      Pinafore.Library.GTK.Context
+      Pinafore.Library.GTK.Widget.Context
+      Pinafore.Library.GTK.Widget.Drawing
+      Pinafore.Library.GTK.Widget
+      Pinafore.Library.GTK.MenuEntry
+      Pinafore.Library.GTK.Clipboard
+      Pinafore.Library.GTK.Window
+      Pinafore.Library.GTK.Debug
+      Pinafore.Library.GTK
+      Pinafore.Library.WebKit
   hs-source-dirs:
       lib
   default-extensions:

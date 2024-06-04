@@ -1,11 +1,11 @@
-module Pinafore.Language.Library.WebKit
+module Pinafore.Library.WebKit
     ( webKitStuff
     ) where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Widget
+import Pinafore.Library.GTK.Widget
 import Shapes
 
 webViewWidget :: ImmutableWholeModel Text -> LangWidget

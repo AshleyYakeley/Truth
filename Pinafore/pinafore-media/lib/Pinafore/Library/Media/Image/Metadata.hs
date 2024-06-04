@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.Media.Image.Metadata
+module Pinafore.Library.Media.Image.Metadata
     ( metadataStuff
     , LangHasMetadata(..)
     , hasMetadataGroundType

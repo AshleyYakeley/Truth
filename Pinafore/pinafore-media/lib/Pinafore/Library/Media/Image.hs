@@ -1,15 +1,15 @@
-module Pinafore.Language.Library.Media.Image
+module Pinafore.Library.Media.Image
     ( imageStuff
     , LangImage(..)
     ) where
 
 import Data.Media.Image
 import Pinafore.API
-import Pinafore.Language.Library.Media.Colour
-import Pinafore.Language.Library.Media.Image.Image
-import Pinafore.Language.Library.Media.Image.JPEG
-import Pinafore.Language.Library.Media.Image.Metadata
-import Pinafore.Language.Library.Media.Image.PNG
+import Pinafore.Library.Media.Colour
+import Pinafore.Library.Media.Image.Image
+import Pinafore.Library.Media.Image.JPEG
+import Pinafore.Library.Media.Image.Metadata
+import Pinafore.Library.Media.Image.PNG
 import Shapes
 
 langImageSize :: LangImage -> (Int, Int)

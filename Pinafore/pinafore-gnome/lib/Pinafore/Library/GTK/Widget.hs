@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.GTK.Widget
+module Pinafore.Library.GTK.Widget
     ( widgetStuff
     , actionRef
     , WidgetContext(..)
@@ -11,9 +11,9 @@ import Data.Media.Image hiding (Unknown)
 import Data.Shim
 import Data.Time
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Widget.Context
-import Pinafore.Language.Library.Media
+import Pinafore.Library.GTK.Context
+import Pinafore.Library.GTK.Widget.Context
+import Pinafore.Library.Media
 import Shapes
 
 -- LangLayoutWidget

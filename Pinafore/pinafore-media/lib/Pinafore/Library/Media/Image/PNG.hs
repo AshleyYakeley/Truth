@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Media.Image.PNG
+module Pinafore.Library.Media.Image.PNG
     ( pngStuff
     ) where
 
@@ -8,8 +8,8 @@ import Changes.World.Media
 import Data.Media.Image
 import Data.Shim
 import Pinafore.API
-import Pinafore.Language.Library.Media.Image.Image
-import Pinafore.Language.Library.Media.Image.Metadata
+import Pinafore.Library.Media.Image.Image
+import Pinafore.Library.Media.Image.Metadata
 import Shapes
 
 type PNGData = (WitnessMapOf ImageDataKey, SomeFor Image PNGPixelType)

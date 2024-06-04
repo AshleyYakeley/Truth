@@ -1,12 +1,12 @@
-module Pinafore.Language.Library.GTK.Debug
+module Pinafore.Library.GTK.Debug
     ( gtkDebugStuff
     ) where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Window ()
+import Pinafore.Library.GTK.Context
+import Pinafore.Library.GTK.Window ()
 import Shapes
 
 ignoreGError :: IO () -> IO ()

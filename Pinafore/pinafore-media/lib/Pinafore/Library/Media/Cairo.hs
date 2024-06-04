@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Media.Cairo
+module Pinafore.Library.Media.Cairo
     ( cairoStuff
     , LangDrawing(..)
     ) where
@@ -10,8 +10,8 @@ import Data.Shim
 import Graphics.Cairo.Functional
 import Graphics.Cairo.Image
 import Pinafore.API
-import Pinafore.Language.Library.Media.Colour
-import Pinafore.Language.Library.Media.Image
+import Pinafore.Library.Media.Colour
+import Pinafore.Library.Media.Image
 import Shapes hiding (rotate)
 import Shapes.Numeric
 

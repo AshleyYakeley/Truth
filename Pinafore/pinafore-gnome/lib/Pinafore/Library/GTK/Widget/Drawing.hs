@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.GTK.Widget.Drawing
+module Pinafore.Library.GTK.Widget.Drawing
     ( drawingStuff
     ) where
 
@@ -6,9 +6,9 @@ import Changes.Core
 import Changes.World.GNOME.GTK
 import GI.Gdk as GI
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Widget.Context
-import Pinafore.Language.Library.Media
+import Pinafore.Library.GTK.Context
+import Pinafore.Library.GTK.Widget.Context
+import Pinafore.Library.Media
 import Shapes
 
 newtype LangHandler =

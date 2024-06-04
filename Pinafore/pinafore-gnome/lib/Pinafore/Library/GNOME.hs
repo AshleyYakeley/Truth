@@ -1,13 +1,13 @@
-module Pinafore.Language.Library.GNOME
+module Pinafore.Library.GNOME
     ( gnomeLibrary
     , LangFile
     , LangContext(..)
     ) where
 
 import Pinafore.API
-import Pinafore.Language.Library.GIO
-import Pinafore.Language.Library.GTK
-import Pinafore.Language.Library.WebKit
+import Pinafore.Library.GIO
+import Pinafore.Library.GTK
+import Pinafore.Library.WebKit
 import Shapes
 
 gnomeLibrary :: [LibraryModule ()]

@@ -3,8 +3,8 @@ module Main
     ) where
 
 import Paths_pinafore_stdlib
-import Pinafore.Language.Library.GNOME
-import Pinafore.Language.Library.Media
+import Pinafore.Library.GNOME
+import Pinafore.Library.Media
 import Pinafore.Test
 import Shapes
 import Shapes.Test

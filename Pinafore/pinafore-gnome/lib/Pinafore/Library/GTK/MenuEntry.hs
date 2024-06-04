@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.GTK.MenuEntry
+module Pinafore.Library.GTK.MenuEntry
     ( LangMenuEntry(..)
     , LangMenuBar
     , menuEntryStuff
@@ -10,7 +10,7 @@ import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Widget
+import Pinafore.Library.GTK.Widget
 import Shapes
 
 -- LangMenuEntry

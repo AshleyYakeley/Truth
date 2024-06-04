@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.GIO
+module Pinafore.Library.GIO
     ( LangFile
     , gioStuff
     ) where

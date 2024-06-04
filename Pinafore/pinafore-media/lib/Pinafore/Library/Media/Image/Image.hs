@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.Media.Image.Image where
+module Pinafore.Library.Media.Image.Image where
 
 import Data.Media.Image
 import Pinafore.API

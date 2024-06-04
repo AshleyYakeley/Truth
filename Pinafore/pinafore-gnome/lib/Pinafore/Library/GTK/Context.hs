@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.GTK.Context where
+module Pinafore.Library.GTK.Context where
 
 import Changes.Core
 import Changes.World.GNOME.GTK

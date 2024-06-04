@@ -3,7 +3,7 @@ module Test.Golden
     ) where
 
 import Flags
-import Pinafore.Language.Library.GNOME
+import Pinafore.Library.GNOME
 import Pinafore.Test
 import Shapes hiding ((.))
 import Shapes.Test

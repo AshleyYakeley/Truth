@@ -1,11 +1,11 @@
-module Pinafore.Language.Library.GTK.Clipboard
+module Pinafore.Library.GTK.Clipboard
     ( clipboardStuff
     ) where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Context
+import Pinafore.Library.GTK.Context
 import Shapes
 
 clipBijection :: Bijection (Maybe Clip) (Know Literal)

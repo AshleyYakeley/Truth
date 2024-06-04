@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Media.Colour
+module Pinafore.Library.Media.Colour
     ( colourStuff
     , LangColour
     , pattern ColorSRGB

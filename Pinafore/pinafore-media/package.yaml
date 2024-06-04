@@ -21,12 +21,12 @@ library:
       - typed-expression
       - pinafore-language
     exposed-modules:
-      - Pinafore.Language.Library.Media
+      - Pinafore.Library.Media
     other-modules:
-      - Pinafore.Language.Library.Media.Colour
-      - Pinafore.Language.Library.Media.Image.Metadata
-      - Pinafore.Language.Library.Media.Image.Image
-      - Pinafore.Language.Library.Media.Image.PNG
-      - Pinafore.Language.Library.Media.Image.JPEG
-      - Pinafore.Language.Library.Media.Image
-      - Pinafore.Language.Library.Media.Cairo
+      - Pinafore.Library.Media.Colour
+      - Pinafore.Library.Media.Image.Metadata
+      - Pinafore.Library.Media.Image.Image
+      - Pinafore.Library.Media.Image.PNG
+      - Pinafore.Library.Media.Image.JPEG
+      - Pinafore.Library.Media.Image
+      - Pinafore.Library.Media.Cairo

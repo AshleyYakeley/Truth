@@ -1,9 +1,9 @@
-module Pinafore.Language.Library.GTK.Widget.Context where
+module Pinafore.Library.GTK.Widget.Context where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Context
+import Pinafore.Library.GTK.Context
 import Shapes
 
 data SelectionModel =

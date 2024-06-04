@@ -1,16 +1,16 @@
-module Pinafore.Language.Library.GTK
+module Pinafore.Library.GTK
     ( allGTKStuff
     , LangContext(..)
     ) where
 
 import Pinafore.API
-import Pinafore.Language.Library.GTK.Clipboard
-import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Debug
-import Pinafore.Language.Library.GTK.MenuEntry
-import Pinafore.Language.Library.GTK.Widget
-import Pinafore.Language.Library.GTK.Widget.Drawing
-import Pinafore.Language.Library.GTK.Window
+import Pinafore.Library.GTK.Clipboard
+import Pinafore.Library.GTK.Context
+import Pinafore.Library.GTK.Debug
+import Pinafore.Library.GTK.MenuEntry
+import Pinafore.Library.GTK.Widget
+import Pinafore.Library.GTK.Widget.Drawing
+import Pinafore.Library.GTK.Window
 import Shapes
 
 gtkStuff :: LibraryStuff ()
