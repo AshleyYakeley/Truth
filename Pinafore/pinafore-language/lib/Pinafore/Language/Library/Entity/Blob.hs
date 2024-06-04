@@ -18,12 +18,22 @@ blobGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily 
 instance HasQGroundType '[] StrictByteString where
     qGroundType = blobGroundType
 
+toBlob :: [Integer] -> StrictByteString
+toBlob ii = fromList $ fmap fromInteger ii
+
+fromBlob :: StrictByteString -> [Integer]
+fromBlob b = fmap toInteger $ otoList b
+
 blobEntityLibSection :: LibraryStuff context
 blobEntityLibSection =
     headingBDS
         "Blob"
-        ""
-        [ typeBDS "Blob" "" (MkSomeGroundType blobGroundType) []
+        "A sequence of bytes."
+        [ typeBDS
+              "Blob"
+              ""
+              (MkSomeGroundType blobGroundType)
+              [valPatBDS "Mk" "As a list of bytes." toBlob $ PureFunction $ \b -> (fromBlob b, ())]
         , literalSubtypeRelationEntry @StrictByteString
         , showableSubtypeRelationEntry @StrictByteString
         , namespaceBDS "Blob" $
