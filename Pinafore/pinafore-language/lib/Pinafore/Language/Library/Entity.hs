@@ -6,6 +6,7 @@ module Pinafore.Language.Library.Entity
 
 import Import
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Entity.Blob
 import Pinafore.Language.Library.Entity.Boolean
 import Pinafore.Language.Library.Entity.Dynamic
 import Pinafore.Language.Library.Entity.DynamicType
@@ -31,6 +32,7 @@ entityLibSection =
     , booleanEntityLibSection
     , orderingEntityLibSection
     , orderEntityLibSection
+    , blobEntityLibSection
     , textEntityLibSection
     , numericEntityLibSection
     , timeEntityLibSection

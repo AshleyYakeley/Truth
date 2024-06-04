@@ -100,6 +100,7 @@ library
       Pinafore.Language.Library.Entity.Boolean
       Pinafore.Language.Library.Entity.Ordering
       Pinafore.Language.Library.Entity.Order
+      Pinafore.Language.Library.Entity.Blob
       Pinafore.Language.Library.Entity.Text
       Pinafore.Language.Library.Entity.Numeric
       Pinafore.Language.Library.Entity.Time

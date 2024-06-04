@@ -1,6 +1,7 @@
 module Pinafore.Base.MIME
     ( MIME(..)
     , plainTextMIMEType
+    , octetStreamMIMEType
     , vndMIMEType
     , mimeToText
     , textToMIME
@@ -16,6 +17,9 @@ data MIME = MkMIME
 
 plainTextMIMEType :: MIMEContentType
 plainTextMIMEType = MkMIMEContentType TextMimeType "plain" [("charset", "utf-8")]
+
+octetStreamMIMEType :: MIMEContentType
+octetStreamMIMEType = MkMIMEContentType ApplicationMimeType "octet-stream" []
 
 vndMIMEType :: Text -> MIMEContentType
 vndMIMEType t = MkMIMEContentType ApplicationMimeType ("vnd.pinafore." <> t) []

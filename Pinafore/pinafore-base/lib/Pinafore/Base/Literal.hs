@@ -32,6 +32,7 @@ mimeCompress :: [(MIMEContentType, [Word8])]
 mimeCompress =
     [ (vndMIMEType "unit", [0x75]) -- [u]
     , (vndMIMEType "boolean", [0x62]) -- [b]
+    , (octetStreamMIMEType, [0x61]) -- [a]
     , (plainTextMIMEType, [0x74]) -- [t]
     , (vndMIMEType "ordering", [0x6F]) -- [o]
     , (vndMIMEType "rational", [0x72]) -- [r]
@@ -119,6 +120,12 @@ instance AsLiteral Literal where
 
 instance AsLiteral Void where
     literalCodec = rVoid
+
+instance AsLiteral StrictByteString
+
+instance AsMIMELiteral StrictByteString where
+    literalMimeType = octetStreamMIMEType
+    literalContentSerializer = serializer
 
 instance AsLiteral Text
 
