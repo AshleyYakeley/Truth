@@ -149,6 +149,10 @@ import Data.Type.Witness as I
 import Data.Type.OpenWitness as I
 import Data.Type.OpenWitness.Witnessed as I
 
+forn :: Applicative m => Int -> m a -> m [a]
+forn 0 _ = pure []
+forn n ma = liftA2 (:) ma $ forn (pred n) ma
+
 liftComposeOuter :: (Functor f, Applicative g) => f a -> Compose f g a
 liftComposeOuter fa = Compose $ fmap pure fa
 

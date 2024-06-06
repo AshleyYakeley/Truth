@@ -41,9 +41,11 @@ mediaTypeCompress =
     , (vndMediaType "time", [0x54, 0x75]) -- [Tu]
     , (vndMediaType "duration", [0x54, 0x6E]) -- [Tn]
     , (vndMediaType "colour", [0x63]) -- [c]
+    , (vndMediaType "media-type", [0x79]) -- [y]
+    , (vndMediaType "media", [0x6D]) -- [m]
     ]
 
-addSerializer :: (MediaType, [Word8]) -> Serializer MediaType -> Serializer MediaType
+addSerializer :: (MediaType, [Word8]) -> Serializer Stops MediaType -> Serializer Stops MediaType
 addSerializer (t, bcode) s = let
     fromE :: Either () MediaType -> MediaType
     fromE (Left ()) = t
@@ -52,24 +54,24 @@ addSerializer (t, bcode) s = let
     toE t'
         | t' == t = Left ()
     toE t' = Right t'
-    in invmap fromE toE (rLiteralBytes bcode <+++> s)
+    in invmap fromE toE (sPick (sLiteralBytes bcode) s)
 
-rawMediaTypeSerializer :: Serializer MediaType
-rawMediaTypeSerializer = rLiteralBytes [0x6D] ***> serializer
+rawMediaTypeSerializer :: Serializer Stops MediaType
+rawMediaTypeSerializer = sLiteralBytes [0x6D] ***> stoppingSerializer
 
-headerSerializer :: Serializer MediaType
-headerSerializer = foldr addSerializer rawMediaTypeSerializer mediaTypeCompress
+mediaTypeSerializer :: Serializer Stops MediaType
+mediaTypeSerializer = foldr addSerializer rawMediaTypeSerializer mediaTypeCompress
 
-givenMediaTypeSerializer :: MediaType -> Serializer ()
+givenMediaTypeSerializer :: MediaType -> Serializer Stops ()
 givenMediaTypeSerializer t =
     case lookup t mediaTypeCompress of
-        Just bcode -> rLiteralBytes bcode
-        Nothing -> rExact t rawMediaTypeSerializer
+        Just bcode -> sLiteralBytes bcode
+        Nothing -> sExact t rawMediaTypeSerializer
 
 literalMediaCodec :: Codec Literal Media
 literalMediaCodec = let
     encodeRaw :: MediaType -> StrictByteString -> Literal
-    encodeRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> rWhole) (t, b)
+    encodeRaw t b = MkLiteral $ serializerStrictEncode (sProduct mediaTypeSerializer sWhole) (t, b)
     encode :: Media -> Literal
     encode (MkMedia t b) =
         case t of
@@ -77,14 +79,14 @@ literalMediaCodec = let
             _ -> encodeRaw t b
     decode :: Literal -> Maybe Media
     decode (MkLiteral bs) = do
-        (t, b) <- serializerStrictDecode (headerSerializer <***> rWhole) bs
+        (t, b) <- serializerStrictDecode (sProduct mediaTypeSerializer sWhole) bs
         return $ MkMedia t b
     in MkCodec {..}
 
 class Eq t => AsLiteral t where
     literalCodec :: Codec Literal t
     default literalCodec :: AsMediaLiteral t => Codec Literal t
-    literalCodec = serializerStrictCodec literalSerializer . bijectionCodec coerceIsomorphism
+    literalCodec = serializerStrictCodec literalSerializer . coerceCodec
 
 toLiteral :: AsLiteral t => t -> Literal
 toLiteral = encode literalCodec
@@ -97,12 +99,14 @@ literalToEntity v = MkEntity $ byteStringToAnchor $ unLiteral $ toLiteral v
 
 class AsLiteral t => AsMediaLiteral t where
     literalMediaType :: MediaType
-    literalContentSerializer :: Serializer t
+    literalContentSerializer :: Serializer KeepsGoing t
+    default literalContentSerializer :: HasSerializer t => Serializer KeepsGoing t
+    literalContentSerializer = greedySerializer
 
 literalSerializer ::
        forall t. AsMediaLiteral t
-    => Serializer t
-literalSerializer = givenMediaTypeSerializer (literalMediaType @t) ***> literalContentSerializer
+    => Serializer KeepsGoing t
+literalSerializer = sProductR (givenMediaTypeSerializer (literalMediaType @t)) literalContentSerializer
 
 entityToLiteral :: Entity -> Maybe Literal
 entityToLiteral (MkEntity anchor) = do
@@ -112,6 +116,16 @@ entityToLiteral (MkEntity anchor) = do
 instance AsLiteral Literal where
     literalCodec = id
 
+instance AsLiteral MediaType
+
+instance AsMediaLiteral MediaType where
+    literalMediaType = vndMediaType "media-type" -- don't compress
+
+instance AsLiteral Media
+
+instance AsMediaLiteral Media where
+    literalMediaType = vndMediaType "media"
+
 instance AsLiteral Void where
     literalCodec = rVoid
 
@@ -119,13 +133,12 @@ instance AsLiteral StrictByteString
 
 instance AsMediaLiteral StrictByteString where
     literalMediaType = octetStreamMediaType
-    literalContentSerializer = serializer
 
 instance AsLiteral Text
 
 instance AsMediaLiteral Text where
     literalMediaType = plainTextMediaType
-    literalContentSerializer = codecMap' utf8Codec rWhole
+    literalContentSerializer = codecMap' utf8Codec sWhole
 
 instance AsLiteral String where
     literalCodec = bijectionCodec unpackBijection . literalCodec @Text
@@ -134,19 +147,16 @@ instance AsLiteral ()
 
 instance AsMediaLiteral () where
     literalMediaType = vndMediaType "unit"
-    literalContentSerializer = rUnit
 
 instance AsLiteral Bool
 
 instance AsMediaLiteral Bool where
     literalMediaType = vndMediaType "boolean"
-    literalContentSerializer = serializer
 
 instance AsLiteral Ordering
 
 instance AsMediaLiteral Ordering where
     literalMediaType = vndMediaType "ordering"
-    literalContentSerializer = codecMap readShowCodec serializer
 
 instance AsLiteral Number where
     literalCodec = let
@@ -162,13 +172,11 @@ instance AsLiteral Rational
 
 instance AsMediaLiteral Rational where
     literalMediaType = vndMediaType "rational"
-    literalContentSerializer = serializer
 
 instance AsLiteral Double
 
 instance AsMediaLiteral Double where
     literalMediaType = vndMediaType "double"
-    literalContentSerializer = serializer
 
 instance AsLiteral SafeRational where
     literalCodec = codecMap safeRationalNumber literalCodec
@@ -180,28 +188,23 @@ instance AsLiteral Day
 
 instance AsMediaLiteral Day where
     literalMediaType = vndMediaType "day"
-    literalContentSerializer = serializer
 
 instance AsLiteral TimeOfDay
 
 instance AsMediaLiteral TimeOfDay where
     literalMediaType = vndMediaType "timeofday"
-    literalContentSerializer = serializer
 
 instance AsLiteral LocalTime
 
 instance AsMediaLiteral LocalTime where
     literalMediaType = vndMediaType "localtime"
-    literalContentSerializer = serializer
 
 instance AsLiteral UTCTime
 
 instance AsMediaLiteral UTCTime where
     literalMediaType = vndMediaType "time"
-    literalContentSerializer = serializer
 
 instance AsLiteral NominalDiffTime
 
 instance AsMediaLiteral NominalDiffTime where
     literalMediaType = vndMediaType "duration"
-    literalContentSerializer = serializer

@@ -48,12 +48,15 @@ alphaCodec =
 
 instance AsLiteral LangAlphaColour
 
-instance AsMediaLiteral LangAlphaColour where
-    literalMediaType = vndMediaType "colour"
-    literalContentSerializer = let
+instance HasSerializer LangAlphaColour where
+    stoppingSerializer = let
         fromT (r, (g, (b, a))) = Alpha (ColorSRGB r g b) a
         toT (Alpha (ColorSRGB r g b) a) = (r, (g, (b, a)))
-        in invmap fromT toT $ serializer <***> serializer <***> serializer <***> serializer
+        in invmap fromT toT $
+           sProduct stoppingSerializer $ sProduct stoppingSerializer $ sProduct stoppingSerializer stoppingSerializer
+
+instance AsMediaLiteral LangAlphaColour where
+    literalMediaType = vndMediaType "colour"
 
 alphaColourGroundType :: QGroundType '[] LangAlphaColour
 alphaColourGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour"

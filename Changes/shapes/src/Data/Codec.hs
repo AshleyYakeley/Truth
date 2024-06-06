@@ -64,11 +64,6 @@ bijectionCodec (MkIsomorphism p q) = MkCodec (pure . p) q
 codecBijection :: Monad m => Codec' m a b -> Bijection (m a) (m b)
 codecBijection (MkCodec amb ba) = MkIsomorphism (\ma -> ma >>= amb) (fmap ba)
 
-coerceCodec ::
-       forall m a b. (Applicative m, Coercible a b)
-    => Codec' m a b
-coerceCodec = bijectionCodec coerceBijection
-
 codecSum :: Summable f => Codec a b -> f b -> f a -> f a
 codecSum MkCodec {..} fb fa =
     invmap

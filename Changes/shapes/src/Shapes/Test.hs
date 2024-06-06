@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Shapes.Test
     (
     -- * General
@@ -61,6 +63,10 @@ import Test.Tasty.Providers
 import Test.Tasty.Providers.ConsoleFormat
 import Test.Tasty.QuickCheck
 import Test.Tasty.Runners
+
+instance Arbitrary StrictByteString where
+    arbitrary = fmap fromList $ arbitrary @[Word8]
+    shrink a = fmap fromList $ shrink @[Word8] $ otoList a
 
 ingredientSetOptions :: (OptionSet -> OptionSet) -> Ingredient -> Ingredient
 ingredientSetOptions f (TestReporter ods t) = TestReporter ods $ t . f

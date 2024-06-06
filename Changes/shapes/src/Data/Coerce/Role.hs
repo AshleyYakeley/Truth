@@ -6,6 +6,7 @@ import Control.Category.Dual
 import Control.Category.Groupoid
 import Control.Stream
 import Data.CatFunctor
+import Data.Codec
 import Data.Coerce.Coercion
 import Data.Isomorphism
 import Shapes.Import
@@ -39,6 +40,11 @@ coerceIsomorphism =
     MkIsomorphism
         (coercionToFunction (representationalCoercion MkCoercion) id)
         (coercionToFunction (representationalCoercion MkCoercion) id)
+
+coerceCodec ::
+       forall m a b. (Applicative m, Coercible a b)
+    => Codec' m a b
+coerceCodec = bijectionCodec coerceIsomorphism
 
 instance RepresentationalRole f => CatFunctor Coercion Coercion (f :: kp -> kq) where
     cfmap = representationalCoercion

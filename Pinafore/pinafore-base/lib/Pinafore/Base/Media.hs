@@ -12,7 +12,21 @@ import Shapes
 data Media = MkMedia
     { mediaType :: MediaType
     , mediaContent :: StrictByteString
-    }
+    } deriving (Eq)
+
+instance HasSerializer Media where
+    greedySerializer = let
+        toMedia :: (MediaType, StrictByteString) -> Media
+        toMedia (t, b) = MkMedia t b
+        fromMedia :: Media -> (MediaType, StrictByteString)
+        fromMedia (MkMedia t b) = (t, b)
+        in invmap toMedia fromMedia $ sProduct stoppingSerializer greedySerializer
+    stoppingSerializer = let
+        toMedia :: (MediaType, StrictByteString) -> Media
+        toMedia (t, b) = MkMedia t b
+        fromMedia :: Media -> (MediaType, StrictByteString)
+        fromMedia (MkMedia t b) = (t, b)
+        in invmap toMedia fromMedia $ sProduct stoppingSerializer stoppingSerializer
 
 plainTextMediaType :: MediaType
 plainTextMediaType = MkMediaType TextMediaType "plain" [("charset", "utf-8")]
