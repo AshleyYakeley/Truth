@@ -12,6 +12,7 @@ import Pinafore.Language.Library.Entity.Dynamic
 import Pinafore.Language.Library.Entity.DynamicType
 import Pinafore.Language.Library.Entity.Entity
 import Pinafore.Language.Library.Entity.Literal
+import Pinafore.Language.Library.Entity.Media
 import Pinafore.Language.Library.Entity.Numeric
 import Pinafore.Language.Library.Entity.Open
 import Pinafore.Language.Library.Entity.Order
@@ -39,4 +40,5 @@ entityLibSection =
     , openEntityLibSection
     , dynamicEntityLibSection
     , dynamicTypeEntityLibSection
+    , mediaEntityLibSection
     ]

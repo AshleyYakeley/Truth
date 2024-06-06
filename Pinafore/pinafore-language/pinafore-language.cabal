@@ -120,7 +120,7 @@ library
       Pinafore.Language.Library.Action
       Pinafore.Language.Library.Lifecycle
       Pinafore.Language.Library.Interpret
-      Pinafore.Language.Library.Media
+      Pinafore.Language.Library.Entity.Media
       Pinafore.Language.Library.Model
       Pinafore.Language.Library.Optics
       Pinafore.Language.Library.ModelOrder

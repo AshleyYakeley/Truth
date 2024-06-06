@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Media
-    ( mediaLibSection
+module Pinafore.Language.Library.Entity.Media
+    ( mediaEntityLibSection
     ) where
 
 import Import
@@ -24,8 +24,8 @@ instance HasQGroundType '[] Media where
 textMedia :: LangPrism' Media Text
 textMedia = codecToPrism mediaText
 
-mediaLibSection :: LibraryStuff context
-mediaLibSection =
+mediaEntityLibSection :: LibraryStuff context
+mediaEntityLibSection =
     headingBDS
         "Media"
         ""
