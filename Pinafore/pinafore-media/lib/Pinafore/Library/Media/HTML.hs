@@ -6,6 +6,7 @@ module Pinafore.Library.Media.HTML
 import Changes.World.Media.Type
 import Data.Shim
 import Pinafore.API
+import Pinafore.Library.Media.Media
 import Shapes
 
 newtype HTMLText = MkHTMLText

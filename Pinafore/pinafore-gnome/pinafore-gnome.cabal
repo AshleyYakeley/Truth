@@ -132,6 +132,7 @@ test-suite test
     , haskell-gi-base
     , pinafore-gnome
     , pinafore-language
+    , pinafore-media
     , shapes
     , thread-trace
   default-language: GHC2021

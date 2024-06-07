@@ -1,23 +1,18 @@
 module Pinafore.Base.Literal.Data
     ( DecodeLiteral(..)
     , DataLiteral
+    , dlBytes
     , dlData
     , bytesToDataLiteralM
     , bytesToDataLiteral
-    , DecodeMedia(..)
-    , dataLiteralMediaCodec
     ) where
 
-import Changes.World.Media.Type
 import Pinafore.Base.Literal.Literal
 import Pinafore.Base.Literal.Type
-import Pinafore.Base.Media
 import Shapes
 
 class DecodeLiteral t where
     dmLiteralType :: LiteralType
-    default dmLiteralType :: DecodeMedia t => LiteralType
-    dmLiteralType = generalLiteralType $ dmMediaType @t
     dmDecode :: StrictByteString -> Maybe t
 
 data DataLiteral t = MkDataLiteral
@@ -44,19 +39,3 @@ instance DecodeLiteral t => AsLiteral (DataLiteral t)
 instance DecodeLiteral t => AsTypedLiteral (DataLiteral t) where
     literalType = dmLiteralType @t
     literalContentSerializer = codecSerializer dataLiteralCodec
-
-class DecodeLiteral t => DecodeMedia t where
-    dmMediaType :: MediaType
-    dmMatchContentType :: MediaType -> Bool
-
-dataLiteralMediaCodec ::
-       forall t. DecodeMedia t
-    => Codec Media (DataLiteral t)
-dataLiteralMediaCodec = let
-    decode :: Media -> Maybe (DataLiteral t)
-    decode (MkMedia mt bs)
-        | dmMatchContentType @t mt = bytesToDataLiteralM bs
-    decode _ = Nothing
-    encode :: DataLiteral t -> Media
-    encode dl = MkMedia (dmMediaType @t) (dlBytes dl)
-    in MkCodec {..}

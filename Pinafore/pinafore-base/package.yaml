@@ -26,7 +26,6 @@ library:
       - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
       - Pinafore.Base.Order
-      - Pinafore.Base.Media
       - Pinafore.Base.Literal.Type
       - Pinafore.Base.Literal.Literal
       - Pinafore.Base.Literal.Data

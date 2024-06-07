@@ -10,6 +10,7 @@ import Data.Shim
 import Pinafore.API
 import Pinafore.Library.Media.Image.Image
 import Pinafore.Library.Media.Image.Metadata
+import Pinafore.Library.Media.Media
 import Shapes
 
 type PNGData = (WitnessMapOf ImageDataKey, SomeFor Image PNGPixelType)
@@ -29,6 +30,7 @@ instance HasQGroundType '[] LangPNGImage where
     qGroundType = pngImageGroundType
 
 instance DecodeLiteral PNGData where
+    dmLiteralType = generalLiteralType $ dmMediaType @PNGData
     dmDecode bs = resultToMaybe $ decode pngFormat $ fromStrict bs
 
 instance DecodeMedia PNGData where

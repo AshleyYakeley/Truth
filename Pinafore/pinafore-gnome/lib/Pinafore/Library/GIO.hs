@@ -10,6 +10,7 @@ import Changes.World.GNOME.GIO
 import Changes.World.Media.Type
 import qualified GI.Gio as GI
 import Pinafore.API
+import Pinafore.Library.Media
 import Shapes
 import Shapes.Unsafe
 

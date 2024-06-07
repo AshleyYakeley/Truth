@@ -4,6 +4,7 @@ module Test.Golden
 
 import Flags
 import Pinafore.Library.GNOME
+import Pinafore.Library.Media
 import Pinafore.Test
 import Shapes hiding ((.))
 import Shapes.Test
@@ -15,7 +16,7 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFileInDir dir testName $ \hout ->
            runTester defaultTester {tstOutput = hout} $
-           testerLoadLibrary gnomeLibrary $ do
+           testerLoadLibrary (mediaLibrary <> gnomeLibrary) $ do
                testerLiftView $ do
                    action <- qInterpretFile inpath
                    action

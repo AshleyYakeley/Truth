@@ -12,7 +12,6 @@ import Pinafore.Base.KnowShim as I
 import Pinafore.Base.Literal.Data as I
 import Pinafore.Base.Literal.Literal as I
 import Pinafore.Base.Literal.Type as I
-import Pinafore.Base.Media as I
 import Pinafore.Base.Model.FunctionAttribute as I
 import Pinafore.Base.Model.ImmutableWholeModel as I
 import Pinafore.Base.Model.LensAttribute as I

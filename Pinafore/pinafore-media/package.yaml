@@ -23,6 +23,7 @@ library:
     exposed-modules:
       - Pinafore.Library.Media
     other-modules:
+      - Pinafore.Library.Media.Media
       - Pinafore.Library.Media.HTML
       - Pinafore.Library.Media.Colour
       - Pinafore.Library.Media.Image.Metadata

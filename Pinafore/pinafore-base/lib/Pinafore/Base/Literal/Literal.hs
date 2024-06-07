@@ -13,7 +13,6 @@ import Data.Time
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.Literal.Type
-import Pinafore.Base.Media
 import Pinafore.Base.Number
 import Pinafore.Base.SafeRational
 import Shapes
@@ -63,11 +62,6 @@ instance AsLiteral MediaType
 
 instance AsTypedLiteral MediaType where
     literalType = mediaTypeLiteralType
-
-instance AsLiteral Media
-
-instance AsTypedLiteral Media where
-    literalType = mediaLiteralType
 
 instance AsLiteral Void where
     literalCodec = rVoid

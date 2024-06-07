@@ -64,6 +64,7 @@ tests:
           - changes-core
           - changes-gnome
           - pinafore-language
+          - pinafore-media
           - pinafore-gnome
         main: Main.hs
         other-modules:
