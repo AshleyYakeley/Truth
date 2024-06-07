@@ -9,6 +9,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . Showable subtypes: don't put spaces in for list and product types
       . add Result type and functions
       . add cell.Store, set.Store
+    - pinafore-media
+      . add HTMLText type and functions
     - pinafore-gnome
       . rename textArea.Widget to textView.Widget, wrap text
       . add WebView.WebKit GTK element
