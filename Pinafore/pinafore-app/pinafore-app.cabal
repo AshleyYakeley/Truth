@@ -15,6 +15,7 @@ build-type:     Simple
 extra-doc-files:
     examples/calendar
     examples/clock
+    examples/commonmark
     examples/contacts
     examples/events
     examples/fake-theme-system-journal

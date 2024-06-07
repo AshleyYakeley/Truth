@@ -95,27 +95,26 @@ getMediaTextEncoding (MkMediaType ApplicationMediaType s _)
 getMediaTextEncoding (MkMediaType ApplicationMediaType "html" _) = Just decodeUTF8
 getMediaTextEncoding _ = Nothing
 
-mediaSpecificText :: (Text, Text) -> ((Text, Text) -> Bool) -> Codec Media Text
-mediaSpecificText (pt, ps) f = let
-    pp =
+mediaSpecificText :: MediaType -> (MediaType -> Bool) -> Codec Media Text
+mediaSpecificText (MkMediaType pt ps pp) f = let
+    pp' =
+        pp <>
         case pt of
             TextMediaType -> [("charset", "utf-8")]
             _ -> []
     pmt :: MediaType
-    pmt = MkMediaType pt ps pp
+    pmt = MkMediaType pt ps pp'
     ee :: Text -> Media
     ee text = MkMedia pmt $ encode utf8Codec text
-    mtf :: MediaType -> Bool
-    mtf (MkMediaType t s _) = f (t, s)
     dd :: Media -> Maybe Text
     dd (MkMedia mt b) = do
-        altIf $ mtf mt
+        altIf $ f mt
         encoding <- getMediaTextEncoding mt
         encoding b
     in MkCodec dd ee
 
 mediaText :: Codec Media Text
-mediaText = mediaSpecificText (TextMediaType, "plain") (\_ -> True)
+mediaText = mediaSpecificText (MkMediaType TextMediaType "plain" []) (\_ -> True)
 
 mediaEntityLibSection :: LibraryStuff context
 mediaEntityLibSection =

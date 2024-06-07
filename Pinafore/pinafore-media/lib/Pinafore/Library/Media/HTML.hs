@@ -22,14 +22,14 @@ htmlTextGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFam
 instance HasQGroundType '[] HTMLText where
     qGroundType = htmlTextGroundType
 
-htmlAsMedia :: Codec Media HTMLText
-htmlAsMedia =
+asMedia :: Codec Media HTMLText
+asMedia =
     coerceCodec .
     mediaSpecificText
-        (ApplicationMediaType, "html")
+        (MkMediaType ApplicationMediaType "html" [])
         (\case
-             (TextMediaType, "html") -> True
-             (ApplicationMediaType, "html") -> True
+             MkMediaType TextMediaType "html" _ -> True
+             MkMediaType ApplicationMediaType "html" _ -> True
              _ -> False)
 
 htmlStuff :: LibraryStuff ()
@@ -41,5 +41,5 @@ htmlStuff =
           (MkSomeGroundType htmlTextGroundType)
           [valPatBDS "Mk" "" MkHTMLText $ PureFunction $ \(MkHTMLText t) -> (t, ())]
     , hasSubtypeRelationBDS @HTMLText @Text Verify "" $ functionToShim "unHTMLText" unHTMLText
-    , namespaceBDS "HTMLText" [valBDS "asMedia" "" $ codecToPrism htmlAsMedia]
+    , namespaceBDS "HTMLText" [valBDS "asMedia" "" $ codecToPrism asMedia]
     ]

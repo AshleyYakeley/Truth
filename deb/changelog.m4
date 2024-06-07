@@ -12,6 +12,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - pinafore-media
       , add Media type and functions
       . add HTMLText type and functions
+      . add CommonMarkText type and functions
     - pinafore-gnome
       . rename textArea.Widget to textView.Widget, wrap text
       . add WebView.WebKit GTK element
