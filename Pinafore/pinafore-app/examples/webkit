@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-import "pinafore-gnome" in
+import "pinafore-media", "pinafore-gnome" in
 with GTK. in
 do
     r <- newMem.WholeModel;
@@ -9,6 +9,6 @@ do
             notebook.Widget unknown.WholeModel
             [
                 (label.Widget {"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel r),
-                (label.Widget {"Rendered"},webView.WebKit r)
+                (label.Widget {"Rendered"},webView.WebKit {Mk.HTMLText %r})
             ];
 end
