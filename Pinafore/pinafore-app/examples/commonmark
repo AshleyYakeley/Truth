@@ -6,7 +6,7 @@ do
     let
         cmRef = asText.CommonMarkText !$ textRef;
         htmlErr: Text -> HTMLText =
-            fn t => Mk.HTMLText $ "<em>" <>.Text t <>.Text "</em>";
+            fn t => with HTMLText in tag "em" $ plain "error: " <> plain t;
         htmlRef = {from.Result htmlErr id $ toHTML.CommonMarkText %cmRef};
     end;
     run $

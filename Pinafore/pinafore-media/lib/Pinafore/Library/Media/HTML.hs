@@ -11,7 +11,7 @@ import Shapes
 
 newtype HTMLText = MkHTMLText
     { unHTMLText :: Text
-    } deriving newtype (Eq, AsTypedLiteral)
+    } deriving newtype (Eq, Semigroup, Monoid, AsTypedLiteral)
 
 instance AsLiteral HTMLText
 
@@ -21,6 +21,9 @@ htmlTextGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFam
 
 instance HasQGroundType '[] HTMLText where
     qGroundType = htmlTextGroundType
+
+asText :: Codec Text HTMLText
+asText = MkCodec (Just . MkHTMLText) unHTMLText
 
 asMedia :: Codec Media HTMLText
 asMedia =
@@ -32,6 +35,30 @@ asMedia =
              MkMediaType ApplicationMediaType "html" _ -> True
              _ -> False)
 
+escapeChar :: Char -> String
+escapeChar '&' = "&amp;"
+escapeChar '<' = "&lt;"
+escapeChar '>' = "&gt;"
+escapeChar '\'' = "&apos;"
+escapeChar '"' = "&quot;"
+escapeChar c = [c]
+
+escapeText :: Text -> Text
+escapeText = pack . mconcat . fmap escapeChar . unpack
+
+plain :: Text -> HTMLText
+plain t = MkHTMLText $ escapeText t
+
+attrText :: [(Text, Text)] -> Text
+attrText aa = mconcat $ fmap (\(k, v) -> " " <> k <> "=\"" <> escapeText v <> "\"") aa
+
+tagAttrs :: Text -> [(Text, Text)] -> HTMLText -> HTMLText
+tagAttrs e aa (MkHTMLText "") = MkHTMLText $ "<" <> e <> attrText aa <> " />"
+tagAttrs e aa (MkHTMLText t) = MkHTMLText $ "<" <> e <> attrText aa <> ">" <> t <> "</" <> e <> ">"
+
+tag :: Text -> HTMLText -> HTMLText
+tag e = tagAttrs e []
+
 htmlStuff :: LibraryStuff ()
 htmlStuff =
     headingBDS "HTML" "" $
@@ -41,5 +68,12 @@ htmlStuff =
           (MkSomeGroundType htmlTextGroundType)
           [valPatBDS "Mk" "" MkHTMLText $ PureFunction $ \(MkHTMLText t) -> (t, ())]
     , hasSubtypeRelationBDS @HTMLText @Text Verify "" $ functionToShim "unHTMLText" unHTMLText
-    , namespaceBDS "HTMLText" [valBDS "asMedia" "" $ codecToPrism asMedia]
+    , namespaceBDS "HTMLText" $
+      monoidEntries @_ @HTMLText <>
+      [ valBDS "plain" "Plain text HTML." plain
+      , valBDS "tag" "Tag HTML to create an element." tag
+      , valBDS "tagAttrs" "Tag HTML with attributes to create an element." tagAttrs
+      , valBDS "asText" "" $ codecToPrism asText
+      , valBDS "asMedia" "" $ codecToPrism asMedia
+      ]
     ]
