@@ -47,7 +47,7 @@ library
       Data.KindMorphism
       Data.FixBox
       Data.Serializer
-      Data.Serialize.Instances
+      Data.Serialize.Has
       Data.ReadShow
       Data.Witness.ListVProduct
       Data.Text.Markup

@@ -190,17 +190,5 @@ serializerStrictCodec sr = let
     decode = serializerStrictDecode sr
     in MkCodec {..}
 
-class HasSerializer a where
-    stoppingSerializer :: forall stp. Serializer stp a
-    greedySerializer :: Serializer KeepsGoing a
-    greedySerializer = stoppingSerializer
-
-serializeLazyCodec ::
-       forall a. HasSerializer a
-    => Codec LazyByteString a
-serializeLazyCodec = serializerLazyCodec stoppingSerializer
-
-serializeStrictCodec ::
-       forall a. HasSerializer a
-    => Codec StrictByteString a
-serializeStrictCodec = serializerStrictCodec stoppingSerializer
+codecSerializer :: Codec StrictByteString a -> Serializer KeepsGoing a
+codecSerializer codec = codecMap codec sWhole

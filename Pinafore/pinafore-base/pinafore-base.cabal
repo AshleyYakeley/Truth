@@ -24,7 +24,9 @@ library
       Pinafore.Base.Number
       Pinafore.Base.Order
       Pinafore.Base.Media
-      Pinafore.Base.Literal
+      Pinafore.Base.Literal.Type
+      Pinafore.Base.Literal.Literal
+      Pinafore.Base.Literal.Data
       Pinafore.Base.Model.FunctionAttribute
       Pinafore.Base.Model.LensAttribute
       Pinafore.Base.Model.LensProperty

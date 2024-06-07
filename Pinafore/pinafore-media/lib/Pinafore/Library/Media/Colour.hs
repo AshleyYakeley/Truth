@@ -55,8 +55,8 @@ instance HasSerializer LangAlphaColour where
         in invmap fromT toT $
            sProduct stoppingSerializer $ sProduct stoppingSerializer $ sProduct stoppingSerializer stoppingSerializer
 
-instance AsMediaLiteral LangAlphaColour where
-    literalMediaType = vndMediaType "colour"
+instance AsTypedLiteral LangAlphaColour where
+    literalType = colourLiteralType
 
 alphaColourGroundType :: QGroundType '[] LangAlphaColour
 alphaColourGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour"

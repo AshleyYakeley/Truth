@@ -12,7 +12,7 @@ import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
 import Pinafore.Base.KnowShim
-import Pinafore.Base.Literal
+import Pinafore.Base.Literal.Literal
 import Pinafore.Base.Storable.EntityStorer
 import Shapes
 

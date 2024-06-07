@@ -40,7 +40,7 @@ import Data.PurityFunction as I
 import Data.ReadShow as I
 import Data.SameItem as I
 import Data.Sequential as I
-import Data.Serialize.Instances as I ()
+import Data.Serialize.Has as I
 import Data.Serializer as I
 import Data.Store as I
 import Data.Streamable as I

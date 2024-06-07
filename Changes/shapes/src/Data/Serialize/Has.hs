@@ -1,8 +1,4 @@
-{-# OPTIONS -fno-warn-orphans #-}
-
-module Data.Serialize.Instances
-    (
-    ) where
+module Data.Serialize.Has where
 
 import Data.ByteString.Builder
 import Data.Codec
@@ -12,6 +8,21 @@ import Data.Serializer
 import Data.Time
 import Shapes.Import
 import Shapes.Numeric
+
+class HasSerializer a where
+    stoppingSerializer :: forall stp. Serializer stp a
+    greedySerializer :: Serializer KeepsGoing a
+    greedySerializer = stoppingSerializer
+
+serializeLazyCodec ::
+       forall a. HasSerializer a
+    => Codec LazyByteString a
+serializeLazyCodec = serializerLazyCodec stoppingSerializer
+
+serializeStrictCodec ::
+       forall a. HasSerializer a
+    => Codec StrictByteString a
+serializeStrictCodec = serializerStrictCodec stoppingSerializer
 
 instance HasSerializer Void where
     stoppingSerializer = sVoid

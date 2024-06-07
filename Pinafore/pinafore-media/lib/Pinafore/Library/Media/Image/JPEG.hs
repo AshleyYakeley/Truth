@@ -28,12 +28,13 @@ jpegImageGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFa
 instance HasQGroundType '[] LangJPEGImage where
     qGroundType = jpegImageGroundType
 
+instance DecodeLiteral JPEGData where
+    dmDecode bs = resultToMaybe $ decode (jpegFormat 0) $ fromStrict bs
+
 instance DecodeMedia JPEGData where
-    dmContentType = MkMediaType "image" "jpeg" []
-    dmMatchContentType :: MediaType -> Bool
+    dmMediaType = MkMediaType "image" "jpeg" []
     dmMatchContentType (MkMediaType "image" "jpeg" _) = True
     dmMatchContentType _ = False
-    dmDecode bs = resultToMaybe $ decode (jpegFormat 0) $ fromStrict bs
 
 jpegEncode :: Integer -> [(Text, Literal)] -> LangImage -> LangJPEGImage
 jpegEncode q mdata (MkLangImage image) = let

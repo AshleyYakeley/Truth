@@ -10,7 +10,7 @@ module Pinafore.Base.Storable.EntityStorer
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.KnowShim
-import Pinafore.Base.Literal
+import Pinafore.Base.Literal.Literal
 import Shapes
 
 newtype Predicate =

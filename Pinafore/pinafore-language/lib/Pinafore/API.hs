@@ -34,12 +34,7 @@ module Pinafore.API
     , groundQType
     , TrustOrVerify(..)
     , Interpret(..)
-    , DecodeMedia(..)
-    , DataLiteral
-    , dataLiteralMediaCodec
-    , dlData
-    , bytesToDataLiteralM
-    , bytesToDataLiteral
+    , DecodeLiteral(..)
     ) where
 
 import Import

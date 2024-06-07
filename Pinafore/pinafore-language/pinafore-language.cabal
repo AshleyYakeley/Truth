@@ -59,7 +59,6 @@ library
       Pinafore.Language.Var
       Pinafore.Language.Convert.HasType
       Pinafore.Language.Convert.Literal
-      Pinafore.Language.Convert.DataLiteral
       Pinafore.Language.Convert.Types
       Pinafore.Language.Convert
       Pinafore.Language.Type.GetDynamicSupertype

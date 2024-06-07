@@ -28,12 +28,13 @@ pngImageGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFam
 instance HasQGroundType '[] LangPNGImage where
     qGroundType = pngImageGroundType
 
+instance DecodeLiteral PNGData where
+    dmDecode bs = resultToMaybe $ decode pngFormat $ fromStrict bs
+
 instance DecodeMedia PNGData where
-    dmContentType = MkMediaType "image" "png" []
-    dmMatchContentType :: MediaType -> Bool
+    dmMediaType = MkMediaType "image" "png" []
     dmMatchContentType (MkMediaType "image" "png" _) = True
     dmMatchContentType _ = False
-    dmDecode bs = resultToMaybe $ decode pngFormat $ fromStrict bs
 
 pngEncode :: [(Text, Literal)] -> LangImage -> LangPNGImage
 pngEncode mdata (MkLangImage image) = let
