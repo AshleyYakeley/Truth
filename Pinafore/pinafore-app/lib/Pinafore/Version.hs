@@ -9,10 +9,8 @@ import GitHash
 #endif
 import Shapes
 
-#ifdef PINAFOREVERSION
 pinaforeVersion :: String
 pinaforeVersion = PINAFOREVERSION
-#endif
 
 extraVersion :: String
 extraVersion =

@@ -24,12 +24,13 @@ library:
       - pinafore-language
       - pinafore-media
       - pinafore-gnome
+    cpp-options:
+      - -DPINAFOREVERSION="0.5"
     when:
       - condition: flag(gitversion)
         dependencies:
           - githash
         cpp-options:
-          - -DPINAFOREVERSION="0.5"
           - -DFLAG_GITVERSION
     exposed-modules:
       - Pinafore.Version
