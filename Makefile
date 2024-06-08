@@ -192,6 +192,7 @@ deb: out/$(PACKAGEFULLNAME).deb
 # Use this on a Nix system
 nix-flake: out
 	nix flake check .?submodules=1
+	nix build .?submodules=1#vscode-extension
 
 nix/docker/flake.nix: flake.nix
 	cp $< $@
@@ -211,6 +212,7 @@ nix-docker-image: nix/docker/flake.nix nix/docker/flake.lock nix/docker/stack.ya
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
 	docker run --rm -v `pwd`:/workspace -ti nix-build nix flake check .?submodules=1
+	docker run --rm -v `pwd`:/workspace -ti nix-build nix build .?submodules=1#vscode-extension
 
 nix-docker-shell: nix-docker-image
 	mkdir -p nix/home
@@ -238,7 +240,7 @@ out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz: \
  support/pygments-lexer/pyproject.toml \
  support/pygments-lexer/pinafore_lexer/__init__.py \
  support/pygments-lexer/pinafore_lexer/syntax-data.json
-	stack $(STACKFLAGS) exec -- python3 -m build -o out/support/ support/pygments-lexer/
+	stack $(STACKFLAGS) exec -- env PYGLEXERVERSION="$(PYGLEXERVERSION)" python3 -m build -o out/support/ support/pygments-lexer/
 
 .PHONY: pyg-lexer
 pyg-lexer: out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
@@ -285,7 +287,7 @@ docs: \
 	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 	rm -rf out/doc
 	mkdir -p out/doc
-	stack $(STACKFLAGS) exec -- sphinx-build -W --keep-going -b dirhtml doc out/doc/dirhtml
+	stack $(STACKFLAGS) exec -- sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml doc out/doc/dirhtml
 
 
 ### VSCode extension
@@ -293,7 +295,7 @@ docs: \
 VSCXVERSION := $(PINAFOREVERSIONABC)
 
 support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/support/syntax-data.json
-	stack $(STACKFLAGS) exec -- yq --from-file support/vsc-extension/transform.yq -o json $< > $@
+	stack $(STACKFLAGS) exec -- env VSCXVERSION="$(VSCXVERSION)" yq --from-file support/vsc-extension/transform.yq -o json $< > $@
 
 out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
  support/vsc-extension/vsce/package.json \

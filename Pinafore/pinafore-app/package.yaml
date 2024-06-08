@@ -28,7 +28,9 @@ library:
       - condition: flag(gitversion)
         dependencies:
           - githash
-        cpp-options: -DFLAG_GITVERSION
+        cpp-options:
+          - -DPINAFOREVERSION="0.5"
+          - -DFLAG_GITVERSION
     exposed-modules:
       - Pinafore.Version
       - Pinafore.Options

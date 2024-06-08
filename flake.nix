@@ -8,6 +8,8 @@
     };
     outputs = { self, nixpkgs, flake-utils, haskellNix }:
         let
+            PINAFOREVERSION = "0.5";
+            PINAFOREVERSIONABC = PINAFOREVERSION + ".0";
             supportedSystems =
             [
                 "x86_64-linux"
@@ -74,8 +76,10 @@
                     ''
                     ${pinadataPackage}/bin/pinadata --syntax-data > $out
                     '';
+                VSCXVERSION = "${PINAFOREVERSIONABC}";
                 vsceFilePackage = pkgs.runCommand "pinafore-vscode-extension-file" {}
                     ''
+                    export VSCXVERSION="${VSCXVERSION}"
                     mkdir -p out/support
                     cp ${syntaxDataPackage} out/support/syntax-data.json
                     cp ${./.}/support/vsc-extension/transform.yq ./
@@ -97,7 +101,7 @@
                         vscodeExtPublisher = "Pinafore";
                         vscodeExtName = "Pinafore";
                         vscodeExtUniqueId = "Pinafore.pinafore";
-                        version = "0.5";
+                        version = "${VSCXVERSION}";
                     };
             in flake //
             {

@@ -15,7 +15,7 @@ Installing the Debian package will put the intepreter in `/usr/bin/pinafore`.
 
 ### Nix
 
-For Nix, use this flake: `git+https://github.com/AshleyYakeley/Truth?tag=v0.5`. Use these outputs:
+For Nix, use this flake: {{ "`" + "git+https://github.com/AshleyYakeley/Truth?tag=v" + PINAFOREVERSION + "`" }}. Use these outputs:
 
 * `package.x86_64-linux.default`: package containing the Pinafore interpreter (`pinafore`), libraries, and documentation generator (`pinadoc`)
 * `package.x86_64-linux.vscode-extension`: an extension for Visual Studio Code, suitable for adding to `programs.vscode.extensions` in your Home Manager configuration

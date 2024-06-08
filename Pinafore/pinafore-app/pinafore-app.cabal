@@ -78,7 +78,7 @@ library
     , xdg-basedir
   default-language: GHC2021
   if flag(gitversion)
-    cpp-options: -DFLAG_GITVERSION
+    cpp-options: -DPINAFOREVERSION="0.5" -DFLAG_GITVERSION
     build-depends:
         githash
 

@@ -12,12 +12,9 @@ Before release:
 3. Update version numbers
 
     Makefile
+    flake.nix
     common.yaml
-    support/vsc-extension/vsce/package.yaml
-    support/pygments-lexer/pyproject.toml
-    Pinafore/pinafore-app/lib/Version.hs
-    doc/index.md
-    doc/getting-started.md (flake ref)
+    Pinafore/pinafore-app/package.yaml
 
 4. Update changelogs
 

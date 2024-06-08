@@ -3,7 +3,6 @@
 project = "Pinafore"
 copyright = "2024, Ashley Yakeley"
 author = "Ashley Yakeley"
-release = "0.5"
 
 # Sphinx options
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -20,3 +19,4 @@ html_show_sourcelink = False
 
 # MyST options
 myst_heading_anchors = 3
+myst_enable_extensions = ["substitution"]

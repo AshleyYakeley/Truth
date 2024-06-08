@@ -28,6 +28,10 @@ while [[ ! -z "$1" ]]; do
             stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-stdlib/data $ARGS --data $DATA -i 2> "$STDERR"
             shift 1
             ;;
+        --version)
+            stack --docker-env DISPLAY exec -- pinafore --version 2> "$STDERR"
+            shift 1
+            ;;
         -*)
             echo "unknown option: $1" > /dev/stderr
             exit 1
