@@ -45,8 +45,11 @@ else
 HADDOCKFLAGS :=
 endif
 
+ifeq ($(nix-docker),1)
+BINPATH := /binpath
+else
 BINPATH := $(shell stack $(STACKFLAGS) path --local-bin)
-
+endif
 
 ### Docker image
 
@@ -211,8 +214,7 @@ nix-docker-image: nix/docker/flake.nix nix/docker/flake.lock nix/docker/stack.ya
 
 nix-docker-flake: nix-docker-image
 	mkdir -p nix/home
-	docker run --rm -v `pwd`:/workspace -ti nix-build nix flake check .?submodules=1
-	docker run --rm -v `pwd`:/workspace -ti nix-build nix build .?submodules=1#vscode-extension
+	docker run --rm -v `pwd`:/workspace -ti nix-build make nix-docker=1 nix-flake
 
 nix-docker-shell: nix-docker-image
 	mkdir -p nix/home

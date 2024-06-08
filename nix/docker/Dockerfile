@@ -11,7 +11,7 @@ WORKDIR "/setup"
 RUN nix build .?submodules=1#devShell.x86_64-linux.ghc
 
 # set up session and workspace to run in
-RUN nix-env -iA nixpkgs.utillinux
+RUN nix-env -iA nixpkgs.utillinux nixpkgs.gnumake
 COPY session /sbin/
 VOLUME "/workspace"
 WORKDIR "/workspace"
