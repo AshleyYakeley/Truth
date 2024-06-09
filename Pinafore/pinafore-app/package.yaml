@@ -25,7 +25,7 @@ library:
       - pinafore-media
       - pinafore-gnome
     cpp-options:
-      - -DPINAFOREVERSION="0.5"
+      - -DPINAFOREVERSION="0.6"
     when:
       - condition: flag(gitversion)
         dependencies:

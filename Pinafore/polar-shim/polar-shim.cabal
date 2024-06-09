@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           polar-shim
-version:        0.5
+version:        0.6
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
 copyright:      (c) 2017-2024 Ashley Yakeley

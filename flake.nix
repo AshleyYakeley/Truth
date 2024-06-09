@@ -8,7 +8,7 @@
     };
     outputs = { self, nixpkgs, flake-utils, haskellNix }:
         let
-            PINAFOREVERSION = "0.5";
+            PINAFOREVERSION = "0.6";
             PINAFOREVERSIONABC = PINAFOREVERSION + ".0";
             supportedSystems =
             [

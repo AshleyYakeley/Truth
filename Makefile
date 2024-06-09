@@ -1,6 +1,6 @@
 default: full
 
-PINAFOREVERSION := 0.5
+PINAFOREVERSION := 0.6
 
 # must be three numbers, add .0 as necessary
 PINAFOREVERSIONABC := $(PINAFOREVERSION).0
