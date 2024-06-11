@@ -23,7 +23,7 @@ literalStorabilityProp =
         , stbAdapter = pureStorabilityAdapter $ \NilArguments -> asLiteralStoreAdapter
         }
 
-literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
+literalGreatestDynamicSupertype :: AsLiteral t => QPolyGreatestDynamicSupertype '[] t
 literalGreatestDynamicSupertype =
     simplePolyGreatestDynamicSupertype literalGroundType (functionToShim "fromLiteral" fromLiteral)
 

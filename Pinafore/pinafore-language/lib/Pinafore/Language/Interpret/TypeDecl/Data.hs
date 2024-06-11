@@ -191,11 +191,14 @@ data TypeInfo = MkTypeInfo
     { tiName :: FullName
     , tiStorable :: Bool
     , tiParams :: [SyntaxTypeParameter]
+    , tiGDS :: Maybe FullName
     , tiDescription :: RawMarkdown
     }
 
 tiDoc :: TypeInfo -> DefDoc
-tiDoc MkTypeInfo {..} = MkDefDoc (typeDocItem tiName tiStorable tiParams) tiDescription
+tiDoc MkTypeInfo {..} = let
+    gdst = fmap (\gds -> exprShow gds <> mconcat (fmap (\p -> " " <> exprShow p) tiParams)) tiGDS
+    in MkDefDoc (typeDocItem tiName tiStorable tiParams gdst) tiDescription
 
 data TypeData dv t = MkTypeData
     { tdInfo :: TypeInfo
@@ -212,10 +215,11 @@ tdDoc = tiDoc . tdInfo
 
 getConsSubtypeData ::
        forall (dv :: CCRVariances) (t :: CCRVariancesKind dv) extra.
-       TypeData dv t
+       FullName
+    -> TypeData dv t
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
     -> QInterpreter [TypeData dv t]
-getConsSubtypeData superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
+getConsSubtypeData mainName superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
     ssubtid <- newMatchingTypeID @dv
     case ssubtid of
         MkSome subMTID@(MkMatchingTypeID subTypeID) -> do
@@ -230,6 +234,7 @@ getConsSubtypeData superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructorOrSubtyp
                             { tiName = tname
                             , tiStorable = tiStorable superInfo
                             , tiParams = tiParams superInfo
+                            , tiGDS = Just mainName
                             , tiDescription = md
                             }
                     subtypes = tdID superTD : mconcat (fmap tdSubtypes subtdata)
@@ -238,12 +243,12 @@ getConsSubtypeData superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructorOrSubtyp
                         MkTypeData {tdInfo = subInfo, tdID = subMTID, tdSupertype = Just superTD, tdSubtypes = subtypes}
                 subtdata <- getConssSubtypeData subTD conss
             return $ subTD : subtdata
-getConsSubtypeData _ _ = return mempty
+getConsSubtypeData _ _ _ = return mempty
 
 getConssSubtypeData ::
        TypeData dv t -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> QInterpreter [TypeData dv t]
 getConssSubtypeData superTD conss = do
-    tdatas <- for conss $ getConsSubtypeData superTD
+    tdatas <- for conss $ getConsSubtypeData (tiName $ tdInfo superTD) superTD
     return $ mconcat tdatas
 
 data Constructor dv t extra = MkConstructor
@@ -529,15 +534,14 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
                                         MkMatchingTypeID (typeID :: _ subtid) -> let
                                             baseGroundType :: QGroundType dv maintype
                                             (baseGroundType, _) = gttid (tdName tdata) typeID
-                                            gds :: PinaforePolyGreatestDynamicSupertype dv maintype
+                                            gds :: QPolyGreatestDynamicSupertype dv maintype
                                             gds =
                                                 MkPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
                                                     case unsafeRefl @Type @decltype @argstype of
                                                         Refl ->
-                                                            return $
-                                                            Just $
                                                             MkShimWit (MkDolanGroundedType mainGroundType args) $
                                                             MkPolarShim $
+                                                            pureComposeShim $
                                                             functionToShim "supertype" $ \t ->
                                                                 if elem (tdID $ picktype t) $ tdSubtypes tdata
                                                                     then Just t
@@ -724,7 +728,7 @@ makeDataTypeBox ::
 makeDataTypeBox gmaker storable supertypes name md params syntaxConstructorList =
     case getAnyCCRTypeParams params of
         MkAnyCCRTypeParams gtparams ->
-            makeBox gmaker supertypes (MkTypeInfo name storable params md) syntaxConstructorList gtparams
+            makeBox gmaker supertypes (MkTypeInfo name storable params Nothing md) syntaxConstructorList gtparams
 
 makePlainGroundType ::
        forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (decltype :: Type). Is CCRVariancesType dv

@@ -149,35 +149,54 @@ newTypeParameter = do
             return n
         [] -> return "a"
 
-getTypeParameter :: CCRVarianceType a -> State [Name] SyntaxTypeParameter
+getTypeParameter :: CCRVarianceType sv -> State [Name] ([NamedText], Some (CCRPolarArgument QType Negative sv))
 getTypeParameter CoCCRVarianceType = do
-    v <- newTypeParameter
-    return $ PositiveSyntaxTypeParameter v
+    vname <- newTypeParameter
+    nameToTypeVarT vname $ \var ->
+        return ([exprShow vname], MkSome $ CoCCRPolarArgument $ singleDolanType $ VarDolanSingularType var)
 getTypeParameter ContraCCRVarianceType = do
-    v <- newTypeParameter
-    return $ NegativeSyntaxTypeParameter v
+    vname <- newTypeParameter
+    nameToTypeVarT vname $ \var ->
+        return ([exprShow vname], MkSome $ ContraCCRPolarArgument $ singleDolanType $ VarDolanSingularType var)
 getTypeParameter RangeCCRVarianceType = do
-    vn <- newTypeParameter
-    vp <- newTypeParameter
-    return $ RangeSyntaxTypeParameter vn vp
+    vpname <- newTypeParameter
+    vqname <- newTypeParameter
+    nameToTypeVarT vpname $ \varp ->
+        nameToTypeVarT vqname $ \varq ->
+            return
+                ( [exprShow vpname, exprShow vqname]
+                , MkSome $
+                  RangeCCRPolarArgument
+                      (singleDolanType $ VarDolanSingularType varp)
+                      (singleDolanType $ VarDolanSingularType varq))
 
-getTypeParameters :: [Name] -> CCRVariancesType dv -> [NamedText]
-getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeForList dvt getTypeParameter) supply
+getTypeParameters :: CCRVariancesType dv -> State [Name] ([NamedText], Some (CCRPolarArguments dv QType t Negative))
+getTypeParameters NilListType = return ([], MkSome NilCCRArguments)
+getTypeParameters (ConsListType t tt) = do
+    (nt, sarg) <- getTypeParameter t
+    case sarg of
+        MkSome arg -> do
+            (ntt, sargs) <- getTypeParameters tt
+            case sargs of
+                MkSome args -> return (nt <> ntt, MkSome $ ConsCCRArguments arg args)
 
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
+getGDSName :: QGroundType dv t -> Some (CCRPolarArguments dv QType t Negative) -> Maybe NamedText
+getGDSName gt (MkSome params) =
+    case qgtGreatestDynamicSupertype gt of
+        NullPolyGreatestDynamicSupertype -> Nothing
+        MkPolyGreatestDynamicSupertype f -> Just $ exprShow $ f params
+
 typeBDS ::
        forall context. FullNameRef -> RawMarkdown -> QSomeGroundType -> [LibraryStuff context] -> LibraryStuff context
-typeBDS name docDescription t bdChildren = let
+typeBDS name docDescription t@(MkSomeGroundType gt) bdChildren = let
     bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> TypeBinding t
     diNames = pure name
-    diParams =
-        case t of
-            MkSomeGroundType pt -> getTypeParameters nameSupply $ qgtVarianceType pt
-    diStorable =
-        case t of
-            MkSomeGroundType gt -> isJust $ getGroundProperty storabilityProperty gt
+    (diParams, params) = evalState (getTypeParameters $ qgtVarianceType gt) nameSupply
+    diStorable = isJust $ getGroundProperty storabilityProperty gt
+    diGDS = getGDSName gt params
     docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in singleBindDoc MkBindDoc {..} $ namespaceConcat (RelativeNamespaceRef [fnrName name]) bdChildren

@@ -37,10 +37,11 @@ constructorDocItemDocs tname cname (RecordSyntaxConstructor sigs) =
 constructorDocItem :: FullName -> FullName -> SyntaxDataConstructor extra -> DocItem
 constructorDocItem tname cname dcons = fst $ constructorDocItemDocs tname cname dcons
 
-typeDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> DocItem
-typeDocItem name diStorable tparams = let
+typeDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> Maybe NamedText -> DocItem
+typeDocItem name diStorable tparams mgds = let
     diNames = pure $ fullNameRef name
     diParams = fmap exprShow tparams
+    diGDS = fmap (\gds -> gds <> mconcat (fmap (\p -> " " <> p) diParams)) mgds
     in TypeDocItem {..}
 
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
@@ -48,7 +49,8 @@ typeDeclDoc mtname defn docDescription = let
     consDoc :: FullName -> SyntaxConstructorOrSubtype extra -> (DocItem, Docs)
     consDoc tname (ConstructorSyntaxConstructorOrSubtype cname constructor) =
         constructorDocItemDocs tname cname constructor
-    consDoc _ (SubtypeSyntaxConstructorOrSubtype tname tt) = (typeDocItem tname storable tparams, typeConssDoc tname tt)
+    consDoc _ (SubtypeSyntaxConstructorOrSubtype tname tt) =
+        (typeDocItem tname storable tparams (Just $ exprShow mtname), typeConssDoc tname tt)
     typeConsDoc :: FullName -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra) -> Tree DefDoc
     typeConsDoc tname (MkSyntaxWithDoc cdoc scs) = let
         (item, rest) = consDoc tname scs
@@ -60,7 +62,7 @@ typeDeclDoc mtname defn docDescription = let
             StorableDatatypeSyntaxTypeDeclaration tparams' conss -> (True, tparams', typeConssDoc mtname conss)
             PlainDatatypeSyntaxTypeDeclaration tparams' _ conss -> (False, tparams', typeConssDoc mtname conss)
             _ -> (False, mempty, mempty)
-    docItem = typeDocItem mtname storable tparams
+    docItem = typeDocItem mtname storable tparams Nothing
     in MkTree MkDefDoc {..} items
 
 valueDocItem :: ExprShow vtype => FullName -> Maybe vtype -> DocItem

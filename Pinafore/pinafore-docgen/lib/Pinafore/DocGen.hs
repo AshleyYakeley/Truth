@@ -76,13 +76,18 @@ generateCommonMarkDoc outh modopts modname = do
                         nameType = name <> params <> ": " <> toMarkdown diType
                         in nameType
                 TypeDocItem {..} ->
-                    putBindDoc $ let
+                    putIndentMarkdown $
+                    paragraphMarkdown $ let
                         name = showNames diNames
-                        in "type " <>
-                           mif diStorable "storable " <>
-                           case (fmap nameIsInfix $ fullNameRefToUnqualified $ head diNames, diParams) of
-                               (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
-                               _ -> name <> trailingParams diParams
+                        in (codeMarkdown $
+                            "type " <>
+                            mif diStorable "storable " <>
+                            case (fmap nameIsInfix $ fullNameRefToUnqualified $ head diNames, diParams) of
+                                (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
+                                _ -> name <> trailingParams diParams) <>
+                           case diGDS of
+                               Just gds -> " (from " <> codeMarkdown (toMarkdown gds) <> ")"
+                               Nothing -> mempty
                 SubtypeRelationDocItem {..} ->
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
                 HeadingDocItem {..} -> putIndentMarkdown $ titleMarkdown hlevel diTitle

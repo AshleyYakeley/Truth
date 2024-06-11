@@ -36,7 +36,7 @@ data QGroundType dv gt = MkQGroundType
     , qgtFamilyType :: FamilialType gt
     , qgtProperties :: GroundProperties dv gt
     , qgtSubtypeGroup :: Maybe (SubtypeGroup QGroundType dv gt)
-    , qgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
+    , qgtGreatestDynamicSupertype :: QPolyGreatestDynamicSupertype dv gt
     }
 
 instance TestEquality (QGroundType '[]) where
@@ -83,8 +83,8 @@ instance HasInterpreter => AllConstraint ExprShow (QGroundType '[]) where
 instance HasInterpreter => Show (QGroundType dv gt) where
     show t = unpack $ toText $ showGroundType t
 
-type PinaforePolyGreatestDynamicSupertype :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
-type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype QGroundType dv gt
+type QPolyGreatestDynamicSupertype :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
+type QPolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype QGroundType dv gt
 
 type QNonpolarType :: Type -> Type
 type QNonpolarType = NonpolarType QGroundType

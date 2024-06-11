@@ -108,7 +108,7 @@ list1GroundType = let
            , qgtGreatestDynamicSupertype =
                  MkPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
                      tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
-                     in return $ Just $ MkShimWit tt (MkPolarShim $ functionToShim "nonEmpty" nonEmpty)
+                     in MkShimWit tt $ MkPolarShim $ pureComposeShim $ functionToShim "nonEmpty" nonEmpty
            }
 
 eitherStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Either ta tb)

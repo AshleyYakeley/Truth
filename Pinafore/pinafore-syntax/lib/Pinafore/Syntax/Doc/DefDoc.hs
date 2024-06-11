@@ -24,7 +24,8 @@ data DocItem
                          , diType :: NamedText }
     | TypeDocItem { diNames :: NonEmpty FullNameRef
                   , diStorable :: Bool
-                  , diParams :: [NamedText] }
+                  , diParams :: [NamedText]
+                  , diGDS :: Maybe NamedText }
     | SubtypeRelationDocItem { diSubtype :: NamedText
                              , diSupertype :: NamedText }
     deriving (Eq)
@@ -37,8 +38,12 @@ instance Show DocItem where
     show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
     show (SpecialFormDocItem n pp t) =
         "spform " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <> ": " <> unpack (toText t)
-    show (TypeDocItem n st pp) =
-        "type " <> mif st "storable " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp)
+    show (TypeDocItem n st pp mgds) =
+        "type " <>
+        mif st "storable " <>
+        show n <>
+        mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <>
+        (fromMaybe mempty $ fmap (\gds -> " (from " <> unpack (toText gds) <> ")") mgds)
     show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
 
 diNamesTraversal :: Applicative m => (NonEmpty FullNameRef -> m (NonEmpty FullNameRef)) -> DocItem -> m DocItem

@@ -7,13 +7,16 @@ import Import
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
+dynamicTypeName :: Maybe NamedText
+dynamicTypeName = Just $ precNamedText maxBound $ qgtShowType dynamicEntityStorableGroundType
+
 makeAbstractDynamicEntityTypeBox :: FullName -> RawMarkdown -> QInterpreter (QFixBox () ())
 makeAbstractDynamicEntityTypeBox name md =
     withNewTypeID $ \tidsym -> let
         register :: () -> QScopeBuilder ()
         register _ = do
             let
-                doc = MkDefDoc (typeDocItem name True []) md
+                doc = MkDefDoc (typeDocItem name True [] dynamicTypeName) md
                 t = abstractDynamicStorableGroundType name tidsym
             registerGroundType name doc t
             registerSubtypeConversion $
@@ -25,7 +28,7 @@ makeConcreteDynamicEntityTypeBox name md anchor = let
     register :: () -> QScopeBuilder ()
     register _ = do
         let
-            doc = MkDefDoc (typeDocItem name True []) md
+            doc = MkDefDoc (typeDocItem name True [] dynamicTypeName) md
             t = concreteDynamicStorableGroundType name (mkConcreteDynamicType anchor)
         registerGroundType name doc t
         registerSubtypeConversion $
