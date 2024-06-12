@@ -2,7 +2,7 @@
 stack install --profile pinafore-app
 stack --docker-env DISPLAY exec -- \
     .stack-work/docker/_home/.local/bin/pinafore \
-    -I Pinafore/pinafore-lib-stdlib/data \
+    -I Pinafore/pinafore-lib-script/data \
     --data test/pinafore \
     -n \
     Pinafore/pinafore-app/examples/contacts \

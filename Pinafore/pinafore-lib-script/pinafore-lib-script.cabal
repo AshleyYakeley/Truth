@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           pinafore-lib-stdlib
+name:           pinafore-lib-script
 version:        0.6
 author:         Ashley Yakeley
 maintainer:     <ashley@semantic.org>
@@ -21,9 +21,9 @@ data-dir:       data
 
 library
   exposed-modules:
-      Paths_pinafore_lib_stdlib
+      Paths_pinafore_lib_script
   autogen-modules:
-      Paths_pinafore_lib_stdlib
+      Paths_pinafore_lib_script
   default-extensions:
       AllowAmbiguousTypes
       Arrows
@@ -60,9 +60,9 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Paths_pinafore_lib_stdlib
+      Paths_pinafore_lib_script
   autogen-modules:
-      Paths_pinafore_lib_stdlib
+      Paths_pinafore_lib_script
   hs-source-dirs:
       test
   default-extensions:
@@ -100,6 +100,6 @@ test-suite test
     , pinafore-language
     , pinafore-lib-gnome
     , pinafore-lib-media
-    , pinafore-lib-stdlib
+    , pinafore-lib-script
     , shapes
   default-language: GHC2021

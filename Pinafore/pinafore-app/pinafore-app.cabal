@@ -257,7 +257,7 @@ test-suite test
     , filepath
     , pinafore-app
     , pinafore-language
-    , pinafore-lib-stdlib
+    , pinafore-lib-script
     , shapes
   default-language: GHC2021
 
@@ -304,6 +304,6 @@ benchmark benchmark
     , criterion
     , pinafore-app
     , pinafore-language
-    , pinafore-lib-stdlib
+    , pinafore-lib-script
     , shapes
   default-language: GHC2021

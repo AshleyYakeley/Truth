@@ -2,7 +2,7 @@ module Main
     ( main
     ) where
 
-import Paths_pinafore_lib_stdlib
+import Paths_pinafore_lib_script
 import Pinafore.Library.GNOME
 import Pinafore.Library.Media
 import Pinafore.Test
@@ -57,5 +57,5 @@ main = do
     testLibraries <- getTestLibraries
     let
         tests :: TestTree
-        tests = testTree "pinafore-lib-stdlib" [testLibraries]
+        tests = testTree "pinafore-lib-script" [testLibraries]
     testMainNoSignalHandler tests

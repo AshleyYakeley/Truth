@@ -4,7 +4,7 @@ module Main
 
 import Changes.Core
 import Criterion.Main
-import Paths_pinafore_lib_stdlib
+import Paths_pinafore_lib_script
 import Pinafore.Libs
 import Pinafore.Test.Internal
 import Shapes

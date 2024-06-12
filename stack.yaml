@@ -28,7 +28,7 @@ packages:
 - Pinafore/pinafore-language
 - Pinafore/pinafore-lib-media
 - Pinafore/pinafore-lib-gnome
-- Pinafore/pinafore-lib-stdlib
+- Pinafore/pinafore-lib-script
 - Pinafore/pinafore-app
 - Pinafore/pinafore-docgen
 
