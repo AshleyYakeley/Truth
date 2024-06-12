@@ -371,22 +371,22 @@ update-locks:
 ### Top
 
 top-format:
-	make format; bin/reportstatus $$?
+	time -f %E make format; bin/reportstatus $$?
 
 top-build:
-	make exe; bin/reportstatus $$?
+	time -f %E make exe; bin/reportstatus $$?
 
 top-single-build:
-	make single=1 exe; bin/reportstatus $$?
+	time -f %E make single=1 exe; bin/reportstatus $$?
 
 top-format-test:
-	make test=1 format exe; bin/reportstatus $$?
+	time -f %E make test=1 format exe; bin/reportstatus $$?
 
 top-full-resume:
-	make haddock=1 test=1 bench=1 full; bin/reportstatus $$?
+	time -f %E make haddock=1 test=1 bench=1 full; bin/reportstatus $$?
 
 top-full:
-	make haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
+	time -f %E make haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
 
 top-release:
-	make stackroot=1 haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
+	time -f %E make stackroot=1 haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
