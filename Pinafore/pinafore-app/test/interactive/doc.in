@@ -1,8 +1,8 @@
 :doc length.Text
 :doc Time
 :doc Just
-import "pinafore-gnome" end
-import "pinafore-media" end
+import "gnome" end
+import "media" end
 with Cairo end
 :doc paintAlpha.Drawing
 :doc Widget.GTK

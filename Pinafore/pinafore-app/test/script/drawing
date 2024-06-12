@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-import "pinafore-media", "pinafore-gnome" in
+import "media", "gnome" in
 with GTK., Colour., Cairo. in
 let
 

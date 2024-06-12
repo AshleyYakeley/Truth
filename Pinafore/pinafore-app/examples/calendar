@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 openDefault.Store >>= fn store =>
-import "pinafore-gnome" in
+import "gnome" in
 with GTK. in
 let
 

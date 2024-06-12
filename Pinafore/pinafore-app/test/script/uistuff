@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 
 run.GTK $ \gtk => let
-import "pinafore-gnome";
+import "gnome";
 import "UILib";
 in do
     tref1 <- newMem.TextModel;

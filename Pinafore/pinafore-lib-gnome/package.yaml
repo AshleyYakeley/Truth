@@ -1,0 +1,75 @@
+_common: !include "../../common.yaml"
+name: pinafore-lib-gnome
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+flags:
+    test-X11:
+        description: Run tests that require an X11 server
+        default: true
+        manual: false
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.16
+      - shapes
+      - time
+      - polar-shim
+      - typed-expression
+      - Color
+      - gi-cairo-render
+      - gi-gio
+      - gi-gdk
+      - gi-gtk
+      - gi-webkit2
+      - thread-trace
+      - changes-core
+      - changes-world
+      - changes-media
+      - changes-gnome
+      - pinafore-language
+      - pinafore-lib-media
+    exposed-modules:
+      - Pinafore.Library.GNOME
+    other-modules:
+      - Pinafore.Library.GIO
+      - Pinafore.Library.GTK.Context
+      - Pinafore.Library.GTK.Widget.Context
+      - Pinafore.Library.GTK.Widget.Drawing
+      - Pinafore.Library.GTK.Widget
+      - Pinafore.Library.GTK.MenuEntry
+      - Pinafore.Library.GTK.Clipboard
+      - Pinafore.Library.GTK.Window
+      - Pinafore.Library.GTK.Debug
+      - Pinafore.Library.GTK
+      - Pinafore.Library.WebKit
+
+tests:
+    test:
+        source-dirs: test
+        when:
+          - condition: flag(test-X11)
+            cpp-options: -DTEST_X11
+        dependencies:
+          - base >= 4.16
+          - shapes
+          - filepath
+          - gi-gtk
+          - gi-gobject
+          - haskell-gi-base
+          - thread-trace
+          - changes-core
+          - changes-gnome
+          - pinafore-language
+          - pinafore-lib-media
+          - pinafore-lib-gnome
+        main: Main.hs
+        other-modules:
+          - Flags
+          - Test.Context
+          - Test.Golden
+          - Test.UI
+        ghc-options: -threaded

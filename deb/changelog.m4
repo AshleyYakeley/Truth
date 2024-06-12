@@ -4,16 +4,17 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - support implicit parameters
     - allow documentation sections in declarations
   * Library
+    - rename libraries to remove "pinafore-"
     - built-in
       . add Blob type and functions
       . Showable subtypes: don't put spaces in for list and product types
       . add Result type and functions
       . add cell.Store, set.Store
-    - pinafore-media
+    - media
       , add Media type and functions
       . add HTMLText type and functions
       . add CommonMarkText type and functions
-    - pinafore-gnome
+    - gnome
       . rename textArea.Widget to textView.Widget, wrap text
       . add WebView.WebKit GTK element
     - UILib

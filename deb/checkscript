@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 import
     "UILib/Named", # test finding modules
-    "pinafore-gnome"
+    "gnome"
 in
 run.GTK $
 fn gtk =>

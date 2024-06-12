@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 let
-import "pinafore-gnome";
+import "gnome";
 in run.GTK $ \gtk => do
     tref1 <- newMem.WholeModel;
     tref1 := "111";

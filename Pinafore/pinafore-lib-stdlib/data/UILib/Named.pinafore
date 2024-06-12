@@ -1,0 +1,55 @@
+import
+    "gnome",
+    "UILib/Pane"
+in
+with GTK in
+namespace UILib of
+
+    docsec "Named" of
+
+        #| An open entity type; something with a name
+        opentype Named;
+
+        namespace Named of
+
+            #| A name is a text that identifies (in some sense) an entity.
+            nameOf: Property Named Text =
+                property @Named @Text !"identify.name" ?store;
+
+            #| Order alphabetically (case-insensitive) by name
+            order: ModelOrder Named =
+                on.ModelOrder nameOf order.Text;
+
+            #| Order a set of entities by their names.
+            toList: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text)) =
+                fn model => toList.FiniteSetModel (map.ModelOrder fst.Product order) $ (id.Property **.Property nameOf) !$$ model;
+
+            #| A pane for a widget, where the title is the name of the widget.
+            pane: (a -> Widget) -> (a & Named) -> Pane =
+                fn itemWidget, e =>
+                let
+                    titleModel= nameOf !$% {e};
+                    extraMenusModel = {[]};
+                    widget = itemWidget e;
+                in Mk.Pane;
+
+            #| A "name" column for `listTable.Widget`.
+            column: WholeModel +Text *: (Named -> WholeModel Text) =
+                ({"Name"},fn p => nameOf !$ {p});
+
+            #| A `SetWidget` for this set that's a list of widgets by name.
+            table: FiniteSetModel {a,+Named} -> (a -> Widget) -> SetWidget {a,-Named} =
+                fn sm, itemWidget =>
+                Mk.SetWidget $
+                fn msel =>
+                exec.Widget $
+                do
+                    lm <- getList.FiniteSetModel order sm;
+                    pure.Action $ listTable.Widget [column.Named] lm (fn e => paneWindow.Pane $ pane.Named itemWidget e) msel;
+                end;
+
+        end;
+
+    end;
+
+end;

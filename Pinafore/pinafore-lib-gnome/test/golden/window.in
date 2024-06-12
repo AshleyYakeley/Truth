@@ -1,0 +1,15 @@
+#!/usr/bin/env -S pinafore
+import "gnome" in
+do
+outputLn.Env "BEGIN";
+run.GTK $
+fn gtk =>
+do
+outputLn.Env "begin";
+w <- open.Window.GTK gtk (600,800) {"Window"} blank.Widget.GTK;
+outputLn.Env "open";
+close.Window.GTK w;
+outputLn.Env "end";
+end;
+outputLn.Env "END";
+end

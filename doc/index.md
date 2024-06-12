@@ -25,8 +25,8 @@ modules
 :hidden:
 :caption: Library
 library/pinafore
-library/pinafore-media
-library/pinafore-gnome
+library/media
+library/gnome
 library/UILib
 ```
 ```{toctree}

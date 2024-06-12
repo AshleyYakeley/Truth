@@ -37,7 +37,7 @@
                                     {
                                         configureFlags = ["-f" "-trace" "-f" "-test-X11"];
                                     };
-                                    packages."pinafore-gnome" =
+                                    packages."pinafore-lib-gnome" =
                                     {
                                         configureFlags = ["-f" "-test-X11"];
                                     };
@@ -55,7 +55,7 @@
                 pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
                 flake = pkgs.pinaforeProject.flake {};
                 exePackage = flake.packages."pinafore-app:exe:pinafore";
-                stdLibPackage = pkgs.runCommand "pinafore-stdlib" {libdir = ./Pinafore/pinafore-stdlib/data;}
+                stdLibPackage = pkgs.runCommand "pinafore-lib-stdlib" {libdir = ./Pinafore/pinafore-lib-stdlib/data;}
                     ''
                     mkdir -p $out/share/pinafore/lib
                     cp -r $libdir/* $out/share/pinafore/lib/

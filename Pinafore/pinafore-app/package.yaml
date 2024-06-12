@@ -22,8 +22,8 @@ library:
       - filepath
       - xdg-basedir
       - pinafore-language
-      - pinafore-media
-      - pinafore-gnome
+      - pinafore-lib-media
+      - pinafore-lib-gnome
     cpp-options:
       - -DPINAFOREVERSION="0.6"
     when:
@@ -77,7 +77,7 @@ tests:
           - shapes
           - changes-core
           - pinafore-language
-          - pinafore-stdlib
+          - pinafore-lib-stdlib
           - pinafore-app
         main: Main.hs
         other-modules:
@@ -105,7 +105,7 @@ benchmarks:
           - shapes
           - changes-core
           - pinafore-language
-          - pinafore-stdlib
+          - pinafore-lib-stdlib
           - pinafore-app
           - criterion
         main: Main.hs

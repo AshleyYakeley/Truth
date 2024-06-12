@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-import "pinafore-gnome", "UILib" in
+import "gnome", "UILib" in
 with
     GTK.,
     UILib.

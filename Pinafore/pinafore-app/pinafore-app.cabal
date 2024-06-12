@@ -71,9 +71,9 @@ library
       base >=4.16
     , directory
     , filepath
-    , pinafore-gnome
     , pinafore-language
-    , pinafore-media
+    , pinafore-lib-gnome
+    , pinafore-lib-media
     , shapes
     , time
     , xdg-basedir
@@ -257,7 +257,7 @@ test-suite test
     , filepath
     , pinafore-app
     , pinafore-language
-    , pinafore-stdlib
+    , pinafore-lib-stdlib
     , shapes
   default-language: GHC2021
 
@@ -304,6 +304,6 @@ benchmark benchmark
     , criterion
     , pinafore-app
     , pinafore-language
-    , pinafore-stdlib
+    , pinafore-lib-stdlib
     , shapes
   default-language: GHC2021

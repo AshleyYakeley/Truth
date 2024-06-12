@@ -1,0 +1,12 @@
+#!/usr/bin/env -S pinafore
+import "media", "gnome" in
+with GIO in
+do
+    mref <- makeRef.File $ Path.File "test/somefile";
+    mf <- get mref;
+    decode asMedia.Text mf >-
+        match
+            Just t => write.Sink stdout.Env t;
+            Nothing => writeLn.Sink stdout.Env "not text";
+        end;
+end

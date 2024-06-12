@@ -1,0 +1,30 @@
+_common: !include "../../common.yaml"
+name: pinafore-lib-stdlib
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+data-dir: data
+data-files: "**/*.pinafore"
+
+library:
+    dependencies:
+      - base >= 4.16
+    exposed-modules:
+      - Paths_pinafore_lib_stdlib
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.16
+          - directory
+          - shapes
+          - changes-core
+          - pinafore-language
+          - pinafore-lib-media
+          - pinafore-lib-gnome
+          - pinafore-lib-stdlib
+        main: Main.hs
+        ghc-options: -threaded
