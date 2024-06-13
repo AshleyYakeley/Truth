@@ -23,6 +23,7 @@ library:
       - xdg-basedir
       - pinafore-language
       - pinafore-lib-media
+      - pinafore-lib-http
       - pinafore-lib-gnome
     cpp-options:
       - -DPINAFOREVERSION="0.6"

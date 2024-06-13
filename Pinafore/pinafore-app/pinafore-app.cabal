@@ -73,6 +73,7 @@ library
     , filepath
     , pinafore-language
     , pinafore-lib-gnome
+    , pinafore-lib-http
     , pinafore-lib-media
     , shapes
     , time

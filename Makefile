@@ -253,6 +253,7 @@ pyg-lexer: out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 LIBMODULEDOCS := \
     pinafore \
     media \
+    http \
     gnome \
 	UILib
 

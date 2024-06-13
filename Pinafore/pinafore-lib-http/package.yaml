@@ -1,0 +1,17 @@
+_common: !include "../../common.yaml"
+name: pinafore-lib-http
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.16
+      - shapes
+      - pinafore-language
+      - pinafore-lib-media
+    exposed-modules:
+      - Pinafore.Library.HTTP
+    other-modules: []

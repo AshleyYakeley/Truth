@@ -2,6 +2,7 @@ module Pinafore.Libs where
 
 import Pinafore.API
 import Pinafore.Library.GNOME
+import Pinafore.Library.HTTP
 import Pinafore.Library.Media
 import Shapes
 import System.Directory
@@ -18,4 +19,4 @@ ensurePinaforeDir mdirpath = do
     return pinaforedir
 
 extraLibrary :: [LibraryModule ()]
-extraLibrary = mediaLibrary <> gnomeLibrary
+extraLibrary = mediaLibrary <> httpLibrary <> gnomeLibrary

@@ -26,6 +26,7 @@ modules
 :caption: Library
 library/pinafore
 library/media
+library/http
 library/gnome
 library/UILib
 ```
