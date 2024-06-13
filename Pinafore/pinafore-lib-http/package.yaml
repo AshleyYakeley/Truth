@@ -10,6 +10,10 @@ library:
     dependencies:
       - base >= 4.16
       - shapes
+      - changes-core
+      - http-types
+      - wai
+      - warp
       - pinafore-language
       - pinafore-lib-media
     exposed-modules:

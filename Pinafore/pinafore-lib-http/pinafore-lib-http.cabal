@@ -48,7 +48,11 @@ library
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
   build-depends:
       base >=4.16
+    , changes-core
+    , http-types
     , pinafore-language
     , pinafore-lib-media
     , shapes
+    , wai
+    , warp
   default-language: GHC2021
