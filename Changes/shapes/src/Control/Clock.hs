@@ -7,15 +7,10 @@ module Control.Clock
     , clock
     ) where
 
+import Control.Task
 import Data.Time.Clock
 import Shapes.Import
 import Shapes.Numeric
-
-data Cancelled =
-    MkCancelled
-    deriving (Show)
-
-instance Exception Cancelled
 
 data ClockMachine a =
     forall s. MkClockMachine (IO (a, s))
@@ -99,8 +94,6 @@ clock (MkClockMachine (getInitial :: IO (a, s)) f) call = do
                     call a
                     run newstate
     (initialA, initialState) <- liftIO getInitial
-    thread <- liftIO $ forkIO $ handle (\MkCancelled -> return ()) $ run initialState
-    lifecycleOnClose $ do
-        takeMVar var
-        throwTo thread MkCancelled
+    forkEndlessInLifecycle $ run initialState
+    lifecycleOnClose $ takeMVar var
     return initialA

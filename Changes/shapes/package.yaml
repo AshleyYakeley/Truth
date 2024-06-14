@@ -114,4 +114,5 @@ tests:
         main: Main.hs
         other-modules:
           - Serializer
+          - Task
         ghc-options: -threaded
