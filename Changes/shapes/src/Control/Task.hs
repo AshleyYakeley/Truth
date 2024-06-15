@@ -8,7 +8,7 @@ module Control.Task
     , mvarTask
     , timeTask
     , durationTask
-    , raceTasks
+    , firstTask
     , parallelFor
     , parallelFor_
     , Cancelled(..)
@@ -17,8 +17,8 @@ module Control.Task
     , forkStoppableTask
     , foreverStoppableTask
     , followStoppableTask
+    , firstStoppableTask
     , raceStoppableTasks
-    , raceStopStoppableTasks
     ) where
 
 import Shapes.Import
@@ -133,8 +133,8 @@ durationTask d = do
     return $ timeTask $ addUTCTime d c
 
 -- | Return a task for the first task to finish. Does not stop the other tasks.
-raceTasks :: MonadTunnelIO m => [Task m a] -> m (Task m a)
-raceTasks tt = do
+firstTask :: MonadTunnelIO m => [Task m a] -> m (Task m a)
+firstTask tt = do
     var <- liftIO newEmptyMVar
     for_ tt $ \task -> do
         _ <-
@@ -188,13 +188,13 @@ instance (Applicative m, Monoid a) => Monoid (StoppableTask m a) where
 
 forkStoppableTask ::
        forall m a. MonadTunnelIO m
-    => m a
+    => ((forall r. m r) -> m a)
     -> m (StoppableTask m a)
 forkStoppableTask ma = do
     var <- liftIO newEmptyMVar
     tid <-
         tunnelForkIO $ \unliftIO -> do
-            ra <- tryExc $ unliftIO ma
+            ra <- tryExc $ unliftIO $ ma $ liftIO $ throw MkCancelled
             putMVar var $
                 case ra of
                     SuccessResult ta -> SuccessResult $ fmap Just ta
@@ -203,7 +203,7 @@ forkStoppableTask ma = do
                     FailureResult exc -> FailureResult exc
     let
         stoppableTaskTask = execTask $ fmap (liftTunnelIO . fromResultExc) $ mvarTask var
-        stoppableTaskStop = liftIO $ do throwTo tid MkCancelled
+        stoppableTaskStop = liftIO $ throwTo tid MkCancelled
     return MkStoppableTask {..}
 
 -- | Create a stoppable task that will run forever (until stopped).
@@ -226,30 +226,31 @@ followStoppableTask ::
     -> m (StoppableTask m a)
 followStoppableTask task = do
     MkStoppableTask ftask stop <- liftIO foreverStoppableTask
-    rtask <- raceTasks [fmap Just task, ftask]
+    rtask <- firstTask [fmap Just task, ftask]
     return $ MkStoppableTask rtask stop
 
 -- | Create a StoppableTask for the first StoppableTask to finish. Does not stop the other tasks when done.
-raceStoppableTasks ::
+firstStoppableTask ::
        forall m a. MonadTunnelIO m
     => [StoppableTask m a]
     -> m (StoppableTask m a)
-raceStoppableTasks stasks = do
-    task <- raceTasks $ fmap stoppableTaskTask stasks
+firstStoppableTask stasks = do
+    task <- firstTask $ fmap stoppableTaskTask stasks
     let
         stop :: m ()
         stop = for_ stasks stoppableTaskStop
     return $ MkStoppableTask task stop
 
 -- | Create a StoppableTask for the first StoppableTask to finish. Also forks a task to stop them all when that happens.
-raceStopStoppableTasks ::
+raceStoppableTasks ::
        forall m a. MonadTunnelIO m
     => [StoppableTask m a]
     -> m (StoppableTask m a)
-raceStopStoppableTasks stasks = do
-    stask <- raceStoppableTasks stasks
-    _ <-
+raceStoppableTasks stasks = do
+    MkStoppableTask ftask stop <- firstStoppableTask stasks
+    rtask <-
         forkTask $ do
-            _ <- taskWait $ stoppableTaskTask stask
+            ma <- taskWait ftask
             for_ stasks stoppableTaskStop
-    return stask
+            return ma
+    return $ MkStoppableTask rtask stop

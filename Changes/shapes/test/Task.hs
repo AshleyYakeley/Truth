@@ -23,7 +23,7 @@ testTask1 =
     testRecord @String "[1]" $ \record -> do
         record "["
         stask <-
-            forkStoppableTask $ do
+            forkStoppableTask $ \_ -> do
                 record "1"
                 threadSleep 0.2
                 record "2"
@@ -37,5 +37,24 @@ testTask1 =
         assertEqual "result" Nothing result
         record "]"
 
+testTask2 :: TestTree
+testTask2 =
+    testTree "2" $
+    testRecord @String "[1]" $ \record -> do
+        record "["
+        stask <-
+            forkStoppableTask $ \stop -> do
+                record "1"
+                threadSleep 0.1
+                () <- stop
+                record "2"
+        let task = stoppableTaskTask stask
+        threadSleep 0.2
+        done <- taskIsDone task
+        assertEqual "done" True done
+        result <- taskWait task
+        assertEqual "result" Nothing result
+        record "]"
+
 testTask :: TestTree
-testTask = testTree "task" [testTask1]
+testTask = testTree "task" [testTask1, testTask2]

@@ -10,6 +10,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . Showable subtypes: don't put spaces in for list and product types
       . add Result type and functions
       . add cell.Store, set.Store
+      . add StoppableTask type and functions
     - media
       , add Media type and functions
       . add HTMLText type and functions
