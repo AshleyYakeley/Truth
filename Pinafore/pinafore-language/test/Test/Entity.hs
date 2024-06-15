@@ -1825,9 +1825,9 @@ testEntity =
         , tGroup
               "task"
               [ testExpectSuccess
-                    "do t <- async.Task $ do sleep $ Seconds 0.01; pure True end; v <- await.Task t; if v then pass else fail \"\" end"
+                    "do t <- async.Task $ do sleep $ Seconds 0.01; pure True end; v <- wait.Task t; if v then pass else fail \"\" end"
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.01; r := 1; end; await.Task t; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.01; r := 1; end; wait.Task t; v <- get r; if v == 1 then pass else fail \"\" end"
               , testExpectSuccess
                     "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
               , testExpectSuccess

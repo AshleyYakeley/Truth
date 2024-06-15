@@ -7,6 +7,7 @@ import Data.Time
 import Serializer
 import Shapes
 import Shapes.Test
+import Task
 
 baseTime :: UTCTime
 baseTime = UTCTime (ModifiedJulianDay 0) 0
@@ -98,4 +99,4 @@ testFixBox =
     testTree "fixbox" [testTree "IO" (runBoxes :: IO ()), testTree "WithT IO" (unWithT runBoxes return :: IO ())]
 
 main :: IO ()
-main = testMain $ testTree "shapes" [testClock, testFix, testFixBox, testSerializer]
+main = testMain $ testTree "shapes" [testTask, testClock, testFix, testFixBox, testSerializer]
