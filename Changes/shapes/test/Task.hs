@@ -56,5 +56,61 @@ testTask2 =
         assertEqual "result" Nothing result
         record "]"
 
+testTaskFirst :: TestTree
+testTaskFirst =
+    testTree "first" $
+    testRecord @String "[AB213]" $ \record -> do
+        record "["
+        stask1 <-
+            forkStoppableTask $ \_ -> do
+                threadSleep 0.2
+                record "1"
+                return 1
+        stask2 <-
+            forkStoppableTask $ \_ -> do
+                threadSleep 0.1
+                record "2"
+                return 2
+        stask3 <-
+            forkStoppableTask $ \_ -> do
+                threadSleep 0.3
+                record "3"
+                return 3
+        record "A"
+        staskR <- firstStoppableTask [stask1, stask2, stask3]
+        record "B"
+        r <- taskWait $ stoppableTaskTask staskR
+        assertEqual @(Maybe Int) "result" (Just 2) r
+        threadSleep 0.5
+        record "]"
+
+testTaskRace :: TestTree
+testTaskRace =
+    testTree "race" $
+    testRecord @String "[AB2]" $ \record -> do
+        record "["
+        stask1 <-
+            forkStoppableTask $ \_ -> do
+                threadSleep 0.2
+                record "1"
+                return 1
+        stask2 <-
+            forkStoppableTask $ \_ -> do
+                threadSleep 0.1
+                record "2"
+                return 2
+        stask3 <-
+            forkStoppableTask $ \_ -> do
+                threadSleep 0.3
+                record "3"
+                return 3
+        record "A"
+        staskR <- raceStoppableTasks [stask1, stask2, stask3]
+        record "B"
+        r <- taskWait $ stoppableTaskTask staskR
+        assertEqual @(Maybe Int) "result" (Just 2) r
+        threadSleep 0.5
+        record "]"
+
 testTask :: TestTree
-testTask = testTree "task" [testTask1, testTask2]
+testTask = testTree "task" [testTask1, testTask2, testTaskFirst, testTaskRace]

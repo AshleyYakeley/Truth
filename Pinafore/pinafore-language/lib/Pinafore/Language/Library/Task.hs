@@ -86,6 +86,9 @@ langStopTask (MkLangStoppableTask task) = stoppableTaskStop task
 langAsyncStoppable :: (Action BottomType -> Action A) -> Action (LangStoppableTask A)
 langAsyncStoppable call = do
     stask <- forkStoppableTask $ \stop -> call stop
+    actionOnClose $ do
+        _ <- taskWait $ stoppableTaskTask stask
+        return ()
     return $ MkLangStoppableTask stask
 
 langForever :: Action (LangStoppableTask BottomType)
