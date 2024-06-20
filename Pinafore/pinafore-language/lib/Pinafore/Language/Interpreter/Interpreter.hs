@@ -21,12 +21,15 @@ module Pinafore.Language.Interpreter.Interpreter
     , getSubtypeScope
     , newTypeID
     , withNewTypeID
+    , withSemiIdentifiedType
+    , newIdentifiedType
     ) where
 
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Interpreter.Scope
+import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Subtype ()
@@ -307,11 +310,27 @@ newTypeID = do
     tid <- refSucc typeIDRef
     return $ valueToSome tid
 
-withNewTypeID :: (forall tid. TypeIDType tid -> QInterpreter a) -> QInterpreter a
+withNewTypeID :: (forall tid. TypeIDType tid -> QInterpreter r) -> QInterpreter r
 withNewTypeID call = do
     stid <- newTypeID
     case stid of
-        MkSome tid -> call tid
+        MkSome typeID -> call typeID
+
+withSemiIdentifiedType ::
+       forall (dv :: CCRVariances) r.
+       (forall (gt :: CCRVariancesKind dv). FamilialType gt -> QInterpreter r)
+    -> QInterpreter r
+withSemiIdentifiedType call =
+    withNewTypeID $ \typeID -> do
+        Refl <- unsafeIdentifyKind @_ @(CCRVariancesKind dv) typeID
+        call $ identifiedFamilialType typeID
+
+newIdentifiedType :: forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv). QInterpreter (FamilialType gt)
+newIdentifiedType =
+    withNewTypeID $ \typeID -> do
+        Refl <- unsafeIdentifyKind @_ @(CCRVariancesKind dv) typeID
+        Refl <- unsafeIdentify @_ @gt typeID
+        return $ identifiedFamilialType typeID
 
 getSpecialVals :: QInterpreter QSpecialVals
 getSpecialVals = paramAsk specialValsParam

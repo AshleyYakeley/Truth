@@ -159,9 +159,7 @@ data TypeConstruction dv gt extra =
 
 type GroundTypeFromTypeID :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type -> Type
 newtype GroundTypeFromTypeID dv gt y = MkGroundTypeFromTypeID
-    { unGroundTypeFromTypeID :: forall (tid :: Nat).
-                                    (IdentifiedKind tid ~ CCRVariancesKind dv, gt ~~ Identified tid) =>
-                                            FullName -> TypeIDType tid -> (QGroundType dv gt, y)
+    { unGroundTypeFromTypeID :: FullName -> FamilialType gt -> (QGroundType dv gt, y)
     }
 
 type GroundTypeMaker extra
@@ -169,23 +167,6 @@ type GroundTypeMaker extra
            Is CCRVariancesType dv =>
                    FullName -> CCRTypeParams dv gt decltype -> TypeConstruction dv gt [( ConstructorCodec decltype
                                                                                        , extra)]
-
-type MatchingTypeID :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
-data MatchingTypeID dv t where
-    MkMatchingTypeID
-        :: forall tid (dv :: CCRVariances) (t :: CCRVariancesKind dv).
-           (IdentifiedKind tid ~ CCRVariancesKind dv, Identified tid ~~ t)
-        => TypeIDType tid
-        -> MatchingTypeID dv t
-
-instance forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). Eq (MatchingTypeID dv t) where
-    MkMatchingTypeID ta == MkMatchingTypeID tb = isJust $ testEquality ta tb
-
-newMatchingTypeID :: forall (dv :: CCRVariances). QInterpreter (Some (MatchingTypeID dv))
-newMatchingTypeID =
-    withNewTypeID $ \(typeID :: _ tid) ->
-        case unsafeIdentifyKind @_ @(CCRVariancesKind dv) typeID of
-            Identity Refl -> return $ MkSome $ MkMatchingTypeID typeID
 
 data TypeInfo = MkTypeInfo
     { tiName :: FullName
@@ -200,11 +181,11 @@ tiDoc MkTypeInfo {..} = let
     gdst = fmap (\gds -> exprShow gds <> mconcat (fmap (\p -> " " <> exprShow p) tiParams)) tiGDS
     in MkDefDoc (typeDocItem tiName tiStorable tiParams gdst) tiDescription
 
-data TypeData dv t = MkTypeData
+data TypeData dv gt = MkTypeData
     { tdInfo :: TypeInfo
-    , tdID :: MatchingTypeID dv t
-    , tdSupertype :: Maybe (TypeData dv t)
-    , tdSubtypes :: [MatchingTypeID dv t] -- includes self
+    , tdID :: FamilialType gt
+    , tdSupertype :: Maybe (TypeData dv gt)
+    , tdSubtypes :: [FamilialType gt] -- includes self
     }
 
 tdName :: TypeData dv t -> FullName
@@ -214,68 +195,67 @@ tdDoc :: TypeData dv t -> DefDoc
 tdDoc = tiDoc . tdInfo
 
 getConsSubtypeData ::
-       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv) extra.
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) extra.
        FullName
-    -> TypeData dv t
+    -> TypeData dv gt
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
-    -> QInterpreter [TypeData dv t]
+    -> QInterpreter [TypeData dv gt]
 getConsSubtypeData mainName superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructorOrSubtype tname conss)) = do
-    ssubtid <- newMatchingTypeID @dv
-    case ssubtid of
-        MkSome subMTID@(MkMatchingTypeID subTypeID) -> do
-            Refl <- unsafeIdentify @_ @t subTypeID
-            rec
-                let
-                    superInfo :: TypeInfo
-                    superInfo = tdInfo superTD
-                    subInfo :: TypeInfo
-                    subInfo =
-                        MkTypeInfo
-                            { tiName = tname
-                            , tiStorable = tiStorable superInfo
-                            , tiParams = tiParams superInfo
-                            , tiGDS = Just mainName
-                            , tiDescription = md
-                            }
-                    subtypes = tdID superTD : mconcat (fmap tdSubtypes subtdata)
-                    subTD :: TypeData dv t
-                    subTD =
-                        MkTypeData {tdInfo = subInfo, tdID = subMTID, tdSupertype = Just superTD, tdSubtypes = subtypes}
-                subtdata <- getConssSubtypeData subTD conss
-            return $ subTD : subtdata
+    subTypeID <- newIdentifiedType @dv @gt
+    rec
+        let
+            superInfo :: TypeInfo
+            superInfo = tdInfo superTD
+            subInfo :: TypeInfo
+            subInfo =
+                MkTypeInfo
+                    { tiName = tname
+                    , tiStorable = tiStorable superInfo
+                    , tiParams = tiParams superInfo
+                    , tiGDS = Just mainName
+                    , tiDescription = md
+                    }
+            subtypes = tdID superTD : mconcat (fmap tdSubtypes subtdata)
+            subTD :: TypeData dv gt
+            subTD = MkTypeData {tdInfo = subInfo, tdID = subTypeID, tdSupertype = Just superTD, tdSubtypes = subtypes}
+        subtdata <- getConssSubtypeData subTD conss
+    return $ subTD : subtdata
 getConsSubtypeData _ _ _ = return mempty
 
 getConssSubtypeData ::
-       TypeData dv t -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)] -> QInterpreter [TypeData dv t]
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) extra.
+       TypeData dv gt
+    -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
+    -> QInterpreter [TypeData dv gt]
 getConssSubtypeData superTD conss = do
-    tdatas <- for conss $ getConsSubtypeData (tiName $ tdInfo superTD) superTD
+    tdatas <- for conss $ getConsSubtypeData @dv (tiName $ tdInfo superTD) superTD
     return $ mconcat tdatas
 
-data Constructor dv t extra = MkConstructor
+data Constructor dv gt extra = MkConstructor
     { ctName :: FullName
     , ctDoc :: DefDoc
-    , ctOuterType :: TypeData dv t
+    , ctOuterType :: TypeData dv gt
     , ctContents :: Either [SyntaxType] [SyntaxSignature]
     , ctExtra :: extra
     }
 
-typeDataLookup :: [TypeData dv t] -> FullName -> QInterpreter (TypeData dv t)
+typeDataLookup :: [TypeData dv gt] -> FullName -> QInterpreter (TypeData dv gt)
 typeDataLookup [] _ = liftIO $ fail "type name not found"
 typeDataLookup (t:_) name
     | tdName t == name = return t
 typeDataLookup (_:tt) name = typeDataLookup tt name
 
-getConstructor :: TypeData dv t -> FullName -> DefDoc -> SyntaxDataConstructor extra -> Constructor dv t extra
+getConstructor :: TypeData dv gt -> FullName -> DefDoc -> SyntaxDataConstructor extra -> Constructor dv gt extra
 getConstructor typeNM consName doc (PlainSyntaxConstructor stypes extra) =
     MkConstructor consName doc typeNM (Left stypes) extra
 getConstructor typeNM consName doc (RecordSyntaxConstructor sigs) =
     MkConstructor consName doc typeNM (Right sigs) $ error "record extra data"
 
 getConstructorOrSubtype ::
-       [TypeData dv t]
-    -> TypeData dv t
+       [TypeData dv gt]
+    -> TypeData dv gt
     -> SyntaxWithDoc (SyntaxConstructorOrSubtype extra)
-    -> QInterpreter [Constructor dv t extra]
+    -> QInterpreter [Constructor dv gt extra]
 getConstructorOrSubtype _ typeNM (MkSyntaxWithDoc md (ConstructorSyntaxConstructorOrSubtype consName dcons)) =
     return $
     pure $ getConstructor typeNM consName (MkDefDoc (constructorDocItem (tdName typeNM) consName dcons) md) dcons
@@ -284,10 +264,10 @@ getConstructorOrSubtype tdata _ (MkSyntaxWithDoc _ (SubtypeSyntaxConstructorOrSu
     getConstructors tdata subtypeTD stypes
 
 getConstructors ::
-       [TypeData dv t]
-    -> TypeData dv t
+       [TypeData dv gt]
+    -> TypeData dv gt
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
-    -> QInterpreter [Constructor dv t extra]
+    -> QInterpreter [Constructor dv gt extra]
 getConstructors tdata typeNM syntaxConstructorList =
     fmap mconcat $ for syntaxConstructorList $ getConstructorOrSubtype tdata typeNM
 
@@ -319,7 +299,7 @@ lookupRecordConstructorData supertypes rcdName = do
 
 interpretSignature' ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => TypeID
+    => SomeFamilialType
     -> [Some (QGroundType '[])]
     -> SyntaxSignature'
     -> QInterpreter (Maybe RecordConstructorData, [SomeSignature])
@@ -338,7 +318,7 @@ interpretSignature' _ supertypes (SupertypeConstructorSyntaxSignature name) = do
 
 interpretSignature ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => TypeID
+    => SomeFamilialType
     -> [Some (QGroundType '[])]
     -> SyntaxSignature
     -> QInterpreter (Maybe RecordConstructorData, [SomeSignature])
@@ -363,7 +343,7 @@ someSignatureName (MkSome (ValueSignature _ n _ _)) = Just n
 
 interpretConstructorTypes ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => TypeID
+    => SomeFamilialType
     -> [Some (QGroundType '[])]
     -> Constructor dv t extra
     -> QInterpreter (Some ConstructorType)
@@ -441,279 +421,269 @@ makeBox ::
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     -> GenCCRTypeParams dv
     -> QInterpreter (QFixBox () ())
-makeBox gmaker supertypes tinfo syntaxConstructorList gtparams = do
-    stid <- newMatchingTypeID @dv
-    case stid of
-        MkSome (mainMTID@(MkMatchingTypeID mainTypeID) :: _ maintype) -> do
-            rec
-                let
-                    mainTypeName = tiName tinfo
-                    mainTypeData :: TypeData dv maintype
-                    mainTypeData =
-                        MkTypeData
-                            { tdInfo = tinfo
-                            , tdID = mainMTID
-                            , tdSupertype = Nothing
-                            , tdSubtypes = mainMTID : mconcat (fmap tdSubtypes subtypeDatas)
-                            }
-                subtypeDatas <- getConssSubtypeData mainTypeData syntaxConstructorList
-            constructorList <- getConstructors subtypeDatas mainTypeData syntaxConstructorList
-            fixedFromList constructorList $ \(constructorCount :: _ conscount) (constructorFixedList :: FixedList conscount (Constructor dv maintype extra)) ->
-                withRepresentative constructorCount $
-                case gtparams @maintype of
-                    MkSome (tparams :: CCRTypeParams dv maintype decltype) ->
-                        withRepresentative (ccrArgumentsType tparams) $
-                        case gmaker mainTypeName tparams of
-                            MkTypeConstruction mkx (mkgt :: x -> _ (_ y)) postregister -> let
-                                mainRegister :: x -> QScopeBuilder ()
-                                mainRegister x = do
-                                    MkGroundTypeFromTypeID gttid <- builderLift $ mkgt x
-                                    let (gt, y) = gttid mainTypeName mainTypeID
-                                    registerGroundType mainTypeName (tdDoc mainTypeData) gt
-                                    postregister gt y
-                                mainConstruct ::
-                                       ()
-                                    -> QScopeBuilder ( x
-                                                     , ( x
-                                                       , CCRVariancesMap dv maintype
-                                                       , FixedList conscount (ConstructorCodec decltype)
-                                                       , decltype -> TypeData dv maintype))
-                                mainConstruct () = do
-                                    constructorInnerTypes <-
-                                        builderLift $
-                                        for constructorFixedList $
-                                        interpretConstructorTypes (witnessToValue mainTypeID) supertypes
-                                    assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
-                                        let
-                                            freevars :: FiniteSet SomeTypeVarT
-                                            freevars = mconcat $ fmap freeTypeVariables $ toList codecs
-                                            declaredvars :: [SomeTypeVarT]
-                                            declaredvars = tParamsVars tparams
-                                            unboundvars :: [SomeTypeVarT]
-                                            unboundvars = toList freevars \\ declaredvars
-                                        case nonEmpty $ duplicates declaredvars of
-                                            Nothing -> return ()
-                                            Just vv ->
-                                                builderLift $
-                                                throw $
-                                                InterpretTypeDeclDuplicateTypeVariablesError mainTypeName $
-                                                fmap someTypeVarToName vv
-                                        case nonEmpty unboundvars of
-                                            Nothing -> return ()
-                                            Just vv ->
-                                                builderLift $
-                                                throw $
-                                                InterpretTypeDeclUnboundTypeVariablesError mainTypeName $
-                                                fmap someTypeVarToName vv
-                                        Refl <- unsafeGetRefl @Type @structtype @decltype
-                                        dvm :: CCRVariancesMap dv maintype <-
-                                            builderLift $ getCCRVariancesMap @dv mainTypeName tparams vmap
-                                        x <-
+makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
+    withSemiIdentifiedType @dv $ \(mainFamType :: _ maintype) -> do
+        rec
+            let
+                mainTypeName = tiName tinfo
+                mainTypeData :: TypeData dv maintype
+                mainTypeData =
+                    MkTypeData
+                        { tdInfo = tinfo
+                        , tdID = mainFamType
+                        , tdSupertype = Nothing
+                        , tdSubtypes = mainFamType : mconcat (fmap tdSubtypes subtypeDatas)
+                        }
+            subtypeDatas <- getConssSubtypeData mainTypeData syntaxConstructorList
+        constructorList <- getConstructors subtypeDatas mainTypeData syntaxConstructorList
+        fixedFromList constructorList $ \(constructorCount :: _ conscount) (constructorFixedList :: FixedList conscount (Constructor dv maintype extra)) ->
+            withRepresentative constructorCount $
+            case gtparams @maintype of
+                MkSome (tparams :: CCRTypeParams dv maintype decltype) ->
+                    withRepresentative (ccrArgumentsType tparams) $
+                    case gmaker mainTypeName tparams of
+                        MkTypeConstruction mkx (mkgt :: x -> _ (_ y)) postregister -> let
+                            mainRegister :: x -> QScopeBuilder ()
+                            mainRegister x = do
+                                MkGroundTypeFromTypeID gttid <- builderLift $ mkgt x
+                                let (gt, y) = gttid mainTypeName mainFamType
+                                registerGroundType mainTypeName (tdDoc mainTypeData) gt
+                                postregister gt y
+                            mainConstruct ::
+                                   ()
+                                -> QScopeBuilder ( x
+                                                 , ( x
+                                                   , CCRVariancesMap dv maintype
+                                                   , FixedList conscount (ConstructorCodec decltype)
+                                                   , decltype -> TypeData dv maintype))
+                            mainConstruct () = do
+                                constructorInnerTypes <-
+                                    builderLift $
+                                    for constructorFixedList $
+                                    interpretConstructorTypes (MkSomeFamilialType mainFamType) supertypes
+                                assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
+                                    let
+                                        freevars :: FiniteSet SomeTypeVarT
+                                        freevars = mconcat $ fmap freeTypeVariables $ toList codecs
+                                        declaredvars :: [SomeTypeVarT]
+                                        declaredvars = tParamsVars tparams
+                                        unboundvars :: [SomeTypeVarT]
+                                        unboundvars = toList freevars \\ declaredvars
+                                    case nonEmpty $ duplicates declaredvars of
+                                        Nothing -> return ()
+                                        Just vv ->
                                             builderLift $
-                                            mkx dvm $ toList $ liftA2 (,) codecs $ fmap ctExtra constructorFixedList
-                                        return $ (x, (x, dvm, codecs, \t -> ctOuterType $ pickn t constructorFixedList))
-                                mainBox ::
-                                       QFixBox () ( x
-                                                  , CCRVariancesMap dv maintype
-                                                  , FixedList conscount (ConstructorCodec decltype)
-                                                  , decltype -> TypeData dv maintype)
-                                mainBox = mkFixBox mainRegister mainConstruct
-                                mainTypeBox :: QFixBox x (QGroundType dv maintype)
-                                mainTypeBox =
-                                    mkConstructFixBox $ \x -> do
-                                        gtft <- builderLift $ mkgt x
-                                        return $ fst $ unGroundTypeFromTypeID gtft mainTypeName mainTypeID
-                                getGroundType ::
-                                       QGroundType dv maintype
-                                    -> (decltype -> TypeData dv maintype)
-                                    -> GroundTypeFromTypeID dv maintype y
-                                    -> TypeData dv maintype
-                                    -> QGroundType dv maintype
-                                getGroundType mainGroundType picktype (MkGroundTypeFromTypeID gttid) tdata =
-                                    case tdID tdata of
-                                        MkMatchingTypeID (typeID :: _ subtid) -> let
-                                            baseGroundType :: QGroundType dv maintype
-                                            (baseGroundType, _) = gttid (tdName tdata) typeID
-                                            gds :: QPolyGreatestDynamicSupertype dv maintype
-                                            gds =
-                                                MkPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
-                                                    case unsafeRefl @Type @decltype @argstype of
-                                                        Refl ->
-                                                            MkShimWit (MkDolanGroundedType mainGroundType args) $
-                                                            MkPolarShim $
-                                                            pureComposeShim $
-                                                            functionToShim "supertype" $ \t ->
-                                                                if elem (tdID $ picktype t) $ tdSubtypes tdata
-                                                                    then Just t
-                                                                    else Nothing
-                                            in baseGroundType
-                                                   { qgtGreatestDynamicSupertype =
-                                                         if tdID tdata == mainMTID
-                                                             then nullPolyGreatestDynamicSupertype
-                                                             else gds
-                                                   }
-                                declTypes ::
-                                       QGroundType dv maintype
-                                    -> CCRVariancesMap dv maintype
-                                    -> (QGroundedShimWit 'Positive decltype, QGroundedShimWit 'Negative decltype)
-                                declTypes groundType dvm = let
-                                    getargs ::
-                                           forall polarity. Is PolarityType polarity
-                                        => CCRPolarArgumentsShimWit QPolyShim dv QType maintype polarity decltype
-                                    getargs =
-                                        mapPolarCCRArguments
-                                            @QPolyShim
-                                            @CCRTypeParam
-                                            @(CCRPolarArgument QType polarity)
-                                            @dv
-                                            @polarity
-                                            @maintype
-                                            tParamToPolarArgument
-                                            dvm
-                                            tparams
-                                    in case (getargs @'Positive, getargs @'Negative) of
-                                           (MkShimWit posargs posconv, MkShimWit negargs negconv) -> let
-                                               declpos :: QGroundedShimWit 'Positive decltype
-                                               declpos = MkShimWit (MkDolanGroundedType groundType posargs) posconv
-                                               declneg :: QGroundedShimWit 'Negative decltype
-                                               declneg = MkShimWit (MkDolanGroundedType groundType negargs) negconv
-                                               in (declpos, declneg)
-                                registerConstructor ::
-                                       Constructor dv maintype extra
-                                    -> ( QGroundType dv maintype
-                                       , decltype -> TypeData dv maintype
-                                       , x
-                                       , CCRVariancesMap dv maintype
-                                       , ConstructorCodec decltype)
-                                    -> QScopeBuilder ()
-                                registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor ctype codec) = do
-                                    gttid <- builderLift $ mkgt x
+                                            throw $
+                                            InterpretTypeDeclDuplicateTypeVariablesError mainTypeName $
+                                            fmap someTypeVarToName vv
+                                    case nonEmpty unboundvars of
+                                        Nothing -> return ()
+                                        Just vv ->
+                                            builderLift $
+                                            throw $
+                                            InterpretTypeDeclUnboundTypeVariablesError mainTypeName $
+                                            fmap someTypeVarToName vv
+                                    Refl <- unsafeGetRefl @Type @structtype @decltype
+                                    dvm :: CCRVariancesMap dv maintype <-
+                                        builderLift $ getCCRVariancesMap @dv mainTypeName tparams vmap
+                                    x <-
+                                        builderLift $
+                                        mkx dvm $ toList $ liftA2 (,) codecs $ fmap ctExtra constructorFixedList
+                                    return $ (x, (x, dvm, codecs, \t -> ctOuterType $ pickn t constructorFixedList))
+                            mainBox ::
+                                   QFixBox () ( x
+                                              , CCRVariancesMap dv maintype
+                                              , FixedList conscount (ConstructorCodec decltype)
+                                              , decltype -> TypeData dv maintype)
+                            mainBox = mkFixBox mainRegister mainConstruct
+                            mainTypeBox :: QFixBox x (QGroundType dv maintype)
+                            mainTypeBox =
+                                mkConstructFixBox $ \x -> do
+                                    gtft <- builderLift $ mkgt x
+                                    return $ fst $ unGroundTypeFromTypeID gtft mainTypeName mainFamType
+                            getGroundType ::
+                                   QGroundType dv maintype
+                                -> (decltype -> TypeData dv maintype)
+                                -> GroundTypeFromTypeID dv maintype y
+                                -> TypeData dv maintype
+                                -> QGroundType dv maintype
+                            getGroundType mainGroundType picktype (MkGroundTypeFromTypeID gttid) (tdata :: _ subtid) = let
+                                typeID = tdID tdata
+                                baseGroundType :: QGroundType dv maintype
+                                (baseGroundType, _) = gttid (tdName tdata) typeID
+                                gds :: QPolyGreatestDynamicSupertype dv maintype
+                                gds =
+                                    MkPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
+                                        case unsafeRefl @Type @decltype @argstype of
+                                            Refl ->
+                                                MkShimWit (MkDolanGroundedType mainGroundType args) $
+                                                MkPolarShim $
+                                                pureComposeShim $
+                                                functionToShim "supertype" $ \t ->
+                                                    if elem (tdID $ picktype t) $ tdSubtypes tdata
+                                                        then Just t
+                                                        else Nothing
+                                in baseGroundType
+                                       { qgtGreatestDynamicSupertype =
+                                             if tdID tdata == mainFamType
+                                                 then nullPolyGreatestDynamicSupertype
+                                                 else gds
+                                       }
+                            declTypes ::
+                                   QGroundType dv maintype
+                                -> CCRVariancesMap dv maintype
+                                -> (QGroundedShimWit 'Positive decltype, QGroundedShimWit 'Negative decltype)
+                            declTypes groundType dvm = let
+                                getargs ::
+                                       forall polarity. Is PolarityType polarity
+                                    => CCRPolarArgumentsShimWit QPolyShim dv QType maintype polarity decltype
+                                getargs =
+                                    mapPolarCCRArguments
+                                        @QPolyShim
+                                        @CCRTypeParam
+                                        @(CCRPolarArgument QType polarity)
+                                        @dv
+                                        @polarity
+                                        @maintype
+                                        tParamToPolarArgument
+                                        dvm
+                                        tparams
+                                in case (getargs @'Positive, getargs @'Negative) of
+                                       (MkShimWit posargs posconv, MkShimWit negargs negconv) -> let
+                                           declpos :: QGroundedShimWit 'Positive decltype
+                                           declpos = MkShimWit (MkDolanGroundedType groundType posargs) posconv
+                                           declneg :: QGroundedShimWit 'Negative decltype
+                                           declneg = MkShimWit (MkDolanGroundedType groundType negargs) negconv
+                                           in (declpos, declneg)
+                            registerConstructor ::
+                                   Constructor dv maintype extra
+                                -> ( QGroundType dv maintype
+                                   , decltype -> TypeData dv maintype
+                                   , x
+                                   , CCRVariancesMap dv maintype
+                                   , ConstructorCodec decltype)
+                                -> QScopeBuilder ()
+                            registerConstructor constructor (mainGroundType, picktype, x, dvm, MkSomeFor ctype codec) = do
+                                gttid <- builderLift $ mkgt x
+                                let
+                                    groundType :: QGroundType dv maintype
+                                    groundType = getGroundType mainGroundType picktype gttid $ ctOuterType constructor
+                                    (declpos, declneg) = declTypes groundType dvm
+                                    ctfullname = ctName constructor
+                                    ctfpos :: QShimWit 'Positive decltype
+                                    ctfpos = shimWitToDolan declpos
+                                    ctfneg :: QShimWit 'Negative decltype
+                                    ctfneg = shimWitToDolan declneg
+                                    in case ctype of
+                                           MkConstructorType _ PositionalCF lt -> let
+                                               ltp = listVTypeToType $ mapListVType (nonpolarToPositive @QTypeSystem) lt
+                                               ltn = listVTypeToType $ mapListVType (nonpolarToNegative @QTypeSystem) lt
+                                               expr =
+                                                   qConstExprAny $
+                                                   MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
+                                                   encode codec . listProductToVProduct lt
+                                               pc =
+                                                   toPatternConstructor ctfneg ltp $
+                                                   ImpureFunction $ fmap listVProductToProduct . decode codec
+                                               in registerPatternConstructor ctfullname (ctDoc constructor) expr $
+                                                  toExpressionPatternConstructor pc
+                                           MkConstructorType _ (RecordCF _) lt -> let
+                                               recordcons = MkQRecordConstructor lt declpos declneg codec
+                                               in registerRecord ctfullname (ctDoc constructor) recordcons
+                            constructorBox ::
+                                   Constructor dv maintype extra
+                                -> QFixBox ( QGroundType dv maintype
+                                           , decltype -> TypeData dv maintype
+                                           , x
+                                           , CCRVariancesMap dv maintype
+                                           , ConstructorCodec decltype) ()
+                            constructorBox constructor = mkConstructFixBox $ registerConstructor constructor
+                            subtypeRegister ::
+                                   TypeData dv maintype
+                                -> (QGroundType dv maintype, decltype -> TypeData dv maintype, x)
+                                -> QScopeBuilder ()
+                            subtypeRegister tdata (~(mainGroundType, picktype, x)) = do
+                                gttid <- builderLift $ mkgt x
+                                let
+                                    subGroundType :: QGroundType dv maintype
+                                    subGroundType = getGroundType mainGroundType picktype gttid tdata
+                                registerGroundType (tdName tdata) (tdDoc tdata) subGroundType
+                                for_ (tdSupertype tdata) $ \supertdata -> let
+                                    superGroundType :: QGroundType dv maintype
+                                    superGroundType = getGroundType mainGroundType picktype gttid supertdata
+                                    in registerSubtypeConversion $
+                                       MkSubtypeConversionEntry
+                                           Verify
+                                           subGroundType
+                                           superGroundType
+                                           identitySubtypeConversion
+                            subtypeBox ::
+                                   TypeData dv maintype
+                                -> QFixBox (QGroundType dv maintype, decltype -> TypeData dv maintype, x) ()
+                            subtypeBox tdata = mkRegisterFixBox $ subtypeRegister tdata
+                            supertypeBox ::
+                                   forall .
+                                   (Int, Some (QGroundType '[]))
+                                -> QFixBox ( QGroundType dv maintype
+                                           , CCRVariancesMap dv maintype
+                                           , FixedList conscount (ConstructorCodec decltype)) ()
+                            supertypeBox (i, MkSome (supergroundtype :: QGroundType '[] supertype)) =
+                                mkRegisterFixBox $ \(~(mainGroundType, dvm, codecs)) -> do
                                     let
-                                        groundType :: QGroundType dv maintype
-                                        groundType =
-                                            getGroundType mainGroundType picktype gttid $ ctOuterType constructor
-                                        (declpos, declneg) = declTypes groundType dvm
-                                        ctfullname = ctName constructor
-                                        ctfpos :: QShimWit 'Positive decltype
-                                        ctfpos = shimWitToDolan declpos
-                                        ctfneg :: QShimWit 'Negative decltype
-                                        ctfneg = shimWitToDolan declneg
-                                        in case ctype of
-                                               MkConstructorType _ PositionalCF lt -> let
-                                                   ltp =
-                                                       listVTypeToType $
-                                                       mapListVType (nonpolarToPositive @QTypeSystem) lt
-                                                   ltn =
-                                                       listVTypeToType $
-                                                       mapListVType (nonpolarToNegative @QTypeSystem) lt
-                                                   expr =
-                                                       qConstExprAny $
-                                                       MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
-                                                       encode codec . listProductToVProduct lt
-                                                   pc =
-                                                       toPatternConstructor ctfneg ltp $
-                                                       ImpureFunction $ fmap listVProductToProduct . decode codec
-                                                   in registerPatternConstructor ctfullname (ctDoc constructor) expr $
-                                                      toExpressionPatternConstructor pc
-                                               MkConstructorType _ (RecordCF _) lt -> let
-                                                   recordcons = MkQRecordConstructor lt declpos declneg codec
-                                                   in registerRecord ctfullname (ctDoc constructor) recordcons
-                                constructorBox ::
-                                       Constructor dv maintype extra
-                                    -> QFixBox ( QGroundType dv maintype
-                                               , decltype -> TypeData dv maintype
-                                               , x
-                                               , CCRVariancesMap dv maintype
-                                               , ConstructorCodec decltype) ()
-                                constructorBox constructor = mkConstructFixBox $ registerConstructor constructor
-                                subtypeRegister ::
-                                       TypeData dv maintype
-                                    -> (QGroundType dv maintype, decltype -> TypeData dv maintype, x)
-                                    -> QScopeBuilder ()
-                                subtypeRegister tdata (~(mainGroundType, picktype, x)) = do
-                                    gttid <- builderLift $ mkgt x
+                                        getConstypeConvert ::
+                                               forall t.
+                                               ConstructorType t
+                                            -> QScopeBuilder ((Name, Name), QOpenExpression (t -> supertype))
+                                        getConstypeConvert (MkConstructorType _ PositionalCF _) =
+                                            builderLift $ throw DeclareDatatypePositionalConstructorWithSupertypeError
+                                        getConstypeConvert (MkConstructorType consname (RecordCF rcds) sigs) = let
+                                            rcd = unsafeIndex rcds i
+                                            in case rcdRecordConstructor rcd of
+                                                   MkQRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarShim sgtconv)) _ stcodec
+                                                       | Just Refl <- testEquality supergroundtype sgt -> do
+                                                           memberconvexpr <-
+                                                               builderLift $ getMatchMemberConvert sigs stmembers
+                                                           let
+                                                               convexpr =
+                                                                   fmap
+                                                                       (\memberconv ->
+                                                                            shimToFunction sgtconv .
+                                                                            encode stcodec . memberconv)
+                                                                       memberconvexpr
+                                                           return ((consname, fnrName $ rcdName rcd), convexpr)
+                                                   _ -> error $ "broken supertype in datatype: " <> show mainTypeName
+                                        getCodecConvert ::
+                                               ConstructorCodec decltype
+                                            -> QScopeBuilder ( (Name, Name)
+                                                             , QOpenExpression (decltype -> Maybe supertype))
+                                        getCodecConvert (MkSomeFor constype codec) = do
+                                            (chint, convexpr) <- getConstypeConvert constype
+                                            return $ (chint, fmap (\conv -> fmap conv . decode codec) convexpr)
+                                    hintcconvexprs <- for (toList codecs) getCodecConvert
                                     let
-                                        subGroundType :: QGroundType dv maintype
-                                        subGroundType = getGroundType mainGroundType picktype gttid tdata
-                                    registerGroundType (tdName tdata) (tdDoc tdata) subGroundType
-                                    for_ (tdSupertype tdata) $ \supertdata -> let
-                                        superGroundType :: QGroundType dv maintype
-                                        superGroundType = getGroundType mainGroundType picktype gttid supertdata
-                                        in registerSubtypeConversion $
-                                           MkSubtypeConversionEntry
-                                               Verify
-                                               subGroundType
-                                               superGroundType
-                                               identitySubtypeConversion
-                                subtypeBox ::
-                                       TypeData dv maintype
-                                    -> QFixBox (QGroundType dv maintype, decltype -> TypeData dv maintype, x) ()
-                                subtypeBox tdata = mkRegisterFixBox $ subtypeRegister tdata
-                                supertypeBox ::
-                                       forall .
-                                       (Int, Some (QGroundType '[]))
-                                    -> QFixBox ( QGroundType dv maintype
-                                               , CCRVariancesMap dv maintype
-                                               , FixedList conscount (ConstructorCodec decltype)) ()
-                                supertypeBox (i, MkSome (supergroundtype :: QGroundType '[] supertype)) =
-                                    mkRegisterFixBox $ \(~(mainGroundType, dvm, codecs)) -> do
-                                        let
-                                            getConstypeConvert ::
-                                                   forall t.
-                                                   ConstructorType t
-                                                -> QScopeBuilder ((Name, Name), QOpenExpression (t -> supertype))
-                                            getConstypeConvert (MkConstructorType _ PositionalCF _) =
-                                                builderLift $
-                                                throw DeclareDatatypePositionalConstructorWithSupertypeError
-                                            getConstypeConvert (MkConstructorType consname (RecordCF rcds) sigs) = let
-                                                rcd = unsafeIndex rcds i
-                                                in case rcdRecordConstructor rcd of
-                                                       MkQRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarShim sgtconv)) _ stcodec
-                                                           | Just Refl <- testEquality supergroundtype sgt -> do
-                                                               memberconvexpr <-
-                                                                   builderLift $ getMatchMemberConvert sigs stmembers
-                                                               let
-                                                                   convexpr =
-                                                                       fmap
-                                                                           (\memberconv ->
-                                                                                shimToFunction sgtconv .
-                                                                                encode stcodec . memberconv)
-                                                                           memberconvexpr
-                                                               return ((consname, fnrName $ rcdName rcd), convexpr)
-                                                       _ ->
-                                                           error $ "broken supertype in datatype: " <> show mainTypeName
-                                            getCodecConvert ::
-                                                   ConstructorCodec decltype
-                                                -> QScopeBuilder ( (Name, Name)
-                                                                 , QOpenExpression (decltype -> Maybe supertype))
-                                            getCodecConvert (MkSomeFor constype codec) = do
-                                                (chint, convexpr) <- getConstypeConvert constype
-                                                return $ (chint, fmap (\conv -> fmap conv . decode codec) convexpr)
-                                        hintcconvexprs <- for (toList codecs) getCodecConvert
-                                        let
-                                            hint :: QSubtypeHint
-                                            hint = mkQSubtypeHint $ fmap fst hintcconvexprs
-                                            cconvexprs = fmap snd hintcconvexprs
-                                            (_, mainGroundedType) = declTypes mainGroundType dvm
-                                            superGroundedType =
-                                                mkShimWit $ MkDolanGroundedType supergroundtype NilCCRArguments
-                                            joinConvs :: forall a b. [a -> Maybe b] -> a -> b
-                                            joinConvs convs a =
-                                                fromMaybe (error $ "broken datatype: " <> show mainTypeName) $
-                                                choice $ fmap (\amb -> amb a) convs
-                                            conversion :: QOpenExpression (decltype -> supertype)
-                                            conversion = fmap joinConvs $ sequenceA cconvexprs
-                                        registerSubtypeConversion $
-                                            subtypeConversionEntry Verify (Just hint) mainGroundedType superGroundedType $
-                                            fmap (functionToShim "supertype") conversion
-                                in return $
-                                   proc () -> do
-                                       (x, dvm, codecs, picktype) <- mainBox -< ()
-                                       mainGroundType <- mainTypeBox -< x
-                                       mconcat (fmap subtypeBox subtypeDatas) -< (mainGroundType, picktype, x)
-                                       for_ (zip [0 ..] supertypes) supertypeBox -< (mainGroundType, dvm, codecs)
-                                       fixedListArrowSequence_ (fmap constructorBox constructorFixedList) -<
-                                           fmap (\codec -> (mainGroundType, picktype, x, dvm, codec)) codecs
+                                        hint :: QSubtypeHint
+                                        hint = mkQSubtypeHint $ fmap fst hintcconvexprs
+                                        cconvexprs = fmap snd hintcconvexprs
+                                        (_, mainGroundedType) = declTypes mainGroundType dvm
+                                        superGroundedType =
+                                            mkShimWit $ MkDolanGroundedType supergroundtype NilCCRArguments
+                                        joinConvs :: forall a b. [a -> Maybe b] -> a -> b
+                                        joinConvs convs a =
+                                            fromMaybe (error $ "broken datatype: " <> show mainTypeName) $
+                                            choice $ fmap (\amb -> amb a) convs
+                                        conversion :: QOpenExpression (decltype -> supertype)
+                                        conversion = fmap joinConvs $ sequenceA cconvexprs
+                                    registerSubtypeConversion $
+                                        subtypeConversionEntry Verify (Just hint) mainGroundedType superGroundedType $
+                                        fmap (functionToShim "supertype") conversion
+                            in return $
+                               proc () -> do
+                                   (x, dvm, codecs, picktype) <- mainBox -< ()
+                                   mainGroundType <- mainTypeBox -< x
+                                   mconcat (fmap subtypeBox subtypeDatas) -< (mainGroundType, picktype, x)
+                                   for_ (zip [0 ..] supertypes) supertypeBox -< (mainGroundType, dvm, codecs)
+                                   fixedListArrowSequence_ (fmap constructorBox constructorFixedList) -<
+                                       fmap (\codec -> (mainGroundType, picktype, x, dvm, codec)) codecs
 
 makeDataTypeBox ::
        forall extra. (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
@@ -743,13 +713,13 @@ makePlainGroundType _ tparams = let
     mkgt :: CCRVariancesMap dv gt -> QInterpreter (GroundTypeFromTypeID dv gt ())
     mkgt dvm =
         return $
-        MkGroundTypeFromTypeID $ \name mainTypeID -> let
+        MkGroundTypeFromTypeID $ \name mainFamType -> let
             gt =
                 MkQGroundType
                     { qgtVarianceType = dvt
                     , qgtVarianceMap = lazyCCRVariancesMap dvt dvm
                     , qgtShowType = standardListTypeExprShow @dv $ showNamedText name
-                    , qgtFamilyType = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily mainTypeID
+                    , qgtFamilyType = mainFamType
                     , qgtSubtypeGroup = Nothing
                     , qgtProperties = mempty
                     , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype

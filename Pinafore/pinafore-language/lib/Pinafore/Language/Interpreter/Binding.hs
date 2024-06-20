@@ -14,8 +14,8 @@ module Pinafore.Language.Interpreter.Binding
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.SpecialForm
+import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Subtype ()
 
 newtype QSpecialVals = MkQSpecialVals
@@ -24,7 +24,7 @@ newtype QSpecialVals = MkQSpecialVals
     }
 
 data QSignature (polarity :: Polarity) (t :: Type) =
-    ValueSignature TypeID
+    ValueSignature SomeFamilialType
                    Name
                    (QType polarity t)
                    (Maybe (QOpenExpression t))

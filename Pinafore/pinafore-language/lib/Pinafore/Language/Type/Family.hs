@@ -30,6 +30,15 @@ instance TestHetEquality FamilialType where
         HRefl <- testHetEquality ta tb
         return HRefl
 
+instance forall (k :: Type) (t :: k). Eq (FamilialType t) where
+    a == b = isJust $ testHetEquality a b
+
+data SomeFamilialType =
+    forall (k :: Type) (t :: k). MkSomeFamilialType (FamilialType t)
+
+instance Eq SomeFamilialType where
+    MkSomeFamilialType a == MkSomeFamilialType b = isJust $ testHetEquality a b
+
 data IdentifiedTypeFamily :: FamilyKind where
     MkIdentifiedTypeFamily :: forall (tid :: Nat). TypeIDType tid -> IdentifiedTypeFamily (Identified tid)
 
@@ -40,3 +49,6 @@ instance TestHetEquality IdentifiedTypeFamily where
 
 identifiedFamilyWitness :: IOWitness ('MkWitKind IdentifiedTypeFamily)
 identifiedFamilyWitness = $(iowitness [t|'MkWitKind IdentifiedTypeFamily|])
+
+identifiedFamilialType :: forall (tid :: Nat). TypeIDType tid -> FamilialType (Identified tid)
+identifiedFamilialType typeID = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily typeID

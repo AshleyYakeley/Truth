@@ -136,7 +136,7 @@ makeStorableGroundType mainTypeName tparams = let
                 Just cvt -> return cvt
                 Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError mainTypeName
         return $
-            MkGroundTypeFromTypeID $ \subTypeName tidsym -> let
+            MkGroundTypeFromTypeID $ \subTypeName famType -> let
                 stbKind :: CovaryType dv
                 stbKind = cvt
                 stbCovaryMap = ccrVariancesMapToCovary cvt $ lazyCCRVariancesMap dvt dvm
@@ -150,7 +150,7 @@ makeStorableGroundType mainTypeName tparams = let
                         { qgtVarianceType = covaryToCCRVariancesType stbKind
                         , qgtVarianceMap = covaryToCCRVariancesMap stbKind stbCovaryMap
                         , qgtShowType = showType
-                        , qgtFamilyType = MkFamilialType identifiedFamilyWitness $ MkIdentifiedTypeFamily tidsym
+                        , qgtFamilyType = famType
                         , qgtSubtypeGroup = Nothing
                         , qgtProperties = singleGroundProperty storabilityProperty storability
                         , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
