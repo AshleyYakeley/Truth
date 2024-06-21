@@ -2,7 +2,8 @@
 
 ## 0.6.0
 - Update grammar for Pinafore 0.6.
-- Add extension icon
+- Add extension icon.
+- Add file icon.
 
 ## 0.5.0
 - Update grammar for Pinafore 0.5.

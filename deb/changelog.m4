@@ -21,6 +21,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add WebView.WebKit GTK element
     - UILib
       . update
+  * VS Code Extension
+    - add extension and file icons
   * Install
     - rename executable pinafore-docgen to pinadoc
     - include pinadoc in Debian and Nix packages
