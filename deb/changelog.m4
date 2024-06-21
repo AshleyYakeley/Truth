@@ -7,6 +7,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - rename libraries to remove "pinafore-"
     - built-in
       . add Blob type and functions
+      . add utf8.Text
       . Showable subtypes: don't put spaces in for list and product types
       . add Result type and functions
       . add cell.Store, set.Store

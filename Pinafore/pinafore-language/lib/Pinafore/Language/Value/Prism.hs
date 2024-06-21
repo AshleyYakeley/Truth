@@ -8,11 +8,15 @@ data LangPrism (a :: (Type, Type)) (b :: (Type, Type)) =
 
 type LangPrism' a b = LangPrism '( a, a) '( b, b)
 
-prism :: (a -> Maybe b) -> (b -> a) -> LangPrism' a b
+prism ::
+       forall m a b. MonadInner m
+    => (a -> m b)
+    -> (b -> a)
+    -> LangPrism' a b
 prism amb ba =
     MkLangPrism
         (\a ->
-             case amb a of
+             case mToMaybe $ amb a of
                  Just b -> Right b
                  Nothing -> Left a)
         ba
@@ -58,7 +62,10 @@ composeLangPrism (MkLangPrism dBC eBC) (MkLangPrism dAB eAB) = let
     eAC = eAB . eBC
     in MkLangPrism dAC eAC
 
-codecToPrism :: Codec a b -> LangPrism' a b
+codecToPrism ::
+       forall m a b. MonadInner m
+    => Codec' m a b
+    -> LangPrism' a b
 codecToPrism MkCodec {..} = prism decode encode
 
 prismToCodec :: LangPrism' a b -> Codec a b
