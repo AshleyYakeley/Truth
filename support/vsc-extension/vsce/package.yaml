@@ -6,9 +6,10 @@ license: "SEE LICENSE IN LICENSE"
 publisher: "Pinafore"
 displayName: "Pinafore"
 description: "Pinafore language support"
+icon: "images/logo.png"
 
 engines:
-  vscode: "^1.29.0"
+  vscode: "^1.50.0"
 
 categories:
 - "Programming Languages"

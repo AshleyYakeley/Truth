@@ -296,17 +296,24 @@ docs: \
 
 VSCXVERSION := $(PINAFOREVERSIONABC)
 
-support/vsc-extension/vsce/%.json: support/vsc-extension/vsce/%.yaml out/support/syntax-data.json
+VSCXDIR := support/vsc-extension/vsce
+
+$(VSCXDIR)/%.json: $(VSCXDIR)/%.yaml out/support/syntax-data.json
 	stack $(STACKFLAGS) exec -- env VSCXVERSION="$(VSCXVERSION)" yq --from-file support/vsc-extension/transform.yq -o json $< > $@
 
+$(VSCXDIR)/images/logo.png: support/branding/logo.svg
+	mkdir -p $(VSCXDIR)/images
+	stack $(STACKFLAGS) exec -- rsvg-convert -w 256 -h 256 $< -o $@
+
 out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
- support/vsc-extension/vsce/package.json \
- support/vsc-extension/vsce/LICENSE \
- support/vsc-extension/vsce/README.md \
- support/vsc-extension/vsce/CHANGELOG.md \
- support/vsc-extension/vsce/language-configuration.json \
- support/vsc-extension/vsce/syntaxes/pinafore.tmLanguage.json
-	cd support/vsc-extension/vsce && stack $(STACKFLAGS) exec -- vsce package -o ../../../$@
+ $(VSCXDIR)/package.json \
+ $(VSCXDIR)/LICENSE \
+ $(VSCXDIR)/README.md \
+ $(VSCXDIR)/CHANGELOG.md \
+ $(VSCXDIR)/language-configuration.json \
+ $(VSCXDIR)/images/logo.png \
+ $(VSCXDIR)/syntaxes/pinafore.tmLanguage.json
+	cd $(VSCXDIR) && stack $(STACKFLAGS) exec -- vsce package -o ../../../$@
 
 .PHONY: vsc-extension
 vsc-extension: out/support/pinafore-$(VSCXVERSION).vsix

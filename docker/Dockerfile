@@ -1,5 +1,5 @@
 FROM fpco/stack-build-small:lts-22.21
-RUN echo 2024-06-02 > /container.date
+RUN echo 2024-06-21 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND noninteractive
@@ -8,7 +8,7 @@ RUN apt-get full-upgrade -y
 RUN apt autoremove --purge -y
 
 # various APT stuff
-RUN apt-get install -y sudo git curl m4 imagemagick moreutils python3-pip python3-venv lintian
+RUN apt-get install -y sudo git curl m4 imagemagick librsvg2-bin moreutils python3-pip python3-venv lintian
 RUN apt-get install -y \
     libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev libjavascriptcoregtk-4.0-dev libsoup-gnome2.4-dev libwebkit2gtk-4.0-dev
 
