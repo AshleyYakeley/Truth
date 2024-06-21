@@ -258,7 +258,7 @@ recordConsBDS ::
        forall (t :: Type) (tt :: [Type]) context. (HasQGroundedType 'Positive t, HasQGroundedType 'Negative t)
     => FullNameRef
     -> RawMarkdown
-    -> ListVType QDocSignature tt
+    -> ListType QDocSignature tt
     -> Codec t (ListVProduct tt)
     -> LibraryStuff context
 recordConsBDS name docDescription docsigs codec = let
@@ -276,7 +276,7 @@ recordConsBDS name docDescription docsigs codec = let
     dsToDoc (ValueDocSignature n d t p) =
         pure $ MkBindDoc Nothing $ MkDefDoc (ValueSignatureDocItem n (exprShow t) (isJust p)) d
     sigs :: ListVType (QSignature 'Positive) tt
-    sigs = mapListVType dsToSig docsigs
+    sigs = listTypeToVType $ mapListType dsToSig docsigs
     qrc :: QRecordConstructor
     qrc = MkQRecordConstructor sigs posType negType codec
     diNames = pure name
@@ -284,7 +284,7 @@ recordConsBDS name docDescription docsigs codec = let
     docItem = ValuePatternDocItem {..}
     bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> RecordConstructorBinding qrc
     bdDoc = MkDefDoc {..}
-    in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listVTypeToList dsToDoc docsigs
+    in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
 
 specialFormBDS ::
        forall context.
