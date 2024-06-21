@@ -14,6 +14,8 @@ module Pinafore.Language.Library.Defs
     , subtypeRelationBDS
     , hasSubtypeRelationBDS
     , valPatBDS
+    , QDocSignature(..)
+    , recordConsBDS
     , specialFormBDS
     , addNameInRootBDS
     , pickNamesInRootBDS
@@ -245,6 +247,44 @@ valPatBDS name docDescription val pat = let
     docItem = ValuePatternDocItem {..}
     bdDoc = MkDefDoc {..}
     in pure MkBindDoc {..}
+
+data QDocSignature (t :: Type) =
+    ValueDocSignature Name
+                      RawMarkdown
+                      (QType 'Positive t)
+                      (Maybe (QOpenExpression t))
+
+recordConsBDS ::
+       forall (t :: Type) (tt :: [Type]) context. (HasQGroundedType 'Positive t, HasQGroundedType 'Negative t)
+    => FullNameRef
+    -> RawMarkdown
+    -> ListVType QDocSignature tt
+    -> Codec t (ListVProduct tt)
+    -> LibraryStuff context
+recordConsBDS name docDescription docsigs codec = let
+    posType :: QGroundedShimWit 'Positive t
+    posType = qGroundedType
+    negType :: QGroundedShimWit 'Negative t
+    negType = qGroundedType
+    famType :: SomeFamilialType
+    famType =
+        case posType of
+            MkShimWit (MkDolanGroundedType t _) _ -> MkSomeFamilialType $ qgtFamilyType t
+    dsToSig :: QDocSignature --> QSignature 'Positive
+    dsToSig (ValueDocSignature n _ t p) = ValueSignature famType n t p
+    dsToDoc :: forall a. QDocSignature a -> Tree (BindDoc context)
+    dsToDoc (ValueDocSignature n d t p) =
+        pure $ MkBindDoc Nothing $ MkDefDoc (ValueSignatureDocItem n (exprShow t) (isJust p)) d
+    sigs :: ListVType (QSignature 'Positive) tt
+    sigs = mapListVType dsToSig docsigs
+    qrc :: QRecordConstructor
+    qrc = MkQRecordConstructor sigs posType negType codec
+    diNames = pure name
+    diType = exprShow posType
+    docItem = ValuePatternDocItem {..}
+    bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> RecordConstructorBinding qrc
+    bdDoc = MkDefDoc {..}
+    in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listVTypeToList dsToDoc docsigs
 
 specialFormBDS ::
        forall context.

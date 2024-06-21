@@ -13,9 +13,9 @@ class Is PolarityType polarity => HasQType polarity t where
 groundQType :: (Is PolarityType polarity, HasQGroundType '[] t) => QShimWit polarity t
 groundQType = shimWitToDolan $ mkShimWit $ MkDolanGroundedType qGroundType NilCCRArguments
 
-instance {-# OVERLAPPABLE #-} forall polarity (t :: Type). (Is PolarityType polarity, HasHetQGroundedType polarity t) =>
+instance {-# OVERLAPPABLE #-} forall polarity t. (Is PolarityType polarity, HasQGroundedType polarity t) =>
                                   HasQType polarity t where
-    qType = shimWitToDolan $ runHetQGroundedType (hetQGroundedType @polarity @_ @t) NilCCRArguments
+    qType = shimWitToDolan $ qGroundedType @polarity @t
 
 type HetQGroundedType :: Polarity -> CCRVariances -> forall k. k -> Type
 data HetQGroundedType polarity dv f where
@@ -47,6 +47,13 @@ instance {-# OVERLAPPABLE #-} forall polarity k (f :: k). ( Is PolarityType pola
     hetQGroundedType =
         case hetConstraint @_ @(HasQGroundType (HetCCRVariancesOf f)) @_ @f of
             MkHetConstraintWitness -> MkHetQGroundedType $ \args -> mkShimWit $ MkDolanGroundedType qGroundType args
+
+type HasQGroundedType (polarity :: Polarity) (t :: Type) = HasHetQGroundedType polarity t
+
+qGroundedType ::
+       forall polarity t. HasQGroundedType polarity t
+    => QGroundedShimWit polarity t
+qGroundedType = runHetQGroundedType (hetQGroundedType @polarity @_ @t) NilCCRArguments
 
 type HasQGroundType :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Constraint
 class (CoercibleKind (CCRVariancesKind dv), dv ~ HetCCRVariancesOf f, HasCCRVariances dv f) => HasQGroundType dv f
