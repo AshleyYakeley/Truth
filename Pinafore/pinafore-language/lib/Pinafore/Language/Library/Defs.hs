@@ -151,28 +151,33 @@ newTypeParameter = do
             return n
         [] -> return "a"
 
-getTypeParameter :: CCRVarianceType sv -> State [Name] ([NamedText], Some (CCRPolarArgument QType Negative sv))
+getTypeParameter :: CCRVarianceType sv -> State [Name] (DocTypeParameter, Some (CCRPolarArgument QType Negative sv))
 getTypeParameter CoCCRVarianceType = do
     vname <- newTypeParameter
     nameToTypeVarT vname $ \var ->
-        return ([exprShow vname], MkSome $ CoCCRPolarArgument $ singleDolanType $ VarDolanSingularType var)
+        return
+            ( CoDocTypeParameter $ exprShow vname
+            , MkSome $ CoCCRPolarArgument $ singleDolanType $ VarDolanSingularType var)
 getTypeParameter ContraCCRVarianceType = do
     vname <- newTypeParameter
     nameToTypeVarT vname $ \var ->
-        return ([exprShow vname], MkSome $ ContraCCRPolarArgument $ singleDolanType $ VarDolanSingularType var)
+        return
+            ( ContraDocTypeParameter $ exprShow vname
+            , MkSome $ ContraCCRPolarArgument $ singleDolanType $ VarDolanSingularType var)
 getTypeParameter RangeCCRVarianceType = do
     vpname <- newTypeParameter
     vqname <- newTypeParameter
     nameToTypeVarT vpname $ \varp ->
         nameToTypeVarT vqname $ \varq ->
             return
-                ( [exprShow vpname, exprShow vqname]
+                ( RangeDocTypeParameter (exprShow vpname) (exprShow vqname)
                 , MkSome $
                   RangeCCRPolarArgument
                       (singleDolanType $ VarDolanSingularType varp)
                       (singleDolanType $ VarDolanSingularType varq))
 
-getTypeParameters :: CCRVariancesType dv -> State [Name] ([NamedText], Some (CCRPolarArguments dv QType t Negative))
+getTypeParameters ::
+       CCRVariancesType dv -> State [Name] ([DocTypeParameter], Some (CCRPolarArguments dv QType t Negative))
 getTypeParameters NilListType = return ([], MkSome NilCCRArguments)
 getTypeParameters (ConsListType t tt) = do
     (nt, sarg) <- getTypeParameter t
@@ -180,7 +185,7 @@ getTypeParameters (ConsListType t tt) = do
         MkSome arg -> do
             (ntt, sargs) <- getTypeParameters tt
             case sargs of
-                MkSome args -> return (nt <> ntt, MkSome $ ConsCCRArguments arg args)
+                MkSome args -> return (nt : ntt, MkSome $ ConsCCRArguments arg args)
 
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
@@ -294,14 +299,13 @@ specialFormBDS ::
     -> NamedText
     -> ((?qcontext :: context) => QSpecialForm)
     -> LibraryStuff context
-specialFormBDS name docDescription params diType sf = let
+specialFormBDS name docDescription diAnnotations diType sf = let
     bdScopeEntry =
         pure $
         BindScopeEntry name [] $ \pc -> let
             ?qcontext = pc
             in SpecialFormBinding sf
     diNames = pure name
-    diParams = params
     docItem = SpecialFormDocItem {..}
     bdDoc = MkDefDoc {..}
     in pure MkBindDoc {..}

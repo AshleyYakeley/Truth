@@ -37,11 +37,16 @@ constructorDocItemDocs tname cname (RecordSyntaxConstructor sigs) =
 constructorDocItem :: FullName -> FullName -> SyntaxDataConstructor extra -> DocItem
 constructorDocItem tname cname dcons = fst $ constructorDocItemDocs tname cname dcons
 
+typeParameterDoc :: SyntaxTypeParameter -> DocTypeParameter
+typeParameterDoc (PositiveSyntaxTypeParameter q) = CoDocTypeParameter $ exprShow q
+typeParameterDoc (NegativeSyntaxTypeParameter p) = ContraDocTypeParameter $ exprShow p
+typeParameterDoc (RangeSyntaxTypeParameter p q) = RangeDocTypeParameter (exprShow p) (exprShow q)
+
 typeDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> Maybe NamedText -> DocItem
 typeDocItem name diStorable tparams mgds = let
     diNames = pure $ fullNameRef name
-    diParams = fmap exprShow tparams
-    diGDS = fmap (\gds -> gds <> mconcat (fmap (\p -> " " <> p) diParams)) mgds
+    diParams = fmap typeParameterDoc tparams
+    diGDS = fmap (\gds -> gds <> mconcat (fmap (\p -> " " <> exprShow p) tparams)) mgds
     in TypeDocItem {..}
 
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc

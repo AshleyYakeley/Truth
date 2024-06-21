@@ -43,8 +43,8 @@ generateCommonMarkDoc outh modopts modname = do
                     => a
                     -> MarkdownText
                 showMarkdown = toMarkdown . showNamedText
-                trailingParams :: [NamedText] -> MarkdownText
-                trailingParams pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
+                trailing :: [NamedText] -> MarkdownText
+                trailing pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
                 putBindDoc :: MarkdownText -> IO ()
                 putBindDoc m = putIndentMarkdown $ paragraphMarkdown $ codeMarkdown m
                 showNames :: NonEmpty FullNameRef -> MarkdownText
@@ -72,7 +72,7 @@ generateCommonMarkDoc outh modopts modname = do
                 SpecialFormDocItem {..} ->
                     putBindDoc $ let
                         name = showNames diNames
-                        params = trailingParams diParams
+                        params = trailing diAnnotations
                         nameType = name <> params <> ": " <> toMarkdown diType
                         in nameType
                 TypeDocItem {..} ->
@@ -83,8 +83,9 @@ generateCommonMarkDoc outh modopts modname = do
                             "type " <>
                             mif diStorable "storable " <>
                             case (fmap nameIsInfix $ fullNameRefToUnqualified $ head diNames, diParams) of
-                                (Just True, p1:pr) -> toMarkdown p1 <> " " <> name <> trailingParams pr
-                                _ -> name <> trailingParams diParams) <>
+                                (Just True, p1:pr) ->
+                                    toMarkdown (showNamedText p1) <> " " <> name <> trailing (fmap showNamedText pr)
+                                _ -> name <> trailing (fmap showNamedText diParams)) <>
                            case diGDS of
                                Just gds -> " (from " <> codeMarkdown (toMarkdown gds) <> ")"
                                Nothing -> mempty

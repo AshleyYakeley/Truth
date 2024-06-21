@@ -1,5 +1,6 @@
 module Pinafore.Syntax.Doc.DefDoc
-    ( DocItem(..)
+    ( DocTypeParameter(..)
+    , DocItem(..)
     , diNamesTraversal
     , diMatchNameOrSubtypeRel
     , DefDoc(..)
@@ -8,6 +9,21 @@ module Pinafore.Syntax.Doc.DefDoc
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Text
 import Shapes
+
+data DocTypeParameter
+    = CoDocTypeParameter NamedText
+    | ContraDocTypeParameter NamedText
+    | RangeDocTypeParameter NamedText
+                            NamedText
+    deriving (Eq)
+
+instance ShowNamedText DocTypeParameter where
+    showNamedText (CoDocTypeParameter q) = "+" <> q
+    showNamedText (ContraDocTypeParameter p) = "-" <> p
+    showNamedText (RangeDocTypeParameter p q) = "{-" <> p <> ",+" <> q <> "}"
+
+instance Show DocTypeParameter where
+    show p = unpack $ toText $ showNamedText p
 
 data DocItem
     = HeadingDocItem { diTitle :: MarkdownText }
@@ -20,11 +36,11 @@ data DocItem
     | ValuePatternDocItem { diNames :: NonEmpty FullNameRef
                           , diType :: NamedText }
     | SpecialFormDocItem { diNames :: NonEmpty FullNameRef
-                         , diParams :: [NamedText]
+                         , diAnnotations :: [NamedText]
                          , diType :: NamedText }
     | TypeDocItem { diNames :: NonEmpty FullNameRef
                   , diStorable :: Bool
-                  , diParams :: [NamedText]
+                  , diParams :: [DocTypeParameter]
                   , diGDS :: Maybe NamedText }
     | SubtypeRelationDocItem { diSubtype :: NamedText
                              , diSupertype :: NamedText }
@@ -42,7 +58,7 @@ instance Show DocItem where
         "type " <>
         mif st "storable " <>
         show n <>
-        mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <>
+        mconcat (fmap (\p -> " " <> show p) pp) <>
         (fromMaybe mempty $ fmap (\gds -> " (from " <> unpack (toText gds) <> ")") mgds)
     show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
 
