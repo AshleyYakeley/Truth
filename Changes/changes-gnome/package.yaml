@@ -42,7 +42,8 @@ library:
       - changes-core
       - changes-media
     exposed-modules:
-      - Changes.World.GNOME.GIO
+      - Changes.World.GNOME.GIO.File
+      - Changes.World.GNOME.GIO.ReferenceStream
       - Changes.World.GNOME.GTK
       - Changes.World.GNOME.GTK.Test
     when:

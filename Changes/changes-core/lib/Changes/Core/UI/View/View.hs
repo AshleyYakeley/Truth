@@ -13,6 +13,7 @@ module Changes.Core.UI.View.View
     , viewAddViewState
     , viewWithUnliftAsync
     , viewRunResource
+    , viewRunResourceLifecycle
     , viewRunResourceContext
     , viewLocalResourceContext
     , viewGetResourceContext
@@ -98,6 +99,14 @@ viewRunResource ::
 viewRunResource resource call = do
     rc <- viewGetResourceContext
     liftIO $ runResource rc resource $ \ftt -> call ftt
+
+viewRunResourceLifecycle ::
+       forall f. MapResource f
+    => Resource f
+    -> View (f '[])
+viewRunResourceLifecycle resource = do
+    rc <- viewGetResourceContext
+    viewLiftLifecycle $ runResourceLifecycle rc resource
 
 viewRunResourceContext ::
        forall f r.

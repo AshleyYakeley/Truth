@@ -3,7 +3,7 @@ module Changes.Core.Resource.Function where
 import Changes.Core.Import
 
 data TransListFunction (tt1 :: [TransKind]) (tt2 :: [TransKind]) = MkTransListFunction
-    { tlfFunction :: forall m. MonadIO m => Proxy m -> ApplyStack tt1 m --> ApplyStack tt2 m
+    { tlfFunction :: forall m. MonadTunnelIO m => Proxy m -> ApplyStack tt1 m --> ApplyStack tt2 m
     , tlfBackFunction :: forall m. MonadTunnelIO m => Proxy m -> ApplyStack tt1 m -/-> ApplyStack tt2 m
     }
 
@@ -97,7 +97,7 @@ consTransListFunction ::
     -> TransListFunction tta ttb
     -> TransListFunction (t ': tta) (t ': ttb)
 consTransListFunction wtta wttb (MkTransListFunction tf tbf) = let
-    tf' :: forall m. MonadIO m
+    tf' :: forall m. MonadTunnelIO m
         => Proxy m
         -> ApplyStack (t ': tta) m --> ApplyStack (t ': ttb) m
     tf' pm =
@@ -207,4 +207,21 @@ stackTransListFunction = let
         => Proxy m
         -> ApplyStack tt m -/-> StackT tt m
     tlfBackFunction _ call = MkStackT $ call unStackT
+    in MkTransListFunction {..}
+
+unliftTransListFunction ::
+       forall tt. (IsStack (TransConstraint Monad) tt, IsStack MonadTrans tt)
+    => (forall m. MonadTunnelIO m => ApplyStack tt m --> m)
+    -> TransListFunction tt '[]
+unliftTransListFunction unlift = let
+    tlfFunction ::
+           forall m. MonadTunnelIO m
+        => Proxy m
+        -> ApplyStack tt m --> ApplyStack '[] m
+    tlfFunction (_ :: _ m) = unlift @m
+    tlfBackFunction ::
+           forall m. MonadTunnelIO m
+        => Proxy m
+        -> ApplyStack tt m -/-> ApplyStack '[] m
+    tlfBackFunction (_ :: _ m) call = unlift @m $ call $ stackLift @tt
     in MkTransListFunction {..}

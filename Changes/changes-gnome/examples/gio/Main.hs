@@ -3,7 +3,7 @@ module Main
     ) where
 
 import Changes.Core
-import Changes.World.GNOME.GIO
+import Changes.World.GNOME.GIO.File
 import qualified GI.Gio as GI
 import Shapes
 

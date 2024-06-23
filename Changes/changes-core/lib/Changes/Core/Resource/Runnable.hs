@@ -4,6 +4,8 @@ module Changes.Core.Resource.Runnable
     , joinResource_
     , joinResource
     , runResource
+    , runResourceUnlift
+    , runResourceLifecycle
     , runResourceContext
     , exclusiveResource
     ) where
@@ -57,6 +59,28 @@ runResource ::
     -> (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => f tt -> ApplyStack tt m r)
     -> m r
 runResource rc (MkResource rr ftt) call = runResourceRunner rc rr $ call ftt
+
+runResourceUnlift ::
+       forall f m r. (MapResource f, MonadUnliftIO m)
+    => ResourceContext
+    -> Resource f
+    -> (f '[] -> m r)
+    -> m r
+runResourceUnlift rc resource call = let
+    call' ::
+           forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m))
+        => f tt
+        -> ApplyStack tt m r
+    call' ftt =
+        unStackT @tt $ liftWithUnlift $ \unlift -> call $ mapResource (unliftTransListFunction $ unlift . MkStackT) ftt
+    in runResource rc resource call'
+
+runResourceLifecycle ::
+       forall f m. (MapResource f, MonadCoroutine m, MonadAskUnliftIO m)
+    => ResourceContext
+    -> Resource f
+    -> LifecycleT m (f '[])
+runResourceLifecycle rc resource = lifecycleWith $ runResourceUnlift rc resource
 
 runResourceContext ::
        forall f m r. MonadUnliftIO m

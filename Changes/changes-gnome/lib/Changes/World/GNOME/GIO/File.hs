@@ -1,4 +1,4 @@
-module Changes.World.GNOME.GIO
+module Changes.World.GNOME.GIO.File
     ( giFileReference
     ) where
 
