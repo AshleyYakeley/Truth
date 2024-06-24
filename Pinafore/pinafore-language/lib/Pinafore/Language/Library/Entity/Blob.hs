@@ -10,7 +10,9 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Type
+import Pinafore.Language.Value
 
 blobGroundType :: QGroundType '[] StrictByteString
 blobGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily StrictByteString)|]) "Blob"
@@ -23,6 +25,9 @@ toBlob ii = fromList $ fmap fromInteger ii
 
 fromBlob :: StrictByteString -> [Integer]
 fromBlob b = fmap toInteger $ otoList b
+
+hexTextPrism :: LangPrism' Text StrictByteString
+hexTextPrism = prism (fromLooseHexadecimal . unpack) (pack . toHexadecimal)
 
 blobEntityLibSection :: LibraryStuff context
 blobEntityLibSection =
@@ -41,5 +46,10 @@ blobEntityLibSection =
               [ monoidEntries @_ @StrictByteString
               , orderEntries (compare @StrictByteString) ""
               , sequenceEntries @_ @StrictByteString
+              , [ valBDS
+                      "asHexText"
+                      "Represent a `Blob` as hexadecimal `Text`. Encodes as upper-case, decodes case insensitively and ignores spaces and punctuation, but fails on non-hex letters."
+                      hexTextPrism
+                ]
               ]
         ]

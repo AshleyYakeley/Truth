@@ -399,6 +399,21 @@ testEntity =
                     , testExpectSuccess "s1 += 2 >> testeq {[2]} (toList.FiniteSetModel order.Integer s1)"
                     , testExpectSuccess "s1 += 5 >> s1 += 3 >> testeq {[3,5]} (toList.FiniteSetModel order.Integer s1)"
                     ]
+              , tDecls
+                    [ "longtext = \"jfkljgkljrklgjkvbnvleriirejgioerjhgitrklnmbdfmkl;dmnverireigjerkgjrevjkrljvkljvklsjvroejrgiojgireojg\""
+                    , "ela = property @E @(List Integer) !\"ela\" store"
+                    ] $
+                tGroup
+                    "fetch"
+                    [ testExpectSuccess "do v <- fetch @Text store \"hvfjkhvjrkes\"; testeq {\"hvfjkhvjrkes\"} {v} end"
+                    , testExpectSuccess "expectStop $ do v <- fetch @Text store longtext; testeq {longtext} {v} end"
+                    , testExpectSuccess
+                          "do eta !$ {e1} := longtext; v <- fetch @Text store longtext; testeq {longtext} {v} end"
+                    , testExpectSuccess "expectStop $ do v <- fetch @Text store [3,4,5]; testeq {[3,4,5]} {v} end"
+                    , testExpectSuccess "do ela !$ {e1} := [3,4,5]; v <- get $ ela !$ {e1}; testeq {[3,4,5]} {v} end"
+                    , testExpectSuccess
+                          "do ela !$ {e1} := [3,4,5]; v <- fetch @(List Integer) store [3,4,5]; testeq {[3,4,5]} {v} end"
+                    ]
               , tGroup
                     "literal storage"
                     [ tGroup

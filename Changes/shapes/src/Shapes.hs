@@ -28,6 +28,7 @@ import Data.Filterable as I
 import Data.FiniteSet as I
 import Data.FixBox as I
 import Data.HasNewValue as I
+import Data.Hexadecimal as I
 import Data.Injection as I
 import Data.Isomorphism as I
 import Data.KeyContainer as I
