@@ -9,6 +9,23 @@ import Shapes
 import Shapes.Test
 import Task
 
+hexTest :: Maybe String -> String -> TestTree
+hexTest expected s =
+    testTree s $ assertEqual "" expected $ fmap toHexadecimal $ fromLooseHexadecimal @StrictByteString s
+
+testHexadecimal :: TestTree
+testHexadecimal =
+    testTree
+        "hexadecimal"
+        [ hexTest (Just "1234567890ABCDEF") "1234567890ABCDEF"
+        , hexTest (Just "1234567890ABCDEF") "1234567890abCdEF"
+        , hexTest Nothing "1234567890abCdE"
+        , hexTest (Just "1234567890ABCDEF") "12-3456-7890  abcdef"
+        , hexTest (Just "1234567890ABCDEF") "1-23456-7890:abcdef"
+        , hexTest Nothing "1234567890ABCDEFZ"
+        , hexTest Nothing "1234567890ABCDEZ"
+        ]
+
 baseTime :: UTCTime
 baseTime = UTCTime (ModifiedJulianDay 0) 0
 
@@ -99,4 +116,4 @@ testFixBox =
     testTree "fixbox" [testTree "IO" (runBoxes :: IO ()), testTree "WithT IO" (unWithT runBoxes return :: IO ())]
 
 main :: IO ()
-main = testMain $ testTree "shapes" [testTask, testClock, testFix, testFixBox, testSerializer]
+main = testMain $ testTree "shapes" [testHexadecimal, testTask, testClock, testFix, testFixBox, testSerializer]

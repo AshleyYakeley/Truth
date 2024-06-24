@@ -5,11 +5,17 @@ module Pinafore.Language.Library.Entity.Entity
 import Import
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Entity.Blob ()
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Type
+import Pinafore.Language.Value
 
 entityAnchor :: Entity -> Text
 entityAnchor p = pack $ show p
+
+blobPrism :: LangPrism' StrictByteString Entity
+blobPrism = codecToPrism $ MkCodec (Just . MkEntity) (\(MkEntity a) -> a) . anchorCodec
 
 entityEntityLibSection :: LibraryStuff context
 entityEntityLibSection =
@@ -25,5 +31,6 @@ entityEntityLibSection =
           fmap addNameInRootBDS (eqEntries @_ @Entity) <>
           [ valBDS "order" "An arbitrary order on `Entity`." $ compare @Entity
           , valBDS "anchor" "The anchor of an entity, as text." entityAnchor
+          , valBDS "asBlob" "Represent an `Entity` as a `Blob`." blobPrism
           ]
         ]

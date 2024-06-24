@@ -48,6 +48,7 @@ library:
     exposed-modules:
       - Data.Words
       - Data.Sequential
+      - Data.Hexadecimal
       - Control.Category.Groupoid
       - Control.Applicative.Wrapped
       - Control.FixIO

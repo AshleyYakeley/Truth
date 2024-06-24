@@ -66,25 +66,14 @@ instance Random Anchor where
         (ww, g) = randomN @Word8 anchorSize g0
         in (MkAnchor $ pack ww, g)
 
-showHexChar :: Word8 -> Char
-showHexChar w
-    | w < 10 = toEnum $ (fromEnum '0') + (fromEnum w)
-showHexChar w = toEnum $ (fromEnum 'A') + (fromEnum $ w - 10)
-
-showWord8Hex :: Word8 -> [Char]
-showWord8Hex w = [showHexChar $ div w 16, showHexChar $ mod w 16]
-
 groupList :: Int -> [a] -> [[a]]
 groupList _ [] = []
 groupList n aa = let
     (p, q) = splitAt n aa
     in p : groupList n q
 
-showBSHex :: StrictByteString -> [Char]
-showBSHex bs = mconcat $ fmap showWord8Hex $ otoList bs
-
 instance Show Anchor where
-    show (MkAnchor bs) = '!' : (intercalate "-" $ groupList 8 $ showBSHex bs)
+    show (MkAnchor bs) = '!' : (intercalate "-" $ groupList 8 $ toHexadecimal bs)
 
 instance HasSerializer Anchor where
     stoppingSerializer = isoCoerce $ fixedByteStringSerializer anchorSize
