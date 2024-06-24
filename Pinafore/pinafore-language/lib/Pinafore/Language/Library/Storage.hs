@@ -15,6 +15,7 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.Optics
+import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
@@ -30,6 +31,11 @@ openDefaultStore :: (?qcontext :: InvocationInfo) => View QStore
 openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
+
+storeFetch :: StoreAdapter a -> QStore -> Entity -> Action a
+storeFetch adapter store e =
+    actionLiftViewKnow $
+    viewRunResource (qStoreGetModel store) $ \aModel -> aModelRead aModel $ QStorageReadEntity adapter e
 
 storageLibSection :: LibraryStuff InvocationInfo
 storageLibSection =
@@ -59,8 +65,7 @@ storageLibSection =
                         MkDolanGroundedType propertyGroundType $
                         ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
                         ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
-                    typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
-                    typef = qFunctionPosWitness typeStorage typem
+                    typef = qFunctionPosWitness qType typem
                     property = predicateProperty saa sab (MkPredicate anchor)
                     pinaproperty =
                         \qstore ->
@@ -86,8 +91,7 @@ storageLibSection =
                         typeToDolan $
                         MkDolanGroundedType wholeModelGroundType $
                         ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) NilCCRArguments
-                    typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
-                    stype = qFunctionPosWitness typeStorage typem
+                    stype = qFunctionPosWitness qType typem
                     property = predicateProperty (asLiteralStoreAdapter @()) saa (MkPredicate anchor)
                     sval =
                         \qstore -> let
@@ -115,8 +119,7 @@ storageLibSection =
                         typeToDolan $
                         MkDolanGroundedType finiteSetModelGroundType $
                         ConsCCRArguments (RangeCCRPolarArgument rtaep rtaq) NilCCRArguments
-                    typeStorage = typeToDolan $ MkDolanGroundedType storeGroundType NilCCRArguments
-                    stype = qFunctionPosWitness typeStorage typem
+                    stype = qFunctionPosWitness qType typem
                     property :: StorageLensProperty a a () () QStorageUpdate
                     property = predicateProperty saa (asLiteralStoreAdapter @()) (MkPredicate anchor)
                     sval =
@@ -131,6 +134,22 @@ storageLibSection =
                             in cfmap
                                    (MkCatRange (shimToFunction $ iMeetPair id praContra . econv) (shimToFunction praCo))
                                    lfsm
+                return $ MkSomeOf stype sval
+          , specialFormBDS
+                "fetch"
+                "Fetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them."
+                ["@A"]
+                "Store -> Entity -> Action A" $
+            MkQSpecialForm (ConsListType AnnotNonpolarType NilListType) $ \(MkSome (ta :: _ a), ()) -> do
+                eta <- getMonoStorableType ta
+                saa <- monoStoreAdapter eta
+                let
+                    stype :: QShimWit 'Positive (QStore -> Entity -> Action a)
+                    stype =
+                        qFunctionPosWitness qType $
+                        qFunctionPosWitness qType $ actionShimWit $ nonpolarToPositive @QTypeSystem ta
+                    sval :: QStore -> Entity -> Action a
+                    sval = storeFetch saa
                 return $ MkSomeOf stype sval
           , valBDS
                 "openDefault"
