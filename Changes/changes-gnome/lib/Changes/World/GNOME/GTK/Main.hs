@@ -37,7 +37,7 @@ mainLoop uiLock runVar = do
                     sr <- mVarRunStateT runVar Shapes.get
                     case sr of
                         RSRun -> do
-                            _ <- mainContextIteration mc True
+                            _ <- mainContextIteration (Just mc) True
                             mainloop
                         RSStop -> return ()
             liftIO mainloop

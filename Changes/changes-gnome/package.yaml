@@ -24,6 +24,7 @@ library:
     dependencies:
       - base >= 4.16
       - time
+      - bytestring
       - vector
       - haskell-gi-base
       - gi-glib

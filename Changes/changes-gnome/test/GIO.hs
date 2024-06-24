@@ -21,7 +21,7 @@ fileTest =
 
 modelTest :: TestTree
 modelTest =
-    expectFailBecause "ISSUE #285" $
+    ignoreTestBecause "ISSUE #285" $
     testTree "model" $
     runLifecycle $
     runView $ do

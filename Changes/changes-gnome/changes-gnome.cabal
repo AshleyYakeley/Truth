@@ -104,6 +104,7 @@ library
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
   build-depends:
       base >=4.16
+    , bytestring
     , cairo-functional
     , changes-core
     , changes-media

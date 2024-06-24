@@ -4,15 +4,20 @@ module Changes.World.GNOME.GIO.ReferenceStream
     ) where
 
 import Changes.Core
+import Data.ByteString.Unsafe (unsafeUseAsCString)
 import qualified Data.GI.Base.GObject as GI
 import qualified Data.GI.Base.Overloading as GI
+import Data.IORef
+import Foreign
 import qualified GI.GLib as GI
 import qualified GI.GObject as GI
 import qualified GI.Gio as GI
 import Shapes
 
-newtype Private =
-    MkPrivate (Readable IO ByteStringReader)
+data Private = MkPrivate
+    { privReadable :: Readable IO ByteStringReader
+    , privOffset :: IORef Int64
+    }
 
 newtype ReferenceInputStream =
     MkReferenceInputStream (GI.ManagedPtr ReferenceInputStream)
@@ -24,12 +29,28 @@ type instance GI.ParentTypes ReferenceInputStream = '[ GI.Object, GI.InputStream
 
 instance GI.HasParentTypes ReferenceInputStream
 
+readFn :: GI.C_InputStreamClassReadFnFieldCallback
+readFn pis p (fromIntegral -> n) _ _ =
+    GI.withNewObject pis $ \is -> do
+        Just ris <- GI.castTo MkReferenceInputStream is
+        MkPrivate {..} <- GI.gobjectGetPrivateData ris
+        offset <- readIORef privOffset
+        bs <- privReadable $ ReadByteStringSection offset n
+        let
+            l :: Int64
+            l = min n $ olength64 bs
+        writeIORef privOffset $ offset + l
+        unsafeUseAsCString (toStrict bs) $ \c -> copyBytes (castPtr p) c (fromIntegral l)
+        return l
+
 instance GI.DerivedGObject ReferenceInputStream where
     type GObjectParentType ReferenceInputStream = GI.InputStream
     type GObjectPrivateData ReferenceInputStream = Private
     objectTypeName = "ReferenceInputStream"
-    objectClassInit _cl = do
-        -- ISSUE #285: set up virtual methods here
+    objectClassInit cl = do
+        Just isc <- error "ISSUE #285" cl -- ISSUE #285: set up virtual methods here
+        readFnCB <- GI.mk_InputStreamClassReadFnFieldCallback readFn
+        GI.setInputStreamClassReadFn isc readFnCB
         return ()
     objectInstanceInit _ _ = return $ error "uninitialised ReferenceInputStream"
 
@@ -46,5 +67,9 @@ byteStringReferenceInputStream :: Reference ByteStringEdit -> View ReferenceInpu
 byteStringReferenceInputStream ref = do
     o <- liftIO $ GI.constructGObject MkReferenceInputStream []
     aref <- viewRunResourceLifecycle ref
-    liftIO $ GI.gobjectSetPrivateData o $ MkPrivate $ refRead aref
+    let
+        privReadable :: Readable IO ByteStringReader
+        privReadable = refRead aref
+    privOffset <- liftIO $ newIORef 0
+    liftIO $ GI.gobjectSetPrivateData o $ MkPrivate {..}
     return o
