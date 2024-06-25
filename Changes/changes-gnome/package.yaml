@@ -54,6 +54,7 @@ library:
     other-modules:
       - Changes.World.GNOME.GI.Error
       - Changes.World.GNOME.GI.Type
+      - Changes.World.GNOME.GI.Derived
       - Changes.World.GNOME.GI.ViewLock
       - Changes.World.GNOME.GI.LockState
       - Changes.World.GNOME.GI.GView
@@ -98,9 +99,11 @@ tests:
             cpp-options: -DTEST_X11
         dependencies:
           - base >= 4.16
+          - thread-trace
           - shapes
           - changes-core
           - changes-gnome
+          - gi-glib
           - gi-gio
           - gi-cairo-render
         main: Main.hs

@@ -2,6 +2,7 @@ module Changes.World.GNOME.GI
     ( module I
     ) where
 
+import Changes.World.GNOME.GI.Derived as I
 import Changes.World.GNOME.GI.Error as I
 import Changes.World.GNOME.GI.GView as I
 import Changes.World.GNOME.GI.Lifecycle as I

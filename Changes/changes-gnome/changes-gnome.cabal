@@ -37,6 +37,7 @@ library
   other-modules:
       Changes.World.GNOME.GI.Error
       Changes.World.GNOME.GI.Type
+      Changes.World.GNOME.GI.Derived
       Changes.World.GNOME.GI.ViewLock
       Changes.World.GNOME.GI.LockState
       Changes.World.GNOME.GI.GView
@@ -425,7 +426,9 @@ test-suite test
     , changes-gnome
     , gi-cairo-render
     , gi-gio
+    , gi-glib
     , shapes
+    , thread-trace
   default-language: GHC2021
   if flag(test-X11)
     cpp-options: -DTEST_X11

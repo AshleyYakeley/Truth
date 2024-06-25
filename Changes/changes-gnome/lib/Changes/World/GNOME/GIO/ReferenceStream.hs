@@ -4,9 +4,8 @@ module Changes.World.GNOME.GIO.ReferenceStream
     ) where
 
 import Changes.Core
+import Changes.World.GNOME.GI
 import Data.ByteString.Unsafe (unsafeUseAsCString)
-import qualified Data.GI.Base.GObject as GI
-import qualified Data.GI.Base.Overloading as GI
 import Data.IORef
 import Foreign
 import qualified GI.GLib as GI
@@ -16,24 +15,26 @@ import Shapes
 
 data Private = MkPrivate
     { privReadable :: Readable IO ByteStringReader
+    , privClose :: IO ()
     , privOffset :: IORef Int64
     }
 
-newtype ReferenceInputStream =
-    MkReferenceInputStream (GI.ManagedPtr ReferenceInputStream)
+type ReferenceInputStream = GIObject Private
 
-instance GI.ManagedPtrNewtype ReferenceInputStream where
-    toManagedPtr (MkReferenceInputStream mptr) = mptr
+instance IsGIType Private where
+    type GIParent Private = GI.InputStream
+    type GIInterfaces Private = '[ GI.Seekable]
+    type GIParents Private = '[ GI.Object, GI.InputStream, GI.Seekable]
 
-type instance GI.ParentTypes ReferenceInputStream = '[ GI.Object, GI.InputStream, GI.Seekable]
+closeFnMethod :: GI.C_InputStreamClassCloseFnFieldCallback
+closeFnMethod pis _ _ =
+    withPrivatePtr pis $ \MkPrivate {..} -> do
+        privClose
+        return 0
 
-instance GI.HasParentTypes ReferenceInputStream
-
-readFn :: GI.C_InputStreamClassReadFnFieldCallback
-readFn pis p (fromIntegral -> n) _ _ =
-    GI.withNewObject pis $ \is -> do
-        Just ris <- GI.castTo MkReferenceInputStream is
-        MkPrivate {..} <- GI.gobjectGetPrivateData ris
+readFnMethod :: GI.C_InputStreamClassReadFnFieldCallback
+readFnMethod pis p (fromIntegral -> n) _ _ =
+    withPrivatePtr pis $ \MkPrivate {..} -> do
         offset <- readIORef privOffset
         bs <- privReadable $ ReadByteStringSection offset n
         let
@@ -43,33 +44,61 @@ readFn pis p (fromIntegral -> n) _ _ =
         unsafeUseAsCString (toStrict bs) $ \c -> copyBytes (castPtr p) c (fromIntegral l)
         return l
 
-instance GI.DerivedGObject ReferenceInputStream where
-    type GObjectParentType ReferenceInputStream = GI.InputStream
-    type GObjectPrivateData ReferenceInputStream = Private
-    objectTypeName = "ReferenceInputStream"
-    objectClassInit cl = do
-        Just isc <- error "ISSUE #285" cl -- ISSUE #285: set up virtual methods here
-        readFnCB <- GI.mk_InputStreamClassReadFnFieldCallback readFn
-        GI.setInputStreamClassReadFn isc readFnCB
-        return ()
-    objectInstanceInit _ _ = return $ error "uninitialised ReferenceInputStream"
+skipMethod :: GI.C_InputStreamClassSkipFieldCallback
+skipMethod pis (fromIntegral -> n) _ _ =
+    withPrivatePtr pis $ \MkPrivate {..} -> do
+        offset <- readIORef privOffset
+        len <- privReadable ReadByteStringLength
+        let
+            l :: Int64
+            l = min n (len - offset)
+        writeIORef privOffset $ offset + l
+        return l
 
-instance GI.TypedObject ReferenceInputStream where
-    glibType = GI.registerGType MkReferenceInputStream
+seekMethod :: GI.C_SeekableIfaceSeekFieldCallback
+seekMethod ptr offset seekType _ _ =
+    withPrivatePtr ptr $ \MkPrivate {..} -> do
+        len <- privReadable ReadByteStringLength
+        base <-
+            case toEnum $ fromEnum seekType of
+                GI.SeekTypeCur -> readIORef privOffset
+                GI.SeekTypeSet -> return 0
+                GI.SeekTypeEnd -> return len
+                _ -> return 0
+        let newpos = max 0 $ min len $ base + offset
+        writeIORef privOffset newpos
+        return 0
 
-instance GI.GObject ReferenceInputStream
+tellMethod :: GI.SeekableIfaceTellFieldCallback
+tellMethod obj = do
+    MkPrivate {..} <- getPrivate obj
+    readIORef privOffset
 
-instance GI.HasAttributeList ReferenceInputStream
-
-type instance GI.AttributeList ReferenceInputStream = GI.AttributeList GI.InputStream
+instance IsGIDerived Private where
+    giTypeName = "ReferenceInputStream"
+    giSetupClasses cl = do
+        withGObjectClass @GI.InputStreamClass cl $ \isc -> do
+            closeCB <- GI.mk_InputStreamClassCloseFnFieldCallback closeFnMethod
+            GI.set isc [#closeFn GI.:&= closeCB]
+            skipCB <- GI.mk_InputStreamClassSkipFieldCallback skipMethod
+            GI.set isc [#skip GI.:&= skipCB]
+            readFnCB <- GI.mk_InputStreamClassReadFnFieldCallback readFnMethod
+            GI.set isc [#readFn GI.:&= readFnCB]
+        withGObjectClass cl $ \isc -> do
+            GI.set isc [#canSeek GI.:&= \_ -> return True]
+            GI.set isc [#canTruncate GI.:&= \_ -> return False]
+            seekCB <- GI.mk_SeekableIfaceSeekFieldCallback $ seekMethod
+            GI.setSeekableIfaceSeek isc seekCB
+            GI.set isc [#seek GI.:&= seekCB]
+            GI.set isc [#tell GI.:&= tellMethod]
 
 byteStringReferenceInputStream :: Reference ByteStringEdit -> View ReferenceInputStream
 byteStringReferenceInputStream ref = do
-    o <- liftIO $ GI.constructGObject MkReferenceInputStream []
     aref <- viewRunResourceLifecycle ref
     let
         privReadable :: Readable IO ByteStringReader
         privReadable = refRead aref
+        privClose :: IO ()
+        privClose = return ()
     privOffset <- liftIO $ newIORef 0
-    liftIO $ GI.gobjectSetPrivateData o $ MkPrivate {..}
-    return o
+    liftIO $ createDerivedGIObject $ MkPrivate {..}

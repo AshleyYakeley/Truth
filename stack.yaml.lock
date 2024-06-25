@@ -5,12 +5,40 @@
 
 packages:
 - completed:
+    hackage: haskell-gi-base-0.26.6@sha256:6b51dde453c3df84db84e155227b27dccde1b7b179b49f24607a80ed63ffa6bb,2448
+    pantry-tree:
+      sha256: 8afaf5a769a5fe148a7e811062c1214b23c6959bbfec6763b8f9a5af5fdec70a
+      size: 1941
+  original:
+    hackage: haskell-gi-base-0.26.6
+- completed:
     hackage: haskell-gi-0.26.10@sha256:9f32fc4c5341d6f2885c9265d596b168f73e44b1e1c03928e052f055f89c9ff6,5150
     pantry-tree:
       sha256: d60e3ec60e2e6ba40823e122853786de78e2ccd58ba68f1ccfff61538f753a32
       size: 4201
   original:
     hackage: haskell-gi-0.26.10
+- completed:
+    hackage: haskell-gi-overloading-1.0@sha256:a59a812f4490b317fe2850c5442004f230130204af6cb4e0a6604acebb9f2f63,631
+    pantry-tree:
+      sha256: 5b56359796af8ec1bed5b2df43756374915055853f60f01ec8f7d0c403773112
+      size: 265
+  original:
+    hackage: haskell-gi-overloading-1.0
+- completed:
+    hackage: gi-glib-2.0.30@sha256:ac73c972e0c814e74a0b135e8567e1364dbcf60f77e6f020eac9f054eaaebe54,10726
+    pantry-tree:
+      sha256: 8f0c2eaaa93a4aabc18c4e30be3993947514aa6c868db1c99c5e8f1f84207365
+      size: 360
+  original:
+    hackage: gi-glib-2.0.30
+- completed:
+    hackage: gi-gobject-2.0.31@sha256:899a331689f1238fdce3829f1148e51bfd13a39ba5cab70710a6bab59e663d90,9561
+    pantry-tree:
+      sha256: da1356d4b61040347499bf41253cc1aba954e09cca40fa4d4777f068751b62da
+      size: 365
+  original:
+    hackage: gi-gobject-2.0.31
 - completed:
     hackage: gi-gio-2.0.34@sha256:4bc14804f5794743f8c997382d4c4ce66a074f41a215c3f01a9ca6519a239850,22663
     pantry-tree:
