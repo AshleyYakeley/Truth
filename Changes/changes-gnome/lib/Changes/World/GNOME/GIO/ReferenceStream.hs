@@ -22,9 +22,8 @@ data Private = MkPrivate
 type ReferenceInputStream = GIObject Private
 
 instance IsGIType Private where
-    type GIParent Private = GI.InputStream
-    type GIInterfaces Private = '[ GI.Seekable]
-    type GIParents Private = '[ GI.Object, GI.InputStream, GI.Seekable]
+    type GIClassParent Private = GI.InputStream
+    type GISupertypes Private = '[ GI.Object, GI.InputStream, GI.Seekable]
 
 closeFnMethod :: GI.C_InputStreamClassCloseFnFieldCallback
 closeFnMethod pis _ _ =
@@ -74,31 +73,34 @@ tellMethod obj = do
     MkPrivate {..} <- getPrivate obj
     readIORef privOffset
 
+instance GIImplement Private GI.InputStreamClass where
+    giImplement isc = do
+        closeCB <- GI.mk_InputStreamClassCloseFnFieldCallback closeFnMethod
+        GI.set isc [#closeFn GI.:&= closeCB]
+        skipCB <- GI.mk_InputStreamClassSkipFieldCallback skipMethod
+        GI.set isc [#skip GI.:&= skipCB]
+        readFnCB <- GI.mk_InputStreamClassReadFnFieldCallback readFnMethod
+        GI.set isc [#readFn GI.:&= readFnCB]
+
+instance GIImplement Private GI.SeekableIface where
+    giImplement iface = do
+        GI.set iface [#canSeek GI.:&= \_ -> return True]
+        GI.set iface [#canTruncate GI.:&= \_ -> return False]
+        seekCB <- GI.mk_SeekableIfaceSeekFieldCallback $ seekMethod
+        GI.setSeekableIfaceSeek iface seekCB
+        GI.set iface [#seek GI.:&= seekCB]
+        GI.set iface [#tell GI.:&= tellMethod]
+
 instance IsGIDerived Private where
+    type GIImplementClasses Private = '[ GI.InputStream]
+    type GIImplementInterfaces Private = '[ GI.Seekable]
     giTypeName = "ReferenceInputStream"
-    giSetupClasses cl = do
-        withGObjectClass @GI.InputStreamClass cl $ \isc -> do
-            closeCB <- GI.mk_InputStreamClassCloseFnFieldCallback closeFnMethod
-            GI.set isc [#closeFn GI.:&= closeCB]
-            skipCB <- GI.mk_InputStreamClassSkipFieldCallback skipMethod
-            GI.set isc [#skip GI.:&= skipCB]
-            readFnCB <- GI.mk_InputStreamClassReadFnFieldCallback readFnMethod
-            GI.set isc [#readFn GI.:&= readFnCB]
-        withGObjectClass cl $ \isc -> do
-            GI.set isc [#canSeek GI.:&= \_ -> return True]
-            GI.set isc [#canTruncate GI.:&= \_ -> return False]
-            seekCB <- GI.mk_SeekableIfaceSeekFieldCallback $ seekMethod
-            GI.setSeekableIfaceSeek isc seekCB
-            GI.set isc [#seek GI.:&= seekCB]
-            GI.set isc [#tell GI.:&= tellMethod]
 
 byteStringReferenceInputStream :: Reference ByteStringEdit -> View ReferenceInputStream
 byteStringReferenceInputStream ref = do
-    aref <- viewRunResourceLifecycle ref
+    (aref, privClose) <- viewGetCloser $ viewRunResourceLifecycle ref
     let
         privReadable :: Readable IO ByteStringReader
         privReadable = refRead aref
-        privClose :: IO ()
-        privClose = return ()
     privOffset <- liftIO $ newIORef 0
     liftIO $ createDerivedGIObject $ MkPrivate {..}

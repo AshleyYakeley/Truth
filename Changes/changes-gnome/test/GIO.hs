@@ -26,7 +26,6 @@ noCancellable = Nothing
 
 modelTest :: TestTree
 modelTest =
-    ignoreTestBecause "ISSUE #285" $
     testTree "model" $
     runLifecycle $
     runView $ do
