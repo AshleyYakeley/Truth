@@ -54,7 +54,8 @@ library:
     other-modules:
       - Changes.World.GNOME.GI.Error
       - Changes.World.GNOME.GI.Type
-      - Changes.World.GNOME.GI.Derived
+      - Changes.World.GNOME.GI.Implement.Object
+      - Changes.World.GNOME.GI.Implement.Derived
       - Changes.World.GNOME.GI.ViewLock
       - Changes.World.GNOME.GI.LockState
       - Changes.World.GNOME.GI.GView

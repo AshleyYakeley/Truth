@@ -87,7 +87,6 @@ instance GIImplement Private GI.SeekableIface where
         GI.set iface [#canSeek GI.:&= \_ -> return True]
         GI.set iface [#canTruncate GI.:&= \_ -> return False]
         seekCB <- GI.mk_SeekableIfaceSeekFieldCallback $ seekMethod
-        GI.setSeekableIfaceSeek iface seekCB
         GI.set iface [#seek GI.:&= seekCB]
         GI.set iface [#tell GI.:&= tellMethod]
 
