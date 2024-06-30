@@ -383,6 +383,9 @@ top-format:
 top-build:
 	time -f %E make exe; bin/reportstatus $$?
 
+top-nix-flake:
+	time -f %E make nix-flake; bin/reportstatus $$?
+
 top-single-build:
 	time -f %E make single=1 exe; bin/reportstatus $$?
 

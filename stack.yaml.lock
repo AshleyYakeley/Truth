@@ -61,16 +61,16 @@ packages:
   original:
     hackage: leb128-0.1.0.0
 - completed:
-    hackage: gi-cairo-connector-0.1.1@sha256:621d03434a0d6e3d5e68178f5890f2a7142818fcf4c6a5b15079f6b67955407d,1213
+    hackage: gi-cairo-connector-0.1.1@sha256:352fc558ed5bf27d48bd88c8ec0e3be5fdbaf1418eaddffcfd1c7283fd895d40,1251
     pantry-tree:
-      sha256: d10b7d77b0a00090223528e1241a3568e9d12d3378d1719935a53387dd080fa7
+      sha256: 8a4266c4bc002930f3cf4c753e1288b94e16f743885703c6197789388574cd99
       size: 238
   original:
     hackage: gi-cairo-connector-0.1.1
 - completed:
-    hackage: optparse-applicative-0.17.1.0@sha256:665fc6909fa6b8196ec5f40e40e0d9a4375890b169e7f44ff1e708e9e27aa3f3,4994
+    hackage: optparse-applicative-0.17.1.0@sha256:cb5f5f0dc9749846fc0e3df0041a8efee6368cc1cff07336acd4c3b02a951ed6,5147
     pantry-tree:
-      sha256: 4df6baed5561535ecc3223d9b0c79a6532799aeebcdcd55454e4e2df60943021
+      sha256: be7241e9c51c9e2bb4b9966b1a308258ed93b471d125611f068dc0279fcdc669
       size: 3124
   original:
     hackage: optparse-applicative-0.17.1.0
