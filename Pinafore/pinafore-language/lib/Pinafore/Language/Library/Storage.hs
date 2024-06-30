@@ -27,6 +27,9 @@ storeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[] QStore where
     qGroundType = storeGroundType
 
+langStoreToModel :: QStore -> LangModel
+langStoreToModel store = MkLangModel $ MkWModel $ qStoreModel store
+
 openDefaultStore :: (?qcontext :: InvocationInfo) => View QStore
 openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
@@ -35,7 +38,7 @@ openDefaultStore = do
 storeFetch :: StoreAdapter a -> QStore -> Entity -> Action a
 storeFetch adapter store e =
     actionLiftViewKnow $
-    viewRunResource (qStoreGetModel store) $ \aModel -> aModelRead aModel $ QStorageReadEntity adapter e
+    viewRunResource (qStoreModel store) $ \aModel -> aModelRead aModel $ QStorageReadEntity adapter e
 
 storageLibSection :: LibraryStuff InvocationInfo
 storageLibSection =
@@ -76,6 +79,7 @@ storageLibSection =
                             cfmap2 (MkCatDual $ shimToFunction prbContra) $ cfmap1 (shimToFunction prbCo) property
                     anyval = MkSomeOf typef pinaproperty
                 return anyval
+          , hasSubtypeRelationBDS Verify "" $ functionToShim "Store to Model" langStoreToModel
           , specialFormBDS
                 "cell"
                 "Storage of a single value, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @Unit @A <anchor> store !$ {()}`"

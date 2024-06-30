@@ -1,7 +1,7 @@
 module Pinafore.Base.Model.ModelBased
     ( ModelBased
     , QStore
-    , qStoreGetModel
+    , qStoreModel
     , mkQStore
     , modelBasedModel
     , pureModelBased
@@ -19,8 +19,8 @@ data QStore =
     MkQStore Unique
              (Model QStorageUpdate)
 
-qStoreGetModel :: QStore -> Model QStorageUpdate
-qStoreGetModel (MkQStore _ model) = model
+qStoreModel :: QStore -> Model QStorageUpdate
+qStoreModel (MkQStore _ model) = model
 
 mkQStore :: Model QStorageUpdate -> IO QStore
 mkQStore model = do

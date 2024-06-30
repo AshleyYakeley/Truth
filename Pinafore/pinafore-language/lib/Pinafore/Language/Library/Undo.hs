@@ -39,7 +39,7 @@ handleSetModel :: UndoHandler -> LangSetModel A -> LangSetModel EnA
 handleSetModel uh model = handleModel uh $ contramap meet2 model
 
 handleStore :: UndoHandler -> QStore -> IO QStore
-handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreGetModel store
+handleStore uh store = mkQStore $ undoHandlerModel uh $ qStoreModel store
 
 undoLibSection :: LibraryStuff context
 undoLibSection =
