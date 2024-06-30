@@ -278,6 +278,10 @@ support/website/generated/img/information.png: support/website/img/information.p
 	mkdir -p support/website/generated/img
 	cp $< $@
 
+support/website/generated/img/logo.png: support/branding/logo.svg
+	mkdir -p support/website/generated/img
+	$(STACKEXEC) -- rsvg-convert -w 200 -h 200 $< -o $@
+
 support/website/generated/img/favicon.png: support/branding/logo.svg
 	mkdir -p support/website/generated/img
 	$(STACKEXEC) -- rsvg-convert -w 32 -h 32 $< -o $@
@@ -287,6 +291,7 @@ support/website/generated/img/favicon.png: support/branding/logo.svg
 
 .PHONY: docs
 docs: \
+ support/website/generated/img/logo.png \
  support/website/generated/img/favicon.ico \
  $(foreach f,$(LIBMODULEDOCS),support/website/library/$f.md) \
  support/website/generated/infix.md \
