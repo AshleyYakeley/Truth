@@ -27,6 +27,8 @@ endif
 
 STACKFLAGS := $(STACKROOTFLAGS) $(DOCKERFLAGS) $(JOBFLAGS) --ta --hide-successes
 
+STACKEXEC := stack $(STACKFLAGS) exec
+
 ifeq ($(test),1)
 TESTFLAGS :=
 else
@@ -107,7 +109,7 @@ ifeq ($(haddock),1)
 endif
 endif
 ifeq ($(bench),1)
-	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh Pinafore/pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
+	test -n "$$(git status -s)" || ($(STACKEXEC) -- benchgraph/adapters/criterion/export_benchs.sh Pinafore/pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
 
 .PHONY: exe
@@ -144,7 +146,7 @@ LIBMODULEFILES := \
 	for i in $(LIBMODULEFILES); do cp Pinafore/pinafore-lib-script/data/$$i.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/$$i.pinafore; done
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
-	stack $(STACKFLAGS) exec -- \
+	$(STACKEXEC) -- \
 		m4 \
 		-D PACKAGENAME="$(PACKAGENAME)" \
 		-D PACKAGEVERSION="$(PACKAGEVERSION)" \
@@ -153,18 +155,18 @@ LIBMODULEFILES := \
 		-D RELEASEDATE="$$(date -R)" \
 		deb/changelog.m4 | gzip -9 > $(PACKAGEDIR)/usr/share/doc/pinafore/changelog.Debian.gz
 	mkdir -p $(PACKAGEDIR)/usr/share/bash-completion/completions/
-	stack $(STACKFLAGS) exec -- $< --bash-completion-script /usr/bin/pinafore > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
+	$(STACKEXEC) -- $< --bash-completion-script /usr/bin/pinafore > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
 	mkdir -p $(PACKAGEDIR)/DEBIAN
-	stack $(STACKFLAGS) exec -- \
+	$(STACKEXEC) -- \
 		m4 \
 		-D PACKAGENAME="$(PACKAGENAME)" \
 		-D PACKAGEVERSION="$(PACKAGEVERSION)" \
 		-D PACKAGEREVISION="$(PACKAGEREVISION)" \
 		deb/control.m4 > $(PACKAGEDIR)/DEBIAN/control
-	stack $(STACKFLAGS) exec --cwd $(PACKAGEDIR) -- md5sum $$(cd $(PACKAGEDIR) && find * -type f -not -path 'DEBIAN/*') > $(PACKAGEDIR)/DEBIAN/md5sums
+	$(STACKEXEC) --cwd $(PACKAGEDIR) -- md5sum $$(cd $(PACKAGEDIR) && find * -type f -not -path 'DEBIAN/*') > $(PACKAGEDIR)/DEBIAN/md5sums
 	chmod -R g-w $(PACKAGEDIR)
-	stack $(STACKFLAGS) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build -Zxz $(PACKAGEFULLNAME)
-	stack $(STACKFLAGS) exec -- \
+	$(STACKEXEC) --cwd .build/deb -- dpkg-deb --root-owner-group --build -Zxz $(PACKAGEFULLNAME)
+	$(STACKEXEC) -- \
 		lintian \
 		--tag-display-limit 0 \
 		--display-info \
@@ -204,7 +206,7 @@ nix/docker/flake.lock: flake.lock
 	cp $< $@
 
 nix/docker/stack.yaml: stack.yaml
-	stack $(STACKFLAGS) exec -- yq '.packages=[]' $< > $@
+	$(STACKEXEC) -- yq '.packages=[]' $< > $@
 
 nix/docker/stack.yaml.lock: stack.yaml.lock
 	cp $< $@
@@ -227,7 +229,7 @@ out/support:
 	mkdir -p $@
 
 out/support/syntax-data.json: ${BINPATH}/pinadata out/support
-	stack $(STACKFLAGS) exec -- $< --syntax-data > $@
+	$(STACKEXEC) -- $< --syntax-data > $@
 
 
 ### Pygments lexer
@@ -242,7 +244,7 @@ out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz: \
  support/pygments-lexer/pyproject.toml \
  support/pygments-lexer/pinafore_lexer/__init__.py \
  support/pygments-lexer/pinafore_lexer/syntax-data.json
-	stack $(STACKFLAGS) exec -- env PYGLEXERVERSION="$(PYGLEXERVERSION)" python3 -m build -o out/support/ support/pygments-lexer/
+	$(STACKEXEC) -- env PYGLEXERVERSION="$(PYGLEXERVERSION)" python3 -m build -o out/support/ support/pygments-lexer/
 
 .PHONY: pyg-lexer
 pyg-lexer: out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
@@ -258,33 +260,34 @@ LIBMODULEDOCS := \
 
 support/website/library/%.md: ${BINPATH}/pinadoc
 	mkdir -p support/website/library
-	stack $(STACKFLAGS) exec -- $< $(subst .,/,$*) --include Pinafore/pinafore-lib-script/data > $@
+	$(STACKEXEC) -- $< $(subst .,/,$*) --include Pinafore/pinafore-lib-script/data > $@
 
 support/website/generated/infix.md: ${BINPATH}/pinadata
 	mkdir -p support/website/generated
-	stack $(STACKFLAGS) exec -- $< --infix > $@
+	$(STACKEXEC) -- $< --infix > $@
 
 support/website/generated/type-infix.md: ${BINPATH}/pinadata
 	mkdir -p support/website/generated
-	stack $(STACKFLAGS) exec -- $< --infix-type > $@
+	$(STACKEXEC) -- $< --infix-type > $@
 
 .PHONY: scour
 scour: support/website/img/information.svg docker-image
-	stack $(STACKFLAGS) exec -- scour $< | stack $(STACKFLAGS) exec -- sponge $<
+	$(STACKEXEC) -- scour $< | $(STACKEXEC) -- sponge $<
 
 support/website/generated/img/information.png: support/website/img/information.png
 	mkdir -p support/website/generated/img
 	cp $< $@
 
-
-support/website/generated/img/logo.ico: support/branding/logo.svg
+support/website/generated/img/favicon.png: support/branding/logo.svg
 	mkdir -p support/website/generated/img
-	stack $(STACKFLAGS) exec -- rsvg-convert -w 32 -h 32 $< -o support/website/generated/img/logo.png
-	stack $(STACKFLAGS) exec -- convert support/website/generated/img/logo.png -background transparent $@
+	$(STACKEXEC) -- rsvg-convert -w 32 -h 32 $< -o $@
+
+%.ico: %.png
+	$(STACKEXEC) -- convert $< -background transparent $@
 
 .PHONY: docs
 docs: \
- support/website/generated/img/logo.ico \
+ support/website/generated/img/favicon.ico \
  $(foreach f,$(LIBMODULEDOCS),support/website/library/$f.md) \
  support/website/generated/infix.md \
  support/website/generated/type-infix.md \
@@ -293,10 +296,10 @@ docs: \
  docker-image
 	mkdir -p support/website/generated/examples
 	cp Pinafore/pinafore-app/examples/* support/website/generated/examples/
-	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
+	$(STACKEXEC) -- pip3 install --user out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 	rm -rf out/support/website
 	mkdir -p out/support/website
-	stack $(STACKFLAGS) exec -- sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
+	$(STACKEXEC) -- sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
 
 
 ### VSCode extension
@@ -306,11 +309,11 @@ VSCXVERSION := $(PINAFOREVERSIONABC)
 VSCXDIR := support/vsc-extension/vsce
 
 $(VSCXDIR)/%.json: $(VSCXDIR)/%.yaml out/support/syntax-data.json
-	stack $(STACKFLAGS) exec -- env VSCXVERSION="$(VSCXVERSION)" yq --from-file support/vsc-extension/transform.yq -o json $< > $@
+	$(STACKEXEC) -- env VSCXVERSION="$(VSCXVERSION)" yq --from-file support/vsc-extension/transform.yq -o json $< > $@
 
 $(VSCXDIR)/images/logo.png: support/branding/logo.svg
 	mkdir -p $(VSCXDIR)/images
-	stack $(STACKFLAGS) exec -- rsvg-convert -w 256 -h 256 $< -o $@
+	$(STACKEXEC) -- rsvg-convert -w 256 -h 256 $< -o $@
 
 out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
  $(VSCXDIR)/package.json \
@@ -320,7 +323,7 @@ out/support/pinafore-$(VSCXVERSION).vsix: docker-image out/support \
  $(VSCXDIR)/language-configuration.json \
  $(VSCXDIR)/images/logo.png \
  $(VSCXDIR)/syntaxes/pinafore.tmLanguage.json
-	cd $(VSCXDIR) && stack $(STACKFLAGS) exec -- vsce package -o ../../../$@
+	cd $(VSCXDIR) && $(STACKEXEC) -- vsce package -o ../../../$@
 
 .PHONY: vsc-extension
 vsc-extension: out/support/pinafore-$(VSCXVERSION).vsix
@@ -330,11 +333,11 @@ vsc-extension: out/support/pinafore-$(VSCXVERSION).vsix
 
 Changes/changes-gnome/examples/showImages/images/%.RGB.jpeg: Changes/changes-gnome/examples/showImages/%.jpeg
 	mkdir -p Changes/changes-gnome/examples/showImages/images
-	stack $(STACKFLAGS) exec -- convert $< -colorspace RGB $@
+	$(STACKEXEC) -- convert $< -colorspace RGB $@
 
 Changes/changes-gnome/examples/showImages/images/%.YCbCr.jpeg: Changes/changes-gnome/examples/showImages/%.jpeg
 	mkdir -p Changes/changes-gnome/examples/showImages/images
-	stack $(STACKFLAGS) exec -- convert $< -colorspace YCbCr $@
+	$(STACKEXEC) -- convert $< -colorspace YCbCr $@
 
 .PHONY: testimages
 testimages: docker-image \
@@ -390,11 +393,11 @@ top-format:
 top-build:
 	time -f %E make exe; bin/reportstatus $$?
 
-top-nix-flake:
-	time -f %E make nix-flake; bin/reportstatus $$?
-
 top-single-build:
 	time -f %E make single=1 exe; bin/reportstatus $$?
+
+top-nix-flake:
+	time -f %E make nix-flake; bin/reportstatus $$?
 
 top-format-test:
 	time -f %E make test=1 format exe; bin/reportstatus $$?
