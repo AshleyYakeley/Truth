@@ -256,40 +256,40 @@ LIBMODULEDOCS := \
     gnome \
 	UILib
 
-doc/library/%.md: ${BINPATH}/pinadoc
-	mkdir -p doc/library
+support/website/library/%.md: ${BINPATH}/pinadoc
+	mkdir -p support/website/library
 	stack $(STACKFLAGS) exec -- $< $(subst .,/,$*) --include Pinafore/pinafore-lib-script/data > $@
 
-doc/generated/infix.md: ${BINPATH}/pinadata
-	mkdir -p doc/generated
+support/website/generated/infix.md: ${BINPATH}/pinadata
+	mkdir -p support/website/generated
 	stack $(STACKFLAGS) exec -- $< --infix > $@
 
-doc/generated/type-infix.md: ${BINPATH}/pinadata
-	mkdir -p doc/generated
+support/website/generated/type-infix.md: ${BINPATH}/pinadata
+	mkdir -p support/website/generated
 	stack $(STACKFLAGS) exec -- $< --infix-type > $@
 
 .PHONY: scour
-scour: doc/img/information.svg docker-image
+scour: support/website/img/information.svg docker-image
 	stack $(STACKFLAGS) exec -- scour $< | stack $(STACKFLAGS) exec -- sponge $<
 
-doc/generated/img/information.png: doc/img/information.png
-	mkdir -p doc/generated/img
+support/website/generated/img/information.png: support/website/img/information.png
+	mkdir -p support/website/generated/img
 	cp $< $@
 
 .PHONY: docs
 docs: \
- $(foreach f,$(LIBMODULEDOCS),doc/library/$f.md) \
- doc/generated/infix.md \
- doc/generated/type-infix.md \
- doc/generated/img/information.png \
+ $(foreach f,$(LIBMODULEDOCS),support/website/library/$f.md) \
+ support/website/generated/infix.md \
+ support/website/generated/type-infix.md \
+ support/website/generated/img/information.png \
  out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz \
  docker-image
-	mkdir -p doc/generated/examples
-	cp Pinafore/pinafore-app/examples/* doc/generated/examples/
+	mkdir -p support/website/generated/examples
+	cp Pinafore/pinafore-app/examples/* support/website/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
-	rm -rf out/doc
-	mkdir -p out/doc
-	stack $(STACKFLAGS) exec -- sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml doc out/doc/dirhtml
+	rm -rf out/support/website
+	mkdir -p out/support/website
+	stack $(STACKFLAGS) exec -- sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
 
 
 ### VSCode extension
@@ -346,13 +346,13 @@ full: testimages format deb nix-docker-flake deps licensing docs pyg-lexer vsc-e
 clean:
 	rm -rf .build
 	rm -rf out
-	rm -rf doc/generated
-	rm -rf doc/library
 	rm -rf Changes/changes-gnome/examples/showImages/images
 	rm -rf nix/docker/flake.nix
 	rm -rf nix/docker/flake.lock
 	rm -rf nix/docker/stack.yaml
 	rm -rf nix/docker/stack.yaml.lock
+	rm -rf support/website/generated
+	rm -rf support/website/library
 	rm -rf support/vsc-extension/*.json
 	rm -rf support/vsc-extension/*/*.json
 	rm -rf support/vsc-extension/*/*/*.json
