@@ -16,6 +16,7 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_css_files = ["extra.css"]
 html_show_sourcelink = False
+html_favicon = "generated/img/logo.ico"
 
 # MyST options
 myst_heading_anchors = 3

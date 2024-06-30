@@ -276,8 +276,14 @@ support/website/generated/img/information.png: support/website/img/information.p
 	mkdir -p support/website/generated/img
 	cp $< $@
 
+
+support/website/generated/img/logo.ico: support/branding/logo.svg
+	mkdir -p support/website/generated/img
+	stack $(STACKFLAGS) exec -- convert $< -scale 32 $@
+
 .PHONY: docs
 docs: \
+ support/website/generated/img/logo.ico \
  $(foreach f,$(LIBMODULEDOCS),support/website/library/$f.md) \
  support/website/generated/infix.md \
  support/website/generated/type-infix.md \
