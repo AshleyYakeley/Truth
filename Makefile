@@ -279,7 +279,8 @@ support/website/generated/img/information.png: support/website/img/information.p
 
 support/website/generated/img/logo.ico: support/branding/logo.svg
 	mkdir -p support/website/generated/img
-	stack $(STACKFLAGS) exec -- convert $< -scale 32 $@
+	stack $(STACKFLAGS) exec -- rsvg-convert -w 32 -h 32 $< -o support/website/generated/img/logo.png
+	stack $(STACKFLAGS) exec -- convert support/website/generated/img/logo.png -background transparent $@
 
 .PHONY: docs
 docs: \

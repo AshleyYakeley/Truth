@@ -1,3 +1,4 @@
 {
-    "terminal.integrated.shell.linux": "${workspaceFolder}/bin/shell"
+    "terminal.integrated.shell.linux": "${workspaceFolder}/bin/shell",
+    "svg.preview.background": "transparent"
 }
