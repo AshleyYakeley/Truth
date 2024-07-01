@@ -37,7 +37,7 @@ registerBinding name db = registerBindings $ singletonMap name db
 
 registerLetBindings :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindings bb =
-    registerBindings $ fmap (\(fname, doc, exp) -> (fname, MkQBindingInfo fname doc $ ValueBinding exp Nothing)) bb
+    registerBindings $ fmap (\(fname, doc, exp) -> (fname, MkQBindingInfo fname doc $ ValueBinding exp)) bb
 
 registerLetBindingsDocs :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindingsDocs bb = do
@@ -69,7 +69,7 @@ registerGroundType name doc t = do registerType name doc $ MkSomeGroundType t
 registerPatternConstructor :: FullName -> DefDoc -> QExpression -> QPatternConstructor -> QScopeBuilder ()
 registerPatternConstructor name doc exp pc = do
     builderLift $ checkNameForRegister name
-    registerBinding name $ MkQBindingInfo name doc $ ValueBinding exp $ Just pc
+    registerBinding name $ MkQBindingInfo name doc $ PatternConstructorBinding exp pc
 
 registerRecord :: FullName -> DefDoc -> QRecordConstructor -> QScopeBuilder ()
 registerRecord = registerSelector recordConstructorBindingSelector

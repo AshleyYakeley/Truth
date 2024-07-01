@@ -307,8 +307,8 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                     Just (fn, desc) -> showText nameref <> " = " <> showText fn <> ": " <> pack desc
                     Nothing -> showText nameref <> " not found"
 
-interpretRecordConstructor :: QRecordConstructor -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
-interpretRecordConstructor (MkQRecordConstructor items vtype _ codec) msarglist = do
+interpretRecordValue :: QRecordValue -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
+interpretRecordValue (MkQRecordValue items vtype ff) msarglist = do
     let
         getsigname :: forall a. QSignature 'Positive a -> Maybe Name
         getsigname (ValueSignature _ name _ _) = Just name
@@ -348,8 +348,7 @@ interpretRecordConstructor (MkQRecordConstructor items vtype _ codec) msarglist 
                     iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
                     subsumerExpressionTo @QTypeSystem itype' iexpr'
         (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listVProductSequence sexpr
-        unEndoM (subsumerSubstitute @QTypeSystem ssubs) $
-            MkSealedExpression (shimWitToDolan vtype) $ fmap (encode codec) resultExpr
+        unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression (shimWitToDolan vtype) $ fmap ff resultExpr
 
 interpretNamedConstructor :: FullNameRef -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
 interpretNamedConstructor name mvals = do
@@ -357,7 +356,7 @@ interpretNamedConstructor name mvals = do
     case (bv, mvals) of
         (ValueBoundValue e, Nothing) -> return e
         (ValueBoundValue _, Just _) -> throw $ LookupNotRecordConstructorError name
-        (RecordBoundValue rc, _) -> interpretRecordConstructor rc mvals
+        (RecordBoundValue rv, _) -> interpretRecordValue rv mvals
 
 interpretConstructor :: SyntaxConstructor -> QInterpreter QExpression
 interpretConstructor (SLNumber n) =

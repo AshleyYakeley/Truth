@@ -92,7 +92,7 @@ allocateVar mname = do
                 Nothing -> mkUniqueVarID vs
         biOriginalName = name
         biDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
-        biValue = ValueBinding (tsVar @QTypeSystem vid) Nothing
+        biValue = ValueBinding $ tsVar @QTypeSystem vid
         insertScope = MkQScope (bindingInfoToMap (name, MkQBindingInfo {..})) mempty
     refModifyM scopeRef $ \oldScope -> builderLift $ joinScopes oldScope insertScope
     return (name, vid)

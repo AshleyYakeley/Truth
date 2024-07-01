@@ -65,7 +65,7 @@ lookupPatternConstructor :: FullNameRef -> QInterpreter (Either QPatternConstruc
 lookupPatternConstructor name = do
     b <- lookupBinding name
     case b of
-        ValueBinding _ (Just pc) -> return $ Left pc
+        PatternConstructorBinding _ pc -> return $ Left pc
         RecordConstructorBinding rc -> return $ Right rc
         _ -> throw $ LookupNotConstructorError name
 
@@ -77,14 +77,16 @@ lookupSpecialForm = lookupSelector specialFormBindingSelector
 
 data QBoundValue
     = ValueBoundValue QExpression
-    | RecordBoundValue QRecordConstructor
+    | RecordBoundValue QRecordValue
 
 lookupBoundValue :: FullNameRef -> QInterpreter QBoundValue
 lookupBoundValue name = do
     b <- lookupBinding name
     case b of
-        ValueBinding exp _ -> return $ ValueBoundValue exp
-        RecordConstructorBinding rc -> return $ RecordBoundValue rc
+        ValueBinding exp -> return $ ValueBoundValue exp
+        PatternConstructorBinding exp _ -> return $ ValueBoundValue exp
+        RecordValueBinding rv -> return $ RecordBoundValue rv
+        RecordConstructorBinding rc -> return $ RecordBoundValue $ recordConstructorToValue rc
         _ -> throw $ LookupNotConstructorError name
 
 lookupMaybeValue :: FullNameRef -> QInterpreter (Maybe QExpression)
@@ -92,5 +94,6 @@ lookupMaybeValue name = do
     mb <- getBindingLookup
     return $
         case mb name of
-            Just (ValueBinding exp _) -> Just exp
+            Just (ValueBinding exp) -> Just exp
+            Just (PatternConstructorBinding exp _) -> Just exp
             _ -> Nothing

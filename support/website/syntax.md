@@ -157,7 +157,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <constructor-expression> ::= <constructor> <optional(<of(<name> "=" <expression>)>)>
 
-<expression-var> ::= qlname
+<expression-var> ::= qlname <optional(<of(<name> "=" <expression>)>)>
 
 <expression-specialform> ::= qlname <annotations>
 
@@ -203,6 +203,7 @@ All declarations, including type declarations, are local to a `let` block.
     "subtype" <optional("trustme")> <type> "<:" <type> <optional("=" <expression>)> |
     "dynamictype" <type-const> <dynamictype-body> |
     <binding>
+    <record-binding>
 
 <name-item> ::= <name> | "namespace" <name>
 
@@ -215,6 +216,8 @@ All declarations, including type declarations, are local to a `let` block.
 <module-name> ::= literal-text
 
 <binding> ::= <pattern-1> "=" <expression>
+
+<record-binding> ::= lname <of(<record-member>)> "=" <expression>
 
 <supertypes> = <type> | <supertypes> "&" <type>
 

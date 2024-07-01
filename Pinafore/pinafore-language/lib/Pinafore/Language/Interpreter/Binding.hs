@@ -1,7 +1,9 @@
 module Pinafore.Language.Interpreter.Binding
     ( QSpecialVals(..)
     , QSignature(..)
+    , QRecordValue(..)
     , QRecordConstructor(..)
+    , recordConstructorToValue
     , QSpecialForm(..)
     , QInterpreterBinding(..)
     , QBindingInfo(..)
@@ -32,11 +34,19 @@ data QSignature (polarity :: Polarity) (t :: Type) =
 instance (HasInterpreter, Is PolarityType polarity) => HasVarMapping (QSignature polarity) where
     getVarMapping (ValueSignature _ _ t _) = getVarMapping t
 
+data QRecordValue =
+    forall (t :: Type) (tt :: [Type]). MkQRecordValue (ListVType (QSignature 'Positive) tt)
+                                                      (QGroundedShimWit 'Positive t)
+                                                      (ListVProduct tt -> t)
+
 data QRecordConstructor =
     forall (t :: Type) (tt :: [Type]). MkQRecordConstructor (ListVType (QSignature 'Positive) tt)
                                                             (QGroundedShimWit 'Positive t)
                                                             (QGroundedShimWit 'Negative t)
                                                             (Codec t (ListVProduct tt))
+
+recordConstructorToValue :: QRecordConstructor -> QRecordValue
+recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) = MkQRecordValue sigs vtype $ encode codec
 
 type QSpecialForm :: Type
 data QSpecialForm =
@@ -45,16 +55,19 @@ data QSpecialForm =
 
 data QInterpreterBinding
     = ValueBinding QExpression
-                   (Maybe QPatternConstructor)
-    | TypeBinding QSomeGroundType
+    | RecordValueBinding QRecordValue
+    | PatternConstructorBinding QExpression
+                                QPatternConstructor
     | RecordConstructorBinding QRecordConstructor
+    | TypeBinding QSomeGroundType
     | SpecialFormBinding QSpecialForm
 
 instance HasInterpreter => Show QInterpreterBinding where
-    show (ValueBinding e Nothing) = "val: " <> show e
-    show (ValueBinding e (Just _)) = "val+pat: " <> show e
-    show (TypeBinding t) = "type: " <> unpack (toText $ exprShow t)
+    show (ValueBinding e) = "val: " <> show e
+    show (RecordValueBinding _) = "recordval"
+    show (PatternConstructorBinding e _) = "cons: " <> show e
     show (RecordConstructorBinding _) = "recordcons"
+    show (TypeBinding t) = "type: " <> unpack (toText $ exprShow t)
     show (SpecialFormBinding _) = "special"
 
 data QBindingInfo = MkQBindingInfo

@@ -127,7 +127,7 @@ valWitBDS name docDescription qt val = let
         pure $
         BindScopeEntry name [] $ \context -> let
             ?qcontext = context
-            in ValueBinding (qConstExprAny $ MkSomeOf qt val) Nothing
+            in ValueBinding $ qConstExprAny $ MkSomeOf qt val
     diNames = pure name
     diType = qPositiveShimWitDescription qt
     docItem = ValueDocItem {..}
@@ -246,7 +246,8 @@ valPatBDS ::
 valPatBDS name docDescription val pat = let
     bdScopeEntry =
         pure $
-        BindScopeEntry name [] $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
+        BindScopeEntry name [] $ \_ ->
+            PatternConstructorBinding (qConstExprAny $ jmToValue val) $ qToPatternConstructor pat
     diNames = pure name
     diType = qPositiveTypeDescription @t
     docItem = ValuePatternDocItem {..}

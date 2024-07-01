@@ -3,6 +3,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Language
     - support implicit parameters
     - allow documentation sections in declarations
+    - record values
   * Library
     - rename libraries to remove "pinafore-"
     - built-in
