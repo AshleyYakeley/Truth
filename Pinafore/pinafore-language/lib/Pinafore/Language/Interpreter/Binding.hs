@@ -10,6 +10,7 @@ module Pinafore.Language.Interpreter.Binding
     , BindingSelector(..)
     , typeBindingSelector
     , recordConstructorBindingSelector
+    , recordValueBindingSelector
     , specialFormBindingSelector
     ) where
 
@@ -96,6 +97,15 @@ recordConstructorBindingSelector = let
     bsDecode (RecordConstructorBinding t) = Just t
     bsDecode _ = Nothing
     bsError = LookupNotRecordConstructorError
+    in MkBindingSelector {..}
+
+recordValueBindingSelector :: BindingSelector QRecordValue
+recordValueBindingSelector = let
+    bsEncode = RecordValueBinding
+    bsDecode (RecordValueBinding t) = Just t
+    bsDecode (RecordConstructorBinding t) = Just $ recordConstructorToValue t
+    bsDecode _ = Nothing
+    bsError = LookupNotRecordError
     in MkBindingSelector {..}
 
 specialFormBindingSelector :: BindingSelector QSpecialForm

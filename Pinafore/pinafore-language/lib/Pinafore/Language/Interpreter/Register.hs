@@ -7,7 +7,8 @@ module Pinafore.Language.Interpreter.Register
     , registerMatchBindings
     , registerGroundType
     , registerPatternConstructor
-    , registerRecord
+    , registerRecordConstructor
+    , registerRecordValue
     , registerSubtypeConversion
     ) where
 
@@ -71,8 +72,11 @@ registerPatternConstructor name doc exp pc = do
     builderLift $ checkNameForRegister name
     registerBinding name $ MkQBindingInfo name doc $ PatternConstructorBinding exp pc
 
-registerRecord :: FullName -> DefDoc -> QRecordConstructor -> QScopeBuilder ()
-registerRecord = registerSelector recordConstructorBindingSelector
+registerRecordConstructor :: FullName -> DefDoc -> QRecordConstructor -> QScopeBuilder ()
+registerRecordConstructor = registerSelector recordConstructorBindingSelector
+
+registerRecordValue :: FullName -> DefDoc -> QRecordValue -> QScopeBuilder ()
+registerRecordValue = registerSelector recordValueBindingSelector
 
 registerSubtypeConversion :: QSubtypeConversionEntry -> QScopeBuilder ()
 registerSubtypeConversion sce = do

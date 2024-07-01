@@ -80,6 +80,9 @@ data SyntaxRecursiveDeclaration'
                                SyntaxType
                                (Maybe SyntaxExpression)
     | BindingSyntaxDeclaration SyntaxBinding
+    | RecordSyntaxDeclaration FullName
+                              [SyntaxSignature]
+                              SyntaxExpression
     deriving (Eq)
 
 type SyntaxRecursiveDeclaration = SyntaxWithDoc (WithSourcePos SyntaxRecursiveDeclaration')
@@ -301,6 +304,7 @@ data SyntaxExpression'
     | SEConst SyntaxConstant
     | SEVar Namespace
             FullNameRef
+            (Maybe [(Name, SyntaxExpression)])
     | SEImplicitVar ImplicitName
     | SESpecialForm FullNameRef
                     (NonEmpty SyntaxAnnotation)

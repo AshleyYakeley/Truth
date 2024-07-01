@@ -9,7 +9,8 @@ module Pinafore.Language.Interpreter.Lookup
     , lookupRecordConstructor
     , lookupSpecialForm
     , QBoundValue(..)
-    , lookupBoundValue
+    , lookupBoundConstructor
+    , lookupRecord
     , lookupMaybeValue
     ) where
 
@@ -79,8 +80,8 @@ data QBoundValue
     = ValueBoundValue QExpression
     | RecordBoundValue QRecordValue
 
-lookupBoundValue :: FullNameRef -> QInterpreter QBoundValue
-lookupBoundValue name = do
+lookupBoundConstructor :: FullNameRef -> QInterpreter QBoundValue
+lookupBoundConstructor name = do
     b <- lookupBinding name
     case b of
         ValueBinding exp -> return $ ValueBoundValue exp
@@ -88,6 +89,9 @@ lookupBoundValue name = do
         RecordValueBinding rv -> return $ RecordBoundValue rv
         RecordConstructorBinding rc -> return $ RecordBoundValue $ recordConstructorToValue rc
         _ -> throw $ LookupNotConstructorError name
+
+lookupRecord :: FullNameRef -> QInterpreter QRecordValue
+lookupRecord = lookupSelector recordValueBindingSelector
 
 lookupMaybeValue :: FullNameRef -> QInterpreter (Maybe QExpression)
 lookupMaybeValue name = do

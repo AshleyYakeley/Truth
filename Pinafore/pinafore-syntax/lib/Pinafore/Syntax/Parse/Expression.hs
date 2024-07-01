@@ -167,6 +167,16 @@ readBinding = do
     defn <- readExpression
     return $ MkSyntaxBinding pat defn
 
+readRecordDeclaration :: Parser SyntaxRecursiveDeclaration'
+readRecordDeclaration =
+    try $ do
+        ns <- readAskNamespace
+        name <- readLName
+        sigs <- readOf readSignature
+        readThis TokAssign
+        defn <- readExpression
+        return $ RecordSyntaxDeclaration (MkFullName name ns) sigs defn
+
 readNamespaceWith :: Parser SyntaxNamespaceWith
 readNamespaceWith = do
     ns <- readNamespace
@@ -208,7 +218,7 @@ readNameRefItem =
     fmap NameSyntaxNameRefItem readFullNameRef
 
 readDirectDeclaration :: Parser SyntaxRecursiveDeclaration'
-readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
+readDirectDeclaration = readTypeDeclaration <|> readRecordDeclaration <|> fmap BindingSyntaxDeclaration readBinding
 
 readDeclaratorDeclaration :: Parser SyntaxDeclaration'
 readDeclaratorDeclaration = do
@@ -261,7 +271,7 @@ readSubsumedExpression expr = do
 readMkVar :: FullNameRef -> Parser SyntaxExpression'
 readMkVar nref = do
     curns <- readAskNamespace
-    return $ SEVar curns nref
+    return $ SEVar curns nref Nothing
 
 -- following Haskell
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
@@ -511,10 +521,15 @@ readExpression3 =
     readWithSourcePos
         (do
              name <- readFullLName
-             annotations <- many readAnnotation
-             case annotations of
-                 [] -> readMkVar name
-                 (a:aa) -> return $ SESpecialForm name $ a :| aa) <|>
+             (do
+                  rv <- readRecordValue readExpression
+                  curns <- readAskNamespace
+                  return $ SEVar curns name $ Just rv) <|>
+                 (do
+                      annotations <- many readAnnotation
+                      case annotations of
+                          [] -> readMkVar name
+                          (a:aa) -> return $ SESpecialForm name $ a :| aa)) <|>
     readWithSourcePos
         (do
              c <- readConstructor $ Just readExpression

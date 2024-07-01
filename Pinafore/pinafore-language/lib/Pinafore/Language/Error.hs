@@ -15,6 +15,7 @@ data QErrorType
     | LookupNotTypeError FullNameRef
     | LookupNotSpecialFormError FullNameRef
     | LookupNotConstructorError FullNameRef
+    | LookupNotRecordError FullNameRef
     | LookupNotRecordConstructorError FullNameRef
     | SpecialFormWrongAnnotationsError FullNameRef
                                        [NamedText]
@@ -103,6 +104,7 @@ instance ShowNamedText QErrorType where
     showNamedText (LookupNotTypeError n) = "name not type: " <> showNamedText n
     showNamedText (LookupNotSpecialFormError n) = "name not special form: " <> showNamedText n
     showNamedText (LookupNotConstructorError n) = "name not constructor: " <> showNamedText n
+    showNamedText (LookupNotRecordError n) = "name not record: " <> showNamedText n
     showNamedText (LookupNotRecordConstructorError n) = "name not record constructor: " <> showNamedText n
     showNamedText (SpecialFormWrongAnnotationsError n expected found) =
         "wrong annotations for special form " <>

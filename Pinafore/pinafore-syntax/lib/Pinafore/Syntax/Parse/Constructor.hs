@@ -1,12 +1,22 @@
 module Pinafore.Syntax.Parse.Constructor
-    ( readConstructor
+    ( readRecordValue
+    , readConstructor
     ) where
 
+import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Basic
 import Pinafore.Syntax.Parse.Parser
 import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Syntax
 import Shapes hiding (try)
+
+readRecordValue :: Parser SyntaxExpression -> Parser [(Name, SyntaxExpression)]
+readRecordValue p =
+    readOf $ do
+        n <- readLName
+        readThis TokAssign
+        v <- p
+        return (n, v)
 
 readConstructor :: Maybe (Parser SyntaxExpression) -> Parser SyntaxConstructor
 readConstructor mp =
@@ -14,13 +24,7 @@ readConstructor mp =
          name <- readFullUName
          mvals <-
              case mp of
-                 Just p ->
-                     optional $
-                     readOf $ do
-                         n <- readLName
-                         readThis TokAssign
-                         v <- p
-                         return (n, v)
+                 Just p -> optional $ readRecordValue p
                  Nothing -> return Nothing
          return $ SLNamedConstructor name mvals) <|>
     (do

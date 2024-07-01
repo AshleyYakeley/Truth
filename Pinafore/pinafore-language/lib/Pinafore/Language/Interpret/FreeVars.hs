@@ -31,6 +31,10 @@ syntaxPatternBindingVariables pat = let
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet FullName
 
+instance SyntaxFreeVariables t => SyntaxFreeVariables (Maybe t) where
+    syntaxFreeVariables Nothing = mempty
+    syntaxFreeVariables (Just t) = syntaxFreeVariables t
+
 instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
     syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
 
@@ -42,6 +46,9 @@ instance SyntaxFreeVariables t => SyntaxFreeVariables (FixedList n t) where
 
 instance SyntaxFreeVariables st => SyntaxFreeVariables (WithSourcePos st) where
     syntaxFreeVariables (MkWithSourcePos _ e) = syntaxFreeVariables e
+
+instance SyntaxFreeVariables (Name, SyntaxExpression) where
+    syntaxFreeVariables (_, expr) = syntaxFreeVariables expr
 
 instance SyntaxFreeVariables SyntaxCase where
     syntaxFreeVariables (MkSyntaxCase pat expr) =
@@ -63,11 +70,19 @@ instance SyntaxFreeVariables SyntaxDeclarator where
     syntaxFreeVariables SDImport {} = mempty
     syntaxFreeVariables SDWith {} = mempty
 
+instance SyntaxFreeVariables SyntaxConstructor where
+    syntaxFreeVariables (SLNamedConstructor _ mexprs) = syntaxFreeVariables mexprs
+    syntaxFreeVariables _ = mempty
+
+instance SyntaxFreeVariables SyntaxConstant where
+    syntaxFreeVariables SCIfThenElse = mempty
+    syntaxFreeVariables (SCConstructor sc) = syntaxFreeVariables sc
+
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
-    syntaxFreeVariables (SEConst _) = mempty
+    syntaxFreeVariables (SEConst sc) = syntaxFreeVariables sc
     syntaxFreeVariables (SEImplicitVar _) = mempty
-    syntaxFreeVariables (SEVar ns name) = opoint $ namespaceConcatFullName ns name
+    syntaxFreeVariables (SEVar ns name mb) = (opoint $ namespaceConcatFullName ns name) <> syntaxFreeVariables mb
     syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
     syntaxFreeVariables (SEAbstract match) = syntaxFreeVariables match
@@ -119,9 +134,12 @@ constructorBindingVariables :: Namespace -> SyntaxConstructor -> FiniteSet Bindi
 constructorBindingVariables ns (SLNamedConstructor name _) = singletonSet $ ConsBindingThing ns name
 constructorBindingVariables _ _ = mempty
 
+instance SyntaxBindingVariables FullName where
+    syntaxBindingVariables fname = singletonSet $ VarBindingThing fname
+
 instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables AnySyntaxPattern = mempty
-    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet $ VarBindingThing name
+    syntaxBindingVariables (VarSyntaxPattern name) = syntaxBindingVariables name
     syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
     syntaxBindingVariables (ConstructorSyntaxPattern ns c pats) =
@@ -136,6 +154,7 @@ instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) wh
 
 instance SyntaxBindingVariables SyntaxRecursiveDeclaration' where
     syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
+    syntaxBindingVariables (RecordSyntaxDeclaration name _ _) = syntaxBindingVariables name
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxDeclarator where

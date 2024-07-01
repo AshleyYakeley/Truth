@@ -589,7 +589,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                                   toExpressionPatternConstructor pc
                                            MkConstructorType _ (RecordCF _) lt -> let
                                                recordcons = MkQRecordConstructor lt declpos declneg codec
-                                               in registerRecord ctfullname (ctDoc constructor) recordcons
+                                               in registerRecordConstructor ctfullname (ctDoc constructor) recordcons
                             constructorBox ::
                                    Constructor dv maintype extra
                                 -> QFixBox ( QGroundType dv maintype

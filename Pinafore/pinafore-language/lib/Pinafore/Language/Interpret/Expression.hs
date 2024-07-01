@@ -191,8 +191,9 @@ typedSyntaxToSingleBindings isRecursive spat@(MkWithSourcePos spos pat) mstype s
             sbs <-
                 for bvars $ \pname -> let
                     wspos = MkWithSourcePos spos
-                    funcsexpr = wspos $ SEAbstract $ MkSyntaxCase spat $ wspos $ SEVar RootNamespace $ fullNameRef pname
-                    valsexpr = wspos $ SEApply funcsexpr $ wspos $ SEVar RootNamespace $ fullNameRef pvname
+                    funcsexpr =
+                        wspos $ SEAbstract $ MkSyntaxCase spat $ wspos $ SEVar RootNamespace (fullNameRef pname) Nothing
+                    valsexpr = wspos $ SEApply funcsexpr $ wspos $ SEVar RootNamespace (fullNameRef pvname) Nothing
                     in fmap snd $ buildSingleBinding (Just (pname, isRecursive)) Nothing valsexpr doc
             return $ sb : sbs
 
@@ -242,6 +243,10 @@ interpretSequentialLetBinding sbind = do
             qBindingSequentialLetExpr b
     registerMapSingleBindings bmap $ pure sbind
 
+recordToSingleBindings ::
+       FullName -> [SyntaxSignature] -> SyntaxExpression -> RawMarkdown -> QScopeBuilder [SingleBinding]
+recordToSingleBindings _ _ _ _ = return []
+
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> QScopeBuilder ()
 interpretRecursiveDocDeclarations ddecls = do
     let
@@ -254,6 +259,9 @@ interpretRecursiveDocDeclarations ddecls = do
                         (mempty, scopeSetSourcePos spos >> interpretSubtypeRelation trustme sta stb mbody doc, mempty)
                 BindingSyntaxDeclaration sbind -> do
                     binds <- syntaxToSingleBindings True sbind doc
+                    return (mempty, mempty, binds)
+                RecordSyntaxDeclaration name sigs expr -> do
+                    binds <- recordToSingleBindings name sigs expr doc
                     return (mempty, mempty, binds)
     (typeDecls, subtypeSB, bindingDecls) <- fmap mconcat $ for ddecls interp
     let
@@ -282,6 +290,9 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             interpretSubtypeRelation trustme sta stb mbody doc
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
             binds <- syntaxToSingleBindings False sbind doc
+            for_ binds interpretSequentialLetBinding
+        DirectSyntaxDeclaration (RecordSyntaxDeclaration name sigs expr) -> do
+            binds <- recordToSingleBindings name sigs expr doc
             for_ binds interpretSequentialLetBinding
         DeclaratorSyntaxDeclaration declarator -> do
             sd <- builderLift $ interpretDeclarator declarator
@@ -352,7 +363,7 @@ interpretRecordValue (MkQRecordValue items vtype ff) msarglist = do
 
 interpretNamedConstructor :: FullNameRef -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
 interpretNamedConstructor name mvals = do
-    bv <- lookupBoundValue name
+    bv <- lookupBoundConstructor name
     case (bv, mvals) of
         (ValueBoundValue e, Nothing) -> return e
         (ValueBoundValue _, Just _) -> throw $ LookupNotRecordConstructorError name
@@ -546,7 +557,10 @@ interpretExpression' (SEApply sf sarg) = do
     arg <- interpretExpression sarg
     qApplyExpr f arg
 interpretExpression' (SEConst c) = interpretConstant c
-interpretExpression' (SEVar _ name) = qName name
+interpretExpression' (SEVar _ name Nothing) = qName name
+interpretExpression' (SEVar _ name (Just sigs)) = do
+    rv <- lookupRecord name
+    interpretRecordValue rv $ Just sigs
 interpretExpression' (SEImplicitVar name) = return $ qVarExpr $ ImplicitVarID name
 interpretExpression' (SESpecialForm name annots) = do
     val <- interpretSpecialForm name annots
