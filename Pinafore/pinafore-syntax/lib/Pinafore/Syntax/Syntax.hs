@@ -80,9 +80,6 @@ data SyntaxRecursiveDeclaration'
                                SyntaxType
                                (Maybe SyntaxExpression)
     | BindingSyntaxDeclaration SyntaxBinding
-    | RecordSyntaxDeclaration FullName
-                              [SyntaxSignature]
-                              SyntaxExpression
     deriving (Eq)
 
 type SyntaxRecursiveDeclaration = SyntaxWithDoc (WithSourcePos SyntaxRecursiveDeclaration')
@@ -94,6 +91,10 @@ data SyntaxNameRefItem
 
 data SyntaxDeclaration'
     = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
+    | RecordSyntaxDeclaration FullName
+                              [SyntaxSignature]
+                              (Maybe SyntaxType)
+                              SyntaxExpression
     | DeclaratorSyntaxDeclaration SyntaxDeclarator
     | DeclaratorInSyntaxDeclaration SyntaxDeclarator
                                     SyntaxDeclaration

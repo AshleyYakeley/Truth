@@ -17,6 +17,8 @@ module Data.Witness.ListVProduct
     , listTypeToVType
     , listProductToVProduct
     , listVProductToProduct
+    , listVProductHead
+    , listVProductTail
     , listVProductGetters
     ) where
 
@@ -229,6 +231,16 @@ getters _ NilListType = NilListType
 getters i (ConsListType (_ :: _ a) (tt :: _ aa)) =
     case (typicalHeadRefl @a @aa, typicalTailRefl @a @aa) of
         (Refl, Refl) -> ConsListType (getItem i) $ getters (succ i) tt
+
+listVProductHead :: forall a aa. ListVProduct (a : aa) -> a
+listVProductHead (MkListVProduct v) =
+    case typicalHeadRefl @a @aa of
+        Refl -> indexEx v 0
+
+listVProductTail :: forall a aa. ListVProduct (a : aa) -> ListVProduct aa
+listVProductTail (MkListVProduct v) =
+    case typicalTailRefl @a @aa of
+        Refl -> MkListVProduct $ drop 1 v
 
 listVProductGetters :: forall (tt :: [Type]) w. ListType w tt -> ListType ((->) (ListVProduct tt)) tt
 listVProductGetters = getters 0

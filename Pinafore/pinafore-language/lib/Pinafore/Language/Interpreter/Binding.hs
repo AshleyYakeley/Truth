@@ -36,9 +36,9 @@ instance (HasInterpreter, Is PolarityType polarity) => HasVarMapping (QSignature
     getVarMapping (ValueSignature _ _ t _) = getVarMapping t
 
 data QRecordValue =
-    forall (t :: Type) (tt :: [Type]). MkQRecordValue (ListVType (QSignature 'Positive) tt)
-                                                      (QGroundedShimWit 'Positive t)
-                                                      (ListVProduct tt -> t)
+    forall (t :: Type) (tt :: [Type]). MkQRecordValue (ListType (QSignature 'Positive) tt)
+                                                      (QShimWit 'Positive t)
+                                                      (QOpenExpression (ListVProduct tt -> t))
 
 data QRecordConstructor =
     forall (t :: Type) (tt :: [Type]). MkQRecordConstructor (ListVType (QSignature 'Positive) tt)
@@ -47,7 +47,8 @@ data QRecordConstructor =
                                                             (Codec t (ListVProduct tt))
 
 recordConstructorToValue :: QRecordConstructor -> QRecordValue
-recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) = MkQRecordValue sigs vtype $ encode codec
+recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) =
+    MkQRecordValue (listVTypeToType sigs) (shimWitToDolan vtype) $ pure $ encode codec
 
 type QSpecialForm :: Type
 data QSpecialForm =

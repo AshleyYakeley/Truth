@@ -10,6 +10,7 @@ module Language.Expression.Common.Abstract
     , unifierSubstituteSimplifyFinalRename
     , unifierSolve
     , abstractExpression
+    , abstractOpenExpression
     , FunctionWitness
     , UnifierFunctionPosWitness
     , UnifierFunctionNegWitness
@@ -139,6 +140,18 @@ abstractExpression name twt expr = do
     MkAbstractResult vwt uexpr <- abstractResult @ts name expr
     uabsconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts twt) (mkShimWit vwt)
     return $ liftA2 (\tb sat -> tb . shimToFunction sat) uexpr uabsconv
+
+abstractOpenExpression ::
+       forall ts a b. AbstractTypeSystem ts
+    => TSVarID ts
+    -> TSPosShimWit ts a
+    -> TSOpenExpression ts b
+    -> TSInner ts (TSOpenExpression ts (a -> b))
+abstractOpenExpression name twt expr =
+    runRenamer @ts [] [] $
+    withTransConstraintTM @Monad $ do
+        uexpr <- abstractExpression @ts name twt expr
+        unifierSolve @ts uexpr return
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 

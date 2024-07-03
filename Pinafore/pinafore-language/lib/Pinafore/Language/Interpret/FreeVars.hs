@@ -154,7 +154,6 @@ instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) wh
 
 instance SyntaxBindingVariables SyntaxRecursiveDeclaration' where
     syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
-    syntaxBindingVariables (RecordSyntaxDeclaration name _ _) = syntaxBindingVariables name
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxDeclarator where
@@ -165,6 +164,7 @@ instance SyntaxBindingVariables SyntaxDeclarator where
 
 instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind
+    syntaxBindingVariables (RecordSyntaxDeclaration name _ _ _) = syntaxBindingVariables name
     syntaxBindingVariables (DeclaratorSyntaxDeclaration declarator) = syntaxBindingVariables declarator
     syntaxBindingVariables (DeclaratorInSyntaxDeclaration _ decl) = syntaxBindingVariables decl
     syntaxBindingVariables _ = mempty

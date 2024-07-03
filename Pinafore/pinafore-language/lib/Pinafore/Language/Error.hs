@@ -36,6 +36,7 @@ data QErrorType
     | DeclareDatatypeDuplicateInheritedMembers Name
     | RecordConstructorMissingName Name
     | RecordConstructorExtraName Name
+    | RecordFunctionSupertype
     | TypeConvertError NamedText
                        Polarity
                        NamedText
@@ -127,6 +128,7 @@ instance ShowNamedText QErrorType where
         "multiple inherited member declarations for " <> showNamedText m
     showNamedText (RecordConstructorMissingName n) = "missing name for record constructor: " <> showNamedText n
     showNamedText (RecordConstructorExtraName n) = "extra name for record constructor: " <> showNamedText n
+    showNamedText RecordFunctionSupertype = "supertype in record function declaration"
     showNamedText (TypeConvertError ta pa tb pb) =
         "cannot convert " <> ta <> toNamedText (polaritySymbol pa) <> " <: " <> tb <> toNamedText (polaritySymbol pb)
     showNamedText (NoGroundTypeConversionError ta tb) = "no ground conversion for " <> ta <> " <: " <> tb

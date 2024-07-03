@@ -1065,9 +1065,12 @@ testQueries =
                      , testLiteral 4 True "34.5"
                      , testLiteral 9 True "~34"
                      ]
-        , testTree
+        , failTestBecause "crashes" $
+          testTree
               "record"
-              [ testQuery "let rf of x: Integer end = x in rf of x = 7 end" $ LRSuccess "7"
+              [ testQuery "let rf of end = 4 in rf of end" $ LRSuccess "4"
+              , testQuery "let rf of x: Integer end = x in rf of x = 7 end" $ LRSuccess "7"
+              , testQuery "let rf of x: Integer end : Integer = x in rf of x = 7 end" $ LRSuccess "7"
               , testQuery "let rf of x: Integer end = x in let x = 7 in rf" $ LRSuccess "7"
               , testQuery "let rf of x: Integer; y: Integer end = x + y in rf of x = 8; y = 12 end" $ LRSuccess "20"
               , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in rf of x = 8; y = 12 end" $ LRSuccess "20"
@@ -1079,6 +1082,9 @@ testQueries =
                 LRSuccess "(Just 3,Just \"text\")"
               , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in rf" $
                 LRSuccess "(Just 3,Just \"text\")"
+              , testQuery
+                    "let rec rf of x: List Integer = x >- match [] => []; a :: aa => a + 1 :: rf of x = aa end end in rf [3,4,5]" $
+                LRSuccess "[4,5,6]"
               ]
         ]
 

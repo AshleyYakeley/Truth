@@ -243,10 +243,6 @@ interpretSequentialLetBinding sbind = do
             qBindingSequentialLetExpr b
     registerMapSingleBindings bmap $ pure sbind
 
-recordToSingleBindings ::
-       FullName -> [SyntaxSignature] -> SyntaxExpression -> RawMarkdown -> QScopeBuilder [SingleBinding]
-recordToSingleBindings _ _ _ _ = return []
-
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> QScopeBuilder ()
 interpretRecursiveDocDeclarations ddecls = do
     let
@@ -259,9 +255,6 @@ interpretRecursiveDocDeclarations ddecls = do
                         (mempty, scopeSetSourcePos spos >> interpretSubtypeRelation trustme sta stb mbody doc, mempty)
                 BindingSyntaxDeclaration sbind -> do
                     binds <- syntaxToSingleBindings True sbind doc
-                    return (mempty, mempty, binds)
-                RecordSyntaxDeclaration name sigs expr -> do
-                    binds <- recordToSingleBindings name sigs expr doc
                     return (mempty, mempty, binds)
     (typeDecls, subtypeSB, bindingDecls) <- fmap mconcat $ for ddecls interp
     let
@@ -279,6 +272,54 @@ sectionHeading :: Text -> RawMarkdown -> QScopeBuilder --> QScopeBuilder
 sectionHeading heading doc =
     prodCensor builderDocsProd $ \docs -> pureForest $ MkTree (MkDefDoc (HeadingDocItem $ plainText heading) doc) docs
 
+data QRVSig =
+    forall a. MkQRVSig Name
+                       VarID
+                       (QType 'Positive a)
+                       (Maybe (QOpenExpression a))
+
+allocateQRV :: SyntaxSignature -> QScopeBuilder QRVSig
+allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature name stype msdef))) = do
+    curns <- builderLift $ paramAsk currentNamespaceParam
+    (_, varid) <- allocateVar $ Just $ MkFullName name curns
+    builderLift $ do
+        sqtype <- interpretType @'Positive stype
+        case sqtype of
+            MkSome (qtype :: _ t) -> do
+                mqdef <-
+                    for msdef $ \sdef -> do
+                        qdef <- interpretExpression sdef
+                        qSubsumeExpressionToOpen mempty qtype qdef
+                return $ MkQRVSig name varid qtype mqdef
+allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (SupertypeConstructorSyntaxSignature {}))) =
+    builderLift $ throw RecordFunctionSupertype
+
+recordValueAddSig :: QRVSig -> QRecordValue -> QInterpreter QRecordValue
+recordValueAddSig (MkQRVSig name varid qtype mqdef) (MkQRecordValue tt twt f) = do
+    let
+        qsig :: QSignature 'Positive _
+        qsig = ValueSignature (error "NYI") name qtype mqdef
+    f' <- qAbstractOpen varid (mkShimWit qtype) f
+    return $
+        MkQRecordValue (ConsListType qsig tt) twt $ fmap (\atr l -> atr (listVProductHead l) (listVProductTail l)) f'
+
+subsumeRecordValue :: Some (QType Positive) -> QRecordValue -> QInterpreter QRecordValue
+subsumeRecordValue (MkSome _qtype) rv = return rv -- NYI
+
+interpretRecordValueDecl :: [SyntaxSignature] -> Maybe SyntaxType -> SyntaxExpression -> QInterpreter QRecordValue
+interpretRecordValueDecl sigs mstype sexpr =
+    withScopeBuilder (for sigs allocateQRV) $ \qrvsigs -> do
+        MkSealedExpression btype expr <- interpretExpression sexpr
+        let
+            rv0 :: QRecordValue
+            rv0 = MkQRecordValue NilListType btype $ fmap (\t _ -> t) expr
+        rv <- unEndoM (mconcat $ fmap (\sig -> MkEndoM $ recordValueAddSig sig) qrvsigs) rv0
+        case mstype of
+            Nothing -> return rv
+            Just stype -> do
+                qtype <- interpretType @'Positive stype
+                subsumeRecordValue qtype rv
+
 interpretDeclaration :: SyntaxDeclaration -> QScopeBuilder ()
 interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
     scopeSetSourcePos spos
@@ -291,9 +332,12 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
             binds <- syntaxToSingleBindings False sbind doc
             for_ binds interpretSequentialLetBinding
-        DirectSyntaxDeclaration (RecordSyntaxDeclaration name sigs expr) -> do
-            binds <- recordToSingleBindings name sigs expr doc
-            for_ binds interpretSequentialLetBinding
+        RecordSyntaxDeclaration name sigs mtype expr -> do
+            let
+                docItem = valueDocItem name mtype
+                docDescription = doc
+            rv <- builderLift $ interpretRecordValueDecl sigs mtype expr
+            registerRecordValue name MkDefDoc {..} rv
         DeclaratorSyntaxDeclaration declarator -> do
             sd <- builderLift $ interpretDeclarator declarator
             registerScopeDocs sd
@@ -319,12 +363,12 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                     Nothing -> showText nameref <> " not found"
 
 interpretRecordValue :: QRecordValue -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
-interpretRecordValue (MkQRecordValue items vtype ff) msarglist = do
+interpretRecordValue (MkQRecordValue items vtype rvexpr) msarglist = do
     let
         getsigname :: forall a. QSignature 'Positive a -> Maybe Name
         getsigname (ValueSignature _ name _ _) = Just name
         signames :: [Name]
-        signames = catMaybes $ listVTypeToList getsigname items
+        signames = catMaybes $ listTypeToList getsigname items
     margmap :: Maybe (Map Name QExpression) <-
         for msarglist $ \sarglist -> do
             arglist <-
@@ -352,14 +396,14 @@ interpretRecordValue (MkQRecordValue items vtype ff) msarglist = do
                                     Nothing -> throw $ RecordConstructorMissingName iname
     runRenamer @QTypeSystem [] freeFixedNames $ do
         sexpr <-
-            listVTypeFor items $ \case
+            listVTypeFor (listTypeToVType items) $ \case
                 ValueSignature _ iname itype mdefault -> do
                     iexpr <- lift $ getName (fmap (MkSealedExpression (mkShimWit itype)) mdefault) iname
                     itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
                     iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
                     subsumerExpressionTo @QTypeSystem itype' iexpr'
         (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listVProductSequence sexpr
-        unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression (shimWitToDolan vtype) $ fmap ff resultExpr
+        unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ rvexpr <*> resultExpr
 
 interpretNamedConstructor :: FullNameRef -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
 interpretNamedConstructor name mvals = do
@@ -446,8 +490,8 @@ interpretCase :: VarID -> SyntaxCase -> QInterpreter QPartialExpression
 interpretCase varid (MkSyntaxCase spat sbody) =
     interpretSinglePattern varid spat $ fmap sealedToPartialExpression $ interpretExpression sbody
 
-specialCaseVarPatterns :: Bool
-specialCaseVarPatterns = True
+specialCaseVarPatternsINTERNAL :: Bool
+specialCaseVarPatternsINTERNAL = True
 
 interpretMultiPattern ::
        FixedList n VarID
@@ -514,12 +558,12 @@ interpretExpression' (SESubsume sexpr stype) = do
     t <- interpretType stype
     qSubsumeExpr t expr
 interpretExpression' (SEAbstract (MkSyntaxCase (MkWithSourcePos _ AnySyntaxPattern) sbody))
-    | specialCaseVarPatterns =
+    | specialCaseVarPatternsINTERNAL =
         withAllocateNewVar Nothing $ \varid -> do
             expr <- interpretExpression sbody
             qAbstractExpr varid expr
 interpretExpression' (SEAbstract (MkSyntaxCase (MkWithSourcePos _ (VarSyntaxPattern n)) sbody))
-    | specialCaseVarPatterns =
+    | specialCaseVarPatternsINTERNAL =
         withAllocateNewVar (Just n) $ \varid -> do
             expr <- interpretExpression sbody
             qAbstractExpr varid expr
@@ -630,7 +674,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody = do
                     body <- interpretExpression sbody
                     case funcWit of
                         MkShimWit funcType iconv -> do
-                            convexpr <- typedSubsumeExpressionToOpen mempty funcType body
+                            convexpr <- qSubsumeExpressionToOpen mempty funcType body
                             return $
                                 subtypeConversionEntry trustme Nothing gta gtb $
                                 fmap

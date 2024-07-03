@@ -51,6 +51,10 @@ qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
+qAbstractOpen ::
+       forall a b. VarID -> QShimWit 'Positive a -> QOpenExpression b -> QInterpreter (QOpenExpression (a -> b))
+qAbstractOpen = tsAbstractOpen @QTypeSystem
+
 qSimplify ::
        forall a. TSMappable QTypeSystem a
     => a
@@ -174,9 +178,9 @@ qValue v = MkSomeOf toPolarShimWit v
 typedUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
 typedUnifyExpressionToOpen = tsUnifyExpressionTo @QTypeSystem
 
-typedSubsumeExpressionToOpen ::
+qSubsumeExpressionToOpen ::
        forall t. FiniteSet SomeTypeVarT -> QType 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
-typedSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem
+qSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem
 
 qUnifyValue ::
        forall t. HasQType 'Negative t

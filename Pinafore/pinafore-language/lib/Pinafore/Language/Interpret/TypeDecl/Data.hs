@@ -310,7 +310,7 @@ interpretSignature' tid _ (ValueSyntaxSignature name stype msdefv) = do
             modefv <-
                 for msdefv $ \sdefv -> do
                     defv <- ?interpretExpression sdefv
-                    typedSubsumeExpressionToOpen mempty qtype defv
+                    qSubsumeExpressionToOpen mempty qtype defv
             return $ (Nothing, pure $ MkSome $ ValueSignature tid name qtype modefv)
 interpretSignature' _ supertypes (SupertypeConstructorSyntaxSignature name) = do
     rcd <- lookupRecordConstructorData supertypes name

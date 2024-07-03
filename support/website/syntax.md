@@ -190,6 +190,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <declaration> ::=
     <direct-declaration> |
+    <record-binding> |
     "namespace" <optional("docsec")> uname <of(<declaration>)> |
     "docsec" literal-text <of(<declaration>)> |
     "expose" <name-list> |
@@ -203,7 +204,6 @@ All declarations, including type declarations, are local to a `let` block.
     "subtype" <optional("trustme")> <type> "<:" <type> <optional("=" <expression>)> |
     "dynamictype" <type-const> <dynamictype-body> |
     <binding>
-    <record-binding>
 
 <name-item> ::= <name> | "namespace" <name>
 
@@ -217,7 +217,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <binding> ::= <pattern-1> "=" <expression>
 
-<record-binding> ::= lname <of(<record-member>)> "=" <expression>
+<record-binding> ::= lname <of(<record-member>)> <optional(":" <type>)> "=" <expression>
 
 <supertypes> = <type> | <supertypes> "&" <type>
 

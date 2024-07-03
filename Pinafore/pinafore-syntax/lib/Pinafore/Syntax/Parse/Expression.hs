@@ -167,15 +167,19 @@ readBinding = do
     defn <- readExpression
     return $ MkSyntaxBinding pat defn
 
-readRecordDeclaration :: Parser SyntaxRecursiveDeclaration'
+readRecordDeclaration :: Parser SyntaxDeclaration'
 readRecordDeclaration =
     try $ do
         ns <- readAskNamespace
         name <- readLName
         sigs <- readOf readSignature
+        mtype <-
+            optional $ do
+                readThis TokTypeJudge
+                readType
         readThis TokAssign
         defn <- readExpression
-        return $ RecordSyntaxDeclaration (MkFullName name ns) sigs defn
+        return $ RecordSyntaxDeclaration (MkFullName name ns) sigs mtype defn
 
 readNamespaceWith :: Parser SyntaxNamespaceWith
 readNamespaceWith = do
@@ -218,7 +222,7 @@ readNameRefItem =
     fmap NameSyntaxNameRefItem readFullNameRef
 
 readDirectDeclaration :: Parser SyntaxRecursiveDeclaration'
-readDirectDeclaration = readTypeDeclaration <|> readRecordDeclaration <|> fmap BindingSyntaxDeclaration readBinding
+readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
 
 readDeclaratorDeclaration :: Parser SyntaxDeclaration'
 readDeclaratorDeclaration = do
@@ -251,6 +255,7 @@ readDeclaration =
         [ readDebugDeclaration
         , readExposeDeclaration
         , readDeclaratorDeclaration
+        , readRecordDeclaration
         , fmap DirectSyntaxDeclaration readDirectDeclaration
         , readNamespaceDecl
         , readDocSectionDecl
