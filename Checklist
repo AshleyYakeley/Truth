@@ -41,38 +41,43 @@ Before release:
     stack upgrade  # if not using nix
     stack --version
 
-9. Update locks
+9. Make releases for all modified packages in external/
+
+    external/*
+    stack.yaml
+
+10. Update locks
 
     make update-locks
 
-10. Commit and push changes to repo
+11. Commit and push changes to repo
 
     git commit -a
     git push
 
-11. Build & test
+12. Build & test
 
     make top-release
 
-12. Run test UI
+13. Run test UI
 
     bin/testpinafore Pinafore/pinafore-app/test/script/test
     # time zone in stack's docker containter will be UTC
 
-13. Tag commit
+14. Tag commit
 
     git tag -a -s v<VERSION> -m "Version <VERSION>"
     git push --tags
 
-14. Upload to Github
+15. Upload to Github
 
     https://github.com/AshleyYakeley/Truth/releases
 
-15. Upload documentation to pinafore.info
+16. Upload documentation to pinafore.info
 
     (use script)
     https://pinafore.info/
 
-16. Close completed milestone
+17. Close completed milestone
 
     https://github.com/AshleyYakeley/Truth/milestones

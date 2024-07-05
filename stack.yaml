@@ -5,7 +5,7 @@ packages:
 
 # separate (submodule) dependencies
 #- external/countable
-#- external/witness
+- external/witness
 #- external/open-witness
 #- external/type-rig
 - external/monadology

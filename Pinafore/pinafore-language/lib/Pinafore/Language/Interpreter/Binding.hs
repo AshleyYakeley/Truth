@@ -32,13 +32,24 @@ data QSignature (polarity :: Polarity) (t :: Type) =
                    (QType polarity t)
                    (Maybe (QOpenExpression t))
 
+instance Is PolarityType polarity => Show (QSignature polarity a) where
+    show (ValueSignature _ name t mexpr) =
+        show name <>
+        ": " <>
+        show t <>
+        case mexpr of
+            Nothing -> ""
+            Just expr -> " = " <> show expr
+
 instance (HasInterpreter, Is PolarityType polarity) => HasVarMapping (QSignature polarity) where
     getVarMapping (ValueSignature _ _ t _) = getVarMapping t
 
 data QRecordValue =
-    forall (t :: Type) (tt :: [Type]). MkQRecordValue (ListType (QSignature 'Positive) tt)
-                                                      (QShimWit 'Positive t)
-                                                      (QOpenExpression (ListVProduct tt -> t))
+    forall (tt :: [Type]). MkQRecordValue (ListType (QSignature 'Positive) tt)
+                                          (QFExpression ((->) (ListProduct tt)))
+
+instance Show QRecordValue where
+    show (MkQRecordValue sigs expr) = "of " <> show sigs <> ": " <> show expr
 
 data QRecordConstructor =
     forall (t :: Type) (tt :: [Type]). MkQRecordConstructor (ListVType (QSignature 'Positive) tt)
@@ -48,7 +59,8 @@ data QRecordConstructor =
 
 recordConstructorToValue :: QRecordConstructor -> QRecordValue
 recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) =
-    MkQRecordValue (listVTypeToType sigs) (shimWitToDolan vtype) $ pure $ encode codec
+    MkQRecordValue (listVTypeToType sigs) $
+    constSealedFExpression $ MkSomeFor (shimWitToDolan vtype) (encode codec . listProductToVProduct sigs)
 
 type QSpecialForm :: Type
 data QSpecialForm =

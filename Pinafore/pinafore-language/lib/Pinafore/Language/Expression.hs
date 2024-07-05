@@ -51,9 +51,9 @@ qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
-qAbstractOpen ::
-       forall a b. VarID -> QShimWit 'Positive a -> QOpenExpression b -> QInterpreter (QOpenExpression (a -> b))
-qAbstractOpen = tsAbstractOpen @QTypeSystem
+qAbstractF ::
+       forall p q. VarID -> QShimWit 'Positive p -> QFExpression ((->) q) -> QInterpreter (QFExpression ((->) (p, q)))
+qAbstractF = tsAbstractF @QTypeSystem
 
 qSimplify ::
        forall a. TSMappable QTypeSystem a

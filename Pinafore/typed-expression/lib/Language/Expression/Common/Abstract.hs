@@ -10,12 +10,12 @@ module Language.Expression.Common.Abstract
     , unifierSubstituteSimplifyFinalRename
     , unifierSolve
     , abstractExpression
-    , abstractOpenExpression
     , FunctionWitness
     , UnifierFunctionPosWitness
     , UnifierFunctionNegWitness
     , substituteSealedExpression
     , abstractSealedExpression
+    , abstractSealedFExpression
     , applySealedExpression
     , letSealedExpression
     , bothSealedPattern
@@ -35,6 +35,7 @@ import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
+import Language.Expression.Common.SealedF
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.TypeSystem
@@ -142,16 +143,27 @@ abstractExpression name twt expr = do
     return $ liftA2 (\tb sat -> tb . shimToFunction sat) uexpr uabsconv
 
 abstractOpenExpression ::
-       forall ts a b. AbstractTypeSystem ts
+       forall ts a b r. (AbstractTypeSystem ts, TSMappable ts r)
     => TSVarID ts
     -> TSPosShimWit ts a
     -> TSOpenExpression ts b
-    -> TSInner ts (TSOpenExpression ts (a -> b))
-abstractOpenExpression name twt expr =
+    -> (TSOpenExpression ts (a -> b) -> TSOuter ts r)
+    -> TSInner ts r
+abstractOpenExpression name twt expr asm =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         uexpr <- abstractExpression @ts name twt expr
-        unifierSolve @ts uexpr return
+        unifierSolve @ts uexpr asm
+
+abstractSealedFExpression ::
+       forall ts p q. AbstractTypeSystem ts
+    => TSVarID ts
+    -> TSPosShimWit ts p
+    -> TSSealedFExpression ts ((->) q)
+    -> TSInner ts (TSSealedFExpression ts ((->) (p, q)))
+abstractSealedFExpression name nwt (MkSealedFExpression twt expr) =
+    abstractOpenExpression @ts name nwt expr $ \expr' ->
+        return $ MkSealedFExpression twt $ fmap (\pqt (p, q) -> pqt p q) expr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 

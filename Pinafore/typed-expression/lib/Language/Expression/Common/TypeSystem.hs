@@ -5,6 +5,7 @@ import Language.Expression.Common.Named
 import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.Sealed
+import Language.Expression.Common.SealedF
 import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.WitnessMappable
 import Shapes
@@ -55,6 +56,8 @@ type TSOpenExpression ts = NamedExpression (TSVarID ts) (TSNegShimWit ts)
 type TSSealedPartialExpression ts = SealedPartialExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
 
 type TSSealedExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
+
+type TSSealedFExpression ts = SealedFExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
 
 type TSOpenSolverExpression ts typeexpr
      = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenExpression ts)

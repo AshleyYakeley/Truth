@@ -161,13 +161,13 @@ tsAbstract ::
     -> TSInner ts (TSSealedExpression ts)
 tsAbstract = abstractSealedExpression @ts (tsFunctionPosShimWit @ts)
 
-tsAbstractOpen ::
-       forall ts a b. CompleteTypeSystem ts
+tsAbstractF ::
+       forall ts p q. CompleteTypeSystem ts
     => TSVarID ts
-    -> TSPosShimWit ts a
-    -> TSOpenExpression ts b
-    -> TSInner ts (TSOpenExpression ts (a -> b))
-tsAbstractOpen = abstractOpenExpression @ts
+    -> TSPosShimWit ts p
+    -> TSSealedFExpression ts ((->) q)
+    -> TSInner ts (TSSealedFExpression ts ((->) (p, q)))
+tsAbstractF = abstractSealedFExpression @ts
 
 tsSimplify ::
        forall ts a. (CompleteTypeSystem ts, TSMappable ts a)

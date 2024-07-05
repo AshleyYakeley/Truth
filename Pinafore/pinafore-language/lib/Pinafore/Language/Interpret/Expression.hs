@@ -278,6 +278,17 @@ data QRVSig =
                        (QType 'Positive a)
                        (Maybe (QOpenExpression a))
 
+instance Show QRVSig where
+    show (MkQRVSig name varid t mexpr) =
+        show name <>
+        " (" <>
+        show varid <>
+        "): " <>
+        show t <>
+        case mexpr of
+            Just expr -> " = " <> show expr
+            Nothing -> ""
+
 allocateQRV :: SyntaxSignature -> QScopeBuilder QRVSig
 allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature name stype msdef))) = do
     curns <- builderLift $ paramAsk currentNamespaceParam
@@ -295,13 +306,12 @@ allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (SupertypeConstructorSyntaxSig
     builderLift $ throw RecordFunctionSupertype
 
 recordValueAddSig :: QRVSig -> QRecordValue -> QInterpreter QRecordValue
-recordValueAddSig (MkQRVSig name varid qtype mqdef) (MkQRecordValue tt twt f) = do
+recordValueAddSig (MkQRVSig name varid qtype mqdef) (MkQRecordValue tt fexpr) = do
     let
         qsig :: QSignature 'Positive _
         qsig = ValueSignature (error "NYI") name qtype mqdef
-    f' <- qAbstractOpen varid (mkShimWit qtype) f
-    return $
-        MkQRecordValue (ConsListType qsig tt) twt $ fmap (\atr l -> atr (listVProductHead l) (listVProductTail l)) f'
+    fexpr' <- qAbstractF varid (mkShimWit qtype) fexpr
+    return $ MkQRecordValue (ConsListType qsig tt) fexpr'
 
 subsumeRecordValue :: Some (QType Positive) -> QRecordValue -> QInterpreter QRecordValue
 subsumeRecordValue (MkSome _qtype) rv = return rv -- NYI
@@ -309,10 +319,10 @@ subsumeRecordValue (MkSome _qtype) rv = return rv -- NYI
 interpretRecordValueDecl :: [SyntaxSignature] -> Maybe SyntaxType -> SyntaxExpression -> QInterpreter QRecordValue
 interpretRecordValueDecl sigs mstype sexpr =
     withScopeBuilder (for sigs allocateQRV) $ \qrvsigs -> do
-        MkSealedExpression btype expr <- interpretExpression sexpr
+        expr <- interpretExpression sexpr
         let
             rv0 :: QRecordValue
-            rv0 = MkQRecordValue NilListType btype $ fmap (\t _ -> t) expr
+            rv0 = MkQRecordValue NilListType $ toSealedFExpression expr
         rv <- unEndoM (mconcat $ fmap (\sig -> MkEndoM $ recordValueAddSig sig) qrvsigs) rv0
         case mstype of
             Nothing -> return rv
@@ -363,7 +373,7 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                     Nothing -> showText nameref <> " not found"
 
 interpretRecordValue :: QRecordValue -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
-interpretRecordValue (MkQRecordValue items vtype rvexpr) msarglist = do
+interpretRecordValue (MkQRecordValue items rvexpr@(MkSealedFExpression vtype _)) msarglist = do
     let
         getsigname :: forall a. QSignature 'Positive a -> Maybe Name
         getsigname (ValueSignature _ name _ _) = Just name
@@ -396,14 +406,14 @@ interpretRecordValue (MkQRecordValue items vtype rvexpr) msarglist = do
                                     Nothing -> throw $ RecordConstructorMissingName iname
     runRenamer @QTypeSystem [] freeFixedNames $ do
         sexpr <-
-            listVTypeFor (listTypeToVType items) $ \case
+            listTypeFor items $ \case
                 ValueSignature _ iname itype mdefault -> do
                     iexpr <- lift $ getName (fmap (MkSealedExpression (mkShimWit itype)) mdefault) iname
                     itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
                     iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
                     subsumerExpressionTo @QTypeSystem itype' iexpr'
-        (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listVProductSequence sexpr
-        unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ MkSealedExpression vtype $ rvexpr <*> resultExpr
+        (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listProductSequence sexpr
+        unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ applySealedFExpression rvexpr resultExpr
 
 interpretNamedConstructor :: FullNameRef -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
 interpretNamedConstructor name mvals = do

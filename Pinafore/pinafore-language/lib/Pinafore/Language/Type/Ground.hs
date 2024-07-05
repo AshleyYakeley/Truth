@@ -171,6 +171,8 @@ type QOpenExpression = TSOpenExpression QTypeSystem
 
 type QExpression = TSSealedExpression QTypeSystem
 
+type QFExpression = TSSealedFExpression QTypeSystem
+
 type QPartialExpression = TSSealedPartialExpression QTypeSystem
 
 type QMatch = TSMatch QTypeSystem
