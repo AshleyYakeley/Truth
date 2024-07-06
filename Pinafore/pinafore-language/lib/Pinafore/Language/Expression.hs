@@ -10,34 +10,17 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
 
-qConstExprAny :: QValue -> QExpression
-qConstExprAny = tsConst @QTypeSystem
+qConstValue :: QValue -> QExpression
+qConstValue = tsConst @QTypeSystem
 
-qConstExpr ::
+qConst ::
        forall a. HasQType 'Positive a
     => a
     -> QExpression
-qConstExpr a = qConstExprAny $ jmToValue a
+qConst a = qConstValue $ jmToValue a
 
-qVarExpr :: VarID -> QExpression
-qVarExpr name = tsVar @QTypeSystem name
-
-qNameWith :: FullNameRef -> QInterpreter QExpression -> QInterpreter QExpression
-qNameWith name qidefexpr = do
-    mexpr <- lookupMaybeValue name
-    case mexpr of
-        Just expr -> return expr
-        _ -> qidefexpr
-
-qName :: FullNameRef -> QInterpreter QExpression
-qName name =
-    qNameWith name $ do
-        spos <- paramAsk sourcePosParam
-        return $ qVarExpr $ mkBadVarID spos name
-
-qNameWithDefault :: Maybe QExpression -> FullNameRef -> QInterpreter QExpression
-qNameWithDefault (Just defexpr) name = qNameWith name $ return defexpr
-qNameWithDefault Nothing name = qName name
+qVar :: VarID -> QExpression
+qVar name = tsVar @QTypeSystem name
 
 qSubstitute :: (VarID -> Maybe QExpression) -> QExpression -> QInterpreter QExpression
 qSubstitute = tsSubstitute @QTypeSystem
@@ -134,10 +117,10 @@ qApplyAllExpr e (a:aa) = do
     qApplyAllExpr e' aa
 
 qEmptyList :: QExpression
-qEmptyList = qConstExpr $ [] @BottomType
+qEmptyList = qConst $ [] @BottomType
 
 qConsList :: QExpression
-qConsList = qConstExpr $ (:|) @A
+qConsList = qConst $ (:|) @A
 
 qSequenceExpr :: [QExpression] -> QInterpreter QExpression
 qSequenceExpr [] = return $ qEmptyList

@@ -150,37 +150,37 @@ testUnifier =
                           , let
                                 makeVal :: QInterpreter QValue
                                 makeVal = do
-                                    expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                                    expr1 <- qApplyExpr (qConst op2) (qConst @Text "PQPQPQ")
                                     qEvalExpr expr1
                                 checkVal found = assertEqual "" "PQPQPQ" $ found idText id
                                 in testUnifyToType @((Text -> Text) -> (Text -> Text) -> Text) makeVal [] checkVal
                           , let
                                 makeVal :: QInterpreter QValue
                                 makeVal = do
-                                    expr1 <- qApplyExpr (qConstExpr op2Text) (qConstExpr @Text "PQPQPQ")
-                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                                    expr1 <- qApplyExpr (qConst op2Text) (qConst @Text "PQPQPQ")
+                                    expr2 <- qApplyExpr expr1 (qConst idText)
                                     qEvalExpr expr2
                                 checkVal found = assertEqual "" "PQPQPQ" $ found id
                                 in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
                           , testSourceScoped "value1" $ do
-                                expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                                expr1 <- qApplyExpr (qConst op2) (qConst @Text "PQPQPQ")
                                 val1 <- qEvalExpr expr1
                                 found1 <- qUnifyValue @((Text -> Text) -> (Text -> Text) -> Text) val1
                                 liftIO $ assertEqual "found1" "PQPQPQ" $ found1 idText id
                           , let
                                 makeVal :: QInterpreter QValue
                                 makeVal = do
-                                    expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                                    expr1 <- qApplyExpr (qConst op2) (qConst @Text "PQPQPQ")
                                     val1 <- qEvalExpr expr1
-                                    expr2 <- qApplyExpr (qConstExprAny val1) (qConstExpr idText)
+                                    expr2 <- qApplyExpr (qConstValue val1) (qConst idText)
                                     qEvalExpr expr2
                                 checkVal found = assertEqual "" "PQPQPQ" $ found id
                                 in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
                           , let
                                 makeVal :: QInterpreter QValue
                                 makeVal = do
-                                    expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
-                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                                    expr1 <- qApplyExpr (qConst op2) (qConst @Text "PQPQPQ")
+                                    expr2 <- qApplyExpr expr1 (qConst idText)
                                     qEvalExpr expr2
                                 checkVal found = assertEqual "" "PQPQPQ" $ found id
                                 in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
@@ -225,24 +225,24 @@ testUnifier =
                           [ let
                                 makeVal :: QInterpreter QValue
                                 makeVal = do
-                                    expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
+                                    expr1 <- qApplyExpr (qConst op4) (qConst idText)
                                     qEvalExpr expr1
                                 checkVal found = assertEqual "" "PQPQPQ" $ found idText "PQPQPQ"
                                 in testUnifyToType @((Text -> Text) -> Text -> Text) makeVal [] checkVal
                           , let
                                 makeVal :: QInterpreter QValue
                                 makeVal = do
-                                    expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
-                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                                    expr1 <- qApplyExpr (qConst op4) (qConst idText)
+                                    expr2 <- qApplyExpr expr1 (qConst idText)
                                     qEvalExpr expr2
                                 checkVal found = assertEqual "" "PQPQPQ" $ found "PQPQPQ"
                                 in testUnifyToType @(Text -> Text) makeVal [] checkVal
                           , let
                                 makeVal :: QInterpreter QValue
                                 makeVal = do
-                                    expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
-                                    expr2 <- qApplyExpr expr1 (qConstExpr idText)
-                                    expr3 <- qApplyExpr expr2 (qConstExpr @Text "PQPQPQ")
+                                    expr1 <- qApplyExpr (qConst op4) (qConst idText)
+                                    expr2 <- qApplyExpr expr1 (qConst idText)
+                                    expr3 <- qApplyExpr expr2 (qConst @Text "PQPQPQ")
                                     qEvalExpr expr3
                                 checkVal found = assertEqual "" "PQPQPQ" found
                                 in testUnifyToType @Text makeVal [] checkVal
@@ -257,10 +257,9 @@ testUnifier =
                         testerLiftInterpreter $ do
                             a1Expr <-
                                 return $
-                                qConstExpr ((>>=) newMemListModel :: (LangListModel '( A, A) -> Action B) -> Action B)
+                                qConst ((>>=) newMemListModel :: (LangListModel '( A, A) -> Action B) -> Action B)
                             a2Expr <-
-                                return $
-                                qConstExpr (return :: LangListModel '( A, A) -> Action (LangListModel '( A, A)))
+                                return $ qConst (return :: LangListModel '( A, A) -> Action (LangListModel '( A, A)))
                             actionExpr <- qApplyExpr a1Expr a2Expr
                             actionVal <- qEvalExpr actionExpr
                             qUnifyValue @(Action (LangWholeModel '( [Integer], [Integer]))) actionVal
@@ -308,7 +307,7 @@ testUnifier =
                             bodyExpr <-
                                 parseTopExpression
                                     "fn r => do r :=.WholeModel [10,20]; set.ListModel 0 25 r; get.WholeModel r end"
-                            actionExpr <- qApplyExpr bodyExpr (qConstExpr r)
+                            actionExpr <- qApplyExpr bodyExpr (qConst r)
                             actionVal <- qEvalExpr actionExpr
                             qUnifyValue actionVal
                     l :: [Integer] <- testerLiftAction action

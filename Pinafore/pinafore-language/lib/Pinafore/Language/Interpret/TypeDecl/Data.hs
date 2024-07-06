@@ -579,7 +579,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                                ltp = listVTypeToType $ mapListVType (nonpolarToPositive @QTypeSystem) lt
                                                ltn = listVTypeToType $ mapListVType (nonpolarToNegative @QTypeSystem) lt
                                                expr =
-                                                   qConstExprAny $
+                                                   qConstValue $
                                                    MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
                                                    encode codec . listProductToVProduct lt
                                                pc =

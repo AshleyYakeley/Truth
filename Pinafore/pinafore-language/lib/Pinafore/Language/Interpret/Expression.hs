@@ -17,6 +17,7 @@ import Pinafore.Language.Interpret.AppNotation
 import Pinafore.Language.Interpret.FreeVars
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl
+import Pinafore.Language.Interpret.Value
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm
@@ -372,56 +373,11 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                     Just (fn, desc) -> showText nameref <> " = " <> showText fn <> ": " <> pack desc
                     Nothing -> showText nameref <> " not found"
 
-interpretRecordValue :: QRecordValue -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
-interpretRecordValue (MkQRecordValue items rvexpr@(MkSealedFExpression vtype _)) msarglist = do
-    let
-        getsigname :: forall a. QSignature 'Positive a -> Maybe Name
-        getsigname (ValueSignature _ name _ _) = Just name
-        signames :: [Name]
-        signames = catMaybes $ listTypeToList getsigname items
-    margmap :: Maybe (Map Name QExpression) <-
-        for msarglist $ \sarglist -> do
-            arglist <-
-                for sarglist $ \(n, sv) -> do
-                    if elem n signames
-                        then return ()
-                        else throw $ RecordConstructorExtraName n
-                    v <- interpretExpression sv
-                    return (n, v)
-            return $ mapFromList arglist
-    let
-        freeFixedVars = freeTypeVariables vtype
-        freeFixedNames = fmap someTypeVarName $ toList freeFixedVars
-        getName :: Maybe QExpression -> Name -> QInterpreter QExpression
-        getName =
-            case margmap of
-                Nothing -> \mdefexpr iname -> qNameWithDefault mdefexpr $ UnqualifiedFullNameRef iname
-                Just argmap ->
-                    \mdefexpr iname ->
-                        case lookup iname argmap of
-                            Just arg -> return arg
-                            Nothing ->
-                                case mdefexpr of
-                                    Just defexpr -> return defexpr
-                                    Nothing -> throw $ RecordConstructorMissingName iname
-    runRenamer @QTypeSystem [] freeFixedNames $ do
-        sexpr <-
-            listTypeFor items $ \case
-                ValueSignature _ iname itype mdefault -> do
-                    iexpr <- lift $ getName (fmap (MkSealedExpression (mkShimWit itype)) mdefault) iname
-                    itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
-                    iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
-                    subsumerExpressionTo @QTypeSystem itype' iexpr'
-        (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listProductSequence sexpr
-        unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ applySealedFExpression rvexpr resultExpr
-
-interpretNamedConstructor :: FullNameRef -> Maybe [(Name, SyntaxExpression)] -> QInterpreter QExpression
-interpretNamedConstructor name mvals = do
-    bv <- lookupBoundConstructor name
-    case (bv, mvals) of
-        (ValueBoundValue e, Nothing) -> return e
-        (ValueBoundValue _, Just _) -> throw $ LookupNotRecordConstructorError name
-        (RecordBoundValue rv, _) -> interpretRecordValue rv mvals
+interpretRecordArgList :: [(Name, SyntaxExpression)] -> QInterpreter [(Name, QExpression)]
+interpretRecordArgList sarglist =
+    for sarglist $ \(n, sv) -> do
+        v <- interpretExpression sv
+        return (n, v)
 
 interpretConstructor :: SyntaxConstructor -> QInterpreter QExpression
 interpretConstructor (SLNumber n) =
@@ -429,13 +385,15 @@ interpretConstructor (SLNumber n) =
     case decode safeRationalNumber n of
         Just r ->
             case decode integerSafeRational r of
-                Just i -> qConstExprAny $ jmToValue i
-                Nothing -> qConstExprAny $ jmToValue r
-        Nothing -> qConstExprAny $ jmToValue n
-interpretConstructor (SLString v) = return $ qConstExprAny $ jmToValue v
-interpretConstructor (SLNamedConstructor v mvals) = interpretNamedConstructor v mvals
-interpretConstructor SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
-interpretConstructor SLUnit = return $ qConstExprAny $ jmToValue ()
+                Just i -> qConstValue $ jmToValue i
+                Nothing -> qConstValue $ jmToValue r
+        Nothing -> qConstValue $ jmToValue n
+interpretConstructor (SLString v) = return $ qConstValue $ jmToValue v
+interpretConstructor (SLNamedConstructor v mvals) = do
+    marglist <- for mvals interpretRecordArgList
+    interpretValue v marglist
+interpretConstructor SLPair = return $ qConstValue $ jmToValue ((,) :: A -> B -> (A, B))
+interpretConstructor SLUnit = return $ qConstValue $ jmToValue ()
 
 specialFormArg :: QAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe QInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
@@ -476,7 +434,7 @@ interpretSpecialForm name annotations = do
                 (fmap showSA $ toList annotations)
 
 interpretConstant :: SyntaxConstant -> QInterpreter QExpression
-interpretConstant SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse
+interpretConstant SCIfThenElse = return $ qConstValue $ jmToValue qifthenelse
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
 withMatch :: QMatch -> QInterpreter QPartialExpression -> QInterpreter QPartialExpression
@@ -611,14 +569,13 @@ interpretExpression' (SEApply sf sarg) = do
     arg <- interpretExpression sarg
     qApplyExpr f arg
 interpretExpression' (SEConst c) = interpretConstant c
-interpretExpression' (SEVar _ name Nothing) = qName name
-interpretExpression' (SEVar _ name (Just sigs)) = do
-    rv <- lookupRecord name
-    interpretRecordValue rv $ Just sigs
-interpretExpression' (SEImplicitVar name) = return $ qVarExpr $ ImplicitVarID name
+interpretExpression' (SEVar _ name mvals) = do
+    marglist <- for mvals interpretRecordArgList
+    interpretValue name marglist
+interpretExpression' (SEImplicitVar name) = return $ qVar $ ImplicitVarID name
 interpretExpression' (SESpecialForm name annots) = do
     val <- interpretSpecialForm name annots
-    return $ qConstExprAny val
+    return $ qConstValue val
 interpretExpression' (SEAppQuote sexpr) = appNotationQuote $ interpretExpression sexpr
 interpretExpression' (SEAppUnquote sexpr) = appNotationUnquote $ interpretExpression sexpr
 interpretExpression' (SEList sexprs) = do

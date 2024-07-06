@@ -92,7 +92,7 @@ interactLoop inh outh echo = do
                                      buildScope :: QScopeBuilder ()
                                      buildScope = do
                                          pat <- interpretPattern spat
-                                         match <- builderLift $ qExpressionPatternMatch (qConstExprAny rval) pat
+                                         match <- builderLift $ qExpressionPatternMatch (qConstValue rval) pat
                                          registerMatchBindings match
                                      bind :: QInterpreter --> QInterpreter
                                      bind qia = withScopeBuilder buildScope $ \() -> qia

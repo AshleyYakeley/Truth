@@ -9,7 +9,7 @@ module Pinafore.Language.Interpreter.Lookup
     , lookupRecordConstructor
     , lookupSpecialForm
     , QBoundValue(..)
-    , lookupBoundConstructor
+    , lookupValue
     , lookupRecord
     , lookupMaybeValue
     ) where
@@ -80,24 +80,26 @@ data QBoundValue
     = ValueBoundValue QExpression
     | RecordBoundValue QRecordValue
 
-lookupBoundConstructor :: FullNameRef -> QInterpreter QBoundValue
-lookupBoundConstructor name = do
-    b <- lookupBinding name
-    case b of
-        ValueBinding exp -> return $ ValueBoundValue exp
-        PatternConstructorBinding exp _ -> return $ ValueBoundValue exp
-        RecordValueBinding rv -> return $ RecordBoundValue rv
-        RecordConstructorBinding rc -> return $ RecordBoundValue $ recordConstructorToValue rc
-        _ -> throw $ LookupNotConstructorError name
-
 lookupRecord :: FullNameRef -> QInterpreter QRecordValue
 lookupRecord = lookupSelector recordValueBindingSelector
 
-lookupMaybeValue :: FullNameRef -> QInterpreter (Maybe QExpression)
+getBoundValue :: QInterpreterBinding -> Maybe QBoundValue
+getBoundValue =
+    \case
+        ValueBinding exp -> Just $ ValueBoundValue exp
+        PatternConstructorBinding exp _ -> Just $ ValueBoundValue exp
+        RecordValueBinding rv -> Just $ RecordBoundValue rv
+        RecordConstructorBinding rc -> Just $ RecordBoundValue $ recordConstructorToValue rc
+        _ -> Nothing
+
+lookupValue :: FullNameRef -> QInterpreter QBoundValue
+lookupValue name = do
+    b <- lookupBinding name
+    case getBoundValue b of
+        Just bv -> return bv
+        _ -> throw $ LookupNotValueError name
+
+lookupMaybeValue :: FullNameRef -> QInterpreter (Maybe QBoundValue)
 lookupMaybeValue name = do
     mb <- getBindingLookup
-    return $
-        case mb name of
-            Just (ValueBinding exp) -> Just exp
-            Just (PatternConstructorBinding exp _) -> Just exp
-            _ -> Nothing
+    return $ mb name >>= getBoundValue

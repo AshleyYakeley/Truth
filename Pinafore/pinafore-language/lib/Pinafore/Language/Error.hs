@@ -12,6 +12,7 @@ data QErrorType
     | ExpressionUnimpliedError (NonEmpty (ImplicitName, NamedText))
     | LookupNamesUndefinedError (NonEmpty FullNameRef)
     | LookupNotDefinedError FullNameRef
+    | LookupNotValueError FullNameRef
     | LookupNotTypeError FullNameRef
     | LookupNotSpecialFormError FullNameRef
     | LookupNotConstructorError FullNameRef
@@ -102,6 +103,7 @@ instance ShowNamedText QErrorType where
     showNamedText (LookupNamesUndefinedError nn) =
         "undefined names: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
     showNamedText (LookupNotDefinedError n) = "undefined: " <> showNamedText n
+    showNamedText (LookupNotValueError n) = "name not value: " <> showNamedText n
     showNamedText (LookupNotTypeError n) = "name not type: " <> showNamedText n
     showNamedText (LookupNotSpecialFormError n) = "name not special form: " <> showNamedText n
     showNamedText (LookupNotConstructorError n) = "name not constructor: " <> showNamedText n
