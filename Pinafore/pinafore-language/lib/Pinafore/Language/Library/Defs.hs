@@ -15,6 +15,7 @@ module Pinafore.Language.Library.Defs
     , hasSubtypeRelationBDS
     , valPatBDS
     , QDocSignature(..)
+    , recordValueBDS
     , recordConsBDS
     , specialFormBDS
     , addNameInRootBDS
@@ -260,6 +261,31 @@ data QDocSignature (t :: Type) =
                       (QType 'Positive t)
                       (Maybe (QOpenExpression t))
 
+recordValueBDS ::
+       forall (tt :: [Type]) context. (HasQType 'Positive (ListProduct tt))
+    => FullNameRef
+    -> RawMarkdown
+    -> ListType QDocSignature tt
+    -> LibraryStuff context
+recordValueBDS name docDescription docsigs = let
+    posType :: QShimWit 'Positive (ListProduct tt)
+    posType = qType
+    dsToSig :: QDocSignature --> QSignature 'Positive
+    dsToSig (ValueDocSignature n _ t p) = ValueSignature Nothing n t p
+    dsToDoc :: forall a. QDocSignature a -> Tree (BindDoc context)
+    dsToDoc (ValueDocSignature n d t p) =
+        pure $ MkBindDoc Nothing $ MkDefDoc (ValueSignatureDocItem n (exprShow t) (isJust p)) d
+    sigs :: ListType (QSignature 'Positive) tt
+    sigs = mapListType dsToSig docsigs
+    qrv :: QRecordValue
+    qrv = MkQRecordValue sigs $ constSealedFExpression $ MkSomeFor (shimWitToDolan posType) id
+    diNames = pure name
+    diType = exprShow posType
+    docItem = ValuePatternDocItem {..}
+    bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> RecordValueBinding qrv
+    bdDoc = MkDefDoc {..}
+    in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
+
 recordConsBDS ::
        forall (t :: Type) (tt :: [Type]) context. (HasQGroundedType 'Positive t, HasQGroundedType 'Negative t)
     => FullNameRef
@@ -277,7 +303,7 @@ recordConsBDS name docDescription docsigs codec = let
         case posType of
             MkShimWit (MkDolanGroundedType t _) _ -> MkSomeFamilialType $ qgtFamilyType t
     dsToSig :: QDocSignature --> QSignature 'Positive
-    dsToSig (ValueDocSignature n _ t p) = ValueSignature famType n t p
+    dsToSig (ValueDocSignature n _ t p) = ValueSignature (Just famType) n t p
     dsToDoc :: forall a. QDocSignature a -> Tree (BindDoc context)
     dsToDoc (ValueDocSignature n d t p) =
         pure $ MkBindDoc Nothing $ MkDefDoc (ValueSignatureDocItem n (exprShow t) (isJust p)) d

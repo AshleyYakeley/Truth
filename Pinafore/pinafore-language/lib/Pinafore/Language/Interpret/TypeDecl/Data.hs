@@ -311,7 +311,7 @@ interpretSignature' tid _ (ValueSyntaxSignature name stype msdefv) = do
                 for msdefv $ \sdefv -> do
                     defv <- ?interpretExpression sdefv
                     qSubsumeExpressionToOpen mempty qtype defv
-            return $ (Nothing, pure $ MkSome $ ValueSignature tid name qtype modefv)
+            return $ (Nothing, pure $ MkSome $ ValueSignature (Just tid) name qtype modefv)
 interpretSignature' _ supertypes (SupertypeConstructorSyntaxSignature name) = do
     rcd <- lookupRecordConstructorData supertypes name
     return $ (Just rcd, rcdSignatures rcd)
@@ -363,7 +363,7 @@ interpretConstructorTypes tid supertypes c = let
                    allSigs = mconcat $ fmap snd rcdsigss
                    splitSigs :: SomeSignature -> ([SomeSignature], [SomeSignature])
                    splitSigs sig@(MkSome (ValueSignature sigtid _ _ _)) =
-                       if sigtid == tid
+                       if sigtid == Just tid
                            then ([sig], [])
                            else ([], [sig])
                    (thisQSigs, supertypeQSigs) = mconcat $ fmap splitSigs allSigs

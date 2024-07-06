@@ -27,7 +27,7 @@ newtype QSpecialVals = MkQSpecialVals
     }
 
 data QSignature (polarity :: Polarity) (t :: Type) =
-    ValueSignature SomeFamilialType
+    ValueSignature (Maybe SomeFamilialType)
                    Name
                    (QType polarity t)
                    (Maybe (QOpenExpression t))
