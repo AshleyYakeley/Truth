@@ -1092,6 +1092,7 @@ testQueries =
               , textTypeTest
                     "let x: a -> Maybe a = Just in imply ?x = x in (?x 3,?x \"text\")"
                     "{} -> Maybe. Integer. *: Maybe. Text."
+              , textTypeTest "imply ?x = Just in (?x 3,?x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
               , textTypeTest
                     "imply ?x: a -> Maybe a = Just in (?x 3,?x \"text\")"
                     "{} -> Maybe. Integer. *: Maybe. Text."

@@ -171,20 +171,22 @@ uSubstitute subst =
     runExpressionM $ \w@(MkNameWitness var vwt) ->
         case subst var of
             Nothing -> return $ solverExpressionLiftValue $ varExpression w
-            Just (MkSealedExpression twt expr) -> do
+            Just expr -> do
+                MkSealedExpression twt oexpr <- renameMappableSimple @ts expr
                 uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts twt) (uuLiftNegShimWit @ts vwt)
-                return $ liftA2 shimToFunction uconv (solverExpressionLiftValue expr)
+                return $ liftA2 shimToFunction uconv (solverExpressionLiftValue oexpr)
 
 substituteSealedExpression ::
        forall ts. AbstractTypeSystem ts
     => (TSVarID ts -> Maybe (TSSealedExpression ts))
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-substituteSealedExpression subst (MkSealedExpression twt expr) =
+substituteSealedExpression subst expr =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
-        uexpr <- uSubstitute @ts subst expr
-        unifierSolve @ts uexpr $ \expr' -> return $ MkSealedExpression twt expr'
+        MkSealedExpression twt oexpr <- renameMappableSimple @ts expr
+        uexpr <- uSubstitute @ts subst oexpr
+        unifierSolve @ts uexpr $ \oexpr' -> return $ MkSealedExpression twt oexpr'
 
 abstractSealedExpression ::
        forall ts. AbstractTypeSystem ts
