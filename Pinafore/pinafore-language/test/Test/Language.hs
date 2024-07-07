@@ -1085,8 +1085,21 @@ testQueries =
               , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in rf of x = 8 end" $ LRSuccess "10"
               , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in let x = 6 in rf" $ LRSuccess "8"
               , textTypeTest "let rf of m: a -> Maybe a end = m 3 in rf of m = Just end" "{} -> Maybe. Integer."
+              ]
+        , testTree
+              "polymorphism"
+              [ textTypeTest "let x: a -> Maybe a = Just in (x 3,x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
+              , textTypeTest
+                    "let x: a -> Maybe a = Just in imply ?x = x in (?x 3,?x \"text\")"
+                    "{} -> Maybe. Integer. *: Maybe. Text."
+              , textTypeTest
+                    "imply ?x: a -> Maybe a = Just in (?x 3,?x \"text\")"
+                    "{} -> Maybe. Integer. *: Maybe. Text."
               , textTypeTest
                     "let rf of m: a -> Maybe a end = (m 3,m \"text\") in rf of m = Just end"
+                    "{} -> Maybe. Integer. *: Maybe. Text."
+              , textTypeTest
+                    "let datatype T of Mk of m: a -> Maybe a end end; rf = fn Mk.T => (m 3,m \"text\") in rf Mk.T of m = Just end"
                     "{} -> Maybe. Integer. *: Maybe. Text."
               , testQuery "let rf of m: a -> Maybe a end = (m 3,m \"text\") in rf of m = Just end" $
                 LRSuccess "(Just 3,Just \"text\")"
