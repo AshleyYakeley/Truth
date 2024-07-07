@@ -153,7 +153,7 @@ All declarations, including type declarations, are local to a `let` block.
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
 
-<implication> ::= implicit-name "=" <expression>
+<implication> ::= implicit-name <optional(":" <type>)> "=" <expression>
 
 <constructor-expression> ::= <constructor> <optional(<of(<name> "=" <expression>)>)>
 

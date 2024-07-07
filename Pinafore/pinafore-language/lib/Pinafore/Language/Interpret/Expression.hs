@@ -549,9 +549,15 @@ interpretExpression' (SEDecl declarator sbody) = interpretDeclaratorWith declara
 interpretExpression' (SEImply binds sbody) = do
     bexpr <- interpretExpression sbody
     substs <-
-        for binds $ \(n, sexpr) -> do
+        for binds $ \(n, mtype, sexpr) -> do
             expr <- interpretExpression sexpr
-            return (n, expr)
+            expr' <-
+                case mtype of
+                    Nothing -> return expr
+                    Just stype -> do
+                        t <- interpretType stype
+                        qSubsumeExpr t expr
+            return (n, expr')
     let
         substf (ImplicitVarID vn) = lookup vn substs
         substf _ = Nothing

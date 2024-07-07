@@ -460,9 +460,13 @@ readExpression1 =
              sdecls <-
                  readLines $ do
                      name <- readThis TokImplicitName
+                     mtype <-
+                         optional $ do
+                             readThis TokTypeJudge
+                             readType
                      readThis TokAssign
                      defn <- readExpression
-                     return (name, defn)
+                     return (name, mtype, defn)
              readThis TokIn
              sbody <- readExpression
              return $ SEImply sdecls sbody) <|>

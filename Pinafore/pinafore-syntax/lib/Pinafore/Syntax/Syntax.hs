@@ -317,7 +317,7 @@ data SyntaxExpression'
     | SEMatches SyntaxMulticaseList
     | SEAppQuote SyntaxExpression
     | SEAppUnquote SyntaxExpression
-    | SEImply [(ImplicitName, SyntaxExpression)]
+    | SEImply [(ImplicitName, Maybe SyntaxType, SyntaxExpression)]
               SyntaxExpression
     | SEDecl SyntaxDeclarator
              SyntaxExpression

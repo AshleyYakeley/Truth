@@ -92,7 +92,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEAppQuote expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEAppUnquote expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEImply binds expr) =
-        mconcat (fmap (\(_, e) -> syntaxFreeVariables e) binds) <> syntaxFreeVariables expr
+        mconcat (fmap (\(_, _, e) -> syntaxFreeVariables e) binds) <> syntaxFreeVariables expr
     syntaxFreeVariables (SEDecl decl expr) =
         difference
             (syntaxFreeVariables decl <> syntaxFreeVariables expr)
