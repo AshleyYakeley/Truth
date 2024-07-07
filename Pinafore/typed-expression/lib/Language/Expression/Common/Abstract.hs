@@ -142,28 +142,19 @@ abstractExpression name twt expr = do
     uabsconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts twt) (mkShimWit vwt)
     return $ liftA2 (\tb sat -> tb . shimToFunction sat) uexpr uabsconv
 
-abstractOpenExpression ::
-       forall ts a b r. (AbstractTypeSystem ts, TSMappable ts r)
-    => TSVarID ts
-    -> TSPosShimWit ts a
-    -> TSOpenExpression ts b
-    -> (TSOpenExpression ts (a -> b) -> TSOuter ts r)
-    -> TSInner ts r
-abstractOpenExpression name twt expr asm =
-    runRenamer @ts [] [] $
-    withTransConstraintTM @Monad $ do
-        uexpr <- abstractExpression @ts name twt expr
-        unifierSolve @ts uexpr asm
-
 abstractSealedFExpression ::
        forall ts p q. AbstractTypeSystem ts
     => TSVarID ts
     -> TSPosShimWit ts p
     -> TSSealedFExpression ts ((->) q)
     -> TSInner ts (TSSealedFExpression ts ((->) (p, q)))
-abstractSealedFExpression name nwt (MkSealedFExpression twt expr) =
-    abstractOpenExpression @ts name nwt expr $ \expr' ->
-        return $ MkSealedFExpression twt $ fmap (\pqt (p, q) -> pqt p q) expr'
+abstractSealedFExpression name nwt fexpr =
+    runRenamer @ts [] [] $
+    withTransConstraintTM @Monad $ do
+        nwt' <- renameMappableSimple @ts nwt
+        MkSealedFExpression twt expr <- renameMappableSimple @ts fexpr
+        uexpr <- abstractExpression @ts name nwt' expr
+        unifierSolve @ts uexpr $ \expr' -> return $ MkSealedFExpression twt $ fmap (\pqt (p, q) -> pqt p q) expr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 
