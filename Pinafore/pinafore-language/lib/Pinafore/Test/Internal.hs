@@ -34,6 +34,8 @@ module Pinafore.Test.Internal
     , QSubtypeConversionEntry
     , registerSubtypeConversion
     , SomeValue(..)
+    , showExpressionType
+    , parseExpressionToType
     , bindsLibrary
     , showPinaforeModel
     , qInterpretText
@@ -52,6 +54,22 @@ import Pinafore.Main
 import Pinafore.Storage
 import Pinafore.Syntax
 import Pinafore.Test
+
+showVars :: NamedExpression VarID (QShimWit 'Negative) t -> [Text]
+showVars =
+    expressionFreeWitnesses $ \(MkNameWitness name (MkShimWit t _)) -> toText $ exprShow name <> " : " <> exprShow t
+
+showExpressionType :: QExpression -> Text
+showExpressionType (MkSealedExpression (MkShimWit t _) expr) =
+    "{" <> intercalate ", " (nub $ showVars expr) <> "} -> " <> toText (exprShow t)
+
+parseExpressionToType :: Text -> (Text -> IO ()) -> IO ()
+parseExpressionToType text checkType =
+    runTester defaultTester $
+    testerLiftInterpreter $ do
+        expr <- parseTopExpression text
+        expr' <- runRenamer @QTypeSystem [] [] $ unEndoM (finalRenameMappable @QTypeSystem) expr
+        liftIO $ checkType $ showExpressionType expr'
 
 data SomeValue =
     forall t. HasQType 'Positive t => MkSomeValue t

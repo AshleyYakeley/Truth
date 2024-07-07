@@ -11,18 +11,7 @@ import Shapes.Test
 
 type TS = QTypeSystem
 
-type PExpression = TSSealedExpression TS
-
-showVars :: NamedExpression VarID (QShimWit 'Negative) t -> [String]
-showVars (ClosedExpression _) = []
-showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
-    (unpack $ toText $ exprShow name <> " : " <> exprShow t) : showVars expr
-
-showTypes :: PExpression -> String
-showTypes (MkSealedExpression (MkShimWit t _) expr) =
-    "{" <> intercalate ", " (nub $ showVars expr) <> "} -> " <> unpack (toText $ exprShow t)
-
-exprTypeTest :: String -> Maybe String -> QInterpreter PExpression -> TestTree
+exprTypeTest :: String -> Maybe Text -> QInterpreter QExpression -> TestTree
 exprTypeTest name expected mexpr =
     testTree name $
     runTester defaultTester $ do
@@ -30,43 +19,43 @@ exprTypeTest name expected mexpr =
         liftIO $
             assertEqual "" expected $ do
                 expr <- resultToMaybe result
-                return $ showTypes expr
+                return $ showExpressionType expr
 
-apExpr :: PExpression -> PExpression -> QInterpreter PExpression
+apExpr :: QExpression -> QExpression -> QInterpreter QExpression
 apExpr = tsApply @TS
 
-idExpr :: PExpression
+idExpr :: QExpression
 idExpr = typeFConstExpression toJMShimWit $ \(v :: X) -> v
 
-nbFuncExpr :: PExpression
+nbFuncExpr :: QExpression
 nbFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: Number) -> False
 
-numExpr :: PExpression
+numExpr :: QExpression
 numExpr = typeFConstExpression toJMShimWit $ (3 :: Number)
 
-boolExpr :: PExpression
+boolExpr :: QExpression
 boolExpr = typeFConstExpression toJMShimWit False
 
-varExpr :: PExpression
+varExpr :: QExpression
 varExpr = tsVar @TS $ mkVarID szero "v"
 
-ifelseExpr :: PExpression
+ifelseExpr :: QExpression
 ifelseExpr =
     typeFConstExpression toJMShimWit $ \test (tb :: A) (eb :: A) ->
         if test
             then tb
             else eb
 
-list1Expr :: PExpression
+list1Expr :: QExpression
 list1Expr = typeFConstExpression toJMShimWit $ \(a :: A) -> [a]
 
-sndExpr :: PExpression
+sndExpr :: QExpression
 sndExpr = typeFConstExpression toJMShimWit $ \(MkTopType, a :: A) -> a
 
-twiceExpr :: PExpression
+twiceExpr :: QExpression
 twiceExpr = typeFConstExpression toJMShimWit $ \(a :: A) -> (a, a)
 
-thingExpr :: PExpression
+thingExpr :: QExpression
 thingExpr =
     typeFConstExpression toJMShimWit $ \(a :: A, b :: B) ->
         ( a
@@ -74,29 +63,24 @@ thingExpr =
               then MkJoinType $ Left a
               else MkJoinType $ Right b)
 
-dotExpr :: PExpression
+dotExpr :: QExpression
 dotExpr = typeFConstExpression toJMShimWit $ \(f :: B -> C) (g :: A -> B) -> f . g
 
-listNumBoolFuncExpr :: PExpression
+listNumBoolFuncExpr :: QExpression
 listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [True]
 
-listBoolNumFuncExpr :: PExpression
+listBoolNumFuncExpr :: QExpression
 listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> QInterpreter PExpression
+joinExpr :: QExpression -> QExpression -> QInterpreter QExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
     apExpr e exp2
 
-textTypeTest :: Text -> String -> TestTree
-textTypeTest text r =
-    testTree (unpack text) $
-    runTester defaultTester $
-    testerLiftInterpreter $ do
-        expr <- parseTopExpression text
-        expr' <- runRenamer @TS [] [] $ unEndoM (finalRenameMappable @TS) expr
-        liftIO $ assertEqual "" r $ showTypes expr'
+textTypeTest :: Text -> Text -> TestTree
+textTypeTest text expected =
+    testTree (unpack text) $ parseExpressionToType text $ \found -> assertEqual "" expected found
 
 rejectionTest :: Text -> TestTree
 rejectionTest text =
@@ -125,7 +109,7 @@ simplifyTypeTest text e =
                     MkSome t ->
                         runRenamer @TS [] [] $ do
                             t' <- unEndoM (renameType @TS [] FreeName) t
-                            runSimplify @PExpression $
+                            runSimplify @QExpression $
                                 MkSealedExpression (mkPolarShimWit t') $ ClosedExpression undefined
         liftIO $
             case simpexpr of
@@ -370,17 +354,17 @@ testType =
                           , textTypeTest "let rf = fn r => seq (r 3); r = fix rf in r" "{} -> a -> (a | Integer.)"
                           , textTypeTest "fn r => seq (r 3)" "{} -> (Integer. -> Any) -> a -> a"
                           , testTree "fixrec" $ let
-                                fixTest :: Text -> Text -> String -> TestTree
+                                fixTest :: Text -> Text -> Text -> TestTree
                                 fixTest ta tr expected = let
                                     typeText = "(" <> ta <> ") -> " <> tr
                                     script = "fix (undefined: " <> typeText <> ")"
                                     in textTypeTest script ("{} -> " <> expected)
-                                recTest :: Text -> Text -> String -> TestTree
+                                recTest :: Text -> Text -> Text -> TestTree
                                 recTest ta tr expected = let
                                     typeText = "(" <> ta <> ") -> " <> tr
                                     script = "let rec f: " <> typeText <> " = f; x = f x in x"
                                     in textTypeTest script ("{} -> " <> expected)
-                                testPair :: Text -> Text -> String -> TestTree
+                                testPair :: Text -> Text -> Text -> TestTree
                                 testPair ta tr expected =
                                     testTree
                                         (unpack $ ta <> " / " <> tr)

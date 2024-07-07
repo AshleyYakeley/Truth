@@ -12,6 +12,10 @@ import Shapes
 import Shapes.Numeric
 import Shapes.Test
 
+textTypeTest :: Text -> Text -> TestTree
+textTypeTest text expected =
+    testTree (unpack text) $ parseExpressionToType text $ \found -> assertEqual "" expected found
+
 testOp :: Name -> TestTree
 testOp n =
     testTree (show $ unpack n) $ do
@@ -1080,11 +1084,15 @@ testQueries =
               , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in rf of x = 8; y = 12 end" $ LRSuccess "20"
               , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in rf of x = 8 end" $ LRSuccess "10"
               , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in let x = 6 in rf" $ LRSuccess "8"
-              , testQuery "let rf of m: a -> Maybe a end = (m 3,m \"text\") in show (rf of m = Just end)" $
+              , textTypeTest "let rf of m: a -> Maybe a end = m 3 in rf of m = Just end" "{} -> Integer"
+              , textTypeTest
+                    "let rf of m: a -> Maybe a end = (m 3,m \"text\") in rf of m = Just end"
+                    "{} -> Integer *: Text"
+              , testQuery "let rf of m: a -> Maybe a end = (m 3,m \"text\") in rf of m = Just end" $
                 LRSuccess "(Just 3,Just \"text\")"
-              , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in show $ rf of end" $
+              , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in rf of end" $
                 LRSuccess "(Just 3,Just \"text\")"
-              , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in show $ rf" $
+              , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in rf" $
                 LRSuccess "(Just 3,Just \"text\")"
               ]
         ]
