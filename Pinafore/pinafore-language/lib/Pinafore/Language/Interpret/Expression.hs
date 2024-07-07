@@ -310,12 +310,14 @@ recordValueAddSig :: QRVSig -> QRecordValue -> QInterpreter QRecordValue
 recordValueAddSig (MkQRVSig name varid qtype mqdef) (MkQRecordValue tt fexpr) = do
     let
         qsig :: QSignature 'Positive _
-        qsig = ValueSignature (error "NYI") name qtype mqdef
+        qsig = ValueSignature Nothing name qtype mqdef
     fexpr' <- qAbstractF varid (mkShimWit qtype) fexpr
     return $ MkQRecordValue (ConsListType qsig tt) fexpr'
 
 subsumeRecordValue :: Some (QType Positive) -> QRecordValue -> QInterpreter QRecordValue
-subsumeRecordValue (MkSome _qtype) rv = return rv -- NYI
+subsumeRecordValue qtype (MkQRecordValue sigs fexpr) = do
+    fexpr' <- qSubsumeFExpr qtype fexpr
+    return $ MkQRecordValue sigs fexpr'
 
 interpretRecordValueDecl :: [SyntaxSignature] -> Maybe SyntaxType -> SyntaxExpression -> QInterpreter QRecordValue
 interpretRecordValueDecl sigs mstype sexpr =

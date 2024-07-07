@@ -238,6 +238,17 @@ tsSubsumeExpression stdecl@(MkSome tdecl) expr =
         expr' <- renameMappableSimple @ts expr
         subsumeExpression @ts stdecl expr'
 
+tsSubsumeFExpression ::
+       forall ts f. (CompleteTypeSystem ts, Functor f)
+    => Some (TSPosWitness ts)
+    -> TSSealedFExpression ts f
+    -> TSInner ts (TSSealedFExpression ts f)
+tsSubsumeFExpression stdecl@(MkSome tdecl) expr =
+    runRenamer @ts (renameableVars tdecl) [] $
+    withTransConstraintTM @Monad $ do
+        expr' <- renameMappableSimple @ts expr
+        subsumeFExpression @ts stdecl expr'
+
 tsUncheckedRecursiveLet ::
        forall ts. (Ord (TSVarID ts), CompleteTypeSystem ts)
     => [TSBinding ts]

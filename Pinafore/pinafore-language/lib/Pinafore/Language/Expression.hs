@@ -134,6 +134,9 @@ qBindExpr = tsSingleBinding @QTypeSystem
 qSubsumeExpr :: Some (QType 'Positive) -> QExpression -> QInterpreter QExpression
 qSubsumeExpr = tsSubsumeExpression @QTypeSystem
 
+qSubsumeFExpr :: Functor f => Some (QType 'Positive) -> QFExpression f -> QInterpreter (QFExpression f)
+qSubsumeFExpr = tsSubsumeFExpression @QTypeSystem
+
 qLetExpr :: VarID -> QExpression -> QExpression -> QInterpreter QExpression
 qLetExpr name exp body = tsLet @QTypeSystem name exp body
 

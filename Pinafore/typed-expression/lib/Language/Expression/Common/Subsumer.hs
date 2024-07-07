@@ -11,11 +11,13 @@ module Language.Expression.Common.Subsumer
     , subsumerExpression
     , subsumerExpressionTo
     , subsumeExpression
+    , subsumeFExpression
     , subsumeExpressionTo
     ) where
 
 import Data.Shim
 import Language.Expression.Common.Sealed
+import Language.Expression.Common.SealedF
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.TypeSystem
@@ -90,6 +92,10 @@ data SealedSubsumerExpression ts =
     forall tdecl. MkSealedSubsumerExpression (TSPosShimWit ts tdecl)
                                              (OpenSubsumerExpression ts tdecl)
 
+data SealedSubsumerFExpression ts f =
+    forall tdecl. MkSealedSubsumerFExpression (TSPosShimWit ts tdecl)
+                                              (OpenSubsumerExpression ts (f tdecl))
+
 instance (ShowSubsumeTypeSystem ts, SubsumeTypeSystem ts) => Show (SealedSubsumerExpression ts) where
     show (MkSealedSubsumerExpression t (MkSolverExpression subs expr)) =
         showSubsumer @ts subs <> "/" <> allShow expr <> " => " <> show t
@@ -100,6 +106,12 @@ expressionSubsumption ::
     -> SealedSubsumerExpression ts
 expressionSubsumption (MkSealedExpression tw expr) = MkSealedSubsumerExpression tw $ solverExpressionLiftValue expr
 
+fExpressionSubsumption ::
+       forall ts f. SubsumeTypeSystem ts
+    => TSSealedFExpression ts f
+    -> SealedSubsumerFExpression ts f
+fExpressionSubsumption (MkSealedFExpression tw expr) = MkSealedSubsumerFExpression tw $ solverExpressionLiftValue expr
+
 subsumerExpressionTo ::
        forall ts t. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
     => TSPosWitness ts t
@@ -108,6 +120,15 @@ subsumerExpressionTo ::
 subsumerExpressionTo tdecl (MkSealedExpression tinf expr) = do
     sexpr <- subsumePosShimWit @ts tinf tdecl
     return $ liftA2 shimToFunction sexpr $ solverExpressionLiftValue expr
+
+subsumerFExpressionTo ::
+       forall ts f t. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
+    => TSPosWitness ts t
+    -> TSSealedFExpression ts f
+    -> TSOuter ts (OpenSubsumerExpression ts (f t))
+subsumerFExpressionTo tdecl (MkSealedFExpression tinf expr) = do
+    sexpr <- subsumePosShimWit @ts tinf tdecl
+    return $ liftA2 (fmap . shimToFunction) sexpr $ solverExpressionLiftValue expr
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumerExpression ::
@@ -124,6 +145,20 @@ subsumerExpression marawdecltype rawinfexpr = do
             sexpr <- subsumerExpressionTo @ts tdecl expr
             return $ MkSealedSubsumerExpression (mkPolarShimWit tdecl) sexpr
 
+subsumerFExpression ::
+       forall ts f. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
+    => Maybe (Some (TSPosWitness ts))
+    -> TSSealedFExpression ts f
+    -> TSOuter ts (SealedSubsumerFExpression ts f)
+subsumerFExpression marawdecltype rawinfexpr = do
+    expr <- unEndoM (simplify @ts) rawinfexpr
+    case marawdecltype of
+        Nothing -> return $ fExpressionSubsumption expr
+        Just (MkSome rawdecltype) -> do
+            MkShimWit tdecl _ <- unEndoM (simplify @ts) $ mkPolarShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
+            sexpr <- subsumerFExpressionTo @ts tdecl expr
+            return $ MkSealedSubsumerFExpression (mkPolarShimWit tdecl) sexpr
+
 subsumeExpression ::
        forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
     => Some (TSPosWitness ts)
@@ -134,6 +169,17 @@ subsumeExpression t expr = do
     (oexpr, ssubs) <- solveSubsumerExpression @ts sexpr
     oexpr' <- unEndoM (subsumerSubstitute @ts ssubs) oexpr
     return $ MkSealedExpression tp oexpr'
+
+subsumeFExpression ::
+       forall ts f. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
+    => Some (TSPosWitness ts)
+    -> TSSealedFExpression ts f
+    -> TSOuter ts (TSSealedFExpression ts f)
+subsumeFExpression t expr = do
+    MkSealedSubsumerFExpression tp sexpr <- subsumerFExpression @ts (Just t) expr
+    (oexpr, ssubs) <- solveSubsumerExpression @ts sexpr
+    oexpr' <- unEndoM (subsumerSubstitute @ts ssubs) oexpr
+    return $ MkSealedFExpression tp oexpr'
 
 subsumeExpressionTo ::
        forall ts t. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)

@@ -1069,7 +1069,12 @@ testQueries =
               "record"
               [ testQuery "let rf of end = 4 in rf of end" $ LRSuccess "4"
               , testQuery "let rf of x: Integer end = x in rf of x = 7 end" $ LRSuccess "7"
+              , testQuery "let rf of x: Integer end = x in rf of end" $ LRCheckFail
               , testQuery "let rf of x: Integer end : Integer = x in rf of x = 7 end" $ LRSuccess "7"
+              , testQuery "let rf of x: Integer end : Unit = x in rf of x = 7 end" $ LRCheckFail
+              , testQuery "let rf of x: Integer end : Number = x in rf of x = 7 end : Number" $ LRSuccess "7"
+              , testQuery "let rf of x: Integer end : Number = x in rf of x = 7 end : Integer" $ LRCheckFail
+              , testQuery "let rf of x: Integer end : Integer = x in rf of x = 7 end : Integer" $ LRSuccess "7"
               , testQuery "let rf of x: Integer end = x in let x = 7 in rf" $ LRSuccess "7"
               , testQuery "let rf of x: Integer; y: Integer end = x + y in rf of x = 8; y = 12 end" $ LRSuccess "20"
               , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in rf of x = 8; y = 12 end" $ LRSuccess "20"
