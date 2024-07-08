@@ -36,7 +36,8 @@ library
       Language.Expression.Common.Sealed
       Language.Expression.Common.SealedF
       Language.Expression.Common.Partial
-      Language.Expression.Common.TypeSystem
+      Language.Expression.Common.ExpressionTypeSystem
+      Language.Expression.Common.PolarTypeSystem
       Language.Expression.Common.NonpolarTypeSystem
       Language.Expression.Common.TypeFunction
       Language.Expression.Common.TypeVariable

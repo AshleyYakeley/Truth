@@ -1,9 +1,10 @@
 module Language.Expression.Common.Unifier where
 
 import Data.Shim
+import Language.Expression.Common.ExpressionTypeSystem
 import Language.Expression.Common.Pattern
+import Language.Expression.Common.PolarTypeSystem
 import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -39,7 +40,7 @@ uuLiftNegExpressionShimWit (MkExpressionWitness (MkNegShimWit tt conv) expr) =
     MkNegShimWit tt $
     MkComposeShim $ solverExpressionLiftValue $ fmap (\r -> functionToShim "ttr" (\t -> MkMeetType (t, r)) . conv) expr
 
-class ( TypeSystem ts
+class ( PolarTypeSystem ts
       , Applicative (Unifier ts)
       , JoinMeetShim (TSShim ts)
       , FunctionShim (TSShim ts)

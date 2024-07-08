@@ -1,10 +1,10 @@
 module Language.Expression.Common.NonpolarTypeSystem where
 
 import Data.Shim
-import Language.Expression.Common.TypeSystem
+import Language.Expression.Common.PolarTypeSystem
 import Shapes
 
-class TypeSystem ts => NonpolarTypeSystem (ts :: Type) where
+class PolarTypeSystem ts => NonpolarTypeSystem (ts :: Type) where
     type TSNonpolarWitness ts :: Type -> Type
     nonpolarToPositive :: forall t. TSNonpolarWitness ts t -> TSPosShimWit ts t
     nonpolarToNegative :: forall t. TSNonpolarWitness ts t -> TSNegShimWit ts t

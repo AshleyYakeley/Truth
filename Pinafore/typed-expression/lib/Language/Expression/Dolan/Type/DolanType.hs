@@ -31,7 +31,7 @@ class ( FunctionShim (DolanShim ground)
       , Ord (DolanVarID ground)
       , Monad (DolanM ground)
       , MonadThrow PatternError (DolanM ground)
-      , MonadThrow (NamedExpressionError (DolanVarID ground) (DolanShimWit ground 'Negative)) (DolanM ground)
+      , MonadThrow (ExpressionError (DolanVar ground)) (DolanM ground)
       --, DebugGroundType ground
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
     type DolanVarID ground :: Type
@@ -81,6 +81,9 @@ instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
          , DolanPolyShim ground Type ~ JMShim Type
          , ShowGroundType ground
          ) => DebugGroundType ground
+
+type DolanVar :: GroundTypeKind -> Type -> Type
+type DolanVar ground = NameWitness (DolanVarID ground) (DolanShimWit ground 'Negative)
 
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanShimWit ground polarity = PShimWit (DolanShim ground) (DolanType ground) polarity
@@ -238,7 +241,11 @@ type DolanOpenExpression ground = TSOpenExpression (DolanTypeSystem ground)
 type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
 type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSystem (DolanTypeSystem ground) where
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => ExpressionTypeSystem (DolanTypeSystem ground) where
+    type TSVar (DolanTypeSystem ground) = DolanVar ground
+    type TSType (DolanTypeSystem ground) = DolanShimWit ground 'Positive
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => PolarTypeSystem (DolanTypeSystem ground) where
     type TSOuter (DolanTypeSystem ground) = DolanTypeCheckM ground
     type TSNegWitness (DolanTypeSystem ground) = DolanType ground 'Negative
     type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive

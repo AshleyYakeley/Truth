@@ -1,6 +1,7 @@
 module Language.Expression.Common.Pattern.Expression where
 
 import Data.Shim
+import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern.Constructor
 import Language.Expression.Common.Pattern.Sealed
@@ -17,7 +18,7 @@ instance (AllConstraint Show wit, AllConstraint Show expr) => Show (ExpressionWi
 instance (AllConstraint Show wit, AllConstraint Show expr) => AllConstraint Show (ExpressionWitness wit expr) where
     allConstraint = Dict
 
-type NamedExpressionWitness name tw = ExpressionWitness tw (NamedExpression name tw)
+type NamedExpressionWitness name tw = ExpressionWitness tw (Expression (NameWitness name tw))
 
 type SealedExpressionPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type)
      = SealedPattern name vw (NamedExpressionWitness name tw)

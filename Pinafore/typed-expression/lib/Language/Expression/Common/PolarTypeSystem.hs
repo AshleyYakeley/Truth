@@ -1,22 +1,23 @@
-module Language.Expression.Common.TypeSystem where
+module Language.Expression.Common.PolarTypeSystem where
 
 import Data.Shim
+import Language.Expression.Common.ExpressionTypeSystem
 import Language.Expression.Common.Named
-import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
-import Language.Expression.Common.Sealed
-import Language.Expression.Common.SealedF
-import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-type ShowTypeSystem ts = (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts), AllConstraint Show (TSPosWitness ts))
+type ShowPolarTypeSystem ts
+     = (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts), AllConstraint Show (TSPosWitness ts))
 
-class ( Monad (TSOuter ts)
+class ( ExpressionTypeSystem ts
+      , TSVar ts ~ NameWitness (TSVarID ts) (TSNegShimWit ts)
+      , TSType ts ~ TSPosShimWit ts
+      , Monad (TSOuter ts)
       , Category (TSShim ts)
       , Eq (TSVarID ts)
-      -- , ShowTypeSystem ts
-      ) => TypeSystem (ts :: Type) where
+      -- , ShowPolarTypeSystem ts
+      ) => PolarTypeSystem (ts :: Type) where
     type TSOuter ts :: Type -> Type
     type TSNegWitness ts :: Type -> Type
     type TSPosWitness ts :: Type -> Type
@@ -49,17 +50,5 @@ tsMapWitnesses ::
     -> Endo' (TSNegShimWit ts)
     -> Endo a
 tsMapWitnesses = mapWitnesses
-
-type TSOpenExpression :: Type -> Type -> Type
-type TSOpenExpression ts = NamedExpression (TSVarID ts) (TSNegShimWit ts)
-
-type TSSealedPartialExpression ts = SealedPartialExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
-
-type TSSealedExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
-
-type TSSealedFExpression ts = SealedFExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
-
-type TSOpenSolverExpression ts typeexpr
-     = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenExpression ts)
 
 type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)

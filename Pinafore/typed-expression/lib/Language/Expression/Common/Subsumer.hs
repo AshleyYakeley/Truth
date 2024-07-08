@@ -16,11 +16,12 @@ module Language.Expression.Common.Subsumer
     ) where
 
 import Data.Shim
+import Language.Expression.Common.ExpressionTypeSystem
+import Language.Expression.Common.PolarTypeSystem
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.SealedF
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
 
@@ -36,7 +37,7 @@ class (UnifyTypeSystem ts, Applicative (Subsumer ts), RecoverShim (TSShim ts)) =
     subsumePosWitnesses ::
            TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (OpenSubsumerExpression ts (TSShim ts inf decl))
 
-class (ShowTypeSystem ts, Show (SubsumerSubstitutions ts)) => ShowSubsumeTypeSystem ts where
+class (ShowPolarTypeSystem ts, Show (SubsumerSubstitutions ts)) => ShowSubsumeTypeSystem ts where
     showSubsumer :: forall a. Subsumer ts a -> String
     default showSubsumer :: AllConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
     showSubsumer = allShow

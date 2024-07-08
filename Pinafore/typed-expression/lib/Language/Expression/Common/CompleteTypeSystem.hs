@@ -5,13 +5,13 @@ import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
 import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
-import Language.Expression.Common.Named
+import Language.Expression.Common.ExpressionTypeSystem
 import Language.Expression.Common.Pattern
+import Language.Expression.Common.PolarTypeSystem
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.Subsumer
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.TypeVariable
 import Language.Expression.Common.Unifier
 import Shapes
@@ -19,7 +19,7 @@ import Shapes
 class ( AbstractTypeSystem ts
       , SubsumeTypeSystem ts
       , SimplifyTypeSystem ts
-      , MonadThrow (NamedExpressionError (TSVarID ts) (TSNegShimWit ts)) (TSInner ts)
+      , MonadThrow (ExpressionError (TSVar ts)) (TSInner ts)
       ) => CompleteTypeSystem (ts :: Type) where
     tsFunctionPosWitness :: forall a b. TSNegWitness ts a -> TSPosWitness ts b -> TSPosShimWit ts (a -> b)
     tsFunctionNegWitness :: forall a b. TSPosWitness ts a -> TSNegWitness ts b -> TSNegShimWit ts (a -> b)
@@ -43,7 +43,7 @@ tsFunctionNegShimWit ta tb =
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsEval ::
-       forall ts m. (MonadThrow (NamedExpressionError (TSVarID ts) (TSNegShimWit ts)) m)
+       forall ts m. (CompleteTypeSystem ts, MonadThrow (ExpressionError (TSVar ts)) m)
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression

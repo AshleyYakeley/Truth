@@ -55,7 +55,7 @@ import Pinafore.Storage
 import Pinafore.Syntax
 import Pinafore.Test
 
-showVars :: NamedExpression VarID (QShimWit 'Negative) t -> [Text]
+showVars :: QOpenExpression t -> [Text]
 showVars =
     expressionFreeWitnesses $ \(MkNameWitness name (MkShimWit t _)) -> toText $ exprShow name <> " : " <> exprShow t
 

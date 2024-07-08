@@ -2,10 +2,7 @@
 
 module Language.Expression.Common.Named where
 
-import Language.Expression.Common.Error
-import Language.Expression.Common.Expression
 import Language.Expression.Common.NameWit
-import Language.Expression.Common.Witness
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -49,29 +46,14 @@ pattern MkNameWitness name wit =
 
 {-# COMPLETE MkNameWitness #-}
 
+instance WitnessMappable poswit negwit (NameWitness name negwit t) where
+    mapWitnessesM _mapPos mapNeg =
+        MkEndoM $ \(MkNameWitness name tt) -> do
+            tt' <- unEndoM mapNeg tt
+            return $ MkNameWitness name tt'
+
 type NamedExpression :: Type -> (Type -> Type) -> Type -> Type
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)
 
-instance WitnessMappable poswit negwit (NamedExpression name negwit a) where
-    mapWitnessesM mapPos mapNeg =
-        MkEndoM $ \case
-            ClosedExpression a -> pure $ ClosedExpression a
-            OpenExpression (MkNameWitness name tt) expr -> do
-                tt' <- unEndoM mapNeg tt
-                expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
-                pure $ OpenExpression (MkNameWitness name tt') expr'
-
-namedExpressionFreeNames :: NamedExpression name vw a -> [name]
-namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) -> n) expr
-
-substituteExpression :: WitnessSubstitution Type vw1 vw2 -> NamedExpression name vw1 a -> NamedExpression name vw2 a
-substituteExpression _ (ClosedExpression a) = ClosedExpression a
-substituteExpression witmap@(MkWitnessConvert wm) (OpenExpression (MkNameWitness name wt) expr) =
-    wm wt $ \wt' bij ->
-        OpenExpression (MkNameWitness name wt') $
-        fmap (\ta t2 -> ta $ isoBackwards bij t2) $ substituteExpression witmap expr
-
 varNamedExpression :: name -> vw t -> NamedExpression name vw t
 varNamedExpression n t = varNameTypeExpression (MkUnitType n) (MkUnitType' t)
-
-type NamedExpressionError name w = ExpressionError (NameWitness name w)

@@ -147,7 +147,7 @@ qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (DefDoc, QExpre
 qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
 
 qEvalExpr ::
-       forall m. MonadThrow (NamedExpressionError VarID (QShimWit 'Negative)) m
+       forall m. MonadThrow (ExpressionError QVar) m
     => QExpression
     -> m QValue
 qEvalExpr expr = tsEval @QTypeSystem expr

@@ -10,11 +10,12 @@ module Language.Expression.Common.Bindings
     ) where
 
 import Language.Expression.Common.Abstract
+import Language.Expression.Common.ExpressionTypeSystem
+import Language.Expression.Common.PolarTypeSystem
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.Subsumer
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
 

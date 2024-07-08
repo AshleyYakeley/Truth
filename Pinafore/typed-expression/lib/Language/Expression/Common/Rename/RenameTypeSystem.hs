@@ -10,9 +10,9 @@ module Language.Expression.Common.Rename.RenameTypeSystem
     ) where
 
 import Data.Shim
+import Language.Expression.Common.PolarTypeSystem
 import Language.Expression.Common.Rename.Rigidity
 import Language.Expression.Common.Rename.VarRenameable
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -20,7 +20,7 @@ data NewVar ts =
     forall t. MkNewVar (TSNegShimWit ts t)
                        (TSPosShimWit ts t)
 
-class ( TypeSystem ts
+class ( PolarTypeSystem ts
       , TransConstraint Monad (RenamerT ts)
       , MonadTrans (RenamerT ts)
       , VarRenameable1 (TSPosWitness ts)

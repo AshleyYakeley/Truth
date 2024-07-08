@@ -9,8 +9,8 @@ module Language.Expression.Common.UnifierPurityFunction
     , runUnifierPurityFunction
     ) where
 
+import Language.Expression.Common.ExpressionTypeSystem
 import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
 

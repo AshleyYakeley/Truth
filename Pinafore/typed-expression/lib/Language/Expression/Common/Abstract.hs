@@ -30,15 +30,16 @@ module Language.Expression.Common.Abstract
 import Data.Shim
 import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
+import Language.Expression.Common.ExpressionTypeSystem
 import Language.Expression.Common.Named
 import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
+import Language.Expression.Common.PolarTypeSystem
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.SealedF
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
 
@@ -367,7 +368,10 @@ tsMatchGate rawmatch rawexpr =
                 purityIs @Monad purity $
                 MkSealedExpression (MkPartialWit purity etype) $ liftA2 (\t ft -> (pconv $ pf t) >> econv ft) pexpr expr
 
-tsMatchBindings :: forall ts. TSMatch ts -> [(TSVarID ts, TSSealedExpression ts)]
+tsMatchBindings ::
+       forall ts. PolarTypeSystem ts
+    => TSMatch ts
+    -> [(TSVarID ts, TSSealedExpression ts)]
 tsMatchBindings (MkSealedPattern pexpr (MkPattern ww (MkPurityFunction purity (Kleisli pf)))) =
     purityIs @Functor purity $ let
         mkBinding ::

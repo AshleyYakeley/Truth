@@ -7,7 +7,13 @@ import Shapes
 type Unitype :: (Type -> Type) -> Type -> Type -> Type
 data Unitype m name val
 
-instance (Monad m, Eq name, Show name) => TypeSystem (Unitype m name val) where
+type UnitypeVar m name val = NameWitness name (UniShimWit val 'Negative)
+
+instance (Monad m, Eq name, Show name) => ExpressionTypeSystem (Unitype m name val) where
+    type TSVar (Unitype m name val) = UnitypeVar m name val
+    type TSType (Unitype m name val) = UniShimWit val 'Positive
+
+instance (Monad m, Eq name, Show name) => PolarTypeSystem (Unitype m name val) where
     type TSOuter (Unitype m name val) = IdentityT m
     type TSNegWitness (Unitype m name val) = ((:~:) val)
     type TSPosWitness (Unitype m name val) = ((:~:) val)
@@ -65,7 +71,7 @@ class UnitypeValue val where
 
 instance ( Monad m
          , MonadThrow PatternError m
-         , MonadThrow (NamedExpressionError name (UniShimWit val 'Negative)) m
+         , MonadThrow (ExpressionError (UnitypeVar m name val)) m
          , Ord name
          , Show name
          , UnitypeValue val

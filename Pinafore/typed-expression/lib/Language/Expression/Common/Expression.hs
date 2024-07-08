@@ -1,6 +1,7 @@
 module Language.Expression.Common.Expression where
 
 import Language.Expression.Common.Error
+import Language.Expression.Common.WitnessMappable
 import Shapes
 
 type Expression :: (Type -> Type) -> Type -> Type
@@ -28,6 +29,16 @@ instance AllConstraint Show w => Show (Expression w a) where
 
 instance AllConstraint Show w => AllConstraint Show (Expression w) where
     allConstraint = Dict
+
+instance (forall t. WitnessMappable poswit negwit (w t)) => WitnessMappable poswit negwit (Expression w a) where
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \case
+            ClosedExpression a -> pure $ ClosedExpression a
+            OpenExpression wt expr ->
+                liftA2
+                    OpenExpression
+                    (unEndoM (mapWitnessesM mapPos mapNeg) wt)
+                    (unEndoM (mapWitnessesM mapPos mapNeg) expr)
 
 isClosedExpression :: Expression w t -> Bool
 isClosedExpression (ClosedExpression _) = True
