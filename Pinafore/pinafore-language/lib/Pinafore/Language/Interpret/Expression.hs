@@ -102,7 +102,7 @@ interpretPattern' (TypedSyntaxPattern spat stype) = do
                 let
                     pc :: QPatternConstructor
                     pc =
-                        toExpressionPatternConstructor $
+                        toExpressionPatternConstructor @QTypeSystem $
                         toPatternConstructor (mkShimWit tn) (ConsListType tpw NilListType) $
                         PureFunction $ \a -> (a, ())
                 qConstructPattern pc [pat]
@@ -120,7 +120,7 @@ interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
                         let
                             pc :: QPatternConstructor
                             pc =
-                                toExpressionPatternConstructor $
+                                toExpressionPatternConstructor @QTypeSystem $
                                 toPatternConstructor dtn (ConsListType tpw NilListType) $
                                 ImpureFunction $ fmap $ \a -> (a, ())
                         qConstructPattern pc [pat]

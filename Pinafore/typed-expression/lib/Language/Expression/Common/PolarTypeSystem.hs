@@ -4,6 +4,7 @@ import Data.Shim
 import Language.Expression.Common.ExpressionTypeSystem
 import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern
+import Language.Expression.Common.Pattern.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -11,8 +12,11 @@ type ShowPolarTypeSystem ts
      = (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts), AllConstraint Show (TSPosWitness ts))
 
 class ( ExpressionTypeSystem ts
-      , TSVar ts ~ NameWitness (TSVarID ts) (TSNegShimWit ts)
-      , TSType ts ~ TSPosShimWit ts
+      , PatternTypeSystem ts
+      , TSExprType ts ~ TSPosShimWit ts
+      , TSExprVar ts ~ NameWitness (TSVarID ts) (TSNegShimWit ts)
+      , TSPatType ts ~ TSNegShimWit ts
+      , TSPatVar ts ~ NameWitness (TSVarID ts) (TSPosShimWit ts)
       , Monad (TSOuter ts)
       , Category (TSShim ts)
       , Eq (TSVarID ts)
@@ -35,6 +39,31 @@ type TSNegShimWit ts = TSShimWit ts 'Negative
 
 type TSPosShimWit ts = TSShimWit ts 'Positive
 
+type TSPatternConstructor ts = PatternConstructor (TSPatVar ts) (TSPosShimWit ts) (TSPatType ts)
+
+type TSExpressionWitness ts = ExpressionWitness (TSPatType ts) (TSOpenExpression ts)
+
+type TSExpressionPatternConstructor ts = PatternConstructor (TSPatVar ts) (TSPosShimWit ts) (TSExpressionWitness ts)
+
+type TSMatch ts = SealedPattern (TSPatVar ts) (TSOpenExpression ts)
+
+type TSSealedExpressionPattern ts = SealedPattern (TSPatVar ts) (TSExpressionWitness ts)
+
+varSealedExpressionPattern ::
+       forall ts t. PolarTypeSystem ts
+    => TSVarID ts
+    -> TSPatType ts t
+    -> TSPosShimWit ts (MeetType t ())
+    -> TSSealedExpressionPattern ts
+varSealedExpressionPattern n twt vwt = varSealedPattern n (MkExpressionWitness twt $ pure ()) vwt
+
+anySealedExpressionPattern :: forall ts t. TSPatType ts t -> TSSealedExpressionPattern ts
+anySealedExpressionPattern twt = anySealedPattern $ MkExpressionWitness twt $ pure ()
+
+toExpressionPatternConstructor :: forall ts. TSPatternConstructor ts -> TSExpressionPatternConstructor ts
+toExpressionPatternConstructor (MkPatternConstructor twt lt pat) =
+    MkPatternConstructor (MkExpressionWitness twt $ pure MkTopType) lt $ pat . arr meet1
+
 type TSMappable ts = WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts)
 
 tsMapWitnessesM ::
@@ -50,5 +79,3 @@ tsMapWitnesses ::
     -> Endo' (TSNegShimWit ts)
     -> Endo a
 tsMapWitnesses = mapWitnesses
-
-type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)

@@ -31,7 +31,7 @@ class ( FunctionShim (DolanShim ground)
       , Ord (DolanVarID ground)
       , Monad (DolanM ground)
       , MonadThrow PatternError (DolanM ground)
-      , MonadThrow (ExpressionError (DolanVar ground)) (DolanM ground)
+      , MonadThrow (ExpressionError (DolanVar ground 'Negative)) (DolanM ground)
       --, DebugGroundType ground
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
     type DolanVarID ground :: Type
@@ -82,8 +82,8 @@ instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
          , ShowGroundType ground
          ) => DebugGroundType ground
 
-type DolanVar :: GroundTypeKind -> Type -> Type
-type DolanVar ground = NameWitness (DolanVarID ground) (DolanShimWit ground 'Negative)
+type DolanVar :: GroundTypeKind -> Polarity -> Type -> Type
+type DolanVar ground polarity = NameWitness (DolanVarID ground) (DolanShimWit ground polarity)
 
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanShimWit ground polarity = PShimWit (DolanShim ground) (DolanType ground) polarity
@@ -242,8 +242,12 @@ type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
 type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => ExpressionTypeSystem (DolanTypeSystem ground) where
-    type TSVar (DolanTypeSystem ground) = DolanVar ground
-    type TSType (DolanTypeSystem ground) = DolanShimWit ground 'Positive
+    type TSExprVar (DolanTypeSystem ground) = DolanVar ground 'Negative
+    type TSExprType (DolanTypeSystem ground) = DolanShimWit ground 'Positive
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => PatternTypeSystem (DolanTypeSystem ground) where
+    type TSPatVar (DolanTypeSystem ground) = DolanVar ground 'Positive
+    type TSPatType (DolanTypeSystem ground) = DolanShimWit ground 'Negative
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => PolarTypeSystem (DolanTypeSystem ground) where
     type TSOuter (DolanTypeSystem ground) = DolanTypeCheckM ground

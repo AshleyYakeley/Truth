@@ -165,7 +165,7 @@ type QArgumentsShimWit dv gt polarity = CCRPolarArgumentsShimWit QPolyShim dv QT
 
 type QValue = TSValue QTypeSystem
 
-type QVar = TSVar QTypeSystem
+type QVar = TSExprVar QTypeSystem
 
 type QValueF f = TSValueF QTypeSystem f
 

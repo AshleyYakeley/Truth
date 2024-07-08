@@ -59,7 +59,7 @@ qToPatternConstructor ::
     => PurityFunction Maybe t (ListProduct lt)
     -> QPatternConstructor
 qToPatternConstructor tml =
-    toExpressionPatternConstructor $
+    toExpressionPatternConstructor @QTypeSystem $
     toPatternConstructor (fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative)) toListShimWit tml
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> QInterpreter (QPatternConstructor)

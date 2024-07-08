@@ -7,6 +7,7 @@ module Language.Expression.Common.Pattern.Pattern
     , varPattern
     ) where
 
+import Language.Expression.Common.WitnessMappable
 import Shapes
 
 type Pattern :: (Type -> Type) -> Type -> Type -> Type
@@ -16,6 +17,12 @@ data Pattern w q a =
 
 instance Functor (Pattern w q) where
     fmap ab (MkPattern ww pf) = MkPattern ww $ fmap (fmap ab) pf
+
+instance (forall t. WitnessMappable poswit negwit (w t)) => WitnessMappable poswit negwit (Pattern w q a) where
+    mapWitnessesM mapPos mapNeg = let
+        mapNW :: EndoM' _ w
+        mapNW = MkEndoM $ \wt -> unEndoM (mapWitnessesM mapPos mapNeg) wt
+        in MkEndoM $ \(MkPattern ww pf) -> fmap (\ww' -> MkPattern ww' pf) $ unEndoM (endoFor $ endoSomeFor mapNW) ww
 
 purityFunctionPattern :: PurityFunction Maybe a b -> Pattern w a b
 purityFunctionPattern pf = MkPattern [] $ fmap (\b -> ((), b)) pf

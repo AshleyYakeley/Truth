@@ -13,6 +13,7 @@ import Language.Expression.Common.Named as I
 import Language.Expression.Common.NonpolarTypeSystem as I
 import Language.Expression.Common.Partial as I
 import Language.Expression.Common.Pattern as I
+import Language.Expression.Common.Pattern.TypeSystem as I
 import Language.Expression.Common.PolarTypeSystem as I
 import Language.Expression.Common.Rename as I
 import Language.Expression.Common.Sealed as I

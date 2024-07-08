@@ -586,7 +586,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                                    toPatternConstructor ctfneg ltp $
                                                    ImpureFunction $ fmap listVProductToProduct . decode codec
                                                in registerPatternConstructor ctfullname (ctDoc constructor) expr $
-                                                  toExpressionPatternConstructor pc
+                                                  toExpressionPatternConstructor @QTypeSystem pc
                                            MkConstructorType _ (RecordCF _) lt -> let
                                                recordcons = MkQRecordConstructor lt declpos declneg codec
                                                in registerRecordConstructor ctfullname (ctDoc constructor) recordcons

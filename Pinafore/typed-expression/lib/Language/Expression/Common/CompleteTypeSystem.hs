@@ -19,7 +19,7 @@ import Shapes
 class ( AbstractTypeSystem ts
       , SubsumeTypeSystem ts
       , SimplifyTypeSystem ts
-      , MonadThrow (ExpressionError (TSVar ts)) (TSInner ts)
+      , MonadThrow (ExpressionError (TSExprVar ts)) (TSInner ts)
       ) => CompleteTypeSystem (ts :: Type) where
     tsFunctionPosWitness :: forall a b. TSNegWitness ts a -> TSPosWitness ts b -> TSPosShimWit ts (a -> b)
     tsFunctionNegWitness :: forall a b. TSPosWitness ts a -> TSNegWitness ts b -> TSNegShimWit ts (a -> b)
@@ -43,7 +43,7 @@ tsFunctionNegShimWit ta tb =
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsEval ::
-       forall ts m. (CompleteTypeSystem ts, MonadThrow (ExpressionError (TSVar ts)) m)
+       forall ts m. (CompleteTypeSystem ts, MonadThrow (ExpressionError (TSExprVar ts)) m)
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
@@ -270,7 +270,7 @@ tsVarPattern name =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar vwt twt <- renameNewFreeVar @ts
-        return $ varSealedExpressionPattern name vwt $ mapShimWit (MkPolarShim meet1) twt
+        return $ varSealedExpressionPattern @ts name vwt $ mapShimWit (MkPolarShim meet1) twt
 
 tsAnyPattern ::
        forall ts. CompleteTypeSystem ts
@@ -280,7 +280,7 @@ tsAnyPattern =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar twt _ <- renameNewFreeVar @ts
-        return $ anySealedExpressionPattern twt
+        return $ anySealedExpressionPattern @ts twt
 
 tsBothPattern ::
        forall ts. CompleteTypeSystem ts

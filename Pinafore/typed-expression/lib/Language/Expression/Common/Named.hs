@@ -46,6 +46,12 @@ pattern MkNameWitness name wit =
 
 {-# COMPLETE MkNameWitness #-}
 
+instance WitnessMappable poswit negwit (NameWitness name poswit t) where
+    mapWitnessesM mapPos _mapNeg =
+        MkEndoM $ \(MkNameWitness name tt) -> do
+            tt' <- unEndoM mapPos tt
+            return $ MkNameWitness name tt'
+
 instance WitnessMappable poswit negwit (NameWitness name negwit t) where
     mapWitnessesM _mapPos mapNeg =
         MkEndoM $ \(MkNameWitness name tt) -> do

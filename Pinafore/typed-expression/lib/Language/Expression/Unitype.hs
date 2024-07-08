@@ -7,11 +7,17 @@ import Shapes
 type Unitype :: (Type -> Type) -> Type -> Type -> Type
 data Unitype m name val
 
-type UnitypeVar m name val = NameWitness name (UniShimWit val 'Negative)
+type UniShimWit val polarity = PolarShimWit (->) ((:~:) val) polarity
+
+type UnitypeVar m name val polarity = NameWitness name (UniShimWit val polarity)
 
 instance (Monad m, Eq name, Show name) => ExpressionTypeSystem (Unitype m name val) where
-    type TSVar (Unitype m name val) = UnitypeVar m name val
-    type TSType (Unitype m name val) = UniShimWit val 'Positive
+    type TSExprVar (Unitype m name val) = UnitypeVar m name val 'Negative
+    type TSExprType (Unitype m name val) = UniShimWit val 'Positive
+
+instance (Monad m, Eq name, Show name) => PatternTypeSystem (Unitype m name val) where
+    type TSPatVar (Unitype m name val) = UnitypeVar m name val 'Positive
+    type TSPatType (Unitype m name val) = UniShimWit val 'Negative
 
 instance (Monad m, Eq name, Show name) => PolarTypeSystem (Unitype m name val) where
     type TSOuter (Unitype m name val) = IdentityT m
@@ -19,8 +25,6 @@ instance (Monad m, Eq name, Show name) => PolarTypeSystem (Unitype m name val) w
     type TSPosWitness (Unitype m name val) = ((:~:) val)
     type TSShim (Unitype m name val) = (->)
     type TSVarID (Unitype m name val) = name
-
-type UniShimWit val polarity = PolarShimWit (->) ((:~:) val) polarity
 
 unitypeShimWit ::
        forall polarity (val :: Type). Is PolarityType polarity
@@ -71,7 +75,7 @@ class UnitypeValue val where
 
 instance ( Monad m
          , MonadThrow PatternError m
-         , MonadThrow (ExpressionError (UnitypeVar m name val)) m
+         , MonadThrow (ExpressionError (UnitypeVar m name val 'Negative)) m
          , Ord name
          , Show name
          , UnitypeValue val

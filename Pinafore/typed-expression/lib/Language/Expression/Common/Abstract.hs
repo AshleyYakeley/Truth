@@ -68,12 +68,6 @@ cleanSealedExpression (MkSealedExpression t oexpr) = do
 type TSOpenPattern :: Type -> Type -> Type -> Type
 type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
 
-type TSMatch ts = Match (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
-type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
-type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
-
 finalRenameINTERNAL :: Bool
 finalRenameINTERNAL = True
 
@@ -336,7 +330,11 @@ tsPartialExpressionSumList rawee =
         ee <- for rawee $ renameMappableSimple @ts
         partialExpressionSumList @ts ee
 
-tsLambdaPatternMatch :: forall ts. TSVarID ts -> TSSealedExpressionPattern ts -> TSMatch ts
+tsLambdaPatternMatch ::
+       forall ts. PolarTypeSystem ts
+    => TSVarID ts
+    -> TSSealedExpressionPattern ts
+    -> TSMatch ts
 tsLambdaPatternMatch varid (MkSealedPattern (MkExpressionWitness ptw pexpr) opat) =
     MkSealedPattern (OpenExpression (MkNameWitness varid ptw) $ fmap (\r t -> BothMeetType t r) pexpr) opat
 
