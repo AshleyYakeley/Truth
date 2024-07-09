@@ -9,23 +9,23 @@ import Shapes
 data PartialWit (w :: Type -> Type) (t :: Type) where
     MkPartialWit :: forall w f t. PurityType Maybe f -> w t -> PartialWit w (f t)
 
-type SealedPartialExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type)
-     = SealedExpression name vw (PartialWit tw)
+type SealedPartialExpression (varw :: Type -> Type) (tw :: Type -> Type) = SealedExpression varw (PartialWit tw)
 
-instance WitnessMappable poswit negwit (SealedPartialExpression name negwit poswit) where
+instance (forall t. WitnessMappable poswit negwit (varw t)) =>
+             WitnessMappable poswit negwit (SealedPartialExpression varw poswit) where
     mapWitnessesM mapPos mapNeg =
         MkEndoM $ \(MkSealedExpression (MkPartialWit purity tt) expr) -> do
             tt' <- unEndoM mapPos tt
             expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
             pure $ MkSealedExpression (MkPartialWit purity tt') expr'
 
-sealedToPartialExpression :: SealedExpression name vw tw -> SealedPartialExpression name vw tw
+sealedToPartialExpression :: SealedExpression varw tw -> SealedPartialExpression varw tw
 sealedToPartialExpression (MkSealedExpression twt expr) =
     MkSealedExpression (MkPartialWit PureType twt) $ fmap Identity expr
 
-partialToSealedExpression :: SealedPartialExpression name vw tw -> SealedExpression name vw tw
+partialToSealedExpression :: SealedPartialExpression varw tw -> SealedExpression varw tw
 partialToSealedExpression (MkSealedExpression (MkPartialWit purity twt) expr) =
     MkSealedExpression twt $ fmap (runPurityCases purity) expr
 
-neverSealedPartialExpression :: tw a -> SealedPartialExpression name vw tw
+neverSealedPartialExpression :: tw a -> SealedPartialExpression varw tw
 neverSealedPartialExpression twt = MkSealedExpression (MkPartialWit ImpureType twt) $ pure Nothing

@@ -1,6 +1,7 @@
 module Language.Expression.Common.TypeSystem where
 
 import Data.Shim
+import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
@@ -50,16 +51,17 @@ tsMapWitnesses ::
     -> Endo a
 tsMapWitnesses = mapWitnesses
 
+type TSNameWitness ts = NameWitness (TSVarID ts) (TSNegShimWit ts)
+
 type TSOpenExpression :: Type -> Type -> Type
-type TSOpenExpression ts = NamedExpression (TSVarID ts) (TSNegShimWit ts)
+type TSOpenExpression ts = Expression (TSNameWitness ts)
 
-type TSSealedPartialExpression ts = SealedPartialExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
+type TSSealedPartialExpression ts = SealedPartialExpression (TSNameWitness ts) (TSPosShimWit ts)
 
-type TSSealedExpression ts = SealedExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
+type TSSealedExpression ts = SealedExpression (TSNameWitness ts) (TSPosShimWit ts)
 
-type TSSealedFExpression ts = SealedFExpression (TSVarID ts) (TSNegShimWit ts) (TSPosShimWit ts)
+type TSSealedFExpression ts = SealedFExpression (TSNameWitness ts) (TSPosShimWit ts)
 
-type TSOpenSolverExpression ts typeexpr
-     = SolverExpression (TSPosShimWit ts) (TSNegShimWit ts) typeexpr (TSOpenExpression ts)
+type TSOpenSolverExpression ts typeexpr = SolverExpression typeexpr (TSOpenExpression ts)
 
 type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)

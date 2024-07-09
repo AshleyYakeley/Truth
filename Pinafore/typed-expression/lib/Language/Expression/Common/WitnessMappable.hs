@@ -72,3 +72,9 @@ mapPShimWits ::
     -> (forall t. wit 'Negative t -> PShimWit shim wit 'Negative t)
     -> Endo a
 mapPShimWits mapPos mapNeg = mapWitnesses (Endo $ chainPolarShimWit mapPos) (Endo $ chainPolarShimWit mapNeg)
+
+class (forall a. WitnessMappable poswit negwit (f a)) =>
+          WitnessMappable1 (poswit :: k -> Type) (negwit :: k -> Type) (f :: Type -> Type)
+
+instance (forall a. WitnessMappable poswit negwit (f a)) =>
+             WitnessMappable1 (poswit :: k -> Type) (negwit :: k -> Type) (f :: Type -> Type)

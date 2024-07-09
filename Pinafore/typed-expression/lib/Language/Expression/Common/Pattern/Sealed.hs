@@ -2,30 +2,37 @@
 
 module Language.Expression.Common.Pattern.Sealed where
 
+import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern.Named
 import Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-data SealedPattern (name :: Type) (poswit :: Type -> Type) (negwit :: Type -> Type) =
+data SealedPattern (varw :: Type -> Type) (negwit :: Type -> Type) =
     forall t. MkSealedPattern (negwit t)
-                              (NamedPattern name poswit t ())
+                              (Pattern varw t ())
 
-instance WitnessMappable poswit negwit (SealedPattern name poswit negwit) where
+instance (forall t. WitnessMappable poswit negwit (varw t), forall t. WitnessMappable poswit negwit (ww t)) =>
+             WitnessMappable poswit negwit (SealedPattern varw ww) where
     mapWitnessesM mapPos mapNeg =
         MkEndoM $ \(MkSealedPattern tt pat) -> do
-            tt' <- unEndoM mapNeg tt
+            tt' <- unEndoM (mapWitnessesM mapPos mapNeg) tt
             pat' <- unEndoM (mapWitnessesM mapPos mapNeg) pat
             pure $ MkSealedPattern tt' $ pat'
 
-instance (Show name, AllConstraint Show poswit, AllConstraint Show negwit) => Show (SealedPattern name poswit negwit) where
+instance (AllConstraint Show varw, AllConstraint Show negwit) => Show (SealedPattern varw negwit) where
     show (MkSealedPattern t expr) = show expr <> " => " <> allShow t
 
-varSealedPattern :: name -> tw t -> vw t -> SealedPattern name vw tw
-varSealedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt
-
-anySealedPattern :: tw t -> SealedPattern name vw tw
+anySealedPattern :: tw t -> SealedPattern varw tw
 anySealedPattern twt = MkSealedPattern twt anyPattern
 
-sealedPatternNames :: SealedPattern name vw tw -> [name]
+varSealedPattern :: negwit t -> varw t -> SealedPattern varw negwit
+varSealedPattern twt var = MkSealedPattern twt $ varPattern var
+
+type SealedNamedPattern name vw = SealedPattern (NameWitness name vw)
+
+varSealedNamedPattern :: name -> tw t -> vw t -> SealedNamedPattern name vw tw
+varSealedNamedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt
+
+sealedPatternNames :: SealedNamedPattern name vw tw -> [name]
 sealedPatternNames (MkSealedPattern _ pat) = patternNames pat

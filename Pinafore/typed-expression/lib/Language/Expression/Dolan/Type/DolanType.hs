@@ -31,7 +31,7 @@ class ( FunctionShim (DolanShim ground)
       , Ord (DolanVarID ground)
       , Monad (DolanM ground)
       , MonadThrow PatternError (DolanM ground)
-      , MonadThrow (NamedExpressionError (DolanVarID ground) (DolanShimWit ground 'Negative)) (DolanM ground)
+      , MonadThrow (ExpressionError (DolanVar ground 'Negative)) (DolanM ground)
       --, DebugGroundType ground
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
     type DolanVarID ground :: Type
@@ -81,6 +81,9 @@ instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
          , DolanPolyShim ground Type ~ JMShim Type
          , ShowGroundType ground
          ) => DebugGroundType ground
+
+type DolanVar :: GroundTypeKind -> Polarity -> Type -> Type
+type DolanVar ground polarity = NameWitness (DolanVarID ground) (DolanShimWit ground polarity)
 
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanShimWit ground polarity = PShimWit (DolanShim ground) (DolanType ground) polarity
