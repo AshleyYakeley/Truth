@@ -10,7 +10,8 @@ module Pinafore.Language.Interpreter.ScopeBuilder
     , outputScopeDocs
     , QFixBox
     , scopeSetSourcePos
-    , allocateVar
+    , allocateLambdaVar
+    , allocatePolymorphicVar
     , withCurrentNamespaceScope
     ) where
 
@@ -82,20 +83,23 @@ varIDStateRef = builderLiftRef varIDStateParam
 scopeSetSourcePos :: SourcePos -> QScopeBuilder ()
 scopeSetSourcePos = refPut (builderLiftRef sourcePosParam)
 
-allocateVar :: Maybe FullName -> QScopeBuilder (FullName, VarID)
-allocateVar mname = do
+allocateVar :: (VarIDState -> (VarID, FullName)) -> QScopeBuilder (FullName, VarID)
+allocateVar mkvar = do
     vs <- refSucc varIDStateRef
     let
-        (vid, name) =
-            case mname of
-                Just name' -> (mkVarID vs name', name')
-                Nothing -> mkUniqueVarID vs
+        (vid, name) = mkvar vs
         biOriginalName = name
         biDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
         biValue = ValueBinding $ tsVar @QTypeSystem vid
         insertScope = MkQScope (bindingInfoToMap (name, MkQBindingInfo {..})) mempty
     refModifyM scopeRef $ \oldScope -> builderLift $ joinScopes oldScope insertScope
     return (name, vid)
+
+allocateLambdaVar :: Maybe FullName -> QScopeBuilder (FullName, VarID)
+allocateLambdaVar mname = allocateVar $ \vs -> mkLambdaVarID vs mname
+
+allocatePolymorphicVar :: FullName -> QScopeBuilder (FullName, VarID)
+allocatePolymorphicVar name = allocateVar $ \vs -> (mkPolymorphicVarID vs name, name)
 
 withCurrentNamespaceScope :: Namespace -> QScopeBuilder a -> QScopeBuilder a
 withCurrentNamespaceScope ns ma = paramWith (refParam currentNamespaceRef) ns ma

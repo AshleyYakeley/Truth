@@ -67,7 +67,7 @@ testDependentLet =
     runTester defaultTester $ do
         MkT i <-
             testerLiftInterpreter $
-            withScopeBuilder (allocateVar $ Just "x.") $ \(_, varid) -> do
+            withScopeBuilder (allocateLambdaVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
                     withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
@@ -82,7 +82,7 @@ testDependentFunction =
     runTester defaultTester $ do
         MkT i <-
             testerLiftInterpreter $
-            withScopeBuilder (allocateVar $ Just "x.") $ \(_, varid) -> do
+            withScopeBuilder (allocateLambdaVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
                     withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
@@ -128,7 +128,7 @@ testPolyDependentFunction =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
         MkT1 i <-
             testerLiftInterpreter $
-            withScopeBuilder (allocateVar $ Just "x.") $ \(_, varid) -> do
+            withScopeBuilder (allocateLambdaVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
                     withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
@@ -167,7 +167,7 @@ testSemiScript1 =
             withScopeBuilder
                 (do
                      registerT1Stuff
-                     allocateVar $ Just "x.") $ \(_, varid) -> do
+                     allocateLambdaVar $ Just "x.") $ \(_, varid) -> do
                 tExpression <-
                     withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression

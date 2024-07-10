@@ -37,7 +37,7 @@ boolExpr :: QExpression
 boolExpr = typeFConstExpression toJMShimWit False
 
 varExpr :: QExpression
-varExpr = tsVar @TS $ mkVarID szero "v"
+varExpr = tsVar @TS $ fst $ mkLambdaVarID szero $ Just "v"
 
 ifelseExpr :: QExpression
 ifelseExpr =
@@ -113,7 +113,7 @@ simplifyTypeTest text e =
                                 MkSealedExpression (mkPolarShimWit t') $ ClosedExpression undefined
         liftIO $
             case simpexpr of
-                MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ toText $ exprShow t'
+                MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ exprShowShow t'
 
 unrollTest :: Text -> Text -> TestTree
 unrollTest rolledTypeText expectedUnrolledTypeText =

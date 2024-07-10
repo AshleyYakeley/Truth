@@ -107,7 +107,7 @@ instance ExprShow (MonoStorableType t) where
         showEntityType (stbKind storability) showType args
 
 instance Show (MonoStorableType t) where
-    show t = unpack $ toText $ exprShow t
+    show = exprShowShow
 
 monoStoreAdapter :: forall t. MonoStorableType t -> Interpreter (StoreAdapter t)
 monoStoreAdapter (MkMonoType gt args) = storableGroundTypeAdapter gt args

@@ -116,10 +116,9 @@ nameWitnessErrorType ww = let
            Some (NameWitness VarID (QShimWit 'Negative)) -> Either (FullNameRef, NamedText) (ImplicitName, NamedText)
     nwToPair (MkSome (MkNameWitness varid (MkShimWit w _))) = let
         tnt = withAllConstraint @Type @ShowNamedText w $ showNamedText w
-        in case varid of
-               GoodVarID _ fn -> Left (fullNameRef fn, tnt)
-               ImplicitVarID n -> Right (n, tnt)
-               BadVarID _ fnr -> Left (fnr, tnt)
+        in case varIDName varid of
+               Left name -> Left (name, tnt)
+               Right name -> Right (name, tnt)
     in case splitNonEmpty $ fmap nwToPair ww of
            Left pp -> ExpressionUndefinedError pp
            Right pp -> ExpressionUnimpliedError pp

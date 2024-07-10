@@ -10,6 +10,7 @@ import Pinafore.Syntax.Name.NamedText
 import Pinafore.Syntax.Name.Namespace
 import Pinafore.Syntax.Name.NamespaceRef
 import Pinafore.Syntax.Name.PrecNamedText
+import Pinafore.Syntax.Text
 import Shapes
 
 class ExprShow t where
@@ -22,6 +23,9 @@ exprPrecShow c t = precNamedText c $ exprShowPrec t
 
 exprShow :: ExprShow t => t -> NamedText
 exprShow = exprPrecShow maxBound
+
+exprShowShow :: ExprShow t => t -> String
+exprShowShow x = unpack $ toText $ exprShow x
 
 instance ExprShow t => ExprShow (Maybe t) where
     exprShowPrec Nothing = ""

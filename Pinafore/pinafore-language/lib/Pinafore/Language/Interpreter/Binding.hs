@@ -81,7 +81,7 @@ instance HasInterpreter => Show QInterpreterBinding where
     show (RecordValueBinding _) = "recordval"
     show (PatternConstructorBinding e _) = "cons: " <> show e
     show (RecordConstructorBinding _) = "recordcons"
-    show (TypeBinding t) = "type: " <> unpack (toText $ exprShow t)
+    show (TypeBinding t) = "type: " <> exprShowShow t
     show (SpecialFormBinding _) = "special"
 
 data QBindingInfo = MkQBindingInfo

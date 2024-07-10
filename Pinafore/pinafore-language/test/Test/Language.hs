@@ -1126,7 +1126,7 @@ testShim query expectedType expectedShim =
             case result of
                 FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
                 SuccessResult (MkSomeOf (MkPosShimWit t shim) _) -> do
-                    assertEqual "type" expectedType $ unpack $ toText $ exprShow t
+                    assertEqual "type" expectedType $ exprShowShow t
                     assertEqual "shim" expectedShim $ show shim
 
 testShims :: TestTree

@@ -8,7 +8,7 @@ module Pinafore.Test.Internal
     , runInterpreter
     , QTypeSystem
     , VarID
-    , mkVarID
+    , mkLambdaVarID
     , szero
     , UVar
     , Var(..)
@@ -23,7 +23,7 @@ module Pinafore.Test.Internal
     , QInterpreterBinding(..)
     , QInterpreter
     , toJMShimWit
-    , allocateVar
+    , allocateLambdaVar
     , QScopeBuilder
     , withScopeBuilder
     , registerGroundType

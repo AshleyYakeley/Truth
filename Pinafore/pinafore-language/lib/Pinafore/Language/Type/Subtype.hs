@@ -42,9 +42,7 @@ instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
                     (witnessToValue $ polarityType @pola)
                     (exprShow tb)
                     (witnessToValue $ polarityType @polb)
-    shouldMerge (GoodVarID s1 _) (GoodVarID s2 _) = s1 == s2
-    shouldMerge (BadVarID _ n1) (BadVarID _ n2) = n1 == n2
-    shouldMerge _ _ = False
+    shouldMerge = shouldMergeVarID
 
 instance HasInterpreter => IsDolanSubtypeEntriesGroundType QGroundType where
     subtypeConversionEntries = getSubtypeConversions

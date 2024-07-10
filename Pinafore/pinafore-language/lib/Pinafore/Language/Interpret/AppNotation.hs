@@ -11,14 +11,14 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
 
-allocateAppNotationVar :: FullName -> QInterpreter VarID
-allocateAppNotationVar name = do
+allocateAppNotationVar :: QInterpreter VarID
+allocateAppNotationVar = do
     i <- refSucc appNotationVarRef
-    return $ mkVarID i name
+    return $ mkAppNotationVarID i
 
 appNotationUnquote :: QInterpreter QExpression -> QInterpreter QExpression
 appNotationUnquote mexpr = do
-    v <- allocateAppNotationVar $ RootFullName "%model"
+    v <- allocateAppNotationVar
     (expr, uq) <- prodCollect appNotationBindsProd mexpr
     case uq of
         [] -> return ()

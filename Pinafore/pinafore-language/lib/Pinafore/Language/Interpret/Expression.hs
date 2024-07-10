@@ -54,7 +54,7 @@ recordNameWitnesses ::
 recordNameWitnesses ns lt =
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
         MkPairType (ValueSignature _ name t _) f -> do
-            (_, vid) <- allocateVar $ Just $ MkFullName name ns
+            (_, vid) <- allocateLambdaVar $ Just $ MkFullName name ns
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
 
 mkRecordPattern ::
@@ -73,7 +73,7 @@ constructPattern ns (Right (MkQRecordConstructor sigs _ tt codec)) [] = do
 interpretPattern' :: SyntaxPattern' -> QScopeBuilder QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
 interpretPattern' (VarSyntaxPattern n) = do
-    (_, vid) <- allocateVar $ Just n
+    (_, vid) <- allocateLambdaVar $ Just n
     return $ qVarPattern vid
 interpretPattern' (BothSyntaxPattern spat1 spat2) = do
     pat1 <- interpretPattern spat1
@@ -171,10 +171,10 @@ buildSingleBinding ::
 buildSingleBinding mname sbType sbBody sbDoc = do
     (sbName, sbVarID) <-
         case mname of
-            Nothing -> allocateVar Nothing
-            Just (name, True) -> allocateVar $ Just name
+            Nothing -> allocateLambdaVar Nothing
+            Just (name, True) -> allocateLambdaVar $ Just name
             Just (name, False) -> do
-                (_, varID) <- allocateVar Nothing
+                (_, varID) <- allocateLambdaVar Nothing
                 return (name, varID)
     let sbRefVars = syntaxExpressionFreeVariables sbBody
     return (sbName, MkSingleBinding {..})
@@ -276,7 +276,7 @@ sectionHeading heading doc =
 allocateQRV :: SyntaxSignature -> QScopeBuilder (VarID, Some (QSignature 'Positive))
 allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature name stype msdef))) = do
     curns <- builderLift $ paramAsk currentNamespaceParam
-    (_, varid) <- allocateVar $ Just $ MkFullName name curns
+    (_, varid) <- allocatePolymorphicVar $ MkFullName name curns
     builderLift $ do
         sqtype <- interpretType @'Positive stype
         case sqtype of
@@ -426,7 +426,7 @@ withMatch match mexp =
         qMatchGate match exp
 
 withAllocateNewVar :: Maybe FullName -> (VarID -> QInterpreter a) -> QInterpreter a
-withAllocateNewVar mn call = withScopeBuilder (allocateVar mn) $ \(_, varid) -> call varid
+withAllocateNewVar mn call = withScopeBuilder (allocateLambdaVar mn) $ \(_, varid) -> call varid
 
 intepretLambdaMatch :: VarID -> SyntaxPattern -> QScopeBuilder QMatch
 intepretLambdaMatch varid spat = do
@@ -522,7 +522,7 @@ interpretExpression' (SEAbstract match) =
         pexpr <- interpretCase varid match
         qAbstractExpr varid $ partialToSealedExpression pexpr
 interpretExpression' (SEAbstracts (MkSome multimatch@(MkSyntaxMulticase spats _))) =
-    withScopeBuilder (for spats $ \_ -> fmap snd $ allocateVar Nothing) $ \varids -> do
+    withScopeBuilder (for spats $ \_ -> fmap snd $ allocateLambdaVar Nothing) $ \varids -> do
         pexpr <- interpretMulticase varids multimatch
         multiAbstractExpr varids $ partialToSealedExpression pexpr
 interpretExpression' (SEDecl declarator sbody) = interpretDeclaratorWith declarator $ interpretExpression sbody
@@ -548,7 +548,7 @@ interpretExpression' (SEMatch scases) =
         pexpr <- qPartialExpressionSumList pexprs
         qAbstractExpr varid $ partialToSealedExpression pexpr
 interpretExpression' (SEMatches (MkSyntaxMulticaseList nn scases)) =
-    withScopeBuilder (fixedListGenerate nn $ fmap snd $ allocateVar Nothing) $ \varids -> do
+    withScopeBuilder (fixedListGenerate nn $ fmap snd $ allocateLambdaVar Nothing) $ \varids -> do
         pexprs <- for scases $ interpretMulticase varids
         pexpr <- qPartialExpressionSumList pexprs
         multiAbstractExpr varids $ partialToSealedExpression pexpr
