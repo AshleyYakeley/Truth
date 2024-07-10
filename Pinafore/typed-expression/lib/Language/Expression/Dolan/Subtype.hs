@@ -97,6 +97,7 @@ class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
         -> ground dvb gtb
         -> DolanM ground (TypeResult ground (SubtypeChain ground dva gta dvb gtb))
     throwTypeError :: TypeError ground -> DolanM ground a
+    shouldMerge :: DolanVarID ground -> DolanVarID ground -> Bool
 
 runTypeResult ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground

@@ -273,24 +273,7 @@ sectionHeading :: Text -> RawMarkdown -> QScopeBuilder --> QScopeBuilder
 sectionHeading heading doc =
     prodCensor builderDocsProd $ \docs -> pureForest $ MkTree (MkDefDoc (HeadingDocItem $ plainText heading) doc) docs
 
-data QRVSig =
-    forall a. MkQRVSig Name
-                       VarID
-                       (QType 'Positive a)
-                       (Maybe (QOpenExpression a))
-
-instance Show QRVSig where
-    show (MkQRVSig name varid t mexpr) =
-        show name <>
-        " (" <>
-        show varid <>
-        "): " <>
-        show t <>
-        case mexpr of
-            Just expr -> " = " <> show expr
-            Nothing -> ""
-
-allocateQRV :: SyntaxSignature -> QScopeBuilder QRVSig
+allocateQRV :: SyntaxSignature -> QScopeBuilder (VarID, Some (QSignature 'Positive))
 allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature name stype msdef))) = do
     curns <- builderLift $ paramAsk currentNamespaceParam
     (_, varid) <- allocateVar $ Just $ MkFullName name curns
@@ -302,16 +285,13 @@ allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature name sty
                     for msdef $ \sdef -> do
                         qdef <- interpretExpression sdef
                         qSubsumeExpressionToOpen mempty qtype qdef
-                return $ MkQRVSig name varid qtype mqdef
+                return (varid, MkSome $ ValueSignature Nothing name qtype mqdef)
 allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (SupertypeConstructorSyntaxSignature {}))) =
     builderLift $ throw RecordFunctionSupertype
 
-recordValueAddSig :: QRVSig -> QRecordValue -> QInterpreter QRecordValue
-recordValueAddSig (MkQRVSig name varid qtype mqdef) (MkQRecordValue tt fexpr) = do
-    let
-        qsig :: QSignature 'Positive _
-        qsig = ValueSignature Nothing name qtype mqdef
-    fexpr' <- qAbstractF varid (mkShimWit qtype) fexpr
+recordValueAddSig :: VarID -> Some (QSignature 'Positive) -> QRecordValue -> QInterpreter QRecordValue
+recordValueAddSig varid (MkSome qsig@(ValueSignature _ _ qtype _)) (MkQRecordValue tt fexpr) = do
+    fexpr' <- qPolyAbstractF varid (mkShimWit qtype) fexpr
     return $ MkQRecordValue (ConsListType qsig tt) fexpr'
 
 subsumeRecordValue :: Some (QType Positive) -> QRecordValue -> QInterpreter QRecordValue
@@ -326,7 +306,7 @@ interpretRecordValueDecl sigs mstype sexpr =
         let
             rv0 :: QRecordValue
             rv0 = MkQRecordValue NilListType $ toSealedFExpression expr
-        rv <- unEndoM (mconcat $ fmap (\sig -> MkEndoM $ recordValueAddSig sig) qrvsigs) rv0
+        rv <- unEndoM (mconcat $ fmap (\(varid, qsig) -> MkEndoM $ recordValueAddSig varid qsig) qrvsigs) rv0
         case mstype of
             Nothing -> return rv
             Just stype -> do

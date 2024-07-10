@@ -72,9 +72,14 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
     cleanOpenExpression expr@(OpenExpression _ (ClosedExpression _)) = return expr
     cleanOpenExpression expr = do
         let
+            combineWits ::
+                   forall a b.
+                   DolanVarWit ground a
+                -> DolanVarWit ground b
+                -> _ (Maybe (Expression (DolanVarWit ground) (a, b)))
             combineWits (MkNameWitness na ta) (MkNameWitness nb tb) =
                 return $
-                if na == nb
+                if shouldMerge @ground na nb
                     then Just $ fmap (\(MkMeetType ab) -> ab) $ varExpression $ MkNameWitness na $ joinMeetShimWit ta tb
                     else Nothing
         expr' <- combineExpressionWitnessesM combineWits expr

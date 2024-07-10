@@ -1102,6 +1102,12 @@ testQueries =
               , textTypeTest
                     "let datatype T of Mk of m: a -> Maybe a end end; rf = fn Mk.T => (m 3,m \"text\") in rf Mk.T of m = Just end"
                     "{} -> Maybe. Integer. *: Maybe. Text."
+              , textTypeTest
+                    "{let rm = {Just} in (%rm 3,%rm \"text\")}"
+                    "{} -> WholeModel. +(Maybe. Integer. *: Maybe. Text.)"
+              , textTypeTest
+                    "{let m = %{Just} in (m 3,m \"text\")}" -- since this is sugar for ap, it must be monomorphic
+                    "{} -> WholeModel. +(Maybe. (Integer. | Text.) *: Maybe. (Integer. | Text.))"
               , testQuery "let rf of m: a -> Maybe a end = (m 3,m \"text\") in rf of m = Just end" $
                 LRSuccess "(Just 3,Just \"text\")"
               , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in rf of end" $

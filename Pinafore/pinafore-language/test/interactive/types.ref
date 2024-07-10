@@ -37,5 +37,5 @@ pinafore> :t ?uu
 pinafore> :t ?uu + 1
 : ?uu: Integer, Integer
 pinafore> :t ?uu + ?uu + 1
-: ?uu: Integer, Integer
+: ?uu: Integer, ?uu: Integer, Integer
 pinafore> <END>

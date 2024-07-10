@@ -65,7 +65,7 @@ class ( Monad Interpreter
       , Show (Exc Interpreter)
       , MonadIO Interpreter
       , MonadThrow PatternError Interpreter
-      , MonadThrow (ExpressionError QVar) Interpreter
+      , MonadThrow (ExpressionError QVarWit) Interpreter
       , MonadThrow QErrorType Interpreter
       , MonadThrow QError Interpreter
       , MonadCatch QError Interpreter
@@ -165,7 +165,7 @@ type QArgumentsShimWit dv gt polarity = CCRPolarArgumentsShimWit QPolyShim dv QT
 
 type QValue = TSValue QTypeSystem
 
-type QVar = TSNameWitness QTypeSystem
+type QVarWit = TSVarWit QTypeSystem
 
 type QValueF f = TSValueF QTypeSystem f
 

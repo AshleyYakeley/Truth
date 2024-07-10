@@ -18,7 +18,7 @@ import Shapes
 class ( AbstractTypeSystem ts
       , SubsumeTypeSystem ts
       , SimplifyTypeSystem ts
-      , MonadThrow (ExpressionError (TSNameWitness ts)) (TSInner ts)
+      , MonadThrow (ExpressionError (TSVarWit ts)) (TSInner ts)
       ) => CompleteTypeSystem (ts :: Type) where
     tsFunctionPosWitness :: forall a b. TSNegWitness ts a -> TSPosWitness ts b -> TSPosShimWit ts (a -> b)
     tsFunctionNegWitness :: forall a b. TSPosWitness ts a -> TSNegWitness ts b -> TSNegShimWit ts (a -> b)
@@ -42,7 +42,7 @@ tsFunctionNegShimWit ta tb =
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsEval ::
-       forall ts m. (CompleteTypeSystem ts, MonadThrow (ExpressionError (TSNameWitness ts)) m)
+       forall ts m. (CompleteTypeSystem ts, MonadThrow (ExpressionError (TSVarWit ts)) m)
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
@@ -160,13 +160,13 @@ tsAbstract ::
     -> TSInner ts (TSSealedExpression ts)
 tsAbstract = abstractSealedExpression @ts (tsFunctionPosShimWit @ts)
 
-tsAbstractF ::
+tsPolyAbstractF ::
        forall ts p q. CompleteTypeSystem ts
     => TSVarID ts
     -> TSPosShimWit ts p
     -> TSSealedFExpression ts ((->) q)
     -> TSInner ts (TSSealedFExpression ts ((->) (p, q)))
-tsAbstractF = abstractSealedFExpression @ts
+tsPolyAbstractF = polyAbstractSealedFExpression @ts
 
 tsSimplify ::
        forall ts a. (CompleteTypeSystem ts, TSMappable ts a)

@@ -15,7 +15,7 @@ module Language.Expression.Common.Abstract
     , UnifierFunctionNegWitness
     , substituteSealedExpression
     , abstractSealedExpression
-    , abstractSealedFExpression
+    , polyAbstractSealedFExpression
     , applySealedExpression
     , letSealedExpression
     , bothSealedPattern
@@ -142,19 +142,37 @@ abstractExpression name twt expr = do
     uabsconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts twt) (mkShimWit vwt)
     return $ liftA2 (\tb sat -> tb . shimToFunction sat) uexpr uabsconv
 
-abstractSealedFExpression ::
+polyAbstractExpression ::
+       forall ts a b. AbstractTypeSystem ts
+    => TSVarID ts
+    -> TSPosShimWit ts a
+    -> TSOpenExpression ts b
+    -> TSOuter ts (UnifierExpression ts (a -> b))
+polyAbstractExpression name twt =
+    \case
+        ClosedExpression b -> return $ pure $ \_ -> b
+        OpenExpression (MkNameWitness name' vwt) expr
+            | name == name' -> do
+                twt' <- renameMappableSimple @ts twt
+                uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts twt') (uuLiftNegShimWit @ts vwt)
+                uexpr <- polyAbstractExpression @ts name twt expr
+                return $ liftA2 (\conv atb a -> atb a $ shimToFunction conv a) uconv uexpr
+        OpenExpression nw expr -> do
+            uexpr <- polyAbstractExpression @ts name twt expr
+            return $ liftA2 (\t atb a -> atb a t) (solverExpressionLiftValue $ varExpression nw) uexpr
+
+polyAbstractSealedFExpression ::
        forall ts p q. AbstractTypeSystem ts
     => TSVarID ts
     -> TSPosShimWit ts p
     -> TSSealedFExpression ts ((->) q)
     -> TSInner ts (TSSealedFExpression ts ((->) (p, q)))
-abstractSealedFExpression name nwt fexpr =
+polyAbstractSealedFExpression name nwt fexpr = do
     runRenamer @ts [] [] $
-    withTransConstraintTM @Monad $ do
-        nwt' <- renameMappableSimple @ts nwt
-        MkSealedFExpression twt expr <- renameMappableSimple @ts fexpr
-        uexpr <- abstractExpression @ts name nwt' expr
-        unifierSolve @ts uexpr $ \expr' -> return $ MkSealedFExpression twt $ fmap (\pqt (p, q) -> pqt p q) expr'
+        withTransConstraintTM @Monad $ do
+            MkSealedFExpression twt expr <- renameMappableSimple @ts fexpr
+            uexpr <- polyAbstractExpression @ts name nwt expr
+            unifierSolve @ts uexpr $ \expr' -> return $ MkSealedFExpression twt $ fmap (\pqt (p, q) -> pqt p q) expr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 

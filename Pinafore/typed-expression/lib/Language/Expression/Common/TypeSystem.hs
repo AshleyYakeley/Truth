@@ -51,16 +51,16 @@ tsMapWitnesses ::
     -> Endo a
 tsMapWitnesses = mapWitnesses
 
-type TSNameWitness ts = NameWitness (TSVarID ts) (TSNegShimWit ts)
+type TSVarWit ts = NameWitness (TSVarID ts) (TSNegShimWit ts)
 
 type TSOpenExpression :: Type -> Type -> Type
-type TSOpenExpression ts = Expression (TSNameWitness ts)
+type TSOpenExpression ts = Expression (TSVarWit ts)
 
-type TSSealedPartialExpression ts = SealedPartialExpression (TSNameWitness ts) (TSPosShimWit ts)
+type TSSealedPartialExpression ts = SealedPartialExpression (TSVarWit ts) (TSPosShimWit ts)
 
-type TSSealedExpression ts = SealedExpression (TSNameWitness ts) (TSPosShimWit ts)
+type TSSealedExpression ts = SealedExpression (TSVarWit ts) (TSPosShimWit ts)
 
-type TSSealedFExpression ts = SealedFExpression (TSNameWitness ts) (TSPosShimWit ts)
+type TSSealedFExpression ts = SealedFExpression (TSVarWit ts) (TSPosShimWit ts)
 
 type TSOpenSolverExpression ts typeexpr = SolverExpression typeexpr (TSOpenExpression ts)
 

@@ -34,9 +34,9 @@ qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
-qAbstractF ::
+qPolyAbstractF ::
        forall p q. VarID -> QShimWit 'Positive p -> QFExpression ((->) q) -> QInterpreter (QFExpression ((->) (p, q)))
-qAbstractF = tsAbstractF @QTypeSystem
+qPolyAbstractF = tsPolyAbstractF @QTypeSystem
 
 qSimplify ::
        forall a. TSMappable QTypeSystem a
@@ -147,7 +147,7 @@ qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (DefDoc, QExpre
 qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
 
 qEvalExpr ::
-       forall m. MonadThrow (ExpressionError QVar) m
+       forall m. MonadThrow (ExpressionError QVarWit) m
     => QExpression
     -> m QValue
 qEvalExpr expr = tsEval @QTypeSystem expr
