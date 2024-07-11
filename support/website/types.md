@@ -46,8 +46,8 @@ datatype T of
 end;
 ```
 
+As values, record constructors behave the same way as [record functions](record-functions.md).
 To create a value of the type `T` using its record constructor `Mk.T`, set the member values inside `of` ... `end`, like this:
-
 
 ```pinafore
 t: T =

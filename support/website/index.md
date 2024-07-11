@@ -14,6 +14,7 @@ syntax
 expressions
 declarations
 implicit-parameters
+record-functions
 type-system
 types
 dynamic-supertypes
