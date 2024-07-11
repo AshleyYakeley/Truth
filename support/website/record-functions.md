@@ -7,7 +7,7 @@ However, the function itself is monomorphic in the sense that its type cannot sh
 
 Here's an example of a record function declaration:
 
-```pinafore
+```pinafore decl
 rf of
     p: Text;
     q: Integer = 3;
@@ -17,7 +17,7 @@ end = (m p,m q);
 
 You can also specify its type:
 
-```pinafore
+```pinafore decl-cont
 rf of
     p: Text;
     q: Integer = 3;
@@ -36,7 +36,7 @@ end
 
 The `of`...`end` can be omitted, in which case parameters will be taken from the scope. So this is equivalent:
 
-```pinafore
+```pinafore nocheck
 let
     p = "text";
     m = Just;

@@ -1,0 +1,10 @@
+#!/usr/bin/bash -e
+for f in support/website/*.md
+do
+support/website/snip-code -o out/support/website/snippets $f
+done
+
+for f in out/support/website/snippets/*.pinafore
+do
+${BINPATH}/pinafore --no-run $f || (cat $f; exit 1)
+done

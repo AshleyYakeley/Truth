@@ -120,7 +120,6 @@ See [Types](../types/).
 Any declarator can be turned into a declaration by appending `end`.
 
 ```pinafore
-
 let
 
     let rec 
@@ -134,7 +133,7 @@ let
 
     with N end;
 
-in x + y + z;
+in x + y + z
 ```
 
 ### Declarator-Qualified Declarations
@@ -143,7 +142,6 @@ Declarators can qualify declarations just as they can qualify expressions.
 
 
 ```pinafore
-
 let
 
     namespace N of
@@ -152,7 +150,7 @@ let
 
     with N in x = z;
 
-in z;
+in x
 ```
 
 ### Namespaces & Namespace Declarations
@@ -236,9 +234,9 @@ let
 
     with A end;
 
-    s = p + q.B + s.C.A;
+    s = p + q.B + s.C;
 
-in body
+in s + 1
 ```
 
 In this example, the scope for `body` contains declarations with these full names, with these values:
@@ -263,7 +261,7 @@ At the point at which `q.B.A.` is declared, references such as `x` will be searc
 
 For modules, you can organise the generated documentation of your declarations into sections using `docsec` declarations.
 
-```pinafore
+```pinafore decl
 #| Some multiples of integers.
 docsec "Multiples" of
     double: Integer -> Integer = fn x => x * 2;
@@ -273,7 +271,7 @@ end;
 
 You can also add the `docsec` modifier to a namespace declaration: this will create a documentation section with the name of the namespace.
 
-```pinafore
+```pinafore decl
 namespace docsec A of
     p = 3;
     q = 4;
@@ -297,8 +295,8 @@ let
 
         subtype LowerCaseText <: Text = fn Mk.LowerCaseText t => t;
 
-        toLowerCase: Text -> LowerCaseText;
-        toLowerCase t = Mk.LowerCaseText $ textLowerCase t;
+        toLowerCase: Text -> LowerCaseText =
+            fn t => Mk.LowerCaseText $ toLowerCase.Text t;
     in expose LowerCaseText, toLowerCase;
 
     # Outside the above block, there is no way to create a LowerCaseText
@@ -323,5 +321,5 @@ let
         r = 4;
     in expose namespace N, r;
 
-in N.p + N.q + r
+in p.N + q.N + r
 ```

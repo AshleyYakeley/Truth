@@ -19,12 +19,12 @@ In each case, there is a "check" function that can convert `D(T)` back to `Maybe
 
 If `pat` is a pattern of type `T`, then `pat:? T` is a pattern of type `D(T)`. Here's an example:
 
-```pinafore
+```pinafore decl
 showNumberType: Number -> Text =
 match
-    i:? Integer => "integer: " <> show i;
-    r:? Rational => "rational: " <> show r;
-    n => "number: " <> show n;
+    i:? Integer => "integer: " <>.Text show i;
+    r:? Rational => "rational: " <>.Text show r;
+    n => "number: " <>.Text show n;
 end
 ```
 

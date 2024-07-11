@@ -22,7 +22,7 @@ A plain constructor consists of its name, and a list of zero or more ambipolar t
 
 Here's an example of a type with two constructors, `Mk1.T` and `Mk2.T`:
 
-```pinafore
+```pinafore decl
 datatype T of
     Mk1 (Integer -> List Integer);
     Mk2 Integer Text;
@@ -36,7 +36,7 @@ A member consists of a name and a positive type (which may have free type variab
 
 Here's an example of a type with a record constructor with three members:
 
-```pinafore
+```pinafore decl-cont
 datatype T of
     Mk of
         f: List a -> Maybe a;
@@ -49,7 +49,7 @@ end;
 As values, record constructors behave the same way as [record functions](record-functions.md).
 To create a value of the type `T` using its record constructor `Mk.T`, set the member values inside `of` ... `end`, like this:
 
-```pinafore
+```pinafore decl-cont
 t: T =
 Mk.T of
     f = match [] => Nothing; a :: _ => Just a; end;
@@ -60,7 +60,7 @@ end;
 
 Alternatively, you can omit `of` ... `end` and instead bring values matching its members into scope, like this:
 
-```pinafore
+```pinafore decl-cont
 t: T =
 let
     f = match [] => Nothing; a :: _ => Just a; end;
@@ -71,7 +71,7 @@ in Mk.T;
 
 If a member has a default value, then you can omit it:
 
-```pinafore
+```pinafore decl-cont
 t: T =
 Mk.T of
     f = match [] => Nothing; a :: _ => Just a; end;
@@ -82,9 +82,9 @@ end;
 Values can be retrieved by matching the constructor, like this:
 
 
-```pinafore
+```pinafore decl
 tg: T -> Text -> Action Unit =
-fn Mk.T => g;
+    fn Mk.T => g;
 ```
 
 ### Record Inheritance
@@ -101,7 +101,7 @@ the [greatest dynamic supertype](dynamic-supertypes.md) of `T` is still `T`, and
 
 Here's an example:
 
-```pinafore
+```pinafore decl
 datatype S1 of
     Mk of
         p: Rational;
@@ -134,7 +134,7 @@ with a type that subsumes to previous type.
 For example:
 
 
-```pinafore
+```pinafore decl
 datatype S of
     Mk of
         n: Rational;
@@ -164,7 +164,7 @@ Multiple inheritance "diamonds" are permitted, provided they are consistent.
 For example, this is consistent:
 
 
-```pinafore
+```pinafore decl
 datatype A of
     Mk1 of
     end;
@@ -201,7 +201,7 @@ end;
 However, this would be inconsistent:
 
 
-```pinafore
+```pinafore nocheck
 datatype D <: B & C of
     Mk of
         Mk1.B;
@@ -222,9 +222,9 @@ Datatypes can take parameters. The variance of each parameter is specified like 
 
 For example:
 
-```pinafore
+```pinafore decl
 datatype D +a -b {-p,+q} of
-    Mk1 (b -> [a]);
+    Mk1 (b -> List a);
     Mk2 (p *: b -> q);
 end;
 ```
@@ -234,7 +234,7 @@ end;
 It is possible to declare subtypes within a datatype declaration.
 For example:
 
-```pinafore
+```pinafore decl
 datatype P -x +y of
     Mk (x -> y);
     subtype datatype Q of
@@ -343,16 +343,18 @@ Like plain data types, storable data types can have type parameters, but they mu
 
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
-```pinafore
+```pinafore decl
+opentype Person;
+
 datatype storable Patient of
-    LivingPatient Person Date !"Patient.LivingPatient";
-    DeadPatient Person Date Date !"Patient.DeadPatient";
+    Living Person Date !"Patient.Living";
+    Dead Person Date Date !"Patient.Dead";
 end;
 
 patientPerson: Patient -> Person =
 match
-    LivingPatient p _ => p;
-    DeadPatient p _ _ => p;
+    Living.Patient p _ => p;
+    Dead.Patient p _ _ => p;
 end;
 ```
 
@@ -361,7 +363,7 @@ Constructors can be added or removed from a storable data type without affecting
 
 Like plain datatypes, storable datatypes permit subtypes in their definitions:
 
-```pinafore
+```pinafore decl
 let rec
     datatype storable L +x of
         Nil !"L.Nil";
@@ -377,7 +379,7 @@ end;
 An open entity type is a type to which new entities can be added at run-time.
 These types can be declared using `opentype`, and subtype relations between them can be declared using `subtype`:
 
-```pinafore
+```pinafore decl
 opentype Animal;
 opentype Person;
 opentype Cat;
@@ -391,7 +393,7 @@ For any open entity type `T`, `T <: Entity`.
 
 Subtype relations can be declared with `subtype`:
 
-```pinafore
+```pinafore nocheck
 subtype P <: Q;
 ```
 
@@ -412,20 +414,20 @@ Each one represents a set of concrete types.
 A _concrete_ dynamic entity type represents a single concrete type.
 These can be declared like this:
 
-```pinafore
+```pinafore decl-cont
 dynamictype Human = !"type.human";
 ```
 
 An _abstract_ dynamic entity type represents a set of concrete types.
 These can be declared like this:
 
-```pinafore
+```pinafore decl-cont
 dynamictype Mammal;
 ```
 
 An abstract dynamic entity type is initially empty, but concrete types can be added to the set using subtype relations:
 
-```pinafore
+```pinafore decl-cont
 subtype Human <: Mammal;
 dynamictype Cat = !"type.cat";
 subtype Cat <: Mammal;
@@ -435,7 +437,7 @@ subtype Dog <: Mammal;
 
 Subtype relations can also be declared between abstract dynamic entity types:
 
-```pinafore
+```pinafore decl-cont
 dynamictype Animal;
 subtype Mammal <: Animal;
 ```
@@ -445,8 +447,8 @@ Thus, the behaviour of an abstract dynamic entity type depends on which subtype 
 The [greatest dynamic supertype](dynamic-supertypes.md) of all dynamic entity types is `DynamicEntity`.
 So you can use `check`, `coerce`, and pattern-matching to convert between them.
 
-```pinafore
-describeAnimalType :: Animal -> Text =
+```pinafore decl
+describeAnimalType: Animal -> Text =
 match
     h:? Human => "Human";
     c:? Cat => "Cat";

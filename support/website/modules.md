@@ -4,7 +4,7 @@ You can put declarations in module files to organise your code.
 Scripts (and modules) can import modules with the `import` expression.
 Like this:
 
-```pinafore
+```pinafore nocheck
 import "my/stuff" in
 outputLn.Env sometext
 ```
@@ -19,23 +19,23 @@ To import the module `my/stuff`, Pinafore will look for a file in these paths in
 A module file is a list of declarations, though very often it is a single `expose` declaration,
 something like this (see [syntax](syntax.md)):
 
-```pinafore
+```pinafore decl
 let
 
 sometext: Text =
-"Hello";
+    "Hello";
 
 somenumber: Integer =
-4;
+    4;
 
 opentype X;
 
 datatype storable T of
-    Mk1 Integer Boolean;
-    Mk2;
+    Mk1 Integer Boolean !"Mk1.P";
+    Mk2 !"Mk2.P";
 end;
 
 subtype T <: X;
 
-in expose sometext, somenumber, X, T, T1, T2;
+in expose sometext, somenumber, X, T, Mk1.T, Mk2.T;
 ```

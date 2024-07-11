@@ -1,0 +1,38 @@
+#!/usr/bin/python3
+import sys, argparse, os, re
+
+parser = argparse.ArgumentParser(prog='snip-code',description='Snip Pinafore code from CommonMark files')
+parser.add_argument('-o', action='store', metavar='PATH', help='output directory')
+parser.add_argument('inputpath', action='store', metavar='PATH', help='path to CommonMark file')
+args = parser.parse_args()
+
+with open(args.inputpath,"r") as f:
+    text = f.read()
+
+basename = os.path.basename(args.inputpath)
+
+n = 0
+
+def writeSnippet(snippet):
+    global n
+    n += 1
+    outpath = os.path.join(args.o,basename + "." + format(n, '03d') + ".pinafore")
+    with open(outpath,"w") as f:
+        f.write(snippet)
+
+snippets = re.findall(r"```pinafore([^\n]*)\n(.*?)```", text, re.DOTALL)
+decls = ""
+for (t,snippet) in snippets:
+    match t.strip():
+        case "":
+            writeSnippet("let\n" + decls + "in (\n" + snippet + ") >- fn _ => pure ()\n")
+            decls = ""
+        case "decl":
+            writeSnippet("let\n" + decls + snippet + "in pure ()\n")
+            decls = ""
+        case "decl-cont":
+            decls = decls + snippet
+
+if decls != "":
+    print(decls)
+    sys.exit(1)

@@ -306,6 +306,11 @@ docs: \
 	mkdir -p out/support/website
 	$(STACKEXEC) -- sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
 
+.PHONY: check-snippets
+check-snippets: ${BINPATH}/pinafore
+	mkdir -p out/support/website/snippets
+	rm -f out/support/website/snippets/*
+	$(STACKEXEC) --docker-env BINPATH=${BINPATH} -- support/website/check-snippets
 
 ### VSCode extension
 
@@ -355,7 +360,7 @@ testimages: docker-image \
 ### Full build, clean
 
 .PHONY: full
-full: testimages format deb nix-docker-flake deps licensing docs pyg-lexer vsc-extension
+full: testimages format deb nix-docker-flake deps licensing check-snippets docs pyg-lexer vsc-extension
 
 .PHONY: clean
 clean:
