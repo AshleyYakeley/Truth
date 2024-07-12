@@ -23,6 +23,9 @@ newtype NamedText =
 instance Eq NamedText where
     a == b = toText a == toText b
 
+instance Ord NamedText where
+    compare a b = compare (toText a) (toText b)
+
 mapNamedText :: (Text -> Text) -> NamedText -> NamedText
 mapNamedText m (MkNamedText ntt) = MkNamedText $ \nt -> m $ ntt nt
 

@@ -80,7 +80,7 @@
 
 > doc:pz1
 > 
-**<code>pzz1</code>**<code> : ?z: Integer, ?z: Integer, Integer</code>
+**<code>pzz1</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:pzz1
 > 
@@ -92,7 +92,7 @@
 
 > doc:rx
 > 
-**<code>rpzz1</code>**<code> : ?z: Integer, ?z: Integer, Integer</code>
+**<code>rpzz1</code>**<code> : ?z: Integer, Integer</code>
 
 > doc:rpzz1
 > 
