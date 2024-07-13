@@ -69,34 +69,59 @@
       ]
     },
     {
-      "group": {
-        "kind": "build",
-        "isDefault": true
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "label": "Quick Single Build",
+        "type": "shell",
+        "command": "cd ${workspaceRoot} && make top-single-build",
+        "problemMatcher": [
+          {
+            "owner": "stack",
+            "fileLocation": "absolute",
+            "pattern": [
+              {
+                "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+                "file": 1,
+                "line": 2,
+                "column": 3,
+                "severity": 4
+              },
+              {
+                "regexp": "^.*> \\s+(.*)$",
+                "message": 1
+              }
+            ]
+          }
+        ]
       },
-      "label": "Quick Build",
-      "type": "shell",
-      "command": "cd ${workspaceRoot} && make top-single-build",
-      "problemMatcher": [
+      {
+        "group": "build",
+        "label": "Quick Build",
+        "type": "shell",
+        "command": "cd ${workspaceRoot} && make top-build",
+        "problemMatcher": [
+          {
+            "owner": "stack",
+            "fileLocation": "absolute",
+            "pattern": [
+              {
+                "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+                "file": 1,
+                "line": 2,
+                "column": 3,
+                "severity": 4
+              },
+              {
+                "regexp": "^.*> \\s+(.*)$",
+                "message": 1
+              }
+            ]
+          }
+        ]
+      },
         {
-          "owner": "stack",
-          "fileLocation": "absolute",
-          "pattern": [
-            {
-              "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4
-            },
-            {
-              "regexp": "^.*> \\s+(.*)$",
-              "message": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
       "group": "test",
       "label": "Format & Quick Test",
       "type": "shell",
