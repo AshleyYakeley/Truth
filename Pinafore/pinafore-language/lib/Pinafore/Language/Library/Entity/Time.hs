@@ -13,6 +13,7 @@ import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Numeric
 import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Shapes.Numeric
 
@@ -66,7 +67,7 @@ unixAsText ::
 unixAsText fmt = prism (unixParse fmt) (unixFormat fmt)
 
 unixFormattingDef ::
-       forall t context. (HasQType 'Positive t, HasQType 'Negative t, FormatTime t, ParseTime t)
+       forall t context. (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t, FormatTime t, ParseTime t)
     => Text
     -> LibraryStuff context
 unixFormattingDef lname =

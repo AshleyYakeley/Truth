@@ -5,7 +5,6 @@ module Pinafore.Language.Expression where
 import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
@@ -14,7 +13,7 @@ qConstValue :: QValue -> QExpression
 qConstValue = tsConst @QTypeSystem
 
 qConst ::
-       forall a. HasQType 'Positive a
+       forall a. HasQType QPolyShim 'Positive a
     => a
     -> QExpression
 qConst a = qConstValue $ jmToValue a
@@ -54,13 +53,12 @@ qBothPattern :: QPattern -> QPattern -> QInterpreter QPattern
 qBothPattern = tsBothPattern @QTypeSystem
 
 qToPatternConstructor ::
-       forall t lt.
-       (ToListShimWit (QPolyShim Type) (QType 'Positive) lt, FromPolarShimWit (QPolyShim Type) (QType 'Negative) t)
+       forall t lt. (ToListShimWit QShim (QType 'Positive) lt, FromPolarShimWit QShim (QType 'Negative) t)
     => PurityFunction Maybe t (ListProduct lt)
     -> QPatternConstructor
 qToPatternConstructor tml =
     toExpressionPatternConstructor $
-    toPatternConstructor (fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative)) toListShimWit tml
+    toPatternConstructor (fromPolarShimWit @Type @QShim @(QType 'Negative)) toListShimWit tml
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> QInterpreter (QPatternConstructor)
 qApplyPatternConstructor = tsApplyPatternConstructor @QTypeSystem
@@ -156,7 +154,7 @@ qUnifyValueTo :: forall t. QShimWit 'Negative t -> QValue -> QInterpreter t
 qUnifyValueTo = tsUnifyValueTo @QTypeSystem
 
 qValue ::
-       forall t. HasQType 'Positive t
+       forall t. HasQType QPolyShim 'Positive t
     => t
     -> QValue
 qValue v = MkSomeOf toPolarShimWit v
@@ -169,7 +167,7 @@ qSubsumeExpressionToOpen ::
 qSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem
 
 qUnifyValue ::
-       forall t. HasQType 'Negative t
+       forall t. HasQType QPolyShim 'Negative t
     => QValue
     -> QInterpreter t
 qUnifyValue = tsUnifyValue @QTypeSystem
@@ -184,14 +182,14 @@ qUnifyF = tsUnifyF @QTypeSystem
 
 -- | for debugging
 qUnifyRigidValue ::
-       forall t. HasQType 'Negative t
+       forall t. HasQType QPolyShim 'Negative t
     => QValue
     -> QInterpreter t
 qUnifyRigidValue = tsUnifyRigidValue @QTypeSystem
 
 -- | for debugging
 qUnifyValueToFree ::
-       forall t. HasQType 'Negative t
+       forall t. HasQType QPolyShim 'Negative t
     => QValue
     -> QInterpreter t
 qUnifyValueToFree = tsUnifyValueToFree @QTypeSystem

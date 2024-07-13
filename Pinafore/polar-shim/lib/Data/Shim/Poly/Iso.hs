@@ -68,6 +68,16 @@ polarPolyIsoNegative (MkPolarShim iab) =
         PositiveType -> isoBackwards $ unPolyMapT iab
         NegativeType -> isoForwards $ unPolyMapT iab
 
+mkPolyIsoShim ::
+       forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). Is PolarityType polarity
+    => pshim k a b
+    -> pshim k b a
+    -> PolarShim (PolyIso pshim k) polarity a b
+mkPolyIsoShim pab pba =
+    case polarityType @polarity of
+        PositiveType -> MkPolarShim $ MkPolyMapT $ MkIsomorphism pab pba
+        NegativeType -> MkPolarShim $ MkPolyMapT $ MkIsomorphism pba pab
+
 polarPolyIsoPolar1 ::
        forall (pshim :: PolyShimKind) polarity (a :: Type). (JoinMeetIsoShim (pshim Type), Is PolarityType polarity)
     => PolarShim (PolyIso pshim Type) polarity (JoinMeetType polarity a (LimitType polarity)) a

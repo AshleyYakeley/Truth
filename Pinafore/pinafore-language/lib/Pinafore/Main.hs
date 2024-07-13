@@ -16,6 +16,7 @@ module Pinafore.Main
 import Import
 import Pinafore.Context
 import Pinafore.Language
+import Pinafore.Language.Type
 import Pinafore.Storage
 import System.FilePath
 
@@ -72,7 +73,7 @@ sqliteQDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 qInterpretTextAtType ::
-       forall t m. (?library :: LibraryContext, HasQType 'Negative t, MonadIO m, MonadThrow QError m)
+       forall t m. (?library :: LibraryContext, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QError m)
     => FilePath
     -> Text
     -> m t

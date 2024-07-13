@@ -7,7 +7,6 @@ module Pinafore.Language.Type.Storable.Dynamic.Abstract
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -102,7 +101,7 @@ abstractDynamicStorableGroundType name tid = let
 
 getMaybeAbstractDynamicEntityType :: QType 'Positive t -> Maybe (AbstractDynamicEntityFamily DynamicEntity)
 getMaybeAbstractDynamicEntityType tm = do
-    MkShimWit (MkDolanGroundedType gt NilCCRArguments) _ <- dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm
+    MkShimWit (MkDolanGroundedType gt NilCCRArguments) _ <- dolanToMaybeType @QGroundType @_ @_ @QShim tm
     fam@MkAbstractDynamicEntityFamily {} <- getGroundFamily abstractDynamicStorableFamilyWitness gt
     return fam
 

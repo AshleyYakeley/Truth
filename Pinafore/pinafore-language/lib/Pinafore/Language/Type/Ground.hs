@@ -2,7 +2,6 @@ module Pinafore.Language.Type.Ground where
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Show
@@ -136,6 +135,18 @@ type instance TSBindingData QTypeSystem = DefDoc
 
 type instance DolanPolyShim QGroundType = QPolyShim
 
+type QPolyShim :: PolyShimKind
+type QPolyShim = JMShim
+
+type QShim :: ShimKind Type
+type QShim = QPolyShim Type
+
+type QPolyIsoShim :: PolyShimKind
+type QPolyIsoShim = PolyIso QPolyShim
+
+type QIsoShim :: ShimKind Type
+type QIsoShim = QPolyIsoShim Type
+
 type QSomeGroundType :: Type
 type QSomeGroundType = SomeGroundType QGroundType
 
@@ -150,6 +161,9 @@ type QGroundedType = DolanGroundedType QGroundType
 
 type QGroundedShimWit :: Polarity -> Type -> Type
 type QGroundedShimWit polarity = DolanGroundedShimWit QGroundType polarity
+
+type QGroundedIsoShimWit :: Polarity -> Type -> Type
+type QGroundedIsoShimWit polarity = DolanGroundedIsoShimWit QGroundType polarity
 
 type QType :: Polarity -> Type -> Type
 type QType = DolanType QGroundType

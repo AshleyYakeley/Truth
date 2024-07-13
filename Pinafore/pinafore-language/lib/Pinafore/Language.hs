@@ -64,7 +64,7 @@ parseValue text = do
     qEvalExpr rexpr
 
 parseValueUnify ::
-       forall t. (HasQType 'Negative t)
+       forall t. (HasQType QPolyShim 'Negative t)
     => Text
     -> QInterpreter t
 parseValueUnify text = do

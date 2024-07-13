@@ -72,7 +72,7 @@ parseExpressionToType text checkType =
         liftIO $ checkType $ showExpressionType expr'
 
 data SomeValue =
-    forall t. HasQType 'Positive t => MkSomeValue t
+    forall t. HasQType QPolyShim 'Positive t => MkSomeValue t
 
 bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule ()
 bindsLibrary mname binds =

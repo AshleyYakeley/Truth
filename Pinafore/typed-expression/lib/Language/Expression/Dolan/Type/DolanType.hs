@@ -9,6 +9,7 @@ module Language.Expression.Dolan.Type.DolanType
     , DolanType(..)
     , DolanGroundedType(..)
     , DolanGroundedShimWit
+    , DolanGroundedIsoShimWit
     , DolanSingularType(..)
     , DolanVarWit
     , RecursiveTypeError(..)
@@ -118,6 +119,10 @@ instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanG
 
 type DolanGroundedShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanGroundedShimWit ground polarity = PShimWit (DolanShim ground) (DolanGroundedType ground) polarity
+
+type DolanGroundedIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
+type DolanGroundedIsoShimWit ground polarity
+     = PShimWit (DolanPolyIsoShim ground Type) (DolanGroundedType ground) polarity
 
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVarT') for type variables.
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type

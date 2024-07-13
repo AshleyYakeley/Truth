@@ -9,7 +9,6 @@ module Pinafore.Language.Type.Storable.Dynamic.Concrete
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -45,7 +44,7 @@ concreteDynamicStorableGroundType name cdt = let
 
 getMaybeConcreteDynamicEntityType :: QType 'Positive t -> Maybe (FullName, ConcreteDynamicType)
 getMaybeConcreteDynamicEntityType tm = do
-    MkShimWit (MkDolanGroundedType gt NilCCRArguments) _ <- dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm
+    MkShimWit (MkDolanGroundedType gt NilCCRArguments) _ <- dolanToMaybeType @QGroundType @_ @_ @QShim tm
     MkConcreteDynamicEntityFamily name cdt <- getGroundFamily concreteDynamicStorableFamilyWitness gt
     return (name, cdt)
 

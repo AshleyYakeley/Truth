@@ -27,18 +27,18 @@ tShimWit ::
 tShimWit = qType
 
 subtypeEntry ::
-       forall a b. (HasQType 'Negative a, HasQType 'Positive b)
-    => QOpenExpression (QPolyShim Type a b)
+       forall a b. (HasQType QPolyShim 'Negative a, HasQType QPolyShim 'Positive b)
+    => QOpenExpression (QShim a b)
     -> QSubtypeConversionEntry
 subtypeEntry convexpr = let
     ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
     tb = fromJust $ dolanToMaybeShimWit (qType :: _ b)
     in subtypeConversionEntry Verify Nothing ta tb convexpr
 
-simpleConversionExpression :: QOpenExpression (QPolyShim Type () T)
+simpleConversionExpression :: QOpenExpression (QShim () T)
 simpleConversionExpression = pure $ functionToShim "conv" $ \() -> MkT 12
 
-openConversionExpression :: VarID -> QOpenExpression (QPolyShim Type () T)
+openConversionExpression :: VarID -> QOpenExpression (QShim () T)
 openConversionExpression var =
     OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT i
 
@@ -123,7 +123,7 @@ testPolyDependentFunction =
     testTree "poly-dependent-function" $
     runTester defaultTester $ do
         let
-            openConversionExpression1 :: VarID -> QOpenExpression (QPolyShim Type () (T1 Integer))
+            openConversionExpression1 :: VarID -> QOpenExpression (QShim () (T1 Integer))
             openConversionExpression1 var =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> MkT1 i
         MkT1 i <-
@@ -159,7 +159,7 @@ testSemiScript1 =
     testTree "semiscript-1" $
     runTester defaultTester $ do
         let
-            openConversionExpression1 :: VarID -> QOpenExpression (QPolyShim Type () (T1 Integer))
+            openConversionExpression1 :: VarID -> QOpenExpression (QShim () (T1 Integer))
             openConversionExpression1 var =
                 OpenExpression (MkNameWitness var qType) $ pure $ \i -> functionToShim "conv" $ \() -> i
         MkT1 i <-

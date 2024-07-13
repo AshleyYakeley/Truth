@@ -29,7 +29,7 @@ instance AsLiteral LangColour where
 colourGroundType :: QGroundType '[] LangColour
 colourGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour"
 
-instance Is PolarityType polarity => HasQType polarity LangColour where
+instance Is PolarityType polarity => HasQType QPolyShim polarity LangColour where
     qType = groundQType
 
 instance HasQGroundType '[] LangColour where
@@ -61,7 +61,7 @@ instance AsTypedLiteral LangAlphaColour where
 alphaColourGroundType :: QGroundType '[] LangAlphaColour
 alphaColourGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour"
 
-instance Is PolarityType polarity => HasQType polarity LangAlphaColour where
+instance Is PolarityType polarity => HasQType QPolyShim polarity LangAlphaColour where
     qType = groundQType
 
 instance HasQGroundType '[] LangAlphaColour where

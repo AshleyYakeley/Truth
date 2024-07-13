@@ -29,7 +29,7 @@ instance HasQGroundType '[] LangWindow where
     qGroundType = windowGroundType
 
 -- UIWindow
-instance HasQType 'Negative UIWindow where
+instance HasQType QPolyShim 'Negative UIWindow where
     qType = mapNegShimWit (functionToShim "lwWindow" lwWindow) qType
 
 createLangWindow :: LangContext -> WindowSpec -> View LangWindow

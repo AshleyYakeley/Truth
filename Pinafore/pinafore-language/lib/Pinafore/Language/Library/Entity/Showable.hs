@@ -10,7 +10,7 @@ import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 
 showableSubtypeRelationEntry ::
-       forall a context. (HasQType 'Negative a, ShowText a)
+       forall a context. (HasQType QPolyShim 'Negative a, ShowText a)
     => LibraryStuff context
 showableSubtypeRelationEntry = hasSubtypeRelationBDS @a @Showable Verify "" $ functionToShim "textShowable" textShowable
 

@@ -8,9 +8,10 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Type
 
 literalSubtypeRelationEntry ::
-       forall a context. (HasQType 'Negative a, AsLiteral a)
+       forall a context. (HasQType QPolyShim 'Negative a, AsLiteral a)
     => LibraryStuff context
 literalSubtypeRelationEntry = hasSubtypeRelationBDS @a @Literal Verify "" $ functionToShim "toLiteral" toLiteral
 

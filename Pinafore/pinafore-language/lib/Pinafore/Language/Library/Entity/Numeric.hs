@@ -11,6 +11,7 @@ import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
+import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Shapes.Numeric
 
@@ -35,7 +36,7 @@ asTextPrism ::
 asTextPrism = prism (readMaybe . unpack) showText
 
 plainFormattingDef ::
-       forall t context. (HasQType 'Positive t, HasQType 'Negative t, Read t, ShowText t)
+       forall t context. (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t, Read t, ShowText t)
     => Text
     -> LibraryStuff context
 plainFormattingDef lname = valBDS "asText" ("Represent " <> plainText lname <> " as text.") $ asTextPrism @t

@@ -12,6 +12,9 @@ module Pinafore.API
     , FamilialType(..)
     , SomeGroundType(..)
     , QPolyShim
+    , QPolyIsoShim
+    , QShim
+    , QIsoShim
     , StorableGroundType(..)
     , FamilyKind
     , SingletonFamily
@@ -48,7 +51,6 @@ import Pinafore.Language.Library.Interpret
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model ()
 import Pinafore.Language.Library.Types
-import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var

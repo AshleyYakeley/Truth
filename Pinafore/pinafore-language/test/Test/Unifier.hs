@@ -11,7 +11,7 @@ import Pinafore.Test.Internal
 import Shapes
 import Test.RunScript
 
-type PinaforeBisubstitution = Bisubstitution QGroundType (QPolyShim Type) (TypeResult QGroundType)
+type PinaforeBisubstitution = Bisubstitution QGroundType QShim (TypeResult QGroundType)
 
 pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> QInterpreter QValue
 pinaforeBisubstitutes bisubs val = do
@@ -27,7 +27,7 @@ showValType :: QValue -> String
 showValType (MkSomeOf (MkShimWit t _) _) = show t
 
 testUnifyToType ::
-       forall t. HasQType 'Negative t
+       forall t. HasQType QPolyShim 'Negative t
     => QInterpreter QValue
     -> [PinaforeBisubstitution]
     -> (t -> IO ())
@@ -42,7 +42,7 @@ testUnifyToType mval bisubs checkVal =
         liftIO $ checkVal found
 
 testInterpret ::
-       forall t. HasQType 'Negative t
+       forall t. HasQType QPolyShim 'Negative t
     => Text
     -> (t -> Tester ())
     -> ScriptTestTree

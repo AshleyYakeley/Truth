@@ -16,7 +16,6 @@ import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Interpret.TypeDecl.Representation
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Shapes.Unsafe (unsafeGetRefl, unsafeRefl)
 
@@ -68,7 +67,7 @@ withCCRTypeParam (RangeSyntaxTypeParameter np nq) cont =
 tParamToPolarArgument ::
        forall sv (t :: CCRVarianceKind sv) polarity. Is PolarityType polarity
     => CCRTypeParam sv t
-    -> CCRPolarArgumentShimWit (QPolyShim Type) QType polarity sv t
+    -> CCRPolarArgumentShimWit QShim QType polarity sv t
 tParamToPolarArgument (CoCCRTypeParam var) =
     case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv

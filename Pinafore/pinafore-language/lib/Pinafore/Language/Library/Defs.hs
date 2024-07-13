@@ -15,6 +15,7 @@ module Pinafore.Language.Library.Defs
     , hasSubtypeRelationBDS
     , valPatBDS
     , QDocSignature(..)
+    , mkValueDocSignature
     , recordValueBDS
     , recordConsBDS
     , specialFormBDS
@@ -39,7 +40,6 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.LibraryModule
-import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 
@@ -49,17 +49,17 @@ qPositiveShimWitDescription :: forall t. QShimWit 'Positive t -> NamedText
 qPositiveShimWitDescription (MkShimWit w _) = exprShow w
 
 qPositiveTypeDescription ::
-       forall t. HasQType 'Positive t
+       forall t. HasQType QPolyShim 'Positive t
     => NamedText
 qPositiveTypeDescription =
-    case toPolarShimWit @Type @(QPolyShim Type) @(QType 'Positive) @t of
+    case toPolarShimWit @Type @QShim @(QType 'Positive) @t of
         MkShimWit w _ -> exprShow w
 
 qNegativeTypeDescription ::
-       forall t. HasQType 'Negative t
+       forall t. HasQType QPolyShim 'Negative t
     => NamedText
 qNegativeTypeDescription =
-    case fromPolarShimWit @Type @(QPolyShim Type) @(QType 'Negative) @t of
+    case fromPolarShimWit @Type @QShim @(QType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
 instance NamespaceConcat (ScopeEntry context) where
@@ -136,7 +136,7 @@ valWitBDS name docDescription qt val = let
     in singleBindDoc MkBindDoc {..} []
 
 valBDS ::
-       forall context t. HasQType 'Positive t
+       forall context t. HasQType QPolyShim 'Positive t
     => FullNameRef
     -> RawMarkdown
     -> ((?qcontext :: context) => t)
@@ -215,7 +215,7 @@ subtypeRelationBDS ::
     -> RawMarkdown
     -> QGroundedShimWit 'Negative a
     -> QGroundedShimWit 'Positive b
-    -> QPolyShim Type a b
+    -> QShim a b
     -> LibraryStuff context
 subtypeRelationBDS trustme docDescription ta tb conv = let
     diSubtype = exprShow ta
@@ -226,10 +226,10 @@ subtypeRelationBDS trustme docDescription ta tb conv = let
     in singleBindDoc MkBindDoc {..} []
 
 hasSubtypeRelationBDS ::
-       forall a b context. (HasQType 'Negative a, HasQType 'Positive b)
+       forall a b context. (HasQType QPolyShim 'Negative a, HasQType QPolyShim 'Positive b)
     => TrustOrVerify
     -> RawMarkdown
-    -> QPolyShim Type a b
+    -> QShim a b
     -> LibraryStuff context
 hasSubtypeRelationBDS trustme doc conv = let
     ta = fromJust $ dolanToMaybeShimWit (qType :: _ a)
@@ -238,7 +238,7 @@ hasSubtypeRelationBDS trustme doc conv = let
 
 valPatBDS ::
        forall context t v lt.
-       (HasQType 'Positive t, HasQType 'Negative v, ToListShimWit (QPolyShim Type) (QType 'Positive) lt)
+       (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative v, ToListShimWit QShim (QType 'Positive) lt)
     => FullNameRef
     -> RawMarkdown
     -> t
@@ -258,36 +258,61 @@ valPatBDS name docDescription val pat = let
 data QDocSignature (t :: Type) =
     ValueDocSignature Name
                       RawMarkdown
-                      (QType 'Positive t)
+                      (QIsoShimWit 'Positive t)
                       (Maybe (QOpenExpression t))
 
+mkValueDocSignature ::
+       forall t. HasQType QPolyIsoShim 'Positive t
+    => Name
+    -> RawMarkdown
+    -> Maybe t
+    -> QDocSignature t
+mkValueDocSignature name doc mdef = ValueDocSignature name doc qType $ fmap pure mdef
+
+mapListProductShimWit ::
+       forall shim w (tt :: [Type]). CartesianShim shim
+    => ListType (ShimWit shim w) tt
+    -> ShimWit shim (ListProductType w) (ListProduct tt)
+mapListProductShimWit NilListType = mkShimWit $ MkListProductType $ NilListType
+mapListProductShimWit (ConsListType (MkShimWit w1 conv1) ss) =
+    case mapListProductShimWit ss of
+        MkShimWit (MkListProductType wr) convr ->
+            MkShimWit (MkListProductType $ ConsListType w1 wr) $ pairShim conv1 convr
+
+docSignatureToSignature :: QDocSignature --> PShimWit QIsoShim QSignature 'Positive
+docSignatureToSignature (ValueDocSignature n _ (MkShimWit t iconv) p) =
+    MkShimWit (ValueSignature Nothing n t $ fmap (fmap $ shimToFunction $ polarPolyIsoPositive iconv) p) iconv
+
 recordValueBDS ::
-       forall (tt :: [Type]) context. (HasQType 'Positive (ListProduct tt))
+       forall context (params :: [Type]) (t :: Type). (HasQType QPolyShim 'Positive t)
     => FullNameRef
     -> RawMarkdown
-    -> ListType QDocSignature tt
+    -> ListType QDocSignature params
+    -> (ListProduct params -> t)
     -> LibraryStuff context
-recordValueBDS name docDescription docsigs = let
-    posType :: QShimWit 'Positive (ListProduct tt)
+recordValueBDS name docDescription docsigs f = let
+    posType :: QShimWit 'Positive t
     posType = qType
-    dsToSig :: QDocSignature --> QSignature 'Positive
-    dsToSig (ValueDocSignature n _ t p) = ValueSignature Nothing n t p
     dsToDoc :: forall a. QDocSignature a -> Tree (BindDoc context)
     dsToDoc (ValueDocSignature n d t p) =
         pure $ MkBindDoc Nothing $ MkDefDoc (ValueSignatureDocItem n (exprShow t) (isJust p)) d
-    sigs :: ListType (QSignature 'Positive) tt
-    sigs = mapListType dsToSig docsigs
-    qrv :: QRecordValue
-    qrv = MkQRecordValue sigs $ constSealedFExpression $ MkSomeFor (shimWitToDolan posType) id
     diNames = pure name
     diType = exprShow posType
     docItem = ValuePatternDocItem {..}
-    bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> RecordValueBinding qrv
-    bdDoc = MkDefDoc {..}
-    in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
+    in case mapListProductShimWit $ mapListType docSignatureToSignature docsigs of
+           MkShimWit (MkListProductType sigs) argconv -> let
+               qrv :: QRecordValue
+               qrv =
+                   MkQRecordValue sigs $
+                   constSealedFExpression $
+                   MkSomeFor (shimWitToDolan posType) $ f . shimToFunction (polarPolyIsoNegative argconv)
+               bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> RecordValueBinding qrv
+               bdDoc = MkDefDoc {..}
+               in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
 
 recordConsBDS ::
-       forall (t :: Type) (tt :: [Type]) context. (HasQGroundedType 'Positive t, HasQGroundedType 'Negative t)
+       forall (t :: Type) (tt :: [Type]) context.
+       (HasQGroundedType QPolyShim 'Positive t, HasQGroundedType QPolyShim 'Negative t)
     => FullNameRef
     -> RawMarkdown
     -> ListType QDocSignature tt
@@ -298,25 +323,25 @@ recordConsBDS name docDescription docsigs codec = let
     posType = qGroundedType
     negType :: QGroundedShimWit 'Negative t
     negType = qGroundedType
-    famType :: SomeFamilialType
-    famType =
-        case posType of
-            MkShimWit (MkDolanGroundedType t _) _ -> MkSomeFamilialType $ qgtFamilyType t
-    dsToSig :: QDocSignature --> QSignature 'Positive
-    dsToSig (ValueDocSignature n _ t p) = ValueSignature (Just famType) n t p
     dsToDoc :: forall a. QDocSignature a -> Tree (BindDoc context)
     dsToDoc (ValueDocSignature n d t p) =
         pure $ MkBindDoc Nothing $ MkDefDoc (ValueSignatureDocItem n (exprShow t) (isJust p)) d
-    sigs :: ListVType (QSignature 'Positive) tt
-    sigs = listTypeToVType $ mapListType dsToSig docsigs
-    qrc :: QRecordConstructor
-    qrc = MkQRecordConstructor sigs posType negType codec
     diNames = pure name
     diType = exprShow posType
     docItem = ValuePatternDocItem {..}
-    bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> RecordConstructorBinding qrc
-    bdDoc = MkDefDoc {..}
-    in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
+    in case mapListProductShimWit $ mapListType docSignatureToSignature docsigs of
+           MkShimWit (MkListProductType sigs) argconv -> let
+               MkIsomorphism pq qp = polarPolyIso argconv
+               argCodec =
+                   bijectionCodec $
+                   MkIsomorphism
+                       (listProductToVProduct (listTypeToVType sigs) . shimToFunction pq . listVProductToProduct)
+                       (listProductToVProduct (listTypeToVType docsigs) . shimToFunction qp . listVProductToProduct)
+               qrc :: QRecordConstructor
+               qrc = MkQRecordConstructor (listTypeToVType sigs) posType negType $ argCodec . codec
+               bdScopeEntry = pure $ BindScopeEntry name [] $ \_ -> RecordConstructorBinding qrc
+               bdDoc = MkDefDoc {..}
+               in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
 
 specialFormBDS ::
        forall context.
@@ -338,12 +363,12 @@ specialFormBDS name docDescription diAnnotations diType sf = let
     in pure MkBindDoc {..}
 
 eqEntries ::
-       forall context (a :: Type). (Eq a, HasQType 'Positive a, HasQType 'Negative a)
+       forall context (a :: Type). (Eq a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff context]
 eqEntries = [valBDS "==" "Equal." $ (==) @a, valBDS "/=" "Not equal." $ (/=) @a]
 
 ordEntries ::
-       forall context (a :: Type). (Ord a, HasQType 'Positive a, HasQType 'Negative a)
+       forall context (a :: Type). (Ord a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff context]
 ordEntries =
     eqEntries @context @a <>
@@ -369,7 +394,7 @@ greater f a b =
         _ -> b
 
 orderEntries ::
-       forall context (a :: Type). (Eq a, HasQType 'Positive a, HasQType 'Negative a)
+       forall context (a :: Type). (Eq a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => (a -> a -> Ordering)
     -> RawMarkdown
     -> [LibraryStuff context]
@@ -385,17 +410,17 @@ orderEntries order doc =
     ]
 
 enumEntries ::
-       forall context (a :: Type). (Enum a, HasQType 'Positive a, HasQType 'Negative a)
+       forall context (a :: Type). (Enum a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff context]
 enumEntries = [valBDS "pred" "Previous value." $ pred @a, valBDS "succ" "Next value." $ succ @a]
 
 functorEntries ::
        forall context (f :: Type -> Type).
        ( Functor f
-       , HasQType 'Positive (f A)
-       , HasQType 'Negative (f A)
-       , HasQType 'Positive (f B)
-       , HasQType 'Negative (f B)
+       , HasQType QPolyShim 'Positive (f A)
+       , HasQType QPolyShim 'Negative (f A)
+       , HasQType QPolyShim 'Positive (f B)
+       , HasQType QPolyShim 'Negative (f B)
        )
     => [LibraryStuff context]
 functorEntries = [valBDS "map" "" (fmap :: (A -> B) -> f A -> f B)]
@@ -403,18 +428,18 @@ functorEntries = [valBDS "map" "" (fmap :: (A -> B) -> f A -> f B)]
 applicativeEntries ::
        forall context (f :: Type -> Type).
        ( Applicative f
-       , HasQType 'Negative (f TopType)
-       , HasQType 'Negative (f ())
-       , HasQType 'Positive (f ())
-       , HasQType 'Positive (f A)
-       , HasQType 'Negative (f A)
-       , HasQType 'Positive (f B)
-       , HasQType 'Negative (f B)
-       , HasQType 'Positive (f C)
-       , HasQType 'Negative (f C)
-       , HasQType 'Positive (f (A, B))
-       , HasQType 'Positive (f [B])
-       , HasQType 'Negative (f (A -> B))
+       , HasQType QPolyShim 'Negative (f TopType)
+       , HasQType QPolyShim 'Negative (f ())
+       , HasQType QPolyShim 'Positive (f ())
+       , HasQType QPolyShim 'Positive (f A)
+       , HasQType QPolyShim 'Negative (f A)
+       , HasQType QPolyShim 'Positive (f B)
+       , HasQType QPolyShim 'Negative (f B)
+       , HasQType QPolyShim 'Positive (f C)
+       , HasQType QPolyShim 'Negative (f C)
+       , HasQType QPolyShim 'Positive (f (A, B))
+       , HasQType QPolyShim 'Positive (f [B])
+       , HasQType QPolyShim 'Negative (f (A -> B))
        )
     => [LibraryStuff context]
 applicativeEntries =
@@ -431,34 +456,35 @@ applicativeEntries =
 monadEntries ::
        forall context (f :: Type -> Type).
        ( Monad f
-       , HasQType 'Negative (f TopType)
-       , HasQType 'Negative (f ())
-       , HasQType 'Positive (f ())
-       , HasQType 'Positive (f A)
-       , HasQType 'Negative (f A)
-       , HasQType 'Positive (f B)
-       , HasQType 'Negative (f B)
-       , HasQType 'Positive (f C)
-       , HasQType 'Negative (f C)
-       , HasQType 'Positive (f (A, B))
-       , HasQType 'Positive (f [B])
-       , HasQType 'Negative (f (A -> B))
+       , HasQType QPolyShim 'Negative (f TopType)
+       , HasQType QPolyShim 'Negative (f ())
+       , HasQType QPolyShim 'Positive (f ())
+       , HasQType QPolyShim 'Positive (f A)
+       , HasQType QPolyShim 'Negative (f A)
+       , HasQType QPolyShim 'Positive (f B)
+       , HasQType QPolyShim 'Negative (f B)
+       , HasQType QPolyShim 'Positive (f C)
+       , HasQType QPolyShim 'Negative (f C)
+       , HasQType QPolyShim 'Positive (f (A, B))
+       , HasQType QPolyShim 'Positive (f [B])
+       , HasQType QPolyShim 'Negative (f (A -> B))
        )
     => [LibraryStuff context]
 monadEntries = applicativeEntries @context @f <> [valBDS ">>=" "" ((>>=) :: f A -> (A -> f B) -> f B)]
 
 semigroupEntries ::
-       forall context (a :: Type). (Semigroup a, HasQType 'Positive a, HasQType 'Negative a)
+       forall context (a :: Type). (Semigroup a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff context]
 semigroupEntries = [valBDS "<>" "" $ (<>) @a, valBDS "concat1" "" $ sconcat @a]
 
 monoidEntries ::
-       forall context (a :: Type). (Monoid a, HasQType 'Positive a, HasQType 'Negative a)
+       forall context (a :: Type). (Monoid a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff context]
 monoidEntries = semigroupEntries @context @a <> [valBDS "empty" "" $ mempty @a, valBDS "concat" "" $ mconcat @a]
 
 sequenceEntries ::
-       forall context (a :: Type). (IsSequence a, Index a ~ Int, HasQType 'Positive a, HasQType 'Negative a)
+       forall context (a :: Type).
+       (IsSequence a, Index a ~ Int, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff context]
 sequenceEntries =
     [ valBDS "length" "The number of elements." $ olength @a

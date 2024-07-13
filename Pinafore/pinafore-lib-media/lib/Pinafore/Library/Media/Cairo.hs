@@ -100,7 +100,7 @@ alphaColourToTuple (MkAlphaColourFraction op col) = (colourToTuple col, op)
 toPatternColorStop :: (Double, LangAlphaColour) -> PatternColorStop
 toPatternColorStop (offset, MkAlphaColourFraction op col) = MkPatternColorStop offset (colourToTuple col, Just op)
 
-instance HasQType 'Negative PatternColorStop where
+instance HasQType QPolyShim 'Negative PatternColorStop where
     qType = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) qType
 
 langSource :: LangAlphaColour -> LangDrawing A -> LangDrawing A

@@ -6,18 +6,17 @@ module Pinafore.Language.Type.GetDynamicSupertype
 
 import Import
 import Pinafore.Language.Interpreter ()
-import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 
 pfmap ::
        (HasVariance f, VarianceOf f ~ 'Covariance)
-    => PolarShim (QPolyShim Type) 'Negative a b
-    -> PolarShim (QPolyShim Type) 'Negative (f a) (f b)
+    => PolarShim QShim 'Negative a b
+    -> PolarShim QShim 'Negative (f a) (f b)
 pfmap (MkPolarShim mp) = MkPolarShim $ cfmap mp
 
-zip2 :: PolarShim (QPolyShim Type) 'Negative (Maybe (MeetType a b)) (MeetType (Maybe a) (Maybe b))
+zip2 :: PolarShim QShim 'Negative (Maybe (MeetType a b)) (MeetType (Maybe a) (Maybe b))
 zip2 = MkPolarShim $ functionToShim "zip2" $ \(BothMeetType a b) -> liftA2 BothMeetType a b
 
 getOptSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Interpreter (Maybe (QShimWit 'Negative (Maybe t)))

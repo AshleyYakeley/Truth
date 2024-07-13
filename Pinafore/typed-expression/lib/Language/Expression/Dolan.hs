@@ -19,6 +19,7 @@ module Language.Expression.Dolan
     , DolanPolyShim
     , DolanShim
     , DolanPolyIsoShim
+    , invertTypeM
     , CCRVariances
     , CCRVariancesKind
     , CCRVariancesType

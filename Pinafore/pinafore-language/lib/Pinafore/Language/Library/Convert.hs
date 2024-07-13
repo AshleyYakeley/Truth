@@ -9,11 +9,11 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Type
 
 -- IO
-instance (HasQType 'Positive a) => HasQType 'Positive (IO a) where
+instance (HasQType QPolyShim 'Positive a) => HasQType QPolyShim 'Positive (IO a) where
     qType = mapPosShimWit (functionToShim "liftIO" $ liftIO @Action) qType
 
 -- View
-instance (HasQType 'Positive a) => HasQType 'Positive (View a) where
+instance (HasQType QPolyShim 'Positive a) => HasQType QPolyShim 'Positive (View a) where
     qType = mapPosShimWit (functionToShim "actionLiftView" actionLiftView) qType
 
 -- Entity

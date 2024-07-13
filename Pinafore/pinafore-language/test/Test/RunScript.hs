@@ -86,7 +86,7 @@ runScriptTestTree =
         in MkScriptContext {..}
 
 testExpression ::
-       forall a. HasQType 'Negative a
+       forall a. HasQType QPolyShim 'Negative a
     => Text
     -> Text
     -> (Tester a -> Tester ())

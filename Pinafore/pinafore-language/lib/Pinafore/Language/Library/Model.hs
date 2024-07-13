@@ -25,17 +25,19 @@ instance HasQGroundType '[] LangModel where
     qGroundType = modelGroundType
 
 -- WModel
-instance (HasQType 'Positive t, HasQType 'Negative t) => HasQType 'Positive (WModel (WholeUpdate (Know t))) where
+instance (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t) =>
+             HasQType QPolyShim 'Positive (WModel (WholeUpdate (Know t))) where
     qType = mapPosShimWit (functionToShim "wModelToWholeModel" wModelToWholeModel) qType
 
-instance (HasQType 'Positive t, HasQType 'Negative t) => HasQType 'Negative (WModel (WholeUpdate (Know t))) where
+instance (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t) =>
+             HasQType QPolyShim 'Negative (WModel (WholeUpdate (Know t))) where
     qType = mapNegShimWit (functionToShim "langWholeModelToValue" langWholeModelToValue) qType
 
 -- WROWModel
-instance (HasQType 'Negative a) => HasQType 'Negative (WROWModel (Know a)) where
+instance (HasQType QPolyShim 'Negative a) => HasQType QPolyShim 'Negative (WROWModel (Know a)) where
     qType = mapNegShimWit (functionToShim "langWholeModelToReadOnlyValue" langWholeModelToReadOnlyValue) qType
 
-instance (HasQType 'Positive a) => HasQType 'Positive (WROWModel (Know a)) where
+instance (HasQType QPolyShim 'Positive a) => HasQType QPolyShim 'Positive (WROWModel (Know a)) where
     qType = mapPosShimWit (functionToShim "wROWModelToWholeModel" wROWModelToWholeModel) qType
 
 -- SetModel

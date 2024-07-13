@@ -10,7 +10,6 @@ module Pinafore.Language.Type.Storable.Open
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Shim
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Identified
@@ -60,7 +59,7 @@ openStorableGroundType oet = let
 
 getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
-    case dolanToMaybeType @QGroundType @_ @_ @(QPolyShim Type) tm of
+    case dolanToMaybeType @QGroundType @_ @_ @QShim tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
             | Just (MkOpenEntityFamily oet) <- getGroundFamily openStorableFamilyWitness gt -> return $ MkSome oet
         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
