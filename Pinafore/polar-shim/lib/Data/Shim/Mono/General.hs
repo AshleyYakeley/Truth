@@ -199,6 +199,16 @@ instance CartesianShim (->) where
     eitherShim ab _ (Left a) = Left $ ab a
     eitherShim _ pq (Right p) = Right $ pq p
 
+instance CartesianShim shim => CartesianShim (CatDual shim) where
+    funcShim (MkCatDual ba) (MkCatDual qp) = MkCatDual $ funcShim ba qp
+    pairShim (MkCatDual ba) (MkCatDual qp) = MkCatDual $ pairShim ba qp
+    eitherShim (MkCatDual ba) (MkCatDual qp) = MkCatDual $ eitherShim ba qp
+
+instance CartesianShim shim => CartesianShim (Isomorphism shim) where
+    funcShim (MkIsomorphism ab ba) (MkIsomorphism pq qp) = MkIsomorphism (funcShim ab pq) (funcShim ba qp)
+    pairShim (MkIsomorphism ab ba) (MkIsomorphism pq qp) = MkIsomorphism (pairShim ab pq) (pairShim ba qp)
+    eitherShim (MkIsomorphism ab ba) (MkIsomorphism pq qp) = MkIsomorphism (eitherShim ab pq) (eitherShim ba qp)
+
 type LazyCategory :: ShimKind Type -> Constraint
 class JoinMeetIsoShim shim => LazyCategory shim where
     iLazy :: forall a b. shim a b -> shim a b

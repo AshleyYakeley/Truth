@@ -53,3 +53,9 @@ instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind
 instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind). LazyCategory (f (pshim Type)) =>
              LazyCategory (PolyMapT f pshim Type) where
     iLazy (MkPolyMapT ab) = MkPolyMapT $ iLazy ab
+
+instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind). CartesianShim (f (pshim Type)) =>
+             CartesianShim (PolyMapT f pshim Type) where
+    funcShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ funcShim ab pq
+    pairShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ pairShim ab pq
+    eitherShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ eitherShim ab pq

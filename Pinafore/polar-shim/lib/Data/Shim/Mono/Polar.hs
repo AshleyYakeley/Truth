@@ -35,6 +35,21 @@ instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, Grou
             PositiveType -> \(MkPolarShim p) -> MkPolarShim $ invert p
             NegativeType -> \(MkPolarShim p) -> MkPolarShim $ invert p
 
+instance forall polarity (shim :: ShimKind Type). (Is PolarityType polarity, CartesianShim shim) =>
+             CartesianShim (PolarShim shim polarity) where
+    funcShim =
+        case polarityType @polarity of
+            PositiveType -> \(MkPolarShim ab) (MkPolarShim pq) -> MkPolarShim $ funcShim ab pq
+            NegativeType -> \(MkPolarShim ab) (MkPolarShim pq) -> MkPolarShim $ funcShim ab pq
+    pairShim =
+        case polarityType @polarity of
+            PositiveType -> \(MkPolarShim ab) (MkPolarShim pq) -> MkPolarShim $ pairShim ab pq
+            NegativeType -> \(MkPolarShim ab) (MkPolarShim pq) -> MkPolarShim $ pairShim ab pq
+    eitherShim =
+        case polarityType @polarity of
+            PositiveType -> \(MkPolarShim ab) (MkPolarShim pq) -> MkPolarShim $ eitherShim ab pq
+            NegativeType -> \(MkPolarShim ab) (MkPolarShim pq) -> MkPolarShim $ eitherShim ab pq
+
 invertPolarShim ::
        forall polarity k (shim :: ShimKind k) (a :: k) (b :: k). Is PolarityType polarity
     => PolarShim shim polarity a b
