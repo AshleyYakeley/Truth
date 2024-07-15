@@ -323,6 +323,18 @@ do
         in open.Window gtk (400,600) {"Menus"} $ vertical.Widget [mbar, layoutGrow $ checkBox {"Value"} value];
 end;
 
+### Scale
+window_scale: Action Window =
+do
+    value <- newMem.WholeModel;
+
+    open.Window gtk (400,600) {"Scale"} $ with Widget in vertical
+        [
+            scale {(0,100)} value,
+            scale {(0,100)} value
+        ];
+end;
+
 ### Start Window
 
 let rec
@@ -355,6 +367,7 @@ window_start : Action Window
             owned.Widget $ button.Widget {"Owned Self"} {window_start},
             button.Widget {"Cairo Image"} {window_cairoimage},
             button.Widget {"Menus"} {window_menus},
+            button.Widget {"Scale"} {window_scale},
             layoutGrow.Widget $ blank.Widget
         ];
         end;
