@@ -1,6 +1,4 @@
-module Changes.World.GNOME.GTK.Widget.TextEntry
-    ( createTextEntry
-    ) where
+module Changes.World.GNOME.GTK.Widget.TextEntry where
 
 import Changes.Core
 import Changes.World.GNOME.GI
@@ -8,11 +6,10 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes hiding (get)
 
-createTextEntry :: Model (WholeUpdate Text) -> GView 'Unlocked Widget
-createTextEntry rmod = do
+attachEntryText :: Entry -> Model (WholeUpdate Text) -> GView 'Unlocked ()
+attachEntryText entry rmod = do
     esrc <- gvNewEditSource
     gvRunLockedThen $ do
-        (entry, widget) <- gvNewWidget Entry []
         invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
         let
             setValidState :: Bool -> GView 'Locked ()
@@ -32,4 +29,12 @@ createTextEntry rmod = do
                         then return ()
                         else set entry [#text := newtext]
                     setValidState True
-            return widget
+
+createEntry :: GView 'Locked (Entry, Widget)
+createEntry = gvNewWidget Entry []
+
+createTextEntry :: Model (WholeUpdate Text) -> GView 'Unlocked Widget
+createTextEntry rmod = do
+    (entry, widget) <- gvRunLocked $ gvNewWidget Entry []
+    attachEntryText entry rmod
+    return widget

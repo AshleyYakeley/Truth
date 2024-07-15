@@ -11,6 +11,7 @@ module Pinafore.Language.Library.Defs
     , valWitBDS
     , valBDS
     , typeBDS
+    , typeBDS_
     , subtypeRelationBDS
     , hasSubtypeRelationBDS
     , valPatBDS
@@ -208,6 +209,14 @@ typeBDS name docDescription t@(MkSomeGroundType gt) bdChildren = let
     docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in singleBindDoc MkBindDoc {..} $ namespaceConcat (RelativeNamespaceRef [fnrName name]) bdChildren
+
+typeBDS_ ::
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv) context. HasQGroundType dv t
+    => FullNameRef
+    -> RawMarkdown
+    -> [LibraryStuff context]
+    -> LibraryStuff context
+typeBDS_ name doc children = typeBDS name doc (MkSomeGroundType $ qGroundType @dv @t) children
 
 subtypeRelationBDS ::
        forall context a b.

@@ -83,6 +83,9 @@ library:
       - Changes.World.GNOME.GTK.Widget.Notebook
       - Changes.World.GNOME.GTK.Widget.Table
       - Changes.World.GNOME.GTK.Widget.Drag
+      - Changes.World.GNOME.GTK.Widget.Range
+      - Changes.World.GNOME.GTK.Widget.Scale
+      - Changes.World.GNOME.GTK.Widget.SpinButton
       - Changes.World.GNOME.GTK.Widget.MenuBar
       - Changes.World.GNOME.GTK.Widget.Scrolled
       - Changes.World.GNOME.GTK.Widget.Calendar

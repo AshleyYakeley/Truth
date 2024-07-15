@@ -22,7 +22,10 @@ import Changes.World.GNOME.GTK.Widget.Maybe as I
 import Changes.World.GNOME.GTK.Widget.MenuBar as I
 import Changes.World.GNOME.GTK.Widget.Notebook as I
 import Changes.World.GNOME.GTK.Widget.Option as I
+import Changes.World.GNOME.GTK.Widget.Range as I
+import Changes.World.GNOME.GTK.Widget.Scale as I
 import Changes.World.GNOME.GTK.Widget.Scrolled as I
+import Changes.World.GNOME.GTK.Widget.SpinButton as I
 import Changes.World.GNOME.GTK.Widget.Switch as I
 import Changes.World.GNOME.GTK.Widget.Table as I
 import Changes.World.GNOME.GTK.Widget.Text as I

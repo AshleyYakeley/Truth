@@ -10,11 +10,13 @@ import Changes.World.GNOME.GTK
 import Data.Media.Image hiding (Unknown)
 import Data.Shim
 import Data.Time
+import qualified GI.Gtk as GI
 import Pinafore.API
 import Pinafore.Library.GTK.Context
 import Pinafore.Library.GTK.Widget.Context
 import Pinafore.Library.Media
 import Shapes
+import Shapes.Numeric
 
 -- LangLayoutWidget
 data LangLayoutWidget =
@@ -142,14 +144,10 @@ actionRef unlift raction =
 uiButton :: ImmutableWholeModel Text -> ImmutableWholeModel (Action TopType) -> LangWidget
 uiButton text raction =
     MkLangWidget $ \MkWidgetContext {..} ->
-        createButton
-            (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text)
-            (unWModel $ actionRef wcUnlift raction)
+        createButton (unWModel $ immutableWholeModelValue mempty text) (unWModel $ actionRef wcUnlift raction)
 
 uiLabel :: ImmutableWholeModel Text -> LangWidget
-uiLabel text =
-    MkLangWidget $ \_ ->
-        createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel text
+uiLabel text = MkLangWidget $ \_ -> createLabel $ unWModel $ immutableWholeModelValue mempty text
 
 uiDynamic :: ImmutableWholeModel LangWidget -> LangWidget
 uiDynamic uiref =
@@ -168,13 +166,13 @@ uiScrolled (MkLangWidget lui) =
 uiUnitCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know ())) -> LangWidget
 uiUnitCheckBox name val =
     MkLangWidget $ \_ ->
-        createCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
+        createCheckButton (unWModel $ immutableWholeModelValue mempty name) $
         unWModel $ eaMap (toChangeLens knowBool) val
 
 uiCheckBox :: ImmutableWholeModel Text -> WModel (WholeUpdate (Know Bool)) -> LangWidget
 uiCheckBox name val =
     MkLangWidget $ \_ ->
-        createMaybeCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel name) $
+        createMaybeCheckButton (unWModel $ immutableWholeModelValue mempty name) $
         unWModel $ eaMap (toChangeLens knowMaybe) val
 
 uiTextEntry :: WModel (WholeUpdate (Know Text)) -> LangWidget
@@ -269,6 +267,48 @@ langImage ref =
         unWModel $
         eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableModelToReadOnlyModel ref
 
+-- LangScaleWidget
+newtype LangScaleWidget = MkLangScaleWidget
+    { unLangScaleWidget :: WidgetContext -> GView 'Unlocked GI.Scale
+    }
+
+scaleWidgetToWidget :: LangScaleWidget -> LangWidget
+scaleWidgetToWidget sw =
+    MkLangWidget $ \c -> do
+        scale <- unLangScaleWidget sw c
+        gvRunLocked $ GI.toWidget scale
+
+instance HasQGroundType '[] LangScaleWidget where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangScaleWidget)|]) "Scale.Widget.GTK."
+
+uiScale :: ImmutableWholeModel (Double, Double) -> WModel (WholeUpdate (Know Double)) -> LangScaleWidget
+uiScale rangeModel valueModel =
+    MkLangScaleWidget $ \_ -> do
+        (scale, range) <-
+            gvRunLocked $ do
+                (scale, _) <- createScale
+                range <- GI.toRange scale
+                return (scale, range)
+        attachRangeRange range $ unWModel $ immutableWholeModelValue (0, 0) rangeModel
+        attachRangeValue range $ unWModel $ eaMap (unknownValueChangeLens 0) valueModel
+        return scale
+
+uiAttachScaleIncrements :: ImmutableWholeModel (Double, Double) -> LangScaleWidget -> LangScaleWidget
+uiAttachScaleIncrements model sw =
+    MkLangScaleWidget $ \c -> do
+        scale <- unLangScaleWidget sw c
+        range <- gvRunLocked $ GI.toRange scale
+        attachRangeIncrements range $ unWModel $ immutableWholeModelValue (0, 0) model
+        return scale
+
+uiAttachScaleMarks :: ImmutableWholeModel [(Double, (Bool, Maybe Text))] -> LangScaleWidget -> LangScaleWidget
+uiAttachScaleMarks model sw =
+    MkLangScaleWidget $ \c -> do
+        scale <- unLangScaleWidget sw c
+        attachScaleMarks scale $
+            unWModel $ eaMapReadOnlyWhole (fmap $ \(v, (p, mt)) -> (v, p, mt)) $ immutableWholeModelValue mempty model
+        return scale
+
 widgetStuff :: LibraryStuff ()
 widgetStuff =
     headingBDS
@@ -308,13 +348,21 @@ widgetStuff =
                     "notebook"
                     "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
                     uiNotebook
-                    -- drag
-                    -- icon
               , valBDS
                     "button"
                     "A button with this text that does this action. Button will be disabled if the action reference is unknown."
                     uiButton
               , valBDS "pick" "A drop-down menu." uiPick
+              --, valBDS "spinButton" "A numeric entry with buttons." uiSpinButton
+              , valBDS "scale" "A sliding scale." uiScale
+              , typeBDS_ @_ @LangScaleWidget "Scale" "" []
+              , hasSubtypeRelationBDS @LangScaleWidget @LangWidget Verify "" $
+                functionToShim "scale widget" scaleWidgetToWidget
+              , namespaceBDS
+                    "Scale"
+                    [ valBDS "increments" "Step and page increments" uiAttachScaleIncrements
+                    , valBDS "marks" "Marks on scale" uiAttachScaleMarks
+                    ]
               , valBDS "list" "A dynamic list of widgets." uiList
               , valBDS
                     "listTable"
