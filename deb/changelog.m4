@@ -22,6 +22,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - gnome
       . rename textArea.Widget to textView.Widget, wrap text
       . add WebView.WebKit GTK element
+      . add scale.Widget
     - UILib
       . update
   * VS Code Extension
