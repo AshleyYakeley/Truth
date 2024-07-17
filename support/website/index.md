@@ -13,6 +13,7 @@ building
 syntax
 expressions
 declarations
+special-forms
 implicit-parameters
 record-functions
 type-system

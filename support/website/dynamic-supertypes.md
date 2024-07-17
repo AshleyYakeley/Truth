@@ -30,17 +30,17 @@ end
 
 ## Check
 
-`check` is simply the retraction function.
+`check` is a [special form](special-forms.md) that provides the retraction function for a given type.
 
 `check @T: D(T) -> Maybe T`
 
 This is equivalent to
 
-`match t:?T => Just t; _ -> Nothing end`
+`match t:? T => Just t; _ -> Nothing end`
 
 ## Coerce
 
-If you're sure that the retraction will always succeed, you can use `coerce`.
+If you're sure that the retraction will always succeed, you can use the `coerce` special form.
 (If it doesn't, you'll get a run-time error.)
 
 `coerce @T: D(T) -> T`
