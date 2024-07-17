@@ -46,8 +46,20 @@ escapeChar c = [c]
 escapeText :: Text -> Text
 escapeText = pack . mconcat . fmap escapeChar . unpack
 
+plainEscapeChar :: Char -> String
+plainEscapeChar '&' = "&amp;"
+plainEscapeChar '<' = "&lt;"
+plainEscapeChar '>' = "&gt;"
+plainEscapeChar '\'' = "&apos;"
+plainEscapeChar '"' = "&quot;"
+plainEscapeChar '\n' = "<br />\n"
+plainEscapeChar c = [c]
+
+plainEscapeText :: Text -> Text
+plainEscapeText = pack . mconcat . fmap plainEscapeChar . unpack
+
 plain :: Text -> HTMLText
-plain t = MkHTMLText $ escapeText t
+plain t = MkHTMLText $ plainEscapeText t
 
 attrText :: [(Text, Text)] -> Text
 attrText aa = mconcat $ fmap (\(k, v) -> " " <> k <> "=\"" <> escapeText v <> "\"") aa
