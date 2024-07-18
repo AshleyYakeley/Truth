@@ -29,17 +29,10 @@ coFShimWit ::
     => QGroundType '[ CoCCRVariance] f
     -> QShimWit polarity a
     -> QShimWit polarity (f a)
-coFShimWit gt (MkShimWit ta conva) = let
-    fshim =
-        case polarityType @polarity of
-            PositiveType ->
-                case conva of
-                    MkPolarShim shima -> MkPolarShim $ applyCoPolyShim ccrVariation ccrVariation id shima
-            NegativeType ->
-                case conva of
-                    MkPolarShim shima -> MkPolarShim $ applyCoPolyShim ccrVariation ccrVariation id shima
-    in mapPolarShimWit fshim $
-       typeToDolan $ MkDolanGroundedType gt $ ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments
+coFShimWit gt wa =
+    shimWitToDolan $
+    mkDolanGroundedShimWit gt $
+    consCCRPolarArgumentsShimWit (qgtVarianceMap gt) (coCCRArgument wa) nilCCRPolarArgumentsShimWit
 
 maybeShimWit ::
        forall polarity a. Is PolarityType polarity
@@ -65,37 +58,12 @@ cocoFShimWit ::
     -> QShimWit polarity a
     -> QShimWit polarity b
     -> QShimWit polarity (f a b)
-cocoFShimWit gt (MkShimWit ta conva) (MkShimWit tb convb) = let
-    fshim =
-        case qgtVarianceMap gt of
-            ConsCCRVariancesMap ccrva mapb ->
-                case polarityType @polarity of
-                    PositiveType ->
-                        case (conva, convb) of
-                            (MkPolarShim (shima :: _ x y), MkPolarShim shimb) ->
-                                MkPolarShim $
-                                applyCoPolyShim
-                                    (case mapb of
-                                         ConsCCRVariancesMap ccrvb NilCCRVariancesMap -> ccrvb)
-                                    (case mapb of
-                                         ConsCCRVariancesMap ccrvb NilCCRVariancesMap -> ccrvb)
-                                    (applyCoPolyShim ccrva ccrva id shima)
-                                    shimb
-                    NegativeType ->
-                        case (conva, convb) of
-                            (MkPolarShim (shima :: _ x y), MkPolarShim shimb) ->
-                                MkPolarShim $
-                                applyCoPolyShim
-                                    (case mapb of
-                                         ConsCCRVariancesMap ccrvb NilCCRVariancesMap -> ccrvb)
-                                    (case mapb of
-                                         ConsCCRVariancesMap ccrvb NilCCRVariancesMap -> ccrvb)
-                                    (applyCoPolyShim ccrva ccrva id shima)
-                                    shimb
-    in mapPolarShimWit fshim $
-       typeToDolan $
-       MkDolanGroundedType gt $
-       ConsCCRArguments (CoCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
+cocoFShimWit gt wa wb =
+    shimWitToDolan $
+    mkDolanGroundedShimWit gt $
+    consCCRPolarArgumentsShimWit (qgtVarianceMap gt) (coCCRArgument wa) $
+    consCCRPolarArgumentsShimWit (nextCCRVariancesMap $ qgtVarianceMap gt) (coCCRArgument wb) $
+    nilCCRPolarArgumentsShimWit
 
 eitherShimWit ::
        forall polarity a b. Is PolarityType polarity

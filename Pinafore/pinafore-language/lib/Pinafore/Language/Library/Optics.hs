@@ -7,10 +7,12 @@ module Pinafore.Language.Library.Optics
 
 import Import
 import Pinafore.Language.Convert
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model ()
+import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -93,6 +95,31 @@ opticsLibSection =
                     , valBDS "id" "Identity prism." $ identityLangPrism @X @Y
                     , valBDS "." "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
                     , valBDS "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
+                    , specialFormBDS "dynamic" "Prism from greatest dynamic supertype" ["@T"] "Prism {a,-D(T)} {-a,+T}" $
+                      MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome (tn :: _ t), ()) -> do
+                          (MkShimWit (dtn :: _ dt) (MkPolarShim mconv)) <- getGreatestDynamicSupertype tn
+                          tpw <- invertType tn
+                          let
+                              vtype :: QShimWit 'Positive (LangPrism '( MeetType A dt, A) '( A, t))
+                              vtype =
+                                  shimWitToDolan $
+                                  mkDolanGroundedShimWit qGroundType $
+                                  consCCRPolarArgumentsShimWit
+                                      (qgtVarianceMap qGroundType)
+                                      (rangeCCRArgument (joinMeetShimWit qType (mkShimWit dtn)) qType) $
+                                  consCCRPolarArgumentsShimWit
+                                      (nextCCRVariancesMap $ qgtVarianceMap qGroundType)
+                                      (rangeCCRArgument qType tpw) $
+                                  nilCCRPolarArgumentsShimWit
+                              val :: LangPrism '( MeetType A dt, A) '( A, t)
+                              val =
+                                  MkLangPrism
+                                      (\(MkMeetType (a, dt)) ->
+                                           case shimToFunction mconv dt of
+                                               Just t -> Right t
+                                               Nothing -> Left a)
+                                      id
+                          return $ MkSomeOf vtype val
                     ]
               ]
         , headingBDS

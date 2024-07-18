@@ -15,6 +15,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add cell.Store, set.Store, fetch.Store
       . add StoppableTask type and functions
       . add subtype Store <: Model
+      . add dynamic.Prism
     - media
       , add Media type and functions
       . add HTMLText type and functions

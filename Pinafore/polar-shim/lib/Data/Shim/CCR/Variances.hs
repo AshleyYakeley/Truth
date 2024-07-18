@@ -65,6 +65,12 @@ data CCRVariancesMap dv f where
         -> (forall a. CCRVariancesMap dv (f a))
         -> CCRVariancesMap (sv ': dv) f
 
+nextCCRVariancesMap ::
+       forall (sv :: CCRVariance) (dv :: CCRVariances) (f :: CCRVarianceKind sv -> CCRVariancesKind dv).
+       CCRVariancesMap (sv ': dv) f
+    -> forall a. CCRVariancesMap dv (f a)
+nextCCRVariancesMap (ConsCCRVariancesMap _ ccrm) = ccrm
+
 lazyDVKindMorphism ::
        forall dv (a :: CCRVariancesKind dv) (b :: CCRVariancesKind dv).
        CCRVariancesType dv
