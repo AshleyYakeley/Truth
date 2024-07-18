@@ -120,8 +120,7 @@ groundedNonpolarToDolanType ::
     -> NonpolarArguments ground dv gt t
     -> DolanGroundedShimWit ground polarity t
 groundedNonpolarToDolanType gt args =
-    case nonpolarToDolanArguments (groundTypeVarianceMap gt) args of
-        MkShimWit dargs conv -> MkShimWit (MkDolanGroundedType gt dargs) conv
+    mkDolanGroundedShimWit gt $ nonpolarToDolanArguments (groundTypeVarianceMap gt) args
 
 nonpolarToDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

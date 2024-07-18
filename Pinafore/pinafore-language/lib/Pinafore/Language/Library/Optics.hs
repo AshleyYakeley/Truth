@@ -95,7 +95,11 @@ opticsLibSection =
                     , valBDS "id" "Identity prism." $ identityLangPrism @X @Y
                     , valBDS "." "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
                     , valBDS "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
-                    , specialFormBDS "dynamic" "Prism from greatest dynamic supertype" ["@T"] "Prism {a,-D(T)} {-a,+T}" $
+                    , specialFormBDS
+                          "dynamic"
+                          "Prism from greatest dynamic supertype of the given type."
+                          ["@T"]
+                          "Prism {a,-D(T)} {-a,+T}" $
                       MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome (tn :: _ t), ()) -> do
                           (MkShimWit (dtn :: _ dt) (MkPolarShim mconv)) <- getGreatestDynamicSupertype tn
                           tpw <- invertType tn

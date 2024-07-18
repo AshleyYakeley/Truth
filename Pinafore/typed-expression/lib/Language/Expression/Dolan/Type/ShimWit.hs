@@ -2,7 +2,9 @@ module Language.Expression.Dolan.Type.ShimWit where
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Type.DolanType
+import Language.Expression.Dolan.Type.Equality ()
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
@@ -119,3 +121,15 @@ singleDolanType ::
        DolanSingularType ground polarity t
     -> DolanType ground polarity (JoinMeetType polarity t (LimitType polarity))
 singleDolanType st = ConsDolanType st NilDolanType
+
+mapDolanGroundedTypeM ::
+       forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
+       (Monad m, IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
+    => (forall polarity' t'.
+            Is PolarityType polarity' =>
+                    DolanType ground polarity' t' -> m (PShimWit (pshim Type) (DolanType ground) polarity' t'))
+    -> DolanGroundedType ground polarity t
+    -> m (PShimWit (pshim Type) (DolanGroundedType ground) polarity t)
+mapDolanGroundedTypeM ff (MkDolanGroundedType g args) = do
+    args' <- mapDolanArgumentsM ff (groundTypeVarianceMap g) args
+    return $ mkDolanGroundedShimWit g args'

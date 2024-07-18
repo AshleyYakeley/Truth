@@ -6,6 +6,7 @@ module Language.Expression.Dolan.Invert
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
+import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
@@ -18,8 +19,8 @@ invertPositiveGrounded ::
     => DolanGroundedType ground 'Negative a
     -> Maybe (PShimWit (pshim Type) (DolanType ground) 'Positive a)
 invertPositiveGrounded (MkDolanGroundedType gt args) = do
-    MkShimWit args' conv <- mapInvertDolanArgumentsM invertPolarType (groundTypeVarianceMap gt) args
-    return $ shimWitToDolan $ MkShimWit (MkDolanGroundedType gt args') conv
+    args' <- mapInvertDolanArgumentsM invertPolarType (groundTypeVarianceMap gt) args
+    return $ shimWitToDolan $ mkDolanGroundedShimWit gt args'
 
 invertPositiveSingular ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.
@@ -51,8 +52,8 @@ invertNegativeGrounded ::
     => DolanGroundedType ground 'Positive a
     -> Maybe (PShimWit (pshim Type) (DolanType ground) 'Negative a)
 invertNegativeGrounded (MkDolanGroundedType gt args) = do
-    MkShimWit args' conv <- mapInvertDolanArgumentsM invertPolarType (groundTypeVarianceMap gt) args
-    return $ shimWitToDolan $ MkShimWit (MkDolanGroundedType gt args') conv
+    args' <- mapInvertDolanArgumentsM invertPolarType (groundTypeVarianceMap gt) args
+    return $ shimWitToDolan $ mkDolanGroundedShimWit gt args'
 
 invertNegativeSingular ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.

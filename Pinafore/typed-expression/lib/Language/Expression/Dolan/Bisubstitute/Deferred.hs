@@ -200,18 +200,6 @@ recursiveDolanShimWit ::
     -> PShimWit (pshim Type) (DolanSingularType ground) polarity tv
 recursiveDolanShimWit oldvar tw = runRecM $ recursiveDolanShimWitRecM oldvar tw
 
-mapDolanGroundedTypeM ::
-       forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
-       (Monad m, IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)
-    => (forall polarity' t'.
-            Is PolarityType polarity' =>
-                    DolanType ground polarity' t' -> m (PShimWit (pshim Type) (DolanType ground) polarity' t'))
-    -> DolanGroundedType ground polarity t
-    -> m (PShimWit (pshim Type) (DolanGroundedType ground) polarity t)
-mapDolanGroundedTypeM ff (MkDolanGroundedType g args) = do
-    MkShimWit args' conv <- mapDolanArgumentsM ff (groundTypeVarianceMap g) args
-    return $ MkShimWit (MkDolanGroundedType g args') conv
-
 mapDolanSingularTypeRecM ::
        forall m (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.
        (MonadInner m, IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity)

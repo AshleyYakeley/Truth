@@ -11,7 +11,6 @@ module Language.Expression.Dolan.Bisubstitute
     , funcBisubstituteType
     , bisubstitute
     , bisubstitutes
-    , SubstitutablePolyShim
     , recursiveDolanShimWit
     , mapDolanSingularType
     , mapDolanSingularTypeM

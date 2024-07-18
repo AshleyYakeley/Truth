@@ -181,9 +181,7 @@ automatonGroundedType ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
     => Is PolarityType polarity =>
                [Equation ground] -> [Equation ground] -> DolanGroundedType ground polarity t -> DolanTypeCheckM ground (DolanShimWit ground polarity t)
-automatonGroundedType eqns memos (MkDolanGroundedType g args) = do
-    MkShimWit args' conv <- mapDolanArgumentsM (automatonType eqns memos) (groundTypeVarianceMap g) args
-    return $ shimWitToDolan $ MkShimWit (MkDolanGroundedType g args') conv
+automatonGroundedType eqns memos gt = fmap shimWitToDolan $ mapDolanGroundedTypeM (automatonType eqns memos) gt
 
 automatonSingularType ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground

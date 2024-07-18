@@ -533,10 +533,11 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                 -> CCRVariancesMap dv maintype
                                 -> (QGroundedShimWit 'Positive decltype, QGroundedShimWit 'Negative decltype)
                             declTypes groundType dvm = let
-                                getargs ::
+                                groundedDeclType ::
                                        forall polarity. Is PolarityType polarity
-                                    => CCRPolarArgumentsShimWit QPolyShim dv QType maintype polarity decltype
-                                getargs =
+                                    => QGroundedShimWit polarity decltype
+                                groundedDeclType =
+                                    mkDolanGroundedShimWit groundType $
                                     mapPolarCCRArguments
                                         @QPolyShim
                                         @CCRTypeParam
@@ -547,13 +548,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                         tParamToPolarArgument
                                         dvm
                                         tparams
-                                in case (getargs @'Positive, getargs @'Negative) of
-                                       (MkShimWit posargs posconv, MkShimWit negargs negconv) -> let
-                                           declpos :: QGroundedShimWit 'Positive decltype
-                                           declpos = MkShimWit (MkDolanGroundedType groundType posargs) posconv
-                                           declneg :: QGroundedShimWit 'Negative decltype
-                                           declneg = MkShimWit (MkDolanGroundedType groundType negargs) negconv
-                                           in (declpos, declneg)
+                                in (groundedDeclType @'Positive, groundedDeclType @'Negative)
                             registerConstructor ::
                                    Constructor dv maintype extra
                                 -> ( QGroundType dv maintype
