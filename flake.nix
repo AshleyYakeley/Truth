@@ -2,9 +2,25 @@
   description = "Pinafore";
   inputs =
     {
-      haskellNix.url = "github:input-output-hk/haskell.nix";
-      nixpkgs.follows = "haskellNix/nixpkgs-2311";
-      flake-utils.url = "github:numtide/flake-utils";
+      nixpkgs =
+        {
+          follows = "haskellNix/nixpkgs-2405";
+        };
+
+      flake-utils =
+        {
+          type = "github";
+          owner = "numtide";
+          repo = "flake-utils";
+        };
+
+      haskellNix =
+        {
+          type = "github";
+          owner = "input-output-hk";
+          repo = "haskell.nix";
+          inputs.nixpkgs.follows = "nixpkgs";
+        };
     };
   outputs = { self, nixpkgs, flake-utils, haskellNix }:
     let
