@@ -81,19 +81,19 @@
           VSCXVERSION = "${PINAFOREVERSIONABC}";
           vsceFilePackage = pkgs.runCommand "pinafore-vscode-extension-file" { }
             ''
-                                  export VSCXVERSION="${VSCXVERSION}"
-                                  mkdir -p out/support
-                                  cp ${syntaxDataPackage} out/support/syntax-data.json
-                                  cp ${./.}/support/vsc-extension/transform.yq ./
-                                  cp -r ${./.}/support/vsc-extension/vsce ./
-                                  chmod -R u+w vsce
-                                  ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/package.yaml > vsce/package.json
-                                  ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/language-configuration.yaml > vsce/language-configuration.json
-                                  ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/syntaxes/pinafore.tmLanguage.yaml > vsce/syntaxes/pinafore.tmLanguage.json
-              	                mkdir -p vsce/images
-                                  ${pkgs.librsvg}/bin/rsvg-convert -w 256 -h 256 ${./.}/support/branding/logo.svg -o vsce/images/logo.png
-                                  PATH=$PATH:${pkgs.nodejs_20}/bin
-                                  cd vsce && ${pkgs.vsce}/bin/vsce package -o $out
+              export VSCXVERSION="${VSCXVERSION}"
+              mkdir -p out/support
+              cp ${syntaxDataPackage} out/support/syntax-data.json
+              cp ${./.}/support/vsc-extension/transform.yq ./
+              cp -r ${./.}/support/vsc-extension/vsce ./
+              chmod -R u+w vsce
+              ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/package.yaml > vsce/package.json
+              ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/language-configuration.yaml > vsce/language-configuration.json
+              ${pkgs.yq-go}/bin/yq --from-file transform.yq -o json vsce/syntaxes/pinafore.tmLanguage.yaml > vsce/syntaxes/pinafore.tmLanguage.json
+              mkdir -p vsce/images
+              ${pkgs.librsvg}/bin/rsvg-convert -w 256 -h 256 ${./.}/support/branding/logo.svg -o vsce/images/logo.png
+              PATH=$PATH:${pkgs.nodejs_20}/bin
+              cd vsce && ${pkgs.vsce}/bin/vsce package -o $out
             '';
           vscePackage = pkgs.runCommand "pinafore-vscode-extension" { }
             ''
