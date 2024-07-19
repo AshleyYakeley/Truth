@@ -195,6 +195,11 @@ deb: out/$(PACKAGEFULLNAME).deb
 ### Nix
 
 # Use this on a Nix system
+# broken, see https://github.com/NixOS/nix/issues/9347
+nix-fmt:
+	nix fmt
+
+# Use this on a Nix system
 nix-flake: out
 	nix flake check .?submodules=1
 	nix build .?submodules=1#vscode-extension
@@ -388,7 +393,7 @@ ifeq ($(stackroot),1)
 endif
 
 .PHONY: update-locks
-update-locks:
+update-locks: docker-image
 	rm -f stack.yaml.lock
 	stack exec -- echo -n
 	rm -f flake.lock
