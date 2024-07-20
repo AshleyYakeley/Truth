@@ -1790,10 +1790,9 @@ testEntity =
               ]
         , tGroup
               "interpret"
-              [ testExpectSuccess
-                    "do r <- newMem.WholeModel; reverse.Prism asText.Integer !$ r := \"37\"; testeq {37} r; end"
+              [ testExpectSuccess "do r <- newMem.WholeModel; asText.Integer !$ r := \"37\"; testeq {37} r; end"
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; reverse.Prism asText.Date !$ r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
+                    "do r <- newMem.WholeModel; asText.Date !$ r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
               ]
         , tDecls
               [ "runresult = fn ar, arg => ar >- match Failure err => fail err; Success f => f arg end"

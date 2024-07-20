@@ -83,7 +83,7 @@ opticsLibSection =
                       PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
                     ]
               , hasSubtypeRelationBDS
-                    @(LangPrism '( AP, AQ) '( BP, BQ))
+                    @(LangPrism '( BP, BQ) '( AP, AQ))
                     @(LangAttribute '( AP, AQ) '( BP, BQ))
                     Verify
                     "" $

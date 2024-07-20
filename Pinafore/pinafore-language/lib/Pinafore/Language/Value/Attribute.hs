@@ -93,12 +93,8 @@ langLensAttribute :: forall ap aq bp bq. LangLens '( ap, aq) '( bp, bq) -> LangA
 langLensAttribute (MkLangLens g pb) =
     MkLangAttribute $ pureModelBased $ funcStorageLensAttribute (Known . g) $ \ka kb -> Just $ liftA2 pb ka kb
 
-langPrismAttribute :: forall ap aq bp bq. LangPrism '( ap, aq) '( bp, bq) -> LangAttribute '( ap, aq) '( bp, bq)
+langPrismAttribute :: forall ap aq bp bq. LangPrism '( bp, bq) '( ap, aq) -> LangAttribute '( ap, aq) '( bp, bq)
 langPrismAttribute (MkLangPrism d e) =
-    MkLangAttribute $ pureModelBased $ funcStorageLensAttribute (maybeToKnow . mToMaybe . d) (\_ -> Just . fmap e)
-
-langPrismReverseAttribute :: forall ap aq bp bq. LangPrism '( ap, aq) '( bp, bq) -> LangAttribute '( bp, bq) '( ap, aq)
-langPrismReverseAttribute (MkLangPrism d e) =
     MkLangAttribute $
     pureModelBased $
     funcStorageLensAttribute (Known . e) $ \_ ka ->
@@ -108,3 +104,7 @@ langPrismReverseAttribute (MkLangPrism d e) =
                     Right b -> Just $ Known b
                     Left _ -> Nothing
             Unknown -> Just Unknown
+
+langPrismReverseAttribute :: forall ap aq bp bq. LangPrism '( ap, aq) '( bp, bq) -> LangAttribute '( ap, aq) '( bp, bq)
+langPrismReverseAttribute (MkLangPrism d e) =
+    MkLangAttribute $ pureModelBased $ funcStorageLensAttribute (maybeToKnow . mToMaybe . d) (\_ -> Just . fmap e)

@@ -168,8 +168,8 @@ let
         horizontal.Widget
         [
             button.Widget {"cal"} {calendarWindow {evt}},
-            textEntry.Widget $ reverse.Prism asText.Date !$ (dateOf.EventTime !$ timeOf.Event !$% {evt}),
-            textEntry.Widget $ reverse.Prism (unixAsText.TimeOfDay "%H:%M") !$ (timeOfDayModel.EventTime $ timeOf.Event !$% {evt})
+            textEntry.Widget $ asText.Date !$ (dateOf.EventTime !$ timeOf.Event !$% {evt}),
+            textEntry.Widget $ unixAsText.TimeOfDay "%H:%M" !$ (timeOfDayModel.EventTime $ timeOf.Event !$% {evt})
         ],
         layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ notesOf.Event !$% {evt})
     ];

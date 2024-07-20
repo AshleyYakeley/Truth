@@ -190,16 +190,16 @@ window_constant : Action Window
 ### CSS
 window_css: Action Window
 = do
-    cssref <- newMem.TextModel;
-    cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
+    cssref <- newMem.WholeModel;
+    cssref := rule.CSSText ".y, .y > text" [("color","green"),("font-family","\"serif\"")];
     sometext <- newMem.WholeModel;
     sometext := "whatever";
-    std_window {"CSS"} $ styleSheet.Widget (asText.CSSText !$ ignoreUpdateUIExceptions.GTK.Debug. cssref) $ name.Widget "root" $ vertical.Widget
+    std_window {"CSS"} $ styleSheet.Widget (ignoreUpdateUIExceptions.GTK.Debug. cssref) $ name.Widget "root" $ vertical.Widget
         [
             styleClass.Widget "x" $ name.Widget "A" $ checkBox.Widget {"Box"} {True},
             styleClass.Widget "x" $ name.Widget "B" $ button.Widget {"Button"} {do pure () end},
             styleClass.Widget "x" $ name.Widget "C" $ textEntry.Widget sometext,
-            layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textView.Widget cssref,
+            layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textView.Widget $ fromWhole.TextModel $ asText.CSSText !$ cssref,
             styleClass.Widget "y" $ name.Widget "E" $ label.Widget {"Some Text"}
         ];
     end;

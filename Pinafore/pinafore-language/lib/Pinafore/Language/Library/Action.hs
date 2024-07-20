@@ -15,6 +15,9 @@ import Pinafore.Language.Var
 qfail :: Text -> Action BottomType
 qfail t = fail $ unpack t
 
+orStop :: Maybe A -> Action A
+orStop = actionLiftViewKnow . pure . maybeToKnow
+
 onStop :: Action A -> Action A -> Action A
 onStop p q = p <|> q
 
@@ -39,6 +42,8 @@ actionLibSection =
                 "stop"
                 "Stop. This is similar to an exception that can be caught with `onStop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
                 (empty :: Action BottomType)
+          , addNameInRootBDS $
+            valBDS "orStop" "`orStop $ Just x` is `pure x`, while `orStop Nothing` is `stop`." $ orStop
           , addNameInRootBDS $ valBDS "onStop" "`onStop p q` does `p` first, and if it stops, then does `q`." $ onStop
           , addNameInRootBDS $
             valBDS

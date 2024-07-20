@@ -10,7 +10,8 @@ let rec
             _ => False;
             end;
         ref <- makeRef.File.GIO file;
-        jpeg <- get $ jpegMedia.JPEG.Image !$ ref;
+        media <- get ref;
+        jpeg <- orStop $ decode jpegMedia.JPEG.Image media;
         let
         path = file >- match
                 Path.File.GIO path => path;
