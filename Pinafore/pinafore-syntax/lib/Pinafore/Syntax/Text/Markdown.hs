@@ -92,7 +92,7 @@ escapeChars t = let
         if elem c ("\\+*&<>_`#.-[]|" :: [Char])
             then ['\\', c]
             else [c]
-    in pack $ mconcat $ fmap escapeChar $ unpack t
+    in pack $ concatmap escapeChar $ unpack t
 
 instance ToText MItem where
     toText (RawMI t) = toText t
@@ -103,7 +103,7 @@ instance ToText MItem where
     toText (TagMI tagname params m) =
         "<" <>
         tagname <>
-        mconcat (fmap (\(n, t) -> " " <> n <> "=" <> (pack $ show $ unpack t)) params) <>
+        concatmap (\(n, t) -> " " <> n <> "=" <> (pack $ show $ unpack t)) params <>
         ">" <> toText m <> "</" <> tagname <> ">"
 
 instance ToText MarkdownText where
@@ -158,7 +158,7 @@ blockToText indent (ParagraphBlock t) =
     pack $ indent <> replaceListAll "\n\n" ("\n" <> indent <> "\n") (dropLastNewline (unpack $ toText t) <> "\n\n")
 blockToText indent (IndentBlock (MkMarkdown blocks)) = let
     newindent = indent <> "> "
-    in (mconcat $ fmap (blockToText newindent) blocks)
+    in concatmap (blockToText newindent) blocks
 blockToText indent (TitleBlock n m) =
     (pack $ indent <> replicate n '#' <> " ") <> toText m <> (pack $ "\n" <> indent <> "\n")
 

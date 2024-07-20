@@ -195,4 +195,4 @@ applyBisubsToWholeConstraintShim ::
     => [SolverBisubstitution ground]
     -> WholeConstraintShim ground a
     -> TypeResult ground (WholeConstraintShim ground a)
-applyBisubsToWholeConstraintShim bisubs = unEndoM $ mconcat $ fmap (MkEndoM . applyBisubToWholeConstraintShim) bisubs
+applyBisubsToWholeConstraintShim bisubs = unEndoM $ concatmap (MkEndoM . applyBisubToWholeConstraintShim) bisubs

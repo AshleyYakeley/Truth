@@ -101,8 +101,7 @@ parseMediaType = do
     return $ MkMediaType (pack tt) (pack st) mp
 
 showMediaType :: MediaType -> Text
-showMediaType MkMediaType_ {..} =
-    mtType <> "/" <> mtSubtype <> mconcat (fmap (\(n, v) -> ";" <> n <> "=" <> enc v) mtParams)
+showMediaType MkMediaType_ {..} = mtType <> "/" <> mtSubtype <> concatmap (\(n, v) -> ";" <> n <> "=" <> enc v) mtParams
 
 textMediaTypeCodec :: Codec Text MediaType
 textMediaTypeCodec = let

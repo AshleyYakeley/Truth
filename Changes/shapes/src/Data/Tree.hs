@@ -22,7 +22,7 @@ instance Foldable Tree where
     foldMap am (MkTree r b) = am r <> foldMap am b
 
 instance Foldable Forest where
-    foldMap am (MkForest tt) = mconcat $ fmap (foldMap am) tt
+    foldMap am (MkForest tt) = concatmap (foldMap am) tt
 
 instance Traversable Tree where
     traverse afb (MkTree r b) = liftA2 MkTree (afb r) $ traverse afb b
@@ -53,7 +53,7 @@ combineForest :: (Tree a -> Tree b -> Tree c) -> Forest a -> Forest b -> Forest 
 combineForest f (MkForest a) (MkForest b) = MkForest $ liftA2 f a b
 
 bindForest :: Forest a -> (Tree a -> Forest b) -> Forest b
-bindForest (MkForest tt) f = mconcat $ fmap f tt
+bindForest (MkForest tt) f = concatmap f tt
 
 deepForest :: (Forest a -> Forest a) -> Forest a -> Forest a
 deepForest m f = mapForest (deepTree m) $ m f

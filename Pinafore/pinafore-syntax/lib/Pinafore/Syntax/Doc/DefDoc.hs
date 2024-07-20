@@ -53,12 +53,12 @@ instance Show DocItem where
     show (SupertypeConstructorSignatureDocItem n) = "constructor " <> show n
     show (ValuePatternDocItem n t) = "val+pat " <> show n <> ": " <> unpack (toText t)
     show (SpecialFormDocItem n pp t) =
-        "spform " <> show n <> mconcat (fmap (\p -> " " <> unpack (toText p)) pp) <> ": " <> unpack (toText t)
+        "spform " <> show n <> concatmap (\p -> " " <> unpack (toText p)) pp <> ": " <> unpack (toText t)
     show (TypeDocItem n st pp mgds) =
         "type " <>
         mif st "storable " <>
         show n <>
-        mconcat (fmap (\p -> " " <> show p) pp) <>
+        concatmap (\p -> " " <> show p) pp <>
         (fromMaybe mempty $ fmap (\gds -> " (from " <> unpack (toText gds) <> ")") mgds)
     show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
 

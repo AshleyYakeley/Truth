@@ -44,7 +44,7 @@ generateCommonMarkDoc outh modopts modname = do
                     -> MarkdownText
                 showMarkdown = toMarkdown . showNamedText
                 trailing :: [NamedText] -> MarkdownText
-                trailing pp = mconcat $ fmap (\p -> " " <> toMarkdown p) pp
+                trailing pp = concatmap (\p -> " " <> toMarkdown p) pp
                 putBindDoc :: MarkdownText -> IO ()
                 putBindDoc m = putIndentMarkdown $ paragraphMarkdown $ codeMarkdown m
                 showNames :: NonEmpty FullNameRef -> MarkdownText

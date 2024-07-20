@@ -44,7 +44,7 @@ escapeChar '"' = "&quot;"
 escapeChar c = [c]
 
 escapeText :: Text -> Text
-escapeText = pack . mconcat . fmap escapeChar . unpack
+escapeText = pack . concatmap escapeChar . unpack
 
 plainEscapeChar :: Char -> String
 plainEscapeChar '&' = "&amp;"
@@ -56,13 +56,13 @@ plainEscapeChar '\n' = "<br />\n"
 plainEscapeChar c = [c]
 
 plainEscapeText :: Text -> Text
-plainEscapeText = pack . mconcat . fmap plainEscapeChar . unpack
+plainEscapeText = pack . concatmap plainEscapeChar . unpack
 
 plain :: Text -> HTMLText
 plain t = MkHTMLText $ plainEscapeText t
 
 attrText :: [(Text, Text)] -> Text
-attrText aa = mconcat $ fmap (\(k, v) -> " " <> k <> "=\"" <> escapeText v <> "\"") aa
+attrText aa = concatmap (\(k, v) -> " " <> k <> "=\"" <> escapeText v <> "\"") aa
 
 tagAttrs :: Text -> [(Text, Text)] -> HTMLText -> HTMLText
 tagAttrs e aa (MkHTMLText "") = MkHTMLText $ "<" <> e <> attrText aa <> " />"

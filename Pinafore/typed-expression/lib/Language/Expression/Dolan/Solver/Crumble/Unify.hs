@@ -313,7 +313,7 @@ applyEachEvery ::
 applyEachEvery [] = return []
 applyEachEvery (x:pp) = do
     pp1 <- applyEachEvery pp
-    x1 <- unEndoM (mconcat $ fmap (\p -> MkEndoM $ presubstitute p) pp1) x
+    x1 <- unEndoM (concatmap (\p -> MkEndoM $ presubstitute p) pp1) x
     pp2 <- for pp1 $ presubstitute x1
     return $ x1 : pp2
 

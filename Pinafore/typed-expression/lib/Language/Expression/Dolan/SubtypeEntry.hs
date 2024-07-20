@@ -195,7 +195,7 @@ findGreater ::
 findGreater _entries _old [] _target = []
 findGreater entries old current target = let
     convs = mapMaybe (greaterContains target) current
-    allnew = mconcat $ fmap (getImmediateGreaters False entries) current
+    allnew = concatmap (getImmediateGreaters False entries) current
     new = filter (\w -> not $ elem (greaterCWGroup w) old) allnew
     in convs <> findGreater entries (fmap greaterCWGroup current <> old) new target
 
@@ -205,7 +205,7 @@ getAllGreaters ::
     -> [GreaterConversionWit ground dv gt]
     -> [GreaterConversionWit ground dv gt]
 getAllGreaters entries current = let
-    allnew = mconcat $ fmap (getImmediateGreaters True entries) current
+    allnew = concatmap (getImmediateGreaters True entries) current
     old = fmap greaterCWGroup current
     in case filter (\w -> not $ elem (greaterCWGroup w) old) allnew of
            [] -> current
@@ -217,7 +217,7 @@ getAllLessers ::
     -> [LesserConversionWit ground dv gt]
     -> [LesserConversionWit ground dv gt]
 getAllLessers entries current = let
-    allnew = mconcat $ fmap (getImmediateLessers True entries) current
+    allnew = concatmap (getImmediateLessers True entries) current
     old = fmap lesserCWGroup current
     in case filter (\w -> not $ elem (lesserCWGroup w) old) allnew of
            [] -> current

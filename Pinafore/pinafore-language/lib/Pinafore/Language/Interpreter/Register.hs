@@ -43,7 +43,7 @@ registerLetBindings bb =
 registerLetBindingsDocs :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindingsDocs bb = do
     registerLetBindings bb
-    registerDocs $ mconcat $ fmap (\(_, doc, _) -> pure doc) bb
+    registerDocs $ concatmap (\(_, doc, _) -> pure doc) bb
 
 registerLetBinding :: FullName -> DefDoc -> QExpression -> QScopeBuilder ()
 registerLetBinding name doc expr = registerLetBindings $ pure (name, doc, expr)

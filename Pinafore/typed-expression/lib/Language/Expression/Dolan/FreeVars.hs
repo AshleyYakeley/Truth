@@ -14,7 +14,7 @@ instance FreeTypeVariables (TypeVarT t) where
     freeTypeVariables x = freeTypeVariables $ MkSomeTypeVarT x
 
 instance FreeTypeVariables t => FreeTypeVariables [t] where
-    freeTypeVariables x = mconcat $ fmap freeTypeVariables x
+    freeTypeVariables x = concatmap freeTypeVariables x
 
 instance FreeTypeVariables t => FreeTypeVariables (Maybe t) where
     freeTypeVariables (Just x) = freeTypeVariables x

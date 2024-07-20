@@ -46,7 +46,7 @@ typeDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> Maybe NamedText -> D
 typeDocItem name diStorable tparams mgds = let
     diNames = pure $ fullNameRef name
     diParams = fmap typeParameterDoc tparams
-    diGDS = fmap (\gds -> gds <> mconcat (fmap (\p -> " " <> exprShow p) tparams)) mgds
+    diGDS = fmap (\gds -> gds <> concatmap (\p -> " " <> exprShow p) tparams) mgds
     in TypeDocItem {..}
 
 typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc

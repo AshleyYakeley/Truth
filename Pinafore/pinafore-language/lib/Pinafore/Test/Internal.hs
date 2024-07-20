@@ -76,4 +76,4 @@ data SomeValue =
 
 bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule ()
 bindsLibrary mname binds =
-    MkLibraryModule mname $ mconcat $ fmap (\(name, MkSomeValue val) -> valBDS (fullNameRef name) "" val) binds
+    MkLibraryModule mname $ concatmap (\(name, MkSomeValue val) -> valBDS (fullNameRef name) "" val) binds

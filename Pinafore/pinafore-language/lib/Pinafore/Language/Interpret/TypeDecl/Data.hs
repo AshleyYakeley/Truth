@@ -177,7 +177,7 @@ data TypeInfo = MkTypeInfo
 
 tiDoc :: TypeInfo -> DefDoc
 tiDoc MkTypeInfo {..} = let
-    gdst = fmap (\gds -> exprShow gds <> mconcat (fmap (\p -> " " <> exprShow p) tiParams)) tiGDS
+    gdst = fmap (\gds -> exprShow gds <> concatmap (\p -> " " <> exprShow p) tiParams) tiGDS
     in MkDefDoc (typeDocItem tiName tiStorable tiParams gdst) tiDescription
 
 data TypeData dv gt = MkTypeData
@@ -214,7 +214,7 @@ getConsSubtypeData mainName superTD (MkSyntaxWithDoc md (SubtypeSyntaxConstructo
                     , tiGDS = Just mainName
                     , tiDescription = md
                     }
-            subtypes = tdID superTD : mconcat (fmap tdSubtypes subtdata)
+            subtypes = tdID superTD : concatmap tdSubtypes subtdata
             subTD :: TypeData dv gt
             subTD = MkTypeData {tdInfo = subInfo, tdID = subTypeID, tdSupertype = Just superTD, tdSubtypes = subtypes}
         subtdata <- getConssSubtypeData subTD conss
@@ -359,13 +359,13 @@ interpretConstructorTypes tid supertypes c = let
                rcdsigss <- for sigs $ interpretSignature tid supertypes
                let
                    allSigs :: [SomeSignature]
-                   allSigs = mconcat $ fmap snd rcdsigss
+                   allSigs = concatmap snd rcdsigss
                    splitSigs :: SomeSignature -> ([SomeSignature], [SomeSignature])
                    splitSigs sig@(MkSome (ValueSignature sigtid _ _ _)) =
                        if sigtid == Just tid
                            then ([sig], [])
                            else ([], [sig])
-                   (thisQSigs, supertypeQSigs) = mconcat $ fmap splitSigs allSigs
+                   (thisQSigs, supertypeQSigs) = concatmap splitSigs allSigs
                    matchSigs :: SomeSignature -> SomeSignature -> Bool
                    matchSigs (MkSome (ValueSignature ta na _ _)) (MkSome (ValueSignature tb nb _ _)) =
                        (ta, na) == (tb, nb)
@@ -431,7 +431,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                         { tdInfo = tinfo
                         , tdID = mainFamType
                         , tdSupertype = Nothing
-                        , tdSubtypes = mainFamType : mconcat (fmap tdSubtypes subtypeDatas)
+                        , tdSubtypes = mainFamType : concatmap tdSubtypes subtypeDatas
                         }
             subtypeDatas <- getConssSubtypeData mainTypeData syntaxConstructorList
         constructorList <- getConstructors subtypeDatas mainTypeData syntaxConstructorList
@@ -463,7 +463,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                 assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                     let
                                         freevars :: FiniteSet SomeTypeVarT
-                                        freevars = mconcat $ fmap freeTypeVariables $ toList codecs
+                                        freevars = concatmap freeTypeVariables $ toList codecs
                                         declaredvars :: [SomeTypeVarT]
                                         declaredvars = tParamsVars tparams
                                         unboundvars :: [SomeTypeVarT]
@@ -674,7 +674,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                proc () -> do
                                    (x, dvm, codecs, picktype) <- mainBox -< ()
                                    mainGroundType <- mainTypeBox -< x
-                                   mconcat (fmap subtypeBox subtypeDatas) -< (mainGroundType, picktype, x)
+                                   concatmap subtypeBox subtypeDatas -< (mainGroundType, picktype, x)
                                    for_ (zip [0 ..] supertypes) supertypeBox -< (mainGroundType, dvm, codecs)
                                    fixedListArrowSequence_ (fmap constructorBox constructorFixedList) -<
                                        fmap (\codec -> (mainGroundType, picktype, x, dvm, codec)) codecs

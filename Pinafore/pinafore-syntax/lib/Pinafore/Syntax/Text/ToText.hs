@@ -13,4 +13,4 @@ instance ToText String where
     toText = pack
 
 instance {-# OVERLAPPABLE #-} ToText t => ToText [t] where
-    toText ft = mconcat $ fmap toText ft
+    toText ft = concatmap toText ft

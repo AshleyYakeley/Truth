@@ -90,7 +90,7 @@ bisubstitutes ::
        )
     => [Bisubstitution ground (pshim Type) m]
     -> EndoM m a
-bisubstitutes subs = mconcat $ fmap bisubstitute subs
+bisubstitutes = concatmap bisubstitute
 
 mapDolanSingularType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity t.

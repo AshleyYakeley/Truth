@@ -195,7 +195,7 @@ instance ExprShow SyntaxType' where
                    AssocNone -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = namedTextPrec 0 $ exprShow n
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
-        namedTextPrec 2 $ exprShow n <> mconcat (fmap (\arg -> " " <> exprPrecShow 0 arg) args)
+        namedTextPrec 2 $ exprShow n <> concatmap (\arg -> " " <> exprPrecShow 0 arg) args
 
 type SyntaxType = WithSourcePos SyntaxType'
 
@@ -248,8 +248,7 @@ instance ExprShow SyntaxPattern' where
     exprShowPrec (VarSyntaxPattern v) = exprShowPrec v
     exprShowPrec (BothSyntaxPattern a b) = namedTextPrec 6 $ exprPrecShow 5 a <> "@" <> exprPrecShow 5 b
     exprShowPrec (ConstructorSyntaxPattern ns c pp) =
-        namedTextPrec 7 $
-        exprPrecShow 6 ns <> " " <> exprPrecShow 6 c <> mconcat (fmap (\p -> " " <> exprPrecShow 6 p) pp)
+        namedTextPrec 7 $ exprPrecShow 6 ns <> " " <> exprPrecShow 6 c <> concatmap (\p -> " " <> exprPrecShow 6 p) pp
     exprShowPrec (TypedSyntaxPattern p t) = namedTextPrec 7 $ exprPrecShow 6 p <> ": " <> exprPrecShow 6 t
     exprShowPrec (DynamicTypedSyntaxPattern p t) = namedTextPrec 7 $ exprPrecShow 6 p <> ":? " <> exprPrecShow 6 t
     exprShowPrec (NamespaceSyntaxPattern p n) = namedTextPrec 7 $ exprPrecShow 6 p <> " as " <> exprPrecShow 6 n

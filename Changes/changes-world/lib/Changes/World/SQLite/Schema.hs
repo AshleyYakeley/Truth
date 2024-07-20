@@ -109,7 +109,7 @@ data DatabaseSchema tablesel = MkDatabaseSchema
     }
 
 instance ToSchema (FiniteAllFor TableSchema tablesel) where
-    toSchema MkFiniteAllFor {..} = mconcat $ fmap (\(MkSome table) -> toSchema $ finiteGetAllFor table) $ finiteDomain
+    toSchema MkFiniteAllFor {..} = concatmap (\(MkSome table) -> toSchema $ finiteGetAllFor table) $ finiteDomain
 
 instance ToSchema (DatabaseSchema databaseTablesel) where
     toSchema MkDatabaseSchema {..} = toSchema databaseTables

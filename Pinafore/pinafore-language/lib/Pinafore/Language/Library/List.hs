@@ -13,7 +13,7 @@ append :: NonEmpty A -> [A] -> NonEmpty A
 append (a :| aa) bb = a :| (aa <> bb)
 
 mconcat1 :: NonEmpty (NonEmpty A) -> NonEmpty A
-mconcat1 (na :| lna) = append na $ mconcat $ fmap toList lna
+mconcat1 (na :| lna) = append na $ concatmap toList lna
 
 listLibSection :: LibraryStuff context
 listLibSection =

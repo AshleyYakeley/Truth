@@ -90,7 +90,7 @@ sCountedList (MkSerializer s d) = let
     lengthSerializer :: Serializer Stops Int
     lengthSerializer = sleb128Serializer
     s' :: [a] -> Builder
-    s' bs = serialize lengthSerializer (olength bs) <> mconcat (fmap s bs)
+    s' bs = serialize lengthSerializer (olength bs) <> concatmap s bs
     d' = do
         len <- deserialize lengthSerializer
         forn len d

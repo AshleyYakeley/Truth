@@ -36,7 +36,7 @@ data TokenNames = MkTokenNames
 instance Show TokenNames where
     show MkTokenNames {..} =
         show tnName <>
-        mconcat (fmap (\n -> "." <> show n) tnSpace) <>
+        concatmap (\n -> "." <> show n) tnSpace <>
         if tnAbsolute
             then "."
             else ""

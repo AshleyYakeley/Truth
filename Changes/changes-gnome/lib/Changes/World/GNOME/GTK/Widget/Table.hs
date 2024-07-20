@@ -231,4 +231,4 @@ createListTable ::
     -> (Model update -> GView 'Locked ())
     -> SelectNotify (Model update)
     -> GView 'Unlocked (Widget, Maybe (ReadM (UpdateReader update) Bool) -> GView 'Unlocked ())
-createListTable cols sub onActivate sel = tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel
+createListTable cols sub onActivate sel = tableContainerView (concatmap oneKeyColumn cols) sub onActivate sel

@@ -85,7 +85,7 @@ getTypeSet fam = do
     entries <- getSubtypeConversions
     return $ let
         abss = getGraph (getImmediateAbstractDynamicSubtypes entries) fam
-        in setFromList $ mconcat $ fmap (getImmediateConcreteDynamicSubtypes entries) $ toList abss
+        in setFromList $ concatmap (getImmediateConcreteDynamicSubtypes entries) $ toList abss
 
 abstractDynamicStorableGroundType :: FullName -> TypeIDType tid -> QGroundType '[] DynamicEntity
 abstractDynamicStorableGroundType name tid = let

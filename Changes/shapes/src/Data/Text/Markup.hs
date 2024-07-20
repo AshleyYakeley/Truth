@@ -27,7 +27,7 @@ markupElementStrip :: MarkupElement a -> Text
 markupElementStrip (MkMarkupElement _ m) = markupStrip m
 
 markupStrip :: Markup a -> Text
-markupStrip (MkMarkup ee et) = mconcat (fmap (\(t, e) -> t <> markupElementStrip e) ee) <> et
+markupStrip (MkMarkup ee et) = concatmap (\(t, e) -> t <> markupElementStrip e) ee <> et
 
 markupElementSerialise ::
        forall a b. Monoid b
@@ -45,8 +45,8 @@ markupSerialise ::
     -> b
 markupSerialise abb cb (MkMarkup ee et) = let
     tb :: Text -> b
-    tb t = mconcat $ fmap cb $ otoList t
-    in (mconcat $ fmap (\(t, e) -> tb t <> markupElementSerialise abb cb e) ee) <> tb et
+    tb t = concatmap cb $ otoList t
+    in concatmap (\(t, e) -> tb t <> markupElementSerialise abb cb e) ee <> tb et
 
 plainMarkup :: Text -> Markup a
 plainMarkup t = MkMarkup mempty t

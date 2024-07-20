@@ -34,7 +34,7 @@ instance AsHexadecimal Word8 where
     fromStrictHexadecimal _ = Nothing
 
 instance AsHexadecimal [Word8] where
-    toHexadecimal ww = mconcat $ fmap toHexadecimal ww
+    toHexadecimal ww = concatmap toHexadecimal ww
     fromStrictHexadecimal [] = return []
     fromStrictHexadecimal (a:b:r) = do
         w1 <- fromStrictHexadecimal [a, b]

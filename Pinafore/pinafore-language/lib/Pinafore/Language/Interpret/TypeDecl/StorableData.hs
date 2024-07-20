@@ -107,7 +107,7 @@ makeTypeAdapter params conss = do
                                 vcodec = invmap listVProductToProduct (listProductToVProduct $ listTypeToVType tt) codec
                                 in Compose $ Endo $ codecSum vcodec $ constructorStoreAdapter anchor tt
             (MkSomeFor (MkConstructorType _ (RecordCF _) _) _, _) -> throw InterpretTypeDeclTypeStorableRecord
-    return $ MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullStoreAdapter
+    return $ MkWithArgs $ \args -> appEndo (concatmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullStoreAdapter
 
 makeStorableGroundType ::
        forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (decltype :: Type). Is CCRVariancesType dv

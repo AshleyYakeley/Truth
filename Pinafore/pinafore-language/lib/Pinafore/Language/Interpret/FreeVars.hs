@@ -36,7 +36,7 @@ instance SyntaxFreeVariables t => SyntaxFreeVariables (Maybe t) where
     syntaxFreeVariables (Just t) = syntaxFreeVariables t
 
 instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
-    syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
+    syntaxFreeVariables tt = concatmap syntaxFreeVariables tt
 
 instance SyntaxFreeVariables t => SyntaxFreeVariables (NonEmpty t) where
     syntaxFreeVariables tt = syntaxFreeVariables $ toList tt
@@ -92,7 +92,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEAppQuote expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEAppUnquote expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEImply binds expr) =
-        mconcat (fmap (\(_, _, e) -> syntaxFreeVariables e) binds) <> syntaxFreeVariables expr
+        concatmap (\(_, _, e) -> syntaxFreeVariables e) binds <> syntaxFreeVariables expr
     syntaxFreeVariables (SEDecl decl expr) =
         difference
             (syntaxFreeVariables decl <> syntaxFreeVariables expr)
@@ -119,7 +119,7 @@ class SyntaxBindingVariables t where
     syntaxBindingVariables :: t -> FiniteSet BindingThing
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
-    syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
+    syntaxBindingVariables tt = concatmap syntaxBindingVariables tt
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables (NonEmpty t) where
     syntaxBindingVariables tt = syntaxBindingVariables $ toList tt

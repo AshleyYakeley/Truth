@@ -306,7 +306,7 @@ interpretRecordValueDecl sigs mstype sexpr =
         let
             rv0 :: QRecordValue
             rv0 = MkQRecordValue NilListType $ toSealedFExpression expr
-        rv <- unEndoM (mconcat $ fmap (\(varid, qsig) -> MkEndoM $ recordValueAddSig varid qsig) qrvsigs) rv0
+        rv <- unEndoM (concatmap (\(varid, qsig) -> MkEndoM $ recordValueAddSig varid qsig) qrvsigs) rv0
         case mstype of
             Nothing -> return rv
             Just stype -> do
@@ -483,7 +483,7 @@ partitionItem curns (NamespaceSyntaxNameRefItem n) = ([namespaceConcatRef curns 
 interpretExpose :: [SyntaxNameRefItem] -> QInterpreter QScopeDocs
 interpretExpose items = do
     curns <- paramAsk currentNamespaceParam
-    let (namespaces, names) = mconcat $ fmap (partitionItem curns) items
+    let (namespaces, names) = concatmap (partitionItem curns) items
     (scope, docs) <- exportScope namespaces names
     return $ MkQScopeDocs {sdScopes = [scope], sdDocs = MkForest $ fmap pure docs}
 

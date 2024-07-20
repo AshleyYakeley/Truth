@@ -13,7 +13,7 @@ instance Functor Store where
     fmap ab (MkStore key mp) = MkStore key $ fmap ab mp
 
 instance Foldable Store where
-    foldMap am (MkStore _ mp) = mconcat $ fmap am $ toList mp
+    foldMap am (MkStore _ mp) = concatmap am $ toList mp
 
 instance Traversable Store where
     traverse amb (MkStore i mp) = MkStore i <$> traverse amb mp

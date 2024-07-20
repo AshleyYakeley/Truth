@@ -289,6 +289,9 @@ intercalate _ [] = mempty
 intercalate _ [a] = a
 intercalate i (a:aa) = mconcat [a, i, intercalate i aa]
 
+concatmap :: Monoid b => (a -> b) -> [a] -> b
+concatmap f xx = mconcat $ fmap f xx
+
 startsWith :: Eq a => [a] -> [a] -> Maybe [a]
 startsWith [] s = Just s
 startsWith (p:pp) (q:qq)

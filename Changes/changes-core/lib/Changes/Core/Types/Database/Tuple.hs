@@ -111,7 +111,7 @@ instance ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
     orderClause (MkTupleOrderClause clauses) (MkAllOf tup1) (MkAllOf tup2) = let
         oc (MkTupleOrderItem colsel SortAsc) = compare (tup1 colsel) (tup2 colsel)
         oc (MkTupleOrderItem colsel SortDesc) = compare (Down $ tup1 colsel) (Down $ tup2 colsel)
-        in mconcat $ fmap oc clauses
+        in concatmap oc clauses
     orderMonoid (MkTupleTableSel _) = Dict
     type SelectClause dbType (TupleTableSel tablesel) = TupleSelectClause dbType tablesel
     selectClause (MkTupleSelectClause selexpr) tuple =
