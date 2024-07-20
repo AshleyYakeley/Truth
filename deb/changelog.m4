@@ -19,6 +19,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - media
       , add Media type and functions
       . add HTMLText type and functions
+      . add CSSText type and functions
       . add CommonMarkText type and functions
     - gnome
       . rename textArea.Widget to textView.Widget, wrap text

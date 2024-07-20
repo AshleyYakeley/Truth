@@ -3,12 +3,14 @@ module Pinafore.Library.Media
     , DecodeMedia(..)
     , dataLiteralMediaCodec
     , HTMLText(..)
+    , CSSText(..)
     , LangDrawing(..)
     , LangImage(..)
     , mediaLibrary
     ) where
 
 import Pinafore.API
+import Pinafore.Library.Media.CSS
 import Pinafore.Library.Media.Cairo
 import Pinafore.Library.Media.Colour
 import Pinafore.Library.Media.CommonMark
@@ -21,4 +23,4 @@ mediaLibrary :: [LibraryModule ()]
 mediaLibrary =
     pure $
     MkLibraryModule "media" $
-    mconcat [mediaEntityLibSection, htmlStuff, commonMarkStuff, colourStuff, imageStuff, cairoStuff]
+    mconcat [mediaEntityLibSection, htmlStuff, cssStuff, commonMarkStuff, colourStuff, imageStuff, cairoStuff]

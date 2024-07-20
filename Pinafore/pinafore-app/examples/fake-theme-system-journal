@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-import "gnome", "UILib" in
+import "media", "gnome", "UILib" in
 with
     GTK.,
     UILib.
@@ -19,7 +19,7 @@ let
     property @Integer @Text !"FTSJ.yearTheme" ?store;
 
     frontCoverPane: Pane =
-    simple.Pane "Cover" $ styleSheet.Widget {"* {font-size: 32pt;}"} $ label.Widget {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+    simple.Pane "Cover" $ styleSheet.Widget {rule.CSSText "*" [("font-size","32pt")]} $ label.Widget {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
     getThemesPane: Action Pane =
     pure $ simple.Pane "Themes" $ blank.Widget;

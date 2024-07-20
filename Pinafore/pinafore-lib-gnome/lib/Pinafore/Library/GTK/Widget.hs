@@ -208,11 +208,11 @@ uiExec pui =
             Known (MkLangWidget ui) -> ui ec
             Unknown -> createBlank
 
-uiStyleSheet :: ImmutableWholeModel Text -> LangWidget -> LangWidget
+uiStyleSheet :: ImmutableWholeModel CSSText -> LangWidget -> LangWidget
 uiStyleSheet cssmodel (MkLangWidget mw) =
     MkLangWidget $ \ec -> do
         widget <- mw ec
-        bindCSS True maxBound (unWModel $ immutableWholeModelValue mempty cssmodel) widget
+        bindCSS True maxBound (unWModel $ immutableWholeModelValue mempty $ fmap unCSSText cssmodel) widget
         return widget
 
 uiName :: Text -> LangWidget -> LangWidget

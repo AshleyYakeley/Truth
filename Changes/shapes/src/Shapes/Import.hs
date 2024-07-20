@@ -284,13 +284,17 @@ deletesMap :: IsMap map => [ContainerKey map] -> map -> map
 deletesMap [] = id
 deletesMap (k:kk) = deleteMap k . deletesMap kk
 
-intercalate :: Monoid a => a -> [a] -> a
-intercalate _ [] = mempty
-intercalate _ [a] = a
-intercalate i (a:aa) = mconcat [a, i, intercalate i aa]
-
 concatmap :: Monoid b => (a -> b) -> [a] -> b
 concatmap f xx = mconcat $ fmap f xx
+
+intercalate1 :: Monoid a => a -> NonEmpty a -> a
+intercalate1 i (a1 :| aa) = a1 <> concatmap (\a -> i <> a) aa
+
+intercalate :: Monoid a => a -> [a] -> a
+intercalate i aa =
+    case nonEmpty aa of
+        Just aa1 -> intercalate1 i aa1
+        Nothing -> mempty
 
 startsWith :: Eq a => [a] -> [a] -> Maybe [a]
 startsWith [] s = Just s
