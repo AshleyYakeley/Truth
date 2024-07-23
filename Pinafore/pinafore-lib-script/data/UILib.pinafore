@@ -1,5 +1,7 @@
 import
     "UILib/Context",
+    "UILib/Command",
     "UILib/Pane",
+    "UILib/Set",
     "UILib/Named"
 end;

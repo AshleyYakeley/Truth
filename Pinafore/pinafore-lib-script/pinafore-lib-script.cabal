@@ -14,9 +14,11 @@ license-file:   LICENSE
 build-type:     Simple
 data-files:
     UILib.pinafore
+    UILib/Command.pinafore
     UILib/Context.pinafore
     UILib/Named.pinafore
     UILib/Pane.pinafore
+    UILib/Set.pinafore
 data-dir:       data
 
 library

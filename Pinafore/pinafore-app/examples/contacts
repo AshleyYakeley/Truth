@@ -141,15 +141,35 @@ let
         ];
     end;
 
+    newPerson: Command (Context.Command *: SetContext Contact) =
+        Mk.Command of
+            name = "New Person";
+            defaultKeyBinding = Just "Ctrl+K";
+            action =
+                fn (_,Mk.SetContext) =>
+                do
+                    item <- new.DynamicEntity @Person;
+                    addItem item;
+                end;
+        end;
+
+    newOrganisation: Command (Context.Command *: SetContext Contact) =
+        Mk.Command of
+            name = "New Organisation";
+            defaultKeyBinding = Just "Ctrl+K";
+            action =
+                fn (_,Mk.SetContext) =>
+                do
+                    item <- new.DynamicEntity @Organisation;
+                    addItem item;
+                end;
+        end;
+
     contactsPresentation: SetPresentation Contact =
     Mk.SetPresentation of
         setName = "Contacts";
         itemSet = contactSet;
-        newItems =
-        [
-            Mk.NewItem of name = "New Person"; mkey = Just "Ctrl+K"; newItem = new.DynamicEntity @Person end,
-            Mk.NewItem of name = "New Organisation"; newItem = new.DynamicEntity @Organisation end
-        ];
+        menuEntries = [newPerson, newOrganisation];
         itemPane = pane.Named contactUI;
         setWidget = table.Named contactSet contactUI;
     end;

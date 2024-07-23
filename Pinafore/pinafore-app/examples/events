@@ -178,14 +178,20 @@ let
     fn evt =>
     paneWindow.Pane $ pane.Named eventUI evt;
 
-    newEvent: Action Event =
-    do
-        item <- new.OpenEntity @Event;
-        day <- getNowLocal.Date;
-        timeOf.Event !$ {item} := MkDate.EventTime day;
-        nameOf.Named !$ {item} := "";
-        pure item;
-    end;
+    newEvent: Command (Context.Command *: SetContext Event) =
+        Mk.Command of
+            name = "New Event";
+            defaultKeyBinding = Just "Ctrl+K";
+            action =
+                fn (_,Mk.SetContext) =>
+                do
+                    item <- new.OpenEntity @Event;
+                    day <- getNowLocal.Date;
+                    timeOf.Event !$ {item} := MkDate.EventTime day;
+                    nameOf.Named !$ {item} := "";
+                    addItem item;
+                end;
+        end;
 
     eventsTableUI: SetWidget Event =
     Mk.SetWidget $
@@ -210,14 +216,7 @@ let
     Mk.SetPresentation of
         setName = "Events";
         itemSet = eventSet.Event;
-        newItems =
-        [
-            Mk.NewItem of
-                name = "New Event";
-                mkey = Just "Ctrl+K";
-                newItem = newEvent;
-            end
-        ];
+        menuEntries = [newEvent];
         itemPane = pane.Named eventUI;
         setWidget = eventsTableUI;
     end;

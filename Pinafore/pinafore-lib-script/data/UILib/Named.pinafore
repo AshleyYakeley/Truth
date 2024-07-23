@@ -1,6 +1,7 @@
 import
     "gnome",
-    "UILib/Pane"
+    "UILib/Pane",
+    "UILib/Set"
 in
 with GTK in
 namespace UILib of
@@ -29,8 +30,8 @@ namespace UILib of
                 fn itemWidget, e =>
                 let
                     titleModel= nameOf !$% {e};
-                    extraMenusModel = {[]};
-                    widget = itemWidget e;
+                    extraMenusModel = fn _ => {[]};
+                    contents = itemWidget e;
                 in Mk.Pane;
 
             #| A "name" column for `listTable.Widget`.

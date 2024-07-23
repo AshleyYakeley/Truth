@@ -1,0 +1,105 @@
+import "gnome" in
+with GTK. in
+namespace UILib of
+
+    docsec "Commands" of
+
+        datatype Command -context of
+            Mk of
+                name: Text;
+                defaultKeyBinding: Maybe Text = Nothing;
+                action: context -> Action Unit;
+            end;
+        end;
+
+        namespace Command of
+
+            toMenuEntry: context -> Command context -> MenuEntry =
+                fn ctxt, Mk => action.MenuEntry {(name, defaultKeyBinding)} {action ctxt};
+
+            datatype Context of
+                Mk of
+                    gtk: Context.GTK.;
+                    undoHandler: UndoHandler;
+                    window: Window;
+                    getTextSelection: Action (WholeModel Text);
+                end;
+            end;
+
+            copy: Command Context =
+                Mk.Command of
+                    name = "Copy";
+                    defaultKeyBinding = Just "Ctrl+C";
+                    action =
+                        fn Mk.Context =>
+                        do
+                            tmodel <- getTextSelection;
+                            text <- get.WholeModel tmodel;
+                            clipboard ?gtk :=.WholeModel text;
+                        end;
+                end;
+
+            cut: Command Context =
+                Mk.Command of
+                    name = "Cut";
+                    defaultKeyBinding = Just "Ctrl+X";
+                    action =
+                        fn Mk.Context =>
+                        do
+                            tmodel <- getTextSelection;
+                            text <- get.WholeModel tmodel;
+                            clipboard ?gtk :=.WholeModel text;
+                            tmodel :=.WholeModel "";
+                        end;
+                end;
+
+            paste: Command Context =
+                Mk.Command of
+                    name = "Paste";
+                    defaultKeyBinding = Just "Ctrl+V";
+                    action =
+                        fn Mk.Context =>
+                        do
+                            tmodel <- getTextSelection;
+                            clip <- get.WholeModel $ clipboard ?gtk;
+                            clip >-
+                            match
+                                text:? Text => tmodel :=.WholeModel text;
+                                _ => pure ();
+                            end;
+                        end;
+                end;
+
+            undo: Command Context =
+                Mk.Command of
+                    name = "Undo";
+                    defaultKeyBinding = Just "Ctrl+Z";
+                    action = fn Mk.Context => queueUndo undoHandler >> pure ();
+                end;
+
+            redo: Command Context =
+                Mk.Command of
+                    name = "Redo";
+                    defaultKeyBinding = Just "Ctrl+Y";
+                    action = fn Mk.Context => queueRedo undoHandler >> pure ();
+                end;
+
+            close: Command Context =
+                Mk.Command of
+                    name = "Close";
+                    defaultKeyBinding = Just "Ctrl+W";
+                    action = fn Mk.Context => close.Window window;
+                end;
+
+            exit: Command Context =
+                Mk.Command of
+                    name = "Exit";
+                    defaultKeyBinding = Just "Ctrl+Q";
+                    action = fn Mk.Context => exit.GTK gtk;
+                end;
+
+        end;
+
+    end;
+
+end;
