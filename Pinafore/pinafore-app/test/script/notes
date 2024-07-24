@@ -69,12 +69,12 @@ attributeColumn: Text -> Attribute -p +Text -> Column p =
             contents = fn item => immut.WholeModel $ prop !$ {item};
         end;
 
-datatype TableSetWidget {-p,+q} of
+datatype TableSetWidget item of
     Mk of
-        order: ModelOrder p;
-        itemSet: FiniteSetModel {-p,+q};
-        columns: List (Column p);
-        itemPane: p -> Pane;
+        order: ModelOrder item;
+        itemSet: FiniteSetModel item;
+        columns: List (Column item);
+        itemPane: item -> Pane;
     end;
 end;
 

@@ -1065,7 +1065,7 @@ testEntity =
                           ]
                     , tGroup
                           "doubled"
-                          [ tDecls ["datatype F a of Mk (a -> a) end", "unF = fn Mk.D f => f"] $
+                          [ tDecls ["datatype F a of Mk (a -> a) end", "unF = fn Mk.F f => f"] $
                             tGroup
                                 "plain"
                                 [ testExpectSuccess "pass"

@@ -25,7 +25,7 @@ interpretRecordValue (MkQRecordValue items rvexpr@(MkSealedFExpression vtype _))
             return $ mapFromList arglist
     let
         freeFixedVars = freeTypeVariables vtype
-        freeFixedNames = fmap someTypeVarName $ toList freeFixedVars
+        freeFixedNames = fmap someTypeVarTName $ toList freeFixedVars
         getName :: Maybe QExpression -> Name -> QInterpreter QExpression
         getName mdefexpr iname =
             case margmap of

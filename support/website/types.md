@@ -218,7 +218,8 @@ Datatypes can take parameters. The variance of each parameter is specified like 
 
 * `+a` for covariant
 * `-a` for contravariant
-* `{-p,+q}` or `{+q,-p}` for a contravariant-covariant pair.
+* `{-p,+q}` or `{+q,-p}` for a contravariant-covariant pair
+* `a` for a contravariant-covariant pair (known as a _double_ parameter).
 
 For example:
 
@@ -226,6 +227,23 @@ For example:
 datatype D +a -b {-p,+q} of
     Mk1 (b -> List a);
     Mk2 (p *: b -> q);
+end;
+```
+
+A double parameter is really a contravariant-covariant pair of parameters, that makes working with pairs easier.
+For example:
+
+```pinafore decl
+datatype D a of
+    Mk (a -> a);
+end;
+```
+
+This is equivalent to:
+
+```pinafore decl
+datatype D {-p,+q} of
+    Mk (p -> q);
 end;
 ```
 

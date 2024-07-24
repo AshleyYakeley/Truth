@@ -220,7 +220,7 @@ tsSubsumeExpressionTo ::
     -> TSInner ts (TSOpenExpression ts t)
 tsSubsumeExpressionTo freevars tdecl expr = let
     fixednames = renameableVars tdecl
-    freenames = fmap someTypeVarName $ toList freevars
+    freenames = fmap someTypeVarTName $ toList freevars
     rigidnames = fixednames \\ freenames
     in runRenamer @ts rigidnames freenames $ do
            expr' <- renameMappableSimple @ts expr

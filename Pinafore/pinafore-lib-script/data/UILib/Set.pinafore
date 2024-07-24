@@ -5,8 +5,8 @@ namespace UILib of
     docsec "Sets" of
 
         #| A widget for a set, for a model of the current selection
-        datatype SetWidget {-p,+q} of
-            Mk (Maybe (WholeModel {-q,+p}) -> Widget);
+        datatype SetWidget item of
+            Mk (Maybe (WholeModel item) -> Widget);
         end;
 
         namespace SetWidget of
@@ -14,12 +14,12 @@ namespace UILib of
             fn Mk se => se Nothing;
         end;
 
-        datatype SetContext {-p,+q} of
+        datatype SetContext item of
             Mk of
-                itemPane: p -> Pane;
-                getSelection: Action q;
-                addItem: p -> Action Unit;
-                itemSet: SetModel p;
+                itemPane: item -> Pane;
+                getSelection: Action item;
+                addItem: item -> Action Unit;
+                itemSet: SetModel item;
             end;
         end;
 
@@ -47,16 +47,16 @@ namespace UILib of
             end;
 
         #| A way of presenting some set of items as a `Pane`.
-        datatype SetPresentation {-p,+q} of
+        datatype SetPresentation item of
             Mk of
                 #| name for a collection of the items
                 setName: Text;
 
                 #| the set of items
-                itemSet: SetModel p;
+                itemSet: SetModel item;
 
                 #| menu items for creating new items
-                menuEntries: List (Command (Context.Command *: SetContext {-q,+p}))
+                menuEntries: List (Command (Context.Command *: SetContext item))
                     = [];
 
                 #| extra menus
@@ -64,10 +64,10 @@ namespace UILib of
                     = [];
 
                 #| a `Pane` for a individual item
-                itemPane: p -> Pane;
+                itemPane: item -> Pane;
 
                 #| a `SetWidget` for the set as a whole.
-                setWidget: SetWidget {-p,+q};
+                setWidget: SetWidget item;
             end;
         end;
 

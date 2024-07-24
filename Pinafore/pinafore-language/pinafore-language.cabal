@@ -80,6 +80,7 @@ library
       Pinafore.Language.Interpret.Type
       Pinafore.Language.Interpret.TypeDecl.Representation
       Pinafore.Language.Interpret.TypeDecl.Parameter
+      Pinafore.Language.Interpret.TypeDecl.DoubleParams
       Pinafore.Language.Interpret.TypeDecl.Data
       Pinafore.Language.Interpret.TypeDecl.StorableData
       Pinafore.Language.Interpret.TypeDecl.OpenEntity

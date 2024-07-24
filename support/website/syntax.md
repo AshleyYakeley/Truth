@@ -228,6 +228,7 @@ All declarations, including type declarations, are local to a `let` block.
     "-" lname |
     "{" "+" lname "," "-" lname "}" |
     "{" "-" lname "," "+" lname "}" |
+    lname
 
 <plain-datatype-constructor> ::=
     uname <types> |

@@ -13,6 +13,7 @@ import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Interpret.TypeDecl.DoubleParams
 import Pinafore.Language.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Interpret.TypeDecl.Representation
 import Pinafore.Language.Interpreter
@@ -25,6 +26,10 @@ data ConstructorFlavour (w :: Type -> Type) where
 
 data ConstructorType (t :: Type) where
     MkConstructorType :: Name -> ConstructorFlavour w -> ListVType w tt -> ConstructorType (ListVProduct tt)
+
+instance DoubleParams (ConstructorType t) where
+    rangeMapParams nn (MkConstructorType n PositionalCF tt) = MkConstructorType n PositionalCF $ rangeMapParams nn tt
+    rangeMapParams nn (MkConstructorType n cf@RecordCF {} tt) = MkConstructorType n cf $ rangeMapParams nn tt
 
 instance MaybeUnitWitness ConstructorType where
     maybeUnitWitness (MkConstructorType _ _ (MkListVType t :: ListVType w tt)) = do
@@ -58,15 +63,14 @@ assembleDataType tconss call =
             conss = listTypeToFixedList getConst $ joinListType (\codec el -> Const $ MkSomeFor el codec) ccons lcons
             in call conss vmap $ \t -> fixedListElement $ listElementTypeIndex $ someForToSome $ pickcons t
 
-withCCRTypeParam :: SyntaxTypeParameter -> (forall sv t. CCRTypeParam sv t -> r) -> r
-withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v -> cont $ CoCCRTypeParam v
-withCCRTypeParam (NegativeSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v -> cont $ ContraCCRTypeParam v
+withCCRTypeParam :: SyntaxTypeParameter -> (forall sv t. [Name] -> CCRTypeParam sv t -> r) -> r
+withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v -> cont [] $ CoCCRTypeParam v
+withCCRTypeParam (NegativeSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v -> cont [] $ ContraCCRTypeParam v
 withCCRTypeParam (RangeSyntaxTypeParameter np nq) cont =
-    nameToTypeVarT np $ \vp -> nameToTypeVarT nq $ \vq -> cont $ RangeCCRTypeParam vp vq
-withCCRTypeParam (DoubleRangeSyntaxTypeParameter (MkName n)) cont = let
-    np = MkName $ n <> "-"
-    nq = MkName $ n <> "+"
-    in nameToTypeVarT np $ \vp -> nameToTypeVarT nq $ \vq -> cont $ RangeCCRTypeParam vp vq
+    nameToTypeVarT np $ \vp -> nameToTypeVarT nq $ \vq -> cont [] $ RangeCCRTypeParam vp vq
+withCCRTypeParam (DoubleRangeSyntaxTypeParameter n) cont = let
+    (np, nq) = doubleParameterNames n
+    in nameToTypeVarT np $ \vp -> nameToTypeVarT nq $ \vq -> cont [n] $ RangeCCRTypeParam vp vq
 
 tParamToPolarArgument ::
        forall sv (t :: CCRVarianceKind sv) polarity. Is PolarityType polarity
@@ -95,12 +99,12 @@ tParamsVars :: CCRTypeParams dv gt t -> [SomeTypeVarT]
 tParamsVars NilCCRArguments = []
 tParamsVars (ConsCCRArguments tp tps) = tParamVars tp ++ tParamsVars tps
 
-getAnyCCRTypeParams :: [SyntaxTypeParameter] -> AnyCCRTypeParams
-getAnyCCRTypeParams [] = MkAnyCCRTypeParams nilAnyCCRArguments
+getAnyCCRTypeParams :: [SyntaxTypeParameter] -> ([Name], AnyCCRTypeParams)
+getAnyCCRTypeParams [] = ([], MkAnyCCRTypeParams nilAnyCCRArguments)
 getAnyCCRTypeParams (sp:spp) =
-    withCCRTypeParam sp $ \p ->
+    withCCRTypeParam sp $ \nn1 p ->
         case getAnyCCRTypeParams spp of
-            MkAnyCCRTypeParams f -> MkAnyCCRTypeParams $ consAnyCCRArguments p f
+            (nn2, MkAnyCCRTypeParams f) -> (nn1 <> nn2, MkAnyCCRTypeParams $ consAnyCCRArguments p f)
 
 paramsUnEndo ::
        forall (t :: Type) (dv :: CCRVariances) (f :: CCRVariancesKind dv).
@@ -422,9 +426,10 @@ makeBox ::
     -> [Some (QGroundType '[])]
     -> TypeInfo
     -> [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
+    -> [Name]
     -> GenCCRTypeParams dv
     -> QInterpreter (QFixBox () ())
-makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
+makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
     withSemiIdentifiedType @dv $ \(mainFamType :: _ maintype) -> do
         rec
             let
@@ -464,7 +469,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList gtparams =
                                     builderLift $
                                     for constructorFixedList $
                                     interpretConstructorTypes (MkSomeFamilialType mainFamType) supertypes
-                                assembleDataType constructorInnerTypes $ \codecs (vmap :: VarMapping structtype) pickn -> do
+                                assembleDataType (doubleTypeParameters doubleParams constructorInnerTypes) $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                     let
                                         freevars :: FiniteSet SomeTypeVarT
                                         freevars = concatmap freeTypeVariables $ toList codecs
@@ -695,8 +700,14 @@ makeDataTypeBox ::
     -> QInterpreter (QFixBox () ())
 makeDataTypeBox gmaker storable supertypes name md params syntaxConstructorList =
     case getAnyCCRTypeParams params of
-        MkAnyCCRTypeParams gtparams ->
-            makeBox gmaker supertypes (MkTypeInfo name storable params Nothing md) syntaxConstructorList gtparams
+        (doubleParams, MkAnyCCRTypeParams gtparams) ->
+            makeBox
+                gmaker
+                supertypes
+                (MkTypeInfo name storable params Nothing md)
+                syntaxConstructorList
+                doubleParams
+                gtparams
 
 makePlainGroundType ::
        forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (decltype :: Type). Is CCRVariancesType dv

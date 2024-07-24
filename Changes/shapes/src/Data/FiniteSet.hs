@@ -16,6 +16,14 @@ newtype FiniteSet a = MkFiniteSet
                , Filterable
                )
 
+pattern EmptyFiniteSet :: FiniteSet a
+
+pattern EmptyFiniteSet = MkFiniteSet []
+
+pattern SingleFiniteSet :: a -> FiniteSet a
+
+pattern SingleFiniteSet a = MkFiniteSet [a]
+
 instance Eq a => Semigroup (FiniteSet a) where
     (<>) = union
 

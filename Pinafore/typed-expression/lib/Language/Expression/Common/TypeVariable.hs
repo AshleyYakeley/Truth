@@ -13,7 +13,9 @@ module Language.Expression.Common.TypeVariable
     , assignTypeVarWit
     , newAssignTypeVar
     , SomeTypeVarT(..)
-    , someTypeVarName
+    , someTypeVarTName
+    , mkSomeTypeVarT
+    , unSomeTypeVarT
     ) where
 
 import Shapes
@@ -86,14 +88,20 @@ newAssignTypeVar nstr = newUVar nstr $ \vsym -> assignUVar @k @tv vsym $ MkTypeV
 data SomeTypeVarT =
     forall tv. MkSomeTypeVarT (TypeVarT tv)
 
-someTypeVarName :: SomeTypeVarT -> String
-someTypeVarName (MkSomeTypeVarT v) = typeVarName v
+someTypeVarTName :: SomeTypeVarT -> String
+someTypeVarTName (MkSomeTypeVarT v) = typeVarName v
+
+mkSomeTypeVarT :: String -> SomeTypeVarT
+mkSomeTypeVarT n = newTypeVar n MkSomeTypeVarT
+
+unSomeTypeVarT :: SomeTypeVarT -> (forall tv. TypeVarT tv -> r) -> r
+unSomeTypeVarT (MkSomeTypeVarT v) call = call v
 
 instance Eq SomeTypeVarT where
-    va == vb = someTypeVarName va == someTypeVarName vb
+    va == vb = someTypeVarTName va == someTypeVarTName vb
 
 instance Ord SomeTypeVarT where
-    compare = comparing someTypeVarName
+    compare = comparing someTypeVarTName
 
 instance Show SomeTypeVarT where
-    show = someTypeVarName
+    show = someTypeVarTName
