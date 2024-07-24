@@ -1067,10 +1067,17 @@ testEntity =
                           "doubled"
                           [ tDecls ["datatype F a of Mk (a -> a) end", "unF = fn Mk.D f => f"] $
                             tGroup
-                                "single"
+                                "plain"
                                 [ testExpectSuccess "pass"
                                 , testExpectSuccess "let f = Mk.F id in testeqval 3 $ unF f 3"
                                 , testExpectSuccess "let f = Mk.F show in testeqval \"3\" $ unF f 3"
+                                ]
+                          , tDecls ["datatype F a of Mk of mf: a -> a end end", "unF = fn Mk.F => mf"] $
+                            tGroup
+                                "record"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "let f = Mk.F of mf = id end in testeqval 3 $ unF f 3"
+                                , testExpectSuccess "let f = Mk.F of mf = show end in testeqval \"3\" $ unF f 3"
                                 ]
                           ]
                     ]
