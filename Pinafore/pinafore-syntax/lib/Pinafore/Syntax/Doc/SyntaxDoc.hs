@@ -41,6 +41,7 @@ typeParameterDoc :: SyntaxTypeParameter -> DocTypeParameter
 typeParameterDoc (PositiveSyntaxTypeParameter q) = CoDocTypeParameter $ exprShow q
 typeParameterDoc (NegativeSyntaxTypeParameter p) = ContraDocTypeParameter $ exprShow p
 typeParameterDoc (RangeSyntaxTypeParameter p q) = RangeDocTypeParameter (exprShow p) (exprShow q)
+typeParameterDoc (DoubleRangeSyntaxTypeParameter v) = DoubleRangeDocTypeParameter $ exprShow v
 
 typeDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> Maybe NamedText -> DocItem
 typeDocItem name diStorable tparams mgds = let

@@ -116,7 +116,8 @@ readTypeParameter =
           varq <- readPositiveParameter
           readThis TokComma
           varp <- readNegativeParameter
-          return $ RangeSyntaxTypeParameter varp varq))
+          return $ RangeSyntaxTypeParameter varp varq)) <|>
+    fmap DoubleRangeSyntaxTypeParameter readTypeVar
 
 readDataTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDataTypeDeclaration = do

@@ -52,12 +52,14 @@ data SyntaxTypeParameter
     | NegativeSyntaxTypeParameter Name
     | RangeSyntaxTypeParameter Name
                                Name -- negative, positive
+    | DoubleRangeSyntaxTypeParameter Name
     deriving (Eq)
 
 instance ExprShow SyntaxTypeParameter where
     exprShowPrec (PositiveSyntaxTypeParameter v) = namedTextPrec 0 $ "+" <> exprShow v
     exprShowPrec (NegativeSyntaxTypeParameter v) = namedTextPrec 0 $ "-" <> exprShow v
     exprShowPrec (RangeSyntaxTypeParameter vn vp) = namedTextPrec 0 $ "{-" <> exprShow vn <> ",+" <> exprShow vp <> "}"
+    exprShowPrec (DoubleRangeSyntaxTypeParameter v) = namedTextPrec 0 $ exprShow v
 
 type SyntaxPlainDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 

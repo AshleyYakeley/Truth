@@ -63,6 +63,10 @@ withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v ->
 withCCRTypeParam (NegativeSyntaxTypeParameter n) cont = nameToTypeVarT n $ \v -> cont $ ContraCCRTypeParam v
 withCCRTypeParam (RangeSyntaxTypeParameter np nq) cont =
     nameToTypeVarT np $ \vp -> nameToTypeVarT nq $ \vq -> cont $ RangeCCRTypeParam vp vq
+withCCRTypeParam (DoubleRangeSyntaxTypeParameter (MkName n)) cont = let
+    np = MkName $ n <> "-"
+    nq = MkName $ n <> "+"
+    in nameToTypeVarT np $ \vp -> nameToTypeVarT nq $ \vq -> cont $ RangeCCRTypeParam vp vq
 
 tParamToPolarArgument ::
        forall sv (t :: CCRVarianceKind sv) polarity. Is PolarityType polarity
