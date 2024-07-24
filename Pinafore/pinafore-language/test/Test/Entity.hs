@@ -1063,6 +1063,16 @@ testEntity =
                                 ] $
                             testExpectSuccess "if sd == \"45;72;18;\" then pass else fail sd"
                           ]
+                    , tGroup
+                          "doubled"
+                          [ tDecls ["datatype F a of Mk (a -> a) end", "unF = fn Mk.D f => f"] $
+                            tGroup
+                                "single"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "let f = Mk.F id in testeqval 3 $ unF f 3"
+                                , testExpectSuccess "let f = Mk.F show in testeqval \"3\" $ unF f 3"
+                                ]
+                          ]
                     ]
               , tGroup
                     "subtype"
