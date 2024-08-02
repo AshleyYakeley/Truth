@@ -751,7 +751,11 @@ testEntity =
                     , testExpectSuccess "let f : Maybe Number -> Entity = fn x => x in pass"
                     , testExpectSuccess "let f : Maybe (a & Number) -> Entity *: Maybe a = fn x => (x,x) in pass"
                     ]
-              , tGroup "predicate" $
+              , tDecls
+                    [ "testIsJust = match Just _ => pass; Nothing => fail \"Nothing\" end"
+                    , "testIsNothing = match Nothing => pass; Just _ => fail \"Just\" end"
+                    ] $
+                tGroup "predicate" $
                 [ tDecls ["predicatetype Even <: Integer = fn i => mod i 2 == 0"] $
                   tGroup
                       "Even"
@@ -760,6 +764,26 @@ testEntity =
                       , tGroup "Even <: Literal" $ strictSubtypeTests "Even" "Literal"
                       , testExpectSuccess "testeq {Just 4} {check @Even 4}"
                       , testExpectSuccess "testeq {Nothing} {check @Even 5}"
+                      ]
+                , tDecls ["predicatetype F <: Integer -> Integer = fn f => f 3 == 4"] $
+                  tGroup
+                      "Integer -> Integer"
+                      [ testExpectSuccess "pass"
+                      , testExpectSuccess "testIsJust $ check @F $ fn x => x + 1"
+                      , testExpectSuccess "testIsNothing $ check @F $ fn x => x"
+                      , testExpectSuccess "testeq {Just 6} {map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
+                      ]
+                , testExpectReject "let predicatetype F <: a -> a = fn f => f 3 == 4 in pass"
+                , tDecls ["predicatetype F <: a -> a = fn f => True"] $
+                  tGroup
+                      "a -> a"
+                      [ testExpectSuccess "pass"
+                      , testExpectSuccess "testIsJust $ check @F $ fn x => x"
+                      , testExpectSuccess "testIsJust $ check @F not.Boolean"
+                      , tModify (failTestBecause "bad") $
+                        testExpectSuccess "testeq {Just 6} {map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
+                      , tModify (failTestBecause "bad") $
+                        testExpectSuccess "testeq {Just True} {map.Maybe (fn f => f False) $ check @F not.Boolean}"
                       ]
                 ]
               ]
