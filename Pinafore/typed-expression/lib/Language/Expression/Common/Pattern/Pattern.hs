@@ -1,7 +1,6 @@
 module Language.Expression.Common.Pattern.Pattern
     ( Pattern(..)
     , purePattern
-    , contramap1Pattern
     , patternFreeWitnesses
     , anyPattern
     , varPattern
@@ -37,9 +36,6 @@ instance Arrow c => Arrow (Pattern w c) where
 
 purePattern :: Functor (c a) => c a b -> Pattern w c a b
 purePattern pf = MkPattern [] $ fmap (\b -> ((), b)) pf
-
-contramap1Pattern :: Category c => c q p -> Pattern w c p a -> Pattern w c q a
-contramap1Pattern qp (MkPattern ww pf) = MkPattern ww $ pf . qp
 
 contramapWits :: (p -> q) -> [SomeFor ((->) q) w] -> [SomeFor ((->) p) w]
 contramapWits pq = fmap $ \(MkSomeFor w conv) -> MkSomeFor w $ conv . pq

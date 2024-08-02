@@ -67,7 +67,7 @@ cleanSealedExpression (MkSealedExpression t oexpr) = do
 type TSOpenPattern :: Type -> Type -> Type -> Type
 type TSOpenPattern ts = NamedFuncPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
-type TSMatch ts = NamedFuncPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts) () ()
+type TSMatch ts = TSOpenPattern ts () ()
 
 type TSSealedPattern ts = NamedSealedPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts) ()
 
