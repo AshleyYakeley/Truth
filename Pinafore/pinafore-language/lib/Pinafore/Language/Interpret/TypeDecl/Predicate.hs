@@ -10,6 +10,11 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
 
+gate :: (t -> Bool) -> Maybe t -> Maybe t
+gate f (Just t)
+    | f t = Just t
+gate _ _ = Nothing
+
 predicateGroundType ::
        forall tid (t :: Type). (IdentifiedKind tid ~ Type, Identified tid ~~ t)
     => FullName
@@ -17,13 +22,18 @@ predicateGroundType ::
     -> QGroundedShimWit 'Negative t
     -> QOpenExpression (t -> Bool)
     -> QGroundType '[] t
-predicateGroundType name tid parentneg _predexpr = let
+predicateGroundType name tid parentneg predexpr = let
     props = mempty
         -- singleGroundProperty storabilityProperty $ dynamicEntityStorability $ fmap Just $ getTypeSet fam
     in (singleGroundType' (identifiedFamilialType tid) props $ exprShowPrec name)
            { qgtGreatestDynamicSupertype =
                  MkPolyGreatestDynamicSupertype $ \NilCCRArguments ->
-                     getGroundedShimWitGreatestDynamicSupertype parentneg
+                     case getGroundedShimWitGreatestDynamicSupertype parentneg of
+                         MkShimWit dpt (MkPolarShim (MkComposeShim convexpr)) ->
+                             MkShimWit dpt $
+                             MkPolarShim $
+                             MkComposeShim $
+                             liftA2 (\prd conv -> (functionToShim "predicate" $ gate prd) . conv) predexpr convexpr
            }
 
 makePredicateTypeBox ::
