@@ -4,8 +4,8 @@ module Language.Expression.Common.Abstract
     ( AbstractTypeSystem(..)
     , TSOpenPattern
     , TSMatch
-    , TSSealedExpressionPattern
-    , TSExpressionPatternConstructor
+    , TSSealedPattern
+    , TSPatternConstructor
     , simplifyFinalRename
     , unifierSubstituteSimplifyFinalRename
     , unifierSolve
@@ -65,13 +65,13 @@ cleanSealedExpression (MkSealedExpression t oexpr) = do
     return $ MkSealedExpression t oexpr'
 
 type TSOpenPattern :: Type -> Type -> Type -> Type
-type TSOpenPattern ts = NamedPattern (TSVarID ts) (TSPosShimWit ts)
+type TSOpenPattern ts = NamedFuncPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
-type TSMatch ts = SealedNamedPattern (TSVarID ts) (TSPosShimWit ts) (TSOpenExpression ts)
+type TSMatch ts = NamedFuncPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts) () ()
 
-type TSSealedExpressionPattern ts = SealedExpressionPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+type TSSealedPattern ts = NamedSealedPattern (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts) ()
 
-type TSExpressionPatternConstructor ts = ExpressionPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
+type TSPatternConstructor ts = NamedPatternConstructor (TSVarID ts) (TSPosShimWit ts) (TSNegShimWit ts)
 
 finalRenameINTERNAL :: Bool
 finalRenameINTERNAL = True
@@ -265,44 +265,45 @@ letSealedExpression name sexpre sexprb =
 
 bothSealedPattern ::
        forall ts. AbstractTypeSystem ts
-    => TSSealedExpressionPattern ts
-    -> TSSealedExpressionPattern ts
-    -> TSInner ts (TSSealedExpressionPattern ts)
+    => TSSealedPattern ts
+    -> TSSealedPattern ts
+    -> TSInner ts (TSSealedPattern ts)
 bothSealedPattern spat1 spat2 =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkSealedPattern tw1 pat1 <- renameMappableSimple @ts spat1
         MkSealedPattern tw2 pat2 <- renameMappableSimple @ts spat2
-        MkShimWit tr (MkPolarShim uconv) <-
-            unifyUUNegShimWit @ts (uuLiftNegExpressionShimWit @ts tw1) (uuLiftNegExpressionShimWit @ts tw2)
+        MkShimWit tr (MkPolarShim uconv) <- unifyUUNegShimWit @ts (uuLiftNegShimWit @ts tw1) (uuLiftNegShimWit @ts tw2)
         unifierSolve @ts (uuGetShim @ts uconv) $ \convexpr ->
             return $
-            MkSealedPattern (MkExpressionWitness (mkShimWit tr) convexpr) $
-            proc (MkMeetType (t, shim)) -> do
-                let ab = shimToFunction shim t
+            MkSealedPattern (mkShimWit tr) $
+            proc t -> do
+                ab <- pureFuncPattern (fmap shimToFunction convexpr) -< t
                 pat1 -< meet1 ab
                 pat2 -< meet2 ab
 
 applyPatternConstructor ::
        forall ts. AbstractTypeSystem ts
-    => TSExpressionPatternConstructor ts
-    -> TSSealedExpressionPattern ts
-    -> TSInner ts (TSExpressionPatternConstructor ts)
+    => TSPatternConstructor ts
+    -> TSSealedPattern ts
+    -> TSInner ts (TSPatternConstructor ts)
 applyPatternConstructor patcon patarg =
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
-        MkPatternConstructor (MkExpressionWitness pcw pcconvexpr) pclt pcpat <- renameMappableSimple @ts patcon
+        MkPatternConstructor pclt (MkSealedPattern pcw pcpat) <- renameMappableSimple @ts patcon
         case pclt of
             NilListType -> lift $ throw PatternTooManyConsArgsError
             ConsListType pca pcla -> do
-                MkSealedPattern (MkExpressionWitness ta tconvexpr) pata <- renameMappableSimple @ts patarg
+                MkSealedPattern ta pata <- renameMappableSimple @ts patarg
                 uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts pca) (uuLiftNegShimWit @ts ta)
                 unifierSolve @ts uconv $ \convexpr ->
                     return $
-                    MkPatternConstructor (MkExpressionWitness pcw $ (,,) <$> pcconvexpr <*> tconvexpr <*> convexpr) pcla $
-                    proc (MkMeetType (t, (r, r1, conv))) -> do
-                        (a, l) <- pcpat -< MkMeetType (t, r)
-                        pata -< MkMeetType (shimToFunction conv a, r1)
+                    MkPatternConstructor pcla $
+                    MkSealedPattern pcw $
+                    proc t -> do
+                        (a, l) <- pcpat -< t
+                        t1 <- pureFuncPattern $ fmap shimToFunction convexpr -< a
+                        pata -< t1
                         returnA -< l
 
 partialExpressionZero ::
@@ -353,23 +354,21 @@ tsPartialExpressionSumList rawee =
         ee <- for rawee $ renameMappableSimple @ts
         partialExpressionSumList @ts ee
 
-tsLambdaPatternMatch :: forall ts. TSVarID ts -> TSSealedExpressionPattern ts -> TSMatch ts
-tsLambdaPatternMatch varid (MkSealedPattern (MkExpressionWitness ptw pexpr) opat) =
-    MkSealedPattern (OpenExpression (MkNameWitness varid ptw) $ fmap (\r t -> BothMeetType t r) pexpr) opat
+tsLambdaPatternMatch :: forall ts. TSVarID ts -> TSSealedPattern ts -> TSMatch ts
+tsLambdaPatternMatch varid (MkSealedPattern ptype pat) =
+    applyFuncPattern pat $ varExpression $ MkNameWitness varid ptype
 
 tsExpressionPatternMatch ::
        forall ts. AbstractTypeSystem ts
     => TSSealedExpression ts
-    -> TSSealedExpressionPattern ts
+    -> TSSealedPattern ts
     -> TSInner ts (TSMatch ts)
 tsExpressionPatternMatch rawexpr rawpat =
     runRenamer @ts [] [] $ do
         MkSealedExpression etw expr <- renameMappableSimple @ts rawexpr
-        MkSealedPattern (MkExpressionWitness ptw pexpr) opat <- renameMappableSimple @ts rawpat
-        uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts etw) (uuLiftNegShimWit @ts ptw)
-        unifierSolve @ts uconv $ \convexpr ->
-            return $
-            MkSealedPattern ((\conv r t -> BothMeetType (shimToFunction conv t) r) <$> convexpr <*> pexpr <*> expr) opat
+        MkSealedPattern ptype opat <- renameMappableSimple @ts rawpat
+        uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts etw) (uuLiftNegShimWit @ts ptype)
+        unifierSolve @ts uconv $ \convexpr -> return $ applyFuncPattern opat $ liftA2 shimToFunction convexpr expr
 
 tsMatchGate ::
        forall ts. AbstractTypeSystem ts
@@ -378,20 +377,21 @@ tsMatchGate ::
     -> TSInner ts (TSSealedPartialExpression ts)
 tsMatchGate rawmatch rawexpr =
     runRenamer @ts [] [] $ do
-        MkSealedPattern pexpr (MkPattern _ (MkPurityFunction ppurity (Kleisli pf))) <- renameMappableSimple @ts rawmatch
+        MkPattern _ (MkPurityFunction ppurity pfexpr) <- renameMappableSimple @ts rawmatch
         MkSealedExpression (MkPartialWit epurity etype) expr <- renameMappableSimple @ts rawexpr
         return $
             purityTypeProduct ppurity epurity $ \purity pconv econv ->
                 purityIs @Monad purity $
-                MkSealedExpression (MkPartialWit purity etype) $ liftA2 (\t ft -> (pconv $ pf t) >> econv ft) pexpr expr
+                MkSealedExpression (MkPartialWit purity etype) $
+                liftA2 (\pf et -> (pconv $ pf ()) >> econv et) pfexpr expr
 
 tsMatchBindings :: forall ts. TSMatch ts -> [(TSVarID ts, TSSealedExpression ts)]
-tsMatchBindings (MkSealedPattern pexpr (MkPattern ww (MkPurityFunction purity (Kleisli pf)))) =
+tsMatchBindings (MkPattern ww (MkPurityFunction purity pfexpr)) =
     purityIs @Functor purity $ let
         mkBinding ::
                SomeFor ((->) _) (NameWitness (TSVarID ts) (TSPosShimWit ts)) -> (TSVarID ts, TSSealedExpression ts)
         mkBinding (MkSomeFor (MkNameWitness wvar wtype) f) =
             ( wvar
             , partialToSealedExpression $
-              MkSealedExpression (MkPartialWit purity wtype) $ fmap (fmap (\(tt, ()) -> f tt) . pf) pexpr)
+              MkSealedExpression (MkPartialWit purity wtype) $ fmap (\pf -> fmap (\(tt, ()) -> f tt) $ pf ()) pfexpr)
         in fmap mkBinding ww

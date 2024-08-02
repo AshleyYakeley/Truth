@@ -18,17 +18,20 @@ orderingEntityLibSection =
           fmap
               addNameInRootBDS
               [ valPatBDS "LT" "Less than." LT $
-                ImpureFunction $ \v ->
+                ImpureFunction $
+                pure $ \v ->
                     case v of
                         LT -> Just ()
                         _ -> Nothing
               , valPatBDS "EQ" "Equal to." EQ $
-                ImpureFunction $ \v ->
+                ImpureFunction $
+                pure $ \v ->
                     case v of
                         EQ -> Just ()
                         _ -> Nothing
               , valPatBDS "GT" "Greater than." GT $
-                ImpureFunction $ \v ->
+                ImpureFunction $
+                pure $ \v ->
                     case v of
                         GT -> Just ()
                         _ -> Nothing

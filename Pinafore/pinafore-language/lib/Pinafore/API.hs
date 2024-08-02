@@ -22,7 +22,6 @@ module Pinafore.API
     , QGroundType(..)
     , GroundProperties
     , PolyGreatestDynamicSupertype(..)
-    , simpleMPolyGreatestDynamicSupertype
     , simplePolyGreatestDynamicSupertype
     , literalSubtypeRelationEntry
     , mkLiteralGroundType

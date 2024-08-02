@@ -1,6 +1,6 @@
 module Language.Expression.Common.Pattern.Pattern
     ( Pattern(..)
-    , purityFunctionPattern
+    , purePattern
     , contramap1Pattern
     , patternFreeWitnesses
     , anyPattern
@@ -10,57 +10,59 @@ module Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-type Pattern :: (Type -> Type) -> Type -> Type -> Type
-data Pattern w q a =
+type Pattern :: (Type -> Type) -> (Type -> Type -> Type) -> Type -> Type -> Type
+data Pattern w c a b =
     forall t. MkPattern [SomeFor ((->) t) w]
-                        (PurityFunction Maybe q (t, a))
+                        (c a (t, b))
 
-instance Functor (Pattern w q) where
+instance Functor (c a) => Functor (Pattern w c a) where
     fmap ab (MkPattern ww pf) = MkPattern ww $ fmap (fmap ab) pf
 
-instance (forall t. WitnessMappable poswit negwit (w t)) => WitnessMappable poswit negwit (Pattern w q a) where
+instance (forall t. WitnessMappable poswit negwit (w t), forall t. WitnessMappable poswit negwit (c a t)) =>
+             WitnessMappable poswit negwit (Pattern w c a b) where
     mapWitnessesM mapPos mapNeg = let
         mapNW :: EndoM' _ w
         mapNW = MkEndoM $ \wt -> unEndoM (mapWitnessesM mapPos mapNeg) wt
-        in MkEndoM $ \(MkPattern ww pf) -> fmap (\ww' -> MkPattern ww' pf) $ unEndoM (endoFor $ endoSomeFor mapNW) ww
+        in MkEndoM $ \(MkPattern ww pf) ->
+               liftA2 MkPattern (unEndoM (endoFor $ endoSomeFor mapNW) ww) (unEndoM (mapWitnessesM mapPos mapNeg) pf)
 
-purityFunctionPattern :: PurityFunction Maybe a b -> Pattern w a b
-purityFunctionPattern pf = MkPattern [] $ fmap (\b -> ((), b)) pf
+instance Arrow c => Category (Pattern w c) where
+    id = MkPattern [] $ arr $ \a -> ((), a)
+    MkPattern ww1 bc . MkPattern ww2 ab =
+        MkPattern (concatPatternWits ww1 ww2) $ arr (\(t2, (t1, c)) -> ((t1, t2), c)) . second bc . ab
 
-contramap1Pattern :: PurityFunction Maybe q p -> Pattern w p a -> Pattern w q a
+instance Arrow c => Arrow (Pattern w c) where
+    arr ab = MkPattern [] $ arr $ \a -> ((), ab a)
+    first (MkPattern ww pf) = MkPattern ww $ arr (\((t, c), d) -> (t, (c, d))) . first pf
+
+purePattern :: Functor (c a) => c a b -> Pattern w c a b
+purePattern pf = MkPattern [] $ fmap (\b -> ((), b)) pf
+
+contramap1Pattern :: Category c => c q p -> Pattern w c p a -> Pattern w c q a
 contramap1Pattern qp (MkPattern ww pf) = MkPattern ww $ pf . qp
 
 contramapWits :: (p -> q) -> [SomeFor ((->) q) w] -> [SomeFor ((->) p) w]
 contramapWits pq = fmap $ \(MkSomeFor w conv) -> MkSomeFor w $ conv . pq
 
-combineWits :: [SomeFor ((->) p) w] -> [SomeFor ((->) q) w] -> [SomeFor ((->) (p, q)) w]
-combineWits ww1 ww2 = contramapWits fst ww1 <> contramapWits snd ww2
+concatPatternWits :: [SomeFor ((->) p) w] -> [SomeFor ((->) q) w] -> [SomeFor ((->) (p, q)) w]
+concatPatternWits ww1 ww2 = contramapWits fst ww1 <> contramapWits snd ww2
 
-instance Applicative (Pattern w q) where
+instance Applicative (c a) => Applicative (Pattern w c a) where
     pure a = MkPattern [] $ pure ((), a)
     MkPattern ww1 pf <*> MkPattern ww2 qf =
-        MkPattern (combineWits ww1 ww2) $ liftA2 (\(t1, ab) (t2, a) -> ((t1, t2), ab a)) pf qf
-
-instance Category (Pattern w) where
-    id = MkPattern [] $ arr $ \a -> ((), a)
-    MkPattern ww1 bc . MkPattern ww2 ab =
-        MkPattern (combineWits ww1 ww2) $ fmap (\(t2, (t1, c)) -> ((t1, t2), c)) (second bc) . ab
-
-instance Arrow (Pattern w) where
-    arr ab = MkPattern [] $ arr $ \a -> ((), ab a)
-    first (MkPattern ww pf) = MkPattern ww $ fmap (\((t, c), d) -> (t, (c, d))) $ first pf
+        MkPattern (concatPatternWits ww1 ww2) $ liftA2 (\(t1, ab) (t2, a) -> ((t1, t2), ab a)) pf qf
 
 showPatWit :: AllConstraint Show w => SomeFor ((->) t) w -> String
 showPatWit (MkSomeFor wa _) = allShow wa
 
-instance AllConstraint Show w => Show (Pattern w q a) where
-    show (MkPattern ww pf) = "{" <> intercalate "," (fmap showPatWit ww) <> "} " <> show pf
+instance (AllConstraint Show w, AllConstraint Show (c a)) => Show (Pattern w c a b) where
+    show (MkPattern ww pf) = "{" <> intercalate "," (fmap showPatWit ww) <> "} " <> allShow pf
 
-patternFreeWitnesses :: (forall t. w t -> r) -> Pattern w q a -> [r]
+patternFreeWitnesses :: (forall t. w t -> r) -> Pattern w c a b -> [r]
 patternFreeWitnesses wr (MkPattern ww _) = fmap (\(MkSomeFor wt _) -> wr wt) ww
 
-anyPattern :: Pattern w q ()
+anyPattern :: Applicative (c a) => Pattern w c a ()
 anyPattern = pure ()
 
-varPattern :: w t -> Pattern w t ()
+varPattern :: Arrow c => w t -> Pattern w c t ()
 varPattern wt = MkPattern [MkSomeFor wt id] $ arr $ \t -> (t, ())

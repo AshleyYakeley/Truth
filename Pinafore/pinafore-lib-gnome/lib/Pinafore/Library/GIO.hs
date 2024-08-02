@@ -67,9 +67,10 @@ gioStuff =
               "File"
               "A file."
               (MkSomeGroundType fileGroundType)
-              [ valPatBDS "URI" "Construct a file from a URI." uriToFile $ PureFunction $ \f -> (fileToURI f, ())
+              [ valPatBDS "URI" "Construct a file from a URI." uriToFile $ PureFunction $ pure $ \f -> (fileToURI f, ())
               , valPatBDS "Path" "Construct a file from a local path." pathToFile $
-                ImpureFunction $ \f -> do
+                ImpureFunction $
+                pure $ \f -> do
                     p <- fileToPath f
                     return (p, ())
               ]

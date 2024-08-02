@@ -22,12 +22,18 @@ class (IsDolanGroundType ground, IsCovaryGroundType conc) =>
           CovarySubtype (ground :: GroundTypeKind) (conc :: forall k. k -> Type) where
     dolanToMonoGroundType :: forall dv t. ground dv t -> Maybe (CovaryType dv, conc t)
 
+nonpolarGroundedToMonoType ::
+       forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) a. CovarySubtype ground conc
+    => NonpolarGroundedType ground a
+    -> Maybe (MonoType conc a)
+nonpolarGroundedToMonoType (MkNonpolarGroundedType gt args) = do
+    (lc, ct) <- dolanToMonoGroundType gt
+    eargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToMonoType arg) lc args
+    return $ MkMonoType ct eargs
+
 nonpolarToMonoType ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) a. CovarySubtype ground conc
     => NonpolarType ground a
     -> Maybe (MonoType conc a)
-nonpolarToMonoType (GroundedNonpolarType gt args) = do
-    (lc, ct) <- dolanToMonoGroundType gt
-    eargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToMonoType arg) lc args
-    return $ MkMonoType ct eargs
+nonpolarToMonoType (GroundedNonpolarType t) = nonpolarGroundedToMonoType t
 nonpolarToMonoType _ = Nothing

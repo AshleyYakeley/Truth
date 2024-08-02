@@ -110,6 +110,17 @@ mapNegShimWit ::
     -> PolarShimWit shim wit 'Negative b
 mapNegShimWit ab = mapPolarShimWit $ MkPolarShim ab
 
+switchPolarShimWit ::
+       forall polarity (k :: Type) (shim1 :: ShimKind k) (shim2 :: ShimKind k) wit (t :: k). Is PolarityType polarity
+    => (forall a b. shim1 a b -> shim2 a b)
+    -> PolarShimWit shim1 wit polarity t
+    -> PolarShimWit shim2 wit polarity t
+switchPolarShimWit mf =
+    switchShimWit $
+    case polarityType @polarity of
+        PositiveType -> \(MkPolarShim conv) -> MkPolarShim $ mf conv
+        NegativeType -> \(MkPolarShim conv) -> MkPolarShim $ mf conv
+
 instance forall (shim :: ShimKind Type) wit. Category shim =>
              CatFunctor (CatDual shim) (->) (PolarShimWit shim wit 'Positive) where
     cfmap (MkCatDual ab) = mapPosShimWit ab

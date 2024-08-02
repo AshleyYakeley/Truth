@@ -36,7 +36,8 @@ updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMa
 textKey :: Text -> LibraryStuff ()
 textKey name =
     valPatBDS (UnqualifiedFullNameRef $ MkName name) (plainText $ "Standard metadata key \"" <> name <> "\"") name $
-    ImpureFunction $ \n ->
+    ImpureFunction $
+    pure $ \n ->
         if n == name
             then Just ()
             else Nothing
@@ -107,7 +108,7 @@ metadataStuff =
               "Something that has metadata."
               (MkSomeGroundType hasMetadataGroundType)
               [ valPatBDS "Mk" "Construct metadata out of key-value pairs. Duplicates will be removed." mkHasMetadata $
-                PureFunction $ \hm -> (getAllMetadata hm, ())
+                PureFunction $ pure $ \hm -> (getAllMetadata hm, ())
               ]
         , valBDS "lookup" "Look up metadata by name." lookupMetadata
         , valBDS "update" "Update metadata item." updateMetadata

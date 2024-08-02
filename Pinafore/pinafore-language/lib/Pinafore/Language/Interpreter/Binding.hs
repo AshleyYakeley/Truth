@@ -65,7 +65,7 @@ recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) =
 type QSpecialForm :: Type
 data QSpecialForm =
     forall lt. MkQSpecialForm (ListType QAnnotation lt)
-                              (ListProduct lt -> Interpreter QValue)
+                              (ListProduct lt -> Interpreter QExpression)
 
 data QInterpreterBinding
     = ValueBinding QExpression

@@ -54,11 +54,9 @@ qBothPattern = tsBothPattern @QTypeSystem
 
 qToPatternConstructor ::
        forall t lt. (ToListShimWit QShim (QType 'Positive) lt, FromPolarShimWit QShim (QType 'Negative) t)
-    => PurityFunction Maybe t (ListProduct lt)
+    => QPurityFunction t lt
     -> QPatternConstructor
-qToPatternConstructor tml =
-    toExpressionPatternConstructor $
-    toPatternConstructor (fromPolarShimWit @Type @QShim @(QType 'Negative)) toListShimWit tml
+qToPatternConstructor tml = toPatternConstructor (fromPolarShimWit @Type @QShim @(QType 'Negative)) toListShimWit tml
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> QInterpreter (QPatternConstructor)
 qApplyPatternConstructor = tsApplyPatternConstructor @QTypeSystem
@@ -159,12 +157,16 @@ qValue ::
     -> QValue
 qValue v = MkSomeOf toPolarShimWit v
 
-typedUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
-typedUnifyExpressionToOpen = tsUnifyExpressionTo @QTypeSystem
+qUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
+qUnifyExpressionToOpen = tsUnifyExpressionTo @QTypeSystem
 
-qSubsumeExpressionToOpen ::
-       forall t. FiniteSet SomeTypeVarT -> QType 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
-qSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem
+qSubsumeExpressionToOpen :: forall t. QType 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
+qSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem mempty
+
+qSubsumeExpressionToOpenWit :: forall t. QIsoShimWit 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
+qSubsumeExpressionToOpenWit (MkShimWit t iconv) expr = do
+    oexpr <- qSubsumeExpressionToOpen t expr
+    return $ fmap (shimToFunction $ polarPolyIsoNegative iconv) oexpr
 
 qUnifyValue ::
        forall t. HasQType QPolyShim 'Negative t

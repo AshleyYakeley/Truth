@@ -7,8 +7,8 @@ import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl.Data
-import Pinafore.Language.Interpret.TypeDecl.DynamicEntity
 import Pinafore.Language.Interpret.TypeDecl.OpenEntity
+import Pinafore.Language.Interpret.TypeDecl.Predicate
 import Pinafore.Language.Interpret.TypeDecl.StorableData
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
@@ -31,6 +31,8 @@ typeDeclarationTypeBox ::
     -> SyntaxTypeDeclaration
     -> QInterpreter (QFixBox () ())
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
+typeDeclarationTypeBox name doc (PredicateSyntaxTypeDeclaration storable st predicate) =
+    makePredicateTypeBox name doc storable st predicate
 typeDeclarationTypeBox name doc (StorableDatatypeSyntaxTypeDeclaration params sconss) =
     makeStorableDataTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (PlainDatatypeSyntaxTypeDeclaration params msst sconss) = do
@@ -40,9 +42,6 @@ typeDeclarationTypeBox name doc (PlainDatatypeSyntaxTypeDeclaration params msst 
             case st of
                 MkSome t -> getGroundTypes t
     makePlainDataTypeBox (fromMaybe [] mstl) name doc params sconss
-typeDeclarationTypeBox name doc AbstractDynamicEntitySyntaxTypeDeclaration = makeAbstractDynamicEntityTypeBox name doc
-typeDeclarationTypeBox name doc (ConcreteDynamicEntitySyntaxTypeDeclaration anchor) =
-    makeConcreteDynamicEntityTypeBox name doc anchor
 
 interpretSequentialTypeDeclaration ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)

@@ -50,7 +50,7 @@ commonMarkStuff =
           "CommonMarkText"
           "Text that's intended to be CommonMark (not necessarily valid)."
           (MkSomeGroundType commonMarkTextGroundType)
-          [valPatBDS "Mk" "" MkCommonMarkText $ PureFunction $ \(MkCommonMarkText t) -> (t, ())]
+          [valPatBDS "Mk" "" MkCommonMarkText $ PureFunction $ pure $ \(MkCommonMarkText t) -> (t, ())]
     , hasSubtypeRelationBDS @CommonMarkText @Text Verify "" $ functionToShim "unCommonMarkText" unCommonMarkText
     , namespaceBDS "CommonMarkText" $
       monoidEntries @_ @CommonMarkText <>

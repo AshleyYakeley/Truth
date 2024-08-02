@@ -6,11 +6,11 @@ module Language.Expression.Dolan.SubtypeEntry
     , SubtypeConversion
     , identitySubtypeConversion
     , coerceSubtypeConversion
-    , subtypeConversion
     , singleSubtypeConversion
     , matchIdentitySubtypeConversion
     , SubtypeConversionEntry(..)
     , subtypeConversionEntry
+    , neutralSubtypeConversionEntry
     , IsDolanSubtypeEntriesGroundType(..)
     , entries_getSubtypeChain
     , testEqualitySubtypeGroupTest
@@ -21,6 +21,7 @@ module Language.Expression.Dolan.SubtypeEntry
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Solver.Crumble.Type
 import Language.Expression.Dolan.Subtype
@@ -74,6 +75,18 @@ data SubtypeConversionEntry ground =
 instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (SubtypeConversionEntry ground) where
     show (MkSubtypeConversionEntry _ ta tb _) = show ta <> " <: " <> show tb
 
+subtypeConversionEntry_ ::
+       forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
+    => TrustOrVerify
+    -> SubtypeKnowledge ground
+    -> DolanGroundedShimWit ground 'Negative a
+    -> DolanGroundedShimWit ground 'Positive b
+    -> DolanOpenExpression ground (DolanShim ground a b)
+    -> SubtypeConversionEntry ground
+subtypeConversionEntry_ trustme sk (MkShimWit (MkDolanGroundedType gta argsa) conva) (MkShimWit (MkDolanGroundedType gtb argsb) convb) conv =
+    MkSubtypeConversionEntry trustme gta gtb $
+    subtypeConversion sk gta (MkShimWit argsa conva) (MkShimWit argsb convb) conv
+
 subtypeConversionEntry ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => TrustOrVerify
@@ -82,9 +95,15 @@ subtypeConversionEntry ::
     -> DolanGroundedShimWit ground 'Positive b
     -> DolanOpenExpression ground (DolanShim ground a b)
     -> SubtypeConversionEntry ground
-subtypeConversionEntry trustme hint (MkShimWit (MkDolanGroundedType gta argsa) conva) (MkShimWit (MkDolanGroundedType gtb argsb) convb) conv =
-    MkSubtypeConversionEntry trustme gta gtb $
-    subtypeConversion hint gta (MkShimWit argsa conva) (MkShimWit argsb convb) conv
+subtypeConversionEntry trustme hint = subtypeConversionEntry_ trustme $ maybe UnknownSK HintSK hint
+
+neutralSubtypeConversionEntry ::
+       forall (ground :: GroundTypeKind) t. IsDolanSubtypeGroundType ground
+    => NonpolarGroundedType ground t
+    -> NonpolarGroundedType ground t
+    -> SubtypeConversionEntry ground
+neutralSubtypeConversionEntry ta tb =
+    subtypeConversionEntry_ Verify NeutralSK (groundedNonpolarToDolanType ta) (groundedNonpolarToDolanType tb) (pure id)
 
 matchSubtypeGroup ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground

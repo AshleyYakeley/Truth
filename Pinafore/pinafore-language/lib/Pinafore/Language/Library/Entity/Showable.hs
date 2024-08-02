@@ -23,6 +23,6 @@ showableEntityLibSection =
               "Showable"
               "Something that can be represented as `Text`."
               (MkSomeGroundType showableGroundType)
-              [valPatBDS "Mk" "" MkShowable $ PureFunction $ \(MkShowable t) -> (t, ())]
+              [valPatBDS "Mk" "" MkShowable $ PureFunction $ pure $ \(MkShowable t) -> (t, ())]
         , namespaceBDS "Showable" [addNameInRootBDS $ valBDS "show" "Show something as `Text`" $ showText @Showable]
         ]

@@ -263,40 +263,40 @@ tsSequentialLet = bindingSequentialLetSealedExpression @ts
 tsVarPattern ::
        forall ts. CompleteTypeSystem ts
     => TSVarID ts
-    -> TSSealedExpressionPattern ts
+    -> TSSealedPattern ts
 tsVarPattern name =
     runIdentity $
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar vwt twt <- renameNewFreeVar @ts
-        return $ varSealedExpressionPattern name vwt $ mapShimWit (MkPolarShim meet1) twt
+        return $ varNamedSealedPattern name vwt twt
 
 tsAnyPattern ::
        forall ts. CompleteTypeSystem ts
-    => TSSealedExpressionPattern ts
+    => TSSealedPattern ts
 tsAnyPattern =
     runIdentity $
     runRenamer @ts [] [] $
     withTransConstraintTM @Monad $ do
         MkNewVar twt _ <- renameNewFreeVar @ts
-        return $ anySealedExpressionPattern twt
+        return $ anySealedPattern twt
 
 tsBothPattern ::
        forall ts. CompleteTypeSystem ts
-    => TSSealedExpressionPattern ts
-    -> TSSealedExpressionPattern ts
-    -> TSInner ts (TSSealedExpressionPattern ts)
+    => TSSealedPattern ts
+    -> TSSealedPattern ts
+    -> TSInner ts (TSSealedPattern ts)
 tsBothPattern = bothSealedPattern @ts
 
 tsSealPatternConstructor ::
        forall ts m. MonadThrow PatternError m
-    => TSExpressionPatternConstructor ts
-    -> m (TSSealedExpressionPattern ts)
+    => TSPatternConstructor ts
+    -> m (TSSealedPattern ts)
 tsSealPatternConstructor = sealedPatternConstructor
 
 tsApplyPatternConstructor ::
        forall ts. CompleteTypeSystem ts
-    => TSExpressionPatternConstructor ts
-    -> TSSealedExpressionPattern ts
-    -> TSInner ts (TSExpressionPatternConstructor ts)
+    => TSPatternConstructor ts
+    -> TSSealedPattern ts
+    -> TSInner ts (TSPatternConstructor ts)
 tsApplyPatternConstructor = applyPatternConstructor @ts

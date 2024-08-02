@@ -170,14 +170,14 @@ colourStuff =
                 "SRGB16"
                 "Construct a Colour from sRGB (perceptual) red, green, blue, integers in range 0 to 65535. (This is what it actually stored.)"
                 MkPerceptualSRGB16 $
-            PureFunction $ \(MkPerceptualSRGB16 r g b) -> (r, (g, (b, ())))
+            PureFunction $ pure $ \(MkPerceptualSRGB16 r g b) -> (r, (g, (b, ())))
           , valPatBDS
                 "SRGBF"
                 "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
                 MkPerceptualSRGBFraction $
-            PureFunction $ \(MkPerceptualSRGBFraction r g b) -> (r, (g, (b, ())))
+            PureFunction $ pure $ \(MkPerceptualSRGBFraction r g b) -> (r, (g, (b, ())))
           , valPatBDS "LinearF" "Construct a Colour from linear red, green, blue, in range 0 to 1." MkLinearRGBFraction $
-            PureFunction $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
+            PureFunction $ pure $ \(MkLinearRGBFraction r g b) -> (r, (g, (b, ())))
           ]
     , typeBDS
           "AlphaColour"
@@ -187,12 +187,12 @@ colourStuff =
                 "Mk16"
                 "Construct an AlphaColour from an opacity in range 0 to 65535 and a Colour."
                 MkAlphaColour16 $
-            PureFunction $ \(MkAlphaColour16 op col) -> (op, (col, ()))
+            PureFunction $ pure $ \(MkAlphaColour16 op col) -> (op, (col, ()))
           , valPatBDS
                 "MkF"
                 "Construct an AlphaColour from an opacity in range 0 to 1 and a Colour."
                 MkAlphaColourFraction $
-            PureFunction $ \(MkAlphaColourFraction op col) -> (op, (col, ()))
+            PureFunction $ pure $ \(MkAlphaColourFraction op col) -> (op, (col, ()))
           ]
     , literalSubtypeRelationEntry @LangAlphaColour
     , hasSubtypeRelationBDS @LangColour @LangAlphaColour Verify "A Colour is an opaque AlphaColour" $

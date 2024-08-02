@@ -51,62 +51,69 @@ runPurity ImpureType ma = ma
 runPurityCases :: PurityType Maybe f -> f a -> a
 runPurityCases purity fa = fromMaybe (error "missing case") $ runPurity purity fa
 
-data PurityFunction m a b =
+data PurityFunction m e a b =
     forall f. MkPurityFunction (PurityType m f)
-                               (Kleisli f a b)
+                               (e (a -> f b))
 
-pattern PureFunction :: (a -> b) -> PurityFunction m a b
+pattern PureFunction :: Functor e =>
+        e (a -> b) -> PurityFunction m e a b
 
-pattern PureFunction f <-
-        MkPurityFunction PureType
-          (Kleisli ((\ f a -> runIdentity $ f a) -> f))
-  where PureFunction f
-          = MkPurityFunction PureType (Kleisli $ \ a -> Identity $ f a)
+pattern PureFunction ef <-
+        MkPurityFunction PureType (fmap $ (fmap runIdentity) -> ef)
+  where PureFunction ef
+          = MkPurityFunction PureType $ fmap (\ f a -> Identity $ f a) ef
 
-pattern ImpureFunction :: (a -> m b) -> PurityFunction m a b
+pattern ImpureFunction :: Functor e =>
+        e (a -> m b) -> PurityFunction m e a b
 
-pattern ImpureFunction f <- MkPurityFunction ImpureType (Kleisli f)
-  where ImpureFunction f = MkPurityFunction ImpureType (Kleisli f)
+pattern ImpureFunction ef <- MkPurityFunction ImpureType ef
+  where ImpureFunction ef = MkPurityFunction ImpureType ef
 
 {-# COMPLETE PureFunction, ImpureFunction #-}
 
-mapKleisli :: (f1 --> f2) -> Kleisli f1 a b -> Kleisli f2 a b
-mapKleisli f (Kleisli afb) = Kleisli $ \a -> f $ afb a
-
 matchPurityFunction ::
-       Applicative m
-    => (forall f. PurityType m f -> Kleisli f a1 b1 -> Kleisli f a2 b2 -> Kleisli f a12 b12)
-    -> PurityFunction m a1 b1
-    -> PurityFunction m a2 b2
-    -> PurityFunction m a12 b12
+       (Applicative m, Applicative e)
+    => (forall f. PurityType m f -> (a1 -> f b1) -> (a2 -> f b2) -> (a12 -> f b12))
+    -> PurityFunction m e a1 b1
+    -> PurityFunction m e a2 b2
+    -> PurityFunction m e a12 b12
 matchPurityFunction f (MkPurityFunction purity1 k1) (MkPurityFunction purity2 k2) =
     purityTypeProduct purity1 purity2 $ \purity12 c1 c2 ->
-        MkPurityFunction purity12 $ f purity12 (mapKleisli c1 k1) (mapKleisli c2 k2)
+        MkPurityFunction purity12 $ liftA2 (f purity12) (fmap (fmap c1) k1) (fmap (fmap c2) k2)
 
-applyPurityFunction :: Applicative m => PurityFunction m a b -> a -> m b
-applyPurityFunction (MkPurityFunction ImpureType (Kleisli amb)) a = amb a
-applyPurityFunction (MkPurityFunction PureType (Kleisli amb)) a = pure $ runIdentity $ amb a
+runPurityFunction :: (Applicative m, Functor e) => PurityFunction m e a b -> e (a -> m b)
+runPurityFunction (PureFunction eab) = fmap (\ab a -> pure $ ab a) eab
+runPurityFunction (ImpureFunction eamb) = eamb
 
-instance Functor m => Functor (PurityFunction m t) where
-    fmap ab (MkPurityFunction purity mf) = purityIs @Functor purity $ MkPurityFunction purity $ fmap ab mf
+applyPurityFunction :: Applicative e => PurityFunction m e a b -> e a -> PurityFunction m e () b
+applyPurityFunction (MkPurityFunction pt ekfab) ea = MkPurityFunction pt $ liftA2 (\afb a () -> afb a) ekfab ea
 
-instance Applicative m => Applicative (PurityFunction m t) where
-    pure a = MkPurityFunction PureType $ pure a
-    liftA2 f = matchPurityFunction $ \purity ka kb -> purityIs @Applicative purity $ liftA2 f ka kb
+instance (Functor m, Functor e) => Functor (PurityFunction m e t) where
+    fmap ab (MkPurityFunction purity mf) = purityIs @Functor purity $ MkPurityFunction purity $ fmap (fmap $ fmap ab) mf
 
-instance Alternative (PurityFunction Maybe t) where
-    empty = MkPurityFunction ImpureType $ empty
-    MkPurityFunction p1 (Kleisli amb1) <|> MkPurityFunction p2 (Kleisli amb2) =
-        purityTypeSum p1 p2 $ \p12 conv -> MkPurityFunction p12 $ Kleisli $ \a -> conv (amb1 a) (amb2 a)
+instance (Applicative m, Applicative e) => Applicative (PurityFunction m e t) where
+    pure a = MkPurityFunction PureType $ pure $ pure $ pure a
+    liftA2 f = matchPurityFunction $ \purity ka kb -> purityIs @Applicative purity $ liftA2 (liftA2 f) ka kb
 
-instance Monad m => Category (PurityFunction m) where
+instance Applicative e => Alternative (PurityFunction Maybe e t) where
+    empty = MkPurityFunction ImpureType $ pure $ pure empty
+    MkPurityFunction p1 eamb1 <|> MkPurityFunction p2 eamb2 =
+        purityTypeSum p1 p2 $ \p12 conv -> MkPurityFunction p12 $ liftA2 (liftA2 conv) eamb1 eamb2
+            -- Kleisli $ \a -> conv (amb1 a) (amb2 a)
+
+instance (Monad m, Applicative e) => Category (PurityFunction m e) where
     id = arr id
-    (.) = matchPurityFunction $ \purity ka kb -> purityIs @Monad purity $ (.) ka kb
+    (.) = matchPurityFunction $ \purity kbc kab -> purityIs @Monad purity $ \a -> kab a >>= kbc
 
-instance Monad m => Arrow (PurityFunction m) where
-    arr f = MkPurityFunction PureType $ arr f
-    first (MkPurityFunction purity ab) = purityIs @Monad purity $ MkPurityFunction purity $ first ab
-    second (MkPurityFunction purity ab) = purityIs @Monad purity $ MkPurityFunction purity $ second ab
+instance (Monad m, Applicative e) => Arrow (PurityFunction m e) where
+    arr f = MkPurityFunction PureType $ pure $ pure . f
+    first (MkPurityFunction purity ab) =
+        purityIs @Monad purity $ MkPurityFunction purity $ fmap (\bfc (b, d) -> fmap (\c -> (c, d)) $ bfc b) ab
+    second (MkPurityFunction purity ab) =
+        purityIs @Monad purity $ MkPurityFunction purity $ fmap (\bfc (d, b) -> fmap (\c -> (d, c)) $ bfc b) ab
 
-instance Show (PurityFunction m a b) where
+instance Show (PurityFunction m e a b) where
     show (MkPurityFunction purity _) = show purity
+
+instance AllConstraint Show (PurityFunction m e a) where
+    allConstraint = Dict

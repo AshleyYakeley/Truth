@@ -78,7 +78,7 @@ storageLibSection =
                             cfmap3 (shimToFunction praCo) $
                             cfmap2 (MkCatDual $ shimToFunction prbContra) $ cfmap1 (shimToFunction prbCo) property
                     anyval = MkSomeOf typef pinaproperty
-                return anyval
+                return $ constSealedExpression anyval
           , hasSubtypeRelationBDS Verify "" $ functionToShim "Store to Model" langStoreToModel
           , specialFormBDS
                 "cell"
@@ -105,7 +105,7 @@ storageLibSection =
                                 cfmap3 (termf @(->)) $
                                 cfmap2 (MkCatDual $ shimToFunction praContra) $ cfmap1 (shimToFunction praCo) property
                             in applyLangAttributeModel (langPropertyAttribute lprop) $ immutableToWholeModel $ pure ()
-                return $ MkSomeOf stype sval
+                return $ constSealedExpression $ MkSomeOf stype sval
           , specialFormBDS
                 "set"
                 "Storage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @A @Unit <anchor> store !@ {()}`"
@@ -138,7 +138,7 @@ storageLibSection =
                             in cfmap
                                    (MkCatRange (shimToFunction $ iMeetPair id praContra . econv) (shimToFunction praCo))
                                    lfsm
-                return $ MkSomeOf stype sval
+                return $ constSealedExpression $ MkSomeOf stype sval
           , specialFormBDS
                 "fetch"
                 "Fetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them."
@@ -154,7 +154,7 @@ storageLibSection =
                         qFunctionPosWitness qType $ actionShimWit $ nonpolarToPositive @QTypeSystem ta
                     sval :: QStore -> Entity -> Action a
                     sval = storeFetch saa
-                return $ MkSomeOf stype sval
+                return $ constSealedExpression $ MkSomeOf stype sval
           , valBDS
                 "openDefault"
                 "Open the default `Store`. Will be closed at the end of the lifecycle."

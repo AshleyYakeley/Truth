@@ -67,12 +67,11 @@ lookupVar (ConsCCRArguments _ params) var = do
         case matchParamArgs params args of
             Refl -> f args
 
-nonpolarToStoreAdapter ::
+nonpolarGroundedToStoreAdapter ::
        CovParams dv gt ta
-    -> QNonpolarType t
+    -> QNonpolarGroundedType t
     -> QInterpreter (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t)
-nonpolarToStoreAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
-nonpolarToStoreAdapter params (GroundedNonpolarType ground args) = do
+nonpolarGroundedToStoreAdapter params (MkNonpolarGroundedType ground args) = do
     (cvt, MkStorableGroundType _ (MkSealedStorability _ storability)) <-
         case dolanToMonoGroundType ground of
             Nothing -> throw $ InterpretTypeNotEntityError $ showGroundType ground
@@ -80,6 +79,13 @@ nonpolarToStoreAdapter params (GroundedNonpolarType ground args) = do
     aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToStoreAdapter params arg) cvt args
     MkAllFor stba <- stbAdapter storability
     return $ Compose $ \eargs -> stba $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
+
+nonpolarToStoreAdapter ::
+       CovParams dv gt ta
+    -> QNonpolarType t
+    -> QInterpreter (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t)
+nonpolarToStoreAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
+nonpolarToStoreAdapter params (GroundedNonpolarType t) = nonpolarGroundedToStoreAdapter params t
 nonpolarToStoreAdapter _ t@(RecursiveNonpolarType {}) = throw $ InterpretTypeNotEntityError $ exprShow t
 
 makeConstructorAdapter ::
@@ -163,10 +169,13 @@ makeStorableGroundType mainTypeName tparams = let
             storabilitySaturatedAdapter
                 (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
                 plainStoreAdapter
-                storability $ \args eat ->
+                storability $ \(MkShimWit args conv) eat ->
                 return $
-                MkSubtypeConversionEntry TrustMe gt entityGroundType $
-                subtypeConversion Nothing gt args nilCCRPolarArgumentsShimWit $
+                subtypeConversionEntry
+                    TrustMe
+                    Nothing
+                    (MkShimWit (MkDolanGroundedType gt args) conv)
+                    (mkShimWit $ MkDolanGroundedType entityGroundType NilCCRArguments) $
                 pure $ functionToShim "datatype-storable" $ storeAdapterConvert eat
         registerSubtypeConversion sce
     in MkTypeConstruction mkx mkgt postregister

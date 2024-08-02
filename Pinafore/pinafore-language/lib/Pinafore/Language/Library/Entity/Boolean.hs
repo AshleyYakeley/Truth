@@ -18,12 +18,14 @@ booleanEntityLibSection =
           fmap
               addNameInRootBDS
               [ valPatBDS "True" "Boolean TRUE." True $
-                ImpureFunction $ \v ->
+                ImpureFunction $
+                pure $ \v ->
                     if v
                         then Just ()
                         else Nothing
               , valPatBDS "False" "Boolean FALSE." False $
-                ImpureFunction $ \v ->
+                ImpureFunction $
+                pure $ \v ->
                     if v
                         then Nothing
                         else Just ()

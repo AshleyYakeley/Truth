@@ -54,7 +54,7 @@ testSimple =
                 tExpression <-
                     withScopeBuilder (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
-                resultOpenExpression <- typedUnifyExpressionToOpen tShimWit tExpression
+                resultOpenExpression <- qUnifyExpressionToOpen tShimWit tExpression
                 evalExpression resultOpenExpression
         liftIO $ assertEqual "" 12 i
 
@@ -72,7 +72,7 @@ testDependentLet =
                     withScopeBuilder (registerSubtypeConversion (subtypeEntry $ openConversionExpression varid)) $ \() -> do
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 resultExpression <- qLetExpr varid (constIntegerExpression 17) tExpression
-                resultOpenExpression <- typedUnifyExpressionToOpen tShimWit resultExpression
+                resultOpenExpression <- qUnifyExpressionToOpen tShimWit resultExpression
                 evalExpression resultOpenExpression
         liftIO $ assertEqual "" 17 i
 
@@ -88,7 +88,7 @@ testDependentFunction =
                         qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
-                resultOpenExpression <- typedUnifyExpressionToOpen tShimWit resultExpression
+                resultOpenExpression <- qUnifyExpressionToOpen tShimWit resultExpression
                 evalExpression resultOpenExpression
         liftIO $ assertEqual "" 91 i
 
@@ -134,7 +134,7 @@ testPolyDependentFunction =
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
-                resultOpenExpression <- typedUnifyExpressionToOpen t1ShimWit resultExpression
+                resultOpenExpression <- qUnifyExpressionToOpen t1ShimWit resultExpression
                 evalExpression resultOpenExpression
         liftIO $ assertEqual "" 91 i
 
@@ -142,7 +142,7 @@ registerT1Stuff :: QScopeBuilder ()
 registerT1Stuff = do
     registerGroundType "T1." emptyDefDoc t1GroundType
     registerPatternConstructor "MkT1." emptyDefDoc (MkSealedExpression (qType :: _ (AP -> T1 AP)) $ pure MkT1) $
-        qToPatternConstructor $ PureFunction $ \(MkT1 (a :: AQ)) -> (a, ())
+        qToPatternConstructor $ PureFunction $ pure $ \(MkT1 (a :: AQ)) -> (a, ())
 
 testFunctionType :: TestTree
 testFunctionType =

@@ -65,7 +65,7 @@ registerType :: FullName -> DefDoc -> QSomeGroundType -> QScopeBuilder ()
 registerType = registerSelector typeBindingSelector
 
 registerGroundType :: forall dv t. FullName -> DefDoc -> QGroundType dv t -> QScopeBuilder ()
-registerGroundType name doc t = do registerType name doc $ MkSomeGroundType t
+registerGroundType name doc t = registerType name doc $ MkSomeGroundType t
 
 registerPatternConstructor :: FullName -> DefDoc -> QExpression -> QPatternConstructor -> QScopeBuilder ()
 registerPatternConstructor name doc exp pc = do

@@ -78,7 +78,7 @@ htmlStuff =
           "HTMLText"
           "Text that's intended to be HTML (not necessarily valid)."
           (MkSomeGroundType htmlTextGroundType)
-          [valPatBDS "Mk" "" MkHTMLText $ PureFunction $ \(MkHTMLText t) -> (t, ())]
+          [valPatBDS "Mk" "" MkHTMLText $ PureFunction $ pure $ \(MkHTMLText t) -> (t, ())]
     , hasSubtypeRelationBDS @HTMLText @Text Verify "" $ functionToShim "unHTMLText" unHTMLText
     , namespaceBDS "HTMLText" $
       monoidEntries @_ @HTMLText <>

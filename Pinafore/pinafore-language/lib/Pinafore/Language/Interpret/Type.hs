@@ -1,7 +1,7 @@
 module Pinafore.Language.Interpret.Type
     ( interpretType
-    , interpretConcreteDynamicEntityType
     , interpretNonpolarType
+    , interpretNonpolarGroundedType
     ) where
 
 import Import
@@ -22,12 +22,6 @@ interpretType st = do
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretConcreteDynamicEntityType :: SyntaxType -> QInterpreter (FullName, ConcreteDynamicType)
-interpretConcreteDynamicEntityType st = do
-    mpol <- interpretTypeM @'Nothing st
-    case mpol of
-        BothMPolarW atm -> getConcreteDynamicEntityType $ atm @'Positive
-
 interpretNonpolarType :: SyntaxType -> QInterpreter (Some QNonpolarType)
 interpretNonpolarType st = do
     mpol <- interpretTypeM @'Nothing st
@@ -38,6 +32,13 @@ interpretNonpolarType st = do
                     case positiveToNonpolar @QTypeSystem tm of
                         Just t -> return $ shimWitToSome t
                         Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
+
+interpretNonpolarGroundedType :: SyntaxType -> QInterpreter (Some QNonpolarGroundedType)
+interpretNonpolarGroundedType st = do
+    t <- interpretNonpolarType st
+    case t of
+        MkSome (GroundedNonpolarType gnt) -> return $ MkSome gnt
+        _ -> throw $ InterpretTypeNotGroundedError $ exprShow t
 
 interpretTypeM ::
        forall mpolarity. Is MPolarityType mpolarity

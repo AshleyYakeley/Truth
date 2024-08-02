@@ -84,14 +84,14 @@ composeSubtypeConversion sc@CoerceSubtypeConversion (GeneralSubtypeConversion hi
 
 subtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta a dvb gtb b. IsDolanGroundType ground
-    => Maybe (DolanSubtypeHint ground)
+    => SubtypeKnowledge ground
     -> ground dva gta
     -> CCRPolarArgumentsShimWit (DolanPolyShim ground) dva (DolanType ground) gta 'Negative a
     -> CCRPolarArgumentsShimWit (DolanPolyShim ground) dvb (DolanType ground) gtb 'Positive b
     -> DolanOpenExpression ground (DolanShim ground a b)
     -> SubtypeConversion ground dva gta dvb gtb
-subtypeConversion hint ga (MkShimWit argsa (MkPolarShim conva)) (MkShimWit argsb (MkPolarShim convb)) convexpr =
-    GeneralSubtypeConversion (maybe UnknownSK HintSK hint) $
+subtypeConversion sk ga (MkShimWit argsa (MkPolarShim conva)) (MkShimWit argsb (MkPolarShim convb)) convexpr =
+    GeneralSubtypeConversion sk $
     linkSubtypeChain (groundTypeVarianceMap ga) argsa argsb $ fmap (\conv -> convb . conv . conva) convexpr
 
 matchIdentitySubtypeConversion ::

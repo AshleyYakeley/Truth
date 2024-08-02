@@ -18,12 +18,14 @@ maybeLibSection =
           fmap
               addNameInRootBDS
               [ valPatBDS "Just" "Construct a Maybe from a value." (Just @A) $
-                ImpureFunction $ \(v :: Maybe A) ->
+                ImpureFunction $
+                pure $ \(v :: Maybe A) ->
                     case v of
                         Just a -> Just (a, ())
                         _ -> Nothing
               , valPatBDS "Nothing" "Construct a Maybe without a value." (Nothing @BottomType) $
-                ImpureFunction $ \(v :: Maybe A) ->
+                ImpureFunction $
+                pure $ \(v :: Maybe A) ->
                     case v of
                         Nothing -> Just ()
                         _ -> Nothing

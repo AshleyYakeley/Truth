@@ -317,7 +317,7 @@ interpretSignature' tid _ (ValueSyntaxSignature name stype msdefv) = do
             modefv <-
                 for msdefv $ \sdefv -> do
                     defv <- ?interpretExpression sdefv
-                    qSubsumeExpressionToOpen mempty qtype defv
+                    qSubsumeExpressionToOpen qtype defv
             return $ (Nothing, pure $ MkSome $ ValueSignature (Just tid) name qtype modefv)
 interpretSignature' _ supertypes (SupertypeConstructorSyntaxSignature name) = do
     rcd <- lookupRecordConstructorData supertypes name
@@ -587,9 +587,8 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                                    encode codec . listProductToVProduct lt
                                                pc =
                                                    toPatternConstructor ctfneg ltp $
-                                                   ImpureFunction $ fmap listVProductToProduct . decode codec
-                                               in registerPatternConstructor ctfullname (ctDoc constructor) expr $
-                                                  toExpressionPatternConstructor pc
+                                                   ImpureFunction $ pure $ fmap listVProductToProduct . decode codec
+                                               in registerPatternConstructor ctfullname (ctDoc constructor) expr pc
                                            MkConstructorType _ (RecordCF _) lt -> let
                                                recordcons = MkQRecordConstructor lt declpos declneg codec
                                                in registerRecordConstructor ctfullname (ctDoc constructor) recordcons

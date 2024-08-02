@@ -58,7 +58,7 @@ opticsLibSection =
                     ""
                     (MkSomeGroundType lensGroundType)
                     [ valPatBDS "Mk" "" (MkLangLens @'( AP, AQ) @'( BP, BQ)) $
-                      PureFunction $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
+                      PureFunction $ pure $ \(MkLangLens @'(AP, AQ) @'(BP, BQ) g pb) -> (g, (pb, ()))
                     ]
               , hasSubtypeRelationBDS @(LangLens '( AP, AQ) '( BP, BQ)) @(LangAttribute '( AP, AQ) '( BP, BQ)) Verify "" $
                 functionToShim "langLensAttribute" $ langLensAttribute @AP @AQ @BP @BQ
@@ -80,7 +80,7 @@ opticsLibSection =
                     ""
                     (MkSomeGroundType prismGroundType)
                     [ valPatBDS "Mk" "" (MkLangPrism @'( AP, AQ) @'( BP, BQ)) $
-                      PureFunction $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
+                      PureFunction $ pure $ \(MkLangPrism @'(AP, AQ) @'(BP, BQ) d e) -> (d, (e, ()))
                     ]
               , hasSubtypeRelationBDS
                     @(LangPrism '( BP, BQ) '( AP, AQ))
@@ -101,7 +101,8 @@ opticsLibSection =
                           ["@T"]
                           "Prism {a,-D(T)} {-a,+T}" $
                       MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome (tn :: _ t), ()) -> do
-                          (MkShimWit (dtn :: _ dt) (MkPolarShim mconv)) <- getGreatestDynamicSupertype tn
+                          (MkShimWit (dtn :: _ dt) (MkPolarShim (MkComposeShim convexpr))) <-
+                              getGreatestDynamicSupertype tn
                           tpw <- invertType tn
                           let
                               vtype :: QShimWit 'Positive (LangPrism '( MeetType A dt, A) '( A, t))
@@ -115,15 +116,15 @@ opticsLibSection =
                                       (nextCCRVariancesMap $ qgtVarianceMap qGroundType)
                                       (rangeCCRArgument qType tpw) $
                                   nilCCRPolarArgumentsShimWit
-                              val :: LangPrism '( MeetType A dt, A) '( A, t)
-                              val =
+                              toVal :: QShim dt (Maybe t) -> LangPrism '( MeetType A dt, A) '( A, t)
+                              toVal conv =
                                   MkLangPrism
                                       (\(MkMeetType (a, dt)) ->
-                                           case shimToFunction mconv dt of
+                                           case shimToFunction conv dt of
                                                Just t -> Right t
                                                Nothing -> Left a)
                                       id
-                          return $ MkSomeOf vtype val
+                          return $ MkSealedExpression vtype $ fmap toVal convexpr
                     ]
               ]
         , headingBDS

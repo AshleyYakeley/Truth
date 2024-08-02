@@ -37,19 +37,24 @@ functionLibSection =
           , addNameInRootBDS $
             specialFormBDS "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
             MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                dtw <- getGreatestDynamicSupertype tn
+                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertype tn
                 tpw <- invertType tn
-                return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
+                return $ MkSealedExpression (funcShimWit (mkShimWit dtw) $ maybeShimWit tpw) $ fmap shimToFunction expr
           , addNameInRootBDS $
             specialFormBDS "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
             MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                dtw <- getGreatestDynamicSupertype tn
+                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertype tn
                 tpw <- invertType tn
+                let
+                    fromJustOrError :: forall t. Maybe t -> t
+                    fromJustOrError =
+                        \case
+                            Just t -> t
+                            Nothing ->
+                                error $
+                                unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
                 return $
-                    MkSomeOf (funcShimWit dtw tpw) $ \case
-                        Just t -> t
-                        Nothing ->
-                            error $
-                            unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
+                    MkSealedExpression (funcShimWit (mkShimWit dtw) tpw) $
+                    fmap (\conv t -> fromJustOrError $ shimToFunction conv t) expr
           ]
         ]

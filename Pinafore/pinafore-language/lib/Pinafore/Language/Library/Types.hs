@@ -1,28 +1,21 @@
 module Pinafore.Language.Library.Types
     ( openEntityShimWit
-    , concreteDynamicEntityShimWit
     , maybeShimWit
     , listShimWit
     , list1ShimWit
     , eitherShimWit
     , resultShimWit
-    , nullShimWit
     , pairShimWit
     , funcShimWit
     , actionShimWit
     ) where
 
 import Import
-import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Type
 
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openStorableGroundType tp) NilCCRArguments
-
-concreteDynamicEntityShimWit :: FullName -> ConcreteDynamicType -> QShimWit 'Positive DynamicEntity
-concreteDynamicEntityShimWit n dt =
-    typeToDolan $ MkDolanGroundedType (concreteDynamicStorableGroundType n dt) NilCCRArguments
 
 coFShimWit ::
        forall f polarity a. (HasVariance f, VarianceOf f ~ Covariance, Is PolarityType polarity)
@@ -78,11 +71,6 @@ resultShimWit ::
     -> QShimWit polarity b
     -> QShimWit polarity (Result a b)
 resultShimWit = cocoFShimWit resultGroundType
-
-nullShimWit ::
-       forall polarity. Is PolarityType polarity
-    => QShimWit polarity ()
-nullShimWit = typeToDolan $ MkDolanGroundedType unitGroundType NilCCRArguments
 
 pairShimWit ::
        forall polarity a b. Is PolarityType polarity

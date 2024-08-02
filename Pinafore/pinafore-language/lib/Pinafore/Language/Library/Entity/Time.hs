@@ -90,7 +90,7 @@ timeEntityLibSection =
                 (MkSomeGroundType durationGroundType)
                 [ addNameInRootBDS $
                   valPatBDS "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $
-                  PureFunction $ \d -> (nominalDiffTimeToSeconds d, ())
+                  PureFunction $ pure $ \d -> (nominalDiffTimeToSeconds d, ())
                 ]
           , literalSubtypeRelationEntry @NominalDiffTime
           , showableSubtypeRelationEntry @NominalDiffTime
@@ -117,16 +117,16 @@ timeEntityLibSection =
                       "UTCDateAndSinceMidnight"
                       "Construct a `Time` from a `Date` and a `Duration` since UTC midnight."
                       UTCTime $
-                  PureFunction $ \(UTCTime d t) -> (d, (t, ()))
+                  PureFunction $ pure $ \(UTCTime d t) -> (d, (t, ()))
                 , addNameInRootBDS $
                   valPatBDS "UTC" "Construct a `Time` from a `LocalTime` in UTC." (localTimeToUTC utc) $
-                  PureFunction $ \d -> (utcToLocalTime utc d, ())
+                  PureFunction $ pure $ \d -> (utcToLocalTime utc d, ())
                 , addNameInRootBDS $
                   valPatBDS
                       "SinceUnixEpoch"
                       "Construct a `Time` from a `Duration` since the Unix epoch (beginning of 1970 UTC)."
                       posixSecondsToUTCTime $
-                  PureFunction $ \d -> (utcTimeToPOSIXSeconds d, ())
+                  PureFunction $ pure $ \d -> (utcTimeToPOSIXSeconds d, ())
                 ]
           , literalSubtypeRelationEntry @UTCTime
           , showableSubtypeRelationEntry @UTCTime
@@ -148,12 +148,13 @@ timeEntityLibSection =
                 (MkSomeGroundType dateGroundType)
                 [ addNameInRootBDS $
                   valPatBDS "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
-                  PureFunction $ \day -> let
+                  PureFunction $
+                  pure $ \day -> let
                       (y, m, d) = toGregorian day
                       in (y, (m, (d, ())))
                 , addNameInRootBDS $
                   valPatBDS "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $
-                  PureFunction $ \day -> (toModifiedJulianDay day, ())
+                  PureFunction $ pure $ \day -> (toModifiedJulianDay day, ())
                 ]
           , literalSubtypeRelationEntry @Day
           , showableSubtypeRelationEntry @Day
@@ -177,13 +178,13 @@ timeEntityLibSection =
                 (MkSomeGroundType timeOfDayGroundType)
                 [ addNameInRootBDS $
                   valPatBDS "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
-                  PureFunction $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
+                  PureFunction $ pure $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
                 , addNameInRootBDS $
                   valPatBDS
                       "SinceMidnight"
                       "Construct a `TimeOfDay` from duration since midnight (wrapping whole days)."
                       (snd . timeToDaysAndTimeOfDay)
-                      (PureFunction $ \t -> (daysAndTimeOfDayToTime 0 t, ()))
+                      (PureFunction $ pure $ \t -> (daysAndTimeOfDayToTime 0 t, ()))
                 ]
           , literalSubtypeRelationEntry @TimeOfDay
           , showableSubtypeRelationEntry @TimeOfDay
@@ -202,7 +203,7 @@ timeEntityLibSection =
                 (MkSomeGroundType localTimeGroundType)
                 [ addNameInRootBDS $
                   valPatBDS "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $
-                  PureFunction $ \LocalTime {..} -> (localDay, (localTimeOfDay, ()))
+                  PureFunction $ pure $ \LocalTime {..} -> (localDay, (localTimeOfDay, ()))
                 ]
           , literalSubtypeRelationEntry @LocalTime
           , showableSubtypeRelationEntry @LocalTime

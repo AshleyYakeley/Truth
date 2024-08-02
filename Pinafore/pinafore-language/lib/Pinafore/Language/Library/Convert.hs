@@ -19,7 +19,3 @@ instance (HasQType QPolyShim 'Positive a) => HasQType QPolyShim 'Positive (View 
 -- Entity
 instance HasQGroundType '[] Entity where
     qGroundType = entityGroundType
-
--- DynamicEntity
-instance HasQGroundType '[] DynamicEntity where
-    qGroundType = dynamicEntityStorableGroundType

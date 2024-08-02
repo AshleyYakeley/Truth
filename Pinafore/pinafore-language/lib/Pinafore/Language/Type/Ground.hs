@@ -88,6 +88,9 @@ type QPolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype QGroundT
 type QNonpolarType :: Type -> Type
 type QNonpolarType = NonpolarType QGroundType
 
+type QNonpolarGroundedType :: Type -> Type
+type QNonpolarGroundedType = NonpolarGroundedType QGroundType
+
 singleGroundType' ::
        forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). (HasInterpreter, HasCCRVariances dv t)
     => FamilialType t
@@ -193,15 +196,17 @@ type QPartialExpression = TSSealedPartialExpression QTypeSystem
 
 type QMatch = TSMatch QTypeSystem
 
-type QPatternConstructor = TSExpressionPatternConstructor QTypeSystem
+type QPatternConstructor = TSPatternConstructor QTypeSystem
 
 type QOpenPattern = TSOpenPattern QTypeSystem
 
-type QPattern = TSSealedExpressionPattern QTypeSystem
+type QPattern = TSSealedPattern QTypeSystem
 
 type QBinding = TSBinding QTypeSystem
 
 type QSubtypeConversionEntry = SubtypeConversionEntry QGroundType
+
+type QPurityFunction (t :: Type) (lt :: [Type]) = PurityFunction Maybe QOpenExpression t (ListProduct lt)
 
 instance HasInterpreter => IsDolanGroundType QGroundType where
     type DolanVarID QGroundType = VarID

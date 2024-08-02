@@ -73,12 +73,6 @@ library:
       - Pinafore.Language.Type.Subtype.Hint
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Storable.Type
-      - Pinafore.Language.Type.Storable.Dynamic.Entity
-      - Pinafore.Language.Type.Storable.Dynamic.Storability
-      - Pinafore.Language.Type.Storable.Dynamic.DynamicEntity
-      - Pinafore.Language.Type.Storable.Dynamic.Concrete
-      - Pinafore.Language.Type.Storable.Dynamic.Abstract
-      - Pinafore.Language.Type.Storable.Dynamic
       - Pinafore.Language.Type.Storable.Open
       - Pinafore.Language.Type.Storable
       - Pinafore.Language.Type.DynamicSupertype
@@ -93,7 +87,7 @@ library:
       - Pinafore.Language.Interpret.TypeDecl.Data
       - Pinafore.Language.Interpret.TypeDecl.StorableData
       - Pinafore.Language.Interpret.TypeDecl.OpenEntity
-      - Pinafore.Language.Interpret.TypeDecl.DynamicEntity
+      - Pinafore.Language.Interpret.TypeDecl.Predicate
       - Pinafore.Language.Interpret.TypeDecl
       - Pinafore.Language.Interpret.Expression
       - Pinafore.Language.Interpret.Interact
@@ -116,8 +110,6 @@ library:
       - Pinafore.Language.Library.Entity.Numeric
       - Pinafore.Language.Library.Entity.Time
       - Pinafore.Language.Library.Entity.Open
-      - Pinafore.Language.Library.Entity.Dynamic
-      - Pinafore.Language.Library.Entity.DynamicType
       - Pinafore.Language.Library.Entity
       - Pinafore.Language.Library.Maybe
       - Pinafore.Language.Library.Product

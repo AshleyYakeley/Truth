@@ -70,8 +70,9 @@ data SyntaxTypeDeclaration
                                          (Maybe SyntaxType)
                                          [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
-    | ConcreteDynamicEntitySyntaxTypeDeclaration Anchor
-    | AbstractDynamicEntitySyntaxTypeDeclaration
+    | PredicateSyntaxTypeDeclaration Bool
+                                     SyntaxType
+                                     SyntaxExpression
     deriving (Eq)
 
 data SyntaxRecursiveDeclaration'

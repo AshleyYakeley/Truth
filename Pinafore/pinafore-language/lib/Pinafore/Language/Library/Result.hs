@@ -27,13 +27,15 @@ resultLibSection =
               (MkSomeGroundType resultGroundType)
               [ addNameInRootBDS $
                 valPatBDS "Success" "Result representing success." (SuccessResult :: A -> Result BottomType A) $
-                ImpureFunction $ \(v :: Result TopType A) ->
+                ImpureFunction $
+                pure $ \(v :: Result TopType A) ->
                     case v of
                         SuccessResult a -> Just (a, ())
                         _ -> Nothing
               , addNameInRootBDS $
                 valPatBDS "Failure" "Result representing failure." (FailureResult :: E -> Result E BottomType) $
-                ImpureFunction $ \(v :: Result E TopType) ->
+                ImpureFunction $
+                pure $ \(v :: Result E TopType) ->
                     case v of
                         FailureResult err -> Just (err, ())
                         _ -> Nothing

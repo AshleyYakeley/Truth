@@ -1,8 +1,9 @@
 module Language.Expression.Common.Unifier where
 
 import Data.Shim
-import Language.Expression.Common.Pattern
-import Language.Expression.Common.SolverExpression
+
+--import Language.Expression.Common.Pattern
+--import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
@@ -31,6 +32,7 @@ uuLiftPosShimWit ::
     -> UUPosShimWit ts t
 uuLiftPosShimWit t = unPosShimWit t $ \wt conv -> mkPosShimWit wt $ uuLiftShim @ts conv
 
+{-
 uuLiftNegExpressionShimWit ::
        forall ts t. UnifyTypeSystem ts
     => TSExpressionWitness ts t
@@ -38,7 +40,7 @@ uuLiftNegExpressionShimWit ::
 uuLiftNegExpressionShimWit (MkExpressionWitness (MkNegShimWit tt conv) expr) =
     MkNegShimWit tt $
     MkComposeShim $ solverExpressionLiftValue $ fmap (\r -> functionToShim "ttr" (\t -> MkMeetType (t, r)) . conv) expr
-
+-}
 class ( TypeSystem ts
       , Applicative (Unifier ts)
       , JoinMeetShim (TSShim ts)

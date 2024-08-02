@@ -128,7 +128,7 @@ mediaEntityLibSection =
                     "RFC 6838 media type."
                     (MkSomeGroundType mediaTypeGroundType)
                     [ valPatBDS "Mk" "Type, subtype, parameters" MkMediaType $
-                      PureFunction $ \(MkMediaType t s p) -> (t, (s, (p, ())))
+                      PureFunction $ pure $ \(MkMediaType t s p) -> (t, (s, (p, ())))
                     ]
               , literalSubtypeRelationEntry @MediaType
               ]
@@ -136,7 +136,7 @@ mediaEntityLibSection =
               "Media"
               "A blob and an RFC 6838 media type that interprets it."
               (MkSomeGroundType mediaGroundType)
-              [valPatBDS "Mk" "Type and Blob" MkMedia $ PureFunction $ \(MkMedia t b) -> (t, (b, ()))]
+              [valPatBDS "Mk" "Type and Blob" MkMedia $ PureFunction $ pure $ \(MkMedia t b) -> (t, (b, ()))]
         , literalSubtypeRelationEntry @Media
         , namespaceBDS "Blob" [valBDS "asMedia" "Decodes any media." $ codecToPrism mediaBlob]
         , namespaceBDS "Text" [valBDS "asMedia" "Decodes any text-like media." $ codecToPrism mediaText]

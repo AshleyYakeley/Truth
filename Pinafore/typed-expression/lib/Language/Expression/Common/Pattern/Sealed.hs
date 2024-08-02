@@ -2,37 +2,54 @@
 
 module Language.Expression.Common.Pattern.Sealed where
 
+import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern.Named
 import Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-data SealedPattern (varw :: Type -> Type) (negwit :: Type -> Type) =
-    forall t. MkSealedPattern (negwit t)
-                              (Pattern varw t ())
+type FuncPattern (patwit :: Type -> Type) (expwit :: Type -> Type)
+     = Pattern patwit (PurityFunction Maybe (Expression expwit))
 
-instance (forall t. WitnessMappable poswit negwit (varw t), forall t. WitnessMappable poswit negwit (ww t)) =>
-             WitnessMappable poswit negwit (SealedPattern varw ww) where
+pureFuncPattern :: Expression expwit (a -> b) -> FuncPattern patwit expwit a b
+pureFuncPattern expr = purePattern $ PureFunction expr
+
+impureFuncPattern :: Expression expwit (a -> Maybe b) -> FuncPattern patwit expwit a b
+impureFuncPattern expr = purePattern $ ImpureFunction expr
+
+applyFuncPattern :: FuncPattern patwit expwit a b -> Expression expwit a -> FuncPattern patwit expwit () b
+applyFuncPattern (MkPattern ww pf) ea = MkPattern ww $ applyPurityFunction pf ea
+
+type NamedFuncPattern name poswit negwit = FuncPattern (NameWitness name poswit) (NameWitness name negwit)
+
+data SealedPattern (patwit :: Type -> Type) (expwit :: Type -> Type) (funcwit :: Type -> Type) (a :: Type) =
+    forall t. MkSealedPattern (funcwit t)
+                              (FuncPattern patwit expwit t a)
+
+instance ( forall t. WitnessMappable poswit negwit (patwit t)
+         , forall t. WitnessMappable poswit negwit (expwit t)
+         , forall t. WitnessMappable poswit negwit (funcwit t)
+         ) => WitnessMappable poswit negwit (SealedPattern patwit expwit funcwit a) where
     mapWitnessesM mapPos mapNeg =
         MkEndoM $ \(MkSealedPattern tt pat) -> do
             tt' <- unEndoM (mapWitnessesM mapPos mapNeg) tt
             pat' <- unEndoM (mapWitnessesM mapPos mapNeg) pat
             pure $ MkSealedPattern tt' $ pat'
 
-instance (AllConstraint Show varw, AllConstraint Show negwit) => Show (SealedPattern varw negwit) where
+instance (AllConstraint Show patwit, AllConstraint Show funcwit) => Show (SealedPattern patwit expwit funcwit a) where
     show (MkSealedPattern t expr) = show expr <> " => " <> allShow t
 
-anySealedPattern :: tw t -> SealedPattern varw tw
+anySealedPattern :: funcwit t -> SealedPattern patwit expwit funcwit ()
 anySealedPattern twt = MkSealedPattern twt anyPattern
 
-varSealedPattern :: negwit t -> varw t -> SealedPattern varw negwit
+varSealedPattern :: funcwit t -> patwit t -> SealedPattern patwit expwit funcwit ()
 varSealedPattern twt var = MkSealedPattern twt $ varPattern var
 
-type SealedNamedPattern name vw = SealedPattern (NameWitness name vw)
+type NamedSealedPattern name poswit negwit = SealedPattern (NameWitness name poswit) (NameWitness name negwit) negwit
 
-varSealedNamedPattern :: name -> tw t -> vw t -> SealedNamedPattern name vw tw
-varSealedNamedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt
+varNamedSealedPattern :: name -> negwit t -> poswit t -> NamedSealedPattern name poswit negwit ()
+varNamedSealedPattern n twt vwt = varSealedPattern twt $ MkNameWitness n vwt
 
-sealedPatternNames :: SealedNamedPattern name vw tw -> [name]
-sealedPatternNames (MkSealedPattern _ pat) = patternNames pat
+functionPatternNames :: NamedSealedPattern name poswit negwit a -> [name]
+functionPatternNames (MkSealedPattern _ pat) = patternNames pat

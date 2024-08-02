@@ -30,7 +30,7 @@ openEntityLibSection =
                                 typef = openEntityShimWit tp
                                 pt :: OpenEntity tid
                                 pt = MkOpenEntity $ MkEntity anchor
-                                in MkSomeOf typef pt
+                                in constSealedExpression $ MkSomeOf typef pt
               , specialFormBDS "new" "Generate an open entity. `A` is an open entity type." ["@A"] "Action A" $
                 MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                     mtp <- getOpenEntityType t
@@ -40,6 +40,6 @@ openEntityLibSection =
                                 pt :: Action (OpenEntity tid)
                                 pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
                                 typef = actionShimWit $ openEntityShimWit tp
-                                in MkSomeOf typef pt
+                                in constSealedExpression $ MkSomeOf typef pt
               ]
         ]

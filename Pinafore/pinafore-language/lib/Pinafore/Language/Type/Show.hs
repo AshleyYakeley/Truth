@@ -134,3 +134,13 @@ instance forall (ground :: GroundTypeKind) t. (IsDolanGroundType ground, GroundE
 instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, GroundExprShow ground) =>
              AllConstraint ExprShow (NonpolarType ground) where
     allConstraint = Dict
+
+instance forall (ground :: GroundTypeKind) t. (IsDolanGroundType ground, GroundExprShow ground) =>
+             ExprShow (NonpolarGroundedType ground t) where
+    exprShowPrec npt =
+        case groundedNonpolarToDolanType @ground @(DolanPolyShim ground) @'Positive npt of
+            MkShimWit pt _ -> exprShowPrec pt
+
+instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, GroundExprShow ground) =>
+             AllConstraint ExprShow (NonpolarGroundedType ground) where
+    allConstraint = Dict

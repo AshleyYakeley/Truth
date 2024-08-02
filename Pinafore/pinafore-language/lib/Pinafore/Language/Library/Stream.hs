@@ -127,12 +127,14 @@ streamLibSection =
                     "Either an item, or end (meaning end of stream)."
                     (MkSomeGroundType endOrItemGroundType)
                     [ valPatBDS "Item" "Construct an `ItemOrEnd` representing an item." (Item @A) $
-                      ImpureFunction $ \(v :: ItemOrEnd A) ->
+                      ImpureFunction $
+                      pure $ \(v :: ItemOrEnd A) ->
                           case v of
                               Item a -> Just (a, ())
                               _ -> Nothing
                     , valPatBDS "End" "Construct an `ItemOrEnd` representing end of stream." (End @BottomType) $
-                      ImpureFunction $ \(v :: ItemOrEnd A) ->
+                      ImpureFunction $
+                      pure $ \(v :: ItemOrEnd A) ->
                           case v of
                               End -> Just ()
                               _ -> Nothing
@@ -146,7 +148,7 @@ streamLibSection =
                     "A sink is something you can write data (and \"end\") to."
                     (MkSomeGroundType sinkGroundType)
                     [ valPatBDS "Mk" "Construct a `Sink` from a function." (toLangSink @A) $
-                      PureFunction $ \v -> (fromLangSink @A v, ())
+                      PureFunction $ pure $ \v -> (fromLangSink @A v, ())
                     ]
               , namespaceBDS
                     "Sink"

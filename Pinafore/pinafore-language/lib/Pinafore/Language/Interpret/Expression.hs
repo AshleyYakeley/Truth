@@ -31,7 +31,8 @@ interpretPatternConstructor (SLNumber v) =
     return $
     Left $
     qToPatternConstructor $
-    ImpureFunction $ \v' ->
+    ImpureFunction $
+    pure $ \v' ->
         if v == v'
             then Just ()
             else Nothing
@@ -39,13 +40,14 @@ interpretPatternConstructor (SLString v) =
     return $
     Left $
     qToPatternConstructor $
-    ImpureFunction $ \v' ->
+    ImpureFunction $
+    pure $ \v' ->
         if v == v'
             then Just ()
             else Nothing
-interpretPatternConstructor SLUnit = return $ Left $ qToPatternConstructor $ PureFunction $ \() -> ()
+interpretPatternConstructor SLUnit = return $ Left $ qToPatternConstructor $ PureFunction $ pure $ \() -> ()
 interpretPatternConstructor SLPair =
-    return $ Left $ qToPatternConstructor $ PureFunction $ \(a :: A, b :: B) -> (a, (b, ()))
+    return $ Left $ qToPatternConstructor $ PureFunction $ pure $ \(a :: A, b :: B) -> (a, (b, ()))
 
 recordNameWitnesses ::
        Namespace
@@ -61,14 +63,14 @@ mkRecordPattern ::
        Namespace -> ListVType (QSignature 'Positive) tt -> QScopeBuilder (QOpenPattern (Maybe (ListVProduct tt)) ())
 mkRecordPattern ns ww = do
     sff <- recordNameWitnesses ns $ listVTypeToType ww
-    return $ MkPattern sff $ ImpureFunction $ fmap $ \a -> (a, ())
+    return $ MkPattern sff $ ImpureFunction $ pure $ fmap $ \a -> (a, ())
 
 constructPattern :: Namespace -> Either QPatternConstructor QRecordConstructor -> [QPattern] -> QScopeBuilder QPattern
 constructPattern _ (Left pc) pats = builderLift $ qConstructPattern pc pats
 constructPattern _ (Right _) (_:_) = throw PatternTooManyConsArgsError
 constructPattern ns (Right (MkQRecordConstructor sigs _ tt codec)) [] = do
     pat <- mkRecordPattern ns sigs
-    return $ MkSealedPattern (MkExpressionWitness (shimWitToDolan tt) $ pure ()) $ pat . arr (decode codec . meet1)
+    return $ MkSealedPattern (shimWitToDolan tt) $ pat . arr (decode codec)
 
 interpretPattern' :: SyntaxPattern' -> QScopeBuilder QPattern
 interpretPattern' AnySyntaxPattern = return qAnyPattern
@@ -82,16 +84,13 @@ interpretPattern' (BothSyntaxPattern spat1 spat2) = do
 interpretPattern' (ConstructorSyntaxPattern ns scons spats) = do
     pc <- builderLift $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
-    pat@(MkSealedPattern (MkExpressionWitness tw vexpr) patw) <- constructPattern ns pc pats
+    pat@(MkSealedPattern tw patw) <- constructPattern ns pc pats
     mstw <- builderLift $ getOptGreatestDynamicSupertypeSW tw
     return $
         case mstw of
             Nothing -> pat
-            Just stw -> let
-                ff (MkMeetType (mt, r)) = do
-                    t <- mt
-                    return (MkMeetType (t, r))
-                in MkSealedPattern (MkExpressionWitness stw vexpr) $ contramap1Pattern (ImpureFunction ff) patw
+            Just (MkShimWit stw (MkPolarShim (MkComposeShim convexpr))) ->
+                MkSealedPattern (mkShimWit stw) $ patw . impureFuncPattern (fmap shimToFunction convexpr)
 interpretPattern' (TypedSyntaxPattern spat stype) = do
     pat <- interpretPattern spat
     builderLift $ do
@@ -102,9 +101,8 @@ interpretPattern' (TypedSyntaxPattern spat stype) = do
                 let
                     pc :: QPatternConstructor
                     pc =
-                        toExpressionPatternConstructor $
                         toPatternConstructor (mkShimWit tn) (ConsListType tpw NilListType) $
-                        PureFunction $ \a -> (a, ())
+                        PureFunction $ pure $ \a -> (a, ())
                 qConstructPattern pc [pat]
 interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
     pat <- interpretPattern spat
@@ -115,14 +113,13 @@ interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
                 mdtn <- getOptGreatestDynamicSupertype tn
                 case mdtn of
                     Nothing -> return pat
-                    Just dtn -> do
+                    Just (MkShimWit dtn (MkPolarShim (MkComposeShim dtconvexpr))) -> do
                         tpw <- invertType tn
                         let
                             pc :: QPatternConstructor
                             pc =
-                                toExpressionPatternConstructor $
-                                toPatternConstructor dtn (ConsListType tpw NilListType) $
-                                ImpureFunction $ fmap $ \a -> (a, ())
+                                toPatternConstructor (mkShimWit dtn) (ConsListType tpw NilListType) $
+                                ImpureFunction $ fmap (\conv -> fmap (\a -> (a, ())) . shimToFunction conv) dtconvexpr
                         qConstructPattern pc [pat]
 interpretPattern' (NamespaceSyntaxPattern spat _) = interpretPattern spat
 interpretPattern' (DebugSyntaxPattern t spat) = do
@@ -284,7 +281,7 @@ allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature name sty
                 mqdef <-
                     for msdef $ \sdef -> do
                         qdef <- interpretExpression sdef
-                        qSubsumeExpressionToOpen mempty qtype qdef
+                        qSubsumeExpressionToOpen qtype qdef
                 return (varid, MkSome $ ValueSignature Nothing name qtype mqdef)
 allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (SupertypeConstructorSyntaxSignature {}))) =
     builderLift $ throw RecordFunctionSupertype
@@ -402,7 +399,7 @@ showAnnotation AnnotNonpolarType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
-interpretSpecialForm :: FullNameRef -> NonEmpty SyntaxAnnotation -> QInterpreter QValue
+interpretSpecialForm :: FullNameRef -> NonEmpty SyntaxAnnotation -> QInterpreter QExpression
 interpretSpecialForm name annotations = do
     MkQSpecialForm largs val <- lookupSpecialForm name
     margs <- unComposeInner $ specialFormArgs largs $ toList annotations
@@ -561,9 +558,7 @@ interpretExpression' (SEVar _ name mvals) = do
     marglist <- for mvals interpretRecordArgList
     interpretValue name marglist
 interpretExpression' (SEImplicitVar name) = return $ qVar $ ImplicitVarID name
-interpretExpression' (SESpecialForm name annots) = do
-    val <- interpretSpecialForm name annots
-    return $ qConstValue val
+interpretExpression' (SESpecialForm name annots) = interpretSpecialForm name annots
 interpretExpression' (SEAppQuote sexpr) = appNotationQuote $ interpretExpression sexpr
 interpretExpression' (SEAppUnquote sexpr) = appNotationUnquote $ interpretExpression sexpr
 interpretExpression' (SEList sexprs) = do
@@ -627,19 +622,14 @@ interpretGeneralSubtypeRelation trustme sta stb sbody = do
                         funcWit :: QIsoShimWit 'Positive _
                         funcWit = funcShimWit (mkShimWit ta) (mkShimWit tb)
                     body <- interpretExpression sbody
-                    case funcWit of
-                        MkShimWit funcType iconv -> do
-                            convexpr <- qSubsumeExpressionToOpen mempty funcType body
-                            return $
-                                subtypeConversionEntry trustme Nothing gta gtb $
-                                fmap
-                                    (functionToShim "user-subtype" . (shimToFunction $ polarPolyIsoNegative iconv))
-                                    convexpr
+                    convexpr <- qSubsumeExpressionToOpenWit funcWit body
+                    return $
+                        subtypeConversionEntry trustme Nothing gta gtb $ fmap (functionToShim "user-subtype") convexpr
                 _ -> throw $ InterpretTypeNotGroundedError $ exprShow atb
         _ -> throw $ InterpretTypeNotGroundedError $ exprShow ata
 
 nonpolarSimpleEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, StorableGroundType t)
-nonpolarSimpleEntityType (GroundedNonpolarType t NilCCRArguments)
+nonpolarSimpleEntityType (GroundedNonpolarType (MkNonpolarGroundedType t NilCCRArguments))
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
 
@@ -663,18 +653,7 @@ interpretIdentitySubtypeRelation sta stb = do
                                 singleSubtypeConversion Nothing $
                                 coerceShim "open entity" .
                                 (functionToShim "entityConvert" $ storeAdapterConvert adapter)
-                Nothing ->
-                    case getGroundFamily abstractDynamicStorableFamilyWitness gtb of
-                        Just MkAbstractDynamicEntityFamily {} ->
-                            case getGroundFamily abstractDynamicStorableFamilyWitness gta of
-                                Just MkAbstractDynamicEntityFamily {} ->
-                                    return $ MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion
-                                Nothing ->
-                                    case getGroundFamily concreteDynamicStorableFamilyWitness gta of
-                                        Just (MkConcreteDynamicEntityFamily _ _) ->
-                                            return $ MkSubtypeConversionEntry Verify gta gtb identitySubtypeConversion
-                                        Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow ta
-                        Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
+                Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
 interpretSubtypeRelation ::
        TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> RawMarkdown -> QScopeBuilder ()

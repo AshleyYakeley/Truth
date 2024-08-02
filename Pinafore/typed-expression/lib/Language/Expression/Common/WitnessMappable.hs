@@ -56,6 +56,11 @@ instance (forall a. WitnessMappable poswit negwit (w a)) => WitnessMappable posw
             ConsListType wa la ->
                 ConsListType <$> unEndoM (mapWitnessesM mapPos mapNeg) wa <*> unEndoM (mapWitnessesM mapPos mapNeg) la
 
+instance (forall t. WitnessMappable poswit negwit (e t)) => WitnessMappable poswit negwit (PurityFunction m e a b) where
+    mapWitnessesM mapPos mapNeg =
+        MkEndoM $ \case
+            MkPurityFunction pt ekfab -> fmap (MkPurityFunction pt) $ unEndoM (mapWitnessesM mapPos mapNeg) ekfab
+
 type PShimWitMappable (shim :: ShimKind k) (wit :: Polarity -> k -> Type)
      = WitnessMappable (PShimWit shim wit 'Positive) (PShimWit shim wit 'Negative)
 

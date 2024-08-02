@@ -34,5 +34,5 @@ evalLibSection =
                       liftIO $ do
                           result <- specialEvaluate spvals tp src
                           return $ mapResultFailure showText result
-              return $ MkSomeOf stype sval
+              return $ constSealedExpression $ MkSomeOf stype sval
         ]

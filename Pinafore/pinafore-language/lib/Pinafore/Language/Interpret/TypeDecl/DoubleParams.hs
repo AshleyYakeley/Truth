@@ -83,8 +83,11 @@ instance DoubleParams (NonpolarArgument QGroundType sv a) where
     rangeMapParams vv (RangeNonpolarArgument p q) =
         RangeNonpolarArgument (rangeMapParams (fmap swapRangeVars vv) p) (rangeMapParams vv q)
 
-instance DoubleParams (NonpolarType QGroundType t) where
-    rangeMapParams vv (GroundedNonpolarType gt args) = GroundedNonpolarType gt $ rangeMapParams vv args
+instance DoubleParams (QNonpolarGroundedType t) where
+    rangeMapParams vv (MkNonpolarGroundedType gt args) = MkNonpolarGroundedType gt $ rangeMapParams vv args
+
+instance DoubleParams (QNonpolarType t) where
+    rangeMapParams vv (GroundedNonpolarType t) = GroundedNonpolarType $ rangeMapParams vv t
     rangeMapParams vv (VarNonpolarType v) = VarNonpolarType $ coVar $ vv v
     rangeMapParams vv (RecursiveNonpolarType rv t) = let
         vv' :: TypeVarT --> RangeVars

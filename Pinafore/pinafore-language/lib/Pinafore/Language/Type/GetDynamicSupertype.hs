@@ -1,5 +1,9 @@
 module Pinafore.Language.Type.GetDynamicSupertype
-    ( getGreatestDynamicSupertype
+    ( QExprShim
+    , QExprShimWit
+    , QExprGroundedShimWit
+    , getGreatestDynamicSupertype
+    , getGroundedShimWitGreatestDynamicSupertype
     , getOptGreatestDynamicSupertype
     , getOptGreatestDynamicSupertypeSW
     ) where
@@ -8,56 +12,75 @@ import Import
 import Pinafore.Language.Interpreter ()
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Subtype ()
 
-pfmap ::
-       (HasVariance f, VarianceOf f ~ 'Covariance)
-    => PolarShim QShim 'Negative a b
-    -> PolarShim QShim 'Negative (f a) (f b)
-pfmap (MkPolarShim mp) = MkPolarShim $ cfmap mp
+type QExprShim = DolanExprShim QGroundType
 
-zip2 :: PolarShim QShim 'Negative (Maybe (MeetType a b)) (MeetType (Maybe a) (Maybe b))
-zip2 = MkPolarShim $ functionToShim "zip2" $ \(BothMeetType a b) -> liftA2 BothMeetType a b
+type QExprShimWit polarity = PShimWit QExprShim QType polarity
 
-getOptSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Interpreter (Maybe (QShimWit 'Negative (Maybe t)))
-getOptSingleGreatestDynamicSupertype (GroundedDolanSingularType (MkDolanGroundedType gt args)) = do
-    mdt <- getPolyGreatestDynamicSupertype (qgtGreatestDynamicSupertype gt) args
-    return $ fmap shimWitToDolan mdt
+type QExprGroundedShimWit polarity = PShimWit QExprShim QGroundedType polarity
+
+pfmap :: (HasVariance f, VarianceOf f ~ 'Covariance) => QShim a b -> QShim (f a) (f b)
+pfmap = cfmap
+
+zip2 :: PolarShim QExprShim 'Negative (Maybe (MeetType a b)) (MeetType (Maybe a) (Maybe b))
+zip2 = MkPolarShim $ pureComposeShim $ functionToShim "zip2" $ \(BothMeetType a b) -> liftA2 BothMeetType a b
+
+getOptGroundedGreatestDynamicSupertype :: QGroundedType 'Negative t -> Maybe (QExprGroundedShimWit 'Negative (Maybe t))
+getOptGroundedGreatestDynamicSupertype (MkDolanGroundedType gt args) =
+    case qgtGreatestDynamicSupertype gt of
+        NullPolyGreatestDynamicSupertype -> Nothing
+        MkPolyGreatestDynamicSupertype ft -> Just $ ft args
+
+getGroundedGreatestDynamicSupertype :: QGroundedType 'Negative t -> QExprGroundedShimWit 'Negative (Maybe t)
+getGroundedGreatestDynamicSupertype gnt =
+    fromMaybe (MkShimWit gnt $ MkPolarShim $ pureComposeShim $ functionToShim "Just" Just) $
+    getOptGroundedGreatestDynamicSupertype gnt
+
+getGroundedShimWitGreatestDynamicSupertype :: QGroundedShimWit 'Negative t -> QExprGroundedShimWit 'Negative (Maybe t)
+getGroundedShimWitGreatestDynamicSupertype (MkShimWit gnt (MkPolarShim conv)) =
+    mapShimWit (MkPolarShim $ pureComposeShim $ cfmap conv) $ getGroundedGreatestDynamicSupertype gnt
+
+getOptSingleGreatestDynamicSupertype ::
+       QSingularType 'Negative t -> Interpreter (Maybe (QExprShimWit 'Negative (Maybe t)))
+getOptSingleGreatestDynamicSupertype (GroundedDolanSingularType gnt) =
+    return $ do
+        gnt' <- getOptGroundedGreatestDynamicSupertype gnt
+        return $ shimWitToDolan gnt'
 getOptSingleGreatestDynamicSupertype (RecursiveDolanSingularType var t) =
     case unrollRecursiveType var t of
         MkShimWit t' iconv -> do
             t'' <- getGreatestDynamicSupertype t'
-            return $ Just $ mapShimWit (pfmap $ polarPolyIsoForwards iconv) t''
+            return $ Just $ mapShimWit (MkPolarShim $ pureComposeShim $ cfmap $ polarPolyIsoNegative iconv) t''
 getOptSingleGreatestDynamicSupertype _ = return Nothing
 
-getSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Interpreter (QShimWit 'Negative (Maybe t))
+getSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Interpreter (QExprShimWit 'Negative (Maybe t))
 getSingleGreatestDynamicSupertype t = do
     mt' <- getOptSingleGreatestDynamicSupertype t
     return $
         case mt' of
             Just t' -> t'
-            Nothing -> mapPolarShimWit (MkPolarShim $ functionToShim "Just" Just) $ typeToDolan t
+            Nothing -> mapShimWit (MkPolarShim $ pureComposeShim $ functionToShim "Just" Just) $ typeToDolan t
 
-getGreatestDynamicSupertype :: QType 'Negative t -> Interpreter (QShimWit 'Negative (Maybe t))
+getGreatestDynamicSupertype :: QType 'Negative t -> Interpreter (QExprShimWit 'Negative (Maybe t))
 getGreatestDynamicSupertype NilDolanType =
-    return $ mapPolarShimWit (MkPolarShim $ functionToShim "Just" Just) $ mkShimWit NilDolanType
+    return $ mapPolarShimWit (MkPolarShim $ pureComposeShim $ functionToShim "Just" Just) $ mkShimWit NilDolanType
 getGreatestDynamicSupertype (ConsDolanType t1 NilDolanType) = do
     st <- getSingleGreatestDynamicSupertype t1
-    return $ mapShimWit (pfmap iPolarL1) st
+    return $ mapShimWit (MkPolarShim $ pureComposeShim $ pfmap iMeetR1) st
 getGreatestDynamicSupertype (ConsDolanType t1 tr) = do
     t1' <- getSingleGreatestDynamicSupertype t1
     tr' <- getGreatestDynamicSupertype tr
     return $ mapShimWit zip2 $ joinMeetShimWit t1' tr'
 
-getOptGreatestDynamicSupertype :: QType 'Negative t -> Interpreter (Maybe (QShimWit 'Negative (Maybe t)))
+getOptGreatestDynamicSupertype :: QType 'Negative t -> Interpreter (Maybe (QExprShimWit 'Negative (Maybe t)))
 getOptGreatestDynamicSupertype (ConsDolanType t1 NilDolanType) = do
     mt1' <- getOptSingleGreatestDynamicSupertype t1
     return $ do
         t1' <- mt1'
-        return $ shimWitToDolan $ mapShimWit (pfmap iPolarL1) t1'
+        return $ shimWitToDolan $ mapShimWit (MkPolarShim $ pureComposeShim $ pfmap iMeetR1) t1'
 getOptGreatestDynamicSupertype t = fmap Just $ getGreatestDynamicSupertype t
 
-getOptGreatestDynamicSupertypeSW :: QShimWit 'Negative t -> Interpreter (Maybe (QShimWit 'Negative (Maybe t)))
-getOptGreatestDynamicSupertypeSW (MkShimWit t conv) = do
+getOptGreatestDynamicSupertypeSW :: QShimWit 'Negative t -> Interpreter (Maybe (QExprShimWit 'Negative (Maybe t)))
+getOptGreatestDynamicSupertypeSW (MkShimWit t (MkPolarShim conv)) = do
     t' <- getOptGreatestDynamicSupertype t
-    return $ fmap (mapShimWit (pfmap conv)) t'
+    return $ fmap (mapShimWit (MkPolarShim $ pureComposeShim $ cfmap conv)) t'

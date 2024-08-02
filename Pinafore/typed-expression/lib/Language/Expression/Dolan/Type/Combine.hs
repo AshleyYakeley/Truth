@@ -11,22 +11,22 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 joinMeetType ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity (a :: Type) (b :: Type).
-       (JoinMeetIsoShim (pshim Type), Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) polarity (a :: Type) (b :: Type).
+       (JoinMeetIsoShim shim, Is PolarityType polarity)
     => DolanType ground polarity a
     -> DolanType ground polarity b
-    -> PShimWit (pshim Type) (DolanType ground) polarity (JoinMeetType polarity a b)
+    -> PShimWit shim (DolanType ground) polarity (JoinMeetType polarity a b)
 joinMeetType NilDolanType tb = MkShimWit tb iPolarL2
 joinMeetType (ConsDolanType ta tr) tb =
     case joinMeetType tr tb of
         MkShimWit trb convrb -> MkShimWit (ConsDolanType ta trb) $ iPolarPair id convrb . iPolarSwapL
 
 joinMeetShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (a :: Type) (b :: Type).
-       (JoinMeetIsoShim (pshim Type), Is PolarityType polarity)
-    => PShimWit (pshim Type) (DolanType ground) polarity a
-    -> PShimWit (pshim Type) (DolanType ground) polarity b
-    -> PShimWit (pshim Type) (DolanType ground) polarity (JoinMeetType polarity a b)
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) (a :: Type) (b :: Type).
+       (JoinMeetIsoShim shim, Is PolarityType polarity)
+    => PShimWit shim (DolanType ground) polarity a
+    -> PShimWit shim (DolanType ground) polarity b
+    -> PShimWit shim (DolanType ground) polarity (JoinMeetType polarity a b)
 joinMeetShimWit = chainPShimWit2 joinMeetType
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (IsDolanGroundType ground, Is PolarityType polarity) =>

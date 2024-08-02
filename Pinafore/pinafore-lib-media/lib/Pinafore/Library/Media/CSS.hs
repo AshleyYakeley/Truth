@@ -42,7 +42,7 @@ cssStuff =
           @CSSText
           "CSSText"
           "Text that's intended to be CSS (not necessarily valid)."
-          [valPatBDS "Mk" "" MkCSSText $ PureFunction $ \(MkCSSText t) -> (t, ())]
+          [valPatBDS "Mk" "" MkCSSText $ PureFunction $ pure $ \(MkCSSText t) -> (t, ())]
     , hasSubtypeRelationBDS @CSSText @Text Verify "" $ functionToShim "unCSSText" unCSSText
     , namespaceBDS "CSSText" $
       monoidEntries @_ @CSSText <>

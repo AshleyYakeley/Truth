@@ -11,7 +11,6 @@ import Pinafore.Language.Type.Ground as I
 import Pinafore.Language.Type.Identified as I
 import Pinafore.Language.Type.Show as I
 import Pinafore.Language.Type.Storable as I
-import Pinafore.Language.Type.Storable.Dynamic as I
 import Pinafore.Language.Type.Storable.Open as I
 import Pinafore.Language.Type.Storable.Type as I
 import Pinafore.Language.Type.Subtype as I

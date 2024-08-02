@@ -96,6 +96,7 @@ data Token t where
     TokType :: Token ()
     TokDataType :: Token ()
     TokOpenType :: Token ()
+    TokPredicateType :: Token ()
     TokSubtype :: Token ()
     TokTrustMe :: Token ()
     TokStorable :: Token ()
@@ -161,6 +162,7 @@ instance TestEquality Token where
     testEquality TokType TokType = Just Refl
     testEquality TokDataType TokDataType = Just Refl
     testEquality TokOpenType TokOpenType = Just Refl
+    testEquality TokPredicateType TokPredicateType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokTrustMe TokTrustMe = Just Refl
     testEquality TokStorable TokStorable = Just Refl
@@ -218,6 +220,7 @@ instance Show (Token t) where
     show TokType = show ("type" :: String)
     show TokDataType = show ("datatype" :: String)
     show TokOpenType = show ("opentype" :: String)
+    show TokPredicateType = show ("predicatetype" :: String)
     show TokSubtype = show ("subtype" :: String)
     show TokTrustMe = show ("trustme" :: String)
     show TokStorable = show ("storable" :: String)
@@ -354,6 +357,7 @@ checkKeyword "else" = return $ MkSomeOf TokElse ()
 checkKeyword "type" = return $ MkSomeOf TokType ()
 checkKeyword "datatype" = return $ MkSomeOf TokDataType ()
 checkKeyword "opentype" = return $ MkSomeOf TokOpenType ()
+checkKeyword "predicatetype" = return $ MkSomeOf TokPredicateType ()
 checkKeyword "subtype" = return $ MkSomeOf TokSubtype ()
 checkKeyword "trustme" = return $ MkSomeOf TokTrustMe ()
 checkKeyword "storable" = return $ MkSomeOf TokStorable ()
@@ -386,6 +390,7 @@ allKeywords =
     , ("type", "keyword.declaration.pinafore")
     , ("datatype", "keyword.declaration.pinafore")
     , ("opentype", "keyword.declaration.pinafore")
+    , ("predicatetype", "keyword.declaration.pinafore")
     , ("subtype", "keyword.declaration.pinafore")
     , ("trustme", "keyword.declaration.pinafore")
     , ("storable", "keyword.declaration.pinafore")

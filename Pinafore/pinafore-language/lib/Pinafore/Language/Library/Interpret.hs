@@ -43,7 +43,7 @@ interpretLibSection =
               "Interpret"
               ""
               (MkSomeGroundType interpretGroundType)
-              [valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ \(MkInterpret @A x) -> (x, ())]
+              [valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ pure $ \(MkInterpret @A x) -> (x, ())]
         , namespaceBDS "Interpret" $
           functorEntries @_ @Interpret <> [addNameInRootBDS $ valBDS "interpret" "" $ interpret @A]
         ]

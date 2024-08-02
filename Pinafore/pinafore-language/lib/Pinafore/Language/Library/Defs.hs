@@ -251,7 +251,7 @@ valPatBDS ::
     => FullNameRef
     -> RawMarkdown
     -> t
-    -> PurityFunction Maybe v (ListProduct lt)
+    -> QPurityFunction v lt
     -> LibraryStuff context
 valPatBDS name docDescription val pat = let
     bdScopeEntry =

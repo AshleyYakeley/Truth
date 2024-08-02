@@ -38,7 +38,7 @@ blobEntityLibSection =
               "Blob"
               ""
               (MkSomeGroundType blobGroundType)
-              [valPatBDS "Mk" "As a list of bytes." toBlob $ PureFunction $ \b -> (fromBlob b, ())]
+              [valPatBDS "Mk" "As a list of bytes." toBlob $ PureFunction $ pure $ \b -> (fromBlob b, ())]
         , literalSubtypeRelationEntry @StrictByteString
         , showableSubtypeRelationEntry @StrictByteString
         , namespaceBDS "Blob" $

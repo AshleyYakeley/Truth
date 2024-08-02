@@ -18,12 +18,14 @@ sumLibSection =
           fmap
               addNameInRootBDS
               [ valPatBDS "Left" "Construct an Either from the left." (Left @A @B) $
-                ImpureFunction $ \(v :: Either A B) ->
+                ImpureFunction $
+                pure $ \(v :: Either A B) ->
                     case v of
                         Left a -> Just (a, ())
                         _ -> Nothing
               , valPatBDS "Right" "Construct an Either from the right." (Right @A @B) $
-                ImpureFunction $ \(v :: Either A B) ->
+                ImpureFunction $
+                pure $ \(v :: Either A B) ->
                     case v of
                         Right a -> Just (a, ())
                         _ -> Nothing

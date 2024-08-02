@@ -25,6 +25,17 @@ readOpenEntityTypeDeclaration = do
     name <- readTypeNewName
     return $ TypeSyntaxDeclaration name OpenEntitySyntaxTypeDeclaration
 
+readPredicateTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
+readPredicateTypeDeclaration = do
+    readThis TokPredicateType
+    mstorable <- optional $ readThis TokStorable
+    name <- readTypeNewName
+    readThis TokSubtypeOf
+    st <- readType
+    readThis TokAssign
+    predicate <- readExpression
+    return $ TypeSyntaxDeclaration name $ PredicateSyntaxTypeDeclaration (isJust mstorable) st predicate
+
 readSubtypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readSubtypeDeclaration = do
     readThis TokSubtype
@@ -142,24 +153,10 @@ readDataTypeDeclaration = do
                 return $
                     TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters msupertype constructors
 
-readDynamicTypeBody :: Parser SyntaxTypeDeclaration
-readDynamicTypeBody =
-    (do
-         readThis TokAssign
-         anchor <- readThis TokAnchor
-         return $ ConcreteDynamicEntitySyntaxTypeDeclaration anchor) <|>
-    (return AbstractDynamicEntitySyntaxTypeDeclaration)
-
-readDynamicTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
-readDynamicTypeDeclaration = do
-    readThis TokDynamicType
-    name <- readTypeNewName
-    body <- readDynamicTypeBody
-    return $ TypeSyntaxDeclaration name body
-
 readTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readTypeDeclaration =
-    readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readDynamicTypeDeclaration
+    readOpenEntityTypeDeclaration <|> readPredicateTypeDeclaration <|> readSubtypeDeclaration <|>
+    readDataTypeDeclaration
 
 readBinding :: Parser SyntaxBinding
 readBinding = do

@@ -29,13 +29,15 @@ listLibSection =
               , hasSubtypeRelationBDS @(NonEmpty A) @[A] Verify "" $ functionToShim "NonEmpty.toList" toList
               , addNameInRootBDS $
                 valPatBDS "[]" "Empty list" ([] @BottomType) $
-                ImpureFunction $ \(v :: [A]) ->
+                ImpureFunction $
+                pure $ \(v :: [A]) ->
                     case v of
                         [] -> Just ()
                         _ -> Nothing
               , addNameInRootBDS $
                 valPatBDS "::" "Construct a list" ((:|) @A) $
-                ImpureFunction $ \(v :: [A]) ->
+                ImpureFunction $
+                pure $ \(v :: [A]) ->
                     case v of
                         a:b -> Just (a, (b, ()))
                         _ -> Nothing
