@@ -446,6 +446,11 @@ even4: Even = coerce @Even 4;
 
 The greatest dynamic supertype of `Even` will be `Literal` (since that is the GDS of `Integer`).
 
+You can also create storable predicate types from storable parent types:
+```pinafore decl
+predicatetype storable Even <: Integer = fn i => i % 2 == 0;
+```
+
 ## Functions
 
 `-a -> +b`  

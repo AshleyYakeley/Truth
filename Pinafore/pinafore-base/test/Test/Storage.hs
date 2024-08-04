@@ -9,10 +9,11 @@ import Shapes
 import Shapes.Test
 
 data TestContext = MkTestContext
-    { putProperty :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
+    { putProperty :: forall s v. StoreAdapter Identity s -> StoreAdapter Identity v -> Predicate -> s -> Know v -> IO ()
     , readProperty :: forall s v.
-                          (Show v, Eq v) => StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
-    , readCount :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> v -> Int -> IO ()
+                          (Show v, Eq v) =>
+                                  StoreAdapter Identity s -> StoreAdapter Identity v -> Predicate -> s -> Know v -> IO ()
+    , readCount :: forall s v. StoreAdapter Identity s -> StoreAdapter Identity v -> Predicate -> v -> Int -> IO ()
     , checkEmpty :: String -> IO ()
     , checkNonEmpty :: String -> IO ()
     }
@@ -39,14 +40,15 @@ testStorageCase name action =
                     _ -> return ()
             tableRef = convertReference storageRef
             entityRef = qTableEntityReference tableRef
-            putProperty :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
+            putProperty ::
+                   forall s v. StoreAdapter Identity s -> StoreAdapter Identity v -> Predicate -> s -> Know v -> IO ()
             putProperty st vt p s kv =
                 runResource emptyResourceContext entityRef $ \aref ->
                     pushOrFail "can't push table edit" noEditSource $ refEdit aref $ pure $ MkQStorageEdit st vt p s kv
             readProperty ::
                    forall s v. (Show v, Eq v)
-                => StoreAdapter s
-                -> StoreAdapter v
+                => StoreAdapter Identity s
+                -> StoreAdapter Identity v
                 -> Predicate
                 -> s
                 -> Know v
@@ -60,7 +62,8 @@ testStorageCase name action =
                             runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadEntity vt e
                         assertEqual "typed" (Known v) kv'
                     Unknown -> return ()
-            readCount :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> v -> Int -> IO ()
+            readCount ::
+                   forall s v. StoreAdapter Identity s -> StoreAdapter Identity v -> Predicate -> v -> Int -> IO ()
             readCount st vt p v expcount = do
                 fset <-
                     runResource emptyResourceContext entityRef $ \aref ->
@@ -73,7 +76,8 @@ testStorageCase name action =
             testContext = MkTestContext {..}
         action testContext
 
-testAddRemoveProperty :: (Eq v, Show v) => StoreAdapter s -> StoreAdapter v -> s -> v -> TestContext -> IO ()
+testAddRemoveProperty ::
+       (Eq v, Show v) => StoreAdapter Identity s -> StoreAdapter Identity v -> s -> v -> TestContext -> IO ()
 testAddRemoveProperty st vt s v MkTestContext {..} = do
     pA <- fmap MkPredicate randomIO
     checkEmpty "0"
@@ -91,10 +95,10 @@ testAddRemoveProperty st vt s v MkTestContext {..} = do
     checkEmpty "3"
     readCount st vt pA v 0
 
-textAdapter :: StoreAdapter Text
+textAdapter :: StoreAdapter Identity Text
 textAdapter = asLiteralStoreAdapter
 
-maybeTextAdapter :: StoreAdapter (Maybe Text)
+maybeTextAdapter :: StoreAdapter Identity (Maybe Text)
 maybeTextAdapter = let
     justAnchor = codeAnchor "pinafore-base:Just"
     justAdapter = constructorStoreAdapter justAnchor $ ConsListType textAdapter NilListType
@@ -108,7 +112,7 @@ maybeTextAdapter = let
     to Nothing = Right ()
     in invmap from to $ justAdapter <+++> nothingAdapter
 
-listTextAdapter :: StoreAdapter [Text]
+listTextAdapter :: StoreAdapter Identity [Text]
 listTextAdapter = let
     nilAnchor = codeAnchor "pinafore-base:Nil"
     nilAdapter = constructorStoreAdapter nilAnchor NilListType
@@ -123,7 +127,7 @@ listTextAdapter = let
     to (a:aa) = Right (a, (aa, ()))
     in listAdapter
 
-enumAdapter :: StoreAdapter Bool
+enumAdapter :: StoreAdapter Identity Bool
 enumAdapter = let
     falseAnchor = codeAnchor "pinafore-base:False"
     falseAdapter = constructorStoreAdapter falseAnchor NilListType

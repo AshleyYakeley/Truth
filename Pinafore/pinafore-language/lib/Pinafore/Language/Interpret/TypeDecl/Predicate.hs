@@ -46,7 +46,9 @@ makePredicateTypeBox name md storable sparent spredicate =
                                 storability = let
                                     stbKind = NilListType
                                     stbCovaryMap = covarymap
-                                    stbAdapter = pureStorabilityAdapter $ \NilArguments -> storeadapter NilArguments
+                                    stbAdapter =
+                                        pureStorabilityAdapter $ \NilArguments ->
+                                            gateStoreAdapter predexpr $ storeadapter NilArguments
                                     in MkStorability {..}
                             return $ singleGroundProperty storabilityProperty storability
                         else return mempty

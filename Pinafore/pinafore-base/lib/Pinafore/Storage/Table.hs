@@ -269,7 +269,11 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                         Just oldrc -> succ oldrc
                                 tablePush esrc $ QTableEditEntityRefCount entity $ Just newrc
                             releaseByFact ::
-                                   forall t. EditSource -> FieldStorer 'MultipleMode t -> Entity -> ApplyStack tt IO ()
+                                   forall t.
+                                   EditSource
+                                -> FieldStorer ('MultipleMode Identity) t
+                                -> Entity
+                                -> ApplyStack tt IO ()
                             releaseByFact esrc (MkFieldStorer p subdef) entity = do
                                 msubv <- tableRead $ QTableReadFactGet p entity
                                 for_ msubv $ \subv -> releaseByEntity esrc subdef subv
@@ -277,7 +281,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                             releaseByConstructor ::
                                    forall t.
                                    EditSource
-                                -> ConstructorStorer 'MultipleMode t
+                                -> ConstructorStorer ('MultipleMode Identity) t
                                 -> Entity
                                 -> ApplyStack tt IO ()
                             releaseByConstructor _ PlainConstructorStorer _ = return ()
@@ -288,7 +292,11 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                             releaseByConstructor esrc (ConstructorConstructorStorer _ facts) entity =
                                 listTypeFor_ facts $ \fact -> releaseByFact esrc fact entity
                             releaseByEntity ::
-                                   forall t. EditSource -> EntityStorer 'MultipleMode t -> Entity -> ApplyStack tt IO ()
+                                   forall t.
+                                   EditSource
+                                -> EntityStorer ('MultipleMode Identity) t
+                                -> Entity
+                                -> ApplyStack tt IO ()
                             releaseByEntity esrc (MkEntityStorer css) entity = do
                                 mrc <- tableRead $ QTableReadEntityRefCount entity
                                 case mrc of
@@ -297,7 +305,8 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                         for_ css $ \(MkKnowShim def _) -> releaseByConstructor esrc def entity
                                     Just oldrc -> tablePush esrc $ QTableEditEntityRefCount entity $ Just $ pred oldrc
                                     Nothing -> return ()
-                            releaseByAdapter :: forall t. EditSource -> StoreAdapter t -> Entity -> ApplyStack tt IO ()
+                            releaseByAdapter ::
+                                   forall t. EditSource -> StoreAdapter Identity t -> Entity -> ApplyStack tt IO ()
                             releaseByAdapter esrc vtype entity =
                                 releaseByEntity esrc (storeAdapterDefinitions vtype) entity
                             setFact ::
@@ -348,7 +357,8 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                 -> t
                                 -> ApplyStack tt IO ()
                             setEntity esrc (MkEntityStorer cs) e t = setConstructor esrc cs e t
-                            setEntityFromAdapter :: EditSource -> Entity -> StoreAdapter t -> t -> ApplyStack tt IO ()
+                            setEntityFromAdapter ::
+                                   EditSource -> Entity -> StoreAdapter Identity t -> t -> ApplyStack tt IO ()
                             setEntityFromAdapter esrc entity ea t = do
                                 case storeAdapterToDefinition ea t of
                                     MkSomeOf def tt -> setEntity esrc def entity tt
@@ -382,7 +392,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                         tablePush esrc $ QTableEditPropertySet p se Nothing
                             readFact ::
                                    forall (t :: Type).
-                                   FieldStorer 'MultipleMode t
+                                   FieldStorer ('MultipleMode Identity) t
                                 -> Entity
                                 -> ComposeInner Know (ApplyStack tt IO) t
                             readFact (MkFieldStorer p subdef) entity = do
@@ -390,7 +400,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                 readEntity subdef subentity
                             readFacts ::
                                    forall (t :: [Type]).
-                                   ListType (FieldStorer 'MultipleMode) t
+                                   ListType (FieldStorer ('MultipleMode Identity)) t
                                 -> Entity
                                 -> ComposeInner Know (ApplyStack tt IO) (ListProduct t)
                             readFacts NilListType _ = return ()
@@ -400,7 +410,7 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                                 return (t1, tr)
                             readConstructor ::
                                    forall (t :: Type).
-                                   ConstructorStorer 'MultipleMode t
+                                   ConstructorStorer ('MultipleMode Identity) t
                                 -> Entity
                                 -> ComposeInner Know (ApplyStack tt IO) t
                             readConstructor PlainConstructorStorer entity = return entity
@@ -414,11 +424,11 @@ qTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tabl
                             firstKnown (a:aa) f = f a <|> firstKnown aa f
                             readEntity ::
                                    forall (t :: Type).
-                                   EntityStorer 'MultipleMode t
+                                   EntityStorer ('MultipleMode Identity) t
                                 -> Entity
                                 -> ComposeInner Know (ApplyStack tt IO) t
                             readEntity (MkEntityStorer css) entity =
-                                firstKnown css $ \(MkKnowShim def f) -> do
+                                firstKnown css $ \(MkKnowShim def (Identity f)) -> do
                                     dt <- readConstructor def entity
                                     liftInner $ f dt
                             refRead :: Readable (ApplyStack tt IO) QStorageRead

@@ -12,7 +12,7 @@ import Pinafore.Language.Type
 
 type WithArgs :: forall k. (Type -> Type) -> k -> Type
 newtype WithArgs f gt =
-    MkWithArgs (forall (ta :: Type). Arguments StoreAdapter gt ta -> f ta)
+    MkWithArgs (forall (ta :: Type). Arguments QStoreAdapter gt ta -> f ta)
 
 assignArgumentParams ::
        forall (f :: Type -> Type) dv (gt :: CCRVariancesKind dv) (decltype :: Type) (ta :: Type).
@@ -32,7 +32,7 @@ data Thing x decltype ta =
 makeConstructorAdapter ::
        CovParams dv gt decltype
     -> ListType QNonpolarType lt
-    -> QInterpreter (WithArgs (Thing (ListType StoreAdapter lt) decltype) gt)
+    -> QInterpreter (WithArgs (Thing (ListType QStoreAdapter lt) decltype) gt)
 makeConstructorAdapter params pts = do
     ets <- mapMListType (nonpolarToStoreAdapter params) pts
     return $
@@ -41,7 +41,7 @@ makeConstructorAdapter params pts = do
                 Refl -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl
 
 makeTypeAdapter ::
-       CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs StoreAdapter gt)
+       CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs QStoreAdapter gt)
 makeTypeAdapter params conss = do
     ff <-
         for conss $ \case
@@ -65,7 +65,7 @@ makeStorableGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
     mkx :: CCRVariancesMap dv gt
         -> [(ConstructorCodec decltype, Anchor)]
-        -> QInterpreter (CCRVariancesMap dv gt, WithArgs StoreAdapter gt)
+        -> QInterpreter (CCRVariancesMap dv gt, WithArgs QStoreAdapter gt)
     mkx dvm conss = do
         cvt <-
             case ccrVariancesToCovaryType dvt of
@@ -75,7 +75,7 @@ makeStorableGroundType mainTypeName tparams = let
         adapter <- makeTypeAdapter cparams conss
         return (dvm, adapter)
     mkgt ::
-           (CCRVariancesMap dv gt, WithArgs StoreAdapter gt)
+           (CCRVariancesMap dv gt, WithArgs QStoreAdapter gt)
         -> QInterpreter (GroundTypeFromTypeID dv gt (Storability dv gt))
     mkgt ~(dvm, ~(MkWithArgs stba)) = do
         cvt <-
@@ -88,7 +88,7 @@ makeStorableGroundType mainTypeName tparams = let
                 stbKind = cvt
                 stbCovaryMap = ccrVariancesMapToCovary cvt $ lazyCCRVariancesMap dvt dvm
                 showType = standardListTypeExprShow @dv $ exprShow subTypeName
-                stbAdapter = return $ MkAllFor stba
+                stbAdapter = MkAllFor stba
                 storability :: Storability dv gt
                 storability = MkStorability {..}
                 gt :: QGroundType dv gt

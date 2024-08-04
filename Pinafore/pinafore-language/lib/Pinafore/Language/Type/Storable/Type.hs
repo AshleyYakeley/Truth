@@ -5,18 +5,20 @@ import Pinafore.Language.Interpreter ()
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 
+type QStoreAdapter = StoreAdapter QOpenExpression
+
 type Storability :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data Storability dv gt = MkStorability
     { stbKind :: CovaryType dv
     , stbCovaryMap :: CovaryMap gt
-    , stbAdapter :: Interpreter (AllFor StoreAdapter (Arguments StoreAdapter gt))
+    , stbAdapter :: AllFor QStoreAdapter (Arguments QStoreAdapter gt)
     }
 
 pureStorabilityAdapter ::
        forall gt.
-       (forall ta. Arguments StoreAdapter gt ta -> StoreAdapter ta)
-    -> Interpreter (AllFor StoreAdapter (Arguments StoreAdapter gt))
-pureStorabilityAdapter f = return $ MkAllFor f
+       (forall ta. Arguments QStoreAdapter gt ta -> QStoreAdapter ta)
+    -> AllFor QStoreAdapter (Arguments QStoreAdapter gt)
+pureStorabilityAdapter f = MkAllFor f
 
 storabilityProperty :: IOWitness (Storability '[] ())
 storabilityProperty = $(iowitness [t|Storability '[] ()|])
@@ -24,10 +26,10 @@ storabilityProperty = $(iowitness [t|Storability '[] ()|])
 saturateStoreAdapter ::
        forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) a r.
        QShimWit 'Negative a
-    -> StoreAdapter a
+    -> QStoreAdapter a
     -> CovaryType dv
     -> CovaryMap gt
-    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> Arguments StoreAdapter gt t -> r)
+    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> Arguments QStoreAdapter gt t -> r)
     -> r
 saturateStoreAdapter _ _ NilListType NilCovaryMap call = call nilCCRPolarArgumentsShimWit NilArguments
 saturateStoreAdapter tt adapter (ConsListType Refl ct) (ConsCovaryMap ccrv cvm) call =
@@ -42,12 +44,12 @@ saturateStoreAdapter tt adapter (ConsListType Refl ct) (ConsCovaryMap ccrv cvm) 
 storabilitySaturatedAdapter ::
        forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) a r.
        QShimWit 'Negative a
-    -> StoreAdapter a
+    -> QStoreAdapter a
     -> Storability dv gt
-    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> StoreAdapter t -> Interpreter r)
+    -> (forall t. QArgumentsShimWit dv gt 'Negative t -> QStoreAdapter t -> Interpreter r)
     -> Interpreter r
 storabilitySaturatedAdapter tt adapter MkStorability {..} call = do
-    MkAllFor stba <- stbAdapter
+    MkAllFor stba <- return stbAdapter
     saturateStoreAdapter tt adapter stbKind stbCovaryMap $ \args eargs -> call args $ stba eargs
 
 type SealedStorability :: forall k. k -> Type
@@ -85,9 +87,9 @@ instance IsCovaryGroundType StorableGroundType where
     groundTypeCovaryMap (MkStorableGroundType _ (MkSealedStorability _ storability)) = stbCovaryMap storability
 
 storableGroundTypeAdapter ::
-       forall f t. StorableGroundType f -> Arguments MonoStorableType f t -> Interpreter (StoreAdapter t)
+       forall f t. StorableGroundType f -> Arguments MonoStorableType f t -> Interpreter (QStoreAdapter t)
 storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storability)) args = do
-    MkAllFor stba <- stbAdapter storability
+    MkAllFor stba <- return $ stbAdapter storability
     args' <- mapArgumentsM monoStoreAdapter args
     return $ stba args'
 
@@ -109,5 +111,5 @@ instance ExprShow (MonoStorableType t) where
 instance Show (MonoStorableType t) where
     show = exprShowShow
 
-monoStoreAdapter :: forall t. MonoStorableType t -> Interpreter (StoreAdapter t)
+monoStoreAdapter :: forall t. MonoStorableType t -> Interpreter (QStoreAdapter t)
 monoStoreAdapter (MkMonoType gt args) = storableGroundTypeAdapter gt args

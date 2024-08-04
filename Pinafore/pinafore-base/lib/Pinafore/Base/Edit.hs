@@ -14,9 +14,9 @@ import Shapes
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 type QStorageRead :: Type -> Type
 data QStorageRead t where
-    QStorageReadGet :: StoreAdapter t -> Predicate -> t -> QStorageRead Entity
+    QStorageReadGet :: StoreAdapter Identity t -> Predicate -> t -> QStorageRead Entity
     QStorageReadLookup :: Predicate -> Entity -> QStorageRead (FiniteSet Entity)
-    QStorageReadEntity :: StoreAdapter t -> Entity -> QStorageRead (Know t)
+    QStorageReadEntity :: StoreAdapter Identity t -> Entity -> QStorageRead (Know t)
 
 instance Show (QStorageRead t) where
     show (QStorageReadGet st p s) = "get " ++ show p ++ " of " ++ show (storeAdapterConvert st s)
@@ -27,7 +27,7 @@ instance AllConstraint Show QStorageRead where
     allConstraint = Dict
 
 data QStorageEdit where
-    MkQStorageEdit :: StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> QStorageEdit -- pred subj kval
+    MkQStorageEdit :: StoreAdapter Identity s -> StoreAdapter Identity v -> Predicate -> s -> Know v -> QStorageEdit -- pred subj kval
 
 instance Floating QStorageEdit QStorageEdit
 

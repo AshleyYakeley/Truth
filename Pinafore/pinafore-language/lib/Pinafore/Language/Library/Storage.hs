@@ -35,7 +35,7 @@ openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
 
-storeFetch :: StoreAdapter a -> QStore -> Entity -> Action a
+storeFetch :: StoreAdapter Identity a -> QStore -> Entity -> Action a
 storeFetch adapter store e =
     actionLiftViewKnow $
     viewRunResource (qStoreModel store) $ \aModel -> aModelRead aModel $ QStorageReadEntity adapter e
@@ -69,16 +69,23 @@ storageLibSection =
                         ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
                         ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
                     typef = qFunctionPosWitness qType typem
-                    property = predicateProperty saa sab (MkPredicate anchor)
-                    pinaproperty =
-                        \qstore ->
-                            MkLangProperty $
-                            storageModelBased qstore $
-                            cfmap4 (MkCatDual $ shimToFunction praContra) $
-                            cfmap3 (shimToFunction praCo) $
-                            cfmap2 (MkCatDual $ shimToFunction prbContra) $ cfmap1 (shimToFunction prbCo) property
-                    anyval = MkSomeOf typef pinaproperty
-                return $ constSealedExpression anyval
+                    propertyexpr =
+                        liftA2
+                            (\isaa isab -> predicateProperty isaa isab (MkPredicate anchor))
+                            (sequenceStoreAdapter saa)
+                            (sequenceStoreAdapter sab)
+                    pinapropertyexpr =
+                        fmap
+                            (\property ->
+                                 \qstore ->
+                                     MkLangProperty $
+                                     storageModelBased qstore $
+                                     cfmap4 (MkCatDual $ shimToFunction praContra) $
+                                     cfmap3 (shimToFunction praCo) $
+                                     cfmap2 (MkCatDual $ shimToFunction prbContra) $
+                                     cfmap1 (shimToFunction prbCo) property)
+                            propertyexpr
+                return $ MkSealedExpression typef pinapropertyexpr
           , hasSubtypeRelationBDS Verify "" $ functionToShim "Store to Model" langStoreToModel
           , specialFormBDS
                 "cell"
@@ -96,16 +103,24 @@ storageLibSection =
                         MkDolanGroundedType wholeModelGroundType $
                         ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) NilCCRArguments
                     stype = qFunctionPosWitness qType typem
-                    property = predicateProperty (asLiteralStoreAdapter @()) saa (MkPredicate anchor)
-                    sval =
-                        \qstore -> let
-                            lprop =
-                                MkLangProperty $
-                                storageModelBased qstore $
-                                cfmap3 (termf @(->)) $
-                                cfmap2 (MkCatDual $ shimToFunction praContra) $ cfmap1 (shimToFunction praCo) property
-                            in applyLangAttributeModel (langPropertyAttribute lprop) $ immutableToWholeModel $ pure ()
-                return $ constSealedExpression $ MkSomeOf stype sval
+                    propertyexpr =
+                        fmap
+                            (\isaa -> predicateProperty (asLiteralStoreAdapter @_ @()) isaa (MkPredicate anchor))
+                            (sequenceStoreAdapter saa)
+                    sexpr =
+                        fmap
+                            (\property ->
+                                 \qstore -> let
+                                     lprop =
+                                         MkLangProperty $
+                                         storageModelBased qstore $
+                                         cfmap3 (termf @(->)) $
+                                         cfmap2 (MkCatDual $ shimToFunction praContra) $
+                                         cfmap1 (shimToFunction praCo) property
+                                     in applyLangAttributeModel (langPropertyAttribute lprop) $
+                                        immutableToWholeModel $ pure ())
+                            propertyexpr
+                return $ MkSealedExpression stype sexpr
           , specialFormBDS
                 "set"
                 "Storage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @A @Unit <anchor> store !@ {()}`"
@@ -124,21 +139,29 @@ storageLibSection =
                         MkDolanGroundedType finiteSetModelGroundType $
                         ConsCCRArguments (RangeCCRPolarArgument rtaep rtaq) NilCCRArguments
                     stype = qFunctionPosWitness qType typem
-                    property :: StorageLensProperty a a () () QStorageUpdate
-                    property = predicateProperty saa (asLiteralStoreAdapter @()) (MkPredicate anchor)
-                    sval =
-                        \qstore -> let
-                            lprop :: LangProperty '( a, MeetType Entity a) '( (), TopType)
-                            lprop =
-                                MkLangProperty $
-                                storageModelBased qstore $
-                                cfmap3 (meetf (storeAdapterConvert saa) id) $ cfmap1 (termf @(->)) property
-                            lfsm :: LangFiniteSetModel '( MeetType Entity a, a)
-                            lfsm = inverseApplyLangPropertyImmutModel lprop $ pure ()
-                            in cfmap
-                                   (MkCatRange (shimToFunction $ iMeetPair id praContra . econv) (shimToFunction praCo))
-                                   lfsm
-                return $ constSealedExpression $ MkSomeOf stype sval
+                    propertyexpr :: QOpenExpression (StorageLensProperty a a () () QStorageUpdate)
+                    propertyexpr =
+                        fmap
+                            (\isaa -> predicateProperty isaa (asLiteralStoreAdapter @_ @()) (MkPredicate anchor))
+                            (sequenceStoreAdapter saa)
+                    sexpr =
+                        fmap
+                            (\property ->
+                                 \qstore -> let
+                                     lprop :: LangProperty '( a, MeetType Entity a) '( (), TopType)
+                                     lprop =
+                                         MkLangProperty $
+                                         storageModelBased qstore $
+                                         cfmap3 (meetf (storeAdapterConvert saa) id) $ cfmap1 (termf @(->)) property
+                                     lfsm :: LangFiniteSetModel '( MeetType Entity a, a)
+                                     lfsm = inverseApplyLangPropertyImmutModel lprop $ pure ()
+                                     in cfmap
+                                            (MkCatRange
+                                                 (shimToFunction $ iMeetPair id praContra . econv)
+                                                 (shimToFunction praCo))
+                                            lfsm)
+                            propertyexpr
+                return $ MkSealedExpression stype sexpr
           , specialFormBDS
                 "fetch"
                 "Fetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them."
@@ -152,9 +175,9 @@ storageLibSection =
                     stype =
                         qFunctionPosWitness qType $
                         qFunctionPosWitness qType $ actionShimWit $ nonpolarToPositive @QTypeSystem ta
-                    sval :: QStore -> Entity -> Action a
-                    sval = storeFetch saa
-                return $ constSealedExpression $ MkSomeOf stype sval
+                    sexpr :: QOpenExpression (QStore -> Entity -> Action a)
+                    sexpr = fmap storeFetch $ sequenceStoreAdapter saa
+                return $ MkSealedExpression stype sexpr
           , valBDS
                 "openDefault"
                 "Open the default `Store`. Will be closed at the end of the lifecycle."

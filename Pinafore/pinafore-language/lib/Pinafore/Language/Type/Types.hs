@@ -26,7 +26,7 @@ import Pinafore.Language.Value
 actionGroundType :: QGroundType '[ CoCCRVariance] Action
 actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Action)|]) "Action"
 
-maybeStoreAdapter :: StoreAdapter t -> StoreAdapter (Maybe t)
+maybeStoreAdapter :: QStoreAdapter t -> QStoreAdapter (Maybe t)
 maybeStoreAdapter et = let
     justAnchor = codeAnchor "pinafore-base:Just"
     justAdapter = constructorStoreAdapter justAnchor $ ConsListType et NilListType
@@ -54,7 +54,7 @@ maybeGroundType = let
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe") {qgtProperties = props}
 
-listStoreAdapters :: StoreAdapter t -> (StoreAdapter [t], StoreAdapter (NonEmpty t))
+listStoreAdapters :: QStoreAdapter t -> (QStoreAdapter [t], QStoreAdapter (NonEmpty t))
 listStoreAdapters et = let
     nilAnchor = codeAnchor "pinafore-base:Nil"
     nilAdapter = constructorStoreAdapter nilAnchor NilListType
@@ -74,10 +74,10 @@ listStoreAdapters et = let
     to (a:aa) = Right $ a :| aa
     in (listAdapter, list1Adapter)
 
-listStoreAdapter :: StoreAdapter t -> StoreAdapter [t]
+listStoreAdapter :: QStoreAdapter t -> QStoreAdapter [t]
 listStoreAdapter = fst . listStoreAdapters
 
-list1StoreAdapter :: StoreAdapter t -> StoreAdapter (NonEmpty t)
+list1StoreAdapter :: QStoreAdapter t -> QStoreAdapter (NonEmpty t)
 list1StoreAdapter = snd . listStoreAdapters
 
 listEntityConvert :: [Entity] -> Entity
@@ -111,7 +111,7 @@ list1GroundType = let
                      in MkShimWit tt $ MkPolarShim $ pureComposeShim $ functionToShim "nonEmpty" nonEmpty
            }
 
-eitherStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Either ta tb)
+eitherStoreAdapter :: QStoreAdapter ta -> QStoreAdapter tb -> QStoreAdapter (Either ta tb)
 eitherStoreAdapter eta etb = let
     from :: (a, ()) -> a
     from (a, ()) = a
@@ -141,7 +141,7 @@ eitherGroundType = let
     showtype ta tb = namedTextPrec 4 $ precNamedText 3 ta <> " +: " <> precNamedText 4 tb
     in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) showtype) {qgtProperties = props}
 
-resultStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Result ta tb)
+resultStoreAdapter :: QStoreAdapter ta -> QStoreAdapter tb -> QStoreAdapter (Result ta tb)
 resultStoreAdapter eta etb = let
     from :: (a, ()) -> a
     from (a, ()) = a
@@ -169,7 +169,7 @@ resultGroundType = let
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Result)|]) "Result") {qgtProperties = props}
 
-pairStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (ta, tb)
+pairStoreAdapter :: QStoreAdapter ta -> QStoreAdapter tb -> QStoreAdapter (ta, tb)
 pairStoreAdapter eta etb = let
     pairAnchor = codeAnchor "pinafore-base:Pair"
     pairAdapter = constructorStoreAdapter pairAnchor $ ConsListType eta $ ConsListType etb NilListType
@@ -196,7 +196,7 @@ pairGroundType = let
     showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
     in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) showtype) {qgtProperties = props}
 
-mapStoreAdapter :: StoreAdapter t -> StoreAdapter (LangMap t)
+mapStoreAdapter :: QStoreAdapter t -> QStoreAdapter (LangMap t)
 mapStoreAdapter t = invmap langMapFromList langMapToList $ listStoreAdapter $ pairStoreAdapter plainStoreAdapter t
 
 mapGroundType :: QGroundType '[ CoCCRVariance] LangMap

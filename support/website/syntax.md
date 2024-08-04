@@ -200,9 +200,9 @@ All declarations, including type declarations, are local to a `let` block.
 <direct-declaration> ::=
     "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <of(<plain-datatype-constructor>)> |
     "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
+    "predicatetype" <optional("storable")> <type-const> "<:" <type> "=" <expression> |
     "opentype" <type-const> |
     "subtype" <optional("trustme")> <type> "<:" <type> <optional("=" <expression>)> |
-    "dynamictype" <type-const> <dynamictype-body> |
     <binding>
 
 <name-item> ::= <name> | "namespace" <name>
@@ -244,8 +244,6 @@ All declarations, including type declarations, are local to a `let` block.
 <storable-datatype-constructor> ::=
     uname <types> anchor |
     "subtype" "datatype" "storable" <type-const> <of(<storable-datatype-constructor>)>
-
-<dynamictype-body> ::=  | <anchor>
 
 <types> ::=  | <type-3> <types>
 
