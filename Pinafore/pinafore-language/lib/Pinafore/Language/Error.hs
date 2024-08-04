@@ -56,7 +56,7 @@ data QErrorType
                                       NamedText
     | InterpretTypeNotAmbipolarError NamedText
     | InterpretTypeNotGroundedError NamedText
-    | InterpretTypeNotEntityError NamedText
+    | InterpretTypeNotStorableError NamedText
     | InterpretTypeNotSimpleEntityError NamedText
     | InterpretTypeNotDynamicEntityError NamedText
     | InterpretTypeNotOpenEntityError NamedText
@@ -148,7 +148,7 @@ instance ShowNamedText QErrorType where
         "recursive variable " <> showNamedText var <> " is used immediately in type " <> tp
     showNamedText (InterpretTypeNotAmbipolarError t) = t <> " is not an ambipolar type"
     showNamedText (InterpretTypeNotGroundedError t) = t <> " is not a grounded type"
-    showNamedText (InterpretTypeNotEntityError t) = t <> " is not an entity type"
+    showNamedText (InterpretTypeNotStorableError t) = t <> " is not a storable type"
     showNamedText (InterpretTypeNotSimpleEntityError t) = t <> " is not a simple entity type"
     showNamedText (InterpretTypeNotDynamicEntityError t) = t <> " is not a dynamic entity type"
     showNamedText (InterpretTypeNotOpenEntityError t) = t <> " is not an open entity type"

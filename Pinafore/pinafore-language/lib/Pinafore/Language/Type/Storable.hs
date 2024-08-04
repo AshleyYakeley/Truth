@@ -33,4 +33,4 @@ getMonoStorableType :: QNonpolarType t -> QInterpreter (MonoStorableType t)
 getMonoStorableType tm =
     case nonpolarToMonoType tm of
         Just t -> return t
-        Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
+        Nothing -> throw $ InterpretTypeNotStorableError $ exprShow tm
