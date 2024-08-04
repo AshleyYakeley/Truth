@@ -773,17 +773,30 @@ testEntity =
                       , testExpectSuccess "testIsNothing $ check @F $ fn x => x"
                       , testExpectSuccess "testeq {Just 6} {map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
                       ]
-                , testExpectReject "let predicatetype F <: a -> a = fn f => f 3 == 4 in pass"
-                , tDecls ["predicatetype F <: a -> a = fn f => True"] $
-                  tGroup
-                      "a -> a"
-                      [ testExpectSuccess "pass"
-                      , testExpectSuccess "testIsJust $ check @F $ fn x => x"
-                      , testExpectSuccess "testIsJust $ check @F not.Boolean"
-                      , tModify (failTestBecause "bad") $
-                        testExpectSuccess "testeq {Just 6} {map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
-                      , tModify (failTestBecause "bad") $
-                        testExpectSuccess "testeq {Just True} {map.Maybe (fn f => f False) $ check @F not.Boolean}"
+                , testExpectReject "let predicatetype F <: a -> a = fn f => True in pass"
+                , testExpectSuccess
+                      "let predicatetype AtLeastThree <: rec a, Maybe a = match Just (Just (Just _)) => True; _ => False; end in pass"
+                , testExpectSuccess
+                      "let predicatetype AtLeastThree <: Maybe (rec a, Maybe a) = match Just (Just (Just _)) => True; _ => False; end in pass"
+                , tGroup
+                      "storable"
+                      [ testExpectSuccess "let predicatetype F <: Integer -> Integer = fn _ => True in pass"
+                      , testExpectReject "let predicatetype storable F <: Integer -> Integer = fn _ => True in pass"
+                      , tOpenDefaultStore $
+                        tWith ["Store"] $
+                        tDecls
+                            [ "predicatetype storable Even <: Integer = fn i => mod i 2 == 0"
+                            , "cellInteger = cell @Integer !\"c\" store"
+                            , "cellEven = cell @Even !\"c\" store"
+                            ] $
+                        tGroup
+                            "store"
+                            [ testExpectSuccess "pass"
+                            , testExpectSuccess "do cellInteger = 18; testeq {18} cellInteger end"
+                            , testExpectSuccess "do cellInteger = 18; testeq {18} cellEven end"
+                            , testExpectSuccess "do cellInteger = 17; testeq {17} cellInteger end"
+                            , testExpectSuccess "do cellInteger = 17; testisunknown cellEven end"
+                            ]
                       ]
                 ]
               ]
