@@ -421,6 +421,31 @@ So `opentype Integer <: Q` is allowed, but `opentype Maybe Integer <: Q` is not 
 Subtypes relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.
 
+## Predicate Types
+
+A predicate type `T` is a "subset" of an existing type `P`, consisting of those values that satisfy some predicate `f: P -> Boolean`.
+You can declare them like this:
+
+```pinafore decl
+predicatetype T <: P = f;
+```
+
+The parent type `P` must be an invertible type (that is, with no type variables, `&`, `|`, `Any` or `None`).
+This will create a new type `T`, with subtype relation `T <: P` and [greatest dynamic supertype](dynamic-supertypes.md) `D(T) = D(P)`.
+
+To create new values of `T`, you can use `check @T` and `coerce @T`.
+
+For example, a type of even integers:
+```pinafore decl
+predicatetype Even <: Integer = fn i => i % 2 == 0;
+
+addEven: Even -> Even -> Even = fn a, b => coerce @Even $ a + b;
+
+even4: Even = coerce @Even 4;
+```
+
+The greatest dynamic supertype of `Even` will be `Literal` (since that is the GDS of `Integer`).
+
 ## Functions
 
 `-a -> +b`  
