@@ -4,6 +4,7 @@ module Pinafore.Language.Interpret.TypeDecl.Predicate
 
 import Import
 import Pinafore.Language.Convert
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl.Storage
@@ -32,6 +33,18 @@ makePredicateTypeBox name md storable sparent spredicate =
                    (QNonpolarGroundedType (Identified tid), QOpenExpression (Identified tid -> Bool))
                 -> QScopeBuilder ()
             register ~(parent, predexpr) = do
+                let
+                    freevars :: FiniteSet SomeTypeVarT
+                    freevars = freeTypeVariables parent
+                    declaredvars :: [SomeTypeVarT]
+                    declaredvars = mempty -- TBD
+                    unboundvars :: [SomeTypeVarT]
+                    unboundvars = toList freevars \\ declaredvars
+                case nonEmpty unboundvars of
+                    Nothing -> return ()
+                    Just vv ->
+                        builderLift $
+                        throw $ InterpretTypeDeclUnboundTypeVariablesError name $ fmap someTypeVarToName vv
                 let
                     parentneg :: QGroundedShimWit 'Negative (Identified tid)
                     parentneg = groundedNonpolarToDolanType parent
