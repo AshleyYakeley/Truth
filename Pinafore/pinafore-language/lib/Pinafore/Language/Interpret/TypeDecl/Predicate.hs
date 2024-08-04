@@ -6,6 +6,7 @@ import Import
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Interpret.TypeDecl.Storage
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
@@ -14,27 +15,6 @@ gate :: (t -> Bool) -> Maybe t -> Maybe t
 gate f (Just t)
     | f t = Just t
 gate _ _ = Nothing
-
-predicateGroundType ::
-       forall tid (t :: Type). (IdentifiedKind tid ~ Type, Identified tid ~~ t)
-    => FullName
-    -> TypeIDType tid
-    -> QGroundedShimWit 'Negative t
-    -> QOpenExpression (t -> Bool)
-    -> QGroundType '[] t
-predicateGroundType name tid parentneg predexpr = let
-    props = mempty
-        -- singleGroundProperty storabilityProperty $ dynamicEntityStorability $ fmap Just $ getTypeSet fam
-    in (singleGroundType' (identifiedFamilialType tid) props $ exprShowPrec name)
-           { qgtGreatestDynamicSupertype =
-                 MkPolyGreatestDynamicSupertype $ \NilCCRArguments ->
-                     case getGroundedShimWitGreatestDynamicSupertype parentneg of
-                         MkShimWit dpt (MkPolarShim (MkComposeShim convexpr)) ->
-                             MkShimWit dpt $
-                             MkPolarShim $
-                             MkComposeShim $
-                             liftA2 (\prd conv -> (functionToShim "predicate" $ gate prd) . conv) predexpr convexpr
-           }
 
 makePredicateTypeBox ::
        (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
@@ -51,13 +31,42 @@ makePredicateTypeBox name md storable sparent spredicate =
             register ::
                    (QNonpolarGroundedType (Identified tid), QOpenExpression (Identified tid -> Bool))
                 -> QScopeBuilder ()
-            register ~(parent, oexpr) = do
+            register ~(parent, predexpr) = do
                 let
                     parentneg :: QGroundedShimWit 'Negative (Identified tid)
                     parentneg = groundedNonpolarToDolanType parent
+                    gds :: QExprGroundedShimWit 'Negative (Maybe (Identified tid))
+                    gds = getGroundedShimWitGreatestDynamicSupertype parentneg
+                props :: GroundProperties '[] (Identified tid) <-
+                    if storable
+                        then do
+                            Compose storeadapter <- builderLift $ nonpolarGroundedToStoreAdapter NilCCRArguments parent
+                            let
+                                storability :: Storability '[] (Identified tid)
+                                storability = let
+                                    stbKind = NilListType
+                                    stbCovaryMap = covarymap
+                                    stbAdapter = pureStorabilityAdapter $ \NilArguments -> storeadapter NilArguments
+                                    in MkStorability {..}
+                            return $ singleGroundProperty storabilityProperty storability
+                        else return mempty
+                let
                     gt :: QGroundType '[] (Identified tid)
-                    gt = predicateGroundType name tidsym parentneg oexpr
-                    gdsname = exprShow $ getGroundedShimWitGreatestDynamicSupertype parentneg
+                    gt =
+                        (singleGroundType' (identifiedFamilialType tidsym) props $ exprShowPrec name)
+                            { qgtGreatestDynamicSupertype =
+                                  MkPolyGreatestDynamicSupertype $ \NilCCRArguments ->
+                                      case gds of
+                                          MkShimWit dpt (MkPolarShim (MkComposeShim convexpr)) ->
+                                              MkShimWit dpt $
+                                              MkPolarShim $
+                                              MkComposeShim $
+                                              liftA2
+                                                  (\prd conv -> (functionToShim "predicate" $ gate prd) . conv)
+                                                  predexpr
+                                                  convexpr
+                            }
+                    gdsname = exprShow gds
                     doc = MkDefDoc (typeDocItem name storable [] (Just gdsname)) md
                     sce :: QSubtypeConversionEntry
                     sce = neutralSubtypeConversionEntry (MkNonpolarGroundedType gt NilCCRArguments) parent

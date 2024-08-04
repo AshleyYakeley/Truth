@@ -792,10 +792,10 @@ testEntity =
                         tGroup
                             "store"
                             [ testExpectSuccess "pass"
-                            , testExpectSuccess "do cellInteger = 18; testeq {18} cellInteger end"
-                            , testExpectSuccess "do cellInteger = 18; testeq {18} cellEven end"
-                            , testExpectSuccess "do cellInteger = 17; testeq {17} cellInteger end"
-                            , testExpectSuccess "do cellInteger = 17; testisunknown cellEven end"
+                            , testExpectSuccess "do cellInteger := 18; testeq {18} cellInteger end"
+                            , testExpectSuccess "do cellInteger := 18; testeq {18} cellEven end"
+                            , testExpectSuccess "do cellInteger := 17; testeq {17} cellInteger end"
+                            , testExpectSuccess "do cellInteger := 17; testisunknown cellEven end"
                             ]
                       ]
                 ]
