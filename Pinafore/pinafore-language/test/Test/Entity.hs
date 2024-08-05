@@ -774,10 +774,18 @@ testEntity =
                       , testExpectSuccess "testeq {Just 6} {map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
                       ]
                 , testExpectReject "let predicatetype F <: a -> a = fn f => True in pass"
-                , testExpectSuccess
-                      "let predicatetype AtLeastThree <: rec a, Maybe a = match Just (Just (Just _)) => True; _ => False; end in pass"
-                , testExpectSuccess
-                      "let predicatetype AtLeastThree <: Maybe (rec a, Maybe a) = match Just (Just (Just _)) => True; _ => False; end in pass"
+                , tGroup
+                      "unroll"
+                      [ testExpectSuccess
+                            "let predicatetype AtLeastThree <: Maybe (rec a, Maybe a) = match Just (Just (Just _)) => True; _ => False; end in pass"
+                      , testExpectSuccess
+                            "let predicatetype AtLeastThree <: rec a, Maybe a = match Just (Just (Just _)) => True; _ => False; end in pass"
+                      , testExpectSuccess
+                            "let predicatetype AtLeastThree <: rec a, a +: a = match Left (Left (Left _)) => True; _ => False; end in pass"
+                      , testExpectSuccess
+                            "let predicatetype AtLeastThree <: rec a, rec b, a +: b = match Left (Left (Left _)) => True; _ => False; end in pass"
+                      , testExpectReject "let predicatetype Degenerate <: rec a, a = fn _ => True in pass"
+                      ]
                 , tGroup
                       "storable"
                       [ testExpectSuccess "let predicatetype F <: Integer -> Integer = fn _ => True in pass"

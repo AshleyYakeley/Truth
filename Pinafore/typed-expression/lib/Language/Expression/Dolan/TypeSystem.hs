@@ -17,5 +17,8 @@ type DolanShim ground = DolanPolyShim ground Type
 type DolanPolyIsoShim :: GroundTypeKind -> PolyShimKind
 type DolanPolyIsoShim ground = PolyIso (DolanPolyShim ground)
 
+type DolanIsoShim :: GroundTypeKind -> ShimKind Type
+type DolanIsoShim ground = DolanPolyIsoShim ground Type
+
 type DolanPolarShim :: GroundTypeKind -> Polarity -> ShimKind Type
 type DolanPolarShim ground = PolarShim (DolanShim ground)

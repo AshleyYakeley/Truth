@@ -39,6 +39,7 @@ module Language.Expression.Dolan
     , DolanSingularType(..)
     , DolanType(..)
     , unrollRecursiveType
+    , unrollTopType
     , unToRangeShimWit
     , unFromRangeShimWit
     , invertType

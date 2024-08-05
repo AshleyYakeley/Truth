@@ -92,7 +92,7 @@ type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanShimWit ground polarity = PShimWit (DolanShim ground) (DolanType ground) polarity
 
 type DolanIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type DolanIsoShimWit ground polarity = PShimWit (DolanPolyIsoShim ground Type) (DolanType ground) polarity
+type DolanIsoShimWit ground polarity = PShimWit (DolanIsoShim ground) (DolanType ground) polarity
 
 type DolanType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanType ground polarity t where
@@ -122,8 +122,7 @@ type DolanGroundedShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanGroundedShimWit ground polarity = PShimWit (DolanShim ground) (DolanGroundedType ground) polarity
 
 type DolanGroundedIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type DolanGroundedIsoShimWit ground polarity
-     = PShimWit (DolanPolyIsoShim ground Type) (DolanGroundedType ground) polarity
+type DolanGroundedIsoShimWit ground polarity = PShimWit (DolanIsoShim ground) (DolanGroundedType ground) polarity
 
 mkDolanGroundedShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (polarity :: Polarity) t.

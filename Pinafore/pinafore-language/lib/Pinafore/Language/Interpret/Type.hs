@@ -29,9 +29,11 @@ interpretNonpolarType st = do
         BothMPolarW atm ->
             case atm @'Positive of
                 MkSome tm ->
-                    case positiveToNonpolar @QTypeSystem tm of
-                        Just t -> return $ shimWitToSome t
-                        Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
+                    case unrollTopType tm of
+                        MkShimWit tm' _ ->
+                            case positiveToNonpolar @QTypeSystem tm' of
+                                Just t -> return $ shimWitToSome t
+                                Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 
 interpretNonpolarGroundedType :: SyntaxType -> QInterpreter (Some QNonpolarGroundedType)
 interpretNonpolarGroundedType st = do
