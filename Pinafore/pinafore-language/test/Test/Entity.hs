@@ -399,13 +399,22 @@ testEntity =
                     , testExpectSuccess "s1 += 2 >> testeq {[2]} (toList.FiniteSetModel order.Integer s1)"
                     , testExpectSuccess "s1 += 5 >> s1 += 3 >> testeq {[3,5]} (toList.FiniteSetModel order.Integer s1)"
                     ]
+              , tGroup
+                    "type"
+                    [ testExpectSuccess "let c = cell @Boolean !\"c\" store in pass"
+                    , testExpectSuccess "let c = cell @Unit !\"c\" store in pass"
+                    , testExpectSuccess "let c = cell @(Maybe Integer) !\"c\" store in pass"
+                    , testExpectSuccess "let c = cell @(List Unit) !\"c\" store in pass"
+                    , testExpectSuccess "let c = cell @(List (List (List Integer))) !\"c\" store in pass"
+                    ]
               , tDecls
                     [ "longtext = \"jfkljgkljrklgjkvbnvleriirejgioerjhgitrklnmbdfmkl;dmnverireigjerkgjrevjkrljvkljvklsjvroejrgiojgireojg\""
                     , "ela = property @E @(List Integer) !\"ela\" store"
                     ] $
                 tGroup
                     "fetch"
-                    [ testExpectSuccess "do v <- fetch @Text store \"hvfjkhvjrkes\"; testeq {\"hvfjkhvjrkes\"} {v} end"
+                    [ testExpectSuccess "pass"
+                    , testExpectSuccess "do v <- fetch @Text store \"hvfjkhvjrkes\"; testeq {\"hvfjkhvjrkes\"} {v} end"
                     , testExpectSuccess "expectStop $ do v <- fetch @Text store longtext; testeq {longtext} {v} end"
                     , testExpectSuccess
                           "do eta !$ {e1} := longtext; v <- fetch @Text store longtext; testeq {longtext} {v} end"
