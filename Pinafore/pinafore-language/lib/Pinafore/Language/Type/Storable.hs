@@ -1,8 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Type.Storable
-    ( QStoreAdapter
-    , Storability(..)
+    ( Storability(..)
     , pureStorabilityAdapter
     , storabilityProperty
     , entityGroundType

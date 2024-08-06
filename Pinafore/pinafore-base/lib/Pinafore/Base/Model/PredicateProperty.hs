@@ -13,11 +13,7 @@ import Pinafore.Base.Storable.StoreAdapter
 import Shapes
 
 predicateProperty ::
-       forall a b.
-       StoreAdapter Identity a
-    -> StoreAdapter Identity b
-    -> Predicate
-    -> StorageLensProperty a a b b QStorageUpdate
+       forall a b. StoreAdapter a -> StoreAdapter b -> Predicate -> StorageLensProperty a a b b QStorageUpdate
 predicateProperty eaa eab prd = let
     ap = storeAdapterConvert eaa
     bp = storeAdapterConvert eab

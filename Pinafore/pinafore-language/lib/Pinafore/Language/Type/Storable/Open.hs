@@ -52,7 +52,7 @@ openStorableGroundType oet = let
         stbCovaryMap = covarymap
         stbAdapter =
             pureStorabilityAdapter @(OpenEntity tid) $ \NilArguments ->
-                invmap MkOpenEntity unOpenEntity plainStoreAdapter
+                mkQStoreAdapter $ invmap MkOpenEntity unOpenEntity plainStoreAdapter
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet

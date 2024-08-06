@@ -35,7 +35,7 @@ openDefaultStore = do
     model <- iiDefaultStorageModel ?qcontext
     liftIO $ mkQStore model
 
-storeFetch :: StoreAdapter Identity a -> QStore -> Entity -> Action a
+storeFetch :: StoreAdapter a -> QStore -> Entity -> Action a
 storeFetch adapter store e =
     actionLiftViewKnow $
     viewRunResource (qStoreModel store) $ \aModel -> aModelRead aModel $ QStorageReadEntity adapter e
@@ -56,8 +56,8 @@ storageLibSection =
                 (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
                 eta <- getMonoStorableType ta
                 etb <- getMonoStorableType tb
-                saa <- monoStoreAdapter eta
-                sab <- monoStoreAdapter etb
+                Compose saa <- monoStoreAdapter eta
+                Compose sab <- monoStoreAdapter etb
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
                 MkShimWit rtaq (MkPolarShim praCo) <- return $ nonpolarToPositive @QTypeSystem ta
                 MkShimWit rtbp (MkPolarShim prbContra) <- return $ nonpolarToNegative @QTypeSystem tb
@@ -69,11 +69,7 @@ storageLibSection =
                         ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
                         ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
                     typef = qFunctionPosWitness qType typem
-                    propertyexpr =
-                        liftA2
-                            (\isaa isab -> predicateProperty isaa isab (MkPredicate anchor))
-                            (sequenceStoreAdapter saa)
-                            (sequenceStoreAdapter sab)
+                    propertyexpr = liftA2 (\isaa isab -> predicateProperty isaa isab (MkPredicate anchor)) saa sab
                     pinapropertyexpr =
                         fmap
                             (\property ->
@@ -94,7 +90,7 @@ storageLibSection =
                 "Store -> WholeModel A" $
             MkQSpecialForm (ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (anchor, ())) -> do
                 eta <- getMonoStorableType ta
-                saa <- monoStoreAdapter eta
+                Compose saa <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
                 MkShimWit rtaq (MkPolarShim praCo) <- return $ nonpolarToPositive @QTypeSystem ta
                 let
@@ -104,9 +100,7 @@ storageLibSection =
                         ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) NilCCRArguments
                     stype = qFunctionPosWitness qType typem
                     propertyexpr =
-                        fmap
-                            (\isaa -> predicateProperty (asLiteralStoreAdapter @_ @()) isaa (MkPredicate anchor))
-                            (sequenceStoreAdapter saa)
+                        fmap (\isaa -> predicateProperty (asLiteralStoreAdapter @()) isaa (MkPredicate anchor)) saa
                     sexpr =
                         fmap
                             (\property ->
@@ -128,7 +122,7 @@ storageLibSection =
                 "Store -> FiniteSetModel {-Entity,A}" $
             MkQSpecialForm (ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome (ta :: _ a), (anchor, ())) -> do
                 eta <- getMonoStorableType ta
-                saa <- monoStoreAdapter eta
+                Compose saa <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
                 MkShimWit rtaq (MkPolarShim praCo) <- return $ nonpolarToPositive @QTypeSystem ta
                 MkShimWit rtaep (MkPolarShim econv) <-
@@ -141,18 +135,16 @@ storageLibSection =
                     stype = qFunctionPosWitness qType typem
                     propertyexpr :: QOpenExpression (StorageLensProperty a a () () QStorageUpdate)
                     propertyexpr =
-                        fmap
-                            (\isaa -> predicateProperty isaa (asLiteralStoreAdapter @_ @()) (MkPredicate anchor))
-                            (sequenceStoreAdapter saa)
+                        fmap (\isaa -> predicateProperty isaa (asLiteralStoreAdapter @()) (MkPredicate anchor)) saa
                     sexpr =
-                        fmap
-                            (\property ->
+                        liftA2
+                            (\property isaa ->
                                  \qstore -> let
                                      lprop :: LangProperty '( a, MeetType Entity a) '( (), TopType)
                                      lprop =
                                          MkLangProperty $
                                          storageModelBased qstore $
-                                         cfmap3 (meetf (storeAdapterConvert saa) id) $ cfmap1 (termf @(->)) property
+                                         cfmap3 (meetf (storeAdapterConvert isaa) id) $ cfmap1 (termf @(->)) property
                                      lfsm :: LangFiniteSetModel '( MeetType Entity a, a)
                                      lfsm = inverseApplyLangPropertyImmutModel lprop $ pure ()
                                      in cfmap
@@ -161,6 +153,7 @@ storageLibSection =
                                                  (shimToFunction praCo))
                                             lfsm)
                             propertyexpr
+                            saa
                 return $ MkSealedExpression stype sexpr
           , specialFormBDS
                 "fetch"
@@ -169,14 +162,14 @@ storageLibSection =
                 "Store -> Entity -> Action A" $
             MkQSpecialForm (ConsListType AnnotNonpolarType NilListType) $ \(MkSome (ta :: _ a), ()) -> do
                 eta <- getMonoStorableType ta
-                saa <- monoStoreAdapter eta
+                Compose saa <- monoStoreAdapter eta
                 let
                     stype :: QShimWit 'Positive (QStore -> Entity -> Action a)
                     stype =
                         qFunctionPosWitness qType $
                         qFunctionPosWitness qType $ actionShimWit $ nonpolarToPositive @QTypeSystem ta
                     sexpr :: QOpenExpression (QStore -> Entity -> Action a)
-                    sexpr = fmap storeFetch $ sequenceStoreAdapter saa
+                    sexpr = fmap storeFetch saa
                 return $ MkSealedExpression stype sexpr
           , valBDS
                 "openDefault"

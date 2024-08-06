@@ -1,6 +1,5 @@
 module Pinafore.Base.Storable.EntityStorer
-    ( TraversableToIdentity(..)
-    , Predicate(..)
+    ( Predicate(..)
     , FieldStorer(..)
     , ConstructorStorer(..)
     , EntityStorer(..)
@@ -22,16 +21,6 @@ newtype Predicate =
 instance Show Predicate where
     show (MkPredicate anchor) = show anchor
 
-data StorerMode
-    = SingleMode
-    | MultipleMode (Type -> Type)
-
-class TraversableToIdentity (t :: StorerMode -> Type -> Type) where
-    sequenceToIdentity ::
-           forall f a. Applicative f
-        => t ('MultipleMode f) a
-        -> f (t ('MultipleMode Identity) a)
-
 type FieldStorer :: StorerMode -> Type -> Type
 data FieldStorer mode t where
     MkFieldStorer :: Predicate -> EntityStorer mode t -> FieldStorer mode t
@@ -42,8 +31,9 @@ instance TestEquality (FieldStorer 'SingleMode) where
         , Just Refl <- testEquality d1 d2 = Just Refl
     testEquality _ _ = Nothing
 
-instance TraversableToIdentity FieldStorer where
-    sequenceToIdentity (MkFieldStorer p es) = fmap (MkFieldStorer p) $ sequenceToIdentity es
+data StorerMode
+    = SingleMode
+    | MultipleMode
 
 instance WitnessConstraint Show (FieldStorer 'SingleMode) where
     witnessConstraint (MkFieldStorer _ t) = witnessConstraint t
@@ -74,12 +64,6 @@ instance WitnessConstraint Show (ConstructorStorer 'SingleMode) where
         case listProductShow witnessConstraint t of
             Dict -> Dict
 
-instance TraversableToIdentity ConstructorStorer where
-    sequenceToIdentity PlainConstructorStorer = pure PlainConstructorStorer
-    sequenceToIdentity LiteralConstructorStorer = pure LiteralConstructorStorer
-    sequenceToIdentity (ConstructorConstructorStorer anchor fss) =
-        fmap (ConstructorConstructorStorer anchor) $ mapMListType sequenceToIdentity fss
-
 constructorStorerToEntity :: forall t. ConstructorStorer 'SingleMode t -> t -> Entity
 constructorStorerToEntity PlainConstructorStorer t = t
 constructorStorerToEntity LiteralConstructorStorer l = literalToEntity l
@@ -99,7 +83,7 @@ constructorStorerToEntity (ConstructorConstructorStorer anchor facts) hl =
 type EntityStorer' :: StorerMode -> Type -> Type
 type family EntityStorer' mode t where
     EntityStorer' 'SingleMode t = ConstructorStorer 'SingleMode t
-    EntityStorer' ('MultipleMode f) t = [KnowShim (ConstructorStorer ('MultipleMode f)) f t]
+    EntityStorer' 'MultipleMode t = [KnowShim (ConstructorStorer 'MultipleMode) t]
 
 type EntityStorer :: StorerMode -> Type -> Type
 newtype EntityStorer mode t =
@@ -111,29 +95,24 @@ instance TestEquality (EntityStorer 'SingleMode) where
 instance WitnessConstraint Show (EntityStorer 'SingleMode) where
     witnessConstraint (MkEntityStorer fc) = witnessConstraint fc
 
-instance TraversableToIdentity EntityStorer where
-    sequenceToIdentity (MkEntityStorer kss) =
-        fmap MkEntityStorer $
-        for kss $ \(MkKnowShim wfdt ff) -> liftA2 (\wdt f -> MkKnowShim wdt $ Identity f) (sequenceToIdentity wfdt) ff
-
 entityStorerToEntity :: forall t. EntityStorer 'SingleMode t -> t -> Entity
 entityStorerToEntity (MkEntityStorer fc) = constructorStorerToEntity fc
 
-instance Functor f => Functor (EntityStorer ('MultipleMode f)) where
+instance Functor (EntityStorer 'MultipleMode) where
     fmap ab (MkEntityStorer kss) = MkEntityStorer $ fmap (fmap ab) kss
 
-instance Semigroup (EntityStorer ('MultipleMode f) t) where
+instance Semigroup (EntityStorer 'MultipleMode t) where
     MkEntityStorer kssa <> MkEntityStorer kssb = MkEntityStorer $ kssa <> kssb
 
-instance Monoid (EntityStorer ('MultipleMode f) t) where
+instance Monoid (EntityStorer 'MultipleMode t) where
     mempty = MkEntityStorer mempty
 
-instance Functor f => Invariant (EntityStorer ('MultipleMode f)) where
+instance Invariant (EntityStorer 'MultipleMode) where
     invmap ab _ = fmap ab
 
-instance Functor f => Summable (EntityStorer ('MultipleMode f)) where
+instance Summable (EntityStorer 'MultipleMode) where
     rVoid = mempty
     esa <+++> esb = fmap Left esa <> fmap Right esb
 
-gateEntityStorer :: Applicative f => f (t -> Bool) -> EntityStorer (MultipleMode f) t -> EntityStorer (MultipleMode f) t
+gateEntityStorer :: (t -> Bool) -> EntityStorer 'MultipleMode t -> EntityStorer 'MultipleMode t
 gateEntityStorer prd (MkEntityStorer kss) = MkEntityStorer $ fmap (gateKnowShim prd) kss

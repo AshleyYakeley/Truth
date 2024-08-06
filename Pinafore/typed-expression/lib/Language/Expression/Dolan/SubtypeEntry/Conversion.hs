@@ -60,11 +60,11 @@ coerceSubtypeConversion = CoerceSubtypeConversion
 singleSubtypeConversion ::
        forall (ground :: GroundTypeKind) a b.
        Maybe (DolanSubtypeHint ground)
-    -> DolanShim ground a b
+    -> DolanOpenExpression ground (DolanShim ground a b)
     -> SubtypeConversion ground '[] a '[] b
 singleSubtypeConversion hint conv =
     GeneralSubtypeConversion (maybe UnknownSK HintSK hint) $
-    linkSubtypeChain NilCCRVariancesMap NilCCRArguments NilCCRArguments $ pure conv
+    linkSubtypeChain NilCCRVariancesMap NilCCRArguments NilCCRArguments conv
 
 composeSubtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb dvc gtc.

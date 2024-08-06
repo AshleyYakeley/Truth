@@ -40,6 +40,10 @@ makeConstructorAdapter params pts = do
             case assignArgumentParams params args of
                 Refl -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl
 
+sequenceComposeListType :: Applicative f => ListType (Compose f w) lt -> f (ListType w lt)
+sequenceComposeListType NilListType = pure NilListType
+sequenceComposeListType (ConsListType (Compose fwa) tt) = liftA2 ConsListType fwa $ sequenceComposeListType tt
+
 makeTypeAdapter ::
        CovParams dv gt decltype -> [(ConstructorCodec decltype, Anchor)] -> QInterpreter (WithArgs QStoreAdapter gt)
 makeTypeAdapter params conss = do
@@ -52,9 +56,17 @@ makeTypeAdapter params conss = do
                         case wa args of
                             MkThing tt Refl -> let
                                 vcodec = invmap listVProductToProduct (listProductToVProduct $ listTypeToVType tt) codec
-                                in Compose $ Endo $ codecSum vcodec $ constructorStoreAdapter anchor tt
+                                in Compose $
+                                   Endo $ \(Compose qsa) ->
+                                       Compose $
+                                       liftA2
+                                           (codecSum vcodec . constructorStoreAdapter anchor)
+                                           (sequenceComposeListType tt)
+                                           qsa
             (MkSomeFor (MkConstructorType _ (RecordCF _) _) _, _) -> throw InterpretTypeDeclTypeStorableRecord
-    return $ MkWithArgs $ \args -> appEndo (concatmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullStoreAdapter
+    return $
+        MkWithArgs $ \args ->
+            appEndo (concatmap (\(MkWithArgs f) -> getCompose $ f args) ff) $ mkQStoreAdapter nullStoreAdapter
 
 makeStorableGroundType ::
        forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (decltype :: Type). Is CCRVariancesType dv
@@ -109,15 +121,15 @@ makeStorableGroundType mainTypeName tparams = let
             builderLift $
             storabilitySaturatedAdapter
                 (typeToDolan $ MkDolanGroundedType entityGroundType NilCCRArguments)
-                plainStoreAdapter
-                storability $ \(MkShimWit args conv) eat ->
+                (mkQStoreAdapter plainStoreAdapter)
+                storability $ \(MkShimWit args conv) (Compose eat) ->
                 return $
                 subtypeConversionEntry
                     TrustMe
                     Nothing
                     (MkShimWit (MkDolanGroundedType gt args) conv)
                     (mkShimWit $ MkDolanGroundedType entityGroundType NilCCRArguments) $
-                pure $ functionToShim "datatype-storable" $ storeAdapterConvert eat
+                fmap (functionToShim "datatype-storable" . storeAdapterConvert) eat
         registerSubtypeConversion sce
     in MkTypeConstruction mkx mkgt postregister
 

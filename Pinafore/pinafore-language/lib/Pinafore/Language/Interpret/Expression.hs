@@ -643,7 +643,7 @@ interpretIdentitySubtypeRelation sta stb = do
             (gtb, _) <- nonpolarSimpleEntityType tb
             case getGroundFamily openStorableFamilyWitness gtb of
                 Just (MkOpenEntityFamily _) -> do
-                    adapter <- storableGroundTypeAdapter tea NilArguments
+                    Compose qadapter <- storableGroundTypeAdapter tea NilArguments
                     return $
                         case getGroundFamily openStorableFamilyWitness gta of
                             Just (MkOpenEntityFamily _) ->
@@ -651,8 +651,11 @@ interpretIdentitySubtypeRelation sta stb = do
                             Nothing ->
                                 MkSubtypeConversionEntry TrustMe gta gtb $
                                 singleSubtypeConversion Nothing $
-                                coerceShim "open entity" .
-                                (functionToShim "entityConvert" $ storeAdapterConvert adapter)
+                                fmap
+                                    (\adapter ->
+                                         coerceShim "open entity" .
+                                         (functionToShim "entityConvert" $ storeAdapterConvert adapter))
+                                    qadapter
                 Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
 interpretSubtypeRelation ::

@@ -11,6 +11,7 @@ module Pinafore.Base.Know
     , knowMaybe
     , knowMaybeLens
     , catKnowns
+    , gateKnow
     , unknownValueBijection
     , unknownValueChangeLens
     , biFromKnowWhole
@@ -83,6 +84,11 @@ knowMaybeLens = MkLens Known $ \ka _ -> knowToMaybe ka
 
 catKnowns :: Filterable f => f (Know a) -> f a
 catKnowns = catMaybes . fmap knowToMaybe
+
+gateKnow :: forall t. (t -> Bool) -> Know t -> Know t
+gateKnow f (Known t)
+    | f t = Known t
+gateKnow _ _ = Unknown
 
 -- | not really a bijection
 unknownValueBijection :: a -> Bijection (Know a) a

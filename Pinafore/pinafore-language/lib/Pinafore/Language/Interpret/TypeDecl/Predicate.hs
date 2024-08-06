@@ -61,7 +61,8 @@ makePredicateTypeBox name md storable sparent spredicate =
                                     stbCovaryMap = covarymap
                                     stbAdapter =
                                         pureStorabilityAdapter $ \NilArguments ->
-                                            gateStoreAdapter predexpr $ storeadapter NilArguments
+                                            Compose $
+                                            liftA2 gateStoreAdapter predexpr $ getCompose $ storeadapter NilArguments
                                     in MkStorability {..}
                             return $ singleGroundProperty storabilityProperty storability
                         else return mempty

@@ -61,8 +61,10 @@ nonpolarGroundedToStoreAdapter params (MkNonpolarGroundedType ground args) = do
             Nothing -> throw $ InterpretTypeNotStorableError $ showGroundType ground
             Just x -> return x
     aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToStoreAdapter params arg) cvt args
-    MkAllFor stba <- return $ stbAdapter storability
-    return $ Compose $ \eargs -> stba $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
+    return $
+        Compose $ \eargs ->
+            case stbAdapter storability of
+                MkAllFor stba -> stba $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
 
 nonpolarToStoreAdapter ::
        CovParams dv gt ta

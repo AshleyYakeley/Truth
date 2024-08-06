@@ -5,7 +5,10 @@ import Pinafore.Language.Interpreter ()
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 
-type QStoreAdapter = StoreAdapter QOpenExpression
+type QStoreAdapter = Compose QOpenExpression StoreAdapter
+
+mkQStoreAdapter :: StoreAdapter --> QStoreAdapter
+mkQStoreAdapter = Compose . pure
 
 type Storability :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data Storability dv gt = MkStorability
