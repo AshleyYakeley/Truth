@@ -1542,6 +1542,18 @@ testEntity =
                     , testExpectSuccess "let rec datatype storable P of P1 P !\"P1\" end in pass"
                     , testExpectSuccess "let rec datatype storable P +a of P1 (P (a *: a)) !\"P1\" end in pass"
                     , tDecls
+                          [ "let rec datatype storable Nat of Z !\"Z\"; S Nat !\"S\" end end"
+                          , "let rec natToInteger: Nat -> Integer = match Z.Nat => 0; S.Nat n => 1 + natToInteger n end end"
+                          ] $
+                      tGroup
+                          "Nat"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "testeq {0} {natToInteger Z.Nat}"
+                          , testExpectSuccess "testeq {1} {natToInteger $ S.Nat Z.Nat}"
+                          , testExpectSuccess "testneq {0} {Z.Nat}"
+                          , testExpectSuccess "testeq {Z.Nat} {Z.Nat}"
+                          ]
+                    , tDecls
                           [ "let rec datatype storable L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
                           , "let rec listToL: List a -> L a = match [] => Nil.L; x::xs => Cons.L x (listToL xs) end end"
                           , "let rec lToList: L a -> List a = match Nil.L => []; Cons.L x xs => x :: lToList xs end end"
@@ -1552,6 +1564,10 @@ testEntity =
                           , testExpectSuccess "let l = listToL [1,2,3] in pass"
                           , testExpectSuccess "let l = listToL [1,2,3] in testeq {lToList l} {[1,2,3]}"
                           , testExpectSuccess "testeq {lToList $ listToL [1,2,3]} {[1,2,3]}"
+                          , testExpectSuccess "testneq {0} {Nil.L}"
+                          , testExpectSuccess "testeq {Nil.L} {Nil.L}"
+                          , testExpectSuccess "testeq {Cons.L 1 Nil.L} {Cons.L 1 Nil.L}"
+                          , testExpectSuccess "testeq {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
                           , testExpectSuccess "testeq {listToL [1,2,3]} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
                           , testExpectSuccess "testeq {lToList $ Cons.L 1 $ Cons.L 2 $ Cons.L 3 Nil.L} {[1,2,3]}"
                           ]
