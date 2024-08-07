@@ -78,7 +78,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
                    forall a b.
                    DolanVarWit ground a
                 -> DolanVarWit ground b
-                -> _ (Maybe (Expression (DolanVarWit ground) (a, b)))
+                -> _ (Maybe (FunctionExpression (DolanVarWit ground) (a, b)))
             combineWits (MkNameWitness na ta) (MkNameWitness nb tb) =
                 return $
                 if shouldMerge @ground na nb

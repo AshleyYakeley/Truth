@@ -10,7 +10,7 @@ import Shapes
 
 data SealedFExpression (varw :: Type -> Type) (tw :: Type -> Type) (f :: Type -> Type) =
     forall t. MkSealedFExpression (tw t)
-                                  (Expression varw (f t))
+                                  (FunctionExpression varw (f t))
 
 constSealedFExpression :: SomeFor f tw -> SealedFExpression varw tw f
 constSealedFExpression (MkSomeFor twt t) = MkSealedFExpression twt $ pure t
@@ -18,7 +18,7 @@ constSealedFExpression (MkSomeFor twt t) = MkSealedFExpression twt $ pure t
 mapSealedFExpression :: (f --> g) -> SealedFExpression varw tw f -> SealedFExpression varw tw g
 mapSealedFExpression m (MkSealedFExpression twt expr) = MkSealedFExpression twt $ fmap m expr
 
-applySealedFExpression :: SealedFExpression varw tw ((->) a) -> Expression varw a -> SealedExpression varw tw
+applySealedFExpression :: SealedFExpression varw tw ((->) a) -> FunctionExpression varw a -> SealedExpression varw tw
 applySealedFExpression (MkSealedFExpression twt exprar) expra = MkSealedExpression twt $ exprar <*> expra
 
 toSealedFExpression :: Applicative f => SealedExpression varw tw -> SealedFExpression varw tw f

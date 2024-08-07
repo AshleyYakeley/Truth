@@ -50,7 +50,7 @@ instance forall (ground :: GroundTypeKind). ShowGroundType ground => AllConstrai
     allConstraint = Dict
 
 type Puzzle :: GroundTypeKind -> Type -> Type
-type Puzzle ground = Expression (Piece ground)
+type Puzzle ground = FunctionExpression (Piece ground)
 
 simplifyWholeConstraintINTERNAL :: Bool
 simplifyWholeConstraintINTERNAL = False

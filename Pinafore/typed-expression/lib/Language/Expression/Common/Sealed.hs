@@ -10,7 +10,7 @@ import Shapes
 
 data SealedExpression (varw :: Type -> Type) (tw :: Type -> Type) =
     forall (t :: Type). MkSealedExpression (tw t)
-                                           (Expression varw t)
+                                           (FunctionExpression varw t)
 
 type instance Element (SealedExpression varw ((:~:) val)) = val
 

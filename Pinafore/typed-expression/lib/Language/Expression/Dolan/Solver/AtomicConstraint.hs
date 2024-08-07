@@ -46,7 +46,7 @@ isPureAtomicConstraint (MkAtomicConstraint depvar pol (NormalFlipType tw)) =
 isPureAtomicConstraint _ = Nothing
 
 type AtomicPuzzle :: GroundTypeKind -> Type -> Type
-type AtomicPuzzle ground = Expression (AtomicConstraint ground)
+type AtomicPuzzle ground = FunctionExpression (AtomicConstraint ground)
 
 type AtomicPuzzleExpression :: GroundTypeKind -> Type -> Type
 type AtomicPuzzleExpression ground = TSOpenSolverExpression (DolanTypeSystem ground) (AtomicPuzzle ground)

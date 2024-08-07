@@ -4,8 +4,6 @@ import Data.Shim
 import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.Partial
-
---import Language.Expression.Common.Pattern
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.SealedF
 import Language.Expression.Common.SolverExpression
@@ -55,7 +53,7 @@ tsMapWitnesses = mapWitnesses
 type TSVarWit ts = NameWitness (TSVarID ts) (TSNegShimWit ts)
 
 type TSOpenExpression :: Type -> Type -> Type
-type TSOpenExpression ts = Expression (TSVarWit ts)
+type TSOpenExpression ts = FunctionExpression (TSVarWit ts)
 
 type TSSealedPartialExpression ts = SealedPartialExpression (TSVarWit ts) (TSPosShimWit ts)
 
@@ -64,4 +62,3 @@ type TSSealedExpression ts = SealedExpression (TSVarWit ts) (TSPosShimWit ts)
 type TSSealedFExpression ts = SealedFExpression (TSVarWit ts) (TSPosShimWit ts)
 
 type TSOpenSolverExpression ts typeexpr = SolverExpression typeexpr (TSOpenExpression ts)
---type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)

@@ -19,7 +19,7 @@ instance (AllConstraint Show nw, AllConstraint (AllConstraint Show) vw) => AllCo
     allConstraint = Dict
 
 type NameTypeExpression :: (kn -> Type) -> (kn -> Type -> Type) -> Type -> Type
-type NameTypeExpression nw vw = Expression (NameTypeWitness nw vw)
+type NameTypeExpression nw vw = FunctionExpression (NameTypeWitness nw vw)
 
 varNameTypeExpression :: nw n -> vw n t -> NameTypeExpression nw vw t
 varNameTypeExpression n t = varExpression $ MkNameTypeWitness n t

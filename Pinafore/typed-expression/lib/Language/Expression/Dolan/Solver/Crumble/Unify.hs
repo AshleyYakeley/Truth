@@ -151,12 +151,12 @@ matchWholeUnifyPiece ::
 matchWholeUnifyPiece (WholeUnifyPiece wconstr) = Just wconstr
 matchWholeUnifyPiece _ = Nothing
 
-type UnifyPuzzle (ground :: GroundTypeKind) = Expression (UnifyPiece ground)
+type UnifyPuzzle (ground :: GroundTypeKind) = FunctionExpression (UnifyPiece ground)
 
 type UnifyPuzzleExpression (ground :: GroundTypeKind)
      = TSOpenSolverExpression (DolanTypeSystem ground) (UnifyPuzzle ground)
 
-type VarPuzzle (ground :: GroundTypeKind) = Expression (UnifyVariableConstraint ground)
+type VarPuzzle (ground :: GroundTypeKind) = FunctionExpression (UnifyVariableConstraint ground)
 
 type VarPuzzleExpression (ground :: GroundTypeKind) = TSOpenSolverExpression (DolanTypeSystem ground) (VarPuzzle ground)
 
@@ -245,7 +245,7 @@ atomicToVariablePuzzle =
 toPureVariablePuzzle ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => UnifyPuzzle ground a
-    -> Maybe (Expression (UnifyVariableConstraint ground) a)
+    -> Maybe (FunctionExpression (UnifyVariableConstraint ground) a)
 toPureVariablePuzzle =
     mapExactExpressionM $ \case
         VariableUnifyPiece vconstr -> Just vconstr

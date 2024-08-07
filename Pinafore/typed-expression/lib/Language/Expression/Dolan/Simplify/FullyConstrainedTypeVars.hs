@@ -30,7 +30,7 @@ instance forall (ground :: GroundTypeKind) tv. ShowGroundType ground => AllConst
     allConstraint = Dict
 
 type ExpressionPolyShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
-type ExpressionPolyShim w = PolyComposeShim (Expression w)
+type ExpressionPolyShim w = PolyComposeShim (FunctionExpression w)
 
 type ExpressionShimWit :: (GroundTypeKind -> Polarity -> Type -> Type) -> GroundTypeKind -> Polarity -> Type -> Type -> Type
 type ExpressionShimWit w ground polarity tv
@@ -119,7 +119,7 @@ solveUsageWitness (MkUsageWitness NegativeType tw) =
 
 solveUsageExpression ::
        forall (ground :: GroundTypeKind) tv t. IsDolanGroundType ground
-    => Expression (UsageWitness ground tv) t
+    => FunctionExpression (UsageWitness ground tv) t
     -> UsageSolution ground tv t
 solveUsageExpression expr = runExpression solveUsageWitness expr
 

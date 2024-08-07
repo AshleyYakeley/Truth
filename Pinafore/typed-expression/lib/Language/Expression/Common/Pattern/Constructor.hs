@@ -18,7 +18,7 @@ toPatternConstructor ::
        forall patwit expwit funcwit poswit t lt.
        funcwit t
     -> ListType poswit lt
-    -> PurityFunction Maybe (Expression expwit) t (ListProduct lt)
+    -> PurityFunction Maybe (FunctionExpression expwit) t (ListProduct lt)
     -> PatternConstructor patwit expwit funcwit poswit
 toPatternConstructor nwt tlt f = MkPatternConstructor tlt $ MkSealedPattern nwt $ purePattern f
 
