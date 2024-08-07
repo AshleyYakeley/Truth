@@ -1567,7 +1567,8 @@ testEntity =
                           , testExpectSuccess "testneq {0} {Nil.L}"
                           , testExpectSuccess "testeq {Nil.L} {Nil.L}"
                           , testExpectSuccess "testeq {Cons.L 1 Nil.L} {Cons.L 1 Nil.L}"
-                          , testExpectSuccess "testeq {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
+                          , testExpectSuccess
+                                "testeq {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
                           , testExpectSuccess "testeq {listToL [1,2,3]} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
                           , testExpectSuccess "testeq {lToList $ Cons.L 1 $ Cons.L 2 $ Cons.L 3 Nil.L} {[1,2,3]}"
                           ]
