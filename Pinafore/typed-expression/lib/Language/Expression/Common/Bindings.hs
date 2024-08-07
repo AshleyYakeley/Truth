@@ -88,7 +88,7 @@ singleBound (MkTSBinding name bdf hasTypeSig mexpr) = do
             else return decltype
     let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifierExpression ts (tdecl -> a))
-        abstractNames = abstractExpression @ts name decltype'
+        abstractNames = abstractOpenExpression @ts name decltype'
         getbinds ::
                UnifierSubstitutions ts
             -> SubsumerSubstitutions ts

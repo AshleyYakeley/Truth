@@ -63,6 +63,13 @@ evalExpression expr = fromResult $ evalExpressionResult expr
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id
 
+abstractExpression :: TestEquality w => w a -> Expression w b -> Expression w (a -> b)
+abstractExpression _ (ClosedExpression a) = ClosedExpression $ \_ -> a
+abstractExpression wa (OpenExpression wt expr)
+    | Just Refl <- testEquality wa wt = fmap (\aab a -> aab a a) $ abstractExpression wa expr
+abstractExpression wa (OpenExpression wt expr) =
+    OpenExpression wt $ fmap (\atb t a -> atb a t) $ abstractExpression wa expr
+
 runExpression ::
        forall m w. Applicative m
     => (w --> m)

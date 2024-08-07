@@ -9,7 +9,7 @@ module Language.Expression.Common.Abstract
     , simplifyFinalRename
     , unifierSubstituteSimplifyFinalRename
     , unifierSolve
-    , abstractExpression
+    , abstractOpenExpression
     , FunctionWitness
     , UnifierFunctionPosWitness
     , UnifierFunctionNegWitness
@@ -131,13 +131,13 @@ abstractResult name expr = do
         MkAbstractResult vwt $
         liftA2 (\tb stt a -> tb $ meet2 $ shimToFunction stt a) (solverExpressionLiftValue expr') uconv
 
-abstractExpression ::
+abstractOpenExpression ::
        forall ts a b. AbstractTypeSystem ts
     => TSVarID ts
     -> TSPosShimWit ts a
     -> TSOpenExpression ts b
     -> TSOuter ts (UnifierExpression ts (a -> b))
-abstractExpression name twt expr = do
+abstractOpenExpression name twt expr = do
     MkAbstractResult vwt uexpr <- abstractResult @ts name expr
     uabsconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts twt) (mkShimWit vwt)
     return $ liftA2 (\tb sat -> tb . shimToFunction sat) uexpr uabsconv
@@ -259,7 +259,7 @@ letSealedExpression name sexpre sexprb =
     withTransConstraintTM @Monad $ do
         MkSealedExpression te expre <- renameMappableSimple @ts sexpre
         MkSealedExpression tb exprb <- renameMappableSimple @ts sexprb
-        MkSolverExpression uconv exprf <- abstractExpression @ts name te exprb
+        MkSolverExpression uconv exprf <- abstractOpenExpression @ts name te exprb
         unifierSolve @ts (solverExpressionLiftType uconv) $ \convexpr ->
             return $ MkSealedExpression tb $ exprf <*> convexpr <*> expre
 
