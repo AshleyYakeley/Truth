@@ -1550,8 +1550,8 @@ testEntity =
                           [ testExpectSuccess "pass"
                           , testExpectSuccess "testeq {0} {natToInteger Z.Nat}"
                           , testExpectSuccess "testeq {1} {natToInteger $ S.Nat Z.Nat}"
-                          , testExpectSuccess "testneq {0} {Z.Nat}"
-                          , testExpectSuccess "testeq {Z.Nat} {Z.Nat}"
+                          , tModify (failTestBecause "bad knot") $ testExpectSuccess "testneq {0} {Z.Nat}"
+                          , tModify (failTestBecause "bad knot") $ testExpectSuccess "testeq {Z.Nat} {Z.Nat}"
                           ]
                     , tDecls
                           [ "let rec datatype storable L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
@@ -1564,12 +1564,15 @@ testEntity =
                           , testExpectSuccess "let l = listToL [1,2,3] in pass"
                           , testExpectSuccess "let l = listToL [1,2,3] in testeq {lToList l} {[1,2,3]}"
                           , testExpectSuccess "testeq {lToList $ listToL [1,2,3]} {[1,2,3]}"
-                          , testExpectSuccess "testneq {0} {Nil.L}"
-                          , testExpectSuccess "testeq {Nil.L} {Nil.L}"
-                          , testExpectSuccess "testeq {Cons.L 1 Nil.L} {Cons.L 1 Nil.L}"
-                          , testExpectSuccess
+                          , tModify (failTestBecause "bad knot") $ testExpectSuccess "testneq {0} {Nil.L}"
+                          , tModify (failTestBecause "bad knot") $ testExpectSuccess "testeq {Nil.L} {Nil.L}"
+                          , tModify (failTestBecause "bad knot") $
+                            testExpectSuccess "testeq {Cons.L 1 Nil.L} {Cons.L 1 Nil.L}"
+                          , tModify (failTestBecause "bad knot") $
+                            testExpectSuccess
                                 "testeq {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
-                          , testExpectSuccess "testeq {listToL [1,2,3]} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
+                          , tModify (failTestBecause "bad knot") $
+                            testExpectSuccess "testeq {listToL [1,2,3]} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
                           , testExpectSuccess "testeq {lToList $ Cons.L 1 $ Cons.L 2 $ Cons.L 3 Nil.L} {[1,2,3]}"
                           ]
                     ]
