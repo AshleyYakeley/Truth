@@ -24,6 +24,7 @@ import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 mkPolarBisubstitution ::

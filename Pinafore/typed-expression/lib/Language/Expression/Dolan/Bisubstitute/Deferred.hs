@@ -6,13 +6,13 @@ module Language.Expression.Dolan.Bisubstitute.Deferred
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute.Bisubstitution
 import Language.Expression.Dolan.Bisubstitute.RecM
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 type DeferredPolyShim :: PolyShimKind -> Type -> Type -> Type -> PolyShimKind

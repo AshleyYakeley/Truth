@@ -11,6 +11,7 @@ import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
+import Language.Expression.TypeSystem
 import Shapes
 
 class HasRecursion t where

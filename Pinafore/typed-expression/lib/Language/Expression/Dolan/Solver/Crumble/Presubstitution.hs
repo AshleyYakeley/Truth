@@ -6,13 +6,13 @@ module Language.Expression.Dolan.Solver.Crumble.Presubstitution
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 data SubShimWit (ground :: GroundTypeKind) (polarity :: Polarity) oldtv newtv =

@@ -16,8 +16,7 @@ module Language.Expression.TypeSystem.Subsume
     ) where
 
 import Data.Shim
-import Language.Expression.Common.Sealed.Sealed
-import Language.Expression.Common.Sealed.SealedF
+import Language.Expression.Common
 import Language.Expression.TypeSystem.Simplify
 import Language.Expression.TypeSystem.SolverExpression
 import Language.Expression.TypeSystem.TypeSystem

@@ -1,11 +1,11 @@
 module Language.Expression.Dolan.Type.FlipType where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Type.DolanType
 import Language.Expression.Dolan.Type.Equality ()
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 type FlipType :: GroundTypeKind -> Polarity -> Type -> Type

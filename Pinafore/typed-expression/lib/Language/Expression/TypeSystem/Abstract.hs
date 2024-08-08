@@ -28,13 +28,7 @@ module Language.Expression.TypeSystem.Abstract
     ) where
 
 import Data.Shim
-import Language.Expression.Common.Open.Error
-import Language.Expression.Common.Open.Expression
-import Language.Expression.Common.Open.Named
-import Language.Expression.Common.Pattern
-import Language.Expression.Common.Sealed.Partial
-import Language.Expression.Common.Sealed.Sealed
-import Language.Expression.Common.Sealed.SealedF
+import Language.Expression.Common
 import Language.Expression.TypeSystem.Rename
 import Language.Expression.TypeSystem.Simplify
 import Language.Expression.TypeSystem.SolverExpression

@@ -5,9 +5,9 @@ module Language.Expression.Dolan.Type.Equality
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Type.DolanType
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 data VarMatch =

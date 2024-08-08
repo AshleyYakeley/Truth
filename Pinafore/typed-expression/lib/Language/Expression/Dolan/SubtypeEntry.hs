@@ -20,7 +20,6 @@ module Language.Expression.Dolan.SubtypeEntry
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Solver.Crumble.Type
@@ -31,6 +30,7 @@ import Language.Expression.Dolan.SubtypeEntry.Knowledge
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])

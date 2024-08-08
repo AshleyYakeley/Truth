@@ -1,7 +1,7 @@
 module Language.Expression.Dolan.FreeVars where
 
 import Data.Shim
-import Language.Expression.Common
+import Language.Expression.TypeSystem
 import Shapes
 
 class FreeTypeVariables t where

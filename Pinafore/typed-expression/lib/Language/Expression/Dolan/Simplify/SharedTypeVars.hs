@@ -7,6 +7,7 @@ import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 findShare ::

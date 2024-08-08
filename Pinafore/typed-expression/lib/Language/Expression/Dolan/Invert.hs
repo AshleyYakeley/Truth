@@ -4,13 +4,13 @@ module Language.Expression.Dolan.Invert
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 invertPositiveGrounded ::

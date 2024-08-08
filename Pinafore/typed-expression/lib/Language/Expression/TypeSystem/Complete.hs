@@ -1,10 +1,7 @@
 module Language.Expression.TypeSystem.Complete where
 
 import Data.Shim
-import Language.Expression.Common.Open.Error
-import Language.Expression.Common.Open.Expression
-import Language.Expression.Common.Pattern
-import Language.Expression.Common.Sealed.Sealed
+import Language.Expression.Common
 import Language.Expression.TypeSystem.Abstract
 import Language.Expression.TypeSystem.Bindings
 import Language.Expression.TypeSystem.Rename

@@ -1,12 +1,7 @@
 module Language.Expression.TypeSystem.TypeSystem where
 
 import Data.Shim
-import Language.Expression.Common.Open.Expression
-import Language.Expression.Common.Open.Named
-import Language.Expression.Common.Sealed.Partial
-import Language.Expression.Common.Sealed.Sealed
-import Language.Expression.Common.Sealed.SealedF
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common
 import Language.Expression.TypeSystem.SolverExpression
 import Shapes
 

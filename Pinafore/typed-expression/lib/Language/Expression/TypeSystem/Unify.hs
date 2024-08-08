@@ -2,9 +2,7 @@ module Language.Expression.TypeSystem.Unify where
 
 import Data.Shim
 
-import Language.Expression.Common.WitnessMappable
---import Language.Expression.Common.Pattern
---import Language.Expression.TypeSystem.SolverExpression
+import Language.Expression.Common
 import Language.Expression.TypeSystem.TypeSystem
 import Shapes
 

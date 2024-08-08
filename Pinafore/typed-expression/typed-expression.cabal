@@ -16,6 +16,7 @@ build-type:     Simple
 library
   exposed-modules:
       Language.Expression.Common
+      Language.Expression.TypeSystem
       Language.Expression.Unitype
       Language.Expression.Dolan
       Language.Expression.Dolan.Test

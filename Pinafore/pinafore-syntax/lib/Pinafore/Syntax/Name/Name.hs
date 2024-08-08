@@ -1,6 +1,6 @@
 module Pinafore.Syntax.Name.Name where
 
-import Language.Expression.Common
+import Language.Expression.TypeSystem
 import Pinafore.Base
 import Shapes
 

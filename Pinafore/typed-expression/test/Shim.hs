@@ -3,7 +3,7 @@ module Shim
     ) where
 
 import Data.Shim
-import Language.Expression.Common
+import Language.Expression.TypeSystem
 import Shapes
 import Shapes.Test
 

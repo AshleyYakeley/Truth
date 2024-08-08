@@ -10,7 +10,7 @@ module Language.Expression.TypeSystem.Rename.RenameTypeSystem
     ) where
 
 import Data.Shim
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common
 import Language.Expression.TypeSystem.Rename.Rigidity
 import Language.Expression.TypeSystem.Rename.VarRenameable
 import Language.Expression.TypeSystem.TypeSystem

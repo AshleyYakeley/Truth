@@ -9,7 +9,7 @@ module Language.Expression.TypeSystem.Bindings
     , bindingsRecursiveLetSealedExpression
     ) where
 
-import Language.Expression.Common.Sealed.Sealed
+import Language.Expression.Common
 import Language.Expression.TypeSystem.Abstract
 import Language.Expression.TypeSystem.Rename
 import Language.Expression.TypeSystem.SolverExpression

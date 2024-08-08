@@ -1,10 +1,10 @@
 module Language.Expression.Dolan.Bisubstitute.RecM where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 data RecMemoKey (ground :: GroundTypeKind) (t :: (Type, Polarity, Type)) where

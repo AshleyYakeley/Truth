@@ -2,6 +2,7 @@ module Pinafore.Syntax.Name.ExprShow where
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.TypeSystem
 import Pinafore.Syntax.Name.FullName
 import Pinafore.Syntax.Name.FullNameRef
 import Pinafore.Syntax.Name.ImplicitName

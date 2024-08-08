@@ -4,9 +4,9 @@ module Language.Expression.Dolan.Simplify.VarUsage
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 type TVarUsage :: GroundTypeKind -> Polarity -> Type -> Type -> Type

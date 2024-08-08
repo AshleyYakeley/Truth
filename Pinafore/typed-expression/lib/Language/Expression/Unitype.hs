@@ -2,6 +2,7 @@ module Language.Expression.Unitype where
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.TypeSystem
 import Shapes
 
 type Unitype :: (Type -> Type) -> Type -> Type -> Type

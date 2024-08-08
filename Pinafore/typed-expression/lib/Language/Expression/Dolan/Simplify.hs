@@ -18,6 +18,7 @@ import Language.Expression.Dolan.Simplify.UnusedRecursion
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 data SimplifierSettings = MkSimplifierSettings

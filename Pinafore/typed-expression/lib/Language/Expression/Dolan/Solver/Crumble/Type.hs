@@ -6,7 +6,6 @@ module Language.Expression.Dolan.Solver.Crumble.Type
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
@@ -16,6 +15,7 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
+import Language.Expression.TypeSystem
 import Shapes
 
 newtype TypeCrumbler (ground :: GroundTypeKind) a = MkTypeCrumbler

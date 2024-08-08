@@ -1,9 +1,9 @@
 module Language.Expression.Dolan.Solver.CrumbleM where
 
-import Language.Expression.Common
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 newtype CrumbleM (ground :: GroundTypeKind) a = MkCrumbleM

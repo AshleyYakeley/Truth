@@ -26,6 +26,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 class ( FunctionShim (DolanShim ground)

@@ -9,6 +9,7 @@ import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
+import Language.Expression.TypeSystem
 import Shapes
 
 type RollUp :: GroundTypeKind -> Type

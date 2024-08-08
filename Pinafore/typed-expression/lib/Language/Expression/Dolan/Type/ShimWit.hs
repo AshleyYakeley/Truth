@@ -1,11 +1,11 @@
 module Language.Expression.Dolan.Type.ShimWit where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.Type.DolanType
 import Language.Expression.Dolan.Type.Equality ()
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 type DolanTypeSub :: GroundTypeKind -> Polarity -> (Type -> Type) -> Constraint
