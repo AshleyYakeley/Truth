@@ -3,7 +3,6 @@ module Language.Expression.Dolan.Simplify.DuplicateGroundTypes
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Solver.CrumbleM
@@ -11,6 +10,7 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 mergeInSingularType ::

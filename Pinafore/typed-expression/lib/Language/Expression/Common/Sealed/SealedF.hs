@@ -2,10 +2,8 @@
 
 module Language.Expression.Common.Sealed.SealedF where
 
-import Language.Expression.Common.Open.Error
-import Language.Expression.Common.Open.Expression
+import Language.Expression.Common.Open
 import Language.Expression.Common.Sealed.Sealed
-import Language.Expression.Common.WitnessMappable
 import Shapes
 
 data SealedFExpression (varw :: Type -> Type) (tw :: Type -> Type) (f :: Type -> Type) =
@@ -45,14 +43,6 @@ instance MonoApplicative (SealedFExpression varw ((:~:) val) f) where
         MkSealedFExpression Refl $ appf <$> vexpr <*> bexpr
     osequenceA conv exprs =
         MkSealedFExpression Refl $ fmap conv $ sequenceA $ fmap (\(MkSealedFExpression Refl expr) -> expr) exprs
-
-instance (forall t. WitnessMappable poswit negwit (varw t)) =>
-             WitnessMappable poswit negwit (SealedFExpression varw poswit f) where
-    mapWitnessesM mapPos mapNeg =
-        MkEndoM $ \(MkSealedFExpression tt expr) -> do
-            tt' <- unEndoM mapPos tt
-            expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
-            pure $ MkSealedFExpression tt' expr'
 
 instance (AllConstraint Show varw, AllConstraint Show poswit) => Show (SealedFExpression varw poswit f) where
     show (MkSealedFExpression t expr) = show expr <> " => " <> allShow t

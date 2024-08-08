@@ -6,7 +6,6 @@ module Language.Expression.Common.Pattern.Pattern
     , varPattern
     ) where
 
-import Language.Expression.Common.WitnessMappable
 import Shapes
 
 type Pattern :: (Type -> Type) -> (Type -> Type -> Type) -> Type -> Type -> Type
@@ -16,14 +15,6 @@ data Pattern w c a b =
 
 instance Functor (c a) => Functor (Pattern w c a) where
     fmap ab (MkPattern ww pf) = MkPattern ww $ fmap (fmap ab) pf
-
-instance (forall t. WitnessMappable poswit negwit (w t), forall t. WitnessMappable poswit negwit (c a t)) =>
-             WitnessMappable poswit negwit (Pattern w c a b) where
-    mapWitnessesM mapPos mapNeg = let
-        mapNW :: EndoM' _ w
-        mapNW = MkEndoM $ \wt -> unEndoM (mapWitnessesM mapPos mapNeg) wt
-        in MkEndoM $ \(MkPattern ww pf) ->
-               liftA2 MkPattern (unEndoM (endoFor $ endoSomeFor mapNW) ww) (unEndoM (mapWitnessesM mapPos mapNeg) pf)
 
 instance Arrow c => Category (Pattern w c) where
     id = MkPattern [] $ arr $ \a -> ((), a)

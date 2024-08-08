@@ -2,12 +2,9 @@
 
 module Language.Expression.Common.Pattern.Constructor where
 
-import Language.Expression.Common.Open.Error
-import Language.Expression.Common.Open.Expression
-import Language.Expression.Common.Open.Named
+import Language.Expression.Common.Open
 import Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.Pattern.Sealed
-import Language.Expression.Common.WitnessMappable
 import Shapes
 
 data PatternConstructor patwit expwit funcwit poswit =
@@ -27,21 +24,6 @@ liftListProductPolwit ::
     => EndoM' m wit
     -> EndoM' m (ListProductType wit)
 liftListProductPolwit ff = MkEndoM $ \(MkListProductType lwt) -> fmap MkListProductType $ mapMListType (unEndoM ff) lwt
-
-instance ( forall t. WitnessMappable poswit negwit (patwit t)
-         , forall t. WitnessMappable poswit negwit (expwit t)
-         , forall t. WitnessMappable poswit negwit (funcwit t)
-         ) =>
-             WitnessMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor patwit expwit funcwit poswit) where
-    mapWitnessesM mapPos mapNeg =
-        MkEndoM $ \(MkPatternConstructor (lvw :: ListType wit lt) pat) -> do
-            pat' <- unEndoM (mapWitnessesM @Type mapPos mapNeg) pat
-            hwit <- unEndoM (mapWitnessesM @Type (liftListProductPolwit mapPos) mapNeg) $ MkListProductType lvw
-            pure $
-                case hwit of
-                    MkListProductType (lvw' :: ListType wit lt') ->
-                        case injectiveListProduct @lt @lt' of
-                            Refl -> MkPatternConstructor lvw' pat'
 
 sealedPatternConstructor ::
        MonadThrow PatternError m

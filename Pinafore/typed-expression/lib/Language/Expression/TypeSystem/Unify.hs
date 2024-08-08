@@ -2,8 +2,8 @@ module Language.Expression.TypeSystem.Unify where
 
 import Data.Shim
 
-import Language.Expression.Common
 import Language.Expression.TypeSystem.TypeSystem
+import Language.Expression.TypeSystem.WitnessMappable
 import Shapes
 
 type UUShim (ts :: Type) = ComposeShim (UnifierExpression ts) (TSShim ts)

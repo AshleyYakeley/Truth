@@ -3,6 +3,7 @@ module Language.Expression.TypeSystem.TypeSystem where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.TypeSystem.SolverExpression
+import Language.Expression.TypeSystem.WitnessMappable
 import Shapes
 
 type ShowTypeSystem ts = (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts), AllConstraint Show (TSPosWitness ts))

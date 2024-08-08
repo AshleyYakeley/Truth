@@ -2,7 +2,6 @@ module Language.Expression.Dolan.Simplify.SharedTypeVars
     ( mergeSharedTypeVars
     ) where
 
-import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Type

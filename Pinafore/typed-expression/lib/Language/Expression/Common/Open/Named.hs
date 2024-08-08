@@ -3,7 +3,6 @@
 module Language.Expression.Common.Open.Named where
 
 import Language.Expression.Common.Open.NameWit
-import Language.Expression.Common.WitnessMappable
 import Shapes
 
 type UnitType :: Type -> Type -> Type
@@ -45,18 +44,6 @@ pattern MkNameWitness name wit =
         MkNameTypeWitness (MkUnitType name) (MkUnitType' wit)
 
 {-# COMPLETE MkNameWitness #-}
-
-instance WitnessMappable poswit negwit (NameWitness name poswit t) where
-    mapWitnessesM mapPos _mapNeg =
-        MkEndoM $ \(MkNameWitness name tt) -> do
-            tt' <- unEndoM mapPos tt
-            return $ MkNameWitness name tt'
-
-instance WitnessMappable poswit negwit (NameWitness name negwit t) where
-    mapWitnessesM _mapPos mapNeg =
-        MkEndoM $ \(MkNameWitness name tt) -> do
-            tt' <- unEndoM mapNeg tt
-            return $ MkNameWitness name tt'
 
 type NamedExpression :: Type -> (Type -> Type) -> Type -> Type
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)

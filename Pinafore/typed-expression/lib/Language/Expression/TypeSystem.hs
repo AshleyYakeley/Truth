@@ -14,3 +14,4 @@ import Language.Expression.TypeSystem.TypeSystem as I
 import Language.Expression.TypeSystem.TypeVariable as I
 import Language.Expression.TypeSystem.Unify as I
 import Language.Expression.TypeSystem.VarMapping as I
+import Language.Expression.TypeSystem.WitnessMappable as I

@@ -9,7 +9,7 @@ module Language.Expression.Dolan.Test
     , runTypeResult
     ) where
 
-import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.TypeResult
+import Language.Expression.TypeSystem

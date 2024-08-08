@@ -3,10 +3,10 @@ module Language.Expression.Dolan.Simplify.DuplicateTypeVars
     ) where
 
 import Data.Shim
-import Language.Expression.Common.WitnessMappable
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 mergeInSingularType ::

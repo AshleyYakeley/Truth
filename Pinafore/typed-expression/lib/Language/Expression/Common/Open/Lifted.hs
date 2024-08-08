@@ -4,7 +4,6 @@ import Language.Expression.Common.Open.Abstract
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Expression
 import Language.Expression.Common.Open.Free
-import Language.Expression.Common.WitnessMappable
 import Shapes
 
 type LiftedExpression :: (Type -> Type) -> (Type -> Type) -> Type -> Type
@@ -37,16 +36,6 @@ instance AllConstraint Show w => Show (LiftedExpression f w a) where
 
 instance AllConstraint Show w => AllConstraint Show (LiftedExpression f w) where
     allConstraint = Dict
-
-instance (forall t. WitnessMappable poswit negwit (w t)) => WitnessMappable poswit negwit (LiftedExpression f w a) where
-    mapWitnessesM mapPos mapNeg =
-        MkEndoM $ \case
-            ClosedLiftedExpression a -> pure $ ClosedLiftedExpression a
-            OpenLiftedExpression wt expr ->
-                liftA2
-                    OpenLiftedExpression
-                    (unEndoM (mapWitnessesM mapPos mapNeg) wt)
-                    (unEndoM (mapWitnessesM mapPos mapNeg) expr)
 
 instance HasFreeWitnesses (LiftedExpression f) where
     freeWitnesses _wr (ClosedLiftedExpression _) = []

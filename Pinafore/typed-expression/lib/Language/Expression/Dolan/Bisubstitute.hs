@@ -17,7 +17,6 @@ module Language.Expression.Dolan.Bisubstitute
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute.Bisubstitution
 import Language.Expression.Dolan.Bisubstitute.Deferred
 import Language.Expression.Dolan.Rename ()

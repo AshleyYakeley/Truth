@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Simplify
     , defaultSimplifierSettings
     ) where
 
-import Language.Expression.Common
 import Language.Expression.Dolan.Simplify.AutomateRecursion
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
 import Language.Expression.Dolan.Simplify.DuplicateTypeVars

@@ -3,7 +3,6 @@ module Test.Solver
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.TypeSystem
 import Pinafore.Test.Internal
 import Shapes

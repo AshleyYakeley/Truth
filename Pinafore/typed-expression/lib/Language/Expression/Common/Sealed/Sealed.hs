@@ -2,10 +2,7 @@
 
 module Language.Expression.Common.Sealed.Sealed where
 
-import Language.Expression.Common.Open.Error
-import Language.Expression.Common.Open.Expression
-import Language.Expression.Common.Open.Named
-import Language.Expression.Common.WitnessMappable
+import Language.Expression.Common.Open
 import Shapes
 
 data SealedExpression (varw :: Type -> Type) (tw :: Type -> Type) =
@@ -39,14 +36,6 @@ evalSealedExpression :: (MonadThrow (ExpressionError varw) m) => SealedExpressio
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkSomeOf twa a
-
-instance (forall t. WitnessMappable poswit negwit (varw t)) =>
-             WitnessMappable poswit negwit (SealedExpression varw poswit) where
-    mapWitnessesM mapPos mapNeg =
-        MkEndoM $ \(MkSealedExpression tt expr) -> do
-            tt' <- unEndoM mapPos tt
-            expr' <- unEndoM (mapWitnessesM mapPos mapNeg) expr
-            pure $ MkSealedExpression tt' expr'
 
 instance (AllConstraint Show varw, AllConstraint Show poswit) => Show (SealedExpression varw poswit) where
     show (MkSealedExpression t expr) = show expr <> " => " <> allShow t

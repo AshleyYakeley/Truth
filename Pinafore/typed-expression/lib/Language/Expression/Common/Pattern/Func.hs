@@ -1,7 +1,6 @@
 module Language.Expression.Common.Pattern.Func where
 
-import Language.Expression.Common.Open.Expression
-import Language.Expression.Common.Open.Named
+import Language.Expression.Common.Open
 import Language.Expression.Common.Pattern.Pattern
 import Shapes
 

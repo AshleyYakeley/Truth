@@ -21,7 +21,7 @@ library
       Language.Expression.Dolan
       Language.Expression.Dolan.Test
   other-modules:
-      Language.Expression.Common.WitnessMappable
+      Language.Expression.TypeSystem.WitnessMappable
       Language.Expression.Common.Open.Error
       Language.Expression.Common.Open.Free
       Language.Expression.Common.Open.Abstract
@@ -30,6 +30,7 @@ library
       Language.Expression.Common.Open.ExpressionBox
       Language.Expression.Common.Open.NameWit
       Language.Expression.Common.Open.Named
+      Language.Expression.Common.Open
       Language.Expression.Common.Pattern.Pattern
       Language.Expression.Common.Pattern.Named
       Language.Expression.Common.Pattern.Func
@@ -39,6 +40,7 @@ library
       Language.Expression.Common.Sealed.Sealed
       Language.Expression.Common.Sealed.SealedF
       Language.Expression.Common.Sealed.Partial
+      Language.Expression.Common.Sealed
       Language.Expression.TypeSystem.TypeSystem
       Language.Expression.TypeSystem.Nonpolar
       Language.Expression.TypeSystem.TypeVariable

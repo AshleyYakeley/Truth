@@ -1,12 +1,12 @@
 module Language.Expression.Dolan.Simplify.Safety where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Solver.Safety
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeSystem
 import Shapes
 
 checkSafetyInType ::
