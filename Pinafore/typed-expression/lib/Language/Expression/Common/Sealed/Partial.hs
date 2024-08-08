@@ -1,8 +1,8 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Common.Partial where
+module Language.Expression.Common.Sealed.Partial where
 
-import Language.Expression.Common.Sealed
+import Language.Expression.Common.Sealed.Sealed
 import Language.Expression.Common.WitnessMappable
 import Shapes
 

@@ -1,4 +1,4 @@
-module Language.Expression.Common.Rename.Rigidity where
+module Language.Expression.TypeSystem.Rename.Rigidity where
 
 import Shapes
 

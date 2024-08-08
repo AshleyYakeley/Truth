@@ -1,7 +1,7 @@
-module Language.Expression.Common.Rename.VarRenameable where
+module Language.Expression.TypeSystem.Rename.VarRenameable where
 
 import Data.Shim
-import Language.Expression.Common.TypeVariable
+import Language.Expression.TypeSystem.TypeVariable
 import Shapes
 
 data RenameSource m = MkRenameSource

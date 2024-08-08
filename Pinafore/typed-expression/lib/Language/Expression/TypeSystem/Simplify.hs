@@ -1,8 +1,8 @@
-module Language.Expression.Common.Simplifier
+module Language.Expression.TypeSystem.Simplify
     ( SimplifyTypeSystem(..)
     ) where
 
-import Language.Expression.Common.TypeSystem
+import Language.Expression.TypeSystem.TypeSystem
 import Shapes
 
 class TypeSystem ts => SimplifyTypeSystem ts where

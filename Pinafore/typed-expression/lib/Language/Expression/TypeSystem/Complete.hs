@@ -1,18 +1,18 @@
-module Language.Expression.Common.CompleteTypeSystem where
+module Language.Expression.TypeSystem.Complete where
 
 import Data.Shim
-import Language.Expression.Common.Abstract
-import Language.Expression.Common.Bindings
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Expression
 import Language.Expression.Common.Pattern
-import Language.Expression.Common.Rename
-import Language.Expression.Common.Sealed
-import Language.Expression.Common.Simplifier
-import Language.Expression.Common.Subsumer
-import Language.Expression.Common.TypeSystem
-import Language.Expression.Common.TypeVariable
-import Language.Expression.Common.Unifier
+import Language.Expression.Common.Sealed.Sealed
+import Language.Expression.TypeSystem.Abstract
+import Language.Expression.TypeSystem.Bindings
+import Language.Expression.TypeSystem.Rename
+import Language.Expression.TypeSystem.Simplify
+import Language.Expression.TypeSystem.Subsume
+import Language.Expression.TypeSystem.TypeSystem
+import Language.Expression.TypeSystem.TypeVariable
+import Language.Expression.TypeSystem.Unify
 import Shapes
 
 class ( AbstractTypeSystem ts

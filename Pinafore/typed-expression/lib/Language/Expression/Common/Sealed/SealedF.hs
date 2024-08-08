@@ -1,10 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Common.SealedF where
+module Language.Expression.Common.Sealed.SealedF where
 
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Expression
-import Language.Expression.Common.Sealed
+import Language.Expression.Common.Sealed.Sealed
 import Language.Expression.Common.WitnessMappable
 import Shapes
 

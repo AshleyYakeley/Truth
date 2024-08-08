@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Common.Sealed where
+module Language.Expression.Common.Sealed.Sealed where
 
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Expression

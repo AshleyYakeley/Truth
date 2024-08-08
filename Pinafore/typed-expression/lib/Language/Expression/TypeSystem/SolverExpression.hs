@@ -1,4 +1,4 @@
-module Language.Expression.Common.SolverExpression where
+module Language.Expression.TypeSystem.SolverExpression where
 
 import Shapes
 

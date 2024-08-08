@@ -1,7 +1,7 @@
-module Language.Expression.Common.NonpolarTypeSystem where
+module Language.Expression.TypeSystem.Nonpolar where
 
 import Data.Shim
-import Language.Expression.Common.TypeSystem
+import Language.Expression.TypeSystem.TypeSystem
 import Shapes
 
 class TypeSystem ts => NonpolarTypeSystem (ts :: Type) where

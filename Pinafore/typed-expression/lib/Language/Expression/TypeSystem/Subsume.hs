@@ -1,4 +1,4 @@
-module Language.Expression.Common.Subsumer
+module Language.Expression.TypeSystem.Subsume
     ( SubsumeTypeSystem(..)
     , ShowSubsumeTypeSystem(..)
     , solveSubsumerExpression
@@ -16,12 +16,12 @@ module Language.Expression.Common.Subsumer
     ) where
 
 import Data.Shim
-import Language.Expression.Common.Sealed
-import Language.Expression.Common.SealedF
-import Language.Expression.Common.Simplifier
-import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.TypeSystem
-import Language.Expression.Common.Unifier
+import Language.Expression.Common.Sealed.Sealed
+import Language.Expression.Common.Sealed.SealedF
+import Language.Expression.TypeSystem.Simplify
+import Language.Expression.TypeSystem.SolverExpression
+import Language.Expression.TypeSystem.TypeSystem
+import Language.Expression.TypeSystem.Unify
 import Shapes
 
 type OpenSubsumerExpression ts = TSOpenSolverExpression ts (Subsumer ts)

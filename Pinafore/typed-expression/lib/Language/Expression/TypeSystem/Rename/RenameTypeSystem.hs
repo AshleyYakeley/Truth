@@ -1,4 +1,4 @@
-module Language.Expression.Common.Rename.RenameTypeSystem
+module Language.Expression.TypeSystem.Rename.RenameTypeSystem
     ( RenameTypeSystem(..)
     , renameMappable
     , renameMappableSimple
@@ -10,10 +10,10 @@ module Language.Expression.Common.Rename.RenameTypeSystem
     ) where
 
 import Data.Shim
-import Language.Expression.Common.Rename.Rigidity
-import Language.Expression.Common.Rename.VarRenameable
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
+import Language.Expression.TypeSystem.Rename.Rigidity
+import Language.Expression.TypeSystem.Rename.VarRenameable
+import Language.Expression.TypeSystem.TypeSystem
 import Shapes
 
 data NewVar ts =

@@ -1,11 +1,11 @@
-module Language.Expression.Common.Unifier where
+module Language.Expression.TypeSystem.Unify where
 
 import Data.Shim
 
---import Language.Expression.Common.Pattern
---import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
+--import Language.Expression.Common.Pattern
+--import Language.Expression.TypeSystem.SolverExpression
+import Language.Expression.TypeSystem.TypeSystem
 import Shapes
 
 type UUShim (ts :: Type) = ComposeShim (UnifierExpression ts) (TSShim ts)

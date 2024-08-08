@@ -20,7 +20,6 @@ library:
       - Language.Expression.Dolan.Test
     other-modules:
       - Language.Expression.Common.WitnessMappable
-      - Language.Expression.Common.Witness
       - Language.Expression.Common.Open.Error
       - Language.Expression.Common.Open.Free
       - Language.Expression.Common.Open.Abstract
@@ -35,27 +34,26 @@ library:
       - Language.Expression.Common.Pattern.Sealed
       - Language.Expression.Common.Pattern.Constructor
       - Language.Expression.Common.Pattern
-      - Language.Expression.Common.Sealed
-      - Language.Expression.Common.SealedF
-      - Language.Expression.Common.Partial
-      - Language.Expression.Common.TypeSystem
-      - Language.Expression.Common.NonpolarTypeSystem
-      - Language.Expression.Common.TypeFunction
-      - Language.Expression.Common.TypeVariable
-      - Language.Expression.Common.VarMapping
-      - Language.Expression.Common.Rename.RenameTypeSystem
-      - Language.Expression.Common.Rename.Rigidity
-      - Language.Expression.Common.Rename.VarNamespaceT
-      - Language.Expression.Common.Rename.VarRenamerT
-      - Language.Expression.Common.Rename.VarRenameable
-      - Language.Expression.Common.Rename
-      - Language.Expression.Common.Simplifier
-      - Language.Expression.Common.SolverExpression
-      - Language.Expression.Common.Unifier
-      - Language.Expression.Common.Subsumer
-      - Language.Expression.Common.Abstract
-      - Language.Expression.Common.Bindings
-      - Language.Expression.Common.CompleteTypeSystem
+      - Language.Expression.Common.Sealed.Sealed
+      - Language.Expression.Common.Sealed.SealedF
+      - Language.Expression.Common.Sealed.Partial
+      - Language.Expression.TypeSystem.TypeSystem
+      - Language.Expression.TypeSystem.Nonpolar
+      - Language.Expression.TypeSystem.TypeVariable
+      - Language.Expression.TypeSystem.VarMapping
+      - Language.Expression.TypeSystem.Rename.RenameTypeSystem
+      - Language.Expression.TypeSystem.Rename.Rigidity
+      - Language.Expression.TypeSystem.Rename.VarNamespaceT
+      - Language.Expression.TypeSystem.Rename.VarRenamerT
+      - Language.Expression.TypeSystem.Rename.VarRenameable
+      - Language.Expression.TypeSystem.Rename
+      - Language.Expression.TypeSystem.Simplify
+      - Language.Expression.TypeSystem.SolverExpression
+      - Language.Expression.TypeSystem.Unify
+      - Language.Expression.TypeSystem.Subsume
+      - Language.Expression.TypeSystem.Abstract
+      - Language.Expression.TypeSystem.Bindings
+      - Language.Expression.TypeSystem.Complete
       - Language.Expression.Dolan.FreeVars
       - Language.Expression.Dolan.Shim
       - Language.Expression.Dolan.Type.DolanType

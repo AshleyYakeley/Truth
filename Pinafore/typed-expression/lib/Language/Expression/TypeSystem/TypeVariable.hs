@@ -1,5 +1,5 @@
 -- | the "U" is for "unsafe". This entire module is built on lies.
-module Language.Expression.Common.TypeVariable
+module Language.Expression.TypeSystem.TypeVariable
     ( UVar
     , UVarT
     , uVarName

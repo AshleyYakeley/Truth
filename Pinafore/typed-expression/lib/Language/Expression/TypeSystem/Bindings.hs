@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Common.Bindings
+module Language.Expression.TypeSystem.Bindings
     ( TSBindingData
     , TSBinding
     , singleBinding
@@ -9,13 +9,13 @@ module Language.Expression.Common.Bindings
     , bindingsRecursiveLetSealedExpression
     ) where
 
-import Language.Expression.Common.Abstract
-import Language.Expression.Common.Rename
-import Language.Expression.Common.Sealed
-import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.Subsumer
-import Language.Expression.Common.TypeSystem
-import Language.Expression.Common.Unifier
+import Language.Expression.Common.Sealed.Sealed
+import Language.Expression.TypeSystem.Abstract
+import Language.Expression.TypeSystem.Rename
+import Language.Expression.TypeSystem.SolverExpression
+import Language.Expression.TypeSystem.Subsume
+import Language.Expression.TypeSystem.TypeSystem
+import Language.Expression.TypeSystem.Unify
 import Shapes
 
 type TSBindingData :: Type -> Type

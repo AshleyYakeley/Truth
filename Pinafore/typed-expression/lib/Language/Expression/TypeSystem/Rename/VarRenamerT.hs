@@ -1,10 +1,10 @@
-module Language.Expression.Common.Rename.VarRenamerT
+module Language.Expression.TypeSystem.Rename.VarRenamerT
     ( VarRenamerT
     , runVarRenamerT
     , finalVarRenamerT
     ) where
 
-import Language.Expression.Common.Rename.VarNamespaceT
+import Language.Expression.TypeSystem.Rename.VarNamespaceT
 import Shapes
 
 {-

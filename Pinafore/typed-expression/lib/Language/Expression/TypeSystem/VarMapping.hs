@@ -1,7 +1,7 @@
-module Language.Expression.Common.VarMapping where
+module Language.Expression.TypeSystem.VarMapping where
 
 import Data.Shim
-import Language.Expression.Common.TypeVariable
+import Language.Expression.TypeSystem.TypeVariable
 import Shapes
 
 type Mapping :: Type -> Type -> Type

@@ -1,15 +1,13 @@
-module Language.Expression.Common.TypeSystem where
+module Language.Expression.TypeSystem.TypeSystem where
 
 import Data.Shim
 import Language.Expression.Common.Open.Expression
 import Language.Expression.Common.Open.Named
-import Language.Expression.Common.Partial
-
---import Language.Expression.Common.Pattern
-import Language.Expression.Common.Sealed
-import Language.Expression.Common.SealedF
-import Language.Expression.Common.SolverExpression
+import Language.Expression.Common.Sealed.Partial
+import Language.Expression.Common.Sealed.Sealed
+import Language.Expression.Common.Sealed.SealedF
 import Language.Expression.Common.WitnessMappable
+import Language.Expression.TypeSystem.SolverExpression
 import Shapes
 
 type ShowTypeSystem ts = (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts), AllConstraint Show (TSPosWitness ts))
@@ -64,4 +62,3 @@ type TSSealedExpression ts = SealedExpression (TSVarWit ts) (TSPosShimWit ts)
 type TSSealedFExpression ts = SealedFExpression (TSVarWit ts) (TSPosShimWit ts)
 
 type TSOpenSolverExpression ts typeexpr = SolverExpression typeexpr (TSOpenExpression ts)
---type TSExpressionWitness ts = NamedExpressionWitness (TSVarID ts) (TSNegShimWit ts)

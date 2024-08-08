@@ -1,4 +1,4 @@
-module Language.Expression.Common.Rename.VarNamespaceT
+module Language.Expression.TypeSystem.Rename.VarNamespaceT
     ( NameRigidity(..)
     , RenamerMonad(..)
     , renamerGenerateFree
@@ -11,10 +11,10 @@ module Language.Expression.Common.Rename.VarNamespaceT
     , varNamespaceRenameSource
     ) where
 
-import Language.Expression.Common.Rename.RenameTypeSystem
-import Language.Expression.Common.Rename.Rigidity
-import Language.Expression.Common.Rename.VarRenameable
-import Language.Expression.Common.TypeVariable
+import Language.Expression.TypeSystem.Rename.RenameTypeSystem
+import Language.Expression.TypeSystem.Rename.Rigidity
+import Language.Expression.TypeSystem.Rename.VarRenameable
+import Language.Expression.TypeSystem.TypeVariable
 import Shapes
 
 class Monad m => RenamerMonad m where

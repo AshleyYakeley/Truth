@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Common.Abstract
+module Language.Expression.TypeSystem.Abstract
     ( AbstractTypeSystem(..)
     , TSOpenPattern
     , TSMatch
@@ -31,15 +31,15 @@ import Data.Shim
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Expression
 import Language.Expression.Common.Open.Named
-import Language.Expression.Common.Partial
 import Language.Expression.Common.Pattern
-import Language.Expression.Common.Rename
-import Language.Expression.Common.Sealed
-import Language.Expression.Common.SealedF
-import Language.Expression.Common.Simplifier
-import Language.Expression.Common.SolverExpression
-import Language.Expression.Common.TypeSystem
-import Language.Expression.Common.Unifier
+import Language.Expression.Common.Sealed.Partial
+import Language.Expression.Common.Sealed.Sealed
+import Language.Expression.Common.Sealed.SealedF
+import Language.Expression.TypeSystem.Rename
+import Language.Expression.TypeSystem.Simplify
+import Language.Expression.TypeSystem.SolverExpression
+import Language.Expression.TypeSystem.TypeSystem
+import Language.Expression.TypeSystem.Unify
 import Shapes
 
 class ( RenameTypeSystem ts
