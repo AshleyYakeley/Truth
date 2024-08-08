@@ -1,6 +1,6 @@
-module Language.Expression.Common.NameWit where
+module Language.Expression.Common.Open.NameWit where
 
-import Language.Expression.Common.Expression
+import Language.Expression.Common.Open.Expression
 import Shapes
 
 type NameTypeWitness :: forall kn kt. (kn -> Type) -> (kn -> kt -> Type) -> kt -> Type

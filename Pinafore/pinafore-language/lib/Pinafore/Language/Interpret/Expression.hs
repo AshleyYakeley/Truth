@@ -579,7 +579,7 @@ checkExprVars (MkSealedExpression _ expr) = do
         getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
             paramWith sourcePosParam spos $ return $ Just $ (spos, MkSome w)
         getBadVarErrors _ = return Nothing
-    errorMessages <- sequenceA $ expressionFreeWitnesses getBadVarErrors expr
+    errorMessages <- sequenceA $ freeWitnesses getBadVarErrors expr
     case nonEmpty $ catMaybes errorMessages of
         Nothing -> return ()
         Just ww@((spos, _) :| _) ->

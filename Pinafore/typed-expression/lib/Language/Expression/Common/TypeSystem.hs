@@ -1,8 +1,8 @@
 module Language.Expression.Common.TypeSystem where
 
 import Data.Shim
-import Language.Expression.Common.Expression
-import Language.Expression.Common.Named
+import Language.Expression.Common.Open.Expression
+import Language.Expression.Common.Open.Named
 import Language.Expression.Common.Partial
 
 --import Language.Expression.Common.Pattern

@@ -56,8 +56,7 @@ import Pinafore.Syntax
 import Pinafore.Test
 
 showVars :: QOpenExpression t -> [Text]
-showVars =
-    expressionFreeWitnesses $ \(MkNameWitness name (MkShimWit t _)) -> toText $ exprShow name <> " : " <> exprShow t
+showVars = freeWitnesses $ \(MkNameWitness name (MkShimWit t _)) -> toText $ exprShow name <> " : " <> exprShow t
 
 showExpressionType :: QExpression -> Text
 showExpressionType (MkSealedExpression (MkShimWit t _) expr) =

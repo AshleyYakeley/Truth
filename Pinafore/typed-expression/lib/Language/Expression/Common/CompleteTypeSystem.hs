@@ -3,8 +3,8 @@ module Language.Expression.Common.CompleteTypeSystem where
 import Data.Shim
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
-import Language.Expression.Common.Error
-import Language.Expression.Common.Expression
+import Language.Expression.Common.Open.Error
+import Language.Expression.Common.Open.Expression
 import Language.Expression.Common.Pattern
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed

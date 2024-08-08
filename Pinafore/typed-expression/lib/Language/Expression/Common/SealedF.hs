@@ -2,8 +2,8 @@
 
 module Language.Expression.Common.SealedF where
 
-import Language.Expression.Common.Error
-import Language.Expression.Common.Expression
+import Language.Expression.Common.Open.Error
+import Language.Expression.Common.Open.Expression
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.WitnessMappable
 import Shapes

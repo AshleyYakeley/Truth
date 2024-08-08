@@ -1,6 +1,8 @@
-module Language.Expression.Common.Expression where
+module Language.Expression.Common.Open.Expression where
 
-import Language.Expression.Common.Error
+import Language.Expression.Common.Open.Abstract
+import Language.Expression.Common.Open.Error
+import Language.Expression.Common.Open.Free
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -25,7 +27,7 @@ instance Applicative (Expression w) where
 instance Productable (Expression w)
 
 instance AllConstraint Show w => Show (Expression w a) where
-    show expr = "{" <> intercalate "; " (expressionFreeWitnesses allShow expr) <> "}"
+    show expr = "{" <> intercalate "; " (freeWitnesses allShow expr) <> "}"
 
 instance AllConstraint Show w => AllConstraint Show (Expression w) where
     allConstraint = Dict
@@ -40,22 +42,21 @@ instance (forall t. WitnessMappable poswit negwit (w t)) => WitnessMappable posw
                     (unEndoM (mapWitnessesM mapPos mapNeg) wt)
                     (unEndoM (mapWitnessesM mapPos mapNeg) expr)
 
-isClosedExpression :: Expression w t -> Bool
-isClosedExpression (ClosedExpression _) = True
-isClosedExpression (OpenExpression _ _) = False
+instance HasFreeWitnesses Expression where
+    freeWitnesses _wr (ClosedExpression _) = []
+    freeWitnesses wr (OpenExpression wt expr) = (wr wt) : freeWitnesses wr expr
+    isClosed (ClosedExpression _) = True
+    isClosed (OpenExpression _ _) = False
+    freeWitnessCount (ClosedExpression _) = 0
+    freeWitnessCount (OpenExpression _ expr) = succ $ freeWitnessCount expr
 
-expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
-expressionFreeWitnesses _wr (ClosedExpression _) = []
-expressionFreeWitnesses wr (OpenExpression wt expr) = (wr wt) : expressionFreeWitnesses wr expr
-
-expressionFreeWitnessCount :: Expression w a -> Int
-expressionFreeWitnessCount (ClosedExpression _) = 0
-expressionFreeWitnessCount (OpenExpression _ expr) = succ $ expressionFreeWitnessCount expr
+instance AbstractWitness Expression where
+    abstractWitness = abstractExpression
 
 evalExpressionResult :: Expression w --> Result (ExpressionError w)
 evalExpressionResult (ClosedExpression a) = return a
 evalExpressionResult (OpenExpression wt expr) =
-    throwExc $ UndefinedBindingsError $ MkSome wt :| expressionFreeWitnesses MkSome expr
+    throwExc $ UndefinedBindingsError $ MkSome wt :| freeWitnesses MkSome expr
 
 evalExpression :: MonadThrow (ExpressionError w) m => Expression w --> m
 evalExpression expr = fromResult $ evalExpressionResult expr

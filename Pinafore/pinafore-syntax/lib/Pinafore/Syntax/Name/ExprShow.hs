@@ -66,7 +66,7 @@ instance (ExprShow name, ExprShow (w t)) => ExprShow (NameWitness name w t) wher
     exprShowPrec (MkNameWitness name wt) = namedTextPrec 2 $ exprShow name <> ": " <> exprShow wt
 
 instance (forall t. ExprShow (w t)) => ExprShow (Expression w a) where
-    exprShowPrec expr = namedTextPrec 3 $ mconcat $ sort $ nub $ expressionFreeWitnesses (\w -> exprShow w <> ", ") expr
+    exprShowPrec expr = namedTextPrec 3 $ mconcat $ sort $ nub $ freeWitnesses (\w -> exprShow w <> ", ") expr
 
 instance (ExprShow name, forall t. ExprShow (vw t), forall t. ExprShow (tw t)) =>
              ExprShow (SealedNamedExpression name vw tw) where

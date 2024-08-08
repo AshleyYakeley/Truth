@@ -2,9 +2,9 @@
 
 module Language.Expression.Common.Pattern.Constructor where
 
-import Language.Expression.Common.Error
-import Language.Expression.Common.Expression
-import Language.Expression.Common.Named
+import Language.Expression.Common.Open.Error
+import Language.Expression.Common.Open.Expression
+import Language.Expression.Common.Open.Named
 import Language.Expression.Common.Pattern.Pattern
 import Language.Expression.Common.Pattern.Sealed
 import Language.Expression.Common.WitnessMappable

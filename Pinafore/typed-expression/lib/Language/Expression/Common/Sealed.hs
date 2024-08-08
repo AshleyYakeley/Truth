@@ -2,9 +2,9 @@
 
 module Language.Expression.Common.Sealed where
 
-import Language.Expression.Common.Error
-import Language.Expression.Common.Expression
-import Language.Expression.Common.Named
+import Language.Expression.Common.Open.Error
+import Language.Expression.Common.Open.Expression
+import Language.Expression.Common.Open.Named
 import Language.Expression.Common.WitnessMappable
 import Shapes
 

@@ -1,8 +1,8 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Common.Named where
+module Language.Expression.Common.Open.Named where
 
-import Language.Expression.Common.NameWit
+import Language.Expression.Common.Open.NameWit
 import Language.Expression.Common.WitnessMappable
 import Shapes
 

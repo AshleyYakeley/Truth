@@ -20,18 +20,22 @@ library
       Language.Expression.Dolan
       Language.Expression.Dolan.Test
   other-modules:
-      Language.Expression.Common.Error
       Language.Expression.Common.WitnessMappable
       Language.Expression.Common.Witness
-      Language.Expression.Common.Expression
+      Language.Expression.Common.Open.Error
+      Language.Expression.Common.Open.Free
+      Language.Expression.Common.Open.Abstract
+      Language.Expression.Common.Open.Expression
+      Language.Expression.Common.Open.Lifted
+      Language.Expression.Common.Open.ExpressionBox
+      Language.Expression.Common.Open.NameWit
+      Language.Expression.Common.Open.Named
       Language.Expression.Common.Pattern.Pattern
       Language.Expression.Common.Pattern.Named
       Language.Expression.Common.Pattern.Func
       Language.Expression.Common.Pattern.Sealed
       Language.Expression.Common.Pattern.Constructor
       Language.Expression.Common.Pattern
-      Language.Expression.Common.NameWit
-      Language.Expression.Common.Named
       Language.Expression.Common.Sealed
       Language.Expression.Common.SealedF
       Language.Expression.Common.Partial

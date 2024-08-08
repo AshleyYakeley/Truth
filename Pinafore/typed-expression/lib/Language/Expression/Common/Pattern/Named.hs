@@ -3,8 +3,8 @@
 
 module Language.Expression.Common.Pattern.Named where
 
-import Language.Expression.Common.NameWit
-import Language.Expression.Common.Named
+import Language.Expression.Common.Open.NameWit
+import Language.Expression.Common.Open.Named
 import Language.Expression.Common.Pattern.Pattern
 import Shapes
 

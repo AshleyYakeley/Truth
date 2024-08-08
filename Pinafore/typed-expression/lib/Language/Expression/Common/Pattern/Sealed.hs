@@ -2,7 +2,7 @@
 
 module Language.Expression.Common.Pattern.Sealed where
 
-import Language.Expression.Common.Named
+import Language.Expression.Common.Open.Named
 import Language.Expression.Common.Pattern.Func
 import Language.Expression.Common.Pattern.Named
 import Language.Expression.Common.Pattern.Pattern
