@@ -5,6 +5,7 @@ module Language.Expression.Common.Open
 import Language.Expression.Common.Open.Abstract as I
 import Language.Expression.Common.Open.Error as I
 import Language.Expression.Common.Open.Expression as I
+import Language.Expression.Common.Open.ExpressionBox as I
 import Language.Expression.Common.Open.Free as I
 import Language.Expression.Common.Open.Lifted as I
 import Language.Expression.Common.Open.NameWit as I

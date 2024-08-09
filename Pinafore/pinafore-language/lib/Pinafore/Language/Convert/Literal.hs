@@ -20,7 +20,7 @@ literalStorabilityProp =
     MkStorability
         { stbKind = NilListType
         , stbCovaryMap = covarymap
-        , stbAdapter = pureStorabilityAdapter $ \NilArguments -> mkQStoreAdapter asLiteralStoreAdapter
+        , stbAdapterExpr = pure $ MkAllFor $ \NilArguments -> asLiteralStoreAdapter
         }
 
 literalGreatestDynamicSupertype :: AsLiteral t => QPolyGreatestDynamicSupertype '[] t

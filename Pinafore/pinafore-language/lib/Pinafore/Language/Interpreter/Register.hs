@@ -10,6 +10,7 @@ module Pinafore.Language.Interpreter.Register
     , registerRecordConstructor
     , registerRecordValue
     , registerSubtypeConversion
+    , updateGroundType
     ) where
 
 import Import
@@ -36,6 +37,12 @@ registerBindings bb = registerScope $ bindingInfosToScope bb
 registerBinding :: FullName -> QBindingInfo -> QScopeBuilder ()
 registerBinding name db = registerBindings $ singletonMap name db
 
+updateBindingInfo :: FullNameRef -> (QBindingInfo -> QScopeBuilder QBindingInfo) -> QScopeBuilder ()
+updateBindingInfo fnref f = do
+    (fname, oldbi) <- builderLift $ lookupBindingInfo fnref
+    newbi <- f oldbi
+    registerBinding fname newbi
+
 registerLetBindings :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindings bb =
     registerBindings $ fmap (\(fname, doc, exp) -> (fname, MkQBindingInfo fname doc $ ValueBinding exp)) bb
@@ -60,6 +67,24 @@ registerSelector :: BindingSelector t -> FullName -> DefDoc -> t -> QScopeBuilde
 registerSelector bst name doc t = do
     builderLift $ checkNameForRegister name
     registerBinding name $ MkQBindingInfo name doc $ bsEncode bst t
+
+updateSelector :: BindingSelector t -> FullNameRef -> (t -> QScopeBuilder t) -> QScopeBuilder ()
+updateSelector bst fnref f =
+    updateBindingInfo fnref $ \oldbi -> do
+        let oldbind = biValue oldbi
+        oldt <-
+            case bsDecode bst oldbind of
+                Just t -> return t
+                Nothing -> throw $ bsError bst fnref
+        newt <- f oldt
+        let
+            newbind = bsEncode bst newt
+            newbi = oldbi {biValue = newbind}
+        return newbi
+
+updateGroundType :: FullNameRef -> (forall dv t. QGroundType dv t -> QGroundType dv t) -> QScopeBuilder ()
+updateGroundType fnref f =
+    updateSelector typeBindingSelector fnref $ \(MkSomeGroundType t) -> return $ MkSomeGroundType $ f t
 
 registerType :: FullName -> DefDoc -> QSomeGroundType -> QScopeBuilder ()
 registerType = registerSelector typeBindingSelector
