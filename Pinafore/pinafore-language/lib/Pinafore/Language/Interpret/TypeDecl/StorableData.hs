@@ -10,19 +10,6 @@ import Pinafore.Language.Interpret.TypeDecl.Storage
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
-{-
-data StorabilityWitness (t :: Type) where
-    MkStorabilityWitness
-        :: forall dv (gt :: CCRVariancesKind dv).
-           FullName
-        -> FamilialType gt
-        -> StorabilityWitness (AllFor StoreAdapter (Arguments StoreAdapter gt))
-
-type StorabilityBox = ExpressionBox QOpenExpression StorabilityWitness (QScopeBuilder ())
--}
-type WithArgs :: forall k. (Type -> Type) -> k -> Type
-type WithArgs f gt = AllFor f (Arguments StoreAdapter gt)
-
 assignArgumentParams ::
        forall (f :: Type -> Type) dv (gt :: CCRVariancesKind dv) (decltype :: Type) (ta :: Type).
        CovParams dv gt decltype
@@ -41,7 +28,7 @@ data Thing x decltype ta =
 makeConstructorAdapter ::
        CovParams dv gt decltype
     -> ListType QNonpolarType lt
-    -> QInterpreter (QOpenExpression (WithArgs (Thing (ListType StoreAdapter lt) decltype) gt))
+    -> QInterpreter (QOpenExpression (WithStoreAdapterArgs gt (Thing (ListType StoreAdapter lt) decltype)))
 makeConstructorAdapter params pts = do
     etsexpr <- getCompose $ mapMListType (Compose . nonpolarToStoreAdapter params) pts
     return $
@@ -55,24 +42,17 @@ makeConstructorAdapter params pts = do
 makeTypeAdapter ::
        CovParams dv gt decltype
     -> [(ConstructorCodec decltype, Anchor)]
-    -> QInterpreter (QOpenExpression (WithArgs StoreAdapter gt))
+    -> QInterpreter (QOpenExpression (WithStoreAdapterArgs gt StoreAdapter))
 makeTypeAdapter params conss = do
-    ffexpr :: [QOpenExpression (WithArgs (Compose Endo StoreAdapter) gt)] <-
+    ffexpr :: [QOpenExpression (WithStoreAdapterArgs gt (Compose Endo StoreAdapter))] <-
         for conss $ \case
             (MkSomeFor (MkConstructorType _ PositionalCF cc) codec, anchor) -> do
                 caexpr <- makeConstructorAdapter params $ listVTypeToType cc
                 return $
                     fmap
-                        (\(MkAllFor wa) ->
-                             MkAllFor $ \args ->
-                                 case wa args of
-                                     MkThing tt Refl -> let
-                                         vcodec =
-                                             invmap
-                                                 listVProductToProduct
-                                                 (listProductToVProduct $ listTypeToVType tt)
-                                                 codec
-                                         in Compose $ Endo $ codecSum vcodec $ constructorStoreAdapter anchor tt)
+                        (mapAllFor $ \(MkThing tt Refl) -> let
+                             vcodec = invmap listVProductToProduct (listProductToVProduct $ listTypeToVType tt) codec
+                             in Compose $ Endo $ codecSum vcodec $ constructorStoreAdapter anchor tt)
                         caexpr
             (MkSomeFor (MkConstructorType _ (RecordCF _) _) _, _) -> throw InterpretTypeDeclTypeStorableRecord
     return $
@@ -88,7 +68,7 @@ makeStorableGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
     mkx :: CCRVariancesMap dv gt
         -> [(ConstructorCodec decltype, Anchor)]
-        -> QInterpreter (CCRVariancesMap dv gt, QOpenExpression (WithArgs StoreAdapter gt))
+        -> QInterpreter (CCRVariancesMap dv gt, QOpenExpression (WithStoreAdapterArgs gt StoreAdapter))
     mkx dvm conss = do
         cvt <-
             case ccrVariancesToCovaryType dvt of
@@ -98,7 +78,7 @@ makeStorableGroundType mainTypeName tparams = let
         adapterexpr <- makeTypeAdapter cparams conss
         return (dvm, adapterexpr)
     mkgt ::
-           (CCRVariancesMap dv gt, QOpenExpression (WithArgs StoreAdapter gt))
+           (CCRVariancesMap dv gt, QOpenExpression (WithStoreAdapterArgs gt StoreAdapter))
         -> QInterpreter (GroundTypeFromTypeID dv gt (Storability dv gt))
     mkgt ~(dvm, adapterexpr) = do
         cvt <-

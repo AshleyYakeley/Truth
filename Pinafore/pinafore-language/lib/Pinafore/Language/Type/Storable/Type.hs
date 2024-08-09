@@ -5,17 +5,20 @@ import Pinafore.Language.Interpreter ()
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 
+type WithStoreAdapterArgs :: forall k. k -> (Type -> Type) -> Type
+type WithStoreAdapterArgs gt f = AllFor f (Arguments StoreAdapter gt)
+
 type Storability :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data Storability dv gt = MkStorability
     { stbKind :: CovaryType dv
     , stbCovaryMap :: CovaryMap gt
-    , stbAdapterExpr :: QOpenExpression (AllFor StoreAdapter (Arguments StoreAdapter gt))
+    , stbAdapterExpr :: QOpenExpression (WithStoreAdapterArgs gt StoreAdapter)
     }
 
 pureStorabilityAdapter ::
        forall gt.
        (forall ta. Arguments StoreAdapter gt ta -> StoreAdapter ta)
-    -> QOpenExpression (AllFor StoreAdapter (Arguments StoreAdapter gt))
+    -> QOpenExpression (WithStoreAdapterArgs gt StoreAdapter)
 pureStorabilityAdapter f = pure $ MkAllFor f
 
 storabilityProperty :: IOWitness (Storability '[] ())
