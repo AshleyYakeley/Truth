@@ -46,7 +46,8 @@ library
       Data.Merge
       Data.Tree
       Data.KindMorphism
-      Data.FixBox
+      Data.Recursion.FixBox
+      Data.Recursion.AppRec
       Data.Serializer
       Data.Serialize.Has
       Data.ReadShow
@@ -143,6 +144,7 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      AppRec
       Serializer
       Task
   hs-source-dirs:

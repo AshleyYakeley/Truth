@@ -26,7 +26,6 @@ import Data.Coerce.Role as I
 import Data.EndoM as I
 import Data.Filterable as I
 import Data.FiniteSet as I
-import Data.FixBox as I
 import Data.HasNewValue as I
 import Data.Hexadecimal as I
 import Data.Injection as I
@@ -39,6 +38,8 @@ import Data.Merge as I
 import Data.MonoApplicative as I
 import Data.PurityFunction as I
 import Data.ReadShow as I
+import Data.Recursion.AppRec as I
+import Data.Recursion.FixBox as I
 import Data.SameItem as I
 import Data.Sequential as I
 import Data.Serialize.Has as I

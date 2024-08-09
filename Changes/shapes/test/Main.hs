@@ -2,6 +2,7 @@ module Main
     ( main
     ) where
 
+import AppRec
 import Data.IORef
 import Data.Time
 import Serializer
@@ -116,4 +117,5 @@ testFixBox =
     testTree "fixbox" [testTree "IO" (runBoxes :: IO ()), testTree "WithT IO" (unWithT runBoxes return :: IO ())]
 
 main :: IO ()
-main = testMain $ testTree "shapes" [testHexadecimal, testTask, testClock, testFix, testFixBox, testSerializer]
+main =
+    testMain $ testTree "shapes" [testHexadecimal, testTask, testClock, testFix, testFixBox, testAppRec, testSerializer]

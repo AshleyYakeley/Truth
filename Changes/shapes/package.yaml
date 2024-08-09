@@ -77,7 +77,8 @@ library:
       - Data.Merge
       - Data.Tree
       - Data.KindMorphism
-      - Data.FixBox
+      - Data.Recursion.FixBox
+      - Data.Recursion.AppRec
       - Data.Serializer
       - Data.Serialize.Has
       - Data.ReadShow
@@ -114,6 +115,7 @@ tests:
           - shapes
         main: Main.hs
         other-modules:
+          - AppRec
           - Serializer
           - Task
         ghc-options: -threaded

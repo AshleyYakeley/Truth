@@ -1,4 +1,4 @@
-module Data.FixBox
+module Data.Recursion.FixBox
     ( FixBox
     , mkFixBox
     , mkConstructFixBox
