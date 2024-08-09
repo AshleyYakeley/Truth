@@ -49,7 +49,7 @@ maybeGroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr = pureStorabilityAdapter @Maybe $ \(ConsArguments t NilArguments) -> maybeStoreAdapter t
+        stbAdapterExprKnot = pureStorabilityAdapter @Maybe $ \(ConsArguments t NilArguments) -> maybeStoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe") {qgtProperties = props}
@@ -89,7 +89,7 @@ listGroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr = pureStorabilityAdapter @[] $ \(ConsArguments t NilArguments) -> listStoreAdapter t
+        stbAdapterExprKnot = pureStorabilityAdapter @[] $ \(ConsArguments t NilArguments) -> listStoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List") {qgtProperties = props}
@@ -100,7 +100,7 @@ list1GroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr = pureStorabilityAdapter @NonEmpty $ \(ConsArguments t NilArguments) -> list1StoreAdapter t
+        stbAdapterExprKnot = pureStorabilityAdapter @NonEmpty $ \(ConsArguments t NilArguments) -> list1StoreAdapter t
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1.List.")
@@ -132,7 +132,7 @@ eitherGroundType = let
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr =
+        stbAdapterExprKnot =
             pureStorabilityAdapter @Either $ \(ConsArguments ta (ConsArguments tb NilArguments)) ->
                 eitherStoreAdapter ta tb
         in MkStorability {..}
@@ -162,7 +162,7 @@ resultGroundType = let
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr =
+        stbAdapterExprKnot =
             pureStorabilityAdapter @Result $ \(ConsArguments ta (ConsArguments tb NilArguments)) ->
                 resultStoreAdapter ta tb
         in MkStorability {..}
@@ -188,7 +188,7 @@ pairGroundType = let
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr =
+        stbAdapterExprKnot =
             pureStorabilityAdapter @(,) $ \(ConsArguments ta (ConsArguments tb NilArguments)) -> pairStoreAdapter ta tb
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
@@ -205,7 +205,7 @@ mapGroundType = let
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr = pureStorabilityAdapter @LangMap $ \(ConsArguments t NilArguments) -> mapStoreAdapter t
+        stbAdapterExprKnot = pureStorabilityAdapter @LangMap $ \(ConsArguments t NilArguments) -> mapStoreAdapter t
         in MkStorability {..}
     props :: GroundProperties '[ CoCCRVariance] LangMap
     props = singleGroundProperty storabilityProperty storability

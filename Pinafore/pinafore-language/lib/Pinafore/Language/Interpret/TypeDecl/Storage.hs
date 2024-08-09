@@ -54,7 +54,7 @@ lookupVar (ConsCCRArguments _ params) var = do
 nonpolarGroundedToStoreAdapter ::
        CovParams dv gt ta
     -> QNonpolarGroundedType t
-    -> QInterpreter (QOpenExpression (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t))
+    -> QInterpreter (QExprRec (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t))
 nonpolarGroundedToStoreAdapter params (MkNonpolarGroundedType ground args) = do
     (cvt, MkStorableGroundType _ (MkSealedStorability _ storability)) <-
         case dolanToMonoGroundType ground of
@@ -66,13 +66,13 @@ nonpolarGroundedToStoreAdapter params (MkNonpolarGroundedType ground args) = do
     return $
         liftA2
             (\(MkAllFor stba) aargs -> Compose $ \eargs -> stba $ mapArguments (\(Compose eaf) -> eaf eargs) aargs)
-            (stbAdapterExpr storability)
+            (stbAdapterExprRec storability)
             aargsexpr
 
 nonpolarToStoreAdapter ::
        CovParams dv gt ta
     -> QNonpolarType t
-    -> QInterpreter (QOpenExpression (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t))
+    -> QInterpreter (QExprRec (Compose ((->) (Arguments StoreAdapter gt ta)) StoreAdapter t))
 nonpolarToStoreAdapter params (VarNonpolarType var) = fmap (pure . Compose) $ lookupVar params var
 nonpolarToStoreAdapter params (GroundedNonpolarType t) = nonpolarGroundedToStoreAdapter params t
 nonpolarToStoreAdapter _ t@(RecursiveNonpolarType {}) = throw $ InterpretTypeNotStorableError $ exprShow t

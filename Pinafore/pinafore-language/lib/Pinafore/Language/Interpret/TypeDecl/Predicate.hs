@@ -54,16 +54,18 @@ makePredicateTypeBox name md storable sparent spredicate =
                     if storable
                         then do
                             storeadapterexpr <- builderLift $ nonpolarGroundedToStoreAdapter NilCCRArguments parent
+                            wit <- liftIO newIOWitness
                             let
                                 storability :: Storability '[] (Identified tid)
                                 storability = let
                                     stbKind = NilListType
                                     stbCovaryMap = covarymap
-                                    stbAdapterExpr =
+                                    stbAdapterExprKnot =
+                                        knotAppRec wit $
                                         liftA2
                                             (\prd (Compose adap) ->
                                                  MkAllFor $ \NilArguments -> gateStoreAdapter prd $ adap NilArguments)
-                                            predexpr
+                                            (liftAppRec predexpr)
                                             storeadapterexpr
                                     in MkStorability {..}
                             return $ singleGroundProperty storabilityProperty storability

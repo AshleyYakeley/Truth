@@ -4,6 +4,7 @@ module Data.Recursion.AppRec
     , AppKnot
     , appKnotRec
     , appKnotResult
+    , pureAppKnot
     , knotAppRec
     ) where
 
@@ -25,10 +26,18 @@ liftAppRec fa = MkAppRec $ \_ -> fmap (\a _ -> a) fa
 runAppRec :: Functor f => IOWitness a -> AppRec f a -> f a
 runAppRec wit (MkAppRec tfta) = fmap fix $ tfta wit
 
+-- | deliberately not an instance of Functor/Applicative
 data AppKnot f a = MkAppKnot
     { appKnotRec :: AppRec f a
     , appKnotResult :: f a
     }
+
+-- | probably shouldn't be exposed
+liftAppKnot :: Functor f => f a -> AppKnot f a
+liftAppKnot fa = MkAppKnot (liftAppRec fa) fa
+
+pureAppKnot :: Applicative f => a -> AppKnot f a
+pureAppKnot a = liftAppKnot $ pure a
 
 knotAppRec ::
        forall f a. Applicative f

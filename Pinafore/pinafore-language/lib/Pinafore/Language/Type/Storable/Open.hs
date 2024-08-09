@@ -50,8 +50,9 @@ openStorableGroundType oet = let
     storability = let
         stbKind = NilListType
         stbCovaryMap = covarymap
-        stbAdapterExpr :: QOpenExpression (WithStoreAdapterArgs (OpenEntity tid) StoreAdapter)
-        stbAdapterExpr = pure $ MkAllFor $ \NilArguments -> invmap MkOpenEntity unOpenEntity plainStoreAdapter
+        stbAdapterExprKnot :: QExprKnot (WithStoreAdapterArgs (OpenEntity tid) StoreAdapter)
+        stbAdapterExprKnot =
+            pureAppKnot $ MkAllFor $ \NilArguments -> invmap MkOpenEntity unOpenEntity plainStoreAdapter
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
     in singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet

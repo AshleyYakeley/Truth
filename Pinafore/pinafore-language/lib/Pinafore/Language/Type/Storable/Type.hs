@@ -8,18 +8,34 @@ import Pinafore.Language.Type.Ground
 type WithStoreAdapterArgs :: forall k. k -> (Type -> Type) -> Type
 type WithStoreAdapterArgs gt f = AllFor f (Arguments StoreAdapter gt)
 
+type QExprRec = AppRec QOpenExpression
+
+type QExprKnot = AppKnot QOpenExpression
+
 type Storability :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
 data Storability dv gt = MkStorability
     { stbKind :: CovaryType dv
     , stbCovaryMap :: CovaryMap gt
-    , stbAdapterExpr :: QOpenExpression (WithStoreAdapterArgs gt StoreAdapter)
+    , stbAdapterExprKnot :: QExprKnot (WithStoreAdapterArgs gt StoreAdapter)
     }
+
+stbAdapterExprRec ::
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
+       Storability dv gt
+    -> QExprRec (WithStoreAdapterArgs gt StoreAdapter)
+stbAdapterExprRec = appKnotRec . stbAdapterExprKnot
+
+stbAdapterExprResult ::
+       forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
+       Storability dv gt
+    -> QOpenExpression (WithStoreAdapterArgs gt StoreAdapter)
+stbAdapterExprResult = appKnotResult . stbAdapterExprKnot
 
 pureStorabilityAdapter ::
        forall gt.
        (forall ta. Arguments StoreAdapter gt ta -> StoreAdapter ta)
-    -> QOpenExpression (WithStoreAdapterArgs gt StoreAdapter)
-pureStorabilityAdapter f = pure $ MkAllFor f
+    -> QExprKnot (WithStoreAdapterArgs gt StoreAdapter)
+pureStorabilityAdapter f = pureAppKnot $ MkAllFor f
 
 storabilityProperty :: IOWitness (Storability '[] ())
 storabilityProperty = $(iowitness [t|Storability '[] ()|])
@@ -49,9 +65,9 @@ storabilitySaturatedAdapter ::
     -> Storability dv gt
     -> (forall t. QArgumentsShimWit dv gt 'Negative t -> QOpenExpression (StoreAdapter t) -> r)
     -> r
-storabilitySaturatedAdapter tt fadapter MkStorability {..} call =
+storabilitySaturatedAdapter tt fadapter st@(MkStorability {..}) call =
     saturateStoreAdapter tt fadapter stbKind stbCovaryMap $ \args eargsexpr ->
-        call args $ liftA2 (\(MkAllFor adp) eargs -> adp eargs) stbAdapterExpr eargsexpr
+        call args $ liftA2 (\(MkAllFor adp) eargs -> adp eargs) (stbAdapterExprResult st) eargsexpr
 
 type SealedStorability :: forall k. k -> Type
 data SealedStorability gt where
@@ -94,7 +110,7 @@ storableGroundTypeAdapter ::
     -> Interpreter (QOpenExpression (StoreAdapter t))
 storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storability)) args = do
     argsexpr' <- getCompose $ mapArgumentsM (Compose . monoStoreAdapter) args
-    return $ liftA2 (\(MkAllFor stba) args' -> stba args') (stbAdapterExpr storability) argsexpr'
+    return $ liftA2 (\(MkAllFor stba) args' -> stba args') (stbAdapterExprResult storability) argsexpr'
 
 type MonoStorableType = MonoType StorableGroundType
 

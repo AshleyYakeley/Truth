@@ -28,7 +28,7 @@ data Thing x decltype ta =
 makeConstructorAdapter ::
        CovParams dv gt decltype
     -> ListType QNonpolarType lt
-    -> QInterpreter (QOpenExpression (WithStoreAdapterArgs gt (Thing (ListType StoreAdapter lt) decltype)))
+    -> QInterpreter (QExprRec (WithStoreAdapterArgs gt (Thing (ListType StoreAdapter lt) decltype)))
 makeConstructorAdapter params pts = do
     etsexpr <- getCompose $ mapMListType (Compose . nonpolarToStoreAdapter params) pts
     return $
@@ -42,9 +42,9 @@ makeConstructorAdapter params pts = do
 makeTypeAdapter ::
        CovParams dv gt decltype
     -> [(ConstructorCodec decltype, Anchor)]
-    -> QInterpreter (QOpenExpression (WithStoreAdapterArgs gt StoreAdapter))
+    -> QInterpreter (QExprRec (WithStoreAdapterArgs gt StoreAdapter))
 makeTypeAdapter params conss = do
-    ffexpr :: [QOpenExpression (WithStoreAdapterArgs gt (Compose Endo StoreAdapter))] <-
+    ffexpr :: [QExprRec (WithStoreAdapterArgs gt (Compose Endo StoreAdapter))] <-
         for conss $ \case
             (MkSomeFor (MkConstructorType _ PositionalCF cc) codec, anchor) -> do
                 caexpr <- makeConstructorAdapter params $ listVTypeToType cc
@@ -68,7 +68,7 @@ makeStorableGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
     mkx :: CCRVariancesMap dv gt
         -> [(ConstructorCodec decltype, Anchor)]
-        -> QInterpreter (CCRVariancesMap dv gt, QOpenExpression (WithStoreAdapterArgs gt StoreAdapter))
+        -> QInterpreter (CCRVariancesMap dv gt, QExprRec (WithStoreAdapterArgs gt StoreAdapter))
     mkx dvm conss = do
         cvt <-
             case ccrVariancesToCovaryType dvt of
@@ -78,9 +78,10 @@ makeStorableGroundType mainTypeName tparams = let
         adapterexpr <- makeTypeAdapter cparams conss
         return (dvm, adapterexpr)
     mkgt ::
-           (CCRVariancesMap dv gt, QOpenExpression (WithStoreAdapterArgs gt StoreAdapter))
+           (CCRVariancesMap dv gt, QExprRec (WithStoreAdapterArgs gt StoreAdapter))
         -> QInterpreter (GroundTypeFromTypeID dv gt (Storability dv gt))
     mkgt ~(dvm, adapterexpr) = do
+        wit <- liftIO newIOWitness
         cvt <-
             case ccrVariancesToCovaryType dvt of
                 Just cvt -> return cvt
@@ -91,7 +92,7 @@ makeStorableGroundType mainTypeName tparams = let
                 stbKind = cvt
                 stbCovaryMap = ccrVariancesMapToCovary cvt $ lazyCCRVariancesMap dvt dvm
                 showType = standardListTypeExprShow @dv $ exprShow subTypeName
-                stbAdapterExpr = adapterexpr
+                stbAdapterExprKnot = knotAppRec wit adapterexpr
                 storability :: Storability dv gt
                 storability = MkStorability {..}
                 gt :: QGroundType dv gt
