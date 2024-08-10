@@ -69,10 +69,7 @@
       ]
     },
     {
-        "group": {
-          "kind": "build",
-          "isDefault": true
-        },
+        "group": "build",
         "label": "Quick Single Build",
         "type": "shell",
         "command": "cd ${workspaceRoot} && make top-single-build",
@@ -97,7 +94,10 @@
         ]
       },
       {
-        "group": "build",
+        "group": {
+            "kind": "build",
+            "isDefault": true
+          },
         "label": "Quick Build",
         "type": "shell",
         "command": "cd ${workspaceRoot} && make top-build",
