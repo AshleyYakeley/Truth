@@ -13,7 +13,7 @@ makeOpenEntityTypeBox name md =
         register _ = do
             let
                 doc = MkDefDoc (typeDocItem name True [] Nothing) md
-                t = openStorableGroundType $ MkOpenEntityType name tidsym
+                t = openEntityGroundType $ MkOpenEntityType name tidsym
             registerGroundType name doc t
             registerSubtypeConversion $ MkSubtypeConversionEntry Verify t entityGroundType coerceSubtypeConversion
         in return $ mkRegisterFixBox register

@@ -201,7 +201,7 @@ All declarations, including type declarations, are local to a `let` block.
 <direct-declaration> ::=
     "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <of(<plain-datatype-constructor>)> |
     "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
-    "opentype" <type-const> |
+    "entitytype" <type-const> |
     "subtype" <optional("trustme")> <type> "<:" <type> <optional("=" <expression>)> |
     <binding>
 

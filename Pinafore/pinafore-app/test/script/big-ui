@@ -4,7 +4,7 @@ import "gnome" in
 with Store in
 let
 
-opentype T;
+entitytype T;
 me = point.OpenEntity @T !"T";
 
 func20 = fn n, a, b, c, d, e, f => label.Widget.GTK n;

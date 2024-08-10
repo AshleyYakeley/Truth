@@ -27,7 +27,7 @@ pinafore> :doc xx
 #| doc 1 xx
 pinafore> {# plain comment #} zz = 12
 pinafore> :doc zz
-pinafore> {#| doc 3 T #} opentype T
+pinafore> {#| doc 3 T #} entitytype T
 pinafore> :doc T
 #| doc 3 T
 pinafore> <END>

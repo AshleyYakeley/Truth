@@ -6,7 +6,7 @@ run.GTK $ fn gtk =>
 let
 
     # a person
-    opentype Person;
+    entitytype Person;
     people: FiniteSetModel Person
     = set.Store @Person !"p" store;
 

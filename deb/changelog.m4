@@ -7,6 +7,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - allow double type parameters in datatype declarations
     - add predicate types
     - remove dynamic entity types
+    - rename opentype keyword to entitytype
   * Library
     - rename libraries to remove "pinafore-"
     - built-in

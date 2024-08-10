@@ -17,5 +17,5 @@ aa = 8
 :doc xx
 {# plain comment #} zz = 12
 :doc zz
-{#| doc 3 T #} opentype T
+{#| doc 3 T #} entitytype T
 :doc T

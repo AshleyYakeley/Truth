@@ -1,8 +1,8 @@
 #!/usr/bin/pinafore
 let
 
-opentype A;
-opentype B;
+entitytype A;
+entitytype B;
 
 datatype R of
     Mk of

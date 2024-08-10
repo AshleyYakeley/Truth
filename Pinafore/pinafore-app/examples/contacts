@@ -13,13 +13,13 @@ in
 let
 
     # something with a lifespan
-    opentype Lifespanned;
+    entitytype Lifespanned;
     # birth and death dates
     birthDateOf = property @Lifespanned @Date !"lifespan.start.date" ?store;
     deathDateOf = property @Lifespanned @Date !"lifespan.end.date" ?store;
 
     # physical locations, that have addresses
-    opentype Location;
+    entitytype Location;
 
     namespace Location of
         addressOf = property @Location @Text !"location.address.withincity" ?store;
@@ -44,8 +44,8 @@ let
 
     let
         # a person or organisation
-        opentype ContactType;
-        opentype ContactValue;
+        entitytype ContactType;
+        entitytype ContactValue;
         datatype storable Contact of
             Mk ContactType ContactValue !"Mk.Contact";
         end;

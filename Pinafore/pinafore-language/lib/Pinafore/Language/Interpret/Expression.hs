@@ -631,10 +631,10 @@ interpretGeneralSubtypeRelation trustme sta stb sbody = do
                 _ -> throw $ InterpretTypeNotGroundedError $ exprShow atb
         _ -> throw $ InterpretTypeNotGroundedError $ exprShow ata
 
-nonpolarSimpleEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, StorableGroundType t)
-nonpolarSimpleEntityType (GroundedNonpolarType (MkNonpolarGroundedType t NilCCRArguments))
+nonpolarSimpleOpenEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, StorableGroundType t)
+nonpolarSimpleOpenEntityType (GroundedNonpolarType (MkNonpolarGroundedType t NilCCRArguments))
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
-nonpolarSimpleEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
+nonpolarSimpleOpenEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
 
 interpretIdentitySubtypeRelation :: SyntaxType -> SyntaxType -> QInterpreter QSubtypeConversionEntry
 interpretIdentitySubtypeRelation sta stb = do
@@ -642,13 +642,13 @@ interpretIdentitySubtypeRelation sta stb = do
     atb <- interpretNonpolarType stb
     case (ata, atb) of
         (MkSome ta, MkSome tb) -> do
-            (gta, tea) <- nonpolarSimpleEntityType ta
-            (gtb, _) <- nonpolarSimpleEntityType tb
-            case getGroundFamily openStorableFamilyWitness gtb of
+            (gta, tea) <- nonpolarSimpleOpenEntityType ta
+            (gtb, _) <- nonpolarSimpleOpenEntityType tb
+            case getGroundFamily openEntityFamilyWitness gtb of
                 Just (MkOpenEntityFamily _) -> do
                     adapterexpr <- storableGroundTypeAdapter tea NilArguments
                     return $
-                        case getGroundFamily openStorableFamilyWitness gta of
+                        case getGroundFamily openEntityFamilyWitness gta of
                             Just (MkOpenEntityFamily _) ->
                                 MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                             Nothing ->

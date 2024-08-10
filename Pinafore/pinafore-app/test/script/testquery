@@ -4,7 +4,7 @@ with Store in
 let
 
 # Define a type of entity for people
-opentype Person;
+entitytype Person;
 
 # Properties of Person
 name = property @Person @Text !"example:name" store;
@@ -12,7 +12,7 @@ mother = property @Person @Person !"example:mother" store;
 father = property @Person @Person !"example:father" store;
 
 # Root type and entity
-opentype Root;
+entitytype Root;
 root = point.OpenEntity @Root !"example:root";
 
 # The set of people connected to root.

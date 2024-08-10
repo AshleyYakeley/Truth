@@ -95,7 +95,7 @@ data Token t where
     TokElse :: Token ()
     TokType :: Token ()
     TokDataType :: Token ()
-    TokOpenType :: Token ()
+    TokEntityType :: Token ()
     TokPredicateType :: Token ()
     TokSubtype :: Token ()
     TokTrustMe :: Token ()
@@ -160,7 +160,7 @@ instance TestEquality Token where
     testEquality TokElse TokElse = Just Refl
     testEquality TokType TokType = Just Refl
     testEquality TokDataType TokDataType = Just Refl
-    testEquality TokOpenType TokOpenType = Just Refl
+    testEquality TokEntityType TokEntityType = Just Refl
     testEquality TokPredicateType TokPredicateType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokTrustMe TokTrustMe = Just Refl
@@ -217,7 +217,7 @@ instance Show (Token t) where
     show TokElse = show ("else" :: String)
     show TokType = show ("type" :: String)
     show TokDataType = show ("datatype" :: String)
-    show TokOpenType = show ("opentype" :: String)
+    show TokEntityType = show ("entitytype" :: String)
     show TokPredicateType = show ("predicatetype" :: String)
     show TokSubtype = show ("subtype" :: String)
     show TokTrustMe = show ("trustme" :: String)
@@ -353,7 +353,7 @@ checkKeyword "then" = return $ MkSomeOf TokThen ()
 checkKeyword "else" = return $ MkSomeOf TokElse ()
 checkKeyword "type" = return $ MkSomeOf TokType ()
 checkKeyword "datatype" = return $ MkSomeOf TokDataType ()
-checkKeyword "opentype" = return $ MkSomeOf TokOpenType ()
+checkKeyword "entitytype" = return $ MkSomeOf TokEntityType ()
 checkKeyword "predicatetype" = return $ MkSomeOf TokPredicateType ()
 checkKeyword "subtype" = return $ MkSomeOf TokSubtype ()
 checkKeyword "trustme" = return $ MkSomeOf TokTrustMe ()
@@ -385,7 +385,7 @@ allKeywords =
     , ("else", "keyword.control.pinafore")
     , ("type", "keyword.declaration.pinafore")
     , ("datatype", "keyword.declaration.pinafore")
-    , ("opentype", "keyword.declaration.pinafore")
+    , ("entitytype", "keyword.declaration.pinafore")
     , ("predicatetype", "keyword.declaration.pinafore")
     , ("subtype", "keyword.declaration.pinafore")
     , ("trustme", "keyword.declaration.pinafore")

@@ -1,5 +1,5 @@
-pinafore> opentype A
-pinafore> opentype B
-pinafore> opentype A
+pinafore> entitytype A
+pinafore> entitytype B
+pinafore> entitytype A
 <input>:1:1: duplicate binding: A
 pinafore> <END>

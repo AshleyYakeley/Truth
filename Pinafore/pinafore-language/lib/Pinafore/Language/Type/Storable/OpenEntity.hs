@@ -1,9 +1,9 @@
-module Pinafore.Language.Type.Storable.Open
+module Pinafore.Language.Type.Storable.OpenEntity
     ( OpenEntityType(..)
     , OpenEntity(..)
     , OpenEntityFamily(..)
-    , openStorableFamilyWitness
-    , openStorableGroundType
+    , openEntityFamilyWitness
+    , openEntityGroundType
     , getOpenEntityType
     ) where
 
@@ -41,11 +41,11 @@ instance TestHetEquality OpenEntityFamily where
         Refl <- testEquality t1 t2
         return HRefl
 
-openStorableFamilyWitness :: IOWitness ('MkWitKind OpenEntityFamily)
-openStorableFamilyWitness = $(iowitness [t|'MkWitKind OpenEntityFamily|])
+openEntityFamilyWitness :: IOWitness ('MkWitKind OpenEntityFamily)
+openEntityFamilyWitness = $(iowitness [t|'MkWitKind OpenEntityFamily|])
 
-openStorableGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
-openStorableGroundType oet = let
+openEntityGroundType :: forall tid. OpenEntityType tid -> QGroundType '[] (OpenEntity tid)
+openEntityGroundType oet = let
     storability :: Storability '[] (OpenEntity tid)
     storability = let
         stbKind = NilListType
@@ -55,11 +55,11 @@ openStorableGroundType oet = let
             pureAppKnot $ MkAllFor $ \NilArguments -> invmap MkOpenEntity unOpenEntity plainStoreAdapter
         in MkStorability {..}
     props = singleGroundProperty storabilityProperty storability
-    in singleGroundType' (MkFamilialType openStorableFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet
+    in singleGroundType' (MkFamilialType openEntityFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet
 
 getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
 getOpenEntityType (MkSome tm) =
     case dolanToMaybeType @QGroundType @_ @_ @QShim tm of
         Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
-            | Just (MkOpenEntityFamily oet) <- getGroundFamily openStorableFamilyWitness gt -> return $ MkSome oet
+            | Just (MkOpenEntityFamily oet) <- getGroundFamily openEntityFamilyWitness gt -> return $ MkSome oet
         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm

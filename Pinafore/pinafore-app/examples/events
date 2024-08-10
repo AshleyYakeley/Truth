@@ -80,7 +80,7 @@ let
 
     ### Event
 
-    opentype Event;
+    entitytype Event;
     subtype Event <: Named;
 
     namespace Event of

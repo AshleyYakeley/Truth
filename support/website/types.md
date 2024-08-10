@@ -362,7 +362,7 @@ Like plain data types, storable data types can have type parameters, but they mu
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
 ```pinafore decl
-opentype Person;
+entitytype Person;
 
 datatype storable Patient of
     Living Person Date !"Patient.Living";
@@ -395,17 +395,17 @@ end;
 ### Open Entity Types
 
 An open entity type is a type to which new entities can be added at run-time.
-These types can be declared using `opentype`, and subtype relations between them can be declared using `subtype`:
+These types can be declared using `entitytype`, and subtype relations between them can be declared using `subtype`:
 
 ```pinafore decl
-opentype Animal;
-opentype Person;
-opentype Cat;
+entitytype Animal;
+entitytype Person;
+entitytype Cat;
 subtype Person <: Animal;
 subtype Cat <: Animal;
 ```
 
-For any open entity type `T`, `T <: Entity`.
+Every open entity type is a subtype of `Entity`, and their representations are the same.
 
 #### Subtype Relations
 
@@ -416,7 +416,7 @@ subtype P <: Q;
 ```
 
 where `Q` is an open entity type, and `P` is a "simple" entity type, that is, a subtype of `Entity` that does not use type parameters.
-So `opentype Integer <: Q` is allowed, but `opentype Maybe Integer <: Q` is not (even though `Maybe Integer` is a subtype of `Entity`).
+So `entitytype Integer <: Q` is allowed, but `entitytype Maybe Integer <: Q` is not (even though `Maybe Integer` is a subtype of `Entity`).
 
 Subtypes relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.

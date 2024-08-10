@@ -5,7 +5,7 @@ openDefault.Store >>= fn store =>
 run.GTK $ fn gtk =>
 let
 
-    opentype Person;
+    entitytype Person;
     p = point.OpenEntity @Person !"p";
     people: FiniteSetModel Person = set.Store @Person !"T" store;
 

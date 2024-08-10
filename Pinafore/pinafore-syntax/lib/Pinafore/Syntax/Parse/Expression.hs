@@ -21,7 +21,7 @@ import Shapes hiding (try)
 
 readOpenEntityTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readOpenEntityTypeDeclaration = do
-    readThis TokOpenType
+    readThis TokEntityType
     name <- readTypeNewName
     return $ TypeSyntaxDeclaration name OpenEntitySyntaxRecursiveTypeDeclaration
 

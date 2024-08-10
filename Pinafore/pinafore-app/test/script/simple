@@ -6,7 +6,7 @@ let
 
 # Ontology
 # Define a type of entity for people
-opentype Person;
+entitytype Person;
 
 # Properties of Person
 name = property @Person @Text !"example:name" store;

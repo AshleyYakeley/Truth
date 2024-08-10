@@ -23,9 +23,9 @@ testNamespace =
         , tGroup
               "let"
               [ testExpectSuccess "let f: Integer = undefined in pass"
-              , testExpectSuccess "let opentype P; f: P = undefined in pass"
-              , testExpectSuccess "let let opentype P in expose P; f: P = undefined in pass"
-              , testExpectSuccess "let namespace M of opentype P end; with M. in f: P = undefined in pass"
+              , testExpectSuccess "let entitytype P; f: P = undefined in pass"
+              , testExpectSuccess "let let entitytype P in expose P; f: P = undefined in pass"
+              , testExpectSuccess "let namespace M of entitytype P end; with M. in f: P = undefined in pass"
               ]
         , tGroup
               "exprs"
@@ -109,20 +109,21 @@ testNamespace =
               , testExpectSuccess "let f: T.M -> T.M = fn x => x in pass"
               ]
         , tDecls ["namespace M of let a = b in expose a end"] $ testExpectReject "with M in pass"
-        , tDecls ["namespace M of let opentype T in expose T end"] $
+        , tDecls ["namespace M of let entitytype T in expose T end"] $
           tGroup
-              "opentype"
+              "entitytype"
               [ testExpectSuccess "with M in let datatype D of MkD T end; in pass"
               , testExpectSuccess "let datatype D of MkD T.M end; in pass"
               ]
         , tGroup
               "subtype"
-              [ tDecls ["namespace M of opentype P; opentype Q end", "namespace N of with M. end; subtype P <: Q end"] $
+              [ tDecls
+                    ["namespace M of entitytype P; entitytype Q end", "namespace N of with M. end; subtype P <: Q end"] $
                 tGroup
                     "namespace"
                     [testExpectSuccess "pass", testExpectSuccess "with M in let f: P -> Q = fn x => x in pass"]
               , tDecls
-                    [ "namespace M of let opentype P; opentype Q in expose P, Q end"
+                    [ "namespace M of let entitytype P; entitytype Q in expose P, Q end"
                     , "namespace N of with M. in subtype P <: Q end"
                     ] $
                 tGroup
@@ -214,8 +215,8 @@ testNamespace =
               ]
         , tGroup
               "clash"
-              [ testExpectReject "let namespace M of opentype M end; i: M -> M = fn x => x in pass"
-              , testExpectSuccess "let namespace M of opentype M end in with M in let i: M -> M = fn x => x in pass"
+              [ testExpectReject "let namespace M of entitytype M end; i: M -> M = fn x => x in pass"
+              , testExpectSuccess "let namespace M of entitytype M end in with M in let i: M -> M = fn x => x in pass"
               ]
         , tGroup
               "pattern"

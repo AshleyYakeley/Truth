@@ -28,7 +28,7 @@ sometext: Text =
 somenumber: Integer =
     4;
 
-opentype X;
+entitytype X;
 
 datatype storable T of
     Mk1 Integer Boolean !"Mk1.P";

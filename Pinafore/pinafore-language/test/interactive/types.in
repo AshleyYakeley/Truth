@@ -1,5 +1,5 @@
-opentype P
-opentype Q
+entitytype P
+entitytype Q
 subtype P <: Q
 p = point.OpenEntity @P !"p"
 q = point.OpenEntity @Q !"q"

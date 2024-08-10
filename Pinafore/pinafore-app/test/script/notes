@@ -2,12 +2,12 @@
 let
 import "media" end;
 
-opentype World;
+entitytype World;
 world = cell.Store @World !"pinafore-notes.world" ?store;
 
 let
-    opentype ItemType;
-    opentype ItemValue;
+    entitytype ItemType;
+    entitytype ItemValue;
     datatype storable Item of
         Mk ItemType ItemValue !"pinafore-notes.Item";
     end;

@@ -73,7 +73,7 @@ library:
       - Pinafore.Language.Type.Subtype.Hint
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Storable.Type
-      - Pinafore.Language.Type.Storable.Open
+      - Pinafore.Language.Type.Storable.OpenEntity
       - Pinafore.Language.Type.Storable
       - Pinafore.Language.Type.DynamicSupertype
       - Pinafore.Language.Type

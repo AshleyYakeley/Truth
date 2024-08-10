@@ -114,18 +114,18 @@ storableGroundTypeAdapter (MkStorableGroundType _ (MkSealedStorability _ storabi
 
 type MonoStorableType = MonoType StorableGroundType
 
-showEntityType ::
+showOpenEntityType ::
        forall (dv :: CCRVariances) (t :: CCRVariancesKind dv) a.
        CovaryType dv
     -> ListTypeExprShow dv
     -> Arguments MonoStorableType t a
     -> PrecNamedText
-showEntityType NilListType sh NilArguments = sh
-showEntityType (ConsListType _ cv) sh (ConsArguments ta tr) = showEntityType cv (sh $ exprShowPrec ta) tr
+showOpenEntityType NilListType sh NilArguments = sh
+showOpenEntityType (ConsListType _ cv) sh (ConsArguments ta tr) = showOpenEntityType cv (sh $ exprShowPrec ta) tr
 
 instance ExprShow (MonoStorableType t) where
     exprShowPrec (MkMonoType (MkStorableGroundType _ (MkSealedStorability showType storability)) args) =
-        showEntityType (stbKind storability) showType args
+        showOpenEntityType (stbKind storability) showType args
 
 instance Show (MonoStorableType t) where
     show = exprShowShow

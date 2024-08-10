@@ -2,12 +2,12 @@
 
 let
 
-opentype Named;
+entitytype Named;
 name = property @Named @Text !"identify.name";
 byName: FiniteSetModel {+a,+Named} -> WholeModel +[(a,Text)];
 byName ref = list.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (identity **.Property name) !$$ ref;
 
-opentype Person;
+entitytype Person;
 testpt = point.OpenEntity @Person !"testpt";
 
 inform: Text -> Maybe Entity -> Action Unit;

@@ -36,9 +36,9 @@ testModule =
               , testExpectSuccess "let import \"m\" in expose T1.T       in let f = T1.T in pure ()"
               , testExpectReject " let import \"m\" in expose T2.T       in let f = T1.T in pure ()"
               ]
-        , tModule "m" "opentype T" $
-          tGroup "opentype" [testExpectSuccess "import \"m\" in let datatype D of MkD T end; in pure ()"]
-        , tModule "m" "opentype P; opentype Q" $
+        , tModule "m" "entitytype T" $
+          tGroup "entitytype" [testExpectSuccess "import \"m\" in let datatype D of MkD T end; in pure ()"]
+        , tModule "m" "entitytype P; entitytype Q" $
           tModule "n" "let import \"m\" end; subtype P <: Q in expose" $
           tGroup
               "subtype"

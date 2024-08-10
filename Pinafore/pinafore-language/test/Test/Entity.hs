@@ -115,7 +115,7 @@ testEntity =
               , testExpectThrow "fail \"text\""
               , testExpectThrow "let in fail \"text\""
               , testExpectThrow "let t = 1 in fail \"text\""
-              , testExpectThrow "let opentype T in fail \"text\""
+              , testExpectThrow "let entitytype T in fail \"text\""
               ]
         , tGroup
               "do"
@@ -315,7 +315,7 @@ testEntity =
         , tOpenDefaultStore $
           tWith ["Store"] $
           tDecls
-              [ "opentype E"
+              [ "entitytype E"
               , "eea = property @E @E !\"eea\" store"
               , "eeb = property @E @E !\"eeb\" store"
               , "eec = property @E @E !\"eec\" store"
@@ -578,14 +578,15 @@ testEntity =
                     ]
               , tGroup
                     "types"
-                    [ testExpectSuccess "let opentype T1; p = property @T1 @T1 !\"p\" in pass"
-                    , testExpectSuccess "let opentype T1 in let p = property @T1 @T1 !\"p\" in pass"
-                    , testExpectSuccess "let opentype T1; opentype T2; p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectSuccess "let opentype T1; opentype T2 in let p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectSuccess "let opentype T1 in let opentype T2; p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectSuccess "let opentype T1 in let opentype T2 in let p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectReject "let opentype T1 in let opentype T1 in pass"
-                    , testExpectReject "let opentype T1; opentype T1 in pass"
+                    [ testExpectSuccess "let entitytype T1; p = property @T1 @T1 !\"p\" in pass"
+                    , testExpectSuccess "let entitytype T1 in let p = property @T1 @T1 !\"p\" in pass"
+                    , testExpectSuccess "let entitytype T1; entitytype T2; p = property @T1 @T2 !\"p\" in pass"
+                    , testExpectSuccess "let entitytype T1; entitytype T2 in let p = property @T1 @T2 !\"p\" in pass"
+                    , testExpectSuccess "let entitytype T1 in let entitytype T2; p = property @T1 @T2 !\"p\" in pass"
+                    , testExpectSuccess
+                          "let entitytype T1 in let entitytype T2 in let p = property @T1 @T2 !\"p\" in pass"
+                    , testExpectReject "let entitytype T1 in let entitytype T1 in pass"
+                    , testExpectReject "let entitytype T1; entitytype T1 in pass"
                     ]
               , tGroup
                     "Maybe"
@@ -680,33 +681,34 @@ testEntity =
                     ]
               , tGroup
                     "let"
-                    [ tDecls ["opentype P", "opentype Q", "subtype P <: Q"] $ tGroup "seq" $ strictSubtypeTests "P" "Q"
-                    , tDeclsRec ["opentype P", "opentype Q", "subtype P <: Q"] $
+                    [ tDecls ["entitytype P", "entitytype Q", "subtype P <: Q"] $
+                      tGroup "seq" $ strictSubtypeTests "P" "Q"
+                    , tDeclsRec ["entitytype P", "entitytype Q", "subtype P <: Q"] $
                       tGroup "rec 1" $ strictSubtypeTests "P" "Q"
-                    , tDeclsRec ["opentype P", "subtype P <: Q", "opentype Q"] $
+                    , tDeclsRec ["entitytype P", "subtype P <: Q", "entitytype Q"] $
                       tGroup "rec 2" $ strictSubtypeTests "P" "Q"
-                    , tDeclsRec ["subtype P <: Q", "opentype P", "opentype Q"] $
+                    , tDeclsRec ["subtype P <: Q", "entitytype P", "entitytype Q"] $
                       tGroup "rec 3" $ strictSubtypeTests "P" "Q"
                     ]
               , tGroup
                     "local"
-                    [ tDecls ["opentype P"] $
+                    [ tDecls ["entitytype P"] $
                       tGroup
                           "1"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let opentype Q; subtype P <: Q in pass"
-                          , testExpectSuccess "let opentype Q; subtype P <: Q; f : P -> Q = fn x => x in pass"
-                          , testExpectReject "let opentype Q; subtype P <: Q; f : Q -> P = fn x => x in pass"
+                          , testExpectSuccess "let entitytype Q; subtype P <: Q in pass"
+                          , testExpectSuccess "let entitytype Q; subtype P <: Q; f : P -> Q = fn x => x in pass"
+                          , testExpectReject "let entitytype Q; subtype P <: Q; f : Q -> P = fn x => x in pass"
                           ]
-                    , tDecls ["opentype Q"] $
+                    , tDecls ["entitytype Q"] $
                       tGroup
                           "2"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let opentype P; subtype P <: Q in pass"
-                          , testExpectSuccess "let opentype P; subtype P <: Q; f : P -> Q = fn x => x in pass"
-                          , testExpectReject "let opentype P; subtype P <: Q; f : Q -> P = fn x => x in pass"
+                          , testExpectSuccess "let entitytype P; subtype P <: Q in pass"
+                          , testExpectSuccess "let entitytype P; subtype P <: Q; f : P -> Q = fn x => x in pass"
+                          , testExpectReject "let entitytype P; subtype P <: Q; f : Q -> P = fn x => x in pass"
                           ]
-                    , tDecls ["opentype P", "opentype Q"] $
+                    , tDecls ["entitytype P", "entitytype Q"] $
                       tGroup
                           "3"
                           [ testExpectSuccess "pass"
@@ -717,14 +719,14 @@ testEntity =
                     ]
               , tGroup
                     "circular"
-                    [ tDecls ["opentype P", "subtype P <: P"] $
+                    [ tDecls ["entitytype P", "subtype P <: P"] $
                       tGroup
                           "singular"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess "let f : P -> P = fn x => x in pass"
                           , testExpectSuccess "let f : List P -> List P = fn x => x in pass"
                           ]
-                    , tDecls ["opentype P", "opentype Q", "subtype P <: Q", "subtype Q <: P"] $
+                    , tDecls ["entitytype P", "entitytype Q", "subtype P <: Q", "subtype Q <: P"] $
                       tGroup
                           "pair"
                           [ testExpectSuccess "pass"
@@ -738,16 +740,16 @@ testEntity =
               , tDecls
                     ["subtype Map a <: Entity -> Maybe a = fn m, e => lookup.Map e m", "x = single.Map 34 \"sometext\""] $
                 tGroup "Map" [testExpectSuccess "pass", testExpectSuccess "testeqval (Just \"sometext\") $ x 34"]
-              , tDecls ["opentype Q", "subtype Maybe Number <: Q"] $
+              , tDecls ["entitytype Q", "subtype Maybe Number <: Q"] $
                 tGroup
                     "non-simple" -- not allowed, per issue #28
                     [testExpectReject "pass"]
-              , tDecls ["opentype Q", "subtype Integer <: Q"] $ tGroup "literal" $ strictSubtypeTests "Integer" "Q"
-              , tDecls ["opentype Q", "datatype storable P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
+              , tDecls ["entitytype Q", "subtype Integer <: Q"] $ tGroup "literal" $ strictSubtypeTests "Integer" "Q"
+              , tDecls ["entitytype Q", "datatype storable P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
                 tGroup "closed" $ strictSubtypeTests "P" "Q"
               , tDecls
-                    [ "opentype Q"
-                    , "opentype R"
+                    [ "entitytype Q"
+                    , "entitytype R"
                     , "datatype storable P of P1 Text Number !\"P.P1\" end"
                     , "subtype P <: Q"
                     , "subtype P <: R"
@@ -1542,21 +1544,21 @@ testEntity =
         , tGroup
               "type escape"
               [ testExpectSuccess
-                    "let opentype T; t = let in point.OpenEntity @T !\"t\"; f = let f : T -> Action Unit = fn _ => pass in f; in f t"
+                    "let entitytype T; t = let in point.OpenEntity @T !\"t\"; f = let f : T -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let opentype T1; opentype T2; t = let in point.OpenEntity @T1 !\"t\"; f = let f : T2 -> Action Unit = fn _ => pass in f; in f t"
+                    "let entitytype T1; entitytype T2; t = let in point.OpenEntity @T1 !\"t\"; f = let f : T2 -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T in point.OpenEntity @T !\"t\"; f = let opentype T; f : T -> Action Unit = fn _ => pass in f; in f t"
+                    "let t = let entitytype T in point.OpenEntity @T !\"t\"; f = let entitytype T; f : T -> Action Unit = fn _ => pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T1 in point.OpenEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action Unit = fn _ => pass in f; in f t"
+                    "let t = let entitytype T1 in point.OpenEntity @T1 !\"t\"; f = let entitytype T2; f : T2 -> Action Unit = fn _ => pass in f; in f t"
               ]
         , tGroup
               "general-subtype"
               [ testExpectReject "let subtype Unit <: Unit = fn _ => () in pass"
               , testExpectReject "let subtype Integer <: Unit = fn _ => () in pass"
-              , tDecls ["opentype P", "opentype Q"] $
+              , tDecls ["entitytype P", "entitytype Q"] $
                 tGroup
-                    "opentype"
+                    "entitytype"
                     [ testExpectSuccess "let subtype P <: P in pass"
                     , testExpectSuccess "let subtype P <: Q in pass"
                     , testExpectReject "let subtype P <: P = fn x => x in pass"
@@ -1725,7 +1727,7 @@ testEntity =
         , testOpenUHStore $
           tWith ["Store", "UndoHandler"] $
           tDecls
-              [ "opentype E"
+              [ "entitytype E"
               , "eta = property @E @Text !\"eta\" store"
               , "e1 = point.OpenEntity @E !\"e1\""
               , "rt1 = eta !$ {e1}"

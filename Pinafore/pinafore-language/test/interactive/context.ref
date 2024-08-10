@@ -1,5 +1,5 @@
-pinafore> opentype P
-pinafore> opentype Q
+pinafore> entitytype P
+pinafore> entitytype Q
 pinafore> subtype P <: Q
 pinafore> p = point.OpenEntity @P !"p"
 pinafore> q = point.OpenEntity @Q !"q"

@@ -34,7 +34,7 @@ std_window: WholeModel +Text -> Widget -> Action Window
 
 # Ontology
 
-opentype Person;
+entitytype Person;
 
 people = set.Store @Person !"f06efa5e-190f-4e5d-8633-495c5683c124" store;
 
@@ -54,7 +54,7 @@ email = property @Person @Text !"8649b74c-123e-4ece-be3b-b734b0db3ea7" store;
 
 phone = property @Person @Text !"83dfc88b-7b5b-4262-a548-0af84d5e3b63" store;
 
-opentype Location;
+entitytype Location;
 home = property @Person @Location !"b4f7736e-2db4-486c-aae5-b6a9b1035fd0" store;
 address = property @Location @Text !"fd83bef7-145c-4e40-a2d6-938bb5fb6da1" store;
 locphone = property @Location @Text !"0689535c-f220-47a2-8fcb-4782574e0749" store;
@@ -132,7 +132,7 @@ end;
 
 window_calc : Action Window
 = let
-    opentype P;
+    entitytype P;
     pvalue = property @P @Number !"pvalue" store;
     aval = pvalue !$ {point.OpenEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
     bval = pvalue !$ {point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
@@ -147,7 +147,7 @@ window_calc : Action Window
 
 window_switch : Action Window
 = let
-    opentype P;
+    entitytype P;
     pbool = property @P @Boolean !"pbool" store;
     ptext = property @P @Text !"ptext" store;
     sw_pick = pbool !$ {point.OpenEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};

@@ -67,7 +67,7 @@ testUI =
         [ "with Function, SetModel, Action end"
         , "import \"gnome\" end"
         , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.Widget.GTK; pure (); end"
-        , "opentype T"
+        , "entitytype T"
         , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- new.OpenEntity @T; s += p; pure (); end"
         , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.Widget.GTK {\"Button\"} {action}); pure (); end"
         ]

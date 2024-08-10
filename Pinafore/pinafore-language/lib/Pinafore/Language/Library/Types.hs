@@ -15,7 +15,7 @@ import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Type
 
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)
-openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openStorableGroundType tp) NilCCRArguments
+openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openEntityGroundType tp) NilCCRArguments
 
 coFShimWit ::
        forall f polarity a. (HasVariance f, VarianceOf f ~ Covariance, Is PolarityType polarity)
