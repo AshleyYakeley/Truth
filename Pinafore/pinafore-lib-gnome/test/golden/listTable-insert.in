@@ -6,7 +6,7 @@ run.GTK $ fn gtk =>
 let
 
     # a person
-    dynamictype Person = !"type.person";
+    opentype Person;
     people: FiniteSetModel Person
     = set.Store @Person !"p" store;
 
@@ -22,7 +22,7 @@ in do
         sleep $ Seconds 0.2;
         for_ (range 0 200) $ fn i =>
         do
-            p <- new.DynamicEntity @Person;
+            p <- new.OpenEntity @Person;
             people += p;
         end;
         close.Window w;

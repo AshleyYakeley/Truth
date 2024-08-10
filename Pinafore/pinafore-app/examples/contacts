@@ -44,7 +44,14 @@ let
 
     let
         # a person or organisation
-        dynamictype Contact;
+        opentype ContactType;
+        opentype ContactValue;
+        datatype storable Contact of
+            Mk ContactType ContactValue !"Mk.Contact";
+        end;
+        newContact: ContactType -> Action Contact =
+            fn t => map.Action (Mk.Contact t) $ new.OpenEntity @ContactValue;
+
         subtype Contact <: Named;
         subtype Contact <: Lifespanned;
 
@@ -56,8 +63,9 @@ let
         set.Store @Contact !"type.legalentity" ?store;
 
         # a person
-        dynamictype Person = !"type.person";
-        subtype Person <: Contact;
+        personType: ContactType = point.OpenEntity @ContactType !"type.person";
+        predicatetype storable Person <: Contact = fn Mk.Contact t _ => t == personType;
+        newPerson: Action Person = map.Action (coerce @Person) $ newContact personType;
 
         peopleSet: FiniteSetModel Person =
         maybeMap.FiniteSetModel (check @Person) contactSet;
@@ -75,8 +83,10 @@ let
         fn p => employerOf !@% p;
 
         # an organisation
-        dynamictype Organisation = !"type.organisation";
-        subtype Organisation <: Contact;
+        organisationType: ContactType = point.OpenEntity @ContactType !"type.organisation";
+        predicatetype storable Organisation <: Contact = fn Mk.Contact t _ => t == organisationType;
+        newOrganisation: Action Organisation = map.Action (coerce @Organisation) $ newContact organisationType;
+
         organisationSet: FiniteSetModel Organisation =
             set.Store @Organisation !"type.organisation" ?store;
     end;
@@ -148,7 +158,7 @@ let
             action =
                 fn (_,Mk.SetContext) =>
                 do
-                    item <- new.DynamicEntity @Person;
+                    item <- newPerson;
                     addItem item;
                 end;
         end;
@@ -160,7 +170,7 @@ let
             action =
                 fn (_,Mk.SetContext) =>
                 do
-                    item <- new.DynamicEntity @Organisation;
+                    item <- newOrganisation;
                     addItem item;
                 end;
         end;

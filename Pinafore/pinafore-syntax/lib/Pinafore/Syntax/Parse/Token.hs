@@ -100,7 +100,6 @@ data Token t where
     TokSubtype :: Token ()
     TokTrustMe :: Token ()
     TokStorable :: Token ()
-    TokDynamicType :: Token ()
     TokExpose :: Token ()
     TokImport :: Token ()
     TokAs :: Token ()
@@ -166,7 +165,6 @@ instance TestEquality Token where
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokTrustMe TokTrustMe = Just Refl
     testEquality TokStorable TokStorable = Just Refl
-    testEquality TokDynamicType TokDynamicType = Just Refl
     testEquality TokExpose TokExpose = Just Refl
     testEquality TokImport TokImport = Just Refl
     testEquality TokAs TokAs = Just Refl
@@ -224,7 +222,6 @@ instance Show (Token t) where
     show TokSubtype = show ("subtype" :: String)
     show TokTrustMe = show ("trustme" :: String)
     show TokStorable = show ("storable" :: String)
-    show TokDynamicType = show ("dynamictype" :: String)
     show TokExpose = show ("expose" :: String)
     show TokImport = show ("import" :: String)
     show TokAs = show ("as" :: String)
@@ -361,7 +358,6 @@ checkKeyword "predicatetype" = return $ MkSomeOf TokPredicateType ()
 checkKeyword "subtype" = return $ MkSomeOf TokSubtype ()
 checkKeyword "trustme" = return $ MkSomeOf TokTrustMe ()
 checkKeyword "storable" = return $ MkSomeOf TokStorable ()
-checkKeyword "dynamictype" = return $ MkSomeOf TokDynamicType ()
 checkKeyword "expose" = return $ MkSomeOf TokExpose ()
 checkKeyword "import" = return $ MkSomeOf TokImport ()
 checkKeyword "as" = return $ MkSomeOf TokAs ()
@@ -394,7 +390,6 @@ allKeywords =
     , ("subtype", "keyword.declaration.pinafore")
     , ("trustme", "keyword.declaration.pinafore")
     , ("storable", "keyword.declaration.pinafore")
-    , ("dynamictype", "keyword.declaration.pinafore")
     , ("module", "keyword.declaration.pinafore")
     , ("expose", "keyword.declaration.pinafore")
     , ("import", "keyword.declaration.pinafore")

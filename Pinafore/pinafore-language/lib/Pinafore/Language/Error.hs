@@ -23,7 +23,6 @@ data QErrorType
                                        [NamedText]
     | DeclareBindingDuplicateError FullName
     | DeclareConstructorDuplicateError FullNameRef
-    | DeclareDynamicTypeCycleError (NonEmpty FullName)
     | DeclareDatatypeBadSupertypeError NamedText
     | DeclareDatatypeConstructorNotSupertypeError FullNameRef
                                                   NamedText
@@ -58,10 +57,7 @@ data QErrorType
     | InterpretTypeNotGroundedError NamedText
     | InterpretTypeNotStorableError NamedText
     | InterpretTypeNotSimpleEntityError NamedText
-    | InterpretTypeNotDynamicEntityError NamedText
     | InterpretTypeNotOpenEntityError NamedText
-    | InterpretTypeNotConcreteDynamicEntityError NamedText
-    | InterpretTypeNoneNotNegativeEntityError
     | InterpretTypeUnderApplyError NamedText
     | InterpretTypeOverApplyError NamedText
     | InterpretTypeRangeApplyError NamedText
@@ -114,8 +110,6 @@ instance ShowNamedText QErrorType where
         showNamedText n <> ": expecting " <> intercalate " " expected <> ", found " <> intercalate " " found
     showNamedText (DeclareBindingDuplicateError n) = "duplicate binding: " <> showNamedText n
     showNamedText (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> showNamedText n
-    showNamedText (DeclareDynamicTypeCycleError nn) =
-        "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
     showNamedText (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> t
     showNamedText (DeclareDatatypeConstructorNotSupertypeError c t ss) =
         "constructor " <> showNamedText c <> ": " <> t <> " is not from supertypes " <> (intercalate " & " ss)
@@ -150,10 +144,7 @@ instance ShowNamedText QErrorType where
     showNamedText (InterpretTypeNotGroundedError t) = t <> " is not a grounded type"
     showNamedText (InterpretTypeNotStorableError t) = t <> " is not a storable type"
     showNamedText (InterpretTypeNotSimpleEntityError t) = t <> " is not a simple entity type"
-    showNamedText (InterpretTypeNotDynamicEntityError t) = t <> " is not a dynamic entity type"
     showNamedText (InterpretTypeNotOpenEntityError t) = t <> " is not an open entity type"
-    showNamedText (InterpretTypeNotConcreteDynamicEntityError t) = t <> " is not a concrete dynamic entity type"
-    showNamedText InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
     showNamedText (InterpretTypeUnderApplyError t) = "underapplied type constructor: " <> t
     showNamedText (InterpretTypeOverApplyError t) = "overapplied type constructor: " <> t
     showNamedText (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> t

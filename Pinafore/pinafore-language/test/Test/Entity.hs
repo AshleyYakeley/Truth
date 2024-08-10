@@ -850,41 +850,6 @@ testEntity =
                     ]
               ]
         , tDecls
-              [ "dynamictype P1 = !\"P1\""
-              , "dynamictype P2 = !\"P2\""
-              , "dynamictype Q"
-              , "subtype P1 <: Q"
-              , "subtype P2 <: Q"
-              , "e1 = point.DynamicEntity @P1 !\"e1\""
-              ] $
-          tGroup
-              "dynamictype"
-              [ testExpectSuccess "pass"
-              , testExpectSuccess "testeq {e1} {e1}"
-              , testExpectSuccess "testeq {Just e1} {check @P1 e1}"
-              , testExpectSuccess "testeq {Nothing} {check @P2 e1}"
-              , testExpectSuccess "testeq {Just e1} {check @Q e1}"
-              , testExpectSuccess "testeq {True} {e1 >- match _:? P1 => True; _ => False end}"
-              , testExpectSuccess "testeq {False} {e1 >- match _:? P2 => True; _ => False end}"
-              , testExpectSuccess "testeq {True} {e1 >- match _:? Q => True; _ => False end}"
-              , testExpectSuccess "testeq {e1} {coerce @P1 e1}"
-              , testExpectSuccess "testeq {e1} {coerce @Q e1}"
-              , tDecls
-                    [ "dynamictype R"
-                    , "subtype Q <: R"
-                    , "dynamictype P3 = !\"P3\""
-                    , "e3 = point.DynamicEntity @P3 !\"e3\""
-                    , "subtype P3 <: Q"
-                    ] $
-                tGroup
-                    "transitive"
-                    [ testExpectSuccess "pass"
-                    , testExpectSuccess "testeq {Just e1} {check @R e1}"
-                    , testExpectSuccess "testeq {Just e3} {check @Q e3}"
-                    , testExpectSuccess "testeq {Just e3} {check @R e3}"
-                    ]
-              ]
-        , tDecls
               [ "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeModel {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
               ] $
           tGroup

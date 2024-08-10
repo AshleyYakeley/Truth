@@ -5,15 +5,33 @@ import "media" end;
 opentype World;
 world = cell.Store @World !"pinafore-notes.world" ?store;
 
-dynamictype Item;
-items: FiniteSetModel DynamicEntity =
-    property @DynamicEntity @World !"pinafore-notes.Item-World" ?store !@ world;
+let
+    opentype ItemType;
+    opentype ItemValue;
+    datatype storable Item of
+        Mk ItemType ItemValue !"pinafore-notes.Item";
+    end;
+    namespace Item of
+        new: ItemType -> Action Item =
+            fn t => map.Action (Mk t) $ new.OpenEntity. @ItemValue;
+        is: ItemType -> Item -> Boolean =
+            fn t, Mk it _ => it == t;
+    end;
+in expose Item, ItemType, new.Item, is.Item;
+
+items: FiniteSetModel Item =
+    property @Item @World !"pinafore-notes.Item-World" ?store !@ world;
 
 nameOf: Property Item Text =
     property @Item @Text !"pinafore-notes.name" ?store;
 
-dynamictype Note = !"pinafore-notes.Note";
-subtype Note <: Item;
+namespace Note of
+    itype: ItemType = point.OpenEntity. @ItemType !"pinafore-notes.Note";
+end;
+predicatetype storable Note <: Item = is.Item itype.Note;
+namespace Note of
+    new: Action Note = map.Action (coerce @Note) $ new.Item itype.Note;
+end;
 
 notes: FiniteSetModel Note = reverse.Prism dynamic.Prism @Note !$$ items;
 content = property @Note @CommonMarkText !"pinafore-notes.content" ?store;
@@ -28,7 +46,7 @@ newNote: Command (Context.Command *: SetContext Note) =
         action =
             fn (_,Mk.SetContext) =>
             do
-                item <- new.DynamicEntity @Note;
+                item <- new.Note;
                 addItem item;
             end;
     end;

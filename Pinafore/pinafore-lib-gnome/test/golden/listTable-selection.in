@@ -5,8 +5,8 @@ openDefault.Store >>= fn store =>
 run.GTK $ fn gtk =>
 let
 
-    dynamictype Person = !"TP";
-    p = point.DynamicEntity @Person !"p";
+    opentype Person;
+    p = point.OpenEntity @Person !"p";
     people: FiniteSetModel Person = set.Store @Person !"T" store;
 
 in do
