@@ -63,21 +63,24 @@ instance ExprShow SyntaxTypeParameter where
 
 type SyntaxPlainDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
-data SyntaxTypeDeclaration
-    = StorableDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
-                                            [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
-    | PlainDatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
-                                         (Maybe SyntaxType)
-                                         [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
-    | OpenEntitySyntaxTypeDeclaration
-    | PredicateSyntaxTypeDeclaration Bool
-                                     SyntaxType
-                                     SyntaxExpression
+data SyntaxRecursiveTypeDeclaration
+    = StorableDatatypeSyntaxRecursiveTypeDeclaration [SyntaxTypeParameter]
+                                                     [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
+    | PlainDatatypeSyntaxRecursiveTypeDeclaration [SyntaxTypeParameter]
+                                                  (Maybe SyntaxType)
+                                                  [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
+    | OpenEntitySyntaxRecursiveTypeDeclaration
+    deriving (Eq)
+
+data SyntaxNonrecursiveTypeDeclaration =
+    PredicateSyntaxNonrecursiveTypeDeclaration Bool
+                                               SyntaxType
+                                               SyntaxExpression
     deriving (Eq)
 
 data SyntaxRecursiveDeclaration'
     = TypeSyntaxDeclaration FullName
-                            SyntaxTypeDeclaration
+                            SyntaxRecursiveTypeDeclaration
     | SubtypeSyntaxDeclaration TrustOrVerify
                                SyntaxType
                                SyntaxType
@@ -94,6 +97,8 @@ data SyntaxNameRefItem
 
 data SyntaxDeclaration'
     = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
+    | NonrecursiveTypeSyntaxDeclaration FullName
+                                        SyntaxNonrecursiveTypeDeclaration
     | RecordSyntaxDeclaration FullName
                               [SyntaxSignature]
                               (Maybe SyntaxType)

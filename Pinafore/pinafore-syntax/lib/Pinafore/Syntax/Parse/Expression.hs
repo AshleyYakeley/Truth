@@ -23,9 +23,9 @@ readOpenEntityTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readOpenEntityTypeDeclaration = do
     readThis TokOpenType
     name <- readTypeNewName
-    return $ TypeSyntaxDeclaration name OpenEntitySyntaxTypeDeclaration
+    return $ TypeSyntaxDeclaration name OpenEntitySyntaxRecursiveTypeDeclaration
 
-readPredicateTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
+readPredicateTypeDeclaration :: Parser SyntaxDeclaration'
 readPredicateTypeDeclaration = do
     readThis TokPredicateType
     mstorable <- optional $ readThis TokStorable
@@ -34,7 +34,9 @@ readPredicateTypeDeclaration = do
     st <- readType
     readThis TokAssign
     predicate <- readExpression
-    return $ TypeSyntaxDeclaration name $ PredicateSyntaxTypeDeclaration (isJust mstorable) st predicate
+    return $
+        NonrecursiveTypeSyntaxDeclaration name $
+        PredicateSyntaxNonrecursiveTypeDeclaration (isJust mstorable) st predicate
 
 readSubtypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readSubtypeDeclaration = do
@@ -147,16 +149,16 @@ readDataTypeDeclaration = do
                     Nothing -> return ()
                     Just _ -> throw $ DeclareDatatypeStorableSupertypeError name
                 constructors <- readOf $ readWithDoc readStorableDataTypeConstructor
-                return $ TypeSyntaxDeclaration name $ StorableDatatypeSyntaxTypeDeclaration parameters constructors
+                return $
+                    TypeSyntaxDeclaration name $ StorableDatatypeSyntaxRecursiveTypeDeclaration parameters constructors
             Nothing -> do
                 constructors <- readOf $ readWithDoc readPlainDataTypeConstructor
                 return $
-                    TypeSyntaxDeclaration name $ PlainDatatypeSyntaxTypeDeclaration parameters msupertype constructors
+                    TypeSyntaxDeclaration name $
+                    PlainDatatypeSyntaxRecursiveTypeDeclaration parameters msupertype constructors
 
 readTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
-readTypeDeclaration =
-    readOpenEntityTypeDeclaration <|> readPredicateTypeDeclaration <|> readSubtypeDeclaration <|>
-    readDataTypeDeclaration
+readTypeDeclaration = choice [readOpenEntityTypeDeclaration, readSubtypeDeclaration, readDataTypeDeclaration]
 
 readBinding :: Parser SyntaxBinding
 readBinding = do
@@ -255,6 +257,7 @@ readDeclaration =
         , readDeclaratorDeclaration
         , readRecordDeclaration
         , fmap DirectSyntaxDeclaration readDirectDeclaration
+        , readPredicateTypeDeclaration
         , readNamespaceDecl
         , readDocSectionDecl
         ]

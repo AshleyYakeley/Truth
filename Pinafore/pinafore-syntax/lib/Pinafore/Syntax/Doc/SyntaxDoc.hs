@@ -50,7 +50,7 @@ typeDocItem name diStorable tparams mgds = let
     diGDS = fmap (\gds -> gds <> concatmap (\p -> " " <> exprShow p) tparams) mgds
     in TypeDocItem {..}
 
-typeDeclDoc :: FullName -> SyntaxTypeDeclaration -> RawMarkdown -> Tree DefDoc
+typeDeclDoc :: FullName -> SyntaxRecursiveTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc mtname defn docDescription = let
     consDoc :: FullName -> SyntaxConstructorOrSubtype extra -> (DocItem, Docs)
     consDoc tname (ConstructorSyntaxConstructorOrSubtype cname constructor) =
@@ -65,8 +65,8 @@ typeDeclDoc mtname defn docDescription = let
     typeConssDoc tname sdocs = MkForest $ fmap (typeConsDoc tname) sdocs
     (storable, tparams, items) =
         case defn of
-            StorableDatatypeSyntaxTypeDeclaration tparams' conss -> (True, tparams', typeConssDoc mtname conss)
-            PlainDatatypeSyntaxTypeDeclaration tparams' _ conss -> (False, tparams', typeConssDoc mtname conss)
+            StorableDatatypeSyntaxRecursiveTypeDeclaration tparams' conss -> (True, tparams', typeConssDoc mtname conss)
+            PlainDatatypeSyntaxRecursiveTypeDeclaration tparams' _ conss -> (False, tparams', typeConssDoc mtname conss)
             _ -> (False, mempty, mempty)
     docItem = typeDocItem mtname storable tparams Nothing
     in MkTree MkDefDoc {..} items

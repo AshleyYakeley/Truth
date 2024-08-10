@@ -322,6 +322,9 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind) -> do
             binds <- syntaxToSingleBindings False sbind doc
             for_ binds interpretSequentialLetBinding
+        NonrecursiveTypeSyntaxDeclaration name defn -> let
+            ?interpretExpression = interpretExpression
+            in interpretNonrecursiveTypeDeclaration name doc defn
         RecordSyntaxDeclaration name sigs mtype expr -> do
             let
                 docItem = valueDocItem name mtype
