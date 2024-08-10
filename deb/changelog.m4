@@ -5,6 +5,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - add documentation sections in declarations
     - add record functions
     - allow double type parameters in datatype declarations
+    - add predicate types
+    - remove dynamic entity types
   * Library
     - rename libraries to remove "pinafore-"
     - built-in
