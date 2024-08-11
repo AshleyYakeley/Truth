@@ -28,5 +28,6 @@ in do
         close.Window w;
         outputLn.Env "Thread End";
     end;
+    sleep $ Seconds 0.2;
     outputLn.Env "Main End";
 end
