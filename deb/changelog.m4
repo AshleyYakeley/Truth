@@ -22,6 +22,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . reverse types of subtype Prism <: Attribute
       . add dynamic.Prism
       . add orStop.Action
+      . add div
     - media
       , add Media type and functions
       . add HTMLText type and functions

@@ -98,6 +98,11 @@ numericEntityLibSection =
                 , valBDS "recip" "Reciprocal." $ recip @SafeRational
                 , valBDS "abs" "Absolute value." $ abs @SafeRational
                 , valBDS "signum" "Sign." $ signum @SafeRational
+                , addNameInRootBDS $
+                  valBDS
+                      "div"
+                      "Divide, truncate towards negative infinity."
+                      (div' :: SafeRational -> SafeRational -> Integer)
                 , valBDS "mod" "Modulus, leftover from `div`" $ mod' @SafeRational
                 , valBDS "^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
                 , valBDS "sum" "Sum." $ sum @[] @SafeRational
