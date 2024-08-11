@@ -34,6 +34,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add scale.Widget
     - UILib
       . update
+  * Execution
+    - use all available processors
   * VS Code Extension
     - add extension and file icons
   * Install
