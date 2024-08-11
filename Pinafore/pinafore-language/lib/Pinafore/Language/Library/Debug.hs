@@ -24,7 +24,9 @@ compute e = MkEntity $ hashToAnchor $ \s -> pure $ s e
 
 longCompute :: Integer -> Entity -> Entity
 longCompute 0 e = e
-longCompute n e = longCompute (pred n) $ compute e
+longCompute n e = let
+    e' = compute e
+    in seq e' $ longCompute (pred n) e'
 
 debugLibSection :: LibraryStuff context
 debugLibSection =
@@ -36,6 +38,5 @@ debugLibSection =
         , valBDS "checkEntity" "debugCheckEntity" debugCheckEntity
         , valBDS "literalLength" "Byte length of a Literal" debugLiteralLength
         , valBDS "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
-        , valBDS "longCompute" "`longCompute n x` iterates BLAKE3 `n * 1000` times on `x`" $ \n ->
-              longCompute (n * 1000)
+        , valBDS "longCompute" "`longCompute n x` iterates BLAKE3 `n` times on `x`" longCompute
         ]

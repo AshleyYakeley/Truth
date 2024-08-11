@@ -9,11 +9,17 @@ import Pinafore.Main
 import Shapes
 import System.Environment
 
+parallelExecutionINTERNAL :: Bool
+parallelExecutionINTERNAL = True
+
 setup :: IO ()
 setup = do
-    -- use all processors
-    np <- getNumProcessors
-    setNumCapabilities np
+    if parallelExecutionINTERNAL
+        then do
+            np <- getNumProcessors
+            -- use all processors
+            setNumCapabilities np
+        else return ()
 
 runFiles :: Foldable t => (StorageModelOptions, ModuleOptions) -> Bool -> t (FilePath, [String]) -> IO ()
 runFiles (smopts, modopts) fNoRun scripts = do
