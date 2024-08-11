@@ -128,7 +128,7 @@ repeatTest n =
             r <- test
             case resultOutcome r of
                 Test.Tasty.Runners.Success -> do
-                    r' <- go (i + 1)
+                    r' <- go $ succ i
                     return r' {resultTime = resultTime r + resultTime r'}
                 _ ->
                     return

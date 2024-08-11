@@ -13,6 +13,8 @@ module Test.RunScript
     , testOpenUHStore
     , tModule
     , tLibrary
+    , scriptRepeat
+    , scriptParallel
     , runScriptTestTree
     , testExpression
     , ScriptExpectation(..)
@@ -77,6 +79,12 @@ tModule name script =
 
 tLibrary :: LibraryModule () -> ScriptTestTree -> ScriptTestTree
 tLibrary libm = tLoadModule $ libraryLoadModule () [libm]
+
+scriptRepeat :: Int -> Text -> Text
+scriptRepeat i script = "for_ (range 1 " <> showText i <> ") $ fn _ => " <> script
+
+scriptParallel :: Int -> Text -> Text
+scriptParallel i script = scriptRepeat i $ "map.Action (fn _ => ()) $ async.Task. $ " <> script
 
 runScriptTestTree :: ScriptTestTree -> TestTree
 runScriptTestTree =
