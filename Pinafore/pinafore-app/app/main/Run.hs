@@ -4,26 +4,13 @@ module Run
     ) where
 
 import Changes.Core
-import GHC.Conc
 import Pinafore.Main
 import Shapes
 import System.Environment
 
-parallelExecutionINTERNAL :: Bool
-parallelExecutionINTERNAL = True
-
-setup :: IO ()
-setup = do
-    if parallelExecutionINTERNAL
-        then do
-            np <- getNumProcessors
-            -- use all processors
-            setNumCapabilities np
-        else return ()
-
 runFiles :: Foldable t => (StorageModelOptions, ModuleOptions) -> Bool -> t (FilePath, [String]) -> IO ()
 runFiles (smopts, modopts) fNoRun scripts = do
-    setup
+    setupExecution defaultExecutionOptions
     runLifecycle $
         runView $
         for_ scripts $ \(fpath, iiScriptArguments) -> do
@@ -42,7 +29,7 @@ runFiles (smopts, modopts) fNoRun scripts = do
 
 runInteractive :: (StorageModelOptions, ModuleOptions) -> IO ()
 runInteractive (smopts, modopts) = do
-    setup
+    setupExecution defaultExecutionOptions
     runLifecycle $
         runView $ do
             let

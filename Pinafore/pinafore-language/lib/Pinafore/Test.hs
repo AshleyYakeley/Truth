@@ -71,11 +71,13 @@ makeTestInvocationInfo hout = do
     return (ii, getTableState)
 
 data TesterOptions = MkTesterOptions
-    { tstOutput :: Handle
+    { tstExecutionOptions :: ExecutionOptions
+    , tstOutput :: Handle
     }
 
 defaultTester :: TesterOptions
 defaultTester = let
+    tstExecutionOptions = defaultExecutionOptions
     tstOutput = stdout
     in MkTesterOptions {..}
 
@@ -93,7 +95,8 @@ instance MonadUnliftIO Tester where
     liftIOWithUnlift call = MkTester $ liftIOWithUnlift $ \unlift -> call $ unlift . unTester
 
 runTester :: TesterOptions -> Tester () -> IO ()
-runTester MkTesterOptions {..} (MkTester ta) =
+runTester MkTesterOptions {..} (MkTester ta) = do
+    setupExecution tstExecutionOptions
     runLifecycle $ do
         (ii, getTableState) <- makeTestInvocationInfo tstOutput
         let library = mkLibraryContext ii mempty

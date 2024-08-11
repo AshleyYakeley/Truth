@@ -1,5 +1,9 @@
 module Pinafore.Main
-    ( ModuleOptions(..)
+    ( ProcessorCount(..)
+    , ExecutionOptions(..)
+    , defaultExecutionOptions
+    , setupExecution
+    , ModuleOptions(..)
     , InvocationInfo(..)
     , standardLibraryContext
     , nullInvocationInfo
@@ -13,12 +17,36 @@ module Pinafore.Main
     , qInteract
     ) where
 
+import GHC.Conc
 import Import
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Type
 import Pinafore.Storage
 import System.FilePath
+
+data ProcessorCount
+    = SpecificProcessorCount Int
+    | AllProcessorCount
+
+data ExecutionOptions = MkExecutionOptions
+    { eoProcessorCount :: Maybe ProcessorCount
+    }
+
+defaultProcessorCountINTERNAL :: Maybe ProcessorCount
+defaultProcessorCountINTERNAL = Just AllProcessorCount
+
+defaultExecutionOptions :: ExecutionOptions
+defaultExecutionOptions = MkExecutionOptions {eoProcessorCount = defaultProcessorCountINTERNAL}
+
+setupExecution :: ExecutionOptions -> IO ()
+setupExecution MkExecutionOptions {..} = do
+    for_ eoProcessorCount $ \case
+        SpecificProcessorCount i -> setNumCapabilities i
+        AllProcessorCount -> do
+            np <- getNumProcessors
+            -- use all processors
+            setNumCapabilities np
 
 data StorageModelOptions = MkStorageModelOptions
     { smoCache :: Bool
