@@ -123,4 +123,5 @@ tests:
       - Resource
       - Subscribe
       - Lens
+      - List
     ghc-options: -threaded

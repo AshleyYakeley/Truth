@@ -156,6 +156,7 @@ test-suite test
       Resource
       Subscribe
       Lens
+      List
   hs-source-dirs:
       test
   default-extensions:

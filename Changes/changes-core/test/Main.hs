@@ -6,6 +6,7 @@ module Main
 
 import Changes.Core
 import Lens
+import List
 import Resource
 import Shapes
 import Shapes.Test
@@ -260,6 +261,7 @@ tests =
         , testStringSectionLens
         , testSubscribe
         , testLens
+        , testList
         ]
 
 main :: IO ()
