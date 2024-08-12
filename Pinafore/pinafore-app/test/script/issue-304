@@ -1,0 +1,19 @@
+#!/usr/bin/pinafore
+
+# bin/testpinafore --parallel Pinafore/pinafore-app/test/script/issue-304
+
+for_ (range 1 32) $
+fn _ =>
+map.Action (fn _ => ()) $
+async.Task $
+for_ (range 1 1000000) $
+fn _ =>
+do
+    r <- newMem.ListModel;
+    r := [10,20,30];
+    ir <- item.ListModel False 1 r;
+    l0 <- get r;
+    delete ir;
+    l1 <- get r;
+    if l1 == [10,20,30] then pure () else fail $ show (l0,l1);
+end

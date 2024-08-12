@@ -245,22 +245,6 @@ testEntity =
                           "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
                     , testExpectSuccess "testImmutList True 1 $ fn _ => pure ()"
                     ]
-              , tModify (ignoreTestBecause "slow") $
-                tGroup
-                    "issue-304"
-                    [ tParallel $
-                      testExpectSuccess $
-                      scriptAsync 32 $
-                      scriptRepeat
-                          1000000
-                          "do r <- newMem.WholeModel; r := [10,20,30]; r := [10,15,20,30];  l <- get r; testeqval [10,15,20,30] l; end"
-                    , tParallel $
-                      testExpectSuccess $
-                      scriptAsync 32 $
-                      scriptRepeat
-                          1000000
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
-                    ]
               ]
         , tDecls
               [ "convr : Rational -> Rational= id"
