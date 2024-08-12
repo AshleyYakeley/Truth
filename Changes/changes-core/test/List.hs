@@ -46,9 +46,10 @@ langListModelItem present i lmodel = do
         linearListItemCL =
             composeExpFloatingChangeLens (changeLensToExpFloating $ bijectionWholeChangeLens id) $
             listItemLinearLens present $ MkSequencePoint i
-    eaFloatMap emptyResourceContext
-            (expToFloatingChangeLens $ biLinearFloatingChangeLens (linearListItemCL @p) (linearListItemCL @q))
-            lmodel
+    eaFloatMap
+        emptyResourceContext
+        (expToFloatingChangeLens $ biLinearFloatingChangeLens (linearListItemCL @p) (linearListItemCL @q))
+        lmodel
 
 actionModelGet :: WModel update -> ReadM (UpdateReader update) t -> Lifecycle t
 actionModelGet model rm = do
@@ -56,7 +57,8 @@ actionModelGet model rm = do
     liftIO $ wModelGet emptyResourceContext model rm
 
 testIssue304 :: TestTree
-testIssue304 = localOption (mkTimeout 3000000) $
+testIssue304 =
+    localOption (mkTimeout 3000000) $
     testTree "issue-304" $ do
         np <- getNumProcessors
         refPutRestore processorCountRef np $
