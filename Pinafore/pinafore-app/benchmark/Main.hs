@@ -6,6 +6,7 @@ import Changes.Core
 import Criterion.Main
 import Paths_pinafore_lib_script
 import Pinafore.Libs
+import Pinafore.Main
 import Pinafore.Test.Internal
 import Shapes
 
@@ -148,4 +149,4 @@ benchFiles =
         ]
 
 main :: IO ()
-main = defaultMain [benchHashes, benchScripts, benchUpdates, benchFiles]
+main = runWithOptions defaultExecutionOptions $ defaultMain [benchHashes, benchScripts, benchUpdates, benchFiles]

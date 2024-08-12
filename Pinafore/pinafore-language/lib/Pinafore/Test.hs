@@ -95,8 +95,8 @@ instance MonadUnliftIO Tester where
     liftIOWithUnlift call = MkTester $ liftIOWithUnlift $ \unlift -> call $ unlift . unTester
 
 runTester :: TesterOptions -> Tester () -> IO ()
-runTester MkTesterOptions {..} (MkTester ta) = do
-    setupExecution tstExecutionOptions
+runTester MkTesterOptions {..} (MkTester ta) =
+    runWithOptions tstExecutionOptions $
     runLifecycle $ do
         (ii, getTableState) <- makeTestInvocationInfo tstOutput
         let library = mkLibraryContext ii mempty

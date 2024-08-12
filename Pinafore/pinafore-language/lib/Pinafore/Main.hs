@@ -1,8 +1,9 @@
 module Pinafore.Main
-    ( ProcessorCount(..)
+    ( processorCountRef
+    , ProcessorCount(..)
     , ExecutionOptions(..)
     , defaultExecutionOptions
-    , setupExecution
+    , RunWithOptions(..)
     , ModuleOptions(..)
     , InvocationInfo(..)
     , standardLibraryContext
@@ -25,28 +26,43 @@ import Pinafore.Language.Type
 import Pinafore.Storage
 import System.FilePath
 
+class RunWithOptions a where
+    runWithOptions :: a -> IO --> IO
+
+instance RunWithOptions () where
+    runWithOptions () = id
+
+instance RunWithOptions a => RunWithOptions (Maybe a) where
+    runWithOptions Nothing = id
+    runWithOptions (Just a) = runWithOptions a
+
+processorCountRef :: Ref IO Int
+processorCountRef = MkRef getNumCapabilities setNumCapabilities
+
 data ProcessorCount
     = SpecificProcessorCount Int
     | AllProcessorCount
 
+instance RunWithOptions ProcessorCount where
+    runWithOptions pc mr = do
+        nc <-
+            case pc of
+                AllProcessorCount -> getNumProcessors
+                SpecificProcessorCount i -> return i
+        refPutRestore processorCountRef nc mr
+
 data ExecutionOptions = MkExecutionOptions
     { eoProcessorCount :: Maybe ProcessorCount
     }
+
+instance RunWithOptions ExecutionOptions where
+    runWithOptions MkExecutionOptions {..} = runWithOptions eoProcessorCount
 
 defaultProcessorCountINTERNAL :: Maybe ProcessorCount
 defaultProcessorCountINTERNAL = Nothing
 
 defaultExecutionOptions :: ExecutionOptions
 defaultExecutionOptions = MkExecutionOptions {eoProcessorCount = defaultProcessorCountINTERNAL}
-
-setupExecution :: ExecutionOptions -> IO ()
-setupExecution MkExecutionOptions {..} = do
-    for_ eoProcessorCount $ \case
-        SpecificProcessorCount i -> setNumCapabilities i
-        AllProcessorCount -> do
-            np <- getNumProcessors
-            -- use all processors
-            setNumCapabilities np
 
 data StorageModelOptions = MkStorageModelOptions
     { smoCache :: Bool

@@ -248,11 +248,15 @@ testEntity =
               , tModify (ignoreTestBecause "slow") $
                 tGroup
                     "issue-304"
-                    [ testExpectSuccess $
+                    [ tParallel $
+                      testExpectSuccess $
+                      scriptAsync 32 $
                       scriptRepeat
                           1000000
                           "do r <- newMem.WholeModel; r := [10,20,30]; r := [10,15,20,30];  l <- get r; testeqval [10,15,20,30] l; end"
-                    , testExpectSuccess $
+                    , tParallel $
+                      testExpectSuccess $
+                      scriptAsync 32 $
                       scriptRepeat
                           1000000
                           "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"

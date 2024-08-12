@@ -13,8 +13,9 @@ module Test.RunScript
     , testOpenUHStore
     , tModule
     , tLibrary
+    , tParallel
     , scriptRepeat
-    , scriptParallel
+    , scriptAsync
     , runScriptTestTree
     , testExpression
     , ScriptExpectation(..)
@@ -26,13 +27,15 @@ module Test.RunScript
     ) where
 
 import Data.Shim
+import Pinafore.Main
 import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 import Shapes.Test.Context
 
 data ScriptContext = MkScriptContext
-    { scLoadModule :: LoadModule
+    { scTesterOptions :: TesterOptions
+    , scLoadModule :: LoadModule
     , scPrefix :: Text
     }
 
@@ -77,18 +80,26 @@ tModule name script =
             then Just script
             else Nothing
 
+tParallel :: ScriptTestTree -> ScriptTestTree
+tParallel =
+    tContext $ \sc -> let
+        topts = scTesterOptions sc
+        eopts = tstExecutionOptions topts
+        in sc {scTesterOptions = topts {tstExecutionOptions = eopts {eoProcessorCount = Just AllProcessorCount}}}
+
 tLibrary :: LibraryModule () -> ScriptTestTree -> ScriptTestTree
 tLibrary libm = tLoadModule $ libraryLoadModule () [libm]
 
 scriptRepeat :: Int -> Text -> Text
 scriptRepeat i script = "for_ (range 1 " <> showText i <> ") $ fn _ => " <> script
 
-scriptParallel :: Int -> Text -> Text
-scriptParallel i script = scriptRepeat i $ "map.Action (fn _ => ()) $ async.Task. $ " <> script
+scriptAsync :: Int -> Text -> Text
+scriptAsync i script = scriptRepeat i $ "map.Action (fn _ => ()) $ async.Task. $ " <> script
 
 runScriptTestTree :: ScriptTestTree -> TestTree
 runScriptTestTree =
     runContextTestTree $ let
+        scTesterOptions = defaultTester
         scLoadModule = mempty
         scPrefix = mempty
         in MkScriptContext {..}
@@ -103,7 +114,7 @@ testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
             fullscript = scPrefix <> script
-            in runTester defaultTester $
+            in runTester scTesterOptions $
                testerLoad scLoadModule $ do call $ testerLiftInterpreter $ parseValueUnify fullscript
 
 testScript :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> ScriptTestTree
