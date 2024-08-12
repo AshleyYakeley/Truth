@@ -24,6 +24,10 @@ while [[ ! -z "$1" ]]; do
             DATA="$2"
             shift 2
             ;;
+        --parallel)
+            ARGS="$ARGS +RTS -N -RTS"
+            shift 1
+            ;;
         -i)
             stack --docker-env DISPLAY exec -- pinafore -I Pinafore/pinafore-lib-script/data $ARGS --data $DATA -i 2> "$STDERR"
             shift 1
