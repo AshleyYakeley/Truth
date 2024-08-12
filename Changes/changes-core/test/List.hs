@@ -10,51 +10,26 @@ import Shapes.Test
 processorCountRef :: Ref IO Int
 processorCountRef = MkRef getNumCapabilities setNumCapabilities
 
-asyncTask :: Lifecycle a -> Lifecycle (Task Lifecycle a)
-asyncTask pa = do
-    task <- forkTask pa
-    lifecycleOnClose $ do
-        _ <- runLifecycle $ taskWait task
-        return ()
-    return task
-
-biToMaybeWhole ::
-       forall p q. Monoid p
-    => ChangeLens (BiWholeUpdate p q) (BiWholeUpdate (Maybe p) (Maybe q))
-biToMaybeWhole = mapBiWholeChangeLens (fromMaybe mempty) Just
-
-actionFlushModelUpdates :: WModel update -> Lifecycle ()
-actionFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
+waitModel :: WModel update -> Lifecycle ()
+waitModel model = liftIO $ taskWait $ modelUpdatesTask $ unWModel model
 
 actionModelPush :: WModel update -> NonEmpty (UpdateEdit update) -> Lifecycle ()
 actionModelPush model edits = do
-    actionFlushModelUpdates model
+    waitModel model
     ok <- liftIO $ wModelPush emptyResourceContext model edits
     if ok
         then return ()
         else fail "bad push"
 
 langListModelItem ::
-       forall p q.
-       Bool
-    -> Int64
-    -> WModel (BiUpdate (ListUpdate (WholeUpdate p)) (ListUpdate (WholeUpdate q)))
-    -> Lifecycle (WModel (BiWholeUpdate (Maybe p) (Maybe q)))
+       forall t. Bool -> Int64 -> WModel (ListUpdate (WholeUpdate t)) -> Lifecycle (WModel (WholeUpdate (Maybe t)))
 langListModelItem present i lmodel = do
     let
-        linearListItemCL :: forall t. LinearFloatingChangeLens _ (ListUpdate (WholeUpdate t)) (WholeUpdate (Maybe t))
+        linearListItemCL :: LinearFloatingChangeLens _ (ListUpdate (WholeUpdate t)) (WholeUpdate (Maybe t))
         linearListItemCL =
             composeExpFloatingChangeLens (changeLensToExpFloating $ bijectionWholeChangeLens id) $
             listItemLinearLens present $ MkSequencePoint i
-    eaFloatMap
-        emptyResourceContext
-        (expToFloatingChangeLens $ biLinearFloatingChangeLens (linearListItemCL @p) (linearListItemCL @q))
-        lmodel
-
-actionModelGet :: WModel update -> ReadM (UpdateReader update) t -> Lifecycle t
-actionModelGet model rm = do
-    actionFlushModelUpdates model
-    liftIO $ wModelGet emptyResourceContext model rm
+    eaFloatMap emptyResourceContext (expToFloatingChangeLens linearListItemCL) lmodel
 
 testIssue304 :: TestTree
 testIssue304 =
@@ -63,22 +38,27 @@ testIssue304 =
         np <- getNumProcessors
         refPutRestore processorCountRef np $
             runLifecycle $
-            for_ [1 .. 32] $ \(_ :: Integer) ->
-                asyncTask $
-                for_ [1 .. 100] $ \(_ :: Integer) -> do
-                    ref <- liftIO $ makeMemoryReference mempty $ \_ -> True
-                    model :: Model (ListUpdate (WholeUpdate Integer)) <- makeReflectingModel $ convertReference ref
-                    let
-                        lm = eaMap singleBiChangeLens $ MkWModel model
-                        wm = eaMap (biToMaybeWhole . convertBiChangeLens id) lm
-                    actionModelPush wm $ pure $ MkBiWholeEdit $ Just $ fromList [10, 20, 30]
-                    im <- langListModelItem False 1 lm
-                    actionModelPush im $ pure $ MkBiWholeEdit Nothing
-                    val <- actionModelGet (eaMap biReadOnlyChangeLens wm) $ readM ReadWhole
-                    let lval = fmap toList val
-                    if lval == Just [10, 20, 30]
-                        then return ()
-                        else fail $ "bad: " <> show lval
+            for_ [1 .. 1000] $ \(i :: Integer) -> do
+                ref <- liftIO $ makeMemoryReference mempty $ \_ -> True
+                model <- makeReflectingModel $ convertReference ref
+                let
+                    checkRef :: String -> [Int] -> Lifecycle ()
+                    checkRef name expected = do
+                        foundv <- liftIO $ runResource emptyResourceContext ref $ \aref -> refRead aref ReadWhole
+                        let found = toList foundv
+                        if found == expected
+                            then return ()
+                            else fail $ "iter #" <> show i <> " " <> name <> ": " <> show found
+                    lm :: WModel (ListUpdate (WholeUpdate Int))
+                    lm = MkWModel model
+                    wm = eaMap (bijectionWholeChangeLens id) lm
+                checkRef "A" []
+                actionModelPush wm $ pure $ MkWholeReaderEdit $ fromList [10, 20, 30]
+                checkRef "B" [10, 20, 30]
+                im <- langListModelItem False 1 lm
+                actionModelPush im $ pure $ MkWholeReaderEdit Nothing
+                waitModel im
+                checkRef "C" [10, 20, 30]
 
 testList :: TestTree
 testList = testTree "list" [testIssue304]
