@@ -34,7 +34,7 @@ data ExecutionOptions = MkExecutionOptions
     }
 
 defaultProcessorCountINTERNAL :: Maybe ProcessorCount
-defaultProcessorCountINTERNAL = Just AllProcessorCount
+defaultProcessorCountINTERNAL = Nothing
 
 defaultExecutionOptions :: ExecutionOptions
 defaultExecutionOptions = MkExecutionOptions {eoProcessorCount = defaultProcessorCountINTERNAL}
