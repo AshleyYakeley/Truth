@@ -15,3 +15,4 @@ import Changes.Core.Model.Savable as I
 import Changes.Core.Model.Tuple as I
 import Changes.Core.Model.Undo as I
 import Changes.Core.Model.WModel as I
+import Changes.Core.Model.WReference as I

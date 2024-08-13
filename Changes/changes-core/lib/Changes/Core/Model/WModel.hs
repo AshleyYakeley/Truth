@@ -6,6 +6,7 @@ import Changes.Core.Model.EditContext
 import Changes.Core.Model.Model
 import Changes.Core.Model.Reference
 import Changes.Core.Model.Tuple
+import Changes.Core.Model.WReference
 import Changes.Core.Read
 import Changes.Core.Resource
 import Changes.Core.Types
@@ -27,3 +28,6 @@ wModelGet rc (MkWModel sub) readm = runResource rc sub $ \asub -> unReadM readm 
 
 wModelPush :: ResourceContext -> WModel update -> NonEmpty (UpdateEdit update) -> IO Bool
 wModelPush rc (MkWModel sub) edits = runResource rc sub $ \asub -> pushEdit noEditSource $ aModelEdit asub edits
+
+wModelReference :: WModel update -> WReference update
+wModelReference (MkWModel model) = MkWReference $ modelReference model

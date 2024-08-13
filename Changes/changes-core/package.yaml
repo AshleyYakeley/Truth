@@ -101,6 +101,7 @@ library:
       - Changes.Core.Model.Cache
       - Changes.Core.Model.Savable
       - Changes.Core.Model.Undo
+      - Changes.Core.Model.WReference
       - Changes.Core.Model.WModel
       - Changes.Core.Model
       - Changes.Core.UI.View.Context
