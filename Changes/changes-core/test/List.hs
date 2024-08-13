@@ -10,12 +10,8 @@ import Shapes.Test
 processorCountRef :: Ref IO Int
 processorCountRef = MkRef getNumCapabilities setNumCapabilities
 
-waitModel :: WModel update -> Lifecycle ()
-waitModel model = liftIO $ taskWait $ modelUpdatesTask $ unWModel model
-
 actionModelPush :: WModel update -> NonEmpty (UpdateEdit update) -> Lifecycle ()
 actionModelPush model edits = do
-    waitModel model
     ok <- liftIO $ wModelPush emptyResourceContext model edits
     if ok
         then return ()
@@ -33,12 +29,12 @@ langListModelItem present i lmodel = do
 
 testIssue304 :: TestTree
 testIssue304 =
-    localOption (mkTimeout 3000000) $
+    localOption (mkTimeout 20000000) $
     testTree "issue-304" $ do
         np <- getNumProcessors
         refPutRestore processorCountRef np $
             runLifecycle $
-            for_ [1 .. 1000] $ \(i :: Integer) -> do
+            for_ [1 .. 5000] $ \(i :: Integer) -> do
                 ref <- liftIO $ makeMemoryReference mempty $ \_ -> True
                 model <- makeReflectingModel $ convertReference ref
                 let
@@ -55,10 +51,12 @@ testIssue304 =
                 checkRef "A" []
                 actionModelPush wm $ pure $ MkWholeReaderEdit $ fromList [10, 20, 30]
                 checkRef "B" [10, 20, 30]
+                -- liftIO $ threadDelay 100
                 im <- langListModelItem False 1 lm
-                actionModelPush im $ pure $ MkWholeReaderEdit Nothing
-                waitModel im
                 checkRef "C" [10, 20, 30]
+                liftIO $ threadDelay 100
+                actionModelPush im $ pure $ MkWholeReaderEdit $ Just 15
+                checkRef "D" [10, 15, 20, 30]
 
 testList :: TestTree
 testList = testTree "list" [testIssue304]
