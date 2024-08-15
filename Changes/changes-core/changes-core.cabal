@@ -40,6 +40,7 @@ library
       Changes.Core.Lens.Lens
       Changes.Core.Lens.Floating
       Changes.Core.Lens.State
+      Changes.Core.Lens.Delay
       Changes.Core.Lens
       Changes.Core.Types.Partial
       Changes.Core.Edit.Opaque
@@ -192,4 +193,5 @@ test-suite test
       base >=4.16
     , changes-core
     , shapes
+    , thread-trace
   default-language: GHC2021
