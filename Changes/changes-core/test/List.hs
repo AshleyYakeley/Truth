@@ -19,13 +19,8 @@ actionModelPush model edits = do
 
 langListModelItem ::
        forall t. Bool -> Int64 -> WModel (ListUpdate (WholeUpdate t)) -> Lifecycle (WModel (WholeUpdate (Maybe t)))
-langListModelItem present i lmodel = do
-    let
-        linearListItemCL :: LinearFloatingChangeLens _ (ListUpdate (WholeUpdate t)) (WholeUpdate (Maybe t))
-        linearListItemCL =
-            composeExpFloatingChangeLens (changeLensToExpFloating $ bijectionWholeChangeLens id) $
-            listItemLinearLens present $ MkSequencePoint i
-    eaFloatMap emptyResourceContext (expToFloatingChangeLens linearListItemCL) lmodel
+langListModelItem present i lmodel =
+    eaFloatMap emptyResourceContext (changeLensToFloating (bijectionWholeChangeLens id) . listItemLens present (MkSequencePoint i)) lmodel
 
 testIssue304 :: TestTree
 testIssue304 =

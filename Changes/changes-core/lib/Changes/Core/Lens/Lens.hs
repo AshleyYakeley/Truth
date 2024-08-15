@@ -6,6 +6,7 @@ import Changes.Core.Edit.Update
 import Changes.Core.Import
 import Changes.Core.Read
 
+-- | A 'Linear' lens is one where puts don't require reads.
 data Linearity
     = Linear
     | NonLinear
