@@ -120,14 +120,50 @@ asyncWaitRunner _ mus doit = do
         atomicallyDo waitForIdle
     return (pushVal, utask)
 
+asyncWorkerRunner ::
+       forall t. Semigroup t
+    => Text
+    -> (t -> IO ())
+    -> Lifecycle (t -> IO (), Task IO ())
+asyncWorkerRunner name doit = do
+    (asyncDoIt, utask) <- asyncWaitRunner name 0 doit
+    return (\t -> asyncDoIt $ Just t, utask)
+
+asyncTaskRunner ::
+       forall t. Semigroup t
+    => Text
+    -> (t -> IO ())
+    -> Lifecycle (t -> IO (), Task IO ())
+asyncTaskRunner _ doit = do
+    var <- liftIO $ newMVar mempty
+    let
+        pushVal :: t -> IO ()
+        pushVal t =
+            mVarRunStateT var $ do
+                oldTask <- get
+                newTask <-
+                    lift $
+                    forkTask $ do
+                        taskWait oldTask
+                        doit t
+                put newTask
+        utask :: Task IO ()
+        utask = ioTask $ mVarRunStateT var get
+    lifecycleOnClose $ taskWait utask
+    return (pushVal, utask)
+
+asyncRunnerINTERNAL :: Bool
+asyncRunnerINTERNAL = False
+
 asyncRunner ::
        forall t. Semigroup t
     => Text
     -> (t -> IO ())
     -> Lifecycle (t -> IO (), Task IO ())
-asyncRunner name doit = do
-    (asyncDoIt, utask) <- asyncWaitRunner name 0 doit
-    return (\t -> asyncDoIt $ Just t, utask)
+asyncRunner =
+    if asyncRunnerINTERNAL
+        then asyncTaskRunner
+        else asyncWorkerRunner
 
 asyncIORunner :: Text -> Lifecycle (IO () -> IO (), Task IO ())
 asyncIORunner name = do
