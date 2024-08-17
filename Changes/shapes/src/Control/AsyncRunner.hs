@@ -7,27 +7,73 @@ module Control.AsyncRunner
 import Control.Task
 import Shapes.Import
 
-data VarState t
-    = VSIdle
-    -- ^ worker is idle, with no tasks pending
-    | VSException SomeException
-    -- ^ worker has terminated because task gave this exception
-    | VSRunning
-    -- ^ worker is working, with no tasks pending
-    | VSPending t
-                Bool
-    -- ^ worker has tasks pending, flag means worker should wait for more tasks (for given period)
-    | VSEnd
-    -- ^ caller is telling worker to terminate
+asyncIORunner :: Text -> Lifecycle (IO () -> IO (), Task IO ())
+asyncIORunner _ = do
+    var <- liftIO $ newMVar mempty
+    let
+        pushVal :: IO () -> IO ()
+        pushVal job =
+            mVarRunStateT var $ do
+                oldTask <- get
+                newTask <-
+                    lift $
+                    forkTask $ do
+                        taskWait oldTask
+                        job
+                put newTask
+        utask :: Task IO ()
+        utask = ioTask $ mVarRunStateT var get
+    lifecycleOnClose $ taskWait utask
+    return (pushVal, utask)
 
--- | Useful for debugging
-instance Show (VarState t) where
-    show VSIdle = "idle"
-    show (VSException e) = "exception " ++ show e
-    show VSRunning = "running"
-    show (VSPending _ True) = "pending (wait)"
-    show (VSPending _ False) = "pending (no wait)"
-    show VSEnd = "end"
+newtype SemigroupQueue t =
+    MkSemigroupQueue (MVar (Maybe t))
+
+newSemigroupQueue :: IO (SemigroupQueue t)
+newSemigroupQueue = do
+    var <- newMVar Nothing
+    return $ MkSemigroupQueue var
+
+takeSemigroupQueue :: SemigroupQueue t -> IO (Maybe t)
+takeSemigroupQueue (MkSemigroupQueue var) =
+    mVarRunStateT var $ do
+        mt <- get
+        put Nothing
+        return mt
+
+putSemigroupQueue :: Semigroup t => SemigroupQueue t -> t -> IO Bool
+putSemigroupQueue (MkSemigroupQueue var) t =
+    mVarRunStateT var $ do
+        get >>= \case
+            Just oldt -> do
+                put $ Just $ oldt <> t
+                return False
+            Nothing -> do
+                put $ Just t
+                return True
+
+asyncRunner ::
+       forall t. Semigroup t
+    => Text
+    -> (t -> IO ())
+    -> Lifecycle (t -> IO (), Task IO ())
+asyncRunner name doit = do
+    sq :: SemigroupQueue t <- liftIO $ newSemigroupQueue
+    (ioio, utask) <- asyncIORunner name
+    let
+        action :: IO ()
+        action = do
+            mt <- takeSemigroupQueue sq
+            case mt of
+                Just t -> doit t
+                Nothing -> return ()
+        tio :: t -> IO ()
+        tio t = do
+            b <- putSemigroupQueue sq t
+            if b
+                then ioio action
+                else return ()
+    return (tio, utask)
 
 asyncWaitRunner ::
        forall t. Semigroup t
@@ -35,137 +81,23 @@ asyncWaitRunner ::
     -> Int
     -> (t -> IO ())
     -> Lifecycle (Maybe t -> IO (), Task IO ())
-asyncWaitRunner _ mus doit = do
-    bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSIdle
+asyncWaitRunner name mus doit = do
+    sq :: SemigroupQueue t <- liftIO $ newSemigroupQueue
+    (ioio, utask) <- asyncIORunner name
     let
-        threadDo :: IO ()
-        threadDo = do
-            maction <-
-                atomically $ do
-                    vs <- readTVar bufferVar
-                    case vs of
-                        VSEnd -> do
-                            writeTVar bufferVar VSIdle
-                            return Nothing
-                        VSException _ -> return Nothing
-                        VSIdle -> mzero
-                        VSRunning -> do
-                            writeTVar bufferVar VSIdle
-                            return $ Just $ return ()
-                        VSPending vals True
-                            | mus > 0 -> do
-                                writeTVar bufferVar $ VSPending vals False
-                                return $ Just $ threadDelay mus
-                        VSPending vals _ -> do
-                            writeTVar bufferVar VSRunning
-                            return $ Just $ doit vals
-            case maction of
-                Just action -> do
-                    catchExc action $ \ex -> atomically $ writeTVar bufferVar $ VSException ex
-                    threadDo
+        action :: IO ()
+        action = do
+            mt <- takeSemigroupQueue sq
+            case mt of
+                Just t -> doit t
                 Nothing -> return ()
-        waitForIdle :: STM (Result SomeException ())
-        waitForIdle = do
-            vs <- readTVar bufferVar
-            case vs of
-                VSIdle -> return $ return ()
-                VSException ex -> return $ throwExc ex
-                _ -> mzero
-        atomicallyDo :: STM (Result SomeException a) -> IO a
-        atomicallyDo stra = do
-            ra <- atomically stra
-            fromResultExc ra
-        pushVal :: Maybe t -> IO ()
-        pushVal (Just val) =
-            atomicallyDo $ do
-                vs <- readTVar bufferVar
-                case vs of
-                    VSEnd -> return $ return ()
-                    VSException ex -> return $ throwExc ex
-                    VSIdle -> do
-                        writeTVar bufferVar $ VSPending val True
-                        return $ return ()
-                    VSRunning -> do
-                        writeTVar bufferVar $ VSPending val True
-                        return $ return ()
-                    VSPending oldval _ -> do
-                        writeTVar bufferVar $ VSPending (oldval <> val) True
-                        return $ return ()
-        pushVal Nothing =
-            atomically $ do
-                vs <- readTVar bufferVar
-                case vs of
-                    VSPending oldval False -> writeTVar bufferVar $ VSPending oldval True
-                    _ -> return ()
-        utask :: Task IO ()
-        utask = let
-            taskWait = atomicallyDo waitForIdle
-            taskIsDone =
-                atomicallyDo $ do
-                    vs <- readTVar bufferVar
-                    return $
-                        case vs of
-                            VSIdle -> return True
-                            VSException _ -> return True
-                            _ -> return False
-            in MkTask {..}
-    _ <- liftIO $ forkIO threadDo
-    lifecycleOnClose $ do
-        atomicallyDo $ do
-            me <- waitForIdle
-            case me of
-                SuccessResult _ -> writeTVar bufferVar VSEnd
-                FailureResult _ -> return ()
-            return me
-        atomicallyDo waitForIdle
-    return (pushVal, utask)
-
-asyncWorkerRunner ::
-       forall t. Semigroup t
-    => Text
-    -> (t -> IO ())
-    -> Lifecycle (t -> IO (), Task IO ())
-asyncWorkerRunner name doit = do
-    (asyncDoIt, utask) <- asyncWaitRunner name 0 doit
-    return (\t -> asyncDoIt $ Just t, utask)
-
-asyncTaskRunner ::
-       forall t. Semigroup t
-    => Text
-    -> (t -> IO ())
-    -> Lifecycle (t -> IO (), Task IO ())
-asyncTaskRunner _ doit = do
-    var <- liftIO $ newMVar mempty
-    let
-        pushVal :: t -> IO ()
-        pushVal t =
-            mVarRunStateT var $ do
-                oldTask <- get
-                newTask <-
-                    lift $
-                    forkTask $ do
-                        taskWait oldTask
-                        doit t
-                put newTask
-        utask :: Task IO ()
-        utask = ioTask $ mVarRunStateT var get
-    lifecycleOnClose $ taskWait utask
-    return (pushVal, utask)
-
-asyncRunnerINTERNAL :: Bool
-asyncRunnerINTERNAL = False
-
-asyncRunner ::
-       forall t. Semigroup t
-    => Text
-    -> (t -> IO ())
-    -> Lifecycle (t -> IO (), Task IO ())
-asyncRunner =
-    if asyncRunnerINTERNAL
-        then asyncTaskRunner
-        else asyncWorkerRunner
-
-asyncIORunner :: Text -> Lifecycle (IO () -> IO (), Task IO ())
-asyncIORunner name = do
-    (asyncDoIt, utask) <- asyncRunner name sequence_
-    return (\io -> asyncDoIt [io], utask)
+        tio :: Maybe t -> IO ()
+        tio (Just t) = do
+            b <- putSemigroupQueue sq t
+            if b
+                then ioio $ do
+                         threadDelay mus
+                         action
+                else return ()
+        tio Nothing = ioio action
+    return (tio, utask)
