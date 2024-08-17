@@ -25,6 +25,7 @@ module Debug.ThreadTrace
     , TraceThing(..)
     , traceSTM
     , traceBracketSTM
+    , traceAtomicallySTM
     , module Debug.ThreadTrace.Lookup
     ) where
 
@@ -300,3 +301,7 @@ traceBracketSTM s ma = do
             empty
     traceSTM $ s ++ " ]"
     return a
+
+traceAtomicallySTM :: String -> STM a -> IO a
+traceAtomicallySTM s stma =
+    traceBracket (contextStr s "outside") $ atomically $ traceBracketSTM (contextStr s "inside") stma
