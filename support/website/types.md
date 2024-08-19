@@ -426,7 +426,7 @@ If there is a loop of subtype relations, it will simply make those types equival
 A predicate type `T` is a "subset" of an existing type `P`, consisting of those values that satisfy some predicate `f: P -> Boolean`.
 You can declare them like this:
 
-```pinafore decl
+```pinafore nocheck
 predicatetype T <: P = f;
 ```
 
@@ -437,7 +437,7 @@ To create new values of `T`, you can use `check @T` and `coerce @T`.
 
 For example, a type of even integers:
 ```pinafore decl
-predicatetype Even <: Integer = fn i => i % 2 == 0;
+predicatetype Even <: Integer = fn i => mod i 2 == 0;
 
 addEven: Even -> Even -> Even = fn a, b => coerce @Even $ a + b;
 
@@ -448,7 +448,7 @@ The greatest dynamic supertype of `Even` will be `Literal` (since that is the GD
 
 You can also create storable predicate types from storable parent types:
 ```pinafore decl
-predicatetype storable Even <: Integer = fn i => i % 2 == 0;
+predicatetype storable Even <: Integer = fn i => mod i 2 == 0;
 ```
 
 ## Functions
