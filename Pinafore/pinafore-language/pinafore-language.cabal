@@ -28,6 +28,7 @@ library
       Pinafore.Language.Value.Map
       Pinafore.Language.Value.Lens
       Pinafore.Language.Value.Prism
+      Pinafore.Language.Value.Task
       Pinafore.Language.Value.Model
       Pinafore.Language.Value.WholeModel
       Pinafore.Language.Value.SetModel

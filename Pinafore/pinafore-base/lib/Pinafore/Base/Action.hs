@@ -81,7 +81,7 @@ actionFlushModelUpdates :: WModel update -> Action ()
 actionFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
 
 actionFlushModelCommits :: WModel update -> Action ()
-actionFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitTask model
+actionFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitsTask model
 
 actionModelGet :: WModel update -> ReadM (UpdateReader update) t -> Action t
 actionModelGet model rm = do

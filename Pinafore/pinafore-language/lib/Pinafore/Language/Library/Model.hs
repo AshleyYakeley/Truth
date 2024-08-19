@@ -13,6 +13,7 @@ import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
+import Pinafore.Language.Library.Task ()
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -117,6 +118,16 @@ modelLibSection =
                     "Model"
                     [ addNameInRootBDS $
                       valBDS "onUpdate" "Do this on every update, during this lifecycle." langModelSubscribe
+                    , addNameInRootBDS $
+                      valBDS
+                          "updatesTask"
+                          "A task representing the processing of updates from this model to user interface, etc."
+                          langModelUpdatesTask
+                    , addNameInRootBDS $
+                      valBDS
+                          "commitsTask"
+                          "A task representing the propagation of changes to the underlying model, which may be done asynchronously."
+                          langModelCommitsTask
                     ]
               ]
         , headingBDS

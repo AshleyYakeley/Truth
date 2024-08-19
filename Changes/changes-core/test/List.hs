@@ -55,7 +55,7 @@ testIssue304 =
                     liftIO $ threadDelay 300
                     actionModelPush im $ pure $ MkWholeReaderEdit $ Just 15
                     checkRef "D" [10, 15, 20, 30]
-                    liftIO $ taskWait $ modelCommitTask model
+                    liftIO $ taskWait $ modelCommitsTask model
 
 testList :: TestTree
 testList = testTree "list" [testIssue304]

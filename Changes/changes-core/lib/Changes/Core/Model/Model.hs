@@ -5,7 +5,7 @@ module Changes.Core.Model.Model
     , Model
     , modelReference
     , modelUpdatesTask
-    , modelCommitTask
+    , modelCommitsTask
     , makeReflectingModel
     , makeSharedModel
     , modelPremodel
@@ -72,8 +72,8 @@ modelReference (MkResource rr amodel) = MkResource rr $ aModelAReference amodel
 modelUpdatesTask :: Model update -> Task IO ()
 modelUpdatesTask (MkResource _ asub) = aModelUpdatesTask asub
 
-modelCommitTask :: Model update -> Task IO ()
-modelCommitTask (MkResource _ asub) = refCommitTask $ aModelAReference asub
+modelCommitsTask :: Model update -> Task IO ()
+modelCommitsTask (MkResource _ asub) = refCommitTask $ aModelAReference asub
 
 newtype UpdateQueue update =
     MkUpdateQueue [(EditContext, NonEmpty update)]

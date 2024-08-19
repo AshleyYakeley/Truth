@@ -2,6 +2,7 @@ module Pinafore.Language.Value.Model where
 
 import Import
 import Pinafore.Language.Value.Instances ()
+import Pinafore.Language.Value.Task
 
 type InvertibleModelLens t
      = forall m.
@@ -34,3 +35,9 @@ data LangModel where
 langModelSubscribe :: LangModel -> Action () -> Action ()
 langModelSubscribe (MkLangModel (MkWModel model)) update =
     actionLiftView $ viewBindModel model Nothing (return ()) mempty $ \() _ -> runAction update
+
+langModelUpdatesTask :: LangModel -> LangTask ()
+langModelUpdatesTask (MkLangModel (MkWModel model)) = liftTask $ modelUpdatesTask model
+
+langModelCommitsTask :: LangModel -> LangTask ()
+langModelCommitsTask (MkLangModel (MkWModel model)) = liftTask $ modelCommitsTask model

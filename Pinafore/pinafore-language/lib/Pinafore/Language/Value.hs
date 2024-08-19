@@ -13,5 +13,6 @@ import Pinafore.Language.Value.ModelOrder as I
 import Pinafore.Language.Value.Prism as I
 import Pinafore.Language.Value.Property as I
 import Pinafore.Language.Value.SetModel as I
+import Pinafore.Language.Value.Task as I
 import Pinafore.Language.Value.TextModel as I
 import Pinafore.Language.Value.WholeModel as I
