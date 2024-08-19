@@ -1,0 +1,7 @@
+#!/usr/bin/pinafore
+import "gnome" in
+openDefault.Store >>= fn store =>
+run.GTK $ fn gtk =>
+let
+c = cell.Store @Text !"cell" store;
+in open.Window.GTK gtk (400,500) {"Test"} $ textEntry.Widget.GTK c
