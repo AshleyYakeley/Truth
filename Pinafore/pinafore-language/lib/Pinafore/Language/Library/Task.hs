@@ -109,18 +109,21 @@ taskLibSection =
     [ headingBDS "Task" "" $
       [ typeBDS
             "Task"
-            "A task is something that can be waited for to give a result."
+            "A task is something that can be waited for to give a result. Some tasks are _one-shot_, once they are done they remain done. Other tasks may become pending again after being done."
             (MkSomeGroundType taskGroundType)
             []
       , namespaceBDS "Task" $
         applicativeEntries @_ @LangTask <>
-        [ valBDS "async" "Run an action in another thread. It will complete in the current life cycle." langAsync
-        , valBDS "wait" "Wait for a task to complete. This action is idempotent." langWait
+        [ valBDS
+              "async"
+              "Run an action in another thread, as a one-shot task. It will complete in the current life cycle."
+              langAsync
+        , valBDS "wait" "Wait for a task to complete. For one-shot tasks, this action is idempotent." langWait
         , valBDS "check" "Check to see if a task is done without waiting." langCheck
         , valBDS "isDone" "Check whether a task is done." langIsDone
-        , valBDS "time" "A task that is done at this time." langTimeTask
-        , valBDS "duration" "Create a task that will be done after this duration." langDuration
-        , valBDS "first" "Create a task for the first task to finish." langFirst
+        , valBDS "time" "A one-shot task that is done at this time." langTimeTask
+        , valBDS "duration" "Create a one-shot task that will be done after this duration." langDuration
+        , valBDS "first" "Create a one-shot task for the first task to finish." langFirst
         ]
       ]
     , headingBDS "StoppableTask" "" $
