@@ -138,9 +138,9 @@ window_calc : Action Window
     bval = pvalue !$ {point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
     in std_window {"Calc"} $ vertical.Widget
     [
-        #textEntry.Widget aval,
-        #textEntry.Widget bval,
-        #label.Widget $ aval / bval
+        textEntry.Widget $ asText.Number !$ aval,
+        textEntry.Widget $ asText.Number !$ bval,
+        label.Widget {show $ %aval /.Number %bval}
     ];
 
 ### Switching Value
