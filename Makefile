@@ -127,7 +127,9 @@ DEBIANREL := bookworm
 
 LIBMODULEFILES := \
 	UILib/Context \
+	UILib/Command \
 	UILib/Pane \
+	UILib/Set \
 	UILib/Named \
 	UILib
 
