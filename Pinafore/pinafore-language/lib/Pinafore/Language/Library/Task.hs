@@ -48,7 +48,7 @@ langIsDone :: LangTask TopType -> Action Bool
 langIsDone task = taskIsDone $ unLangTask task
 
 langCheck :: LangTask A -> Action (Maybe A)
-langCheck task = checkTask $ unLangTask task
+langCheck task = taskCheck $ unLangTask task
 
 langTimeTask :: UTCTime -> LangTask ()
 langTimeTask t = liftTask $ timeTask t

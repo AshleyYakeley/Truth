@@ -1,7 +1,7 @@
 module Control.Task
     ( Task(..)
     , hoistTask
-    , checkTask
+    , taskIsDone
     , execTask
     , ioTask
     , forkTask
@@ -26,15 +26,15 @@ import Shapes.Import
 type Task :: (Type -> Type) -> Type -> Type
 data Task m a = MkTask
     { taskWait :: m a
-    , taskIsDone :: m Bool
+    , taskCheck :: m (Maybe a)
     }
 
 instance Functor m => Functor (Task m) where
-    fmap ab (MkTask w d) = MkTask (fmap ab w) d
+    fmap ab (MkTask w c) = MkTask (fmap ab w) (fmap (fmap ab) c)
 
 instance Applicative m => Applicative (Task m) where
-    pure a = MkTask (pure a) (pure True)
-    (MkTask wab dab) <*> (MkTask wa da) = MkTask (wab <*> wa) ((&&) <$> dab <*> da)
+    pure a = MkTask (pure a) (pure $ pure a)
+    (MkTask wab cab) <*> (MkTask wa ca) = MkTask (wab <*> wa) ((<*>) <$> cab <*> ca)
 
 instance (Applicative m, Semigroup a) => Semigroup (Task m a) where
     (<>) = liftA2 (<>)
@@ -42,8 +42,11 @@ instance (Applicative m, Semigroup a) => Semigroup (Task m a) where
 instance (Applicative m, Monoid a) => Monoid (Task m a) where
     mempty = pure mempty
 
+taskIsDone :: Functor m => Task m a -> m Bool
+taskIsDone task = fmap isJust $ taskCheck task
+
 hoistTask :: (m1 --> m2) -> Task m1 --> Task m2
-hoistTask mm (MkTask w d) = MkTask (mm w) (mm d)
+hoistTask mm (MkTask w c) = MkTask (mm w) (mm c)
 
 {-
 instance RepresentationalRole m => RepresentationalRole (Task m) where
@@ -60,10 +63,10 @@ ioTask mt =
               do
                   t <- mt
                   taskWait t
-        , taskIsDone =
+        , taskCheck =
               do
                   t <- mt
-                  taskIsDone t
+                  taskCheck t
         }
 
 mvarTask ::
@@ -73,12 +76,15 @@ mvarTask ::
 mvarTask var = let
     taskWait :: m a
     taskWait = liftIO $ readMVar var
-    taskIsDone :: m Bool
-    taskIsDone = liftIO $ fmap isJust $ tryReadMVar var
+    taskCheck :: m (Maybe a)
+    taskCheck = liftIO $ tryReadMVar var
     in MkTask {..}
 
 execTask :: Monad m => Task m (m a) -> Task m a
-execTask (MkTask w isd) = MkTask (w >>= id) isd
+execTask (MkTask w c) =
+    MkTask (w >>= id) $ do
+        mma <- c
+        sequence mma
 
 tunnelForkIO :: MonadTunnelIO m => ((forall a. m a -> IO (TunnelIO m a)) -> IO ()) -> m ThreadId
 tunnelForkIO iou =
@@ -98,13 +104,6 @@ forkTask ma = do
             putMVar var ra
     return $ execTask $ fmap (liftTunnelIO . fromResultExc) $ mvarTask var
 
-checkTask :: Monad m => Task m a -> m (Maybe a)
-checkTask task = do
-    done <- taskIsDone task
-    if done
-        then fmap Just $ taskWait task
-        else return Nothing
-
 timeTask :: UTCTime -> Task IO ()
 timeTask t = let
     remaining :: IO (Maybe NominalDiffTime)
@@ -121,10 +120,13 @@ timeTask t = let
         case r of
             Just d -> threadSleep d
             Nothing -> return ()
-    taskIsDone :: IO Bool
-    taskIsDone = do
-        d <- remaining
-        return $ not $ isJust d
+    taskCheck :: IO (Maybe ())
+    taskCheck = do
+        md <- remaining
+        return $
+            case md of
+                Nothing -> Just ()
+                Just _ -> Nothing
     in MkTask {..}
 
 durationTask :: NominalDiffTime -> IO (Task IO ())
@@ -143,7 +145,7 @@ firstTask tt = do
                 _ <- tryPutMVar var a
                 return ()
         return ()
-    return MkTask {taskIsDone = shortOr $ fmap taskIsDone tt, taskWait = liftTunnelIO $ takeMVar var}
+    return MkTask {taskWait = liftTunnelIO $ readMVar var, taskCheck = liftTunnelIO $ fmap sequence $ tryReadMVar var}
 
 parallelFor :: (Traversable t, MonadTunnelIO m) => t a -> (a -> m b) -> m (t b)
 parallelFor ta amb = do
