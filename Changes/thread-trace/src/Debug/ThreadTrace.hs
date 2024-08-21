@@ -1,6 +1,7 @@
 module Debug.ThreadTrace
     ( contextStr
     , traceNameThread
+    , traceSetThreadState
     , traceHide
     , traceShow
     , traceHidePrefix
@@ -57,6 +58,7 @@ data ThreadData = MkThreadData
     , tdShowPrefix :: Bool
     , tdShowCosts :: Bool
     , tdCosts :: Map.Map String (Int, Nano)
+    , tdState :: String
     }
 
 defaultThreadData :: ThreadData
@@ -66,6 +68,7 @@ defaultThreadData = let
     tdShowPrefix = True
     tdShowCosts = False
     tdCosts = mempty
+    tdState = ""
     in MkThreadData {..}
 
 traceThreadData :: MVar (Map.Map ThreadId ThreadData)
@@ -95,6 +98,9 @@ threadModifyData m = do
 
 traceNameThread :: String -> IO ()
 traceNameThread name = threadModifyData $ \tdata -> tdata {tdName = name}
+
+traceSetThreadState :: String -> IO ()
+traceSetThreadState s = threadModifyData $ \tdata -> tdata {tdState = s}
 
 traceSaveData :: MonadIO m => m r -> m r
 traceSaveData mr = do
@@ -138,11 +144,16 @@ traceIOM msg =
                              nametxt =
                                  case tdName tdata of
                                      "" -> ""
-                                     name -> " (" ++ name ++ ")"
+                                     name -> " " ++ name
+                             statetxt =
+                                 case tdState tdata of
+                                     "" -> ""
+                                     stt -> " (" <> stt <> ")"
                              showMod :: Int -> Word32 -> String
                              showMod 0 _ = ""
                              showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
-                         traceIO $ show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> ": " <> msg
+                         traceIO $
+                             show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> statetxt <> ": " <> msg
                      else traceIO msg
             else return ()
 
