@@ -14,6 +14,7 @@ module Changes.Core.Resource.ResourceRunner
     , discardingResourceRunner
     , ResourceContext
     , emptyResourceContext
+    , resourceContextSize
     , runResourceRunner
     , runResourceRunnerContext
     ) where
@@ -140,6 +141,10 @@ newtype ResourceContext =
 
 emptyResourceContext :: ResourceContext
 emptyResourceContext = MkResourceContext []
+
+-- | for debugging
+resourceContextSize :: ResourceContext -> Int
+resourceContextSize (MkResourceContext rc) = length rc
 
 runLSR ::
        forall tt m r. MonadUnliftIO m

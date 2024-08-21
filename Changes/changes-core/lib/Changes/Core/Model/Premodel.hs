@@ -92,10 +92,10 @@ mapPremodel ::
     -> FloatingChangeLens updateA updateB
     -> Premodel updateA a
     -> Premodel updateB a
-mapPremodel rc (MkFloatingChangeLens finit rlens) uobja utask recvb = do
+mapPremodel rc (MkFloatingChangeLens finit rlens) premodel utask recvb = do
     rec
         (result, recva) <- do
-            MkPremodelResult (MkResource (rr :: _ tt) anobjA) updTask val <- uobja utask recva
+            MkPremodelResult (MkResource (rr :: _ tt) anobjA) updTask val <- premodel utask recva
             liftIO $ do
                 r <- runResourceRunner rc rr $ runFloatInit finit $ refRead anobjA
                 let

@@ -100,7 +100,7 @@ modelPremodel rc (MkResource rr MkAModel {..}) val update utask = do
     return $ MkPremodelResult (MkResource rr aModelAReference) aModelUpdatesTask val
 
 makeSharedModel :: forall update a. Premodel update a -> Lifecycle (Model update, a)
-makeSharedModel om = do
+makeSharedModel premodel = do
     var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
         updateP :: ResourceContext -> NonEmpty update -> EditContext -> IO ()
@@ -113,7 +113,7 @@ makeSharedModel om = do
             return $ fmap useTask $ toList store
         utaskP :: Task IO ()
         utaskP = ioTask (fmap mconcat getTasks)
-    MkPremodelResult {..} <- om utaskP updateP
+    MkPremodelResult {..} <- premodel utaskP updateP
     MkResource (trunC :: ResourceRunner tt) aModelAReference <- return pmrReference
     Dict <- return $ resourceRunnerUnliftDict trunC
     Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
@@ -134,11 +134,13 @@ makeSharedModel om = do
                             useUpdate updates ectxt = updateAsync $ singleUpdateQueue updates ectxt
                             useTask = taskC <> runnertask
                         addStoreStateT $ MkUpdateStoreEntry {..}
-                lifecycleOnClose $
-                    mVarRunStateT var $ do
-                        mentry <- lookupStoreStateT key
-                        for_ mentry $ \entry -> lift $ closeLifeState $ useLifeState entry
-                        deleteStoreStateT key
+                lifecycleOnClose $ do
+                    mentry <-
+                        mVarRunStateT var $ do
+                            mentry <- lookupStoreStateT key
+                            deleteStoreStateT key
+                            return mentry
+                    for_ mentry $ \entry -> closeLifeState $ useLifeState entry
         aModelUpdatesTask = pmrUpdatesTask
         child :: Model update
         child = MkResource trunC $ MkAModel {..}

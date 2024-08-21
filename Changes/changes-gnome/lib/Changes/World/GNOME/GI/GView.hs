@@ -55,7 +55,7 @@ data GTKContext = MkGTKContext
 -- 1. Don't call GTK functions unless holding the GTK lock.
 -- For this reason `liftIO` requires holding the lock.
 --
--- 2. Don't aquire model "runner" locks while holding the GTK lock (to prevent deadlock).
+-- 2. Don't acquire model "runner" locks while holding the GTK lock (to prevent deadlock).
 -- Therefore, avoid calling code while holding the GTK lock unless you know it's safe.
 --
 -- 3. Call `gvRunUnlocked` only when necessary (generally when called by a signal handler).
