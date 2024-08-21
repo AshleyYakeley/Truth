@@ -19,6 +19,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add cell.Store, set.Store, fetch.Store
       . add StoppableTask type and functions
       . add subtype Store <: Model
+      . add updatesTask.Model, commitsTask.Model
+      . Model get/set functions no longer wait for updates
       . reverse types of subtype Prism <: Attribute
       . add dynamic.Prism
       . add orStop.Action
