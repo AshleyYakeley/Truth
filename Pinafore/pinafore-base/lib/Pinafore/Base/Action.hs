@@ -11,8 +11,6 @@ module Pinafore.Base.Action
     , actionLiftLifecycle
     , actionGetCreateViewUnlift
     , actionResourceContext
-    , actionFlushModelUpdates
-    , actionFlushModelCommits
     , actionModelGet
     , actionModelPush
     , actionKnow
@@ -77,21 +75,13 @@ actionGetCreateViewUnlift = return $ MkWRaised $ \(MkAction ra) -> ra
 actionResourceContext :: Action ResourceContext
 actionResourceContext = actionLiftView viewGetResourceContext
 
-actionFlushModelUpdates :: WModel update -> Action ()
-actionFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
-
-actionFlushModelCommits :: WModel update -> Action ()
-actionFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitsTask model
-
 actionModelGet :: WModel update -> ReadM (UpdateReader update) t -> Action t
 actionModelGet model rm = do
-    actionFlushModelUpdates model
     rc <- actionResourceContext
     liftIO $ wModelGet rc model rm
 
 actionModelPush :: WModel update -> NonEmpty (UpdateEdit update) -> Action ()
 actionModelPush model edits = do
-    actionFlushModelUpdates model
     rc <- actionResourceContext
     ok <- liftIO $ wModelPush rc model edits
     if ok

@@ -23,6 +23,7 @@ in do
         for_ (range 0 200) $ fn i =>
         do
             p <- new.OpenEntity @Person;
+            outputLn.Env $ "Thread Push " <>.Text show i;
             people += p;
         end;
         close.Window w;
