@@ -9,7 +9,7 @@ description: "Pinafore language support"
 icon: "images/logo.png"
 
 engines:
-  vscode: "^1.89.1"
+  vscode: "^1.92.1"
 
 categories:
 - "Programming Languages"
