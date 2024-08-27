@@ -139,7 +139,7 @@ testNamedQuery name query expected =
         result <-
             testerLiftInterpreter $
             tryExc $ do
-                v <- parseValue query
+                v <- parseToValue query []
                 showPinaforeModel v
         liftIO $
             case result of
@@ -1121,7 +1121,7 @@ testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
     testTree (unpack query) $
     runTester defaultTester $ do
-        result <- tryExc $ testerLiftInterpreter $ parseValue query
+        result <- tryExc $ testerLiftInterpreter $ parseToValue query []
         liftIO $
             case result of
                 FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e

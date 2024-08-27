@@ -63,11 +63,11 @@ tImport :: [Text] -> ScriptTestTree -> ScriptTestTree
 tImport tt = tDeclarator $ "import " <> intercalate ", " (fmap (pack . show) tt)
 
 tOpenDefaultStore :: ScriptTestTree -> ScriptTestTree
-tOpenDefaultStore = tPrefix "openDefault.Store >>=.Action fn store =>"
+tOpenDefaultStore = tPrefix "?openTestStore >>=.Action fn store =>"
 
 testOpenUHStore :: ScriptTestTree -> ScriptTestTree
 testOpenUHStore =
-    tPrefix "openDefault.Store >>=.Action fn dstore =>" .
+    tPrefix "?openTestStore >>=.Action fn dstore =>" .
     tPrefix "new.UndoHandler >>=.Action fn undoHandler =>" .
     tPrefix "handleStore.UndoHandler undoHandler dstore >>=.Action fn store =>"
 
@@ -87,8 +87,8 @@ tParallel =
         eopts = tstExecutionOptions topts
         in sc {scTesterOptions = topts {tstExecutionOptions = eopts {eoProcessorCount = Just AllProcessorCount}}}
 
-tLibrary :: LibraryModule () -> ScriptTestTree -> ScriptTestTree
-tLibrary libm = tLoadModule $ libraryLoadModule () [libm]
+tLibrary :: LibraryModule -> ScriptTestTree -> ScriptTestTree
+tLibrary libm = tLoadModule $ libraryLoadModule [libm]
 
 scriptRepeat :: Int -> Text -> Text
 scriptRepeat i script = "for_ (range 1 " <> showText i <> ") $ fn _ => " <> script
@@ -114,8 +114,7 @@ testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
             fullscript = scPrefix <> script
-            in runTester scTesterOptions $
-               testerLoad scLoadModule $ do call $ testerLiftInterpreter $ parseValueUnify fullscript
+            in runTester scTesterOptions $ testerLoad scLoadModule $ call $ testerInterpret fullscript
 
 testScript :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> ScriptTestTree
 testScript = testExpression @(Action ())

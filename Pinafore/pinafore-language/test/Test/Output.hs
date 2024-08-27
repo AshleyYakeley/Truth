@@ -17,10 +17,9 @@ testFile inpath = let
             _ -> id
     in modifier $
        testHandleVsFileInDir dir testName $ \hout ->
-           runTester defaultTester {tstOutput = hout} $
-           testerLiftView $ do
-               action <- qInterpretFile inpath
-               action
+           runTester defaultTester {tstOutput = hout} $ do
+               action <- testerInterpretScriptFile inpath []
+               testerLiftView action
 
 getTestOutput :: IO TestTree
 getTestOutput = do

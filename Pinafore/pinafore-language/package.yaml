@@ -16,6 +16,7 @@ library:
       - containers
       - text
       - unicode-collation
+      - xdg-basedir
       - thread-trace
       - polar-shim
       - typed-expression

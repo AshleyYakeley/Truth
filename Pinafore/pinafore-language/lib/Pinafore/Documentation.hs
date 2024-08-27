@@ -17,7 +17,6 @@ module Pinafore.Documentation
 import Import
 import Pinafore.Context
 import Pinafore.Language
-import Pinafore.Language.Library
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Main
 import Pinafore.Syntax.Doc
@@ -26,7 +25,7 @@ import Pinafore.Syntax.Text
 
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
-    getDocName :: forall context. BindDoc context -> Maybe Name
+    getDocName :: BindDoc -> Maybe Name
     getDocName MkBindDoc {bdScopeEntry = Just (BindScopeEntry (MkFullNameRef name _) _ _), bdDoc = dd}
         | test $ docItem dd
         , nameIsInfix name = Just name
@@ -34,20 +33,20 @@ allOperatorNames test = let
     in sort $
        nub $
        mapMaybe getDocName $ do
-           lmod <- builtInLibrary
+           lmod <- pinaforeLibrary
            libraryContentsEntries $ lmContents lmod
 
-bindDocTypeName :: BindDoc a -> [Name]
+bindDocTypeName :: BindDoc -> [Name]
 bindDocTypeName bd =
     case docItem (bdDoc bd) of
         TypeDocItem {diNames = n} -> fmap fnrName $ toList n
         _ -> []
 
-libraryTypeNames :: LibraryModule a -> [Name]
+libraryTypeNames :: LibraryModule -> [Name]
 libraryTypeNames lm = toList (lmContents lm) >>= bindDocTypeName
 
 allTypeNames :: [Name]
-allTypeNames = filter (not . nameIsInfix) $ sort $ nub $ builtInLibrary >>= libraryTypeNames
+allTypeNames = filter (not . nameIsInfix) $ sort $ nub $ pinaforeLibrary >>= libraryTypeNames
 
 getModuleDocs :: (?library :: LibraryContext) => ModuleName -> IO Docs
 getModuleDocs modname = do

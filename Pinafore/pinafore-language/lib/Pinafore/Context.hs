@@ -1,24 +1,25 @@
 module Pinafore.Context where
 
 import Import
+import System.Directory
+import System.Environment
+import System.Environment.XDG.BaseDir
 
-data InvocationInfo = MkInvocationInfo
-    { iiScriptName :: String
-    , iiScriptArguments :: [String]
-    , iiEnvironment :: [(String, String)]
-    , iiStdIn :: Source IO Text
-    , iiStdOut :: Sink IO Text
-    , iiStdErr :: Sink IO Text
-    , iiDefaultStorageModel :: View (Model QStorageUpdate)
-    }
+getPinaforeDir :: IO FilePath
+getPinaforeDir = do
+    mpdir <- lookupEnv "PINAFOREDIR"
+    case mpdir of
+        Just dir -> return dir
+        Nothing -> getUserDataDir "pinafore"
 
-nullInvocationInfo :: InvocationInfo
-nullInvocationInfo = let
-    iiScriptName = "<null>"
-    iiScriptArguments = []
-    iiEnvironment = []
-    iiStdIn = nullSource
-    iiStdOut = mempty
-    iiStdErr = mempty
-    iiDefaultStorageModel = return $ error "no default storage model"
-    in MkInvocationInfo {..}
+setPinaforeDir :: Maybe FilePath -> IO ()
+setPinaforeDir mdir = for_ mdir $ setEnv "PINAFOREDIR"
+
+ensurePinaforeDir :: Maybe FilePath -> IO FilePath
+ensurePinaforeDir mdir = do
+    dir <-
+        case mdir of
+            Nothing -> getPinaforeDir
+            Just dir -> return dir
+    createDirectoryIfMissing True dir
+    return dir

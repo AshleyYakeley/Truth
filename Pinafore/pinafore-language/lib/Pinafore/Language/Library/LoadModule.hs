@@ -44,22 +44,19 @@ directoryLoadModule dirpath =
                 mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString bs
                 return $ Just mm
 
-getLibraryContentsModule :: forall context. context -> LibraryStuff context -> QInterpreter QModule
-getLibraryContentsModule context libmod = do
+getLibraryContentsModule :: LibraryStuff -> QInterpreter QModule
+getLibraryContentsModule libmod = do
     let
-        bindDocs :: [(ScopeEntry context, DefDoc)]
+        bindDocs :: [(ScopeEntry, DefDoc)]
         bindDocs = mapMaybe (\MkBindDoc {..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryContentsEntries libmod
         bscope :: QScope
         bscope =
             bindingInfosToScope $ do
-                (se, bd) <- bindDocs
+                (se, biDocumentation) <- bindDocs
                 case se of
-                    (BindScopeEntry oname xnames b) -> do
+                    (BindScopeEntry oname xnames biValue) -> do
                         let biOriginalName = namespaceConcatFullName RootNamespace oname
                         biName <- biOriginalName : xnames
-                        let
-                            biDocumentation = bd
-                            biValue = b context
                         return (biName, MkQBindingInfo {..})
                     _ -> []
     dscopes <-
@@ -70,8 +67,8 @@ getLibraryContentsModule context libmod = do
     scope <- joinAllScopes $ bscope : dscopes
     return $ MkQModule (libraryContentsDocumentation libmod) scope
 
-libraryLoadModule :: forall context. context -> [LibraryModule context] -> LoadModule
-libraryLoadModule context lmods = let
-    m :: Map ModuleName (LibraryStuff context)
+libraryLoadModule :: [LibraryModule] -> LoadModule
+libraryLoadModule lmods = let
+    m :: Map ModuleName LibraryStuff
     m = mapFromList $ fmap (\MkLibraryModule {..} -> (lmName, lmContents)) lmods
-    in MkLoadModule $ \mname -> for (lookup mname m) $ getLibraryContentsModule context
+    in MkLoadModule $ \mname -> for (lookup mname m) getLibraryContentsModule

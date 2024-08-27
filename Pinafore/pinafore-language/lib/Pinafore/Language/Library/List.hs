@@ -15,7 +15,7 @@ append (a :| aa) bb = a :| (aa <> bb)
 mconcat1 :: NonEmpty (NonEmpty A) -> NonEmpty A
 mconcat1 (na :| lna) = append na $ concatmap toList lna
 
-listLibSection :: LibraryStuff context
+listLibSection :: LibraryStuff
 listLibSection =
     headingBDS
         "List"
@@ -45,8 +45,8 @@ listLibSection =
         , hasSubtypeRelationBDS @[Entity] @Entity Verify "" $ functionToShim "listEntityConvert" listEntityConvert
         , hasSubtypeRelationBDS @[Showable] @Showable Verify "" $ functionToShim "show" textShowable
         , namespaceBDS "List" $
-          pickNamesInRootBDS ["<>"] (monoidEntries @_ @[A]) <>
-          monadEntries @_ @[] <>
+          pickNamesInRootBDS ["<>"] (monoidEntries @[A]) <>
+          monadEntries @[] <>
           [ valBDS "from" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil
@@ -68,7 +68,7 @@ listLibSection =
           , addNameInRootBDS $ valBDS "sort" "Sort list by an order." (sortBy :: (A -> A -> Ordering) -> [A] -> [A])
           ]
         , namespaceBDS "List1" $
-          applicativeEntries @_ @NonEmpty <>
+          applicativeEntries @NonEmpty <>
           [ valBDS "<>" "Concatenate a non-empty list with a list." append
           , addNameInRootBDS $ valBDS "concat1" "Concatenate a non-empty list of non-empty lists." mconcat1
           , valBDS

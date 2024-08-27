@@ -13,46 +13,36 @@ import Import
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
-data ScopeEntry context
+data ScopeEntry
     = BindScopeEntry FullNameRef
                      [FullName]
-                     (context -> QInterpreterBinding)
+                     QInterpreterBinding
     | SubtypeScopeEntry QSubtypeConversionEntry
 
-instance Contravariant ScopeEntry where
-    contramap ab (BindScopeEntry name oname f) = BindScopeEntry name oname $ \c -> f $ ab c
-    contramap _ (SubtypeScopeEntry entry) = SubtypeScopeEntry entry
-
-scopeEntryName :: ScopeEntry context -> Maybe FullNameRef
+scopeEntryName :: ScopeEntry -> Maybe FullNameRef
 scopeEntryName (BindScopeEntry name _ _) = Just name
 scopeEntryName (SubtypeScopeEntry _) = Nothing
 
-data BindDoc context = MkBindDoc
-    { bdScopeEntry :: Maybe (ScopeEntry context)
+data BindDoc = MkBindDoc
+    { bdScopeEntry :: Maybe ScopeEntry
     , bdDoc :: DefDoc
     }
 
-bindDocNames :: BindDoc context -> Maybe FullNameRef
+bindDocNames :: BindDoc -> Maybe FullNameRef
 bindDocNames bd = mapMaybe scopeEntryName $ bdScopeEntry bd
 
-instance Contravariant BindDoc where
-    contramap ab (MkBindDoc se d) = MkBindDoc (fmap (contramap ab) $ se) d
+type LibraryStuff = Forest BindDoc
 
-type LibraryStuff context = Forest (BindDoc context)
-
-singleBindDoc :: BindDoc context -> [LibraryStuff context] -> LibraryStuff context
+singleBindDoc :: BindDoc -> [LibraryStuff] -> LibraryStuff
 singleBindDoc bd tt = pureForest $ MkTree bd $ mconcat tt
 
-libraryContentsEntries :: LibraryStuff context -> [BindDoc context]
+libraryContentsEntries :: LibraryStuff -> [BindDoc]
 libraryContentsEntries = toList
 
-libraryContentsDocumentation :: LibraryStuff context -> Forest DefDoc
+libraryContentsDocumentation :: LibraryStuff -> Forest DefDoc
 libraryContentsDocumentation = fmap bdDoc
 
-data LibraryModule context = MkLibraryModule
+data LibraryModule = MkLibraryModule
     { lmName :: ModuleName
-    , lmContents :: LibraryStuff context
+    , lmContents :: LibraryStuff
     }
-
-instance Contravariant LibraryModule where
-    contramap ab (MkLibraryModule n c) = MkLibraryModule n $ fmap (contramap ab) c

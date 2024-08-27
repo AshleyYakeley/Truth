@@ -34,7 +34,7 @@ interpretGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFa
 instance HasQGroundType '[ CoCCRVariance] Interpret where
     qGroundType = interpretGroundType
 
-interpretLibSection :: LibraryStuff context
+interpretLibSection :: LibraryStuff
 interpretLibSection =
     headingBDS
         "Interpretation"
@@ -45,5 +45,5 @@ interpretLibSection =
               (MkSomeGroundType interpretGroundType)
               [valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ pure $ \(MkInterpret @A x) -> (x, ())]
         , namespaceBDS "Interpret" $
-          functorEntries @_ @Interpret <> [addNameInRootBDS $ valBDS "interpret" "" $ interpret @A]
+          functorEntries @Interpret <> [addNameInRootBDS $ valBDS "interpret" "" $ interpret @A]
         ]

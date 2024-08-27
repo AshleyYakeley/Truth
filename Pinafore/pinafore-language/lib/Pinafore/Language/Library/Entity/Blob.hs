@@ -29,7 +29,7 @@ fromBlob b = fmap toInteger $ otoList b
 hexTextPrism :: LangPrism' Text StrictByteString
 hexTextPrism = prism (fromLooseHexadecimal . unpack) (pack . toHexadecimal)
 
-blobEntityLibSection :: LibraryStuff context
+blobEntityLibSection :: LibraryStuff
 blobEntityLibSection =
     headingBDS
         "Blob"
@@ -43,9 +43,9 @@ blobEntityLibSection =
         , showableSubtypeRelationEntry @StrictByteString
         , namespaceBDS "Blob" $
           mconcat
-              [ monoidEntries @_ @StrictByteString
+              [ monoidEntries @StrictByteString
               , orderEntries (compare @StrictByteString) ""
-              , sequenceEntries @_ @StrictByteString
+              , sequenceEntries @StrictByteString
               , [ valBDS
                       "asHexText"
                       "Represent a `Blob` as hexadecimal `Text`. Encodes as upper-case, decodes case insensitively and ignores spaces and punctuation, but fails on non-hex letters."

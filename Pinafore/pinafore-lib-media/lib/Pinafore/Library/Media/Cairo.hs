@@ -123,7 +123,7 @@ fontFace' fname italic bold =
 drawToImage :: (Int, Int) -> LangDrawing a -> LangImage
 drawToImage s (MkLangDrawing d) = MkLangImage $ MkSomeFor RGBA8PixelType $ renderToImage s $ drawingRender d
 
-cairoStuff :: LibraryStuff ()
+cairoStuff :: LibraryStuff
 cairoStuff =
     headingBDS "Cairo" "" $
     pure $
@@ -134,8 +134,8 @@ cairoStuff =
               ""
               [ typeBDS "Drawing" "Something that can be drawn." (MkSomeGroundType drawingGroundType) []
               , namespaceBDS "Drawing" $
-                monoidEntries @_ @(LangDrawing A) <>
-                applicativeEntries @_ @LangDrawing <>
+                monoidEntries @(LangDrawing A) <>
+                applicativeEntries @LangDrawing <>
                 [ valBDS "map" "" $ fmap @LangDrawing @A @B
                 , valBDS "toImage" "" $ drawToImage @TopType
                 , headingBDS
@@ -218,7 +218,7 @@ cairoStuff =
               ""
               [ typeBDS "Path" "A path on a drawing." (MkSomeGroundType pathGroundType) []
               , namespaceBDS "Path" $
-                monoidEntries @_ @LangPath <>
+                monoidEntries @LangPath <>
                 [ headingBDS
                       "Construction"
                       ""

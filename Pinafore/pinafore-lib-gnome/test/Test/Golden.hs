@@ -17,9 +17,8 @@ testFile inpath = let
     in testHandleVsFileInDir dir testName $ \hout ->
            runTester defaultTester {tstOutput = hout} $
            testerLoadLibrary (mediaLibrary <> gnomeLibrary) $ do
-               testerLiftView $ do
-                   action <- qInterpretFile inpath
-                   action
+               action <- testerInterpretScriptFile inpath []
+               testerLiftView action
 
 items :: [String]
 items =

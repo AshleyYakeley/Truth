@@ -25,8 +25,10 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add dynamic.Prism
       . add orStop.Action
       . add div
+      . replace openDefault.Store with openLocal.Store record function
+      . use `?arglist` implicit variable to pass parameters
     - media
-      , add Media type and functions
+      . add Media type and functions
       . add HTMLText type and functions
       . add CSSText type and functions
       . add CommonMarkText type and functions

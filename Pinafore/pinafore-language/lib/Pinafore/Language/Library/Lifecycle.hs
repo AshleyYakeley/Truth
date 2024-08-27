@@ -8,7 +8,7 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Var
 
-lifecycleLibSection :: LibraryStuff context
+lifecycleLibSection :: LibraryStuff
 lifecycleLibSection =
     headingBDS
         "Lifecycles"

@@ -10,7 +10,7 @@ import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 
-mapLibSection :: LibraryStuff context
+mapLibSection :: LibraryStuff
 mapLibSection =
     headingBDS
         "Map"
@@ -18,7 +18,7 @@ mapLibSection =
         [ typeBDS "Map" "A hash map." (MkSomeGroundType mapGroundType) []
         , hasSubtypeRelationBDS @(LangMap Entity) @Entity Verify "" $ functionToShim "mapEntityConvert" mapEntityConvert
         , namespaceBDS "Map" $
-          monoidEntries @_ @(LangMap A) <>
+          monoidEntries @(LangMap A) <>
           [ valBDS "lookup" "Look up element." $ langMapLookup @A
           , valBDS "insert" "Insert into map." $ langMapInsert @A
           , valBDS "delete" "Delete from map." $ langMapDelete @A

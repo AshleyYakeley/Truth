@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 import "media", "gnome" in
-openDefault.Store >>= fn dstore =>
+openLocal.Store of end >>= fn dstore =>
 new.UndoHandler >>= fn uh =>
 handleStore.UndoHandler uh dstore >>= fn store =>
 with GTK., Store. in

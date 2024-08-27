@@ -65,7 +65,7 @@ uiMenuBar :: LangMenuBar -> LangWidget
 uiMenuBar lmb =
     MkLangWidget $ \MkWidgetContext {..} -> createMenuBar wcAccelGroup $ fmap (\(MkLangMenuEntry me) -> me wcUnlift) lmb
 
-menuEntryStuff :: LibraryStuff ()
+menuEntryStuff :: LibraryStuff
 menuEntryStuff =
     headingBDS
         "Menu"

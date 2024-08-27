@@ -16,7 +16,7 @@ resultFrom :: (E -> B) -> (A -> B) -> Result E A -> B
 resultFrom eb _ (FailureResult e) = eb e
 resultFrom _ ab (SuccessResult a) = ab a
 
-resultLibSection :: LibraryStuff context
+resultLibSection :: LibraryStuff
 resultLibSection =
     headingBDS
         "Result"
@@ -44,7 +44,7 @@ resultLibSection =
           functionToShim "resultEntityConvert" resultEntityConvert
         , hasSubtypeRelationBDS @(Result Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
         , namespaceBDS "Result" $
-          monadEntries @_ @(Result E) <>
+          monadEntries @(Result E) <>
           [ valBDS "mfix" "The fixed point of a Result." $ mfix @(Result E) @A
           , valBDS "fail" "Failure Result" (FailureResult :: E -> Result E BottomType)
           , valBDS "mapFailure" "" (mapResultFailure :: (B -> C) -> Result B A -> Result C A)

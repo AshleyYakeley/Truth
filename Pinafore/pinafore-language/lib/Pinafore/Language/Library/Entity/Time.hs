@@ -67,9 +67,9 @@ unixAsText ::
 unixAsText fmt = prism (unixParse fmt) (unixFormat fmt)
 
 unixFormattingDef ::
-       forall t context. (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t, FormatTime t, ParseTime t)
+       forall t. (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t, FormatTime t, ParseTime t)
     => Text
-    -> LibraryStuff context
+    -> LibraryStuff
 unixFormattingDef lname =
     valBDS
         (UnqualifiedFullNameRef $ MkName $ "unixAsText")
@@ -78,7 +78,7 @@ unixFormattingDef lname =
          " as text, using the given [Unix-like format/parsing](https://hackage.haskell.org/package/time-1.12.2/docs/Data-Time-Format.html) string.") $
     unixAsText @t
 
-timeEntityLibSection :: LibraryStuff context
+timeEntityLibSection :: LibraryStuff
 timeEntityLibSection =
     headingBDS
         "Date & Time"
@@ -95,7 +95,7 @@ timeEntityLibSection =
           , literalSubtypeRelationEntry @NominalDiffTime
           , showableSubtypeRelationEntry @NominalDiffTime
           , namespaceBDS "Duration" $
-            ordEntries @_ @NominalDiffTime <>
+            ordEntries @NominalDiffTime <>
             [ valBDS "zero" "No duration." $ (0 :: NominalDiffTime)
             , valBDS "day" "One day duration." nominalDay
             , valBDS "+" "Add durations." $ (+) @NominalDiffTime
@@ -131,7 +131,7 @@ timeEntityLibSection =
           , literalSubtypeRelationEntry @UTCTime
           , showableSubtypeRelationEntry @UTCTime
           , namespaceBDS "Time" $
-            ordEntries @_ @UTCTime <>
+            ordEntries @UTCTime <>
             [ plainFormattingDef @UTCTime "a time"
             , unixFormattingDef @UTCTime "a time"
             , valBDS "+" "Add duration to time." addUTCTime
@@ -159,8 +159,8 @@ timeEntityLibSection =
           , literalSubtypeRelationEntry @Day
           , showableSubtypeRelationEntry @Day
           , namespaceBDS "Date" $
-            enumEntries @_ @Day <>
-            ordEntries @_ @Day <>
+            enumEntries @Day <>
+            ordEntries @Day <>
             [ plainFormattingDef @Day "a date"
             , unixFormattingDef @Day "a date"
             , valBDS "+" "Add count to days to date." addDays
@@ -189,7 +189,7 @@ timeEntityLibSection =
           , literalSubtypeRelationEntry @TimeOfDay
           , showableSubtypeRelationEntry @TimeOfDay
           , namespaceBDS "TimeOfDay" $
-            ordEntries @_ @TimeOfDay <>
+            ordEntries @TimeOfDay <>
             [ plainFormattingDef @TimeOfDay "a time of day"
             , unixFormattingDef @TimeOfDay "a time of day"
             , addNameInRootBDS $ valBDS "midnight" "Midnight." midnight
@@ -208,7 +208,7 @@ timeEntityLibSection =
           , literalSubtypeRelationEntry @LocalTime
           , showableSubtypeRelationEntry @LocalTime
           , namespaceBDS "LocalTime" $
-            ordEntries @_ @LocalTime <>
+            ordEntries @LocalTime <>
             [ plainFormattingDef @LocalTime "a local time"
             , unixFormattingDef @LocalTime "a local time"
             , valBDS "fromTime" "Convert a time to local time, given a time zone offset in minutes" $ \i ->

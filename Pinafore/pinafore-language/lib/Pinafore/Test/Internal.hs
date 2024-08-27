@@ -38,7 +38,7 @@ module Pinafore.Test.Internal
     , parseExpressionToType
     , bindsLibrary
     , showPinaforeModel
-    , qInterpretText
+    , qInterpretScriptText
     , qInteractHandles
     ) where
 
@@ -73,6 +73,6 @@ parseExpressionToType text checkType =
 data SomeValue =
     forall t. HasQType QPolyShim 'Positive t => MkSomeValue t
 
-bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule ()
+bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule
 bindsLibrary mname binds =
     MkLibraryModule mname $ concatmap (\(name, MkSomeValue val) -> valBDS (fullNameRef name) "" val) binds

@@ -10,5 +10,5 @@ import Pinafore.Library.GTK
 import Pinafore.Library.WebKit
 import Shapes
 
-gnomeLibrary :: [LibraryModule ()]
+gnomeLibrary :: [LibraryModule]
 gnomeLibrary = pure $ MkLibraryModule "gnome" $ mconcat $ [gioStuff] <> allGTKStuff <> [webKitStuff]

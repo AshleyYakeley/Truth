@@ -367,15 +367,15 @@ interpretConstructor (SLNumber n) =
     case decode safeRationalNumber n of
         Just r ->
             case decode integerSafeRational r of
-                Just i -> qConstValue $ jmToValue i
-                Nothing -> qConstValue $ jmToValue r
-        Nothing -> qConstValue $ jmToValue n
-interpretConstructor (SLString v) = return $ qConstValue $ jmToValue v
+                Just i -> qConst i
+                Nothing -> qConst r
+        Nothing -> qConst n
+interpretConstructor (SLString v) = return $ qConst v
 interpretConstructor (SLNamedConstructor v mvals) = do
     marglist <- for mvals interpretRecordArgList
     interpretValue v marglist
-interpretConstructor SLPair = return $ qConstValue $ jmToValue ((,) :: A -> B -> (A, B))
-interpretConstructor SLUnit = return $ qConstValue $ jmToValue ()
+interpretConstructor SLPair = return $ qConst ((,) :: A -> B -> (A, B))
+interpretConstructor SLUnit = return $ qConst ()
 
 specialFormArg :: QAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe QInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
@@ -416,7 +416,7 @@ interpretSpecialForm name annotations = do
                 (fmap showSA $ toList annotations)
 
 interpretConstant :: SyntaxConstant -> QInterpreter QExpression
-interpretConstant SCIfThenElse = return $ qConstValue $ jmToValue qifthenelse
+interpretConstant SCIfThenElse = return $ qConst qifthenelse
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
 withMatch :: QMatch -> QInterpreter QPartialExpression -> QInterpreter QPartialExpression
@@ -538,10 +538,7 @@ interpretExpression' (SEImply binds sbody) = do
                         t <- interpretType stype
                         qSubsumeExpr t expr
             return (n, expr')
-    let
-        substf (ImplicitVarID vn) = lookup vn substs
-        substf _ = Nothing
-    qSubstitute substf bexpr
+    qImply substs bexpr
 interpretExpression' (SEMatch scases) =
     withAllocateNewVar Nothing $ \varid -> do
         pexprs <- for scases $ interpretCase varid

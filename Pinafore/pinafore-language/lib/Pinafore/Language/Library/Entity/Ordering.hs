@@ -9,7 +9,7 @@ import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 
-orderingEntityLibSection :: LibraryStuff context
+orderingEntityLibSection :: LibraryStuff
 orderingEntityLibSection =
     headingBDS
         "Ordering"
@@ -39,8 +39,8 @@ orderingEntityLibSection =
         , literalSubtypeRelationEntry @Ordering
         , showableSubtypeRelationEntry @Ordering
         , namespaceBDS "Ordering" $
-          ordEntries @_ @Ordering <>
-          monoidEntries @_ @Ordering <>
+          ordEntries @Ordering <>
+          monoidEntries @Ordering <>
           [ addNameInRootBDS $ valBDS "eq" "Equal." $ (==) EQ
           , addNameInRootBDS $ valBDS "ne" "Not equal." $ (/=) EQ
           , addNameInRootBDS $ valBDS "lt" "Less than." $ (==) LT

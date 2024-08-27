@@ -11,11 +11,11 @@ import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 
 literalSubtypeRelationEntry ::
-       forall a context. (HasQType QPolyShim 'Negative a, AsLiteral a)
-    => LibraryStuff context
+       forall a. (HasQType QPolyShim 'Negative a, AsLiteral a)
+    => LibraryStuff
 literalSubtypeRelationEntry = hasSubtypeRelationBDS @a @Literal Verify "" $ functionToShim "toLiteral" toLiteral
 
-literalEntityLibSection :: LibraryStuff context
+literalEntityLibSection :: LibraryStuff
 literalEntityLibSection =
     headingBDS
         "Literal"

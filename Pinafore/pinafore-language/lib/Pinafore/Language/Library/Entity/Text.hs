@@ -17,7 +17,7 @@ import qualified Text.Collate
 utf8Prism :: LangPrism' StrictByteString Text
 utf8Prism = codecToPrism utf8Codec
 
-textEntityLibSection :: LibraryStuff context
+textEntityLibSection :: LibraryStuff
 textEntityLibSection =
     headingBDS
         "Text"
@@ -27,11 +27,11 @@ textEntityLibSection =
         , showableSubtypeRelationEntry @Text
         , namespaceBDS "Text" $
           mconcat
-              [ monoidEntries @_ @Text
+              [ monoidEntries @Text
               , orderEntries
                     (Text.Collate.collate Text.Collate.rootCollator)
                     "Order alphabetical first, then lower case before upper, per Unicode normalisation."
-              , sequenceEntries @_ @Text
+              , sequenceEntries @Text
               , [ valBDS "toUpperCase" "" Data.Text.toUpper
                 , valBDS "toLowerCase" "" Data.Text.toLower
                 , valBDS "utf8" "Encode and decode UTF-8 from a `Blob`." utf8Prism

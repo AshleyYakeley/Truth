@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-openDefault.Store >>= fn store =>
+openLocal.Store of end >>= fn store =>
 let
     rdate = cell.Store @Date !"calendar-test" store;
 in

@@ -71,7 +71,7 @@ tagAttrs e aa (MkHTMLText t) = MkHTMLText $ "<" <> e <> attrText aa <> ">" <> t 
 tag :: Text -> HTMLText -> HTMLText
 tag e = tagAttrs e []
 
-htmlStuff :: LibraryStuff ()
+htmlStuff :: LibraryStuff
 htmlStuff =
     headingBDS "HTML" "" $
     [ typeBDS
@@ -81,7 +81,7 @@ htmlStuff =
           [valPatBDS "Mk" "" MkHTMLText $ PureFunction $ pure $ \(MkHTMLText t) -> (t, ())]
     , hasSubtypeRelationBDS @HTMLText @Text Verify "" $ functionToShim "unHTMLText" unHTMLText
     , namespaceBDS "HTMLText" $
-      monoidEntries @_ @HTMLText <>
+      monoidEntries @HTMLText <>
       [ valBDS "plain" "Plain text HTML." plain
       , valBDS "tag" "Tag HTML to create an element." tag
       , valBDS "tagAttrs" "Tag HTML with attributes to create an element." tagAttrs

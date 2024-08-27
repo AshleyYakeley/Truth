@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 import "gnome" in
-openDefault.Store >>= fn store =>
+openLocal.Store of end >>= fn store =>
 run.GTK $ fn gtk =>
 let
 c = cell.Store @Text !"cell" store;

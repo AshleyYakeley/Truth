@@ -17,18 +17,17 @@ testCheckScript :: FilePath -> String -> TestTree
 testCheckScript fpath name =
     testTree name $
     runTester defaultTester $
-    testerLoadLibrary extraLibrary $
+    testerLoadLibrary appLibrary $
     testerLoad (directoryLoadModule libDir) $ do
-        _ <- testerLiftView $ qInterpretFile fpath
+        _ <- testerInterpretScriptFile fpath []
         return ()
 
 testQuine :: TestName -> FilePath -> FilePath -> TestTree
 testQuine name fpath outpath =
     testHandleVsFile name fpath outpath $ \hout ->
-        runTester defaultTester {tstOutput = hout} $
-        testerLiftView $ do
-            action <- qInterpretFile fpath
-            action
+        runTester defaultTester {tstOutput = hout} $ do
+            action <- testerInterpretScriptFile fpath []
+            testerLiftView action
 
 testScripts :: TestTree
 testScripts =

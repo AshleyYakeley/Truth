@@ -50,7 +50,7 @@ jpegMetadata (MkLangJPEGImage dl) = keyMapToMetadata $ fst $ dlData dl
 jpegImage :: LangJPEGImage -> LangImage
 jpegImage (MkLangJPEGImage dl) = MkLangImage $ mapSome toPixelType $ snd $ dlData dl
 
-jpegStuff :: LibraryStuff ()
+jpegStuff :: LibraryStuff
 jpegStuff =
     headingBDS
         "JPEG"

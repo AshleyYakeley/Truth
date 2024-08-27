@@ -9,6 +9,12 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
 
+qToValue ::
+       forall a. HasQType QPolyShim 'Positive a
+    => a
+    -> QValue
+qToValue = jmToValue
+
 qConstValue :: QValue -> QExpression
 qConstValue = tsConst @QTypeSystem
 
@@ -16,13 +22,19 @@ qConst ::
        forall a. HasQType QPolyShim 'Positive a
     => a
     -> QExpression
-qConst a = qConstValue $ jmToValue a
+qConst a = qConstValue $ qToValue a
 
 qVar :: VarID -> QExpression
 qVar name = tsVar @QTypeSystem name
 
 qSubstitute :: (VarID -> Maybe QExpression) -> QExpression -> QInterpreter QExpression
 qSubstitute = tsSubstitute @QTypeSystem
+
+qImply :: [(ImplicitName, QExpression)] -> QExpression -> QInterpreter QExpression
+qImply substs expr = let
+    substf (ImplicitVarID vn) = lookup vn substs
+    substf _ = Nothing
+    in qSubstitute substf expr
 
 qAbstractExpr :: VarID -> QExpression -> QInterpreter QExpression
 qAbstractExpr = tsAbstract @QTypeSystem

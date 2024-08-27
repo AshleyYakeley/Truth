@@ -20,7 +20,7 @@ import Pinafore.Language.Library.Entity.Time
 import Pinafore.Language.Library.Entity.Unit
 import Pinafore.Language.Library.LibraryModule
 
-entityLibSection :: LibraryStuff context
+entityLibSection :: LibraryStuff
 entityLibSection =
     headingBDS "Literals & Entities" "" $
     [ entityEntityLibSection

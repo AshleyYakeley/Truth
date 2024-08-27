@@ -309,7 +309,7 @@ uiAttachScaleMarks model sw =
             unWModel $ eaMapReadOnlyWhole (fmap $ \(v, (p, mt)) -> (v, p, mt)) $ immutableWholeModelValue mempty model
         return scale
 
-widgetStuff :: LibraryStuff ()
+widgetStuff :: LibraryStuff
 widgetStuff =
     headingBDS
         "Widget"

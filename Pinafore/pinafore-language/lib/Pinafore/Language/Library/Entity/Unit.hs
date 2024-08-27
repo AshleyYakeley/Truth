@@ -9,7 +9,7 @@ import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 
-unitEntityLibSection :: LibraryStuff context
+unitEntityLibSection :: LibraryStuff
 unitEntityLibSection =
     headingBDS
         "Unit"
@@ -17,5 +17,5 @@ unitEntityLibSection =
         [ typeBDS "Unit" "" (MkSomeGroundType unitGroundType) []
         , literalSubtypeRelationEntry @()
         , showableSubtypeRelationEntry @()
-        , namespaceBDS "Unit" $ monoidEntries @_ @() <> eqEntries @_ @()
+        , namespaceBDS "Unit" $ monoidEntries @() <> eqEntries @()
         ]

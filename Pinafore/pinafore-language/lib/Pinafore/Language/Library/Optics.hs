@@ -45,7 +45,7 @@ prismGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily
 instance HasQGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangPrism where
     qGroundType = prismGroundType
 
-opticsLibSection :: LibraryStuff context
+opticsLibSection :: LibraryStuff
 opticsLibSection =
     headingBDS
         "Optics & Properties"

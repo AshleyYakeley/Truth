@@ -13,6 +13,6 @@ webViewWidget :: ImmutableWholeModel HTMLText -> LangWidget
 webViewWidget model =
     MkLangWidget $ \_ -> createWebView $ unWModel $ immutableWholeModelValue mempty $ fmap unHTMLText model
 
-webKitStuff :: LibraryStuff ()
+webKitStuff :: LibraryStuff
 webKitStuff =
     headingBDS "WebKit" "WebKit HTML rendering, etc." $ pure $ namespaceBDS "WebKit" [valBDS "webView" "" webViewWidget]

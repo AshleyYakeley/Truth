@@ -9,6 +9,7 @@ module Pinafore.Language
     , getModule
     , LibraryContext(..)
     , mkLibraryContext
+    , pinaforeLibrary
     , QSpecialVals(..)
     , QError
     , fromParseResult
@@ -18,9 +19,9 @@ module Pinafore.Language
     , Action
     , HasQType
     , parseTopExpression
-    , parseValue
-    , parseValueUnify
-    , parseValueSubsume
+    , parseToValue
+    , parseToValueUnify
+    , parseToValueSubsume
     , interact
     , initialPos
     , TopType(..)
@@ -54,26 +55,29 @@ spvals :: (?library :: LibraryContext) => QSpecialVals
 spvals = let
     specialEvaluate :: forall t. QType 'Positive t -> Text -> IO (Result QError t)
     specialEvaluate t text = do
-        ier <- evaluate $ runPinaforeScoped "<evaluate>" $ parseValueSubsume t text
+        ier <- evaluate $ runPinaforeScoped "<evaluate>" $ parseToValueSubsume t text
         runInterpretResult ier
     in MkQSpecialVals {..}
 
-parseValue :: Text -> QInterpreter QValue
-parseValue text = do
-    rexpr <- parseTopExpression text
-    qEvalExpr rexpr
+parseToValue :: Text -> [(ImplicitName, QValue)] -> QInterpreter QValue
+parseToValue text args = do
+    expr <- parseTopExpression text
+    let argExprs = fmap (fmap qConstValue) args
+    expr' <- qImply argExprs expr
+    qEvalExpr expr'
 
-parseValueUnify ::
+parseToValueUnify ::
        forall t. (HasQType QPolyShim 'Negative t)
     => Text
+    -> [(ImplicitName, QValue)]
     -> QInterpreter t
-parseValueUnify text = do
-    val <- parseValue text
+parseToValueUnify text args = do
+    val <- parseToValue text args
     qUnifyValue val
 
-parseValueSubsume :: forall t. QType 'Positive t -> Text -> QInterpreter t
-parseValueSubsume t text = do
-    val <- parseValue text
+parseToValueSubsume :: forall t. QType 'Positive t -> Text -> QInterpreter t
+parseToValueSubsume t text = do
+    val <- parseToValue text []
     tsSubsumeValue @QTypeSystem t val
 
 interact :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()

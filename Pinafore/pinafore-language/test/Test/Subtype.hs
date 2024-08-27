@@ -173,7 +173,7 @@ testSemiScript1 =
                         qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
                 funcExpression <- qAbstractExpr varid tExpression
                 withScopeBuilder (registerLetBinding "f." emptyDefDoc funcExpression) $ \() -> do
-                    parseValueUnify @(T1 Integer) "f (MkT1 62)"
+                    parseToValueUnify @(T1 Integer) "f (MkT1 62)" []
         liftIO $ assertEqual "" 62 i
 
 testSemiScript2 :: TestTree
@@ -183,9 +183,10 @@ testSemiScript2 =
         MkT1 i <-
             testerLiftInterpreter $
             withScopeBuilder registerT1Stuff $ \() -> do
-                parseValueUnify
+                parseToValueUnify
                     @(T1 Integer)
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => x in ((): T1 Integer) in f (MkT1 17)"
+                    []
         liftIO $ assertEqual "" 17 i
 
 testSemiScript3 :: TestTree
@@ -195,9 +196,10 @@ testSemiScript3 =
         MkT1 i <-
             testerLiftInterpreter $
             withScopeBuilder registerT1Stuff $ \() -> do
-                parseValueUnify
+                parseToValueUnify
                     @(T1 Integer)
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in ((): T1 Integer) in f 17"
+                    []
         liftIO $ assertEqual "" 17 i
 
 testSemiScript4 :: TestTree
@@ -207,9 +209,10 @@ testSemiScript4 =
         i <-
             testerLiftInterpreter $
             withScopeBuilder registerT1Stuff $ \() -> do
-                parseValueUnify
+                parseToValueUnify
                     @Integer
                     "let f = fn x => let subtype Unit <: T1 Integer = fn () => MkT1 x in (fn MkT1 y => y) () in f 17"
+                    []
         liftIO $ assertEqual "" 17 i
 
 testScript :: TestTree

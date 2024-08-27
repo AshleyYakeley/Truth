@@ -27,14 +27,14 @@ tryStop action = actionLiftView $ fmap knowToMaybe $ unliftAction action
 tryStop_ :: Action () -> Action ()
 tryStop_ action = actionLiftView $ fmap (\_ -> ()) $ unliftAction action
 
-actionLibSection :: LibraryStuff context
+actionLibSection :: LibraryStuff
 actionLibSection =
     headingBDS
         "Action"
         ""
         [ typeBDS "Action" "" (MkSomeGroundType actionGroundType) []
         , namespaceBDS "Action" $
-          fmap addNameInRootBDS (monadEntries @_ @Action) <>
+          fmap addNameInRootBDS (monadEntries @Action) <>
           [ addNameInRootBDS $ valBDS "mfix" "The fixed point of an Action." $ mfix @Action @A
           , addNameInRootBDS $ valBDS "fail" "Fail, causing the program to terminate with error." $ qfail
           , addNameInRootBDS $

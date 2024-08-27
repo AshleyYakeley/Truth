@@ -14,14 +14,14 @@ import Pinafore.Language.Var
 revap :: A -> (A -> B) -> B
 revap x f = f x
 
-functionLibSection :: LibraryStuff context
+functionLibSection :: LibraryStuff
 functionLibSection =
     headingBDS
         "Function"
         ""
         [ typeBDS "->" "A pure function." (MkSomeGroundType funcGroundType) []
         , namespaceBDS "Function" $
-          monadEntries @_ @((->) P) <>
+          monadEntries @((->) P) <>
           [ addNameInRootBDS $ valBDS "$" "Apply a function to a value." $ id @(->) @(A -> B)
           , addNameInRootBDS $ valBDS ">-" "Apply a value to a function." revap
           , addNameInRootBDS $ valBDS "id" "The identity function." $ id @(->) @A

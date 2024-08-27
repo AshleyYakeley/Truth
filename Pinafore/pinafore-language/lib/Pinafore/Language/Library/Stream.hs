@@ -114,7 +114,7 @@ lineBufferSource (MkLangSource source) = do
 langListSource :: forall a. [a] -> IO (LangSource a)
 langListSource aa = fmap liftSource $ listSource aa
 
-streamLibSection :: LibraryStuff context
+streamLibSection :: LibraryStuff
 streamLibSection =
     headingBDS
         "Stream"
@@ -164,7 +164,7 @@ streamLibSection =
               ""
               [ typeBDS "Source" "A source is something you can read data from." (MkSomeGroundType sourceGroundType) []
               , namespaceBDS "Source" $
-                functorEntries @_ @LangSource <>
+                functorEntries @LangSource <>
                 [ valBDS "isReady" "Does this source have data available now?" $ langSourceReady @TopType
                 , valBDS "read" "Read data (or end), waiting if necessary." $ langSourceRead @A
                 , valBDS "readAvailable" "Read data (or end), if it is now available." $ langSourceReadAvailable @A

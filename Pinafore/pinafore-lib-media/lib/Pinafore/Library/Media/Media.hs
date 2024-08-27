@@ -116,7 +116,7 @@ mediaSpecificText (MkMediaType pt ps pp) f = let
 mediaText :: Codec Media Text
 mediaText = mediaSpecificText (MkMediaType TextMediaType "plain" []) (\_ -> True)
 
-mediaEntityLibSection :: LibraryStuff context
+mediaEntityLibSection :: LibraryStuff
 mediaEntityLibSection =
     headingBDS
         "Media"

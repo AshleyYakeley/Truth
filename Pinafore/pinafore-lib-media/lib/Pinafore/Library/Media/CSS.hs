@@ -34,7 +34,7 @@ asMedia =
 rule :: Text -> [(Text, Text)] -> CSSText
 rule sels decls = MkCSSText $ sels <> " {" <> concatmap (\(k, v) -> k <> ":" <> v <> ";") decls <> "}\n"
 
-cssStuff :: LibraryStuff ()
+cssStuff :: LibraryStuff
 cssStuff =
     headingBDS "CSS" "" $
     [ typeBDS_
@@ -45,7 +45,7 @@ cssStuff =
           [valPatBDS "Mk" "" MkCSSText $ PureFunction $ pure $ \(MkCSSText t) -> (t, ())]
     , hasSubtypeRelationBDS @CSSText @Text Verify "" $ functionToShim "unCSSText" unCSSText
     , namespaceBDS "CSSText" $
-      monoidEntries @_ @CSSText <>
+      monoidEntries @CSSText <>
       [ valBDS "rule" "A CSS rule." rule
       , valBDS "asText" "" $ codecToPrism asText
       , valBDS "asMedia" "" $ codecToPrism asMedia

@@ -56,14 +56,14 @@ uiDraw model =
         immutableWholeModelValue mempty $
         fmap (\d p -> fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $ unLangDrawing (d p)) model
 
-drawingStuff :: LibraryStuff ()
+drawingStuff :: LibraryStuff
 drawingStuff =
     headingBDS
         "Drawing"
         ""
         [ typeBDS "Handler" "Response to button-clicked events" (MkSomeGroundType handlerGroundType) []
         , namespaceBDS "Handler" $
-          monoidEntries @_ @LangHandler <>
+          monoidEntries @LangHandler <>
           [ valBDS "onClick" "Action to perform on click" langOnClick
           , valBDS "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
           ]

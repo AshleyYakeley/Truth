@@ -12,7 +12,7 @@ import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 
-modelOrderLibSection :: LibraryStuff context
+modelOrderLibSection :: LibraryStuff
 modelOrderLibSection =
     headingBDS
         "ModelOrder"
@@ -20,7 +20,7 @@ modelOrderLibSection =
         [ typeBDS "ModelOrder" "" (MkSomeGroundType modelOrderGroundType) []
         , hasSubtypeRelationBDS Verify "" $ functionToShim "Order to ModelOrder" $ pureLangModelOrder @A
         , namespaceBDS "ModelOrder" $
-          monoidEntries @_ @(LangModelOrder A) <>
+          monoidEntries @(LangModelOrder A) <>
           [ valBDS
                 "map"
                 "Map a function on a `ModelOrder`."

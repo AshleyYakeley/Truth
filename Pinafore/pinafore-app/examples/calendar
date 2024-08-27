@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
-openDefault.Store >>= fn store =>
+openLocal.Store of end >>= fn store =>
 import "gnome" in
 with GTK. in
 let

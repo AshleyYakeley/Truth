@@ -19,7 +19,7 @@ import Pinafore.Library.Media.Image
 import Pinafore.Library.Media.Media
 import Shapes
 
-mediaLibrary :: [LibraryModule ()]
+mediaLibrary :: [LibraryModule]
 mediaLibrary =
     pure $
     MkLibraryModule "media" $

@@ -3,7 +3,6 @@ module Main
     ) where
 
 import Options
-import Pinafore.Libs
 import Pinafore.Main
 import Pinafore.Options
 import Pinafore.Version
@@ -18,8 +17,8 @@ main =
             pinaforedir <- ensurePinaforeDir mdirpath
             sqliteQDumpTable pinaforedir
         RunFileOption ropts fNoRun fscript -> do
-            copts <- getApplicationOptions ropts
+            copts <- getModuleOptions ropts
             runFiles copts fNoRun [fscript]
         RunInteractiveOption ropts -> do
-            copts <- getApplicationOptions ropts
+            copts <- getModuleOptions ropts
             runInteractive copts

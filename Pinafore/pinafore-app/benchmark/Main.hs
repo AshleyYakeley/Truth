@@ -28,12 +28,9 @@ benchHashes =
         ]
 
 getBenchEnv :: IO (() -> LibraryContext)
-getBenchEnv = do
-    (library, _) <-
-        getLifeState $ do
-            (ii, _) <- makeTestInvocationInfo stdout
-            return $ mkLibraryContext ii (libraryLoadModule () extraLibrary)
-    return $ \() -> library
+getBenchEnv = let
+    library = mkLibraryContext $ libraryLoadModule appLibrary
+    in return $ \() -> library
 
 benchScript :: Text -> Benchmark
 benchScript text =
@@ -43,8 +40,9 @@ benchScript text =
                ?library = library
                in bgroup
                       (show $ unpack text)
-                      [ bench "check" $ nfIO $ fromInterpretResult $ qInterpretText "<test>" text >> return ()
-                      , env (fmap const $ fromInterpretResult $ qInterpretText "<test>" text) $ \action ->
+                      [ bench "check" $
+                        nfIO $ fromInterpretResult $ qInterpretScriptText "<test>" text [] [] >> return ()
+                      , env (fmap const $ fromInterpretResult $ qInterpretScriptText "<test>" text [] []) $ \action ->
                             bench "run" $ nfIO (nullViewIO $ action ())
                       ]
 
@@ -102,19 +100,14 @@ benchScripts =
 interpretUpdater :: Text -> IO ()
 interpretUpdater text =
     runTester defaultTester $ do
-        action <- testerLiftView $ qInterpretTextAtType "<test>" text
+        action <- testerLiftView $ qInterpretTextAtType "<test>" text [] []
         (sendUpdate, ref) <- testerLiftAction action
         testerLiftView $
             runEditor (unWModel $ immutableModelToRejectingModel ref) $
             checkUpdateEditor (Known (1 :: Integer)) $ unliftActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
-benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestInvocationInfo stdout) $ \tpc -> let
-        ((pc, _), _) = tpc ()
-        in let
-               ?qcontext = pc
-               in bench (show $ unpack text) $ nfIO $ interpretUpdater text
+benchUpdate text = bench (show $ unpack text) $ nfIO $ interpretUpdater text
 
 benchUpdates :: Benchmark
 benchUpdates =
@@ -132,11 +125,9 @@ benchInterpretFile fpath =
     bench fpath $
     nfIO $ do
         libDir <- getDataDir
-        runTester defaultTester $
-            testerLoadLibrary extraLibrary $
-            testerLoad (directoryLoadModule libDir) $
-            testerLiftView $ do
-                _ <- qInterpretFile fpath
+        runTester defaultTester {tstLibrary = appLibrary} $
+            testerLoad (directoryLoadModule libDir) $ do
+                _ <- testerInterpretScriptFile fpath []
                 return ()
 
 benchFiles :: Benchmark

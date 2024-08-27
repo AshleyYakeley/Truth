@@ -29,7 +29,7 @@ stoppableTaskGroundType =
 instance HasQGroundType '[ CoCCRVariance] LangStoppableTask where
     qGroundType = stoppableTaskGroundType
 
-taskLibSection :: LibraryStuff context
+taskLibSection :: LibraryStuff
 taskLibSection =
     headingBDS "Tasks" "" $
     [ headingBDS "Task" "" $
@@ -39,7 +39,7 @@ taskLibSection =
             (MkSomeGroundType taskGroundType)
             []
       , namespaceBDS "Task" $
-        applicativeEntries @_ @LangTask <>
+        applicativeEntries @LangTask <>
         [ valBDS
               "async"
               "Run an action in another thread, as a one-shot task. It will complete in the current life cycle." $
@@ -56,7 +56,7 @@ taskLibSection =
       [ typeBDS "StoppableTask" "A `Task` that can be stopped." (MkSomeGroundType stoppableTaskGroundType) []
       , hasSubtypeRelationBDS Verify "" $ functionToShim "langStoppableTaskTask" $ langStoppableTaskTask @A
       , namespaceBDS "StoppableTask" $
-        applicativeEntries @_ @LangStoppableTask <>
+        applicativeEntries @LangStoppableTask <>
         [ valBDS "stop" "Stop a stoppable task." langStopTask
         , valBDS
               "async"

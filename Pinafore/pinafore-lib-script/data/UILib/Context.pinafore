@@ -18,7 +18,7 @@ namespace UILib of
             run: (Context -> Action a) -> Action a =
                 fn call =>
                 do
-                    dstore <- openDefault.Store;
+                    dstore <- openLocal.Store of end;
                     undoHandler <- new.UndoHandler;
                     store <- handleStore.UndoHandler undoHandler dstore;
                     run.GTK $ fn gtk => call Mk.Context;

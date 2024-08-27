@@ -123,6 +123,10 @@
             vscodeExtUniqueId = "Pinafore.pinafore";
             version = "${VSCXVERSION}";
           };
+          app = flake.apps."pinafore-app:exe:pinafore".program;
+          minscript = pkgs.writeText "minscript" "pass ()";
+          interpretFileCheck = pkgs.runCommand "interpretFileCheck" {} "${app} -n ${minscript}";
+          runFileCheck = pkgs.runCommand "runFileCheck" {} "${app} ${minscript}";
         in
         flake //
         {
@@ -139,6 +143,11 @@
               pinadoc = flake.apps."pinafore-docgen:exe:pinadoc";
               pinadata = flake.apps."pinafore-app:exe:pinadata";
             };
+          checks = flake.checks //
+          {
+            interpretFile = interpretFileCheck;
+            runFile = runFileCheck;
+          };
           files =
             {
               syntax-data = syntaxDataPackage;

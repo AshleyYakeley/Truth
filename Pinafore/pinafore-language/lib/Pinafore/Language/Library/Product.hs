@@ -9,7 +9,7 @@ import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 
-productLibSection :: LibraryStuff context
+productLibSection :: LibraryStuff
 productLibSection =
     headingBDS
         "Type Product"

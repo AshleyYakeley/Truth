@@ -24,7 +24,7 @@ trimDoc (MkTree n children) = MkTree n $ trimDocChildren children
 
 generateCommonMarkDoc :: Handle -> ModuleOptions -> ModuleName -> IO ()
 generateCommonMarkDoc outh modopts modname = do
-    let ?library = standardLibraryContext nullInvocationInfo modopts
+    let ?library = standardLibraryContext modopts
     docs <- getModuleDocs modname
     let
         runDocTree :: Int -> Int -> Tree DefDoc -> IO ()

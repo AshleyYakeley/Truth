@@ -69,7 +69,7 @@ op4 withVal r v = withVal $ r $ r v
 idText :: Text -> Text
 idText = id
 
-testLib :: LibraryModule context
+testLib :: LibraryModule
 testLib = let
     testSameT :: Text -> Text -> Action ()
     testSameT expected found =
@@ -92,7 +92,7 @@ testLib = let
        , valBDS "op4" "TEST" op4
        ]
 
-_traceLib :: LibraryModule context
+_traceLib :: LibraryModule
 _traceLib = let
     libTracePure :: Text -> A -> A
     --libTracePure t = tracePure $ unpack t
@@ -369,7 +369,7 @@ testUnifier =
               "action"
               [ testTree "1" $
                 runTester defaultTester $ do
-                    smodel <- testerGetDefaultStore
+                    smodel <- testerGetStore
                     action :: QStore -> Action () <-
                         testerLiftInterpreter $ do
                             expr <-
@@ -381,7 +381,7 @@ testUnifier =
                     testerRunAction $ action smodel
               , testTree "2" $
                 runTester defaultTester $ do
-                    smodel <- testerGetDefaultStore
+                    smodel <- testerGetStore
                     rval :: QStore -> LangWholeModel '( Integer, Integer) <-
                         testerLiftInterpreter $ do
                             expr <-

@@ -5,15 +5,13 @@ module Pinafore.Main
     , defaultExecutionOptions
     , RunWithOptions(..)
     , ModuleOptions(..)
-    , InvocationInfo(..)
+    , module Pinafore.Context
     , standardLibraryContext
-    , nullInvocationInfo
-    , StorageModelOptions(..)
-    , standardStorageModel
+    , pinaforeLibrary
     , sqliteQDumpTable
     , qInterpretTextAtType
-    , qInterpretText
-    , qInterpretFile
+    , qInterpretScriptText
+    , qInterpretScriptFile
     , qInteractHandles
     , qInteract
     ) where
@@ -22,6 +20,7 @@ import GHC.Conc
 import Import
 import Pinafore.Context
 import Pinafore.Language
+import Pinafore.Language.Expression
 import Pinafore.Language.Type
 import Pinafore.Storage
 import System.FilePath
@@ -64,41 +63,21 @@ defaultProcessorCountINTERNAL = Nothing
 defaultExecutionOptions :: ExecutionOptions
 defaultExecutionOptions = MkExecutionOptions {eoProcessorCount = defaultProcessorCountINTERNAL}
 
-data StorageModelOptions = MkStorageModelOptions
-    { smoCache :: Bool
-    , smoDataDir :: FilePath
-    }
-
 data ModuleOptions = MkModuleOptions
-    { moExtraLibrary :: [LibraryModule ()]
+    { moLibraryModules :: [LibraryModule]
     , moModuleDirs :: [FilePath]
     }
 
-standardStorageModel :: StorageModelOptions -> View (Model QStorageUpdate)
-standardStorageModel MkStorageModelOptions {..} = do
-    rc <- viewGetResourceContext
-    viewLiftLifecycle $ do
-        sqlReference <- liftIO $ sqliteTableReference $ smoDataDir </> "tables.sqlite3"
-        tableReference1 <- exclusiveResource rc sqlReference
-        tableReference <-
-            if smoCache
-                then do
-                    tableReferenceF <- cacheReference rc 500000 tableReference1 -- half-second delay before writing
-                    return $ tableReferenceF rc
-                else return tableReference1
-        (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
-        return model
-
 standardLoadModule :: ModuleOptions -> LoadModule
 standardLoadModule MkModuleOptions {..} = let
-    extraLibLoadModule :: LoadModule
-    extraLibLoadModule = libraryLoadModule () moExtraLibrary
+    libLoadModule :: LoadModule
+    libLoadModule = libraryLoadModule moLibraryModules
     dirLoadModule :: LoadModule
     dirLoadModule = mconcat $ fmap directoryLoadModule moModuleDirs
-    in extraLibLoadModule <> dirLoadModule
+    in libLoadModule <> dirLoadModule
 
-standardLibraryContext :: InvocationInfo -> ModuleOptions -> LibraryContext
-standardLibraryContext ii modopts = mkLibraryContext ii $ standardLoadModule modopts
+standardLibraryContext :: ModuleOptions -> LibraryContext
+standardLibraryContext modopts = mkLibraryContext $ standardLoadModule modopts
 
 sqliteQDumpTable :: FilePath -> IO ()
 sqliteQDumpTable dirpath = do
@@ -120,18 +99,30 @@ qInterpretTextAtType ::
        forall t m. (?library :: LibraryContext, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QError m)
     => FilePath
     -> Text
+    -> [String]
+    -> [(ImplicitName, QValue)]
     -> m t
-qInterpretTextAtType puipath puitext = fromInterpretResult $ runPinaforeScoped puipath $ parseValueUnify puitext
+qInterpretTextAtType puipath puitext args impargs = let
+    arglist = qToValue @(NonEmpty Text) $ fmap pack $ puipath :| args
+    in fromInterpretResult $
+       runPinaforeScoped puipath $ parseToValueUnify puitext $ (MkImplicitName "arglist", arglist) : impargs
 
-qInterpretText :: (?library :: LibraryContext, MonadIO m, MonadThrow QError m) => FilePath -> Text -> m (View ())
-qInterpretText puipath puitext = do
-    action <- qInterpretTextAtType @(Action TopType) puipath puitext
+qInterpretScriptText ::
+       (?library :: LibraryContext, MonadIO m, MonadThrow QError m)
+    => FilePath
+    -> Text
+    -> [String]
+    -> [(ImplicitName, QValue)]
+    -> m (View ())
+qInterpretScriptText puipath puitext args impargs = do
+    action <- qInterpretTextAtType @(Action TopType) puipath puitext args impargs
     return $ runAction $ fmap (\MkTopType -> ()) $ action
 
-qInterpretFile :: (?library :: LibraryContext) => FilePath -> View (View ())
-qInterpretFile fpath = do
+qInterpretScriptFile ::
+       (?library :: LibraryContext) => FilePath -> [String] -> [(ImplicitName, QValue)] -> View (View ())
+qInterpretScriptFile fpath args impargs = do
     ptext <- liftIO $ readFile fpath
-    qInterpretText fpath $ decodeUtf8 $ toStrict ptext
+    qInterpretScriptText fpath (decodeUtf8 $ toStrict ptext) args impargs
 
 qInteractHandles :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 qInteractHandles inh outh echo = interact inh outh echo

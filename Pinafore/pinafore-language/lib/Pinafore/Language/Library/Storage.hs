@@ -19,6 +19,8 @@ import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
+import Pinafore.Storage
+import System.FilePath
 
 -- QStore
 storeGroundType :: QGroundType '[] QStore
@@ -30,17 +32,30 @@ instance HasQGroundType '[] QStore where
 langStoreToModel :: QStore -> LangModel
 langStoreToModel store = MkLangModel $ MkWModel $ qStoreModel store
 
-openDefaultStore :: (?qcontext :: InvocationInfo) => View QStore
-openDefaultStore = do
-    model <- iiDefaultStorageModel ?qcontext
-    liftIO $ mkQStore model
+openLocalStore :: (Maybe Text, (Bool, ())) -> View QStore
+openLocalStore (mDataDir, (cache, ())) = do
+    rc <- viewGetResourceContext
+    viewLiftLifecycle $ do
+        sqlReference <-
+            liftIO $ do
+                dataDir <- ensurePinaforeDir $ fmap unpack mDataDir
+                sqliteTableReference $ dataDir </> "tables.sqlite3"
+        tableReference1 <- exclusiveResource rc sqlReference
+        tableReference <-
+            if cache
+                then do
+                    tableReferenceF <- cacheReference rc 500000 tableReference1 -- half-second delay before writing
+                    return $ tableReferenceF rc
+                else return tableReference1
+        (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
+        liftIO $ mkQStore model
 
 storeFetch :: StoreAdapter a -> QStore -> Entity -> Action a
 storeFetch adapter store e =
     actionLiftViewKnow $
     viewRunResource (qStoreModel store) $ \aModel -> aModelRead aModel $ QStorageReadEntity adapter e
 
-storageLibSection :: LibraryStuff InvocationInfo
+storageLibSection :: LibraryStuff
 storageLibSection =
     headingBDS "Storage" "" $
     [ typeBDS "Store" "Storage of information." (MkSomeGroundType storeGroundType) []
@@ -171,9 +186,16 @@ storageLibSection =
                     sexpr :: QOpenExpression (QStore -> Entity -> Action a)
                     sexpr = fmap storeFetch saaexpr
                 return $ MkSealedExpression stype sexpr
-          , valBDS
-                "openDefault"
-                "Open the default `Store`. Will be closed at the end of the lifecycle."
-                openDefaultStore
+          , recordValueBDS
+                "openLocal"
+                "Open a `Store` from a directory. Will be closed at the end of the lifecycle."
+                (ConsListType
+                     (ValueDocSignature @(Maybe Text) "path" "Path to directory, or `Nothing` for default." qType $
+                      Just $ pure Nothing) $
+                 ConsListType
+                     (ValueDocSignature @Bool "cache" "Whether to cache commits (default: `True`)." qType $
+                      Just $ pure True)
+                     NilListType)
+                openLocalStore
           ]
     ]

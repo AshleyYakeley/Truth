@@ -36,12 +36,12 @@ asTextPrism ::
 asTextPrism = prism (readMaybe . unpack) showText
 
 plainFormattingDef ::
-       forall t context. (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t, Read t, ShowText t)
+       forall t. (HasQType QPolyShim 'Positive t, HasQType QPolyShim 'Negative t, Read t, ShowText t)
     => Text
-    -> LibraryStuff context
+    -> LibraryStuff
 plainFormattingDef lname = valBDS "asText" ("Represent " <> plainText lname <> " as text.") $ asTextPrism @t
 
-numericEntityLibSection :: LibraryStuff context
+numericEntityLibSection :: LibraryStuff
 numericEntityLibSection =
     headingBDS
         "Numeric"
@@ -51,8 +51,8 @@ numericEntityLibSection =
           , hasSubtypeRelationBDS @Integer @SafeRational Verify "" $
             functionToShim "integerSafeRational" $ encode integerSafeRational
           , namespaceBDS "Integer" $
-            pickNamesInRootBDS ["min", "max"] (ordEntries @_ @Integer) <>
-            pickNamesInRootBDS ["succ", "pred"] (enumEntries @_ @Integer) <>
+            pickNamesInRootBDS ["min", "max"] (ordEntries @Integer) <>
+            pickNamesInRootBDS ["succ", "pred"] (enumEntries @Integer) <>
             [ plainFormattingDef @Integer "an integer"
             , addNameInRootBDS $ valBDS "+" "Add." $ (+) @Integer
             , addNameInRootBDS $ valBDS "-" "Subtract." $ (-) @Integer
@@ -115,7 +115,7 @@ numericEntityLibSection =
           , literalSubtypeRelationEntry @Number
           , showableSubtypeRelationEntry @Number
           , namespaceBDS "Number" $
-            pickNamesInRootBDS ["<", "<=", ">", ">="] (ordEntries @_ @Number) <>
+            pickNamesInRootBDS ["<", "<=", ">", ">="] (ordEntries @Number) <>
             [ plainFormattingDef @Number "a number"
             , valBDS "+" "Add." $ (+) @Number
             , valBDS "-" "Subtract." $ (-) @Number

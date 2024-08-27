@@ -30,7 +30,7 @@ main = do
         roCache = False
         roIncludeDirs = ["test" </> "golden"]
         roDataDir = Nothing
-    mo <- getModelOptions MkRunOptions {..}
+    mo <- getModuleOptions MkRunOptions {..}
     let
         testGolden :: TestTree
         testGolden = testTree "golden" $ fmap (testFile mo) inpaths

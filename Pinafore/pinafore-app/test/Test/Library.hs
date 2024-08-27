@@ -14,12 +14,12 @@ keywords = fmap fst allKeywords
 testLibrary :: TestTree
 testLibrary =
     testTree "library" $ let
-        moExtraLibrary = extraLibrary
+        moLibraryModules = appLibrary
         moModuleDirs = []
         moduleNames :: [ModuleName]
-        moduleNames = builtInModuleName : fmap lmName extraLibrary
+        moduleNames = fmap lmName appLibrary
         in let
-               ?library = standardLibraryContext nullInvocationInfo MkModuleOptions {..}
+               ?library = standardLibraryContext MkModuleOptions {..}
                in for_ moduleNames $ \modname -> do
                       mmod <-
                           fromInterpretResult $

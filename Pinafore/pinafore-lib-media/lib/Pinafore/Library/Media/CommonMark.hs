@@ -43,7 +43,7 @@ toHTML (MkCommonMarkText t) =
         html :: C.Html () <- eitherToResult $ C.commonmark "" t
         return $ MkHTMLText $ toStrict $ C.renderHtml html
 
-commonMarkStuff :: LibraryStuff ()
+commonMarkStuff :: LibraryStuff
 commonMarkStuff =
     headingBDS "CommonMark" "" $
     [ typeBDS
@@ -53,7 +53,7 @@ commonMarkStuff =
           [valPatBDS "Mk" "" MkCommonMarkText $ PureFunction $ pure $ \(MkCommonMarkText t) -> (t, ())]
     , hasSubtypeRelationBDS @CommonMarkText @Text Verify "" $ functionToShim "unCommonMarkText" unCommonMarkText
     , namespaceBDS "CommonMarkText" $
-      monoidEntries @_ @CommonMarkText <>
+      monoidEntries @CommonMarkText <>
       [ valBDS "asText" "" $ codecToPrism asText
       , valBDS "asMedia" "" $ codecToPrism asMedia
       , valBDS "toHTML" "render as HTML" toHTML

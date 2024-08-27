@@ -9,7 +9,7 @@ import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 
-booleanEntityLibSection :: LibraryStuff context
+booleanEntityLibSection :: LibraryStuff
 booleanEntityLibSection =
     headingBDS
         "Boolean"
@@ -33,7 +33,7 @@ booleanEntityLibSection =
         , literalSubtypeRelationEntry @Bool
         , showableSubtypeRelationEntry @Bool
         , namespaceBDS "Boolean" $
-          eqEntries @_ @Bool <>
+          eqEntries @Bool <>
           [ addNameInRootBDS $ valBDS "&&" "Boolean AND." (&&)
           , addNameInRootBDS $ valBDS "||" "Boolean OR." (||)
           , addNameInRootBDS $ valBDS "not" "Boolean NOT." not

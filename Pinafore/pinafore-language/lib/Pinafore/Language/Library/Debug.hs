@@ -28,7 +28,7 @@ longCompute n e = let
     e' = compute e
     in seq e' $ longCompute (pred n) e'
 
-debugLibSection :: LibraryStuff context
+debugLibSection :: LibraryStuff
 debugLibSection =
     headingBDS "Debug" "Functions for debugging." $
     pure $

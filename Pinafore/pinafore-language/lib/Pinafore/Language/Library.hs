@@ -2,7 +2,7 @@ module Pinafore.Language.Library
     ( DefDoc(..)
     , LibraryStuff
     , LibraryModule(..)
-    , builtInLibrary
+    , pinaforeLibrary
     , LoadModule
     , directoryLoadModule
     , textLoadModule
@@ -12,7 +12,6 @@ module Pinafore.Language.Library
     ) where
 
 import Import
-import Pinafore.Context
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Action
 import Pinafore.Language.Library.Debug
@@ -38,8 +37,8 @@ import Pinafore.Language.Library.Sum
 import Pinafore.Language.Library.Task
 import Pinafore.Language.Library.Undo
 
-builtInLibrary :: [LibraryModule InvocationInfo]
-builtInLibrary =
+pinaforeLibrary :: [LibraryModule]
+pinaforeLibrary =
     pure $
     MkLibraryModule builtInModuleName $
     mconcat $
@@ -66,10 +65,7 @@ builtInLibrary =
     , debugLibSection
     ]
 
-builtInLoadModule :: InvocationInfo -> LoadModule
-builtInLoadModule ii = libraryLoadModule ii builtInLibrary
-
-mkLibraryContext :: InvocationInfo -> LoadModule -> LibraryContext
-mkLibraryContext ii lm = let
-    lcLoadModule = builtInLoadModule ii <> lm
+mkLibraryContext :: LoadModule -> LibraryContext
+mkLibraryContext lm = let
+    lcLoadModule = lm
     in MkLibraryContext {..}

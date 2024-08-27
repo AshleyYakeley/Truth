@@ -10,7 +10,7 @@ import Pinafore.Language.Library.Types
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 
-openEntityLibSection :: LibraryStuff context
+openEntityLibSection :: LibraryStuff
 openEntityLibSection =
     headingBDS
         "Open Entities"

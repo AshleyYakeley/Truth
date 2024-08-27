@@ -105,7 +105,7 @@ getFiniteSetModelList order (MkLangFiniteSetModel r (val :: WModel (FiniteSetUpd
             eaMap (liftOrderedListChangeLens (constWholeChangeLens conv) . tupleChangeLens SelectContent) $
             MkWModel colSub
 
-modelLibSection :: LibraryStuff context
+modelLibSection :: LibraryStuff
 modelLibSection =
     headingBDS
         "Models"
@@ -141,7 +141,7 @@ modelLibSection =
               , hasSubtypeRelationBDS Verify "" $
                 functionToShim "WholeModel to Model" $ langWholeModelToModel @BottomType @TopType
               , namespaceBDS "WholeModel" $
-                applicativeEntries @_ @ImmutableWholeModel <>
+                applicativeEntries @ImmutableWholeModel <>
                 [ valBDS
                       "immut"
                       "Convert a whole model to immutable.\n`immut.WholeModel r = {%r}`"

@@ -2,7 +2,7 @@ module Pinafore.Test
     ( moduleScopeEntries
     , checkUpdateEditor
     , QTableSubject(..)
-    , makeTestInvocationInfo
+    , makeTestStorage
     , TesterOptions(..)
     , defaultTester
     , LoadModule(..)
@@ -14,19 +14,24 @@ module Pinafore.Test
     , testerLiftAction
     , testerRunAction
     , testerLiftInterpreter
-    , testerGetDefaultStore
+    , testerInterpret
+    , testerInterpretScriptFile
+    , testerGetStore
     , testerGetTableState
     , libraryLoadModule
     , directoryLoadModule
     , lcLoadModule
-    , qInterpretFile
+    , qInterpretScriptFile
     , qInterpretTextAtType
     ) where
 
 import Import
-import Pinafore.Context
 import Pinafore.Language
+import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Stream
+import Pinafore.Language.Type
 import Pinafore.Main
 import Pinafore.Storage
 
@@ -55,8 +60,8 @@ checkUpdateEditor val push =
             editingTask = mempty
         return MkEditing {..}
 
-makeTestInvocationInfo :: Handle -> Lifecycle (InvocationInfo, View QTableSubject)
-makeTestInvocationInfo hout = do
+makeTestStorage :: Lifecycle (Model QStorageUpdate, View QTableSubject)
+makeTestStorage = do
     tableStateReference :: Reference (WholeEdit QTableSubject) <-
         liftIO $ makeMemoryReference (MkQTableSubject [] [] [] []) $ \_ -> True
     let
@@ -67,22 +72,23 @@ makeTestInvocationInfo hout = do
             rc <- viewGetResourceContext
             liftIO $ getReferenceSubject rc tableStateReference
     (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
-    let ii = nullInvocationInfo {iiStdOut = handleSinkText hout, iiDefaultStorageModel = return model}
-    return (ii, getTableState)
+    return (model, getTableState)
 
 data TesterOptions = MkTesterOptions
     { tstExecutionOptions :: ExecutionOptions
     , tstOutput :: Handle
+    , tstLibrary :: [LibraryModule]
     }
 
 defaultTester :: TesterOptions
 defaultTester = let
     tstExecutionOptions = defaultExecutionOptions
     tstOutput = stdout
+    tstLibrary = pinaforeLibrary
     in MkTesterOptions {..}
 
 data TesterContext = MkTesterContext
-    { tcInvocationInfo :: InvocationInfo
+    { tcStorageModel :: Model QStorageUpdate
     , tcLibrary :: LibraryContext
     , tcGetTableState :: View QTableSubject
     }
@@ -94,32 +100,48 @@ newtype Tester a = MkTester
 instance MonadUnliftIO Tester where
     liftIOWithUnlift call = MkTester $ liftIOWithUnlift $ \unlift -> call $ unlift . unTester
 
+overrideLibraryModule :: ModuleName -> (LibraryStuff -> LibraryStuff) -> [LibraryModule] -> [LibraryModule]
+overrideLibraryModule mname f =
+    fmap $ \case
+        MkLibraryModule n c
+            | n == mname -> MkLibraryModule n $ f c
+        lm -> lm
+
 runTester :: TesterOptions -> Tester () -> IO ()
 runTester MkTesterOptions {..} (MkTester ta) =
     runWithOptions tstExecutionOptions $
     runLifecycle $ do
-        (ii, getTableState) <- makeTestInvocationInfo tstOutput
-        let library = mkLibraryContext ii mempty
-        runView $ runReaderT ta $ MkTesterContext ii library getTableState
+        (tcStorageModel, tcGetTableState) <- makeTestStorage
+        let
+            outputSink :: Sink Action Text
+            outputSink = hoistSink liftIO $ handleSinkText tstOutput
+            testOutputLn :: Text -> Action ()
+            testOutputLn = sinkWriteLn outputSink
+            myLibStuff :: LibraryStuff
+            myLibStuff =
+                namespaceBDS
+                    "Env"
+                    [valBDS "stdout" "OVERRIDDEN" $ MkLangSink outputSink, valBDS "outputLn" "OVERRIDDEN" testOutputLn]
+            tcLibrary =
+                mkLibraryContext $
+                libraryLoadModule $ overrideLibraryModule builtInModuleName (\lib -> lib <> myLibStuff) tstLibrary
+        runView $ runReaderT ta $ MkTesterContext {..}
 
 contextParam :: Param Tester TesterContext
 contextParam = MkParam (MkTester ask) $ \a (MkTester m) -> MkTester $ with a m
 
-testerWithLoadModule :: (InvocationInfo -> LoadModule) -> Tester --> Tester
-testerWithLoadModule iifm =
+testerLoad :: LoadModule -> Tester --> Tester
+testerLoad lm =
     paramLocal contextParam $ \tc ->
         tc
             { tcLibrary =
                   let
                       tcl = tcLibrary tc
-                      in tcl {lcLoadModule = lcLoadModule tcl <> iifm (tcInvocationInfo tc)}
+                      in tcl {lcLoadModule = lcLoadModule tcl <> lm}
             }
 
-testerLoad :: LoadModule -> Tester --> Tester
-testerLoad lm = testerWithLoadModule $ \_ -> lm
-
-testerLoadLibrary :: [LibraryModule ()] -> Tester --> Tester
-testerLoadLibrary lms = testerLoad $ libraryLoadModule () lms
+testerLoadLibrary :: [LibraryModule] -> Tester --> Tester
+testerLoadLibrary lms = testerLoad $ libraryLoadModule lms
 
 testerLiftView :: forall a. ((?library :: LibraryContext) => View a) -> Tester a
 testerLiftView va =
@@ -134,13 +156,15 @@ testerRunAction pa = testerLiftView $ runAction pa
 testerLiftAction :: Action --> Tester
 testerLiftAction pa = testerLiftView $ unliftActionOrFail pa
 
-testerLiftInterpreter :: forall a. ((?library :: LibraryContext) => QInterpreter a) -> Tester a
-testerLiftInterpreter pia = testerLiftView $ fromInterpretResult $ runPinaforeScoped "<input>" pia
+testerLiftInterpreterPath :: forall a. FilePath -> ((?library :: LibraryContext) => QInterpreter a) -> Tester a
+testerLiftInterpreterPath fpath pia = testerLiftView $ fromInterpretResult $ runPinaforeScoped fpath pia
 
-testerGetDefaultStore :: Tester QStore
-testerGetDefaultStore = do
-    ii <- MkTester $ asks tcInvocationInfo
-    model <- testerLiftView $ iiDefaultStorageModel ii
+testerLiftInterpreter :: forall a. ((?library :: LibraryContext) => QInterpreter a) -> Tester a
+testerLiftInterpreter = testerLiftInterpreterPath "<input>"
+
+testerGetStore :: Tester QStore
+testerGetStore = do
+    model <- MkTester $ asks tcStorageModel
     liftIO $ mkQStore model
 
 testerGetTableState :: Tester QTableSubject
@@ -148,3 +172,24 @@ testerGetTableState =
     MkTester $ do
         gts <- asks tcGetTableState
         lift gts
+
+testerGetImplications :: Tester [(ImplicitName, QValue)]
+testerGetImplications = do
+    store <- testerGetStore
+    let
+        getStore :: Action QStore
+        getStore = return store
+    return [(MkImplicitName "openTestStore", qToValue getStore)]
+
+testerInterpret ::
+       forall a. HasQType QPolyShim 'Negative a
+    => Text
+    -> Tester a
+testerInterpret script = do
+    impls <- testerGetImplications
+    testerLiftInterpreter $ parseToValueUnify script impls
+
+testerInterpretScriptFile :: FilePath -> [String] -> Tester (View ())
+testerInterpretScriptFile fpath args = do
+    impls <- testerGetImplications
+    testerLiftView $ qInterpretScriptFile fpath args impls
