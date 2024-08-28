@@ -39,7 +39,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - UILib
       . update
   * Execution
-    - use all available processors
+    - add --imply command-line option
   * VS Code Extension
     - add extension and file icons
   * Install

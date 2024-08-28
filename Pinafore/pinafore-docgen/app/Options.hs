@@ -21,11 +21,8 @@ optIncludes = many $ strOption $ long "include" <> short 'I' <> metavar "PATH"
 optDataPath :: Parser (Maybe FilePath)
 optDataPath = optional $ strOption $ long "data" <> metavar "PATH"
 
-optCache :: Parser Bool
-optCache = pure False
-
 optRunOptions :: Parser RunOptions
-optRunOptions = MkRunOptions <$> optCache <*> optIncludes <*> optDataPath
+optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath
 
 optParser :: Parser Options
 optParser =

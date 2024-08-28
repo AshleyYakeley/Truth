@@ -27,7 +27,6 @@ main :: IO ()
 main = do
     inpaths <- getTestPaths
     let
-        roCache = False
         roIncludeDirs = ["test" </> "golden"]
         roDataDir = Nothing
     mo <- getModuleOptions MkRunOptions {..}

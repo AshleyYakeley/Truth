@@ -10,8 +10,7 @@ import System.Environment.XDG.BaseDir
 import System.FilePath
 
 data RunOptions = MkRunOptions
-    { roCache :: Bool
-    , roIncludeDirs :: [FilePath]
+    { roIncludeDirs :: [FilePath]
     , roDataDir :: Maybe FilePath
     } deriving (Eq, Show)
 

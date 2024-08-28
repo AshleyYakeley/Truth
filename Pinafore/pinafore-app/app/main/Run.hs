@@ -7,14 +7,14 @@ import Changes.Core
 import Pinafore.Main
 import Shapes
 
-runFiles :: Foldable t => ModuleOptions -> Bool -> t (FilePath, [String]) -> IO ()
+runFiles :: Foldable t => ModuleOptions -> Bool -> t (FilePath, [String], [(Text, Text)]) -> IO ()
 runFiles modopts fNoRun scripts =
     runWithOptions defaultExecutionOptions $
     runLifecycle $
     runView $
-    for_ scripts $ \(fpath, args) -> do
+    for_ scripts $ \(fpath, args, implArgs) -> do
         let ?library = standardLibraryContext modopts
-        action <- qInterpretScriptFile fpath args []
+        action <- qInterpretScriptFile fpath args implArgs
         if fNoRun
             then return ()
             else action

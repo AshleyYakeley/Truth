@@ -2,21 +2,34 @@
 
 Usage:
 ```text
-pinafore [--data PATH] [-I|--include PATH] [-n|--no-run] SCRIPTPATH [ARGUMENT...]
+pinafore [--data PATH] [-I|--include PATH] [-n|--no-run] [--imply name=value] SCRIPTPATH [ARGUMENT...]
 ```
 
 Call `pinafore` with a script containing actions to run those actions.
 The script must consist of an expression of a subtype of `Action Any`.
 
-By default, pinafore will store local information in the directory `$XDG_DATA_HOME/pinafore` (or else `$HOME/.local/share/pinafore`).
-Use `--data` to specify a different directory.
-
 To just parse and type-check a file without running it, use `-n` or `--no-run`.
+
+You can pass in implicit variables (of type `Text`) with `--imply`,
+e.g. `--imply myvar=xyz` is equivalent to `imply ?myvar: Text = "xyz" in ...`.
+
+Use `--data` to set the data directory (this also sets `$PINAFOREDIR` within the script).
+If not specified, the data directory will be `$PINAFOREDIR`, or else `$XDG_DATA_HOME/pinafore`, or else `$HOME/.local/share/pinafore`.
+The data directory is used by `openLocal.Store` for the directory to put local storage.
+
+Use `--include` or `-I` to set directories to search for scripts for `import`.
+The directory `lib` within the data directory will also be searched.
 
 If you want to make a script executable from the command line, you can put this at the top, in the usual Unix fashion:
 
 ```text
 #!/usr/bin/pinafore
+```
+
+or (expecially on NixOS)
+
+```text
+#!/usr/bin/env pinafore
 ```
 
 ## Interactive Mode

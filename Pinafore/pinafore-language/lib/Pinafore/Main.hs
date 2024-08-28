@@ -102,10 +102,10 @@ qInterpretTextAtType ::
     -> [String]
     -> [(ImplicitName, QValue)]
     -> m t
-qInterpretTextAtType puipath puitext args impargs = let
+qInterpretTextAtType puipath puitext args impls = let
     arglist = qToValue @(NonEmpty Text) $ fmap pack $ puipath :| args
     in fromInterpretResult $
-       runPinaforeScoped puipath $ parseToValueUnify puitext $ (MkImplicitName "arglist", arglist) : impargs
+       runPinaforeScoped puipath $ parseToValueUnify puitext $ (MkImplicitName "arglist", arglist) : impls
 
 qInterpretScriptText ::
        (?library :: LibraryContext, MonadIO m, MonadThrow QError m)
@@ -114,15 +114,15 @@ qInterpretScriptText ::
     -> [String]
     -> [(ImplicitName, QValue)]
     -> m (View ())
-qInterpretScriptText puipath puitext args impargs = do
-    action <- qInterpretTextAtType @(Action TopType) puipath puitext args impargs
+qInterpretScriptText puipath puitext args impls = do
+    action <- qInterpretTextAtType @(Action TopType) puipath puitext args impls
     return $ runAction $ fmap (\MkTopType -> ()) $ action
 
-qInterpretScriptFile ::
-       (?library :: LibraryContext) => FilePath -> [String] -> [(ImplicitName, QValue)] -> View (View ())
-qInterpretScriptFile fpath args impargs = do
+qInterpretScriptFile :: (?library :: LibraryContext) => FilePath -> [String] -> [(Text, Text)] -> View (View ())
+qInterpretScriptFile fpath args implArgs = do
     ptext <- liftIO $ readFile fpath
-    qInterpretScriptText fpath (decodeUtf8 $ toStrict ptext) args impargs
+    let impls = fmap (\(n, v) -> (MkImplicitName $ MkName n, qToValue v)) implArgs
+    qInterpretScriptText fpath (decodeUtf8 $ toStrict ptext) args impls
 
 qInteractHandles :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 qInteractHandles inh outh echo = interact inh outh echo

@@ -32,7 +32,7 @@ data Options
     | DumpTableOption (Maybe FilePath)
     | RunFileOption RunOptions
                     Bool
-                    (FilePath, [String])
+                    (FilePath, [String], [(Text, Text)])
     | RunInteractiveOption RunOptions
     deriving (Eq, Show)
 
@@ -48,17 +48,26 @@ optScript = remainingParser $ metavar "PATH"
 optNoRun :: Parser Bool
 optNoRun = switch $ long "no-run" <> short 'n'
 
-optCache :: Parser Bool
-optCache = fmap not $ switch $ long "no-cache"
-
 optRunOptions :: Parser RunOptions
-optRunOptions = MkRunOptions <$> optCache <*> optIncludes <*> optDataPath
+optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath
+
+assignReader :: ReadM (Text, Text)
+assignReader =
+    maybeReader $ \s -> let
+        (t, d) = span (\c -> c /= '=') s
+        in case d of
+               '=':v -> Just (pack t, pack v)
+               _ -> Nothing
+
+optImply :: Parser (Text, Text)
+optImply = option assignReader $ long "imply" <> metavar "name=value" <> help "imply `?name = value`"
 
 optParser :: Parser Options
 optParser =
     (flag' ShowVersionOption $ long "version" <> short 'v') <|>
     (((flag' RunInteractiveOption $ long "interactive" <> short 'i') <|>
-      ((\nr script ropts -> RunFileOption ropts nr script) <$> optNoRun <*> optScript)) <*>
+      ((\nr implies (fp, args) ropts -> RunFileOption ropts nr (fp, args, implies)) <$> optNoRun <*> many optImply <*>
+       optScript)) <*>
      optRunOptions) <|>
     ((flag' DumpTableOption $ long "dump-table") <*> optDataPath)
 

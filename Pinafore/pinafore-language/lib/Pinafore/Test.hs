@@ -21,7 +21,6 @@ module Pinafore.Test
     , libraryLoadModule
     , directoryLoadModule
     , lcLoadModule
-    , qInterpretScriptFile
     , qInterpretTextAtType
     ) where
 
@@ -192,4 +191,5 @@ testerInterpret script = do
 testerInterpretScriptFile :: FilePath -> [String] -> Tester (View ())
 testerInterpretScriptFile fpath args = do
     impls <- testerGetImplications
-    testerLiftView $ qInterpretScriptFile fpath args impls
+    ptext <- liftIO $ readFile fpath
+    testerLiftView $ qInterpretScriptText fpath (decodeUtf8 $ toStrict ptext) args impls
