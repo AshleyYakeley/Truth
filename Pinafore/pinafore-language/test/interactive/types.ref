@@ -5,7 +5,7 @@ pinafore> p = point.OpenEntity @P !"p"
 pinafore> q = point.OpenEntity @Q !"q"
 pinafore> with Attribute end
 pinafore> with Store end
-pinafore> store <- openLocal.Store of end
+pinafore> store <- openTemp.Store
 pinafore> pp = property @P @P !"pp" store
 pinafore> qp = property @Q @P !"qp" store
 pinafore> :t pp

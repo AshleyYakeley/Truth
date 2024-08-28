@@ -50,6 +50,16 @@ openLocalStore (mDataDir, (cache, ())) = do
         (model, ()) <- makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
         liftIO $ mkQStore model
 
+openTempStore :: View QStore
+openTempStore = do
+    tableStateReference :: Reference (WholeEdit QTableSubject) <-
+        liftIO $ makeMemoryReference (MkQTableSubject [] [] [] []) $ \_ -> True
+    let
+        tableReference :: Reference QTableEdit
+        tableReference = convertReference tableStateReference
+    (model, ()) <- viewLiftLifecycle $ makeSharedModel $ reflectingPremodel $ qTableEntityReference tableReference
+    liftIO $ mkQStore model
+
 storeFetch :: StoreAdapter a -> QStore -> Entity -> Action a
 storeFetch adapter store e =
     actionLiftViewKnow $
@@ -201,5 +211,6 @@ storageLibSection =
                       Just $ pure True)
                      NilListType)
                 openLocalStore
+          , valBDS "openTemp" "Open a `Store` from memory. Nothing will be persisted." openTempStore
           ]
     ]

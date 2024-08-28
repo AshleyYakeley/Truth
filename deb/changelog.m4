@@ -26,6 +26,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add orStop.Action
       . add div
       . replace openDefault.Store with openLocal.Store record function
+      . add openTemp.Store
       . use `?arglist` implicit variable to pass parameters
     - media
       . add Media type and functions

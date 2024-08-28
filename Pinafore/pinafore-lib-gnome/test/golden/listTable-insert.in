@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 import "gnome" in
 with GTK. in
-openLocal.Store of end >>= fn store =>
+openTemp.Store >>= fn store =>
 run.GTK $ fn gtk =>
 let
 
