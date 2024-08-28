@@ -2,7 +2,7 @@ module Main
     ( main
     ) where
 
-import Paths_pinafore_lib_script
+import qualified Paths_pinafore_lib_script
 import Pinafore.Library.GNOME
 import Pinafore.Library.Media
 import Pinafore.Test
@@ -13,10 +13,10 @@ import System.Directory
 testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $ do
-        libDir <- getDataDir
+        scriptLibDir <- Paths_pinafore_lib_script.getDataDir
         runTester defaultTester $
             testerLoadLibrary (mediaLibrary <> gnomeLibrary) $
-            testerLoad (directoryLoadModule libDir) $ do
+            testerLoad (directoryLoadModule scriptLibDir) $ do
                 mm <- testerLiftInterpreter $ runLoadModule (lcLoadModule ?library) $ fromString name
                 case mm of
                     Just _ -> return ()
@@ -48,8 +48,8 @@ getRelFilePaths dir = do
 
 getTestLibraries :: IO TestTree
 getTestLibraries = do
-    libDir <- getDataDir
-    paths <- getRelFilePaths libDir
+    scriptLibDir <- Paths_pinafore_lib_script.getDataDir
+    paths <- getRelFilePaths scriptLibDir
     return $ testTree "library" $ mapMaybe testRelPath paths
 
 main :: IO ()

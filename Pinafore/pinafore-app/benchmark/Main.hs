@@ -4,7 +4,7 @@ module Main
 
 import Changes.Core
 import Criterion.Main
-import Paths_pinafore_lib_script
+import qualified Paths_pinafore_lib_script
 import Pinafore.Libs
 import Pinafore.Main
 import Pinafore.Test.Internal
@@ -124,9 +124,9 @@ benchInterpretFile :: FilePath -> Benchmark
 benchInterpretFile fpath =
     bench fpath $
     nfIO $ do
-        libDir <- getDataDir
+        scriptLibDir <- Paths_pinafore_lib_script.getDataDir
         runTester defaultTester {tstLibrary = appLibrary} $
-            testerLoad (directoryLoadModule libDir) $ do
+            testerLoad (directoryLoadModule scriptLibDir) $ do
                 _ <- testerInterpretScriptFile fpath []
                 return ()
 

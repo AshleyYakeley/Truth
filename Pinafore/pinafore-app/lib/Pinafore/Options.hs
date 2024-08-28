@@ -3,6 +3,7 @@ module Pinafore.Options
     , getModuleOptions
     ) where
 
+import qualified Paths_pinafore_lib_script
 import Pinafore.Libs
 import Pinafore.Main
 import Shapes
@@ -19,7 +20,9 @@ getModuleOptions MkRunOptions {..} = do
     setPinaforeDir roDataDir
     dataDir <- getPinaforeDir
     sysIncludeDirs <- getSystemDataDirs "pinafore/lib"
+    scriptLibDir <- Paths_pinafore_lib_script.getDataDir
     let
         moLibraryModules = appLibrary
-        moModuleDirs = roIncludeDirs <> [dataDir </> "lib"] <> sysIncludeDirs
+        moModuleDirs = roIncludeDirs <> [dataDir </> "lib", scriptLibDir] <> sysIncludeDirs
+    putStrLn $ show moModuleDirs
     return MkModuleOptions {..}

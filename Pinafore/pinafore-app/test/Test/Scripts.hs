@@ -2,25 +2,22 @@ module Test.Scripts
     ( testScripts
     ) where
 
-import Paths_pinafore_lib_script
+import qualified Paths_pinafore_lib_script
 import Pinafore.Libs
 import Pinafore.Test
 import Shapes
 import Shapes.Test
-import Shapes.Unsafe (unsafePerformIO)
-
-libDir :: FilePath
-libDir = unsafePerformIO getDataDir
 
 -- Just check, don't run
 testCheckScript :: FilePath -> String -> TestTree
 testCheckScript fpath name =
-    testTree name $
-    runTester defaultTester $
-    testerLoadLibrary appLibrary $
-    testerLoad (directoryLoadModule libDir) $ do
-        _ <- testerInterpretScriptFile fpath []
-        return ()
+    testTree name $ do
+        scriptLibDir <- Paths_pinafore_lib_script.getDataDir
+        runTester defaultTester $
+            testerLoadLibrary appLibrary $
+            testerLoad (directoryLoadModule scriptLibDir) $ do
+                _ <- testerInterpretScriptFile fpath []
+                return ()
 
 testQuine :: TestName -> FilePath -> FilePath -> TestTree
 testQuine name fpath outpath =
