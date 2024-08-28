@@ -24,5 +24,4 @@ getModuleOptions MkRunOptions {..} = do
     let
         moLibraryModules = appLibrary
         moModuleDirs = roIncludeDirs <> [dataDir </> "lib", scriptLibDir] <> sysIncludeDirs
-    putStrLn $ show moModuleDirs
     return MkModuleOptions {..}
