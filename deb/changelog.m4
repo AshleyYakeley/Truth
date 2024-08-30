@@ -22,6 +22,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add updatesTask.Model, commitsTask.Model
       . Model get/set functions no longer wait for updates
       . reverse types of subtype Prism <: Attribute
+      . sort out !$$ and !$$%
       . add dynamic.Prism
       . add orStop.Action
       . add div

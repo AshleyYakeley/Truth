@@ -263,6 +263,55 @@ filterFiniteSetChangeLens f =
                  else Nothing)
         id
 
+codecFiniteSetChangeLens ::
+       forall a b. Eq a
+    => Codec a b
+    -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
+codecFiniteSetChangeLens (MkCodec amb ba) = let
+    clRead :: ReadFunction (FiniteSetReader a) (FiniteSetReader b)
+    clRead mra KeyReadKeys = fmap (mapMaybe amb) $ mra KeyReadKeys
+    clRead mra (KeyReadItem b ReadWhole) = fmap (mapMaybe amb) $ mra $ KeyReadItem (ba b) ReadWhole
+    clUpdate ::
+           forall m. MonadIO m
+        => FiniteSetUpdate a
+        -> Readable m (FiniteSetReader a)
+        -> m [FiniteSetUpdate b]
+    clUpdate (KeyUpdateItem _ update) _ = never update
+    clUpdate (KeyUpdateDelete a) _ =
+        return $
+        case amb a of
+            Nothing -> []
+            Just b -> [KeyUpdateDelete b]
+    clUpdate (KeyUpdateInsertReplace a) _ =
+        return $
+        case amb a of
+            Nothing -> []
+            Just b -> [KeyUpdateInsertReplace b]
+    clUpdate KeyUpdateClear _ = return [KeyUpdateClear]
+    clPutEdit ::
+           forall m. MonadIO m
+        => FiniteSetEdit b
+        -> Readable m (FiniteSetReader a)
+        -> m (Maybe [FiniteSetEdit a])
+    clPutEdit (KeyEditItem _ edit) _ = never edit
+    clPutEdit (KeyEditDelete b) _ = return $ Just [KeyEditDelete $ ba b]
+    clPutEdit (KeyEditInsertReplace b) _ = return $ Just [KeyEditInsertReplace $ ba b]
+    clPutEdit KeyEditClear mra = do
+        fsa <- mra KeyReadKeys
+        let
+            ff :: a -> Maybe (FiniteSetEdit a)
+            ff a = do
+                _ <- amb a
+                return $ KeyEditDelete a
+        return $ Just $ mapMaybe ff $ toList fsa
+    clPutEdits ::
+           forall m. MonadIO m
+        => [FiniteSetEdit b]
+        -> Readable m (FiniteSetReader a)
+        -> m (Maybe [FiniteSetEdit a])
+    clPutEdits = clPutEditsFromPutEdit clPutEdit
+    in MkChangeLens {..}
+
 bijectionFiniteSetChangeLens :: forall a b. Bijection a b -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
 bijectionFiniteSetChangeLens (MkIsomorphism ab ba) = let
     mapFiniteSetUpdate :: forall p q. (p -> q) -> FiniteSetUpdate p -> FiniteSetUpdate q

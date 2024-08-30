@@ -1,6 +1,7 @@
 module Pinafore.Language.Value.Prism where
 
 import Import
+import Pinafore.Language.Value.FiniteSetModel
 
 data LangPrism (a :: (Type, Type)) (b :: (Type, Type)) =
     MkLangPrism (Contra a -> Either (Co a) (Co b))
@@ -73,3 +74,13 @@ prismToCodec p = let
     decode = prismDecode p
     encode = prismEncode p
     in MkCodec {..}
+
+langPrismApplySet ::
+       forall ap aq b.
+       LangPrism '( aq, ap) '( b, MeetType Entity b)
+    -> LangFiniteSetModel '( ap, aq)
+    -> LangFiniteSetModel '( MeetType Entity b, b)
+langPrismApplySet (MkLangPrism dec enc) (MkLangFiniteSetModel (MkRange pt qt :: _ t _) model) = let
+    codec :: Codec t (MeetType Entity b)
+    codec = MkCodec (mToMaybe . dec . shimToFunction qt) (shimToFunction pt . enc . meet2)
+    in MkLangFiniteSetModel (MkRange id meet2) $ eaMap (codecFiniteSetChangeLens codec) model

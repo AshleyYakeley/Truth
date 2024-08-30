@@ -99,7 +99,7 @@ let
         let
 
             eventData: FiniteSetModel (EventTime *: Text) =
-            (timeOf.Event **.Property nameOf.Named) !$$ eventSet;
+            (timeOf.Event **.Property nameOf.Named) !$$% eventSet;
 
             eventDataOrder: ModelOrder (EventTime *: Text) =
             map.ModelOrder fst order.EventTime;

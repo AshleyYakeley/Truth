@@ -226,7 +226,7 @@ storageLensAttributeChangeLens plm = let
         -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap)))
         -> m [BiWholeUpdate (Know bp) (Know bq)]
     clUpdate (MkTupleUpdate SelectContext pinupdate) mr = do
-        mf <- unReadM (sfaUpdate (slaFunction plm) pinupdate) $ tupleReadFunction SelectContext mr
+        mf <- runContextReadM mr $ sfaUpdate (slaFunction plm) pinupdate
         case mf of
             Nothing -> return []
             Just armkb -> do

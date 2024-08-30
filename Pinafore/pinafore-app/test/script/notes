@@ -33,7 +33,7 @@ namespace Note of
     new: Action Note = map.Action (coerce @Note) $ new.Item itype.Note;
 end;
 
-notes: FiniteSetModel Note = reverse.Prism dynamic.Prism @Note !$$ items;
+notes: FiniteSetModel Note = dynamic.Prism @Note !$$ items;
 content = property @Note @CommonMarkText !"pinafore-notes.content" ?store;
 
 import "gnome", "UILib" end;

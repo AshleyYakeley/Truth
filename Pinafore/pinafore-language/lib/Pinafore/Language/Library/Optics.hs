@@ -74,7 +74,7 @@ opticsLibSection =
               ]
         , headingBDS
               "Prism"
-              ""
+              "Things shaped like prisms (but not necessarily injective)."
               [ typeBDS
                     "Prism"
                     ""
@@ -94,6 +94,7 @@ opticsLibSection =
                     , addNameInRootBDS $ valBDS "encode" "" $ prismEncode @AP @AQ @BP @BQ
                     , valBDS "id" "Identity prism." $ identityLangPrism @X @Y
                     , valBDS "." "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
+                    , addNameInRootBDS $ valBDS "!$$" "Apply a prism to a set." $ langPrismApplySet @AP @AQ @B
                     , valBDS "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
                     , specialFormBDS
                           "dynamic"
@@ -129,7 +130,7 @@ opticsLibSection =
               ]
         , headingBDS
               "Attribute"
-              "Attributes relate entities."
+              "Attributes relate entities. An attribute lets you look up and change a value for a given subject."
               [ typeBDS "Attribute" "" (MkSomeGroundType attributeGroundType) []
               , namespaceBDS
                     "Attribute"
@@ -144,12 +145,14 @@ opticsLibSection =
                     , addNameInRootBDS $
                       valBDS "!$%" "Apply an attribute to an immutable model.\n`m !$% r = m !$ immut.WholeModel r`" $
                       applyLangAttributeImmutModel @A @BP @BQ
-                    , addNameInRootBDS $ valBDS "!$$" "Apply an attribute to a set." $ applyLangAttributeSet @A @B
+                    , addNameInRootBDS $
+                      valBDS "!$$%" "Apply an attribute to a set, to make an immutable set." $
+                      applyLangAttributeSet @A @B
                     ]
               ]
         , headingBDS
               "Property"
-              "Properties relate entities."
+              "Properties are attributes that also let you obtain the set of subjects that match a value."
               [ typeBDS "Property" "" (MkSomeGroundType propertyGroundType) []
               , hasSubtypeRelationBDS
                     @(LangProperty '( AP, AQ) '( BP, BQ))

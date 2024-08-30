@@ -547,17 +547,17 @@ testEntity =
                     ]
               , tGroup
                     "single.FiniteSetModel"
-                    [ testExpectSuccess "testisunknown (single.FiniteSetModel $ eib !$$ eia !@ {0})"
+                    [ testExpectSuccess "testisunknown (single.FiniteSetModel $ eib !$$% eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eic !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eic !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 2 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testisunknown (single.FiniteSetModel $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eib !$ {e2} := 2 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testisunknown (single.FiniteSetModel $ eib !$$% eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 1 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eib !$ {e2} := 1 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
                     ]
               , tGroup
                     "multiple set member"

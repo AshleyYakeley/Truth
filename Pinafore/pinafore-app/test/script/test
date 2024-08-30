@@ -83,7 +83,7 @@ ui_people : FiniteSetModel Person -> Widget
     end;
 
 peopleByName : WholeModel +(List (Person *: Text))
-= toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (id.Property **.Property name) !$$ people;
+= toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (id.Property **.Property name) !$$% people;
 
 ui_person : WholeModel Person -> Widget
 = fn p => vertical.Widget

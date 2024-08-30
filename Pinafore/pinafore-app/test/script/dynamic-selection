@@ -5,7 +5,7 @@ let
 entitytype Named;
 name = property @Named @Text !"identify.name";
 byName: FiniteSetModel {+a,+Named} -> WholeModel +[(a,Text)];
-byName ref = list.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (identity **.Property name) !$$ ref;
+byName ref = list.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (identity **.Property name) !$$% ref;
 
 entitytype Person;
 testpt = point.OpenEntity @Person !"testpt";

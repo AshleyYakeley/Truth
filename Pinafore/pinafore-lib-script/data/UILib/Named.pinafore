@@ -23,7 +23,7 @@ namespace UILib of
 
             #| Order a set of entities by their names.
             toList: FiniteSetModel {+a,+Named} -> WholeModel +(List (a *: Text)) =
-                fn model => toList.FiniteSetModel (map.ModelOrder fst.Product order) $ (id.Property **.Property nameOf) !$$ model;
+                fn model => toList.FiniteSetModel (map.ModelOrder fst.Product order) $ (id.Property **.Property nameOf) !$$% model;
 
             #| A pane for a widget, where the title is the name of the widget.
             pane: (a -> Widget) -> (a & Named) -> Pane =
