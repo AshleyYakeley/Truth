@@ -2,6 +2,7 @@
 STDERR=/dev/stderr
 ARGS=
 DATA=test/pinafore
+xhost +si:localuser:${USER}
 while [[ ! -z "$1" ]]; do
     case "$1" in
         --build)

@@ -1,0 +1,49 @@
+#!/usr/bin/env pinafore
+let
+
+entitytype Item;
+allItems: FiniteSetModel Item = set.Store @Item !"Items" ?store;
+nameOf: Property Item Text = property @Item @Text !"name" ?store;
+
+import "gnome" end;
+
+nWindow: Item -> Action Window.GTK =
+    fn item => open.Window.GTK ?gtk (400,400) {"Item"} $ label.Widget.GTK. $ nameOf !$ {item};
+
+lWindow: Action Window.GTK =
+    open.Window.GTK ?gtk (400,400) {"List"} $
+    let nameColumn = ({"Name"},fn item => immut.WholeModel $ nameOf !$ {item}) in
+    with Widget.GTK. in
+    exec $
+    do
+        itemList <- getList.FiniteSetModel (on.ModelOrder nameOf order.Text) allItems;
+        pure $ listTable [nameColumn] itemList nWindow Nothing;
+    end;
+
+in
+
+run.GTK $ fn gtk =>
+openTemp.Store >>= fn store =>
+imply
+    ?store = store;
+    ?gtk = gtk;
+in
+do
+    _ <- lWindow;
+    item <- new.OpenEntity @Item;
+    allItems += item;
+    nameOf !$ {item} := "0";
+    async.Task $
+        for_ (range 1 99) $
+        fn i =>
+        do
+            sleep $ Seconds 0.1;
+            nameOf !$ {item} := show i;
+        end;
+    async.Task $ do
+        sleep $ Seconds 1;
+        _ <- nWindow item;
+        pure ();
+        end;
+    pure ();
+end
