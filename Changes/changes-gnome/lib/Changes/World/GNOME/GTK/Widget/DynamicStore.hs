@@ -28,7 +28,7 @@ newtype DynamicStore t = MkDynamicStore
     { getDynamicSeqStore :: SeqStore (DynamicStoreEntry t)
     }
 
-findInStore :: Unique -> SeqStore (DynamicStoreEntry t) -> IO (Maybe (Int32, DynamicStoreEntry t))
+findInStore :: Unique -> SeqStore (DynamicStoreEntry t) -> GView 'Locked (Maybe (Int32, DynamicStoreEntry t))
 findInStore key store = do
     n <- seqStoreGetSize store
     let
@@ -44,14 +44,14 @@ findInStore key store = do
 makeEntry ::
        forall t.
        t
-    -> (((t -> t) -> IO ()) -> GView 'Unlocked ())
+    -> (((t -> t) -> GView 'Locked ()) -> GView 'Unlocked ())
     -> SeqStore (DynamicStoreEntry t)
     -> GView 'Unlocked (DynamicStoreEntry t)
 makeEntry tdef cvt store = do
     dynamicStoreEntryKey <- gvLiftIONoUI newUnique
     initValRef <- gvLiftIONoUI $ newIORef tdef
     let
-        setValStore :: (t -> t) -> IO ()
+        setValStore :: (t -> t) -> GView 'Locked ()
         setValStore tt = do
             mi <- findInStore dynamicStoreEntryKey store
             case mi of
@@ -61,22 +61,23 @@ makeEntry tdef cvt store = do
                         oldt = dynamicStoreEntryValue entry
                         newt = tt oldt
                     seqStoreSetValue store i $ entry {dynamicStoreEntryValue = newt}
-        setValInitial :: (t -> t) -> IO ()
-        setValInitial tt = do
-            t <- readIORef initValRef
-            writeIORef initValRef $ tt t
+        setValInitial :: (t -> t) -> GView 'Locked ()
+        setValInitial tt =
+            liftIO $ do
+                t <- readIORef initValRef
+                writeIORef initValRef $ tt t
     setValRef <- gvLiftIONoUI $ newIORef setValInitial
     let
-        setVal :: (t -> t) -> IO ()
+        setVal :: (t -> t) -> GView 'Locked ()
         setVal tt = do
-            sv <- readIORef setValRef
+            sv <- liftIO $ readIORef setValRef
             sv tt
     ((), dynamicStoreEntryState) <- gvGetState $ cvt setVal
     gvLiftIONoUI $ writeIORef setValRef setValStore
     dynamicStoreEntryValue <- gvLiftIONoUI $ readIORef initValRef
     return MkDynamicStoreEntry {..}
 
-newDynamicStore :: t -> [((t -> t) -> IO ()) -> GView 'Unlocked ()] -> GView 'Unlocked (DynamicStore t)
+newDynamicStore :: t -> [((t -> t) -> GView 'Locked ()) -> GView 'Unlocked ()] -> GView 'Unlocked (DynamicStore t)
 newDynamicStore tdef lcv = do
     rec
         entries <- for lcv $ \cvt -> makeEntry tdef cvt store
@@ -85,7 +86,12 @@ newDynamicStore tdef lcv = do
     return $ MkDynamicStore store
 
 dynamicStoreInsert ::
-       Integral pos => pos -> t -> (((t -> t) -> IO ()) -> GView 'Unlocked ()) -> DynamicStore t -> GView 'Unlocked ()
+       Integral pos
+    => pos
+    -> t
+    -> (((t -> t) -> GView 'Locked ()) -> GView 'Unlocked ())
+    -> DynamicStore t
+    -> GView 'Unlocked ()
 dynamicStoreInsert i tdef cvt (MkDynamicStore store) = do
     entry <- makeEntry tdef cvt store
     gvRunLocked $ seqStoreInsert store (fromIntegral i) entry

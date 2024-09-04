@@ -116,7 +116,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> GView 'Unlocked ( M
         defStoreEntry = MkStoreEntry (error "unset model") (error "unset text") (error "unset props")
         makeStoreEntry ::
                SequencePoint
-            -> ((StoreEntry update rowtext rowprops -> StoreEntry update rowtext rowprops) -> IO ())
+            -> ((StoreEntry update rowtext rowprops -> StoreEntry update rowtext rowprops) -> GView 'Locked ())
             -> GView 'Unlocked ()
         makeStoreEntry i setval = do
             usub <-
@@ -124,10 +124,10 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> GView 'Unlocked ( M
                 viewFloatMapModel
                     (changeLensToFloating (mustExistOneChangeLens "GTK table view") . orderedListItemLens i)
                     tableModel
-            gvLiftIONoUI $ setval $ \entry -> entry {entryModel = usub}
+            gvRunLocked $ setval $ \entry -> entry {entryModel = usub}
             (textModel, propModel) <- colfunc usub
-            gvBindWholeModel textModel Nothing $ \t -> gvLiftIONoUI $ setval $ \entry -> entry {entryRowText = t}
-            gvBindReadOnlyWholeModel propModel $ \t -> gvLiftIONoUI $ setval $ \entry -> entry {entryRowProps = t}
+            gvBindWholeModel textModel Nothing $ \t -> gvRunLocked $ setval $ \entry -> entry {entryRowText = t}
+            gvBindReadOnlyWholeModel propModel $ \t -> gvRunLocked $ setval $ \entry -> entry {entryRowProps = t}
         initTable :: GView 'Unlocked (DynamicStore (StoreEntry update rowtext rowprops), TreeView, Widget)
         initTable = do
             initialRows <-
