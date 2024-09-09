@@ -421,10 +421,10 @@ readDeclarator =
          readThis TokLet
          (do
               readThis TokRec
-              sdecls <- readLines $ readWithDoc $ readWithSourcePos readDirectDeclaration
+              sdecls <- readBraced $ readWithDoc $ readWithSourcePos readDirectDeclaration
               return $ SDLetRec sdecls) <|>
              (do
-                  sdecls <- readLines readDeclaration
+                  sdecls <- readBraced readDeclaration
                   return $ SDLetSeq sdecls)) <|>
     (do
          readThis TokWith
@@ -440,18 +440,17 @@ readExpression1 =
     readWithSourcePos
         (do
              readThis TokFn
-             mmatch <- readMulticase
-             return $ SEAbstracts mmatch) <|>
-    readWithSourcePos
-        (do
-             readThis TokFn
-             multimatches <- readBraced readMulticase
-             case multimatches of
-                 [] -> return $ SEMatch []
-                 MkSome m:_ -> do
-                     let n = syntaxMulticaseLength m
-                     smm <- for multimatches $ getMulticase n
-                     return $ SEMatches $ MkSyntaxMulticaseList n smm) <|>
+             (do
+                  multimatches <- readBraced readMulticase
+                  case multimatches of
+                      [] -> return $ SEMatch []
+                      MkSome m:_ -> do
+                          let n = syntaxMulticaseLength m
+                          smm <- for multimatches $ getMulticase n
+                          return $ SEMatches $ MkSyntaxMulticaseList n smm) <|>
+                 (do
+                      mmatch <- readMulticase
+                      return $ SEAbstracts mmatch)) <|>
     readWithSourcePos
         (do
              readThis TokImply
