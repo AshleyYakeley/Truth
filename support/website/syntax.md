@@ -126,11 +126,12 @@ All declarations, including type declarations, are local to a `let` block.
 
 <expression-1> ::=
     "fn" <match> |
-    "match" <semicolon-separated(<match>)> "end" |
-    "imply" <semicolon-separated(<implication>)> "in" <expression> |
-    <declarator> "in" <expression> |
+    "fn" <braced(<match>)> |
+    "imply" <semicolon-separated(<implication>)><expression> |
+    <declarator> <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
-    "do" <optional("." <namespace>)> <semicolon-separated(<do-line>)> <expression> "end" |
+    "ap" <optional("." <namespace>)> "{" <expression> "}" |
+    "do" <optional("." <namespace>)> <braced(<do-line>)> |
     <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
@@ -140,7 +141,6 @@ All declarations, including type declarations, are local to a `let` block.
 <annotations> ::= <annotation> | <annotations> <annotation>
 
 <expression-3> ::=
-    "{" <optional("." <namespace>)> <expression> "}" |
     "%" <expression-3> |
     <expression-specialform> |
     <expression-var> |
@@ -155,9 +155,9 @@ All declarations, including type declarations, are local to a `let` block.
 
 <implication> ::= implicit-name <optional(":" <type>)> "=" <expression>
 
-<constructor-expression> ::= <constructor> <optional(<of(<name> "=" <expression>)>)>
+<constructor-expression> ::= <constructor> <optional(<braced(<name> "=" <expression>)>)>
 
-<expression-var> ::= qlname <optional(<of(<name> "=" <expression>)>)>
+<expression-var> ::= qlname <optional(<braced(<name> "=" <expression>)>)>
 
 <expression-specialform> ::= qlname <annotations>
 
@@ -173,7 +173,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <semicolon-separated-1(n)> ::= n ";" <semicolon-separated(n)>
 
-<of(n)> ::= "of" <semicolon-separated(n)> "end"
+<braced(n)> ::= "{" <semicolon-separated(n)> "}"
 
 <match> ::= <comma-separated(<pattern>)> "=>" <expression>
 
@@ -192,15 +192,15 @@ All declarations, including type declarations, are local to a `let` block.
     <direct-declaration> |
     "predicatetype" <optional("storable")> <type-const> "<:" <type> "=" <expression> |
     <record-binding> |
-    "namespace" <optional("docsec")> uname <of(<declaration>)> |
-    "docsec" literal-text <of(<declaration>)> |
+    "namespace" <optional("docsec")> uname <braced(<declaration>)> |
+    "docsec" literal-text <braced(<declaration>)> |
     "expose" <name-list> |
-    <declarator> "end" |
-    <declarator> "in" <declaration>
+    <declarator> |
+    <declarator> <declaration>
 
 <direct-declaration> ::=
-    "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <of(<plain-datatype-constructor>)> |
-    "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
+    "datatype" <type-const> <plain-datatype-parameters> <optional("<:" <supertypes>)> <braced(<plain-datatype-constructor>)> |
+    "datatype" "storable" <type-const> <storable-datatype-parameters> <braced(<storable-datatype-constructor>)> |
     "entitytype" <type-const> |
     "subtype" <optional("trustme")> <type> "<:" <type> <optional("=" <expression>)> |
     <binding>
@@ -217,7 +217,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <binding> ::= <pattern-1> "=" <expression>
 
-<record-binding> ::= lname <of(<record-member>)> <optional(":" <type>)> "=" <expression>
+<record-binding> ::= lname <braced(<record-member>)> <optional(":" <type>)> "=" <expression>
 
 <supertypes> = <type> | <supertypes> "&" <type>
 
@@ -232,8 +232,8 @@ All declarations, including type declarations, are local to a `let` block.
 
 <plain-datatype-constructor> ::=
     uname <types> |
-    uname <of(<record-member>)> |
-    "subtype" "datatype" <type-const> <of(<plain-datatype-constructor>)>
+    uname <braced(<record-member>)> |
+    "subtype" "datatype" <type-const> <braced(<plain-datatype-constructor>)>
 
 <record-member> ::= lname ":" <type> <optional("=" <expression>)>
 
@@ -243,7 +243,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <storable-datatype-constructor> ::=
     uname <types> anchor |
-    "subtype" "datatype" "storable" <type-const> <of(<storable-datatype-constructor>)>
+    "subtype" "datatype" "storable" <type-const> <braced(<storable-datatype-constructor>)>
 
 <types> ::=  | <type-3> <types>
 
