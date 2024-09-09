@@ -143,14 +143,19 @@ newtype SyntaxGroundType =
     ConstSyntaxGroundType FullNameRef
     deriving (Eq)
 
-data SyntaxTypeArgument
-    = SimpleSyntaxTypeArgument SyntaxType
-    | RangeSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
+data SyntaxTypeArgument =
+    MkSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
     deriving (Eq)
+
+pattern SimpleSyntaxTypeArgument ::
+        SyntaxType -> SyntaxTypeArgument
+
+pattern SimpleSyntaxTypeArgument t =
+        MkSyntaxTypeArgument [(Nothing, t)]
 
 instance ExprShow SyntaxTypeArgument where
     exprShowPrec (SimpleSyntaxTypeArgument t) = exprShowPrec t
-    exprShowPrec (RangeSyntaxTypeArgument args) = let
+    exprShowPrec (MkSyntaxTypeArgument args) = let
         showArg (mv, t) = exprShow mv <> exprShow t
         in namedTextPrec 0 $ "{" <> ointercalate "," (fmap showArg args) <> "}"
 

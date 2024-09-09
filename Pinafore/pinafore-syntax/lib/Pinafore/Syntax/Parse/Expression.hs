@@ -119,7 +119,7 @@ readNegativeParameter = do
 readTypeParameter :: Parser SyntaxTypeParameter
 readTypeParameter =
     fmap PositiveSyntaxTypeParameter readPositiveParameter <|> fmap NegativeSyntaxTypeParameter readNegativeParameter <|>
-    (readBracketed TokOpenBrace TokCloseBrace $
+    (readParen $
      (do
           varp <- readNegativeParameter
           readThis TokComma

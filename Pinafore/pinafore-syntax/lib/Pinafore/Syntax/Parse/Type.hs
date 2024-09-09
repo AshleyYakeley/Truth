@@ -87,13 +87,13 @@ readTypeConstant = do
 readTypeArgument :: Parser SyntaxType -> Parser SyntaxTypeArgument
 readTypeArgument r =
     asum
-        [ fmap SimpleSyntaxTypeArgument r
-        , readBracketed TokOpenBrace TokCloseBrace $ do
+        [ readParen $ do
               items <- readCommaM readTypeRangeItem
-              return $ RangeSyntaxTypeArgument items
+              return $ MkSyntaxTypeArgument items
         , do
               (sv, t) <- readSignedType readType3
-              return $ RangeSyntaxTypeArgument [(Just sv, t)]
+              return $ MkSyntaxTypeArgument [(Just sv, t)]
+        , fmap SimpleSyntaxTypeArgument r
         ]
 
 readType2 :: Parser SyntaxType

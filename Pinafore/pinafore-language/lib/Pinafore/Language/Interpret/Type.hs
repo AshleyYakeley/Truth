@@ -121,8 +121,7 @@ interpretTypeArgument ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxTypeArgument
     -> QInterpreter (PinaforeRangeType3 mpolarity)
-interpretTypeArgument (SimpleSyntaxTypeArgument st) = interpretTypeRangeFromType st
-interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
+interpretTypeArgument (MkSyntaxTypeArgument ss) = do
     tt <- for ss interpretTypeRangeItem
     return $ mconcat tt
 
@@ -160,7 +159,7 @@ interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument 
             aargs <- interpretArgs sgt dv stt
             case aargs of
                 MkSome args -> return $ MkSome $ ConsCCRArguments (CoCCRPolarArgument t) args
-interpretArgs sgt (ConsListType CoCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
+interpretArgs sgt (ConsListType CoCCRVarianceType _) (MkSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
     withInvertPolarity @polarity $ do
@@ -170,7 +169,7 @@ interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgum
                 aargs <- interpretArgs sgt dv stt
                 case aargs of
                     MkSome args -> return $ MkSome $ ConsCCRArguments (ContraCCRPolarArgument t) args
-interpretArgs sgt (ConsListType ContraCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
+interpretArgs sgt (ConsListType ContraCCRVarianceType _) (MkSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
     at <- isMPolarity @polarity $ interpretTypeArgument @('Just polarity) st

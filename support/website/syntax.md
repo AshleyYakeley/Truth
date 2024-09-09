@@ -87,7 +87,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-argument> ::=
     <type-3> |
-    "{" <type-range-items> "}" |
+    "(" <type-range-items> ")" |
     "-" <type-3> |
     "+" <type-3>
 
@@ -226,8 +226,8 @@ All declarations, including type declarations, are local to a `let` block.
 <plain-datatype-parameter> ::=
     "+" lname |
     "-" lname |
-    "{" "+" lname "," "-" lname "}" |
-    "{" "-" lname "," "+" lname "}" |
+    "(" "+" lname "," "-" lname ")" |
+    "(" "-" lname "," "+" lname ")" |
     lname
 
 <plain-datatype-constructor> ::=
