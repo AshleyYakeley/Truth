@@ -79,13 +79,13 @@ readPlainDataTypeConstructor =
          readThis TokSubtype
          readThis TokDataType
          name <- readTypeNewName
-         constructors <- readWithNamespaceName (fnName name) $ readOf $ readWithDoc readPlainDataTypeConstructor
+         constructors <- readWithNamespaceName (fnName name) $ readBraced $ readWithDoc readPlainDataTypeConstructor
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
          consName <- readNewUName
          fmap (ConstructorSyntaxConstructorOrSubtype consName) $
              (do
-                  sigs <- readOf readSignature
+                  sigs <- readBraced readSignature
                   return $ RecordSyntaxConstructor sigs) <|>
              (do
                   mtypes <- many readType3
@@ -98,7 +98,7 @@ readStorableDataTypeConstructor =
          readThis TokDataType
          readThis TokStorable
          name <- readTypeNewName
-         constructors <- readWithNamespaceName (fnName name) $ readOf $ readWithDoc readStorableDataTypeConstructor
+         constructors <- readWithNamespaceName (fnName name) $ readBraced $ readWithDoc readStorableDataTypeConstructor
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
          consName <- readNewUName
@@ -148,11 +148,11 @@ readDataTypeDeclaration = do
                 case msupertype of
                     Nothing -> return ()
                     Just _ -> throw $ DeclareDatatypeStorableSupertypeError name
-                constructors <- readOf $ readWithDoc readStorableDataTypeConstructor
+                constructors <- readBraced $ readWithDoc readStorableDataTypeConstructor
                 return $
                     TypeSyntaxDeclaration name $ StorableDatatypeSyntaxRecursiveTypeDeclaration parameters constructors
             Nothing -> do
-                constructors <- readOf $ readWithDoc readPlainDataTypeConstructor
+                constructors <- readBraced $ readWithDoc readPlainDataTypeConstructor
                 return $
                     TypeSyntaxDeclaration name $
                     PlainDatatypeSyntaxRecursiveTypeDeclaration parameters msupertype constructors
@@ -172,7 +172,7 @@ readRecordDeclaration =
     try $ do
         ns <- readAskNamespace
         name <- readLName
-        sigs <- readOf readSignature
+        sigs <- readBraced readSignature
         mtype <-
             optional $ do
                 readThis TokTypeJudge
@@ -203,14 +203,14 @@ readNamespaceDecl = do
     curns <- readAskNamespace
     name <- readUName
     let ns = namespaceAppend [name] curns
-    decls <- readWithNamespace ns $ readOf readDeclaration
+    decls <- readWithNamespace ns $ readBraced readDeclaration
     return $ NamespaceSyntaxDeclaration (isJust msect) ns decls
 
 readDocSectionDecl :: Parser SyntaxDeclaration'
 readDocSectionDecl = do
     readThis TokDocSec
     heading <- readThis TokString
-    decls <- readOf readDeclaration
+    decls <- readBraced readDeclaration
     return $ DocSectionSyntaxDeclaration heading decls
 
 readNameRefItem :: Parser SyntaxNameRefItem
@@ -227,13 +227,10 @@ readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration re
 readDeclaratorDeclaration :: Parser SyntaxDeclaration'
 readDeclaratorDeclaration = do
     sdeclarator <- readDeclarator
-    (do
-         readThis TokEnd
-         return $ DeclaratorSyntaxDeclaration sdeclarator) <|>
-        (do
-             readThis TokIn
-             sdecl <- readDeclaration
-             return $ DeclaratorInSyntaxDeclaration sdeclarator sdecl)
+    (try $ do
+         sdecl <- readDeclaration
+         return $ DeclaratorInSyntaxDeclaration sdeclarator sdecl) <|>
+        (return $ DeclaratorSyntaxDeclaration sdeclarator)
 
 readExposeDeclaration :: Parser SyntaxDeclaration'
 readExposeDeclaration = do
@@ -447,9 +444,8 @@ readExpression1 =
              return $ SEAbstracts mmatch) <|>
     readWithSourcePos
         (do
-             readThis TokMatch
-             multimatches <- readLines readMulticase
-             readThis TokEnd
+             readThis TokFn
+             multimatches <- readBraced readMulticase
              case multimatches of
                  [] -> return $ SEMatch []
                  MkSome m:_ -> do
@@ -460,7 +456,7 @@ readExpression1 =
         (do
              readThis TokImply
              sdecls <-
-                 readLines $ do
+                 readBraced $ do
                      name <- readThis TokImplicitName
                      mtype <-
                          optional $ do
@@ -469,13 +465,11 @@ readExpression1 =
                      readThis TokAssign
                      defn <- readExpression
                      return (name, mtype, defn)
-             readThis TokIn
              sbody <- readExpression
              return $ SEImply sdecls sbody) <|>
     readWithSourcePos
         (do
              sdecl <- readDeclarator
-             readThis TokIn
              sbody <- readExpression
              return $ SEDecl sdecl sbody) <|>
     readWithSourcePos
@@ -484,8 +478,7 @@ readExpression1 =
              mns <- optional readNamespaceQualifier
              let ns = fromMaybe "Action." mns
              withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>", ">>="] $ do
-                 dl <- readLines readDoLine
-                 readThis TokEnd
+                 dl <- readBraced readDoLine
                  case dl of
                      [] -> fail "empty 'do' block"
                      l:ll -> doLines l ll) <|>
@@ -546,10 +539,12 @@ readExpression3 =
              c <- readConstructor $ Just readExpression
              return $ SEConst $ SCConstructor c) <|>
     readWithSourcePos
-        (readBracketed TokOpenBrace TokCloseBrace $ do
+        (do
+             readThis TokAp
              mns <- optional readNamespaceQualifier
              let ns = fromMaybe "WholeModel." mns
-             withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
+             readBracketed TokOpenBrace TokCloseBrace $
+                 withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
                  readWithSourcePos $ do
                      rexpr <- readExpression
                      return $ SEAppQuote rexpr) <|>

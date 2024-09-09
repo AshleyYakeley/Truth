@@ -27,7 +27,7 @@ module Pinafore.Syntax.Parse.Basic
     , readModuleName
     , readLines1
     , readLines
-    , readOf
+    , readBraced
     , readWithDoc
     , chainModify
     ) where
@@ -191,11 +191,11 @@ readLines1 p = do
 readLines :: Parser a -> Parser [a]
 readLines p = (fmap toList $ readLines1 p) <|> (return [])
 
-readOf :: Parser a -> Parser [a]
-readOf p = do
-    readThis TokOf
+readBraced :: Parser a -> Parser [a]
+readBraced p = do
+    readThis TokOpenBrace
     aa <- readLines p
-    readThis TokEnd
+    readThis TokCloseBrace
     return aa
 
 readWithDoc :: Parser t -> Parser (SyntaxWithDoc t)

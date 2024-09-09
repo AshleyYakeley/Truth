@@ -12,7 +12,7 @@ import Shapes hiding (try)
 
 readRecordValue :: Parser SyntaxExpression -> Parser [(Name, SyntaxExpression)]
 readRecordValue p =
-    readOf $ do
+    readBraced $ do
         n <- readLName
         readThis TokAssign
         v <- p

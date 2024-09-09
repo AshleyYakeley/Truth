@@ -86,10 +86,8 @@ data Token t where
     TokRec :: Token ()
     TokLet :: Token ()
     TokImply :: Token ()
-    TokIn :: Token ()
+    TokAp :: Token ()
     TokDo :: Token ()
-    TokOf :: Token ()
-    TokEnd :: Token ()
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
@@ -112,7 +110,6 @@ data Token t where
     TokImplicitName :: Token ImplicitName
     TokUnderscore :: Token ()
     TokFn :: Token ()
-    TokMatch :: Token ()
     TokAssign :: Token ()
     TokMap :: Token ()
     TokBackMap :: Token ()
@@ -151,10 +148,8 @@ instance TestEquality Token where
     testEquality TokRec TokRec = Just Refl
     testEquality TokLet TokLet = Just Refl
     testEquality TokImply TokImply = Just Refl
-    testEquality TokIn TokIn = Just Refl
+    testEquality TokAp TokAp = Just Refl
     testEquality TokDo TokDo = Just Refl
-    testEquality TokOf TokOf = Just Refl
-    testEquality TokEnd TokEnd = Just Refl
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
@@ -177,7 +172,6 @@ instance TestEquality Token where
     testEquality TokImplicitName TokImplicitName = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
     testEquality TokFn TokFn = Just Refl
-    testEquality TokMatch TokMatch = Just Refl
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
     testEquality TokBackMap TokBackMap = Just Refl
@@ -208,10 +202,8 @@ instance Show (Token t) where
     show TokRec = show ("rec" :: String)
     show TokLet = show ("let" :: String)
     show TokImply = show ("imply" :: String)
-    show TokIn = show ("in" :: String)
+    show TokAp = show ("ap" :: String)
     show TokDo = show ("do" :: String)
-    show TokOf = show ("of" :: String)
-    show TokEnd = show ("end" :: String)
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
@@ -234,7 +226,6 @@ instance Show (Token t) where
     show TokImplicitName = "implicit name"
     show TokUnderscore = show ("_" :: String)
     show TokFn = show ("fn" :: String)
-    show TokMatch = show ("match" :: String)
     show TokAssign = show ("=" :: String)
     show TokMap = show ("=>" :: String)
     show TokBackMap = show ("<-" :: String)
@@ -340,14 +331,11 @@ readName = do
 checkKeyword :: Text -> Maybe (SomeOf Token)
 checkKeyword "_" = return $ MkSomeOf TokUnderscore ()
 checkKeyword "fn" = return $ MkSomeOf TokFn ()
-checkKeyword "match" = return $ MkSomeOf TokMatch ()
 checkKeyword "rec" = return $ MkSomeOf TokRec ()
 checkKeyword "let" = return $ MkSomeOf TokLet ()
 checkKeyword "imply" = return $ MkSomeOf TokImply ()
-checkKeyword "in" = return $ MkSomeOf TokIn ()
+checkKeyword "ap" = return $ MkSomeOf TokAp ()
 checkKeyword "do" = return $ MkSomeOf TokDo ()
-checkKeyword "of" = return $ MkSomeOf TokOf ()
-checkKeyword "end" = return $ MkSomeOf TokEnd ()
 checkKeyword "if" = return $ MkSomeOf TokIf ()
 checkKeyword "then" = return $ MkSomeOf TokThen ()
 checkKeyword "else" = return $ MkSomeOf TokElse ()
@@ -372,14 +360,11 @@ checkKeyword _ = Nothing
 allKeywords :: [(Text, Text)]
 allKeywords =
     [ ("fn", "keyword.control.pinafore")
-    , ("match", "keyword.control.pinafore")
     , ("rec", "keyword.other.pinafore")
     , ("let", "keyword.other.pinafore")
     , ("imply", "keyword.other.pinafore")
-    , ("in", "keyword.other.pinafore")
+    , ("ap", "keyword.control.pinafore")
     , ("do", "keyword.control.pinafore")
-    , ("of", "keyword.other.pinafore")
-    , ("end", "keyword.other.pinafore")
     , ("if", "keyword.control.pinafore")
     , ("then", "keyword.control.pinafore")
     , ("else", "keyword.control.pinafore")
