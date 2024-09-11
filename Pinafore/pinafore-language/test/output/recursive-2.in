@@ -1,12 +1,11 @@
 #!/usr/bin/pinafore
-let
+let {
+  recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b =
+    fn s, a, b => if a <= 0 then Just b else s (pred a) b;
 
-recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b
-= fn s, a, b => if a <= 0 then Just b else s (pred a) b;
-
-f: Integer -> Integer -> Maybe Integer
-= fix recf;
-in outputLn.Env $ show $ f 2 5 >- match
+  f: Integer -> Integer -> Maybe Integer =
+    fix recf;
+} outputLn.Env $ show $ f 2 5 >- fn {
     Just b => b;
     Nothing => 0;
-    end
+}

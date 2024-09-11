@@ -1,14 +1,14 @@
 #!/usr/bin/pinafore
-do
-    outputLn.Env "A";
+do {
+  outputLn.Env "A";
+  onClose $
+  do {
+    outputLn.Env "B";
     onClose $
-    do
-        outputLn.Env "B";
-        onClose $
-        do
-            outputLn.Env "C";
-        end;
-        outputLn.Env "D";
-    end;
-    outputLn.Env "E";
-end
+    do {
+      outputLn.Env "C";
+    };
+    outputLn.Env "D";
+  };
+  outputLn.Env "E";
+}

@@ -1,9 +1,8 @@
 #!/usr/bin/pinafore
-let
+let {
+  rrange =
+    fn s, a, b => if a > b then [] else a :: s (succ a) b;
 
-rrange
-= fn s, a, b => if a > b then [] else a :: s (succ a) b;
-
-range: Integer -> Number -> List Integer
-= fix rrange;
-in for_ (range 1 5) $ fn n => outputLn.Env (show n)
+  range: Integer -> Number -> List Integer =
+    fix rrange;
+} for_ (range 1 5) $ fn n => outputLn.Env (show n)

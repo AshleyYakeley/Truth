@@ -3,16 +3,16 @@ entitytype Q
 subtype P <: Q
 p = point.OpenEntity @P !"p"
 q = point.OpenEntity @Q !"q"
-with Attribute end
-with Store end
+with Attribute
+with Store
 store <- openTemp.Store
 pp = property @P @P !"pp" store
 qp = property @Q @P !"qp" store
 :t pp
-:t pp !$ {p}
-:t pp !$ {q}
-:t qp !$ {p}
-:t qp !$ {q}
+:t pp !$ ap{p}
+:t pp !$ ap{q}
+:t qp !$ ap{p}
+:t qp !$ ap{q}
 :t fn x => x <> x
 f = fn x => x <> x
 :t f

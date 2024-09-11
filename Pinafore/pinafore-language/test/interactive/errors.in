@@ -1,6 +1,5 @@
 )
 (
-in
 a
 a
 p = q
@@ -12,8 +11,8 @@ y = point.OpenEntity @Y !"y"
 35
 x +.Integer 1
 x +.Integer y
-datatype D1 +a of MkD1 b end
-datatype D2 +a +a of MkD2 end
-datatype D3 +a -a of MkD3 end
+datatype D1 +a {MkD1 b}
+datatype D2 +a +a {MkD2}
+datatype D3 +a -a {MkD3}
 ?param
 ?pp + 2

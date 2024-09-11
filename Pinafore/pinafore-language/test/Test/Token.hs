@@ -37,9 +37,9 @@ testToken =
         , testTokens "..B." "infix(..B.)"
         , testTokens "{.N x}" "\"{\" infix(.) unames(N) lnames(x) \"}\""
         , testTokens "{ .N x}" "\"{\" infix(.) unames(N) lnames(x) \"}\""
-        , testTokens "do.N x end" "\"do\" infix(.) unames(N) lnames(x) \"end\""
-        , testTokens "do .N x end" "\"do\" infix(.) unames(N) lnames(x) \"end\""
+        , testTokens "do.N { x }" "\"do\" infix(.) unames(N) \"{\" lnames(x) \"}\""
+        , testTokens "do .N { x }" "\"do\" infix(.) unames(N) \"{\" lnames(x) \"}\""
         , testTokens
-              "let x : rec a, Maybe a = Nothing in x"
-              "\"let\" lnames(x) \":\" \"rec\" lnames(a) \",\" unames(Maybe) lnames(a) \"=\" unames(Nothing) \"in\" lnames(x)"
+              "let { x : rec a, Maybe a = Nothing } x"
+              "\"let\" \"{\" lnames(x) \":\" \"rec\" lnames(a) \",\" unames(Maybe) lnames(a) \"=\" unames(Nothing) \"}\" lnames(x)"
         ]

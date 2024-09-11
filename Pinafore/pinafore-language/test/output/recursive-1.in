@@ -1,9 +1,9 @@
 #!/usr/bin/pinafore
-let
+let {
+  recf: (Integer -> b -> b) -> Integer -> b -> b =
+    fn s, a, b => if a <= 0 then b else s (pred a) b;
 
-recf: (Integer -> b -> b) -> Integer -> b -> b
-= fn s, a, b => if a <= 0 then b else s (pred a) b;
-
-f: Integer -> Integer -> Integer
-= fix recf;
-in outputLn.Env $ show $ f 2 5
+  f: Integer -> Integer -> Integer =
+    fix recf;
+}
+outputLn.Env $ show $ f 2 5

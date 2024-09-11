@@ -1,101 +1,96 @@
 #!/usr/bin/pinafore
 
-let
+let {
+  let rec {
+    datatype Value {
+      Lit Literal;
+      Func (Value -> Value);
+      Err Text;
+    };
+  };
 
-    let rec
-        datatype Value of
-            Lit Literal;
-            Func (Value -> Value);
-            Err Text;
-        end;
-    end;
+  namespace Value {
+    subtype Value <: Showable =
+      fn {
+        Lit l => l >-
+          fn {
+            v :? Text => v;
+            v :? Number => v;
+            _ => Mk.Showable "<literal>";
+          };
+        Func _ => Mk.Showable "<function>";
+        Err e => Mk.Showable $ "<#error " <>.Text e <>.Text ">";
+      };
 
-    namespace Value of
+    apply: Value -> Value -> Value =
+      fn {
+        Func f => f;
+        Err e => fn _ => Err e;
+        v => fn _ => Err $ show v <>.Text " not a function";
+      };
+  };
 
-        subtype Value <: Showable =
-            match
-                Lit l => l >-
-                    match
-                        v :? Text => v;
-                        v :? Number => v;
-                        _ => Mk.Showable "<literal>";
-                    end;
-                Func _ => Mk.Showable "<function>";
-                Err e => Mk.Showable $ "<#error " <>.Text e <>.Text ">";
-            end;
+  let rec {
+    datatype Expr +a {
+      Closed a;
+      Open Text (Expr (Value -> a));
+    };
+  };
 
-        apply: Value -> Value -> Value =
-            match
-                Func f => f;
-                Err e => fn _ => Err e;
-                v => fn _ => Err $ show v <>.Text " not a function";
-            end;
-    end;
+  namespace Expr {
+    var: Text -> Expr Value = fn name => Open name $ Closed id;
 
-    let rec
-        datatype Expr +a of
-            Closed a;
-            Open Text (Expr (Value -> a));
-        end;
-    end;
+    let rec {
+      map: (a -> b) -> Expr a -> Expr b =
+        fn f => fn {
+          Closed a => Closed $ f a;
+          Open name expr => Open name $ map (fn va,v => f $ va v) expr;
+        };
 
-    namespace Expr of
-        var: Text -> Expr Value = fn name => Open name $ Closed id;
+      pure: a -> Expr a = Closed;
 
-        let rec
-            map: (a -> b) -> Expr a -> Expr b =
-                fn f =>
-                    match
-                        Closed a => Closed $ f a;
-                        Open name expr => Open name $ map (fn va,v => f $ va v) expr;
-                    end;
+      apply: Expr (a -> b) -> Expr a -> Expr b = fn eab,ea =>
+        eab >- fn {
+          Closed ab => map ab ea;
+          Open name evab => Open name $ apply (map (fn vab,a,v => vab v a) evab) ea
+        };
 
-            pure: a -> Expr a = Closed;
+      liftA2: (a -> b -> c) -> Expr a -> Expr b -> Expr c = fn f,expr => apply $ map f expr;
 
-            ap: Expr (a -> b) -> Expr a -> Expr b = fn eab,ea =>
-                eab >- match
-                    Closed ab => map ab ea;
-                    Open name evab => Open name $ ap (map (fn vab,a,v => vab v a) evab) ea
-                end;
+      (**): Expr a -> Expr b -> Expr (a *: b) = liftA2 $ fn a,b => (a,b);
 
-            liftA2: (a -> b -> c) -> Expr a -> Expr b -> Expr c = fn f,expr => ap $ map f expr;
+      (>>): Expr a -> Expr b -> Expr b = liftA2 $ fn _,b => b;
 
-            (**): Expr a -> Expr b -> Expr (a *: b) = liftA2 $ fn a,b => (a,b);
+      abstract: Text -> Expr a -> Expr (Value -> a) =
+        fn n => fn {
+          Closed a => Closed $ fn _ => a;
+          Open vn expr => if n == vn
+            then map (fn f, v => f v v) $ abstract n expr
+            else Open vn $ map (fn vva, v1, v2 => vva v2 v1) $ abstract n expr
+        };
 
-            (>>): Expr a -> Expr b -> Expr b = liftA2 $ fn _,b => b;
+      freenames: Expr Any -> List Text =
+        fn {
+          Closed _ => [];
+          Open n expr => n :: freenames expr;
+        };
 
-            abstract: Text -> Expr a -> Expr (Value -> a) =
-                fn n =>
-                    match
-                        Closed a => Closed $ fn _ => a;
-                        Open vn expr => if n == vn
-                            then map (fn f, v => f v v) $ abstract n expr
-                            else Open vn $ map (fn vva, v1, v2 => vva v2 v1) $ abstract n expr
-                    end;
+      eval: Expr a -> a =
+        fn {
+          Closed a => a;
+          Open n expr => error $ "undefined: " <>.Text n;
+        };
+    };
+  };
 
-            freenames: Expr Any -> List Text =
-                match
-                    Closed _ => [];
-                    Open n expr => n :: freenames expr;
-                end;
+  with Expr;
 
-            eval: Expr a -> a =
-                match
-                    Closed a => a;
-                    Open n expr => error $ "undefined: " <>.Text n;
-                end;
-        end;
-    end;
+  k: Expr (Value -> Value -> Value) =
+      abstract "a" $ abstract "b" $ var "a";
 
-    with Expr end;
-
-    k: Expr (Value -> Value -> Value) =
-        abstract "a" $ abstract "b" $ var "a";
-
-    i: Expr (Value -> Value) = abstract "a" $ var "a";
-
-in do
-    outputLn.Env $ show $ Lit.Value 47;
-    outputLn.Env $ show $ eval {.Expr Lit.Value 17};
-    outputLn.Env $ show $ eval {.Expr %k (Lit.Value 12) (Lit.Value 37)};
-    end
+  i: Expr (Value -> Value) = abstract "a" $ var "a";
+} do {
+  outputLn.Env $ show $ Lit.Value 47;
+  outputLn.Env $ show $ eval ap.Expr{Lit.Value 17};
+  outputLn.Env $ show $ eval ap.Expr{%k (Lit.Value 12) (Lit.Value 37)};
+}

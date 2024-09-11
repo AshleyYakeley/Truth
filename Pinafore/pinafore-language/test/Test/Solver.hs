@@ -199,7 +199,7 @@ testSolver =
                             return rtype'
                       , scriptTest
                             "script"
-                            ("let f: " <> ftext <> " = error \"f\"; x: " <> xtext <> " = error \"x\" in f x")
+                            ("let {f: " <> ftext <> " = error \"f\"; x: " <> xtext <> " = error \"x\"} f x")
                             ("{} => " <> extext)
                       ]
               in [ testTree

@@ -1,16 +1,16 @@
 #!/usr/bin/pinafore
-let
-    datatype T -p of
-        Mk of
-            m1: SetModel p;
-            m2: p -> Unit;
-        end;
-    end;
+let {
+  datatype T -p {
+    Mk {
+      m1: SetModel p;
+      m2: p -> Unit;
+    };
+  };
 
-    m2: Entity -> Unit = undefined;
-in do
-m1 <- newMem.FiniteSetModel;
-Mk.T >- fn Mk.T => m1 +=.SetModel "text";
-r <- get $ single.FiniteSetModel m1;
-outputLn.Env r;
-end
+  m2: Entity -> Unit = undefined;
+} do {
+  m1 <- newMem.FiniteSetModel;
+  Mk.T >- fn Mk.T => m1 +=.SetModel "text";
+  r <- get $ single.FiniteSetModel m1;
+  outputLn.Env r;
+}

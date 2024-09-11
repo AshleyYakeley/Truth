@@ -1,29 +1,28 @@
 #!/usr/bin/pinafore
-with Env in
-do
-    outputLn "A";
-    onClose $ outputLn "B";
-    outputLn "C";
-    run.Lifecycle $ do
-        outputLn "1";
-        onClose $ outputLn "2";
-        outputLn "3";
-        end;
-    outputLn "D";
-    (_,cl) <- closer $ do
-        outputLn "p";
-        onClose $ outputLn "q";
-        outputLn "r";
-        end;
-    outputLn "E";
-    cl;
-    outputLn "F";
-    cl;
-    outputLn "G";
-    onClose $ do
-        outputLn "x";
-        onClose $ outputLn "y";
-        outputLn "z";
-        end;
-    outputLn "H";
-end
+with Env do {
+  outputLn "A";
+  onClose $ outputLn "B";
+  outputLn "C";
+  run.Lifecycle $ do {
+    outputLn "1";
+    onClose $ outputLn "2";
+    outputLn "3";
+  };
+  outputLn "D";
+  (_,cl) <- closer $ do {
+    outputLn "p";
+    onClose $ outputLn "q";
+    outputLn "r";
+  };
+  outputLn "E";
+  cl;
+  outputLn "F";
+  cl;
+  outputLn "G";
+  onClose $ do {
+    outputLn "x";
+    onClose $ outputLn "y";
+    outputLn "z";
+  };
+  outputLn "H";
+}

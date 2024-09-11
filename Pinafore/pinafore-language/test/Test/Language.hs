@@ -165,18 +165,18 @@ testQuery query = testNamedQuery (show query) query
 testSubsumeSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
 testSubsumeSubtype good t1 t2 vs =
     testTree "subsume" $
-    [ testNamedQuery "plain" ("let x : " <> t1 <> " = undefined; y : " <> t2 <> " = x in ()") $
+    [ testNamedQuery "plain" ("let {x : " <> t1 <> " = undefined; y : " <> t2 <> " = x} ()") $
       goodLangResult good $ LRSuccess "()"
     , testTree "let-1" $
       fmap
           (\v ->
-               testNamedQuery (show v) ("let x : " <> t1 <> " = " <> v <> " in x : " <> t2) $
+               testNamedQuery (show v) ("let {x : " <> t1 <> " = " <> v <> "} x : " <> t2) $
                goodLangResult good $ LRSuccess $ unpack v)
           vs
     , testTree "let-2" $
       fmap
           (\v ->
-               testNamedQuery (show v) ("let x : " <> t1 <> " = " <> v <> "; y : " <> t2 <> " = x in y") $
+               testNamedQuery (show v) ("let {x : " <> t1 <> " = " <> v <> "; y : " <> t2 <> " = x} y") $
                goodLangResult good $ LRSuccess $ unpack v)
           vs
     ]
@@ -185,12 +185,12 @@ testFunctionSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
 testFunctionSubtype good t1 t2 vs =
     testTree "function" $
     [ testNamedQuery "id" ("(fn x => x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
-    , testNamedQuery "let" ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f") $
+    , testNamedQuery "let" ("let {f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x} f") $
       goodLangResult good $ LRSuccess "<?>"
     , testTree "vars" $
       fmap
           (\v ->
-               testNamedQuery (show v) ("let f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x in f (" <> v <> ")") $
+               testNamedQuery (show v) ("let {f : (" <> t1 <> ") -> (" <> t2 <> ") = fn x => x} f (" <> v <> ")") $
                goodLangResult good $ LRSuccess $ unpack v)
           vs
     ]
@@ -257,8 +257,8 @@ testQueries =
               , testQuery "\"1\"" $ LRSuccess "\"1\""
               , testQuery "(+)" $ LRSuccess "<?>"
               , testQuery "length.Text." $ LRSuccess "<?>"
-              , testQuery "let entitytype T in point.OpenEntity @T !\"example\"" $ LRSuccess "<?>"
-              , testQuery "let entitytype T in anchor.Entity $.Function point.OpenEntity @T !\"example\"" $
+              , testQuery "let {entitytype T} point.OpenEntity @T !\"example\"" $ LRSuccess "<?>"
+              , testQuery "let {entitytype T} anchor.Entity $.Function point.OpenEntity @T !\"example\"" $
                 LRSuccess "\"!F332D47A-3C96F533-854E5116-EC65D65E-5279826F-25EE1F57-E925B6C3-076D3BEC\""
               ]
         , testTree
@@ -290,145 +290,145 @@ testQueries =
               ]
         , testTree
               "let-binding"
-              [ testQuery "let in 27" $ LRSuccess "27"
-              , testQuery "let a=\"5\" in a" $ LRSuccess "\"5\""
-              , testQuery "let a=5 in a" $ LRSuccess "5"
-              , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
-              , testQuery "let a=1;b=2 in a" $ LRSuccess "1"
-              , testQuery "let a=1;b=2 in b" $ LRSuccess "2"
-              , testQuery "let a=1;b=2 in b" $ LRSuccess "2"
-              , testQuery "let a=1;b=\"2\" in b" $ LRSuccess "\"2\""
-              , testQuery "let a=1 ;b=\"2\" in b" $ LRSuccess "\"2\""
-              , testQuery "let a= 1 ;b=\"2\" in b" $ LRSuccess "\"2\""
-              , testQuery "let a=7;b=a in a" $ LRSuccess "7"
-              , testQuery "let a=7;b=a in b" $ LRSuccess "7"
-              , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
+              [ testQuery "let {} 27" $ LRSuccess "27"
+              , testQuery "let {a=\"5\"} a" $ LRSuccess "\"5\""
+              , testQuery "let {a=5} a" $ LRSuccess "5"
+              , testQuery "let {a=1} let {a=2} a" $ LRSuccess "2"
+              , testQuery "let {a=1;b=2} a" $ LRSuccess "1"
+              , testQuery "let {a=1;b=2} b" $ LRSuccess "2"
+              , testQuery "let {a=1;b=2} b" $ LRSuccess "2"
+              , testQuery "let {a=1;b=\"2\"} b" $ LRSuccess "\"2\""
+              , testQuery "let {a=1 ;b=\"2\"} b" $ LRSuccess "\"2\""
+              , testQuery "let {a= 1 ;b=\"2\"} b" $ LRSuccess "\"2\""
+              , testQuery "let {a=7;b=a} a" $ LRSuccess "7"
+              , testQuery "let {a=7;b=a} b" $ LRSuccess "7"
+              , testQuery "let {a=2} let {b=a} b" $ LRSuccess "2"
               , testTree
                     "operator"
                     [ testQuery "(-) 9 5" $ LRSuccess "4"
-                    , testQuery "let minus = (-) in minus 4 2" $ LRSuccess "2"
-                    , testQuery "let (&$$&) = fn a,b => a -.Integer b in 374 &$$& 21" $ LRSuccess "353"
-                    , testQuery "let (&$$&) = (-) in 7 &$$& 4" $ LRSuccess "3"
-                    , testQuery "let (&$$&) = fn a,b => a -.Integer b; (**$*) = (&$$&) in 15 **$* 8" $ LRSuccess "7"
-                    , testQuery "let (&$$&) = fn a,b => a -.Integer b; (**$*) = (&$$&) in 15 **$* 8" $ LRSuccess "7"
-                    , testQuery "let (&$$&) = fn a,b => a -.Integer b; (**$*) = fn a,b => a &$$& b in 18 **$* 3" $
+                    , testQuery "let {minus = (-)} minus 4 2" $ LRSuccess "2"
+                    , testQuery "let {(&$$&) = fn a,b => a -.Integer b} 374 &$$& 21" $ LRSuccess "353"
+                    , testQuery "let {(&$$&) = (-)} 7 &$$& 4" $ LRSuccess "3"
+                    , testQuery "let {(&$$&) = fn a,b => a -.Integer b; (**$*) = (&$$&)} 15 **$* 8" $ LRSuccess "7"
+                    , testQuery "let {(&$$&) = fn a,b => a -.Integer b; (**$*) = (&$$&)} 15 **$* 8" $ LRSuccess "7"
+                    , testQuery "let {(&$$&) = fn a,b => a -.Integer b; (**$*) = fn a,b => a &$$& b} 18 **$* 3" $
                       LRSuccess "15"
                     ]
               , testTree
                     "recursive"
-                    [ testQuery "let rec a=1 in a" $ LRSuccess "1"
-                    , testQuery "let rec a=1 in let rec a=2 in a" $ LRSuccess "2"
-                    , testQuery "let rec a=1;a=2 in a" $ LRCheckFail
-                    , testQuery "let rec a=1;b=a in b" $ LRSuccess "1"
-                    , testQuery "let rec b=a;a=1 in b" $ LRSuccess "1"
-                    , testQuery "let rec a = fn x => x in a 1" $ LRSuccess "1"
-                    , testQuery "let rec a = fn x => x; b = a in b" $ LRSuccess "<?>"
-                    , testQuery "let rec a = fn x => x in let rec b = a 1 in b" $ LRSuccess "1"
-                    , testQuery "let rec a = fn x => x; b = a 1 in b" $ LRSuccess "1"
-                    , testQuery "let rec a = fn x => b; b = b in a" $ LRSuccess "<?>"
-                    , testQuery "let rec a = fn x => 1; b = b in a b" $ LRSuccess "1"
-                    , testQuery "let rec a = fn x => 1; b = a b in b" $ LRSuccess "1"
-                    , testQuery "let rec a = fn x => 1 in let rec b = a b in b" $ LRSuccess "1"
-                    , testQuery "let rec b = (fn x => 1) b in b" $ LRSuccess "1"
-                    , testQuery "let rec b = a b; a = fn x => 1 in b" $ LRSuccess "1"
-                    , testQuery "let rec a = fn x => 1; b = a c; c=b in b" $ LRSuccess "1"
+                    [ testQuery "let rec {a=1} a" $ LRSuccess "1"
+                    , testQuery "let rec {a=1} let rec {a=2} a" $ LRSuccess "2"
+                    , testQuery "let rec {a=1;a=2} a" $ LRCheckFail
+                    , testQuery "let rec {a=1;b=a} b" $ LRSuccess "1"
+                    , testQuery "let rec {b=a;a=1} b" $ LRSuccess "1"
+                    , testQuery "let rec {a = fn x => x} a 1" $ LRSuccess "1"
+                    , testQuery "let rec {a = fn x => x; b = a} b" $ LRSuccess "<?>"
+                    , testQuery "let rec {a = fn x => x} let rec {b = a 1} b" $ LRSuccess "1"
+                    , testQuery "let rec {a = fn x => x; b = a 1} b" $ LRSuccess "1"
+                    , testQuery "let rec {a = fn x => b; b = b} a" $ LRSuccess "<?>"
+                    , testQuery "let rec {a = fn x => 1; b = b} a b" $ LRSuccess "1"
+                    , testQuery "let rec {a = fn x => 1; b = a b} b" $ LRSuccess "1"
+                    , testQuery "let rec {a = fn x => 1} let rec {b = a b} b" $ LRSuccess "1"
+                    , testQuery "let rec {b = (fn x => 1) b} b" $ LRSuccess "1"
+                    , testQuery "let rec {b = a b; a = fn x => 1} b" $ LRSuccess "1"
+                    , testQuery "let rec {a = fn x => 1; b = a c; c=b} b" $ LRSuccess "1"
                     , testTree
                           "polymorphism"
-                          [ testQuery "let rec i = fn x => x in (succ.Integer $.Function i 1, i False)" $
+                          [ testQuery "let rec {i = fn x => x} (succ.Integer $.Function i 1, i False)" $
                             LRSuccess "(2,False)"
-                          , testQuery "let rec i = fn x => x; r = (succ.Integer $.Function i 1, i False) in r" $
+                          , testQuery "let rec {i = fn x => x; r = (succ.Integer $.Function i 1, i False)} r" $
                             LRSuccess "(2,False)"
-                          , testQuery "let rec r = (succ.Integer $.Function i 1, i False); i = fn x => x in r" $
+                          , testQuery "let rec {r = (succ.Integer $.Function i 1, i False); i = fn x => x} r" $
                             LRSuccess "(2,False)"
                           ]
                     ]
               , testTree
                     "pattern"
-                    [ testQuery "let (a,b) = (3,4) in a" $ LRSuccess "3"
-                    , testQuery "let (a,b) = (3,4) in b" $ LRSuccess "4"
-                    , testQuery "let (a,b): Integer *: Integer = (3,4) in (b,a)" $ LRSuccess "(4,3)"
-                    , testQuery "let rec (a,b): Integer *: Integer = (3,a +.Integer 4) in (b,a)" $ LRSuccess "(7,3)"
-                    , testQuery "let rec (a,b) = (3,a +.Integer 4) in (b,a)" $ LRSuccess "(7,3)"
-                    , testQuery "let rec (a,b) = (3,a +.Integer 4); (c,d) = (8,c +.Integer 1) in (a,b,c,d)" $
+                    [ testQuery "let {(a,b) = (3,4)} a" $ LRSuccess "3"
+                    , testQuery "let {(a,b) = (3,4)} b" $ LRSuccess "4"
+                    , testQuery "let {(a,b): Integer *: Integer = (3,4)} (b,a)" $ LRSuccess "(4,3)"
+                    , testQuery "let rec {(a,b): Integer *: Integer = (3,a +.Integer 4)} (b,a)" $ LRSuccess "(7,3)"
+                    , testQuery "let rec {(a,b) = (3,a +.Integer 4)} (b,a)" $ LRSuccess "(7,3)"
+                    , testQuery "let rec {(a,b) = (3,a +.Integer 4); (c,d) = (8,c +.Integer 1)} (a,b,c,d)" $
                       LRSuccess "(3,(7,(8,9)))"
-                    , testQuery "let rec (a,b) = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
+                    , testQuery "let rec {(a,b) = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)" $
                       LRSuccess "(3,(7,(24,25)))"
                     , testQuery
-                          "let rec (a,b) = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
+                          "let rec {(a,b) = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)" $
                       LRSuccess "(3,(7,(24,25)))"
                     , testQuery
-                          "let rec (a,b): Integer *: Integer = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
+                          "let rec {(a,b): Integer *: Integer = (3,a +.Integer 4); (c,d) = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)" $
                       LRSuccess "(3,(7,(24,25)))"
                     , testQuery
-                          "let rec (a,b): Integer *: Integer = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1) in (a,b,c,d)" $
+                          "let rec {(a,b): Integer *: Integer = (3,a +.Integer 4); (c,d): Integer *: Integer = (b +.Integer 17,c +.Integer 1)} (a,b,c,d)" $
                       LRSuccess "(3,(7,(24,25)))"
                     ]
               , testTree
                     "rename"
-                    [ testQuery "let f: List a -> Integer -> List a = fn x => fn _ => x in 0" $ LRSuccess "0"
-                    , testQuery "let f: List a -> Integer -> List a = fn x => fn p => x in 0" $ LRSuccess "0"
-                    , testQuery "let f: List a -> Integer *: Integer -> List a = fn x => fn (p,q) => x in 0" $
+                    [ testQuery "let {f: List a -> Integer -> List a = fn x => fn _ => x} 0" $ LRSuccess "0"
+                    , testQuery "let {f: List a -> Integer -> List a = fn x => fn p => x} 0" $ LRSuccess "0"
+                    , testQuery "let {f: List a -> Integer *: Integer -> List a = fn x => fn (p,q) => x} 0" $
                       LRSuccess "0"
                     ]
               , testTree
                     "issue-199"
-                    [ testQuery "let f = fn x => let y = x in y in f 0" $ LRSuccess "0"
-                    , testQuery "let f = fn x => let x = x in x in f 0" $ LRSuccess "0"
+                    [ testQuery "let {f = fn x => let {y = x} y} f 0" $ LRSuccess "0"
+                    , testQuery "let {f = fn x => let {x = x} x} f 0" $ LRSuccess "0"
                     ]
               ]
         , testTree
               "scoping"
               [ testQuery "(fn b => fn a => b) a" LRCheckFail
-              , testQuery "let b=a in fn a => b" LRCheckFail
-              , testQuery "let b=a in ()" LRCheckFail
-              , testQuery "let rec b=a in ()" LRCheckFail
-              , testQuery "let a=1 in let b=a in (fn a => b) 2" $ LRSuccess "1"
-              , testQuery "(fn a => let b=a in (fn a => b) 2) 1" $ LRSuccess "1"
+              , testQuery "let {b=a} fn a => b" LRCheckFail
+              , testQuery "let {b=a} ()" LRCheckFail
+              , testQuery "let rec {b=a} ()" LRCheckFail
+              , testQuery "let {a=1} let {b=a} (fn a => b) 2" $ LRSuccess "1"
+              , testQuery "(fn a => let {b=a} (fn a => b) 2) 1" $ LRSuccess "1"
               ]
         , testTree
               "name shadowing"
-              [ testQuery "let a=1 in (fn a => a) 2" $ LRSuccess "2"
-              , testQuery "let a=1 in (fn (Just a) => a) (Just 2)" $ LRSuccess "2"
-              , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
-              , testQuery "(fn a => let a=2 in a) 1" $ LRSuccess "2"
+              [ testQuery "let {a=1} (fn a => a) 2" $ LRSuccess "2"
+              , testQuery "let {a=1} (fn (Just a) => a) (Just 2)" $ LRSuccess "2"
+              , testQuery "let {a=1} let {a=2} a" $ LRSuccess "2"
+              , testQuery "(fn a => let {a=2} a) 1" $ LRSuccess "2"
               , testQuery "(fn a => fn a => a) 1 2" $ LRSuccess "2"
-              , testQuery "let a=1 in 2 >-.Function match a => a end" $ LRSuccess "2"
-              , testQuery "let a=1 in Just 2 >-.Function match Just a => a end" $ LRSuccess "2"
-              , testQuery "1 >-.Function match a => 2 >-.Function match a => a end end" $ LRSuccess "2"
+              , testQuery "let {a=1} 2 >-.Function fn {a => a}" $ LRSuccess "2"
+              , testQuery "let {a=1} Just 2 >-.Function fn {Just a => a}" $ LRSuccess "2"
+              , testQuery "1 >-.Function fn {a => 2 >-.Function fn {a => a}}" $ LRSuccess "2"
               ]
         , testTree
               "partial keywords"
-              [ testQuery "let i=1 in i" $ LRSuccess "1"
-              , testQuery "let inx=1 in inx" $ LRSuccess "1"
-              , testQuery "let l=1 in l" $ LRSuccess "1"
-              , testQuery "let le=1 in le" $ LRSuccess "1"
-              , testQuery "let letx=1 in letx" $ LRSuccess "1"
-              , testQuery "let letre=1 in letre" $ LRSuccess "1"
-              , testQuery "let letrecx=1 in letrecx" $ LRSuccess "1"
-              , testQuery "let tru=1 in tru" $ LRSuccess "1"
-              , testQuery "let truex=1 in truex" $ LRSuccess "1"
-              , testQuery "let f=1 in f" $ LRSuccess "1"
-              , testQuery "let fals=1 in fals" $ LRSuccess "1"
-              , testQuery "let falsex=1 in falsex" $ LRSuccess "1"
+              [ testQuery "let {i=1} i" $ LRSuccess "1"
+              , testQuery "let {inx=1} inx" $ LRSuccess "1"
+              , testQuery "let {l=1} l" $ LRSuccess "1"
+              , testQuery "let {le=1} le" $ LRSuccess "1"
+              , testQuery "let {letx=1} letx" $ LRSuccess "1"
+              , testQuery "let {letre=1} letre" $ LRSuccess "1"
+              , testQuery "let {letrecx=1} letrecx" $ LRSuccess "1"
+              , testQuery "let {tru=1} tru" $ LRSuccess "1"
+              , testQuery "let {truex=1} truex" $ LRSuccess "1"
+              , testQuery "let {f=1} f" $ LRSuccess "1"
+              , testQuery "let {fals=1} fals" $ LRSuccess "1"
+              , testQuery "let {falsex=1} falsex" $ LRSuccess "1"
               ]
         , testTree
               "duplicate bindings"
-              [ testQuery "let rec a=1;a=1 in a" $ LRCheckFail
-              , testQuery "let rec a=1;a=2 in a" $ LRCheckFail
-              , testQuery "let rec a=1;b=0;a=2 in a" $ LRCheckFail
+              [ testQuery "let rec {a=1;a=1} a" $ LRCheckFail
+              , testQuery "let rec {a=1;a=2} a" $ LRCheckFail
+              , testQuery "let rec {a=1;b=0;a=2} a" $ LRCheckFail
               ]
         , testTree
               "lexical scoping"
-              [ testQuery "let a=1 in let b=a in let a=3 in a" $ LRSuccess "3"
-              , testQuery "let rec a=1;b=a;a=3 in a" $ LRCheckFail
-              , testQuery "let a=1 in let b=a in let a=3 in b" $ LRSuccess "1"
-              , testQuery "let rec a=1;b=a;a=3 in b" $ LRCheckFail
+              [ testQuery "let {a=1} let {b=a} let {a=3} a" $ LRSuccess "3"
+              , testQuery "let rec {a=1;b=a;a=3} a" $ LRCheckFail
+              , testQuery "let {a=1} let {b=a} let {a=3} b" $ LRSuccess "1"
+              , testQuery "let rec {a=1;b=a;a=3} b" $ LRCheckFail
               ]
         , testTree
               "implicit parameters"
-              [ testQuery "let x = ?p in x" $ LRCheckFail
-              , testQuery "let x = ?p in imply ?p = 5 in x" $ LRSuccess "5"
-              , testQuery "let x : Integer = ?p in imply ?p = 43 in x" $ LRSuccess "43"
+              [ testQuery "let {x = ?p} x" $ LRCheckFail
+              , testQuery "let {x = ?p} imply {?p = 5} x" $ LRSuccess "5"
+              , testQuery "let {x : Integer = ?p} imply {?p = 43} x" $ LRSuccess "43"
               ]
         , testTree
               "operator"
@@ -460,22 +460,22 @@ testQueries =
               , testQuery "1 /=.Number 1" $ LRSuccess "False"
               , testQuery "1 /=.Number ~1" $ LRSuccess "False"
               , testQuery "0 /=.Number ~1" $ LRSuccess "True"
-              , testQuery "with Integer in 7+8" $ LRSuccess "15"
-              , testQuery "with Integer in 7 +8" $ LRSuccess "15"
-              , testQuery "with Integer in 7+ 8" $ LRSuccess "15"
-              , testQuery "with Integer in 7 + 8" $ LRSuccess "15"
+              , testQuery "with Integer 7+8" $ LRSuccess "15"
+              , testQuery "with Integer 7 +8" $ LRSuccess "15"
+              , testQuery "with Integer 7+ 8" $ LRSuccess "15"
+              , testQuery "with Integer 7 + 8" $ LRSuccess "15"
               , testQuery "\"abc\"<>.Text\"def\"" $ LRSuccess "\"abcdef\""
               , testQuery "\"abc\" <>.Text\"def\"" $ LRSuccess "\"abcdef\""
               , testQuery "\"abc\"<>.Text \"def\"" $ LRSuccess "\"abcdef\""
               , testQuery "\"abc\" <>.Text \"def\"" $ LRSuccess "\"abcdef\""
-              , testQuery "with Integer in let f = fn x => x + 2 in f -1" $ LRSuccess "1"
-              , testQuery "with Integer in let f = 2 in f - 1" $ LRSuccess "1"
+              , testQuery "with Integer let {f = fn x => x + 2} f -1" $ LRSuccess "1"
+              , testQuery "with Integer let {f = 2} f - 1" $ LRSuccess "1"
               , testTree
                     "precedence"
-                    [ testQuery "with Integer in succ $.Function 2 * 3" $ LRSuccess "7"
-                    , testQuery "with Integer in 3 * 2 + 1" $ LRSuccess "7"
-                    , testQuery "with Integer in 2 * 2 * 2" $ LRSuccess "8"
-                    , testQuery "with Rational in 12 / 2 / 2" $ LRSuccess "3"
+                    [ testQuery "with Integer succ $.Function 2 * 3" $ LRSuccess "7"
+                    , testQuery "with Integer 3 * 2 + 1" $ LRSuccess "7"
+                    , testQuery "with Integer 2 * 2 * 2" $ LRSuccess "8"
+                    , testQuery "with Rational 12 / 2 / 2" $ LRSuccess "3"
                     , testQuery "0 ==.Entity 0" $ LRSuccess "True"
                     , testQuery "0 ==.Entity 0 ==.Entity 0" $ LRCheckFail
                     ]
@@ -517,29 +517,29 @@ testQueries =
               ]
         , testTree
               "type-signature"
-              [ testQuery "let i = fn x => x in i 3" $ LRSuccess "3"
-              , testQuery "let i : tvar -> tvar = fn x => x in i 3" $ LRSuccess "3"
-              , testQuery "let i : a -> a = fn x => x in i 3" $ LRSuccess "3"
-              , testQuery "let i : Number -> Number = fn x => x in i 3" $ LRSuccess "3"
-              , testQuery "let i : Text -> Text = fn x => x in i 3" $ LRCheckFail
-              , testQuery "let i : a -> a = fn x => x in i \"t\"" $ LRSuccess "\"t\""
-              , testQuery "let i : Number -> Number = fn x => x in i \"t\"" $ LRCheckFail
-              , testQuery "let i : Text -> Text = fn x => x in i \"t\"" $ LRSuccess "\"t\""
-              , testQuery "let i : a -> a = fn x => x in 0" $ LRSuccess "0"
-              , testQuery "let i : a -> Number = fn x => x in 0" $ LRCheckFail
-              , testQuery "let i : Number -> a = fn x => x in 0" $ LRCheckFail
-              , testQuery "let i : Number -> Number = fn x => x in 0" $ LRSuccess "0"
-              , testQuery "let i : Number +: Boolean = Left 5 in i" $ LRSuccess "Left 5"
-              , testQuery "let i : Number +: Boolean = Right False in i" $ LRSuccess "Right False"
-              , testQuery "let i : Maybe Number = Just 5 in i" $ LRSuccess "Just 5"
-              , testQuery "let i : Maybe Number = Nothing in i" $ LRSuccess "Nothing"
+              [ testQuery "let {i = fn x => x} i 3" $ LRSuccess "3"
+              , testQuery "let {i : tvar -> tvar = fn x => x} i 3" $ LRSuccess "3"
+              , testQuery "let {i : a -> a = fn x => x} i 3" $ LRSuccess "3"
+              , testQuery "let {i : Number -> Number = fn x => x} i 3" $ LRSuccess "3"
+              , testQuery "let {i : Text -> Text = fn x => x} i 3" $ LRCheckFail
+              , testQuery "let {i : a -> a = fn x => x} i \"t\"" $ LRSuccess "\"t\""
+              , testQuery "let {i : Number -> Number = fn x => x} i \"t\"" $ LRCheckFail
+              , testQuery "let {i : Text -> Text = fn x => x} i \"t\"" $ LRSuccess "\"t\""
+              , testQuery "let {i : a -> a = fn x => x} 0" $ LRSuccess "0"
+              , testQuery "let {i : a -> Number = fn x => x} 0" $ LRCheckFail
+              , testQuery "let {i : Number -> a = fn x => x} 0" $ LRCheckFail
+              , testQuery "let {i : Number -> Number = fn x => x} 0" $ LRSuccess "0"
+              , testQuery "let {i : Number +: Boolean = Left 5} i" $ LRSuccess "Left 5"
+              , testQuery "let {i : Number +: Boolean = Right False} i" $ LRSuccess "Right False"
+              , testQuery "let {i : Maybe Number = Just 5} i" $ LRSuccess "Just 5"
+              , testQuery "let {i : Maybe Number = Nothing} i" $ LRSuccess "Nothing"
               , testTree
                     "polar"
-                    [ testQuery "let x : Text | Number = 3 in x" $ LRSuccess "3"
-                    , testQuery "let f : Any -> Integer = fn _ => 3 in f ()" $ LRSuccess "3"
+                    [ testQuery "let {x : Text | Number = 3} x" $ LRSuccess "3"
+                    , testQuery "let {f : Any -> Integer = fn _ => 3} f ()" $ LRSuccess "3"
                     , testQuery "(fn x => (x,x)) : ((a & Number) -> Showable *: a)" $ LRSuccess "<?>"
-                    , testQuery "let f = (fn x => (x,x)) : (a & Number) -> Showable *: a in f 3" $ LRSuccess "(3,3)"
-                    , testQuery "let f : (a & Number) -> Showable *: a = fn x => (x,x) in f 3" $ LRSuccess "(3,3)"
+                    , testQuery "let {f = (fn x => (x,x)) : (a & Number) -> Showable *: a} f 3" $ LRSuccess "(3,3)"
+                    , testQuery "let {f : (a & Number) -> Showable *: a = fn x => (x,x)} f 3" $ LRSuccess "(3,3)"
                     ]
               ]
         , testTree
@@ -549,8 +549,8 @@ testQueries =
               , testQuery "(fn _ => 5) 2" $ LRSuccess "5"
               , testQuery "(fn (a,b) => a +.Integer b) (5,6)" $ LRSuccess "11"
               , testQuery "(fn Just a => a) (Just 71)" $ LRSuccess "71"
-              , testQuery "(match Just a => a end) (Just 72)" $ LRSuccess "72"
-              , testQuery "let Just a = Just 73 in a" $ LRSuccess "73"
+              , testQuery "(fn {Just a => a}) (Just 72)" $ LRSuccess "72"
+              , testQuery "let {Just a = Just 73} a" $ LRSuccess "73"
               , testTree
                     "at"
                     [ testQuery "(fn a@b => (a,b)) 2" $ LRSuccess "(2,2)"
@@ -563,85 +563,85 @@ testQueries =
               "match-to"
               [ testTree
                     "basic"
-                    [ testQuery "2 >-.Function match a => 5 end" $ LRSuccess "5"
-                    , testQuery "2 >-.Function match a => 5; a => 3 end" $ LRSuccess "5"
-                    , testQuery "2 >-.Function match a => 5; a => 3; end" $ LRSuccess "5"
-                    , testQuery "2 >-.Function match a => a end" $ LRSuccess "2"
-                    , testQuery "2 >-.Function match _ => 5 end" $ LRSuccess "5"
-                    , testQuery "2 >-.Function match _ => 5; _ => 3 end" $ LRSuccess "5"
-                    , testQuery "2 >-.Function match a@b => (a,b) end" $ LRSuccess "(2,2)"
+                    [ testQuery "2 >-.Function fn {a => 5}" $ LRSuccess "5"
+                    , testQuery "2 >-.Function fn {a => 5; a => 3}" $ LRSuccess "5"
+                    , testQuery "2 >-.Function fn {a => 5; a => 3;}" $ LRSuccess "5"
+                    , testQuery "2 >-.Function fn {a => a}" $ LRSuccess "2"
+                    , testQuery "2 >-.Function fn {_ => 5}" $ LRSuccess "5"
+                    , testQuery "2 >-.Function fn {_ => 5; _ => 3}" $ LRSuccess "5"
+                    , testQuery "2 >-.Function fn {a@b => (a,b)}" $ LRSuccess "(2,2)"
                     ]
               , testTree
                     "Boolean"
-                    [ testQuery "True >-.Function match True => 5; False => 7 end" $ LRSuccess "5"
-                    , testQuery "False >-.Function match True => 5; False => 7 end" $ LRSuccess "7"
-                    , testQuery "True >-.Function match False => 7; True => 5 end" $ LRSuccess "5"
-                    , testQuery "False >-.Function match False => 7; True => 5 end" $ LRSuccess "7"
+                    [ testQuery "True >-.Function fn {True => 5; False => 7}" $ LRSuccess "5"
+                    , testQuery "False >-.Function fn {True => 5; False => 7}" $ LRSuccess "7"
+                    , testQuery "True >-.Function fn {False => 7; True => 5}" $ LRSuccess "5"
+                    , testQuery "False >-.Function fn {False => 7; True => 5}" $ LRSuccess "7"
                     ]
               , testTree
                     "Number"
-                    [ testQuery "37 >-.Function match 37 => True; _ => False end" $ LRSuccess "True"
-                    , testQuery "38 >-.Function match 37 => True; _ => False end" $ LRSuccess "False"
-                    , testQuery "-24.3 >-.Function match 37 => 1; -24.3 => 2; _ => 3 end" $ LRSuccess "2"
+                    [ testQuery "37 >-.Function fn {37 => True; _ => False}" $ LRSuccess "True"
+                    , testQuery "38 >-.Function fn {37 => True; _ => False}" $ LRSuccess "False"
+                    , testQuery "-24.3 >-.Function fn {37 => 1; -24.3 => 2; _ => 3}" $ LRSuccess "2"
                     ]
               , testTree
                     "String"
-                    [ testQuery "\"Hello\" >-.Function match \"Hello\" => True; _ => False end" $ LRSuccess "True"
-                    , testQuery "\"thing\" >-.Function match \"Hello\" => True; _ => False end" $ LRSuccess "False"
-                    , testQuery "\"thing\" >-.Function match \"Hello\" => 1; \"thing\" => 2; _ => 3 end" $ LRSuccess "2"
+                    [ testQuery "\"Hello\" >-.Function fn {\"Hello\" => True; _ => False}" $ LRSuccess "True"
+                    , testQuery "\"thing\" >-.Function fn {\"Hello\" => True; _ => False}" $ LRSuccess "False"
+                    , testQuery "\"thing\" >-.Function fn {\"Hello\" => 1; \"thing\" => 2; _ => 3}" $ LRSuccess "2"
                     ]
               , testTree
                     "Either"
-                    [ testQuery "Left 3 >-.Function match Left a => a; Right _ => 1 end" $ LRSuccess "3"
-                    , testQuery "Right 4 >-.Function match Left a => succ.Integer a; Right a => a end" $ LRSuccess "4"
-                    , testQuery "Right 7 >-.Function match Right 4 => True; _ => False end" $ LRSuccess "False"
-                    , testQuery "Right 7 >-.Function match Right 4 => 1; Right 7 => 2; Left _ => 3; _ => 4 end" $
+                    [ testQuery "Left 3 >-.Function fn {Left a => a; Right _ => 1}" $ LRSuccess "3"
+                    , testQuery "Right 4 >-.Function fn {Left a => succ.Integer a; Right a => a}" $ LRSuccess "4"
+                    , testQuery "Right 7 >-.Function fn {Right 4 => True; _ => False}" $ LRSuccess "False"
+                    , testQuery "Right 7 >-.Function fn {Right 4 => 1; Right 7 => 2; Left _ => 3; _ => 4}" $
                       LRSuccess "2"
                     ]
-              , testTree "Unit" [testQuery "() >-.Function match () => 4 end" $ LRSuccess "4"]
-              , testTree "Pair" [testQuery "(2,True) >-.Function match (2,a) => a end" $ LRSuccess "True"]
+              , testTree "Unit" [testQuery "() >-.Function fn {() => 4}" $ LRSuccess "4"]
+              , testTree "Pair" [testQuery "(2,True) >-.Function fn {(2,a) => a}" $ LRSuccess "True"]
               , testTree
                     "Maybe"
-                    [ testQuery "Just 3 >-.Function match Just a => succ.Integer a; Nothing => 7 end" $ LRSuccess "4"
-                    , testQuery "Nothing >-.Function match Just a => succ.Integer a; Nothing => 7 end" $ LRSuccess "7"
+                    [ testQuery "Just 3 >-.Function fn {Just a => succ.Integer a; Nothing => 7}" $ LRSuccess "4"
+                    , testQuery "Nothing >-.Function fn {Just a => succ.Integer a; Nothing => 7}" $ LRSuccess "7"
                     ]
               , testTree
                     "List"
-                    [ testQuery "[] >-.Function match [] => True; _ => False end" $ LRSuccess "True"
-                    , testQuery "[] >-.Function match _::_ => True; _ => False end" $ LRSuccess "False"
-                    , testQuery "[1,2] >-.Function match [] => True; _ => False end" $ LRSuccess "False"
-                    , testQuery "[3,4] >-.Function match _::_ => True; _ => False end" $ LRSuccess "True"
-                    , testQuery "[3] >-.Function match a::b => (a,b) end" $ LRSuccess "(3,[])"
-                    , testQuery "[3,4] >-.Function match a::b => (a,b) end" $ LRSuccess "(3,[4])"
-                    , testQuery "[3,4,5] >-.Function match a::b => (a,b) end" $ LRSuccess "(3,[4,5])"
-                    , testQuery "[3] >-.Function match [a,b] => 1; _ => 2 end" $ LRSuccess "2"
-                    , testQuery "[3,4] >-.Function match [a,b] => 1; _ => 2 end" $ LRSuccess "1"
-                    , testQuery "[3,4,5] >-.Function match [a,b] => 1; _ => 2 end" $ LRSuccess "2"
-                    , testQuery "[3,4] >-.Function match [a,b] => (a,b) end" $ LRSuccess "(3,4)"
+                    [ testQuery "[] >-.Function fn {[] => True; _ => False}" $ LRSuccess "True"
+                    , testQuery "[] >-.Function fn {_::_ => True; _ => False}" $ LRSuccess "False"
+                    , testQuery "[1,2] >-.Function fn {[] => True; _ => False}" $ LRSuccess "False"
+                    , testQuery "[3,4] >-.Function fn {_::_ => True; _ => False}" $ LRSuccess "True"
+                    , testQuery "[3] >-.Function fn {a::b => (a,b)}" $ LRSuccess "(3,[])"
+                    , testQuery "[3,4] >-.Function fn {a::b => (a,b)}" $ LRSuccess "(3,[4])"
+                    , testQuery "[3,4,5] >-.Function fn {a::b => (a,b)}" $ LRSuccess "(3,[4,5])"
+                    , testQuery "[3] >-.Function fn {[a,b] => 1; _ => 2}" $ LRSuccess "2"
+                    , testQuery "[3,4] >-.Function fn {[a,b] => 1; _ => 2}" $ LRSuccess "1"
+                    , testQuery "[3,4,5] >-.Function fn {[a,b] => 1; _ => 2}" $ LRSuccess "2"
+                    , testQuery "[3,4] >-.Function fn {[a,b] => (a,b)}" $ LRSuccess "(3,4)"
                     ]
               ]
         , testTree
               "match"
-              [ testQuery "(match a => 5 end) 2" $ LRSuccess "5"
-              , testQuery "(match a => 5; a => 3 end) 2" $ LRSuccess "5"
-              , testQuery "(match a => 5; a => 3; end) 2" $ LRSuccess "5"
-              , testQuery "(match a => a end) 2" $ LRSuccess "2"
-              , testQuery "(match _ => 5 end) 2" $ LRSuccess "5"
-              , testQuery "(match _ => 5; _ => 3 end) 2" $ LRSuccess "5"
-              , testQuery "(match a@b => (a,b) end) 2" $ LRSuccess "(2,2)"
+              [ testQuery "(fn {a => 5}) 2" $ LRSuccess "5"
+              , testQuery "(fn {a => 5; a => 3}) 2" $ LRSuccess "5"
+              , testQuery "(fn {a => 5; a => 3;}) 2" $ LRSuccess "5"
+              , testQuery "(fn {a => a}) 2" $ LRSuccess "2"
+              , testQuery "(fn {_ => 5}) 2" $ LRSuccess "5"
+              , testQuery "(fn {_ => 5; _ => 3}) 2" $ LRSuccess "5"
+              , testQuery "(fn {a@b => (a,b)}) 2" $ LRSuccess "(2,2)"
               ]
         , testTree
               "matches"
-              [ testQuery "(match a => 5 end) 2" $ LRSuccess "5"
-              , testQuery "(match a, b => a +.Integer b end) 2 3" $ LRSuccess "5"
+              [ testQuery "(fn {a => 5}) 2" $ LRSuccess "5"
+              , testQuery "(fn {a, b => a +.Integer b}) 2 3" $ LRSuccess "5"
               , testQuery
-                    "(match Nothing, Nothing => 1; Nothing, Just a => a +.Integer 10; Just a, _ => a +.Integer 20; end) (Just 1) (Just 2)" $
+                    "(fn {Nothing, Nothing => 1; Nothing, Just a => a +.Integer 10; Just a, _ => a +.Integer 20;}) (Just 1) (Just 2)" $
                 LRSuccess "21"
               , testQuery
-                    "(match Nothing, Nothing => 1; Just a, Nothing => a +.Integer 10; _, Just a => a +.Integer 20; end) (Just 1) (Just 2)" $
+                    "(fn {Nothing, Nothing => 1; Just a, Nothing => a +.Integer 10; _, Just a => a +.Integer 20;}) (Just 1) (Just 2)" $
                 LRSuccess "22"
               , testQuery
-                    "(match Nothing, Nothing => 1; Just a, Nothing => a +.Integer 10; Nothing, Just a => a +.Integer 20; Just a, Just b => a +.Integer b +.Integer 30; end) (Just 1) (Just 2)" $
+                    "(fn {Nothing, Nothing => 1; Just a, Nothing => a +.Integer 10; Nothing, Just a => a +.Integer 20; Just a, Just b => a +.Integer b +.Integer 30;}) (Just 1) (Just 2)" $
                 LRSuccess "33"
               ]
         , testTree
@@ -658,45 +658,45 @@ testQueries =
               ]
         , testTree
               "subtype"
-              [ testQuery "let i : Integer -> Number = fn x => x in i 3" $ LRSuccess "3"
-              , testQuery "let a : Integer = 3; b : Number = a in b" $ LRSuccess "3"
-              , testQuery "let i : FiniteSetModel -a -> SetModel a = fn x => x in 3" $ LRSuccess "3"
-              , testQuery "let i : FiniteSetModel {-a,+Integer} -> SetModel a = fn x => x in 3" $ LRSuccess "3"
+              [ testQuery "let {i : Integer -> Number = fn x => x} i 3" $ LRSuccess "3"
+              , testQuery "let {a : Integer = 3; b : Number = a} b" $ LRSuccess "3"
+              , testQuery "let {i : FiniteSetModel -a -> SetModel a = fn x => x} 3" $ LRSuccess "3"
+              , testQuery "let {i : FiniteSetModel (-a,+Integer) -> SetModel a = fn x => x} 3" $ LRSuccess "3"
               ]
         , testTree
               "subsume"
-              [ testQuery "let rec a: Unit = a in ()" $ LRSuccess "()"
-              , testQuery "let rec a: Integer = a in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text = error.Function \"undefined\" in ()" $ LRSuccess "()"
-              , testQuery "let rec a: Integer|Text = a in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text = 3 in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text = 3; b: Integer|Text = 3 in ()" $ LRSuccess "()"
-              , testQuery "let a: Integer|Text = 3; b: Integer|Text = a in ()" $ LRSuccess "()"
-              , testQuery "let rec r = r in let a: Integer|Text = r in ()" $ LRSuccess "()"
-              , testQuery "let rec r = r in let a: Integer|Text = r in ()" $ LRSuccess "()"
-              , testQuery "let rec r = a; a: Integer|Text = r in ()" $ LRSuccess "()"
-              , testQuery "let rec a: None = a in ()" $ LRSuccess "()"
-              , testQuery "let rec r = r in let a : None = r in ()" $ LRSuccess "()"
-              , testQuery "let rec r = a; a: None = r in ()" $ LRSuccess "()"
-              , testQuery "let a: List (Integer|Text) = [] in a" $ LRSuccess "[]"
-              , testQuery "let a: List Integer | List Text = [] in a" $ LRSuccess "[]"
+              [ testQuery "let rec {a: Unit = a} ()" $ LRSuccess "()"
+              , testQuery "let rec {a: Integer = a} ()" $ LRSuccess "()"
+              , testQuery "let {a: Integer|Text = error.Function \"undefined\"} ()" $ LRSuccess "()"
+              , testQuery "let rec {a: Integer|Text = a} ()" $ LRSuccess "()"
+              , testQuery "let {a: Integer|Text = 3} ()" $ LRSuccess "()"
+              , testQuery "let {a: Integer|Text = 3; b: Integer|Text = 3} ()" $ LRSuccess "()"
+              , testQuery "let {a: Integer|Text = 3; b: Integer|Text = a} ()" $ LRSuccess "()"
+              , testQuery "let rec {r = r} let {a: Integer|Text = r} ()" $ LRSuccess "()"
+              , testQuery "let rec {r = r} let {a: Integer|Text = r} ()" $ LRSuccess "()"
+              , testQuery "let rec {r = a; a: Integer|Text = r} ()" $ LRSuccess "()"
+              , testQuery "let rec {a: None = a} ()" $ LRSuccess "()"
+              , testQuery "let rec {r = r} let {a : None = r} ()" $ LRSuccess "()"
+              , testQuery "let rec {r = a; a: None = r} ()" $ LRSuccess "()"
+              , testQuery "let {a: List (Integer|Text) = []} a" $ LRSuccess "[]"
+              , testQuery "let {a: List Integer | List Text = []} a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
               , testSameType False "Integer|Text" "Integer|Text" []
               , testSameType False "List (Integer|Text)" "List (Integer|Text)" ["[]"]
               , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
               , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]
-              , testQuery "let a: Integer|Text = 3; b: List Integer | List Text = [a] in b" $ LRSuccess "[3]"
+              , testQuery "let {a: Integer|Text = 3; b: List Integer | List Text = [a]} b" $ LRSuccess "[3]"
               , testQuery "newMem.WholeModel >>= fn m => m := 1 >> get m >>= outputLn.Env" LRCheckFail
               , testQuery
-                    "newMem.WholeModel >>= fn m => let n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text in n1 := 1 >> get n2 >>= outputLn.Env"
+                    "newMem.WholeModel >>= fn m => let {n: WholeModel a = m: WholeModel a; n1: WholeModel Integer = n: WholeModel Integer; n2: WholeModel Text = n: WholeModel Text} n1 := 1 >> get n2 >>= outputLn.Env"
                     LRCheckFail
               ]
         , testTree
               "conversion"
-              [ testQuery ("((fn x => Just x): Integer -> Maybe Integer) 34 >-.Function match Just x => x end") $
+              [ testQuery ("((fn x => Just x): Integer -> Maybe Integer) 34 >-.Function fn {Just x => x}") $
                 LRSuccess "34"
               , testQuery ("((fn x => [x]): xy -> List1 xy: Integer -> List Integer) 79") $ LRSuccess "[79]"
-              , testQuery ("((fn x => x :: []): Integer -> List Integer) 57 >-.Function match x::_ => x end") $
+              , testQuery ("((fn x => x :: []): Integer -> List Integer) 57 >-.Function fn {x::_ => x}") $
                 LRSuccess "57"
               ]
         , testTree
@@ -773,227 +773,226 @@ testQueries =
               , testTree
                     "lazy"
                     [ testQuery
-                          "let lazy: Any -> Integer -> Integer = fn _, x => x in (fn x => lazy x 1) (error.Function \"strict\")" $
+                          "let {lazy: Any -> Integer -> Integer = fn _, x => x} (fn x => lazy x 1) (error.Function \"strict\")" $
                       LRSuccess "1"
-                    , testQuery "let lazy: Any -> Integer -> Integer = fn _, x => x in let rec x = lazy x 1 in x" $
-                      LRSuccess "1"
-                    , testQuery
-                          "let lazy: Any -> Integer -> Integer = fn _, x => x in let x = lazy (error.Function \"strict\") 1 in x" $
-                      LRSuccess "1"
-                    , testQuery "let lazy: Any -> Integer -> Integer = fn _, x => x in let rec f = lazy f in f 1" $
+                    , testQuery "let {lazy: Any -> Integer -> Integer = fn _, x => x} let rec {x = lazy x 1} x" $
                       LRSuccess "1"
                     , testQuery
-                          "let lazy: Any -> Integer -> Integer = fn _, x => x in let f = lazy (error.Function \"strict\") in f 1" $
+                          "let {lazy: Any -> Integer -> Integer = fn _, x => x} let {x = lazy (error.Function \"strict\") 1} x" $
+                      LRSuccess "1"
+                    , testQuery "let {lazy: Any -> Integer -> Integer = fn _, x => x} let rec {f = lazy f} f 1" $
+                      LRSuccess "1"
+                    , testQuery
+                          "let {lazy: Any -> Integer -> Integer = fn _, x => x} let {f = lazy (error.Function \"strict\")} f 1" $
                       LRSuccess "1"
                     ]
               , testTree
                     "subsume"
-                    [ testQuery "let rec rval: rec a, Maybe a = rval in ()" $ LRSuccess "()"
-                    , testQuery "let rec rval: rec a, Maybe a = Just rval in ()" $ LRSuccess "()"
+                    [ testQuery "let rec {rval: rec a, Maybe a = rval} ()" $ LRSuccess "()"
+                    , testQuery "let rec {rval: rec a, Maybe a = Just rval} ()" $ LRSuccess "()"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount" $
+                          "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount" $
                       LRSuccess "<?>"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount Nothing" $
+                          "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount Nothing" $
                       LRSuccess "0"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount1 y end; rcount1: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount" $
+                          "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount1 y}; rcount1: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount" $
                       LRSuccess "<?>"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount1 y end; rcount1 = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount1 y}; rcount1 = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = rcount1; rcount1 = match Nothing => 0; Just y => succ $ rcount1 y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = rcount1; rcount1 = fn {Nothing => 0; Just y => succ $ rcount1 y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1 = match Nothing => 0; Just y => succ $ rcount1 y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1 = fn {Nothing => 0; Just y => succ $ rcount1 y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount: (rec xb, Maybe xb) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => succ $ rcount1 y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = fn {Nothing => 0; Just y => succ $ rcount1 y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec xa, Maybe xa) -> Integer = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => succ $ rcount1 y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount: (rec xa, Maybe xa) -> Integer = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = fn {Nothing => 0; Just y => succ $ rcount1 y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec x, Maybe x) -> Integer = rcount1; rcount1: (rec x, Maybe x) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in ()" $
+                          "with Function, Integer let rec {rcount: (rec x, Maybe x) -> Integer = rcount1; rcount1: (rec x, Maybe x) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} ()" $
                       LRSuccess "()"
                     , testQuery
-                          "with Function, Integer in let rec rcount = rcount1; rcount1 = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = rcount1; rcount1 = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = rcount1; rcount1: (rec x, Maybe x) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = rcount1; rcount1: (rec x, Maybe x) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec xa, Maybe xa) -> Integer = match Nothing => 0; Just y => succ $ rcount1 y end; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount: (rec xa, Maybe xa) -> Integer = fn {Nothing => 0; Just y => succ $ rcount1 y}; rcount1: (rec xb, Maybe xb) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
-                          "with Function, Integer in let rec rcount: (rec xc, Maybe xc) -> Integer = match Nothing => 0; Just y => succ $ rcount1 y end; rcount1 = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount: (rec xc, Maybe xc) -> Integer = fn {Nothing => 0; Just y => succ $ rcount1 y}; rcount1 = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testTree
                           "lazy"
                           [ testQuery
-                                "with Function, Integer in let f: (x -> Integer) -> Maybe x -> Integer = fn rc => match Nothing => 0; Just y => succ $ rc y end in let rec rcount: (rec z, Maybe z) -> Integer = rcount1; rcount1 = f rcount in rcount $ Just Nothing" $
+                                "with Function, Integer let {f: (x -> Integer) -> Maybe x -> Integer = fn rc => fn {Nothing => 0; Just y => succ $ rc y}} let rec {rcount: (rec z, Maybe z) -> Integer = rcount1; rcount1 = f rcount} rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function, Integer in let f: ((rec x, Maybe x) -> Integer) -> (rec x, Maybe x) -> Integer = fn rc => match Nothing => 0; Just y => succ $ rc y end in let rec rcount: (rec z, Maybe z) -> Integer = rcount1; rcount1 = f rcount in rcount $ Just Nothing" $
+                                "with Function, Integer let {f: ((rec x, Maybe x) -> Integer) -> (rec x, Maybe x) -> Integer = fn rc => fn {Nothing => 0; Just y => succ $ rc y}} let rec {rcount: (rec z, Maybe z) -> Integer = rcount1; rcount1 = f rcount} rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function, Integer in let f: (Integer -> Integer) -> Integer -> Integer = fn rc, x => if x ==.Entity 0 then 0 else succ $ rc (x - 1) in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount in rcount 1" $
+                                "with Function, Integer let {f: (Integer -> Integer) -> Integer -> Integer = fn rc, x => if x ==.Entity 0 then 0 else succ $ rc (x - 1)} let rec {rcount: Integer -> Integer = rcount1; rcount1 = f rcount} rcount 1" $
                             LRSuccess "1"
-                          , testQuery "with Function in let f = fn _, x => x in let rec rcount = f rcount in rcount 1" $
-                            LRSuccess "1"
-                          , testQuery
-                                "with Function in let f: Any -> Integer -> Integer = fn _, x => x in let rec rcount = f (seq (error \"strict\") rcount) in rcount 1" $
+                          , testQuery "with Function let {f = fn _, x => x} let rec {rcount = f rcount} rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function in let f: Any -> Integer -> Integer = fn _, x => x in let rec rcount = f (seq rcount (error \"strict\")) in rcount 1" $
+                                "with Function let {f: Any -> Integer -> Integer = fn _, x => x} let rec {rcount = f (seq (error \"strict\") rcount)} rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function in let f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x in let rec rcount = f rcount in rcount 1" $
+                                "with Function let {f: Any -> Integer -> Integer = fn _, x => x} let rec {rcount = f (seq rcount (error \"strict\"))} rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function in let f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x in let rec rcount = rcount1; rcount1 = f rcount in rcount 1" $
+                                "with Function let {f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x} let rec {rcount = f rcount} rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function in let f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x in let rec rcount: Integer -> Integer = rcount1; rcount1 = f rcount in rcount 1" $
+                                "with Function let {f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x} let rec {rcount = rcount1; rcount1 = f rcount} rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function, Integer in let rec rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1 = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                                "with Function let {f: (Integer -> Integer) -> Integer -> Integer = fn _, x => x} let rec {rcount: Integer -> Integer = rcount1; rcount1 = f rcount} rcount 1" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function, Integer in let rec rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1: (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                                "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1 = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
                             LRSuccess "1"
                           , testQuery
-                                "with Function, Integer in let rec rcount: (rec xa, Maybe xa) -> Integer = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                                "with Function, Integer let rec {rcount: (rec a, Maybe a) -> Integer = rcount1; rcount1: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          , testQuery
+                                "with Function, Integer let rec {rcount: (rec xa, Maybe xa) -> Integer = rcount1; rcount1: (rec xb, Maybe xb) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
                             LRSuccess "1"
                           ]
                     ]
               , testTree
                     "match"
                     [ testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount Nothing" $
                       LRSuccess "0"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => if True then 1 else succ $ rcount y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => if True then 1 else succ $ rcount y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => y >- match Nothing => 1; Just z => if True then 2 else succ $ rcount y end end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => y >- fn {Nothing => 1; Just z => if True then 2 else succ $ rcount y}}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => if True then 1 else succ $ rcount y end in rcount $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => if True then 1 else succ $ rcount y}} rcount $ Just $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end in rcount $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y}} rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => y >- match Nothing => 1; Just z => if True then 2 else succ $ rcount y end end in rcount $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => y >- fn {Nothing => 1; Just z => if True then 2 else succ $ rcount y}}} rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => y >- match Nothing => 1; Just z => z >- match Nothing => 2; Just p => if True then 3 else succ $ rcount y end end end in rcount $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => y >- fn {Nothing => 1; Just z => z >- fn {Nothing => 2; Just p => if True then 3 else succ $ rcount y}}}} rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => y >- match Nothing => 1; Just z => z >- match Nothing => 2; Just p => succ $ rcount y end end end in rcount $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => y >- fn {Nothing => 1; Just z => z >- fn {Nothing => 2; Just p => succ $ rcount y}}}} rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => y >- match Nothing => 1; Just z => z >- match Nothing => 2; Just p => succ $ rcount y end end end; rcount1 = fn x => rcount x in rcount1 $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => y >- fn {Nothing => 1; Just z => z >- fn {Nothing => 2; Just p => succ $ rcount y}}}; rcount1 = fn x => rcount x} rcount1 $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount1 = match Nothing => 0; Just z => succ $ rcount z; end; rcount = match Nothing => 0; Just y => succ $ rcount1 y end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount1 = fn {Nothing => 0; Just z => succ $ rcount z;}; rcount = fn {Nothing => 0; Just y => succ $ rcount1 y}} rcount $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "4"
                     , testQuery
-                          "with Function, Integer in let rec rcount1 = match Nothing => 0; Just z => succ $ rcount z end; rcount = match Nothing => 0; Just y => succ $ rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount1 = fn {Nothing => 0; Just z => succ $ rcount z}; rcount = fn {Nothing => 0; Just y => succ $ rcount1 y}} rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "12"
                     , testQuery
-                          "with Function, Integer in let rec rcount1 = match Nothing => 0; Just z => succ $ rcount z end; rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount1 = fn {Nothing => 0; Just z => succ $ rcount z}; rcount : (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount1 y}} rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "12"
                     , testQuery
-                          "with Function, Integer in let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y end; rval : rec a, Maybe a = Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount : (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just Nothing => 1; Just (Just y) => if True then 2 else 2 + rcount y}; rval : rec a, Maybe a = Just $ Just Nothing} rcount rval" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a, Maybe a = Just $ Just $ Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount : (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5}; rval : rec a, Maybe a = Just $ Just $ Just $ Just Nothing} rcount rval" $
                       LRSuccess "4"
                     , testQuery
-                          "with Function in let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5 end; rval : rec a, Maybe a = Just rval in rcount rval" $
+                          "with Function let rec {rcount : (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just Nothing))) => 4; Just (Just (Just (Just (Just _)))) => 5}; rval : rec a, Maybe a = Just rval} rcount rval" $
                       LRSuccess "5"
                     , testQuery
-                          "with Function, Integer in let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end; rval : rec a, Maybe a = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount : (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}; rval : rec a, Maybe a = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing} rcount rval" $
                       LRSuccess "10"
                     , testQuery
-                          "with Function, Integer in let rec rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount : (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing} rcount rval" $
                       LRSuccess "10"
                     , testQuery
-                          "with Function, Integer in let rc: (a -> Integer) -> Maybe a -> Integer = fn r => match Nothing => 0; Just y => succ $ r y end in fix rc $ Just Nothing" $
+                          "with Function, Integer let {rc: (a -> Integer) -> Maybe a -> Integer = fn r => fn {Nothing => 0; Just y => succ $ r y}} fix rc $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "with Function, Integer in let rc: (a -> Integer) -> Maybe a -> Integer = fn r => match Nothing => 0; Just y => succ $ r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let {rc: (a -> Integer) -> Maybe a -> Integer = fn r => fn {Nothing => 0; Just y => succ $ r y}} fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just $ Just Nothing" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "4"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
                       LRSuccess "5"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end; rval = Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval = Just $ Just Nothing} rcount rval" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end; rval : Maybe (Maybe (Maybe None)) = Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval : Maybe (Maybe (Maybe None)) = Just $ Just Nothing} rcount rval" $
                       LRSuccess "2"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just Nothing} rcount rval" $
                       LRSuccess "2"
-                    , testQuery "with Function in let in Just $ Just $ Just Nothing" $
-                      LRSuccess "Just Just Just Nothing"
+                    , testQuery "with Function let {} Just $ Just $ Just Nothing" $ LRSuccess "Just Just Just Nothing"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end; rval = Just $ Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval = Just $ Just $ Just Nothing} rcount rval" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval : Maybe (Maybe (Maybe (Maybe None))) = Just $ Just $ Just Nothing} rcount rval" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ rcount y end; rval : Maybe (Maybe (Maybe (Maybe (Maybe None)))) = Just $ Just $ Just Nothing in rcount rval" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ rcount y}; rval : Maybe (Maybe (Maybe (Maybe (Maybe None)))) = Just $ Just $ Just Nothing} rcount rval" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function in let rec rcount = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end in rcount $ Just $ Just $ Just Nothing" $
+                          "with Function let rec {rcount = fn {Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4}} rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function, Integer in let rec rcount = match Nothing => 0; Just y => succ $ r1count y end; r1count = match Nothing => 0; Just y => succ $ r1count y end in rcount $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount = fn {Nothing => 0; Just y => succ $ r1count y}; r1count = fn {Nothing => 0; Just y => succ $ r1count y}} rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function in let in (Just $ Just $ Just Nothing) >- match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end" $
+                          "with Function let {} (Just $ Just $ Just Nothing) >- fn {Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4}" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function in let rec rcount = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end in rcount $ Just $ Just $ Just Nothing" $
+                          "with Function let rec {rcount = fn {Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4}} rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function in let rec rcount : (rec a , Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4 end in rcount $ Just $ Just $ Just Nothing" $
+                          "with Function let rec {rcount : (rec a , Maybe a) -> Integer = fn {Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; _ => 4}} rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function, Integer in let rec rcount : (rec a , Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just y))) => 4 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount : (rec a , Maybe a) -> Integer = fn {Nothing => 0; Just Nothing => 1; Just (Just Nothing) => 2; Just (Just (Just Nothing)) => 3; Just (Just (Just (Just y))) => 4 + rcount y}} rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     , testQuery
-                          "with Function, Integer in let rec rcount : (rec a , Maybe a) -> Integer = match Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                          "with Function, Integer let rec {rcount : (rec a , Maybe a) -> Integer = fn {Nothing => 0; Just Nothing => 1; Just (Just y) => 2 + rcount y}} rcount $ Just $ Just $ Just Nothing" $
                       LRSuccess "3"
                     ]
               , testTree
                     "contra-var"
-                    [ testQuery "let f: rec r, (r -> Integer) = fn _ => 3 in 0" LRCheckFail
-                    , testQuery "let f: rec r, (r -> r) = fn x => x in 0" LRCheckFail
+                    [ testQuery "let {f: rec r, (r -> Integer) = fn _ => 3} 0" LRCheckFail
+                    , testQuery "let {f: rec r, (r -> r) = fn x => x} 0" LRCheckFail
                     ]
               ]
         , let
@@ -1008,28 +1007,28 @@ testQueries =
                   in testTree
                          (unpack $ supertype <> " -> " <> subtype)
                          [ testQuery
-                               ("with Rational in let x: " <>
+                               ("with Rational let {x: " <>
                                 supertype <>
                                 " = " <>
                                 val <>
                                 "; y: " <>
                                 subtype <>
-                                " = x >-.Function match (z:? " <> subtype <> ") => z; _ => " <> altval <> "; end in y")
+                                " = x >-.Function fn {(z:? " <> subtype <> ") => z; _ => " <> altval <> ";}} y")
                                result
                          , testQuery
-                               ("with Rational in let x: " <>
+                               ("with Rational let {x: " <>
                                 supertype <>
                                 " = " <>
                                 val <>
                                 "; y: " <>
                                 subtype <>
                                 " = check.Function @(" <>
-                                subtype <> ") x >-.Function match Just z => z; Nothing => " <> altval <> "; end in y")
+                                subtype <> ") x >-.Function fn {Just z => z; Nothing => " <> altval <> ";}} y")
                                result
                          , testQuery
-                               ("with Rational in let x: " <>
+                               ("with Rational let {x: " <>
                                 supertype <>
-                                " = " <> val <> "; y: " <> subtype <> " = coerce.Function @(" <> subtype <> ") x in y") $
+                                " = " <> val <> "; y: " <> subtype <> " = coerce.Function @(" <> subtype <> ") x} y") $
                            if good
                                then result
                                else LRRunError
@@ -1071,49 +1070,48 @@ testQueries =
                      ]
         , testTree
               "record"
-              [ testQuery "let rf of end = 4 in rf of end" $ LRSuccess "4"
-              , testQuery "let rf of x: Integer end = x in rf of x = 7 end" $ LRSuccess "7"
-              , testQuery "let rf of x: Integer end = x in rf of end" $ LRCheckFail
-              , testQuery "let rf of x: Integer end : Integer = x in rf of x = 7 end" $ LRSuccess "7"
-              , testQuery "let rf of x: Integer end : Unit = x in rf of x = 7 end" $ LRCheckFail
-              , testQuery "let rf of x: Integer end : Number = x in rf of x = 7 end : Number" $ LRSuccess "7"
-              , testQuery "let rf of x: Integer end : Number = x in rf of x = 7 end : Integer" $ LRCheckFail
-              , testQuery "let rf of x: Integer end : Integer = x in rf of x = 7 end : Integer" $ LRSuccess "7"
-              , testQuery "let rf of x: Integer end = x in let x = 7 in rf" $ LRSuccess "7"
-              , testQuery "let rf of x: Integer; y: Integer end = x + y in rf of x = 8; y = 12 end" $ LRSuccess "20"
-              , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in rf of x = 8; y = 12 end" $ LRSuccess "20"
-              , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in rf of x = 8 end" $ LRSuccess "10"
-              , testQuery "let rf of x: Integer; y: Integer = 2 end = x + y in let x = 6 in rf" $ LRSuccess "8"
-              , textTypeTest "let rf of m: a -> Maybe a end = m 3 in rf of m = Just end" "{} -> Maybe. Integer."
+              [ testQuery "let {rf {} = 4} rf {}" $ LRSuccess "4"
+              , testQuery "let {rf {x: Integer} = x} rf {x = 7}" $ LRSuccess "7"
+              , testQuery "let {rf {x: Integer} = x} rf {}" $ LRCheckFail
+              , testQuery "let {rf {x: Integer} : Integer = x} rf {x = 7}" $ LRSuccess "7"
+              , testQuery "let {rf {x: Integer} : Unit = x} rf {x = 7}" $ LRCheckFail
+              , testQuery "let {rf {x: Integer} : Number = x} rf {x = 7} : Number" $ LRSuccess "7"
+              , testQuery "let {rf {x: Integer} : Number = x} rf {x = 7} : Integer" $ LRCheckFail
+              , testQuery "let {rf {x: Integer} : Integer = x} rf {x = 7} : Integer" $ LRSuccess "7"
+              , testQuery "let {rf {x: Integer} = x} let {x = 7} rf" $ LRSuccess "7"
+              , testQuery "let {rf {x: Integer; y: Integer} = x + y} rf {x = 8; y = 12}" $ LRSuccess "20"
+              , testQuery "let {rf {x: Integer; y: Integer = 2} = x + y} rf {x = 8; y = 12}" $ LRSuccess "20"
+              , testQuery "let {rf {x: Integer; y: Integer = 2} = x + y} rf {x = 8}" $ LRSuccess "10"
+              , testQuery "let {rf {x: Integer; y: Integer = 2} = x + y} let {x = 6} rf" $ LRSuccess "8"
+              , textTypeTest "let {rf {m: a -> Maybe a} = m 3} rf {m = Just}" "{} -> Maybe. Integer."
               ]
         , testTree
               "polymorphism"
-              [ textTypeTest "let x: a -> Maybe a = Just in (x 3,x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
+              [ textTypeTest "let {x: a -> Maybe a = Just} (x 3,x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
               , textTypeTest
-                    "let x: a -> Maybe a = Just in imply ?x = x in (?x 3,?x \"text\")"
+                    "let {x: a -> Maybe a = Just} imply {?x = x} (?x 3,?x \"text\")"
                     "{} -> Maybe. Integer. *: Maybe. Text."
-              , textTypeTest "imply ?x = Just in (?x 3,?x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
+              , textTypeTest "imply {?x = Just} (?x 3,?x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
               , textTypeTest
-                    "imply ?x: a -> Maybe a = Just in (?x 3,?x \"text\")"
-                    "{} -> Maybe. Integer. *: Maybe. Text."
-              , textTypeTest
-                    "let rf of m: a -> Maybe a end = (m 3,m \"text\") in rf of m = Just end"
+                    "imply {?x: a -> Maybe a = Just} (?x 3,?x \"text\")"
                     "{} -> Maybe. Integer. *: Maybe. Text."
               , textTypeTest
-                    "let datatype T of Mk of m: a -> Maybe a end end; rf = fn Mk.T => (m 3,m \"text\") in rf Mk.T of m = Just end"
+                    "let {rf {m: a -> Maybe a} = (m 3,m \"text\")} rf {m = Just}"
                     "{} -> Maybe. Integer. *: Maybe. Text."
               , textTypeTest
-                    "{let rm = {Just} in (%rm 3,%rm \"text\")}"
+                    "let {datatype T {Mk {m: a -> Maybe a}}; rf = fn Mk.T => (m 3,m \"text\")} rf Mk.T {m = Just}"
+                    "{} -> Maybe. Integer. *: Maybe. Text."
+              , textTypeTest
+                    "ap{let {rm = ap{Just}} (%rm 3,%rm \"text\")}"
                     "{} -> WholeModel. +(Maybe. Integer. *: Maybe. Text.)"
               , textTypeTest
-                    "{let m = %{Just} in (m 3,m \"text\")}" -- since this is sugar for ap, it must be monomorphic
+                    "ap{let {m = %ap{Just}} (m 3,m \"text\")}" -- since this is sugar for ap, it must be monomorphic
                     "{} -> WholeModel. +(Maybe. (Integer. | Text.) *: Maybe. (Integer. | Text.))"
-              , testQuery "let rf of m: a -> Maybe a end = (m 3,m \"text\") in rf of m = Just end" $
+              , testQuery "let {rf {m: a -> Maybe a} = (m 3,m \"text\")} rf {m = Just}" $
                 LRSuccess "(Just 3,Just \"text\")"
-              , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in rf of end" $
+              , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf {}" $
                 LRSuccess "(Just 3,Just \"text\")"
-              , testQuery "let rf of m: a -> Maybe a = Just end = (m 3,m \"text\") in rf" $
-                LRSuccess "(Just 3,Just \"text\")"
+              , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf" $ LRSuccess "(Just 3,Just \"text\")"
               ]
         ]
 
@@ -1145,12 +1143,12 @@ testShims =
         , testShim "(fn x => 4) 3" "Integer." "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
-              "let rcount = match Nothing => 0; Just y => succ $ rcount y end in rcount"
+              "let {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount"
               "(rec c, Maybe c) -> Integer."
               "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
-              "let rcount : (rec a, Maybe a) -> Integer = match Nothing => 0; Just y => succ $ rcount y end in rcount"
+              "let {rcount : (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just y => succ $ rcount y}} rcount"
               "(rec a, Maybe a) -> Integer."
               "(join1 id)"
         ]

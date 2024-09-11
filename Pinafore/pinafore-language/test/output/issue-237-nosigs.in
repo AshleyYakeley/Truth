@@ -1,28 +1,24 @@
 #!/usr/bin/pinafore
-let rec
+let rec {
+  ff =
+    fn f => fn {
+      Just a => Just $ f a;
+      Nothing => Nothing;
+    };
 
-ff =
-    fn f =>
-    match
-        Just a => Just $ f a;
-        Nothing => Nothing;
-    end;
-
-manytimes =
+  manytimes =
     fn i,f,a =>
-    i >- match
-        0 => a;
-        _ => manytimes (pred.Integer i) f $ f a;
-    end;
-
-in
-do
-    outputLn.Env "START";
-    outputLn.Env $ show $ ff Just Nothing;
-    outputLn.Env $ show $ ff Just (Just Nothing);
-    outputLn.Env $ show $ (ff $ ff $ Just) (Just Nothing);
-    outputLn.Env $ show $ (ff $ ff $ Just) (Just $ Just Nothing);
-    outputLn.Env $ show $ manytimes 5 ff Just (Just $ Just $ Just $ Just Nothing);
-    outputLn.Env $ show $ manytimes 5 ff Just (Just $ Just $ Just $ Just $ Just Nothing);
-    outputLn.Env "END";
-end
+    i >- fn {
+      0 => a;
+      _ => manytimes (pred.Integer i) f $ f a;
+    };
+} do {
+  outputLn.Env "START";
+  outputLn.Env $ show $ ff Just Nothing;
+  outputLn.Env $ show $ ff Just (Just Nothing);
+  outputLn.Env $ show $ (ff $ ff $ Just) (Just Nothing);
+  outputLn.Env $ show $ (ff $ ff $ Just) (Just $ Just Nothing);
+  outputLn.Env $ show $ manytimes 5 ff Just (Just $ Just $ Just $ Just Nothing);
+  outputLn.Env $ show $ manytimes 5 ff Just (Just $ Just $ Just $ Just $ Just Nothing);
+  outputLn.Env "END";
+}

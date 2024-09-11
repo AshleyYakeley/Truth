@@ -1,28 +1,24 @@
 #!/usr/bin/pinafore
-let rec
-
-datatype Value of
+let rec {
+  datatype Value {
     Lit Integer;
     Func (Value -> Value);
-end;
+  };
 
-subtype Integer <: Value = Lit.Value;
-subtype (Value -> Value) <: Value = Func.Value;
+  subtype Integer <: Value = Lit.Value;
+  subtype (Value -> Value) <: Value = Func.Value;
 
-i = fn x => x;
-m = fn x => x x;
-mi = m i;
+  i = fn x => x;
+  m = fn x => x x;
+  mi = m i;
 
-miv: Value = mi;
-
-in
-outputLn.Env $
+  miv: Value = mi;
+} outputLn.Env $
 miv >-
-match
+fn {
+  Lit.Value l => show l;
+  Func.Value f => f 467 >- fn {
     Lit.Value l => show l;
-    Func.Value f => f 467 >-
-    match
-        Lit.Value l => show l;
-        Func.Value _ => "func";
-    end;
-end
+    Func.Value _ => "func";
+  }
+}

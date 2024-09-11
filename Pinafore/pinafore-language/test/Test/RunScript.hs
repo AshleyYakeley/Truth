@@ -48,13 +48,13 @@ tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
 tPrefix t = tContext $ \sc -> sc {scPrefix = scPrefix sc <> t <> "\n"}
 
 tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
-tDecls defs = tPrefix $ pack $ "let\n" <> intercalate ";\n" defs <> "\nin\n"
+tDecls defs = tPrefix $ pack $ "let {\n" <> intercalate ";\n" defs <> "\n}\n"
 
 tDeclsRec :: [String] -> ScriptTestTree -> ScriptTestTree
-tDeclsRec defs = tPrefix $ pack $ "let rec\n" <> intercalate ";\n" defs <> "\nin\n"
+tDeclsRec defs = tPrefix $ pack $ "let rec {\n" <> intercalate ";\n" defs <> "\n}\n"
 
 tDeclarator :: Text -> ScriptTestTree -> ScriptTestTree
-tDeclarator t = tPrefix $ t <> " in\n"
+tDeclarator t = tPrefix $ t <> "\n"
 
 tWith :: [Text] -> ScriptTestTree -> ScriptTestTree
 tWith tt = tDeclarator $ "with " <> intercalate ", " tt

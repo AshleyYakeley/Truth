@@ -1,52 +1,51 @@
 #!/usr/bin/pinafore
 
-let
+let {
+  datatype State s +a {
+    Mk (s -> s *: a);
+  };
 
-    datatype State {-p,+q} +a of
-        Mk (p -> q *: a);
-    end;
+  namespace State {
+    map: (a -> b) -> State s a -> State s b =
+      fn ab, Mk f => Mk $ fn old => f old >- fn (new,a) => (new,ab a);
 
-    namespace State of
-        map: (a -> b) -> State s a -> State s b =
-            fn ab, Mk f => Mk $ fn old => f old >- fn (new,a) => (new,ab a);
+    pure: a -> State s a =
+      fn a => Mk $ fn s => (s,a);
 
-        pure: a -> State s a =
-            fn a => Mk $ fn s => (s,a);
+    (>>=): State s a -> (a -> State s b) -> State s b =
+      fn Mk f, q => Mk $ fn old => let {(new,a) = f old; Mk g = q a} g new;
 
-        (>>=): State s a -> (a -> State s b) -> State s b =
-            fn Mk f, q => Mk $ fn old => let (new,a) = f old; Mk g = q a in g new;
+    apply: State s (a -> b) -> State s a -> State s b = fn mab,ma => mab >>= (fn ab => map ab ma);
 
-        ap: State s (a -> b) -> State s a -> State s b = fn mab,ma => mab >>= (fn ab => map ab ma);
+    liftA2: (a -> b -> c) -> State s a -> State s b -> State s c = fn f,expr => apply $ map f expr;
 
-        liftA2: (a -> b -> c) -> State s a -> State s b -> State s c = fn f,expr => ap $ map f expr;
+    (**): State s a -> State s b -> State s (a *: b) = liftA2 $ fn a,b => (a,b);
 
-        (**): State s a -> State s b -> State s (a *: b) = liftA2 $ fn a,b => (a,b);
+    (>>): State s a -> State s b -> State s b = fn ma,mb => ma >>= (fn _ => mb);
 
-        (>>): State s a -> State s b -> State s b = fn ma,mb => ma >>= (fn _ => mb);
+    get: State s s =
+      Mk $ fn old => (old,old);
 
-        get: State s s =
-            Mk $ fn old => (old,old);
+    set: s -> State +s Unit =
+      fn s => Mk $ fn _ => (s,());
 
-        set: s -> State +s Unit =
-            fn s => Mk $ fn _ => (s,());
+    modify: (s -> s) -> State s Unit =
+      fn m => do.State {
+        s <- get;
+        set $ m s;
+      };
 
-        modify: (s -> s) -> State s Unit =
-            fn m => do.State
-                s <- get;
-                set $ m s;
-                end;
+    run: s -> State s a -> a =
+      fn s, Mk f => f s >- fn (_,a) => a;
+  };
 
-        run: s -> State s a -> a =
-            fn s, Mk f => f s >- fn (_,a) => a;
-    end;
+  val = with State
+    run 0 $ do.State {
+      set 7;
+      a <- get;
+      modify ((+) 4);
+      modify ((*) a);
+      get;
+    };
 
-    val = with State in
-        run 0 $ do.State
-            set 7;
-            a <- get;
-            modify ((+) 4);
-            modify ((*) a);
-            get;
-            end;
-
-in outputLn.Env $ show val
+} outputLn.Env $ show val

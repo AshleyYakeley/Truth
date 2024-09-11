@@ -20,7 +20,7 @@ testUpdate text =
 testUpdates :: TestTree
 testUpdates =
     runScriptTestTree $
-    tGroup "update" [testUpdate "do model <- newMem.WholeModel; pure.Action (model :=.WholeModel 1, model) end"]
+    tGroup "update" [testUpdate "do {model <- newMem.WholeModel; pure.Action (model :=.WholeModel 1, model)}"]
 
 data SubtypeResult
     = SRNot
@@ -29,7 +29,7 @@ data SubtypeResult
     | SRSingle
 
 isOfType :: Text -> Text -> Text
-isOfType v t = "let x: " <> t <> " = " <> v <> " in pass"
+isOfType v t = "let {x: " <> t <> " = " <> v <> "} pass"
 
 subtypeTests :: Bool -> SubtypeResult -> Text -> Text -> [ScriptTestTree]
 subtypeTests polar sr p q =
@@ -37,15 +37,15 @@ subtypeTests polar sr p q =
     , tGroup
           "unify"
           [ testSubtypeUnify polar sr $
-            "let f: (" <> q <> ") -> Unit = fn _ => (); x: " <> p <> " = undefined; fx = f x in pass"
-          , testSubtypeUnify polar sr $ "let rec f: (" <> q <> ") -> Unit = f; x: " <> p <> " = x; fx = f x in pass"
+            "let {f: (" <> q <> ") -> Unit = fn _ => (); x: " <> p <> " = undefined; fx = f x} pass"
+          , testSubtypeUnify polar sr $ "let rec {f: (" <> q <> ") -> Unit = f; x: " <> p <> " = x; fx = f x} pass"
           ]
     , tGroup "subsume" $
-      [ testSubtypeSubsume polar sr $ "let rec x: " <> p <> " = x; y: " <> q <> " = x in pass"
-      , testSubtypeSubsume polar sr $ "let x: " <> p <> " = undefined; y: " <> q <> " = x in pass"
-      , testSubtypeSubsume polar sr $ "let x: " <> q <> " = undefined: " <> p <> " in pass"
-      , testSubtypeSubsume polar sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
-      , testSubtypeSingle polar sr $ "let f: (" <> p <> ") -> (" <> q <> ") = fn x => x in pass"
+      [ testSubtypeSubsume polar sr $ "let rec {x: " <> p <> " = x; y: " <> q <> " = x} pass"
+      , testSubtypeSubsume polar sr $ "let {x: " <> p <> " = undefined; y: " <> q <> " = x} pass"
+      , testSubtypeSubsume polar sr $ "let {x: " <> q <> " = undefined: " <> p <> "} pass"
+      , testSubtypeSubsume polar sr $ "let {x = (undefined: " <> p <> "): " <> q <> "} pass"
+      , testSubtypeSingle polar sr $ "let {f: (" <> p <> ") -> (" <> q <> ") = fn x => x} pass"
       ]
     ]
   where
@@ -74,13 +74,14 @@ testEntity =
     tDecls
         [ "pass = pure ()"
         , "undefined = error \"undefined\""
-        , "runWholeModel = fn r => do a <- get r; a end"
-        , "runreforfail = fn r => runWholeModel (r ?? {fail \"unknown model\"})"
-        , "testeq = fn expected, found => runreforfail {if %expected == %found then pass else fail \"not equal\"}"
-        , "testneq = fn expected, found => runreforfail {if %expected /= %found then pass else fail \"equal\"}"
-        , "testisknown = fn t => runWholeModel {if %(known t) then pass else fail \"known\"}"
-        , "testisunknown = fn t => runWholeModel {if %(known t) then fail \"known\" else pass}"
-        , "testeqval = fn e, f => testeq {e} {f}"
+        , "testeq = fn expected, found => if expected == found then pass else fail \"not equal\""
+        , "testneq = fn expected, found => if expected /= found then pass else fail \"equal\""
+        , "runWholeModel = fn r => do {a <- get r; a}"
+        , "runreforfail = fn r => runWholeModel (r ?? ap{fail \"unknown model\"})"
+        , "testrefeq = fn expected, found => runreforfail ap{testeq %expected %found}"
+        , "testrefneq = fn expected, found => runreforfail ap{testneq %expected %found}"
+        , "testrefisknown = fn t => runWholeModel ap{if %(known t) then pass else fail \"known\"}"
+        , "testrefisunknown = fn t => runWholeModel ap{if %(known t) then fail \"known\" else pass}"
         , "expectStop = fn p => onStop (p >> fail \"no stop\") pass"
         ] $
     tGroup
@@ -104,7 +105,7 @@ testEntity =
               , testExpectReject ")"
               , testExpectReject "pass x"
               , testExpectReject "pass pass"
-              , testExpectReject "pass in"
+              , testExpectReject "pass}"
               , testExpectReject "pass ("
               , testExpectReject "pass )"
               , testExpectReject "pass let"
@@ -113,136 +114,136 @@ testEntity =
               "fail"
               [ testExpectStop "stop"
               , testExpectThrow "fail \"text\""
-              , testExpectThrow "let in fail \"text\""
-              , testExpectThrow "let t = 1 in fail \"text\""
-              , testExpectThrow "let entitytype T in fail \"text\""
+              , testExpectThrow "let {} fail \"text\""
+              , testExpectThrow "let {t = 1} fail \"text\""
+              , testExpectThrow "let {entitytype T} fail \"text\""
               ]
         , tGroup
               "do"
-              [ testExpectSuccess "do pure () end"
-              , testExpectSuccess "do pure (); end"
-              , testExpectSuccess "do testeqval 3 3 end"
-              , testExpectSuccess "do a <- pure 3; testeqval 3 a end"
-              , testExpectSuccess "do a = 3; testeqval 3 a end"
-              , testExpectSuccess "do {# comment #} a = 3; testeqval 3 a end"
-              , testExpectSuccess "do {#| doc a #} a = 3; testeqval 3 a end"
-              , testExpectSuccess "do a <- pure 3; b <- pure $ a +.Integer a; testeqval 6 b end"
+              [ testExpectSuccess "do {pure ()}"
+              , testExpectSuccess "do {pure ();}"
+              , testExpectSuccess "do {testeq 3 3}"
+              , testExpectSuccess "do {a <- pure 3; testeq 3 a}"
+              , testExpectSuccess "do {a = 3; testeq 3 a}"
+              , testExpectSuccess "do {{# comment #} a = 3; testeq 3 a}"
+              , testExpectSuccess "do {{#| doc a #} a = 3; testeq 3 a}"
+              , testExpectSuccess "do {a <- pure 3; b <- pure $ a +.Integer a; testeq 6 b}"
               ]
-        , tDecls ["flagRef = do r <- newMem.WholeModel; r := False; pure r; end"] $
+        , tDecls ["flagRef = do {r <- newMem.WholeModel; r := False; pure r;}"] $
           tGroup
               "stop"
               [ testExpectSuccess "pure ()"
               , testExpectThrow "fail \"failure\""
               , testExpectSuccess "expectStop stop"
-              , testExpectSuccess "expectStop $ do stop; fail \"unstopped\"; end"
-              , testExpectSuccess "do a <- onStop (pure 1) (pure 2); testeqval 1 a; end"
-              , testExpectSuccess "do a <- onStop (pure 1) stop; testeqval 1 a; end"
-              , testExpectThrow "do a <- onStop (pure 1) stop; fail \"unstopped\"; end"
-              , testExpectSuccess "do a <- onStop stop (pure 2); testeqval 2 a; end"
-              , testExpectThrow "do a <- onStop stop (pure 2); fail \"unstopped\"; end"
+              , testExpectSuccess "expectStop $ do {stop; fail \"unstopped\";}"
+              , testExpectSuccess "do {a <- onStop (pure 1) (pure 2); testeq 1 a;}"
+              , testExpectSuccess "do {a <- onStop (pure 1) stop; testeq 1 a;}"
+              , testExpectThrow "do {a <- onStop (pure 1) stop; fail \"unstopped\";}"
+              , testExpectSuccess "do {a <- onStop stop (pure 2); testeq 2 a;}"
+              , testExpectThrow "do {a <- onStop stop (pure 2); fail \"unstopped\";}"
               , testExpectSuccess
-                    "do r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (r2 := True); testeq {True} r1; testeq {False} r2; end"
+                    "do {r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (r2 := True); testrefeq ap{True} r1; testrefeq ap{False} r2;}"
               , testExpectSuccess
-                    "do r1 <- flagRef; r2 <- flagRef; onStop (do r1 := True; stop; end) (r2 := True); testeq {True} r1; testeq {True} r2; end"
+                    "do {r1 <- flagRef; r2 <- flagRef; onStop (do {r1 := True; stop;}) (r2 := True); testrefeq ap{True} r1; testrefeq ap{True} r2;}"
               , testExpectSuccess
-                    "do r1 <- flagRef; r2 <- flagRef; onStop (do stop; r1 := True; end) (r2 := True); testeq {False} r1; testeq {True} r2; end"
+                    "do {r1 <- flagRef; r2 <- flagRef; onStop (do {stop; r1 := True;}) (r2 := True); testrefeq ap{False} r1; testrefeq ap{True} r2;}"
               ]
         , tGroup
               "equality"
-              [ testExpectSuccess "testeqval 1 1"
-              , testExpectSuccess "testeqval False $ 1 == \"1\""
-              , testExpectSuccess "testeqval False $ 0 == 1"
-              , testExpectSuccess "testeqval True $ 1 == 1"
-              , testExpectSuccess "testeqval False $ 1 == ~1"
+              [ testExpectSuccess "testeq 1 1"
+              , testExpectSuccess "testeq False $ 1 == \"1\""
+              , testExpectSuccess "testeq False $ 0 == 1"
+              , testExpectSuccess "testeq True $ 1 == 1"
+              , testExpectSuccess "testeq False $ 1 == ~1"
               ]
         , tGroup
               "model"
               [ tGroup
                     "notation"
-                    [ testExpectSuccess "runreforfail {pass}"
-                    , testExpectSuccess "let p = pass in runreforfail {p}"
-                    , testExpectSuccess "runreforfail {let p = pass in p}"
-                    , testExpectSuccess "runreforfail {%{pass}}"
-                    , testExpectSuccess "let rp = {pass} in runreforfail {%rp}"
-                    , testExpectSuccess "runreforfail {let rp = {pass} in %rp}"
-                    , testExpectSuccess "let rp = {pass} in runreforfail {let p= %rp in p}"
+                    [ testExpectSuccess "runreforfail ap{pass}"
+                    , testExpectSuccess "let {p = pass} runreforfail ap{p}"
+                    , testExpectSuccess "runreforfail ap{let {p = pass} p}"
+                    , testExpectSuccess "runreforfail ap{%ap{pass}}"
+                    , testExpectSuccess "let {rp = ap{pass}} runreforfail ap{%rp}"
+                    , testExpectSuccess "runreforfail ap{let {rp = ap{pass}} %rp}"
+                    , testExpectSuccess "let {rp = ap{pass}} runreforfail ap{let {p= %rp} p}"
                     ]
               , tGroup
                     "stop"
                     [ testExpectSuccess "expectStop $ stop"
                     , testExpectSuccess "expectStop $ get unknown"
-                    , testExpectSuccess "expectStop $ {1} := 1"
-                    , testExpectSuccess "expectStop $ delete {1}"
+                    , testExpectSuccess "expectStop $ ap{1} := 1"
+                    , testExpectSuccess "expectStop $ delete ap{1}"
                     ]
               , tGroup
                     "memory"
-                    [ testExpectSuccess "expectStop $ do r <- newMem.WholeModel; get r; end"
-                    , testExpectSuccess "do r <- newMem.WholeModel; r := 45; a <- get r; testeqval 45 a; end"
-                    , testExpectSuccess "do r <- newMem.WholeModel; r := 3; r := 4; a <- get r; testeqval 4 a; end"
+                    [ testExpectSuccess "expectStop $ do {r <- newMem.WholeModel; get r;}"
+                    , testExpectSuccess "do {r <- newMem.WholeModel; r := 45; a <- get r; testeq 45 a;}"
+                    , testExpectSuccess "do {r <- newMem.WholeModel; r := 3; r := 4; a <- get r; testeq 4 a;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; n <- get $ count.FiniteSetModel s; testeqval 0 n; end"
+                          "do {s <- newMem.FiniteSetModel; n <- get $ count.FiniteSetModel s; testeq 0 n;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; n <- get $ count.FiniteSetModel s; testeqval 1 n; end"
+                          "do {s <- newMem.FiniteSetModel; s +=.SetModel 57; n <- get $ count.FiniteSetModel s; testeq 1 n;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; s -=.SetModel 57; n <- get $ count.FiniteSetModel s; testeqval 0 n; end"
+                          "do {s <- newMem.FiniteSetModel; s -=.SetModel 57; n <- get $ count.FiniteSetModel s; testeq 0 n;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; s -=.SetModel 57; n <- get $ count.FiniteSetModel s; testeqval 0 n; end"
+                          "do {s <- newMem.FiniteSetModel; s +=.SetModel 57; s -=.SetModel 57; n <- get $ count.FiniteSetModel s; testeq 0 n;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; m54 <- get $ member.SetModel s {54}; m57 <- get $ member.SetModel s {57}; testeqval False m54; testeqval True m57; end"
+                          "do {s <- newMem.FiniteSetModel; s +=.SetModel 57; m54 <- get $ member.SetModel s ap{54}; m57 <- get $ member.SetModel s ap{57}; testeq False m54; testeq True m57;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; s -=.SetModel 57; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
+                          "do {s <- newMem.FiniteSetModel; s -=.SetModel 57; m57 <- get $ member.SetModel s ap{57}; testeq False m57;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; s +=.SetModel 57; s -=.SetModel 57; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
+                          "do {s <- newMem.FiniteSetModel; s +=.SetModel 57; s -=.SetModel 57; m57 <- get $ member.SetModel s ap{57}; testeq False m57;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; member.SetModel s {57} := True; m54 <- get $ member.SetModel s {54}; m57 <- get $ member.SetModel s {57}; testeqval False m54; testeqval True m57; end"
+                          "do {s <- newMem.FiniteSetModel; member.SetModel s ap{57} := True; m54 <- get $ member.SetModel s ap{54}; m57 <- get $ member.SetModel s ap{57}; testeq False m54; testeq True m57;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; member.SetModel s {57} := False; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
+                          "do {s <- newMem.FiniteSetModel; member.SetModel s ap{57} := False; m57 <- get $ member.SetModel s ap{57}; testeq False m57;}"
                     , testExpectSuccess
-                          "do s <- newMem.FiniteSetModel; member.SetModel s {57} := True; member.SetModel s {57} := False; m57 <- get $ member.SetModel s {57}; testeqval False m57; end"
-                    , testExpectSuccess "expectStop $ do r <- newMem.WholeModel; immut.WholeModel r := 5; end"
+                          "do {s <- newMem.FiniteSetModel; member.SetModel s ap{57} := True; member.SetModel s ap{57} := False; m57 <- get $ member.SetModel s ap{57}; testeq False m57;}"
+                    , testExpectSuccess "expectStop $ do {r <- newMem.WholeModel; immut.WholeModel r := 5;}"
                     ]
               , tDecls
                     [ "showVal: Showable -> Action Unit = fn v => message.Debug $ show v"
-                    , "showList: List Showable -> Action Unit = fn l => do message.Debug \"[[[\"; for_ l showVal;  message.Debug \"]]]\"; end"
-                    , "testImmutList = fn present, n, call => do lr <- newMem.ListModel; lr := [10,20,30]; r <- item.ListModel present n lr; ir <- item.ListModel present n $ immut.ListModel lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
+                    , "showList: List Showable -> Action Unit = fn l => do {message.Debug \"[[[\"; for_ l showVal;  message.Debug \"]]]\";}"
+                    , "testImmutList = fn present, n, call => do {lr <- newMem.ListModel; lr := [10,20,30]; r <- item.ListModel present n lr; ir <- item.ListModel present n $ immut.ListModel lr; call lr; a <- get r; ia <- get ir; testeq a ia;}"
                     ] $
                 tGroup
                     "list"
                     [ testExpectSuccess "pass"
-                    , testExpectSuccess "do r <- newMem.ListModel; n <- getCount.ListModel r; testeqval 0 n; end"
+                    , testExpectSuccess "do {r <- newMem.ListModel; n <- getCount.ListModel r; testeq 0 n;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; n <- getCount.ListModel r; testeqval 3 n; end"
-                    , testExpectSuccess "do r <- newMem.ListModel; n <- get $ count.ListModel r; testeqval 0 n; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; n <- getCount.ListModel r; testeq 3 n;}"
+                    , testExpectSuccess "do {r <- newMem.ListModel; n <- get $ count.ListModel r; testeq 0 n;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; n <- get $ count.ListModel r; testeqval 3 n; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; n <- get $ count.ListModel r; testeq 3 n;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; i <- get ir; testeqval 20 i; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; i <- get ir; testeq 20 i;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; ir := 25; i <- get ir; testeq 25 i;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; ir := 25; l <- get r; testeq [10,25,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; delete ir; l <- get r; testeqval [10,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; delete ir; l <- get r; testeq [10,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; delete ir; ir := 15; l <- get r; testeq [10,15,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; i <- expectStop $ get ir; pure (); end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; i <- expectStop $ get ir; pure ();}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; ir := 25; i <- get ir; testeq 25 i;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; ir := 25; l <- get r; testeqval [10,25,20,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; ir := 25; l <- get r; testeq [10,25,20,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; l <- get r; testeq [10,20,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeq [10,15,20,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; l <- get r; testeq [10,20,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel False 1 r; delete ir; ir := 15; l <- get r; testeq [10,15,20,30] l;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; i <- get ir; testeqval 20 i; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; i <- get ir; testeq 20 i;}"
                     , testExpectSuccess
-                          "do r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
+                          "do {r <- newMem.ListModel; r := [10,20,30]; ir <- item.ListModel True 1 r; insert.ListModel 1 12 r; ir := 15; l <- get r; testeq [10,12,15,30] l;}"
                     , testExpectSuccess "testImmutList True 1 $ fn _ => pure ()"
                     ]
               ]
@@ -250,7 +251,7 @@ testEntity =
               [ "convr : Rational -> Rational= id"
               , "convn : Number -> Number = id"
               , "convl : Literal -> Literal = id"
-              , "testconvr : Rational -> Action Unit = fn r => testeq {convl r} {convl $ convn r}"
+              , "testconvr : Rational -> Action Unit = fn r => testeq (convl r) (convl $ convn r)"
               ] $
           tGroup
               "literal"
@@ -258,17 +259,16 @@ testEntity =
                     "Rational to Number"
                     [ testExpectSuccess "testconvr 1"
                     , testExpectSuccess "testconvr 2.5"
-                    , testExpectSuccess "testeq {convl 31.5} {convl $ convn 31.5}"
-                    , testExpectSuccess "testeq {\"63/2\"} {show 31.5}"
-                    , testExpectSuccess "testeq {\"63/2\"} {show $ convn 31.5}"
+                    , testExpectSuccess "testeq (convl 31.5) (convl $ convn 31.5)"
+                    , testExpectSuccess "testeq \"63/2\" (show 31.5)"
+                    , testExpectSuccess "testeq \"63/2\" (show $ convn 31.5)"
                     ]
               , let
                     testLiteralConversion :: ScriptExpectation -> Text -> Text -> ScriptTestTree
                     testLiteralConversion se ptype val =
                         testScriptExpectation (val <> ": " <> ptype <> " => " <> pack (show se)) se $
                         "((" <>
-                        val <>
-                        "): Literal) >- match val:? " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
+                        val <> "): Literal) >- fn {val:? " <> ptype <> " => testeq val (" <> val <> "); _ => stop}"
                     testPairs :: [(Text, Text)]
                     testPairs =
                         [ ("Unit", "()")
@@ -307,9 +307,9 @@ testEntity =
                            ]
               , tGroup
                     "show"
-                    [ testExpectSuccess "testeq {\"False\"} {show False}"
-                    , testExpectSuccess "testeq {\"34\"} {show 34}"
-                    , testExpectSuccess "testeq {\"\\\"hello\\\"\"} {show \"hello\"}"
+                    [ testExpectSuccess "testeq \"False\" $ show False"
+                    , testExpectSuccess "testeq \"34\" $ show 34"
+                    , testExpectSuccess "testeq \"\\\"hello\\\"\" $ show \"hello\""
                     ]
               ]
         , tOpenDefaultStore $
@@ -339,73 +339,75 @@ testEntity =
               [ testExpectSuccess "pass"
               , tGroup
                     "unknown & known"
-                    [ testExpectSuccess "testisunknown {% (eta !$ {e1}) == % (eta !$ {e1})}"
-                    , testExpectSuccess "runreforfail {if %(known unknown) then fail \"failed\" else pass}"
-                    , testExpectSuccess "runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
+                    [ testExpectSuccess "testrefisunknown ap{% (eta !$ ap{e1}) == % (eta !$ ap{e1})}"
+                    , testExpectSuccess "runreforfail ap{if %(known unknown) then fail \"failed\" else pass}"
+                    , testExpectSuccess "runreforfail ap{if %(known $ eta !$ ap{e1}) then fail \"failed\" else pass}"
                     , testExpectSuccess
-                          "pass >> runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
+                          "pass >> runreforfail ap{if %(known $ eta !$ ap{e1}) then fail \"failed\" else pass}"
                     , testExpectSuccess
-                          "runreforfail {pass >>.Action if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
+                          "runreforfail ap{pass >>.Action if %(known $ eta !$ ap{e1}) then fail \"failed\" else pass}"
                     , testExpectSuccess
-                          "runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass} >> pass"
-                    , testExpectSuccess "testisunknown unknown"
-                    , testExpectSuccess "testisunknown (eta !$ {e1})"
-                    , testExpectSuccess "testisunknown $ unknown ?? unknown"
-                    , testExpectSuccess "testeq {0} $ unknown ?? {0}"
-                    , testExpectSuccess "testeq {1} $ {1} ?? {0}"
-                    , testExpectSuccess "testeq {1} $ {1} ?? unknown"
+                          "runreforfail ap{if %(known $ eta !$ ap{e1}) then fail \"failed\" else pass} >> pass"
+                    , testExpectSuccess "testrefisunknown unknown"
+                    , testExpectSuccess "testrefisunknown (eta !$ ap{e1})"
+                    , testExpectSuccess "testrefisunknown $ unknown ?? unknown"
+                    , testExpectSuccess "testrefeq ap{0} $ unknown ?? ap{0}"
+                    , testExpectSuccess "testrefeq ap{1} $ ap{1} ?? ap{0}"
+                    , testExpectSuccess "testrefeq ap{1} $ ap{1} ?? unknown"
                     ]
               , tGroup
                     ":="
-                    [ testExpectSuccess "eta !$ {e1} := \"hello\""
-                    , testExpectSuccess "eea !$ {e1} := e2"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
-                    , testExpectSuccess "(eea ..Property eea) !$ {e1} := e2"
+                    [ testExpectSuccess "eta !$ ap{e1} := \"hello\""
+                    , testExpectSuccess "eea !$ ap{e1} := e2"
+                    , testExpectSuccess "eea !$ ap{e1} := e2 >> testrefeq ap{e2} (eea !$ ap{e1})"
+                    , testExpectSuccess "eta !$ ap{e1} := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
+                    , testExpectSuccess "tea !$ ap{\"hello\"} := e1 >> testrefeq ap{e1} (tea !$ ap{\"hello\"})"
                     , testExpectSuccess
-                          "do (eea ..Property eea) !$ {e1} := e2; testeq {e2} ((eea ..Property eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
+                          "tea !$ ap{\"hello\"} := e1 >> testrefeq ap{1} (count.FiniteSetModel (tea !@ ap{e1}))"
+                    , testExpectSuccess "(eea ..Property eea) !$ ap{e1} := e2"
                     , testExpectSuccess
-                          "do eea !$ (eea !$ {e1}) := e2; testeq {e2} ((eea ..Property eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
-                    , testExpectSuccess "expectStop $ do r <- newMem.WholeModel; eia !$ r := 4; end"
+                          "do {(eea ..Property eea) !$ ap{e1} := e2; testrefeq ap{e2} ((eea ..Property eea) !$ ap{e1}); testrefeq ap{e2} (eea !$ (eea !$ ap{e1}));}"
+                    , testExpectSuccess
+                          "do {eea !$ (eea !$ ap{e1}) := e2; testrefeq ap{e2} ((eea ..Property eea) !$ ap{e1}); testrefeq ap{e2} (eea !$ (eea !$ ap{e1}));}"
+                    , testExpectSuccess "expectStop $ do {r <- newMem.WholeModel; eia !$ r := 4;}"
                     ]
               , tGroup
                     "+="
-                    [ testExpectSuccess "eta !@ {\"hello\"} += e1"
-                    , testExpectSuccess "eta !@ {\"hello\"} += e1 >> pass"
-                    , testExpectSuccess "eta !@ {\"hello\"} += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                    [ testExpectSuccess "eta !@ ap{\"hello\"} += e1"
+                    , testExpectSuccess "eta !@ ap{\"hello\"} += e1 >> pass"
+                    , testExpectSuccess "eta !@ ap{\"hello\"} += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
                     ]
               , tGroup
                     "-="
                     [ testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"
+                          "eta !@ ap{\"hello\"} += e1 >> eta !@ ap{\"hello\"} -= e1 >> testrefisunknown (eta !$ ap{e1})"
                     ]
               , tGroup
                     "clear.FiniteSetModel"
                     [ testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> clear.FiniteSetModel (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
+                          "eta !@ ap{\"hello\"} += e1 >> clear.FiniteSetModel (eta !@ ap{\"hello\"}) >> testrefisunknown (eta !$ ap{e1})"
                     ]
               , tDecls ["c1 = cell @Boolean !\"c1\" store"] $
                 tGroup
                     "cell"
-                    [ testExpectSuccess "c1 := True >> testeq {True} c1"
-                    , testExpectSuccess "c1 := False >> testeq {False} c1"
+                    [ testExpectSuccess "c1 := True >> testrefeq ap{True} c1"
+                    , testExpectSuccess "c1 := False >> testrefeq ap{False} c1"
                     ]
               , tDecls ["s1 = set @Integer !\"s1\" store"] $
                 tGroup
                     "set"
-                    [ testExpectSuccess "testeq {[]} (toList.FiniteSetModel order.Integer s1)"
-                    , testExpectSuccess "s1 += 2 >> testeq {[2]} (toList.FiniteSetModel order.Integer s1)"
-                    , testExpectSuccess "s1 += 5 >> s1 += 3 >> testeq {[3,5]} (toList.FiniteSetModel order.Integer s1)"
+                    [ testExpectSuccess "testrefeq ap{[]} (toList.FiniteSetModel order.Integer s1)"
+                    , testExpectSuccess "s1 += 2 >> testrefeq ap{[2]} (toList.FiniteSetModel order.Integer s1)"
+                    , testExpectSuccess
+                          "s1 += 5 >> s1 += 3 >> testrefeq ap{[3,5]} (toList.FiniteSetModel order.Integer s1)"
                     ]
               , tGroup
                     "type"
-                    [ testExpectSuccess "let c = cell @Boolean !\"c\" store in pass"
-                    , testExpectSuccess "let c = cell @Unit !\"c\" store in pass"
-                    , testExpectSuccess "let c = cell @(Maybe Integer) !\"c\" store in pass"
-                    , testExpectSuccess "let c = cell @(List Unit) !\"c\" store in pass"
-                    , testExpectSuccess "let c = cell @(List (List (List Integer))) !\"c\" store in pass"
+                    [ testExpectSuccess "let {c = cell @Boolean !\"c\" store} pass"
+                    , testExpectSuccess "let {c = cell @Unit !\"c\" store} pass"
+                    , testExpectSuccess "let {c = cell @(Maybe Integer) !\"c\" store} pass"
+                    , testExpectSuccess "let {c = cell @(List Unit) !\"c\" store} pass"
+                    , testExpectSuccess "let {c = cell @(List (List (List Integer))) !\"c\" store} pass"
                     ]
               , tDecls
                     [ "longtext = \"jfkljgkljrklgjkvbnvleriirejgioerjhgitrklnmbdfmkl;dmnverireigjerkgjrevjkrljvkljvklsjvroejrgiojgireojg\""
@@ -414,208 +416,227 @@ testEntity =
                 tGroup
                     "fetch"
                     [ testExpectSuccess "pass"
-                    , testExpectSuccess "do v <- fetch @Text store \"hvfjkhvjrkes\"; testeq {\"hvfjkhvjrkes\"} {v} end"
-                    , testExpectSuccess "expectStop $ do v <- fetch @Text store longtext; testeq {longtext} {v} end"
                     , testExpectSuccess
-                          "do eta !$ {e1} := longtext; v <- fetch @Text store longtext; testeq {longtext} {v} end"
-                    , testExpectSuccess "expectStop $ do v <- fetch @Text store [3,4,5]; testeq {[3,4,5]} {v} end"
-                    , testExpectSuccess "do ela !$ {e1} := [3,4,5]; v <- get $ ela !$ {e1}; testeq {[3,4,5]} {v} end"
+                          "do {v <- fetch @Text store \"hvfjkhvjrkes\"; testrefeq ap{\"hvfjkhvjrkes\"} ap{v}}"
                     , testExpectSuccess
-                          "do ela !$ {e1} := [3,4,5]; v <- fetch @(List Integer) store [3,4,5]; testeq {[3,4,5]} {v} end"
+                          "expectStop $ do {v <- fetch @Text store longtext; testrefeq ap{longtext} ap{v}}"
+                    , testExpectSuccess
+                          "do {eta !$ ap{e1} := longtext; v <- fetch @Text store longtext; testrefeq ap{longtext} ap{v}}"
+                    , testExpectSuccess "expectStop $ do {v <- fetch @Text store [3,4,5]; testrefeq ap{[3,4,5]} ap{v}}"
+                    , testExpectSuccess
+                          "do {ela !$ ap{e1} := [3,4,5]; v <- get $ ela !$ ap{e1}; testrefeq ap{[3,4,5]} ap{v}}"
+                    , testExpectSuccess
+                          "do {ela !$ ap{e1} := [3,4,5]; v <- fetch @(List Integer) store [3,4,5]; testrefeq ap{[3,4,5]} ap{v}}"
                     ]
               , tGroup
                     "literal storage"
                     [ tGroup
                           "Boolean"
-                          [ testExpectSuccess "eba !$ {e1} := True >> testeq {True} (eba !$ {e1})"
-                          , testExpectSuccess "eba !$ {e1} := False >> testeq {False} (eba !$ {e1})"
+                          [ testExpectSuccess "eba !$ ap{e1} := True >> testrefeq ap{True} (eba !$ ap{e1})"
+                          , testExpectSuccess "eba !$ ap{e1} := False >> testrefeq ap{False} (eba !$ ap{e1})"
                           ]
                     , tGroup
                           "Text"
-                          [ testExpectSuccess "eta !$ {e1} := \"\" >> testeq {\"\"} (eta !$ {e1})"
-                          , testExpectSuccess "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
+                          [ testExpectSuccess "eta !$ ap{e1} := \"\" >> testrefeq ap{\"\"} (eta !$ ap{e1})"
+                          , testExpectSuccess "eta !$ ap{e1} := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
                           ]
                     , tGroup
                           "Integer"
-                          [ testExpectSuccess "eia !$ {e1} := 0 >> testeq {0} (eia !$ {e1})"
-                          , testExpectSuccess "eia !$ {e1} := 47 >> testeq {47} (eia !$ {e1})"
-                          , testExpectSuccess "eia !$ {e1} := -12 >> testeq {-12} (eia !$ {e1})"
+                          [ testExpectSuccess "eia !$ ap{e1} := 0 >> testrefeq ap{0} (eia !$ ap{e1})"
+                          , testExpectSuccess "eia !$ ap{e1} := 47 >> testrefeq ap{47} (eia !$ ap{e1})"
+                          , testExpectSuccess "eia !$ ap{e1} := -12 >> testrefeq ap{-12} (eia !$ ap{e1})"
                           ]
                     , tGroup
                           "Rational"
-                          [ testExpectSuccess "era !$ {e1} := 0 >> testeq {0} (era !$ {e1})"
-                          , testExpectSuccess "era !$ {e1} := 47 >> testeq {47} (era !$ {e1})"
-                          , testExpectSuccess "era !$ {e1} := -12 >> testeq {-12} (era !$ {e1})"
-                          , testExpectSuccess "era !$ {e1} := 31.5 >> testeq {31.5} (era !$ {e1})"
-                          , testExpectSuccess "era !$ {e1} := -22.8_70 >> testeq {-22.8_70} (era !$ {e1})"
+                          [ testExpectSuccess "era !$ ap{e1} := 0 >> testrefeq ap{0} (era !$ ap{e1})"
+                          , testExpectSuccess "era !$ ap{e1} := 47 >> testrefeq ap{47} (era !$ ap{e1})"
+                          , testExpectSuccess "era !$ ap{e1} := -12 >> testrefeq ap{-12} (era !$ ap{e1})"
+                          , testExpectSuccess "era !$ ap{e1} := 31.5 >> testrefeq ap{31.5} (era !$ ap{e1})"
+                          , testExpectSuccess "era !$ ap{e1} := -22.8_70 >> testrefeq ap{-22.8_70} (era !$ ap{e1})"
                           ]
                     , tGroup
                           "Number"
-                          [ testExpectSuccess "ena !$ {e1} := 0 >> testeq {0} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := 47 >> testeq {47} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := -12 >> testeq {-12} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := 31.5 >> testeq {31.5} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := -22.8_70 >> testeq {-22.8_70} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := ~36.4 >> testeq {~36.4} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := ~-22.1 >> testeq {~-22.1} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := ~-0 >> testeq {~-0} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := (0 /.Number 0) >> testeq {0 /.Number 0} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := (1 /.Number 0) >> testeq {1 /.Number 0} (ena !$ {e1})"
-                          , testExpectSuccess "ena !$ {e1} := (-1 /.Number 0) >> testeq {-1 /.Number 0} (ena !$ {e1})"
+                          [ testExpectSuccess "ena !$ ap{e1} := 0 >> testrefeq ap{0} (ena !$ ap{e1})"
+                          , testExpectSuccess "ena !$ ap{e1} := 47 >> testrefeq ap{47} (ena !$ ap{e1})"
+                          , testExpectSuccess "ena !$ ap{e1} := -12 >> testrefeq ap{-12} (ena !$ ap{e1})"
+                          , testExpectSuccess "ena !$ ap{e1} := 31.5 >> testrefeq ap{31.5} (ena !$ ap{e1})"
+                          , testExpectSuccess "ena !$ ap{e1} := -22.8_70 >> testrefeq ap{-22.8_70} (ena !$ ap{e1})"
+                          , testExpectSuccess "ena !$ ap{e1} := ~36.4 >> testrefeq ap{~36.4} (ena !$ ap{e1})"
+                          , testExpectSuccess "ena !$ ap{e1} := ~-22.1 >> testrefeq ap{~-22.1} (ena !$ ap{e1})"
+                          , testExpectSuccess "ena !$ ap{e1} := ~-0 >> testrefeq ap{~-0} (ena !$ ap{e1})"
+                          , testExpectSuccess
+                                "ena !$ ap{e1} := (0 /.Number 0) >> testrefeq ap{0 /.Number 0} (ena !$ ap{e1})"
+                          , testExpectSuccess
+                                "ena !$ ap{e1} := (1 /.Number 0) >> testrefeq ap{1 /.Number 0} (ena !$ ap{e1})"
+                          , testExpectSuccess
+                                "ena !$ ap{e1} := (-1 /.Number 0) >> testrefeq ap{-1 /.Number 0} (ena !$ ap{e1})"
                           ]
                     ]
               , tGroup
                     "matching literals"
                     [ testExpectSuccess
-                          "eta !$ {e1} := \"hello\" >> eta !$ {e2} := \"hello\" >> testeq (eta !$ {e1}) (eta !$ {e2})"
+                          "eta !$ ap{e1} := \"hello\" >> eta !$ ap{e2} := \"hello\" >> testrefeq (eta !$ ap{e1}) (eta !$ ap{e2})"
                     ]
               , tGroup
                     "identity property"
-                    [ testExpectSuccess "(id.Property !$ eea !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "(eea !$ id.Property !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "((id.Property ..Property eea) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "((eea ..Property id.Property) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (id.Property !$ eea !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (eea !$ id.Property !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} ((id.Property ..Property eea) !$ {e1})"
-                    , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} ((eea ..Property id.Property) !$ {e1})"
-                    , testExpectSuccess "(id.Property !$ eea !$ {e1}) := e2 >> testeq {e2} (id.Property !$ eea !$ {e1})"
+                    [ testExpectSuccess "(id.Property !$ eea !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ ap{e1})"
+                    , testExpectSuccess "(eea !$ id.Property !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ ap{e1})"
+                    , testExpectSuccess
+                          "((id.Property ..Property eea) !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ ap{e1})"
+                    , testExpectSuccess
+                          "((eea ..Property id.Property) !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ ap{e1})"
+                    , testExpectSuccess "eea !$ ap{e1} := e2 >> testrefeq ap{e2} (id.Property !$ eea !$ ap{e1})"
+                    , testExpectSuccess "eea !$ ap{e1} := e2 >> testrefeq ap{e2} (eea !$ id.Property !$ ap{e1})"
+                    , testExpectSuccess
+                          "eea !$ ap{e1} := e2 >> testrefeq ap{e2} ((id.Property ..Property eea) !$ ap{e1})"
+                    , testExpectSuccess
+                          "eea !$ ap{e1} := e2 >> testrefeq ap{e2} ((eea ..Property id.Property) !$ ap{e1})"
+                    , testExpectSuccess
+                          "(id.Property !$ eea !$ ap{e1}) := e2 >> testrefeq ap{e2} (id.Property !$ eea !$ ap{e1})"
                     ]
               , tGroup
                     "identity inverse property"
-                    [ testExpectSuccess "(id.Property !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
-                    , testExpectSuccess "(eea !@@ id.Property !@ {e2}) += e1 >> testneq {e2} (eea !$ {e1})"
-                    , testExpectSuccess "(eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                    [ testExpectSuccess
+                          "(id.Property !@@ eta !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
+                    , testExpectSuccess "(eea !@@ id.Property !@ ap{e2}) += e1 >> testrefneq ap{e2} (eea !$ ap{e1})"
+                    , testExpectSuccess "(eta !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
                     , testExpectSuccess
-                          "((id.Property ..Property eta) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                          "((id.Property ..Property eta) !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
                     , testExpectSuccess
-                          "((eta ..Property id.Property) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+                          "((eta ..Property id.Property) !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
                     , testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"
+                          "eta !@ ap{\"hello\"} += e1 >> eta !@ ap{\"hello\"} -= e1 >> testrefisunknown (eta !$ ap{e1})"
                     , testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> (id.Property !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e1})"
-                    , testExpectSuccess "eea !@ {e2} += e1 >> testeq {e2} (eea !$ {e1})"
+                          "eta !@ ap{\"hello\"} += e1 >> (id.Property !@@ eta !@ ap{\"hello\"}) -= e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e1})"
+                    , testExpectSuccess "eea !@ ap{e2} += e1 >> testrefeq ap{e2} (eea !$ ap{e1})"
                     , testExpectSuccess
-                          "eea !@ {e2} += e1 >> (eea !@@ id.Property !@ {e2}) -= e1 >> testneq {e2} (eea !$ {e1})"
+                          "eea !@ ap{e2} += e1 >> (eea !@@ id.Property !@ ap{e2}) -= e1 >> testrefneq ap{e2} (eea !$ ap{e1})"
                     , testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> ((id.Property ..Property eta) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
+                          "eta !@ ap{\"hello\"} += e1 >> ((id.Property ..Property eta) !@ ap{\"hello\"}) -= e1 >> testrefisunknown (eta !$ ap{e1})"
                     , testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> ((eta ..Property id.Property) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
+                          "eta !@ ap{\"hello\"} += e1 >> ((eta ..Property id.Property) !@ ap{\"hello\"}) -= e1 >> testrefisunknown (eta !$ ap{e1})"
                     ]
               , tGroup
                     "composed properties"
-                    [ testExpectSuccess "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
-                    , testExpectSuccess "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-                    , testExpectSuccess "(eea ..Property eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
+                    [ testExpectSuccess "(eea !$ eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "(eta ..Property eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-                    , testExpectSuccess "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea ..Property eeb !$ {e1})"
+                          "(eta !$ eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta ..Property eeb !$ {e1})"
-                    , testExpectSuccess "(eeb ..Property eea) !$ {e2} := e1 >> testeq {e1} (eeb !$ eea !$ {e2})"
+                          "(eea ..Property eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea !$ eeb !$ ap{e1})"
+                    , testExpectSuccess
+                          "(eta ..Property eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
+                    , testExpectSuccess
+                          "(eea !$ eeb !$ ap{e1}) := e2 >> testrefeq ap{e2} (eea ..Property eeb !$ ap{e1})"
+                    , testExpectSuccess
+                          "(eta !$ eeb !$ ap{e1}) := \"hello\" >> testrefeq ap{\"hello\"} (eta ..Property eeb !$ ap{e1})"
+                    , testExpectSuccess
+                          "(eeb ..Property eea) !$ ap{e2} := e1 >> testrefeq ap{e1} (eeb !$ eea !$ ap{e2})"
                     ]
               , tGroup
                     "composed inverse properties"
-                    [ testExpectSuccess "(eeb !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+                    [ testExpectSuccess
+                          "(eeb !@@ eta !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-                    , testExpectSuccess "((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"
+                          "((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> ((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
+                          "((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefisunknown (eta !$ ap{e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> ((eta ..Property eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ ap{e1} := e2 >> ((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefeq ap{e2} (eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
+                          "eeb !$ ap{e1} := e2 >> ((eta ..Property eeb) !@ ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ ap{e1} := e2 >> (eeb !@@ eta !@  ap{\"hello\"}) += e1 >> testrefeq ap{e2} (eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta ..Property eeb) !@ {\"hello\"}) -= e1 >> testeq {e2} (eeb !$ {e1})"
+                          "eeb !$ ap{e1} := e2 >> (eeb !@@ eta !@  ap{\"hello\"}) += e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta ..Property eeb) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e2})"
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> ((eta ..Property eeb) !@ ap{\"hello\"}) -= e1 >> testrefeq ap{e2} (eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testneq {e2} (eeb !$ {e1})"
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> ((eta ..Property eeb) !@ ap{\"hello\"}) -= e1 >> testrefisunknown (eta !$ ap{e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> (eeb !@@ eta !@ ap{\"hello\"}) -= e1 >> testrefneq ap{e2} (eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel ((eta ..Property eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> (eeb !@@ eta !@ ap{\"hello\"}) -= e1 >> testrefeq ap{\"hello\"} (eta !$ ap{e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel ((eta ..Property eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel ((eta ..Property eeb) !@ ap{\"hello\"}) >> testrefeq ap{e2} (eeb !$ ap{e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel ((eta ..Property eeb) !@ ap{\"hello\"}) >> testrefisunknown (eta !$ ap{e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ ap{\"hello\"}) >> testrefneq ap{e2} (eeb !$ ap{e1})"
+                    , testExpectSuccess
+                          "eeb !$ ap{e1} := e2 >> eta !$ ap{e2} := \"hello\" >> clear.FiniteSetModel (eeb !@@ eta !@ ap{\"hello\"}) >> testrefeq ap{\"hello\"} (eta !$ ap{e2})"
                     ]
               , tGroup
                     "single.FiniteSetModel"
-                    [ testExpectSuccess "testisunknown (single.FiniteSetModel $ eib !$$% eia !@ {0})"
+                    [ testExpectSuccess "testrefisunknown (single.FiniteSetModel $ eib !$$% eia !@ ap{0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
+                          "eib !$ ap{e1} := 1 >> eia !$ ap{e1} := 0 >> testrefeq ap{1} (single.FiniteSetModel $ eib !$$% eia !@ ap{0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eic !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
+                          "eib !$ ap{e1} := 1 >> eia !$ ap{e1} := 0 >> eic !$ ap{e1} := 0 >> testrefeq ap{1} (single.FiniteSetModel $ eib !$$% eia !@ ap{0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eia !$ {e1} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
+                          "eib !$ ap{e1} := 1 >> eia !$ ap{e1} := 0 >> eia !$ ap{e1} := 0 >> testrefeq ap{1} (single.FiniteSetModel $ eib !$$% eia !@ ap{0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 2 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testisunknown (single.FiniteSetModel $ eib !$$% eia !@ {0})"
+                          "eib !$ ap{e1} := 1 >> eib !$ ap{e2} := 2 >> eia !$ ap{e1} := 0 >> eia !$ ap{e2} := 0 >> testrefisunknown (single.FiniteSetModel $ eib !$$% eia !@ ap{0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 1 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testeq {1} (single.FiniteSetModel $ eib !$$% eia !@ {0})"
+                          "eib !$ ap{e1} := 1 >> eib !$ ap{e2} := 1 >> eia !$ ap{e1} := 0 >> eia !$ ap{e2} := 0 >> testrefeq ap{1} (single.FiniteSetModel $ eib !$$% eia !@ ap{0})"
                     ]
               , tGroup
                     "multiple set member"
-                    [ testExpectSuccess "testeq {0} (count.FiniteSetModel (tea !@ {e1}))"
-                    , testExpectSuccess "eea !$ {e2} := e1 >> testeq {1} (count.FiniteSetModel (eea !@ {e1}))"
-                    , testExpectSuccess "eea !@ {e1} += e2 >> testeq {1} (count.FiniteSetModel (eea !@ {e1}))"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
-                    , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
+                    [ testExpectSuccess "testrefeq ap{0} (count.FiniteSetModel (tea !@ ap{e1}))"
+                    , testExpectSuccess "eea !$ ap{e2} := e1 >> testrefeq ap{1} (count.FiniteSetModel (eea !@ ap{e1}))"
+                    , testExpectSuccess "eea !@ ap{e1} += e2 >> testrefeq ap{1} (count.FiniteSetModel (eea !@ ap{e1}))"
+                    , testExpectSuccess "tea !$ ap{\"hello\"} := e1 >> testrefeq ap{e1} (tea !$ ap{\"hello\"})"
+                    , testExpectSuccess "tea !@ ap{e1} += \"hello\" >> testrefeq ap{e1} (tea !$ ap{\"hello\"})"
                     , testExpectSuccess
-                          "tea !@ {e1} += \"hello\" >> tea !@ {e1} += \"hello\" >> testeq {1} (count.FiniteSetModel (tea !@ {e1}))"
+                          "tea !$ ap{\"hello\"} := e1 >> testrefeq ap{1} (count.FiniteSetModel (tea !@ ap{e1}))"
                     , testExpectSuccess
-                          "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (count.FiniteSetModel (tea !@ {e1}))"
+                          "tea !@ ap{e1} += \"hello\" >> testrefeq ap{1} (count.FiniteSetModel (tea !@ ap{e1}))"
+                    , testExpectSuccess
+                          "tea !@ ap{e1} += \"hello\" >> tea !@ ap{e1} += \"hello\" >> testrefeq ap{1} (count.FiniteSetModel (tea !@ ap{e1}))"
+                    , testExpectSuccess
+                          "tea !@ ap{e1} += \"h\" >> tea !@ ap{e1} += \"hello\" >> testrefeq ap{2} (count.FiniteSetModel (tea !@ ap{e1}))"
                     , testExpectSuccess $
-                      "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (toList.FiniteSetModel empty.Order someset) >>= fn pp => for pp $ fn p => runWholeModel {counter := succ.Integer %counter}) >> testeq {1} counter"
+                      "let {counter = eia !$ ap{e1};someset = nea !@ ap{e1}} " <>
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (toList.FiniteSetModel empty.Order someset) >>= fn pp => for pp $ fn p => runWholeModel ap{counter := succ.Integer %counter}) >> testrefeq ap{1} counter"
                     ]
               , tGroup
                     "types"
-                    [ testExpectSuccess "let entitytype T1; p = property @T1 @T1 !\"p\" in pass"
-                    , testExpectSuccess "let entitytype T1 in let p = property @T1 @T1 !\"p\" in pass"
-                    , testExpectSuccess "let entitytype T1; entitytype T2; p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectSuccess "let entitytype T1; entitytype T2 in let p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectSuccess "let entitytype T1 in let entitytype T2; p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectSuccess
-                          "let entitytype T1 in let entitytype T2 in let p = property @T1 @T2 !\"p\" in pass"
-                    , testExpectReject "let entitytype T1 in let entitytype T1 in pass"
-                    , testExpectReject "let entitytype T1; entitytype T1 in pass"
+                    [ testExpectSuccess "let {entitytype T1; p = property @T1 @T1 !\"p\"} pass"
+                    , testExpectSuccess "let {entitytype T1} let {p = property @T1 @T1 !\"p\"} pass"
+                    , testExpectSuccess "let {entitytype T1; entitytype T2; p = property @T1 @T2 !\"p\"} pass"
+                    , testExpectSuccess "let {entitytype T1; entitytype T2} let {p = property @T1 @T2 !\"p\"} pass"
+                    , testExpectSuccess "let {entitytype T1} let {entitytype T2; p = property @T1 @T2 !\"p\"} pass"
+                    , testExpectSuccess "let {entitytype T1} let {entitytype T2} let {p = property @T1 @T2 !\"p\"} pass"
+                    , testExpectReject "let {entitytype T1} let {entitytype T1} pass"
+                    , testExpectReject "let {entitytype T1; entitytype T1} pass"
                     ]
               , tGroup
                     "Maybe"
                     [ testExpectSuccess
-                          "let enta = property @E @(Maybe Text) !\"enta\" store in enta !$ {e1} := Just \"abc\" >> (testeq {Just \"abc\"} $ enta !$ {e1})"
+                          "let {enta = property @E @(Maybe Text) !\"enta\" store} enta !$ ap{e1} := Just \"abc\" >> (testrefeq ap{Just \"abc\"} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Maybe Text) !\"enta\" store in enta !$ {e1} := Nothing >> (testeq {Nothing} $ enta !$ {e1})"
+                          "let {enta = property @E @(Maybe Text) !\"enta\" store} enta !$ ap{e1} := Nothing >> (testrefeq ap{Nothing} $ enta !$ ap{e1})"
                     ]
               , tGroup
                     "List"
                     [ testExpectSuccess
-                          "let enta = property @E @(List Text) !\"enta\" store in enta !$ {e1} := [\"abc\", \"def\"] >> (testeq {[\"abc\", \"def\"]} $ enta !$ {e1})"
+                          "let {enta = property @E @(List Text) !\"enta\" store} enta !$ ap{e1} := [\"abc\", \"def\"] >> (testrefeq ap{[\"abc\", \"def\"]} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(List Text) !\"enta\" store in enta !$ {e1} := [] >> (testeq {[]} $ enta !$ {e1})"
+                          "let {enta = property @E @(List Text) !\"enta\" store} enta !$ ap{e1} := [] >> (testrefeq ap{[]} $ enta !$ ap{e1})"
                     ]
               , tGroup
                     "Pair/Either"
                     [ testExpectSuccess
-                          "let enta = property @E @(Number *: Text) !\"enta\" store in enta !$ {e1} := (74,\"hmm\") >> (testneq {(71,\"hmm\")} $ enta !$ {e1})"
+                          "let {enta = property @E @(Number *: Text) !\"enta\" store} enta !$ ap{e1} := (74,\"hmm\") >> (testrefneq ap{(71,\"hmm\")} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number *: Text) !\"enta\" store in enta !$ {e1} := (74,\"hmm\") >> (testeq {(74,\"hmm\")} $ enta !$ {e1})"
+                          "let {enta = property @E @(Number *: Text) !\"enta\" store} enta !$ ap{e1} := (74,\"hmm\") >> (testrefeq ap{(74,\"hmm\")} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Left 74 >> (testneq {Left 73} $ enta !$ {e1})"
+                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Left 74 >> (testrefneq ap{Left 73} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Left 74 >> (testeq {Left 74} $ enta !$ {e1})"
+                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Left 74 >> (testrefeq ap{Left 74} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Right \"abc\" >> (testneq {Right \"adbc\"} $ enta !$ {e1})"
+                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Right \"abc\" >> (testrefneq ap{Right \"adbc\"} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number +: Text) !\"enta\" store in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
+                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Right \"abc\" >> (testrefeq ap{Right \"abc\"} $ enta !$ ap{e1})"
                     ]
               ]
         , tGroup
@@ -646,25 +667,25 @@ testEntity =
                           "models"
                           [ subtypeTest False SRSingle "ListModel a" "WholeModel (List a)"
                           , subtypeTest False SRSingle "ListModel Integer" "WholeModel (List Integer)"
-                          , subtypeTest False SRSingle "ListModel Integer" "WholeModel {-List Integer,+List Integer}"
+                          , subtypeTest False SRSingle "ListModel Integer" "WholeModel (-List Integer,+List Integer)"
                           , subtypeTest
                                 True
                                 SRSingle
-                                "ListModel {-(a & Integer),+(a | Integer)}"
+                                "ListModel (-(a & Integer),+(a | Integer))"
                                 "WholeModel (List Integer)"
                           , subtypeTest
                                 True
                                 SRSingle
-                                "ListModel {-(a & Entity),+(a | Integer)}"
+                                "ListModel (-(a & Entity),+(a | Integer))"
                                 "WholeModel (List Integer)"
                           , tGroup
                                 "Model"
-                                [ subtypeTest False SRSingle "WholeModel {-Integer,+Text}" "Model"
-                                , subtypeTest False SRSingle "ListModel {-Text,+Text}" "Model"
-                                , subtypeTest False SRSingle "ListModel {-Integer,+Text}" "Model"
+                                [ subtypeTest False SRSingle "WholeModel (-Integer,+Text)" "Model"
+                                , subtypeTest False SRSingle "ListModel (-Text,+Text)" "Model"
+                                , subtypeTest False SRSingle "ListModel (-Integer,+Text)" "Model"
                                 , subtypeTest False SRSingle "TextModel " "Model"
                                 , subtypeTest False SRSingle "SetModel Text" "Model"
-                                , subtypeTest False SRSingle "FiniteSetModel {-Integer,+Text}" "Model"
+                                , subtypeTest False SRSingle "FiniteSetModel (-Integer,+Text)" "Model"
                                 ]
                           ]
                     , tGroup
@@ -696,25 +717,25 @@ testEntity =
                       tGroup
                           "1"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let entitytype Q; subtype P <: Q in pass"
-                          , testExpectSuccess "let entitytype Q; subtype P <: Q; f : P -> Q = fn x => x in pass"
-                          , testExpectReject "let entitytype Q; subtype P <: Q; f : Q -> P = fn x => x in pass"
+                          , testExpectSuccess "let {entitytype Q; subtype P <: Q} pass"
+                          , testExpectSuccess "let {entitytype Q; subtype P <: Q; f : P -> Q = fn x => x} pass"
+                          , testExpectReject "let {entitytype Q; subtype P <: Q; f : Q -> P = fn x => x} pass"
                           ]
                     , tDecls ["entitytype Q"] $
                       tGroup
                           "2"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let entitytype P; subtype P <: Q in pass"
-                          , testExpectSuccess "let entitytype P; subtype P <: Q; f : P -> Q = fn x => x in pass"
-                          , testExpectReject "let entitytype P; subtype P <: Q; f : Q -> P = fn x => x in pass"
+                          , testExpectSuccess "let {entitytype P; subtype P <: Q} pass"
+                          , testExpectSuccess "let {entitytype P; subtype P <: Q; f : P -> Q = fn x => x} pass"
+                          , testExpectReject "let {entitytype P; subtype P <: Q; f : Q -> P = fn x => x} pass"
                           ]
                     , tDecls ["entitytype P", "entitytype Q"] $
                       tGroup
                           "3"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let subtype P <: Q in pass"
-                          , testExpectSuccess "let subtype P <: Q; f : P -> Q = fn x => x in pass"
-                          , testExpectReject "let subtype P <: Q; f : Q -> P = fn x => x in pass"
+                          , testExpectSuccess "let {subtype P <: Q} pass"
+                          , testExpectSuccess "let {subtype P <: Q; f : P -> Q = fn x => x} pass"
+                          , testExpectReject "let {subtype P <: Q; f : Q -> P = fn x => x} pass"
                           ]
                     ]
               , tGroup
@@ -723,48 +744,48 @@ testEntity =
                       tGroup
                           "singular"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let f : P -> P = fn x => x in pass"
-                          , testExpectSuccess "let f : List P -> List P = fn x => x in pass"
+                          , testExpectSuccess "let {f : P -> P = fn x => x} pass"
+                          , testExpectSuccess "let {f : List P -> List P = fn x => x} pass"
                           ]
                     , tDecls ["entitytype P", "entitytype Q", "subtype P <: Q", "subtype Q <: P"] $
                       tGroup
                           "pair"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let f : P -> P = fn x => x in pass"
-                          , testExpectSuccess "let f : Q -> Q = fn x => x in pass"
-                          , testExpectSuccess "let f : P -> Q = fn x => x in pass"
-                          , testExpectSuccess "let f : List P -> List Q = fn x => x in pass"
-                          , testExpectSuccess "let f : Q -> P = fn x => x in pass"
+                          , testExpectSuccess "let {f : P -> P = fn x => x} pass"
+                          , testExpectSuccess "let {f : Q -> Q = fn x => x} pass"
+                          , testExpectSuccess "let {f : P -> Q = fn x => x} pass"
+                          , testExpectSuccess "let {f : List P -> List Q = fn x => x} pass"
+                          , testExpectSuccess "let {f : Q -> P = fn x => x} pass"
                           ]
                     ]
               , tDecls
                     ["subtype Map a <: Entity -> Maybe a = fn m, e => lookup.Map e m", "x = single.Map 34 \"sometext\""] $
-                tGroup "Map" [testExpectSuccess "pass", testExpectSuccess "testeqval (Just \"sometext\") $ x 34"]
+                tGroup "Map" [testExpectSuccess "pass", testExpectSuccess "testeq (Just \"sometext\") $ x 34"]
               , tDecls ["entitytype Q", "subtype Maybe Number <: Q"] $
                 tGroup
                     "non-simple" -- not allowed, per issue #28
                     [testExpectReject "pass"]
               , tDecls ["entitytype Q", "subtype Integer <: Q"] $ tGroup "literal" $ strictSubtypeTests "Integer" "Q"
-              , tDecls ["entitytype Q", "datatype storable P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
+              , tDecls ["entitytype Q", "datatype storable P {P1 Text Number !\"P.P1\"}", "subtype P <: Q"] $
                 tGroup "closed" $ strictSubtypeTests "P" "Q"
               , tDecls
                     [ "entitytype Q"
                     , "entitytype R"
-                    , "datatype storable P of P1 Text Number !\"P.P1\" end"
+                    , "datatype storable P {P1 Text Number !\"P.P1\"}"
                     , "subtype P <: Q"
                     , "subtype P <: R"
                     ] $
                 tGroup "closed" $ strictSubtypeTests "P" "R"
               , tGroup
                     "Entity"
-                    [ testExpectSuccess "let f : Number -> Entity = fn x => x in pass"
-                    , testExpectSuccess "let f : (a & Number) -> Entity *: a = fn x => (x,x) in pass"
-                    , testExpectSuccess "let f : Maybe Number -> Entity = fn x => x in pass"
-                    , testExpectSuccess "let f : Maybe (a & Number) -> Entity *: Maybe a = fn x => (x,x) in pass"
+                    [ testExpectSuccess "let {f : Number -> Entity = fn x => x} pass"
+                    , testExpectSuccess "let {f : (a & Number) -> Entity *: a = fn x => (x,x)} pass"
+                    , testExpectSuccess "let {f : Maybe Number -> Entity = fn x => x} pass"
+                    , testExpectSuccess "let {f : Maybe (a & Number) -> Entity *: Maybe a = fn x => (x,x)} pass"
                     ]
               , tDecls
-                    [ "testIsJust = match Just _ => pass; Nothing => fail \"Nothing\" end"
-                    , "testIsNothing = match Nothing => pass; Just _ => fail \"Just\" end"
+                    [ "testIsJust = fn {Just _ => pass; Nothing => fail \"Nothing\"}"
+                    , "testIsNothing = fn {Nothing => pass; Just _ => fail \"Just\"}"
                     ] $
                 tGroup "predicate" $
                 [ tDecls ["predicatetype Even <: Integer = fn i => mod i 2 == 0"] $
@@ -773,8 +794,8 @@ testEntity =
                       [ testExpectSuccess "pass"
                       , tGroup "Even <: Integer" $ strictSubtypeTests "Even" "Integer"
                       , tGroup "Even <: Literal" $ strictSubtypeTests "Even" "Literal"
-                      , testExpectSuccess "testeq {Just 4} {check @Even 4}"
-                      , testExpectSuccess "testeq {Nothing} {check @Even 5}"
+                      , testExpectSuccess "testrefeq ap{Just 4} ap{check @Even 4}"
+                      , testExpectSuccess "testrefeq ap{Nothing} ap{check @Even 5}"
                       ]
                 , tDecls ["predicatetype F <: Integer -> Integer = fn f => f 3 == 4"] $
                   tGroup
@@ -782,25 +803,25 @@ testEntity =
                       [ testExpectSuccess "pass"
                       , testExpectSuccess "testIsJust $ check @F $ fn x => x + 1"
                       , testExpectSuccess "testIsNothing $ check @F $ fn x => x"
-                      , testExpectSuccess "testeq {Just 6} {map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
+                      , testExpectSuccess "testrefeq ap{Just 6} ap{map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
                       ]
-                , testExpectReject "let predicatetype F <: a -> a = fn f => True in pass"
+                , testExpectReject "let {predicatetype F <: a -> a = fn f => True} pass"
                 , tGroup
                       "unroll"
                       [ testExpectSuccess
-                            "let predicatetype AtLeastThree <: Maybe (rec a, Maybe a) = match Just (Just (Just _)) => True; _ => False; end in pass"
+                            "let {predicatetype AtLeastThree <: Maybe (rec a, Maybe a) = fn {Just (Just (Just _)) => True; _ => False;}} pass"
                       , testExpectSuccess
-                            "let predicatetype AtLeastThree <: rec a, Maybe a = match Just (Just (Just _)) => True; _ => False; end in pass"
+                            "let {predicatetype AtLeastThree <: rec a, Maybe a = fn {Just (Just (Just _)) => True; _ => False;}} pass"
                       , testExpectSuccess
-                            "let predicatetype AtLeastThree <: rec a, a +: a = match Left (Left (Left _)) => True; _ => False; end in pass"
+                            "let {predicatetype AtLeastThree <: rec a, a +: a = fn {Left (Left (Left _)) => True; _ => False;}} pass"
                       , testExpectSuccess
-                            "let predicatetype AtLeastThree <: rec a, rec b, a +: b = match Left (Left (Left _)) => True; _ => False; end in pass"
-                      , testExpectReject "let predicatetype Degenerate <: rec a, a = fn _ => True in pass"
+                            "let {predicatetype AtLeastThree <: rec a, rec b, a +: b = fn {Left (Left (Left _)) => True; _ => False;}} pass"
+                      , testExpectReject "let {predicatetype Degenerate <: rec a, a = fn _ => True} pass"
                       ]
                 , tGroup
                       "storable"
-                      [ testExpectSuccess "let predicatetype F <: Integer -> Integer = fn _ => True in pass"
-                      , testExpectReject "let predicatetype storable F <: Integer -> Integer = fn _ => True in pass"
+                      [ testExpectSuccess "let {predicatetype F <: Integer -> Integer = fn _ => True} pass"
+                      , testExpectReject "let {predicatetype storable F <: Integer -> Integer = fn _ => True} pass"
                       , tOpenDefaultStore $
                         tWith ["Store"] $
                         tDecls
@@ -811,10 +832,10 @@ testEntity =
                         tGroup
                             "store"
                             [ testExpectSuccess "pass"
-                            , testExpectSuccess "do cellInteger := 18; testeq {18} cellInteger end"
-                            , testExpectSuccess "do cellInteger := 18; testeq {18} cellEven end"
-                            , testExpectSuccess "do cellInteger := 17; testeq {17} cellInteger end"
-                            , testExpectSuccess "do cellInteger := 17; testisunknown cellEven end"
+                            , testExpectSuccess "do {cellInteger := 18; testrefeq ap{18} cellInteger}"
+                            , testExpectSuccess "do {cellInteger := 18; testrefeq ap{18} cellEven}"
+                            , testExpectSuccess "do {cellInteger := 17; testrefeq ap{17} cellInteger}"
+                            , testExpectSuccess "do {cellInteger := 17; testrefisunknown cellEven}"
                             ]
                       ]
                 ]
@@ -823,158 +844,157 @@ testEntity =
               "greatest-dynamic-supertype"
               [ tGroup
                     "Literal"
-                    [ testExpectSuccess "testeqval 1 $ 34.0 >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
-                    , testExpectSuccess "testeqval 2 $ True >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    [ testExpectSuccess "testeq 1 $ 34.0 >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
+                    , testExpectSuccess "testeq 2 $ True >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
+                    , testExpectSuccess "testeq 3 $ \"hello\" >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
+                    , testExpectSuccess "testeq 4 $ () >- fn {34 => 1; True => 2; \"hello\" => 3; _ => 4}"
+                    , testExpectSuccess "testeq 1 $ 34.0 >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
+                    , testExpectSuccess "testeq 2 $ True >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
                     , testExpectSuccess
-                          "testeqval 3 $ \"hello\" >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
-                    , testExpectSuccess "testeqval 4 $ () >- match 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                          "testeq 3 $ \"hello\" >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
+                    , testExpectSuccess "testeq 4 $ () >- fn {_:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4}"
                     , testExpectSuccess
-                          "testeqval 1 $ 34.0 >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
+                          "testeq 1 $ 34.0 >- fn {_:?Integer => 1; _:?Rational => 2; _:?Text => 3; _ => 4}"
                     , testExpectSuccess
-                          "testeqval 2 $ True >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
-                    , testExpectSuccess
-                          "testeqval 3 $ \"hello\" >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
-                    , testExpectSuccess
-                          "testeqval 4 $ () >- match _:?Integer => 1; _:?Boolean => 2; _:?Text => 3; _ => 4 end"
-                    , testExpectSuccess
-                          "testeqval 1 $ 34.0 >- match _:?Integer => 1; _:?Rational => 2; _:?Text => 3; _ => 4 end"
-                    , testExpectSuccess
-                          "testeqval 2 $ 34.0 >- match _:?Rational => 2; _:?Integer => 1; _:?Text => 3; _ => 4 end"
+                          "testeq 2 $ 34.0 >- fn {_:?Rational => 2; _:?Integer => 1; _:?Text => 3; _ => 4}"
                     ]
               , tGroup
                     "List"
-                    [ testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; [] => 2 end"
-                    , testExpectSuccess "testeqval 2 $ [] >- match _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 2 $ [] >- match _:? List1 Integer => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; [] => 2 end"
-                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _ :: _ => 1; _ => 2 end"
-                    , testExpectSuccess "testeqval 1 $ [3,4] >- match _:? List1 Integer => 1; _ => 2 end"
+                    [ testExpectSuccess "testeq 2 $ [] >- fn {_ :: _ => 1; [] => 2}"
+                    , testExpectSuccess "testeq 2 $ [] >- fn {_ :: _ => 1; _ => 2}"
+                    , testExpectSuccess "testeq 2 $ [] >- fn {_:? List1 Integer => 1; _ => 2}"
+                    , testExpectSuccess "testeq 1 $ [3,4] >- fn {_ :: _ => 1; [] => 2}"
+                    , testExpectSuccess "testeq 1 $ [3,4] >- fn {_ :: _ => 1; _ => 2}"
+                    , testExpectSuccess "testeq 1 $ [3,4] >- fn {_:? List1 Integer => 1; _ => 2}"
                     ]
               ]
         , tDecls
-              [ "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeModel {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
+              [ "datatype T {T1 Text Number; T2; T3 Boolean; T4 (WholeModel (-Boolean,+Integer) -> Integer); T5 Text (Boolean -> Integer)}"
               ] $
           tGroup
               "datatype"
-              [ testExpectSuccess "pass"
-              , testExpectSuccess "let t1 = T1.T \"hello\" 3 in pass"
-              , testExpectSuccess "let f = fn T1.T x _ => x in pass"
-              , testExpectSuccess "T2.T >- match T2.T => pass end"
-              , testExpectSuccess "T3.T True >- match T3.T True => pass end"
-              , testExpectSuccess "T1.T \"hello\" 3 >- match T1.T \"hello\" 3 => pass end"
-              , testExpectSuccess
-                    "T1.T \"hello\" 3 >- match T2.T => fail \"T2.T\"; T1.T \"hello\" 2 => fail \"T1.T 2\"; T1.T \"hell\" 3 => fail \"T1.T hell\"; T1.T \"hello\" 3 => pass end"
-              , testExpectSuccess
-                    "let f : Boolean -> Integer = fn b => if b then 1 else 0 in T5.T \"abcd\" f >- match T5.T _ ff => if ff True == 1 then pass else fail \"ff\" end"
-              , testExpectReject "let datatype B of Mk a end in pass"
-              , testExpectSuccess "let datatype P of end in pass"
-              , testExpectSuccess "let datatype P of P1 end in pass"
-              , testExpectSuccess "let datatype P of P1; end in pass"
-              , testExpectSuccess "let datatype P of P1 Integer end in pass"
-              , testExpectSuccess "let datatype P of P1 Integer; end in pass"
-              , testExpectSuccess "let datatype P of P1 Integer; P2 Text end in pass"
-              , testExpectSuccess "let datatype P of P1 Integer; P2 Text; end in pass"
+              [ tGroup
+                    "simple"
+                    [ testExpectSuccess "pass"
+                    , testExpectSuccess "let {t1 = T1.T \"hello\" 3} pass"
+                    , testExpectSuccess "let {f = fn T1.T x _ => x} pass"
+                    , testExpectSuccess "T2.T >- fn {T2.T => pass}"
+                    , testExpectSuccess "T3.T True >- fn {T3.T True => pass}"
+                    , testExpectSuccess "T1.T \"hello\" 3 >- fn {T1.T \"hello\" 3 => pass}"
+                    , testExpectSuccess
+                          "T1.T \"hello\" 3 >- fn {T2.T => fail \"T2.T\"; T1.T \"hello\" 2 => fail \"T1.T 2\"; T1.T \"hell\" 3 => fail \"T1.T hell\"; T1.T \"hello\" 3 => pass}"
+                    , testExpectSuccess
+                          "let {f : Boolean -> Integer = fn b => if b then 1 else 0} T5.T \"abcd\" f >- fn {T5.T _ ff => if ff True == 1 then pass else fail \"ff\"}"
+                    , testExpectReject "let {datatype B {Mk a}} pass"
+                    , testExpectSuccess "let {datatype P {}} pass"
+                    , testExpectSuccess "let {datatype P {P1}} pass"
+                    , testExpectSuccess "let {datatype P {P1;}} pass"
+                    , testExpectSuccess "let {datatype P {P1 Integer}} pass"
+                    , testExpectSuccess "let {datatype P {P1 Integer;}} pass"
+                    , testExpectSuccess "let {datatype P {P1 Integer; P2 Text}} pass"
+                    , testExpectSuccess "let {datatype P {P1 Integer; P2 Text;}} pass"
+                    ]
               , tGroup
                     "nominal"
-                    [ testExpectSuccess "let datatype P of P1 end; f : P -> P = fn x => x in pass"
-                    , testExpectReject "let datatype P of P1 end; datatype Q of end; f : P -> Q = fn x => x in pass"
-                    , testExpectReject "let datatype P of end; datatype Q of Q1 end; f : P -> Q = fn x => x in pass"
-                    , testExpectReject "let datatype P of end; datatype Q of end; f : P -> Q = fn x => x in pass"
-                    , testExpectReject "let datatype P of P1 end; datatype Q of Q1 end; f : P -> Q = fn x => x in pass"
+                    [ testExpectSuccess "let {datatype P {P1}; f : P -> P = fn x => x} pass"
+                    , testExpectReject "let {datatype P {P1}; datatype Q {}; f : P -> Q = fn x => x} pass"
+                    , testExpectReject "let {datatype P {}; datatype Q {Q1}; f : P -> Q = fn x => x} pass"
+                    , testExpectReject "let {datatype P {}; datatype Q {}; f : P -> Q = fn x => x} pass"
+                    , testExpectReject "let {datatype P {P1}; datatype Q {Q1}; f : P -> Q = fn x => x} pass"
                     , testExpectReject
-                          "let datatype P of P1 Integer end; datatype Q of Q1 Integer end; f : P -> Q = fn x => x in pass"
+                          "let {datatype P {P1 Integer}; datatype Q {Q1 Integer}; f : P -> Q = fn x => x} pass"
                     ]
               , tGroup
                     "contain-recursive"
                     [ tDecls
-                          [ "datatype P of Mk (rec a, Maybe a) end"
-                          , "let rec fromR: (rec a, Maybe a) -> Integer = match Nothing => 0; Just a => 1 + fromR a end end"
-                          , "let rec toR: Integer -> (rec a, Maybe a) = match 0 => Nothing; i => Just $ toR (i - 1) end end"
-                          , "let rec fromP: P -> Integer = match Mk.P Nothing => 0; Mk.P (Just a) => 1 + fromP (Mk.P a) end end"
-                          , "let rec toP: Integer -> P = match 0 => Mk.P Nothing; i => toP (i - 1) >- fn Mk.P a => Mk.P $ Just a end end"
+                          [ "datatype P {Mk (rec a, Maybe a)}"
+                          , "let rec {fromR: (rec a, Maybe a) -> Integer = fn {Nothing => 0; Just a => 1 + fromR a}}"
+                          , "let rec {toR: Integer -> (rec a, Maybe a) = fn {0 => Nothing; i => Just $ toR (i - 1)}}"
+                          , "let rec {fromP: P -> Integer = fn {Mk.P Nothing => 0; Mk.P (Just a) => 1 + fromP (Mk.P a)}}"
+                          , "let rec {toP: Integer -> P = fn {0 => Mk.P Nothing; i => toP (i - 1) >- fn Mk.P a => Mk.P $ Just a}}"
                           ] $
                       tGroup
                           "Maybe"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "testeqval 5 $ fromP $ Mk.P $ Just $ Just $ Just $ Just $ Just Nothing"
-                          , testExpectSuccess "testeqval 17 $ fromP $ toP 17"
-                          , testExpectSuccess "testeqval 17 $ fromP $ Mk.P $ toR 17"
-                          , testExpectSuccess "testeqval 17 $ fromR $ toP 17 >- fn Mk.P a => a"
+                          , testExpectSuccess "testeq 5 $ fromP $ Mk.P $ Just $ Just $ Just $ Just $ Just Nothing"
+                          , testExpectSuccess "testeq 17 $ fromP $ toP 17"
+                          , testExpectSuccess "testeq 17 $ fromP $ Mk.P $ toR 17"
+                          , testExpectSuccess "testeq 17 $ fromR $ toP 17 >- fn Mk.P a => a"
                           ]
                     , tDecls
-                          [ "datatype Q +t of Mk (rec a, Maybe (t *: a)) end"
-                          , "let rec fromR: (rec a, Maybe (t *: a)) -> List t = match Nothing => []; Just (t,a) => t :: fromR a end end"
-                          , "let rec toR: List t -> (rec a, Maybe (t *: a)) = match [] => Nothing; t :: tt => Just (t, toR tt) end end"
-                          , "let rec fromQ: Q t -> List t = match Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a) end end"
-                          , "let rec toQ: List t -> Q t = match [] => Mk.Q Nothing; t :: tt => Mk.Q $ Just (t, toQ tt >- fn Mk.Q a => a) end end"
+                          [ "datatype Q +t {Mk (rec a, Maybe (t *: a))}"
+                          , "let rec {fromR: (rec a, Maybe (t *: a)) -> List t = fn {Nothing => []; Just (t,a) => t :: fromR a}}"
+                          , "let rec {toR: List t -> (rec a, Maybe (t *: a)) = fn {[] => Nothing; t :: tt => Just (t, toR tt)}}"
+                          , "let rec {fromQ: Q t -> List t = fn {Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a)}}"
+                          , "let rec {toQ: List t -> Q t = fn {[] => Mk.Q Nothing; t :: tt => Mk.Q $ Just (t, toQ tt >- fn Mk.Q a => a)}}"
                           ] $
                       tGroup
                           "Pair"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "testeqval [5,3,1] $ fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
-                          , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ toQ [8,12,27,45]"
-                          , testExpectSuccess "testeqval [8,12,27,45] $ fromQ $ Mk.Q $ toR [8,12,27,45]"
-                          , testExpectSuccess "testeqval [8,12,27,45] $ fromR $ toQ [8,12,27,45] >- fn Mk.Q a => a"
+                          , testExpectSuccess "testeq [5,3,1] $ fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
+                          , testExpectSuccess "testeq [8,12,27,45] $ fromQ $ toQ [8,12,27,45]"
+                          , testExpectSuccess "testeq [8,12,27,45] $ fromQ $ Mk.Q $ toR [8,12,27,45]"
+                          , testExpectSuccess "testeq [8,12,27,45] $ fromR $ toQ [8,12,27,45] >- fn Mk.Q a => a"
                           ]
                     ]
               , tGroup
                     "recursive"
-                    [ testExpectSuccess "let datatype P of P1 end in let datatype Q of Q1 P end in pass"
-                    , testExpectSuccess "let datatype P of P1 end; datatype Q of Q1 P end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of Q1 P end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 P end in pass"
+                    [ testExpectSuccess "let {datatype P {P1}} let {datatype Q {Q1 P}} pass"
+                    , testExpectSuccess "let {datatype P {P1}; datatype Q {Q1 P}} pass"
+                    , testExpectSuccess "let rec {datatype P {P1 Q}; datatype Q {}} pass"
+                    , testExpectSuccess "let rec {datatype P {P1 Q}; datatype Q {Q1 P}} pass"
+                    , testExpectSuccess "let rec {datatype P {P1 P}} pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P = match P1.P q => q >- match Q1.Q p => p end end in pass"
-                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype storable Q of Q1 !\"Q1\" end in pass"
-                    , testExpectReject "let rec datatype storable P of P1 Q end; datatype Q of Q1 !\"Q1\" end in pass"
+                          "let rec {datatype P {P1 Q}; datatype Q {Q1 P}; f : P -> P = fn {P1.P q => q >- fn {Q1.Q p => p}}} pass"
+                    , testExpectSuccess "let rec {datatype P {P1 Q}; datatype storable Q {Q1 !\"Q1\"}} pass"
+                    , testExpectReject "let rec {datatype storable P {P1 Q}; datatype Q {Q1 !\"Q1\"}} pass"
                     , testExpectSuccess
-                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1.P (Q1.Q pass) in pqpass >- match P1.P (Q1.Q p) => p end"
+                          "let rec {datatype P {P1 Q}; datatype Q {Q1 (Action Unit)}; pqpass = P1.P (Q1.Q pass)} pqpass >- fn {P1.P (Q1.Q p) => p}"
                     ]
               , tGroup
                     "parameters"
                     [ tGroup
                           "variance"
-                          [ testExpectSuccess "let datatype B +a of Mk a end in pass"
-                          , testExpectReject "let datatype B -a of Mk a end in pass"
-                          , testExpectSuccess "let datatype B -a of Mk (a -> Boolean) end in pass"
-                          , testExpectReject "let datatype B +a of Mk (a -> Boolean) end in pass"
-                          , testExpectSuccess "let datatype B {-p,+q} of Mk (p -> q) end in pass"
-                          , testExpectSuccess "let datatype B {+q,-p} of Mk (p -> q) end in pass"
-                          , testExpectReject "let datatype B {-p,+q} of Mk (q -> p) end in pass"
-                          , testExpectReject "let datatype B {+q,-p} of Mk (q -> p) end in pass"
+                          [ testExpectSuccess "let {datatype B +a {Mk a}} pass"
+                          , testExpectReject "let {datatype B -a {Mk a}} pass"
+                          , testExpectSuccess "let {datatype B -a {Mk (a -> Boolean)}} pass"
+                          , testExpectReject "let {datatype B +a {Mk (a -> Boolean)}} pass"
+                          , testExpectSuccess "let {datatype B (-p,+q) {Mk (p -> q)}} pass"
+                          , testExpectSuccess "let {datatype B (+q,-p) {Mk (p -> q)}} pass"
+                          , testExpectReject "let {datatype B (-p,+q) {Mk (q -> p)}} pass"
+                          , testExpectReject "let {datatype B (+q,-p) {Mk (q -> p)}} pass"
                           ]
                     , tGroup
                           "recursive"
-                          [ testExpectSuccess "let rec datatype R +a of Mk (R a) end in pass"
-                          , testExpectSuccess "let rec datatype R -a of Mk (R a) end in pass"
+                          [ testExpectSuccess "let rec {datatype R +a {Mk (R a)}} pass"
+                          , testExpectSuccess "let rec {datatype R -a {Mk (R a)}} pass"
                           , testExpectSuccess
-                                "let rec datatype R1 +a of MkR1 (R2 a) end; datatype R2 +a of MkR2 (R1 a) end in pass"
+                                "let rec {datatype R1 +a {MkR1 (R2 a)}; datatype R2 +a {MkR2 (R1 a)}} pass"
                           , testExpectSuccess
-                                "let rec datatype R1 -a of MkR1 (R2 a) end; datatype R2 -a of MkR2 (R1 a) end in pass"
+                                "let rec {datatype R1 -a {MkR1 (R2 a)}; datatype R2 -a {MkR2 (R1 a)}} pass"
                           , testExpectSuccess
-                                "let rec datatype R1 +a of MkR1 (R2 a -> Integer) end; datatype R2 -a of MkR2 (R1 a -> Integer) end in pass"
+                                "let rec {datatype R1 +a {MkR1 (R2 a -> Integer)}; datatype R2 -a {MkR2 (R1 a -> Integer)}} pass"
                           ]
                     , tGroup
                           "conversion"
                           [ tDecls
-                                [ "datatype D +a of Mk1 (List a); Mk2 (Maybe a) end"
-                                , "showD: D Showable -> Text = match Mk1.D aa => show aa; Mk2.D ma => show ma end"
+                                [ "datatype D +a {Mk1 (List a); Mk2 (Maybe a)}"
+                                , "showD: D Showable -> Text = fn {Mk1.D aa => show aa; Mk2.D ma => show ma}"
                                 , "di: D Integer = Mk1.D [576,469,12]"
                                 , "sdi: Text = showD di"
                                 ] $
                             testExpectSuccess "if sdi == \"[576,469,12]\" then pass else fail sdi"
                           , tDecls
-                                [ "datatype D -a of Mk1 (a -> Integer); Mk2 (a -> a -> Text) end"
+                                [ "datatype D -a {Mk1 (a -> Integer); Mk2 (a -> a -> Text)}"
                                 , "dShow: D Number = Mk2.D $ fn a, b => show a <>.Text \",\" <>.Text show b"
                                 , "di: D Integer = dShow"
-                                , "showD: a -> D a -> Text = fn a => match Mk1.D ai => show $ ai a; Mk2.D aat => aat a a end"
+                                , "showD: a -> D a -> Text = fn a => fn {Mk1.D ai => show $ ai a; Mk2.D aat => aat a a}"
                                 , "sd: Text = showD 356 di"
                                 ] $
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
-                                [ "let rec datatype RList +a of Mk (Maybe (a *: RList a)) end end"
-                                , "let rec showRList: RList Showable -> Text = fn Mk.RList rl => rl >- match Nothing => \"\"; Just (a,rla) => show a <>.Text \";\" <>.Text showRList rla end end"
+                                [ "let rec {datatype RList +a {Mk (Maybe (a *: RList a))}}"
+                                , "let rec {showRList: RList Showable -> Text = fn Mk.RList rl => rl >- fn {Nothing => \"\"; Just (a,rla) => show a <>.Text \";\" <>.Text showRList rla}}"
                                 , "rlisti: RList Integer = Mk.RList $ Just (45,Mk.RList $ Just (72, Mk.RList $ Just (18,Mk.RList Nothing)))"
                                 , "rlists: RList Showable = rlisti"
                                 , "sd: Text = showRList rlists"
@@ -983,27 +1003,25 @@ testEntity =
                           ]
                     , tGroup
                           "doubled"
-                          [ tDecls ["datatype F a of Mk (a -> a) end", "unF = fn Mk.F f => f"] $
+                          [ tDecls ["datatype F a {Mk (a -> a)}", "unF = fn Mk.F f => f"] $
                             tGroup
                                 "plain"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "let f = Mk.F id in testeqval 3 $ unF f 3"
-                                , testExpectSuccess "let f = Mk.F show in testeqval \"3\" $ unF f 3"
+                                , testExpectSuccess "let {f = Mk.F id} testeq 3 $ unF f 3"
+                                , testExpectSuccess "let {f = Mk.F show} testeq \"3\" $ unF f 3"
                                 ]
-                          , tDecls ["datatype F a of Mk of mf: a -> a end end", "unF = fn Mk.F => mf"] $
+                          , tDecls ["datatype F a {Mk {mf: a -> a}}", "unF = fn Mk.F => mf"] $
                             tGroup
                                 "record"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "let f = Mk.F of mf = id end in testeqval 3 $ unF f 3"
-                                , testExpectSuccess "let f = Mk.F of mf = show end in testeqval \"3\" $ unF f 3"
+                                , testExpectSuccess "let {f = Mk.F {mf = id}} testeq 3 $ unF f 3"
+                                , testExpectSuccess "let {f = Mk.F {mf = show}} testeq \"3\" $ unF f 3"
                                 ]
                           ]
                     ]
               , tGroup
                     "subtype"
-                    [ tDecls
-                          [ "datatype D1 of Mk Integer; subtype datatype D2 of Mk; subtype datatype D3 of Mk Boolean; end; end; end"
-                          ] $
+                    [ tDecls ["datatype D1 {Mk Integer; subtype datatype D2 {Mk; subtype datatype D3 {Mk Boolean;};};}"] $
                       tGroup
                           "T"
                           [ testExpectSuccess "pass"
@@ -1024,7 +1042,7 @@ testEntity =
                           , subtypeTest False SRNot "D1" "D3.D2.D1"
                           ]
                     , tDeclarator
-                          "let rec datatype D1 of Mk D1 D2 D3.D2; subtype datatype D2 of Mk D1 D2 D3; subtype datatype D3 of P D1 D2 D3; Q; end end end" $
+                          "let rec {datatype D1 {Mk D1 D2 D3.D2; subtype datatype D2 {Mk D1 D2 D3; subtype datatype D3 {P D1 D2 D3; Q;}}}}" $
                       tGroup
                           "recursive"
                           [ testExpectSuccess "pass"
@@ -1045,57 +1063,55 @@ testEntity =
                           , subtypeTest False SRNot "D1" "D3.D2.D1"
                           , tGroup
                                 "GDS"
-                                [ testExpectSuccess $ isOfType "match Mk.D1 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "match Mk.D2.D1 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "match P.D3.D2.D1 _ _ _ => () end" "D1 -> Unit"
-                                , testExpectSuccess $ isOfType "match Q.D3.D2.D1 => () end" "D1 -> Unit"
+                                [ testExpectSuccess $ isOfType "fn {Mk.D1 _ _ _ => ()}" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "fn {Mk.D2.D1 _ _ _ => ()}" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "fn {P.D3.D2.D1 _ _ _ => ()}" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "fn {Q.D3.D2.D1 => ()}" "D1 -> Unit"
                                 ]
                           ]
-                    , testExpectSuccess
-                          "let rec datatype L of LNil; subtype datatype L1 of LCons Unit L end end in pass"
-                    , testExpectSuccess
-                          "let rec datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end in pass"
+                    , testExpectSuccess "let rec {datatype L {LNil; subtype datatype L1 {LCons Unit L}}} pass"
+                    , testExpectSuccess "let rec {datatype L +a {LNil; subtype datatype L1 {LCons a (L a)}}} pass"
                     ]
               , tGroup
                     "record-constructor"
                     [ tGroup
                           "rank-1"
                           [ tDecls
-                                [ "datatype R of Mk of di: Integer end end"
-                                , "mkR1: Integer -> R = fn x => Mk.R of di = x end"
+                                [ "datatype R {Mk {di: Integer}}"
+                                , "mkR1: Integer -> R = fn x => Mk.R {di = x}"
                                 , "mkR2: Integer -> R = fn di => Mk.R"
                                 ] $
                             tGroup
                                 "one"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {21} {(fn Mk.R => di) (mkR1 21)}"
-                                , testExpectSuccess "testeq {21} {(fn Mk.R => di) (mkR2 21)}"
-                                , testExpectSuccess "testeq {22} {(match Mk.R => di end) (mkR1 22)}"
-                                , testExpectSuccess "testeq {22} {(match Mk.R => di end) (mkR2 22)}"
-                                , testExpectSuccess "testeq {23} {let Mk.R = mkR1 23 in 23}"
-                                , testExpectSuccess "testeq {23} {let Mk.R = mkR2 23 in 23}"
-                                , testExpectSuccess "testeq {24} {let Mk.R = mkR1 24 in di}"
-                                , testExpectSuccess "testeq {24} {let Mk.R = mkR2 24 in di}"
-                                , testExpectSuccess "testeq {25} {let Just di = Just 25 in di}"
-                                , testExpectSuccess "let g: R -> Integer = fn Mk.R => di; in testeq {26} {g $ mkR1 26}"
-                                , testExpectReject "testeq {27} {let Mk.R as A = mkR1 27 in di}"
-                                , testExpectSuccess "testeq {28} {let Mk.R as A = mkR1 28 in di.A}"
+                                , testExpectSuccess "testeq 21 $ (fn Mk.R => di) (mkR1 21)"
+                                , testExpectSuccess "testeq 21 $ (fn Mk.R => di) (mkR2 21)"
+                                , testExpectSuccess "testeq 22 $ (fn {Mk.R => di}) (mkR1 22)"
+                                , testExpectSuccess "testeq 22 $ (fn {Mk.R => di}) (mkR2 22)"
+                                , testExpectSuccess "testeq 23 $ let {Mk.R = mkR1 23} 23"
+                                , testExpectSuccess "testeq 23 $ let {Mk.R = mkR2 23} 23"
+                                , testExpectSuccess "testeq 24 $ let {Mk.R = mkR1 24} di"
+                                , testExpectSuccess "testeq 24 $ let {Mk.R = mkR2 24} di"
+                                , testExpectSuccess "testeq 25 $ let {Just di = Just 25} di"
+                                , testExpectSuccess "let {g: R -> Integer = fn Mk.R => di;} testeq 26 $ g $ mkR1 26"
+                                , testExpectReject "testeq 27 $ let {Mk.R as A = mkR1 27} di"
+                                , testExpectSuccess "testeq 28 $ let {Mk.R as A = mkR1 28} di.A"
                                 ]
-                          , tDecls ["datatype R of Mk of di: Integer; dt: Text end end"] $
+                          , tDecls ["datatype R {Mk {di: Integer; dt: Text}}"] $
                             tGroup
                                 "two"
                                 [ testExpectSuccess "pass"
                                 , testExpectSuccess
-                                      "let f: Integer -> R = fn di => let dt = \"t\" in Mk.R; g: R -> Integer = fn Mk.R => di; in testeq {17} {g $ f 17}"
+                                      "let {f: Integer -> R = fn di => let {dt = \"t\"} Mk.R; g: R -> Integer = fn Mk.R => di;} testeq 17 $ g $ f 17"
                                 , testExpectSuccess
-                                      "let f: Integer -> R = fn di => let dt = \"t\" in Mk.R; g: R -> Text = fn Mk.R => dt; in testeq {\"t\"} {g $ f 17}"
+                                      "let {f: Integer -> R = fn di => let {dt = \"t\"} Mk.R; g: R -> Text = fn Mk.R => dt;} testeq \"t\" $ g $ f 17"
                                 ]
                           ]
                     , tDecls
-                          [ "datatype UU of Mk of r1: Unit; r2: Unit; end end"
-                          , "testr = fn f1, a1, f2, a2 => let r1 = f1 a1; r2 = f2 a2; in Mk.UU"
-                          , "testrs = fn f1, a1, f2, a2 => let r1:Unit = f1 a1; r2:Unit = f2 a2; in Mk.UU"
-                          , "testps = fn f1, a1, f2, a2 => let r1:Unit = f1 a1; r2:Unit = f2 a2; in (r1,r2)"
+                          [ "datatype UU {Mk {r1: Unit; r2: Unit;}}"
+                          , "testr = fn f1, a1, f2, a2 => let {r1 = f1 a1; r2 = f2 a2;} Mk.UU"
+                          , "testrs = fn f1, a1, f2, a2 => let {r1:Unit = f1 a1; r2:Unit = f2 a2;} Mk.UU"
+                          , "testps = fn f1, a1, f2, a2 => let {r1:Unit = f1 a1; r2:Unit = f2 a2;} (r1,r2)"
                           ] $
                       tGroup
                           "issue-192"
@@ -1108,24 +1124,23 @@ testEntity =
                           , testExpectSuccess $ isOfType "testps" "(a -> Unit) -> a -> (b -> Unit) -> b -> Unit *: Unit"
                           ]
                     , tDecls
-                          [ "datatype R of Mk of df: (a -> a) -> a -> a end end"
+                          [ "datatype R {Mk {df: (a -> a) -> a -> a}}"
                           , "twice = fn f, x => f (f x)"
                           , "addone: Integer -> Integer = fn x => x + 1"
                           ] $
                       tGroup
                           "rank-2"
                           [ testExpectSuccess "pass"
+                          , testExpectSuccess "let {r:R = Mk.R {df = twice}} r >- fn Mk.R => testeq 9 $ df addone 7"
                           , testExpectSuccess
-                                "let r:R = Mk.R of df = twice end in r >- fn Mk.R => testeq {9} {df addone 7}"
-                          , testExpectSuccess
-                                "let r:R = let df: (b -> b) -> b -> b = twice in Mk.R in r >- fn Mk.R => testeq {9} {df addone 7}"
+                                "let {r:R = let {df: (b -> b) -> b -> b = twice} Mk.R} r >- fn Mk.R => testeq 9 $ df addone 7"
                           , testExpectReject
-                                "let r:R = let df: (Integer -> Integer) -> Integer -> Integer = twice in Mk.R in r >- fn Mk.R => testeq {9} {df addone 7}"
+                                "let {r:R = let {df: (Integer -> Integer) -> Integer -> Integer = twice} Mk.R} r >- fn Mk.R => testeq 9 $ df addone 7"
                           ]
                     , tDecls
-                          [ "datatype R +v of Mk of df: a -> Maybe (a *: v) end end"
+                          [ "datatype R +v {Mk {df: a -> Maybe (a *: v)}}"
                           , "ff: a -> Maybe (a *: Integer) = fn x => Just (x,45)"
-                          , "r = Mk.R of df = ff end"
+                          , "r = Mk.R {df = ff}"
                           ] $
                       tGroup
                           "sub-var"
@@ -1136,51 +1151,51 @@ testEntity =
                     , tGroup
                           "inversion"
                           [ tDecls
-                                [ "datatype W +a of Mk a end"
+                                [ "datatype W +a {Mk a}"
                                 , "wrap: a -> W a = Mk.W"
                                 , "unwrap: W a -> a = fn (Mk.W val) => val"
                                 ] $
                             tGroup
                                 "plain"
-                                [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                                [testExpectSuccess "pass", testExpectSuccess "testeq 374 $ unwrap $ wrap 374"]
                           , tGroup
                                 "record"
                                 [ tDecls
-                                      [ "datatype W +p of Mk of val: p end end"
+                                      [ "datatype W +p {Mk {val: p}}"
                                       , "wrap: x -> W x = fn val => Mk.W"
                                       , "unwrap: W y -> y = fn Mk.W => val"
                                       ] $
                                   tGroup
                                       "id"
-                                      [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                                      [testExpectSuccess "pass", testExpectSuccess "testeq 374 $ unwrap $ wrap 374"]
                                 , tDecls
-                                      [ "datatype W +p of Mk of val: p end end"
-                                      , "wrap: x -> W x = fn v => let val = v in Mk.W"
+                                      [ "datatype W +p {Mk {val: p}}"
+                                      , "wrap: x -> W x = fn v => let {val = v} Mk.W"
                                       , "unwrap: W y -> y = fn Mk.W => val"
                                       ] $
                                   tGroup
                                       "let"
-                                      [testExpectSuccess "pass", testExpectSuccess "testeq {374} {unwrap $ wrap 374}"]
+                                      [testExpectSuccess "pass", testExpectSuccess "testeq 374 $ unwrap $ wrap 374"]
                                 , tDecls
-                                      [ "datatype W +p of Mk of val: Maybe p end end"
+                                      [ "datatype W +p {Mk {val: Maybe p}}"
                                       , "wrap: Maybe x -> W x = fn val => Mk.W"
                                       , "unwrap: W y -> Maybe y = fn Mk.W => val"
                                       ] $
                                   tGroup
                                       "Maybe"
                                       [ testExpectSuccess "pass"
-                                      , testExpectSuccess "testeq {Just 374} {unwrap $ wrap $ Just 374}"
+                                      , testExpectSuccess "testeq (Just 374) $ unwrap $ wrap $ Just 374"
                                       ]
                                 , tDecls
-                                      [ "datatype R +p of Mk of val: q -> (q *: p) end end"
-                                      , "f = fn x => let val = fn y => (y,x) in Mk.R"
+                                      [ "datatype R +p {Mk {val: q -> (q *: p)}}"
+                                      , "f = fn x => let {val = fn y => (y,x)} Mk.R"
                                       ] $
                                   tGroup
                                       "infer-var"
                                       [testExpectSuccess "pass", testExpectSuccess $ isOfType "f" "a -> R a"]
                                 , tDecls
-                                      [ "datatype R +p of Mk of val: q -> (q *: p) end end"
-                                      , "f = fn x => let val = fn y => (y,x+1) in Mk.R"
+                                      [ "datatype R +p {Mk {val: q -> (q *: p)}}"
+                                      , "f = fn x => let {val = fn y => (y,x+1)} Mk.R"
                                       ] $
                                   tGroup
                                       "infer-Integer"
@@ -1190,7 +1205,7 @@ testEntity =
                                 ]
                           ]
                     , tDecls
-                          [ "datatype R +a of Mk of val: List a end end"
+                          [ "datatype R +a {Mk {val: List a}}"
                           , "mkR: List a -> R a = fn val => Mk.R"
                           , "rShow: R Showable -> Text = fn Mk.R => show val"
                           ] $
@@ -1198,37 +1213,37 @@ testEntity =
                           "map"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess
-                                "let r1: R Integer = mkR []; r2: R Showable = r1 in testeq {\"[]\"} {rShow r2}"
+                                "let {r1: R Integer = mkR []; r2: R Showable = r1} testeq \"[]\" $ rShow r2"
                           , testExpectSuccess
-                                "let r1: R Integer = mkR [57]; r2: R Showable = r1 in testeq {\"[57]\"} {rShow r2}"
+                                "let {r1: R Integer = mkR [57]; r2: R Showable = r1} testeq \"[57]\" $ rShow r2"
                           , testExpectSuccess
-                                "let r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1 in testeq {\"[12,10,57]\"} {rShow r2}"
+                                "let {r1: R Integer = mkR [12, 10, 57]; r2: R Showable = r1} testeq \"[12,10,57]\" $ rShow r2"
                           ]
                     , tDecls
-                          [ "datatype Rec +a of Mk of rval: rec r, Maybe (a *: r) end end"
-                          , "rec0: Rec a = let rval = Nothing in Mk.Rec"
-                          , "rec1: a -> Rec a = fn x0 => let rval = Just (x0,Nothing) in Mk.Rec"
-                          , "rec3: a -> a -> a -> Rec a = fn x0, x1, x2 => let rval = Just (x0,Just (x1,Just (x2,Nothing))) in Mk.Rec"
-                          , "let rec rShow: (rec r, Maybe (Showable *: r)) -> Text = match Nothing => \"\"; Just (a,r) => show a <>.Text \",\" <>.Text rShow r end end"
+                          [ "datatype Rec +a {Mk {rval: rec r, Maybe (a *: r)}}"
+                          , "rec0: Rec a = let {rval = Nothing} Mk.Rec"
+                          , "rec1: a -> Rec a = fn x0 => let {rval = Just (x0,Nothing)} Mk.Rec"
+                          , "rec3: a -> a -> a -> Rec a = fn x0, x1, x2 => let {rval = Just (x0,Just (x1,Just (x2,Nothing)))} Mk.Rec"
+                          , "let rec {rShow: (rec r, Maybe (Showable *: r)) -> Text = fn {Nothing => \"\"; Just (a,r) => show a <>.Text \",\" <>.Text rShow r}}"
                           , "recShow: Rec Showable -> Text = fn Mk.Rec => rShow rval"
                           ] $
                       tGroup
                           "recursive"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess
-                                "let r1: Rec Integer = rec0; r2: Rec Showable = r1 in testeq {\"\"} {recShow r2}"
+                                "let {r1: Rec Integer = rec0; r2: Rec Showable = r1} testeq \"\" $ recShow r2"
                           , testExpectSuccess
-                                "let r1: Rec Integer = rec1 57; r2: Rec Showable = r1 in testeq {\"57,\"} {recShow r2}"
+                                "let {r1: Rec Integer = rec1 57; r2: Rec Showable = r1} testeq \"57,\" $ recShow r2"
                           , testExpectSuccess
-                                "let r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1 in testeq {\"12,10,57,\"} {recShow r2}"
+                                "let {r1: Rec Integer = rec3 12 10 57; r2: Rec Showable = r1} testeq \"12,10,57,\" $ recShow r2"
                           ]
                     , tGroup
                           "override"
                           [ tGroup "type" $ let
                                 testOverride :: Text -> Text -> Text
                                 testOverride ta tb =
-                                    "let datatype A of Mk of val: " <>
-                                    ta <> " end end; datatype B <: A of Mk of Mk.A; val: " <> tb <> " end end in pass"
+                                    "let {datatype A {Mk {val: " <>
+                                    ta <> "}}; datatype B <: A {Mk {Mk.A; val: " <> tb <> "}}} pass"
                                 in [ testExpectSuccess $ testOverride "Integer" "Integer"
                                    , testExpectSuccess $ testOverride "Rational" "Integer"
                                    , testExpectReject $ testOverride "Integer" "Rational"
@@ -1239,164 +1254,154 @@ testEntity =
                                    , testExpectSuccess $ testOverride "Integer -> Integer" "a -> a"
                                    , testExpectReject $ testOverride "a -> a" "Integer -> Integer"
                                    ]
-                          , tDecls
-                                [ "datatype A of Mk of val: Integer end end"
-                                , "datatype B of Mk of val: Rational end end"
-                                ] $
+                          , tDecls ["datatype A {Mk {val: Integer}}", "datatype B {Mk {val: Rational}}"] $
                             tGroup
                                 "multiple"
                                 [ testExpectSuccess "pass"
-                                , testExpectReject "let datatype C <: A & B of Mk of Mk.A; Mk.B end end in pass"
-                                , testExpectReject
-                                      "let datatype C <: A & B of Mk of Mk.A; Mk.B; val: Rational end end in pass"
-                                , testExpectSuccess
-                                      "let datatype C <: A & B of Mk of Mk.A; Mk.B; val: Integer end end in pass"
+                                , testExpectReject "let {datatype C <: A & B {Mk {Mk.A; Mk.B}}} pass"
+                                , testExpectReject "let {datatype C <: A & B {Mk {Mk.A; Mk.B; val: Rational}}} pass"
+                                , testExpectSuccess "let {datatype C <: A & B {Mk {Mk.A; Mk.B; val: Integer}}} pass"
                                 ]
                           ]
-                    , tDecls ["datatype R of Mk of u: Unit end end"] $ let
-                          testExpr t = testExpectSuccess $ "let f = " <> t <> " in seq f pass"
+                    , tDecls ["datatype R {Mk {u: Unit}}"] $ let
+                          testExpr t = testExpectSuccess $ "let {f = " <> t <> "} seq f pass"
                           in tGroup
                                  "issue-199"
                                  [ testExpectSuccess "pass"
                                  , testExpr "fn Mk.R => u"
-                                 , testExpr "fn a => let Mk.R = a in u"
-                                 , testExpr "fn Mk.R => let Mk.R = Mk.R in u"
+                                 , testExpr "fn a => let {Mk.R = a} u"
+                                 , testExpr "fn Mk.R => let {Mk.R = Mk.R} u"
                                  , testExpr "fn Mk.R => fn Mk.R => u"
-                                 , testExpr "fn a => let Mk.R = a; Mk.R = a; in u"
+                                 , testExpr "fn a => let {Mk.R = a; Mk.R = a;} u"
                                  ]
                     , tGroup
                           "supertype"
                           [ tDecls
-                                [ "datatype S of Mk of sval: Text end end"
+                                [ "datatype S {Mk {sval: Text}}"
                                 , "mkS: Text -> S = fn sval => Mk.S"
                                 , "unS: S -> Text = fn Mk.S => sval"
-                                , "datatype R <: S of Mk of Mk.S; rval: Integer end end"
+                                , "datatype R <: S {Mk {Mk.S; rval: Integer}}"
                                 , "mkR: Text *: Integer -> R = fn (sval,rval) => Mk.R"
                                 , "unR: R -> Text *: Integer = fn Mk.R => (sval,rval)"
                                 ] $
                             tGroup
                                 "simple"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {(\"textx\", 56)}  {unR $ mkR (\"textx\", 56)}"
+                                , testExpectSuccess "testeq (\"textx\", 56) $ unR $ mkR (\"textx\", 56)"
                                 , subtypeTest False SRSingle "R" "S"
                                 , subtypeTest False SRNot "S" "R"
                                 ]
                           , tDecls
-                                [ "datatype S of Mk of val: Rational end end"
+                                [ "datatype S {Mk {val: Rational}}"
                                 , "mkS: Rational -> S = fn val => Mk.S"
                                 , "unS: S -> Rational = fn Mk.S => val"
-                                , "datatype R <: S of Mk of Mk.S; val: Integer end end"
+                                , "datatype R <: S {Mk {Mk.S; val: Integer}}"
                                 , "mkR: Integer -> R = fn val => Mk.R"
                                 , "unR: R -> Integer = fn Mk.R => val"
                                 ] $
                             tGroup
                                 "refinement"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {74}  {unS $ mkR 74}"
+                                , testExpectSuccess "testeq 74 $ unS $ mkR 74"
                                 , subtypeTest False SRSingle "R" "S"
                                 , subtypeTest False SRNot "S" "R"
                                 ]
-                          , tDecls
-                                [ "datatype S1 of Mk of val: Rational end end"
-                                , "datatype S2 of Mk of val: Rational end end"
-                                ] $
+                          , tDecls ["datatype S1 {Mk {val: Rational}}", "datatype S2 {Mk {val: Rational}}"] $
                             tGroup
                                 "match-type"
-                                [ testExpectSuccess "let datatype R <: S1 of Mk of Mk.S1 end end in pass"
-                                , testExpectReject "let datatype R <: S1 of Mk of Mk.S2 end end in pass"
-                                , testExpectSuccess "let datatype R of Mk of end end in pass"
-                                , testExpectReject "let datatype R <: S1 of Mk of end end in pass"
-                                , testExpectReject "let datatype R of Mk of Mk.S1 end end in pass"
+                                [ testExpectSuccess "let {datatype R <: S1 {Mk {Mk.S1}}} pass"
+                                , testExpectReject "let {datatype R <: S1 {Mk {Mk.S2}}} pass"
+                                , testExpectSuccess "let {datatype R {Mk {}}} pass"
+                                , testExpectReject "let {datatype R <: S1 {Mk {}}} pass"
+                                , testExpectReject "let {datatype R {Mk {Mk.S1}}} pass"
                                 , testExpectSuccess
-                                      "let datatype R <: S1 & S2 of Mk of Mk.S1; Mk.S2; val: Rational end end in pass"
-                                , testExpectSuccess
-                                      "let datatype R <: S1 & S2 of Mk of Mk.S1; Mk.S2; val: Integer end end in pass"
-                                , testExpectReject "let datatype R <: S1 & S2 of Mk of Mk.S1 end end in pass"
-                                , testExpectReject "let datatype R <: S1 & S2 of Mk of Mk.S2 end end in pass"
+                                      "let {datatype R <: S1 & S2 {Mk {Mk.S1; Mk.S2; val: Rational}}} pass"
+                                , testExpectSuccess "let {datatype R <: S1 & S2 {Mk {Mk.S1; Mk.S2; val: Integer}}} pass"
+                                , testExpectReject "let {datatype R <: S1 & S2 {Mk {Mk.S1}}} pass"
+                                , testExpectReject "let {datatype R <: S1 & S2 {Mk {Mk.S2}}} pass"
                                 ]
                           , tGroup
                                 "multiple-supertype"
                                 [ tDecls
-                                      [ "datatype A of Mk of ma: Integer end end"
-                                      , "datatype B of Mk of mb: Text end end"
-                                      , "datatype C <: A & B of Mk of Mk.A; Mk.B end end"
-                                      , "c = let ma = 75; mb = \"ttmb\" in Mk.C"
+                                      [ "datatype A {Mk {ma: Integer}}"
+                                      , "datatype B {Mk {mb: Text}}"
+                                      , "datatype C <: A & B {Mk {Mk.A; Mk.B}}"
+                                      , "c = let {ma = 75; mb = \"ttmb\"} Mk.C"
                                       ] $
                                   tGroup
                                       "single-constructor"
                                       [ testExpectSuccess "pass"
-                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn Mk.B@Mk.A => (mb,ma)}"
-                                      , testExpectSuccess "testeq {(\"ttmb\",75)} {c >- fn Mk.C => (mb,ma)}"
+                                      , testExpectSuccess "testeq (\"ttmb\",75) $ c >- fn Mk.B@Mk.A => (mb,ma)"
+                                      , testExpectSuccess "testeq (\"ttmb\",75) $ c >- fn Mk.C => (mb,ma)"
                                       ]
                                 , tDecls
-                                      [ "datatype A of Mk1 of ma1: Integer end; Mk2 of ma2: Text end; end"
-                                      , "datatype B of Mk1 of mb1: Integer end; Mk2 of mb2: Text end; end"
-                                      , "datatype C <: A & B of Mk of Mk2.A; Mk1.B end end"
-                                      , "c = let mb1 = 77; ma2 = \"ttma1\" in Mk.C"
+                                      [ "datatype A {Mk1 {ma1: Integer}; Mk2 {ma2: Text};}"
+                                      , "datatype B {Mk1 {mb1: Integer}; Mk2 {mb2: Text};}"
+                                      , "datatype C <: A & B {Mk {Mk2.A; Mk1.B}}"
+                                      , "c = let {mb1 = 77; ma2 = \"ttma1\"} Mk.C"
                                       ] $
                                   tGroup
                                       "multiple-constructor"
                                       [ testExpectSuccess "pass"
-                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn Mk2.A@Mk1.B => (ma2,mb1)}"
-                                      , testExpectSuccess "testeq {(\"ttma1\",77)} {c >- fn Mk.C => (ma2,mb1)}"
+                                      , testExpectSuccess "testeq (\"ttma1\",77) $ c >- fn Mk2.A@Mk1.B => (ma2,mb1)"
+                                      , testExpectSuccess "testeq (\"ttma1\",77) $ c >- fn Mk.C => (ma2,mb1)"
                                       ]
                                 , tDecls
-                                      [ "datatype A of Mk1 of ma1: Integer end; Mk2 of ma2: Text end; end"
-                                      , "datatype B <: A of Mk1 of Mk1.A; mb1: Integer end; Mk2 of Mk2.A; mb2: Text end; end"
-                                      , "datatype C <: A of Mk1 of Mk1.A; mc1: Integer end; Mk2 of Mk2.A; mc2: Text end; end"
+                                      [ "datatype A {Mk1 {ma1: Integer}; Mk2 {ma2: Text};}"
+                                      , "datatype B <: A {Mk1 {Mk1.A; mb1: Integer}; Mk2 {Mk2.A; mb2: Text};}"
+                                      , "datatype C <: A {Mk1 {Mk1.A; mc1: Integer}; Mk2 {Mk2.A; mc2: Text};}"
                                       ] $
                                   tGroup
                                       "diamond"
                                       [ testExpectSuccess "pass"
                                       , tDecls
-                                            [ "datatype D <: B & C of Mk of Mk1.B; Mk1.C; end end"
-                                            , "d = let ma1 = 58; mb1 = 59; mc1 = 60 in Mk.D"
+                                            [ "datatype D <: B & C {Mk {Mk1.B; Mk1.C;}}"
+                                            , "d = let {ma1 = 58; mb1 = 59; mc1 = 60} Mk.D"
                                             ] $
                                         tGroup
                                             "consistent"
                                             [ testExpectSuccess "pass"
-                                            , testExpectSuccess "testeq {(58,59,60)} {d >- fn Mk.D => (ma1,mb1,mc1)}"
+                                            , testExpectSuccess "testeq (58,59,60) $ d >- fn Mk.D => (ma1,mb1,mc1)"
                                             , testExpectSuccess
-                                                  "testeq {(58,59,60)} {d >- fn Mk1.B@Mk1.C => (ma1,mb1,mc1)}"
+                                                  "testeq (58,59,60) $ d >- fn Mk1.B@Mk1.C => (ma1,mb1,mc1)"
                                             ]
-                                      , tDecls ["datatype D <: B & C of Mk of Mk1.B; Mk2.C; end end"] $
+                                      , tDecls ["datatype D <: B & C {Mk {Mk1.B; Mk2.C;}}"] $
                                         tGroup "inconsistent" [testExpectReject "pass"]
                                       ]
                                 ]
                           ]
                     , tGroup
                           "default"
-                          [ tDecls ["datatype A of Mk of ma: Integer = 754 end end"] $
+                          [ tDecls ["datatype A {Mk {ma: Integer = 754}}"] $
                             tGroup
                                 "simple"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq {42} {Mk.A of ma = 42 end >- fn Mk.A => ma}"
-                                , testExpectSuccess "testeq {42} {(let ma = 42 in Mk.A) >- fn Mk.A => ma}"
-                                , testExpectSuccess "testeq {754} {Mk.A of end >- fn Mk.A => ma}"
-                                , testExpectSuccess "testeq {754} {Mk.A >- fn Mk.A => ma}"
+                                , testExpectSuccess "testeq 42 $ Mk.A {ma = 42} >- fn Mk.A => ma"
+                                , testExpectSuccess "testeq 42 $ (let {ma = 42} Mk.A) >- fn Mk.A => ma"
+                                , testExpectSuccess "testeq 754 $ Mk.A {} >- fn Mk.A => ma"
+                                , testExpectSuccess "testeq 754 $ Mk.A >- fn Mk.A => ma"
                                 ]
                           , tDecls
-                                [ "datatype A of Mk1 of ma1: Integer = 755 end; Mk2 of ma2: Text end; end"
-                                , "datatype B <: A of Mk1 of Mk1.A; mb1: Integer end; Mk2 of Mk2.A; mb2: Text end; end"
-                                , "datatype C <: A of Mk1 of Mk1.A; mc1: Integer end; Mk2 of Mk2.A; mc2: Text end; end"
-                                , "datatype D <: B & C of Mk of Mk1.B; Mk1.C; end end"
+                                [ "datatype A {Mk1 {ma1: Integer = 755}; Mk2 {ma2: Text};}"
+                                , "datatype B <: A {Mk1 {Mk1.A; mb1: Integer}; Mk2 {Mk2.A; mb2: Text};}"
+                                , "datatype C <: A {Mk1 {Mk1.A; mc1: Integer}; Mk2 {Mk2.A; mc2: Text};}"
+                                , "datatype D <: B & C {Mk {Mk1.B; Mk1.C;}}"
                                 ] $
                             tGroup
                                 "diamond"
                                 [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq 43 $ Mk.D {ma1 = 43; mb1 = 44; mc1 = 45} >- fn Mk.D => ma1"
                                 , testExpectSuccess
-                                      "testeq {43} {Mk.D of ma1 = 43; mb1 = 44; mc1 = 45 end >- fn Mk.D => ma1}"
-                                , testExpectSuccess
-                                      "testeq {43} {(let ma1 = 43; mb1 = 44; mc1 = 45 in Mk.D) >- fn Mk.D => ma1}"
-                                , testExpectSuccess "testeq {755} {Mk.D of mb1 = 46; mc1 = 47 end >- fn Mk.D => ma1}"
-                                , testExpectSuccess "testeq {755} {(let mb1 = 46; mc1 = 47 in Mk.D) >- fn Mk.D => ma1}"
+                                      "testeq 43 $ (let {ma1 = 43; mb1 = 44; mc1 = 45} Mk.D) >- fn Mk.D => ma1"
+                                , testExpectSuccess "testeq 755 $ Mk.D {mb1 = 46; mc1 = 47} >- fn Mk.D => ma1"
+                                , testExpectSuccess "testeq 755 $ (let {mb1 = 46; mc1 = 47} Mk.D) >- fn Mk.D => ma1"
                                 ]
                           ]
                     ]
               ]
         , tGroup
               "subtype-decl"
-              [ tDecls ["datatype T of T1 Integer end", "unT1 = fn T1.T x => x"] $
+              [ tDecls ["datatype T {T1 Integer}", "unT1 = fn T1.T x => x"] $
                 tGroup
                     "simple"
                     [ tDecls ["subtype Integer <: T = T1.T"] $
@@ -1414,7 +1419,7 @@ testEntity =
                           , subtypeTest False SRSingle "T" "Integer"
                           ]
                     ]
-              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1.T x => x"] $
+              , tDecls ["datatype T +a {T1 (Maybe a)}", "unT1 = fn T1.T x => x"] $
                 tGroup
                     "parameter"
                     [ tDecls ["subtype Maybe Integer <: T Integer = T1.T"] $
@@ -1422,160 +1427,159 @@ testEntity =
                           "plain"
                           [ testExpectSuccess "pass"
                           , subtypeTest False SRSingle "Maybe Integer" "T Integer"
-                          , testExpectSuccess "testeq {Just 3} {unT1 $ Just 3}"
+                          , testExpectSuccess "testeq (Just 3) $ unT1 $ Just 3"
                           ]
                     , tDecls ["subtype Maybe a <: T a = T1.T"] $
                       tGroup
                           "tyvar"
                           [ testExpectSuccess "pass"
                           , subtypeTest False SRSingle "Maybe Integer" "T Integer"
-                          , testExpectSuccess "testeq {Just 3} {unT1 $ Just 3}"
+                          , testExpectSuccess "testeq (Just 3) $ unT1 $ Just 3"
                           ]
                     ]
-              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = fn T1.T x => x"] $
+              , tDecls ["datatype T +a {T1 (Maybe a)}", "unT1 = fn T1.T x => x"] $
                 tGroup
                     "dependent"
                     [ testExpectSuccess $
-                      "let x = 17; f = let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 () in testeq {Just 17} {f}"
+                      "let {x = 17; f = let {subtype Unit <: T Integer = fn () => T1.T (Just x)} unT1 ()} testeq (Just 17) f"
                     , testExpectSuccess $
-                      "let rec f = let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 (); x = 17 in testeq {Just 17} {f}"
+                      "let rec {f = let {subtype Unit <: T Integer = fn () => T1.T (Just x)} unT1 (); x = 17} testeq (Just 17) f"
                     , testExpectSuccess $
-                      "let f = fn x => let subtype Unit <: T Integer = fn () => T1.T (Just x) in unT1 () in testeq {Just 17} {f 17}"
+                      "let {f = fn x => let {subtype Unit <: T Integer = fn () => T1.T (Just x)} unT1 ()} testeq (Just 17) $ f 17"
                     , testExpectSuccess $
-                      "let f = fn x => let y = x; subtype Unit <: T Integer = fn () => T1.T (Just y) in unT1 () in testeq {Just 17} {f 17}"
+                      "let {f = fn x => let {y = x; subtype Unit <: T Integer = fn () => T1.T (Just y)} unT1 ()} testeq (Just 17) $ f 17"
                     ]
               ]
-        , tDecls ["datatype storable T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
+        , tDecls ["datatype storable T {T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\"}"] $
           tGroup
               "datatype-storable"
               [ testExpectSuccess "pass"
-              , testExpectSuccess "let f: T -> Entity = fn x => x in pass"
-              , testExpectSuccess "let t1 = T1.T \"hello\" 3 in pass"
-              , testExpectSuccess "let f = fn T1.T x _ => x in pass"
-              , testExpectSuccess "T1.T \"hello\" 3 >- match T1.T \"hello\" 3 => pass end"
+              , testExpectSuccess "let {f: T -> Entity = fn x => x} pass"
+              , testExpectSuccess "let {t1 = T1.T \"hello\" 3} pass"
+              , testExpectSuccess "let {f = fn T1.T x _ => x} pass"
+              , testExpectSuccess "T1.T \"hello\" 3 >- fn {T1.T \"hello\" 3 => pass}"
               , testExpectSuccess
-                    "T1.T \"hello\" 3 >- match T2.T => fail \"T2\"; T1.T \"hello\" 2 => fail \"T1.T 2\"; T1.T \"hell\" 3 => fail \"T1.T hell\"; T1.T \"hello\" 3 => pass end"
-              , testExpectSuccess "let datatype storable P of end in pass"
-              , testExpectSuccess "let datatype storable P of P1 !\"P1\" end in pass"
-              , testExpectSuccess "let datatype storable P of P1 !\"P1\"; end in pass"
-              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\" end in pass"
-              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\"; end in pass"
-              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\"; P2 Text !\"P2\" end in pass"
-              , testExpectSuccess "let datatype storable P of P1 Integer !\"P1\"; P2 Text !\"P2\"; end in pass"
+                    "T1.T \"hello\" 3 >- fn {T2.T => fail \"T2\"; T1.T \"hello\" 2 => fail \"T1.T 2\"; T1.T \"hell\" 3 => fail \"T1.T hell\"; T1.T \"hello\" 3 => pass}"
+              , testExpectSuccess "let {datatype storable P {}} pass"
+              , testExpectSuccess "let {datatype storable P {P1 !\"P1\"}} pass"
+              , testExpectSuccess "let {datatype storable P {P1 !\"P1\";}} pass"
+              , testExpectSuccess "let {datatype storable P {P1 Integer !\"P1\"}} pass"
+              , testExpectSuccess "let {datatype storable P {P1 Integer !\"P1\";}} pass"
+              , testExpectSuccess "let {datatype storable P {P1 Integer !\"P1\"; P2 Text !\"P2\"}} pass"
+              , testExpectSuccess "let {datatype storable P {P1 Integer !\"P1\"; P2 Text !\"P2\";}} pass"
               , tGroup
                     "nominal"
-                    [ testExpectSuccess "let datatype storable P of P1 !\"P1\" end; f : P -> P = fn x => x in pass"
+                    [ testExpectSuccess "let {datatype storable P {P1 !\"P1\"}; f : P -> P = fn x => x} pass"
                     , testExpectReject
-                          "let datatype storable P of P1 !\"P1\" end; datatype storable Q of end; f : P -> Q = fn x => x in pass"
+                          "let {datatype storable P {P1 !\"P1\"}; datatype storable Q {}; f : P -> Q = fn x => x} pass"
                     , testExpectReject
-                          "let datatype storable P of end; datatype storable Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
+                          "let {datatype storable P {}; datatype storable Q {Q1 !\"Q1\"}; f : P -> Q = fn x => x} pass"
                     , testExpectReject
-                          "let datatype storable P of end; datatype storable Q of end; f : P -> Q = fn x => x in pass"
+                          "let {datatype storable P {}; datatype storable Q {}; f : P -> Q = fn x => x} pass"
                     , testExpectReject
-                          "let datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 !\"Q1\" end; f : P -> Q = fn x => x in pass"
+                          "let {datatype storable P {P1 !\"P1\"}; datatype storable Q {Q1 !\"Q1\"}; f : P -> Q = fn x => x} pass"
                     , testExpectReject
-                          "let datatype storable P of P1 Integer !\"P1\" end; datatype storable Q of Q1 Integer !\"Q1\" end; f : P -> Q = fn x => x in pass"
+                          "let {datatype storable P {P1 Integer !\"P1\"}; datatype storable Q {Q1 Integer !\"Q1\"}; f : P -> Q = fn x => x} pass"
                     ]
               , tGroup
                     "parameters"
                     [ testExpectSuccess
-                          "let datatype storable P +a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let {datatype storable P +a {P1 !\"P1\"}; f : P Integer -> P Integer = fn x => x} pass"
                     , testExpectReject
-                          "let datatype storable P -a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let {datatype storable P -a {P1 !\"P1\"}; f : P Integer -> P Integer = fn x => x} pass"
                     , testExpectReject
-                          "let datatype storable P a of P1 !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let {datatype storable P a {P1 !\"P1\"}; f : P Integer -> P Integer = fn x => x} pass"
                     , testExpectSuccess
-                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Integer -> P Integer = fn x => x in pass"
+                          "let {datatype storable P +a {P1 a !\"P1\"}; f : P Integer -> P Integer = fn x => x} pass"
                     , testExpectSuccess
-                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Integer -> Integer= fn P1.P x => x in pass"
-                    , testExpectSuccess "let datatype storable P of P1 !\"P1\" end; f : P -> Entity = fn x => x in pass"
+                          "let {datatype storable P +a {P1 a !\"P1\"}; f : P Integer -> Integer= fn P1.P x => x} pass"
+                    , testExpectSuccess "let {datatype storable P {P1 !\"P1\"}; f : P -> Entity = fn x => x} pass"
                     , testExpectSuccess
-                          "let datatype storable P +a of P1 a !\"P1\" end; f : P Entity -> Entity = fn x => x in pass"
+                          "let {datatype storable P +a {P1 a !\"P1\"}; f : P Entity -> Entity = fn x => x} pass"
                     , testExpectSuccess
-                          "let datatype storable P +a +b of P1 a b !\"P1\" end; f : P Entity Entity -> Entity = fn x => x in pass"
+                          "let {datatype storable P +a +b {P1 a b !\"P1\"}; f : P Entity Entity -> Entity = fn x => x} pass"
                     ]
               , tGroup
                     "recursive"
                     [ testExpectSuccess
-                          "let datatype storable P of P1 !\"P1\" end in let datatype storable Q of Q1 P !\"Q1\" end in pass"
+                          "let {datatype storable P {P1 !\"P1\"}} let {datatype storable Q {Q1 P !\"Q1\"}} pass"
                     , testExpectSuccess
-                          "let datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end in pass"
+                          "let {datatype storable P {P1 !\"P1\"}; datatype storable Q {Q1 P !\"Q1\"}} pass"
                     , testExpectSuccess
-                          "let rec datatype storable P of P1 !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end in pass"
+                          "let rec {datatype storable P {P1 !\"P1\"}; datatype storable Q {Q1 P !\"Q1\"}} pass"
+                    , testExpectSuccess "let rec {datatype storable P {P1 Q !\"P1\"}; datatype storable Q {}} pass"
                     , testExpectSuccess
-                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of end in pass"
-                    , testExpectSuccess
-                          "let rec datatype storable P of P1 Q !\"P1\" end; datatype storable Q of Q1 P !\"Q1\" end in pass"
-                    , testExpectSuccess "let rec datatype storable P of P1 P !\"P1\" end in pass"
-                    , testExpectSuccess "let rec datatype storable P +a of P1 (P (a *: a)) !\"P1\" end in pass"
+                          "let rec {datatype storable P {P1 Q !\"P1\"}; datatype storable Q {Q1 P !\"Q1\"}} pass"
+                    , testExpectSuccess "let rec {datatype storable P {P1 P !\"P1\"}} pass"
+                    , testExpectSuccess "let rec {datatype storable P +a {P1 (P (a *: a)) !\"P1\"}} pass"
                     , tDecls
-                          [ "let rec datatype storable Nat of Z !\"Z\"; S Nat !\"S\" end end"
-                          , "let rec natToInteger: Nat -> Integer = match Z.Nat => 0; S.Nat n => 1 + natToInteger n end end"
+                          [ "let rec {datatype storable Nat {Z !\"Z\"; S Nat !\"S\"}}"
+                          , "let rec {natToInteger: Nat -> Integer = fn {Z.Nat => 0; S.Nat n => 1 + natToInteger n}}"
                           ] $
                       tGroup
                           "Nat"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "testeq {0} {natToInteger Z.Nat}"
-                          , testExpectSuccess "testeq {1} {natToInteger $ S.Nat Z.Nat}"
-                          , testExpectSuccess "testneq {0} {Z.Nat}"
-                          , testExpectSuccess "testeq {Z.Nat} {Z.Nat}"
+                          , testExpectSuccess "testeq 0 $ natToInteger Z.Nat"
+                          , testExpectSuccess "testeq 1 $ natToInteger $ S.Nat Z.Nat"
+                          , testExpectSuccess "testneq 0 Z.Nat"
+                          , testExpectSuccess "testeq Z.Nat Z.Nat"
                           ]
                     , tDecls
-                          [ "let rec datatype storable L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
-                          , "let rec listToL: List a -> L a = match [] => Nil.L; x::xs => Cons.L x (listToL xs) end end"
-                          , "let rec lToList: L a -> List a = match Nil.L => []; Cons.L x xs => x :: lToList xs end end"
+                          [ "let rec {datatype storable L +a {Nil !\"Nil\"; Cons a (L a) !\"Cons\"}}"
+                          , "let rec {listToL: List a -> L a = fn {[] => Nil.L; x::xs => Cons.L x (listToL xs)}}"
+                          , "let rec {lToList: L a -> List a = fn {Nil.L => []; Cons.L x xs => x :: lToList xs}}"
                           ] $
                       tGroup
                           "list"
                           [ testExpectSuccess "pass"
-                          , testExpectSuccess "let l = listToL [1,2,3] in pass"
-                          , testExpectSuccess "let l = listToL [1,2,3] in testeq {lToList l} {[1,2,3]}"
-                          , testExpectSuccess "testeq {lToList $ listToL [1,2,3]} {[1,2,3]}"
-                          , testExpectSuccess "testneq {0} {Nil.L}"
-                          , testExpectSuccess "testeq {Nil.L} {Nil.L}"
-                          , testExpectSuccess "testeq {Cons.L 1 Nil.L} {Cons.L 1 Nil.L}"
+                          , testExpectSuccess "let {l = listToL [1,2,3]} pass"
+                          , testExpectSuccess "let {l = listToL [1,2,3]} testeq (lToList l) [1,2,3]"
+                          , testExpectSuccess "testeq (lToList $ listToL [1,2,3]) [1,2,3]"
+                          , testExpectSuccess "testneq 0 Nil.L"
+                          , testExpectSuccess "testeq Nil.L Nil.L"
+                          , testExpectSuccess "testeq (Cons.L 1 Nil.L) (Cons.L 1 Nil.L)"
                           , testExpectSuccess
-                                "testeq {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
-                          , testExpectSuccess "testeq {listToL [1,2,3]} {Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))}"
-                          , testExpectSuccess "testeq {lToList $ Cons.L 1 $ Cons.L 2 $ Cons.L 3 Nil.L} {[1,2,3]}"
+                                "testeq (Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L))) (Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L)))"
+                          , testExpectSuccess "testeq (listToL [1,2,3]) (Cons.L 1 (Cons.L 2 (Cons.L 3 Nil.L)))"
+                          , testExpectSuccess "testeq (lToList $ Cons.L 1 $ Cons.L 2 $ Cons.L 3 Nil.L) [1,2,3]"
                           ]
                     ]
               ]
         , tGroup
-              "type escape"
+              "type-escape"
               [ testExpectSuccess
-                    "let entitytype T; t = let in point.OpenEntity @T !\"t\"; f = let f : T -> Action Unit = fn _ => pass in f; in f t"
+                    "let {entitytype T; t = let {} point.OpenEntity @T !\"t\"; f = let {f : T -> Action Unit = fn _ => pass} f;} f t"
               , testExpectReject
-                    "let entitytype T1; entitytype T2; t = let in point.OpenEntity @T1 !\"t\"; f = let f : T2 -> Action Unit = fn _ => pass in f; in f t"
+                    "let {entitytype T1; entitytype T2; t = let {} point.OpenEntity @T1 !\"t\"; f = let {f : T2 -> Action Unit = fn _ => pass} f;} f t"
               , testExpectReject
-                    "let t = let entitytype T in point.OpenEntity @T !\"t\"; f = let entitytype T; f : T -> Action Unit = fn _ => pass in f; in f t"
+                    "let {t = let {entitytype T} point.OpenEntity @T !\"t\"; f = let {entitytype T; f : T -> Action Unit = fn _ => pass} f;} f t"
               , testExpectReject
-                    "let t = let entitytype T1 in point.OpenEntity @T1 !\"t\"; f = let entitytype T2; f : T2 -> Action Unit = fn _ => pass in f; in f t"
+                    "let {t = let {entitytype T1} point.OpenEntity @T1 !\"t\"; f = let {entitytype T2; f : T2 -> Action Unit = fn _ => pass} f;} f t"
               ]
         , tGroup
               "general-subtype"
-              [ testExpectReject "let subtype Unit <: Unit = fn _ => () in pass"
-              , testExpectReject "let subtype Integer <: Unit = fn _ => () in pass"
+              [ testExpectReject "let {subtype Unit <: Unit = fn _ => ()} pass"
+              , testExpectReject "let {subtype Integer <: Unit = fn _ => ()} pass"
               , tDecls ["entitytype P", "entitytype Q"] $
                 tGroup
                     "entitytype"
-                    [ testExpectSuccess "let subtype P <: P in pass"
-                    , testExpectSuccess "let subtype P <: Q in pass"
-                    , testExpectReject "let subtype P <: P = fn x => x in pass"
-                    , testExpectReject "let subtype P <: Q = fn _ => error \"\" in pass"
+                    [ testExpectSuccess "let {subtype P <: P} pass"
+                    , testExpectSuccess "let {subtype P <: Q} pass"
+                    , testExpectReject "let {subtype P <: P = fn x => x} pass"
+                    , testExpectReject "let {subtype P <: Q = fn _ => error \"\"} pass"
                     ]
-              , tDecls ["datatype P of Mk Number end"] $
+              , tDecls ["datatype P {Mk Number}"] $
                 tGroup
                     "datatype"
-                    [ testExpectSuccess "let subtype Number <: P = Mk.P in pass"
-                    , testExpectReject "let subtype Number <: P = Mk.P; subtype Number <: P = Mk.P in pass"
-                    , testExpectReject "let subtype Number <: P = Mk.P; subtype Integer <: P = Mk.P in pass"
+                    [ testExpectSuccess "let {subtype Number <: P = Mk.P} pass"
+                    , testExpectReject "let {subtype Number <: P = Mk.P; subtype Number <: P = Mk.P} pass"
+                    , testExpectReject "let {subtype Number <: P = Mk.P; subtype Integer <: P = Mk.P} pass"
                     ]
               , tDecls
-                    [ "datatype A of Mk Number end"
-                    , "datatype B of Mk Number end"
-                    , "datatype C of Mk Number end"
-                    , "datatype D of Mk Number end"
+                    [ "datatype A {Mk Number}"
+                    , "datatype B {Mk Number}"
+                    , "datatype C {Mk Number}"
+                    , "datatype D {Mk Number}"
                     , "subtype A <: B = fn Mk.A x => Mk.B x"
                     , "subtype C <: D = fn Mk.C x => Mk.D x"
                     , "subtype A <: D = fn Mk.A x => Mk.D x"
@@ -1583,26 +1587,26 @@ testEntity =
                 tGroup
                     "verify"
                     [ testExpectSuccess "pass"
-                    , testExpectReject "let subtype B <: B = fn Mk.B x => Mk.B x in pass"
-                    , testExpectReject "let subtype B <: C = fn Mk.B x => Mk.C x in pass"
+                    , testExpectReject "let {subtype B <: B = fn Mk.B x => Mk.B x} pass"
+                    , testExpectReject "let {subtype B <: C = fn Mk.B x => Mk.C x} pass"
                     ]
-              , tDecls ["datatype A of Mk Number end", "datatype B of Mk Number end"] $
+              , tDecls ["datatype A {Mk Number}", "datatype B {Mk Number}"] $
                 tGroup
                     "trustme"
                     [ testExpectSuccess "pass"
-                    , testExpectSuccess "let subtype A <: B = fn Mk.A x => Mk.B x in pass"
+                    , testExpectSuccess "let {subtype A <: B = fn Mk.A x => Mk.B x} pass"
                     , testExpectReject
-                          "let subtype A <: B = fn Mk.A x => Mk.B x; subtype A <: B = fn Mk.A x => Mk.B x in pass"
+                          "let {subtype A <: B = fn Mk.A x => Mk.B x; subtype A <: B = fn Mk.A x => Mk.B x} pass"
                     , testExpectSuccess
-                          "let subtype A <: B = fn Mk.A x => Mk.B x; subtype trustme A <: B = fn Mk.A x => Mk.B x in pass"
+                          "let {subtype A <: B = fn Mk.A x => Mk.B x; subtype trustme A <: B = fn Mk.A x => Mk.B x} pass"
                     , testExpectSuccess
-                          "let subtype trustme A <: B = fn Mk.A x => Mk.B x; subtype A <: B = fn Mk.A x => Mk.B x in pass"
+                          "let {subtype trustme A <: B = fn Mk.A x => Mk.B x; subtype A <: B = fn Mk.A x => Mk.B x} pass"
                     ]
-              , tDecls ["datatype A +x of Mk x end", "datatype B +x of Mk x end", "datatype C of Mk end"] $
+              , tDecls ["datatype A +x {Mk x}", "datatype B +x {Mk x}", "datatype C {Mk}"] $
                 tGroup
                     "preferred"
                     [ testExpectSuccess "pass"
-                    , testExpectSuccess "let subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x in pass"
+                    , testExpectSuccess "let {subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x} pass"
                     , tModify (testTreeOne "1") $
                       tDecls
                           [ "subtype trustme A Number <: B Number = fn Mk.A x => Mk.B x"
@@ -1730,73 +1734,73 @@ testEntity =
               [ "entitytype E"
               , "eta = property @E @Text !\"eta\" store"
               , "e1 = point.OpenEntity @E !\"e1\""
-              , "rt1 = eta !$ {e1}"
+              , "rt1 = eta !$ ap{e1}"
               ] $
           tGroup
               "undo"
-              [ testExpectSuccess "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; end"
+              [ testExpectSuccess "do {rt1 := \"A\"; testrefeq ap{\"A\"} rt1; rt1 := \"B\"; testrefeq ap{\"B\"} rt1;}"
               , testExpectSuccess
-                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo undoHandler; testeq {\"A\"} rt1; end"
+                    "do {rt1 := \"A\"; testrefeq ap{\"A\"} rt1; rt1 := \"B\"; testrefeq ap{\"B\"} rt1; queueUndo undoHandler; testrefeq ap{\"A\"} rt1;}"
               , testExpectSuccess
-                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo undoHandler; testeq {\"A\"} rt1; queueRedo undoHandler; testeq {\"B\"} rt1; end"
+                    "do {rt1 := \"A\"; testrefeq ap{\"A\"} rt1; rt1 := \"B\"; testrefeq ap{\"B\"} rt1; queueUndo undoHandler; testrefeq ap{\"A\"} rt1; queueRedo undoHandler; testrefeq ap{\"B\"} rt1;}"
               ]
         , tGroup
               "interpret"
-              [ testExpectSuccess "do r <- newMem.WholeModel; asText.Integer !$ r := \"37\"; testeq {37} r; end"
+              [ testExpectSuccess "do {r <- newMem.WholeModel; asText.Integer !$ r := \"37\"; testrefeq ap{37} r;}"
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; asText.Date !$ r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
+                    "do {r <- newMem.WholeModel; asText.Date !$ r := \"2015-08-12\"; testrefeq ap{YearMonthDay 2015 08 12} r;}"
               ]
         , tDecls
-              [ "runresult = fn ar, arg => ar >- match Failure err => fail err; Success f => f arg end"
-              , "testaction = fn expected, action => do found <- action; testeqval expected found end"
-              , "testFailure = fn action => do found <- action; found >- match Failure _ => pass; Success _ => fail \"not Failure\" end end"
+              [ "runresult = fn ar, arg => ar >- fn {Failure err => fail err; Success f => f arg}"
+              , "testaction = fn expected, action => do {found <- action; testeq expected found}"
+              , "testFailure = fn action => do {found <- action; found >- fn {Failure _ => pass; Success _ => fail \"not Failure\"}}"
               ] $
           tWith ["Eval"] $
           tGroup
               "evaluate"
               [ testExpectSuccess "testaction (Success True) $ evaluate @Boolean \"True\""
               , testExpectSuccess "testaction (Success 5) $ evaluate @Integer \"5\""
-              , testExpectSuccess "testaction (Success 5) $ evaluate @Integer \"let x = 5 in x\""
+              , testExpectSuccess "testaction (Success 5) $ evaluate @Integer \"let {x = 5} x\""
               , testExpectSuccess
-                    "do ar <- evaluate @(Integer -> Integer) \"fn x => x +.Integer 1\"; ar >- match Failure err => fail err; Success f => testeqval 8 $ f 7 end end"
+                    "do {ar <- evaluate @(Integer -> Integer) \"fn x => x +.Integer 1\"; ar >- fn {Failure err => fail err; Success f => testeq 8 $ f 7}}"
               , testExpectSuccess
                     "testaction (Failure \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate @Integer \"\""
               , testExpectSuccess "testaction (Failure \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
               , testExpectSuccess "testFailure $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; ar <- evaluate @(WholeModel Integer -> Action Unit) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+                    "do {r <- newMem.WholeModel; ar <- evaluate @(WholeModel Integer -> Action Unit) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeq 45 a;}"
               , testExpectSuccess "testaction 569 $ evaluate @(a -> a) \"fn x => x\" >>= fn Success f => pure $ f 569"
               , testExpectSuccess
                     "testaction 570 $  evaluate @(Integer -> Integer) \"fn x => x\" >>= fn Success f => pure $ f 570"
               ]
         , tGroup
               "text-sort"
-              [ testExpectSuccess "testeq {EQ} {order.Text \"a\" \"a\"}"
-              , testExpectSuccess "testeq {EQ} {order.Text \"A\" \"A\"}"
-              , testExpectSuccess "testeq {LT} {order.Text \"a\" \"A\"}"
-              , testExpectSuccess "testeq {LT} {order.Text \"a\" \"b\"}"
-              , testExpectSuccess "testeq {LT} {order.Text \"A\" \"b\"}"
-              , testExpectSuccess "testeq {LT} {order.Text \"a\" \"B\"}"
+              [ testExpectSuccess "testeq EQ $ order.Text \"a\" \"a\""
+              , testExpectSuccess "testeq EQ $ order.Text \"A\" \"A\""
+              , testExpectSuccess "testeq LT $ order.Text \"a\" \"A\""
+              , testExpectSuccess "testeq LT $ order.Text \"a\" \"b\""
+              , testExpectSuccess "testeq LT $ order.Text \"A\" \"b\""
+              , testExpectSuccess "testeq LT $ order.Text \"a\" \"B\""
               ]
         , tGroup
               "applicative-notation"
-              [ testExpectSuccess "testeq {Just 3} {{.Maybe 3}}"
-              , testExpectSuccess "testeq {[10,13,11,14]} {{.List %([3,4]) +.Integer %([7,10])}}"
+              [ testExpectSuccess "testeq (Just 3) $ ap.Maybe {3}"
+              , testExpectSuccess "testeq [10,13,11,14] $ ap.List {%([3,4]) +.Integer %([7,10])}"
               ]
         , tGroup
               "do-notation"
-              [ testExpectSuccess "testeq {Just 3} {do.Maybe pure 3 end}"
-              , testExpectSuccess "testeq {[10,13,11,14]} {do.List a <- [3,4]; b <- [7,10]; pure $ a +.Integer b end}"
+              [ testExpectSuccess "testeq (Just 3) $ do.Maybe {pure 3}"
+              , testExpectSuccess "testeq [10,13,11,14] $ do.List {a <- [3,4]; b <- [7,10]; pure $ a +.Integer b}"
               ]
         , tGroup
               "task"
               [ testExpectSuccess
-                    "do t <- async.Task $ do sleep $ Seconds 0.01; pure True end; v <- wait.Task t; if v then pass else fail \"\" end"
+                    "do {t <- async.Task $ do {sleep $ Seconds 0.01; pure True}; v <- wait.Task t; if v then pass else fail \"\"}"
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.01; r := 1; end; wait.Task t; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do {r <- newMem.WholeModel; r := 0; t <- async.Task $ do {sleep $ Seconds 0.01; r := 1;}; wait.Task t; v <- get r; if v == 1 then pass else fail \"\"}"
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; r := 0; t <- async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 0 then pass else fail \"\" end"
+                    "do {r <- newMem.WholeModel; r := 0; t <- async.Task $ do {sleep $ Seconds 0.05; r := 1;}; v <- get r; if v == 0 then pass else fail \"\"}"
               , testExpectSuccess
-                    "do r <- newMem.WholeModel; r := 0; t <- run.Lifecycle $ async.Task $ do sleep $ Seconds 0.05; r := 1; end; v <- get r; if v == 1 then pass else fail \"\" end"
+                    "do {r <- newMem.WholeModel; r := 0; t <- run.Lifecycle $ async.Task $ do {sleep $ Seconds 0.05; r := 1;}; v <- get r; if v == 1 then pass else fail \"\"}"
               ]
         ]

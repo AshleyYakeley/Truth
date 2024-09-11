@@ -291,7 +291,7 @@ testUnifier =
                         testerLiftInterpreter $ do
                             bodyExpr <-
                                 parseTopExpression
-                                    "fn r => do r :=.WholeModel [10,20]; set.ListModel 0 25 r; get.WholeModel r end"
+                                    "fn r => do {r :=.WholeModel [10,20]; set.ListModel 0 25 r; get.WholeModel r}"
                             bodyVal <- qEvalExpr bodyExpr
                             body <- qUnifyValueToFree bodyVal
                             return $ body r
@@ -306,7 +306,7 @@ testUnifier =
                         testerLiftInterpreter $ do
                             bodyExpr <-
                                 parseTopExpression
-                                    "fn r => do r :=.WholeModel [10,20]; set.ListModel 0 25 r; get.WholeModel r end"
+                                    "fn r => do {r :=.WholeModel [10,20]; set.ListModel 0 25 r; get.WholeModel r}"
                             actionExpr <- qApplyExpr bodyExpr (qConst r)
                             actionVal <- qEvalExpr actionExpr
                             qUnifyValue actionVal
@@ -320,7 +320,7 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression
-                                    "do r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; get.WholeModel r end"
+                                    "do {r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; get.WholeModel r}"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     l :: [Integer] <- testerLiftAction action
@@ -333,13 +333,13 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression
-                                    "do r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
+                                    "do {r <- newMem.ListModel: Action (ListModel a); r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\";}"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     testerLiftAction action
               , runScriptTestTree $
                 testExpectSuccess
-                    "do r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\"; end"
+                    "do {r <- newMem.ListModel; r :=.WholeModel [10,20]; ir <- item.ListModel True 0 r; ir :=.WholeModel 25; l <- get.WholeModel r; if l ==.Entity [25,20] then pure.Action () else fail.Action \"different\";}"
               ]
         , testTree
               "retraction"
@@ -374,8 +374,8 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "fn store => let entitytype E in\n" <>
-                                "property @E @Integer !\"r\" store !$ {point.OpenEntity @E !\"p\"} := 456"
+                                "fn store => let {entitytype E}\n" <>
+                                "property @E @Integer !\"r\" store !$ ap{point.OpenEntity @E !\"p\"} := 456"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     testerRunAction $ action smodel
@@ -386,7 +386,7 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "fn store => let entitytype E in property @E @Integer !\"r\" store !$ {point.OpenEntity @E !\"p\"}"
+                                "fn store => let {entitytype E} property @E @Integer !\"r\" store !$ ap{point.OpenEntity @E !\"p\"}"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     testerRunAction $ langWholeModelSet (rval smodel) $ Known 345
@@ -412,9 +412,9 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "let rec\n" <>
-                                "fromRec = match Nothing => []; Just (t,tt) => t :: fromRec tt end;\n" <>
-                                "in fromRec $ Just (5,Just (3,Nothing))"
+                                "let rec {\n" <>
+                                "fromRec = fn {Nothing => []; Just (t,tt) => t :: fromRec tt};\n" <>
+                                "} fromRec $ Just (5,Just (3,Nothing))"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     if tval == [5, 3]
@@ -426,10 +426,10 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "let rec\n" <>
-                                "datatype Q +t of Mk (rec a, Maybe (t *: a)) end;\n" <>
-                                "fromQ = fn Mk.Q x => x >- match Nothing => []; (Just (t,a)) => t :: fromQ (Mk.Q a) end;\n" <>
-                                "in fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
+                                "let rec {\n" <>
+                                "datatype Q +t {Mk (rec a, Maybe (t *: a))};\n" <>
+                                "fromQ = fn Mk.Q x => x >- fn {Nothing => []; (Just (t,a)) => t :: fromQ (Mk.Q a)};\n" <>
+                                "} fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     if tval == [5, 3, 1]
@@ -441,10 +441,10 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "let rec\n" <>
-                                "datatype Q +t of Mk (rec a, Maybe (t *: a)) end;\n" <>
-                                "fromQ = match Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a) end;\n" <>
-                                "in fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
+                                "let rec {\n" <>
+                                "datatype Q +t {Mk (rec a, Maybe (t *: a))};\n" <>
+                                "fromQ = fn {Mk.Q Nothing => []; Mk.Q (Just (t,a)) => t :: fromQ (Mk.Q a)};\n" <>
+                                "} fromQ $ Mk.Q $ Just (5,Just (3,Just (1,Nothing)))"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     if tval == [5, 3, 1]
@@ -463,7 +463,7 @@ testUnifier =
                        testerLoadLibrary [lib] $ do
                            tval :: [Integer] <-
                                testerLiftInterpreter $ do
-                                   expr <- parseTopExpression $ "import \"test\" in fix f v"
+                                   expr <- parseTopExpression $ "import \"test\" fix f v"
                                    val <- qEvalExpr expr
                                    qUnifyValue val
                            if tval == [5, 3]

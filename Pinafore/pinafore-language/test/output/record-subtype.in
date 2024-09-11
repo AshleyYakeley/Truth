@@ -1,18 +1,15 @@
 #!/usr/bin/pinafore
-let
+let {
+  entitytype A;
+  entitytype B;
 
-entitytype A;
-entitytype B;
+  datatype R {
+    Mk {
+      f: A -> Action Unit;
+    };
+  };
 
-datatype R of
-    Mk of
-    f: A -> Action Unit;
-    end;
-end;
-
-r: R = let f = fn _ => outputLn.Env "Done." in Mk.R;
-
-in r >- fn Mk.R =>
-    let
-    subtype B <: A
-    in f (error "" : B)
+  r: R =
+    let {f = fn _ => outputLn.Env "Done."} Mk.R;
+} r >- fn Mk.R =>
+  let {subtype B <: A} f (error "" : B)

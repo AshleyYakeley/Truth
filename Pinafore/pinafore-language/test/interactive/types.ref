@@ -3,20 +3,20 @@ pinafore> entitytype Q
 pinafore> subtype P <: Q
 pinafore> p = point.OpenEntity @P !"p"
 pinafore> q = point.OpenEntity @Q !"q"
-pinafore> with Attribute end
-pinafore> with Store end
+pinafore> with Attribute
+pinafore> with Store
 pinafore> store <- openTemp.Store
 pinafore> pp = property @P @P !"pp" store
 pinafore> qp = property @Q @P !"qp" store
 pinafore> :t pp
 : Property P P
-pinafore> :t pp !$ {p}
+pinafore> :t pp !$ ap{p}
 : WholeModel P
-pinafore> :t pp !$ {q}
+pinafore> :t pp !$ ap{q}
 <input>:13:7: no ground conversion for Q <: P
-pinafore> :t qp !$ {p}
+pinafore> :t qp !$ ap{p}
 : WholeModel P
-pinafore> :t qp !$ {q}
+pinafore> :t qp !$ ap{q}
 : WholeModel P
 pinafore> :t fn x => x <> x
 : List a -> List a
