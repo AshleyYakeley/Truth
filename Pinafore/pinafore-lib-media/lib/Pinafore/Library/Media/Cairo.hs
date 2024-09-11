@@ -176,7 +176,7 @@ cairoStuff =
                             [ valBDS "clear" "" $ hoistDrawing @A operatorClear
                             , valBDS "source" "" $ hoistDrawing @A operatorSource
                             , valBDS "over" "" $ hoistDrawing @A operatorOver
-                            , valBDS "in_" "" $ hoistDrawing @A operatorIn
+                            , valBDS "in" "" $ hoistDrawing @A operatorIn
                             , valBDS "out" "" $ hoistDrawing @A operatorOut
                             , valBDS "atop" "" $ hoistDrawing @A operatorAtop
                             , valBDS "dest" "" $ hoistDrawing @A operatorDest
