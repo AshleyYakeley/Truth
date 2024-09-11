@@ -357,33 +357,28 @@ checkKeyword "debug"
     | debugSyntaxINTERNAL = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
 
-allKeywords :: [(Text, Text)]
-allKeywords =
-    [ ("fn", "keyword.control.pinafore")
-    , ("rec", "keyword.other.pinafore")
-    , ("let", "keyword.other.pinafore")
-    , ("imply", "keyword.other.pinafore")
-    , ("ap", "keyword.control.pinafore")
-    , ("do", "keyword.control.pinafore")
-    , ("if", "keyword.control.pinafore")
-    , ("then", "keyword.control.pinafore")
-    , ("else", "keyword.control.pinafore")
-    , ("type", "keyword.declaration.pinafore")
-    , ("datatype", "keyword.declaration.pinafore")
-    , ("entitytype", "keyword.declaration.pinafore")
-    , ("predicatetype", "keyword.declaration.pinafore")
-    , ("subtype", "keyword.declaration.pinafore")
-    , ("trustme", "keyword.declaration.pinafore")
-    , ("storable", "keyword.declaration.pinafore")
-    , ("module", "keyword.declaration.pinafore")
-    , ("expose", "keyword.declaration.pinafore")
-    , ("import", "keyword.declaration.pinafore")
-    , ("as", "keyword.other.pinafore")
-    , ("except", "keyword.other.pinafore")
-    , ("namespace", "keyword.declaration.pinafore")
-    , ("docsec", "keyword.declaration.pinafore")
-    , ("with", "keyword.declaration.pinafore")
+keywordClasses :: [(Text, [Token ()])]
+keywordClasses =
+    [ ("keyword.control.pinafore", [TokFn, TokAp, TokDo, TokIf, TokThen, TokElse])
+    , ( "keyword.declaration.pinafore"
+      , [ TokType
+        , TokDataType
+        , TokEntityType
+        , TokPredicateType
+        , TokSubtype
+        , TokTrustMe
+        , TokStorable
+        , TokExpose
+        , TokImport
+        , TokNamespace
+        , TokDocSec
+        , TokWith
+        ])
+    , ("keyword.other.pinafore", [TokRec, TokLet, TokImply, TokAs, TokExcept])
     ]
+
+allKeywords :: [(Text, Text)]
+allKeywords = mconcat $ fmap (\(tokclass, toks) -> fmap (\tok -> (pack $ show tok, tokclass)) toks) keywordClasses
 
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do
