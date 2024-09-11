@@ -41,7 +41,7 @@ noTestAction = return ()
 
 testUIAction :: Text -> GView 'Unlocked () -> ScriptTestTree
 testUIAction text testaction =
-    scriptTestCase text ("fn call => run.GTK $ fn gtk => do " <> text <> "; call gtk; end") $ runUIAction testaction
+    scriptTestCase text ("fn call => run.GTK $ fn gtk => do {" <> text <> "; call gtk;}") $ runUIAction testaction
 
 testActions :: ScriptTestTree
 testActions =
@@ -65,11 +65,11 @@ testUI :: TestTree
 testUI =
     runScriptTestTree $
     tDecls
-        [ "with Function, SetModel, Action end"
-        , "import \"gnome\" end"
-        , "emptywindow: Context.GTK -> Action Unit = fn gtk => do open.Window.GTK gtk (300,400) {\"Empty\"} blank.Widget.GTK; pure (); end"
+        [ "with Function, SetModel, Action"
+        , "import \"gnome\""
+        , "emptywindow: Context.GTK -> Action Unit = fn gtk => do {open.Window.GTK gtk (300,400) ap{\"Empty\"} blank.Widget.GTK; pure ();}"
         , "entitytype T"
-        , "newpoint: Action Unit = do s <- newMem.FiniteSetModel; p <- new.OpenEntity @T; s += p; pure (); end"
-        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do open.Window.GTK gtk (300,400) {\"Test\"} (button.Widget.GTK {\"Button\"} {action}); pure (); end"
+        , "newpoint: Action Unit = do {s <- newMem.FiniteSetModel; p <- new.OpenEntity @T; s += p; pure ();}"
+        , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do {open.Window.GTK gtk (300,400) ap{\"Test\"} (button.Widget.GTK ap{\"Button\"} ap{action}); pure ();}"
         ]
         testActions

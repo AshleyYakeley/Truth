@@ -1,28 +1,24 @@
 #!/usr/bin/pinafore
-import "gnome" in
-with GTK. in
+import "gnome"
+with GTK.
 run.GTK $ fn gtk =>
-let
-
-messageBracket: Text -> Action a -> Action a
-= fn t, ma => do
-    outputLn.Env $ t <>.Text " [";
-    a <- ma;
-    outputLn.Env $ t <>.Text " ]";
-    pure.Action a;
-    end;
-
-in messageBracket "main" $
-do
-    w <- open.Window gtk (600,800) {"Window"} blank.Widget;
-    async.Task $
-    messageBracket "thread" $
-    do
-        messageBracket "thread: lock: outside" $
-        lock.GTK.Debug gtk $
+let {
+  messageBracket: Text -> Action a -> Action a =
+    fn t, ma => do {
+      outputLn.Env $ t <>.Text " [";
+      a <- ma;
+      outputLn.Env $ t <>.Text " ]";
+      pure.Action a;
+    };
+} messageBracket "main" $ do {
+  w <- open.Window gtk (600,800) ap{"Window"} blank.Widget;
+  async.Task $
+  messageBracket "thread" $ do {
+    messageBracket "thread: lock: outside" $
+      lock.GTK.Debug gtk $
         messageBracket "thread: lock: inside" $
-        sleep $ Seconds 0.3;
-        messageBracket "thread: closeWindow" $ close.Window w;
-    end;
-    sleep $ Seconds 0.1;
-end
+          sleep $ Seconds 0.3;
+    messageBracket "thread: closeWindow" $ close.Window w;
+  };
+  sleep $ Seconds 0.1;
+}

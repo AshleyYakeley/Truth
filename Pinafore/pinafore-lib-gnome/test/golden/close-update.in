@@ -1,19 +1,17 @@
 #!/usr/bin/env -S pinafore
-import "gnome" in
-with GTK. in
+import "gnome"
+with GTK.
 run.GTK $ fn gtk =>
-let
-
-    eui: Widget
-    = exec.Widget $ do
-        sleep $ Seconds 0.2;
-        pure.Action blank.Widget;
-        end;
-
-in do
-    model <- newMem.WholeModel;
-    w <- open.Window gtk (600,800) {"Window"} $ dynamic.Widget $ coMap.WholeModel (fn _ => eui) model;
-    model := ();
-    sleep $ Seconds 0.1;
-    close.Window w;
-    end
+let {
+  eui: Widget =
+    exec.Widget $ do {
+      sleep $ Seconds 0.2;
+      pure.Action blank.Widget;
+    };
+} do {
+  model <- newMem.WholeModel;
+  w <- open.Window gtk (600,800) ap{"Window"} $ dynamic.Widget $ coMap.WholeModel (fn _ => eui) model;
+  model := ();
+  sleep $ Seconds 0.1;
+  close.Window w;
+}

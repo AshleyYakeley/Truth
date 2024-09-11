@@ -1,34 +1,31 @@
 #!/usr/bin/pinafore
-import "gnome" in
-with GTK. in
+import "gnome"
+with GTK.
 openTemp.Store >>= fn store =>
 run.GTK $ fn gtk =>
-let
+let {
+  # a person
+  entitytype Person;
+  people: FiniteSetModel Person =
+    set.Store @Person !"p" store;
 
-    # a person
-    entitytype Person;
-    people: FiniteSetModel Person
-    = set.Store @Person !"p" store;
-
-    name: Property Person Text
-    = property @Person @Text !"identify.name" store;
-
-in do
-    outputLn.Env "Main Start";
-    lm <- getList.FiniteSetModel order.Entity people;
-    w <- open.Window gtk (600,800) {"Test"} $ listTable.Widget [({"Name"},fn p => name !$ {p})] lm (fn _ => pure ()) Nothing;
-    async.Task $ do
-        outputLn.Env "Thread Start";
-        sleep $ Seconds 0.2;
-        for_ (range 0 200) $ fn i =>
-        do
-            p <- new.OpenEntity @Person;
-            outputLn.Env $ "Thread Push " <>.Text show i;
-            people += p;
-        end;
-        close.Window w;
-        outputLn.Env "Thread End";
-    end;
+  name: Property Person Text =
+    property @Person @Text !"identify.name" store;
+} do {
+  outputLn.Env "Main Start";
+  lm <- getList.FiniteSetModel order.Entity people;
+  w <- open.Window gtk (600,800) ap{"Test"} $ listTable.Widget [(ap{"Name"},fn p => name !$ ap{p})] lm (fn _ => pure ()) Nothing;
+  async.Task $ do {
+    outputLn.Env "Thread Start";
     sleep $ Seconds 0.2;
-    outputLn.Env "Main End";
-end
+    for_ (range 0 200) $ fn i => do {
+      p <- new.OpenEntity @Person;
+      outputLn.Env $ "Thread Push " <>.Text show i;
+      people += p;
+    };
+    close.Window w;
+    outputLn.Env "Thread End";
+  };
+  sleep $ Seconds 0.2;
+  outputLn.Env "Main End";
+}

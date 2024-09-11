@@ -1,23 +1,21 @@
 #!/usr/bin/env -S pinafore
-import "gnome" in
-with GTK. in
+import "gnome"
+with GTK.
 openTemp.Store >>= fn store =>
 run.GTK $ fn gtk =>
-let
+let {
+  entitytype Person;
+  p = point.OpenEntity @Person !"p";
+  people: FiniteSetModel Person = set.Store @Person !"T" store;
+} do {
+  outputLn.Env "Start";
+  selectionRef <- newMem.WholeModel;
+  lm <- getList.FiniteSetModel order.Entity people;
+  w <- open.Window gtk (600,800) ap{"Test"} $ listTable.Widget [] lm (fn _ => pure ()) $ Just selectionRef;
 
-    entitytype Person;
-    p = point.OpenEntity @Person !"p";
-    people: FiniteSetModel Person = set.Store @Person !"T" store;
-
-in do
-    outputLn.Env "Start";
-    selectionRef <- newMem.WholeModel;
-    lm <- getList.FiniteSetModel order.Entity people;
-    w <- open.Window gtk (600,800) {"Test"} $ listTable.Widget [] lm (fn _ => pure ()) $ Just selectionRef;
-
-    people +=.SetModel p;
-    selectionRef :=.WholeModel p;
-    sleep $ Seconds 0.2;
-    close.Window w;
-    outputLn.Env "End";
-    end
+  people +=.SetModel p;
+  selectionRef :=.WholeModel p;
+  sleep $ Seconds 0.2;
+  close.Window w;
+  outputLn.Env "End";
+}
