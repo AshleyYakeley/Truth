@@ -29,7 +29,7 @@ appNotationUnquote mexpr = do
 aplist :: QExpression -> [QExpression] -> QInterpreter QExpression
 aplist expr [] = return expr
 aplist expr (arg:args) = do
-    aprefExpr <- interpretValue "ap" Nothing
+    aprefExpr <- interpretValue "apply" Nothing
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args
 

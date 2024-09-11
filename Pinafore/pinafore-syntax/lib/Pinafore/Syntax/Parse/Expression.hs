@@ -476,7 +476,7 @@ readExpression1 =
              readThis TokDo
              mns <- optional readNamespaceQualifier
              let ns = fromMaybe "Action." mns
-             withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>", ">>="] $ do
+             withWithExpr ns ["map", "pure", "apply", "liftA2", "**", ">>", ">>="] $ do
                  dl <- readBraced readDoLine
                  case dl of
                      [] -> fail "empty 'do' block"
@@ -543,7 +543,7 @@ readExpression3 =
              mns <- optional readNamespaceQualifier
              let ns = fromMaybe "WholeModel." mns
              readBracketed TokOpenBrace TokCloseBrace $
-                 withWithExpr ns ["map", "pure", "ap", "liftA2", "**", ">>"] $
+                 withWithExpr ns ["map", "pure", "apply", "liftA2", "**", ">>"] $
                  readWithSourcePos $ do
                      rexpr <- readExpression
                      return $ SEAppQuote rexpr) <|>

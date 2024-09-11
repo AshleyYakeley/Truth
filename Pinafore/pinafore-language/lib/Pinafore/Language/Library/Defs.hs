@@ -429,7 +429,7 @@ applicativeEntries ::
 applicativeEntries =
     functorEntries @f <>
     [ valBDS "pure" "" (pure :: A -> f A)
-    , valBDS "ap" "" ((<*>) :: f (A -> B) -> f A -> f B)
+    , valBDS "apply" "" ((<*>) :: f (A -> B) -> f A -> f B)
     , valBDS "liftA2" "" (liftA2 :: (A -> B -> C) -> f A -> f B -> f C)
     , valBDS "**" "" (liftA2 (,) :: f A -> f B -> f (A, B))
     , valBDS ">>" "" ((*>) :: f TopType -> f A -> f A)
