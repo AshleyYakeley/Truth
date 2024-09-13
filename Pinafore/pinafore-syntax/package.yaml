@@ -48,3 +48,15 @@ library:
       - Pinafore.Syntax.Doc.DefDoc
       - Pinafore.Syntax.Doc.Docs
       - Pinafore.Syntax.Doc.SyntaxDoc
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.16
+          - shapes
+          - thread-trace
+          - pinafore-base
+          - pinafore-syntax
+        main: Main.hs
+        ghc-options: -threaded
