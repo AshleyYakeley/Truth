@@ -360,6 +360,22 @@ data DoLine
     | BindDoLine SyntaxPattern
                  SyntaxExpression
 
+readEitherDeclExpr :: Parser (Either SyntaxDeclaration SyntaxExpression)
+readEitherDeclExpr =
+    (try $ do
+         declr <- readDeclarator
+         de <- readEitherDeclExpr
+         case de of
+             Left decl ->
+                 fmap Left $ readWithDoc $ readWithSourcePos $ return $ DeclaratorInSyntaxDeclaration declr decl
+             Right expr -> fmap Right $ readWithSourcePos $ return $ SEDecl declr expr) <|>
+    (try $ do
+         decl <- readDeclaration
+         return $ Left decl) <|>
+    (do
+         expr <- readExpression
+         return $ Right expr)
+
 readDoLine :: Parser DoLine
 readDoLine =
     (try $ do
@@ -367,12 +383,12 @@ readDoLine =
          readThis TokBackMap
          expr <- readExpression
          return $ BindDoLine pat expr) <|>
-    (try $ do
-         decl <- readDeclaration
-         return $ DeclarationDoLine decl) <|>
     (do
-         expr <- readExpression
-         return $ ExpressionDoLine expr)
+         de <- readEitherDeclExpr
+         return $
+             case de of
+                 Left decl -> DeclarationDoLine decl
+                 Right expr -> ExpressionDoLine expr)
 
 doLines :: DoLine -> [DoLine] -> Parser SyntaxExpression
 doLines (ExpressionDoLine expr) [] = return expr

@@ -19,13 +19,24 @@ main =
     testMainNoSignalHandler $
     testTree
         "pinafore-syntax"
-        [ testParseAccept "do {r}"
-        , testParseAccept "do {a = x; r}"
-        , testParseAccept "do {a = x; r;}"
-        , testParseAccept "do {a <- x; r}"
-        , testParseAccept "do {a <- x; r;}"
-        , testParseAccept "do {let {a = x}; r}"
-        , testParseAccept "do {let {a = x}; r;}"
-        , testParseAccept "do {let {a = x;}; r;}"
-        , testParseAccept "do {let {a = x} y; r;}"
+        [ testTree
+              "decls"
+              [ testParseAccept "let {a = x} m"
+              , testParseAccept "let {a = x} let {b = y} m"
+              , testParseAccept "let {let {b = y} a = x} m"
+              ]
+        , testTree
+              "do"
+              [ testParseAccept "do {r}"
+              , testParseAccept "do {a = x; r}"
+              , testParseAccept "do {a = x; r;}"
+              , testParseAccept "do {a <- x; r}"
+              , testParseAccept "do {a <- x; r;}"
+              , testParseAccept "do {let {a = x}; r}"
+              , testParseAccept "do {let {a = x}; r;}"
+              , testParseAccept "do {let {a = x;}; r;}"
+              , testParseAccept "do {let {a = x} m; r;}"
+              , testParseAccept "do {let {a = x} let {b = y}; r;}"
+              , testParseAccept "do {let {a = x} let {b = y} m; r;}"
+              ]
         ]
