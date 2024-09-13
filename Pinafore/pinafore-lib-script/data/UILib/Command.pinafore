@@ -1,105 +1,96 @@
-import "gnome" in
-with GTK. in
-namespace UILib of
+import "gnome"
+with GTK.
+namespace UILib {
+  docsec "Commands" {
+    datatype Command -context {
+      Mk {
+        name: Text;
+        defaultKeyBinding: Maybe Text = Nothing;
+        action: context -> Action Unit;
+      };
+    };
 
-    docsec "Commands" of
+    namespace Command {
+      toMenuEntry: context -> Command context -> MenuEntry =
+        fn ctxt, Mk => action.MenuEntry ap{(name, defaultKeyBinding)} ap{action ctxt};
 
-        datatype Command -context of
-            Mk of
-                name: Text;
-                defaultKeyBinding: Maybe Text = Nothing;
-                action: context -> Action Unit;
-            end;
-        end;
+      datatype Context {
+        Mk {
+          gtk: Context.GTK.;
+          undoHandler: UndoHandler;
+          window: Window;
+          getTextSelection: Action (WholeModel Text);
+        };
+      };
 
-        namespace Command of
+      copy: Command Context =
+        Mk.Command {
+          name = "Copy";
+          defaultKeyBinding = Just "Ctrl+C";
+          action =
+            fn Mk.Context => do {
+              tmodel <- getTextSelection;
+              text <- get.WholeModel tmodel;
+              clipboard ?gtk :=.WholeModel text;
+            };
+        };
 
-            toMenuEntry: context -> Command context -> MenuEntry =
-                fn ctxt, Mk => action.MenuEntry {(name, defaultKeyBinding)} {action ctxt};
+      cut: Command Context =
+        Mk.Command {
+          name = "Cut";
+          defaultKeyBinding = Just "Ctrl+X";
+          action =
+            fn Mk.Context => do {
+              tmodel <- getTextSelection;
+              text <- get.WholeModel tmodel;
+              clipboard ?gtk :=.WholeModel text;
+              tmodel :=.WholeModel "";
+            };
+        };
 
-            datatype Context of
-                Mk of
-                    gtk: Context.GTK.;
-                    undoHandler: UndoHandler;
-                    window: Window;
-                    getTextSelection: Action (WholeModel Text);
-                end;
-            end;
+      paste: Command Context =
+          Mk.Command {
+            name = "Paste";
+            defaultKeyBinding = Just "Ctrl+V";
+            action =
+              fn Mk.Context => do {
+                tmodel <- getTextSelection;
+                clip <- get.WholeModel $ clipboard ?gtk;
+                clip >-
+                fn {
+                  text:? Text => tmodel :=.WholeModel text;
+                  _ => pure ();
+                };
+              };
+          };
 
-            copy: Command Context =
-                Mk.Command of
-                    name = "Copy";
-                    defaultKeyBinding = Just "Ctrl+C";
-                    action =
-                        fn Mk.Context =>
-                        do
-                            tmodel <- getTextSelection;
-                            text <- get.WholeModel tmodel;
-                            clipboard ?gtk :=.WholeModel text;
-                        end;
-                end;
+      undo: Command Context =
+        Mk.Command {
+          name = "Undo";
+          defaultKeyBinding = Just "Ctrl+Z";
+          action = fn Mk.Context => queueUndo undoHandler >> pure ();
+        };
 
-            cut: Command Context =
-                Mk.Command of
-                    name = "Cut";
-                    defaultKeyBinding = Just "Ctrl+X";
-                    action =
-                        fn Mk.Context =>
-                        do
-                            tmodel <- getTextSelection;
-                            text <- get.WholeModel tmodel;
-                            clipboard ?gtk :=.WholeModel text;
-                            tmodel :=.WholeModel "";
-                        end;
-                end;
+      redo: Command Context =
+        Mk.Command {
+          name = "Redo";
+          defaultKeyBinding = Just "Ctrl+Y";
+          action = fn Mk.Context => queueRedo undoHandler >> pure ();
+        };
 
-            paste: Command Context =
-                Mk.Command of
-                    name = "Paste";
-                    defaultKeyBinding = Just "Ctrl+V";
-                    action =
-                        fn Mk.Context =>
-                        do
-                            tmodel <- getTextSelection;
-                            clip <- get.WholeModel $ clipboard ?gtk;
-                            clip >-
-                            match
-                                text:? Text => tmodel :=.WholeModel text;
-                                _ => pure ();
-                            end;
-                        end;
-                end;
+      close: Command Context =
+        Mk.Command {
+          name = "Close";
+          defaultKeyBinding = Just "Ctrl+W";
+          action = fn Mk.Context => close.Window window;
+        };
 
-            undo: Command Context =
-                Mk.Command of
-                    name = "Undo";
-                    defaultKeyBinding = Just "Ctrl+Z";
-                    action = fn Mk.Context => queueUndo undoHandler >> pure ();
-                end;
-
-            redo: Command Context =
-                Mk.Command of
-                    name = "Redo";
-                    defaultKeyBinding = Just "Ctrl+Y";
-                    action = fn Mk.Context => queueRedo undoHandler >> pure ();
-                end;
-
-            close: Command Context =
-                Mk.Command of
-                    name = "Close";
-                    defaultKeyBinding = Just "Ctrl+W";
-                    action = fn Mk.Context => close.Window window;
-                end;
-
-            exit: Command Context =
-                Mk.Command of
-                    name = "Exit";
-                    defaultKeyBinding = Just "Ctrl+Q";
-                    action = fn Mk.Context => exit.GTK gtk;
-                end;
-
-        end;
-
-    end;
-
-end;
+      exit: Command Context =
+        Mk.Command {
+          name = "Exit";
+          defaultKeyBinding = Just "Ctrl+Q";
+          action = fn Mk.Context => exit.GTK gtk;
+        };
+    };
+  };
+};

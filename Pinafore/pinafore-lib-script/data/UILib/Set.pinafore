@@ -1,138 +1,129 @@
-import "gnome", "UILib/Command", "UILib/Pane" in
-with GTK. in
-namespace UILib of
+import "gnome", "UILib/Command", "UILib/Pane"
+with GTK.
+namespace UILib {
+  docsec "Sets" {
+    #| A widget for a set, for a model of the current selection
+    datatype SetWidget item {
+      Mk (Maybe (WholeModel item) -> Widget);
+    };
 
-    docsec "Sets" of
+    namespace SetWidget {
+      toWidget: SetWidget () -> Widget =
+      fn Mk se => se Nothing;
+    };
 
-        #| A widget for a set, for a model of the current selection
-        datatype SetWidget item of
-            Mk (Maybe (WholeModel item) -> Widget);
-        end;
+    datatype SetContext item {
+      Mk {
+        itemPane: item -> Pane;
+        getSelection: Action item;
+        addItem: item -> Action Unit;
+        itemSet: SetModel item;
+      };
+    };
 
-        namespace SetWidget of
-            toWidget: SetWidget {} -> Widget =
-            fn Mk se => se Nothing;
-        end;
+    viewCommand: Command (Context.Command *: SetContext item) =
+      Mk.Command {
+        name = "View";
+        action =
+          fn (_,Mk.SetContext) =>
+          do {
+              item <- getSelection;
+              paneWindow.Pane $ itemPane item;
+              pure ();
+          };
+      };
 
-        datatype SetContext item of
-            Mk of
-                itemPane: item -> Pane;
-                getSelection: Action item;
-                addItem: item -> Action Unit;
-                itemSet: SetModel item;
-            end;
-        end;
+    deleteCommand: Command (Context.Command *: SetContext item) =
+        Mk.Command {
+          name = "Delete";
+          action =
+            fn (_,Mk.SetContext) =>
+            do {
+              item <- getSelection;
+              itemSet -=.SetModel item;
+            };
+        };
 
-        viewCommand: Command (Context.Command *: SetContext item) =
-            Mk.Command of
-                name = "View";
-                action =
-                    fn (_,Mk.SetContext) =>
-                    do
-                        item <- getSelection;
-                        paneWindow.Pane $ itemPane item;
-                        pure ();
-                    end;
-            end;
+    #| A way of presenting some set of items as a `Pane`.
+    datatype SetPresentation item {
+      Mk {
+        #| name for a collection of the items
+        setName: Text;
 
-        deleteCommand: Command (Context.Command *: SetContext item) =
-            Mk.Command of
-                name = "Delete";
-                action =
-                    fn (_,Mk.SetContext) =>
-                    do
-                        item <- getSelection;
-                        itemSet -=.SetModel item;
-                    end;
-            end;
+        #| the set of items
+        itemSet: SetModel item;
 
-        #| A way of presenting some set of items as a `Pane`.
-        datatype SetPresentation item of
-            Mk of
-                #| name for a collection of the items
-                setName: Text;
+        #| menu items for creating new items
+        menuEntries: List (Command (Context.Command *: SetContext item))
+            = [];
 
-                #| the set of items
-                itemSet: SetModel item;
+        #| extra menus
+        extraMenus: List MenuEntry
+            = [];
 
-                #| menu items for creating new items
-                menuEntries: List (Command (Context.Command *: SetContext item))
-                    = [];
+        #| a `Pane` for a individual item
+        itemPane: item -> Pane;
 
-                #| extra menus
-                extraMenus: List MenuEntry
-                    = [];
+        #| a `SetWidget` for the set as a whole.
+        setWidget: SetWidget item;
+      };
+    };
 
-                #| a `Pane` for a individual item
-                itemPane: item -> Pane;
+    namespace SetPresentation {
 
-                #| a `SetWidget` for the set as a whole.
-                setWidget: SetWidget item;
-            end;
-        end;
+      presentWithWidget: SetPresentation item -> SetWidget item -> Action Pane =
+        fn Mk.SetPresentation, Mk.SetWidget se => do {
+          selectionModel <- newMem.WholeModel;
+          pure $
+          Mk.Pane {
+            titleModel = ap{setName};
+            contents = se $ Just selectionModel;
+            extraMenusModel = fn context =>
+              let {
+                setContext =
+                  Mk.SetContext {
+                    itemPane = itemPane;
+                    getSelection = get.WholeModel selectionModel;
+                    addItem = fn item => do {
+                        itemSet +=.SetModel item;
+                        selectionModel :=.WholeModel item;
+                      };
+                    itemSet = itemSet;
+                  };
 
-        namespace SetPresentation of
+                allExtraMenus: List MenuEntry =
+                with MenuEntry.GTK. [
+                  submenu "Selection" $
+                  map.List (toMenuEntry.Command (context,setContext)) $
+                  menuEntries <>.List [
+                      viewCommand,
+                      deleteCommand
+                  ]
+                ] <> extraMenus;
+              } ap{allExtraMenus};
+          };
+        };
 
-            presentWithWidget: SetPresentation item -> SetWidget item -> Action Pane =
-                fn Mk.SetPresentation, Mk.SetWidget se =>
-                do
-                    selectionModel <- newMem.WholeModel;
-                    pure $
-                    Mk.Pane of
-                        titleModel = {setName};
-                        contents = se $ Just selectionModel;
-                        extraMenusModel = fn context =>
-                            let
-                                setContext =
-                                    Mk.SetContext of
-                                        itemPane = itemPane;
-                                        getSelection = get.WholeModel selectionModel;
-                                        addItem = fn item =>
-                                            do
-                                                itemSet +=.SetModel item;
-                                                selectionModel :=.WholeModel item;
-                                            end;
-                                        itemSet = itemSet;
-                                    end;
+      present: SetPresentation item -> Action Pane =
+        fn tp@Mk.SetPresentation =>
+        presentWithWidget tp setWidget;
 
-                                allExtraMenus: List MenuEntry =
-                                with MenuEntry.GTK. in
-                                [
-                                    submenu "Selection" $ map.List (toMenuEntry.Command (context,setContext)) $ menuEntries <>.List
-                                    [
-                                        viewCommand,
-                                        deleteCommand
-                                    ]
-                                ] <> extraMenus;
+      presentWithItem: SetPresentation item -> Action Pane =
+        fn tp@Mk.SetPresentation =>
+        presentWithWidget tp $
+        Mk.SetWidget $
+        fn mSelectionModel =>
+        let {
+          sidebarUI: Widget =
+            setWidget >- fn Mk.SetWidget se =>
+            se mSelectionModel;
 
-                            in {allExtraMenus};
-                    end;
-                end;
-
-            present: SetPresentation item -> Action Pane =
-                fn tp@Mk.SetPresentation =>
-                presentWithWidget tp setWidget;
-
-            presentWithItem: SetPresentation item -> Action Pane =
-                fn tp@Mk.SetPresentation =>
-                presentWithWidget tp $
-                Mk.SetWidget $
-                fn mSelectionModel =>
-                let
-                    sidebarUI: Widget =
-                    setWidget >- fn Mk.SetWidget se =>
-                    se mSelectionModel;
-
-                    selectedUI: Widget =
-                    mSelectionModel >-
-                    match
-                        Nothing => blank.Widget;
-                        Just selectionModel => dynamic.Widget {itemPane %selectionModel >- fn Mk.Pane => contents};
-                    end;
-
-                in horizontal.Widget [sidebarUI, layoutGrow.Widget selectedUI];
-        end;
-
-    end;
-
-end;
+          selectedUI: Widget =
+            mSelectionModel >- fn {
+              Nothing => blank.Widget;
+              Just selectionModel => dynamic.Widget ap{itemPane %selectionModel >- fn Mk.Pane => contents};
+            };
+        } horizontal.Widget [sidebarUI, layoutGrow.Widget selectedUI];
+    };
+  };
+};

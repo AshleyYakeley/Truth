@@ -1,123 +1,106 @@
-import "gnome", "UILib/Command" in
-with GTK. in
-namespace UILib of
+import "gnome", "UILib/Command"
+with GTK.
+namespace UILib {
+  docsec "Useful GTK stuff" {
+    namespace Widget {
+      #| Create a labelled page for use with `notebook.Widget.GTK`.
+      page: WholeModel +Text -> Widget -> Widget *: Widget =
+        fn n, ui =>
+        (label.Widget n,ui);
 
-    docsec "Useful GTK stuff" of
-        namespace Widget of
-            #| Create a labelled page for use with `notebook.Widget.GTK`.
-            page: WholeModel +Text -> Widget -> Widget *: Widget =
-                fn n, ui =>
-                (label.Widget n,ui);
+      #| Create a labelled layout row.
+      labelled: WholeModel +Text -> Widget -> Widget =
+        fn n, ui =>
+        horizontal.Widget [label.Widget n, layoutGrow.Widget ui];
+    };
+  };
 
-            #| Create a labelled layout row.
-            labelled: WholeModel +Text -> Widget -> Widget =
-                fn n, ui =>
-                horizontal.Widget [label.Widget n, layoutGrow.Widget ui];
-        end;
-    end;
+  docsec "Panes" {
+    #| A pane is a title, GTK widget, and menu.
+    datatype Pane {
+      Mk {
+        titleModel: WholeModel Text;
+        extraMenusModel: Context.Command -> WholeModel (List MenuEntry) = fn _ => ap{[]};
+        contents: Widget;
+      };
+    };
 
-    docsec "Panes" of
+  namespace Pane {
+    #| A pane with this title and widget
+    simple: Text -> Widget -> Pane =
+      fn title, e => Mk.Pane {
+        titleModel = ap{title};
+        contents = e;
+      };
 
-        #| A pane is a title, GTK widget, and menu.
-        datatype Pane of
-            Mk of
-                titleModel: WholeModel Text;
+    #| Create a notebook from a list of panes
+    notebook: WholeModel +Text -> List Pane -> Action Pane =
+      fn title, panes => do {
+        tabModel <- newMem.WholeModel;
+        pure $
+        let {
+          makePage: Pane -> Widget *: Widget =
+              fn Mk.Pane => page.Widget titleModel contents;
 
-                extraMenusModel: Context.Command -> WholeModel (List MenuEntry) = fn _ => {[]};
+          with WholeModel.;
+        } Mk.Pane {
+          titleModel = immut title;
+          extraMenusModel = fn context =>
+              fromMaybe ap{index.List %(for panes $ fn Mk.Pane => extraMenusModel context) %tabModel};
+          contents = notebook.Widget tabModel $ map.List makePage panes;
+        };
+      };
 
-                contents: Widget;
-            end;
-        end;
+    paneWindow: Pane -> Action Window =
+      fn Mk.Pane =>
+      mfix.Action $
+      fn window => do {
+        textsel <- newMem.WholeModel;
+        let {
+          notify: Action TextModel -> Action Unit =
+            fn atmodel =>
+            textsel :=.WholeModel atmodel;
 
-        namespace Pane of
+          getTextSelection: Action (WholeModel Text) =
+            do {
+              atmodel <- get.WholeModel textsel;
+              atmodel;
+            };
 
-            #| A pane with this title and widget
-            simple: Text -> Widget -> Pane =
-                fn title, e =>
-                Mk.Pane of
-                    titleModel = {title};
-                    contents = e;
-                end;
+          context =
+            Mk.Context.Command {
+              gtk = ?gtk;
+              undoHandler = ?undoHandler;
+              window = window;
+              getTextSelection = getTextSelection;
+            };
 
-            #| Create a notebook from a list of panes
-            notebook: WholeModel +Text -> List Pane -> Action Pane =
-                fn title, panes =>
-                do
-                    tabModel <- newMem.WholeModel;
-                    pure $
-                    let
-                        makePage: Pane -> Widget *: Widget =
-                            fn Mk.Pane => page.Widget titleModel contents;
-
-                        with WholeModel. end;
-                    in
-                    Mk.Pane of
-                        titleModel = immut title;
-                        extraMenusModel = fn context =>
-                            fromMaybe {index.List %(for panes $ fn Mk.Pane => extraMenusModel context) %tabModel};
-                        contents = notebook.Widget tabModel $ map.List makePage panes;
-                    end;
-                end;
-
-            paneWindow: Pane -> Action Window =
-                fn Mk.Pane =>
-                mfix.Action $
-                fn window =>
-                do
-                    textsel <- newMem.WholeModel;
-                    let
-                        notify: Action TextModel -> Action Unit =
-                            fn atmodel =>
-                            textsel :=.WholeModel atmodel;
-
-                        getTextSelection: Action (WholeModel Text) =
-                            do
-                                atmodel <- get.WholeModel textsel;
-                                atmodel;
-                            end;
-
-                        context =
-                            Mk.Context.Command of
-                                gtk = ?gtk;
-                                undoHandler = ?undoHandler;
-                                window = window;
-                                getTextSelection = getTextSelection;
-                            end;
-
-                        mbar: Widget =
-                            dynamic.Widget
-                            {
-                                menuBar.Widget $
-                                with MenuEntry.GTK., Command.UILib. in
-                                [
-                                    submenu "File"
-                                    [
-                                        toMenuEntry context close,
-                                        separator,
-                                        toMenuEntry context exit
-                                    ],
-                                    submenu "Edit"
-                                    [
-                                        toMenuEntry context undo,
-                                        toMenuEntry context redo,
-                                        separator,
-                                        toMenuEntry context cut,
-                                        toMenuEntry context copy,
-                                        toMenuEntry context paste
-                                    ]
-                                ] <>.List %(extraMenusModel context)
-                            };
-                    in
-                    open.Window ?gtk (600,800) titleModel $
-                    vertical.Widget
-                    [
-                        mbar,
-                        layoutGrow.Widget $ scrolled.Widget $ notifySelection.Widget notify contents
-                    ];
-                end;
-
-        end;
-
-    end;
-
-end;
+          mbar: Widget =
+            dynamic.Widget ap{
+              menuBar.Widget $
+              with MenuEntry.GTK., Command.UILib. [
+                submenu "File" [
+                  toMenuEntry context close,
+                  separator,
+                  toMenuEntry context exit
+                ],
+                submenu "Edit" [
+                  toMenuEntry context undo,
+                  toMenuEntry context redo,
+                  separator,
+                  toMenuEntry context cut,
+                  toMenuEntry context copy,
+                  toMenuEntry context paste
+                ]
+              ] <>.List %(extraMenusModel context)
+            };
+        }
+        open.Window ?gtk (600,800) titleModel $
+        vertical.Widget [
+          mbar,
+          layoutGrow.Widget $ scrolled.Widget $ notifySelection.Widget notify contents
+        ];
+      };
+    };
+  };
+};
