@@ -185,58 +185,74 @@ instance TestEquality Token where
     testEquality TokDebug TokDebug = Just Refl
     testEquality _ _ = Nothing
 
+data TokenName t where
+    FixedTokenName :: Text -> TokenName ()
+    VarTokenName :: ((t :~: ()) -> Void) -> String -> TokenName t
+
+tokenName :: Token t -> TokenName t
+tokenName TokComment = VarTokenName (\case {}) "comment"
+tokenName TokSemicolon = FixedTokenName ";"
+tokenName TokComma = FixedTokenName ","
+tokenName TokTypeJudge = FixedTokenName ":"
+tokenName TokTypeDynamic = FixedTokenName ":?"
+tokenName TokOpenParen = FixedTokenName "("
+tokenName TokCloseParen = FixedTokenName ")"
+tokenName TokOpenBracket = FixedTokenName "["
+tokenName TokCloseBracket = FixedTokenName "]"
+tokenName TokOpenBrace = FixedTokenName "{"
+tokenName TokCloseBrace = FixedTokenName "}"
+tokenName TokString = VarTokenName (\case {}) "quoted string"
+tokenName TokUnquote = FixedTokenName "%"
+tokenName TokRec = FixedTokenName "rec"
+tokenName TokLet = FixedTokenName "let"
+tokenName TokImply = FixedTokenName "imply"
+tokenName TokAp = FixedTokenName "ap"
+tokenName TokDo = FixedTokenName "do"
+tokenName TokIf = FixedTokenName "if"
+tokenName TokThen = FixedTokenName "then"
+tokenName TokElse = FixedTokenName "else"
+tokenName TokType = FixedTokenName "type"
+tokenName TokDataType = FixedTokenName "datatype"
+tokenName TokEntityType = FixedTokenName "entitytype"
+tokenName TokPredicateType = FixedTokenName "predicatetype"
+tokenName TokSubtype = FixedTokenName "subtype"
+tokenName TokTrustMe = FixedTokenName "trustme"
+tokenName TokStorable = FixedTokenName "storable"
+tokenName TokExpose = FixedTokenName "expose"
+tokenName TokImport = FixedTokenName "import"
+tokenName TokAs = FixedTokenName "as"
+tokenName TokExcept = FixedTokenName "except"
+tokenName TokNamespace = FixedTokenName "namespace"
+tokenName TokDocSec = FixedTokenName "docsec"
+tokenName TokWith = FixedTokenName "with"
+tokenName TokNamesUpper = VarTokenName (\case {}) "unames"
+tokenName TokNamesLower = VarTokenName (\case {}) "lnames"
+tokenName TokImplicitName = VarTokenName (\case {}) "implicit name"
+tokenName TokUnderscore = FixedTokenName "_"
+tokenName TokFn = FixedTokenName "fn"
+tokenName TokAssign = FixedTokenName "="
+tokenName TokMap = FixedTokenName "=>"
+tokenName TokBackMap = FixedTokenName "<-"
+tokenName TokAnchor = VarTokenName (\case {}) "anchor"
+tokenName TokAt = FixedTokenName "@"
+tokenName TokOperator = VarTokenName (\case {}) "infix"
+tokenName TokSubtypeOf = FixedTokenName "<:"
+tokenName TokOr = FixedTokenName "|"
+tokenName TokAnd = FixedTokenName "&"
+tokenName TokNumber = VarTokenName (\case {}) "number"
+tokenName TokDebug = FixedTokenName "debug"
+
+fixedTokenName :: Token () -> Text
+fixedTokenName tok =
+    case tokenName tok of
+        FixedTokenName t -> t
+        VarTokenName v _ -> absurd $ v Refl
+
 instance Show (Token t) where
-    show TokComment = show ("comment" :: String)
-    show TokSemicolon = show (";" :: String)
-    show TokComma = show ("," :: String)
-    show TokTypeJudge = show (":" :: String)
-    show TokTypeDynamic = show (":?" :: String)
-    show TokOpenParen = show ("(" :: String)
-    show TokCloseParen = show (")" :: String)
-    show TokOpenBracket = show ("[" :: String)
-    show TokCloseBracket = show ("]" :: String)
-    show TokOpenBrace = show ("{" :: String)
-    show TokCloseBrace = show ("}" :: String)
-    show TokString = "quoted string"
-    show TokUnquote = "unquote"
-    show TokRec = show ("rec" :: String)
-    show TokLet = show ("let" :: String)
-    show TokImply = show ("imply" :: String)
-    show TokAp = show ("ap" :: String)
-    show TokDo = show ("do" :: String)
-    show TokIf = show ("if" :: String)
-    show TokThen = show ("then" :: String)
-    show TokElse = show ("else" :: String)
-    show TokType = show ("type" :: String)
-    show TokDataType = show ("datatype" :: String)
-    show TokEntityType = show ("entitytype" :: String)
-    show TokPredicateType = show ("predicatetype" :: String)
-    show TokSubtype = show ("subtype" :: String)
-    show TokTrustMe = show ("trustme" :: String)
-    show TokStorable = show ("storable" :: String)
-    show TokExpose = show ("expose" :: String)
-    show TokImport = show ("import" :: String)
-    show TokAs = show ("as" :: String)
-    show TokExcept = show ("except" :: String)
-    show TokNamespace = show ("namespace" :: String)
-    show TokDocSec = show ("docsec" :: String)
-    show TokWith = show ("with" :: String)
-    show TokNamesUpper = "unames"
-    show TokNamesLower = "lnames"
-    show TokImplicitName = "implicit name"
-    show TokUnderscore = show ("_" :: String)
-    show TokFn = show ("fn" :: String)
-    show TokAssign = show ("=" :: String)
-    show TokMap = show ("=>" :: String)
-    show TokBackMap = show ("<-" :: String)
-    show TokAnchor = "anchor"
-    show TokAt = show ("@" :: String)
-    show TokOperator = "infix"
-    show TokSubtypeOf = show ("<:" :: String)
-    show TokOr = show ("|" :: String)
-    show TokAnd = show ("&" :: String)
-    show TokNumber = "number"
-    show TokDebug = "debug"
+    show tok =
+        case tokenName tok of
+            FixedTokenName t -> show t
+            VarTokenName _ s -> s
 
 instance Show (SomeOf Token) where
     show (MkSomeOf t x) =
@@ -378,7 +394,7 @@ keywordClasses =
     ]
 
 allKeywords :: [(Text, Text)]
-allKeywords = mconcat $ fmap (\(tokclass, toks) -> fmap (\tok -> (pack $ show tok, tokclass)) toks) keywordClasses
+allKeywords = mconcat $ fmap (\(tokclass, toks) -> fmap (\tok -> (fixedTokenName tok, tokclass)) toks) keywordClasses
 
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do
