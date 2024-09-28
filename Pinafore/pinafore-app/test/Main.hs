@@ -11,6 +11,7 @@ import Test.Scripts
 main :: IO ()
 main = do
     testInteractive <- getTestInteractive
+    testScripts <- getTestScripts
     let
         tests :: TestTree
         tests = testTree "pinafore-app" [testInteractive, testScripts, testLibrary]

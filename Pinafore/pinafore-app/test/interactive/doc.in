@@ -1,9 +1,9 @@
 :doc length.Text
 :doc Time
 :doc Just
-import "gnome" end
-import "media" end
-with Cairo end
+import "gnome"
+import "media"
+with Cairo
 :doc paintAlpha.Drawing
 :doc Widget.GTK
 :doc textView.Widget.GTK

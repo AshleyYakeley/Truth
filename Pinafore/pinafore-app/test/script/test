@@ -1,377 +1,380 @@
 #!/usr/bin/pinafore
-import "media", "gnome" in
-openLocal.Store of end >>= fn dstore =>
+import "media", "gnome"
+openLocal.Store {} >>= fn dstore =>
 new.UndoHandler >>= fn uh =>
 handleStore.UndoHandler uh dstore >>= fn store =>
-with GTK., Store. in
+with GTK., Store.
 run $ fn gtk =>
-let
+let {
+    ### Useful
+    ui_page = fn n, ui => (label.Widget n,ui);
+    ui_labelled = fn n, ui => horizontal.Widget [label.Widget n, layoutGrow.Widget    ui];
 
-### Useful
-ui_page = fn n, ui => (label.Widget n,ui);
-ui_labelled = fn n, ui => horizontal.Widget [label.Widget n, layoutGrow.Widget  ui];
-
-std_window: WholeModel +Text -> Widget -> Action Window
-= fn title, contents => mfix.Action $ fn window => let
-    mbar: Widget
-    = menuBar.Widget $ with MenuEntry.GTK. in
-        [
-            submenu "File"
-            [
-                action {("Close" ,Just "Ctrl+W")} {close.Window window},
-                separator,
-                action {("Exit" ,Just "Ctrl+Q")} {exit gtk}
-            ],
-            submenu "Edit"
-            [
-                action {("Undo" ,Just "Ctrl+Z")} {queueUndo.UndoHandler uh},
-                action {("Redo" ,Just "Ctrl+Y")} {queueRedo.UndoHandler uh}
-            ]
-        ]
-    in open.Window gtk (400,600) title $ vertical.Widget [mbar, layoutGrow.Widget $ scrolled.Widget contents];
-
-### People
-
-# Ontology
-
-entitytype Person;
-
-people = set.Store @Person !"f06efa5e-190f-4e5d-8633-495c5683c124" store;
-
-name = property @Person @Text !"498260df-6a8a-44f0-b285-68a63565a33b" store;
-
-
-mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085" store;
-father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5" store;
-# parents : WholeModel Person -> FiniteSetModel Person;
-# parents p = (mother !$ p) <|> (father !$ p);
-children : WholeModel Person -> FiniteSetModel Person
-= fn p => mother !@ p <:|:> father !@ p;
-
-employer = property @Person @Person !"72f612af-ae47-4c18-b3df-6932ae914f62" store;
-
-email = property @Person @Text !"8649b74c-123e-4ece-be3b-b734b0db3ea7" store;
-
-phone = property @Person @Text !"83dfc88b-7b5b-4262-a548-0af84d5e3b63" store;
-
-entitytype Location;
-home = property @Person @Location !"b4f7736e-2db4-486c-aae5-b6a9b1035fd0" store;
-address = property @Location @Text !"fd83bef7-145c-4e40-a2d6-938bb5fb6da1" store;
-locphone = property @Location @Text !"0689535c-f220-47a2-8fcb-4782574e0749" store;
-city = property @Location @Text !"55c84133-64f2-47a6-8b3c-e01256ec9779" store;
-postcode = property @Location @Text !"80f99100-407b-4a6b-a4f0-a025c94132b3" store;
-province = property @Location @Text !"dffae424-28d5-4543-b1b2-b8a744bbc0cd" store;
-country = property @Location @Text !"1257c340-0ec1-4ff7-9fd8-d2eaa7822463" store;
-
-birthdate = property @Person @Text !"b711b9b3-b43c-4ff6-be12-3291cc6b050a" store;
-deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb" store;
-married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22" store;
-
-# GTK
-let rec
-ui_people : FiniteSetModel Person -> Widget
-= fn pp => exec.Widget $ do
-    selectedperson <- newMem.WholeModel;
-    pplist <- getList.FiniteSetModel empty.Order pp;
-    pure $ vertical.Widget
-    [
-        button.Widget {"New Person"} {do p <- new.OpenEntity @Person; pp += p; window_person p end},
-        button.Widget {"View Person"} {get selectedperson >>= window_person},
-        button.Widget {"Remove Person"} {get selectedperson >>= fn p => pp -= p},
-        layoutGrow.Widget $ listTable.Widget [({"Name"},fn p => name !$ {p})] pplist window_person (Just selectedperson)
-    ];
-    end;
-
-peopleByName : WholeModel +(List (Person *: Text))
-= toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (id.Property **.Property name) !$$% people;
-
-ui_person : WholeModel Person -> Widget
-= fn p => vertical.Widget
-[
-    ui_labelled {"Name: "} $ textEntry.Widget $ name !$ p,
-    layoutGrow.Widget $ notebook.Widget unknown
-    [
-        ui_page {"Social"} $ vertical.Widget
-        [
-            ui_labelled {"Email: "} $ textEntry.Widget $ email !$ p,
-            ui_labelled {"Phone: "} $ textEntry.Widget $ phone !$ p
-        ],
-        ui_page {"Home"} $ let homep = home !$ p in vertical.Widget
-        [
-            ui_labelled {"Address: "} $ textView.Widget (fromWhole.TextModel $ address !$ homep),
-            ui_labelled {"City: "} $ textEntry.Widget $ city !$ homep,
-            ui_labelled {"Postcode/ZIP: "} $ textEntry.Widget $ postcode !$ homep,
-            ui_labelled {"State/Province: "} $ textEntry.Widget $ province !$ homep,
-            ui_labelled {"Country: "} $ textEntry.Widget $ country !$ homep,
-            ui_labelled {"Phone: "} $ textEntry.Widget $ locphone !$ homep
-        ],
-        ui_page {"Work"} $ vertical.Widget
-        [
-            ui_labelled {"Employer: "} $ textEntry.Widget $ (name ..Property employer) !$ p
-        ],
-        ui_page {"Family"} $ vertical.Widget
-        [
-            ui_labelled {"Birth: "} $ textEntry.Widget $ birthdate !$ p,
-            ui_labelled {"Death: "} $ textEntry.Widget $ deathdate !$ p,
-            checkBox.Widget {"Married"} $ married !$ p,
-            ui_labelled {"Mother: "} $ pick.Widget peopleByName $ mother !$ p,
-            ui_labelled {"Father: "} $ pick.Widget peopleByName $ father !$ p,
-            layoutGrow.Widget $ ui_people (children p)
-        ]
-    ]
-];
-
-window_person : Person -> Action Window
-= fn p => std_window (name !$ {p}) (ui_person {p});
-
-window_people : Action Window
-= std_window {"People"} (ui_people people);
-end;
-
-### Calculator
-
-window_calc : Action Window
-= let
-    entitytype P;
-    pvalue = property @P @Number !"pvalue" store;
-    aval = pvalue !$ {point.OpenEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
-    bval = pvalue !$ {point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
-    in std_window {"Calc"} $ vertical.Widget
-    [
-        textEntry.Widget $ asText.Number !$ aval,
-        textEntry.Widget $ asText.Number !$ bval,
-        label.Widget {show $ %aval /.Number %bval}
-    ];
-
-### Switching Value
-
-window_switch : Action Window
-= let
-    entitytype P;
-    pbool = property @P @Boolean !"pbool" store;
-    ptext = property @P @Text !"ptext" store;
-    sw_pick = pbool !$ {point.OpenEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
-    sw_val1 = ptext !$ {point.OpenEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
-    sw_val2 = ptext !$ {point.OpenEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
-    in std_window {"Switch"} $ vertical.Widget
-    [
-        #textEntry.Widget sw_pick),
-        checkBox.Widget {"pick"} sw_pick,
-        layoutGrow.Widget $ dynamic.Widget {if %sw_pick then textView.Widget (fromWhole.TextModel sw_val1) else textView.Widget (fromWhole.TextModel sw_val2)}
-    ];
-
-### Imported Files
-
-window_files : Action Window
-= let
-    #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
-    #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-    window_file = fn f => std_window {"File"} $ vertical.Widget
-    [
-        #textEntry.Widget $ caption f
-    ];
-    in std_window {"Files"} $ vertical.Widget
-    [
-        #button.Widget "Import" {file_import Files $ fn f => std_window $ window_file f},
-        #layoutGrow.Widget $ listTable.Widget [column "Caption" caption, column "Size" file_size] window_file Files
-    ];
-
-### Constant Edit
-
-window_constant : Action Window
-= std_window {"Constant"} $ vertical.Widget
-[
-    checkBox.Widget {"off"} {False},
-    checkBox.Widget {"on"} {True},
-    textEntry.Widget {"constant"},
-    layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ {"constant"})
-];
-
-### CSS
-window_css: Action Window
-= do
-    cssref <- newMem.WholeModel;
-    cssref := rule.CSSText ".y, .y > text" [("color","green"),("font-family","\"serif\"")];
-    sometext <- newMem.WholeModel;
-    sometext := "whatever";
-    std_window {"CSS"} $ styleSheet.Widget (ignoreUpdateUIExceptions.GTK.Debug. cssref) $ name.Widget "root" $ vertical.Widget
-        [
-            styleClass.Widget "x" $ name.Widget "A" $ checkBox.Widget {"Box"} {True},
-            styleClass.Widget "x" $ name.Widget "B" $ button.Widget {"Button"} {do pure () end},
-            styleClass.Widget "x" $ name.Widget "C" $ textEntry.Widget sometext,
-            layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textView.Widget $ fromWhole.TextModel $ asText.CSSText !$ cssref,
-            styleClass.Widget "y" $ name.Widget "E" $ label.Widget {"Some Text"}
-        ];
-    end;
-
-### Drawing
-window_drawing: WholeModel +Time -> Action Window
-= fn now =>
-    with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number in
-    do
-        tzref <- newTimeZoneModel.LocalTime now;
-        std_window {"Drawing"} $ draw.Widget {fn (w,h) => let
-            size = min w h;
-            in fromTime.LocalTime %tzref %now >- match
-                DateAndTime _ (HourMinuteSecond _ _ s) =>
-                    translate (w / 2, h / 2) $
-                    scale (size, size) $
-                    scale (-0.5, -0.5) $
-                    rotate (s * pi / 30) $
-                    over.Operator $
-                    source purple $
-                    capSquare $
-                    width 0.01 $
-                    stroke $ concat.Path [moveTo (0, 0), lineTo (0, 1)];
-                end};
-    end;
-
-window_list: Action Window
-= do
-    peopleList <- getList.FiniteSetModel (on.ModelOrder name order.Text) people;
-    std_window {"List"} $ list.Widget ui_person peopleList;
-    end;
-
-### Text Selection
-window_textselection: Action Window
-= do
-    tref1 <- newMem.TextModel;
-    tref1 := "111";
-    tref2 <- newMem.TextModel;
-    tref2 := "222";
-    tref3 <- newMem.TextModel;
-    tref3 := "333";
-    sel <- newMem.WholeModel;
-    let
-        notify: Action TextModel -> Action Unit
-        = fn atref => sel := atref;
-    in std_window {"Text Selection"} $ styleSheet.Widget {rule.CSSText "*" [("padding","2pt")]} $ vertical.Widget
-    [
-        notifySelection.Widget notify $ textView.Widget tref1,
-        notifySelection.Widget notify $ textView.Widget tref2,
-        notifySelection.Widget notify $ textView.Widget tref3,
-        dynamic.Widget {exec.Widget $ map.Action (fn tref => textView.Widget (fromWhole.TextModel tref)) %sel}
-    ];
-    end;
-
-### Cairo Image
-window_cairoimage: Action Window
-= with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number in
-    let
-    dimensions: Integer *: Integer
-    = (400,400);
-    drawing: Integer *: Integer -> Drawing Handler
-    = fn (w,h) => let
-        size = min w h;
-        square: Drawing Handler
-        = fill $ concat.Path [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
-        squares: List ((Integer *: Integer) *: Colour)
-        =
-        [
-            ((0,0), black),
-            ((1,0), red),
-            ((2,0), green),
-            ((3,0), yellow),
-            ((0,1), blue),
-            ((1,1), magenta),
-            ((2,1), cyan),
-            ((3,1), white),
-            ((0,2), purple),
-            ((1,2), brown),
-            ((2,2), pink),
-            ((3,2), cornflowerblue),
-            ((0,3), lavender),
-            ((1,3), ivory),
-            ((2,3), midnightblue)
-        ];
-        block: Number -> Drawing Handler
-        = fn a => concat.Drawing
-        [
-            concat.Drawing $ map.List (fn (s,c) => translate s $ source (MkF.AlphaColour a c) $ square) squares,
-            width 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 * pi)
-        ];
-        in
-            scale (size, size) $
-            scale (0.125, 0.125) $
-            over.Operator $ concat.Drawing
-            [
-                translate (0,0) $ block 1,
-                translate (0,4) $ block (2/3),
-                translate (4,0) $ block (1/3),
-                translate (4,4) $ block 0
-            ];
-    in std_window {"Cairo Image"} $ with Widget in vertical
-    [
-        layoutGrow $ draw {drawing},
-        layoutGrow $ styleSheet {rule.CSSText "*" [("border","solid 5px black"),("padding","5px")]} $ image {toImage dimensions $ drawing dimensions}
-    ];
-
-### Menus
-window_menus: Action Window =
-do
-    value <- newMem.WholeModel;
-
-    mfix.Action $ fn window => with Widget in
-        let
-        mbar: Widget = menuBar $ with MenuEntry in
-            [
-                submenu "Menu"
-                [
-                    checked {("Value",Nothing)} value
+    std_window: WholeModel +Text -> Widget -> Action Window =
+        fn title, contents => mfix.Action $ fn window => let {
+            mbar: Widget =
+                menuBar.Widget $
+                with MenuEntry.GTK. [
+                    submenu "File" [
+                        action ap{("Close" ,Just "Ctrl+W")} ap{close.Window window},
+                        separator,
+                        action ap{("Exit" ,Just "Ctrl+Q")} ap{exit gtk}
+                    ],
+                    submenu "Edit" [
+                        action ap{("Undo" ,Just "Ctrl+Z")} ap{queueUndo.UndoHandler uh},
+                        action ap{("Redo" ,Just "Ctrl+Y")} ap{queueRedo.UndoHandler uh}
+                    ]
                 ]
-            ]
-        in open.Window gtk (400,600) {"Menus"} $ vertical.Widget [mbar, layoutGrow $ checkBox {"Value"} value];
-end;
+        } open.Window gtk (400,600) title $ vertical.Widget [mbar, layoutGrow.Widget $ scrolled.Widget contents];
 
-### Scale
-window_scale: Action Window =
-do
-    value <- newMem.WholeModel;
+    ### People
 
-    open.Window gtk (400,600) {"Scale"} $ with Widget in vertical
-        [
-            scale {(0,100)} value,
-            scale {(0,100)} value
+    # Ontology
+
+    entitytype Person;
+
+    people = set.Store @Person !"f06efa5e-190f-4e5d-8633-495c5683c124" store;
+
+    name = property @Person @Text !"498260df-6a8a-44f0-b285-68a63565a33b" store;
+
+
+    mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085" store;
+    father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5" store;
+    # parents : WholeModel Person -> FiniteSetModel Person;
+    # parents p = (mother !$ p) <|> (father !$ p);
+    children : WholeModel Person -> FiniteSetModel Person =
+        fn p => mother !@ p <:|:> father !@ p;
+
+    employer = property @Person @Person !"72f612af-ae47-4c18-b3df-6932ae914f62" store;
+
+    email = property @Person @Text !"8649b74c-123e-4ece-be3b-b734b0db3ea7" store;
+
+    phone = property @Person @Text !"83dfc88b-7b5b-4262-a548-0af84d5e3b63" store;
+
+    entitytype Location;
+    home = property @Person @Location !"b4f7736e-2db4-486c-aae5-b6a9b1035fd0" store;
+    address = property @Location @Text !"fd83bef7-145c-4e40-a2d6-938bb5fb6da1" store;
+    locphone = property @Location @Text !"0689535c-f220-47a2-8fcb-4782574e0749" store;
+    city = property @Location @Text !"55c84133-64f2-47a6-8b3c-e01256ec9779" store;
+    postcode = property @Location @Text !"80f99100-407b-4a6b-a4f0-a025c94132b3" store;
+    province = property @Location @Text !"dffae424-28d5-4543-b1b2-b8a744bbc0cd" store;
+    country = property @Location @Text !"1257c340-0ec1-4ff7-9fd8-d2eaa7822463" store;
+
+    birthdate = property @Person @Text !"b711b9b3-b43c-4ff6-be12-3291cc6b050a" store;
+    deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb" store;
+    married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22" store;
+
+    # GTK
+    let rec {
+        ui_people: FiniteSetModel Person -> Widget =
+            fn pp =>
+            exec.Widget $ do {
+                selectedperson <- newMem.WholeModel;
+                pplist <- getList.FiniteSetModel empty.Order pp;
+                pure $ vertical.Widget [
+                    button.Widget ap{"New Person"} ap{do {p <- new.OpenEntity @Person; pp += p; window_person p}},
+                    button.Widget ap{"View Person"} ap{get selectedperson >>= window_person},
+                    button.Widget ap{"Remove Person"} ap{get selectedperson >>= fn p => pp -= p},
+                    layoutGrow.Widget $ listTable.Widget [(ap{"Name"},fn p => name !$ ap{p})] pplist window_person (Just selectedperson)
+                ];
+            };
+
+        peopleByName: WholeModel +(List (Person *: Text)) =
+            toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (id.Property **.Property name) !$$% people;
+
+        ui_person: WholeModel Person -> Widget =
+            fn p =>
+            vertical.Widget [
+                ui_labelled ap{"Name: "} $ textEntry.Widget $ name !$ p,
+                layoutGrow.Widget $
+                    notebook.Widget unknown [
+                        ui_page ap{"Social"} $ vertical.Widget [
+                            ui_labelled ap{"Email: "} $ textEntry.Widget $ email !$ p,
+                            ui_labelled ap{"Phone: "} $ textEntry.Widget $ phone !$ p
+                        ],
+                        ui_page ap{"Home"} $
+                            let {homep = home !$ p}
+                            vertical.Widget [
+                                ui_labelled ap{"Address: "} $ textView.Widget (fromWhole.TextModel $ address !$ homep),
+                                ui_labelled ap{"City: "} $ textEntry.Widget $ city !$ homep,
+                                ui_labelled ap{"Postcode/ZIP: "} $ textEntry.Widget $ postcode !$ homep,
+                                ui_labelled ap{"State/Province: "} $ textEntry.Widget $ province !$ homep,
+                                ui_labelled ap{"Country: "} $ textEntry.Widget $ country !$ homep,
+                                ui_labelled ap{"Phone: "} $ textEntry.Widget $ locphone !$ homep
+                            ],
+                        ui_page ap{"Work"} $
+                            vertical.Widget [
+                                ui_labelled ap{"Employer: "} $ textEntry.Widget $ (name ..Property employer) !$ p
+                            ],
+                        ui_page ap{"Family"} $
+                            vertical.Widget [
+                                ui_labelled ap{"Birth: "} $ textEntry.Widget $ birthdate !$ p,
+                                ui_labelled ap{"Death: "} $ textEntry.Widget $ deathdate !$ p,
+                                checkBox.Widget ap{"Married"} $ married !$ p,
+                                ui_labelled ap{"Mother: "} $ pick.Widget peopleByName $ mother !$ p,
+                                ui_labelled ap{"Father: "} $ pick.Widget peopleByName $ father !$ p,
+                                layoutGrow.Widget $ ui_people (children p)
+                            ]
+                ]
         ];
-end;
 
-### Start Window
+        window_person: Person -> Action Window =
+            fn p => std_window (name !$ ap{p}) (ui_person ap{p});
 
-let rec
-window_start : Action Window
-= do
-    now <- newClock $ Seconds 1;
-    timeZone <- newTimeZoneModel.LocalTime now;
-    let
-        utcDate = {%now};
-        localNow = {fromTime.LocalTime %timeZone %now};
-        today = {%localNow >- match DateAndTime day _ => day end};
-        in do
-        std_window {"Pinafore"} $ vertical.Widget
-        [
-            label.Widget {"UTC time: " <>.Text show %now},
-            label.Widget {"UTC date: " <>.Text show %utcDate},
-            label.Widget {"Local time: " <>.Text show %localNow},
-            label.Widget {"Local date: " <>.Text show %today},
-            label.Widget {"Time zone offset minutes: " <>.Text show %timeZone},
-            button.Widget {"Calculated Form"} {window_calc},
-            button.Widget {"Switch"} {window_switch},
-            button.Widget {"Files"} {window_files},
-            button.Widget {"Constant"} {window_constant},
-            button.Widget {"CSS"} {window_css},
-            button.Widget {"Drawing"} {window_drawing now},
-            button.Widget {"List"} {window_list},
-            button.Widget {"Text Selection"} {window_textselection},
-            button.Widget {"Disabled"} unknown,
-            button.Widget {"Unowned self"} {window_start},
-            owned.Widget $ button.Widget {"Owned Self"} {window_start},
-            button.Widget {"Cairo Image"} {window_cairoimage},
-            button.Widget {"Menus"} {window_menus},
-            button.Widget {"Scale"} {window_scale},
-            layoutGrow.Widget $ blank.Widget
+        window_people: Action Window =
+            std_window ap{"People"} (ui_people people);
+        };
+
+    ### Calculator
+
+    window_calc: Action Window =
+        let {
+            entitytype P;
+            pvalue = property @P @Number !"pvalue" store;
+            aval = pvalue !$ ap{point.OpenEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
+            bval = pvalue !$ ap{point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
+        } std_window ap{"Calc"} $
+        vertical.Widget [
+            textEntry.Widget $ asText.Number !$ aval,
+            textEntry.Widget $ asText.Number !$ bval,
+            label.Widget ap{show $ %aval /.Number %bval}
         ];
-        end;
-    end;
-end;
 
-in window_start
+    ### Switching Value
+
+    window_switch: Action Window =
+        let {
+            entitytype P;
+            pbool = property @P @Boolean !"pbool" store;
+            ptext = property @P @Text !"ptext" store;
+            sw_pick = pbool !$ ap{point.OpenEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
+            sw_val1 = ptext !$ ap{point.OpenEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
+            sw_val2 = ptext !$ ap{point.OpenEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
+        } std_window ap{"Switch"} $
+        vertical.Widget [
+            #textEntry.Widget sw_pick),
+            checkBox.Widget ap{"pick"} sw_pick,
+            layoutGrow.Widget $ dynamic.Widget ap{if %sw_pick then textView.Widget (fromWhole.TextModel sw_val1) else textView.Widget (fromWhole.TextModel sw_val2)}
+        ];
+
+    ### Imported Files
+
+    window_files: Action Window =
+        let {
+            #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
+            #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
+            window_file = fn f => std_window ap{"File"} $ vertical.Widget
+            [
+                    #textEntry.Widget $ caption f
+            ];
+        } std_window ap{"Files"} $
+        vertical.Widget [
+            #button.Widget "Import" ap{file_import Files $ fn f => std_window $ window_file f},
+            #layoutGrow.Widget $ listTable.Widget [column "Caption" caption, column "Size" file_size] window_file Files
+        ];
+
+    ### Constant Edit
+
+    window_constant: Action Window =
+        std_window ap{"Constant"} $
+        vertical.Widget [
+            checkBox.Widget ap{"off"} ap{False},
+            checkBox.Widget ap{"on"} ap{True},
+            textEntry.Widget ap{"constant"},
+            layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ ap{"constant"})
+        ];
+
+    ### CSS
+    window_css: Action Window =
+        do {
+            cssref <- newMem.WholeModel;
+            cssref := rule.CSSText ".y, .y > text" [("color","green"),("font-family","\"serif\"")];
+            sometext <- newMem.WholeModel;
+            sometext := "whatever";
+            std_window ap{"CSS"} $
+                styleSheet.Widget (ignoreUpdateUIExceptions.GTK.Debug. cssref) $
+                name.Widget "root" $
+                vertical.Widget [
+                    styleClass.Widget "x" $ name.Widget "A" $ checkBox.Widget ap{"Box"} ap{True},
+                    styleClass.Widget "x" $ name.Widget "B" $ button.Widget ap{"Button"} ap{do {pure ()}},
+                    styleClass.Widget "x" $ name.Widget "C" $ textEntry.Widget sometext,
+                    layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textView.Widget $ fromWhole.TextModel $ asText.CSSText !$ cssref,
+                    styleClass.Widget "y" $ name.Widget "E" $ label.Widget ap{"Some Text"}
+                ];
+        };
+
+    ### Drawing
+    window_drawing: WholeModel +Time -> Action Window =
+        fn now =>
+            with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number
+            do {
+                tzref <- newTimeZoneModel.LocalTime now;
+                std_window ap{"Drawing"} $
+                    draw.Widget ap{fn (w,h) =>
+                        let {size = min w h}
+                        fromTime.LocalTime %tzref %now >- fn
+                            DateAndTime _ (HourMinuteSecond _ _ s) =>
+                                translate (w / 2, h / 2) $
+                                scale (size, size) $
+                                scale (-0.5, -0.5) $
+                                rotate (s * pi / 30) $
+                                over.Operator $
+                                source purple $
+                                capSquare $
+                                width 0.01 $
+                                stroke $
+                                concat.Path [moveTo (0, 0), lineTo (0, 1)]
+                        };
+            };
+
+    window_list: Action Window =
+        do {
+            peopleList <- getList.FiniteSetModel (on.ModelOrder name order.Text) people;
+            std_window ap{"List"} $ list.Widget ui_person peopleList;
+        };
+
+    ### Text Selection
+    window_textselection: Action Window =
+        do {
+            tref1 <- newMem.TextModel;
+            tref1 := "111";
+            tref2 <- newMem.TextModel;
+            tref2 := "222";
+            tref3 <- newMem.TextModel;
+            tref3 := "333";
+            sel <- newMem.WholeModel;
+            let {
+                notify: Action TextModel -> Action Unit =
+                    fn atref => sel := atref;
+            }
+            std_window ap{"Text Selection"} $
+                styleSheet.Widget ap{rule.CSSText "*" [("padding","2pt")]} $
+                vertical.Widget [
+                    notifySelection.Widget notify $ textView.Widget tref1,
+                    notifySelection.Widget notify $ textView.Widget tref2,
+                    notifySelection.Widget notify $ textView.Widget tref3,
+                    dynamic.Widget ap{exec.Widget $ map.Action (fn tref => textView.Widget (fromWhole.TextModel tref)) %sel}
+                ];
+        };
+
+    ### Cairo Image
+    window_cairoimage: Action Window =
+        with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number
+        let {
+            dimensions: Integer *: Integer =
+                (400,400);
+            drawing: Integer *: Integer -> Drawing Handler =
+                fn (w,h) =>
+                let {
+                    size = min w h;
+                    square: Drawing Handler =
+                        fill $ concat.Path [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
+                    squares: List ((Integer *: Integer) *: Colour) =
+                        [
+                            ((0,0), black),
+                            ((1,0), red),
+                            ((2,0), green),
+                            ((3,0), yellow),
+                            ((0,1), blue),
+                            ((1,1), magenta),
+                            ((2,1), cyan),
+                            ((3,1), white),
+                            ((0,2), purple),
+                            ((1,2), brown),
+                            ((2,2), pink),
+                            ((3,2), cornflowerblue),
+                            ((0,3), lavender),
+                            ((1,3), ivory),
+                            ((2,3), midnightblue)
+                        ];
+                    block: Number -> Drawing Handler =
+                        fn a => concat.Drawing [
+                            concat.Drawing $ map.List (fn (s,c) => translate s $ source (MkF.AlphaColour a c) $ square) squares,
+                            width 0.05 $ source black $ stroke $ arc (2,2) 2 0 (2 * pi)
+                        ];
+                }
+                scale (size, size) $
+                scale (0.125, 0.125) $
+                over.Operator $
+                concat.Drawing [
+                    translate (0,0) $ block 1,
+                    translate (0,4) $ block (2/3),
+                    translate (4,0) $ block (1/3),
+                    translate (4,4) $ block 0
+                ];
+        }
+        std_window ap{"Cairo Image"} $
+        with Widget
+        vertical [
+            layoutGrow $
+                draw ap{drawing},
+            layoutGrow $
+                styleSheet ap{rule.CSSText "*" [("border","solid 5px black"),("padding","5px")]} $
+                image ap{toImage dimensions $ drawing dimensions}
+        ];
+
+    ### Menus
+    window_menus: Action Window =
+        do {
+            value <- newMem.WholeModel;
+            mfix.Action $
+                fn window =>
+                with Widget
+                let {
+                    mbar: Widget =
+                        menuBar $ with MenuEntry [
+                                submenu "Menu" [
+                                    checked ap{("Value",Nothing)} value
+                                ]
+                            ]
+                } open.Window gtk (400,600) ap{"Menus"} $ vertical.Widget [mbar, layoutGrow $ checkBox ap{"Value"} value];
+        };
+
+    ### Scale
+    window_scale: Action Window =
+        do {
+            value <- newMem.WholeModel;
+            open.Window gtk (400,600) ap{"Scale"} $
+                with Widget
+                vertical [
+                        scale ap{(0,100)} value,
+                        scale ap{(0,100)} value
+                    ];
+        };
+
+    ### Start Window
+    let rec {
+        window_start : Action Window =
+            do {
+                now <- newClock $ Seconds 1;
+                timeZone <- newTimeZoneModel.LocalTime now;
+                utcDate = ap{%now};
+                localNow = ap{fromTime.LocalTime %timeZone %now};
+                today = ap{%localNow >- fn DateAndTime day _ => day};
+                std_window ap{"Pinafore"} $
+                    vertical.Widget [
+                        label.Widget ap{"UTC time: " <>.Text show %now},
+                        label.Widget ap{"UTC date: " <>.Text show %utcDate},
+                        label.Widget ap{"Local time: " <>.Text show %localNow},
+                        label.Widget ap{"Local date: " <>.Text show %today},
+                        label.Widget ap{"Time zone offset minutes: " <>.Text show %timeZone},
+                        button.Widget ap{"Calculated Form"} ap{window_calc},
+                        button.Widget ap{"Switch"} ap{window_switch},
+                        button.Widget ap{"Files"} ap{window_files},
+                        button.Widget ap{"Constant"} ap{window_constant},
+                        button.Widget ap{"CSS"} ap{window_css},
+                        button.Widget ap{"Drawing"} ap{window_drawing now},
+                        button.Widget ap{"List"} ap{window_list},
+                        button.Widget ap{"Text Selection"} ap{window_textselection},
+                        button.Widget ap{"Disabled"} unknown,
+                        button.Widget ap{"Unowned self"} ap{window_start},
+                        owned.Widget $ button.Widget ap{"Owned Self"} ap{window_start},
+                        button.Widget ap{"Cairo Image"} ap{window_cairoimage},
+                        button.Widget ap{"Menus"} ap{window_menus},
+                        button.Widget ap{"Scale"} ap{window_scale},
+                        layoutGrow.Widget $ blank.Widget
+                    ];
+            }
+    };
+}
+window_start

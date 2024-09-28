@@ -1,10 +1,14 @@
 #!/usr/bin/pinafore
-
-run.GTK $ \gtk => let
-import "gnome";
-import "UILib";
-in do
+import "gnome", "UILib"
+run.GTK $ fn gtk =>
+new.UndoHandler >>= fn undoHander =>
+imply {
+    ?gtk = gtk;
+    ?undoHandler = undoHander;
+}
+with Widget.GTK., UILib.
+do {
     tref1 <- newMem.TextModel;
     tref2 <- newMem.TextModel;
-    paneWindow.Pane gtk $ simple.Pane "Text" $ vertical [layoutGrow $ textView tref1, layoutGrow $ textView tref2];
-    end
+    paneWindow.Pane $ simple.Pane "Text" $ vertical [layoutGrow $ textView tref1, layoutGrow $ textView tref2];
+}

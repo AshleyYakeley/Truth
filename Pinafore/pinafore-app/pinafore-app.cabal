@@ -255,6 +255,7 @@ test-suite test
   build-depends:
       base >=4.16
     , changes-core
+    , directory
     , filepath
     , pinafore-app
     , pinafore-language

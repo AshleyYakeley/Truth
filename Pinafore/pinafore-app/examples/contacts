@@ -1,17 +1,12 @@
 #!/usr/bin/pinafore
-import "gnome", "UILib" in
-with
-    GTK.,
-    UILib.
-in
+import "gnome", "UILib"
+with GTK., UILib.
 run.Context $ fn Mk.Context =>
-imply
+imply {
     ?gtk = gtk;
     ?undoHandler = undoHandler;
     ?store = store;
-in
-let
-
+} let {
     # something with a lifespan
     entitytype Lifespanned;
     # birth and death dates
@@ -21,34 +16,33 @@ let
     # physical locations, that have addresses
     entitytype Location;
 
-    namespace Location of
+    namespace Location {
         addressOf = property @Location @Text !"location.address.withincity" ?store;
         phoneOf = property @Location @Text !"location.telephone" ?store;
         cityOf = property @Location @Text !"location.address.city" ?store;
         postcodeOf = property @Location @Text !"location.address.postcode" ?store;
         provinceOf = property @Location @Text !"location.address.province" ?store;
         countryOf = property @Location @Text !"location.address.country" ?store;
-    end;
+    };
 
     locationUI: WholeModel +Location -> Widget =
-    fn loc =>
-    vertical.Widget
-    [
-        layoutGrow.Widget $ labelled.Widget {"Address: "} $ textView.Widget (fromWhole.TextModel $ addressOf.Location !$% loc),
-        labelled.Widget {"City: "} $ textEntry.Widget $ cityOf.Location !$% loc,
-        labelled.Widget {"Postcode/ZIP: "} $ textEntry.Widget $ postcodeOf.Location !$% loc,
-        labelled.Widget {"State/Province: "} $ textEntry.Widget $ provinceOf.Location !$% loc,
-        labelled.Widget {"Country: "} $ textEntry.Widget $ countryOf.Location !$% loc,
-        labelled.Widget {"Phone: "} $ textEntry.Widget $ phoneOf.Location !$% loc
-    ];
+        fn loc =>
+        vertical.Widget [
+            layoutGrow.Widget $ labelled.Widget ap{"Address: "} $ textView.Widget (fromWhole.TextModel $ addressOf.Location !$% loc),
+            labelled.Widget ap{"City: "} $ textEntry.Widget $ cityOf.Location !$% loc,
+            labelled.Widget ap{"Postcode/ZIP: "} $ textEntry.Widget $ postcodeOf.Location !$% loc,
+            labelled.Widget ap{"State/Province: "} $ textEntry.Widget $ provinceOf.Location !$% loc,
+            labelled.Widget ap{"Country: "} $ textEntry.Widget $ countryOf.Location !$% loc,
+            labelled.Widget ap{"Phone: "} $ textEntry.Widget $ phoneOf.Location !$% loc
+        ];
 
-    let
+    let {
         # a person or organisation
         entitytype ContactType;
         entitytype ContactValue;
-        datatype storable Contact of
+        datatype storable Contact {
             Mk ContactType ContactValue !"Mk.Contact";
-        end;
+        };
         newContact: ContactType -> Action Contact =
             fn t => map.Action (Mk.Contact t) $ new.OpenEntity @ContactValue;
 
@@ -60,7 +54,7 @@ let
         homeOf = property @Contact @Location !"being.location" ?store;
 
         contactSet: FiniteSetModel Contact =
-        set.Store @Contact !"type.legalentity" ?store;
+            set.Store @Contact !"type.legalentity" ?store;
 
         # a person
         personType: ContactType = point.OpenEntity @ContactType !"type.person";
@@ -74,13 +68,13 @@ let
         motherOf = property @Person @Person !"relation.family.mother" ?store;
         fatherOf = property @Person @Person !"relation.family.father" ?store;
         childrenSet: WholeModel +Person -> FiniteSetModel Person =
-        fn p => (motherOf !@% p) <:|:> (fatherOf !@% p);
+            fn p => (motherOf !@% p) <:|:> (fatherOf !@% p);
         marriedOf = property @Person @Boolean !"relation.family.spouse.exist" ?store;
 
         # employment relationship
         employerOf = property @Person @Contact !"relation.employer" ?store;
         employeeSet: WholeModel +Contact -> FiniteSetModel Person =
-        fn p => employerOf !@% p;
+            fn p => employerOf !@% p;
 
         # an organisation
         organisationType: ContactType = point.OpenEntity @ContactType !"type.organisation";
@@ -88,106 +82,96 @@ let
         newOrganisation: Action Organisation = map.Action (coerce @Organisation) $ newContact organisationType;
 
         organisationSet: FiniteSetModel Organisation =
-            set.Store @Organisation !"type.organisation" ?store;
-    end;
+                set.Store @Organisation !"type.organisation" ?store;
+    };
 
     ### User Interface
 
-    let rec
-
+    let rec {
         contactPages: WholeModel +Contact -> List (Widget *: Widget) =
-        fn er =>
-        [
-            page.Widget {"Social"} $ vertical.Widget
-            [
-                labelled.Widget {"Email: "} $ textEntry.Widget $ emailOf !$% er,
-                labelled.Widget {"Phone: "} $ textEntry.Widget $ phoneOf !$% er
-            ],
-            page.Widget {"Home"} $ locationUI $ homeOf !$% er
-        ];
+            fn er => [
+                page.Widget ap{"Social"} $ vertical.Widget [
+                    labelled.Widget ap{"Email: "} $ textEntry.Widget $ emailOf !$% er,
+                    labelled.Widget ap{"Phone: "} $ textEntry.Widget $ phoneOf !$% er
+                ],
+                page.Widget ap{"Home"} $ locationUI $ homeOf !$% er
+            ];
 
         personPages: WholeModel +Person -> List (Widget *: Widget) =
-        fn p =>
-        [
-            page.Widget {"Work"} $ vertical.Widget
-            [
-                labelled.Widget {"Employer: "} $ pick.Widget (toList.Named contactSet) $ employerOf !$% p
-            ],
-            page.Widget {"Family"} $ familyUI p
-        ];
+            fn p => [
+                page.Widget ap{"Work"} $ vertical.Widget [
+                    labelled.Widget ap{"Employer: "} $ pick.Widget (toList.Named contactSet) $ employerOf !$% p
+                ],
+                page.Widget ap{"Family"} $ familyUI p
+            ];
 
         familyUI: WholeModel +Person -> Widget =
-        fn p =>
-        vertical.Widget
-        [
-            labelled.Widget {"Birth: "} $ textEntry.Widget $ asText.Date !$ birthDateOf !$% p,
-            labelled.Widget {"Death: "} $ textEntry.Widget $ asText.Date !$ deathDateOf !$% p,
-            checkBox.Widget {"Married"} $ marriedOf !$% p,
-            labelled.Widget {"Mother: "} $ pick.Widget (toList.Named peopleSet) $ motherOf !$% p,
-            labelled.Widget {"Father: "} $ pick.Widget (toList.Named peopleSet) $ fatherOf !$% p,
-            label.Widget {"Children:"},
-            layoutGrow.Widget $ toWidget.SetWidget $ table.Named (childrenSet p) contactUI
-        ];
+            fn p =>
+            vertical.Widget [
+                labelled.Widget ap{"Birth: "} $ textEntry.Widget $ asText.Date !$ birthDateOf !$% p,
+                labelled.Widget ap{"Death: "} $ textEntry.Widget $ asText.Date !$ deathDateOf !$% p,
+                checkBox.Widget ap{"Married"} $ marriedOf !$% p,
+                labelled.Widget ap{"Mother: "} $ pick.Widget (toList.Named peopleSet) $ motherOf !$% p,
+                labelled.Widget ap{"Father: "} $ pick.Widget (toList.Named peopleSet) $ fatherOf !$% p,
+                label.Widget ap{"Children:"},
+                layoutGrow.Widget $ toWidget.SetWidget $ table.Named (childrenSet p) contactUI
+            ];
 
         organisationPages: WholeModel +Organisation -> List (Widget *: Widget) =
-        fn subj =>
-        [
-            page.Widget {"Employees"} $ toWidget.SetWidget $ table.Named (employeeSet subj) contactUI
-        ];
+            fn subj => [
+                page.Widget ap{"Employees"} $ toWidget.SetWidget $ table.Named (employeeSet subj) contactUI
+            ];
 
         contactUI: Contact -> Widget =
-        fn c =>
-        let
-            pages: List (Widget *: Widget) =
-            contactPages {c} <>.List (c >- match
-                p:? Person => personPages {p};
-                o:? Organisation => organisationPages {o};
-                end);
-        in
-        vertical.Widget
-        [
-            labelled.Widget {"Name: "} $ textEntry.Widget $ nameOf.Named !$% {c},
-            layoutGrow.Widget $ notebook.Widget unknown pages
-        ];
-    end;
+            fn c =>
+            let {
+                pages: List (Widget *: Widget) =
+                contactPages ap{c} <>.List (c >- fn {
+                    p:? Person => personPages ap{p};
+                    o:? Organisation => organisationPages ap{o};
+                });
+            } vertical.Widget [
+                labelled.Widget ap{"Name: "} $ textEntry.Widget $ nameOf.Named !$% ap{c},
+                layoutGrow.Widget $ notebook.Widget unknown pages
+            ];
+    };
 
     newPerson: Command (Context.Command *: SetContext Contact) =
-        Mk.Command of
+        Mk.Command {
             name = "New Person";
             defaultKeyBinding = Just "Ctrl+K";
             action =
                 fn (_,Mk.SetContext) =>
-                do
+                do {
                     item <- newPerson;
                     addItem item;
-                end;
-        end;
+                };
+        };
 
     newOrganisation: Command (Context.Command *: SetContext Contact) =
-        Mk.Command of
+        Mk.Command {
             name = "New Organisation";
             defaultKeyBinding = Just "Ctrl+K";
             action =
                 fn (_,Mk.SetContext) =>
-                do
+                do {
                     item <- newOrganisation;
                     addItem item;
-                end;
-        end;
+                };
+        };
 
     contactsPresentation: SetPresentation Contact =
-    Mk.SetPresentation of
-        setName = "Contacts";
-        itemSet = contactSet;
-        menuEntries = [newPerson, newOrganisation];
-        itemPane = pane.Named contactUI;
-        setWidget = table.Named contactSet contactUI;
-    end;
+        Mk.SetPresentation {
+            setName = "Contacts";
+            itemSet = contactSet;
+            menuEntries = [newPerson, newOrganisation];
+            itemPane = pane.Named contactUI;
+            setWidget = table.Named contactSet contactUI;
+        };
 
     contactsWindow: Action Window =
-    do
-        p <- presentWithItem.SetPresentation contactsPresentation;
-        paneWindow.Pane p;
-    end;
-
-in contactsWindow
+        do {
+            p <- presentWithItem.SetPresentation contactsPresentation;
+            paneWindow.Pane p;
+        };
+} contactsWindow

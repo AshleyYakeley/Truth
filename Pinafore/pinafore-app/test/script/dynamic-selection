@@ -1,52 +1,56 @@
 #!/usr/bin/pinafore
 
-let
+let {
+    entitytype Named;
+    name = property @Named @Text !"identify.name" ?store;
+    byName: FiniteSetModel (+a,+Named) -> WholeModel +(List (a *: Text)) =
+        fn ref => toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (id.Property **.Property name) !$$% ref;
 
-entitytype Named;
-name = property @Named @Text !"identify.name";
-byName: FiniteSetModel {+a,+Named} -> WholeModel +[(a,Text)];
-byName ref = list.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (identity **.Property name) !$$% ref;
+    entitytype Person;
+    testpt = point.OpenEntity @Person !"testpt";
 
-entitytype Person;
-testpt = point.OpenEntity @Person !"testpt";
+    inform: Text -> Maybe Entity -> Action Unit =
+        fn t, mv => message.Debug $ with Text t <> ": " <> (mv >- fn {
+                Just v => "changed: " <> anchor.Entity v;
+                Nothing => "deleted";
+            });
 
-inform: Text -> Maybe Entity -> Action Unit;
-inform t mv = message.Debug $ t <> ": " <> case mv of
-    Just v -> "changed: " <> anchor.Entity v;
-    Nothing -> "deleted";
-    end;
+    import "gnome";
 
-debugWindow: Window.GTK -> Action Unit;
-debugWindow window = do
-    t <- Debug.windowInfo.GTK window;
-    message.Debug t;
-    end;
+    debugWindow: Window.GTK -> Action Unit =
+        fn window => do {
+            t <- windowInfo.GTK.Debug window;
+            message.Debug t;
+        };
 
-debugThing: Text -> Action a -> Action a;
-debugThing t action = do
-    message.Debug $ t <> ": [";
-    a <- action;
-    message.Debug $ t <> ": ]";
-    pure a;
-    end;
-
-in debugThing "SCRIPT" $ do
+    debugThing: Text -> Action a -> Action a =
+        fn t, action => do {
+            message.Debug $ t <>.Text ": [";
+            a <- action;
+            message.Debug $ t <>.Text ": ]";
+            pure a;
+        };
+}
+debugThing "SCRIPT" $
+run.GTK $ fn gtk =>
+do {
     selection <- newMem.WholeModel;
-    onWholeModelUpdate selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
+    onUpdate.WholeModel selection $ fn me => debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- fixAction $ \w -> open.Window.GTK (300,400) {"Test"} $
-        dynamic.GTK $ coMapWholeModel (\e -> run.GTK $ debugThing "DYNAMIC" $ do
+    window <- mfix $ fn w => open.Window.GTK gtk (300,400) ap{"Test"} $ with Widget.GTK.
+        dynamic $ coMap.WholeModel (fn e => exec.Widget.GTK $ debugThing "DYNAMIC" $ do {
             # debugWindow w;
             inform "dynamic" $ Just e;
-            pure $ vertical.GTK [(True,label.GTK {"Set Text"})];
-            end) selection
-        ;
+            pure $ vertical [layoutGrow $ label ap{"Set Text"}];
+        }) selection;
     debugWindow window;
     selection := testpt;
     debugWindow window;
-    open.Window.GTK (300,400) {"Check"} $ button.GTK {"Check"} $ {debugThing "CHECK" $ do
-        debugWindow window;
-        selection := testpt;
-        debugWindow window;
-        end};
-    end
+    open.Window.GTK gtk (300,400) ap{"Check"} $
+        button.Widget.GTK ap{"Check"}
+        ap{debugThing "CHECK" $ do {
+            debugWindow window;
+            selection := testpt;
+            debugWindow window;
+        }};
+}

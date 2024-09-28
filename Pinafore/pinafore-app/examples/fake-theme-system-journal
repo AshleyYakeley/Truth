@@ -1,40 +1,34 @@
 #!/usr/bin/pinafore
-import "media", "gnome", "UILib" in
-with
-    GTK.,
-    UILib.
-in
+import "media", "gnome", "UILib"
+with GTK., UILib.
 run.Context $ fn Mk.Context =>
-imply
+imply {
     ?gtk = gtk;
     ?undoHandler = undoHandler;
     ?store = store;
-in
-let
-
+}
+let {
     years: FiniteSetModel Integer =
-    set.Store @Integer !"FTSJ.years" ?store;
+        set.Store @Integer !"FTSJ.years" ?store;
 
     yearTheme: Property Integer Text =
-    property @Integer @Text !"FTSJ.yearTheme" ?store;
+        property @Integer @Text !"FTSJ.yearTheme" ?store;
 
     frontCoverPane: Pane =
-    simple.Pane "Cover" $ styleSheet.Widget {rule.CSSText "*" [("font-size","32pt")]} $ label.Widget {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+        simple.Pane "Cover" $ styleSheet.Widget ap{rule.CSSText "*" [("font-size","32pt")]} $ label.Widget ap{"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
     getThemesPane: Action Pane =
-    pure $ simple.Pane "Themes" $ blank.Widget;
+        pure $ simple.Pane "Themes" $ blank.Widget;
 
     daysPane: Pane =
-    simple.Pane "Days" $ blank.Widget;
+        simple.Pane "Days" $ blank.Widget;
 
     createMainPane: Action Pane =
-    do
-        themesPane <- getThemesPane;
-        notebook.Pane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
-    end;
-
-in
-do
+        do {
+            themesPane <- getThemesPane;
+            notebook.Pane ap{"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
+        };
+} do {
     mainPane <- createMainPane;
     paneWindow.Pane mainPane;
-end
+}

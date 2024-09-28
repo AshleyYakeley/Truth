@@ -1,25 +1,22 @@
 #!/usr/bin/pinafore
-import "media", "gnome" in
+import "media", "gnome"
 run.GTK $ fn gtk =>
-let rec
-
-    showFile: Action Unit
-    = do
-        file <- chooseExistingFile.GTK gtk $ match
-            Just ("image",_) => True;
-            _ => False;
-            end;
-        ref <- makeRef.File.GIO file;
-        media <- get ref;
-        jpeg <- orStop $ decode jpegMedia.JPEG.Image media;
-        let
-        path = file >- match
+let rec {
+    showFile: Action Unit =
+        do {
+            file <- chooseExistingFile.GTK gtk $ fn {
+                Just ("image",_) => True;
+                _ => False;
+            };
+            ref <- makeRef.File.GIO file;
+            media <- get ref;
+            jpeg <- orStop $ decode jpegMedia.JPEG.Image media;
+            path = file >- fn {
                 Path.File.GIO path => path;
                 _ => "unknown";
-            end;
-        image = interpret jpeg;
-        in open.Window.GTK gtk (size.Image image) {path} $ image.Widget.GTK {image};
-        showFile;
-    end;
-
-in showFile
+            };
+            image = interpret jpeg;
+            open.Window.GTK gtk (size.Image image) ap{path} $ image.Widget.GTK ap{image};
+            showFile;
+        };
+} showFile

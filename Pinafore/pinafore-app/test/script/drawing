@@ -1,54 +1,49 @@
 #!/usr/bin/pinafore
-import "media", "gnome" in
-with GTK., Colour., Cairo. in
-let
+import "media", "gnome"
+with GTK., Colour., Cairo.
+let {
+    # transform from (-1 .. +1,-1 .. +1)
+    scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a) =
+        fn rd => ap{
+            fn (w,h) =>
+                let {size = min w h;}
+                with Drawing
+                translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd
+        };
 
-# transform from (-1 .. +1,-1 .. +1)
-scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a)
-= fn rd => {fn (w,h) => let
-    size = min w h;
-    in with Drawing in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
+    datatype Progress {
+        No;
+        Partial;
+        Done;
+    };
 
-datatype Progress of
-    No;
-    Partial;
-    Done;
-end;
-
-drawing: WholeModel Progress -> WholeModel +(Drawing Handler)
-= fn ref =>
-{
-    with Drawing in
-    scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat
-    [
-        source navy $ %(toMaybe.WholeModel ref) >- match
-            Nothing => pure $ onClick.Handler $ ref := Partial.Progress;
-            Just No.Progress => pure $ onClick.Handler $ ref := Partial.Progress;
-            Just Partial.Progress => concat
-                [
-                    with Path in fill $ concat [arc (0,0) 1 0 pi, close],
-                    pure $ onClick.Handler $ ref := Done.Progress
-                ];
-            Just Done.Progress => concat
-                [
-                    with Path in fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
-                    pure $ onClick.Handler $ ref := No.Progress
-                ];
-        end,
-        with Path in stroke $ concat
-        [
-            arc (0,0) 1 0 (2 *.Number pi),
-            moveTo (-1,0),
-            lineTo (1,0)
+    drawing: WholeModel Progress -> WholeModel +(Drawing Handler) =
+    fn ref => ap{
+        with Drawing
+        scale (0.8,0.8) $ rotate (3/4 *.Number pi) $ width 0.1 $ concat [
+            source navy $ %(toMaybe.WholeModel ref) >- fn {
+                    Nothing => pure $ onClick.Handler $ ref := Partial.Progress;
+                    Just No.Progress => pure $ onClick.Handler $ ref := Partial.Progress;
+                    Just Partial.Progress => concat [
+                            with Path fill $ concat [arc (0,0) 1 0 pi, close],
+                            pure $ onClick.Handler $ ref := Done.Progress
+                        ];
+                    Just Done.Progress => concat [
+                            with Path fill $ concat [arc (0,0) 1 0 (2 *.Number pi)],
+                            pure $ onClick.Handler $ ref := No.Progress
+                        ];
+            },
+            with Path stroke $ concat [
+                arc (0,0) 1 0 (2 *.Number pi),
+                moveTo (-1,0),
+                lineTo (1,0)
+            ]
         ]
-    ]
-};
-
-in run $ fn gtk => do
+    };
+} run $ fn gtk => do {
     ref <- newMem.WholeModel;
-    open.Window gtk (300,400) {"Drawing"} $ vertical.Widget
-    [
-        layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref,
-        layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref
+    open.Window gtk (300,400) ap{"Drawing"} $ vertical.Widget [
+            layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref,
+            layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref
     ];
-    end
+}

@@ -1,5 +1,5 @@
 module Test.Scripts
-    ( testScripts
+    ( getTestScripts
     ) where
 
 import qualified Paths_pinafore_lib_script
@@ -7,6 +7,7 @@ import Pinafore.Libs
 import Pinafore.Test
 import Shapes
 import Shapes.Test
+import System.Directory
 
 -- Just check, don't run
 testCheckScript :: FilePath -> String -> TestTree
@@ -19,6 +20,11 @@ testCheckScript fpath name =
                 _ <- testerInterpretScriptFile fpath []
                 return ()
 
+testCheckScripts :: String -> FilePath -> IO TestTree
+testCheckScripts name dir = do
+    tnames <- listDirectory dir
+    return $ testTree name $ fmap (\tname -> testCheckScript (dir </> tname) tname) $ sort tnames
+
 testQuine :: TestName -> FilePath -> FilePath -> TestTree
 testQuine name fpath outpath =
     testHandleVsFile name fpath outpath $ \hout ->
@@ -26,26 +32,8 @@ testQuine name fpath outpath =
             action <- testerInterpretScriptFile fpath []
             testerLiftView action
 
-testScripts :: TestTree
-testScripts =
-    testTree
-        "scripts"
-        [ testTree "test" $
-          fmap
-              (\name -> testCheckScript ("test/script" </> name) name)
-              ["empty", "simple", "testquery", "test", "big-ui", "calendar", "drawing", "choose", "notes"]
-        , testTree "example" $
-          fmap
-              (\name -> testCheckScript ("examples" </> name) name)
-              [ "stopwatch"
-              , "calendar"
-              , "contacts"
-              , "events"
-              , "clock"
-              , "quine"
-              , "fake-theme-system-journal"
-              , "webkit"
-              , "commonmark"
-              ]
-        , testQuine "quine" "examples/quine" "test/out/quine.out"
-        ]
+getTestScripts :: IO TestTree
+getTestScripts = do
+    scriptTest <- testCheckScripts "test" "test/script"
+    exampleTest <- testCheckScripts "example" "examples"
+    return $ testTree "scripts" [scriptTest, exampleTest, testQuine "quine" "examples/quine" "test/out/quine.out"]

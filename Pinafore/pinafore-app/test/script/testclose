@@ -1,10 +1,12 @@
 #!/usr/bin/pinafore
-import "gnome" in
+import "gnome"
+with GTK.
 run $
-\gtk =>
-fixAction $
-\window =>
-let mbar = menuBar [action.MenuEntry "Close" (Just "Ctrl+W") {close.Window window}] in
-open.Window gtk (400,600) {"Pinafore"} $
-vertical
-[mbar, layoutGrow $ button {"Close"} {close.Window window}]
+    fn gtk =>
+    mfix $
+    fn window =>
+    with Widget
+    let {mbar = menuBar [action.MenuEntry ap{("Close",Just "Ctrl+W")} ap{close.Window window}]}
+    open.Window gtk (400,600) ap{"Pinafore"} $
+    vertical
+        [mbar, layoutGrow $ button ap{"Close"} ap{close.Window window}]

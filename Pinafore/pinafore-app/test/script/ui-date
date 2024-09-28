@@ -1,15 +1,19 @@
 #!/usr/bin/pinafore
-do
-dref <- newMem.WholeModel;
-tref <- newMem.WholeModel;
-iref <- newMem.WholeModel;
-open.Window.GTK (300,400) {"Date"} $ vertical.GTK
-    [
-        (textEntry.GTK tref, False),
-        (textEntry.GTK tref, False),
-        (textEntry.GTK $ interpretDateAsText dref, False),
-        (textEntry.GTK $ interpretDateAsText dref, False),
-        (textEntry.GTK $ interpretIntegerAsText iref, False),
-        (textEntry.GTK $ interpretIntegerAsText iref, False)
-    ];
-end
+import "gnome"
+with GTK.
+run $ fn gtk =>
+do {
+    dref <- newMem.WholeModel;
+    tref <- newMem.WholeModel;
+    iref <- newMem.WholeModel;
+    open.Window gtk (300,400) ap{"Date"} $
+        with Widget
+        vertical [
+            textEntry tref,
+            textEntry tref,
+            textEntry $ asText.Date !$ dref,
+            textEntry $ asText.Date !$ dref,
+            textEntry $ asText.Integer !$ iref,
+            textEntry $ asText.Integer !$ iref
+        ];
+}

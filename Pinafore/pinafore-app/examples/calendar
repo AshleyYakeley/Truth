@@ -1,29 +1,24 @@
 #!/usr/bin/pinafore
-openLocal.Store of end >>= fn store =>
-import "gnome" in
-with GTK. in
-let
-
+openLocal.Store {} >>= fn store =>
+import "gnome"
+with GTK.
+let {
     dateNotesOf: Property Date Text =
-    property @Date @Text !"example.calendar:dateNotes" store;
+        property @Date @Text !"example.calendar:dateNotes" store;
 
     ui: WholeModel Date -> Widget =
-    fn r =>
-    vertical.Widget
-    [
-    horizontal.Widget
-        [
-        button.Widget {"<"} {do d <- get r; r := pred.Date d; end},
-        layoutGrow.Widget $ label.Widget {encode (unixAsText.Date "%A, %B %e, %Y") %r},
-        button.Widget {">"} {do d <- get r; r := succ.Date d; end}
-        ],
-    layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ dateNotesOf !$ r)
-    ];
-
-in
-do
+        fn r =>
+        vertical.Widget [
+            horizontal.Widget [
+                button.Widget ap{"<"} ap{do {d <- get r; r := pred.Date d}},
+                layoutGrow.Widget $ label.Widget ap{encode (unixAsText.Date "%A, %B %e, %Y") %r},
+                button.Widget ap{">"} ap{do {d <- get r; r := succ.Date d}}
+            ],
+            layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ dateNotesOf !$ r)
+        ];
+} do {
     r <- newMem.WholeModel;
     d <- getNowLocal.Date;
     r := d;
-    run $ fn gtk => open.Window gtk (300,400) {show %r} $ ui r;
-end
+    run $ fn gtk => open.Window gtk (300,400) ap{show %r} $ ui r;
+}

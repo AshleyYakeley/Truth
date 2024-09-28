@@ -1,141 +1,131 @@
 #!/usr/bin/pinafore
-let
-import "media" end;
+let {
+    import "media";
 
-entitytype World;
-world = cell.Store @World !"pinafore-notes.world" ?store;
+    entitytype World;
+    world = cell.Store @World !"pinafore-notes.world" ?store;
 
-let
-    entitytype ItemType;
-    entitytype ItemValue;
-    datatype storable Item of
-        Mk ItemType ItemValue !"pinafore-notes.Item";
-    end;
-    namespace Item of
-        new: ItemType -> Action Item =
-            fn t => map.Action (Mk t) $ new.OpenEntity. @ItemValue;
-        is: ItemType -> Item -> Boolean =
-            fn t, Mk it _ => it == t;
-    end;
-in expose Item, ItemType, new.Item, is.Item;
+    let {
+        entitytype ItemType;
+        entitytype ItemValue;
+        datatype storable Item {
+            Mk ItemType ItemValue !"pinafore-notes.Item";
+        };
+        namespace Item {
+            new: ItemType -> Action Item =
+                fn t => map.Action (Mk t) $ new.OpenEntity. @ItemValue;
+            is: ItemType -> Item -> Boolean =
+                fn t, Mk it _ => it == t;
+        };
+    } expose Item, ItemType, new.Item, is.Item;
 
-items: FiniteSetModel Item =
-    property @Item @World !"pinafore-notes.Item-World" ?store !@ world;
+    items: FiniteSetModel Item =
+        property @Item @World !"pinafore-notes.Item-World" ?store !@ world;
 
-nameOf: Property Item Text =
-    property @Item @Text !"pinafore-notes.name" ?store;
+    nameOf: Property Item Text =
+        property @Item @Text !"pinafore-notes.name" ?store;
 
-namespace Note of
-    itype: ItemType = point.OpenEntity. @ItemType !"pinafore-notes.Note";
-end;
-predicatetype storable Note <: Item = is.Item itype.Note;
-namespace Note of
-    new: Action Note = map.Action (coerce @Note) $ new.Item itype.Note;
-end;
+    namespace Note {
+        itype: ItemType = point.OpenEntity. @ItemType !"pinafore-notes.Note";
+    };
+    predicatetype storable Note <: Item = is.Item itype.Note;
+    namespace Note {
+        new: Action Note = map.Action (coerce @Note) $ new.Item itype.Note;
+    };
 
-notes: FiniteSetModel Note = dynamic.Prism @Note !$$ items;
-content = property @Note @CommonMarkText !"pinafore-notes.content" ?store;
+    notes: FiniteSetModel Note = dynamic.Prism @Note !$$ items;
+    content = property @Note @CommonMarkText !"pinafore-notes.content" ?store;
 
-import "gnome", "UILib" end;
-with UILib end;
+    import "gnome", "UILib";
+    with UILib;
 
-newNote: Command (Context.Command *: SetContext Note) =
-    Mk.Command of
-        name = "New Note";
-        defaultKeyBinding = Just "Ctrl+K";
-        action =
-            fn (_,Mk.SetContext) =>
-            do
-                item <- new.Note;
-                addItem item;
-            end;
-    end;
+    newNote: Command (Context.Command *: SetContext Note) =
+        Mk.Command {
+            name = "New Note";
+            defaultKeyBinding = Just "Ctrl+K";
+            action =
+                fn (_,Mk.SetContext) =>
+                do {
+                    item <- new.Note;
+                    addItem item;
+                };
+        };
 
-notePane: Note -> Pane =
-    fn note =>
-    let
-        noteContent: WholeModel CommonMarkText =
-            content !$ {note};
-        textModel: TextModel =
-            fromWhole.TextModel $ asText.CommonMarkText !$ noteContent;
-        htmlErr: Text -> HTMLText =
-            fn t => with HTMLText in tag "em" $ plain "error: " <> plain t;
-        htmlRef: WholeModel +HTMLText =
-            {from.Result htmlErr id $ toHTML.CommonMarkText %noteContent};
-    in
-    Mk.Pane of
-        titleModel = {"Note"};
-        contents = with Widget.GTK. in
-            notebook unknown.WholeModel
-            [
-                (label {"Edit"},scrolled $ textView textModel),
-                (label {"Show"},webView.WebKit htmlRef)
-            ]
-    end;
+    notePane: Note -> Pane =
+        fn note =>
+        let {
+            noteContent: WholeModel CommonMarkText =
+                content !$ ap{note};
+            textModel: TextModel =
+                fromWhole.TextModel $ asText.CommonMarkText !$ noteContent;
+            htmlErr: Text -> HTMLText =
+                fn t => with HTMLText tag "em" $ plain "error: " <> plain t;
+            htmlRef: WholeModel +HTMLText =
+                ap{from.Result htmlErr id $ toHTML.CommonMarkText %noteContent};
+        } Mk.Pane {
+            titleModel = ap{"Note"};
+            contents = with Widget.GTK.
+                notebook unknown.WholeModel [
+                    (label ap{"Edit"},scrolled $ textView textModel),
+                    (label ap{"Show"},webView.WebKit htmlRef)
+                ]
+        };
 
-datatype Column -p of
-    Mk of
-        name: WholeModel +Text;
-        contents: p -> WholeModel +Text;
-    end;
-end;
+    datatype Column -p {
+        Mk {
+            name: WholeModel +Text;
+            contents: p -> WholeModel +Text;
+        };
+    };
+    attributeColumn: Text -> Attribute -p +Text -> Column p =
+        fn name, prop =>
+            Mk.Column {
+                name = ap{name};
+                contents = fn item => immut.WholeModel $ prop !$ ap{item};
+            };
 
-attributeColumn: Text -> Attribute -p +Text -> Column p =
-    fn name, prop =>
-        Mk.Column of
-            name = {name};
-            contents = fn item => immut.WholeModel $ prop !$ {item};
-        end;
+    datatype TableSetWidget item {
+        Mk {
+            order: ModelOrder item;
+            itemSet: FiniteSetModel item;
+            columns: List (Column item);
+            itemPane: item -> Pane;
+        };
+    };
 
-datatype TableSetWidget item of
-    Mk of
-        order: ModelOrder item;
-        itemSet: FiniteSetModel item;
-        columns: List (Column item);
-        itemPane: item -> Pane;
-    end;
-end;
-
-subtype TableSetWidget {a,+Entity} <: SetWidget {a,-Entity} =
-    fn Mk.TableSetWidget => Mk.SetWidget $
-        fn mSelectionModel =>
-            exec.Widget.GTK $
-            do
-                itemList <- getList.FiniteSetModel order itemSet;
-                let
+    subtype TableSetWidget (a,+Entity) <: SetWidget (a,-Entity) =
+        fn Mk.TableSetWidget => Mk.SetWidget $
+            fn mSelectionModel =>
+                exec.Widget.GTK $
+                do {
+                    itemList <- getList.FiniteSetModel order itemSet;
                     columnPairs = map.List (fn Mk.Column => (name,contents)) columns;
-                end;
-                pure $ listTable.Widget.GTK. columnPairs itemList (fn item => paneWindow.Pane $ itemPane item) mSelectionModel;
-            end;
+                    pure $ listTable.Widget.GTK. columnPairs itemList (fn item => paneWindow.Pane $ itemPane item) mSelectionModel;
+                };
 
-notesPresentation: SetPresentation Note =
-    Mk.SetPresentation of
-        setName = "Notes";
-        menuEntries = [newNote];
-        itemSet = notes;
-        itemPane = notePane;
-        setWidget =
-            Mk.TableSetWidget of
-                order = on.ModelOrder nameOf order.Text;
-                columns =
-                [
-                    attributeColumn "Name" nameOf
-                ];
+    notesPresentation: SetPresentation Note =
+            Mk.SetPresentation {
+                setName = "Notes";
+                menuEntries = [newNote];
                 itemSet = notes;
                 itemPane = notePane;
-            end;
-    end;
-
-in
-
-run.Context $ fn Mk.Context =>
-imply
+                setWidget =
+                        Mk.TableSetWidget {
+                            order = on.ModelOrder nameOf order.Text;
+                            columns = [
+                                attributeColumn "Name" nameOf
+                            ];
+                            itemSet = notes;
+                            itemPane = notePane;
+                        };
+            };
+} run.Context $ fn Mk.Context =>
+imply {
     ?store = store;
     ?undoHandler = undoHandler;
     ?gtk = gtk;
-in
-do
+} do {
     pane <- present.SetPresentation notesPresentation;
     _ <- paneWindow.Pane pane;
     pure ()
-end
+}

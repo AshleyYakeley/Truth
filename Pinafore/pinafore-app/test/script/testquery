@@ -1,22 +1,20 @@
 #!/usr/bin/pinafore
-openLocal.Store of end >>= fn store =>
-with Store in
-let
+openLocal.Store {} >>=
+fn store =>
+with Store
+let {
+    # Define a type of entity for people
+    entitytype Person;
 
-# Define a type of entity for people
-entitytype Person;
+    # Properties of Person
+    name = property @Person @Text !"example:name" store;
+    mother = property @Person @Person !"example:mother" store;
+    father = property @Person @Person !"example:father" store;
 
-# Properties of Person
-name = property @Person @Text !"example:name" store;
-mother = property @Person @Person !"example:mother" store;
-father = property @Person @Person !"example:father" store;
+    # Root type and entity
+    entitytype Root;
+    root = point.OpenEntity @Root !"example:root";
 
-# Root type and entity
-entitytype Root;
-root = point.OpenEntity @Root !"example:root";
-
-# The set of people connected to root.
-people = property @Person @Root !"example:people" store !@ {root};
-
-in
-get (toList.FiniteSetModel (reverse.ModelOrder order.Text) (name !$$% people)) >>= fn l => for_ l outputLn.Env
+    # The set of people connected to root.
+    people = property @Person @Root !"example:people" store !@ ap{root};
+} get (toList.FiniteSetModel (reverse.ModelOrder order.Text) (name !$$% people)) >>= fn l => for_ l outputLn.Env

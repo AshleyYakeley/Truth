@@ -1,2 +1,7 @@
 #!/usr/bin/pinafore
-import "gnome" in run $ \gtk => open.Window gtk (400,500) {"Title"} $ notebook unknown [(label {"Tab"},blank)]
+import "gnome"
+with GTK.
+run $ fn gtk =>
+open.Window gtk (400,500) ap{"Title"} $
+with Widget
+notebook unknown [(label ap{"Tab"},blank)]

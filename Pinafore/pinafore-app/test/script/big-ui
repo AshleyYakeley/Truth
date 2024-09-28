@@ -1,52 +1,51 @@
 #!/usr/bin/pinafore
-openLocal.Store of end >>= fn store =>
-import "gnome" in
-with Store in
-let
+openLocal.Store{} >>=
+fn store =>
+import "gnome"
+with Store
+let {
+    entitytype T;
+    me = point.OpenEntity @T !"T";
 
-entitytype T;
-me = point.OpenEntity @T !"T";
+    func20 = fn n, a, b, c, d, e, f => label.Widget.GTK n;
+    func19 = fn n, a, b, c, d, e, f => func20 n a b c d e f;
+    func18 = fn n, a, b, c, d, e, f => func19 n a b c d e f;
+    func17 = fn n, a, b, c, d, e, f => func18 n a b c d e f;
+    func16 = fn n, a, b, c, d, e, f => func17 n a b c d e f;
+    func15 = fn n, a, b, c, d, e, f => func16 n a b c d e f;
+    func14 = fn n, a, b, c, d, e, f => func15 n a b c d e f;
+    func13 = fn n, a, b, c, d, e, f => func14 n a b c d e f;
+    func12 = fn n, a, b, c, d, e, f => func13 n a b c d e f;
+    func11 = fn n, a, b, c, d, e, f => func12 n a b c d e f;
+    func10 = fn n, a, b, c, d, e, f => func11 n a b c d e f;
+    func9 = fn n, a, b, c, d, e, f => func10 n a b c d e f;
+    func8 = fn n, a, b, c, d, e, f => func9 n a b c d e f;
+    func7 = fn n, a, b, c, d, e, f => func8 n a b c d e f;
+    func6 = fn n, a, b, c, d, e, f => func7 n a b c d e f;
+    func5 = fn n, a, b, c, d, e, f => func6 n a b c d e f;
+    func4 = fn n, a, b, c, d, e, f => func5 n a b c d e f;
+    func3 = fn n, a, b, c, d, e, f => func4 n a b c d e f;
+    func2 = fn n, a, b, c, d, e, f => func3 n a b c d e f;
+    func1 = fn n, a, b, c, d, e, f => func2 n a b c d e f;
+    func0 = fn n, a, b, c, d, e, f => func1 n a b c d e f;
 
-func20 = fn n, a, b, c, d, e, f => label.Widget.GTK n;
-func19 = fn n, a, b, c, d, e, f => func20 n a b c d e f;
-func18 = fn n, a, b, c, d, e, f => func19 n a b c d e f;
-func17 = fn n, a, b, c, d, e, f => func18 n a b c d e f;
-func16 = fn n, a, b, c, d, e, f => func17 n a b c d e f;
-func15 = fn n, a, b, c, d, e, f => func16 n a b c d e f;
-func14 = fn n, a, b, c, d, e, f => func15 n a b c d e f;
-func13 = fn n, a, b, c, d, e, f => func14 n a b c d e f;
-func12 = fn n, a, b, c, d, e, f => func13 n a b c d e f;
-func11 = fn n, a, b, c, d, e, f => func12 n a b c d e f;
-func10 = fn n, a, b, c, d, e, f => func11 n a b c d e f;
-func9 = fn n, a, b, c, d, e, f => func10 n a b c d e f;
-func8 = fn n, a, b, c, d, e, f => func9 n a b c d e f;
-func7 = fn n, a, b, c, d, e, f => func8 n a b c d e f;
-func6 = fn n, a, b, c, d, e, f => func7 n a b c d e f;
-func5 = fn n, a, b, c, d, e, f => func6 n a b c d e f;
-func4 = fn n, a, b, c, d, e, f => func5 n a b c d e f;
-func3 = fn n, a, b, c, d, e, f => func4 n a b c d e f;
-func2 = fn n, a, b, c, d, e, f => func3 n a b c d e f;
-func1 = fn n, a, b, c, d, e, f => func2 n a b c d e f;
-func0 = fn n, a, b, c, d, e, f => func1 n a b c d e f;
+    w : Context.GTK -> Action Window.GTK =
+        fn gtk => open.Window.GTK gtk (300,400) ap{"Test"} $ func0 (pure.WholeModel "Text") False False False False False False;
 
-w : Context.GTK -> Action Window.GTK
-= fn gtk => open.Window.GTK gtk (300,400) {"Test"} $ func0 (pure.WholeModel "Text") False False False False False False;
+    prop0 = property @T @Text !"000" store;
 
-prop0 = property @T @Text !"000" store;
-
-act : Action Unit
-= do
-    message.Debug "ACTION: start";
-    tstart <- getNow.Time;
-    prop0 !$ {me} := "Example";
-    tend <- getNow.Time;
-    outputLn.Env $ "Time: " <>.Text show (tend -.Time tstart >- fn Seconds s => round (s *.Rational 1000));
-    message.Debug "ACTION: end";
-    end
-
-in run.GTK $ fn gtk => do
+    act : Action Unit =
+    do {
+        message.Debug "ACTION: start";
+        tstart <- getNow.Time;
+        prop0 !$ ap{me} := "Example";
+        tend <- getNow.Time;
+        outputLn.Env $ "Time: " <>.Text show (tend -.Time tstart >- fn Seconds s => round (s *.Rational 1000));
+        message.Debug "ACTION: end";
+    };
+} run.GTK $ fn gtk => do {
     w1 <- w gtk;
     act;
     act;
     close.Window.GTK w1;
-    end
+}

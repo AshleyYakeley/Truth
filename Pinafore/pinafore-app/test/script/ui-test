@@ -1,15 +1,20 @@
 #!/usr/bin/pinafore
-let
+let {
+import "gnome";
+with GTK;
 
-with GTK end;
+emptywindow: Context.GTK -> Action Unit =
+    fn gtk =>
+    do {
+        open.Window gtk (300,400) ap{"Empty"} blank.Widget;
+        pure ();
+    };
 
-emptywindow :: Action Unit;
-emptywindow =  do
-    open.Window (300,400) {"Empty"} blank.Widget;
-    pure ();
-    end;
+entitytype T;
 
-newpoint :: Action Unit;
-newpoint = do s <- newMem.FiniteSetModel; newEntity s; pure (); end;
-
-in open.Window (300,400) {"Test"} $ button.Widget {"Button"} {newpoint >> emptywindow};
+newpoint: Action Unit =
+    do {s <- newMem.FiniteSetModel; p <- new.OpenEntity @T; s += p; pure ();};
+}
+run $ fn gtk =>
+open.Window gtk (300,400) ap{"Test"} $
+    button.Widget ap{"Button"} $ ap{newpoint >>.Action emptywindow gtk}

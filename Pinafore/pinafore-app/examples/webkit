@@ -1,14 +1,13 @@
 #!/usr/bin/pinafore
-import "media", "gnome" in
-with GTK. in
-do
+import "media", "gnome"
+with GTK.
+do {
     r <- newMem.WholeModel;
     run $
         fn gtk =>
-        open.Window gtk (400,600) {"WebKit"} $
-            notebook.Widget unknown.WholeModel
-            [
-                (label.Widget {"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel r),
-                (label.Widget {"Rendered"},webView.WebKit {Mk.HTMLText %r})
-            ];
-end
+        open.Window gtk (400,600) ap{"WebKit"} $
+        notebook.Widget unknown.WholeModel [
+            (label.Widget ap{"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel r),
+            (label.Widget ap{"Rendered"},webView.WebKit ap{Mk.HTMLText %r})
+        ];
+}

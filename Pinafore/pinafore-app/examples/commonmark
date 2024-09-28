@@ -1,20 +1,17 @@
 #!/usr/bin/pinafore
-import "media", "gnome" in
-with GTK. in
-do
+import "media", "gnome"
+with GTK.
+do {
     cmRef <- newMem.WholeModel;
-    let
-        htmlErr: Text -> HTMLText =
-            fn t => with HTMLText in tag "em" $ plain "error: " <> plain t;
-        htmlRef = {from.Result htmlErr id $ toHTML.CommonMarkText %cmRef};
-    end;
+    htmlErr: Text -> HTMLText =
+        fn t => with HTMLText tag "em" $ plain "error: " <> plain t;
+    htmlRef = ap{from.Result htmlErr id $ toHTML.CommonMarkText %cmRef};
     run $
         fn gtk =>
-        open.Window gtk (400,600) {"CommonMark / WebKit"} $
-            notebook.Widget unknown.WholeModel
-            [
-                (label.Widget {"CommonMark Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel $ asText.CommonMarkText !$ cmRef),
-                (label.Widget {"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel {%htmlRef >- fn Mk.HTMLText t => t}),
-                (label.Widget {"Rendered"},webView.WebKit htmlRef)
-            ];
-end
+        open.Window gtk (400,600) ap{"CommonMark / WebKit"} $
+        notebook.Widget unknown.WholeModel [
+            (label.Widget ap{"CommonMark Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel $ asText.CommonMarkText !$ cmRef),
+            (label.Widget ap{"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel ap{%htmlRef >- fn Mk.HTMLText t => t}),
+            (label.Widget ap{"Rendered"},webView.WebKit htmlRef)
+        ];
+}

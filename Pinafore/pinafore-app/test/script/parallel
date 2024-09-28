@@ -1,16 +1,18 @@
 #!/usr/bin/pinafore
 # for issue #305
-let
+let {
     taskCount = 32;
     computeIters = 400000;
-in
-for_ (range 1 taskCount) $ fn t => do
+}
+for_ (range 1 taskCount) $
+fn t => do {
     outputLn.Env $ "starting #" <>.Text show t;
     async.Task. $
-        for_ (arithList 1 0 Nothing) $ fn i =>
+        for_ (arithList 1 0 Nothing) $
+        fn i =>
         outputLn.Env $
-        let e = longCompute.Debug computeIters $ i * taskCount + t in
-        with Text. in
+        let {e = longCompute.Debug computeIters $ i * taskCount + t}
+        with Text.
         "#" <> show t <> " (" <> show i <> "): " <> show (anchor.Entity e);
     outputLn.Env $ "started #" <>.Text show t;
-end
+}

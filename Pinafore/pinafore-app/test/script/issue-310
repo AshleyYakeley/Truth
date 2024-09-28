@@ -2,36 +2,34 @@
 
 # bin/testpinafore --build Pinafore/pinafore-app/test/script/issue-310
 
-let
-entitytype Item;
-allItems: FiniteSetModel Item = set.Store @Item !"Items" ?store;
-nameOf: Property Item Text = property @Item @Text !"name" ?store;
-import "gnome" end;
-in
+let {
+    entitytype Item;
+    allItems: FiniteSetModel Item = set.Store @Item !"Items" ?store;
+    nameOf: Property Item Text = property @Item @Text !"name" ?store;
+    import "gnome";
+}
 run.GTK $ fn gtk =>
 openTemp.Store >>= fn store =>
-imply
+imply {
     ?store = store;
     ?gtk = gtk;
-in
-do
+}
+do {
     item <- new.OpenEntity @Item;
     allItems += item;
-    _ <- open.Window.GTK ?gtk (400,400) {"List"} $
-        let nameColumn = ({"Name"},fn item => immut.WholeModel $ nameOf !$ {item}) in
-        with Widget.GTK. in
-        exec $
-        do
+    _ <- open.Window.GTK ?gtk (400,400) ap{"List"} $
+        let {nameColumn = (ap{"Name"},fn item => immut.WholeModel $ nameOf !$ ap{item})}
+        with Widget.GTK.
+        exec $ do {
             itemList <- getList.FiniteSetModel empty.ModelOrder allItems;
             pure $ listTable [nameColumn] itemList (fn _ => pure ()) Nothing;
-        end;
-    nameOf !$ {item} := "0";
+        };
+    nameOf !$ ap{item} := "0";
     async.Task $
         for_ (range 1 99) $
-        fn i =>
-        do
+        fn i => do {
             sleep $ Seconds 0.1;
-            nameOf !$ {item} := show i;
-        end;
+            nameOf !$ ap{item} := show i;
+        };
     pure ();
-end
+}
