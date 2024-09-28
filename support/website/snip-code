@@ -25,10 +25,10 @@ decls = ""
 for (t,snippet) in snippets:
     match t.strip():
         case "":
-            writeSnippet("let\n" + decls + "in (\n" + snippet + ") >- fn _ => pure ()\n")
+            writeSnippet("let {\n" + decls + "} (\n" + snippet + ") >- fn _ => pure ()\n")
             decls = ""
         case "decl":
-            writeSnippet("let\n" + decls + snippet + "in pure ()\n")
+            writeSnippet("let {\n" + decls + snippet + "} pure ()\n")
             decls = ""
         case "decl-cont":
             decls = decls + snippet

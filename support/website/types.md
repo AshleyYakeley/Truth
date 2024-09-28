@@ -23,60 +23,60 @@ A plain constructor consists of its name, and a list of zero or more ambipolar t
 Here's an example of a type with two constructors, `Mk1.T` and `Mk2.T`:
 
 ```pinafore decl
-datatype T of
+datatype T {
     Mk1 (Integer -> List Integer);
     Mk2 Integer Text;
-end;
+};
 ```
 ### Record Constructors
 
-A record constructor consists of its name, and a list of zero or more _members_ in an `of`...`end` block.
+A record constructor consists of its name, and a list of zero or more _members_ in an `{`...`}` block.
 
 A member consists of a name and a positive type (which may have free type variables), and optionally a "default" value.
 
 Here's an example of a type with a record constructor with three members:
 
 ```pinafore decl-cont
-datatype T of
-    Mk of
+datatype T {
+    Mk {
         f: List a -> Maybe a;
         g: Text -> Action Unit;
         h: Integer *: Integer = (100, 50);
-    end;
-end;
+    };
+};
 ```
 
 As values, record constructors behave the same way as [record functions](record-functions.md).
-To create a value of the type `T` using its record constructor `Mk.T`, set the member values inside `of` ... `end`, like this:
+To create a value of the type `T` using its record constructor `Mk.T`, set the member values inside `{` ... `}`, like this:
 
 ```pinafore decl-cont
 t: T =
-Mk.T of
-    f = match [] => Nothing; a :: _ => Just a; end;
+Mk.T {
+    f = fn {[] => Nothing; a :: _ => Just a;};
     g = outputLn.Env.;
     h = (52,1);
-end;
+};
 ```
 
-Alternatively, you can omit `of` ... `end` and instead bring values matching its members into scope, like this:
+Alternatively, you can omit `{` ... `}` and instead bring values matching its members into scope, like this:
 
 ```pinafore decl-cont
 t: T =
-let
-    f = match [] => Nothing; a :: _ => Just a; end;
+let {
+    f = fn {[] => Nothing; a :: _ => Just a;};
     g = outputLn.Env.;
     h = (52,1);
-in Mk.T;
+} Mk.T;
 ```
 
 If a member has a default value, then you can omit it:
 
 ```pinafore decl-cont
 t: T =
-Mk.T of
-    f = match [] => Nothing; a :: _ => Just a; end;
+Mk.T {
+    f = fn {[] => Nothing; a :: _ => Just a;};
     g = outputLn.Env.;
-end;
+};
 ```
 
 Values can be retrieved by matching the constructor, like this:
@@ -102,26 +102,26 @@ the [greatest dynamic supertype](dynamic-supertypes.md) of `T` is still `T`, and
 Here's an example:
 
 ```pinafore decl
-datatype S1 of
-    Mk of
+datatype S1 {
+    Mk {
         p: Rational;
         q: Text -> Text;
-    end;
-end;
+    };
+};
 
-datatype S2 of
-    Mk of
+datatype S2 {
+    Mk {
         r: Action Unit;
-    end;
-end;
+    };
+};
 
-datatype T <: S1 & S2 of
-    Mk of
+datatype T <: S1 & S2 {
+    Mk {
         Mk.S1;
         Mk.S2;
         x: Number;
-    end;
-end;
+    };
+};
 ```
 
 All members of each mentioned supertype constructor will be in the defined constructor.
@@ -135,20 +135,20 @@ For example:
 
 
 ```pinafore decl
-datatype S of
-    Mk of
+datatype S {
+    Mk {
         n: Rational;
         f: Text -> Text;
-    end;
-end;
+    };
+};
 
-datatype T <: S of
-    Mk of
+datatype T <: S {
+    Mk {
         Mk.S;
         n: Integer;
         f: a -> a;
-    end;
-end;
+    };
+};
 ```
 
 In this case, constructor `Mk.T` has two members, `n` and `f`,
@@ -165,49 +165,49 @@ For example, this is consistent:
 
 
 ```pinafore decl
-datatype A of
-    Mk1 of
-    end;
-    Mk2 of
-    end;
-end;
+datatype A {
+    Mk1 {
+    };
+    Mk2 {
+    };
+};
 
-datatype B <: A of
-    Mk1 of
+datatype B <: A {
+    Mk1 {
         Mk1.A;
-    end;
-    Mk2 of
+    };
+    Mk2 {
         Mk2.A;
-    end;
-end;
+    };
+};
 
-datatype C <: A of
-    Mk1 of
+datatype C <: A {
+    Mk1 {
         Mk1.A;
-    end;
-    Mk2 of
+    };
+    Mk2 {
         Mk2.A;
-    end;
-end;
+    };
+};
 
-datatype D <: B & C of
-    Mk of
+datatype D <: B & C {
+    Mk {
         Mk1.B;
         Mk1.C;
-    end;
-end;
+    };
+};
 ```
 
 However, this would be inconsistent:
 
 
 ```pinafore nocheck
-datatype D <: B & C of
-    Mk of
+datatype D <: B & C {
+    Mk {
         Mk1.B;
         Mk2.C;
-    end;
-end;
+    };
+};
 ```
 
 This is because the conversions `D <: B <: A` and `D <: C <: A` would be different.
@@ -218,33 +218,33 @@ Datatypes can take parameters. The variance of each parameter is specified like 
 
 * `+a` for covariant
 * `-a` for contravariant
-* `{-p,+q}` or `{+q,-p}` for a contravariant-covariant pair
+* `(-p,+q)` or `(+q,-p)` for a contravariant-covariant pair
 * `a` for a contravariant-covariant pair (known as a _double_ parameter).
 
 For example:
 
 ```pinafore decl
-datatype D +a -b {-p,+q} of
+datatype D +a -b (-p,+q) {
     Mk1 (b -> List a);
     Mk2 (p *: b -> q);
-end;
+};
 ```
 
 A double parameter is really a contravariant-covariant pair of parameters, that makes working with pairs easier.
 For example:
 
 ```pinafore decl
-datatype D a of
+datatype D a {
     Mk (a -> a);
-end;
+};
 ```
 
 This is equivalent to:
 
 ```pinafore decl
-datatype D {-p,+q} of
+datatype D (-p,+q) {
     Mk (p -> q);
-end;
+};
 ```
 
 ### Subtypes
@@ -253,12 +253,12 @@ It is possible to declare subtypes within a datatype declaration.
 For example:
 
 ```pinafore decl
-datatype P -x +y of
+datatype P -x +y {
     Mk (x -> y);
-    subtype datatype Q of
+    subtype datatype Q {
         Mk (x -> Integer) y;
-    end;
-end;
+    };
+};
 ```
 
 This creates types `P` and `Q.P`, as well as constructors `Mk.P` and `Mk.Q.P`.
@@ -364,16 +364,16 @@ Each constructor has a name, a list of zero or more types (each a subtype of `En
 ```pinafore decl
 entitytype Person;
 
-datatype storable Patient of
+datatype storable Patient {
     Living Person Date !"Patient.Living";
     Dead Person Date Date !"Patient.Dead";
-end;
+};
 
 patientPerson: Patient -> Person =
-match
+fn {
     Living.Patient p _ => p;
     Dead.Patient p _ _ => p;
-end;
+};
 ```
 
 Each constructor is anchored by its anchor and its count of types.
@@ -382,14 +382,14 @@ Constructors can be added or removed from a storable data type without affecting
 Like plain datatypes, storable datatypes permit subtypes in their definitions:
 
 ```pinafore decl
-let rec
-    datatype storable L +x of
+let rec {
+    datatype storable L +x {
         Nil !"L.Nil";
-        subtype datatype storable L1 of
+        subtype datatype storable L1 {
             Cons x (L x) !"L.Cons";
-        end;
-    end;
-end;
+        };
+    };
+};
 ```
 
 ### Open Entity Types
@@ -482,7 +482,7 @@ Models (of the various model types) keep track of updates, and will update user 
 
 ### Whole Models
 
-`WholeModel {-p,+q}`
+`WholeModel (-p,+q)`
 
 A whole model a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
 
@@ -496,7 +496,7 @@ A set model is a mutable predicate, like a test on values. Values can be added t
 
 ### Finite Set Models
 
-`FiniteSetModel {-p,+q}`
+`FiniteSetModel (-p,+q)`
 
 Finite set models are set models:
 
@@ -506,4 +506,4 @@ Finite set models contain a finite number of members, which can be retrieved.
 
 ## Properties
 
-`Property {-ap,+aq} {-bp,+bq}`
+`Property (-ap,+aq) (-bp,+bq)`

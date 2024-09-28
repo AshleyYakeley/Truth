@@ -16,34 +16,34 @@ Declarations in `let`-declarators have sequential, not recursive scope.
 For example:
 
 ```pinafore
-let a=3; b=4 in a+b
+let {a=3; b=4} a+b
 ```
 
-Here `a+b` is an expression, `a=3` and `b=4` are declarations, and `let a=3; b=4` is a declarator.
+Here `a+b` is an expression, `a=3` and `b=4` are declarations, and `let {a=3; b=4}` is a declarator.
 This declarator outputs bindings for `a` and `b` to the scope of the expression `a+b`.
 
 Declarators can also output bindings to declarations:
 
 ```pinafore
-let
-    let a=3; b=4 in c=a+b;
-in c+1
+let {
+    let {a=3; b=4} c=a+b;
+} c+1
 ```
 
-Here the declarator `let a=3; b=4` outputs bindings for `a` and `b` to the declaration `c=a+b`.
+Here the declarator `let {a=3; b=4}` outputs bindings for `a` and `b` to the declaration `c=a+b`.
 
-The declarator `let let a=3; b=4 in c=a+b` outputs a binding for `c`, but not `a` or `b`, to the expression `c+1`.
+The declarator `let {let {a=3; b=4} c=a+b}` outputs a binding for `c`, but not `a` or `b`, to the expression `c+1`.
 
-A declarator can also be converted into a declaration using the `end` keyword:
+A declarator can also be used as a declaration:
 
 ```pinafore
-let
-    let a=3; b=4 end;
+let {
+    let {a=3; b=4};
     c=a+b;
-in c+a+b
+} c+a+b
 ```
 
-Here `let a=3; b=4 end` and `c=a+b` are declarations.
+Here `let {a=3; b=4}` and `c=a+b` are declarations.
 The outer declarator outputs bindings for `a`, `b`, and `c` to the expression `c+a+b`.
 
 ### Recursive "Let" Declarators
@@ -52,26 +52,26 @@ For recursive declarations, use `let rec` to make a recursive "let"-declarator.
 Declarator declarations and namespace declarations are not allowed inside recursive blocks.
 
 ```pinafore
-let
+let {
 
-    let rec
-        datatype P of
-        Mk (Q -> P);
-        end;
+    let rec {
+        datatype P {
+            Mk (Q -> P);
+        };
 
-        datatype Q of
-        Mk (P -> Maybe Q);
-        end;
-    end;
+        datatype Q {
+            Mk (P -> Maybe Q);
+        };
+    };
 
-    let rec
-    fact = match
-        0 => 1;
-        n => n * fact (n - 1);
-        end;
-    end;
+    let rec {
+        fact = fn {
+            0 => 1;
+            n => n * fact (n - 1);
+        };
+    };
 
-in fact 12
+ } fact 12
 ```
 
 ### "With" Declarators
@@ -103,9 +103,9 @@ Value declarations are of the form `<pattern> = <expression>`.
 New operators can be declared with parentheses, like this:
 
 ```pinafore
-let
-(&$$&) = fn a,b => a - b;
-in 57 &$$& 22
+let {
+    (&$$&) = fn a,b => a - b;
+} 57 &$$& 22
 ```
 
 The parsing "infixity" of the operator is determined by its name (regardless of namespace) according to [the table](syntax.md#infix-operators),
@@ -117,23 +117,23 @@ See [Types](../types/).
 
 ### Standalone Declarator Declarations
 
-Any declarator can be turned into a declaration by appending `end`.
+Any declarator can be used as a declaration.
 
 ```pinafore
-let
+let {
 
-    let rec 
+    let rec {
         x = y;
         y = 4;
-    end;
+    };
 
-    namespace N of
+    namespace N {
         z = 1;
-    end;
+    };
 
-    with N end;
+    with N;
 
-in x + y + z
+} x + y + z
 ```
 
 ### Declarator-Qualified Declarations
@@ -142,15 +142,15 @@ Declarators can qualify declarations just as they can qualify expressions.
 
 
 ```pinafore
-let
+let {
 
-    namespace N of
+    namespace N {
         z = 1;
-    end;
+    };
 
-    with N in x = z;
+    with N x = z;
 
-in x
+} x
 ```
 
 ### Namespaces & Namespace Declarations
@@ -215,28 +215,28 @@ For example:
 #### Example
 
 ```pinafore
-let
+let {
 
-    namespace A of
+    namespace A {
         p = 3;
 
-        namespace B of
+        namespace B {
             q = 4;
-        end;
+        };
 
-    end;
+    };
 
-    namespace C of
+    namespace C {
         s = 6;
-        with B.A. end;
+        with B.A.;
         t = q + 12;
-    end;
+    };
 
-    with A end;
+    with A;
 
     s = p + q.B + s.C;
 
-in s + 1
+} s + 1
 ```
 
 In this example, the scope for `body` contains declarations with these full names, with these values:
@@ -263,19 +263,19 @@ For modules, you can organise the generated documentation of your declarations i
 
 ```pinafore decl
 #| Some multiples of integers.
-docsec "Multiples" of
+docsec "Multiples" {
     double: Integer -> Integer = fn x => x * 2;
     triple: Integer -> Integer = fn x => x * 3;
-end;
+};
 ```
 
 You can also add the `docsec` modifier to a namespace declaration: this will create a documentation section with the name of the namespace.
 
 ```pinafore decl
-namespace docsec A of
+namespace docsec A {
     p = 3;
     q = 4;
-end;
+};
 ```
 
 Use of `docsec` doesn't affect program semantics, it only changes the output of documentation generation.
@@ -287,39 +287,39 @@ Only the specified names will be exposed from the declaration, although subtype 
 Expose declarations can be used within `let`-expressions for more fine-grained hiding.
 
 ```pinafore
-let
+let {
 
-    let
+    let {
         # Mk.LowerCaseText not exposed
-        datatype LowerCaseText of Mk Text end;
+        datatype LowerCaseText { Mk Text };
 
         subtype LowerCaseText <: Text = fn Mk.LowerCaseText t => t;
 
         toLowerCase: Text -> LowerCaseText =
             fn t => Mk.LowerCaseText $ toLowerCase.Text t;
-    in expose LowerCaseText, toLowerCase;
+    } expose LowerCaseText, toLowerCase;
 
     # Outside the above block, there is no way to create a LowerCaseText
     # that is not lower-case text.
 
-in toLowerCase "Hello"
+} toLowerCase "Hello"
 ```
 
 It's also possible to expose everything in a namespace:
 
 ```pinafore
-let
+let {
 
-    let
+    let {
         x = 1; # not exposed
 
-        namespace N of
+        namespace N {
             p = x + 2;
             q = 3;
-        end;
+        };
         
         r = 4;
-    in expose namespace N, r;
+    } expose namespace N, r;
 
-in p.N + q.N + r
+} p.N + q.N + r
 ```

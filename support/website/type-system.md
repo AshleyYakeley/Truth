@@ -101,29 +101,29 @@ More generally, if `P <: Q` then
 
 To represent a parameterised type with a parameter that would not ordinarily be either covariant or contravariant, a *type range* is used.
 This is simply a pair of type parameters, one contravariant (indicated with a minus sign) and one covariant (a plus sign).
-Type ranges in types are typically represented by the form `{-p,+q}`, where `p` is the contravariant parameter and `q` the covariant.
+Type ranges in types are typically represented by the form `(-p,+q)`, where `p` is the contravariant parameter and `q` the covariant.
 However, the syntax permits any number of comma-separated items. For example, in positive position:
 
-`T {}` = `T {-Any,+None}`  
-`T {+a}` = `T {-Any,+a}`  
-`T {+Int,-a,-Entity}` = `T {-(a & Entity),+Int}`
+`T ()` = `T (-Any,+None)`  
+`T (+a)` = `T (-Any,+a)`  
+`T (+Int,-a,-Entity)` = `T (-(a & Entity),+Int)`
 
 In negative position,
 
-`T {}` = `T {-None,+Any}`  
-`T {+a}` = `T {-None,+a}`  
-`T {+Int,-a,-Entity}` = `T {-(a | Entity),+Int}`
+`T ()` = `T (-None,+Any)`  
+`T (+a)` = `T (-None,+a)`  
+`T (+Int,-a,-Entity)` = `T (-(a | Entity),+Int)`
 
 And also,
 
-`T A` = `T {A}` = `T {-A,+A}`  
-`T +A` = `T {+A}`  
-`T -A` = `T {-A}`  
+`T A` = `T (A)` = `T (-A,+A)`  
+`T +A` = `T (+A)`  
+`T -A` = `T (-A)`  
 
 It's important to remember that `-` and `+` indicate contravariance and covariance, not negative and positive polarity.
 
 One consequence of this that may trip you up is that, for example, `T +A` in positive and negative position are not the same.
-Thus a type such as `T +A -> T +A` may not include the identity function, since this type is actually equivalent to `T {-None,+A} -> T {-Any,+A}`.
+Thus a type such as `T +A -> T +A` may not include the identity function, since this type is actually equivalent to `T (-None,+A) -> T (-Any,+A)`.
 
 ## Type Inversion
 
@@ -135,6 +135,6 @@ As a rule of thumb, types that, after simplification, have free type variables, 
 
 Type inversion shows up in type signatures inside function bindings. Here's an example, given some positive type `T`:
 
-`f = fn x => let y:T = x in y`
+`f = fn x => let {y:T = x} y`
 
 If `T` can be inverted (to `T'`), the type of `f` is `T' -> T`. Otherwise Pinafore will reject the expression with a "cannot invert type" error.

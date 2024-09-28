@@ -21,11 +21,11 @@ If `pat` is a pattern of type `T`, then `pat:? T` is a pattern of type `D(T)`. H
 
 ```pinafore decl
 showNumberType: Number -> Text =
-match
+fn {
     i:? Integer => "integer: " <>.Text show i;
     r:? Rational => "rational: " <>.Text show r;
     n => "number: " <>.Text show n;
-end
+}
 ```
 
 ## Check
@@ -36,7 +36,7 @@ end
 
 This is equivalent to
 
-`match t:? T => Just t; _ -> Nothing end`
+`fn {t:? T => Just t; _ -> Nothing}`
 
 ## Coerce
 
@@ -47,4 +47,4 @@ If you're sure that the retraction will always succeed, you can use the `coerce`
 
 This is equivalent to
 
-`match t:?T => t; _ => error "coercion from D(T) to T failed" end`
+`fn {t:?T => t; _ => error "coercion from D(T) to T failed"}`

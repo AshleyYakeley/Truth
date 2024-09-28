@@ -20,7 +20,7 @@ A module file is a list of declarations, though very often it is a single `expos
 something like this (see [syntax](syntax.md)):
 
 ```pinafore decl
-let
+let {
 
 sometext: Text =
     "Hello";
@@ -30,12 +30,12 @@ somenumber: Integer =
 
 entitytype X;
 
-datatype storable T of
+datatype storable T {
     Mk1 Integer Boolean !"Mk1.P";
     Mk2 !"Mk2.P";
-end;
+};
 
 subtype T <: X;
 
-in expose sometext, somenumber, X, T, Mk1.T, Mk2.T;
+} expose sometext, somenumber, X, T, Mk1.T, Mk2.T;
 ```

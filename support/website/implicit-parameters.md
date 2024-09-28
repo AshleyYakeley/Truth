@@ -6,10 +6,10 @@ Expressions can include implicit parameters, and they can be discharged with the
 
 For example:
 ```pinafore
-let
+let {
     x = ?y + 1;
-in
-imply ?y = 2 in x + 3 
+}
+imply {?y = 2} x + 3 
 ```
 
 ## Type
