@@ -1,6 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Language
+    - major redesign of syntax
     - add implicit parameters
     - add documentation sections in declarations
     - add record functions

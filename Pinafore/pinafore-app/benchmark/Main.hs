@@ -50,51 +50,51 @@ benchScripts :: Benchmark
 benchScripts =
     bgroup
         "script"
-        [ benchScript "do a <- pure $ pure (); a end"
-        , benchScript "do a <- get {pure.Action ()}; a end"
-        , benchScript "do a <- get $ pure.WholeModel $ pure (); a end"
-        , benchScript "get {pure.Action ()} >>= fn v => v"
-        , benchScript "get {False} >>= fn v => pure ()"
+        [ benchScript "do {a <- pure $ pure (); a}"
+        , benchScript "do {a <- get ap{pure.Action ()}; a}"
+        , benchScript "do {a <- get $ pure.WholeModel $ pure (); a}"
+        , benchScript "get ap{pure.Action ()} >>= fn v => v"
+        , benchScript "get ap{False} >>= fn v => pure ()"
         , benchScript "get (pure.WholeModel False) >>= fn v => pure ()"
-        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => pure ()"
-        , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=pure () in a"
+        , benchScript "let {p = 3} for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ fn v => pure ()"
+        , benchScript "let rec {a=b; b=c; c=d; d=e; e=f; f=g; g=pure ()} a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ pure ()"
         , benchScript
-              "import \"gnome\" in with GTK, Widget.GTK in let const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, layoutGrow ui] in const (pure ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} blank.Widget.GTK"
-        , benchScript "let const = fn a, b => a; let rec r = 3::r end in const (pure ()) r"
+              "import \"gnome\" with GTK, Widget.GTK let {const = fn a, b => a; ui_labelled = fn n, ui => horizontal [label n, grow.Layout ui]} const (pure ()) $ ui_labelled ap{\"Address: \"} $ ui_labelled ap{\"Address: \"} $ ui_labelled ap{\"Address: \"} $ ui_labelled ap{\"Address: \"} $ ui_labelled ap{\"Address: \"} blank.Widget.GTK"
+        , benchScript "let {const = fn a, b => a; let rec {r = 3::r}} const (pure ()) r"
         , benchScript
-              "let cpass = fn x => pure (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let {cpass = fn x => pure (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c]} cpass d"
         , benchScript
-              "let cpass = fn x => pure (); let rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
+              "let {cpass = fn x => pure (); let rec {d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3}} cpass d"
         , benchScript
-              "let cpass = fn x => pure () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let {cpass = fn x => pure ()} let {a = 3} let {b = [a,a,a,a,a,a,a,a]} let {c = [b,b,b,b,b,b,b,b]} let {d = [c,c,c,c,c,c,c,c]} cpass d"
         , benchScript
-              "let cpass = fn x => pure () in let f = fn a => let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
+              "let {cpass = fn x => pure ()} let {f = fn a => let {b = [a,a,a,a,a,a,a,a]} let {c = [b,b,b,b,b,b,b,b]} let {d = [c,c,c,c,c,c,c,c]} d} cpass (f 3)"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => pure (); q = [" <>
-          intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "] in for_ q id"
+          "let {g = fn r => get r >>= fn x => pure (); q = [" <>
+          intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "]} for_ q id"
         , benchScript $
           pack $
-          "let g1 = fn r => get r >>= fn x => pure (); g2 = fn r => get r >>= fn x => pure (); q = [" <>
+          "let {g1 = fn r => get r >>= fn x => pure (); g2 = fn r => get r >>= fn x => pure (); q = [" <>
           intercalate "," (replicate 25 "g1 (pure.WholeModel 1)" <> replicate 25 "g2 (pure.WholeModel 1)") <>
-          "] in for_ q id"
+          "]} for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => pure () in let q = [" <>
-          intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "] in for_ q id"
+          "let {g = fn r => get r >>= fn x => pure ()} let {q = [" <>
+          intercalate "," (replicate 50 "g (pure.WholeModel 1)") <> "]} for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => pure () in let q = [" <>
-          intercalate "," (fmap (\(i :: Int) -> "g (pure.WholeModel " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
+          "let {g = fn r => get r >>= fn x => pure ()} let {q = [" <>
+          intercalate "," (fmap (\(i :: Int) -> "g (pure.WholeModel " <> show i <> ")") [1 .. 50]) <> "]} for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => get r >>= fn x => pure (); q = [" <>
-          intercalate "," (replicate 50 "get (pure.WholeModel 1) >>= fn x => pure ()") <> "] in for_ q id"
+          "let {g = fn r => get r >>= fn x => pure (); q = [" <>
+          intercalate "," (replicate 50 "get (pure.WholeModel 1) >>= fn x => pure ()") <> "]} for_ q id"
         , benchScript $
           pack $
-          "let g = fn r => from.List (pure ()) (fn x, y => pure ()) r; q = [" <>
-          intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
+          "let {g = fn r => from.List (pure ()) (fn x, y => pure ()) r; q = [" <>
+          intercalate "," (replicate 50 "g [1]") <> "]} for_ q id"
         ]
 
 interpretUpdater :: Text -> IO ()
@@ -113,11 +113,11 @@ benchUpdates :: Benchmark
 benchUpdates =
     bgroup
         "update"
-        [ benchUpdate "do ref <- newMem.WholeModel; pure (ref := 1, ref) end"
+        [ benchUpdate "do {ref <- newMem.WholeModel; pure (ref := 1, ref)}"
         , benchUpdate
-              "let id = fn x => x in do ref <- newMem.WholeModel; pure (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
+              "let {id = fn x => x} do {ref <- newMem.WholeModel; pure (ref := 1, id (id (id (id (id (id (id (id (id (id (ref)))))))))))}"
         , benchUpdate
-              "let id = fn x => x in do ref <- newMem.WholeModel; pure (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
+              "let {id = fn x => x} do {ref <- newMem.WholeModel; pure (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref)}"
         ]
 
 benchInterpretFile :: FilePath -> Benchmark
