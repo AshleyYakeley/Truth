@@ -151,7 +151,7 @@ let {
                 textEntry.Widget $ asText.Date !$ (dateOf.EventTime !$ timeOf.Event !$% ap{evt}),
                 textEntry.Widget $ unixAsText.TimeOfDay "%H:%M" !$ (timeOfDayModel.EventTime $ timeOf.Event !$% ap{evt})
             ],
-            layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ notesOf.Event !$% ap{evt})
+            grow.Layout.Widget $ textView.Widget (fromWhole.TextModel $ notesOf.Event !$% ap{evt})
         ];
 
     eventWindow: Event -> Action Window =

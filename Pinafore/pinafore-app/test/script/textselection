@@ -13,7 +13,7 @@ run $ fn gtk => do {
         with Widget
         styleSheet ap{Mk.CSSText "* {padding: 2pt;}"} $
         vertical [
-            layoutGrow $
+            grow.Layout $
             notifySelection (fn atm => sel := atm) $
             vertical [
                 textView tref1,

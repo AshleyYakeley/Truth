@@ -28,7 +28,7 @@ imply {
     locationUI: WholeModel +Location -> Widget =
         fn loc =>
         vertical.Widget [
-            layoutGrow.Widget $ labelled.Widget ap{"Address: "} $ textView.Widget (fromWhole.TextModel $ addressOf.Location !$% loc),
+            grow.Layout.Widget $ labelled.Widget ap{"Address: "} $ textView.Widget (fromWhole.TextModel $ addressOf.Location !$% loc),
             labelled.Widget ap{"City: "} $ textEntry.Widget $ cityOf.Location !$% loc,
             labelled.Widget ap{"Postcode/ZIP: "} $ textEntry.Widget $ postcodeOf.Location !$% loc,
             labelled.Widget ap{"State/Province: "} $ textEntry.Widget $ provinceOf.Location !$% loc,
@@ -114,7 +114,7 @@ imply {
                 labelled.Widget ap{"Mother: "} $ pick.Widget (toList.Named peopleSet) $ motherOf !$% p,
                 labelled.Widget ap{"Father: "} $ pick.Widget (toList.Named peopleSet) $ fatherOf !$% p,
                 label.Widget ap{"Children:"},
-                layoutGrow.Widget $ toWidget.SetWidget $ table.Named (childrenSet p) contactUI
+                grow.Layout.Widget $ toWidget.SetWidget $ table.Named (childrenSet p) contactUI
             ];
 
         organisationPages: WholeModel +Organisation -> List (Widget *: Widget) =
@@ -132,7 +132,7 @@ imply {
                 });
             } vertical.Widget [
                 labelled.Widget ap{"Name: "} $ textEntry.Widget $ nameOf.Named !$% ap{c},
-                layoutGrow.Widget $ notebook.Widget unknown pages
+                grow.Layout.Widget $ notebook.Widget unknown pages
             ];
     };
 

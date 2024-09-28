@@ -343,7 +343,7 @@ widgetStuff =
               , valBDS "label" "Label." uiLabel
               , valBDS "horizontal" "Widgets laid out horizontally." $ uiLayout OrientationHorizontal
               , valBDS "vertical" "Widgets laid out vertically." $ uiLayout OrientationVertical
-              , valBDS "layoutGrow" "Allow the widget to expand into remaining space within the layout." layoutGrow
+              , valBDS "grow.Layout" "Allow the widget to expand into remaining space within the layout." layoutGrow
               , valBDS
                     "notebook"
                     "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."

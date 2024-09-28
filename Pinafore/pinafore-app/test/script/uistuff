@@ -10,5 +10,5 @@ with Widget.GTK., UILib.
 do {
     tref1 <- newMem.TextModel;
     tref2 <- newMem.TextModel;
-    paneWindow.Pane $ simple.Pane "Text" $ vertical [layoutGrow $ textView tref1, layoutGrow $ textView tref2];
+    paneWindow.Pane $ simple.Pane "Text" $ vertical [grow.Layout $ textView tref1, grow.Layout $ textView tref2];
 }

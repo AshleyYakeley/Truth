@@ -11,7 +11,7 @@ namespace UILib {
       #| Create a labelled layout row.
       labelled: WholeModel +Text -> Widget -> Widget =
         fn n, ui =>
-        horizontal.Widget [label.Widget n, layoutGrow.Widget ui];
+        horizontal.Widget [label.Widget n, grow.Layout.Widget ui];
     };
   };
 
@@ -98,7 +98,7 @@ namespace UILib {
         open.Window ?gtk (600,800) titleModel $
         vertical.Widget [
           mbar,
-          layoutGrow.Widget $ scrolled.Widget $ notifySelection.Widget notify contents
+          grow.Layout.Widget $ scrolled.Widget $ notifySelection.Widget notify contents
         ];
       };
     };

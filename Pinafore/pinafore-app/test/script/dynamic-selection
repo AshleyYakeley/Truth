@@ -41,7 +41,7 @@ do {
         dynamic $ coMap.WholeModel (fn e => exec.Widget.GTK $ debugThing "DYNAMIC" $ do {
             # debugWindow w;
             inform "dynamic" $ Just e;
-            pure $ vertical [layoutGrow $ label ap{"Set Text"}];
+            pure $ vertical [grow.Layout $ label ap{"Set Text"}];
         }) selection;
     debugWindow window;
     selection := testpt;

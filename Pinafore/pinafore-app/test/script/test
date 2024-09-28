@@ -8,7 +8,7 @@ run $ fn gtk =>
 let {
     ### Useful
     ui_page = fn n, ui => (label.Widget n,ui);
-    ui_labelled = fn n, ui => horizontal.Widget [label.Widget n, layoutGrow.Widget    ui];
+    ui_labelled = fn n, ui => horizontal.Widget [label.Widget n, grow.Layout.Widget    ui];
 
     std_window: WholeModel +Text -> Widget -> Action Window =
         fn title, contents => mfix.Action $ fn window => let {
@@ -25,7 +25,7 @@ let {
                         action ap{("Redo" ,Just "Ctrl+Y")} ap{queueRedo.UndoHandler uh}
                     ]
                 ]
-        } open.Window gtk (400,600) title $ vertical.Widget [mbar, layoutGrow.Widget $ scrolled.Widget contents];
+        } open.Window gtk (400,600) title $ vertical.Widget [mbar, grow.Layout.Widget $ scrolled.Widget contents];
 
     ### People
 
@@ -75,7 +75,7 @@ let {
                     button.Widget ap{"New Person"} ap{do {p <- new.OpenEntity @Person; pp += p; window_person p}},
                     button.Widget ap{"View Person"} ap{get selectedperson >>= window_person},
                     button.Widget ap{"Remove Person"} ap{get selectedperson >>= fn p => pp -= p},
-                    layoutGrow.Widget $ listTable.Widget [(ap{"Name"},fn p => name !$ ap{p})] pplist window_person (Just selectedperson)
+                    grow.Layout.Widget $ listTable.Widget [(ap{"Name"},fn p => name !$ ap{p})] pplist window_person (Just selectedperson)
                 ];
             };
 
@@ -86,7 +86,7 @@ let {
             fn p =>
             vertical.Widget [
                 ui_labelled ap{"Name: "} $ textEntry.Widget $ name !$ p,
-                layoutGrow.Widget $
+                grow.Layout.Widget $
                     notebook.Widget unknown [
                         ui_page ap{"Social"} $ vertical.Widget [
                             ui_labelled ap{"Email: "} $ textEntry.Widget $ email !$ p,
@@ -113,7 +113,7 @@ let {
                                 checkBox.Widget ap{"Married"} $ married !$ p,
                                 ui_labelled ap{"Mother: "} $ pick.Widget peopleByName $ mother !$ p,
                                 ui_labelled ap{"Father: "} $ pick.Widget peopleByName $ father !$ p,
-                                layoutGrow.Widget $ ui_people (children p)
+                                grow.Layout.Widget $ ui_people (children p)
                             ]
                 ]
         ];
@@ -154,7 +154,7 @@ let {
         vertical.Widget [
             #textEntry.Widget sw_pick),
             checkBox.Widget ap{"pick"} sw_pick,
-            layoutGrow.Widget $ dynamic.Widget ap{if %sw_pick then textView.Widget (fromWhole.TextModel sw_val1) else textView.Widget (fromWhole.TextModel sw_val2)}
+            grow.Layout.Widget $ dynamic.Widget ap{if %sw_pick then textView.Widget (fromWhole.TextModel sw_val1) else textView.Widget (fromWhole.TextModel sw_val2)}
         ];
 
     ### Imported Files
@@ -170,7 +170,7 @@ let {
         } std_window ap{"Files"} $
         vertical.Widget [
             #button.Widget "Import" ap{file_import Files $ fn f => std_window $ window_file f},
-            #layoutGrow.Widget $ listTable.Widget [column "Caption" caption, column "Size" file_size] window_file Files
+            #grow.Layout.Widget $ listTable.Widget [column "Caption" caption, column "Size" file_size] window_file Files
         ];
 
     ### Constant Edit
@@ -181,7 +181,7 @@ let {
             checkBox.Widget ap{"off"} ap{False},
             checkBox.Widget ap{"on"} ap{True},
             textEntry.Widget ap{"constant"},
-            layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ ap{"constant"})
+            grow.Layout.Widget $ textView.Widget (fromWhole.TextModel $ ap{"constant"})
         ];
 
     ### CSS
@@ -198,7 +198,7 @@ let {
                     styleClass.Widget "x" $ name.Widget "A" $ checkBox.Widget ap{"Box"} ap{True},
                     styleClass.Widget "x" $ name.Widget "B" $ button.Widget ap{"Button"} ap{do {pure ()}},
                     styleClass.Widget "x" $ name.Widget "C" $ textEntry.Widget sometext,
-                    layoutGrow.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textView.Widget $ fromWhole.TextModel $ asText.CSSText !$ cssref,
+                    grow.Layout.Widget $ styleClass.Widget "y" $ name.Widget "D" $ textView.Widget $ fromWhole.TextModel $ asText.CSSText !$ cssref,
                     styleClass.Widget "y" $ name.Widget "E" $ label.Widget ap{"Some Text"}
                 ];
         };
@@ -306,9 +306,9 @@ let {
         std_window ap{"Cairo Image"} $
         with Widget
         vertical [
-            layoutGrow $
+            grow.Layout $
                 draw ap{drawing},
-            layoutGrow $
+            grow.Layout $
                 styleSheet ap{rule.CSSText "*" [("border","solid 5px black"),("padding","5px")]} $
                 image ap{toImage dimensions $ drawing dimensions}
         ];
@@ -327,7 +327,7 @@ let {
                                     checked ap{("Value",Nothing)} value
                                 ]
                             ]
-                } open.Window gtk (400,600) ap{"Menus"} $ vertical.Widget [mbar, layoutGrow $ checkBox ap{"Value"} value];
+                } open.Window gtk (400,600) ap{"Menus"} $ vertical.Widget [mbar, grow.Layout $ checkBox ap{"Value"} value];
         };
 
     ### Scale
@@ -372,7 +372,7 @@ let {
                         button.Widget ap{"Cairo Image"} ap{window_cairoimage},
                         button.Widget ap{"Menus"} ap{window_menus},
                         button.Widget ap{"Scale"} ap{window_scale},
-                        layoutGrow.Widget $ blank.Widget
+                        grow.Layout.Widget $ blank.Widget
                     ];
             }
     };

@@ -43,7 +43,7 @@ let {
 } run $ fn gtk => do {
     ref <- newMem.WholeModel;
     open.Window gtk (300,400) ap{"Drawing"} $ vertical.Widget [
-            layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref,
-            layoutGrow.Widget $ draw.Widget $ scaleDrawing $ drawing ref
+            grow.Layout.Widget $ draw.Widget $ scaleDrawing $ drawing ref,
+            grow.Layout.Widget $ draw.Widget $ scaleDrawing $ drawing ref
     ];
 }

@@ -9,4 +9,4 @@ run $
     let {mbar = menuBar [action.MenuEntry ap{("Close",Just "Ctrl+W")} ap{close.Window window}]}
     open.Window gtk (400,600) ap{"Pinafore"} $
     vertical
-        [mbar, layoutGrow $ button ap{"Close"} ap{close.Window window}]
+        [mbar, grow.Layout $ button ap{"Close"} ap{close.Window window}]

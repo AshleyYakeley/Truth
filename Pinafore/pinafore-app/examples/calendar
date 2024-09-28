@@ -11,10 +11,10 @@ let {
         vertical.Widget [
             horizontal.Widget [
                 button.Widget ap{"<"} ap{do {d <- get r; r := pred.Date d}},
-                layoutGrow.Widget $ label.Widget ap{encode (unixAsText.Date "%A, %B %e, %Y") %r},
+                grow.Layout.Widget $ label.Widget ap{encode (unixAsText.Date "%A, %B %e, %Y") %r},
                 button.Widget ap{">"} ap{do {d <- get r; r := succ.Date d}}
             ],
-            layoutGrow.Widget $ textView.Widget (fromWhole.TextModel $ dateNotesOf !$ r)
+            grow.Layout.Widget $ textView.Widget (fromWhole.TextModel $ dateNotesOf !$ r)
         ];
 } do {
     r <- newMem.WholeModel;

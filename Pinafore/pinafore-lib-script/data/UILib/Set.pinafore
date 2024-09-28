@@ -123,7 +123,7 @@ namespace UILib {
               Nothing => blank.Widget;
               Just selectionModel => dynamic.Widget ap{itemPane %selectionModel >- fn Mk.Pane => contents};
             };
-        } horizontal.Widget [sidebarUI, layoutGrow.Widget selectedUI];
+        } horizontal.Widget [sidebarUI, grow.Layout.Widget selectedUI];
     };
   };
 };

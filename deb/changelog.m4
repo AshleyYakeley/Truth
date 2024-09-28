@@ -36,6 +36,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add CommonMarkText type and functions
     - gnome
       . rename textArea.Widget to textView.Widget, wrap text
+      . rename layoutGrow.Widget.GTK to grow.Layout.Widget.GTK
       . add WebView.WebKit GTK element
       . add scale.Widget
     - UILib
