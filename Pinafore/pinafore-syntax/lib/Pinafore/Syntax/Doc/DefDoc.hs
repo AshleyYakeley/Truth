@@ -21,7 +21,7 @@ data DocTypeParameter
 instance ShowNamedText DocTypeParameter where
     showNamedText (CoDocTypeParameter q) = "+" <> q
     showNamedText (ContraDocTypeParameter p) = "-" <> p
-    showNamedText (RangeDocTypeParameter p q) = "{-" <> p <> ",+" <> q <> "}"
+    showNamedText (RangeDocTypeParameter p q) = "(-" <> p <> ",+" <> q <> ")"
     showNamedText (DoubleRangeDocTypeParameter v) = v
 
 instance Show DocTypeParameter where

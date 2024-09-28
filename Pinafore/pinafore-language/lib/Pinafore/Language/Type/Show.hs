@@ -122,7 +122,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
             text =
                 case pieces of
                     [t] -> t
-                    _ -> "{" <> ointercalate "," pieces <> "}"
+                    _ -> "(" <> ointercalate "," pieces <> ")"
             in text
 
 instance forall (ground :: GroundTypeKind) t. (IsDolanGroundType ground, GroundExprShow ground) =>
