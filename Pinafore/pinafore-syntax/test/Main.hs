@@ -14,6 +14,15 @@ testParseAccept t =
         SuccessResult _ -> return () :: IO ()
         FailureResult err -> fail $ unpack $ showText err
 
+testParseFail :: Text -> (ParseErrorType -> Bool) -> TestTree
+testParseFail t errtest =
+    testTree (unpack t) $
+    case evalStateT (runParser readExpression t) (initialPos "<test>") of
+        SuccessResult _ -> fail "accepted bad text"
+        FailureResult (MkSourceError _ _ err)
+            | errtest err -> return () :: IO ()
+        FailureResult err -> fail $ unpack $ showText err
+
 main :: IO ()
 main =
     testMainNoSignalHandler $
@@ -38,5 +47,9 @@ main =
               , testParseAccept "do {let {a = x} m; r;}"
               , testParseAccept "do {let {a = x} let {b = y}; r;}"
               , testParseAccept "do {let {a = x} let {b = y} m; r;}"
+              , ignoreTestBecause "#316" $
+                testParseFail "do {a <- {}; r;}" $ \case
+                    SyntaxErrorType [] -> True
+                    _ -> False
               ]
         ]
