@@ -2,10 +2,9 @@
 import
     "UILib/Named", # test finding modules
     "gnome"
-in
 run.GTK $
 fn gtk =>
-do
-    w <- open.Window.GTK gtk (300,400) {"Test"} $ label.Widget.GTK {"Hello"};
+do {
+    w <- open.Window.GTK gtk (300,400) ap{"Test"} $ label.Widget.GTK ap{"Hello"};
     close.Window.GTK w;
-end
+}
