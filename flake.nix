@@ -125,7 +125,7 @@
           };
           app = flake.apps."pinafore-app:exe:pinafore".program;
           minscript = pkgs.writeText "minscript" "pure ()";
-          importscript = pkgs.writeText "importscript" "import \"UILib\" in pure ()";
+          importscript = pkgs.writeText "importscript" "import \"UILib\" pure ()";
           interpretFileCheck = pkgs.runCommand "interpretFileCheck" {} "${app} -n ${minscript} > $out";
           runFileCheck = pkgs.runCommand "runFileCheck" {} "${app} ${minscript} > $out";
           importFileCheck = pkgs.runCommand "importFileCheck" {} "${app} ${importscript} > $out";
