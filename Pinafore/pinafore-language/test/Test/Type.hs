@@ -466,10 +466,10 @@ testType =
               , textTypeTest "(id.Property ..Property id.Property) !$.Attribute ap{3}" "{} -> WholeModel. +Integer."
               , textTypeTest
                     "property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store"
-                    "{store : Store.} -> Property. {-Integer.,+Number.} (Text. *: Text.)"
+                    "{store : Store.} -> Property. (-Integer.,+Number.) (Text. *: Text.)"
               , textTypeTest
                     "property.Store @Text @Integer !\"a\" store ++.Property property.Store @Text @Number !\"b\" store"
-                    "{store : Store.} -> Property. (Text. +: Text.) {-Integer.,+Number.}"
+                    "{store : Store.} -> Property. (Text. +: Text.) (-Integer.,+Number.)"
               , textTypeTest
                     "(property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store) !$%.Attribute ap{3}"
                     "{store : Store.} -> WholeModel. (Text. *: Text.)"
@@ -487,7 +487,7 @@ testType =
                     "{store : Store.} -> FiniteSetModel. (Integer. *: Number.)"
               , textTypeTest
                     "product.WholeModel ap{3} ap{\"x\"}"
-                    "{} -> WholeModel. {-(Any *: Any),+(Integer. *: Text.)}"
+                    "{} -> WholeModel. (-(Any *: Any),+(Integer. *: Text.))"
               , textTypeTest
                     "immut.WholeModel $.Function product.WholeModel ap{3} ap{\"x\"}"
                     "{} -> WholeModel. +(Integer. *: Text.)"
