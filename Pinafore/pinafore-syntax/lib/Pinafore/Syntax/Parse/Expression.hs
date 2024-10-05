@@ -376,19 +376,26 @@ readEitherDeclExpr =
          expr <- readExpression
          return $ Right expr)
 
+readDeclExprDoLine :: Parser DoLine
+readDeclExprDoLine = do
+    de <- readEitherDeclExpr
+    return $
+        case de of
+            Left decl -> DeclarationDoLine decl
+            Right expr -> ExpressionDoLine expr
+
+readBindDoLine :: Parser DoLine
+readBindDoLine = do
+    pat <-
+        try $ do
+            pat <- readPattern
+            readThis TokBackMap
+            return pat
+    expr <- readExpression
+    return $ BindDoLine pat expr
+
 readDoLine :: Parser DoLine
-readDoLine =
-    (try $ do
-         pat <- readPattern
-         readThis TokBackMap
-         expr <- readExpression
-         return $ BindDoLine pat expr) <|>
-    (do
-         de <- readEitherDeclExpr
-         return $
-             case de of
-                 Left decl -> DeclarationDoLine decl
-                 Right expr -> ExpressionDoLine expr)
+readDoLine = readBindDoLine <|> readDeclExprDoLine
 
 doLines :: DoLine -> [DoLine] -> Parser SyntaxExpression
 doLines (ExpressionDoLine expr) [] = return expr

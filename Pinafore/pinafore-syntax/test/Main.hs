@@ -45,11 +45,14 @@ main =
               , testParseAccept "do {let {a = x}; r;}"
               , testParseAccept "do {let {a = x;}; r;}"
               , testParseAccept "do {let {a = x} m; r;}"
+              , testParseAccept "do {let {a = x} p = q; r;}"
               , testParseAccept "do {let {a = x} let {b = y}; r;}"
               , testParseAccept "do {let {a = x} let {b = y} m; r;}"
-              , ignoreTestBecause "#316" $
-                testParseFail "do {a <- {}; r;}" $ \case
-                    SyntaxErrorType [] -> True
+              , testParseFail "do {a <- {}; r;}" $ \case
+                    SyntaxErrorType _ -> True
+                    _ -> False
+              , testParseFail "do {{}}" $ \case
+                    SyntaxErrorType _ -> True
                     _ -> False
               ]
         ]
