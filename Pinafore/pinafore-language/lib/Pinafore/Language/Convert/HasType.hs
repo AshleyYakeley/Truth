@@ -64,6 +64,11 @@ class (CoercibleKind (CCRVariancesKind dv), dv ~ HetCCRVariancesOf f, HasCCRVari
     where
     qGroundType :: QGroundType dv f
 
+qSomeGroundType ::
+       forall dv (t :: CCRVariancesKind dv). HasQGroundType dv t
+    => QSomeGroundType
+qSomeGroundType = MkSomeGroundType $ qGroundType @dv @t
+
 type HasQArgumentType :: PolyShimKind -> Polarity -> forall (sv :: CCRVariance) -> CCRVarianceKind sv -> Constraint
 class Is PolarityType polarity => HasQArgumentType pshim polarity sv t | t -> sv where
     qArgumentType :: CCRPolarArgumentShimWit (pshim Type) QType polarity sv t

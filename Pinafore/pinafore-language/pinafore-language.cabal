@@ -123,7 +123,7 @@ library
       Pinafore.Language.Library.Storage
       Pinafore.Language.Library.Undo
       Pinafore.Language.Library.Env
-      Pinafore.Language.Library.Eval
+      Pinafore.Language.Library.Pinafore
       Pinafore.Language.Library.Debug
       Pinafore.Language.Library
       Pinafore.Language

@@ -1,5 +1,9 @@
 module Pinafore.Language.Library.Types
-    ( openEntityShimWit
+    ( coShimWit
+    , contraShimWit
+    , rangeShimWit
+    , cocoShimWit
+    , openEntityShimWit
     , maybeShimWit
     , listShimWit
     , list1ShimWit
@@ -17,41 +21,62 @@ import Pinafore.Language.Type
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openEntityGroundType tp) NilCCRArguments
 
-coFShimWit ::
+coShimWit ::
        forall f polarity a. (HasVariance f, VarianceOf f ~ Covariance, Is PolarityType polarity)
     => QGroundType '[ CoCCRVariance] f
     -> QShimWit polarity a
     -> QShimWit polarity (f a)
-coFShimWit gt wa =
+coShimWit gt wa =
     shimWitToDolan $
     mkDolanGroundedShimWit gt $
     consCCRPolarArgumentsShimWit (qgtVarianceMap gt) (coCCRArgument wa) nilCCRPolarArgumentsShimWit
+
+contraShimWit ::
+       forall f polarity a. (HasVariance f, VarianceOf f ~ Contravariance, Is PolarityType polarity)
+    => QGroundType '[ ContraCCRVariance] f
+    -> QShimWit (InvertPolarity polarity) a
+    -> QShimWit polarity (f a)
+contraShimWit gt wa =
+    shimWitToDolan $
+    mkDolanGroundedShimWit gt $
+    consCCRPolarArgumentsShimWit (qgtVarianceMap gt) (contraCCRArgument wa) nilCCRPolarArgumentsShimWit
+
+rangeShimWit ::
+       forall f polarity p q. Is PolarityType polarity
+    => QGroundType '[ RangeCCRVariance] f
+    -> QShimWit (InvertPolarity polarity) p
+    -> QShimWit polarity q
+    -> QShimWit polarity (f '( p, q))
+rangeShimWit gt wp wq =
+    shimWitToDolan $
+    mkDolanGroundedShimWit gt $
+    consCCRPolarArgumentsShimWit (qgtVarianceMap gt) (rangeCCRArgument wp wq) nilCCRPolarArgumentsShimWit
 
 maybeShimWit ::
        forall polarity a. Is PolarityType polarity
     => QShimWit polarity a
     -> QShimWit polarity (Maybe a)
-maybeShimWit = coFShimWit maybeGroundType
+maybeShimWit = coShimWit maybeGroundType
 
 listShimWit ::
        forall polarity a. Is PolarityType polarity
     => QShimWit polarity a
     -> QShimWit polarity [a]
-listShimWit = coFShimWit listGroundType
+listShimWit = coShimWit listGroundType
 
 list1ShimWit ::
        forall polarity a. Is PolarityType polarity
     => QShimWit polarity a
     -> QShimWit polarity (NonEmpty a)
-list1ShimWit = coFShimWit list1GroundType
+list1ShimWit = coShimWit list1GroundType
 
-cocoFShimWit ::
+cocoShimWit ::
        forall f polarity a b. Is PolarityType polarity
     => QGroundType '[ CoCCRVariance, CoCCRVariance] f
     -> QShimWit polarity a
     -> QShimWit polarity b
     -> QShimWit polarity (f a b)
-cocoFShimWit gt wa wb =
+cocoShimWit gt wa wb =
     shimWitToDolan $
     mkDolanGroundedShimWit gt $
     consCCRPolarArgumentsShimWit (qgtVarianceMap gt) (coCCRArgument wa) $
@@ -63,21 +88,21 @@ eitherShimWit ::
     => QShimWit polarity a
     -> QShimWit polarity b
     -> QShimWit polarity (Either a b)
-eitherShimWit = cocoFShimWit eitherGroundType
+eitherShimWit = cocoShimWit eitherGroundType
 
 resultShimWit ::
        forall polarity a b. Is PolarityType polarity
     => QShimWit polarity a
     -> QShimWit polarity b
     -> QShimWit polarity (Result a b)
-resultShimWit = cocoFShimWit resultGroundType
+resultShimWit = cocoShimWit resultGroundType
 
 pairShimWit ::
        forall polarity a b. Is PolarityType polarity
     => QShimWit polarity a
     -> QShimWit polarity b
     -> QShimWit polarity (a, b)
-pairShimWit = cocoFShimWit pairGroundType
+pairShimWit = cocoShimWit pairGroundType
 
 funcShimWit ::
        forall polarity (pshim :: PolyShimKind) a b.

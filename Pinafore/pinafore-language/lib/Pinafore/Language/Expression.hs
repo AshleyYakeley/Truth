@@ -160,6 +160,9 @@ qEvalExpr ::
     -> m QValue
 qEvalExpr expr = tsEval @QTypeSystem expr
 
+qUnifyRigid :: forall a b. QShimWit 'Positive a -> QShimWit 'Negative b -> QInterpreter (QShim a b)
+qUnifyRigid = tsUnifyRigid @QTypeSystem
+
 qUnifyValueTo :: forall t. QShimWit 'Negative t -> QValue -> QInterpreter t
 qUnifyValueTo = tsUnifyValueTo @QTypeSystem
 

@@ -44,6 +44,17 @@ tsEval ::
     -> m (TSValue ts)
 tsEval = evalSealedExpression
 
+tsUnifyRigid ::
+       forall ts a b. CompleteTypeSystem ts
+    => TSPosShimWit ts a
+    -> TSNegShimWit ts b
+    -> TSInner ts (TSShim ts a b)
+tsUnifyRigid witp witn =
+    runRenamer @ts (renameableVars witp <> renameableVars witn) [] $ do
+        uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp) (uuLiftNegShimWit @ts witn)
+        convexpr <- unifierSolve @ts uconv return
+        lift $ evalExpression convexpr
+
 -- | for debugging
 tsUnifyRigidValue ::
        forall ts t. (CompleteTypeSystem ts, FromPolarShimWit (TSShim ts) (TSNegWitness ts) t)
@@ -51,10 +62,8 @@ tsUnifyRigidValue ::
     -> TSInner ts t
 tsUnifyRigidValue (MkSomeOf witp val) = let
     witn = fromPolarShimWit
-    in runRenamer @ts (renameableVars witp <> renameableVars witn) [] $ do
-           uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp) (uuLiftNegShimWit @ts witn)
-           convexpr <- unifierSolve @ts uconv return
-           conv <- lift $ evalExpression convexpr
+    in do
+           conv <- tsUnifyRigid @ts witp witn
            return $ shimToFunction conv val
 
 tsUnifyExpressionTo ::

@@ -7,6 +7,7 @@ module Pinafore.Language.Interpreter.Interpreter
     , sourcePosParam
     , varIDStateParam
     , scopeParam
+    , loadModuleParam
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
@@ -89,6 +90,15 @@ newtype QInterpreter a = MkQInterpreter
                , MonadHoistIO
                , MonadTunnelIO
                )
+
+instance RepresentationalRole QInterpreter where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance MaybeRepresentational QInterpreter where
+    maybeRepresentational = Just Dict
+
+instance HasVariance QInterpreter where
+    type VarianceOf QInterpreter = 'Covariance
 
 instance MonadCoroutine QInterpreter where
     coroutineSuspend pqmr =
