@@ -7,7 +7,7 @@ import Pinafore.Language.Value.SetModel
 import Pinafore.Language.Value.WholeModel
 
 data LangFiniteSetModel pq where
-    MkLangFiniteSetModel :: Eq t => Range QShim t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq
+    MkLangFiniteSetModel :: Eq t => QRange t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq
 
 instance CatFunctor (CatRange (->)) (->) LangFiniteSetModel where
     cfmap f (MkLangFiniteSetModel r v) = MkLangFiniteSetModel (cfmap f r) v
@@ -41,7 +41,7 @@ langFiniteSetFilter f (MkLangFiniteSetModel tr lv) =
 langFiniteSetMaybeMap ::
        forall ap aq b. (aq -> Maybe b) -> LangFiniteSetModel '( ap, aq) -> LangFiniteSetModel '( MeetType ap b, b)
 langFiniteSetMaybeMap f (MkLangFiniteSetModel (tr :: _ t _) lv) = let
-    tr' :: Range QShim (MeetType t b) '( MeetType ap b, b)
+    tr' :: QRange (MeetType t b) '( MeetType ap b, b)
     tr' = MkRange (iMeetPair (rangeContra tr) id) meet2
     amb :: t -> Maybe (MeetType t b)
     amb t = do
@@ -55,7 +55,7 @@ langFiniteSetCollect ::
     -> LangFiniteSetModel '( ap, aq)
     -> LangFiniteSetModel '( MeetType ap b, b)
 langFiniteSetCollect (MkImmutableWholeModel mf) (MkLangFiniteSetModel (tr :: _ t _) lv) = let
-    tr' :: Range QShim (MeetType t b) '( MeetType ap b, b)
+    tr' :: QRange (MeetType t b) '( MeetType ap b, b)
     tr' = MkRange (iMeetPair (rangeContra tr) id) meet2
     amb :: Know (aq -> Maybe b) -> (t -> Maybe (MeetType t b))
     amb Unknown _ = Nothing

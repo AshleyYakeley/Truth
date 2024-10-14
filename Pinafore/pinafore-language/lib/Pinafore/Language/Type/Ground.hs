@@ -186,6 +186,8 @@ type QVarWit = TSVarWit QTypeSystem
 
 type QValueF f = TSValueF QTypeSystem f
 
+type QRange = Range QShim
+
 type QOpenExpression = TSOpenExpression QTypeSystem
 
 type QExpression = TSSealedExpression QTypeSystem
