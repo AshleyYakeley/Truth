@@ -64,16 +64,8 @@ parseToValueSubsume t text = do
     val <- parseToValue text []
     tsSubsumeValue @QTypeSystem t val
 
-spvals :: (?library :: LibraryContext) => QSpecialVals
-spvals = let
-    specialEvaluate :: forall t. QType 'Positive t -> Text -> IO (Result QError t)
-    specialEvaluate t text = do
-        ier <- evaluate $ runPinaforeScoped "<evaluate>" $ parseToValueSubsume t text
-        runInterpretResult ier
-    in MkQSpecialVals {..}
-
 runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename ma =
-    runInterpreter (initialPos sourcename) ?library spvals $ do
+    runInterpreter (initialPos sourcename) ?library $ do
         sd <- interpretImportDeclaration builtInModuleName
         withScopeDocs sd ma

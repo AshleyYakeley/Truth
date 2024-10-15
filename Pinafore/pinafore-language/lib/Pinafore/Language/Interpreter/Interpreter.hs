@@ -16,7 +16,6 @@ module Pinafore.Language.Interpreter.Interpreter
     , getRenderFullName
     , getBindingInfoLookup
     , getNamespaceWithScope
-    , getSpecialVals
     , exportScope
     , getModule
     , getSubtypeScope
@@ -56,7 +55,6 @@ data InterpretContext = MkInterpretContext
     , icVarIDState :: VarIDState
     , icScope :: QScope
     , icCurrentNamespace :: Namespace
-    , icSpecialVals :: QSpecialVals
     , icModulePath :: [ModuleName]
     , icLoadModule :: LoadModule
     }
@@ -170,9 +168,6 @@ currentNamespaceParam :: Param QInterpreter Namespace
 currentNamespaceParam =
     lensMapParam (\bfb a -> fmap (\b -> a {icCurrentNamespace = b}) $ bfb $ icCurrentNamespace a) contextParam
 
-specialValsParam :: Param QInterpreter QSpecialVals
-specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ bfb $ icSpecialVals a) contextParam
-
 modulePathParam :: Param QInterpreter [ModuleName]
 modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
 
@@ -203,8 +198,8 @@ data LibraryContext = MkLibraryContext
     { lcLoadModule :: LoadModule
     }
 
-runInterpreter :: SourcePos -> LibraryContext -> QSpecialVals -> QInterpreter a -> InterpretResult a
-runInterpreter icSourcePos MkLibraryContext {..} icSpecialVals qa = let
+runInterpreter :: SourcePos -> LibraryContext -> QInterpreter a -> InterpretResult a
+runInterpreter icSourcePos MkLibraryContext {..} qa = let
     icVarIDState = szero
     icScope = emptyScope
     icModulePath = []
@@ -340,6 +335,3 @@ newIdentifiedType =
         Refl <- unsafeIdentifyKind @_ @(CCRVariancesKind dv) typeID
         Refl <- unsafeIdentify @_ @gt typeID
         return $ identifiedFamilialType typeID
-
-getSpecialVals :: QInterpreter QSpecialVals
-getSpecialVals = paramAsk specialValsParam

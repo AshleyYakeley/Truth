@@ -10,7 +10,6 @@ module Pinafore.Language
     , LibraryContext(..)
     , mkLibraryContext
     , pinaforeLibrary
-    , QSpecialVals(..)
     , QError
     , fromParseResult
     , InterpretResult

@@ -1,6 +1,5 @@
 module Pinafore.Language.Interpreter.Binding
-    ( QSpecialVals(..)
-    , QSignature(..)
+    ( QSignature(..)
     , QRecordValue(..)
     , QRecordConstructor(..)
     , recordConstructorToValue
@@ -20,11 +19,6 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
-
-newtype QSpecialVals = MkQSpecialVals
-    { specialEvaluate :: forall t. QType 'Positive t -> Text -> IO (Result QError t)
-        -- ^ in IO because this can do things like import files
-    }
 
 data QSignature (polarity :: Polarity) (t :: Type) =
     ValueSignature (Maybe SomeFamilialType)
