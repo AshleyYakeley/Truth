@@ -96,27 +96,47 @@ pinaforeLibSection =
     pure $
     namespaceBDS
         "Pinafore"
-        [ typeBDS "Context" "" (qSomeGroundType @_ @QContext) []
-        , namespaceBDS
+        [ headingBDS
               "Context"
-              [specialFormBDS "this" "The context at this point in source." [] "Context.Pinafore" thisContext]
-        , typeBDS "Interpreter" "" (qSomeGroundType @_ @QInterpreter) []
-        , namespaceBDS "Interpreter" $ monadEntries @Interpreter <> [valBDS "run" "" langRunInterpreter]
-        , typeBDS "Type" "" (qSomeGroundType @_ @LangType) []
-        , specialFormBDS "const.Type" "" ["@A"] "Type.Pinafore A" $
-          MkQSpecialForm (ConsListType AnnotNonpolarType NilListType) $ \(MkSome (tw :: _ t), ()) -> let
-              stype :: QShimWit 'Positive (LangType '( t, t))
-              stype = rangeShimWit qGroundType (nonpolarToNegative @QTypeSystem tw) (nonpolarToPositive @QTypeSystem tw)
-              sval :: LangType '( t, t)
-              sval = MkLangType identityRange tw
-              in return $ constSealedExpression $ MkSomeOf stype sval
-        , hasSubtypeRelationBDS @(LangType '( P, Q)) @Showable Verify "" $ functionToShim "show" textShowable
-        , namespaceBDS "Type" [valBDS "unify" "Unify two types." langUnifyTypes]
-        , typeBDS "Value" "" (qSomeGroundType @_ @LangValue) []
-        , namespaceBDS
+              ""
+              [ typeBDS "Context" "" (qSomeGroundType @_ @QContext) []
+              , namespaceBDS
+                    "Context"
+                    [specialFormBDS "this" "The context at this point in source." [] "Context.Pinafore" thisContext]
+              ]
+        , headingBDS
+              "Interpreter"
+              ""
+              [ typeBDS "Interpreter" "" (qSomeGroundType @_ @QInterpreter) []
+              , namespaceBDS "Interpreter" $ monadEntries @Interpreter <> [valBDS "run" "" langRunInterpreter]
+              ]
+        , headingBDS
+              "Type"
+              ""
+              [ typeBDS "Type" "" (qSomeGroundType @_ @LangType) []
+              , specialFormBDS "const.Type" "" ["@A"] "Type.Pinafore A" $
+                MkQSpecialForm (ConsListType AnnotNonpolarType NilListType) $ \(MkSome (tw :: _ t), ()) -> let
+                    stype :: QShimWit 'Positive (LangType '( t, t))
+                    stype =
+                        rangeShimWit
+                            qGroundType
+                            (nonpolarToNegative @QTypeSystem tw)
+                            (nonpolarToPositive @QTypeSystem tw)
+                    sval :: LangType '( t, t)
+                    sval = MkLangType identityRange tw
+                    in return $ constSealedExpression $ MkSomeOf stype sval
+              , hasSubtypeRelationBDS @(LangType '( P, Q)) @Showable Verify "" $ functionToShim "show" textShowable
+              , namespaceBDS "Type" [valBDS "unify" "Unify two types." langUnifyTypes]
+              ]
+        , headingBDS
               "Value"
-              [ valBDS "mk" "" mkLangValue
-              , valBDS "unify" "Unify type with value." langUnifyValue
-              , valBDS "interpret" "Interpret Pinafore source." interpretToValue
+              ""
+              [ typeBDS "Value" "" (qSomeGroundType @_ @LangValue) []
+              , namespaceBDS
+                    "Value"
+                    [ valBDS "mk" "" mkLangValue
+                    , valBDS "unify" "Unify type with value." langUnifyValue
+                    , valBDS "interpret" "Interpret Pinafore source." interpretToValue
+                    ]
               ]
         ]

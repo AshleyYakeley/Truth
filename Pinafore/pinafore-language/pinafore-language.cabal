@@ -70,6 +70,7 @@ library
       Pinafore.Language.Type.DynamicSupertype
       Pinafore.Language.Type
       Pinafore.Language.Interpret.FreeVars
+      Pinafore.Language.Interpret.SpecialForm
       Pinafore.Language.Interpret.Value
       Pinafore.Language.Interpret.AppNotation
       Pinafore.Language.Interpret.Type

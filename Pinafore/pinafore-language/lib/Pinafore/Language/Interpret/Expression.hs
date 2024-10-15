@@ -15,12 +15,12 @@ import Pinafore.Language.Expression
 import Pinafore.Language.If
 import Pinafore.Language.Interpret.AppNotation
 import Pinafore.Language.Interpret.FreeVars
+import Pinafore.Language.Interpret.SpecialForm
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Interpret.Value
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
@@ -377,44 +377,6 @@ interpretConstructor (SLNamedConstructor v mvals) = do
 interpretConstructor SLPair = return $ qConst ((,) :: A -> B -> (A, B))
 interpretConstructor SLUnit = return $ qConst ()
 
-specialFormArg :: QAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe QInterpreter t
-specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
-specialFormArg AnnotNonpolarType (SAType st) = lift $ interpretNonpolarType st
-specialFormArg AnnotPositiveType (SAType st) = lift $ interpretType @'Positive st
-specialFormArg AnnotNegativeType (SAType st) = lift $ interpretType @'Negative st
-specialFormArg _ _ = liftInner Nothing
-
-specialFormArgs :: ListType QAnnotation lt -> [SyntaxAnnotation] -> ComposeInner Maybe QInterpreter (ListProduct lt)
-specialFormArgs NilListType [] = return ()
-specialFormArgs (ConsListType t tt) (a:aa) = do
-    v <- specialFormArg t a
-    vv <- specialFormArgs tt aa
-    return (v, vv)
-specialFormArgs _ _ = liftInner Nothing
-
-showSA :: SyntaxAnnotation -> NamedText
-showSA (SAType _) = "type"
-showSA (SAAnchor _) = "anchor"
-
-showAnnotation :: QAnnotation a -> NamedText
-showAnnotation AnnotAnchor = "anchor"
-showAnnotation AnnotNonpolarType = "type"
-showAnnotation AnnotPositiveType = "type"
-showAnnotation AnnotNegativeType = "type"
-
-interpretSpecialForm :: FullNameRef -> NonEmpty SyntaxAnnotation -> QInterpreter QExpression
-interpretSpecialForm name annotations = do
-    MkQSpecialForm largs val <- lookupSpecialForm name
-    margs <- unComposeInner $ specialFormArgs largs $ toList annotations
-    case margs of
-        Just args -> val args
-        Nothing ->
-            throw $
-            SpecialFormWrongAnnotationsError
-                name
-                (listTypeToList showAnnotation largs)
-                (fmap showSA $ toList annotations)
-
 interpretConstant :: SyntaxConstant -> QInterpreter QExpression
 interpretConstant SCIfThenElse = return $ qConst qifthenelse
 interpretConstant (SCConstructor lit) = interpretConstructor lit
@@ -558,7 +520,7 @@ interpretExpression' (SEVar _ name mvals) = do
     marglist <- for mvals interpretRecordArgList
     interpretValue name marglist
 interpretExpression' (SEImplicitVar name) = return $ qVar $ ImplicitVarID name
-interpretExpression' (SESpecialForm name annots) = interpretSpecialForm name annots
+interpretExpression' (SESpecialForm name annots) = interpretSpecialForm name Nothing $ toList annots
 interpretExpression' (SEAppQuote sexpr) = appNotationQuote $ interpretExpression sexpr
 interpretExpression' (SEAppUnquote sexpr) = appNotationUnquote $ interpretExpression sexpr
 interpretExpression' (SEList sexprs) = do
