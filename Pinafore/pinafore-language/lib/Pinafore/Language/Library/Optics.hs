@@ -101,10 +101,12 @@ opticsLibSection =
                           "Prism from greatest dynamic supertype of the given type."
                           ["@T"]
                           "Prism {a,-D(T)} {-a,+T}" $
-                      MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome (tn :: _ t), ()) -> do
+                      MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome (npt :: _ t), ()) -> do
+                          let
+                              tn = nonpolarToNegative @QTypeSystem npt
+                              tp = nonpolarToPositive @QTypeSystem npt
                           (MkShimWit (dtn :: _ dt) (MkPolarShim (MkComposeShim convexpr))) <-
-                              getGreatestDynamicSupertype tn
-                          tpw <- invertType tn
+                              getGreatestDynamicSupertypeSW tn
                           let
                               vtype :: QShimWit 'Positive (LangPrism '( MeetType A dt, A) '( A, t))
                               vtype =
@@ -115,7 +117,7 @@ opticsLibSection =
                                       (rangeCCRArgument (joinMeetShimWit qType (mkShimWit dtn)) qType) $
                                   consCCRPolarArgumentsShimWit
                                       (nextCCRVariancesMap $ qgtVarianceMap qGroundType)
-                                      (rangeCCRArgument qType tpw) $
+                                      (rangeCCRArgument qType tp) $
                                   nilCCRPolarArgumentsShimWit
                               toVal :: QShim dt (Maybe t) -> LangPrism '( MeetType A dt, A) '( A, t)
                               toVal conv =

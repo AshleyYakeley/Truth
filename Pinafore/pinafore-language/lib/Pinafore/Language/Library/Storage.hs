@@ -77,8 +77,7 @@ storageLibSection =
                 "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
                 ["@A", "@B", "<anchor>"]
                 "Store -> Property A B" $
-            MkQSpecialForm
-                (ConsListType AnnotNonpolarType $ ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
+            MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
                 eta <- getMonoStorableType ta
                 etb <- getMonoStorableType tb
                 saaexpr <- monoStoreAdapter eta
@@ -113,7 +112,7 @@ storageLibSection =
                 "Storage of a single value, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @Unit @A <anchor> store !$ {()}`"
                 ["@A", "<anchor>"]
                 "Store -> WholeModel A" $
-            MkQSpecialForm (ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (anchor, ())) -> do
+            MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (anchor, ())) -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
@@ -145,7 +144,7 @@ storageLibSection =
                 "Storage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @A @Unit <anchor> store !@ {()}`"
                 ["@A", "<anchor>"]
                 "Store -> FiniteSetModel {-Entity,A}" $
-            MkQSpecialForm (ConsListType AnnotNonpolarType $ ConsListType AnnotAnchor NilListType) $ \(MkSome (ta :: _ a), (anchor, ())) -> do
+            MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(MkSome (ta :: _ a), (anchor, ())) -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
@@ -185,7 +184,7 @@ storageLibSection =
                 "Fetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them."
                 ["@A"]
                 "Store -> Entity -> Action A" $
-            MkQSpecialForm (ConsListType AnnotNonpolarType NilListType) $ \(MkSome (ta :: _ a), ()) -> do
+            MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome (ta :: _ a), ()) -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 let

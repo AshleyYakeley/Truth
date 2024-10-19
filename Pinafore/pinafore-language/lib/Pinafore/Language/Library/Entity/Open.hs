@@ -22,7 +22,7 @@ openEntityLibSection =
                     "An open entity for this anchor. `A` is an open entity type."
                     ["@A", "<anchor>"]
                     "A" $
-                MkQSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
+                MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
                     mtp <- getOpenEntityType t
                     return $
                         case mtp of
@@ -32,7 +32,7 @@ openEntityLibSection =
                                 pt = MkOpenEntity $ MkEntity anchor
                                 in constSealedExpression $ MkSomeOf typef pt
               , specialFormBDS "new" "Generate an open entity. `A` is an open entity type." ["@A"] "Action A" $
-                MkQSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
+                MkQSpecialForm (ConsListType AnnotType NilListType) $ \(t, ()) -> do
                     mtp <- getOpenEntityType t
                     return $
                         case mtp of

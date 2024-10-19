@@ -11,9 +11,7 @@ import Pinafore.Language.Type
 
 specialFormArg :: QAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe QInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
-specialFormArg AnnotNonpolarType (SAType st) = lift $ interpretNonpolarType st
-specialFormArg AnnotPositiveType (SAType st) = lift $ interpretType @'Positive st
-specialFormArg AnnotNegativeType (SAType st) = lift $ interpretType @'Negative st
+specialFormArg AnnotType (SAType st) = lift $ interpretNonpolarType st
 specialFormArg _ _ = liftInner Nothing
 
 specialFormArgs :: ListType QAnnotation lt -> [SyntaxAnnotation] -> ComposeInner Maybe QInterpreter (ListProduct lt)
@@ -30,9 +28,7 @@ showSA (SAAnchor _) = "anchor"
 
 showAnnotation :: QAnnotation a -> NamedText
 showAnnotation AnnotAnchor = "anchor"
-showAnnotation AnnotNonpolarType = "type"
-showAnnotation AnnotPositiveType = "type"
-showAnnotation AnnotNegativeType = "type"
+showAnnotation AnnotType = "type"
 
 interpretSpecialForm :: FullNameRef -> Maybe QSpecialForm -> [SyntaxAnnotation] -> QInterpreter QExpression
 interpretSpecialForm name msf annotations = do

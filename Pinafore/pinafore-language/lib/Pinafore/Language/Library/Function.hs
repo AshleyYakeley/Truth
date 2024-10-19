@@ -36,15 +36,19 @@ functionLibSection =
                 (seq :: TopType -> A -> A)
           , addNameInRootBDS $
             specialFormBDS "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
-            MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertype tn
-                tpw <- invertType tn
-                return $ MkSealedExpression (funcShimWit (mkShimWit dtw) $ maybeShimWit tpw) $ fmap shimToFunction expr
+            MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome npt, ()) -> do
+                let
+                    tn = nonpolarToNegative @QTypeSystem npt
+                    tp = nonpolarToPositive @QTypeSystem npt
+                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
+                return $ MkSealedExpression (funcShimWit (mkShimWit dtw) $ maybeShimWit tp) $ fmap shimToFunction expr
           , addNameInRootBDS $
             specialFormBDS "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
-            MkQSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
-                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertype tn
-                tpw <- invertType tn
+            MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome npt, ()) -> do
+                let
+                    tn = nonpolarToNegative @QTypeSystem npt
+                    tp = nonpolarToPositive @QTypeSystem npt
+                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
                 let
                     fromJustOrError :: forall t. Maybe t -> t
                     fromJustOrError =
@@ -54,7 +58,7 @@ functionLibSection =
                                 error $
                                 unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
                 return $
-                    MkSealedExpression (funcShimWit (mkShimWit dtw) tpw) $
+                    MkSealedExpression (funcShimWit (mkShimWit dtw) tp) $
                     fmap (\conv t -> fromJustOrError $ shimToFunction conv t) expr
           ]
         ]

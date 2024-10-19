@@ -57,9 +57,7 @@ openEntityGroundType oet = let
     props = singleGroundProperty storabilityProperty storability
     in singleGroundType' (MkFamilialType openEntityFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet
 
-getOpenEntityType :: Some (QType 'Positive) -> QInterpreter (Some OpenEntityType)
-getOpenEntityType (MkSome tm) =
-    case dolanToMaybeType @QGroundType @_ @_ @QShim tm of
-        Just (MkShimWit (MkDolanGroundedType gt NilCCRArguments) _)
-            | Just (MkOpenEntityFamily oet) <- getGroundFamily openEntityFamilyWitness gt -> return $ MkSome oet
-        _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
+getOpenEntityType :: Some QNonpolarType -> QInterpreter (Some OpenEntityType)
+getOpenEntityType (MkSome (GroundedNonpolarType (MkNonpolarGroundedType gt NilCCRArguments)))
+    | Just (MkOpenEntityFamily oet) <- getGroundFamily openEntityFamilyWitness gt = return $ MkSome oet
+getOpenEntityType tm = throw $ InterpretTypeNotOpenEntityError $ exprShow tm

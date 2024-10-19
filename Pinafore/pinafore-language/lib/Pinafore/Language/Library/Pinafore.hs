@@ -138,7 +138,7 @@ pinaforeLibSection =
               ""
               [ typeBDS "Type" "A (concrete nonpolar) Pinafore type." (qSomeGroundType @_ @LangType) []
               , specialFormBDS "const.Type" "A `Type` for a given type." ["@A"] "Type.Pinafore A" $
-                MkQSpecialForm (ConsListType AnnotNonpolarType NilListType) $ \(MkSome (tw :: _ t), ()) -> let
+                MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome (tw :: _ t), ()) -> let
                     stype :: QShimWit 'Positive (LangType '( t, t))
                     stype =
                         rangeShimWit

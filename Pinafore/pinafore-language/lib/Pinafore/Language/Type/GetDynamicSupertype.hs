@@ -3,6 +3,7 @@ module Pinafore.Language.Type.GetDynamicSupertype
     , QExprShimWit
     , QExprGroundedShimWit
     , getGreatestDynamicSupertype
+    , getGreatestDynamicSupertypeSW
     , getGroundedShimWitGreatestDynamicSupertype
     , getOptGreatestDynamicSupertype
     , getOptGreatestDynamicSupertypeSW
@@ -71,6 +72,11 @@ getGreatestDynamicSupertype (ConsDolanType t1 tr) = do
     t1' <- getSingleGreatestDynamicSupertype t1
     tr' <- getGreatestDynamicSupertype tr
     return $ mapShimWit zip2 $ joinMeetShimWit t1' tr'
+
+getGreatestDynamicSupertypeSW :: QShimWit 'Negative t -> Interpreter (QExprShimWit 'Negative (Maybe t))
+getGreatestDynamicSupertypeSW (MkShimWit t (MkPolarShim conv)) = do
+    t' <- getGreatestDynamicSupertype t
+    return $ mapShimWit (MkPolarShim $ pureComposeShim $ cfmap conv) t'
 
 getOptGreatestDynamicSupertype :: QType 'Negative t -> Interpreter (Maybe (QExprShimWit 'Negative (Maybe t)))
 getOptGreatestDynamicSupertype (ConsDolanType t1 NilDolanType) = do
