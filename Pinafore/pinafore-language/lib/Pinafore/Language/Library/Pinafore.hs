@@ -90,16 +90,35 @@ interpretToValue src = fmap MkLangValue $ parseToValue src []
 langUnifyValue :: LangType '( BottomType, A) -> LangValue -> QInterpreter A
 langUnifyValue t (MkLangValue v) = qUnifyValueTo (langTypeNegative t) v
 
+-- QScopeDocs
+instance HasQGroundType '[] QScopeDocs where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QScopeDocs)|]) "Scope.Pinafore."
+
+langWithScope :: QScopeDocs -> QInterpreter A -> QInterpreter A
+langWithScope sdocs = withScopeDocs sdocs
+
+bindScope :: Text -> LangValue -> QScopeDocs
+bindScope name (MkLangValue val@(MkSomeFor t _)) = let
+    fname = fromString $ unpack name
+    doc :: DefDoc
+    doc = MkDefDoc {docItem = ValueDocItem (pure $ fullNameRef fname) $ exprShow t, docDescription = ""}
+    in scopeDocs $ bindingInfosToScope $ pure $ (fname, MkQBindingInfo fname doc $ ValueBinding $ qConstValue val)
+
+interpretModuleFromSource :: Text -> QInterpreter QScopeDocs
+interpretModuleFromSource src = do
+    m <- parseModule src
+    return $ moduleScopeDocs m
+
 pinaforeLibSection :: LibraryStuff
 pinaforeLibSection =
-    headingBDS "Pinafore" "" $
+    headingBDS "Pinafore" "Functions for working with Pinafore source code." $
     pure $
     namespaceBDS
         "Pinafore"
         [ headingBDS
               "Context"
               ""
-              [ typeBDS "Context" "" (qSomeGroundType @_ @QContext) []
+              [ typeBDS "Context" "The context used for running `Interpreter`." (qSomeGroundType @_ @QContext) []
               , namespaceBDS
                     "Context"
                     [specialFormBDS "this" "The context at this point in source." [] "Context.Pinafore" thisContext]
@@ -107,14 +126,18 @@ pinaforeLibSection =
         , headingBDS
               "Interpreter"
               ""
-              [ typeBDS "Interpreter" "" (qSomeGroundType @_ @QInterpreter) []
+              [ typeBDS
+                    "Interpreter"
+                    "All parsing and type-checking takes place within `Interpreter`."
+                    (qSomeGroundType @_ @QInterpreter)
+                    []
               , namespaceBDS "Interpreter" $ monadEntries @Interpreter <> [valBDS "run" "" langRunInterpreter]
               ]
         , headingBDS
               "Type"
               ""
-              [ typeBDS "Type" "" (qSomeGroundType @_ @LangType) []
-              , specialFormBDS "const.Type" "" ["@A"] "Type.Pinafore A" $
+              [ typeBDS "Type" "A (concrete nonpolar) Pinafore type." (qSomeGroundType @_ @LangType) []
+              , specialFormBDS "const.Type" "A `Type` for a given type." ["@A"] "Type.Pinafore A" $
                 MkQSpecialForm (ConsListType AnnotNonpolarType NilListType) $ \(MkSome (tw :: _ t), ()) -> let
                     stype :: QShimWit 'Positive (LangType '( t, t))
                     stype =
@@ -126,7 +149,7 @@ pinaforeLibSection =
                     sval = MkLangType identityRange tw
                     in return $ constSealedExpression $ MkSomeOf stype sval
               , hasSubtypeRelationBDS @(LangType '( P, Q)) @Showable Verify "" $ functionToShim "show" textShowable
-              , namespaceBDS "Type" [valBDS "unify" "Unify two types." langUnifyTypes]
+              , namespaceBDS "Type" [valBDS "unify" "Unify two `Type`s." langUnifyTypes]
               ]
         , headingBDS
               "Value"
@@ -134,9 +157,20 @@ pinaforeLibSection =
               [ typeBDS "Value" "" (qSomeGroundType @_ @LangValue) []
               , namespaceBDS
                     "Value"
-                    [ valBDS "mk" "" mkLangValue
-                    , valBDS "unify" "Unify type with value." langUnifyValue
-                    , valBDS "interpret" "Interpret Pinafore source." interpretToValue
+                    [ valBDS "mk" "Create a `Value` from a `Type` and a value." mkLangValue
+                    , valBDS "unify" "Unify a `Type` with a `Value`." langUnifyValue
+                    , valBDS "interpret" "Interpret a Pinafore expression." interpretToValue
                     ]
+              ]
+        , headingBDS
+              "Scope"
+              ""
+              [ typeBDS "Scope" "" (qSomeGroundType @_ @QScopeDocs) []
+              , namespaceBDS "Scope" $
+                monoidEntries @QScopeDocs <>
+                [ valBDS "interpret" "Interpret a Pinafore module (list of declarations)." interpretModuleFromSource
+                , valBDS "apply" "Interpret within a given scope." langWithScope
+                , valBDS "bind" "Let-bind a name to a value." bindScope
+                ]
               ]
         ]

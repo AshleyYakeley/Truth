@@ -26,7 +26,7 @@ import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
 
 registerScope :: QScope -> QScopeBuilder ()
-registerScope scope = registerScopeDocs $ mempty {sdScopes = [scope]}
+registerScope scope = registerScopeDocs $ scopeDocs scope
 
 registerDocs :: Docs -> QScopeBuilder ()
 registerDocs docs = registerScopeDocs $ mempty {sdDocs = docs}

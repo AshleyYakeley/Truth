@@ -10,6 +10,9 @@ data QScopeDocs = MkQScopeDocs
     , sdDocs :: Docs
     }
 
+scopeDocs :: QScope -> QScopeDocs
+scopeDocs scope = mempty {sdScopes = [scope]}
+
 instance Semigroup QScopeDocs where
     MkQScopeDocs sa da <> MkQScopeDocs sb db = MkQScopeDocs (sa <> sb) (da <> db)
 
@@ -20,3 +23,9 @@ withScopeDocs :: QScopeDocs -> QInterpreter --> QInterpreter
 withScopeDocs sd ma = do
     scope <- joinAllScopes $ sdScopes sd
     paramLocalM scopeParam (\oldscope -> joinScopes oldscope scope) ma
+
+moduleScopeDocs :: QModule -> QScopeDocs
+moduleScopeDocs MkQModule {..} = let
+    sdScopes = [moduleScope]
+    sdDocs = moduleDoc
+    in MkQScopeDocs {..}
