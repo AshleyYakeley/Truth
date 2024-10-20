@@ -41,14 +41,14 @@ langRunInterpreter (MkQContext lc) ia = let
            rea <- runInterpretResult $ runPinaforeScoped "<evaluate>" ia
            return $ mapResultFailure showText rea
 
-langTypePositive :: LangType '( p, q) -> QShimWit 'Positive p
-langTypePositive (MkLangType r t) = mapShimWit (MkPolarShim $ rangeContra r) $ nonpolarToPositive @QTypeSystem t
+langTypePositive :: LangOpenType '( p, q) -> QShimWit 'Positive p
+langTypePositive (MkLangOpenType r t) = mapShimWit (MkPolarShim $ rangeContra r) $ nonpolarToPositive @QTypeSystem t
 
-langTypeNegative :: LangType '( p, q) -> QShimWit 'Negative q
-langTypeNegative (MkLangType r t) = mapShimWit (MkPolarShim $ rangeCo r) $ nonpolarToNegative @QTypeSystem t
+langTypeNegative :: LangOpenType '( p, q) -> QShimWit 'Negative q
+langTypeNegative (MkLangOpenType r t) = mapShimWit (MkPolarShim $ rangeCo r) $ nonpolarToNegative @QTypeSystem t
 
-langUnifyTypes :: LangType '( A, TopType) -> LangType '( BottomType, B) -> QInterpreter (A -> B)
-langUnifyTypes ta tb = fmap shimToFunction $ qUnifyRigid (langTypePositive ta) (langTypeNegative tb)
+langUnifyOpenTypes :: LangOpenType '( A, TopType) -> LangOpenType '( BottomType, B) -> QInterpreter (A -> B)
+langUnifyOpenTypes ta tb = fmap shimToFunction $ qUnifyRigid (langTypePositive ta) (langTypeNegative tb)
 
 -- LangValue
 newtype LangValue = MkLangValue
@@ -58,7 +58,7 @@ newtype LangValue = MkLangValue
 instance HasQGroundType '[] LangValue where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangValue)|]) "Value.Pinafore."
 
-mkLangValue :: LangType '( A, TopType) -> A -> LangValue
+mkLangValue :: LangOpenType '( A, TopType) -> A -> LangValue
 mkLangValue t v = MkLangValue $ MkSomeOf (langTypePositive t) v
 
 interpretToExpression :: Text -> QInterpreter LangExpression
@@ -74,7 +74,7 @@ interpretToValue src = do
     expr <- interpretToExpression src
     evaluateLangExpression expr
 
-langUnifyValue :: LangType '( BottomType, A) -> LangValue -> QInterpreter A
+langUnifyValue :: LangOpenType '( BottomType, A) -> LangValue -> QInterpreter A
 langUnifyValue t (MkLangValue v) = qUnifyValueTo (langTypeNegative t) v
 
 langWithScope :: QScopeDocs -> QInterpreter A -> QInterpreter A
@@ -120,19 +120,26 @@ pinaforeLibSection =
               "Type"
               ""
               [ typeBDS "Type" "A (concrete nonpolar) Pinafore type." (qSomeGroundType @_ @LangType) []
-              , specialFormBDS "const.Type" "A `Type` for a given type." ["@A"] "Type.Pinafore A" $
+              , hasSubtypeRelationBDS @LangType @Showable Verify "" $ functionToShim "show" textShowable
+              ]
+        , headingBDS
+              "OpenType"
+              ""
+              [ typeBDS "OpenType" "A (concrete nonpolar) Pinafore type." (qSomeGroundType @_ @LangOpenType) []
+              , specialFormBDS "const.OpenType" "An `OpenType` for a given type." ["@A"] "OpenType.Pinafore A" $
                 MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome (tw :: _ t), ()) -> let
-                    stype :: QShimWit 'Positive (LangType '( t, t))
+                    stype :: QShimWit 'Positive (LangOpenType '( t, t))
                     stype =
                         rangeShimWit
                             qGroundType
                             (nonpolarToNegative @QTypeSystem tw)
                             (nonpolarToPositive @QTypeSystem tw)
-                    sval :: LangType '( t, t)
-                    sval = MkLangType identityRange tw
+                    sval :: LangOpenType '( t, t)
+                    sval = MkLangOpenType identityRange tw
                     in return $ constSealedExpression $ MkSomeOf stype sval
-              , hasSubtypeRelationBDS @(LangType '( P, Q)) @Showable Verify "" $ functionToShim "show" textShowable
-              , namespaceBDS "Type" [valBDS "unify" "Unify two `Type`s." langUnifyTypes]
+              , hasSubtypeRelationBDS @(LangOpenType '( P, Q)) @LangType Verify "" $
+                functionToShim "openLangTypeToType" openLangTypeToType
+              , namespaceBDS "OpenType" [valBDS "unify" "Unify two `OpenType`s." langUnifyOpenTypes]
               ]
         , headingBDS
               "Expression"

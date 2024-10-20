@@ -1762,22 +1762,22 @@ testEntity =
           tGroup
               "evaluate"
               [ testExpectSuccess "pass"
-              , testExpectSuccess "testaction (Success True) $ evaluate (const.Type @Boolean) \"True\""
-              , testExpectSuccess "testaction (Success 5) $ evaluate (const.Type @Integer) \"5\""
-              , testExpectSuccess "testaction (Success 5) $ evaluate (const.Type @Integer) \"let {x = 5} x\""
+              , testExpectSuccess "testaction (Success True) $ evaluate (const.OpenType @Boolean) \"True\""
+              , testExpectSuccess "testaction (Success 5) $ evaluate (const.OpenType @Integer) \"5\""
+              , testExpectSuccess "testaction (Success 5) $ evaluate (const.OpenType @Integer) \"let {x = 5} x\""
               , testExpectSuccess
-                    "do {ar <- evaluate (const.Type @(Integer -> Integer)) \"fn x => x +.Integer 1\"; ar >- fn {Failure err => fail err; Success f => testeq 8 $ f 7}}"
+                    "do {ar <- evaluate (const.OpenType @(Integer -> Integer)) \"fn x => x +.Integer 1\"; ar >- fn {Failure err => fail err; Success f => testeq 8 $ f 7}}"
               , testExpectSuccess
-                    "testaction (Failure \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate (const.Type @Integer) \"\""
+                    "testaction (Failure \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate (const.OpenType @Integer) \"\""
               , testExpectSuccess
-                    "testaction (Failure \"<evaluate>:1:1: undefined: f: a\") $ evaluate (const.Type @Integer) \"f\""
-              , testExpectSuccess "testFailure $ evaluate (const.Type @Integer) \"\\\"hello\\\"\""
+                    "testaction (Failure \"<evaluate>:1:1: undefined: f: a\") $ evaluate (const.OpenType @Integer) \"f\""
+              , testExpectSuccess "testFailure $ evaluate (const.OpenType @Integer) \"\\\"hello\\\"\""
               , testExpectSuccess
-                    "do {r <- newMem.WholeModel; ar <- evaluate (const.Type @(WholeModel Integer -> Action Unit)) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeq 45 a;}"
+                    "do {r <- newMem.WholeModel; ar <- evaluate (const.OpenType @(WholeModel Integer -> Action Unit)) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeq 45 a;}"
               , testExpectSuccess
-                    "testaction 569 $ evaluate (const.Type @(a -> a)) \"fn x => x\" >>= fn Success f => pure $ f 569"
+                    "testaction 569 $ evaluate (const.OpenType @(a -> a)) \"fn x => x\" >>= fn Success f => pure $ f 569"
               , testExpectSuccess
-                    "testaction 570 $ evaluate (const.Type @(Integer -> Integer)) \"fn x => x\" >>= fn Success f => pure $ f 570"
+                    "testaction 570 $ evaluate (const.OpenType @(Integer -> Integer)) \"fn x => x\" >>= fn Success f => pure $ f 570"
               ]
         , tGroup
               "text-sort"
