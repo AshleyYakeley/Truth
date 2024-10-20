@@ -32,9 +32,14 @@ typeFConstExpression tt t = MkSealedExpression tt $ pure t
 sealedExpressionType :: SealedExpression varw tw -> Some tw
 sealedExpressionType (MkSealedExpression t _) = MkSome t
 
-evalSealedExpression :: (MonadThrow (ExpressionError varw) m) => SealedExpression varw tw -> m (SomeOf tw)
+evalSealedExpression :: MonadThrow (ExpressionError varw) m => SealedExpression varw tw -> m (SomeOf tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
+    return $ MkSomeOf twa a
+
+evalSealedExpressionMaybe :: SealedExpression varw tw -> Maybe (SomeOf tw)
+evalSealedExpressionMaybe (MkSealedExpression twa expr) = do
+    a <- evalExpressionMaybe expr
     return $ MkSomeOf twa a
 
 instance (AllConstraint Show varw, AllConstraint Show poswit) => Show (SealedExpression varw poswit) where

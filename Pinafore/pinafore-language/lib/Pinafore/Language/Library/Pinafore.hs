@@ -51,8 +51,9 @@ langUnifyTypes :: LangType '( A, TopType) -> LangType '( BottomType, B) -> QInte
 langUnifyTypes ta tb = fmap shimToFunction $ qUnifyRigid (langTypePositive ta) (langTypeNegative tb)
 
 -- LangValue
-newtype LangValue =
-    MkLangValue QValue
+newtype LangValue = MkLangValue
+    { unLangValue :: QValue
+    }
 
 instance HasQGroundType '[] LangValue where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangValue)|]) "Value.Pinafore."
@@ -60,8 +61,18 @@ instance HasQGroundType '[] LangValue where
 mkLangValue :: LangType '( A, TopType) -> A -> LangValue
 mkLangValue t v = MkLangValue $ MkSomeOf (langTypePositive t) v
 
+interpretToExpression :: Text -> QInterpreter LangExpression
+interpretToExpression src = fmap MkLangExpression $ parseTopExpression src
+
+evaluateLangExpression :: LangExpression -> QInterpreter LangValue
+evaluateLangExpression (MkLangExpression expr) = do
+    val <- qEvalExpr expr
+    return $ MkLangValue val
+
 interpretToValue :: Text -> QInterpreter LangValue
-interpretToValue src = fmap MkLangValue $ parseToValue src []
+interpretToValue src = do
+    expr <- interpretToExpression src
+    evaluateLangExpression expr
 
 langUnifyValue :: LangType '( BottomType, A) -> LangValue -> QInterpreter A
 langUnifyValue t (MkLangValue v) = qUnifyValueTo (langTypeNegative t) v
@@ -122,6 +133,28 @@ pinaforeLibSection =
                     in return $ constSealedExpression $ MkSomeOf stype sval
               , hasSubtypeRelationBDS @(LangType '( P, Q)) @Showable Verify "" $ functionToShim "show" textShowable
               , namespaceBDS "Type" [valBDS "unify" "Unify two `Type`s." langUnifyTypes]
+              ]
+        , headingBDS
+              "Expression"
+              ""
+              [ typeBDS
+                    "Expression"
+                    ""
+                    (qSomeGroundType @_ @LangExpression)
+                    [ valPatBDS
+                          "Closed"
+                          "Construct an `Expression` from a `Value`."
+                          (MkLangExpression . qConstValue . unLangValue) $
+                      ImpureFunction $
+                      pure $ \expr -> do
+                          v <- qEvalExprMaybe $ unLangExpression expr
+                          return (MkLangValue v, ())
+                    ]
+              , namespaceBDS
+                    "Expression"
+                    [ valBDS "interpret" "Interpret a Pinafore expression." interpretToExpression
+                    , valBDS "eval" "Evaluate an `Expression`, or throw an error." evaluateLangExpression
+                    ]
               ]
         , headingBDS
               "Value"

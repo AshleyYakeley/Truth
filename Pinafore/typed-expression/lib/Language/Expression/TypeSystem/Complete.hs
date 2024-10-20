@@ -44,6 +44,12 @@ tsEval ::
     -> m (TSValue ts)
 tsEval = evalSealedExpression
 
+tsEvalMaybe ::
+       forall ts. CompleteTypeSystem ts
+    => TSSealedExpression ts
+    -> Maybe (TSValue ts)
+tsEvalMaybe = evalSealedExpressionMaybe
+
 tsUnifyRigid ::
        forall ts a b. CompleteTypeSystem ts
     => TSPosShimWit ts a

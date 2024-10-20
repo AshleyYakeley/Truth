@@ -47,6 +47,10 @@ evalExpressionResult (ClosedExpression a) = return a
 evalExpressionResult (OpenExpression wt expr) =
     throwExc $ UndefinedBindingsError $ MkSome wt :| freeWitnesses MkSome expr
 
+evalExpressionMaybe :: Expression w --> Maybe
+evalExpressionMaybe (ClosedExpression a) = Just a
+evalExpressionMaybe (OpenExpression _ _) = Nothing
+
 evalExpression :: MonadThrow (ExpressionError w) m => Expression w --> m
 evalExpression expr = fromResult $ evalExpressionResult expr
 
