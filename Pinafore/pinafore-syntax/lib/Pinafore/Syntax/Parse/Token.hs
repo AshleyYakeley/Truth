@@ -81,6 +81,7 @@ data Token t where
     TokCloseBracket :: Token ()
     TokOpenBrace :: Token ()
     TokCloseBrace :: Token ()
+    TokSpliceOpenBrace :: Token ()
     TokString :: Token Text
     TokUnquote :: Token ()
     TokRec :: Token ()
@@ -114,6 +115,7 @@ data Token t where
     TokMap :: Token ()
     TokBackMap :: Token ()
     TokAnchor :: Token Anchor
+    TokSpecialName :: Token Name
     TokAt :: Token ()
     TokOperator :: Token TokenNames
     TokSubtypeOf :: Token ()
@@ -141,6 +143,7 @@ instance TestEquality Token where
     testEquality TokCloseParen TokCloseParen = Just Refl
     testEquality TokOpenBracket TokOpenBracket = Just Refl
     testEquality TokCloseBracket TokCloseBracket = Just Refl
+    testEquality TokSpliceOpenBrace TokSpliceOpenBrace = Just Refl
     testEquality TokOpenBrace TokOpenBrace = Just Refl
     testEquality TokCloseBrace TokCloseBrace = Just Refl
     testEquality TokString TokString = Just Refl
@@ -176,6 +179,7 @@ instance TestEquality Token where
     testEquality TokMap TokMap = Just Refl
     testEquality TokBackMap TokBackMap = Just Refl
     testEquality TokAnchor TokAnchor = Just Refl
+    testEquality TokSpecialName TokSpecialName = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
     testEquality TokSubtypeOf TokSubtypeOf = Just Refl
@@ -199,6 +203,7 @@ tokenName TokOpenParen = FixedTokenName "("
 tokenName TokCloseParen = FixedTokenName ")"
 tokenName TokOpenBracket = FixedTokenName "["
 tokenName TokCloseBracket = FixedTokenName "]"
+tokenName TokSpliceOpenBrace = FixedTokenName "!{"
 tokenName TokOpenBrace = FixedTokenName "{"
 tokenName TokCloseBrace = FixedTokenName "}"
 tokenName TokString = VarTokenName (\case {}) "quoted string"
@@ -234,6 +239,7 @@ tokenName TokAssign = FixedTokenName "="
 tokenName TokMap = FixedTokenName "=>"
 tokenName TokBackMap = FixedTokenName "<-"
 tokenName TokAnchor = VarTokenName (\case {}) "anchor"
+tokenName TokSpecialName = VarTokenName (\case {}) "special name"
 tokenName TokAt = FixedTokenName "@"
 tokenName TokOperator = VarTokenName (\case {}) "infix"
 tokenName TokSubtypeOf = FixedTokenName "<:"
@@ -446,12 +452,17 @@ readHexAnchor = do
         octets <- fromHex $ filter isHexDigit cs
         decode anchorCodec $ fromList octets
 
+readLowerCaseName :: Parser Name
+readLowerCaseName = do
+    (u, name) <- readName
+    altIf $ not u
+    return name
+
 readImplicitName :: Parser (SomeOf Token)
 readImplicitName =
     try $ do
         readChar '?'
-        (u, name) <- readName
-        altIf $ not u
+        name <- readLowerCaseName
         return $ MkSomeOf TokImplicitName $ MkImplicitName name
 
 readOpToken :: Parser (SomeOf Token)
@@ -473,7 +484,10 @@ readOpToken = do
                  return $ MkSomeOf TokAnchor anchor) <|>
             (do
                  s <- readQuotedString
-                 return $ MkSomeOf TokAnchor $ codeAnchor s)
+                 return $ MkSomeOf TokAnchor $ codeAnchor s) <|>
+            (do
+                 n <- readLowerCaseName
+                 return $ MkSomeOf TokSpecialName n)
         "@" -> return $ MkSomeOf TokAt ()
         "|" -> return $ MkSomeOf TokOr ()
         "&" -> return $ MkSomeOf TokAnd ()

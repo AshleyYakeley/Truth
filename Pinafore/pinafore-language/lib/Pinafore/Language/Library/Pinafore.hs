@@ -34,36 +34,12 @@ thisContext =
             sval = MkQContext $ MkLibraryContext lm
         return $ constSealedExpression $ MkSomeOf qType sval
 
--- QInterpreter
-instance HasQGroundType '[ CoCCRVariance] QInterpreter where
-    qGroundType =
-        stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QInterpreter)|]) "Interpreter.Pinafore."
-
 langRunInterpreter :: QContext -> QInterpreter A -> Action (Result Text A)
 langRunInterpreter (MkQContext lc) ia = let
     ?library = lc
     in do
            rea <- runInterpretResult $ runPinaforeScoped "<evaluate>" ia
            return $ mapResultFailure showText rea
-
--- LangType
-data LangType (pq :: (Type, Type)) =
-    forall a. MkLangType (QRange a pq)
-                         (QNonpolarType a)
-
-instance CatFunctor (CatRange (->)) (->) LangType where
-    cfmap f (MkLangType r v) = MkLangType (cfmap f r) v
-
-instance ShowText (LangType pq) where
-    showText (MkLangType _ v) = toText $ exprShow v
-
-instance MaybeRepresentational LangType where
-    maybeRepresentational = Nothing
-
-instance HasCCRVariance 'RangeCCRVariance LangType
-
-instance HasQGroundType '[ RangeCCRVariance] LangType where
-    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangType)|]) "Type.Pinafore."
 
 langTypePositive :: LangType '( p, q) -> QShimWit 'Positive p
 langTypePositive (MkLangType r t) = mapShimWit (MkPolarShim $ rangeContra r) $ nonpolarToPositive @QTypeSystem t
@@ -89,10 +65,6 @@ interpretToValue src = fmap MkLangValue $ parseToValue src []
 
 langUnifyValue :: LangType '( BottomType, A) -> LangValue -> QInterpreter A
 langUnifyValue t (MkLangValue v) = qUnifyValueTo (langTypeNegative t) v
-
--- QScopeDocs
-instance HasQGroundType '[] QScopeDocs where
-    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QScopeDocs)|]) "Scope.Pinafore."
 
 langWithScope :: QScopeDocs -> QInterpreter A -> QInterpreter A
 langWithScope sdocs = withScopeDocs sdocs

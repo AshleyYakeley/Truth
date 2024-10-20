@@ -15,7 +15,6 @@ module Pinafore.Language.Library.Types
     ) where
 
 import Import
-import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Type
 
 openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenEntity tid)

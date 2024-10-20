@@ -112,6 +112,7 @@ data SyntaxDeclaration'
                                  [SyntaxDeclaration]
     | DocSectionSyntaxDeclaration Text
                                   [SyntaxDeclaration]
+    | SpliceSyntaxDeclaration SyntaxExpression
     | DebugSyntaxDeclaration FullNameRef
     deriving (Eq)
 
@@ -319,8 +320,6 @@ data SyntaxExpression'
             FullNameRef
             (Maybe [(Name, SyntaxExpression)])
     | SEImplicitVar ImplicitName
-    | SESpecialForm FullNameRef
-                    (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression
     | SEAbstract SyntaxCase
@@ -334,6 +333,15 @@ data SyntaxExpression'
     | SEDecl SyntaxDeclarator
              SyntaxExpression
     | SEList [SyntaxExpression]
+    -- macro stuff
+    | SESpecialForm FullNameRef
+                    (NonEmpty SyntaxAnnotation)
+    | SESplice SyntaxExpression
+    | SEQuoteExpression SyntaxExpression
+    | SEQuoteScope [SyntaxDeclaration]
+    | SEQuoteType SyntaxType
+    | SEQuoteAnchor Anchor
+    -- debug
     | SEDebug Text
               SyntaxExpression
     deriving (Eq)

@@ -83,7 +83,6 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEConst sc) = syntaxFreeVariables sc
     syntaxFreeVariables (SEImplicitVar _) = mempty
     syntaxFreeVariables (SEVar ns name mb) = (opoint $ namespaceConcatFullName ns name) <> syntaxFreeVariables mb
-    syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
     syntaxFreeVariables (SEAbstract match) = syntaxFreeVariables match
     syntaxFreeVariables (SEAbstracts match) = syntaxFreeVariables match
@@ -98,6 +97,12 @@ instance SyntaxFreeVariables SyntaxExpression' where
             (syntaxFreeVariables decl <> syntaxFreeVariables expr)
             (mapMaybe btGetVar $ syntaxBindingVariables decl)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
+    syntaxFreeVariables (SESpecialForm _ _) = mempty
+    syntaxFreeVariables (SESplice _) = mempty
+    syntaxFreeVariables (SEQuoteExpression _) = mempty
+    syntaxFreeVariables (SEQuoteScope _) = mempty
+    syntaxFreeVariables (SEQuoteType _) = mempty
+    syntaxFreeVariables (SEQuoteAnchor _) = mempty
     syntaxFreeVariables (SEDebug _ expr) = syntaxFreeVariables expr
 
 instance SyntaxFreeVariables SyntaxBinding where

@@ -257,6 +257,7 @@ readDeclaration =
         , readPredicateTypeDeclaration
         , readNamespaceDecl
         , readDocSectionDecl
+        , fmap SpliceSyntaxDeclaration readSplice
         ]
 
 readSubsumedExpression :: SyntaxExpression -> Parser SyntaxExpression
@@ -458,6 +459,9 @@ readDeclarator =
          simps <- readCommaList readModuleName
          return $ SDImport simps)
 
+readSplice :: Parser SyntaxExpression
+readSplice = readBracketed TokSpliceOpenBrace TokCloseBrace readExpression
+
 readExpression1 :: Parser SyntaxExpression
 readExpression1 =
     readWithSourcePos
@@ -570,6 +574,23 @@ readExpression3 =
                  readWithSourcePos $ do
                      rexpr <- readExpression
                      return $ SEAppQuote rexpr) <|>
+    readWithSourcePos (fmap SESplice readSplice) <|>
+    readWithSourcePos
+        (do
+             sname <- readThis TokSpecialName
+             case sname of
+                 "expression" -> readBracketed TokOpenBrace TokCloseBrace $ fmap SEQuoteExpression readExpression
+                 "scope" -> readBracketed TokOpenBrace TokCloseBrace $ fmap SEQuoteScope $ readLines readDeclaration
+                 _ -> mzero) <|>
+    readWithSourcePos
+        (do
+             readThis TokAt
+             t <- readType3
+             return $ SEQuoteType t) <|>
+    readWithSourcePos
+        (do
+             anchor <- readThis TokAnchor
+             return $ SEQuoteAnchor anchor) <|>
     readWithSourcePos
         (do
              readThis TokUnquote

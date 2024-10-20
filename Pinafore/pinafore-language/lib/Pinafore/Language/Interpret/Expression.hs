@@ -9,6 +9,7 @@ module Pinafore.Language.Interpret.Expression
 
 import Data.Graph hiding (Forest, Tree)
 import Import
+import Pinafore.Language.Convert.Pinafore
 import Pinafore.Language.Debug
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
@@ -347,6 +348,12 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                  else id) $
             for_ decls interpretDeclaration
         DocSectionSyntaxDeclaration heading decls -> sectionHeading heading doc $ for_ decls interpretDeclaration
+        SpliceSyntaxDeclaration sexpr -> do
+            sd <-
+                builderLift $ do
+                    expr <- interpretExpression sexpr
+                    spliceDecls expr
+            registerScopeDocs sd
         DebugSyntaxDeclaration nameref -> do
             mfd <- builderLift $ lookupDebugBindingInfo nameref
             liftIO $
@@ -530,6 +537,27 @@ interpretExpression' (SEDebug t sexpr) = do
     expr <- interpretExpression sexpr
     liftIO $ debugMessage $ t <> ": " <> pack (show expr)
     return expr
+interpretExpression' (SESplice sexpr) = do
+    expr <- interpretExpression sexpr
+    spliceExpression expr
+interpretExpression' (SEQuoteExpression sexpr) = return $ qConst $ fmap MkLangExpression $ interpretExpression sexpr
+interpretExpression' (SEQuoteScope sdecls) = return $ qConst $ interpretScopeDocs sdecls
+interpretExpression' (SEQuoteType stype) = do
+    t <- interpretNonpolarType stype
+    return $ qConstValue $ mkLangTypeValue t
+interpretExpression' (SEQuoteAnchor anchor) = return $ qConst anchor
+
+spliceExpression :: QExpression -> QInterpreter QExpression
+spliceExpression spliceexpr = do
+    val <- qEvalExpr spliceexpr
+    mexpr <- qUnifyValue @(QInterpreter LangExpression) val
+    fmap unLangExpression mexpr
+
+spliceDecls :: QExpression -> QInterpreter QScopeDocs
+spliceDecls spliceexpr = do
+    val <- qEvalExpr spliceexpr
+    msd <- qUnifyValue @(QInterpreter QScopeDocs) val
+    msd
 
 checkExprVars :: QExpression -> QInterpreter ()
 checkExprVars (MkSealedExpression _ expr) = do
@@ -635,8 +663,11 @@ interpretSubtypeRelation trustme sta stb mbody docDescription = do
         docItem = SubtypeRelationDocItem {..}
     registerDocs $ pure MkDefDoc {..}
 
+interpretScopeDocs :: [SyntaxDeclaration] -> QInterpreter QScopeDocs
+interpretScopeDocs sdecls = runScopeBuilder $ for_ sdecls interpretDeclaration
+
 interpretModule :: SyntaxModule -> QInterpreter QModule
 interpretModule (MkSyntaxModule sdecls) = do
-    MkQScopeDocs scopes docs <- runScopeBuilder $ for_ sdecls interpretDeclaration
+    MkQScopeDocs scopes docs <- interpretScopeDocs sdecls
     scope <- joinAllScopes scopes
     return $ MkQModule docs scope
