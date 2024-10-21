@@ -4,8 +4,8 @@
 
 let {
     entitytype Item;
-    allItems: FiniteSetModel Item = set.Store @Item !"Items" ?store;
-    nameOf: Property Item Text = property @Item @Text !"name" ?store;
+    allItems: FiniteSetModel Item = !{set.Store @Item !"Items"} ?store;
+    nameOf: Property Item Text = !{property @Item @Text !"name"} ?store;
     import "gnome";
 }
 run.GTK $ fn gtk =>
@@ -15,7 +15,7 @@ imply {
     ?gtk = gtk;
 }
 do {
-    item <- new.OpenEntity @Item;
+    item <- !{new.OpenEntity @Item};
     allItems += item;
     _ <- open.Window.GTK ?gtk (400,400) ap{"List"} $
         let {nameColumn = (ap{"Name"},fn item => immut.WholeModel $ nameOf !$ ap{item})}

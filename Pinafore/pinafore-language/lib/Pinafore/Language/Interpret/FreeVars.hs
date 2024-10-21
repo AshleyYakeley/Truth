@@ -97,7 +97,6 @@ instance SyntaxFreeVariables SyntaxExpression' where
             (syntaxFreeVariables decl <> syntaxFreeVariables expr)
             (mapMaybe btGetVar $ syntaxBindingVariables decl)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
-    syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SESplice _) = mempty
     syntaxFreeVariables (SEQuoteExpression _) = mempty
     syntaxFreeVariables (SEQuoteScope _) = mempty

@@ -13,7 +13,7 @@ emptywindow: Context.GTK -> Action Unit =
 entitytype T;
 
 newpoint: Action Unit =
-    do {s <- newMem.FiniteSetModel; p <- new.OpenEntity @T; s += p; pure ();};
+    do {s <- newMem.FiniteSetModel; p <- !{new.OpenEntity @T}; s += p; pure ();};
 }
 run $ fn gtk =>
 open.Window gtk (300,400) ap{"Test"} $

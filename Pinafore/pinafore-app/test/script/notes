@@ -3,7 +3,7 @@ let {
     import "media";
 
     entitytype World;
-    world = cell.Store @World !"pinafore-notes.world" ?store;
+    world = !{cell.Store @World !"pinafore-notes.world"} ?store;
 
     let {
         entitytype ItemType;
@@ -13,28 +13,28 @@ let {
         };
         namespace Item {
             new: ItemType -> Action Item =
-                fn t => map.Action (Mk t) $ new.OpenEntity. @ItemValue;
+                fn t => map.Action (Mk t) $ !{new.OpenEntity. @ItemValue};
             is: ItemType -> Item -> Boolean =
                 fn t, Mk it _ => it == t;
         };
     } expose Item, ItemType, new.Item, is.Item;
 
     items: FiniteSetModel Item =
-        property @Item @World !"pinafore-notes.Item-World" ?store !@ world;
+        !{property @Item @World !"pinafore-notes.Item-World"} ?store !@ world;
 
     nameOf: Property Item Text =
-        property @Item @Text !"pinafore-notes.name" ?store;
+        !{property @Item @Text !"pinafore-notes.name"} ?store;
 
     namespace Note {
-        itype: ItemType = point.OpenEntity. @ItemType !"pinafore-notes.Note";
+        itype: ItemType = !{point.OpenEntity. @ItemType !"pinafore-notes.Note"};
     };
     predicatetype storable Note <: Item = is.Item itype.Note;
     namespace Note {
-        new: Action Note = map.Action (coerce @Note) $ new.Item itype.Note;
+        new: Action Note = map.Action (!{coerce @Note}) $ new.Item itype.Note;
     };
 
-    notes: FiniteSetModel Note = dynamic.Prism @Note !$$ items;
-    content = property @Note @CommonMarkText !"pinafore-notes.content" ?store;
+    notes: FiniteSetModel Note = !{dynamic.Prism @Note} !$$ items;
+    content = !{property @Note @CommonMarkText !"pinafore-notes.content"} ?store;
 
     import "gnome", "UILib";
     with UILib;

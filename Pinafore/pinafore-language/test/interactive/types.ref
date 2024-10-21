@@ -1,13 +1,13 @@
 pinafore> entitytype P
 pinafore> entitytype Q
 pinafore> subtype P <: Q
-pinafore> p = point.OpenEntity @P !"p"
-pinafore> q = point.OpenEntity @Q !"q"
+pinafore> p = !{point.OpenEntity @P !"p"}
+pinafore> q = !{point.OpenEntity @Q !"q"}
 pinafore> with Attribute
 pinafore> with Store
 pinafore> store <- openTemp.Store
-pinafore> pp = property @P @P !"pp" store
-pinafore> qp = property @Q @P !"qp" store
+pinafore> pp = !{property @P @P !"pp"} store
+pinafore> qp = !{property @Q @P !"qp"} store
 pinafore> :t pp
 : Property P P
 pinafore> :t pp !$ ap{p}

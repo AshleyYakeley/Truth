@@ -3,16 +3,44 @@ module Pinafore.Language.Library.Function
     ) where
 
 import Import
+import Pinafore.Language.Convert.Pinafore
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Types
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 
 revap :: A -> (A -> B) -> B
 revap x f = f x
+
+langCheck :: LangType -> QInterpreter LangExpression
+langCheck (MkLangType npt) = do
+    let
+        tn = nonpolarToNegative @QTypeSystem npt
+        tp = nonpolarToPositive @QTypeSystem npt
+    MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
+    let
+        stype = funcShimWit (mkShimWit dtw) $ maybeShimWit tp
+        sexpr = fmap shimToFunction expr
+    return $ MkLangExpression $ MkSealedExpression stype sexpr
+
+langCoerce :: LangType -> QInterpreter LangExpression
+langCoerce (MkLangType npt) = do
+    let
+        tn = nonpolarToNegative @QTypeSystem npt
+        tp = nonpolarToPositive @QTypeSystem npt
+    MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
+    let
+        fromJustOrError :: forall t. Maybe t -> t
+        fromJustOrError =
+            \case
+                Just t -> t
+                Nothing ->
+                    error $ unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
+        stype = funcShimWit (mkShimWit dtw) tp
+        sexpr = fmap (\conv t -> fromJustOrError $ shimToFunction conv t) expr
+    return $ MkLangExpression $ MkSealedExpression stype sexpr
 
 functionLibSection :: LibraryStuff
 functionLibSection =
@@ -35,30 +63,7 @@ functionLibSection =
                 "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
                 (seq :: TopType -> A -> A)
           , addNameInRootBDS $
-            specialFormBDS "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
-            MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome npt, ()) -> do
-                let
-                    tn = nonpolarToNegative @QTypeSystem npt
-                    tp = nonpolarToPositive @QTypeSystem npt
-                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
-                return $ MkSealedExpression (funcShimWit (mkShimWit dtw) $ maybeShimWit tp) $ fmap shimToFunction expr
-          , addNameInRootBDS $
-            specialFormBDS "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
-            MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome npt, ()) -> do
-                let
-                    tn = nonpolarToNegative @QTypeSystem npt
-                    tp = nonpolarToPositive @QTypeSystem npt
-                MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
-                let
-                    fromJustOrError :: forall t. Maybe t -> t
-                    fromJustOrError =
-                        \case
-                            Just t -> t
-                            Nothing ->
-                                error $
-                                unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
-                return $
-                    MkSealedExpression (funcShimWit (mkShimWit dtw) tp) $
-                    fmap (\conv t -> fromJustOrError $ shimToFunction conv t) expr
+            valBDS "check" "`!{check @A}: D(A) -> Maybe A`\nCheck from a dynamic supertype." langCheck
+          , addNameInRootBDS $ valBDS "coerce" "`!{coerce @A}: D(A) -> A`\nCoerce from a dynamic supertype." langCoerce
           ]
         ]

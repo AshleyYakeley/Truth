@@ -375,7 +375,7 @@ testUnifier =
                             expr <-
                                 parseTopExpression $
                                 "fn store => let {entitytype E}\n" <>
-                                "property @E @Integer !\"r\" store !$ ap{point.OpenEntity @E !\"p\"} := 456"
+                                "!{property @E @Integer !\"r\"} store !$ ap{!{point.OpenEntity @E !\"p\"}} := 456"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     testerRunAction $ action smodel
@@ -386,7 +386,7 @@ testUnifier =
                         testerLiftInterpreter $ do
                             expr <-
                                 parseTopExpression $
-                                "fn store => let {entitytype E} property @E @Integer !\"r\" store !$ ap{point.OpenEntity @E !\"p\"}"
+                                "fn store => let {entitytype E} !{property @E @Integer !\"r\"} store !$ ap{!{point.OpenEntity @E !\"p\"}}"
                             val <- qEvalExpr expr
                             qUnifyValue val
                     testerRunAction $ langWholeModelSet (rval smodel) $ Known 345

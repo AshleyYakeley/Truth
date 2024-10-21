@@ -75,11 +75,11 @@ let {
 
     namespace Event {
         eventSet: FiniteSetModel Event =
-        set.Store @Event !"type.event" ?store;
+            !{set.Store @Event !"type.event"} ?store;
 
-        timeOf = property @Event @EventTime !"event.time" ?store;
+        timeOf = !{property @Event @EventTime !"event.time"} ?store;
 
-        notesOf = property @Event @Text !"item.description" ?store;
+        notesOf = !{property @Event @Text !"item.description"} ?store;
 
         order: ModelOrder Event =
         on.ModelOrder timeOf order.EventTime;
@@ -164,7 +164,7 @@ let {
                 defaultKeyBinding = Just "Ctrl+K";
                 action =
                     fn (_,Mk.SetContext) => do {
-                        item <- new.OpenEntity @Event;
+                        item <- !{new.OpenEntity @Event};
                         day <- getNowLocal.Date;
                         timeOf.Event !$ ap{item} := MkDate.EventTime day;
                         nameOf.Named !$ ap{item} := "";

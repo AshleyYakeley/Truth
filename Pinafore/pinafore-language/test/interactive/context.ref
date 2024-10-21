@@ -1,8 +1,8 @@
 pinafore> entitytype P
 pinafore> entitytype Q
 pinafore> subtype P <: Q
-pinafore> p = point.OpenEntity @P !"p"
-pinafore> q = point.OpenEntity @Q !"q"
+pinafore> p = !{point.OpenEntity @P !"p"}
+pinafore> q = !{point.OpenEntity @Q !"q"}
 pinafore> fp : P -> Boolean = fn _ => True
 pinafore> fq : Q -> Boolean = fn _ => True
 pinafore> fp p

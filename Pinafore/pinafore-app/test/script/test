@@ -33,36 +33,36 @@ let {
 
     entitytype Person;
 
-    people = set.Store @Person !"f06efa5e-190f-4e5d-8633-495c5683c124" store;
+    people = !{set.Store @Person !"f06efa5e-190f-4e5d-8633-495c5683c124"} store;
 
-    name = property @Person @Text !"498260df-6a8a-44f0-b285-68a63565a33b" store;
+    name = !{property @Person @Text !"498260df-6a8a-44f0-b285-68a63565a33b"} store;
 
 
-    mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085" store;
-    father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5" store;
+    mother = !{property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085"} store;
+    father = !{property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5"} store;
     # parents : WholeModel Person -> FiniteSetModel Person;
     # parents p = (mother !$ p) <|> (father !$ p);
     children : WholeModel Person -> FiniteSetModel Person =
         fn p => mother !@ p <:|:> father !@ p;
 
-    employer = property @Person @Person !"72f612af-ae47-4c18-b3df-6932ae914f62" store;
+    employer = !{property @Person @Person !"72f612af-ae47-4c18-b3df-6932ae914f62"} store;
 
-    email = property @Person @Text !"8649b74c-123e-4ece-be3b-b734b0db3ea7" store;
+    email = !{property @Person @Text !"8649b74c-123e-4ece-be3b-b734b0db3ea7"} store;
 
-    phone = property @Person @Text !"83dfc88b-7b5b-4262-a548-0af84d5e3b63" store;
+    phone = !{property @Person @Text !"83dfc88b-7b5b-4262-a548-0af84d5e3b63"} store;
 
     entitytype Location;
-    home = property @Person @Location !"b4f7736e-2db4-486c-aae5-b6a9b1035fd0" store;
-    address = property @Location @Text !"fd83bef7-145c-4e40-a2d6-938bb5fb6da1" store;
-    locphone = property @Location @Text !"0689535c-f220-47a2-8fcb-4782574e0749" store;
-    city = property @Location @Text !"55c84133-64f2-47a6-8b3c-e01256ec9779" store;
-    postcode = property @Location @Text !"80f99100-407b-4a6b-a4f0-a025c94132b3" store;
-    province = property @Location @Text !"dffae424-28d5-4543-b1b2-b8a744bbc0cd" store;
-    country = property @Location @Text !"1257c340-0ec1-4ff7-9fd8-d2eaa7822463" store;
+    home = !{property @Person @Location !"b4f7736e-2db4-486c-aae5-b6a9b1035fd0"} store;
+    address = !{property @Location @Text !"fd83bef7-145c-4e40-a2d6-938bb5fb6da1"} store;
+    locphone = !{property @Location @Text !"0689535c-f220-47a2-8fcb-4782574e0749"} store;
+    city = !{property @Location @Text !"55c84133-64f2-47a6-8b3c-e01256ec9779"} store;
+    postcode = !{property @Location @Text !"80f99100-407b-4a6b-a4f0-a025c94132b3"} store;
+    province = !{property @Location @Text !"dffae424-28d5-4543-b1b2-b8a744bbc0cd"} store;
+    country = !{property @Location @Text !"1257c340-0ec1-4ff7-9fd8-d2eaa7822463"} store;
 
-    birthdate = property @Person @Text !"b711b9b3-b43c-4ff6-be12-3291cc6b050a" store;
-    deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb" store;
-    married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22" store;
+    birthdate = !{property @Person @Text !"b711b9b3-b43c-4ff6-be12-3291cc6b050a"} store;
+    deathdate = !{property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb"} store;
+    married = !{property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22"} store;
 
     # GTK
     let rec {
@@ -72,7 +72,7 @@ let {
                 selectedperson <- newMem.WholeModel;
                 pplist <- getList.FiniteSetModel empty.Order pp;
                 pure $ vertical.Widget [
-                    button.Widget ap{"New Person"} ap{do {p <- new.OpenEntity @Person; pp += p; window_person p}},
+                    button.Widget ap{"New Person"} ap{do {p <- !{new.OpenEntity @Person}; pp += p; window_person p}},
                     button.Widget ap{"View Person"} ap{get selectedperson >>= window_person},
                     button.Widget ap{"Remove Person"} ap{get selectedperson >>= fn p => pp -= p},
                     grow.Layout.Widget $ listTable.Widget [(ap{"Name"},fn p => name !$ ap{p})] pplist window_person (Just selectedperson)
@@ -130,9 +130,9 @@ let {
     window_calc: Action Window =
         let {
             entitytype P;
-            pvalue = property @P @Number !"pvalue" store;
-            aval = pvalue !$ ap{point.OpenEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
-            bval = pvalue !$ ap{point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
+            pvalue = !{property @P @Number !"pvalue"} store;
+            aval = pvalue !$ ap{!{point.OpenEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"}};
+            bval = pvalue !$ ap{!{point.OpenEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"}};
         } std_window ap{"Calc"} $
         vertical.Widget [
             textEntry.Widget $ asText.Number !$ aval,
@@ -145,11 +145,11 @@ let {
     window_switch: Action Window =
         let {
             entitytype P;
-            pbool = property @P @Boolean !"pbool" store;
-            ptext = property @P @Text !"ptext" store;
-            sw_pick = pbool !$ ap{point.OpenEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
-            sw_val1 = ptext !$ ap{point.OpenEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
-            sw_val2 = ptext !$ ap{point.OpenEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
+            pbool = !{property @P @Boolean !"pbool"} store;
+            ptext = !{property @P @Text !"ptext"} store;
+            sw_pick = pbool !$ ap{!{point.OpenEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"}};
+            sw_val1 = ptext !$ ap{!{point.OpenEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"}};
+            sw_val2 = ptext !$ ap{!{point.OpenEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"}};
         } std_window ap{"Switch"} $
         vertical.Widget [
             #textEntry.Widget sw_pick),

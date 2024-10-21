@@ -16,7 +16,6 @@ import Pinafore.Language.Expression
 import Pinafore.Language.If
 import Pinafore.Language.Interpret.AppNotation
 import Pinafore.Language.Interpret.FreeVars
-import Pinafore.Language.Interpret.SpecialForm
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Interpret.Value
@@ -527,7 +526,6 @@ interpretExpression' (SEVar _ name mvals) = do
     marglist <- for mvals interpretRecordArgList
     interpretValue name marglist
 interpretExpression' (SEImplicitVar name) = return $ qVar $ ImplicitVarID name
-interpretExpression' (SESpecialForm name annots) = interpretSpecialForm name Nothing $ toList annots
 interpretExpression' (SEAppQuote sexpr) = appNotationQuote $ interpretExpression sexpr
 interpretExpression' (SEAppUnquote sexpr) = appNotationUnquote $ interpretExpression sexpr
 interpretExpression' (SEList sexprs) = do

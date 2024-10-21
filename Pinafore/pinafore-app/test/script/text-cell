@@ -2,6 +2,6 @@
 import "gnome"
 openLocal.Store {} >>= fn store =>
 run.GTK $ fn gtk =>
-let {c = cell.Store @Text !"cell" store}
+let {c = !{cell.Store @Text !"cell"} store}
 open.Window.GTK gtk (400,500) ap{"Test"} $
     textEntry.Widget.GTK c

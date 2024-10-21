@@ -7,10 +7,10 @@ let {
   # a person
   entitytype Person;
   people: FiniteSetModel Person =
-    set.Store @Person !"p" store;
+    !{set.Store @Person !"p"} store;
 
   name: Property Person Text =
-    property @Person @Text !"identify.name" store;
+    !{property @Person @Text !"identify.name"} store;
 } do {
   outputLn.Env "Main Start";
   lm <- getList.FiniteSetModel order.Entity people;
@@ -19,7 +19,7 @@ let {
     outputLn.Env "Thread Start";
     sleep $ Seconds 0.2;
     for_ (range 0 200) $ fn i => do {
-      p <- new.OpenEntity @Person;
+      p <- !{new.OpenEntity @Person};
       outputLn.Env $ "Thread Push " <>.Text show i;
       people += p;
     };

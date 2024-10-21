@@ -292,11 +292,6 @@ instance TestEquality SyntaxMulticase where
 instance Eq (SyntaxMulticase n) where
     a == b = isJust $ testEquality a b
 
-data SyntaxAnnotation
-    = SAType SyntaxType
-    | SAAnchor Anchor
-    deriving (Eq)
-
 data SyntaxConstant
     = SCIfThenElse
     | SCConstructor SyntaxConstructor
@@ -334,8 +329,6 @@ data SyntaxExpression'
              SyntaxExpression
     | SEList [SyntaxExpression]
     -- macro stuff
-    | SESpecialForm FullNameRef
-                    (NonEmpty SyntaxAnnotation)
     | SESplice SyntaxExpression
     | SEQuoteExpression SyntaxExpression
     | SEQuoteScope [SyntaxDeclaration]

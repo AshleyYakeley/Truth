@@ -5,7 +5,7 @@ import "gnome"
 with Store
 let {
     entitytype T;
-    me = point.OpenEntity @T !"T";
+    me = !{point.OpenEntity @T !"T"};
 
     func20 = fn n, a, b, c, d, e, f => label.Widget.GTK n;
     func19 = fn n, a, b, c, d, e, f => func20 n a b c d e f;
@@ -32,7 +32,7 @@ let {
     w : Context.GTK -> Action Window.GTK =
         fn gtk => open.Window.GTK gtk (300,400) ap{"Test"} $ func0 (pure.WholeModel "Text") False False False False False False;
 
-    prop0 = property @T @Text !"000" store;
+    prop0 = !{property @T @Text !"000"} store;
 
     act : Action Unit =
     do {

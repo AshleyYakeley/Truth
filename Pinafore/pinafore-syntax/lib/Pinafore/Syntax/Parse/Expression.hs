@@ -532,16 +532,6 @@ readExpression2 = do
     sargs <- many readExpression3
     return $ seApplys spos sfunc sargs
 
-readAnnotation :: Parser SyntaxAnnotation
-readAnnotation =
-    (do
-         readThis TokAt
-         t <- readType3
-         return $ SAType t) <|>
-    (do
-         anchor <- readThis TokAnchor
-         return $ SAAnchor anchor)
-
 readExpression3 :: Parser SyntaxExpression
 readExpression3 =
     readWithSourcePos
@@ -555,11 +545,7 @@ readExpression3 =
                   rv <- readRecordValue readExpression
                   curns <- readAskNamespace
                   return $ SEVar curns name $ Just rv) <|>
-                 (do
-                      annotations <- many readAnnotation
-                      case annotations of
-                          [] -> readMkVar name
-                          (a:aa) -> return $ SESpecialForm name $ a :| aa)) <|>
+                 (readMkVar name)) <|>
     readWithSourcePos
         (do
              c <- readConstructor $ Just readExpression

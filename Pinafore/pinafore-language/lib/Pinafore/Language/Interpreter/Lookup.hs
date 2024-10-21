@@ -7,7 +7,6 @@ module Pinafore.Language.Interpreter.Lookup
     , lookupBoundType
     , lookupPatternConstructor
     , lookupRecordConstructor
-    , lookupSpecialForm
     , QBoundValue(..)
     , lookupValue
     , lookupRecord
@@ -73,13 +72,9 @@ lookupPatternConstructor name = do
 lookupRecordConstructor :: FullNameRef -> QInterpreter QRecordConstructor
 lookupRecordConstructor = lookupSelector recordConstructorBindingSelector
 
-lookupSpecialForm :: FullNameRef -> QInterpreter QSpecialForm
-lookupSpecialForm = lookupSelector specialFormBindingSelector
-
 data QBoundValue
     = ValueBoundValue QExpression
     | RecordBoundValue QRecordValue
-    | SpecialFormBoundValue QSpecialForm
 
 lookupRecord :: FullNameRef -> QInterpreter QRecordValue
 lookupRecord = lookupSelector recordValueBindingSelector
@@ -91,7 +86,6 @@ getBoundValue =
         PatternConstructorBinding exp _ -> Just $ ValueBoundValue exp
         RecordValueBinding rv -> Just $ RecordBoundValue rv
         RecordConstructorBinding rc -> Just $ RecordBoundValue $ recordConstructorToValue rc
-        SpecialFormBinding sf -> Just $ SpecialFormBoundValue sf
         _ -> Nothing
 
 lookupValue :: FullNameRef -> QInterpreter QBoundValue

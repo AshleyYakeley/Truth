@@ -3,19 +3,16 @@ module Pinafore.Language.Interpreter.Binding
     , QRecordValue(..)
     , QRecordConstructor(..)
     , recordConstructorToValue
-    , QSpecialForm(..)
     , QInterpreterBinding(..)
     , QBindingInfo(..)
     , BindingSelector(..)
     , typeBindingSelector
     , recordConstructorBindingSelector
     , recordValueBindingSelector
-    , specialFormBindingSelector
     ) where
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
@@ -56,11 +53,6 @@ recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) =
     MkQRecordValue (listVTypeToType sigs) $
     constSealedFExpression $ MkSomeFor (shimWitToDolan vtype) (encode codec . listProductToVProduct sigs)
 
-type QSpecialForm :: Type
-data QSpecialForm =
-    forall lt. MkQSpecialForm (ListType QAnnotation lt)
-                              (ListProduct lt -> Interpreter QExpression)
-
 data QInterpreterBinding
     = ValueBinding QExpression
     | RecordValueBinding QRecordValue
@@ -68,7 +60,6 @@ data QInterpreterBinding
                                 QPatternConstructor
     | RecordConstructorBinding QRecordConstructor
     | TypeBinding QSomeGroundType
-    | SpecialFormBinding QSpecialForm
 
 instance HasInterpreter => Show QInterpreterBinding where
     show (ValueBinding e) = "val: " <> show e
@@ -76,7 +67,6 @@ instance HasInterpreter => Show QInterpreterBinding where
     show (PatternConstructorBinding e _) = "cons: " <> show e
     show (RecordConstructorBinding _) = "recordcons"
     show (TypeBinding t) = "type: " <> exprShowShow t
-    show (SpecialFormBinding _) = "special"
 
 data QBindingInfo = MkQBindingInfo
     { biOriginalName :: FullName
@@ -113,12 +103,4 @@ recordValueBindingSelector = let
     bsDecode (RecordConstructorBinding t) = Just $ recordConstructorToValue t
     bsDecode _ = Nothing
     bsError = LookupNotRecordError
-    in MkBindingSelector {..}
-
-specialFormBindingSelector :: BindingSelector QSpecialForm
-specialFormBindingSelector = let
-    bsEncode = SpecialFormBinding
-    bsDecode (SpecialFormBinding t) = Just t
-    bsDecode _ = Nothing
-    bsError = LookupNotSpecialFormError
     in MkBindingSelector {..}

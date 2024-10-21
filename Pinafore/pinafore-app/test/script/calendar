@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 openLocal.Store {} >>=
 fn store =>
-let {rdate = cell.Store @Date !"calendar-test" store}
+let {rdate = !{cell.Store @Date !"calendar-test"} store}
 import "gnome"
 with GTK.
 run $ fn gtk => open.Window gtk (300,400) ap{"Test Calendar"} $ vertical.Widget [calendar.Widget rdate,grow.Layout.Widget $ label.Widget ap{show %rdate}]

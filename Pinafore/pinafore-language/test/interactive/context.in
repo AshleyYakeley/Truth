@@ -1,8 +1,8 @@
 entitytype P
 entitytype Q
 subtype P <: Q
-p = point.OpenEntity @P !"p"
-q = point.OpenEntity @Q !"q"
+p = !{point.OpenEntity @P !"p"}
+q = !{point.OpenEntity @Q !"q"}
 fp : P -> Boolean = fn _ => True
 fq : Q -> Boolean = fn _ => True
 fp p

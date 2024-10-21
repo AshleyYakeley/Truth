@@ -316,23 +316,23 @@ testEntity =
           tWith ["Store"] $
           tDecls
               [ "entitytype E"
-              , "eea = property @E @E !\"eea\" store"
-              , "eeb = property @E @E !\"eeb\" store"
-              , "eec = property @E @E !\"eec\" store"
-              , "eed = property @E @E !\"eed\" store"
-              , "eta = property @E @Text !\"eta\" store"
-              , "eia = property @E @Integer !\"eia\" store"
-              , "eib = property @E @Integer !\"eib\" store"
-              , "eic = property @E @Integer !\"eic\" store"
-              , "tea = property @Text @E !\"tea\" store"
-              , "nea = property @Integer @E !\"nea\" store"
-              , "e1 = point.OpenEntity @E !\"e1\""
-              , "e2 = point.OpenEntity @E !\"e2\""
-              , "e3 = point.OpenEntity @E !\"e3\""
-              , "e4 = point.OpenEntity @E !\"e4\""
-              , "eba = property @E @Boolean !\"eba\" store"
-              , "era = property @E @Rational !\"era\" store"
-              , "ena = property @E @Number !\"ena\" store"
+              , "eea = !{property @E @E !\"eea\"} store"
+              , "eeb = !{property @E @E !\"eeb\"} store"
+              , "eec = !{property @E @E !\"eec\"} store"
+              , "eed = !{property @E @E !\"eed\"} store"
+              , "eta = !{property @E @Text !\"eta\"} store"
+              , "eia = !{property @E @Integer !\"eia\"} store"
+              , "eib = !{property @E @Integer !\"eib\"} store"
+              , "eic = !{property @E @Integer !\"eic\"} store"
+              , "tea = !{property @Text @E !\"tea\"} store"
+              , "nea = !{property @Integer @E !\"nea\"} store"
+              , "e1 = !{point.OpenEntity @E !\"e1\"}"
+              , "e2 = !{point.OpenEntity @E !\"e2\"}"
+              , "e3 = !{point.OpenEntity @E !\"e3\"}"
+              , "e4 = !{point.OpenEntity @E !\"e4\"}"
+              , "eba = !{property @E @Boolean !\"eba\"} store"
+              , "era = !{property @E @Rational !\"era\"} store"
+              , "ena = !{property @E @Number !\"ena\"} store"
               ] $
           tGroup
               "storage"
@@ -387,13 +387,13 @@ testEntity =
                     [ testExpectSuccess
                           "eta !@ ap{\"hello\"} += e1 >> clear.FiniteSetModel (eta !@ ap{\"hello\"}) >> testrefisunknown (eta !$ ap{e1})"
                     ]
-              , tDecls ["c1 = cell @Boolean !\"c1\" store"] $
+              , tDecls ["c1 = !{cell @Boolean !\"c1\"} store"] $
                 tGroup
                     "cell"
                     [ testExpectSuccess "c1 := True >> testrefeq ap{True} c1"
                     , testExpectSuccess "c1 := False >> testrefeq ap{False} c1"
                     ]
-              , tDecls ["s1 = set @Integer !\"s1\" store"] $
+              , tDecls ["s1 = !{set @Integer !\"s1\"} store"] $
                 tGroup
                     "set"
                     [ testExpectSuccess "testrefeq ap{[]} (toList.FiniteSetModel order.Integer s1)"
@@ -403,30 +403,31 @@ testEntity =
                     ]
               , tGroup
                     "type"
-                    [ testExpectSuccess "let {c = cell @Boolean !\"c\" store} pass"
-                    , testExpectSuccess "let {c = cell @Unit !\"c\" store} pass"
-                    , testExpectSuccess "let {c = cell @(Maybe Integer) !\"c\" store} pass"
-                    , testExpectSuccess "let {c = cell @(List Unit) !\"c\" store} pass"
-                    , testExpectSuccess "let {c = cell @(List (List (List Integer))) !\"c\" store} pass"
+                    [ testExpectSuccess "let {c = !{cell @Boolean !\"c\"} store} pass"
+                    , testExpectSuccess "let {c = !{cell @Unit !\"c\"} store} pass"
+                    , testExpectSuccess "let {c = !{cell @(Maybe Integer) !\"c\"} store} pass"
+                    , testExpectSuccess "let {c = !{cell @(List Unit) !\"c\"} store} pass"
+                    , testExpectSuccess "let {c = !{cell @(List (List (List Integer))) !\"c\"} store} pass"
                     ]
               , tDecls
                     [ "longtext = \"jfkljgkljrklgjkvbnvleriirejgioerjhgitrklnmbdfmkl;dmnverireigjerkgjrevjkrljvkljvklsjvroejrgiojgireojg\""
-                    , "ela = property @E @(List Integer) !\"ela\" store"
+                    , "ela = !{property @E @(List Integer) !\"ela\"} store"
                     ] $
                 tGroup
                     "fetch"
                     [ testExpectSuccess "pass"
                     , testExpectSuccess
-                          "do {v <- fetch @Text store \"hvfjkhvjrkes\"; testrefeq ap{\"hvfjkhvjrkes\"} ap{v}}"
+                          "do {v <- !{fetch @Text} store \"hvfjkhvjrkes\"; testrefeq ap{\"hvfjkhvjrkes\"} ap{v}}"
                     , testExpectSuccess
-                          "expectStop $ do {v <- fetch @Text store longtext; testrefeq ap{longtext} ap{v}}"
+                          "expectStop $ do {v <- !{fetch @Text} store longtext; testrefeq ap{longtext} ap{v}}"
                     , testExpectSuccess
-                          "do {eta !$ ap{e1} := longtext; v <- fetch @Text store longtext; testrefeq ap{longtext} ap{v}}"
-                    , testExpectSuccess "expectStop $ do {v <- fetch @Text store [3,4,5]; testrefeq ap{[3,4,5]} ap{v}}"
+                          "do {eta !$ ap{e1} := longtext; v <- !{fetch @Text} store longtext; testrefeq ap{longtext} ap{v}}"
+                    , testExpectSuccess
+                          "expectStop $ do {v <- !{fetch @Text} store [3,4,5]; testrefeq ap{[3,4,5]} ap{v}}"
                     , testExpectSuccess
                           "do {ela !$ ap{e1} := [3,4,5]; v <- get $ ela !$ ap{e1}; testrefeq ap{[3,4,5]} ap{v}}"
                     , testExpectSuccess
-                          "do {ela !$ ap{e1} := [3,4,5]; v <- fetch @(List Integer) store [3,4,5]; testrefeq ap{[3,4,5]} ap{v}}"
+                          "do {ela !$ ap{e1} := [3,4,5]; v <- !{fetch @(List Integer)} store [3,4,5]; testrefeq ap{[3,4,5]} ap{v}}"
                     ]
               , tGroup
                     "literal storage"
@@ -612,31 +613,31 @@ testEntity =
               , tGroup
                     "Maybe"
                     [ testExpectSuccess
-                          "let {enta = property @E @(Maybe Text) !\"enta\" store} enta !$ ap{e1} := Just \"abc\" >> (testrefeq ap{Just \"abc\"} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Maybe Text) !\"enta\"} store} enta !$ ap{e1} := Just \"abc\" >> (testrefeq ap{Just \"abc\"} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let {enta = property @E @(Maybe Text) !\"enta\" store} enta !$ ap{e1} := Nothing >> (testrefeq ap{Nothing} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Maybe Text) !\"enta\"} store} enta !$ ap{e1} := Nothing >> (testrefeq ap{Nothing} $ enta !$ ap{e1})"
                     ]
               , tGroup
                     "List"
                     [ testExpectSuccess
-                          "let {enta = property @E @(List Text) !\"enta\" store} enta !$ ap{e1} := [\"abc\", \"def\"] >> (testrefeq ap{[\"abc\", \"def\"]} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(List Text) !\"enta\"} store} enta !$ ap{e1} := [\"abc\", \"def\"] >> (testrefeq ap{[\"abc\", \"def\"]} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let {enta = property @E @(List Text) !\"enta\" store} enta !$ ap{e1} := [] >> (testrefeq ap{[]} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(List Text) !\"enta\"} store} enta !$ ap{e1} := [] >> (testrefeq ap{[]} $ enta !$ ap{e1})"
                     ]
               , tGroup
                     "Pair/Either"
                     [ testExpectSuccess
-                          "let {enta = property @E @(Number *: Text) !\"enta\" store} enta !$ ap{e1} := (74,\"hmm\") >> (testrefneq ap{(71,\"hmm\")} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Number *: Text) !\"enta\"} store} enta !$ ap{e1} := (74,\"hmm\") >> (testrefneq ap{(71,\"hmm\")} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let {enta = property @E @(Number *: Text) !\"enta\" store} enta !$ ap{e1} := (74,\"hmm\") >> (testrefeq ap{(74,\"hmm\")} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Number *: Text) !\"enta\"} store} enta !$ ap{e1} := (74,\"hmm\") >> (testrefeq ap{(74,\"hmm\")} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Left 74 >> (testrefneq ap{Left 73} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Number +: Text) !\"enta\"} store} enta !$ ap{e1} := Left 74 >> (testrefneq ap{Left 73} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Left 74 >> (testrefeq ap{Left 74} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Number +: Text) !\"enta\"} store} enta !$ ap{e1} := Left 74 >> (testrefeq ap{Left 74} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Right \"abc\" >> (testrefneq ap{Right \"adbc\"} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Number +: Text) !\"enta\"} store} enta !$ ap{e1} := Right \"abc\" >> (testrefneq ap{Right \"adbc\"} $ enta !$ ap{e1})"
                     , testExpectSuccess
-                          "let {enta = property @E @(Number +: Text) !\"enta\" store} enta !$ ap{e1} := Right \"abc\" >> (testrefeq ap{Right \"abc\"} $ enta !$ ap{e1})"
+                          "let {enta = !{property @E @(Number +: Text) !\"enta\"} store} enta !$ ap{e1} := Right \"abc\" >> (testrefeq ap{Right \"abc\"} $ enta !$ ap{e1})"
                     ]
               ]
         , tGroup
@@ -794,16 +795,17 @@ testEntity =
                       [ testExpectSuccess "pass"
                       , tGroup "Even <: Integer" $ strictSubtypeTests "Even" "Integer"
                       , tGroup "Even <: Literal" $ strictSubtypeTests "Even" "Literal"
-                      , testExpectSuccess "testrefeq ap{Just 4} ap{check @Even 4}"
-                      , testExpectSuccess "testrefeq ap{Nothing} ap{check @Even 5}"
+                      , testExpectSuccess "testrefeq ap{Just 4} ap{!{check @Even} 4}"
+                      , testExpectSuccess "testrefeq ap{Nothing} ap{!{check @Even} 5}"
                       ]
                 , tDecls ["predicatetype F <: Integer -> Integer = fn f => f 3 == 4"] $
                   tGroup
                       "Integer -> Integer"
                       [ testExpectSuccess "pass"
-                      , testExpectSuccess "testIsJust $ check @F $ fn x => x + 1"
-                      , testExpectSuccess "testIsNothing $ check @F $ fn x => x"
-                      , testExpectSuccess "testrefeq ap{Just 6} ap{map.Maybe (fn f => f 5) $ check @F $ fn x => x + 1}"
+                      , testExpectSuccess "testIsJust $ !{check @F} $ fn x => x + 1"
+                      , testExpectSuccess "testIsNothing $ !{check @F} $ fn x => x"
+                      , testExpectSuccess
+                            "testrefeq ap{Just 6} ap{map.Maybe (fn f => f 5) $ !{check @F} $ fn x => x + 1}"
                       ]
                 , testExpectReject "let {predicatetype F <: a -> a = fn f => True} pass"
                 , tGroup
@@ -826,8 +828,8 @@ testEntity =
                         tWith ["Store"] $
                         tDecls
                             [ "predicatetype storable Even <: Integer = fn i => mod i 2 == 0"
-                            , "cellInteger = cell @Integer !\"c\" store"
-                            , "cellEven = cell @Even !\"c\" store"
+                            , "cellInteger = !{cell @Integer !\"c\"} store"
+                            , "cellEven = !{cell @Even !\"c\"} store"
                             ] $
                         tGroup
                             "store"
@@ -1548,13 +1550,13 @@ testEntity =
         , tGroup
               "type-escape"
               [ testExpectSuccess
-                    "let {entitytype T; t = let {} point.OpenEntity @T !\"t\"; f = let {f : T -> Action Unit = fn _ => pass} f;} f t"
+                    "let {entitytype T; t = let {} !{point.OpenEntity @T !\"t\"}; f = let {f : T -> Action Unit = fn _ => pass} f;} f t"
               , testExpectReject
-                    "let {entitytype T1; entitytype T2; t = let {} point.OpenEntity @T1 !\"t\"; f = let {f : T2 -> Action Unit = fn _ => pass} f;} f t"
+                    "let {entitytype T1; entitytype T2; t = let {} !{point.OpenEntity @T1 !\"t\"}; f = let {f : T2 -> Action Unit = fn _ => pass} f;} f t"
               , testExpectReject
-                    "let {t = let {entitytype T} point.OpenEntity @T !\"t\"; f = let {entitytype T; f : T -> Action Unit = fn _ => pass} f;} f t"
+                    "let {t = let {entitytype T} !{point.OpenEntity @T !\"t\"}; f = let {entitytype T; f : T -> Action Unit = fn _ => pass} f;} f t"
               , testExpectReject
-                    "let {t = let {entitytype T1} point.OpenEntity @T1 !\"t\"; f = let {entitytype T2; f : T2 -> Action Unit = fn _ => pass} f;} f t"
+                    "let {t = let {entitytype T1} !{point.OpenEntity @T1 !\"t\"}; f = let {entitytype T2; f : T2 -> Action Unit = fn _ => pass} f;} f t"
               ]
         , tGroup
               "general-subtype"
@@ -1732,8 +1734,8 @@ testEntity =
           tWith ["Store", "UndoHandler"] $
           tDecls
               [ "entitytype E"
-              , "eta = property @E @Text !\"eta\" store"
-              , "e1 = point.OpenEntity @E !\"e1\""
+              , "eta = !{property @E @Text !\"eta\"} store"
+              , "e1 = !{point.OpenEntity @E !\"e1\"}"
               , "rt1 = eta !$ ap{e1}"
               ] $
           tGroup
@@ -1757,27 +1759,25 @@ testEntity =
               ] $
           tWith ["Pinafore"] $
           tDecls
-              [ "evaluate = fn t, text => run.Interpreter this.Context $ do.Interpreter { v <- interpret.Value text; unify.Value t v }"
+              [ "evaluate = fn t, text => run.Interpreter !{this.Context} $ do.Interpreter { v <- interpret.Value text; unify.Value t v }"
               ] $
           tGroup
               "evaluate"
               [ testExpectSuccess "pass"
-              , testExpectSuccess "testaction (Success True) $ evaluate (const.OpenType @Boolean) \"True\""
-              , testExpectSuccess "testaction (Success 5) $ evaluate (const.OpenType @Integer) \"5\""
-              , testExpectSuccess "testaction (Success 5) $ evaluate (const.OpenType @Integer) \"let {x = 5} x\""
+              , testExpectSuccess "testaction (Success True) $ evaluate @Boolean \"True\""
+              , testExpectSuccess "testaction (Success 5) $ evaluate @Integer \"5\""
+              , testExpectSuccess "testaction (Success 5) $ evaluate @Integer \"let {x = 5} x\""
               , testExpectSuccess
-                    "do {ar <- evaluate (const.OpenType @(Integer -> Integer)) \"fn x => x +.Integer 1\"; ar >- fn {Failure err => fail err; Success f => testeq 8 $ f 7}}"
+                    "do {ar <- evaluate @(Integer -> Integer) \"fn x => x +.Integer 1\"; ar >- fn {Failure err => fail err; Success f => testeq 8 $ f 7}}"
               , testExpectSuccess
-                    "testaction (Failure \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate (const.OpenType @Integer) \"\""
+                    "testaction (Failure \"<evaluate>:1:1: syntax: expecting: expression\") $ evaluate @Integer \"\""
+              , testExpectSuccess "testaction (Failure \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
+              , testExpectSuccess "testFailure $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
-                    "testaction (Failure \"<evaluate>:1:1: undefined: f: a\") $ evaluate (const.OpenType @Integer) \"f\""
-              , testExpectSuccess "testFailure $ evaluate (const.OpenType @Integer) \"\\\"hello\\\"\""
+                    "do {r <- newMem.WholeModel; ar <- evaluate @(WholeModel Integer -> Action Unit) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeq 45 a;}"
+              , testExpectSuccess "testaction 569 $ evaluate @(a -> a) \"fn x => x\" >>= fn Success f => pure $ f 569"
               , testExpectSuccess
-                    "do {r <- newMem.WholeModel; ar <- evaluate (const.OpenType @(WholeModel Integer -> Action Unit)) \"fn r => r :=.WholeModel 45\"; runresult ar r; a <- get r; testeq 45 a;}"
-              , testExpectSuccess
-                    "testaction 569 $ evaluate (const.OpenType @(a -> a)) \"fn x => x\" >>= fn Success f => pure $ f 569"
-              , testExpectSuccess
-                    "testaction 570 $ evaluate (const.OpenType @(Integer -> Integer)) \"fn x => x\" >>= fn Success f => pure $ f 570"
+                    "testaction 570 $ evaluate @(Integer -> Integer) \"fn x => x\" >>= fn Success f => pure $ f 570"
               ]
         , tGroup
               "text-sort"

@@ -9,14 +9,12 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Expression
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.Optics
 import Pinafore.Language.Library.Types
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Storage
@@ -72,12 +70,9 @@ storageLibSection =
     , namespaceBDS
           "Store"
           [ addNameInRootBDS $
-            specialFormBDS
+            valBDS
                 "property"
-                "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
-                ["@A", "@B", "<anchor>"]
-                "Store -> Property A B" $
-            MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (MkSome tb, (anchor, ()))) -> do
+                "!{property @A @B <anchor>}: Store -> Property A B\nA property for this anchor. `A` and `B` are types that are subtypes of `Entity`." $ \(MkLangType ta) (MkLangType tb) anchor -> do
                 eta <- getMonoStorableType ta
                 etb <- getMonoStorableType tb
                 saaexpr <- monoStoreAdapter eta
@@ -105,14 +100,11 @@ storageLibSection =
                                      cfmap2 (MkCatDual $ shimToFunction prbContra) $
                                      cfmap1 (shimToFunction prbCo) property)
                             propertyexpr
-                return $ MkSealedExpression typef pinapropertyexpr
+                return $ MkLangExpression $ MkSealedExpression typef pinapropertyexpr
           , hasSubtypeRelationBDS Verify "" $ functionToShim "Store to Model" langStoreToModel
-          , specialFormBDS
+          , valBDS
                 "cell"
-                "Storage of a single value, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @Unit @A <anchor> store !$ {()}`"
-                ["@A", "<anchor>"]
-                "Store -> WholeModel A" $
-            MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(MkSome ta, (anchor, ())) -> do
+                "!{cell @A}: Store -> WholeModel A\nStorage of a single value, of the given type, identified by the given anchor. Actually equivalent to `fn store => !{property @Unit @A <anchor>} store !$ {()}`" $ \(MkLangType ta) anchor -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
@@ -138,13 +130,10 @@ storageLibSection =
                                      in applyLangAttributeModel (langPropertyAttribute lprop) $
                                         immutableToWholeModel $ pure ())
                             propertyexpr
-                return $ MkSealedExpression stype sexpr
-          , specialFormBDS
+                return $ MkLangExpression $ MkSealedExpression stype sexpr
+          , valBDS
                 "set"
-                "Storage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => property @A @Unit <anchor> store !@ {()}`"
-                ["@A", "<anchor>"]
-                "Store -> FiniteSetModel {-Entity,A}" $
-            MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(MkSome (ta :: _ a), (anchor, ())) -> do
+                "!{set @A <anchor>}: Store -> FiniteSetModel {-Entity,A}\nStorage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => !{property @A @Unit <anchor>} store !@ {()}`" $ \(MkLangType (ta :: _ a)) anchor -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
@@ -178,13 +167,10 @@ storageLibSection =
                                             lfsm)
                             propertyexpr
                             saaexpr
-                return $ MkSealedExpression stype sexpr
-          , specialFormBDS
+                return $ MkLangExpression $ MkSealedExpression stype sexpr
+          , valBDS
                 "fetch"
-                "Fetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them."
-                ["@A"]
-                "Store -> Entity -> Action A" $
-            MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome (ta :: _ a), ()) -> do
+                "!{fetch @A}: Store -> Entity -> Action A\nFetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them." $ \(MkLangType (ta :: _ a)) -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 let
@@ -194,7 +180,7 @@ storageLibSection =
                         qFunctionPosWitness qType $ actionShimWit $ nonpolarToPositive @QTypeSystem ta
                     sexpr :: QOpenExpression (QStore -> Entity -> Action a)
                     sexpr = fmap storeFetch saaexpr
-                return $ MkSealedExpression stype sexpr
+                return $ MkLangExpression $ MkSealedExpression stype sexpr
           , recordValueBDS
                 "openLocal"
                 "Open a `Store` from a directory. Will be closed at the end of the lifecycle."

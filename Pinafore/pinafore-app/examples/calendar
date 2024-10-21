@@ -4,7 +4,7 @@ import "gnome"
 with GTK.
 let {
     dateNotesOf: Property Date Text =
-        property @Date @Text !"example.calendar:dateNotes" store;
+        !{property @Date @Text !"example.calendar:dateNotes"} store;
 
     ui: WholeModel Date -> Widget =
         fn r =>

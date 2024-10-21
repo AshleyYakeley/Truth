@@ -9,10 +9,10 @@ imply {
 }
 let {
     years: FiniteSetModel Integer =
-        set.Store @Integer !"FTSJ.years" ?store;
+        !{set.Store @Integer !"FTSJ.years"} ?store;
 
     yearTheme: Property Integer Text =
-        property @Integer @Text !"FTSJ.yearTheme" ?store;
+        !{property @Integer @Text !"FTSJ.yearTheme"} ?store;
 
     frontCoverPane: Pane =
         simple.Pane "Cover" $ styleSheet.Widget ap{rule.CSSText "*" [("font-size","32pt")]} $ label.Widget ap{"FAKE\nTHEME\nSYSTEM\nJOURNAL"};

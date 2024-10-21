@@ -7,12 +7,10 @@ module Pinafore.Language.Library.Optics
 
 import Import
 import Pinafore.Language.Convert
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model ()
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
@@ -96,12 +94,9 @@ opticsLibSection =
                     , valBDS "." "Compose prisms." $ composeLangPrism @AP @AQ @BX @BY @CP @CQ
                     , addNameInRootBDS $ valBDS "!$$" "Apply a prism to a set." $ langPrismApplySet @AP @AQ @B
                     , valBDS "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
-                    , specialFormBDS
+                    , valBDS
                           "dynamic"
-                          "Prism from greatest dynamic supertype of the given type."
-                          ["@T"]
-                          "Prism {a,-D(T)} {-a,+T}" $
-                      MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome (npt :: _ t), ()) -> do
+                          "!{dynamic @T}: Prism {a,-D(T)} {-a,+T}\nPrism from greatest dynamic supertype of the given type." $ \(MkLangType (npt :: _ t)) -> do
                           let
                               tn = nonpolarToNegative @QTypeSystem npt
                               tp = nonpolarToPositive @QTypeSystem npt
@@ -127,7 +122,7 @@ opticsLibSection =
                                                Just t -> Right t
                                                Nothing -> Left a)
                                       id
-                          return $ MkSealedExpression vtype $ fmap toVal convexpr
+                          return $ MkLangExpression $ MkSealedExpression vtype $ fmap toVal convexpr
                     ]
               ]
         , headingBDS

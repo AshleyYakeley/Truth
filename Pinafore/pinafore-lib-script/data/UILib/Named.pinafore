@@ -11,7 +11,7 @@ namespace UILib {
     namespace Named {
       #| A name is a text that identifies (in some sense) an entity.
       nameOf: Property Named Text =
-        property @Named @Text !"identify.name" ?store;
+        !{property @Named @Text !"identify.name"} ?store;
 
       #| Order alphabetically (case-insensitive) by name
       order: ModelOrder Named =

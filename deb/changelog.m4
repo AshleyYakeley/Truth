@@ -9,6 +9,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - add predicate types
     - remove dynamic entity types
     - rename opentype keyword to entitytype
+    - replace special forms with quoting and splicing of Pinafore code
   * Library
     - rename libraries to remove "pinafore-"
     - built-in
@@ -30,6 +31,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . replace openDefault.Store with openLocal.Store record function
       . add openTemp.Store
       . use `?arglist` implicit variable to pass parameters
+      . new Pinafore namespace with interpretation and functions for splicing
     - media
       . add Media type and functions
       . add HTMLText type and functions

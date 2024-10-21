@@ -13,8 +13,6 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
-import Pinafore.Language.Library.Types
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 
@@ -25,14 +23,13 @@ newtype QContext =
 instance HasQGroundType '[] QContext where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QContext)|]) "Context.Pinafore."
 
-thisContext :: QSpecialForm
-thisContext =
-    MkQSpecialForm NilListType $ \() -> do
-        lm <- paramAsk loadModuleParam
-        let
-            sval :: QContext
-            sval = MkQContext $ MkLibraryContext lm
-        return $ constSealedExpression $ MkSomeOf qType sval
+thisContext :: QInterpreter LangExpression
+thisContext = do
+    lm <- paramAsk loadModuleParam
+    let
+        sval :: QContext
+        sval = MkQContext $ MkLibraryContext lm
+    return $ MkLangExpression $ constSealedExpression $ MkSomeOf qType sval
 
 langRunInterpreter :: QContext -> QInterpreter A -> Action (Result Text A)
 langRunInterpreter (MkQContext lc) ia = let
@@ -104,7 +101,7 @@ pinaforeLibSection =
               [ typeBDS "Context" "The context used for running `Interpreter`." (qSomeGroundType @_ @QContext) []
               , namespaceBDS
                     "Context"
-                    [specialFormBDS "this" "The context at this point in source." [] "Context.Pinafore" thisContext]
+                    [valBDS "this" "!{this}: Context.Pinafore\nThe context at this point in source." thisContext]
               ]
         , headingBDS
               "Interpreter"
@@ -126,17 +123,6 @@ pinaforeLibSection =
               "OpenType"
               ""
               [ typeBDS "OpenType" "A (concrete nonpolar) Pinafore type." (qSomeGroundType @_ @LangOpenType) []
-              , specialFormBDS "const.OpenType" "An `OpenType` for a given type." ["@A"] "OpenType.Pinafore A" $
-                MkQSpecialForm (ConsListType AnnotType NilListType) $ \(MkSome (tw :: _ t), ()) -> let
-                    stype :: QShimWit 'Positive (LangOpenType '( t, t))
-                    stype =
-                        rangeShimWit
-                            qGroundType
-                            (nonpolarToNegative @QTypeSystem tw)
-                            (nonpolarToPositive @QTypeSystem tw)
-                    sval :: LangOpenType '( t, t)
-                    sval = MkLangOpenType identityRange tw
-                    in return $ constSealedExpression $ MkSomeOf stype sval
               , hasSubtypeRelationBDS @(LangOpenType '( P, Q)) @LangType Verify "" $
                 functionToShim "openLangTypeToType" openLangTypeToType
               , namespaceBDS "OpenType" [valBDS "unify" "Unify two `OpenType`s." langUnifyOpenTypes]

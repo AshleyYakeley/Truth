@@ -10,19 +10,19 @@ imply {
     # something with a lifespan
     entitytype Lifespanned;
     # birth and death dates
-    birthDateOf = property @Lifespanned @Date !"lifespan.start.date" ?store;
-    deathDateOf = property @Lifespanned @Date !"lifespan.end.date" ?store;
+    birthDateOf = !{property @Lifespanned @Date !"lifespan.start.date"} ?store;
+    deathDateOf = !{property @Lifespanned @Date !"lifespan.end.date"} ?store;
 
     # physical locations, that have addresses
     entitytype Location;
 
     namespace Location {
-        addressOf = property @Location @Text !"location.address.withincity" ?store;
-        phoneOf = property @Location @Text !"location.telephone" ?store;
-        cityOf = property @Location @Text !"location.address.city" ?store;
-        postcodeOf = property @Location @Text !"location.address.postcode" ?store;
-        provinceOf = property @Location @Text !"location.address.province" ?store;
-        countryOf = property @Location @Text !"location.address.country" ?store;
+        addressOf = !{property @Location @Text !"location.address.withincity"} ?store;
+        phoneOf = !{property @Location @Text !"location.telephone"} ?store;
+        cityOf = !{property @Location @Text !"location.address.city"} ?store;
+        postcodeOf = !{property @Location @Text !"location.address.postcode"} ?store;
+        provinceOf = !{property @Location @Text !"location.address.province"} ?store;
+        countryOf = !{property @Location @Text !"location.address.country"} ?store;
     };
 
     locationUI: WholeModel +Location -> Widget =
@@ -44,45 +44,45 @@ imply {
             Mk ContactType ContactValue !"Mk.Contact";
         };
         newContact: ContactType -> Action Contact =
-            fn t => map.Action (Mk.Contact t) $ new.OpenEntity @ContactValue;
+            fn t => map.Action (Mk.Contact t) $ !{new.OpenEntity @ContactValue};
 
         subtype Contact <: Named;
         subtype Contact <: Lifespanned;
 
-        emailOf = property @Contact @Text !"contact.email" ?store;
-        phoneOf = property @Contact @Text !"contact.telephone" ?store;
-        homeOf = property @Contact @Location !"being.location" ?store;
+        emailOf = !{property @Contact @Text !"contact.email"} ?store;
+        phoneOf = !{property @Contact @Text !"contact.telephone"} ?store;
+        homeOf = !{property @Contact @Location !"being.location"} ?store;
 
         contactSet: FiniteSetModel Contact =
-            set.Store @Contact !"type.legalentity" ?store;
+            !{set.Store @Contact !"type.legalentity"} ?store;
 
         # a person
-        personType: ContactType = point.OpenEntity @ContactType !"type.person";
+        personType: ContactType = !{point.OpenEntity @ContactType !"type.person"};
         predicatetype storable Person <: Contact = fn Mk.Contact t _ => t == personType;
-        newPerson: Action Person = map.Action (coerce @Person) $ newContact personType;
+        newPerson: Action Person = map.Action !{coerce @Person} $ newContact personType;
 
         peopleSet: FiniteSetModel Person =
-        maybeMap.FiniteSetModel (check @Person) contactSet;
+        maybeMap.FiniteSetModel !{check @Person} contactSet;
 
         # family relationships between people
-        motherOf = property @Person @Person !"relation.family.mother" ?store;
-        fatherOf = property @Person @Person !"relation.family.father" ?store;
+        motherOf = !{property @Person @Person !"relation.family.mother"} ?store;
+        fatherOf = !{property @Person @Person !"relation.family.father"} ?store;
         childrenSet: WholeModel +Person -> FiniteSetModel Person =
             fn p => (motherOf !@% p) <:|:> (fatherOf !@% p);
-        marriedOf = property @Person @Boolean !"relation.family.spouse.exist" ?store;
+        marriedOf = !{property @Person @Boolean !"relation.family.spouse.exist"} ?store;
 
         # employment relationship
-        employerOf = property @Person @Contact !"relation.employer" ?store;
+        employerOf = !{property @Person @Contact !"relation.employer"} ?store;
         employeeSet: WholeModel +Contact -> FiniteSetModel Person =
             fn p => employerOf !@% p;
 
         # an organisation
-        organisationType: ContactType = point.OpenEntity @ContactType !"type.organisation";
+        organisationType: ContactType = !{point.OpenEntity @ContactType !"type.organisation"};
         predicatetype storable Organisation <: Contact = fn Mk.Contact t _ => t == organisationType;
-        newOrganisation: Action Organisation = map.Action (coerce @Organisation) $ newContact organisationType;
+        newOrganisation: Action Organisation = map.Action !{coerce @Organisation} $ newContact organisationType;
 
         organisationSet: FiniteSetModel Organisation =
-                set.Store @Organisation !"type.organisation" ?store;
+                !{set.Store @Organisation !"type.organisation"} ?store;
     };
 
     ### User Interface

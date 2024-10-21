@@ -257,8 +257,8 @@ testQueries =
               , testQuery "\"1\"" $ LRSuccess "\"1\""
               , testQuery "(+)" $ LRSuccess "<?>"
               , testQuery "length.Text." $ LRSuccess "<?>"
-              , testQuery "let {entitytype T} point.OpenEntity @T !\"example\"" $ LRSuccess "<?>"
-              , testQuery "let {entitytype T} anchor.Entity $.Function point.OpenEntity @T !\"example\"" $
+              , testQuery "let {entitytype T} !{point.OpenEntity @T !\"example\"}" $ LRSuccess "<?>"
+              , testQuery "let {entitytype T} anchor.Entity $.Function !{point.OpenEntity @T !\"example\"}" $
                 LRSuccess "\"!F332D47A-3C96F533-854E5116-EC65D65E-5279826F-25EE1F57-E925B6C3-076D3BEC\""
               ]
         , testTree
@@ -1022,13 +1022,13 @@ testQueries =
                                 val <>
                                 "; y: " <>
                                 subtype <>
-                                " = check.Function @(" <>
-                                subtype <> ") x >-.Function fn {Just z => z; Nothing => " <> altval <> ";}} y")
+                                " = !{check.Function @(" <>
+                                subtype <> ")} x >-.Function fn {Just z => z; Nothing => " <> altval <> ";}} y")
                                result
                          , testQuery
                                ("with Rational let {x: " <>
                                 supertype <>
-                                " = " <> val <> "; y: " <> subtype <> " = coerce.Function @(" <> subtype <> ") x} y") $
+                                " = " <> val <> "; y: " <> subtype <> " = !{coerce.Function @(" <> subtype <> ")} x} y") $
                            if good
                                then result
                                else LRRunError

@@ -69,7 +69,7 @@ testUI =
         , "import \"gnome\""
         , "emptywindow: Context.GTK -> Action Unit = fn gtk => do {open.Window.GTK gtk (300,400) ap{\"Empty\"} blank.Widget.GTK; pure ();}"
         , "entitytype T"
-        , "newpoint: Action Unit = do {s <- newMem.FiniteSetModel; p <- new.OpenEntity @T; s += p; pure ();}"
+        , "newpoint: Action Unit = do {s <- newMem.FiniteSetModel; p <- !{new.OpenEntity @T}; s += p; pure ();}"
         , "buttonwindow: Context.GTK -> Action Any -> Action Unit = fn gtk, action => do {open.Window.GTK gtk (300,400) ap{\"Test\"} (button.Widget.GTK ap{\"Button\"} ap{action}); pure ();}"
         ]
         testActions

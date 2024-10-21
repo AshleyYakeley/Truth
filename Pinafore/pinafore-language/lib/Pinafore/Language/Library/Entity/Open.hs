@@ -3,11 +3,10 @@ module Pinafore.Language.Library.Entity.Open
     ) where
 
 import Import
-import Pinafore.Language.Interpreter
+import Pinafore.Language.Convert.Pinafore
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Types
-import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 
 openEntityLibSection :: LibraryStuff
@@ -17,24 +16,20 @@ openEntityLibSection =
         ""
         [ namespaceBDS
               "OpenEntity"
-              [ specialFormBDS
-                    "point"
-                    "An open entity for this anchor. `A` is an open entity type."
-                    ["@A", "<anchor>"]
-                    "A" $
-                MkQSpecialForm (ConsListType AnnotType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
+              [ valBDS "point" "!{point @A <anchor>}: A\nAn open entity for this anchor. `A` is an open entity type." $ \(MkLangType t) anchor -> do
                     mtp <- getOpenEntityType t
                     return $
+                        MkLangExpression $
                         case mtp of
                             MkSome (tp :: OpenEntityType tid) -> let
                                 typef = openEntityShimWit tp
                                 pt :: OpenEntity tid
                                 pt = MkOpenEntity $ MkEntity anchor
                                 in constSealedExpression $ MkSomeOf typef pt
-              , specialFormBDS "new" "Generate an open entity. `A` is an open entity type." ["@A"] "Action A" $
-                MkQSpecialForm (ConsListType AnnotType NilListType) $ \(t, ()) -> do
+              , valBDS "new" "!{new @A}: Action A\nGenerate an open entity. `A` is an open entity type." $ \(MkLangType t) -> do
                     mtp <- getOpenEntityType t
                     return $
+                        MkLangExpression $
                         case mtp of
                             MkSome (tp :: OpenEntityType tid) -> let
                                 pt :: Action (OpenEntity tid)

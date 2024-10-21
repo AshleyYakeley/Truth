@@ -480,14 +480,17 @@ readOpToken = do
         "%" -> return $ MkSomeOf TokUnquote ()
         "!" ->
             (do
-                 anchor <- readHexAnchor
-                 return $ MkSomeOf TokAnchor anchor) <|>
+                 readChar '{'
+                 return $ MkSomeOf TokSpliceOpenBrace ()) <|>
             (do
                  s <- readQuotedString
                  return $ MkSomeOf TokAnchor $ codeAnchor s) <|>
             (do
                  n <- readLowerCaseName
-                 return $ MkSomeOf TokSpecialName n)
+                 return $ MkSomeOf TokSpecialName n) <|>
+            (try $ do
+                 anchor <- readHexAnchor
+                 return $ MkSomeOf TokAnchor anchor)
         "@" -> return $ MkSomeOf TokAt ()
         "|" -> return $ MkSomeOf TokOr ()
         "&" -> return $ MkSomeOf TokAnd ()

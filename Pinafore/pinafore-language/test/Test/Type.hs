@@ -465,25 +465,25 @@ testType =
               , textTypeTest "(id.Property ..Property id.Property) !$%.Attribute ap{3}" "{} -> WholeModel. +Integer."
               , textTypeTest "(id.Property ..Property id.Property) !$.Attribute ap{3}" "{} -> WholeModel. +Integer."
               , textTypeTest
-                    "property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store"
+                    "!{property.Store @Integer @Text !\"a\"} store **.Property !{property.Store @Number @Text !\"b\"} store"
                     "{store : Store.} -> Property. (-Integer.,+Number.) (Text. *: Text.)"
               , textTypeTest
-                    "property.Store @Text @Integer !\"a\" store ++.Property property.Store @Text @Number !\"b\" store"
+                    "!{property.Store @Text @Integer !\"a\"} store ++.Property !{property.Store @Text @Number !\"b\"} store"
                     "{store : Store.} -> Property. (Text. +: Text.) (-Integer.,+Number.)"
               , textTypeTest
-                    "(property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store) !$%.Attribute ap{3}"
+                    "(!{property.Store @Integer @Text !\"a\"} store **.Property !{property.Store @Number @Text !\"b\"} store) !$%.Attribute ap{3}"
                     "{store : Store.} -> WholeModel. (Text. *: Text.)"
               , textTypeTest
-                    "(property.Store @Integer @Text !\"a\" store **.Property property.Store @Number @Text !\"b\" store) !$.Attribute ap{3}"
+                    "(!{property.Store @Integer @Text !\"a\"} store **.Property !{property.Store @Number @Text !\"b\"} store) !$.Attribute ap{3}"
                     "{store : Store.} -> WholeModel. (Text. *: Text.)"
               , textTypeTest
-                    "property.Store @Integer @Text !\"a\" store !@%.Property ap{\"x\"}"
+                    "!{property.Store @Integer @Text !\"a\"} store !@%.Property ap{\"x\"}"
                     "{store : Store.} -> FiniteSetModel. Integer."
               , textTypeTest
-                    "property.Store @Integer @Text !\"a\" store !@.Property ap{\"x\"}"
+                    "!{property.Store @Integer @Text !\"a\"} store !@.Property ap{\"x\"}"
                     "{store : Store.} -> FiniteSetModel. Integer."
               , textTypeTest
-                    "(property.Store @Integer @Text !\"a\" store !@%.Property ap{\"x\"}) <:*:>.FiniteSetModel (property.Store @Number @Text !\"b\" store !@%.Property ap{\"y\"})"
+                    "(!{property.Store @Integer @Text !\"a\"} store !@%.Property ap{\"x\"}) <:*:>.FiniteSetModel (!{property.Store @Number @Text !\"b\"} store !@%.Property ap{\"y\"})"
                     "{store : Store.} -> FiniteSetModel. (Integer. *: Number.)"
               , textTypeTest
                     "product.WholeModel ap{3} ap{\"x\"}"

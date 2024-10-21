@@ -5,8 +5,8 @@ openTemp.Store >>= fn store =>
 run.GTK $ fn gtk =>
 let {
   entitytype Person;
-  p = point.OpenEntity @Person !"p";
-  people: FiniteSetModel Person = set.Store @Person !"T" store;
+  p = !{point.OpenEntity @Person !"p"};
+  people: FiniteSetModel Person = !{set.Store @Person !"T"} store;
 } do {
   outputLn.Env "Start";
   selectionRef <- newMem.WholeModel;

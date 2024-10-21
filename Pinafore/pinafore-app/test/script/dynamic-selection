@@ -2,12 +2,12 @@
 
 let {
     entitytype Named;
-    name = property @Named @Text !"identify.name" ?store;
+    name = !{property @Named @Text !"identify.name"} ?store;
     byName: FiniteSetModel (+a,+Named) -> WholeModel +(List (a *: Text)) =
         fn ref => toList.FiniteSetModel (map.ModelOrder fst $ on.ModelOrder name order.Text) $ (id.Property **.Property name) !$$% ref;
 
     entitytype Person;
-    testpt = point.OpenEntity @Person !"testpt";
+    testpt = !{point.OpenEntity @Person !"testpt"};
 
     inform: Text -> Maybe Entity -> Action Unit =
         fn t, mv => message.Debug $ with Text t <> ": " <> (mv >- fn {

@@ -1,13 +1,13 @@
 entitytype P
 entitytype Q
 subtype P <: Q
-p = point.OpenEntity @P !"p"
-q = point.OpenEntity @Q !"q"
+p = !{point.OpenEntity @P !"p"}
+q = !{point.OpenEntity @Q !"q"}
 with Attribute
 with Store
 store <- openTemp.Store
-pp = property @P @P !"pp" store
-qp = property @Q @P !"qp" store
+pp = !{property @P @P !"pp"} store
+qp = !{property @Q @P !"qp"} store
 :t pp
 :t pp !$ ap{p}
 :t pp !$ ap{q}

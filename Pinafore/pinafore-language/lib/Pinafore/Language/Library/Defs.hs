@@ -19,7 +19,6 @@ module Pinafore.Language.Library.Defs
     , mkValueDocSignature
     , recordValueBDS
     , recordConsBDS
-    , specialFormBDS
     , addNameInRootBDS
     , pickNamesInRootBDS
     , eqEntries
@@ -337,14 +336,6 @@ recordConsBDS name docDescription docsigs codec = let
                bdScopeEntry = pure $ BindScopeEntry name [] $ RecordConstructorBinding qrc
                bdDoc = MkDefDoc {..}
                in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
-
-specialFormBDS :: FullNameRef -> RawMarkdown -> [NamedText] -> NamedText -> QSpecialForm -> LibraryStuff
-specialFormBDS name docDescription diAnnotations diType sf = let
-    bdScopeEntry = pure $ BindScopeEntry name [] $ SpecialFormBinding sf
-    diNames = pure name
-    docItem = SpecialFormDocItem {..}
-    bdDoc = MkDefDoc {..}
-    in pure MkBindDoc {..}
 
 eqEntries ::
        forall (a :: Type). (Eq a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)

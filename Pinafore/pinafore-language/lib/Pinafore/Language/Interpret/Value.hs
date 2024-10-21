@@ -5,7 +5,6 @@ module Pinafore.Language.Interpret.Value
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Interpret.SpecialForm
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
@@ -63,7 +62,6 @@ interpretValueWithDefault name margmap mdefexpr = do
         (Nothing, Just _) -> throw $ LookupNotDefinedError name
         (Just (ValueBoundValue _), Just _) -> throw $ LookupNotRecordConstructorError name
         (Just (RecordBoundValue rv), _) -> interpretRecordValue rv margmap
-        (Just (SpecialFormBoundValue sf), _) -> interpretSpecialForm name (Just sf) []
 
 interpretValue :: FullNameRef -> Maybe [(Name, QExpression)] -> QInterpreter QExpression
 interpretValue name margmap =
