@@ -30,9 +30,9 @@ fn {
 
 ## Check
 
-`check` is a [special form](special-forms.md) that provides the retraction function for a given type.
+`check` is a [macro](splices.md) that provides the retraction function for a given type.
 
-`check @T: D(T) -> Maybe T`
+`!{check @T}: D(T) -> Maybe T`
 
 This is equivalent to
 
@@ -40,10 +40,10 @@ This is equivalent to
 
 ## Coerce
 
-If you're sure that the retraction will always succeed, you can use the `coerce` special form.
+If you're sure that the retraction will always succeed, you can use the `coerce` macro.
 (If it doesn't, you'll get a run-time error.)
 
-`coerce @T: D(T) -> T`
+`!{coerce @T}: D(T) -> T`
 
 This is equivalent to
 

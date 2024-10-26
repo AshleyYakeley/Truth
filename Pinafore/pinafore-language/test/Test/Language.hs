@@ -1113,6 +1113,13 @@ testQueries =
                 LRSuccess "(Just 3,Just \"text\")"
               , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf" $ LRSuccess "(Just 3,Just \"text\")"
               ]
+        , testTree
+              "splice"
+              [ textTypeTest "!expression {f x}" "{} -> Interpreter.Pinafore. Expression.Pinafore."
+              , testQuery "let {expr = !expression {3}} !{expr}" $ LRSuccess "3"
+              , testQuery "let {expr = !expression {x}} let {x = 5} !{expr}" $ LRSuccess "5"
+              , testQuery "let {expr = !expression {x}; sc = !scope{x = 17}} let {!{sc}} !{expr}" $ LRSuccess "17"
+              ]
         ]
 
 testShim :: Text -> String -> String -> TestTree

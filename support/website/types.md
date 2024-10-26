@@ -433,15 +433,15 @@ predicatetype T <: P = f;
 The parent type `P` must be an invertible type (that is, with no type variables, `&`, `|`, `Any` or `None`).
 This will create a new type `T`, with subtype relation `T <: P` and [greatest dynamic supertype](dynamic-supertypes.md) `D(T) = D(P)`.
 
-To create new values of `T`, you can use `check @T` and `coerce @T`.
+To create new values of `T`, you can use `!{check @T}` and `!{coerce @T}`.
 
 For example, a type of even integers:
 ```pinafore decl
 predicatetype Even <: Integer = fn i => mod i 2 == 0;
 
-addEven: Even -> Even -> Even = fn a, b => coerce @Even $ a + b;
+addEven: Even -> Even -> Even = fn a, b => !{coerce @Even} $ a + b;
 
-even4: Even = coerce @Even 4;
+even4: Even = !{coerce @Even} 4;
 ```
 
 The greatest dynamic supertype of `Even` will be `Literal` (since that is the GDS of `Integer`).

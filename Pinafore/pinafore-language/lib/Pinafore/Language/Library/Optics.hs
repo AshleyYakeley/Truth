@@ -96,7 +96,7 @@ opticsLibSection =
                     , valBDS "reverse" "" $ langPrismReverseAttribute @AP @AQ @BP @BQ
                     , valBDS
                           "dynamic"
-                          "!{dynamic @T}: Prism {a,-D(T)} {-a,+T}\nPrism from greatest dynamic supertype of the given type." $ \(MkLangType (npt :: _ t)) -> do
+                          "`!{dynamic @T}: Prism {a,-D(T)} {-a,+T}`  \nPrism from greatest dynamic supertype of the given type." $ \(MkLangType (npt :: _ t)) -> do
                           let
                               tn = nonpolarToNegative @QTypeSystem npt
                               tp = nonpolarToPositive @QTypeSystem npt

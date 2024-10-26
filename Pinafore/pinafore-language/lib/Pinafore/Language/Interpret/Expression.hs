@@ -666,6 +666,5 @@ interpretScopeDocs sdecls = runScopeBuilder $ for_ sdecls interpretDeclaration
 
 interpretModule :: SyntaxModule -> QInterpreter QModule
 interpretModule (MkSyntaxModule sdecls) = do
-    MkQScopeDocs scopes docs <- interpretScopeDocs sdecls
-    scope <- joinAllScopes scopes
-    return $ MkQModule docs scope
+    sdocs <- interpretScopeDocs sdecls
+    scopeDocsModule sdocs

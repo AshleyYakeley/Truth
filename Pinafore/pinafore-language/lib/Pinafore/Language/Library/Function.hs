@@ -63,7 +63,8 @@ functionLibSection =
                 "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
                 (seq :: TopType -> A -> A)
           , addNameInRootBDS $
-            valBDS "check" "`!{check @A}: D(A) -> Maybe A`\nCheck from a dynamic supertype." langCheck
-          , addNameInRootBDS $ valBDS "coerce" "`!{coerce @A}: D(A) -> A`\nCoerce from a dynamic supertype." langCoerce
+            valBDS "check" "`!{check @A}: D(A) -> Maybe A`  \nCheck from a dynamic supertype." langCheck
+          , addNameInRootBDS $
+            valBDS "coerce" "`!{coerce @A}: D(A) -> A`  \nCoerce from a dynamic supertype." langCoerce
           ]
         ]

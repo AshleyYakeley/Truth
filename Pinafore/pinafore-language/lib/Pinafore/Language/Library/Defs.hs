@@ -340,20 +340,24 @@ recordConsBDS name docDescription docsigs codec = let
 eqEntries ::
        forall (a :: Type). (Eq a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
-eqEntries = [valBDS "==" "Equal." $ (==) @a, valBDS "/=" "Not equal." $ (/=) @a]
+eqEntries = [headingBDS "Eq" "" [valBDS "==" "Equal." $ (==) @a, valBDS "/=" "Not equal." $ (/=) @a]]
 
 ordEntries ::
        forall (a :: Type). (Ord a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
 ordEntries =
     eqEntries @a <>
-    [ valBDS "order" "Order" $ compare @a
-    , valBDS "<" "Strictly less." $ (<) @a
-    , valBDS "<=" "Less or equal." $ (<=) @a
-    , valBDS ">" "Strictly greater." $ (>) @a
-    , valBDS ">=" "Greater or equal." $ (>=) @a
-    , valBDS "min" "Lesser of two" $ min @a
-    , valBDS "max" "Greater of two" $ max @a
+    [ headingBDS
+          "Order"
+          ""
+          [ valBDS "order" "Order" $ compare @a
+          , valBDS "<" "Strictly less." $ (<) @a
+          , valBDS "<=" "Less or equal." $ (<=) @a
+          , valBDS ">" "Strictly greater." $ (>) @a
+          , valBDS ">=" "Greater or equal." $ (>=) @a
+          , valBDS "min" "Lesser of two" $ min @a
+          , valBDS "max" "Greater of two" $ max @a
+          ]
     ]
 
 lesser :: (a -> a -> Ordering) -> a -> a -> a
@@ -375,19 +379,23 @@ orderEntries ::
     -> [LibraryStuff]
 orderEntries order doc =
     eqEntries @a <>
-    [ valBDS "order" doc $ order
-    , valBDS "<" "Strictly less." $ \x y -> order x y == LT
-    , valBDS "<=" "Less or equal." $ \x y -> order x y /= GT
-    , valBDS ">" "Strictly greater." $ \x y -> order x y == GT
-    , valBDS ">=" "Greater or equal." $ \x y -> order x y /= LT
-    , valBDS "min" "Lesser of two" $ lesser order
-    , valBDS "max" "Greater of two" $ greater order
+    [ headingBDS
+          "Order"
+          ""
+          [ valBDS "order" doc $ order
+          , valBDS "<" "Strictly less." $ \x y -> order x y == LT
+          , valBDS "<=" "Less or equal." $ \x y -> order x y /= GT
+          , valBDS ">" "Strictly greater." $ \x y -> order x y == GT
+          , valBDS ">=" "Greater or equal." $ \x y -> order x y /= LT
+          , valBDS "min" "Lesser of two" $ lesser order
+          , valBDS "max" "Greater of two" $ greater order
+          ]
     ]
 
 enumEntries ::
        forall (a :: Type). (Enum a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
-enumEntries = [valBDS "pred" "Previous value." $ pred @a, valBDS "succ" "Next value." $ succ @a]
+enumEntries = [headingBDS "Enum" "" [valBDS "pred" "Previous value." $ pred @a, valBDS "succ" "Next value." $ succ @a]]
 
 functorEntries ::
        forall (f :: Type -> Type).
@@ -398,7 +406,7 @@ functorEntries ::
        , HasQType QPolyShim 'Negative (f B)
        )
     => [LibraryStuff]
-functorEntries = [valBDS "map" "" (fmap :: (A -> B) -> f A -> f B)]
+functorEntries = [headingBDS "Functor" "" [valBDS "map" "" (fmap :: (A -> B) -> f A -> f B)]]
 
 applicativeEntries ::
        forall (f :: Type -> Type).
@@ -419,13 +427,17 @@ applicativeEntries ::
     => [LibraryStuff]
 applicativeEntries =
     functorEntries @f <>
-    [ valBDS "pure" "" (pure :: A -> f A)
-    , valBDS "apply" "" ((<*>) :: f (A -> B) -> f A -> f B)
-    , valBDS "liftA2" "" (liftA2 :: (A -> B -> C) -> f A -> f B -> f C)
-    , valBDS "**" "" (liftA2 (,) :: f A -> f B -> f (A, B))
-    , valBDS ">>" "" ((*>) :: f TopType -> f A -> f A)
-    , valBDS "for_" "Perform on each value of a list." (for_ :: [A] -> (A -> f ()) -> f ())
-    , valBDS "for" "Perform on each value of a list, returning a list." (for :: [A] -> (A -> f B) -> f [B])
+    [ headingBDS
+          "Applicative"
+          ""
+          [ valBDS "pure" "" (pure :: A -> f A)
+          , valBDS "apply" "" ((<*>) :: f (A -> B) -> f A -> f B)
+          , valBDS "liftA2" "" (liftA2 :: (A -> B -> C) -> f A -> f B -> f C)
+          , valBDS "**" "" (liftA2 (,) :: f A -> f B -> f (A, B))
+          , valBDS ">>" "" ((*>) :: f TopType -> f A -> f A)
+          , valBDS "for_" "Perform on each value of a list." (for_ :: [A] -> (A -> f ()) -> f ())
+          , valBDS "for" "Perform on each value of a list, returning a list." (for :: [A] -> (A -> f B) -> f [B])
+          ]
     ]
 
 monadEntries ::
@@ -445,25 +457,30 @@ monadEntries ::
        , HasQType QPolyShim 'Negative (f (A -> B))
        )
     => [LibraryStuff]
-monadEntries = applicativeEntries @f <> [valBDS ">>=" "" ((>>=) :: f A -> (A -> f B) -> f B)]
+monadEntries = applicativeEntries @f <> [headingBDS "Monad" "" [valBDS ">>=" "" ((>>=) :: f A -> (A -> f B) -> f B)]]
 
 semigroupEntries ::
        forall (a :: Type). (Semigroup a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
-semigroupEntries = [valBDS "<>" "" $ (<>) @a, valBDS "concat1" "" $ sconcat @a]
+semigroupEntries = [headingBDS "Semigroup" "" [valBDS "<>" "" $ (<>) @a, valBDS "concat1" "" $ sconcat @a]]
 
 monoidEntries ::
        forall (a :: Type). (Monoid a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
-monoidEntries = semigroupEntries @a <> [valBDS "empty" "" $ mempty @a, valBDS "concat" "" $ mconcat @a]
+monoidEntries =
+    semigroupEntries @a <> [headingBDS "Monoid" "" [valBDS "empty" "" $ mempty @a, valBDS "concat" "" $ mconcat @a]]
 
 sequenceEntries ::
        forall (a :: Type). (IsSequence a, Index a ~ Int, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
 sequenceEntries =
-    [ valBDS "length" "The number of elements." $ olength @a
-    , valBDS "section" "`section start len x` is the section of `x` beginning at `start` of length `len`." $ \start len (x :: a) ->
-          take len $ drop start x
-    , valBDS "take" "Take the first n elements." (take :: Int -> a -> a)
-    , valBDS "drop" "Drop the first n elements." (drop :: Int -> a -> a)
+    [ headingBDS
+          "Sequence"
+          ""
+          [ valBDS "length" "The number of elements." $ olength @a
+          , valBDS "section" "`section start len x` is the section of `x` beginning at `start` of length `len`." $ \start len (x :: a) ->
+                take len $ drop start x
+          , valBDS "take" "Take the first n elements." (take :: Int -> a -> a)
+          , valBDS "drop" "Drop the first n elements." (drop :: Int -> a -> a)
+          ]
     ]

@@ -72,7 +72,7 @@ storageLibSection =
           [ addNameInRootBDS $
             valBDS
                 "property"
-                "!{property @A @B <anchor>}: Store -> Property A B\nA property for this anchor. `A` and `B` are types that are subtypes of `Entity`." $ \(MkLangType ta) (MkLangType tb) anchor -> do
+                "`!{property @A @B <anchor>}: Store -> Property A B`  \nA property for this anchor. `A` and `B` are types that are subtypes of `Entity`." $ \(MkLangType ta) (MkLangType tb) anchor -> do
                 eta <- getMonoStorableType ta
                 etb <- getMonoStorableType tb
                 saaexpr <- monoStoreAdapter eta
@@ -104,7 +104,7 @@ storageLibSection =
           , hasSubtypeRelationBDS Verify "" $ functionToShim "Store to Model" langStoreToModel
           , valBDS
                 "cell"
-                "!{cell @A}: Store -> WholeModel A\nStorage of a single value, of the given type, identified by the given anchor. Actually equivalent to `fn store => !{property @Unit @A <anchor>} store !$ {()}`" $ \(MkLangType ta) anchor -> do
+                "`!{cell @A}: Store -> WholeModel A`  \nStorage of a single value, of the given type, identified by the given anchor. Actually equivalent to `fn store => !{property @Unit @A <anchor>} store !$ {()}`" $ \(MkLangType ta) anchor -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
@@ -133,7 +133,7 @@ storageLibSection =
                 return $ MkLangExpression $ MkSealedExpression stype sexpr
           , valBDS
                 "set"
-                "!{set @A <anchor>}: Store -> FiniteSetModel {-Entity,A}\nStorage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => !{property @A @Unit <anchor>} store !@ {()}`" $ \(MkLangType (ta :: _ a)) anchor -> do
+                "`!{set @A <anchor>}: Store -> FiniteSetModel {-Entity,A}`  \nStorage of a set of values, of the given type, identified by the given anchor. Actually equivalent to `fn store => !{property @A @Unit <anchor>} store !@ {()}`" $ \(MkLangType (ta :: _ a)) anchor -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
@@ -170,7 +170,7 @@ storageLibSection =
                 return $ MkLangExpression $ MkSealedExpression stype sexpr
           , valBDS
                 "fetch"
-                "!{fetch @A}: Store -> Entity -> Action A\nFetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them." $ \(MkLangType (ta :: _ a)) -> do
+                "`!{fetch @A}: Store -> Entity -> Action A`  \nFetch the full value of an `Entity` from storage, or stop. Note values are removed from storage when no triple refers to them." $ \(MkLangType (ta :: _ a)) -> do
                 eta <- getMonoStorableType ta
                 saaexpr <- monoStoreAdapter eta
                 let

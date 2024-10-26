@@ -98,10 +98,43 @@ pinaforeLibSection =
         [ headingBDS
               "Context"
               ""
-              [ typeBDS "Context" "The context used for running `Interpreter`." (qSomeGroundType @_ @QContext) []
+              [ typeBDS
+                    "Context"
+                    "The context used for running `Interpreter`."
+                    (qSomeGroundType @_ @QContext)
+                    [ let
+                          defaultloadModule :: Text -> QInterpreter (Maybe QScopeDocs)
+                          defaultloadModule _ = return Nothing
+                          rtype :: ListType QDocSignature '[ Text -> QInterpreter (Maybe QScopeDocs)]
+                          rtype =
+                              ConsListType
+                                  (ValueDocSignature @(Text -> QInterpreter (Maybe QScopeDocs)) "loadModule" "" qType $
+                                   Just $ pure defaultloadModule)
+                                  NilListType
+                          qContextLoadModule :: QContext -> Text -> QInterpreter (Maybe QScopeDocs)
+                          qContextLoadModule (MkQContext lc) name = do
+                              mqm <- runLoadModule (lcLoadModule lc) $ MkModuleName name
+                              return $ fmap moduleScopeDocs mqm
+                          toLoadModule :: (Text -> QInterpreter (Maybe QScopeDocs)) -> LoadModule
+                          toLoadModule lm =
+                              MkLoadModule $ \(MkModuleName name) -> do
+                                  msdocs <- lm name
+                                  for msdocs scopeDocsModule
+                          fromQContext :: QContext -> Maybe (ListVProduct '[ Text -> QInterpreter (Maybe QScopeDocs)])
+                          fromQContext qc =
+                              Just $ listProductToVProduct (listTypeToVType rtype) (qContextLoadModule qc, ())
+                          toQContext :: ListVProduct '[ Text -> QInterpreter (Maybe QScopeDocs)] -> QContext
+                          toQContext lvp = let
+                              (lm, ()) = listVProductToProduct lvp
+                              lcLoadModule = toLoadModule lm
+                              in MkQContext $ MkLibraryContext {..}
+                          codec :: Codec QContext (ListVProduct '[ Text -> QInterpreter (Maybe QScopeDocs)])
+                          codec = MkCodec fromQContext toQContext
+                          in recordConsBDS "Mk" "" rtype codec
+                    ]
               , namespaceBDS
                     "Context"
-                    [valBDS "this" "!{this}: Context.Pinafore\nThe context at this point in source." thisContext]
+                    [valBDS "this" "`!{this}: Context.Pinafore`  \nThe context at this point in source." thisContext]
               ]
         , headingBDS
               "Interpreter"
@@ -112,6 +145,12 @@ pinaforeLibSection =
                     (qSomeGroundType @_ @QInterpreter)
                     []
               , namespaceBDS "Interpreter" $ monadEntries @Interpreter <> [valBDS "run" "" langRunInterpreter]
+              ]
+        , headingBDS
+              "Anchor"
+              ""
+              [ typeBDS "Anchor" "An anchor, for a point or property." (qSomeGroundType @_ @Anchor) []
+              , hasSubtypeRelationBDS @Anchor @Showable Verify "" $ functionToShim "show" textShowable
               ]
         , headingBDS
               "Type"

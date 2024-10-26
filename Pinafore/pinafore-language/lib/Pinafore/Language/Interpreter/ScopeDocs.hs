@@ -29,3 +29,9 @@ moduleScopeDocs MkQModule {..} = let
     sdScopes = [moduleScope]
     sdDocs = moduleDoc
     in MkQScopeDocs {..}
+
+scopeDocsModule :: QScopeDocs -> QInterpreter QModule
+scopeDocsModule MkQScopeDocs {..} = do
+    moduleScope <- joinAllScopes sdScopes
+    let moduleDoc = sdDocs
+    return MkQModule {..}

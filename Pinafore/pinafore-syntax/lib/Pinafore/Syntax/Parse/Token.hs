@@ -379,6 +379,7 @@ checkKeyword "debug"
     | debugSyntaxINTERNAL = return $ MkSomeOf TokDebug ()
 checkKeyword _ = Nothing
 
+-- https://macromates.com/manual/en/language_grammars#naming-conventions
 keywordClasses :: [(Text, [Token ()])]
 keywordClasses =
     [ ("keyword.control.pinafore", [TokFn, TokAp, TokDo, TokIf, TokThen, TokElse])
@@ -399,8 +400,13 @@ keywordClasses =
     , ("keyword.other.pinafore", [TokRec, TokLet, TokImply, TokAs, TokExcept])
     ]
 
+extraKeywords :: [(Text, Text)]
+extraKeywords = [("!expression", "keyword.other.pinafore"), ("!scope", "keyword.other.pinafore")]
+
 allKeywords :: [(Text, Text)]
-allKeywords = mconcat $ fmap (\(tokclass, toks) -> fmap (\tok -> (fixedTokenName tok, tokclass)) toks) keywordClasses
+allKeywords =
+    (mconcat $ fmap (\(tokclass, toks) -> fmap (\tok -> (fixedTokenName tok, tokclass)) toks) keywordClasses) <>
+    extraKeywords
 
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do

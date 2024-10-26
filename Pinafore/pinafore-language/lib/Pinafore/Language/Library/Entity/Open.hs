@@ -16,7 +16,9 @@ openEntityLibSection =
         ""
         [ namespaceBDS
               "OpenEntity"
-              [ valBDS "point" "!{point @A <anchor>}: A\nAn open entity for this anchor. `A` is an open entity type." $ \(MkLangType t) anchor -> do
+              [ valBDS
+                    "point"
+                    "`!{point @A <anchor>}: A`  \nAn open entity for this anchor. `A` is an open entity type." $ \(MkLangType t) anchor -> do
                     mtp <- getOpenEntityType t
                     return $
                         MkLangExpression $
@@ -26,7 +28,7 @@ openEntityLibSection =
                                 pt :: OpenEntity tid
                                 pt = MkOpenEntity $ MkEntity anchor
                                 in constSealedExpression $ MkSomeOf typef pt
-              , valBDS "new" "!{new @A}: Action A\nGenerate an open entity. `A` is an open entity type." $ \(MkLangType t) -> do
+              , valBDS "new" "`!{new @A}: Action A`  \nGenerate an open entity. `A` is an open entity type." $ \(MkLangType t) -> do
                     mtp <- getOpenEntityType t
                     return $
                         MkLangExpression $
