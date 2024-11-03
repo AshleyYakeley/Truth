@@ -41,12 +41,26 @@ instance (HasQType QPolyShim 'Negative a) => HasQType QPolyShim 'Negative (WROWM
 instance (HasQType QPolyShim 'Positive a) => HasQType QPolyShim 'Positive (WROWModel (Know a)) where
     qType = mapPosShimWit (functionToShim "wROWModelToWholeModel" wROWModelToWholeModel) qType
 
+dynamicWholeModel :: forall p q. ImmutableWholeModel (LangWholeModel '( p, q)) -> LangWholeModel '( p, q)
+dynamicWholeModel iwmodel = let
+    emptyModel :: WModel (BiWholeUpdate (Know p) (Know q))
+    emptyModel = immutableModelToRejectingBiModel empty
+    in MutableLangWholeModel $
+       dynamicWModel $ immutableWholeModelValue emptyModel $ fmap langWholeModelToBiWholeModel iwmodel
+
 -- SetModel
 setModelGroundType :: QGroundType '[ ContraCCRVariance] LangSetModel
 setModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangSetModel)|]) "SetModel"
 
 instance HasQGroundType '[ ContraCCRVariance] LangSetModel where
     qGroundType = setModelGroundType
+
+dynamicSetModel :: ImmutableWholeModel (LangSetModel A) -> LangSetModel EnA
+dynamicSetModel iwmodel = let
+    emptyModel :: WModel (PartialSetUpdate EnA)
+    emptyModel = eaMap fromReadOnlyRejectingChangeLens $ MkWModel $ constantModel $ \_ -> False
+    in mkLangSetModel $
+       dynamicWModel $ immutableWholeModelValue emptyModel $ fmap (unLangSetModel . contramap meet2) iwmodel
 
 -- FiniteSetModel
 finiteSetModelGroundType :: QGroundType '[ 'RangeCCRVariance] LangFiniteSetModel
@@ -55,6 +69,16 @@ finiteSetModelGroundType =
 
 instance HasQGroundType '[ 'RangeCCRVariance] LangFiniteSetModel where
     qGroundType = finiteSetModelGroundType
+
+dynamicFiniteSetModel :: ImmutableWholeModel (LangFiniteSetModel '( A, EnA)) -> LangFiniteSetModel '( EnA, A)
+dynamicFiniteSetModel iwmodel = let
+    emptyModel :: WModel (FiniteSetUpdate EnA)
+    emptyModel = eaMap fromReadOnlyRejectingChangeLens $ MkWModel $ constantModel mempty
+    in cfmap (coCatRange $ meet2 @(->)) $
+       valueLangFiniteSetModel $
+       dynamicWModel $
+       immutableWholeModelValue emptyModel $
+       fmap (langFiniteSetModelValue . cfmap (contraCatRange $ meet2 @(->))) iwmodel
 
 -- ListModel
 listModelGroundType :: QGroundType '[ 'RangeCCRVariance] LangListModel
@@ -69,6 +93,12 @@ textModelGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFa
 
 instance HasQGroundType '[] LangTextModel where
     qGroundType = textModelGroundType
+
+dynamicTextModel :: ImmutableWholeModel LangTextModel -> LangTextModel
+dynamicTextModel iwmodel = let
+    emptyModel :: WModel (StringUpdate Text)
+    emptyModel = eaMap fromReadOnlyRejectingChangeLens $ MkWModel $ constantModel mempty
+    in MkLangTextModel $ dynamicWModel $ immutableWholeModelValue emptyModel $ fmap unLangTextModel iwmodel
 
 -- ModelOrder
 modelOrderGroundType :: QGroundType '[ ContraCCRVariance] LangModelOrder
@@ -182,6 +212,7 @@ modelLibSection =
                 , valBDS "onUpdate" "Do an action initially and on every update, during this lifecycle." $
                   langWholeModelSubscribe @A
                 , valBDS "newMem" "Create a new whole model of memory, initially unknown." $ newMemWholeModel @A
+                , valBDS "dynamic" "A `WholeModel` provided by a model." $ dynamicWholeModel @P @Q
                 ]
               ]
         , headingBDS
@@ -232,6 +263,7 @@ modelLibSection =
                     , addNameInRootBDS $
                       valBDS "<*>" "Cartesian product of sets. The resulting set will be read-only." $
                       langSetModelCartesianProduct @A @B
+                    , valBDS "dynamic" "A `SetModel` provided by a model." dynamicSetModel
                     ]
               ]
         , headingBDS
@@ -296,6 +328,7 @@ modelLibSection =
                           getFiniteSetModelList
                     , valBDS "newMem" "Create a new finite set model of memory, initially empty." $
                       newMemFiniteSetModel @A
+                    , valBDS "dynamic" "A `FiniteSetModel` provided by a model." dynamicFiniteSetModel
                     ]
               ]
         , headingBDS
@@ -345,6 +378,7 @@ modelLibSection =
                           "Create a model of a (start,length) section of a text model. It will track the section as the text changes."
                           langTextModelSection
                     , valBDS "newMem" "Create a new text model of memory, initially empty." newMemTextModel
+                    , valBDS "dynamic" "A `TextModel` provided by a model." dynamicTextModel
                     ]
               ]
         ]

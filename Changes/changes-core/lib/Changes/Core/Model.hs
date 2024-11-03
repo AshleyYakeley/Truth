@@ -5,6 +5,7 @@ module Changes.Core.Model
 import Changes.Core.Model.AutoClose as I
 import Changes.Core.Model.Cache as I
 import Changes.Core.Model.DeferActionT as I
+import Changes.Core.Model.Dynamic as I
 import Changes.Core.Model.EditContext as I
 import Changes.Core.Model.MemoryCell as I
 import Changes.Core.Model.Model as I

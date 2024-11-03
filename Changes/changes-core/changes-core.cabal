@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -98,6 +98,7 @@ library
       Changes.Core.Model.ReferenceEdit
       Changes.Core.Model.Premodel
       Changes.Core.Model.Model
+      Changes.Core.Model.Dynamic
       Changes.Core.Model.Tuple
       Changes.Core.Model.MemoryCell
       Changes.Core.UI.Editor

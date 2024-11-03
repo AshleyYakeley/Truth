@@ -4,8 +4,9 @@ import Import
 import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
 
-newtype LangTextModel =
-    MkLangTextModel (WModel (StringUpdate Text))
+newtype LangTextModel = MkLangTextModel
+    { unLangTextModel :: WModel (StringUpdate Text)
+    }
 
 instance IsInvertibleModel LangTextModel where
     invertibleModelLens f (MkLangTextModel model) = fmap MkLangTextModel $ wInvertibleModelLens f model
