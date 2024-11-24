@@ -404,25 +404,25 @@ update-locks: docker-image
 ### Top
 
 top-format:
-	time -f %E make format; bin/reportstatus $$?
+	make format
 
 top-build:
-	time -f %E make exe; bin/reportstatus $$?
+	make exe
 
 top-single-build:
-	time -f %E make single=1 exe; bin/reportstatus $$?
+	make single=1 exe
 
 top-nix-flake:
-	time -f %E make nix-flake; bin/reportstatus $$?
+	make nix-flake
 
 top-format-test:
-	time -f %E make test=1 format exe; bin/reportstatus $$?
+	make test=1 format exe
 
 top-full-resume:
-	time -f %E make haddock=1 test=1 bench=1 full; bin/reportstatus $$?
+	make haddock=1 test=1 bench=1 full
 
 top-full:
-	time -f %E make haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
+	make haddock=1 test=1 bench=1 clean full
 
 top-release:
-	time -f %E make stackroot=1 haddock=1 test=1 bench=1 clean full; bin/reportstatus $$?
+	make stackroot=1 haddock=1 test=1 bench=1 clean full

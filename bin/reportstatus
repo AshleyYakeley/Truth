@@ -1,9 +1,0 @@
-#!/usr/bin/env -S bash -e
-if [ "$1" -eq "0" ]; then
-    echo "Succeeded";
-    pw-play --volume=0.2 $($(dirname $BASH_SOURCE)/getfile sounds/freedesktop/stereo/complete.oga)
-else
-    echo "Failed: $1";
-    pw-play --volume=0.5 $($(dirname $BASH_SOURCE)/getfile sounds/mate/default/alerts/bark.ogg)
-fi
-exit $1
