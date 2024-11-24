@@ -1,7 +1,5 @@
 module Pinafore.Language.Interpreter.Lookup
-    ( getBindingLookup
-    , checkNameForRegister
-    , lookupBindingInfo
+    ( checkNameForRegister
     , lookupDebugBindingInfo
     , lookupSelector
     , lookupBoundType
@@ -20,14 +18,9 @@ import Pinafore.Language.Interpreter.Interpreter
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 
-getBindingLookup :: QInterpreter (FullNameRef -> Maybe QInterpreterBinding)
-getBindingLookup = do
-    bindmap <- getBindingInfoLookup
-    return $ \rname -> fmap (biValue . snd) $ bindmap rname
-
 checkNameForRegister :: FullName -> QInterpreter ()
 checkNameForRegister name = do
-    mnt <- getBindingLookup
+    mnt <- getBindingInfoLookup
     case mnt $ fullNameRef name of
         Just _ -> throw $ DeclareBindingDuplicateError name
         Nothing -> return ()
@@ -38,13 +31,10 @@ rnuToInterpreter nameref Nothing = throw $ LookupNotDefinedError nameref
 
 lookupBinding :: FullNameRef -> QInterpreter QInterpreterBinding
 lookupBinding nameref = do
-    bindmap <- getBindingLookup
-    rnuToInterpreter nameref $ bindmap nameref
-
-lookupBindingInfo :: FullNameRef -> QInterpreter (FullName, QBindingInfo)
-lookupBindingInfo nameref = do
     bindmap <- getBindingInfoLookup
-    rnuToInterpreter nameref $ bindmap nameref
+    (fname, bi) <- rnuToInterpreter nameref $ bindmap nameref
+    prodTell nameUsagesProd $ opoint fname
+    return $ biValue bi
 
 lookupDebugBindingInfo :: FullNameRef -> QInterpreter (Maybe (FullName, String))
 lookupDebugBindingInfo nameref = do
@@ -97,5 +87,7 @@ lookupValue name = do
 
 lookupMaybeValue :: FullNameRef -> QInterpreter (Maybe QBoundValue)
 lookupMaybeValue name = do
-    mb <- getBindingLookup
-    return $ mb name >>= getBoundValue
+    mb <- getBindingInfoLookup
+    return $ do
+        (_, bi) <- mb name
+        getBoundValue $ biValue bi

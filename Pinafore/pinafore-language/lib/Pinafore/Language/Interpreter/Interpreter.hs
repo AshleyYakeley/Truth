@@ -11,6 +11,7 @@ module Pinafore.Language.Interpreter.Interpreter
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
+    , nameUsagesProd
     , LibraryContext(..)
     , runInterpreter
     , getRenderFullName
@@ -72,7 +73,16 @@ emptyInterpretState = let
     isAppNotationVar = szero
     in MkInterpretState {..}
 
-type InterpretOutput = [(VarID, QExpression)]
+data InterpretOutput = MkInterpretOutput
+    { ioAppNotationBinds :: [(VarID, QExpression)]
+    , ioNameUsages :: Set FullName
+    }
+
+instance Semigroup InterpretOutput where
+    MkInterpretOutput a1 n1 <> MkInterpretOutput a2 n2 = MkInterpretOutput (a1 <> a2) (n1 <> n2)
+
+instance Monoid InterpretOutput where
+    mempty = MkInterpretOutput mempty mempty
 
 type QInterpreter :: Type -> Type
 newtype QInterpreter a = MkQInterpreter
@@ -149,50 +159,56 @@ instance HasInterpreter where
         return $ MkSourceError spos ntt
     getSubtypeConversions = fmap (toList . scopeSubtypes) $ paramAsk scopeParam
 
-contextParam :: Param QInterpreter InterpretContext
-contextParam = MkParam (MkQInterpreter ask) $ \a (MkQInterpreter m) -> MkQInterpreter $ with a m
+allParam :: Param QInterpreter InterpretContext
+allParam = MkParam (MkQInterpreter ask) $ \a (MkQInterpreter m) -> MkQInterpreter $ with a m
+
+allRef :: Ref QInterpreter InterpretState
+allRef = let
+    ref = liftRef $ liftRef stateRef
+    in MkRef (MkQInterpreter $ refGet ref) $ \a -> MkQInterpreter $ refPut ref a
+
+allProd :: Prod QInterpreter InterpretOutput
+allProd = let
+    prod = liftProd writerProd
+    in MkProd (\a -> MkQInterpreter $ prodTell prod a) (\(MkQInterpreter mr) -> MkQInterpreter $ prodCollect prod mr)
 
 sourcePosParam :: Param QInterpreter SourcePos
-sourcePosParam = lensMapParam (\bfb a -> fmap (\b -> a {icSourcePos = b}) $ bfb $ icSourcePos a) contextParam
+sourcePosParam = lensMapParam (\bfb a -> fmap (\b -> a {icSourcePos = b}) $ bfb $ icSourcePos a) allParam
 
 varIDStateParam :: Param QInterpreter VarIDState
-varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bfb $ icVarIDState a) contextParam
+varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bfb $ icVarIDState a) allParam
 
 scopeParam :: Param QInterpreter QScope
-scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) contextParam
+scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) allParam
 
 bindingsParam :: Param QInterpreter QBindingMap
 bindingsParam = lensMapParam (\bfb a -> fmap (\b -> a {scopeBindings = b}) $ bfb $ scopeBindings a) scopeParam
 
 currentNamespaceParam :: Param QInterpreter Namespace
 currentNamespaceParam =
-    lensMapParam (\bfb a -> fmap (\b -> a {icCurrentNamespace = b}) $ bfb $ icCurrentNamespace a) contextParam
+    lensMapParam (\bfb a -> fmap (\b -> a {icCurrentNamespace = b}) $ bfb $ icCurrentNamespace a) allParam
 
 modulePathParam :: Param QInterpreter [ModuleName]
-modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
+modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) allParam
 
 loadModuleParam :: Param QInterpreter LoadModule
-loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
-
-interpretStateRef :: Ref QInterpreter InterpretState
-interpretStateRef = let
-    ref = liftRef $ liftRef stateRef
-    in MkRef (MkQInterpreter $ refGet ref) $ \a -> MkQInterpreter $ refPut ref a
+loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) allParam
 
 appNotationBindsProd :: Prod QInterpreter [(VarID, QExpression)]
-appNotationBindsProd = let
-    prod = liftProd writerProd
-    in MkProd (\a -> MkQInterpreter $ prodTell prod a) (\(MkQInterpreter mr) -> MkQInterpreter $ prodCollect prod mr)
+appNotationBindsProd =
+    lensMapProd (\bfb a -> fmap (\b -> a {ioAppNotationBinds = b}) $ bfb $ ioAppNotationBinds a) allProd
+
+nameUsagesProd :: Prod QInterpreter (Set FullName)
+nameUsagesProd = lensMapProd (\bfb a -> fmap (\b -> a {ioNameUsages = b}) $ bfb $ ioNameUsages a) allProd
 
 typeIDRef :: Ref QInterpreter TypeID
-typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
+typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) allRef
 
 modulesRef :: Ref QInterpreter (Map ModuleName QModule)
-modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) interpretStateRef
+modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) allRef
 
 appNotationVarRef :: Ref QInterpreter VarIDState
-appNotationVarRef =
-    lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
+appNotationVarRef = lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) allRef
 
 data LibraryContext = MkLibraryContext
     { lcLoadModule :: LoadModule
