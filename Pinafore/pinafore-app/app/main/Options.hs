@@ -49,7 +49,7 @@ optNoRun :: Parser Bool
 optNoRun = switch $ long "no-run" <> short 'n'
 
 optRunOptions :: Parser RunOptions
-optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath
+optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath <*> switch (long "sloppy")
 
 assignReader :: ReadM (Text, Text)
 assignReader =

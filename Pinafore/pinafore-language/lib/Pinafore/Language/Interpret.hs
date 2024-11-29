@@ -64,8 +64,8 @@ parseToValueSubsume t text = do
     val <- parseToValue text []
     tsSubsumeValue @QTypeSystem t val
 
-runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
+runPinaforeScoped :: (?behaviour :: InterpretBehaviour) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename ma =
-    runInterpreter (initialPos sourcename) ?library $ do
+    runInterpreter (initialPos sourcename) ?behaviour $ do
         sd <- interpretImportDeclaration builtInModuleName
         withScopeDocs sd ma

@@ -2,9 +2,21 @@ module Pinafore.Language.Error where
 
 import Import
 
+data QWarningType =
+    TestQWarningType
+
+instance ShowNamedText QWarningType where
+    showNamedText TestQWarningType = "test warning"
+
+type QWarning = SourceError QWarningType
+
+emitWarning :: QWarning -> IO ()
+emitWarning w = hPutStrLn stderr $ unpack $ "warning: " <> (toText $ showNamedText w)
+
 data QErrorType
     = InternalError (Maybe Int)
                     NamedText
+    | WarningError QWarningType
     | UnicodeDecodeError NamedText
     | ParserError ParseErrorType
     | PatternErrorError PatternError
@@ -83,6 +95,7 @@ instance ShowNamedText QErrorType where
                 (Just n, _) -> "INTERNAL ERROR: " <> toNamedText t <> " (issue #" <> showNamedText n <> ")"
                 (Nothing, "") -> "INTERNAL ERROR"
                 (Nothing, _) -> "INTERNAL ERROR: " <> toNamedText t
+    showNamedText (WarningError w) = showNamedText w <> " (use --sloppy to ignore)"
     showNamedText (UnicodeDecodeError t) = "Unicode decode error: " <> t
     showNamedText (ParserError err) = showNamedText err
     showNamedText (PatternErrorError e) = showNamedText e

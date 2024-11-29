@@ -2,5 +2,5 @@ Invalid option `--help'
 
 Usage: pinafore ((-v|--version) | 
                   ((-i|--interactive) | [-n|--no-run] [--imply name=value] PATH)
-                  [-I|--include PATH] [--data PATH] |
+                  [-I|--include PATH] [--data PATH] [--sloppy] |
                   --dump-table [--data PATH])

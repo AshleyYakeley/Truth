@@ -7,8 +7,7 @@ module Pinafore.Language
     , libraryLoadModule
     , QModule(..)
     , getModule
-    , LibraryContext(..)
-    , mkLibraryContext
+    , InterpretBehaviour(..)
     , pinaforeLibrary
     , QError
     , fromParseResult
@@ -42,7 +41,7 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library
 import Pinafore.Language.Var
 
-interact :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
+interact :: (?behaviour :: InterpretBehaviour) => Handle -> Handle -> Bool -> View ()
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
     runInteract inh outh echo $ fromInterpretResult . runPinaforeScoped "<UNKNOWN>"

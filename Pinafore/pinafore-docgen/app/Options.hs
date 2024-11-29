@@ -22,7 +22,7 @@ optDataPath :: Parser (Maybe FilePath)
 optDataPath = optional $ strOption $ long "data" <> metavar "PATH"
 
 optRunOptions :: Parser RunOptions
-optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath
+optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath <*> switch (long "sloppy")
 
 optParser :: Parser Options
 optParser =

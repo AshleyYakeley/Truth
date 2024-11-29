@@ -13,6 +13,7 @@ import System.FilePath
 data RunOptions = MkRunOptions
     { roIncludeDirs :: [FilePath]
     , roDataDir :: Maybe FilePath
+    , roSloppy :: Bool
     } deriving (Eq, Show)
 
 getModuleOptions :: RunOptions -> IO ModuleOptions

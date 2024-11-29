@@ -17,7 +17,7 @@ testCheckModule name =
         runTester defaultTester $
             testerLoadLibrary (mediaLibrary <> gnomeLibrary) $
             testerLoad (directoryLoadModule scriptLibDir) $ do
-                mm <- testerLiftInterpreter $ runLoadModule (lcLoadModule ?library) $ fromString name
+                mm <- testerLiftInterpreter $ runLoadModule (ibLoadModule ?behaviour) $ fromString name
                 case mm of
                     Just _ -> return ()
                     Nothing -> fail "module not found"

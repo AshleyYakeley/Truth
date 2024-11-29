@@ -48,7 +48,7 @@ libraryTypeNames lm = toList (lmContents lm) >>= bindDocTypeName
 allTypeNames :: [Name]
 allTypeNames = filter (not . nameIsInfix) $ sort $ nub $ pinaforeLibrary >>= libraryTypeNames
 
-getModuleDocs :: (?library :: LibraryContext) => ModuleName -> IO Docs
+getModuleDocs :: (?behaviour :: InterpretBehaviour) => ModuleName -> IO Docs
 getModuleDocs modname = do
     qmodule <- fromInterpretResult $ runPinaforeScoped "<doc>" $ getModule modname
     return $ moduleDoc qmodule

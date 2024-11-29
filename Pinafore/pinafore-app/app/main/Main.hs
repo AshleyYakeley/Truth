@@ -18,7 +18,7 @@ main =
             sqliteQDumpTable pinaforedir
         RunFileOption ropts fNoRun fscript -> do
             copts <- getModuleOptions ropts
-            runFiles copts fNoRun [fscript]
+            runFiles (roSloppy ropts) copts fNoRun [fscript]
         RunInteractiveOption ropts -> do
             copts <- getModuleOptions ropts
-            runInteractive copts
+            runInteractive (roSloppy ropts) copts

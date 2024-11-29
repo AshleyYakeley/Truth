@@ -72,6 +72,7 @@ class ( Monad Interpreter
     type Interpreter :: Type -> Type
     getSubtypeConversions :: Interpreter [QSubtypeConversionEntry]
     mkErrorMessage :: Interpreter (QErrorType -> QError)
+    mkWarningMessage :: Interpreter (QWarningType -> QWarning)
 
 instance HasInterpreter => ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType

@@ -19,11 +19,12 @@ testLibrary =
         moduleNames :: [ModuleName]
         moduleNames = fmap lmName appLibrary
         in let
-               ?library = standardLibraryContext MkModuleOptions {..}
+               ?behaviour = MkInterpretBehaviour
+                   {ibSloppy = False, ibLoadModule = standardLoadModule MkModuleOptions {..}}
                in for_ moduleNames $ \modname -> do
                       mmod <-
                           fromInterpretResult $
-                          runPinaforeScoped (show modname) $ runLoadModule (lcLoadModule ?library) modname
+                          runPinaforeScoped (show modname) $ runLoadModule (ibLoadModule ?behaviour) modname
                       pmodule <- maybeToM (show modname <> ": not found") mmod
                       for_ (moduleScopeEntries pmodule) $ \(_, binfo) -> do
                           let oname = biOriginalName binfo
