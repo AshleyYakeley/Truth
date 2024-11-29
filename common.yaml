@@ -14,12 +14,10 @@
     default-extensions:
       - AllowAmbiguousTypes
       - Arrows
-      - ConstraintKinds
       - DataKinds
       - DefaultSignatures
       - DerivingStrategies
       - FunctionalDependencies
-      - GADTs
       - ImplicitParams
       - NoImplicitPrelude
       - LambdaCase
@@ -39,9 +37,21 @@
       - UndecidableSuperClasses
       - ViewPatterns
     ghc-options:
-      - -Wall
-      - -Wincomplete-uni-patterns
-      - -Wincomplete-record-updates
-      - -Wcompat
-      - -Wnoncanonical-monad-instances
+      - -Weverything
+      - -Wno-missing-import-lists
+      - -Wno-missing-export-lists
+      - -Wno-unsafe
+      - -Wno-missing-safe-haskell-mode
+      - -Wno-missing-kind-signatures
+      - -Wno-monomorphism-restriction # fix?
+      - -Wno-prepositive-qualified-module # fix
+      - -Wno-missed-specialisations # fix
+      - -Wno-all-missed-specialisations # fix
+      - -Wno-unused-packages # will catch threadtrace
+      - -Wno-missing-deriving-strategies # fix
+      - -Wno-unused-type-patterns # fix
+      - -Wno-missing-local-signatures # fix?
+      - -Wno-unticked-promoted-constructors # fix
       - -Wno-partial-type-signatures
+      - -Wno-redundant-constraints # fix
+      - -Wno-partial-fields # fix?

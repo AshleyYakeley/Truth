@@ -41,12 +41,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -65,7 +63,7 @@ library
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unused-packages -Wno-missing-deriving-strategies -Wno-unused-type-patterns -Wno-missing-local-signatures -Wno-unticked-promoted-constructors -Wno-partial-type-signatures -Wno-redundant-constraints -Wno-partial-fields
   cpp-options: -DPINAFOREVERSION="0.6"
   build-depends:
       base >=4.16
@@ -93,12 +91,10 @@ executable pinadata
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -117,7 +113,7 @@ executable pinadata
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unused-packages -Wno-missing-deriving-strategies -Wno-unused-type-patterns -Wno-missing-local-signatures -Wno-unticked-promoted-constructors -Wno-partial-type-signatures -Wno-redundant-constraints -Wno-partial-fields -threaded
   build-depends:
       aeson
     , base >=4.16
@@ -138,12 +134,10 @@ executable pinafore
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -162,7 +156,7 @@ executable pinafore
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unused-packages -Wno-missing-deriving-strategies -Wno-unused-type-patterns -Wno-missing-local-signatures -Wno-unticked-promoted-constructors -Wno-partial-type-signatures -Wno-redundant-constraints -Wno-partial-fields -threaded
   build-depends:
       base >=4.16
     , changes-core
@@ -183,12 +177,10 @@ test-suite app
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -207,7 +199,7 @@ test-suite app
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unused-packages -Wno-missing-deriving-strategies -Wno-unused-type-patterns -Wno-missing-local-signatures -Wno-unticked-promoted-constructors -Wno-partial-type-signatures -Wno-redundant-constraints -Wno-partial-fields -threaded
   build-depends:
       base >=4.16
     , optparse-applicative
@@ -227,12 +219,10 @@ test-suite test
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -251,7 +241,7 @@ test-suite test
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unused-packages -Wno-missing-deriving-strategies -Wno-unused-type-patterns -Wno-missing-local-signatures -Wno-unticked-promoted-constructors -Wno-partial-type-signatures -Wno-redundant-constraints -Wno-partial-fields -threaded
   build-depends:
       base >=4.16
     , changes-core
@@ -275,12 +265,10 @@ benchmark benchmark
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -299,7 +287,7 @@ benchmark benchmark
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unused-packages -Wno-missing-deriving-strategies -Wno-unused-type-patterns -Wno-missing-local-signatures -Wno-unticked-promoted-constructors -Wno-partial-type-signatures -Wno-redundant-constraints -Wno-partial-fields -threaded
   build-depends:
       base >=4.16
     , changes-core
