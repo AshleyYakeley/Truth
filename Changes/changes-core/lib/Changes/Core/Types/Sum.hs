@@ -20,7 +20,7 @@ instance (Floating ea ea, Floating eb eb) => Floating (SumEdit ea eb) (SumEdit e
     floatingUpdate (SumEditRight e1) (SumEditRight e2) = SumEditRight $ floatingUpdate e1 e2
     floatingUpdate _ t = t
 
-type instance EditReader (SumEdit ea eb) = EditReader ea
+type instance EditReader (SumEdit ea _) = EditReader ea
 
 instance (ApplicableEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) => ApplicableEdit (SumEdit ea eb) where
     applyEdit (SumEditLeft edit) = applyEdit edit

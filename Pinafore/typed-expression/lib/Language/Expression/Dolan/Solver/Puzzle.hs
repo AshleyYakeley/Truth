@@ -73,7 +73,7 @@ atomicConstraintPuzzle :: forall (ground :: GroundTypeKind) a. AtomicConstraint 
 atomicConstraintPuzzle ac = varExpression $ AtomicPiece ac
 
 atomicPuzzle ::
-       forall (ground :: GroundTypeKind) polarity v t. (IsDolanGroundType ground, Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) polarity v t. Is PolarityType polarity
     => TypeVarT v
     -> FlipType ground polarity t
     -> Puzzle ground (PolarShimType (DolanShim ground) polarity t v)

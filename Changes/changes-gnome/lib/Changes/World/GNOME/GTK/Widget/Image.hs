@@ -9,7 +9,7 @@ import Data.Media.Image
 import Data.Vector.Storable
 import Foreign.Ptr
 import GI.GdkPixbuf
-import qualified GI.Gtk as GI
+import GI.Gtk qualified as GI
 import GI.Gtk hiding (Image)
 import Shapes
 

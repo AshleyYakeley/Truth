@@ -31,7 +31,7 @@ data TokenNames = MkTokenNames
     { tnAbsolute :: Bool
     , tnName :: Name
     , tnSpace :: [Name] -- always upper
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 instance Show TokenNames where
     show MkTokenNames {..} =

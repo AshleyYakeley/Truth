@@ -41,7 +41,7 @@ data RenamerState = MkRenamerState
 
 newtype VarRenamerT (ts :: Type) m a =
     MkVarRenamerT (ReaderT [String] (StateT RenamerState m) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadException)
+    deriving newtype (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadException)
 
 instance MonadTrans (VarRenamerT ts) where
     lift ma = MkVarRenamerT $ lift $ lift ma

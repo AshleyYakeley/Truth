@@ -84,7 +84,7 @@ lastReadOnlyWholeUpdate updates = do
     return subj
 
 wholePutEdits ::
-       (Monad mm, Monad m)
+       Monad mm
     => (ReaderSubject reader -> Readable m (EditReader edita) -> mm (Maybe [edita]))
     -> [WholeReaderEdit reader]
     -> Readable m (EditReader edita)
@@ -120,10 +120,7 @@ changeOnlyUpdateFunction ::
        forall a. Eq a
     => FloatingChangeLens (WholeUpdate a) (ROWUpdate a)
 changeOnlyUpdateFunction = let
-    sclInit ::
-           forall m. MonadIO m
-        => Readable m (WholeReader a)
-        -> m a
+    sclInit :: forall m. Readable m (WholeReader a) -> m a
     sclInit mr = mr ReadWhole
     sclRead :: ReadFunctionT (StateT a) (WholeReader a) (WholeReader a)
     sclRead _ ReadWhole = get

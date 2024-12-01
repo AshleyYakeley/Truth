@@ -90,20 +90,20 @@ type DolanSingularShimWit ground polarity = PShimWit (DolanShim ground) (DolanSi
 
 varDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) t.
-       (IsDolanGroundType ground, JoinMeetIsoShim shim, Is PolarityType polarity)
+       (JoinMeetIsoShim shim, Is PolarityType polarity)
     => TypeVarT t
     -> PShimWit shim (DolanType ground) polarity t
 varDolanShimWit var = typeToDolan $ VarDolanSingularType var
 
 nilDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity).
-       (IsDolanGroundType ground, Category shim, Is PolarityType polarity)
+       (Category shim, Is PolarityType polarity)
     => PShimWit shim (DolanType ground) polarity (LimitType polarity)
 nilDolanShimWit = mkPolarShimWit NilDolanType
 
 consDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) t1 tr.
-       (IsDolanGroundType ground, JoinMeetIsoShim shim, Is PolarityType polarity)
+       (JoinMeetIsoShim shim, Is PolarityType polarity)
     => PShimWit shim (DolanSingularType ground) polarity t1
     -> PShimWit shim (DolanType ground) polarity tr
     -> PShimWit shim (DolanType ground) polarity (JoinMeetType polarity t1 tr)
@@ -111,7 +111,7 @@ consDolanShimWit (MkShimWit t1 conv1) (MkShimWit tr convr) = MkShimWit (ConsDola
 
 unsafeDeleteVarShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) t.
-       (IsDolanGroundType ground, JoinMeetIsoShim shim, Is PolarityType polarity)
+       (JoinMeetIsoShim shim, Is PolarityType polarity)
     => TypeVarT t
     -> PShimWit shim (DolanType ground) polarity t
 unsafeDeleteVarShimWit n = assignTypeVarT @(LimitType polarity) n nilDolanShimWit

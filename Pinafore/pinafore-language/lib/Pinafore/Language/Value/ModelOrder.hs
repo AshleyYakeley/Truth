@@ -7,7 +7,7 @@ import Pinafore.Language.Value.WholeModel
 
 newtype LangModelOrder a =
     MkLangModelOrder (ModelModelOrder a)
-    deriving (Semigroup, Monoid)
+    deriving newtype (Semigroup, Monoid)
 
 instance Contravariant LangModelOrder where
     contramap ba (MkLangModelOrder o) = MkLangModelOrder $ mapModelModelOrder ba o

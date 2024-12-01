@@ -4,7 +4,7 @@ module Main
 
 import Changes.Core
 import Changes.World.GNOME.GTK
-import qualified Options.Applicative as O
+import Options.Applicative qualified as O
 import Shapes
 import Soup
 

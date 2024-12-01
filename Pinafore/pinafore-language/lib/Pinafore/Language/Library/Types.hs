@@ -21,7 +21,7 @@ openEntityShimWit :: forall tid. OpenEntityType tid -> QShimWit 'Positive (OpenE
 openEntityShimWit tp = typeToDolan $ MkDolanGroundedType (openEntityGroundType tp) NilCCRArguments
 
 coShimWit ::
-       forall f polarity a. (HasVariance f, VarianceOf f ~ Covariance, Is PolarityType polarity)
+       forall f polarity a. Is PolarityType polarity
     => QGroundType '[ CoCCRVariance] f
     -> QShimWit polarity a
     -> QShimWit polarity (f a)
@@ -31,7 +31,7 @@ coShimWit gt wa =
     consCCRPolarArgumentsShimWit (qgtVarianceMap gt) (coCCRArgument wa) nilCCRPolarArgumentsShimWit
 
 contraShimWit ::
-       forall f polarity a. (HasVariance f, VarianceOf f ~ Contravariance, Is PolarityType polarity)
+       forall f polarity a. Is PolarityType polarity
     => QGroundType '[ ContraCCRVariance] f
     -> QShimWit (InvertPolarity polarity) a
     -> QShimWit polarity (f a)
@@ -42,7 +42,7 @@ contraShimWit gt wa =
 
 rangeShimWit ::
        forall f polarity p q. Is PolarityType polarity
-    => QGroundType '[ RangeCCRVariance] f
+    => QGroundType '[ 'RangeCCRVariance] f
     -> QShimWit (InvertPolarity polarity) p
     -> QShimWit polarity q
     -> QShimWit polarity (f '( p, q))

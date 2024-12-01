@@ -30,7 +30,7 @@ evalSealedFExpression (MkSealedFExpression twa expr) = do
 sealedFExpressionType :: SealedFExpression varw tw f -> Some tw
 sealedFExpressionType (MkSealedFExpression t _) = MkSome t
 
-type instance Element (SealedFExpression varw ((:~:) val) f) = f val
+type instance Element (SealedFExpression _ ((:~:) val) f) = f val
 
 instance MonoFunctor (SealedFExpression varw ((:~:) val) f) where
     omap ab (MkSealedFExpression Refl expr) = MkSealedFExpression Refl $ fmap ab expr

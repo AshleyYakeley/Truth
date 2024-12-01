@@ -98,8 +98,8 @@ module Graphics.Cairo.Functional
     , colorAlphaDrawingPattern
     ) where
 
-import qualified GI.Cairo.Render as R
-import qualified GI.Cairo.Render.Matrix as RM
+import GI.Cairo.Render qualified as R
+import GI.Cairo.Render.Matrix qualified as RM
 import Shapes hiding (rotate)
 import Shapes.Numeric
 

@@ -68,7 +68,7 @@ runResourceUnlift ::
     -> m r
 runResourceUnlift rc resource call = let
     call' ::
-           forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m))
+           forall tt. MonadTransStackUnlift tt
         => f tt
         -> ApplyStack tt m r
     call' ftt =

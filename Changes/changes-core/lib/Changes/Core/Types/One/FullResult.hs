@@ -229,7 +229,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (finit :: FloatInit _ 
 
 -- | for use in UIs where items can be deleted
 mustExistOneChangeLens ::
-       forall f update. (MonadInner f, IsUpdate update)
+       forall f update. MonadInner f
     => String
     -> ChangeLens (FullResultOneUpdate f update) update
 mustExistOneChangeLens err = let

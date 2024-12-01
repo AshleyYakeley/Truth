@@ -5,4 +5,4 @@ import Shapes
 
 newtype FileEntity =
     MkFileEntity Entity
-    deriving (Eq)
+    deriving newtype (Eq)

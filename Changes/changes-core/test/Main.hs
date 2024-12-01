@@ -157,7 +157,7 @@ counterexamples [] = id
 counterexamples (s:ss) = counterexample s . counterexamples ss
 
 lensUpdateGetProperty ::
-       forall state updateA updateB.
+       forall updateA updateB.
        ( IsUpdate updateA
        , Show (UpdateEdit updateA)
        , ApplicableEdit (UpdateEdit updateA)
@@ -169,7 +169,6 @@ lensUpdateGetProperty ::
        , FullSubjectReader (UpdateReader updateB)
        , Eq (UpdateSubject updateB)
        , Show (UpdateSubject updateB)
-       , Show state
        )
     => FloatingChangeLens updateA updateB
     -> UpdateSubject updateA
@@ -203,8 +202,7 @@ lensUpdateGetProperty lens oldA editA =
 
 testLensUpdate :: TestTree
 testLensUpdate =
-    testTree "update" $ \run (MkSimpleString base) edit ->
-        lensUpdateGetProperty @SequenceRun (stringSectionLens run) base edit
+    testTree "update" $ \run (MkSimpleString base) edit -> lensUpdateGetProperty (stringSectionLens run) base edit
 
 testStringSectionLens :: TestTree
 testStringSectionLens =
@@ -216,25 +214,21 @@ testStringSectionLens =
           testTree "update special" $
           [ testTree "1 0" $
             lensUpdateGetProperty
-                @SequenceRun
                 (stringSectionLens $ seqRun 0 1)
                 ("A" :: String)
                 (StringReplaceSection (seqRun 1 0) "x")
           , testTree "4 1" $
             lensUpdateGetProperty
-                @SequenceRun
                 (stringSectionLens $ seqRun 0 5)
                 ("ABCDE" :: String)
                 (StringReplaceSection (seqRun 4 1) "pqrstu")
           , testTree "4 2" $
             lensUpdateGetProperty
-                @SequenceRun
                 (stringSectionLens $ seqRun 0 5)
                 ("ABCDE" :: String)
                 (StringReplaceSection (seqRun 4 2) "pqrstu")
           , testTree "SharedString5" $
             lensUpdateGetProperty
-                @SequenceRun
                 (stringSectionLens $ startEndRun 1 3)
                 ("ABCD" :: String)
                 (StringReplaceSection (startEndRun 2 4) "")

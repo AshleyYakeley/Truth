@@ -162,7 +162,7 @@ data PropertyCacheKey cache t ct where
     GetPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey Entity (Maybe t)))
     LookupPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Entity)))
 
-instance Eq t => TestEquality (PropertyCacheKey cache t) where
+instance TestEquality (PropertyCacheKey cache t) where
     testEquality GetPropertyCacheKey GetPropertyCacheKey = Just Refl
     testEquality LookupPropertyCacheKey LookupPropertyCacheKey = Just Refl
     testEquality _ _ = Nothing
@@ -189,7 +189,7 @@ data QTableEditKey
     | QTEKFact Predicate
                Entity
     | QTEKLiteral Entity
-    deriving (Eq, Ord)
+    deriving stock (Eq, Ord)
 
 qTableEditKey :: QTableEdit -> QTableEditKey
 qTableEditKey (QTableEditPropertySet p e _) = QTEKProperty p e

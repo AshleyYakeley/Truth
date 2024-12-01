@@ -2,7 +2,7 @@ module Main
     ( main
     ) where
 
-import qualified Paths_pinafore_lib_script
+import Paths_pinafore_lib_script qualified
 import Pinafore.Library.GNOME
 import Pinafore.Library.Media
 import Pinafore.Test

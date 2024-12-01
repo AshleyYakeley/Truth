@@ -7,7 +7,7 @@ import Shapes
 type Mapping :: Type -> Type -> Type
 newtype Mapping tv t =
     MkMapping (Kleisli Endo (tv -> tv) t)
-    deriving (Semigroup, Monoid, Invariant, Summable, Productable)
+    deriving newtype (Semigroup, Monoid, Invariant, Summable, Productable)
 
 mkMapping :: ((tv -> tv) -> t -> t) -> Mapping tv t
 mkMapping f = MkMapping $ Kleisli $ \vv -> Endo $ f vv

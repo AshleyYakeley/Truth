@@ -10,7 +10,7 @@ data Unitype m name val
 
 type UnitypeVar m name val polarity = NameWitness name (UniShimWit val polarity)
 
-instance (Monad m, Eq name, Show name) => TypeSystem (Unitype m name val) where
+instance (Monad m, Eq name) => TypeSystem (Unitype m name val) where
     type TSOuter (Unitype m name val) = IdentityT m
     type TSNegWitness (Unitype m name val) = ((:~:) val)
     type TSPosWitness (Unitype m name val) = ((:~:) val)
@@ -24,7 +24,7 @@ unitypeShimWit ::
     => UniShimWit val polarity val
 unitypeShimWit = mkPolarShimWit Refl
 
-instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) where
+instance (Monad m, Eq name) => RenameTypeSystem (Unitype m name val) where
     type RenamerT (Unitype m name val) = IdentityT
     namespaceRenameSource = MkRenameSource mempty mempty
     type RenamerNamespaceT (Unitype m name val) = IdentityT
@@ -43,7 +43,7 @@ instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) w
     unifierPosSubstitute () Refl = return unitypeShimWit
     unifierNegSubstitute () Refl = return unitypeShimWit
 
-instance (Monad m, Eq name, Show name) => SimplifyTypeSystem (Unitype m name val) where
+instance (Monad m, Eq name) => SimplifyTypeSystem (Unitype m name val) where
     simplify = mempty
 
 instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val) where
@@ -55,7 +55,7 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     subsumerNegSubstitute () Refl = return unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 
-instance (Monad m, Eq name, Show name) => ShowSubsumeTypeSystem (Unitype m name val) where
+instance Show name => ShowSubsumeTypeSystem (Unitype m name val) where
     showSubsumer _ = ""
 
 instance (Monad m, MonadThrow PatternError m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where

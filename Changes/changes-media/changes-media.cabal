@@ -50,7 +50,7 @@ library
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unused-packages -Wno-missing-deriving-strategies -Wno-unused-type-patterns -Wno-missing-local-signatures -Wno-unticked-promoted-constructors -Wno-partial-type-signatures -Wno-redundant-constraints -Wno-partial-fields
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-unused-packages -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields
   build-depends:
       JuicyPixels
     , changes-core

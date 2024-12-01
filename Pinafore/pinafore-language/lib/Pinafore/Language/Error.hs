@@ -178,7 +178,7 @@ fromParseResult pr = fromResult $ mapResultFailure (fmap ParserError) pr
 
 newtype InterpretResult a = MkInterpretResult
     { unInterpretResult :: ResultT QError IO a
-    } deriving (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
+    } deriving newtype (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
 
 instance MonadCoroutine InterpretResult where
     coroutineSuspend pqmr =

@@ -6,7 +6,6 @@ import Changes.World.GNOME.GI.Type
 import Data.GI.Base
 import Data.GI.Gtk
 import Data.IORef
-import GI.GObject
 import Shapes
 
 containerGetAllChildren :: Container -> IO [Widget]
@@ -65,7 +64,7 @@ gvAdd c w = do
     containerAdd c w
     gvOnClose $ gvLiftIO $ containerRemove c w
 
-gvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> GView 'Locked ()
+gvPackStart :: (IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> GView 'Locked ()
 gvPackStart grow box w = do
     boxPackStart box w grow grow 0
     gvOnClose $ gvLiftIO $ containerRemove box w

@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-redundant-constraints #-}
+
 module Data.Coerce.Coercion where
 
 import Control.Category.Groupoid

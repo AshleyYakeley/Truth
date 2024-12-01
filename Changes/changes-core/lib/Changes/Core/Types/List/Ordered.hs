@@ -105,8 +105,8 @@ orderedListLengthLens = let
 
 -- | prevents creation of the element
 orderedListItemLinearLens ::
-       forall update. (FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
-    => SequencePoint
+       forall update.
+       SequencePoint
     -> LinearFloatingChangeLens (StateLensVar SequencePoint) (OrderedListUpdate update) (MaybeUpdate update)
 orderedListItemLinearLens initpos = let
     sclInit ::
@@ -188,9 +188,7 @@ orderedListItemLinearLens initpos = let
 
 -- | prevents creation of the element
 orderedListItemLens ::
-       forall update. (FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
-    => SequencePoint
-    -> FloatingChangeLens (OrderedListUpdate update) (MaybeUpdate update)
+       forall update. SequencePoint -> FloatingChangeLens (OrderedListUpdate update) (MaybeUpdate update)
 orderedListItemLens initpos = expToFloatingChangeLens $ orderedListItemLinearLens initpos
 
 listOrderedListChangeLens ::

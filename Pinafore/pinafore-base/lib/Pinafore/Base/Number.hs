@@ -11,7 +11,7 @@ module Pinafore.Base.Number
     , readNumberLiteral
     ) where
 
-import qualified Data.List (head)
+import Data.List qualified (head)
 import Pinafore.Base.SafeRational
 import Pinafore.Base.Showable
 import Shapes hiding ((+++))

@@ -105,6 +105,6 @@ class Is CCRVariancesType dv => HasCCRVariances (dv :: CCRVariances) (f :: CCRVa
 instance HasCCRVariances '[] (f :: Type) where
     ccrVariancesMap = NilCCRVariancesMap
 
-instance (HasCCRVariance sv f, forall a. HasCCRVariances dv (f a), CoercibleKind (CCRVariancesKind dv)) =>
+instance (HasCCRVariance sv f, forall a. HasCCRVariances dv (f a)) =>
              HasCCRVariances (sv ': dv) (f :: CCRVarianceKind sv -> CCRVariancesKind dv) where
     ccrVariancesMap = ConsCCRVariancesMap ccrVariation ccrVariancesMap

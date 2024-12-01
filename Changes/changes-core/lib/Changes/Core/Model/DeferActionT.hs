@@ -11,23 +11,24 @@ import Changes.Core.Resource
 newtype DeferActionT m a =
     MkDeferActionT (WriterT [IO ()] m a)
 
-deriving instance Functor m => Functor (DeferActionT m)
+deriving newtype instance Functor m => Functor (DeferActionT m)
 
-deriving instance Monad m => Applicative (DeferActionT m)
+deriving newtype instance Monad m => Applicative (DeferActionT m)
 
-deriving instance Monad m => Monad (DeferActionT m)
+deriving newtype instance Monad m => Monad (DeferActionT m)
 
-deriving instance MonadFail m => MonadFail (DeferActionT m)
+deriving newtype instance MonadFail m => MonadFail (DeferActionT m)
 
-deriving instance MonadIO m => MonadIO (DeferActionT m)
+deriving newtype instance MonadIO m => MonadIO (DeferActionT m)
 
-deriving instance MonadFix m => MonadFix (DeferActionT m)
+deriving newtype instance MonadFix m => MonadFix (DeferActionT m)
 
-deriving instance MonadPlus m => Alternative (DeferActionT m)
+deriving newtype instance
+         MonadPlus m => Alternative (DeferActionT m)
 
-deriving instance MonadPlus m => MonadPlus (DeferActionT m)
+deriving newtype instance MonadPlus m => MonadPlus (DeferActionT m)
 
-deriving instance MonadTrans DeferActionT
+deriving newtype instance MonadTrans DeferActionT
 
 instance TransConstraint Monad DeferActionT where
     hasTransConstraint = Dict
@@ -44,9 +45,9 @@ instance TransConstraint MonadFix DeferActionT where
 instance TransConstraint MonadPlus DeferActionT where
     hasTransConstraint = Dict
 
-deriving instance MonadTransHoist DeferActionT
+deriving newtype instance MonadTransHoist DeferActionT
 
-deriving instance MonadTransTunnel DeferActionT
+deriving newtype instance MonadTransTunnel DeferActionT
 
 instance MonadTransUnlift DeferActionT where
     liftWithUnlift utmr = MkDeferActionT $ liftWithUnlift $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma

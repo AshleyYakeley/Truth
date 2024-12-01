@@ -8,7 +8,7 @@ module Changes.World.SQLite
     ) where
 
 import Changes.Core
-import qualified Changes.World.SQLite.Schema as SQLite
+import Changes.World.SQLite.Schema qualified as SQLite
 import Database.SQLite.Simple hiding (columnName)
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.Internal

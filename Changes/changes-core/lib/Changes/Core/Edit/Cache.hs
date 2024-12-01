@@ -75,7 +75,7 @@ class CacheableEdit (edit :: Type) where
         => edit
         -> StateT (cache (EditCacheKey cache edit)) IO ()
     -- defaults
-    type EditCacheKey cache edit = EditReader edit
+    type EditCacheKey _ edit = EditReader edit
     default editCacheAdd ::
         forall cache m t.
             (IsCache cache, Applicative m, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>

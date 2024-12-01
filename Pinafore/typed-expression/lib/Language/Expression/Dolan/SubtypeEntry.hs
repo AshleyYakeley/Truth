@@ -63,7 +63,7 @@ bestM asGoodAs (a:aa) = do
 data TrustOrVerify
     = TrustMe
     | Verify
-    deriving (Eq)
+    deriving stock (Eq)
 
 type SubtypeConversionEntry :: GroundTypeKind -> Type
 data SubtypeConversionEntry ground =

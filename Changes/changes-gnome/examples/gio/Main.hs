@@ -4,7 +4,7 @@ module Main
 
 import Changes.Core
 import Changes.World.GNOME.GIO.File
-import qualified GI.Gio as GI
+import GI.Gio qualified as GI
 import Shapes
 
 main :: IO ()

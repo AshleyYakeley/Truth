@@ -6,11 +6,11 @@ import Shapes.Import
 data Tree a = MkTree
     { treeRoot :: a
     , treeBranches :: Forest a
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 newtype Forest a =
     MkForest [Tree a]
-    deriving (Semigroup, Monoid, Eq)
+    deriving newtype (Semigroup, Monoid, Eq)
 
 instance Functor Tree where
     fmap ab (MkTree r br) = MkTree (ab r) (fmap ab br)

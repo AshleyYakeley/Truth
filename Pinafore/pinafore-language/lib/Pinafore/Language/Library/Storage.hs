@@ -139,7 +139,7 @@ storageLibSection =
                 MkShimWit rtap (MkPolarShim praContra) <- return $ nonpolarToNegative @QTypeSystem ta
                 MkShimWit rtaq (MkPolarShim praCo) <- return $ nonpolarToPositive @QTypeSystem ta
                 MkShimWit rtaep (MkPolarShim econv) <-
-                    return $ joinMeetShimWit (qType @QPolyShim @Negative @Entity) (mkShimWit rtap)
+                    return $ joinMeetShimWit (qType @QPolyShim @'Negative @Entity) (mkShimWit rtap)
                 let
                     typem =
                         typeToDolan $

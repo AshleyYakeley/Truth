@@ -8,7 +8,7 @@ import Shapes
 data FullName = MkFullName
     { fnName :: Name
     , fnSpace :: Namespace
-    } deriving (Eq, Ord)
+    } deriving stock (Eq, Ord)
 
 pattern RootFullName :: Name -> FullName
 

@@ -15,7 +15,7 @@ allowedAlphaNameChar c = isAlphaNum c
 
 newtype Name =
     MkName Text
-    deriving (Eq, Ord, MonoFoldable)
+    deriving newtype (Eq, Ord, MonoFoldable)
 
 instance ShowText Name where
     showText (MkName n) = n

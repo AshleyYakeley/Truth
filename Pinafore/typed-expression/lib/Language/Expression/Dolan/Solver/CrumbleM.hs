@@ -63,8 +63,8 @@ liftResultToCrumbleM ::
 liftResultToCrumbleM rea = MkCrumbleM $ lift $ liftInner rea
 
 runCrumbleMResult ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => (String -> NameRigidity)
+       forall (ground :: GroundTypeKind) a.
+       (String -> NameRigidity)
     -> CrumbleM ground a
     -> DolanTypeCheckM ground (TypeResult ground a)
 runCrumbleMResult rigidity ca = unComposeInner $ runReaderT (unCrumbleM ca) rigidity

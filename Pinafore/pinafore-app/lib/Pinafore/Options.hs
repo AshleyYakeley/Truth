@@ -3,7 +3,7 @@ module Pinafore.Options
     , getModuleOptions
     ) where
 
-import qualified Paths_pinafore_lib_script
+import Paths_pinafore_lib_script qualified
 import Pinafore.Libs
 import Pinafore.Main
 import Shapes
@@ -13,7 +13,7 @@ import System.FilePath
 data RunOptions = MkRunOptions
     { roIncludeDirs :: [FilePath]
     , roDataDir :: Maybe FilePath
-    } deriving (Eq, Show)
+    } deriving stock (Eq, Show)
 
 getModuleOptions :: RunOptions -> IO ModuleOptions
 getModuleOptions MkRunOptions {..} = do

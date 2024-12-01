@@ -94,7 +94,7 @@ listGroundType = let
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List") {qgtProperties = props}
 
-list1GroundType :: IsDolanSubtypeGroundType QGroundType => QGroundType '[ CoCCRVariance] NonEmpty
+list1GroundType :: QGroundType '[ CoCCRVariance] NonEmpty
 list1GroundType = let
     storability :: Storability '[ CoCCRVariance] NonEmpty
     storability = let

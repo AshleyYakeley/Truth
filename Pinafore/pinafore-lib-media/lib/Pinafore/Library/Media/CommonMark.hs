@@ -4,7 +4,7 @@ module Pinafore.Library.Media.CommonMark
     ) where
 
 import Changes.World.Media.Type
-import qualified Commonmark as C
+import Commonmark qualified as C
 import Data.Shim
 import Pinafore.API
 import Pinafore.Library.Media.HTML

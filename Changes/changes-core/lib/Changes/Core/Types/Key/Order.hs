@@ -44,7 +44,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
     getMaybeO ordr mr k =
         unComposeInner $ clRead (rOrdLens ordr) (\rt -> MkComposeInner $ mr $ KeyReadItem k rt) ReadWhole
     getO ::
-           forall m. (HasCallStack, MonadIO m)
+           forall m. MonadIO m
         => or
         -> Readable m (KeyReader cont (UpdateReader update))
         -> ContainerKey cont

@@ -6,7 +6,7 @@ import Shapes
 
 newtype ImplicitName =
     MkImplicitName Name
-    deriving (Eq, Ord)
+    deriving newtype (Eq, Ord)
 
 instance ShowText ImplicitName where
     showText (MkImplicitName n) = "?" <> showText n

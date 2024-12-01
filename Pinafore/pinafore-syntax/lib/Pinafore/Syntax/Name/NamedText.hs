@@ -18,7 +18,7 @@ instance ToText NamedTextItem where
 
 newtype NamedText =
     MkNamedText ((NamedTextItem -> Text) -> Text)
-    deriving (Semigroup, Monoid)
+    deriving newtype (Semigroup, Monoid)
 
 instance Eq NamedText where
     a == b = toText a == toText b

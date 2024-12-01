@@ -16,7 +16,7 @@ data DocTypeParameter
     | RangeDocTypeParameter NamedText
                             NamedText
     | DoubleRangeDocTypeParameter NamedText
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance ShowNamedText DocTypeParameter where
     showNamedText (CoDocTypeParameter q) = "+" <> q
@@ -46,7 +46,7 @@ data DocItem
                   , diGDS :: Maybe NamedText }
     | SubtypeRelationDocItem { diSubtype :: NamedText
                              , diSupertype :: NamedText }
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance Show DocItem where
     show (HeadingDocItem t) = "heading " <> show t

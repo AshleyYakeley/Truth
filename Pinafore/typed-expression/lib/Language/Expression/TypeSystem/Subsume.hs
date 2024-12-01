@@ -112,7 +112,7 @@ fExpressionSubsumption ::
 fExpressionSubsumption (MkSealedFExpression tw expr) = MkSealedSubsumerFExpression tw $ solverExpressionLiftValue expr
 
 subsumerExpressionTo ::
-       forall ts t. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
+       forall ts t. (SubsumeTypeSystem ts, SimplifyTypeSystem ts)
     => TSPosWitness ts t
     -> TSSealedExpression ts
     -> TSOuter ts (OpenSubsumerExpression ts t)
@@ -121,7 +121,7 @@ subsumerExpressionTo tdecl (MkSealedExpression tinf expr) = do
     return $ liftA2 shimToFunction sexpr $ solverExpressionLiftValue expr
 
 subsumerFExpressionTo ::
-       forall ts f t. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
+       forall ts f t. (SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
     => TSPosWitness ts t
     -> TSSealedFExpression ts f
     -> TSOuter ts (OpenSubsumerExpression ts (f t))
@@ -131,7 +131,7 @@ subsumerFExpressionTo tdecl (MkSealedFExpression tinf expr) = do
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumerExpression ::
-       forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
+       forall ts. (SubsumeTypeSystem ts, SimplifyTypeSystem ts)
     => Maybe (Some (TSPosWitness ts))
     -> TSSealedExpression ts
     -> TSOuter ts (SealedSubsumerExpression ts)
@@ -145,7 +145,7 @@ subsumerExpression marawdecltype rawinfexpr = do
             return $ MkSealedSubsumerExpression (mkPolarShimWit tdecl) sexpr
 
 subsumerFExpression ::
-       forall ts f. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
+       forall ts f. (SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
     => Maybe (Some (TSPosWitness ts))
     -> TSSealedFExpression ts f
     -> TSOuter ts (SealedSubsumerFExpression ts f)
@@ -159,7 +159,7 @@ subsumerFExpression marawdecltype rawinfexpr = do
             return $ MkSealedSubsumerFExpression (mkPolarShimWit tdecl) sexpr
 
 subsumeExpression ::
-       forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
+       forall ts. (SubsumeTypeSystem ts, SimplifyTypeSystem ts)
     => Some (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSOuter ts (TSSealedExpression ts)
@@ -170,7 +170,7 @@ subsumeExpression t expr = do
     return $ MkSealedExpression tp oexpr'
 
 subsumeFExpression ::
-       forall ts f. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
+       forall ts f. (SubsumeTypeSystem ts, SimplifyTypeSystem ts, Functor f)
     => Some (TSPosWitness ts)
     -> TSSealedFExpression ts f
     -> TSOuter ts (TSSealedFExpression ts f)
@@ -181,7 +181,7 @@ subsumeFExpression t expr = do
     return $ MkSealedFExpression tp oexpr'
 
 subsumeExpressionTo ::
-       forall ts t. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
+       forall ts t. (SubsumeTypeSystem ts, SimplifyTypeSystem ts)
     => TSPosWitness ts t
     -> TSSealedExpression ts
     -> TSOuter ts (TSOpenExpression ts t)

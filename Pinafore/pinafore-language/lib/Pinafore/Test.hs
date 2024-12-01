@@ -94,7 +94,16 @@ data TesterContext = MkTesterContext
 
 newtype Tester a = MkTester
     { unTester :: ReaderT TesterContext View a
-    } deriving (Functor, Applicative, Monad, MonadFail, MonadIO, MonadException, MonadFix, MonadHoistIO, MonadTunnelIO)
+    } deriving newtype ( Functor
+                       , Applicative
+                       , Monad
+                       , MonadFail
+                       , MonadIO
+                       , MonadException
+                       , MonadFix
+                       , MonadHoistIO
+                       , MonadTunnelIO
+                       )
 
 instance MonadUnliftIO Tester where
     liftIOWithUnlift call = MkTester $ liftIOWithUnlift $ \unlift -> call $ unlift . unTester

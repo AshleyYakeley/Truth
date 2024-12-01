@@ -6,7 +6,7 @@ import Changes.Core
 import Changes.World.Clock
 import Changes.World.GNOME.GTK
 import Data.Time
-import qualified GI.Gtk as GI
+import GI.Gtk qualified as GI
 import Graphics.Cairo.Functional
 import Shapes hiding (rotate)
 import Shapes.Numeric

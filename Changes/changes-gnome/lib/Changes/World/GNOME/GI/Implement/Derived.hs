@@ -3,10 +3,10 @@
 module Changes.World.GNOME.GI.Implement.Derived where
 
 import Changes.World.GNOME.GI.Implement.Object
-import qualified Data.GI.Base.GObject as GI
+import Data.GI.Base.GObject qualified as GI
 import Foreign
-import qualified GI.GLib as GI
-import qualified GI.Gio as GI
+import GI.GLib qualified as GI
+import GI.Gio qualified as GI
 import Shapes
 
 type family GIInterface (a :: Type) :: Type
