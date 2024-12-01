@@ -41,13 +41,13 @@ literalToEntity v = MkEntity $ byteStringToAnchor $ unLiteral $ toLiteral v
 
 class AsLiteral t => AsTypedLiteral t where
     literalType :: LiteralType
-    literalContentSerializer :: Serializer KeepsGoing t
-    default literalContentSerializer :: HasSerializer t => Serializer KeepsGoing t
+    literalContentSerializer :: Serializer 'KeepsGoing t
+    default literalContentSerializer :: HasSerializer t => Serializer 'KeepsGoing t
     literalContentSerializer = greedySerializer
 
 literalSerializer ::
        forall t. AsTypedLiteral t
-    => Serializer KeepsGoing t
+    => Serializer 'KeepsGoing t
 literalSerializer = sProductR (runLiteralType $ literalType @t) literalContentSerializer
 
 entityToLiteral :: Entity -> Maybe Literal

@@ -38,20 +38,20 @@ type ViewState = LifeState
 
 newtype View a = MkView
     { unView :: ReaderT ViewContext Lifecycle a
-    } deriving ( Functor
-               , Applicative
-               , Monad
-               , MonadFix
-               , MonadFail
-               , MonadIO
-               , MonadException
-               , MonadThrow e
-               , MonadCatch e
-               , MonadHoistIO
-               , MonadTunnelIO
-               , MonadUnliftIO
-               , RepresentationalRole
-               )
+    } deriving newtype ( Functor
+                       , Applicative
+                       , Monad
+                       , MonadFix
+                       , MonadFail
+                       , MonadIO
+                       , MonadException
+                       , MonadThrow e
+                       , MonadCatch e
+                       , MonadHoistIO
+                       , MonadTunnelIO
+                       , MonadUnliftIO
+                       , RepresentationalRole
+                       )
 
 viewOnCloseIO :: IO () -> View ()
 viewOnCloseIO closer = viewLiftLifecycle $ lifecycleOnClose closer

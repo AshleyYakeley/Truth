@@ -2,7 +2,7 @@ module Pinafore.Language.Library.Entity.Text
     ( textEntityLibSection
     ) where
 
-import qualified Data.Text
+import Data.Text qualified
 import Import
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Defs
@@ -12,7 +12,7 @@ import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Value
-import qualified Text.Collate
+import Text.Collate qualified
 
 utf8Prism :: LangPrism' StrictByteString Text
 utf8Prism = codecToPrism utf8Codec

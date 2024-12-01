@@ -7,7 +7,6 @@ module Pinafore.Language.Library
     , directoryLoadModule
     , textLoadModule
     , libraryLoadModule
-    , mkLibraryContext
     , nameIsInfix
     ) where
 
@@ -64,8 +63,3 @@ pinaforeLibrary =
     , pinaforeLibSection
     , debugLibSection
     ]
-
-mkLibraryContext :: LoadModule -> LibraryContext
-mkLibraryContext lm = let
-    lcLoadModule = lm
-    in MkLibraryContext {..}

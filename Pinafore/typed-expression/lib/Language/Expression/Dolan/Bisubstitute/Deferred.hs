@@ -232,7 +232,7 @@ mapDolanSingularTypeM ff (RecursiveDolanSingularType var t) = do
 
 bisubstituteType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type) m t.
-       (SubstitutablePolyShim pshim, Bisubstitutable ground polarity w, Is PolarityType polarity, MonadInner m)
+       (SubstitutablePolyShim pshim, Bisubstitutable ground polarity w, MonadInner m)
     => Bisubstitution ground (pshim Type) m
     -> w t
     -> m (PShimWit (pshim Type) (DolanType ground) polarity t)

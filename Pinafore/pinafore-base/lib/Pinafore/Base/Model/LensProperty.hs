@@ -14,7 +14,7 @@ module Pinafore.Base.Model.LensProperty
     ) where
 
 import Changes.Core
-import qualified Data.List as List
+import Data.List qualified as List
 import Pinafore.Base.Know
 import Pinafore.Base.Model.LensAttribute
 import Shapes

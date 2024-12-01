@@ -10,8 +10,8 @@ import Pinafore.Syntax.Name
 import Pinafore.Syntax.Text
 import Shapes hiding (try)
 import Shapes.Numeric
-import qualified Text.Parsec as P
-import qualified Text.Parsec.Error as P
+import Text.Parsec qualified as P
+import Text.Parsec.Error qualified as P
 
 showSourceError :: P.SourcePos -> Text -> Text
 showSourceError spos s =

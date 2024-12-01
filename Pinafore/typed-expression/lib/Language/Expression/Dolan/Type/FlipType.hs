@@ -24,8 +24,7 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
             return Refl
     testEquality _ _ = Nothing
 
-instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             FreeTypeVariables (FlipType ground polarity t) where
+instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (FlipType ground polarity t) where
     freeTypeVariables (NormalFlipType t) = freeTypeVariables t
     freeTypeVariables (InvertFlipType t) = freeTypeVariables t
 
@@ -39,8 +38,7 @@ instance forall (ground :: GroundTypeKind) polarity. (ShowGroundType ground, Is 
     allConstraint = Dict
 
 toFlipType ::
-       forall (ground :: GroundTypeKind) pola polb t.
-       (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb)
+       forall (ground :: GroundTypeKind) pola polb t. (Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola t
     -> FlipType ground polb t
 toFlipType =
@@ -49,17 +47,13 @@ toFlipType =
         Right Refl -> InvertFlipType
 
 flipToType ::
-       forall (ground :: GroundTypeKind) pola t r. (IsDolanGroundType ground, Is PolarityType pola)
+       forall (ground :: GroundTypeKind) pola t r. Is PolarityType pola
     => FlipType ground pola t
     -> (forall polb. Is PolarityType polb => DolanType ground polb t -> r)
     -> r
 flipToType (NormalFlipType t) call = call t
 flipToType (InvertFlipType t) call = withInvertPolarity @pola $ call t
 
-occursInFlipType ::
-       forall (ground :: GroundTypeKind) polarity tv a. IsDolanGroundType ground
-    => TypeVarT tv
-    -> FlipType ground polarity a
-    -> Bool
+occursInFlipType :: forall (ground :: GroundTypeKind) polarity tv a. TypeVarT tv -> FlipType ground polarity a -> Bool
 occursInFlipType v (NormalFlipType t) = variableOccursIn v t
 occursInFlipType v (InvertFlipType t) = variableOccursIn v t

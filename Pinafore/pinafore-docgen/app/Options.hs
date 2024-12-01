@@ -13,7 +13,7 @@ data Options
     = ShowVersionOption
     | ModuleDocOption RunOptions
                       Text
-    deriving (Eq, Show)
+    deriving stock (Eq, Show)
 
 optIncludes :: Parser [FilePath]
 optIncludes = many $ strOption $ long "include" <> short 'I' <> metavar "PATH"
@@ -22,7 +22,7 @@ optDataPath :: Parser (Maybe FilePath)
 optDataPath = optional $ strOption $ long "data" <> metavar "PATH"
 
 optRunOptions :: Parser RunOptions
-optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath
+optRunOptions = MkRunOptions <$> optIncludes <*> optDataPath <*> switch (long "sloppy")
 
 optParser :: Parser Options
 optParser =

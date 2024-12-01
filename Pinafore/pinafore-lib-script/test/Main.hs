@@ -2,7 +2,7 @@ module Main
     ( main
     ) where
 
-import qualified Paths_pinafore_lib_script
+import Paths_pinafore_lib_script qualified
 import Pinafore.Library.GNOME
 import Pinafore.Library.Media
 import Pinafore.Test
@@ -17,7 +17,7 @@ testCheckModule name =
         runTester defaultTester $
             testerLoadLibrary (mediaLibrary <> gnomeLibrary) $
             testerLoad (directoryLoadModule scriptLibDir) $ do
-                mm <- testerLiftInterpreter $ runLoadModule (lcLoadModule ?library) $ fromString name
+                mm <- testerLiftInterpreter $ runLoadModule (ibLoadModule ?behaviour) $ fromString name
                 case mm of
                     Just _ -> return ()
                     Nothing -> fail "module not found"

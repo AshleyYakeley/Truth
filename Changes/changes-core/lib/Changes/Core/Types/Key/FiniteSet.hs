@@ -470,11 +470,7 @@ filterFiniteSetUpdateFunction ::
        forall a. Eq a
     => ChangeLens (PairUpdate (FiniteSetUpdate a) (PartialSetUpdate a)) (ReadOnlyUpdate (FiniteSetUpdate a))
 filterFiniteSetUpdateFunction = let
-    testItem1 ::
-           forall m. MonadIO m
-        => Readable m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a))
-        -> a
-        -> m (Maybe a)
+    testItem1 :: forall m. Readable m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a)) -> a -> m (Maybe a)
     testItem1 mr a = mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
     testItem2 ::
            forall m. MonadIO m

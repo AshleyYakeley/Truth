@@ -2,19 +2,19 @@ module Data.FiniteSet where
 
 import Data.Filterable
 import Data.KeyContainer
-import qualified Data.List as List
+import Data.List qualified as List
 import Shapes.Import
 
 newtype FiniteSet a = MkFiniteSet
     { unFiniteSet :: [a]
-    } deriving ( Foldable
-               , Functor
-               , Applicative -- ,Monad,Alternative,MonadPlus,
-               , MonoFunctor
-               , MonoFoldable
-               , GrowingAppend
-               , Filterable
-               )
+    } deriving newtype ( Foldable
+                       , Functor
+                       , Applicative -- ,Monad,Alternative,MonadPlus,
+                       , MonoFunctor
+                       , MonoFoldable
+                       , GrowingAppend
+                       , Filterable
+                       )
 
 pattern EmptyFiniteSet :: FiniteSet a
 

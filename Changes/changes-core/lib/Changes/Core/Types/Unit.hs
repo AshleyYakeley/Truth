@@ -29,11 +29,7 @@ ioConstWholeChangeLens ::
 ioConstWholeChangeLens amb = let
     clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     clRead mra rt = (mSubjectToReadable $ readableToSubject mra >>= \a -> liftIO (amb a)) rt
-    clUpdate ::
-           forall m. MonadIO m
-        => updateA
-        -> Readable m (UpdateReader updateA)
-        -> m [updateB]
+    clUpdate :: forall m. updateA -> Readable m (UpdateReader updateA) -> m [updateB]
     clUpdate u _ = never u
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 

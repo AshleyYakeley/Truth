@@ -4,7 +4,7 @@ module Main
 
 import Changes.Core
 import Criterion.Main
-import qualified Paths_pinafore_lib_script
+import Paths_pinafore_lib_script qualified
 import Pinafore.Libs
 import Pinafore.Main
 import Pinafore.Test.Internal
@@ -27,17 +27,18 @@ benchHashes =
               "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
         ]
 
-getBenchEnv :: IO (() -> LibraryContext)
+getBenchEnv :: IO (() -> InterpretBehaviour)
 getBenchEnv = let
-    library = mkLibraryContext $ libraryLoadModule appLibrary
-    in return $ \() -> library
+    ibLoadModule = libraryLoadModule appLibrary
+    ibSloppy = False
+    in return $ \() -> MkInterpretBehaviour {..}
 
 benchScript :: Text -> Benchmark
 benchScript text =
     env getBenchEnv $ \tpc -> let
-        library = tpc ()
+        behaviour = tpc ()
         in let
-               ?library = library
+               ?behaviour = behaviour
                in bgroup
                       (show $ unpack text)
                       [ bench "check" $

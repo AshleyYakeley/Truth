@@ -291,7 +291,7 @@ recordValueAddSig varid (MkSome qsig@(ValueSignature _ _ qtype _)) (MkQRecordVal
     fexpr' <- qPolyAbstractF varid (mkShimWit qtype) fexpr
     return $ MkQRecordValue (ConsListType qsig tt) fexpr'
 
-subsumeRecordValue :: Some (QType Positive) -> QRecordValue -> QInterpreter QRecordValue
+subsumeRecordValue :: Some (QType 'Positive) -> QRecordValue -> QInterpreter QRecordValue
 subsumeRecordValue qtype (MkQRecordValue sigs fexpr) = do
     fexpr' <- qSubsumeFExpr qtype fexpr
     return $ MkQRecordValue sigs fexpr'

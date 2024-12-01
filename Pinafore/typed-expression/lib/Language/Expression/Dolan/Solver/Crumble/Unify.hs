@@ -145,10 +145,7 @@ instance forall (ground :: GroundTypeKind) t. ShowGroundType ground => Show (Uni
 instance forall (ground :: GroundTypeKind). ShowGroundType ground => AllConstraint Show (UnifyPiece ground) where
     allConstraint = Dict
 
-matchWholeUnifyPiece ::
-       forall (ground :: GroundTypeKind) t. IsDolanGroundType ground
-    => UnifyPiece ground t
-    -> Maybe (WholeConstraint ground t)
+matchWholeUnifyPiece :: forall (ground :: GroundTypeKind) t. UnifyPiece ground t -> Maybe (WholeConstraint ground t)
 matchWholeUnifyPiece (WholeUnifyPiece wconstr) = Just wconstr
 matchWholeUnifyPiece _ = Nothing
 
@@ -244,8 +241,8 @@ atomicToVariablePuzzle =
         piece -> return $ varExpression piece
 
 toPureVariablePuzzle ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => UnifyPuzzle ground a
+       forall (ground :: GroundTypeKind) a.
+       UnifyPuzzle ground a
     -> Maybe (Expression (UnifyVariableConstraint ground) a)
 toPureVariablePuzzle =
     mapExactExpressionM $ \case

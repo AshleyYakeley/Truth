@@ -2,10 +2,10 @@ module Main
     ( main
     ) where
 
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Key as JSON
-import qualified Data.Aeson.KeyMap as JSON
-import qualified Data.Aeson.Text as JSON
+import Data.Aeson qualified as JSON
+import Data.Aeson.Key qualified as JSON
+import Data.Aeson.KeyMap qualified as JSON
+import Data.Aeson.Text qualified as JSON
 import Options
 import Pinafore.Documentation
 import Pinafore.Version

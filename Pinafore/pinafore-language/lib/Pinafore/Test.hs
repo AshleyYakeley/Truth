@@ -20,7 +20,7 @@ module Pinafore.Test
     , testerGetTableState
     , libraryLoadModule
     , directoryLoadModule
-    , lcLoadModule
+    , ibLoadModule
     , qInterpretTextAtType
     ) where
 
@@ -77,6 +77,7 @@ data TesterOptions = MkTesterOptions
     { tstExecutionOptions :: ExecutionOptions
     , tstOutput :: Handle
     , tstLibrary :: [LibraryModule]
+    , tstSloppy :: Bool
     }
 
 defaultTester :: TesterOptions
@@ -84,17 +85,27 @@ defaultTester = let
     tstExecutionOptions = defaultExecutionOptions
     tstOutput = stdout
     tstLibrary = pinaforeLibrary
+    tstSloppy = False
     in MkTesterOptions {..}
 
 data TesterContext = MkTesterContext
     { tcStorageModel :: Model QStorageUpdate
-    , tcLibrary :: LibraryContext
+    , tcInterpretBehaviour :: InterpretBehaviour
     , tcGetTableState :: View QTableSubject
     }
 
 newtype Tester a = MkTester
     { unTester :: ReaderT TesterContext View a
-    } deriving (Functor, Applicative, Monad, MonadFail, MonadIO, MonadException, MonadFix, MonadHoistIO, MonadTunnelIO)
+    } deriving newtype ( Functor
+                       , Applicative
+                       , Monad
+                       , MonadFail
+                       , MonadIO
+                       , MonadException
+                       , MonadFix
+                       , MonadHoistIO
+                       , MonadTunnelIO
+                       )
 
 instance MonadUnliftIO Tester where
     liftIOWithUnlift call = MkTester $ liftIOWithUnlift $ \unlift -> call $ unlift . unTester
@@ -121,9 +132,12 @@ runTester MkTesterOptions {..} (MkTester ta) =
                 namespaceBDS
                     "Env"
                     [valBDS "stdout" "OVERRIDDEN" $ MkLangSink outputSink, valBDS "outputLn" "OVERRIDDEN" testOutputLn]
-            tcLibrary =
-                mkLibraryContext $
+            ibSloppy :: Bool
+            ibSloppy = tstSloppy
+            ibLoadModule :: LoadModule
+            ibLoadModule =
                 libraryLoadModule $ overrideLibraryModule builtInModuleName (\lib -> lib <> myLibStuff) tstLibrary
+            tcInterpretBehaviour = MkInterpretBehaviour {..}
         runView $ runReaderT ta $ MkTesterContext {..}
 
 contextParam :: Param Tester TesterContext
@@ -133,20 +147,20 @@ testerLoad :: LoadModule -> Tester --> Tester
 testerLoad lm =
     paramLocal contextParam $ \tc ->
         tc
-            { tcLibrary =
+            { tcInterpretBehaviour =
                   let
-                      tcl = tcLibrary tc
-                      in tcl {lcLoadModule = lcLoadModule tcl <> lm}
+                      tcl = tcInterpretBehaviour tc
+                      in tcl {ibLoadModule = ibLoadModule tcl <> lm}
             }
 
 testerLoadLibrary :: [LibraryModule] -> Tester --> Tester
 testerLoadLibrary lms = testerLoad $ libraryLoadModule lms
 
-testerLiftView :: forall a. ((?library :: LibraryContext) => View a) -> Tester a
+testerLiftView :: forall a. ((?behaviour :: InterpretBehaviour) => View a) -> Tester a
 testerLiftView va =
     MkTester $
     ReaderT $ \MkTesterContext {..} -> let
-        ?library = tcLibrary
+        ?behaviour = tcInterpretBehaviour
         in va
 
 testerRunAction :: Action () -> Tester ()
@@ -155,10 +169,10 @@ testerRunAction pa = testerLiftView $ runAction pa
 testerLiftAction :: Action --> Tester
 testerLiftAction pa = testerLiftView $ unliftActionOrFail pa
 
-testerLiftInterpreterPath :: forall a. FilePath -> ((?library :: LibraryContext) => QInterpreter a) -> Tester a
+testerLiftInterpreterPath :: forall a. FilePath -> ((?behaviour :: InterpretBehaviour) => QInterpreter a) -> Tester a
 testerLiftInterpreterPath fpath pia = testerLiftView $ fromInterpretResult $ runPinaforeScoped fpath pia
 
-testerLiftInterpreter :: forall a. ((?library :: LibraryContext) => QInterpreter a) -> Tester a
+testerLiftInterpreter :: forall a. ((?behaviour :: InterpretBehaviour) => QInterpreter a) -> Tester a
 testerLiftInterpreter = testerLiftInterpreterPath "<input>"
 
 testerGetStore :: Tester QStore

@@ -29,6 +29,7 @@ main = do
     let
         roIncludeDirs = ["test" </> "golden"]
         roDataDir = Nothing
+        roSloppy = False
     mo <- getModuleOptions MkRunOptions {..}
     let
         testGolden :: TestTree

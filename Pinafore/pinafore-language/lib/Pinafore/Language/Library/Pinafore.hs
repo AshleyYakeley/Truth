@@ -18,22 +18,22 @@ import Pinafore.Language.Var
 
 -- QContext
 newtype QContext =
-    MkQContext LibraryContext
+    MkQContext InterpretBehaviour
 
 instance HasQGroundType '[] QContext where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QContext)|]) "Context.Pinafore."
 
 thisContext :: QInterpreter LangExpression
 thisContext = do
-    lm <- paramAsk loadModuleParam
+    behaviour <- paramAsk behaviourParam
     let
         sval :: QContext
-        sval = MkQContext $ MkLibraryContext lm
+        sval = MkQContext behaviour
     return $ MkLangExpression $ constSealedExpression $ MkSomeOf qType sval
 
 langRunInterpreter :: QContext -> QInterpreter A -> Action (Result Text A)
 langRunInterpreter (MkQContext lc) ia = let
-    ?library = lc
+    ?behaviour = lc
     in do
            rea <- runInterpretResult $ runPinaforeScoped "<evaluate>" ia
            return $ mapResultFailure showText rea
@@ -105,30 +105,35 @@ pinaforeLibSection =
                     [ let
                           defaultloadModule :: Text -> QInterpreter (Maybe QScopeDocs)
                           defaultloadModule _ = return Nothing
-                          rtype :: ListType QDocSignature '[ Text -> QInterpreter (Maybe QScopeDocs)]
+                          rtype :: ListType QDocSignature '[ Bool, Text -> QInterpreter (Maybe QScopeDocs)]
                           rtype =
+                              ConsListType (ValueDocSignature @Bool "sloppy" "" qType $ Just $ pure False) $
                               ConsListType
                                   (ValueDocSignature @(Text -> QInterpreter (Maybe QScopeDocs)) "loadModule" "" qType $
                                    Just $ pure defaultloadModule)
                                   NilListType
-                          qContextLoadModule :: QContext -> Text -> QInterpreter (Maybe QScopeDocs)
-                          qContextLoadModule (MkQContext lc) name = do
-                              mqm <- runLoadModule (lcLoadModule lc) $ MkModuleName name
+                          fromLoadModule :: LoadModule -> Text -> QInterpreter (Maybe QScopeDocs)
+                          fromLoadModule lm name = do
+                              mqm <- runLoadModule lm $ MkModuleName name
                               return $ fmap moduleScopeDocs mqm
                           toLoadModule :: (Text -> QInterpreter (Maybe QScopeDocs)) -> LoadModule
                           toLoadModule lm =
                               MkLoadModule $ \(MkModuleName name) -> do
                                   msdocs <- lm name
                                   for msdocs scopeDocsModule
-                          fromQContext :: QContext -> Maybe (ListVProduct '[ Text -> QInterpreter (Maybe QScopeDocs)])
-                          fromQContext qc =
-                              Just $ listProductToVProduct (listTypeToVType rtype) (qContextLoadModule qc, ())
-                          toQContext :: ListVProduct '[ Text -> QInterpreter (Maybe QScopeDocs)] -> QContext
+                          fromQContext ::
+                                 QContext -> Maybe (ListVProduct '[ Bool, Text -> QInterpreter (Maybe QScopeDocs)])
+                          fromQContext (MkQContext (MkInterpretBehaviour {..})) =
+                              Just $
+                              listProductToVProduct
+                                  (listTypeToVType rtype)
+                                  (ibSloppy, (fromLoadModule ibLoadModule, ()))
+                          toQContext :: ListVProduct '[ Bool, Text -> QInterpreter (Maybe QScopeDocs)] -> QContext
                           toQContext lvp = let
-                              (lm, ()) = listVProductToProduct lvp
-                              lcLoadModule = toLoadModule lm
-                              in MkQContext $ MkLibraryContext {..}
-                          codec :: Codec QContext (ListVProduct '[ Text -> QInterpreter (Maybe QScopeDocs)])
+                              (ibSloppy, (lm, ())) = listVProductToProduct lvp
+                              ibLoadModule = toLoadModule lm
+                              in MkQContext $ MkInterpretBehaviour {..}
+                          codec :: Codec QContext (ListVProduct '[ Bool, Text -> QInterpreter (Maybe QScopeDocs)])
                           codec = MkCodec fromQContext toQContext
                           in recordConsBDS "Mk" "" rtype codec
                     ]

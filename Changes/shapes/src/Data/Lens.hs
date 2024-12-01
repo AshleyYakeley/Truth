@@ -112,7 +112,7 @@ bijectionLens (MkIsomorphism ab ba) = MkLens ab (\b _ -> return (ba b))
 injectionLens :: Injection' m a b -> Lens' m a b
 injectionLens lens = MkLens {lensGet = injForwards lens, lensPutback = \b -> pure (injBackwards lens b)}
 
-hashMapLens :: (Eq key, Hashable key) => key -> PureLens (HashMap key value) (Maybe value)
+hashMapLens :: Hashable key => key -> PureLens (HashMap key value) (Maybe value)
 hashMapLens key = let
     lensGet = lookup key
     lensPutback Nothing hm = Identity $ deleteMap key hm

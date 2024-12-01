@@ -32,7 +32,7 @@ data VarVal
     | AppNotationVarVal Int
     | ImplicitVarVal ImplicitName
     | BadVarVal FullNameRef
-    deriving (Eq, Ord)
+    deriving stock (Eq, Ord)
 
 toVarVal :: VarID -> VarVal
 toVarVal =

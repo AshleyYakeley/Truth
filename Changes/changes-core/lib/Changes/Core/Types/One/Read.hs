@@ -20,7 +20,7 @@ instance (Show e, WitnessConstraint Show reader) => WitnessConstraint Show (OneR
         case witnessConstraint @_ @Show rt of
             Dict -> Dict
 
-instance (Show e, WitnessConstraint Show reader) => WitnessConstraint Show (OneReader Maybe reader) where
+instance WitnessConstraint Show reader => WitnessConstraint Show (OneReader Maybe reader) where
     witnessConstraint ReadHasOne = Dict
     witnessConstraint (ReadOne rt) =
         case witnessConstraint @_ @Show rt of

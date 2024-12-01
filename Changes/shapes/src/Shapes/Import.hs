@@ -25,7 +25,7 @@ import Data.Functor.Product as I
 import Data.Int as I
 import Data.Kind as I
 import Data.List as I ((++), (\\), iterate, nub, nubBy, zip)
-import qualified Data.List
+import Data.List qualified
 import Data.List.NonEmpty as I (NonEmpty(..), head, init, last, nonEmpty, tail)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
@@ -95,8 +95,8 @@ import Data.Hashable as I (Hashable)
 -- containers
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
 import Data.Map as I (Map)
-import qualified Data.Map.Lazy
 import Data.Set as I (Set)
+import Data.Map.Lazy qualified
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)

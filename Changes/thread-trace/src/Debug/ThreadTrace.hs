@@ -37,7 +37,7 @@ import Control.Monad.Ology
 import Data.Fixed
 import Data.Foldable
 import Data.List (sortOn)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Maybe
 import Data.Time.Clock.System
 import Data.Word
@@ -45,7 +45,7 @@ import Debug.ThreadTrace.Lookup
 import Debug.Trace (traceIO)
 import GHC.Conc
 import Prelude
-import qualified System.Clock as Clock
+import System.Clock qualified as Clock
 import System.IO.Unsafe
 
 contextStr :: String -> String -> String

@@ -166,8 +166,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> GView 'Unlocked ( M
                 tpath <- treePathNewFromIndices [fromIntegral i]
                 #selectPath tselection tpath
             recvTable ::
-                   HasCallStack
-                => (DynamicStore (StoreEntry update rowtext rowprops), TreeView, Widget)
+                   (DynamicStore (StoreEntry update rowtext rowprops), TreeView, Widget)
                 -> NonEmpty (OrderedListUpdate update)
                 -> GView 'Unlocked ()
             recvTable _ updates = do

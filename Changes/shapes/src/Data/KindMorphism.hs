@@ -21,10 +21,10 @@ instance Category (KindMorphism cat :: kq -> kq -> Type) =>
 type instance KindMorphism cat = NestedMorphism cat
 
 type family Fst (a :: (kp, kq)) :: kp where
-    Fst '( p, q) = p
+    Fst '( p, _) = p
 
 type family Snd (a :: (kp, kq)) :: kq where
-    Snd '( p, q) = q
+    Snd '( _, q) = q
 
 unsafeTypeIsPair :: forall kp kq (a :: (kp, kq)). a :~: '( Fst a, Snd a)
 unsafeTypeIsPair = unsafeRefl @(kp, kq) @a @'( Fst a, Snd a)

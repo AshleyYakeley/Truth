@@ -49,10 +49,10 @@ composeLangAttribute = combineLangAttributes composeStorageLensAttribute
 
 pairLangAttribute ::
        forall ap aq bp bq cp cq.
-       LangAttribute '( ap, MeetType Entity aq) '( bp, bq)
-    -> LangAttribute '( ap, MeetType Entity aq) '( cp, cq)
+       LangAttribute '( ap, aq) '( bp, bq)
+    -> LangAttribute '( ap, aq) '( cp, cq)
     -> LangAttribute '( ap, aq) '( (bp, cp), (bq, cq))
-pairLangAttribute = combineLangAttributes $ \m1 m2 -> cfmap3 (meet2 @(->)) $ pairStorageLensAttribute m1 m2
+pairLangAttribute = combineLangAttributes pairStorageLensAttribute
 
 eitherLangAttribute ::
        forall ap aq bp bq cp cq.

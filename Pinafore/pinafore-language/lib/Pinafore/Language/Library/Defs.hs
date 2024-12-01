@@ -142,7 +142,7 @@ newTypeParameter = do
             return n
         [] -> return "a"
 
-getTypeParameter :: CCRVarianceType sv -> State [Name] (DocTypeParameter, Some (CCRPolarArgument QType Negative sv))
+getTypeParameter :: CCRVarianceType sv -> State [Name] (DocTypeParameter, Some (CCRPolarArgument QType 'Negative sv))
 getTypeParameter CoCCRVarianceType = do
     vname <- newTypeParameter
     nameToTypeVarT vname $ \var ->
@@ -168,7 +168,7 @@ getTypeParameter RangeCCRVarianceType = do
                       (singleDolanType $ VarDolanSingularType varq))
 
 getTypeParameters ::
-       CCRVariancesType dv -> State [Name] ([DocTypeParameter], Some (CCRPolarArguments dv QType t Negative))
+       CCRVariancesType dv -> State [Name] ([DocTypeParameter], Some (CCRPolarArguments dv QType t 'Negative))
 getTypeParameters NilListType = return ([], MkSome NilCCRArguments)
 getTypeParameters (ConsListType t tt) = do
     (nt, sarg) <- getTypeParameter t
@@ -181,7 +181,7 @@ getTypeParameters (ConsListType t tt) = do
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-getGDSName :: QGroundType dv t -> Some (CCRPolarArguments dv QType t Negative) -> Maybe NamedText
+getGDSName :: QGroundType dv t -> Some (CCRPolarArguments dv QType t 'Negative) -> Maybe NamedText
 getGDSName gt (MkSome params) =
     case qgtGreatestDynamicSupertype gt of
         NullPolyGreatestDynamicSupertype -> Nothing
@@ -403,7 +403,6 @@ functorEntries ::
        , HasQType QPolyShim 'Positive (f A)
        , HasQType QPolyShim 'Negative (f A)
        , HasQType QPolyShim 'Positive (f B)
-       , HasQType QPolyShim 'Negative (f B)
        )
     => [LibraryStuff]
 functorEntries = [headingBDS "Functor" "" [valBDS "map" "" (fmap :: (A -> B) -> f A -> f B)]]
@@ -419,7 +418,6 @@ applicativeEntries ::
        , HasQType QPolyShim 'Positive (f B)
        , HasQType QPolyShim 'Negative (f B)
        , HasQType QPolyShim 'Positive (f C)
-       , HasQType QPolyShim 'Negative (f C)
        , HasQType QPolyShim 'Positive (f (A, B))
        , HasQType QPolyShim 'Positive (f [B])
        , HasQType QPolyShim 'Negative (f (A -> B))
@@ -451,7 +449,6 @@ monadEntries ::
        , HasQType QPolyShim 'Positive (f B)
        , HasQType QPolyShim 'Negative (f B)
        , HasQType QPolyShim 'Positive (f C)
-       , HasQType QPolyShim 'Negative (f C)
        , HasQType QPolyShim 'Positive (f (A, B))
        , HasQType QPolyShim 'Positive (f [B])
        , HasQType QPolyShim 'Negative (f (A -> B))

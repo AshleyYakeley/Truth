@@ -6,8 +6,8 @@ import Changes.Core
 import Changes.World.GNOME.GIO.File
 import Changes.World.GNOME.GIO.ReferenceStream
 import Foreign.C
-import qualified GI.GLib as GI
-import qualified GI.Gio as GI
+import GI.GLib qualified as GI
+import GI.Gio qualified as GI
 import Shapes
 import Shapes.Test
 

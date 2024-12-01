@@ -8,18 +8,13 @@ version: *pinafore_version
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.16
       - shapes
-      - time
       - commonmark
       - Color
-      - gi-cairo-render
       - cairo-functional
-      - changes-core
       - changes-world
       - changes-media
       - polar-shim
-      - typed-expression
       - pinafore-language
     exposed-modules:
       - Pinafore.Library.Media

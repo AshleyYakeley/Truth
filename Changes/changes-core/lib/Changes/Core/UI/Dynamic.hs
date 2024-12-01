@@ -4,7 +4,6 @@ module Changes.Core.UI.Dynamic
     , viewInnerWholeView
     ) where
 
-import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Model
 import Changes.Core.Types
@@ -50,7 +49,7 @@ data OneWholeViews f =
                     ViewState
 
 viewInnerWholeView ::
-       forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall f update. MonadInner f
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> View ())
     -> SelectNotify (f ())

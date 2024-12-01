@@ -64,10 +64,7 @@ oneLiftChangeLens (MkChangeLens g u pe) = let
         unComposeInner $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
     in MkChangeLens {..}
 
-oneNullChangeLens ::
-       forall f updateA updateB. MonadInner f
-    => (forall x. f x)
-    -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
+oneNullChangeLens :: forall f updateA updateB. (forall x. f x) -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
 oneNullChangeLens fu = let
     clRead :: ReadFunction (OneReader f (UpdateReader updateA)) (OneReader f (UpdateReader updateB))
     clRead _ ReadHasOne = return fu

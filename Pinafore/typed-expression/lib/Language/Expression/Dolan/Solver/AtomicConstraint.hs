@@ -26,7 +26,7 @@ instance forall (ground :: GroundTypeKind). ShowGroundType ground => AllConstrai
     allConstraint = Dict
 
 mkAtomicConstraint ::
-       forall (ground :: GroundTypeKind) polarity tv t. (IsDolanGroundType ground, Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) polarity tv t. Is PolarityType polarity
     => TypeVarT tv
     -> FlipType ground polarity t
     -> AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)

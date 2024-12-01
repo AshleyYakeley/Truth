@@ -53,12 +53,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -77,10 +75,9 @@ library
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages
   build-depends:
-      base >=4.16
-    , parsec
+      parsec
     , pinafore-base
     , polar-shim
     , shapes
@@ -99,12 +96,10 @@ test-suite test
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -123,7 +118,7 @@ test-suite test
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
       base >=4.16
     , pinafore-base

@@ -13,7 +13,7 @@ data BindingThing
     = VarBindingThing FullName
     | ConsBindingThing Namespace
                        FullNameRef
-    deriving (Eq)
+    deriving stock (Eq)
 
 btGetVar :: BindingThing -> Maybe FullName
 btGetVar (VarBindingThing x) = Just x

@@ -118,8 +118,8 @@ composeStorageLensAttribute (MkStorageLensAttribute funcBC putBC) ab@(MkStorageL
     in MkStorageLensAttribute {..}
 
 pairStorageLensAttribute ::
-       forall baseupdate ap aq bp bq cp cq. Eq aq
-    => StorageLensAttribute ap aq bp bq baseupdate
+       forall baseupdate ap aq bp bq cp cq.
+       StorageLensAttribute ap aq bp bq baseupdate
     -> StorageLensAttribute ap aq cp cq baseupdate
     -> StorageLensAttribute ap aq (bp, cp) (bq, cq) baseupdate
 pairStorageLensAttribute (MkStorageLensAttribute funcB putB) (MkStorageLensAttribute funcC putC) = let

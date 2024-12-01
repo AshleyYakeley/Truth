@@ -62,14 +62,14 @@ data GTKContext = MkGTKContext
 type GView :: LockState -> Type -> Type
 newtype GView ls a = MkGView
     { unGView :: ReaderT GTKContext View a
-    } deriving (Functor, Applicative, Monad, MonadFail, MonadFix, MonadException)
+    } deriving newtype (Functor, Applicative, Monad, MonadFail, MonadFix, MonadException)
 
 -- | Only run IO with the UI lock held.
-deriving instance MonadIO (GView 'Locked)
+deriving newtype instance MonadIO (GView 'Locked)
 
-deriving instance MonadHoistIO (GView 'Locked)
+deriving newtype instance MonadHoistIO (GView 'Locked)
 
-deriving instance MonadTunnelIO (GView 'Locked)
+deriving newtype instance MonadTunnelIO (GView 'Locked)
 
 instance MonadUnliftIO (GView 'Locked) where
     liftIOWithUnlift call = MkGView $ liftIOWithUnlift $ \unlift -> call $ unlift . unGView
@@ -80,7 +80,7 @@ gvGetContext = MkGView ask
 type GViewState :: LockState -> Type
 newtype GViewState ls = MkGViewState
     { gvsViewState :: ViewState
-    } deriving (Semigroup, Monoid)
+    } deriving newtype (Semigroup, Monoid)
 
 gvGetState :: GView ls a -> GView ls (a, GViewState ls)
 gvGetState gv =
@@ -91,17 +91,11 @@ gvGetState gv =
 gvAddState :: GViewState ls -> GView ls ()
 gvAddState state = MkGView $ lift $ viewAddViewState $ gvsViewState state
 
-gvCloseState ::
-       forall ls. Is LockStateType ls
-    => GViewState ls
-    -> GView ls ()
+gvCloseState :: forall ls. GViewState ls -> GView ls ()
 gvCloseState (MkGViewState NoLifeState) = return ()
 gvCloseState state = MkGView $ liftIO $ closeLifeState $ gvsViewState state
 
-gvOnClose ::
-       forall ls. Is LockStateType ls
-    => GView ls ()
-    -> GView ls ()
+gvOnClose :: forall ls. GView ls () -> GView ls ()
 gvOnClose gv = gvLiftViewWithUnliftNoUI $ \unlift -> viewOnClose $ unlift gv
 
 gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GView ls ())
@@ -148,7 +142,7 @@ gvExitUI = do
     gtkc <- gvGetContext
     gvLiftIONoUI $ gtkcExit gtkc
 
-gvExitOnClosed :: GView 'Unlocked --> GView Unlocked
+gvExitOnClosed :: GView 'Unlocked --> GView 'Unlocked
 gvExitOnClosed gv = do
     gtkc <- gvGetContext
     gvHoistView (gtkcExitOnClosed gtkc) gv
@@ -296,7 +290,7 @@ gvSwitch model = do
     gvDynamic model initVS return mempty recvVS
 
 gvInnerWholeView ::
-       forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall f update. MonadInner f
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> GView 'Unlocked ())
     -> SelectNotify (f ())

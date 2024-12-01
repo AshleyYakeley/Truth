@@ -9,7 +9,7 @@ data SealedExpression (varw :: Type -> Type) (tw :: Type -> Type) =
     forall (t :: Type). MkSealedExpression (tw t)
                                            (Expression varw t)
 
-type instance Element (SealedExpression varw ((:~:) val)) = val
+type instance Element (SealedExpression _ ((:~:) val)) = val
 
 instance MonoFunctor (SealedExpression varw ((:~:) val)) where
     omap ab (MkSealedExpression Refl expr) = MkSealedExpression Refl $ fmap ab expr

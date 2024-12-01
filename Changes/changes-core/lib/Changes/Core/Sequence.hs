@@ -4,7 +4,7 @@ import Changes.Core.Import
 
 newtype SequencePoint = MkSequencePoint
     { unSequencePoint :: Int64
-    } deriving (Eq, Ord, Num, Enum, Real, Integral)
+    } deriving newtype (Eq, Ord, Num, Enum, Real, Integral)
 
 instance Show SequencePoint where
     show (MkSequencePoint i) = show i
@@ -27,7 +27,7 @@ seqSplitAt p = splitAt $ fromIntegral p
 data SequenceRun = MkSequenceRun
     { runStart :: SequencePoint
     , runLength :: SequencePoint
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 instance Show SequenceRun where
     show (MkSequenceRun start len) = show start ++ "+" ++ show len

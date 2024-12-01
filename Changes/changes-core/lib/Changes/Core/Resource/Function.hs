@@ -197,15 +197,9 @@ contractTransListFunction wtt = let
 
 stackTransListFunction :: forall tt. TransListFunction tt '[ StackT tt]
 stackTransListFunction = let
-    tlfFunction ::
-           forall m. Monad m
-        => Proxy m
-        -> ApplyStack tt m --> StackT tt m
+    tlfFunction :: forall m. Proxy m -> ApplyStack tt m --> StackT tt m
     tlfFunction _ = MkStackT
-    tlfBackFunction ::
-           forall m. MonadTunnelIO m
-        => Proxy m
-        -> ApplyStack tt m -/-> StackT tt m
+    tlfBackFunction :: forall m. Proxy m -> ApplyStack tt m -/-> StackT tt m
     tlfBackFunction _ call = MkStackT $ call unStackT
     in MkTransListFunction {..}
 

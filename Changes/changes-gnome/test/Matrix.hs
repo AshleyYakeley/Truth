@@ -2,7 +2,7 @@ module Matrix
     ( matrixTest
     ) where
 
-import qualified GI.Cairo.Render.Matrix as RM
+import GI.Cairo.Render.Matrix qualified as RM
 import Shapes
 import Shapes.Test
 

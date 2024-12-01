@@ -6,7 +6,8 @@ module Pinafore.Main
     , RunWithOptions(..)
     , ModuleOptions(..)
     , module Pinafore.Context
-    , standardLibraryContext
+    , InterpretBehaviour(..)
+    , standardLoadModule
     , pinaforeLibrary
     , sqliteQDumpTable
     , qInterpretTextAtType
@@ -76,9 +77,6 @@ standardLoadModule MkModuleOptions {..} = let
     dirLoadModule = mconcat $ fmap directoryLoadModule moModuleDirs
     in libLoadModule <> dirLoadModule
 
-standardLibraryContext :: ModuleOptions -> LibraryContext
-standardLibraryContext modopts = mkLibraryContext $ standardLoadModule modopts
-
 sqliteQDumpTable :: FilePath -> IO ()
 sqliteQDumpTable dirpath = do
     MkAllFor tables <- sqliteTableGetEntireDatabase emptyResourceContext $ dirpath </> "tables.sqlite3"
@@ -96,7 +94,7 @@ sqliteQDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 qInterpretTextAtType ::
-       forall t m. (?library :: LibraryContext, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QError m)
+       forall t m. (?behaviour :: InterpretBehaviour, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QError m)
     => FilePath
     -> Text
     -> [String]
@@ -108,7 +106,7 @@ qInterpretTextAtType puipath puitext args impls = let
        runPinaforeScoped puipath $ parseToValueUnify puitext $ (MkImplicitName "arglist", arglist) : impls
 
 qInterpretScriptText ::
-       (?library :: LibraryContext, MonadIO m, MonadThrow QError m)
+       (?behaviour :: InterpretBehaviour, MonadIO m, MonadThrow QError m)
     => FilePath
     -> Text
     -> [String]
@@ -118,14 +116,14 @@ qInterpretScriptText puipath puitext args impls = do
     action <- qInterpretTextAtType @(Action TopType) puipath puitext args impls
     return $ runAction $ fmap (\MkTopType -> ()) $ action
 
-qInterpretScriptFile :: (?library :: LibraryContext) => FilePath -> [String] -> [(Text, Text)] -> View (View ())
+qInterpretScriptFile :: (?behaviour :: InterpretBehaviour) => FilePath -> [String] -> [(Text, Text)] -> View (View ())
 qInterpretScriptFile fpath args implArgs = do
     ptext <- liftIO $ readFile fpath
     let impls = fmap (\(n, v) -> (MkImplicitName $ MkName n, qToValue v)) implArgs
     qInterpretScriptText fpath (decodeUtf8 $ toStrict ptext) args impls
 
-qInteractHandles :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
+qInteractHandles :: (?behaviour :: InterpretBehaviour) => Handle -> Handle -> Bool -> View ()
 qInteractHandles inh outh echo = interact inh outh echo
 
-qInteract :: (?library :: LibraryContext) => View ()
+qInteract :: (?behaviour :: InterpretBehaviour) => View ()
 qInteract = qInteractHandles stdin stdout False

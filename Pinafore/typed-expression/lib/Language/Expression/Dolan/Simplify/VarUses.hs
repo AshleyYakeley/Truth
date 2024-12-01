@@ -45,8 +45,8 @@ appearanceMatchingTypes ::
 appearanceMatchingTypes var = mapMaybe (appearanceMatchingType var)
 
 removeAppearanceVar ::
-       forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground
-    => SomeTypeVarT
+       forall (ground :: GroundTypeKind) polarity.
+       SomeTypeVarT
     -> Appearance ground polarity
     -> Appearance ground polarity
 removeAppearanceVar (MkSomeTypeVarT var) (MkAppearance appr) = let
@@ -55,9 +55,7 @@ removeAppearanceVar (MkSomeTypeVarT var) (MkAppearance appr) = let
     in MkAppearance $ filter notVar appr
 
 typeToAppearance ::
-       forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
-    => DolanType ground polarity t
-    -> Appearance ground polarity
+       forall (ground :: GroundTypeKind) polarity t. DolanType ground polarity t -> Appearance ground polarity
 typeToAppearance t = MkAppearance $ typeToAnySingulars t
 
 checkVar :: forall (ground :: GroundTypeKind) polarity. Some (DolanSingularType ground polarity) -> Maybe (SomeTypeVarT)

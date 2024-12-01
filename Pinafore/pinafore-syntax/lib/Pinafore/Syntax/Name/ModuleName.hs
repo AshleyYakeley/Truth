@@ -5,7 +5,7 @@ import Shapes
 
 newtype ModuleName =
     MkModuleName Text
-    deriving (Eq, Ord)
+    deriving newtype (Eq, Ord)
 
 instance ShowText ModuleName where
     showText (MkModuleName t) = t

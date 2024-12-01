@@ -3,10 +3,10 @@ module Soup.Note where
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Changes.World.JSON
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Key as JSON
-import qualified Data.Aeson.KeyMap as JSON
-import qualified Data.Aeson.Types as JSON
+import Data.Aeson qualified as JSON
+import Data.Aeson.Key qualified as JSON
+import Data.Aeson.KeyMap qualified as JSON
+import Data.Aeson.Types qualified as JSON
 import Shapes
 
 data NoteSel t where

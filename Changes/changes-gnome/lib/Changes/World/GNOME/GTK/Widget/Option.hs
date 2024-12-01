@@ -15,7 +15,7 @@ data ComboBoxCell = MkComboBoxCell
     { cbcText :: Text
     , cbcStyle :: TextStyle
     , cbcDefault :: Bool
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 plainComboBoxCell :: Text -> ComboBoxCell
 plainComboBoxCell cbcText = let

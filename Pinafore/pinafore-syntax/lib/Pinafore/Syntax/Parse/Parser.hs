@@ -19,7 +19,7 @@ import Pinafore.Syntax.Parse.Error
 import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Text
 import Shapes hiding (try)
-import qualified Text.Parsec as P
+import Text.Parsec qualified as P
 import Text.Parsec.Pos (SourcePos, initialPos)
 
 runTokens :: Text -> StateT SourcePos ParseResult [(SourcePos, SomeOf Token)]

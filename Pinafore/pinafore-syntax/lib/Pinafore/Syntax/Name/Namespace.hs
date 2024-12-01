@@ -6,7 +6,7 @@ import Shapes
 
 newtype Namespace =
     MkNamespace [Name]
-    deriving (Eq)
+    deriving newtype (Eq)
 
 instance Ord Namespace where
     compare (MkNamespace a) (MkNamespace b) = compare (reverse a) (reverse b)

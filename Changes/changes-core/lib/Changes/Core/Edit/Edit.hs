@@ -57,8 +57,7 @@ class InvertibleEdit (edit :: Type) where
         => [edit]
         -> Readable m (EditReader edit)
         -> m [edit]
-    default invertEdits ::
-        (MonadIO m, ApplicableEdit edit, InvertibleEdit edit) => [edit] -> Readable m (EditReader edit) -> m [edit]
+    default invertEdits :: (MonadIO m, ApplicableEdit edit) => [edit] -> Readable m (EditReader edit) -> m [edit]
     invertEdits [] _mr = return []
     invertEdits (e:ee) mr = do
         u <- invertEdit e mr

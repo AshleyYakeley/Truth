@@ -72,6 +72,7 @@ class ( Monad Interpreter
     type Interpreter :: Type -> Type
     getSubtypeConversions :: Interpreter [QSubtypeConversionEntry]
     mkErrorMessage :: Interpreter (QErrorType -> QError)
+    mkWarningMessage :: Interpreter (QWarningType -> QWarning)
 
 instance HasInterpreter => ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType
@@ -92,7 +93,7 @@ type QNonpolarGroundedType :: Type -> Type
 type QNonpolarGroundedType = NonpolarGroundedType QGroundType
 
 singleGroundType' ::
-       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). (HasInterpreter, HasCCRVariances dv t)
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). HasCCRVariances dv t
     => FamilialType t
     -> GroundProperties dv t
     -> ListTypeExprShow dv
@@ -109,7 +110,7 @@ singleGroundType' ft props showexp =
         }
 
 singleGroundType ::
-       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). (HasInterpreter, HasCCRVariances dv t)
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). HasCCRVariances dv t
     => IOWitness ('MkWitKind (SingletonFamily t))
     -> ListTypeExprShow dv
     -> QGroundType dv t
@@ -126,7 +127,7 @@ standardListTypeExprShow = let
     in sh 0 $ representative @_ @_ @dv
 
 stdSingleGroundType ::
-       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). (HasInterpreter, HasCCRVariances dv t)
+       forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). HasCCRVariances dv t
     => IOWitness ('MkWitKind (SingletonFamily t))
     -> FullName
     -> QGroundType dv t

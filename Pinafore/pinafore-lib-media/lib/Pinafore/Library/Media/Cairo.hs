@@ -18,7 +18,7 @@ import Shapes.Numeric
 -- LangDrawing
 newtype LangDrawing a = MkLangDrawing
     { unLangDrawing :: Drawing (PixelPoint -> [a])
-    } deriving (Semigroup, Monoid)
+    } deriving newtype (Semigroup, Monoid)
 
 instance Functor LangDrawing where
     fmap ab (MkLangDrawing d) = MkLangDrawing $ fmap (fmap (fmap ab)) d

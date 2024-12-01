@@ -54,7 +54,7 @@ data TupleSelectClause dbType tablesel row t where
 data SortDir
     = SortAsc
     | SortDesc
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance Show SortDir where
     show SortAsc = "ASC"

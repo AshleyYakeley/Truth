@@ -31,7 +31,7 @@ instance HasQGroundType '[ CoCCRVariance] ItemOrEnd where
 -- LangSink
 newtype LangSink a =
     MkLangSink (Sink Action a)
-    deriving (Contravariant)
+    deriving newtype (Contravariant)
 
 instance MaybeRepresentational LangSink where
     maybeRepresentational = Nothing
@@ -66,7 +66,7 @@ langSinkWriteLn (MkLangSink sink) = sinkWriteLn sink
 -- LangSource
 newtype LangSource a =
     MkLangSource (Source Action a)
-    deriving (Functor)
+    deriving newtype (Functor)
 
 instance MaybeRepresentational LangSource where
     maybeRepresentational = Nothing

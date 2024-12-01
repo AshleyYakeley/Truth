@@ -2,17 +2,18 @@
 
 module Pinafore.Language.Interpreter.Interpreter
     ( QInterpreter
+    , warn
     , LoadModule(..)
     , nameWitnessErrorType
     , sourcePosParam
     , varIDStateParam
     , scopeParam
-    , loadModuleParam
+    , behaviourParam
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
     , nameUsagesProd
-    , LibraryContext(..)
+    , InterpretBehaviour(..)
     , runInterpreter
     , getRenderFullName
     , getBindingInfoLookup
@@ -51,13 +52,18 @@ instance Semigroup LoadModule where
 instance Monoid LoadModule where
     mempty = MkLoadModule $ \_ -> return Nothing
 
+data InterpretBehaviour = MkInterpretBehaviour
+    { ibLoadModule :: LoadModule
+    , ibSloppy :: Bool
+    }
+
 data InterpretContext = MkInterpretContext
     { icSourcePos :: SourcePos
     , icVarIDState :: VarIDState
     , icScope :: QScope
     , icCurrentNamespace :: Namespace
     , icModulePath :: [ModuleName]
-    , icLoadModule :: LoadModule
+    , icBehvaiour :: InterpretBehaviour
     }
 
 data InterpretState = MkInterpretState
@@ -87,17 +93,17 @@ instance Monoid InterpretOutput where
 type QInterpreter :: Type -> Type
 newtype QInterpreter a = MkQInterpreter
     { unInterpreter :: ReaderT InterpretContext (WriterT InterpretOutput (StateT InterpretState InterpretResult)) a
-    } deriving ( Functor
-               , Applicative
-               , Monad
-               , MonadIO
-               , MonadFix
-               , MonadException
-               , MonadThrow QError
-               , MonadCatch QError
-               , MonadHoistIO
-               , MonadTunnelIO
-               )
+    } deriving newtype ( Functor
+                       , Applicative
+                       , Monad
+                       , MonadIO
+                       , MonadFix
+                       , MonadException
+                       , MonadThrow QError
+                       , MonadCatch QError
+                       , MonadHoistIO
+                       , MonadTunnelIO
+                       )
 
 instance RepresentationalRole QInterpreter where
     representationalCoercion MkCoercion = MkCoercion
@@ -114,11 +120,20 @@ instance MonadCoroutine QInterpreter where
 
 instance MonadThrow QErrorType QInterpreter where
     throw err = do
-        em <- mkErrorMessage
-        throw $ em err
+        mm <- mkErrorMessage
+        throw $ mm err
 
 instance MonadThrow PatternError QInterpreter where
     throw err = throw $ PatternErrorError err
+
+warn :: QWarningType -> QInterpreter ()
+warn wt = do
+    sloppy <- paramAsks behaviourParam ibSloppy
+    if sloppy
+        then do
+            mm <- mkWarningMessage
+            liftIO $ emitWarning $ mm wt
+        else throw $ WarningError wt
 
 -- Left if at least one a
 splitNonEmpty :: NonEmpty (Either a b) -> Either (NonEmpty a) (NonEmpty b)
@@ -157,6 +172,10 @@ instance HasInterpreter where
         spos <- paramAsk sourcePosParam
         ntt <- getRenderFullName
         return $ MkSourceError spos ntt
+    mkWarningMessage = do
+        spos <- paramAsk sourcePosParam
+        ntt <- getRenderFullName
+        return $ MkSourceError spos ntt
     getSubtypeConversions = fmap (toList . scopeSubtypes) $ paramAsk scopeParam
 
 allParam :: Param QInterpreter InterpretContext
@@ -191,8 +210,11 @@ currentNamespaceParam =
 modulePathParam :: Param QInterpreter [ModuleName]
 modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) allParam
 
+behaviourParam :: Param QInterpreter InterpretBehaviour
+behaviourParam = lensMapParam (\bfb a -> fmap (\b -> a {icBehvaiour = b}) $ bfb $ icBehvaiour a) allParam
+
 loadModuleParam :: Param QInterpreter LoadModule
-loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) allParam
+loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {ibLoadModule = b}) $ bfb $ ibLoadModule a) behaviourParam
 
 appNotationBindsProd :: Prod QInterpreter [(VarID, QExpression)]
 appNotationBindsProd =
@@ -210,17 +232,12 @@ modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModu
 appNotationVarRef :: Ref QInterpreter VarIDState
 appNotationVarRef = lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) allRef
 
-data LibraryContext = MkLibraryContext
-    { lcLoadModule :: LoadModule
-    }
-
-runInterpreter :: SourcePos -> LibraryContext -> QInterpreter a -> InterpretResult a
-runInterpreter icSourcePos MkLibraryContext {..} qa = let
+runInterpreter :: SourcePos -> InterpretBehaviour -> QInterpreter a -> InterpretResult a
+runInterpreter icSourcePos icBehvaiour qa = let
     icVarIDState = szero
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace
-    icLoadModule = lcLoadModule
     in evalStateT (evalWriterT $ runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
 
 firstOf :: [a] -> (a -> Maybe b) -> Maybe b

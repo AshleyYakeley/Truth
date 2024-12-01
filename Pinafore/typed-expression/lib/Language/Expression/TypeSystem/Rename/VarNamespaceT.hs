@@ -50,7 +50,7 @@ data VNContext = MkVNContext
 
 newtype VarNamespaceT (ts :: Type) m a =
     MkVarNamespaceT (ReaderT VNContext (StateT [(String, String)] m) a)
-    deriving (Functor, Applicative, Monad, MonadIO, MonadFail)
+    deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFail)
 
 instance MonadTrans (VarNamespaceT ts) where
     lift ma = MkVarNamespaceT $ lift $ lift ma
@@ -86,7 +86,7 @@ varNamespaceTRename oldname = do
                  Nothing -> varNamespaceTAddName oldname
 
 varNamespaceRenameSource ::
-       forall ts m. (RenameTypeSystem ts, RenamerMonad (RenamerT ts m), Monad m)
+       forall ts m. RenamerMonad (RenamerT ts m)
     => RenameSource (VarNamespaceT ts (RenamerT ts m))
 varNamespaceRenameSource = let
     rsNewVar :: EndoM' (VarNamespaceT ts (RenamerT ts m)) TypeVarT
