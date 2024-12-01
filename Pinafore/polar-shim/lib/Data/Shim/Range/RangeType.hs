@@ -55,7 +55,7 @@ instance (Is MPolarityType mpolarity, Monoid (Some (RangeType w 'Negative)), Mon
                             NegativeType -> mempty
                     in x
 
-type instance ConvertMPolarity (MPolarRangeType w mpolarity) = mpolarity
+type instance ConvertMPolarity (MPolarRangeType _ mpolarity) = mpolarity
 
 instance ToMPolar (MPolarRangeType w mpolarity) where
     type ToMPolarConvert (MPolarRangeType w mpolarity) polarity = Some (RangeType w polarity)

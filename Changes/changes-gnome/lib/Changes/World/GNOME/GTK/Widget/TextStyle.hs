@@ -7,7 +7,7 @@ import Shapes
 
 data TextStyle = MkTextStyle
     { tsItalic :: Bool
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 plainTextStyle :: TextStyle
 plainTextStyle = let

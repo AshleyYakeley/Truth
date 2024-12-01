@@ -11,11 +11,11 @@ data NullShim k a b where
 instance Show (NullShim k a b) where
     show MkNullShim = "null"
 
-instance CoercibleKind k => Category (NullShim k) where
+instance Category (NullShim k) where
     id = MkNullShim
     MkNullShim . MkNullShim = MkNullShim
 
-instance CoercibleKind k => Groupoid (NullShim k) where
+instance Groupoid (NullShim k) where
     invert MkNullShim = MkNullShim
 
 instance forall k (f :: Type -> k). CatFunctor (NullShim Type) (NullShim k) f where

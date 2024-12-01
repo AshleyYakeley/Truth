@@ -9,14 +9,14 @@ module Pinafore.Base.Anchor
     , anchorToByteString
     ) where
 
-import qualified BLAKE3
+import BLAKE3 qualified
 import Control.DeepSeq
 import Data.ByteArray (convert)
 import Shapes
 
 newtype Anchor =
     MkAnchor StrictByteString
-    deriving (Eq, Ord, NFData, Hashable)
+    deriving newtype (Eq, Ord, NFData, Hashable)
 
 class IsHash h where
     hashSize :: Int

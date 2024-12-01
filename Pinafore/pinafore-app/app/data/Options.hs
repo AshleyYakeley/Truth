@@ -12,7 +12,7 @@ data Options
     | SyntaxDataDocOption
     | InfixDocOption
     | TypeInfixDocOption
-    deriving (Eq, Show)
+    deriving stock (Eq, Show)
 
 optParser :: Parser Options
 optParser =

@@ -159,7 +159,7 @@ parallelFor_ ta amb = do
 
 data Cancelled =
     MkCancelled
-    deriving (Show)
+    deriving stock (Show)
 
 instance Exception Cancelled
 

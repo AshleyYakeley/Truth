@@ -13,7 +13,7 @@ type CoCCRVariance = 'SimpleCCRVariance 'Covariance
 type ContraCCRVariance = 'SimpleCCRVariance 'Contravariance
 
 type family CCRVarianceKind (sv :: CCRVariance) :: Type where
-    CCRVarianceKind ('SimpleCCRVariance t) = Type
+    CCRVarianceKind ('SimpleCCRVariance _) = Type
     CCRVarianceKind 'RangeCCRVariance = (Type, Type)
 
 data CCRVarianceType (t :: CCRVariance) where

@@ -46,7 +46,7 @@ data MItem
     | TagMI Text
             [(Text, Text)]
             MarkdownText
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance PlainText MItem where
     plainText = PlainMI
@@ -61,7 +61,7 @@ joinMItems _ _ = Nothing
 
 newtype MarkdownText =
     MkMarkdownText [MItem]
-    deriving (Eq)
+    deriving newtype (Eq)
 
 instance Semigroup MarkdownText where
     MkMarkdownText aa <> MkMarkdownText bb =
@@ -143,7 +143,7 @@ data Block
     | IndentBlock Markdown
     | TitleBlock Int
                  MarkdownText
-    deriving (Eq)
+    deriving stock (Eq)
 
 block :: Block -> Markdown
 block = MkMarkdown . pure
@@ -171,7 +171,7 @@ instance ToText Markdown where
 -- | CommonMark
 newtype Markdown =
     MkMarkdown [Block]
-    deriving (Eq, Semigroup, Monoid)
+    deriving newtype (Eq, Semigroup, Monoid)
 
 instance PlainText Markdown where
     plainText = paragraphMarkdown . plainText

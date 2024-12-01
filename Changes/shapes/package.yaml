@@ -16,11 +16,9 @@ library:
       # general
       - constraints
       - mono-traversable
-      - contravariant
       - comonad
       - invariant
       - lattices
-      - transformers
       - hashable
       - unordered-containers
       - bytestring

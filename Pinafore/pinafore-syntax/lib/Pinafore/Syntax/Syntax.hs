@@ -10,7 +10,7 @@ import Text.Parsec (SourcePos)
 data WithSourcePos t =
     MkWithSourcePos SourcePos
                     t
-    deriving (Eq)
+    deriving stock (Eq)
 
 getSourcePos :: WithSourcePos t -> SourcePos
 getSourcePos (MkWithSourcePos spos _) = spos
@@ -21,20 +21,20 @@ instance ExprShow t => ExprShow (WithSourcePos t) where
 data SyntaxWithDoc t =
     MkSyntaxWithDoc RawMarkdown
                     t
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxDataConstructor extra
     = PlainSyntaxConstructor [SyntaxType]
                              extra
     | RecordSyntaxConstructor [SyntaxSignature]
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxConstructorOrSubtype extra
     = ConstructorSyntaxConstructorOrSubtype FullName
                                             (SyntaxDataConstructor extra)
     | SubtypeSyntaxConstructorOrSubtype FullName
                                         [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
-    deriving (Eq)
+    deriving stock (Eq)
 
 type SyntaxStorableDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
 
@@ -43,7 +43,7 @@ data SyntaxSignature'
     | ValueSyntaxSignature Name
                            SyntaxType
                            (Maybe SyntaxExpression)
-    deriving (Eq)
+    deriving stock (Eq)
 
 type SyntaxSignature = SyntaxWithDoc (WithSourcePos SyntaxSignature')
 
@@ -53,7 +53,7 @@ data SyntaxTypeParameter
     | RangeSyntaxTypeParameter Name
                                Name -- negative, positive
     | DoubleRangeSyntaxTypeParameter Name
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance ExprShow SyntaxTypeParameter where
     exprShowPrec (PositiveSyntaxTypeParameter v) = namedTextPrec 0 $ "+" <> exprShow v
@@ -70,13 +70,13 @@ data SyntaxRecursiveTypeDeclaration
                                                   (Maybe SyntaxType)
                                                   [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxRecursiveTypeDeclaration
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxNonrecursiveTypeDeclaration =
     PredicateSyntaxNonrecursiveTypeDeclaration Bool
                                                SyntaxType
                                                SyntaxExpression
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxRecursiveDeclaration'
     = TypeSyntaxDeclaration FullName
@@ -86,14 +86,14 @@ data SyntaxRecursiveDeclaration'
                                SyntaxType
                                (Maybe SyntaxExpression)
     | BindingSyntaxDeclaration SyntaxBinding
-    deriving (Eq)
+    deriving stock (Eq)
 
 type SyntaxRecursiveDeclaration = SyntaxWithDoc (WithSourcePos SyntaxRecursiveDeclaration')
 
 data SyntaxNameRefItem
     = NameSyntaxNameRefItem FullNameRef
     | NamespaceSyntaxNameRefItem NamespaceRef
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxDeclaration'
     = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
@@ -114,7 +114,7 @@ data SyntaxDeclaration'
                                   [SyntaxDeclaration]
     | SpliceSyntaxDeclaration SyntaxExpression
     | DebugSyntaxDeclaration FullNameRef
-    deriving (Eq)
+    deriving stock (Eq)
 
 type SyntaxDeclaration = SyntaxWithDoc (WithSourcePos SyntaxDeclaration')
 
@@ -122,19 +122,19 @@ data SyntaxNamespaceWith =
     MkSyntaxNamespaceWith Namespace
                           (Maybe (Bool, [SyntaxNameRefItem]))
                           Namespace
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxDeclarator
     = SDLetSeq [SyntaxDeclaration]
     | SDLetRec [SyntaxRecursiveDeclaration]
     | SDImport [ModuleName]
     | SDWith [SyntaxNamespaceWith]
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxVariance
     = CoSyntaxVariance
     | ContraSyntaxVariance
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance ExprShow SyntaxVariance where
     exprShowPrec CoSyntaxVariance = "+"
@@ -142,11 +142,11 @@ instance ExprShow SyntaxVariance where
 
 newtype SyntaxGroundType =
     ConstSyntaxGroundType FullNameRef
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxTypeArgument =
     MkSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
-    deriving (Eq)
+    deriving stock (Eq)
 
 pattern SimpleSyntaxTypeArgument ::
         SyntaxType -> SyntaxTypeArgument
@@ -172,18 +172,18 @@ data SyntaxType'
     | BottomSyntaxType
     | RecursiveSyntaxType Name
                           SyntaxType
-    deriving (Eq)
+    deriving stock (Eq)
 
 data FixAssoc
     = AssocNone
     | AssocLeft
     | AssocRight
-    deriving (Eq)
+    deriving stock (Eq)
 
 data Fixity = MkFixity
     { fixityAssoc :: FixAssoc
     , fixityPrec :: Int
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 typeOperatorFixity :: Name -> Fixity
 typeOperatorFixity "->" = MkFixity AssocRight 0
@@ -216,7 +216,7 @@ type SyntaxType = WithSourcePos SyntaxType'
 data SyntaxBinding =
     MkSyntaxBinding SyntaxPattern
                     SyntaxExpression
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxConstructor
     = SLNumber Number
@@ -225,7 +225,7 @@ data SyntaxConstructor
                          (Maybe [(Name, SyntaxExpression)])
     | SLPair
     | SLUnit
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance ExprShow SyntaxConstructor where
     exprShowPrec (SLNumber x) = identifierPrecNamedText $ pack $ show x
@@ -255,7 +255,7 @@ data SyntaxPattern'
                              NamespaceRef
     | DebugSyntaxPattern Text
                          SyntaxPattern
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance ExprShow SyntaxPattern' where
     exprShowPrec AnySyntaxPattern = "_"
@@ -273,7 +273,7 @@ type SyntaxPattern = WithSourcePos SyntaxPattern'
 data SyntaxCase =
     MkSyntaxCase SyntaxPattern
                  SyntaxExpression
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxMulticase (n :: PeanoNat) =
     MkSyntaxMulticase (FixedList n SyntaxPattern)
@@ -295,7 +295,7 @@ instance Eq (SyntaxMulticase n) where
 data SyntaxConstant
     = SCIfThenElse
     | SCConstructor SyntaxConstructor
-    deriving (Eq)
+    deriving stock (Eq)
 
 data SyntaxMulticaseList =
     forall (n :: PeanoNat). MkSyntaxMulticaseList (PeanoNatType n)
@@ -337,7 +337,7 @@ data SyntaxExpression'
     -- debug
     | SEDebug Text
               SyntaxExpression
-    deriving (Eq)
+    deriving stock (Eq)
 
 seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc

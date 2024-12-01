@@ -10,7 +10,7 @@ import Changes.World.GNOME.GTK
 import Data.Media.Image hiding (Unknown)
 import Data.Shim
 import Data.Time
-import qualified GI.Gtk as GI
+import GI.Gtk qualified as GI
 import Pinafore.API
 import Pinafore.Library.GTK.Context
 import Pinafore.Library.GTK.Widget.Context

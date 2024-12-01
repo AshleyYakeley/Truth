@@ -17,7 +17,7 @@ newtype TypeID =
 
 newtype TypeIDType (bn :: Nat) =
     MkTypeIDType (NaturalType bn)
-    deriving (TestEquality, TestOrder)
+    deriving newtype (TestEquality, TestOrder)
 
 instance WitnessValue TypeIDType where
     type WitnessValueType TypeIDType = TypeID

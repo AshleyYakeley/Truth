@@ -11,8 +11,7 @@ import Shapes.Test
 import Test.Useful
 
 debugLens ::
-       forall updateA updateB.
-       (Show updateA, Show updateB, Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
+       forall updateA updateB. (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
     => String
     -> ChangeLens updateA updateB
     -> ChangeLens updateA updateB
@@ -39,8 +38,7 @@ debugLens name (MkChangeLens g u pe) = let
     in MkChangeLens g u' pe'
 
 debugFloatingLens ::
-       forall updateA updateB.
-       (Show updateA, Show updateB, Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
+       forall updateA updateB. (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
     => String
     -> FloatingChangeLens updateA updateB
     -> FloatingChangeLens updateA updateB
@@ -116,16 +114,7 @@ outputLn s = liftIO $ hPutStrLn ?handle s
 outputNameLn :: (?handle :: Handle, MonadIO m) => String -> String -> m ()
 outputNameLn name s = outputLn $ name ++ ": " ++ s
 
-subscribeShowUpdates ::
-       ( Show update
-       , Show (UpdateEdit update)
-       , Show (UpdateSubject update)
-       , FullSubjectReader (UpdateReader update)
-       , ?handle :: Handle
-       )
-    => String
-    -> Model update
-    -> View (View ())
+subscribeShowUpdates :: (Show update, ?handle :: Handle) => String -> Model update -> View (View ())
 subscribeShowUpdates name model = do
     chan <- liftIO newChan
     viewOnCloseIO $ do

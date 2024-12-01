@@ -11,7 +11,7 @@ import Shapes.Numeric
 
 class HasSerializer a where
     stoppingSerializer :: forall stp. Serializer stp a
-    greedySerializer :: Serializer KeepsGoing a
+    greedySerializer :: Serializer 'KeepsGoing a
     greedySerializer = stoppingSerializer
 
 serializeLazyCodec ::
@@ -42,7 +42,7 @@ instance {-# OVERLAPPABLE #-} HasSerializer a => HasSerializer [a] where
 instance HasSerializer StrictByteString where
     greedySerializer = sWhole
     stoppingSerializer = let
-        lengthSerializer :: Serializer Stops Int
+        lengthSerializer :: Serializer 'Stops Int
         lengthSerializer = sleb128Serializer
         s :: StrictByteString -> Builder
         s bs = serialize lengthSerializer (olength bs) <> byteString bs

@@ -27,17 +27,17 @@ import Pinafore.Language.VarID
 
 newtype QScopeBuilder a =
     MkQScopeBuilder (WriterT QScopeDocs (WithT QInterpreter) a)
-    deriving ( Functor
-             , Applicative
-             , Monad
-             , MonadIO
-             , MonadException
-             , MonadThrow QError
-             , MonadCatch QError
-             , MonadThrow PatternError
-             , MonadThrow QErrorType
-             , MonadHoistIO
-             )
+    deriving newtype ( Functor
+                     , Applicative
+                     , Monad
+                     , MonadIO
+                     , MonadException
+                     , MonadThrow QError
+                     , MonadCatch QError
+                     , MonadThrow PatternError
+                     , MonadThrow QErrorType
+                     , MonadHoistIO
+                     )
 
 instance Semigroup a => Semigroup (QScopeBuilder a) where
     (<>) = liftA2 (<>)

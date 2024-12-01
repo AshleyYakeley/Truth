@@ -114,16 +114,9 @@ langSetModelMember (MkLangSetModel eq sv) aref = let
     afval = langWholeModelToReadOnlyValue aref
     knowApplySetLens :: ChangeLens (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
     knowApplySetLens = let
-        getFunc ::
-               forall m. MonadIO m
-            => Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
-            -> a
-            -> m Bool
+        getFunc :: forall m. Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a))) -> a -> m Bool
         getFunc mr a = mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
-        getArg ::
-               forall m. MonadIO m
-            => Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
-            -> m (Know a)
+        getArg :: forall m. Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a))) -> m (Know a)
         getArg mr = mr $ MkTupleUpdateReader SelectSecond ReadWhole
         clRead ::
                forall m. MonadIO m

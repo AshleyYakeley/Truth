@@ -30,8 +30,8 @@ removeAllListViewStates = do
     return s
 
 createListBox ::
-       forall update. (IsUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
-    => (Model update -> GView 'Unlocked Widget)
+       forall update.
+       (Model update -> GView 'Unlocked Widget)
     -> Model (OrderedListUpdate update)
     -> GView 'Unlocked Widget
 createListBox mkWidget model = do

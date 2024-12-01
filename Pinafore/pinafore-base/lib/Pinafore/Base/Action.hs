@@ -27,19 +27,19 @@ import Shapes
 
 newtype Action a = MkAction
     { unAction :: ComposeInner Know View a
-    } deriving ( Functor
-               , Applicative
-               , Monad
-               , Alternative
-               , MonadPlus
-               , MonadFix
-               , MonadFail
-               , MonadIO
-               , MonadHoistIO
-               , MonadTunnelIO
-               , MonadException
-               , RepresentationalRole
-               )
+    } deriving newtype ( Functor
+                       , Applicative
+                       , Monad
+                       , Alternative
+                       , MonadPlus
+                       , MonadFix
+                       , MonadFail
+                       , MonadIO
+                       , MonadHoistIO
+                       , MonadTunnelIO
+                       , MonadException
+                       , RepresentationalRole
+                       )
 
 unliftAction :: forall a. Action a -> View (Know a)
 unliftAction = unComposeInner . unAction

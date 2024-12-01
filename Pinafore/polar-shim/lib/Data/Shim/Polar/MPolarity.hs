@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-redundant-constraints #-}
+
 module Data.Shim.Polar.MPolarity where
 
 import Data.Shim.Polar.Polarity
@@ -149,7 +151,7 @@ class FromMPolar t where
         => t
         -> FromMPolarConvert t polarity
 
-type instance ConvertMPolarity (MPolarW w mpolarity) = mpolarity
+type instance ConvertMPolarity (MPolarW _ mpolarity) = mpolarity
 
 instance ToMPolar (MPolarW w mpolarity) where
     type ToMPolarConvert (MPolarW w mpolarity) polarity = Some (w polarity)
@@ -161,7 +163,7 @@ instance FromMPolar (MPolarW w mpolarity) where
     fromMPolarSingle (SingleMPolarW aw) = aw
     fromMPolarBoth (BothMPolarW aw) = aw
 
-type instance ConvertMPolarity (arg -> t) = ConvertMPolarity t
+type instance ConvertMPolarity (_ -> t) = ConvertMPolarity t
 
 instance (FromMPolar arg, ToMPolar t, ConvertMPolarity arg ~ ConvertMPolarity t) => ToMPolar (arg -> t) where
     type ToMPolarConvert (arg -> t) polarity = FromMPolarConvert arg polarity -> ToMPolarConvert t polarity
@@ -176,7 +178,7 @@ newtype InvertMPolarW w mpolarity = MkInvertMPolarW
     { unInvertMPolarW :: MPolarW w (InvertMPolarity mpolarity)
     }
 
-type instance ConvertMPolarity (InvertMPolarW w mpolarity) = mpolarity
+type instance ConvertMPolarity (InvertMPolarW _ mpolarity) = mpolarity
 
 instance FromMPolar (InvertMPolarW w mpolarity) where
     type FromMPolarConvert (InvertMPolarW w mpolarity) polarity = Some (w (InvertPolarity polarity))

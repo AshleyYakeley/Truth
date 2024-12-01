@@ -5,7 +5,7 @@ import Shapes
 data Polarity
     = Positive
     | Negative
-    deriving (Eq)
+    deriving stock (Eq)
 
 type PolarityType :: Polarity -> Type
 data PolarityType polarity where

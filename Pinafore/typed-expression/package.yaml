@@ -8,9 +8,7 @@ version: *pinafore_version
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.16
       - shapes
-      - time
       - thread-trace
       - polar-shim
     exposed-modules:
@@ -113,7 +111,6 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.16
           - shapes
           - polar-shim
           - typed-expression

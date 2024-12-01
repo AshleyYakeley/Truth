@@ -23,7 +23,7 @@ import Changes.World.Media.Type
 import Shapes
 
 newtype LiteralType = MkLiteralType
-    { runLiteralType :: Serializer Stops ()
+    { runLiteralType :: Serializer 'Stops ()
     }
 
 generalLiteralType :: MediaType -> LiteralType

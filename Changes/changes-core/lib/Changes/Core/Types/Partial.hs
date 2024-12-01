@@ -119,9 +119,7 @@ liftPartialChangeLens maprs lens = partialiseChangeLens maprs $ partialChangeLen
 
 partialConvertChangeLens ::
        forall updateA updateB.
-       ( IsEditUpdate updateA
-       , IsUpdate updateB
-       , UpdateSubject updateA ~ UpdateSubject updateB
+       ( UpdateSubject updateA ~ UpdateSubject updateB
        , FullEdit (UpdateEdit updateA)
        , SubjectMapEdit (UpdateEdit updateB)
        )

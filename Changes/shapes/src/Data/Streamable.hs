@@ -2,8 +2,8 @@ module Data.Streamable where
 
 import Data.Filterable
 import Shapes.Import
-import qualified Text.ParserCombinators.ReadP as ReadP
-import qualified Text.ParserCombinators.ReadPrec as ReadPrec
+import Text.ParserCombinators.ReadP qualified as ReadP
+import Text.ParserCombinators.ReadPrec qualified as ReadPrec
 
 class (Riggable f, Monoid (StreamableBasis f)) => Streamable f where
     type StreamableBasis f :: Type

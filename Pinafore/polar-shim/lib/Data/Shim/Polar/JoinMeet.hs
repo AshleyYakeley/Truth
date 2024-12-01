@@ -4,14 +4,14 @@ import Shapes
 
 data TopType =
     MkTopType
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance Show TopType where
     show MkTopType = "T"
 
 newtype BottomType =
     MkBottomType Void
-    deriving (Eq, Show, Searchable, Countable, Empty)
+    deriving newtype (Eq, Show, Searchable, Countable, Empty)
 
 instance Finite BottomType where
     allValues = []

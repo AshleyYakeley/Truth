@@ -33,7 +33,7 @@ instance MaybeRepresentational LangOpenType where
 
 instance HasCCRVariance 'RangeCCRVariance LangOpenType
 
-instance HasQGroundType '[ RangeCCRVariance] LangOpenType where
+instance HasQGroundType '[ 'RangeCCRVariance] LangOpenType where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangOpenType)|]) "OpenType.Pinafore."
 
 openLangTypeToType :: forall p q. LangOpenType '( p, q) -> LangType

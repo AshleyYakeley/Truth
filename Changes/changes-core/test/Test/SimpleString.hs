@@ -7,7 +7,7 @@ import Shapes.Test
 
 newtype SimpleString = MkSimpleString
     { getSimpleString :: String
-    } deriving (Eq)
+    } deriving newtype (Eq)
 
 instance Show SimpleString where
     show (MkSimpleString s) = show s

@@ -1,8 +1,8 @@
 module Changes.World.GNOME.GI.Implement.Object where
 
-import qualified Data.GI.Base.GObject as GI
-import qualified Data.GI.Base.Overloading as GI
-import qualified GI.GLib as GI
+import Data.GI.Base.GObject qualified as GI
+import Data.GI.Base.Overloading qualified as GI
+import GI.GLib qualified as GI
 import Shapes
 
 newtype GIObject (t :: Type) =
@@ -21,13 +21,13 @@ class (GI.GObject (GIClassParent t)) => IsGIType (t :: Type) where
 
 type instance GI.ParentTypes (GIObject t) = GISupertypes t
 
-instance IsGIType t => GI.HasParentTypes (GIObject t)
+instance GI.HasParentTypes (GIObject t)
 
 instance IsGIType t => GI.TypedObject (GIObject t) where
     glibType = giGetGType @t
 
 instance IsGIType t => GI.GObject (GIObject t)
 
-instance IsGIType t => GI.HasAttributeList (GIObject t)
+instance GI.HasAttributeList (GIObject t)
 
 type instance GI.AttributeList (GIObject t) = GI.AttributeList (GIClassParent t)

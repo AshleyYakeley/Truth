@@ -35,9 +35,9 @@ runHetQGroundedType (MkHetQGroundedType f) = f
 
 type HetCCRVariancesOf :: forall k. k -> CCRVariances
 type family HetCCRVariancesOf f where
-    HetCCRVariancesOf (f :: Type) = '[]
-    HetCCRVariancesOf (f :: Type -> k) = 'SimpleCCRVariance (VarianceOf f) ': HetCCRVariancesOf (f ())
-    HetCCRVariancesOf (f :: (Type, Type) -> k) = 'RangeCCRVariance ': HetCCRVariancesOf (f '( (), ()))
+    HetCCRVariancesOf (_ :: Type) = '[]
+    HetCCRVariancesOf (f :: Type -> _) = 'SimpleCCRVariance (VarianceOf f) ': HetCCRVariancesOf (f ())
+    HetCCRVariancesOf (f :: (Type, Type) -> _) = 'RangeCCRVariance ': HetCCRVariancesOf (f '( (), ()))
 
 type HasHetQGroundedType :: PolyShimKind -> Polarity -> forall k. k -> Constraint
 class Is PolarityType polarity => HasHetQGroundedType pshim polarity (f :: k) where
@@ -102,7 +102,6 @@ instance forall (pshim :: PolyShimKind) polarity (p :: Type) (q :: Type). ( HasQ
 
 instance forall (pshim :: PolyShimKind) dv k (f :: Type -> k) polarity (a :: Type). ( CCRVariancesShim pshim
          , HasVariance f
-         , Is CCRVariancesType dv
          , k ~ CCRVariancesKind dv
          , CoercibleKind (CCRVariancesKind dv)
          , HetConstraint (HasCCRVariances dv) (f a)
@@ -142,7 +141,6 @@ instance forall (pshim :: PolyShimKind) dv k (f :: Type -> k) polarity (a :: Typ
 
 instance forall (pshim :: PolyShimKind) dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)). ( CCRVariancesShim pshim
          , HasCCRVariance 'RangeCCRVariance f
-         , Is CCRVariancesType dv
          , CoercibleKind (CCRVariancesKind dv)
          , HetConstraint (HasCCRVariances dv) (f a)
          , HetCCRVariancesOf f ~ ('RangeCCRVariance ': dv)

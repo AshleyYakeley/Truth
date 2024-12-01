@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-redundant-constraints #-}
+
 module Data.Witness.ListVProduct
     ( MapType
     , emptyMapTypeRefl
@@ -26,7 +28,7 @@ import Shapes.Import
 import Shapes.Unsafe (unsafeRefl)
 
 type family MapType (f :: ka -> kb) (aa :: [ka]) :: [kb] where
-    MapType f '[] = '[]
+    MapType _ '[] = '[]
     MapType f (a ': aa) = f a ': MapType f aa
 
 emptyMapTypeRefl ::
@@ -232,12 +234,12 @@ getters i (ConsListType (_ :: _ a) (tt :: _ aa)) =
     case (typicalHeadRefl @a @aa, typicalTailRefl @a @aa) of
         (Refl, Refl) -> ConsListType (getItem i) $ getters (succ i) tt
 
-listVProductHead :: forall a aa. ListVProduct (a : aa) -> a
+listVProductHead :: forall a aa. ListVProduct (a ': aa) -> a
 listVProductHead (MkListVProduct v) =
     case typicalHeadRefl @a @aa of
         Refl -> indexEx v 0
 
-listVProductTail :: forall a aa. ListVProduct (a : aa) -> ListVProduct aa
+listVProductTail :: forall a aa. ListVProduct (a ': aa) -> ListVProduct aa
 listVProductTail (MkListVProduct v) =
     case typicalTailRefl @a @aa of
         Refl -> MkListVProduct $ drop 1 v

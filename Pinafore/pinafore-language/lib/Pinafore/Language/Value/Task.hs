@@ -5,7 +5,7 @@ import Import
 -- Task
 newtype LangTask a = MkLangTask
     { unLangTask :: Task Action a
-    } deriving (Functor, Applicative)
+    } deriving newtype (Functor, Applicative)
 
 instance MaybeRepresentational LangTask where
     maybeRepresentational = Nothing
@@ -45,7 +45,7 @@ langFirst tasks = fmap MkLangTask $ firstTask $ fmap unLangTask tasks
 -- StoppableTask
 newtype LangStoppableTask a = MkLangStoppableTask
     { unLangStoppableTask :: StoppableTask Action a
-    } deriving (Functor, Applicative)
+    } deriving newtype (Functor, Applicative)
 
 instance MaybeRepresentational LangStoppableTask where
     maybeRepresentational = Nothing

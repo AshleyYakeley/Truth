@@ -10,7 +10,7 @@ import Shapes
 data FullNameRef = MkFullNameRef
     { fnrName :: Name
     , fnrSpace :: NamespaceRef
-    } deriving (Eq, Ord)
+    } deriving stock (Eq, Ord)
 
 pattern UnqualifiedFullNameRef :: Name -> FullNameRef
 

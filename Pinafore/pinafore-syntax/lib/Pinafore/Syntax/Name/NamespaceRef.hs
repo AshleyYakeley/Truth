@@ -8,7 +8,7 @@ import Shapes
 data NamespaceRef
     = AbsoluteNamespaceRef Namespace
     | RelativeNamespaceRef [Name]
-    deriving (Eq, Ord)
+    deriving stock (Eq, Ord)
 
 pattern CurrentNamespaceRef :: NamespaceRef
 

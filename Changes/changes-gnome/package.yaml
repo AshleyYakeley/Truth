@@ -127,7 +127,6 @@ executables:
         dependencies:
           - base >= 4.16
           - filepath
-          - bytestring
           - thread-trace
           - shapes
           - changes-core
@@ -143,16 +142,10 @@ executables:
         source-dirs: examples/gio
         dependencies:
           - base >= 4.16
-          - filepath
-          - bytestring
           - gi-gio
-          - uuid
-          - aeson
           - shapes
           - changes-core
           - changes-gnome
-          - changes-world
-          - optparse-applicative
         main: Main.hs
         ghc-options: -threaded
     changes-soup:
@@ -161,9 +154,7 @@ executables:
             buildable: False
         source-dirs: examples/soup
         dependencies:
-          - base >= 4.16
           - filepath
-          - bytestring
           - uuid
           - aeson
           - shapes
@@ -190,7 +181,6 @@ executables:
           - shapes
           - changes-core
           - changes-media
-          - changes-world
           - changes-gnome
         main: Main.hs
         ghc-options: -threaded
@@ -207,7 +197,6 @@ executables:
           - changes-core
           - changes-world
           - changes-gnome
-          - gi-cairo-render
           - gi-gtk
         main: Main.hs
         ghc-options: -threaded

@@ -27,16 +27,16 @@ instance ToField Anchor where
 instance FieldType Entity where
     fieldTypeName = fieldTypeName @Anchor
 
-deriving instance FromField Entity
+deriving newtype instance FromField Entity
 
-deriving instance ToField Entity
+deriving newtype instance ToField Entity
 
 instance FieldType Predicate where
     fieldTypeName = fieldTypeName @Anchor
 
-deriving instance FromField Predicate
+deriving newtype instance FromField Predicate
 
-deriving instance ToField Predicate
+deriving newtype instance ToField Predicate
 
 instance FieldType Literal where
     fieldTypeName = "BLOB"

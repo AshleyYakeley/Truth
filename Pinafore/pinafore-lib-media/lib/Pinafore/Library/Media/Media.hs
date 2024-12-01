@@ -15,7 +15,7 @@ import Shapes
 data Media = MkMedia
     { mediaType :: MediaType
     , mediaContent :: StrictByteString
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 instance AsLiteral Media
 

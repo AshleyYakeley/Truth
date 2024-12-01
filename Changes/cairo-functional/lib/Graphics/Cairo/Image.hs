@@ -6,7 +6,7 @@ module Graphics.Cairo.Image
 
 import Codec.Picture.Types
 import Data.Vector.Storable.ByteString
-import qualified GI.Cairo.Render as R
+import GI.Cairo.Render qualified as R
 import Shapes hiding (rotate)
 import Shapes.Unsafe
 
@@ -24,7 +24,7 @@ data PixelCairoARGB32 =
                        !Pixel8
                        !Pixel8
                        !Pixel8
-    deriving (Eq)
+    deriving stock (Eq)
 
 instance Pixel PixelCairoARGB32 where
     type PixelBaseComponent PixelCairoARGB32 = Word8

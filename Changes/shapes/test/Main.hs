@@ -57,14 +57,14 @@ testClock :: TestTree
 testClock = testTree "clock" [testFastClock, testSlowClock]
 
 runFix ::
-       forall m. (MonadIO m, MonadFix m)
+       forall m. MonadIO m
     => m ()
 runFix = do
     (_, x) <- mfixIO $ \(~(x, _)) -> return (True, x)
     liftIO $ assertEqual "" True x
 
 runBoxes ::
-       forall m. (MonadIO m, MonadFix m)
+       forall m. MonadIO m
     => m ()
 runBoxes = do
     refA <- liftIO $ newIORef 0

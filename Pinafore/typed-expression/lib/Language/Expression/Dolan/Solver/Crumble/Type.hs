@@ -72,11 +72,7 @@ crumblerLiftExpression expr = crumblerLiftPuzzleExpression $ solverExpressionLif
 
 crumbleBreak ::
        forall (ground :: GroundTypeKind) pola polb ta tb.
-       ( IsDolanSubtypeGroundType ground
-       , Is PolarityType pola
-       , Is PolarityType polb
-       , ?rigidity :: String -> NameRigidity
-       )
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => DolanType ground pola ta
     -> DolanType ground polb tb
     -> TypeCrumbler ground (DolanShim ground ta tb)

@@ -9,7 +9,7 @@ import GI.Gtk hiding (get)
 import Shapes
 
 oneWholeView ::
-       forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall f update. MonadInner f
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> GView 'Unlocked Widget)
     -> SelectNotify (f ())
@@ -27,14 +27,14 @@ oneWholeView model baseView sn = do
     return widget
 
 createOneWhole ::
-       forall f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
+       forall f update. MonadInner f
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> GView 'Unlocked Widget)
     -> GView 'Unlocked Widget
 createOneWhole sub itemspec = oneWholeView sub itemspec mempty
 
 createOneWholeSel ::
-       forall sel f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
+       forall sel f update. MonadInner f
     => Model (FullResultOneUpdate f update)
     -> (f (Model update, SelectNotify sel) -> GView 'Unlocked Widget)
     -> SelectNotify (f sel)

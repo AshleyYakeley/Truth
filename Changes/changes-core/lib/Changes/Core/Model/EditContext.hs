@@ -11,7 +11,7 @@ import Changes.Core.Import
 
 newtype EditSource =
     MkEditSource (Maybe Unique)
-    deriving (Eq)
+    deriving newtype (Eq)
 
 noEditSource :: EditSource
 noEditSource = MkEditSource Nothing
@@ -23,7 +23,7 @@ newEditSource = do
 
 newtype EditContext = MkEditContext
     { editContextSource :: EditSource
-    } deriving (Eq)
+    } deriving newtype (Eq)
 
 editSourceContext :: EditSource -> EditContext
 editSourceContext editContextSource = MkEditContext {..}

@@ -55,7 +55,6 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.16
           - shapes
           - changes-core
           - pinafore-base

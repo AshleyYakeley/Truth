@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -82,12 +82,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -106,7 +104,7 @@ library
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages
   build-depends:
       base >=4.16
     , bytestring
@@ -144,12 +142,10 @@ executable changes-cairo
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -168,14 +164,13 @@ executable changes-cairo
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
       base >=4.16
     , cairo-functional
     , changes-core
     , changes-gnome
     , changes-world
-    , gi-cairo-render
     , gi-gtk
     , shapes
     , time
@@ -194,12 +189,10 @@ executable changes-gio
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -218,19 +211,13 @@ executable changes-gio
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
-      aeson
-    , base >=4.16
-    , bytestring
+      base >=4.16
     , changes-core
     , changes-gnome
-    , changes-world
-    , filepath
     , gi-gio
-    , optparse-applicative
     , shapes
-    , uuid
   default-language: GHC2021
   if !flag(build-examples)
     buildable: False
@@ -246,12 +233,10 @@ executable changes-showImages
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -270,13 +255,12 @@ executable changes-showImages
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
       base >=4.16
     , changes-core
     , changes-gnome
     , changes-media
-    , changes-world
     , directory
     , filepath
     , shapes
@@ -296,12 +280,10 @@ executable changes-soup
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -320,11 +302,9 @@ executable changes-soup
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
       aeson
-    , base >=4.16
-    , bytestring
     , changes-core
     , changes-gnome
     , changes-world
@@ -347,12 +327,10 @@ executable changes-text
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -371,10 +349,9 @@ executable changes-text
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
       base >=4.16
-    , bytestring
     , changes-core
     , changes-gnome
     , changes-world
@@ -399,12 +376,10 @@ test-suite test
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      ConstraintKinds
       DataKinds
       DefaultSignatures
       DerivingStrategies
       FunctionalDependencies
-      GADTs
       ImplicitParams
       NoImplicitPrelude
       LambdaCase
@@ -423,7 +398,7 @@ test-suite test
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wno-partial-type-signatures -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
       base >=4.16
     , changes-core

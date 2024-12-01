@@ -1,7 +1,7 @@
 module Data.KeyContainer where
 
 import Data.HasNewValue
-import qualified Data.List
+import Data.List qualified
 import Shapes.Import
 
 class (Monoid t, Semigroup t, MonoFoldable t, GrowingAppend t) => ItemContainer t where

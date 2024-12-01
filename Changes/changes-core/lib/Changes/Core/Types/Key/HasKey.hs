@@ -28,9 +28,7 @@ instance Eq t => HasKeyReader (FiniteSet t) (WholeReader t) where
 instance ( Eq key
          , UpdateSubject keyupdate ~ key
          , UpdateSubject valupdate ~ val
-         , SubjectReader (UpdateReader keyupdate)
          , FullSubjectReader (UpdateReader keyupdate)
-         , SubjectReader (UpdateReader valupdate)
          ) => HasKeyReader [(key, val)] (PairUpdateReader keyupdate valupdate) where
     readKey mr = readableToSubject $ firstReadFunction mr
 
@@ -46,9 +44,7 @@ instance Eq t => HasKeyUpdate (FiniteSet t) (WholeUpdate t) where
 instance ( Eq key
          , UpdateSubject keyupdate ~ key
          , UpdateSubject valupdate ~ val
-         , SubjectReader (UpdateReader keyupdate)
          , FullSubjectReader (UpdateReader keyupdate)
-         , SubjectReader (UpdateReader valupdate)
          , IsEditUpdate keyupdate
          , ApplicableEdit (UpdateEdit keyupdate)
          ) => HasKeyUpdate [(key, val)] (PairUpdate keyupdate valupdate) where

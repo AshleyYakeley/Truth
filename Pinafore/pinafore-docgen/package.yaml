@@ -18,7 +18,6 @@ executables:
     pinadoc:
         source-dirs: app
         dependencies:
-          - base >= 4.16
           - shapes
           - optparse-applicative
           - pinafore-language

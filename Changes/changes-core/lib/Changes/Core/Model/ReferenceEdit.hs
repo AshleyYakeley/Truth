@@ -53,11 +53,7 @@ referenceChangeLens = let
         rc <- mr ReadReferenceResourceContext
         obj <- mr ReadReference
         liftIO $ runResource rc obj $ \anobj -> refRead anobj rt
-    clUpdate ::
-           forall m. MonadIO m
-        => ReferenceUpdate update
-        -> Readable m (ReferenceReader (UpdateEdit update))
-        -> m [update]
+    clUpdate :: forall m. ReferenceUpdate update -> Readable m (ReferenceReader (UpdateEdit update)) -> m [update]
     clUpdate update _ = never update
     clPutEdits ::
            forall m. MonadIO m
@@ -80,8 +76,8 @@ referenceChangeLens = let
     in MkChangeLens {..}
 
 referenceLiftChangeLens ::
-       forall updateA updateB. ApplicableEdit (UpdateEdit updateA)
-    => ChangeLens updateA updateB
+       forall updateA updateB.
+       ChangeLens updateA updateB
     -> ChangeLens (ReferenceUpdate updateA) (ReferenceUpdate updateB)
 referenceLiftChangeLens lens = let
     clRead :: ReadFunction (ReferenceReader (UpdateEdit updateA)) (ReferenceReader (UpdateEdit updateB))
@@ -90,8 +86,8 @@ referenceLiftChangeLens lens = let
         reference <- mr ReadReference
         return $ mapReference lens reference
     clUpdate ::
-           forall m. MonadIO m
-        => ReferenceUpdate updateA
+           forall m.
+           ReferenceUpdate updateA
         -> Readable m (ReferenceReader (UpdateEdit updateA))
         -> m [ReferenceUpdate updateB]
     clUpdate update _ = never update

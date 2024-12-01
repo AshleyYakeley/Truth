@@ -83,17 +83,17 @@ type InterpretOutput = [(VarID, QExpression)]
 type QInterpreter :: Type -> Type
 newtype QInterpreter a = MkQInterpreter
     { unInterpreter :: ReaderT InterpretContext (WriterT InterpretOutput (StateT InterpretState InterpretResult)) a
-    } deriving ( Functor
-               , Applicative
-               , Monad
-               , MonadIO
-               , MonadFix
-               , MonadException
-               , MonadThrow QError
-               , MonadCatch QError
-               , MonadHoistIO
-               , MonadTunnelIO
-               )
+    } deriving newtype ( Functor
+                       , Applicative
+                       , Monad
+                       , MonadIO
+                       , MonadFix
+                       , MonadException
+                       , MonadThrow QError
+                       , MonadCatch QError
+                       , MonadHoistIO
+                       , MonadTunnelIO
+                       )
 
 instance RepresentationalRole QInterpreter where
     representationalCoercion MkCoercion = MkCoercion

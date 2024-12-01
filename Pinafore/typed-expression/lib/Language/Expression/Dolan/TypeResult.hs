@@ -43,6 +43,5 @@ joinFirstResult :: Result err a -> Result err a -> Result err a
 joinFirstResult (FailureResult _) r = r
 joinFirstResult (SuccessResult a) _ = SuccessResult a
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
-             MonadThrow (TypeError ground) (TypeResult ground) where
+instance forall (ground :: GroundTypeKind). MonadThrow (TypeError ground) (TypeResult ground) where
     throw = throwExc

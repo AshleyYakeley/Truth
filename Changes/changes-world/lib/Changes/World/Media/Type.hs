@@ -11,13 +11,13 @@ module Changes.World.Media.Type
     ) where
 
 import Shapes
-import qualified Text.ParserCombinators.ReadP as P
+import Text.ParserCombinators.ReadP qualified as P
 
 data MediaType = MkMediaType_
     { mtType :: Text
     , mtSubtype :: Text
     , mtParams :: [(Text, Text)]
-    } deriving (Eq)
+    } deriving stock (Eq)
 
 pattern MkMediaType :: Text -> Text -> [(Text, Text)] -> MediaType
 

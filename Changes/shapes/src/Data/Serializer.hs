@@ -19,7 +19,7 @@ data Serializer (stp :: Stopping) a = MkSerializer
 instance Invariant (Serializer stp) where
     invmap ab ba (MkSerializer s d) = MkSerializer (s . ba) (fmap ab d)
 
-sUpstop :: Serializer Stops a -> Serializer stp a
+sUpstop :: Serializer 'Stops a -> Serializer stp a
 sUpstop (MkSerializer s d) = MkSerializer s d
 
 sleb128Serializer ::
@@ -37,19 +37,19 @@ sUnit = let
     deserialize = return ()
     in MkSerializer {..}
 
-sProduct :: forall stp a b. Serializer Stops a -> Serializer stp b -> Serializer stp (a, b)
+sProduct :: forall stp a b. Serializer 'Stops a -> Serializer stp b -> Serializer stp (a, b)
 sProduct (MkSerializer sa da) (MkSerializer sb db) = let
     sab (a, b) = sa a <> sb b
     dab = liftA2 (,) da db
     in MkSerializer sab dab
 
-sProductR :: forall stp b. Serializer Stops () -> Serializer stp b -> Serializer stp b
+sProductR :: forall stp b. Serializer 'Stops () -> Serializer stp b -> Serializer stp b
 sProductR (MkSerializer sa da) (MkSerializer sb db) = let
     sab b = sa () <> sb b
     dab = liftA2 (\() b -> b) da db
     in MkSerializer sab dab
 
-instance Productable (Serializer Stops) where
+instance Productable (Serializer 'Stops) where
     rUnit = sUnit
     (<***>) = sProduct
 
@@ -71,23 +71,23 @@ instance Summable (Serializer stp) where
     rVoid = sVoid
     (<+++>) = sPick
 
-sOptional :: Serializer Stops a -> Serializer KeepsGoing (Maybe a)
+sOptional :: Serializer 'Stops a -> Serializer 'KeepsGoing (Maybe a)
 sOptional (MkSerializer s d) = let
     s' Nothing = mempty
     s' (Just x) = s x
     d' = fmap Just d <|> return Nothing
     in MkSerializer s' d'
 
-sList :: Serializer Stops a -> Serializer KeepsGoing [a]
+sList :: Serializer 'Stops a -> Serializer 'KeepsGoing [a]
 sList (MkSerializer s d) = let
     s' [] = mempty
     s' (x:xs) = s x <> s' xs
     d' = liftA2 (:) d d' <|> return []
     in MkSerializer s' d'
 
-sCountedList :: forall stp a. Serializer Stops a -> Serializer stp [a]
+sCountedList :: forall stp a. Serializer 'Stops a -> Serializer stp [a]
 sCountedList (MkSerializer s d) = let
-    lengthSerializer :: Serializer Stops Int
+    lengthSerializer :: Serializer 'Stops Int
     lengthSerializer = sleb128Serializer
     s' :: [a] -> Builder
     s' bs = serialize lengthSerializer (olength bs) <> concatmap s bs
@@ -96,7 +96,7 @@ sCountedList (MkSerializer s d) = let
         forn len d
     in MkSerializer s' d'
 
-sList1 :: Serializer Stops a -> Serializer KeepsGoing (NonEmpty a)
+sList1 :: Serializer 'Stops a -> Serializer 'KeepsGoing (NonEmpty a)
 sList1 (MkSerializer s d) = let
     s' [] = mempty
     s' (x:xs) = s'' (x :| xs)
@@ -108,7 +108,7 @@ sList1 (MkSerializer s d) = let
 sItem :: Serializer stp Word8
 sItem = MkSerializer word8 bsRead
 
-sWhole :: Serializer KeepsGoing StrictByteString
+sWhole :: Serializer 'KeepsGoing StrictByteString
 sWhole = let
     serialize = byteString
     deserialize = bsReadEverything
@@ -190,5 +190,5 @@ serializerStrictCodec sr = let
     decode = serializerStrictDecode sr
     in MkCodec {..}
 
-codecSerializer :: Codec StrictByteString a -> Serializer KeepsGoing a
+codecSerializer :: Codec StrictByteString a -> Serializer 'KeepsGoing a
 codecSerializer codec = codecMap codec sWhole

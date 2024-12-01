@@ -31,7 +31,7 @@ instance ExprShow (OpenEntityType tid) where
 type OpenEntity :: Nat -> Type
 newtype OpenEntity tid = MkOpenEntity
     { unOpenEntity :: Entity
-    } deriving (Eq, Random)
+    } deriving newtype (Eq, Random)
 
 data OpenEntityFamily :: FamilyKind where
     MkOpenEntityFamily :: OpenEntityType tid -> OpenEntityFamily (OpenEntity tid)

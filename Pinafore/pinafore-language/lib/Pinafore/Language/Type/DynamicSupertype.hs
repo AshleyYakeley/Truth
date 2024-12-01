@@ -16,13 +16,13 @@ data PolyGreatestDynamicSupertype ground dv gt where
         -> PolyGreatestDynamicSupertype ground dv gt
 
 nullPolyGreatestDynamicSupertype ::
-       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv). IsDolanGroundType ground
-    => PolyGreatestDynamicSupertype ground dv gt
+       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
+       PolyGreatestDynamicSupertype ground dv gt
 nullPolyGreatestDynamicSupertype = NullPolyGreatestDynamicSupertype
 
 simplePolyGreatestDynamicSupertype ::
-       forall (ground :: GroundTypeKind) (pt :: Type) (t :: Type). IsDolanGroundType ground
-    => ground '[] pt
+       forall (ground :: GroundTypeKind) (pt :: Type) (t :: Type).
+       ground '[] pt
     -> DolanShim ground pt (Maybe t)
     -> PolyGreatestDynamicSupertype ground '[] t
 simplePolyGreatestDynamicSupertype wt conv =

@@ -1,8 +1,8 @@
 module Data.Filterable where
 
-import qualified Data.List as List
-import qualified Data.Map as Map
-import qualified Data.Maybe as List
+import Data.List qualified as List
+import Data.Map qualified as Map
+import Data.Maybe qualified as List
 import Shapes.Import
 
 class Functor f => Filterable f where

@@ -8,7 +8,7 @@ module Pinafore.Library.GIO
 import Changes.Core
 import Changes.World.GNOME.GIO.File
 import Changes.World.Media.Type
-import qualified GI.Gio as GI
+import GI.Gio qualified as GI
 import Pinafore.API
 import Pinafore.Library.Media
 import Shapes

@@ -64,7 +64,7 @@ listLengthLens = let
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 listItemLinearLens ::
-       forall update. (FullSubjectReader (UpdateReader update), FullEdit (UpdateEdit update))
+       forall update. FullEdit (UpdateEdit update)
     => Bool
     -> SequencePoint
     -> LinearFloatingChangeLens (StateLensVar (Bool, Int64)) (ListUpdate update) (MaybeUpdate update)
@@ -175,7 +175,7 @@ listItemLinearLens initpresent (MkSequencePoint initpos) = let
     in makeStateExpLens MkStateChangeLens {..}
 
 listItemLens ::
-       forall update. (FullSubjectReader (UpdateReader update), FullEdit (UpdateEdit update))
+       forall update. FullEdit (UpdateEdit update)
     => Bool
     -> SequencePoint
     -> FloatingChangeLens (ListUpdate update) (MaybeUpdate update)

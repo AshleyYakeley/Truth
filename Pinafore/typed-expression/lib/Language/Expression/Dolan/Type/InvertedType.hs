@@ -26,8 +26,8 @@ instance forall (ground :: GroundTypeKind) polarity t. (ShowGroundType ground, I
     show t = withInvertPolarity @polarity $ show $ invertedSomeTypes t
 
 singleInvertedType ::
-       forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
-    => DolanType ground (InvertPolarity polarity) t
+       forall (ground :: GroundTypeKind) polarity t.
+       DolanType ground (InvertPolarity polarity) t
     -> InvertedType ground polarity (JoinMeetType polarity t (LimitType polarity))
 singleInvertedType t = ConsInvertedType t NilInvertedType
 

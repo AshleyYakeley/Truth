@@ -13,7 +13,7 @@ data Options
     = ShowVersionOption
     | ModuleDocOption RunOptions
                       Text
-    deriving (Eq, Show)
+    deriving stock (Eq, Show)
 
 optIncludes :: Parser [FilePath]
 optIncludes = many $ strOption $ long "include" <> short 'I' <> metavar "PATH"

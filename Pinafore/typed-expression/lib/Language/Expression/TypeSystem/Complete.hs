@@ -39,15 +39,12 @@ tsFunctionNegShimWit ta tb =
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsEval ::
-       forall ts m. (CompleteTypeSystem ts, MonadThrow (ExpressionError (TSVarWit ts)) m)
+       forall ts m. MonadThrow (ExpressionError (TSVarWit ts)) m
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
 
-tsEvalMaybe ::
-       forall ts. CompleteTypeSystem ts
-    => TSSealedExpression ts
-    -> Maybe (TSValue ts)
+tsEvalMaybe :: forall ts. TSSealedExpression ts -> Maybe (TSValue ts)
 tsEvalMaybe = evalSealedExpressionMaybe
 
 tsUnifyRigid ::
@@ -197,10 +194,7 @@ tsVar name =
         MkNewVar vwt twt <- renameNewFreeVar @ts
         return $ varSealedExpression name vwt twt
 
-tsConst ::
-       forall ts. CompleteTypeSystem ts
-    => TSValue ts
-    -> TSSealedExpression ts
+tsConst :: forall ts. TSValue ts -> TSSealedExpression ts
 tsConst = constSealedExpression
 
 tsLet ::
@@ -261,13 +255,13 @@ tsSubsumeFExpression stdecl@(MkSome tdecl) expr =
         subsumeFExpression @ts stdecl expr'
 
 tsUncheckedRecursiveLet ::
-       forall ts. (Ord (TSVarID ts), CompleteTypeSystem ts)
+       forall ts. CompleteTypeSystem ts
     => [TSBinding ts]
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 tsUncheckedRecursiveLet = bindingsRecursiveLetSealedExpression @ts
 
 tsSequentialLet ::
-       forall ts. (Ord (TSVarID ts), CompleteTypeSystem ts)
+       forall ts. CompleteTypeSystem ts
     => TSBinding ts
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 tsSequentialLet = bindingSequentialLetSealedExpression @ts

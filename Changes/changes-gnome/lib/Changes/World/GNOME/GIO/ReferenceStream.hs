@@ -8,9 +8,9 @@ import Changes.World.GNOME.GI
 import Data.ByteString.Unsafe (unsafeUseAsCString)
 import Data.IORef
 import Foreign
-import qualified GI.GLib as GI
-import qualified GI.GObject as GI
-import qualified GI.Gio as GI
+import GI.GLib qualified as GI
+import GI.GObject qualified as GI
+import GI.Gio qualified as GI
 import Shapes
 
 data Private = MkPrivate

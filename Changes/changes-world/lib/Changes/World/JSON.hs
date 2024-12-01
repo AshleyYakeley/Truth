@@ -1,9 +1,9 @@
 module Changes.World.JSON where
 
 import Changes.Core
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Key as JSON
-import qualified Data.Aeson.KeyMap as JSON
+import Data.Aeson qualified as JSON
+import Data.Aeson.Key qualified as JSON
+import Data.Aeson.KeyMap qualified as JSON
 import Shapes
 
 jsonCodec :: ReasonCodec LazyByteString JSON.Value

@@ -24,7 +24,7 @@ class IsLinearity lin where
     nlLiftReadFunction :: forall ra rb. ReadFunction ra rb -> ReadFunction (NL lin ra) (NL lin rb)
 
 instance IsLinearity 'Linear where
-    type NL 'Linear r = NullReader
+    type NL 'Linear _ = NullReader
     linear = nullReadable
     nlLiftReadFunction _ rd = rd
 

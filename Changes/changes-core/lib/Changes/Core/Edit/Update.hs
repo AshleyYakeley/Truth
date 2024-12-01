@@ -19,12 +19,12 @@ class IsUpdate update => IsEditUpdate update where
 
 newtype EditUpdate edit =
     MkEditUpdate edit
-    deriving (Eq, Countable, Searchable)
+    deriving newtype (Eq, Countable, Searchable)
 
 instance Finite edit => Finite (EditUpdate edit) where
     allValues = fmap MkEditUpdate allValues
 
-deriving instance Empty edit => Empty (EditUpdate edit)
+deriving newtype instance Empty edit => Empty (EditUpdate edit)
 
 instance Show edit => Show (EditUpdate edit) where
     show (MkEditUpdate edit) = show edit

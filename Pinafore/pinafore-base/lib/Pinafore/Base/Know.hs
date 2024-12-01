@@ -23,7 +23,17 @@ import Shapes
 
 newtype Know a =
     MkKnow (Maybe a)
-    deriving (Eq, Functor, Foldable, Applicative, Alternative, Monad, MonadFix, MonadPlus, MonadException, MonadInner)
+    deriving newtype ( Eq
+                     , Functor
+                     , Foldable
+                     , Applicative
+                     , Alternative
+                     , Monad
+                     , MonadFix
+                     , MonadPlus
+                     , MonadException
+                     , MonadInner
+                     )
 
 pattern Known :: a -> Know a
 
