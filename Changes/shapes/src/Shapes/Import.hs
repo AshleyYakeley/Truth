@@ -95,8 +95,8 @@ import Data.Hashable as I (Hashable)
 -- containers
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
 import Data.Map as I (Map)
-import Data.Set as I (Set)
 import Data.Map.Lazy qualified
+import Data.Set as I (Set)
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
