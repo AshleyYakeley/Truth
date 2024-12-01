@@ -373,6 +373,8 @@ full: testimages format deb nix-docker-flake deps licensing check-snippets docs 
 clean:
 	rm -rf .build
 	rm -rf out
+	rm -rf Changes/*/*.cabal
+	rm -rf Pinafore/*/*.cabal
 	rm -rf Changes/changes-gnome/examples/showImages/images
 	rm -rf nix/docker/flake.nix
 	rm -rf nix/docker/flake.lock
