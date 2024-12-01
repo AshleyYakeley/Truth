@@ -44,9 +44,9 @@
       - -Wno-missing-safe-haskell-mode
       - -Wno-missing-kind-signatures
       - -Wno-partial-type-signatures
-      - -Wno-unused-packages # will catch threadtrace
+      - -Wno-monomorphism-restriction
+      - -Wno-missing-local-signatures
+      - -Wno-partial-fields
       - -Wno-all-missed-specialisations # non-breaking
       - -Wno-missed-specialisations # non-breaking
-      - -Wno-monomorphism-restriction # fix?
-      - -Wno-missing-local-signatures # fix?
-      - -Wno-partial-fields # fix?
+      - -Wno-unused-packages # will catch threadtrace

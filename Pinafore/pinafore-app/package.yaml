@@ -18,7 +18,6 @@ library:
       - base >= 4.16
       - shapes
       - time
-      - directory
       - filepath
       - xdg-basedir
       - pinafore-language
@@ -42,7 +41,6 @@ executables:
     pinafore:
         source-dirs: app/main
         dependencies:
-          - base >= 4.16
           - thread-trace
           - shapes
           - optparse-applicative
@@ -57,9 +55,7 @@ executables:
     pinadata:
         source-dirs: app/data
         dependencies:
-          - base >= 4.16
           - shapes
-          - filepath
           - optparse-applicative
           - aeson
           - pinafore-language
@@ -73,11 +69,9 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.16
           - filepath
           - directory
           - shapes
-          - changes-core
           - pinafore-language
           - pinafore-lib-script
           - pinafore-app
@@ -90,7 +84,6 @@ tests:
     app:
         source-dirs: app/main
         dependencies:
-          - base >= 4.16
           - shapes
           - optparse-applicative
           - pinafore-app

@@ -10,7 +10,6 @@ library:
     dependencies:
       - shapes
       - base >= 4.16
-      - time
       - thread-trace
     exposed-modules:
       - Changes.Core

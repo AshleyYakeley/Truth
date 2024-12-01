@@ -21,7 +21,6 @@ tests:
           - base >= 4.16
           - directory
           - shapes
-          - changes-core
           - pinafore-language
           - pinafore-lib-media
           - pinafore-lib-gnome

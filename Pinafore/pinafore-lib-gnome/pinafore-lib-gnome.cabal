@@ -60,26 +60,21 @@ library
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-unused-packages -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages
   build-depends:
-      Color
-    , base >=4.16
-    , changes-core
+      changes-core
     , changes-gnome
     , changes-media
     , changes-world
-    , gi-cairo-render
     , gi-gdk
     , gi-gio
     , gi-gtk
-    , gi-webkit2
     , pinafore-language
     , pinafore-lib-media
     , polar-shim
     , shapes
     , thread-trace
     , time
-    , typed-expression
   default-language: GHC2021
 
 test-suite test
@@ -117,15 +112,11 @@ test-suite test
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-unused-packages -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -threaded
+  ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages -threaded
   build-depends:
-      base >=4.16
-    , changes-core
+      changes-core
     , changes-gnome
     , filepath
-    , gi-gobject
-    , gi-gtk
-    , haskell-gi-base
     , pinafore-language
     , pinafore-lib-gnome
     , pinafore-lib-media
