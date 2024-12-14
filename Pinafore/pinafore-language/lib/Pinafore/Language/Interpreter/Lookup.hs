@@ -1,5 +1,6 @@
 module Pinafore.Language.Interpreter.Lookup
     ( checkNameForRegister
+    , warnNameForRegister
     , lookupDebugBindingInfo
     , lookupSelector
     , lookupBoundType
@@ -20,10 +21,18 @@ import Pinafore.Language.Type.Subtype ()
 
 checkNameForRegister :: FullName -> QInterpreter ()
 checkNameForRegister name = do
-    mnt <- getBindingInfoLookup
-    case mnt $ fullNameRef name of
+    bindmap <- getBindingInfoLookup
+    case bindmap $ fullNameRef name of
         Just _ -> throw $ DeclareBindingDuplicateError name
         Nothing -> return ()
+
+warnNameForRegister :: [FullName] -> QInterpreter ()
+warnNameForRegister names = do
+    bindmap <- getBindingInfoLookup
+    for_ names $ \name ->
+        case bindmap $ fullNameRef name of
+            Just _ -> warn $ NameRedefined name
+            Nothing -> return ()
 
 rnuToInterpreter :: FullNameRef -> Maybe a -> QInterpreter a
 rnuToInterpreter _ (Just a) = return a

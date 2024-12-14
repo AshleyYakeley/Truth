@@ -31,7 +31,9 @@ registerDocs :: Docs -> QScopeBuilder ()
 registerDocs docs = registerScopeDocs $ mempty {sdDocs = docs}
 
 registerBindings :: [(FullName, QBindingInfo)] -> QScopeBuilder ()
-registerBindings bb = registerScope $ bindingInfosToScope bb
+registerBindings bb = do
+    builderLift $ warnNameForRegister $ fmap fst bb
+    registerScope $ bindingInfosToScope bb
 
 registerBinding :: FullName -> QBindingInfo -> QScopeBuilder ()
 registerBinding name db = registerBindings $ singletonMap name db

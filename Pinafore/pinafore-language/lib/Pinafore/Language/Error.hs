@@ -2,11 +2,13 @@ module Pinafore.Language.Error where
 
 import Import
 
-data QWarningType =
-    TestQWarningType
+data QWarningType
+    = NameNotUsed Name
+    | NameRedefined FullName
 
 instance ShowNamedText QWarningType where
-    showNamedText TestQWarningType = "test warning"
+    showNamedText (NameNotUsed n) = showNamedText n <> " is defined but not used"
+    showNamedText (NameRedefined n) = showNamedText n <> " is already defined"
 
 type QWarning = SourceError QWarningType
 
@@ -95,7 +97,7 @@ instance ShowNamedText QErrorType where
                 (Just n, _) -> "INTERNAL ERROR: " <> toNamedText t <> " (issue #" <> showNamedText n <> ")"
                 (Nothing, "") -> "INTERNAL ERROR"
                 (Nothing, _) -> "INTERNAL ERROR: " <> toNamedText t
-    showNamedText (WarningError w) = showNamedText w <> " (use --sloppy to ignore)"
+    showNamedText (WarningError w) = showNamedText w <> " (use --sloppy to allow)"
     showNamedText (UnicodeDecodeError t) = "Unicode decode error: " <> t
     showNamedText (ParserError err) = showNamedText err
     showNamedText (PatternErrorError e) = showNamedText e
