@@ -44,16 +44,12 @@ allow-newer-deps:
 
 extra-deps:
 # GTK
-- haskell-gi-0.26.14
-- haskell-gi-base-0.26.8
-- gi-glib-2.0.30
-- gi-gio-2.0.35
-- gi-gdk-3.0.29
-- gi-gtk-3.0.43
-- gi-gtk-hs-0.3.17
-- gi-soup-2.4.29
-- gi-javascriptcore-4.0.28
-- gi-webkit2-4.0.31
+- gi-gdk-4.0.9
+- gi-gsk-4.0.8
+- gi-gtk-4.0.9
+- gi-soup-3.0.3
+- gi-javascriptcore-6.0.4
+- gi-webkit-6.0.3
 
 # other
 - blake3-0.3

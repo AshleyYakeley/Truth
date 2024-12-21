@@ -2,7 +2,7 @@ ARG RESOLVER="lts-24.6"
 
 FROM ubuntu:jammy
 # FROM fpco/stack-build-small:${RESOLVER}
-RUN echo 2025-08-29 > /container.date
+RUN echo 2026-02-16 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive
@@ -38,16 +38,16 @@ RUN stack setup --resolver ${RESOLVER}
 # GNOME stuff
 RUN apt-get install -y \
     pkg-config build-essential \
-    libsoup2.4-dev \
+    libsoup-3.0-dev \
     gobject-introspection \
     libgirepository1.0-dev \
     libglib2.0-dev               gir1.2-glib-2.0 \
     libgdk-pixbuf-2.0-dev        gir1.2-gdkpixbuf-2.0 \
     libpango1.0-dev              gir1.2-pango-1.0 \
     libcairo2-dev                gir1.2-cairo-1.0 \
-    libgtk-3-dev                 gir1.2-gtk-3.0 \
-    libjavascriptcoregtk-4.0-dev gir1.2-javascriptcoregtk-4.0 \
-    libwebkit2gtk-4.0-dev        gir1.2-webkit2-4.0
+    libgtk-4-dev                 gir1.2-gtk-4.0 \
+    libjavascriptcoregtk-6.0-dev gir1.2-javascriptcoregtk-6.0 \
+    libwebkitgtk-6.0-dev         gir1.2-webkit-6.0
 
 # various
 RUN apt-get install -y git m4 imagemagick librsvg2-bin moreutils lintian

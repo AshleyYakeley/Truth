@@ -36,8 +36,7 @@ library:
       - gi-cairo-connector
       - gi-pango
       - gi-gtk
-      - gi-gtk-hs
-      - gi-webkit2
+      - gi-webkit
       - thread-trace
       - shapes
       - cairo-functional

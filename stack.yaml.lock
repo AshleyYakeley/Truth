@@ -5,75 +5,47 @@
 
 packages:
 - completed:
-    hackage: haskell-gi-0.26.14@sha256:209f73e90c3627663cda73a02c16dd8b56770d4ff7a094c090bb2d7cc9bd8c27,5151
+    hackage: gi-gdk-4.0.9@sha256:4196fd5d91a5a3297b2a52debe067409d5001edfec7ed7adb7a44b99a5372893,9585
     pantry-tree:
-      sha256: 32456cc58685e325cd88d8950007177b856d0ebe3e57e0d3eb5c19c0ba744d5d
-      size: 4202
+      sha256: a6c2b884d8e646f1c15bf8f9c30c4fdd3691f451de984f55bd5234d6e00ef268
+      size: 355
   original:
-    hackage: haskell-gi-0.26.14
+    hackage: gi-gdk-4.0.9
 - completed:
-    hackage: haskell-gi-base-0.26.8@sha256:968e2bd48e6f1b9379713ddfda9e664bfbd050157cf937ceaf52b0e0536fcf8a,2448
+    hackage: gi-gsk-4.0.8@sha256:97d8e7f63b4b2a19c1e55cabc56bdc05e0d911e1629ae70fbd2fefa7c087ce0c,8365
     pantry-tree:
-      sha256: df1933e58bd5e0b28cb4be5eb4e80105fe09eedb59645d08e567e8de4d9e065c
-      size: 1941
+      sha256: 1b77ab5b3d5aa28bd1fc7a7ff029efbc4aabdc7193bd7c8135a0953de3b3795e
+      size: 353
   original:
-    hackage: haskell-gi-base-0.26.8
+    hackage: gi-gsk-4.0.8
 - completed:
-    hackage: gi-glib-2.0.30@sha256:ac73c972e0c814e74a0b135e8567e1364dbcf60f77e6f020eac9f054eaaebe54,10726
+    hackage: gi-gtk-4.0.9@sha256:e172b4955b70a1737bca9ffc53dbb2ada2420d1aa604a01a7461bdbab1561ba3,36939
     pantry-tree:
-      sha256: 8f0c2eaaa93a4aabc18c4e30be3993947514aa6c868db1c99c5e8f1f84207365
-      size: 360
+      sha256: c4dc960da48a10f2d6d674e607d17604cb85491d37a60bd7647592ac69d497a9
+      size: 357
   original:
-    hackage: gi-glib-2.0.30
+    hackage: gi-gtk-4.0.9
 - completed:
-    hackage: gi-gio-2.0.35@sha256:3b4c55db06533622a6aa3ef3251cdf1e3c0b61eb97bd282ec39ad3e34b0c3be8,22663
+    hackage: gi-soup-3.0.3@sha256:4932b8cd67b8fc0ac11aa292617719d29c0f009578699d66fe47532c5ca7ce56,6961
     pantry-tree:
-      sha256: f97c092f60db9ca323ba7d6936518bc93df5a0dc374eef53f8ade78fa4fc8a83
-      size: 359
+      sha256: 042a30560c99f3e8ea31b9570a18e45a32a1427d32b2f29bf90c6b090dda5d38
+      size: 302
   original:
-    hackage: gi-gio-2.0.35
+    hackage: gi-soup-3.0.3
 - completed:
-    hackage: gi-gdk-3.0.29@sha256:7b0f571750f11d4869e87130224dc6fe365df8efeebdd5afeb7a5b4ec213b288,8995
+    hackage: gi-javascriptcore-6.0.4@sha256:3f6e39ddab473ad045e096d2fda6fe305cce7215099376b2cfe3837f6d725a43,4019
     pantry-tree:
-      sha256: 023c1fc6546026a96ea9ddc6eb53291a9e3d5fd8124e4cade428969b6a6fbeaf
-      size: 356
-  original:
-    hackage: gi-gdk-3.0.29
-- completed:
-    hackage: gi-gtk-3.0.43@sha256:2e33d82be6bfe3ac25f7562bac54c7d27a7968404037dc860bac1969c6b1a39c,40306
-    pantry-tree:
-      sha256: 50efdf1693a92838a91f267d4a1280a93bc7467dc5b72b5fbad5b0f8a85d0ae1
-      size: 359
-  original:
-    hackage: gi-gtk-3.0.43
-- completed:
-    hackage: gi-gtk-hs-0.3.17@sha256:f29311138878ba1a1b13480e01b1a6192eef905b573a620e7a7f1e523d7b25a3,2037
-    pantry-tree:
-      sha256: b6b91710957e49c7efac9bcd91578a10415e9f67789370e568f1bc8ebe49b859
-      size: 1137
-  original:
-    hackage: gi-gtk-hs-0.3.17
-- completed:
-    hackage: gi-soup-2.4.29@sha256:09b6138147fb16ac36dd144aaddf6d4a08d77d32ad2ab7e5c90edf7d8459a785,8949
-    pantry-tree:
-      sha256: 24822aed1b1bdf91aed3c810a6a01b480ad0b85aa62e67d6bce064d60d88c73b
-      size: 359
-  original:
-    hackage: gi-soup-2.4.29
-- completed:
-    hackage: gi-javascriptcore-4.0.28@sha256:0d880fbd9a8acd31f8dfc4cacff97b59eb3af88c26136800a9050b5b68721653,4020
-    pantry-tree:
-      sha256: 38abefc291e7c5c50854e8b8f6e5e8cd8b3071ed9477f2516e62fb93d8197af2
+      sha256: 5b1df2a6f3bc23587b9e7dd0aa47b2b67411bd292030ea2096ddbf11804e24f0
       size: 312
   original:
-    hackage: gi-javascriptcore-4.0.28
+    hackage: gi-javascriptcore-6.0.4
 - completed:
-    hackage: gi-webkit2-4.0.31@sha256:68a34dc21ef7af69ba7d482c634bbdccb3c8631f3ea983231b401369c1c33b7a,12790
+    hackage: gi-webkit-6.0.3@sha256:5096a8976efec6b33675099011ebbe3a20095689fe8c47e721301de69f45c50c,12118
     pantry-tree:
-      sha256: 89554848cd1851d7c120dc2aa8a5cf9a33cb402bc56b520714cd5a76d7dd41d2
-      size: 366
+      sha256: 20db97e8596d40fc12ce7f42035da41936166da6ff229f721152f4448187e296
+      size: 362
   original:
-    hackage: gi-webkit2-4.0.31
+    hackage: gi-webkit-6.0.3
 - completed:
     hackage: blake3-0.3@sha256:5517c394b60f88918df78eb8356799fd3b1a09e16b82af36be6edb85d6c3e108,2838
     pantry-tree:
