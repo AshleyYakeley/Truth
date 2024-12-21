@@ -13,7 +13,7 @@ instance (TestEquality (tw polarity), TestEquality (tw (InvertPolarity polarity)
         Refl <- testEquality qa qb
         return Refl
 
-data MPolarRangeType w mpolarity where
+data MPolarRangeType (w :: Polarity -> Type -> Type) (mpolarity :: Maybe Polarity) where
     SingleMPolarRangeType
         :: Is PolarityType polarity => Some (RangeType w polarity) -> MPolarRangeType w ('Just polarity)
     BothMPolarRangeType

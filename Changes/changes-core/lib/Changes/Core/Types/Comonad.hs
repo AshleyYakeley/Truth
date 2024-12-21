@@ -8,11 +8,11 @@ import Changes.Core.Read
 newtype ComonadReader (w :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadExtract :: forall w reader t. reader t -> ComonadReader w reader t
 
-instance (Comonad w, SubjectReader reader) => SubjectReader (ComonadReader w reader) where
+instance forall w reader. (Comonad w, SubjectReader reader) => SubjectReader (ComonadReader w reader) where
     type ReaderSubject (ComonadReader w reader) = w (ReaderSubject reader)
     subjectToRead wsubj (ReadExtract rd) = subjectToRead (extract wsubj) rd
 
-comonadReadFunction :: ReadFunction (ComonadReader w reader) reader
+comonadReadFunction :: forall w reader. ReadFunction (ComonadReader w reader) reader
 comonadReadFunction mr rt = mr $ ReadExtract rt
 
 newtype ComonadEdit (w :: Type -> Type) (edit :: Type) =

@@ -23,17 +23,19 @@ import Changes.Core.Types.Tuple.Tuple
 
 --- reader
 data KeyReader cont reader t where
-    KeyReadKeys :: KeyReader cont reader (FiniteSet (ContainerKey cont))
-    KeyReadItem :: ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t)
+    KeyReadKeys :: forall cont reader. KeyReader cont reader (FiniteSet (ContainerKey cont))
+    KeyReadItem :: forall cont reader t. ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t)
 
-instance (Show (ContainerKey cont), AllConstraint Show reader) => Show (KeyReader cont reader t) where
+instance forall cont reader t. (Show (ContainerKey cont), AllConstraint Show reader) => Show (KeyReader cont reader t) where
     show KeyReadKeys = "keys"
     show (KeyReadItem key rt) = "item " ++ show key ++ " " ++ allShow rt
 
-instance (Show (ContainerKey cont), AllConstraint Show reader) => AllConstraint Show (KeyReader cont reader) where
+instance forall cont reader. (Show (ContainerKey cont), AllConstraint Show reader) =>
+             AllConstraint Show (KeyReader cont reader) where
     allConstraint = Dict
 
-instance (Show (ContainerKey cont), WitnessConstraint Show reader) => WitnessConstraint Show (KeyReader cont reader) where
+instance forall cont reader. (Show (ContainerKey cont), WitnessConstraint Show reader) =>
+             WitnessConstraint Show (KeyReader cont reader) where
     witnessConstraint KeyReadKeys = Dict
     witnessConstraint (KeyReadItem _ rt) =
         case witnessConstraint @_ @Show rt of
@@ -52,13 +54,13 @@ knownKeyItemReadFunction key mr rt = do
         Just t -> return t
         Nothing -> error $ "missing item in list"
 
-instance (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Item cont) =>
+instance forall cont reader. (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Item cont) =>
              SubjectReader (KeyReader cont reader) where
     type ReaderSubject (KeyReader cont reader) = cont
     subjectToRead cont KeyReadKeys = MkFiniteSet $ keys cont
     subjectToRead cont (KeyReadItem key rd) = fmap (\e -> subjectToRead e rd) $ lookupItem key cont
 
-instance (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Item cont) =>
+instance forall cont reader. (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Item cont) =>
              FullSubjectReader (KeyReader cont reader) where
     readableToSubject mr = do
         MkFiniteSet allkeys <- mr KeyReadKeys

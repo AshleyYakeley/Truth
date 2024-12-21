@@ -4,7 +4,7 @@ import Data.CatFunctor
 import Data.Isomorphism
 import Shapes.Import
 
-class IsBiMap bm where
+class IsBiMap (bm :: (Type -> Type) -> Type -> Type -> Type) where
     mapBiMapM :: (forall x. m1 x -> m2 x) -> bm m1 a b -> bm m2 a b
 
 toBiMapMaybe :: (IsBiMap bm, MonadInner m) => bm m edita editb -> bm Maybe edita editb

@@ -22,10 +22,10 @@ import Changes.Core.Lens.Lens
 import Changes.Core.Read
 
 data FloatInit reader r where
-    ReadFloatInit :: (forall m. MonadIO m => Readable m reader -> m r) -> FloatInit reader r
-    NoFloatInit :: r -> FloatInit reader r
+    ReadFloatInit :: forall reader r. (forall m. MonadIO m => Readable m reader -> m r) -> FloatInit reader r
+    NoFloatInit :: forall reader r. r -> FloatInit reader r
 
-runFloatInit :: FloatInit reader r -> forall m. MonadIO m => Readable m reader -> m r
+runFloatInit :: forall reader r. FloatInit reader r -> forall m. MonadIO m => Readable m reader -> m r
 runFloatInit (ReadFloatInit finit) = finit
 runFloatInit (NoFloatInit r) = \_ -> return r
 

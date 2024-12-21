@@ -321,7 +321,10 @@ replaceListAll needle replacement haystack
 replaceListAll _ _ [] = []
 replaceListAll needle replacement (h:hh) = h : replaceListAll needle replacement hh
 
-trimSpace :: (IsSequence seq, Element seq ~ Char) => seq -> seq
+trimSpace ::
+       forall seq. (IsSequence seq, Element seq ~ Char)
+    => seq
+    -> seq
 trimSpace = reverse . dropWhile isSpace . reverse . dropWhile isSpace
 
 lifecycleOnAllDone ::

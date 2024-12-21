@@ -17,7 +17,7 @@ import Changes.Core.Lens
 import Changes.Core.Read
 import Changes.Core.Types.ReadOnly
 
-type ReaderSet reader = forall t. reader t -> Bool
+type ReaderSet (reader :: Type -> Type) = forall (t :: Type). reader t -> Bool
 
 data PartialUpdate update
     = KnownPartialUpdate update

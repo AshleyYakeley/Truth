@@ -188,7 +188,7 @@ tiDoc MkTypeInfo {..} = let
     gdst = fmap (\gds -> exprShow gds <> concatmap (\p -> " " <> exprShow p) tiParams) tiGDS
     in MkDefDoc (typeDocItem tiName tiStorable tiParams gdst) tiDescription
 
-data TypeData dv gt = MkTypeData
+data TypeData (dv :: CCRVariances) (gt :: CCRVariancesKind dv) = MkTypeData
     { tdInfo :: TypeInfo
     , tdID :: FamilialType gt
     , tdSupertype :: Maybe (TypeData dv gt)

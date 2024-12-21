@@ -146,10 +146,13 @@ immutableAReference mr =
     case transStackDict @Monad @tt @IO of
         Dict -> MkAReference mr (\_ -> return Nothing) mempty
 
-readConstantReference :: Readable IO reader -> Reference (ConstEdit reader)
+readConstantReference :: forall reader. Readable IO reader -> Reference (ConstEdit reader)
 readConstantReference mr = MkResource nilResourceRunner $ immutableAReference mr
 
-constantReference :: SubjectReader reader => ReaderSubject reader -> Reference (ConstEdit reader)
+constantReference ::
+       forall reader. SubjectReader reader
+    => ReaderSubject reader
+    -> Reference (ConstEdit reader)
 constantReference subj = readConstantReference $ subjectToReadable subj
 
 alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))

@@ -7,7 +7,11 @@ class PairWords single double | single -> double, double -> single where
     lo :: double -> single
     hilo :: single -> single -> double
 
-lohi :: PairWords single double => single -> single -> double
+lohi ::
+       forall single double. PairWords single double
+    => single
+    -> single
+    -> double
 lohi l h = hilo h l
 
 instance PairWords Word8 Word16 where

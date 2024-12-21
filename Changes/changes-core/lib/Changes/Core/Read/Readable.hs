@@ -23,7 +23,9 @@ newtype ReadableW m reader = MkReadableW
     { unReadableW :: Readable m reader
     }
 
-stateReadable :: Monad m => Readable (StateT (ReadableW m reader) m) reader
+stateReadable ::
+       forall reader m. Monad m
+    => Readable (StateT (ReadableW m reader) m) reader
 stateReadable rt = do
     MkReadableW mr <- get
     lift $ mr rt

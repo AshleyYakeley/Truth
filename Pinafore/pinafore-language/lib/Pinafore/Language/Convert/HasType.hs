@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# OPTIONS -fno-warn-overlapping-patterns #-}
 
 module Pinafore.Language.Convert.HasType where
 

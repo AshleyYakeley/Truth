@@ -7,7 +7,7 @@ import Database.SQLite.Simple hiding (columnName)
 import Shapes
 import Shapes.Numeric
 
-class FieldType t where
+class FieldType (t :: Type) where
     fieldTypeName :: String
 
 instance FieldType SQLData where
@@ -80,12 +80,12 @@ instance Show (FiniteAllFor ColumnSchema colsel) where
 class ToSchema t where
     toSchema :: t -> [Query]
 
-data IndexSchema colsel = MkIndexSchema
+data IndexSchema (colsel :: Type -> Type) = MkIndexSchema
     { indexName :: String
     , indexColumns :: [Some colsel]
     }
 
-data TableSchema colsel = MkTableSchema
+data TableSchema (colsel :: Type -> Type) = MkTableSchema
     { tableName :: String
     , tableColumns :: FiniteAllFor ColumnSchema colsel
     , tableIndexes :: [IndexSchema colsel]

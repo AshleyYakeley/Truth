@@ -37,29 +37,29 @@ wholeReadable ma ReadWhole = ma
 newtype WholeReaderEdit (reader :: Type -> Type) =
     MkWholeReaderEdit (ReaderSubject reader)
 
-instance Show (ReaderSubject reader) => Show (WholeReaderEdit reader) where
+instance forall reader. Show (ReaderSubject reader) => Show (WholeReaderEdit reader) where
     show (MkWholeReaderEdit subj) = "whole " ++ show subj
 
-instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
+instance forall reader. Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 
-type instance EditReader (WholeReaderEdit reader) = reader
+type instance forall reader. EditReader (WholeReaderEdit reader) = reader
 
-instance (FullSubjectReader reader) => ApplicableEdit (WholeReaderEdit reader) where
+instance forall reader. (FullSubjectReader reader) => ApplicableEdit (WholeReaderEdit reader) where
     applyEdit (MkWholeReaderEdit a) _ = subjectToReadable a
 
-instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
+instance forall reader. (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
     invertEdit _ mr = do
         a <- readableToSubject mr
         return [MkWholeReaderEdit a]
 
-instance FullSubjectReader reader => SubjectMapEdit (WholeReaderEdit reader)
+instance forall reader. FullSubjectReader reader => SubjectMapEdit (WholeReaderEdit reader)
 
-instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
+instance forall reader. (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
     replaceEdit mr write = do
         a <- readableToSubject mr
         write $ MkWholeReaderEdit a
 
-instance (FullSubjectReader reader, TestEquality reader) => CacheableEdit (WholeReaderEdit reader) where
+instance forall reader. (FullSubjectReader reader, TestEquality reader) => CacheableEdit (WholeReaderEdit reader) where
     trimEdits edits =
         case lastM edits of
             Nothing -> []
@@ -68,23 +68,23 @@ instance (FullSubjectReader reader, TestEquality reader) => CacheableEdit (Whole
 mapWholeEdit :: (ReaderSubject ra -> ReaderSubject rb) -> WholeReaderEdit ra -> WholeReaderEdit rb
 mapWholeEdit = coerce
 
-lastWholeEdit :: [WholeReaderEdit reader] -> Maybe (ReaderSubject reader)
+lastWholeEdit :: forall reader. [WholeReaderEdit reader] -> Maybe (ReaderSubject reader)
 lastWholeEdit edits = do
     MkWholeReaderEdit subj <- lastM edits
     return subj
 
-lastWholeUpdate :: [WholeReaderUpdate reader] -> Maybe (ReaderSubject reader)
+lastWholeUpdate :: forall reader. [WholeReaderUpdate reader] -> Maybe (ReaderSubject reader)
 lastWholeUpdate updates = do
     MkWholeReaderUpdate subj <- lastM updates
     return subj
 
-lastReadOnlyWholeUpdate :: [ReadOnlyUpdate (WholeReaderUpdate reader)] -> Maybe (ReaderSubject reader)
+lastReadOnlyWholeUpdate :: forall reader. [ReadOnlyUpdate (WholeReaderUpdate reader)] -> Maybe (ReaderSubject reader)
 lastReadOnlyWholeUpdate updates = do
     MkReadOnlyUpdate (MkWholeReaderUpdate subj) <- lastM updates
     return subj
 
 wholePutEdits ::
-       Monad mm
+       forall mm m reader edita. Monad mm
     => (ReaderSubject reader -> Readable m (EditReader edita) -> mm (Maybe [edita]))
     -> [WholeReaderEdit reader]
     -> Readable m (EditReader edita)

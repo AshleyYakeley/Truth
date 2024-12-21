@@ -23,7 +23,7 @@ instance Arbitrary SequenceRun where
     arbitrary = MkSequenceRun <$> arbitrary <*> arbitrary
     shrink (MkSequenceRun s l) = [MkSequenceRun s' l' | (s', l') <- shrink (s, l)]
 
-instance Arbitrary seq => Arbitrary (StringEdit seq) where
+instance forall seq. Arbitrary seq => Arbitrary (StringEdit seq) where
     arbitrary = oneof [StringReplaceWhole <$> arbitrary, StringReplaceSection <$> arbitrary <*> arbitrary]
     shrink (StringReplaceWhole s) = StringReplaceWhole <$> shrink s
     shrink (StringReplaceSection r s) =

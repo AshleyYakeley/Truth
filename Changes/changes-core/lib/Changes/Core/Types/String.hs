@@ -12,26 +12,26 @@ import Changes.Core.Read
 import Changes.Core.Sequence
 
 data StringRead seq t where
-    StringReadLength :: StringRead seq SequencePoint
-    StringReadSection :: SequenceRun -> StringRead seq seq
+    StringReadLength :: forall seq. StringRead seq SequencePoint
+    StringReadSection :: forall seq. SequenceRun -> StringRead seq seq
 
-instance Show (StringRead seq t) where
+instance forall seq t. Show (StringRead seq t) where
     show StringReadLength = "length"
     show (StringReadSection run) = "section " ++ show run
 
-instance (c seq, c SequencePoint) => WitnessConstraint c (StringRead seq) where
+instance forall c seq. (c seq, c SequencePoint) => WitnessConstraint c (StringRead seq) where
     witnessConstraint StringReadLength = Dict
     witnessConstraint (StringReadSection _) = Dict
 
-instance AllConstraint Show (StringRead seq) where
+instance forall seq. AllConstraint Show (StringRead seq) where
     allConstraint = Dict
 
-instance IsSequence seq => SubjectReader (StringRead seq) where
+instance forall seq. IsSequence seq => SubjectReader (StringRead seq) where
     type ReaderSubject (StringRead seq) = seq
     subjectToRead s StringReadLength = seqLength s
     subjectToRead s (StringReadSection run) = seqSection run s
 
-instance IsSequence seq => FullSubjectReader (StringRead seq) where
+instance forall seq. IsSequence seq => FullSubjectReader (StringRead seq) where
     readableToSubject mr = do
         len <- mr StringReadLength
         mr $ StringReadSection $ MkSequenceRun 0 len
@@ -41,11 +41,15 @@ data StringEdit seq
     | StringReplaceSection SequenceRun
                            seq
 
-instance Show seq => Show (StringEdit seq) where
+instance forall seq. Show seq => Show (StringEdit seq) where
     show (StringReplaceWhole s) = "whole " ++ show s
     show (StringReplaceSection r s) = "section " ++ show r ++ " " ++ show s
 
-floatingUpdateLeft :: IsSequence seq => StringEdit seq -> SequencePoint -> SequencePoint
+floatingUpdateLeft ::
+       forall seq. IsSequence seq
+    => StringEdit seq
+    -> SequencePoint
+    -> SequencePoint
 floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
     uend = ustart + ulen
     slen = seqLength u
@@ -56,7 +60,11 @@ floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
                     else i
 floatingUpdateLeft _ i = i
 
-floatingUpdateRight :: IsSequence seq => StringEdit seq -> SequencePoint -> SequencePoint
+floatingUpdateRight ::
+       forall seq. IsSequence seq
+    => StringEdit seq
+    -> SequencePoint
+    -> SequencePoint
 floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
     uend = ustart + ulen
     slen = seqLength u
@@ -67,19 +75,19 @@ floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
                     else i
 floatingUpdateRight _ i = i
 
-instance IsSequence seq => Floating (StringEdit seq) SequencePoint where
+instance forall seq. IsSequence seq => Floating (StringEdit seq) SequencePoint where
     floatingUpdate = floatingUpdateRight
 
-instance IsSequence seq => Floating (StringEdit seq) SequenceRun where
+instance forall seq. IsSequence seq => Floating (StringEdit seq) SequenceRun where
     floatingUpdate edit (MkSequenceRun ostart olen) = let
         oend = ostart + olen
         in startEndRun (floatingUpdateLeft edit ostart) (floatingUpdateRight edit oend)
 
-instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
+instance forall seq. IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
     floatingUpdate _ (StringReplaceWhole s) = StringReplaceWhole s
     floatingUpdate edit (StringReplaceSection run s) = StringReplaceSection (floatingUpdate edit run) s
 
-type instance EditReader (StringEdit seq) = StringRead seq
+type instance forall seq. EditReader (StringEdit seq) = StringRead seq
 
 cleanEdit :: SequencePoint -> SequenceRun -> Maybe SequenceRun
 cleanEdit _len run
@@ -90,7 +98,7 @@ cleanEdit len run
     | runEnd run > len = Just $ startEndRun (runStart run) len
 cleanEdit _len run = Just run
 
-instance IsSequence seq => ApplicableEdit (StringEdit seq) where
+instance forall seq. IsSequence seq => ApplicableEdit (StringEdit seq) where
     applyEdit (StringReplaceWhole s) _ rd = return $ subjectToRead s rd
     applyEdit (StringReplaceSection erunRaw s) mr StringReadLength = do
         oldlen <- mr StringReadLength
@@ -125,7 +133,7 @@ instance IsSequence seq => ApplicableEdit (StringEdit seq) where
                 return $ mappend before $ mappend middle after
             Nothing -> mr $ StringReadSection rrunRaw
 
-instance IsSequence seq => InvertibleEdit (StringEdit seq) where
+instance forall seq. IsSequence seq => InvertibleEdit (StringEdit seq) where
     invertEdit (StringReplaceWhole _) mr = do
         olds <- readableToSubject mr
         return [StringReplaceWhole olds]
@@ -133,9 +141,9 @@ instance IsSequence seq => InvertibleEdit (StringEdit seq) where
         olds <- mr $ StringReadSection run
         return [StringReplaceSection (MkSequenceRun start (seqLength s)) olds]
 
-instance IsSequence seq => SubjectMapEdit (StringEdit seq)
+instance forall seq. IsSequence seq => SubjectMapEdit (StringEdit seq)
 
-instance IsSequence seq => FullEdit (StringEdit seq) where
+instance forall seq. IsSequence seq => FullEdit (StringEdit seq) where
     replaceEdit mr writeEdit = do
         a <- readableToSubject mr
         writeEdit $ StringReplaceWhole a

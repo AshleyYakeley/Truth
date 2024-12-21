@@ -9,19 +9,38 @@ newtype SequencePoint = MkSequencePoint
 instance Show SequencePoint where
     show (MkSequencePoint i) = show i
 
-seqLength :: IsSequence seq => seq -> SequencePoint
+seqLength ::
+       forall seq. IsSequence seq
+    => seq
+    -> SequencePoint
 seqLength = fromIntegral . olength64
 
-seqIndex :: IsSequence seq => seq -> SequencePoint -> Maybe (Element seq)
+seqIndex ::
+       forall seq. IsSequence seq
+    => seq
+    -> SequencePoint
+    -> Maybe (Element seq)
 seqIndex sq i = index sq $ fromIntegral i
 
-seqTake :: IsSequence seq => SequencePoint -> seq -> seq
+seqTake ::
+       forall seq. IsSequence seq
+    => SequencePoint
+    -> seq
+    -> seq
 seqTake p = take $ fromIntegral p
 
-seqDrop :: IsSequence seq => SequencePoint -> seq -> seq
+seqDrop ::
+       forall seq. IsSequence seq
+    => SequencePoint
+    -> seq
+    -> seq
 seqDrop p = drop $ fromIntegral p
 
-seqSplitAt :: IsSequence seq => SequencePoint -> seq -> (seq, seq)
+seqSplitAt ::
+       forall seq. IsSequence seq
+    => SequencePoint
+    -> seq
+    -> (seq, seq)
 seqSplitAt p = splitAt $ fromIntegral p
 
 data SequenceRun = MkSequenceRun
@@ -73,7 +92,11 @@ clipRunEnd nend (MkSequenceRun start len) = let
 clipWithin :: SequenceRun -> SequenceRun -> SequenceRun
 clipWithin constraint run = clipRunEnd (runEnd constraint) $ clipRunStart (runStart constraint) run
 
-seqSection :: IsSequence seq => SequenceRun -> seq -> seq
+seqSection ::
+       forall seq. IsSequence seq
+    => SequenceRun
+    -> seq
+    -> seq
 seqSection (MkSequenceRun start len) s = seqTake len $ seqDrop (max start 0) s
 
 seqIntersect :: SequenceRun -> SequenceRun -> Maybe SequenceRun

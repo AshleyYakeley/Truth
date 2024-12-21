@@ -29,30 +29,30 @@ newtype ConstEdit (reader :: Type -> Type) =
     MkConstEdit Void
     deriving newtype (Eq, Countable, Searchable)
 
-instance Finite (ConstEdit reader) where
+instance forall reader. Finite (ConstEdit reader) where
     allValues = []
 
-deriving newtype instance Empty (ConstEdit reader)
+deriving newtype instance forall reader . Empty (ConstEdit reader)
 
-instance Show (ConstEdit reader) where
+instance forall reader. Show (ConstEdit reader) where
     show edit = never edit
 
-instance Floating (ConstEdit reader) (ConstEdit reader)
+instance forall reader. Floating (ConstEdit reader) (ConstEdit reader)
 
-type instance EditReader (ConstEdit reader) = reader
+type instance forall reader. EditReader (ConstEdit reader) = reader
 
-instance ApplicableEdit (ConstEdit reader) where
+instance forall reader. ApplicableEdit (ConstEdit reader) where
     applyEdit edit _ = never edit
 
-instance InvertibleEdit (ConstEdit reader) where
+instance forall reader. InvertibleEdit (ConstEdit reader) where
     invertEdit edit _ = never edit
 
-instance FullSubjectReader reader => SubjectMapEdit (ConstEdit reader)
+instance forall reader. FullSubjectReader reader => SubjectMapEdit (ConstEdit reader)
 
-instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (ConstEdit reader) where
+instance forall reader. (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (ConstEdit reader) where
     replaceEdit _ _ = return ()
 
-instance TestEquality reader => CacheableEdit (ConstEdit reader) where
+instance forall reader. TestEquality reader => CacheableEdit (ConstEdit reader) where
     trimEdits _ = []
 
 type ConstUpdate reader = EditUpdate (ConstEdit reader)

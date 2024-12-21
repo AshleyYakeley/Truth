@@ -8,7 +8,8 @@ import Shapes
 type Unitype :: (Type -> Type) -> Type -> Type -> Type
 data Unitype m name val
 
-type UnitypeVar m name val polarity = NameWitness name (UniShimWit val polarity)
+type UnitypeVar (m :: Type -> Type) (name :: Type) (val :: Type) (polarity :: Polarity)
+     = NameWitness name (UniShimWit val polarity)
 
 instance (Monad m, Eq name) => TypeSystem (Unitype m name val) where
     type TSOuter (Unitype m name val) = IdentityT m

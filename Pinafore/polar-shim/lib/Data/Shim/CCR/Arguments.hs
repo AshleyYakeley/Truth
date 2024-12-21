@@ -156,8 +156,8 @@ consAnyCCRArguments p atp = let
             MkSome pp -> MkSome $ ConsCCRArguments p pp
     in atp'
 
-type CCRPolarArguments :: forall (dv :: CCRVariances) ->
-                                  (Polarity -> Type -> Type) -> CCRVariancesKind dv -> Polarity -> Type -> Type
+type CCRPolarArguments ::
+       forall (dv :: CCRVariances) -> (Polarity -> Type -> Type) -> CCRVariancesKind dv -> Polarity -> Type -> Type
 type CCRPolarArguments dv ft gt polarity = CCRArguments (CCRPolarArgument ft polarity) dv gt
 
 instance forall (w :: CCRArgumentKind) dv gt. IsCCRArg w => TestEquality (CCRArguments w dv gt) where
@@ -167,8 +167,9 @@ instance forall (w :: CCRArgumentKind) dv gt. IsCCRArg w => TestEquality (CCRArg
         Refl <- testEquality tta ttb
         return Refl
 
-type CCRPolarArgumentsShimWit :: PolyShimKind -> forall (dv :: CCRVariances) ->
-                                                         (Polarity -> Type -> Type) -> CCRVariancesKind dv -> Polarity -> Type -> Type
+type CCRPolarArgumentsShimWit ::
+       PolyShimKind
+    -> forall (dv :: CCRVariances) -> (Polarity -> Type -> Type) -> CCRVariancesKind dv -> Polarity -> Type -> Type
 type CCRPolarArgumentsShimWit pshim dv ft gt polarity
      = PolarShimWit (pshim Type) (CCRPolarArguments dv ft gt polarity) polarity
 

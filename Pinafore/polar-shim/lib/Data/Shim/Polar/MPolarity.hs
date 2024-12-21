@@ -174,7 +174,7 @@ instance (FromMPolar arg, ToMPolar t, ConvertMPolarity arg ~ ConvertMPolarity t)
         ff = f @polarity $ fromMPolarBoth @_ @polarity arg
         in toMPolarBoth ff
 
-newtype InvertMPolarW w mpolarity = MkInvertMPolarW
+newtype InvertMPolarW (w :: Polarity -> Type -> Type) (mpolarity :: Maybe Polarity) = MkInvertMPolarW
     { unInvertMPolarW :: MPolarW w (InvertMPolarity mpolarity)
     }
 

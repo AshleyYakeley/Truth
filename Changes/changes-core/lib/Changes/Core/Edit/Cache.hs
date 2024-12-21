@@ -116,7 +116,7 @@ editCacheUpdates ::
     -> StateT (cache (EditCacheKey cache edit)) IO ()
 editCacheUpdates ee = for_ ee $ editCacheUpdate
 
-data SimpleCacheKey a b ct where
+data SimpleCacheKey (a :: Type) (b :: Type) (ct :: Type) where
     MkSimpleCacheKey :: a -> SimpleCacheKey a b b
 
 instance Eq a => TestEquality (SimpleCacheKey a b) where

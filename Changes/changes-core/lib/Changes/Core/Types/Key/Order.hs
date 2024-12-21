@@ -26,7 +26,7 @@ orderedSetLens ::
        )
     => UpdateOrder update
     -> FloatingChangeLens (KeyUpdate cont update) (OrderedListUpdate update)
-orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens (ordInit :: FloatInit _ or) rOrdLens)) = let
+orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens @_ @_ @or ordInit rOrdLens)) = let
     kcmp :: (o, ContainerKey cont, or) -> (o, ContainerKey cont, or) -> Ordering
     kcmp (o1, k1, _) (o2, k2, _) =
         case cmp o1 o2 of
@@ -221,7 +221,7 @@ contextOrderedSetLens ::
        )
     => UpdateOrder (ContextUpdate updateX updateN)
     -> FloatingChangeLens (ContextUpdate updateX (KeyUpdate cont updateN)) (ContextUpdate updateX (OrderedListUpdate updateN))
-contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens (ordInit :: FloatInit _ or) rOrdLens)) = let
+contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens @_ @_ @or ordInit rOrdLens)) = let
     kcmp :: (o, ContainerKey cont, or) -> (o, ContainerKey cont, or) -> Ordering
     kcmp (o1, k1, _) (o2, k2, _) =
         case cmp o1 o2 of

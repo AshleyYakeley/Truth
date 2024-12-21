@@ -9,9 +9,10 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
 import Shapes
 
-type SubtypeLink :: GroundTypeKind -> forall (dva :: CCRVariances) ->
-                                              CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
-                                                                              CCRVariancesKind dvb -> Type
+type SubtypeLink ::
+       GroundTypeKind
+    -> forall (dva :: CCRVariances) ->
+               CCRVariancesKind dva -> forall (dvb :: CCRVariances) -> CCRVariancesKind dvb -> Type
 data SubtypeLink ground dva gta dvb gtb =
     forall a b. MkSubtypeLink (CCRVariancesMap dva gta)
                               (CCRPolarArguments dva (DolanType ground) gta 'Negative a)
@@ -30,9 +31,10 @@ instance forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVari
              Show (SubtypeLink ground dva gta dvb gtb) where
     show (MkSubtypeLink _ _ _ _) = "link"
 
-type SubtypeChain :: GroundTypeKind -> forall (dva :: CCRVariances) ->
-                                               CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
-                                                                               CCRVariancesKind dvb -> Type
+type SubtypeChain ::
+       GroundTypeKind
+    -> forall (dva :: CCRVariances) ->
+               CCRVariancesKind dva -> forall (dvb :: CCRVariances) -> CCRVariancesKind dvb -> Type
 data SubtypeChain ground dva gta dvb gtb where
     NilSubtypeChain
         :: forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).

@@ -7,9 +7,10 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-type SubtypeConversion :: GroundTypeKind -> forall (dva :: CCRVariances) ->
-                                                    CCRVariancesKind dva -> forall (dvb :: CCRVariances) ->
-                                                                                    CCRVariancesKind dvb -> Type
+type SubtypeConversion ::
+       GroundTypeKind
+    -> forall (dva :: CCRVariances) ->
+               CCRVariancesKind dva -> forall (dvb :: CCRVariances) -> CCRVariancesKind dvb -> Type
 data SubtypeConversion ground dva gta dvb gtb where
     GeneralSubtypeConversion
         :: forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).

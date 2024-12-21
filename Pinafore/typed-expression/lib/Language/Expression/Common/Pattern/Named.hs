@@ -7,8 +7,8 @@ import Language.Expression.Common.Open
 import Language.Expression.Common.Pattern.Pattern
 import Shapes
 
-type NameTypePattern :: forall kn.
-                                (kn -> Type) -> (kn -> Type -> Type) -> (Type -> Type -> Type) -> Type -> Type -> Type
+type NameTypePattern ::
+       forall kn. (kn -> Type) -> (kn -> Type -> Type) -> (Type -> Type -> Type) -> Type -> Type -> Type
 type NameTypePattern nw vw = Pattern (NameTypeWitness nw vw)
 
 varNameTypePattern :: Arrow c => nw n -> vw n t -> NameTypePattern nw vw c t ()

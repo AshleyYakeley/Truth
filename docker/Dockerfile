@@ -1,8 +1,8 @@
-FROM fpco/stack-build-small:lts-22.21
-RUN echo 2024-09-08 > /container.date
+FROM fpco/stack-build-small:lts-23.0
+RUN echo 2024-12-15 > /container.date
 
 # Debian upgrade
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get full-upgrade -y
 RUN apt autoremove --purge -y
@@ -32,6 +32,9 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesourc
 RUN apt-get update
 RUN apt-get install -y nodejs
 RUN npm --global install @vscode/vsce
+
+# Stack
+RUN stack setup --resolver lts-23.0
 
 # make sudo work
 RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers

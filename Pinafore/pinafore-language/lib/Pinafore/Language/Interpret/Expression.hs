@@ -244,7 +244,11 @@ interpretSequentialLetBinding sbind = do
 interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> QScopeBuilder ()
 interpretRecursiveDocDeclarations ddecls = do
     let
-        interp :: SyntaxRecursiveDeclaration -> QScopeBuilder (_, QScopeBuilder (), [SingleBinding])
+        interp ::
+               SyntaxRecursiveDeclaration
+            -> QScopeBuilder ( [(SourcePos, FullName, RawMarkdown, SyntaxRecursiveTypeDeclaration)]
+                             , QScopeBuilder ()
+                             , [SingleBinding])
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
                 TypeSyntaxDeclaration name defn -> return (pure (spos, name, doc, defn), mempty, mempty)

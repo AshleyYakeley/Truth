@@ -33,7 +33,8 @@ instance forall (ground :: GroundTypeKind) tv. ShowGroundType ground => AllConst
 type ExpressionPolyShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
 type ExpressionPolyShim w = PolyComposeShim (Expression w)
 
-type ExpressionShimWit :: (GroundTypeKind -> Polarity -> Type -> Type) -> GroundTypeKind -> Polarity -> Type -> Type -> Type
+type ExpressionShimWit ::
+       (GroundTypeKind -> Polarity -> Type -> Type) -> GroundTypeKind -> Polarity -> Type -> Type -> Type
 type ExpressionShimWit w ground polarity tv
      = PShimWit (ExpressionPolyShim (UsageWitness ground tv) (DolanPolyShim ground) Type) (w ground) polarity
 

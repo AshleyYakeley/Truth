@@ -158,7 +158,7 @@ instance InvertibleEdit QTableEdit where
         ml <- mr $ QTableReadLiteralGet v
         return [QTableEditLiteralSet v ml]
 
-data PropertyCacheKey cache t ct where
+data PropertyCacheKey (cache :: (Type -> Type) -> Type) (t :: Type) (ct :: Type) where
     GetPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey Entity (Maybe t)))
     LookupPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Entity)))
 

@@ -5,47 +5,19 @@
 
 packages:
 - completed:
-    hackage: haskell-gi-base-0.26.6@sha256:6b51dde453c3df84db84e155227b27dccde1b7b179b49f24607a80ed63ffa6bb,2448
+    hackage: gi-javascriptcore-4.0.28@sha256:0d880fbd9a8acd31f8dfc4cacff97b59eb3af88c26136800a9050b5b68721653,4020
     pantry-tree:
-      sha256: 8afaf5a769a5fe148a7e811062c1214b23c6959bbfec6763b8f9a5af5fdec70a
-      size: 1941
+      sha256: 38abefc291e7c5c50854e8b8f6e5e8cd8b3071ed9477f2516e62fb93d8197af2
+      size: 312
   original:
-    hackage: haskell-gi-base-0.26.6
+    hackage: gi-javascriptcore-4.0.28
 - completed:
-    hackage: haskell-gi-0.26.10@sha256:9f32fc4c5341d6f2885c9265d596b168f73e44b1e1c03928e052f055f89c9ff6,5150
+    hackage: gi-webkit2-4.0.31@sha256:68a34dc21ef7af69ba7d482c634bbdccb3c8631f3ea983231b401369c1c33b7a,12790
     pantry-tree:
-      sha256: d60e3ec60e2e6ba40823e122853786de78e2ccd58ba68f1ccfff61538f753a32
-      size: 4201
+      sha256: 89554848cd1851d7c120dc2aa8a5cf9a33cb402bc56b520714cd5a76d7dd41d2
+      size: 366
   original:
-    hackage: haskell-gi-0.26.10
-- completed:
-    hackage: haskell-gi-overloading-1.0@sha256:a59a812f4490b317fe2850c5442004f230130204af6cb4e0a6604acebb9f2f63,631
-    pantry-tree:
-      sha256: 5b56359796af8ec1bed5b2df43756374915055853f60f01ec8f7d0c403773112
-      size: 265
-  original:
-    hackage: haskell-gi-overloading-1.0
-- completed:
-    hackage: gi-glib-2.0.30@sha256:ac73c972e0c814e74a0b135e8567e1364dbcf60f77e6f020eac9f054eaaebe54,10726
-    pantry-tree:
-      sha256: 8f0c2eaaa93a4aabc18c4e30be3993947514aa6c868db1c99c5e8f1f84207365
-      size: 360
-  original:
-    hackage: gi-glib-2.0.30
-- completed:
-    hackage: gi-gobject-2.0.31@sha256:899a331689f1238fdce3829f1148e51bfd13a39ba5cab70710a6bab59e663d90,9561
-    pantry-tree:
-      sha256: da1356d4b61040347499bf41253cc1aba954e09cca40fa4d4777f068751b62da
-      size: 365
-  original:
-    hackage: gi-gobject-2.0.31
-- completed:
-    hackage: gi-gio-2.0.34@sha256:4bc14804f5794743f8c997382d4c4ce66a074f41a215c3f01a9ca6519a239850,22663
-    pantry-tree:
-      sha256: b5ec3dc8595ab3aca9bc6f93a5c82ec6bbe548036bc521a87193ae721cd6c466
-      size: 359
-  original:
-    hackage: gi-gio-2.0.34
+    hackage: gi-webkit2-4.0.31
 - completed:
     hackage: blake3-0.3@sha256:5517c394b60f88918df78eb8356799fd3b1a09e16b82af36be6edb85d6c3e108,2838
     pantry-tree:
@@ -61,13 +33,6 @@ packages:
   original:
     hackage: leb128-0.1.0.0
 - completed:
-    hackage: gi-cairo-connector-0.1.1@sha256:352fc558ed5bf27d48bd88c8ec0e3be5fdbaf1418eaddffcfd1c7283fd895d40,1251
-    pantry-tree:
-      sha256: 8a4266c4bc002930f3cf4c753e1288b94e16f743885703c6197789388574cd99
-      size: 238
-  original:
-    hackage: gi-cairo-connector-0.1.1
-- completed:
     hackage: optparse-applicative-0.17.1.0@sha256:cb5f5f0dc9749846fc0e3df0041a8efee6368cc1cff07336acd4c3b02a951ed6,5147
     pantry-tree:
       sha256: be7241e9c51c9e2bb4b9966b1a308258ed93b471d125611f068dc0279fcdc669
@@ -75,26 +40,26 @@ packages:
   original:
     hackage: optparse-applicative-0.17.1.0
 - completed:
-    commit: 04451a2de42c21d690d55f8a6b77939dc911cf16
+    commit: 443776e416f3fc3c2b56cbd5b11beaf022365c9d
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
     name: haskell-src-exts
     pantry-tree:
-      sha256: ce7dc3a4190a488c77c7e6d513f1c5c8fc2b11a9d265010e742fb4b69c6f35d4
+      sha256: b316fd6cc4a6ae6dbfbb0dce02a08f253c093b5ea91785a9db85b979571423f5
       size: 98740
     version: 1.23.1
   original:
-    commit: 04451a2de42c21d690d55f8a6b77939dc911cf16
+    commit: 443776e416f3fc3c2b56cbd5b11beaf022365c9d
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
 - completed:
-    commit: 882019c877b1cccb47a1ce9d0117c1f36ec684e9
+    commit: 39739ea7717249e405ab67c8a579b552e4cec8b9
     git: https://github.com/AshleyYakeley/hindent.git
     name: hindent
     pantry-tree:
-      sha256: bb129beb80917ef13739f711ce813c26d057e05c021ab4d6a1855580aeb6a860
+      sha256: d494b065a194847e1101d1ed2de1e4ef45bd4176b41e753eb17d3b72505e8864
       size: 2019
     version: 5.3.1
   original:
-    commit: 882019c877b1cccb47a1ce9d0117c1f36ec684e9
+    commit: 39739ea7717249e405ab67c8a579b552e4cec8b9
     git: https://github.com/AshleyYakeley/hindent.git
 - completed:
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
@@ -107,9 +72,30 @@ packages:
   original:
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
     git: https://github.com/fpco/ghc-prof-flamegraph.git
+- completed:
+    hackage: witness-0.7@sha256:845d0c2ac74785824d035d38e3580fd30964eabdc6103ada08f195de3ad23a24,3520
+    pantry-tree:
+      sha256: cd7c413275006b8b78ec726824c3ece7ba568163f5a9d2dd2a7c4962bb6f156d
+      size: 2985
+  original:
+    hackage: witness-0.7
+- completed:
+    hackage: monadology-0.4@sha256:a5e2fbb86c8bd643ec1a28c1d211545801d7a5da31568fc3cfff2f79bdb50590,5351
+    pantry-tree:
+      sha256: e01052d6cedfcfda5da4e63d373722cd6bff6f014c5ae09c839f9fcee1c22aac
+      size: 4297
+  original:
+    hackage: monadology-0.4
+- completed:
+    hackage: open-witness-0.7@sha256:5eb33f9ec31d170b972811cc904398eae8188a9153d7c0d529345056987ad722,3704
+    pantry-tree:
+      sha256: c96d854bde89a1cbdd79735110ed4868ef8e5fc8fbf01d63744daf8ef73f3911
+      size: 921
+  original:
+    hackage: open-witness-0.7
 snapshots:
 - completed:
-    sha256: b146f371d1a90abbd2aeae1da10f776951046be50eae55a6fe93548a74fcc0dd
-    size: 713338
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/21.yaml
-  original: lts-22.21
+    sha256: 9444fadfa30b67a93080254d53872478c087592ad64443e47c546cdcd13149ae
+    size: 678857
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/0.yaml
+  original: lts-23.0

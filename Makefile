@@ -400,7 +400,7 @@ endif
 update-locks: docker-image
 	rm -f stack.yaml.lock
 	stack exec -- echo -n
-	nix flake lock --recreate-lock-file
+	nix flake update
 
 
 ### Top

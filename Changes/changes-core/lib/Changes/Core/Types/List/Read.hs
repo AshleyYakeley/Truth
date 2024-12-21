@@ -5,25 +5,25 @@ import Changes.Core.Read
 import Changes.Core.Sequence
 
 data ListReader reader t where
-    ListReadLength :: ListReader reader SequencePoint
-    ListReadItem :: SequencePoint -> reader t -> ListReader reader (Maybe t)
+    ListReadLength :: forall reader. ListReader reader SequencePoint
+    ListReadItem :: forall reader t. SequencePoint -> reader t -> ListReader reader (Maybe t)
 
-itemReadFunction :: SequencePoint -> ReadFunctionF Maybe (ListReader reader) reader
+itemReadFunction :: forall reader. SequencePoint -> ReadFunctionF Maybe (ListReader reader) reader
 itemReadFunction i mr rt = MkComposeInner $ mr $ ListReadItem i rt
 
-knownItemReadFunction :: SequencePoint -> ReadFunction (ListReader reader) reader
+knownItemReadFunction :: forall reader. SequencePoint -> ReadFunction (ListReader reader) reader
 knownItemReadFunction i mr rt = do
     mt <- unComposeInner $ itemReadFunction i mr rt
     case mt of
         Just t -> return t
         Nothing -> error $ "missing item " ++ show i ++ " in list"
 
-instance SubjectReader reader => SubjectReader (ListReader reader) where
+instance forall reader. SubjectReader reader => SubjectReader (ListReader reader) where
     type ReaderSubject (ListReader reader) = Vector (ReaderSubject reader)
     subjectToRead sq ListReadLength = seqLength sq
     subjectToRead sq (ListReadItem i rd) = fmap (\e -> subjectToRead e rd) $ seqIndex sq i
 
-instance FullSubjectReader reader => FullSubjectReader (ListReader reader) where
+instance forall reader. FullSubjectReader reader => FullSubjectReader (ListReader reader) where
     readableToSubject mr = do
         len <- mr ListReadLength
         list <- for [0 .. pred len] $ \i -> readableToSubject $ knownItemReadFunction i mr

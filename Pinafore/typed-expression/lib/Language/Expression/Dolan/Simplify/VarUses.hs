@@ -187,9 +187,9 @@ mappableGetVarUses a = let
     (posapprs, negapprs) = mappableGetAppearances @ground a
     in (fmap appearanceVars posapprs, fmap appearanceVars negapprs)
 
-class GetExpressionVars f where
+class GetExpressionVars (f :: Type -> Type) where
     -- | (positive, negative)
-    getExpressionVars :: forall t. f t -> ([SomeTypeVarT], [SomeTypeVarT])
+    getExpressionVars :: forall (t :: Type). f t -> ([SomeTypeVarT], [SomeTypeVarT])
 
 instance GetExpressionVars wit => GetExpressionVars (PolarShimWit cat wit polarity) where
     getExpressionVars (MkShimWit w _) = getExpressionVars w

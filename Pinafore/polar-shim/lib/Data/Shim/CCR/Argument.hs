@@ -121,8 +121,8 @@ mapInvertCCRPolarArgumentShimWit f (RangeCCRPolarArgument tp tq) =
         MkShimWit tq' convq <- f tq
         return $ MkShimWit (RangeCCRPolarArgument tp' tq') $ mkRangevariantPolarShim convp convq
 
-type SVJoinMeetType :: forall (sv :: CCRVariance) ->
-                               Polarity -> CCRVarianceKind sv -> CCRVarianceKind sv -> CCRVarianceKind sv
+type SVJoinMeetType ::
+       forall (sv :: CCRVariance) -> Polarity -> CCRVarianceKind sv -> CCRVarianceKind sv -> CCRVarianceKind sv
 type family SVJoinMeetType sv polarity a b where
     SVJoinMeetType CoCCRVariance polarity a b = JoinMeetType polarity a b
     SVJoinMeetType ContraCCRVariance polarity a b = JoinMeetType (InvertPolarity polarity) a b

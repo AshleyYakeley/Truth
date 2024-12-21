@@ -21,7 +21,7 @@ assignArgumentParams (ConsCCRArguments (MkCovParam var) args) (ConsArguments arg
     case assignArgumentParams args args' of
         Refl -> Refl
 
-data Thing x decltype ta =
+data Thing (x :: Type) (decltype :: Type) (ta :: Type) =
     MkThing x
             (decltype :~: ta)
 

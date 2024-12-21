@@ -51,8 +51,8 @@ ccrVarianceCoercibleKind CoCCRVarianceType = Dict
 ccrVarianceCoercibleKind ContraCCRVarianceType = Dict
 ccrVarianceCoercibleKind RangeCCRVarianceType = Dict
 
-type CCRVarianceCategory :: ShimKind Type -> forall (sv :: CCRVariance) ->
-                                                     CCRVarianceKind sv -> CCRVarianceKind sv -> Type
+type CCRVarianceCategory ::
+       ShimKind Type -> forall (sv :: CCRVariance) -> CCRVarianceKind sv -> CCRVarianceKind sv -> Type
 type family CCRVarianceCategory cat sv where
     CCRVarianceCategory cat ('SimpleCCRVariance v) = VarianceCategory cat v
     CCRVarianceCategory cat 'RangeCCRVariance = CatRange cat
