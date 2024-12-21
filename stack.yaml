@@ -35,6 +35,10 @@ packages:
 resolver: lts-23.0
 
 allow-newer: true
+allow-newer-deps:
+    - leb128
+    - optparse-applicative
+    - criterion
 
 extra-deps:
 - gi-javascriptcore-4.0.28
