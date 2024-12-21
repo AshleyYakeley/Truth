@@ -119,9 +119,8 @@ library
     , gi-glib
     , gi-gobject
     , gi-gtk
-    , gi-gtk-hs
     , gi-pango
-    , gi-webkit2
+    , gi-webkit
     , haskell-gi-base
     , shapes
     , thread-trace

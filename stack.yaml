@@ -41,8 +41,12 @@ allow-newer-deps:
     - criterion
 
 extra-deps:
-- gi-javascriptcore-4.0.28
-- gi-webkit2-4.0.31
+- gi-gdk-4.0.9
+- gi-gsk-4.0.8
+- gi-gtk-4.0.9
+- gi-soup-3.0.3
+- gi-javascriptcore-6.0.4
+- gi-webkit-6.0.3
 - blake3-0.3
 - leb128-0.1.0.0
 - optparse-applicative-0.17.1.0
