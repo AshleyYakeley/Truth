@@ -1,5 +1,5 @@
 FROM fpco/stack-build-small:lts-23.0
-RUN echo 2024-12-15 > /container.date
+RUN echo 2024-12-21 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive
@@ -8,15 +8,24 @@ RUN apt-get full-upgrade -y
 RUN apt autoremove --purge -y
 
 # various APT stuff
-RUN apt-get install -y sudo git curl m4 imagemagick librsvg2-bin moreutils python3-pip python3-venv lintian
+RUN apt-get install -y sudo git curl m4 imagemagick librsvg2-bin moreutils lintian
+
+# GNOME stuff
 RUN apt-get install -y \
-    libgmp-dev gnome-platform-devel libgtk-3-dev libgirepository1.0-dev libjavascriptcoregtk-4.0-dev libsoup-gnome2.4-dev libwebkit2gtk-4.0-dev
+    gnome-platform-devel \
+    libgtk-3-dev \
+    libjavascriptcoregtk-4.0-dev \
+    gir1.2-javascriptcoregtk-4.0 \
+    libsoup-gnome2.4-dev \
+    libwebkit2gtk-4.0-dev \
+    gir1.2-webkit2-4.0
 
 # yq
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
 RUN chmod +x /usr/local/bin/yq
 
 # various Python stuff
+RUN apt-get install -y python3-pip python3-venv
 RUN pip3 install --upgrade pip
 RUN pip3 install sphinx myst-parser sphinx_rtd_theme Pygments scour build
 RUN mkdir /extra

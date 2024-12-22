@@ -37,7 +37,7 @@ gvTraceSignal sigid call = do
         else do
             hookid <-
                 liftIOWithUnlift $ \unliftIO ->
-                    signalAddEmissionHook sigid 0 $ \_ vals -> do
+                    signalAddEmissionHook sigid 0 $ \_ vals _ -> do
                         unliftIO $ call vals
                         return True
             gvOnClose $ gvLiftIO $ signalRemoveEmissionHook sigid hookid
