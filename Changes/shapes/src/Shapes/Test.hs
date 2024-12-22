@@ -9,6 +9,7 @@ module Shapes.Test
     , setTestName
     , repeatedTest
     , repeatTest
+    , randomSleep
     , pauseTestOnFailure
     , testMain
     , testMainNoSignalHandler
@@ -111,6 +112,12 @@ setTestName name (After dtype expr tests) = After dtype expr $ setTestName name 
 
 repeatedTest :: Int -> TestTree -> TestTree
 repeatedTest n tests = testGroup (getTestName tests) $ fmap (\i -> setTestName (show i <> "/" <> show n) tests) [1 .. n]
+
+randomSleep :: MonadIO m => m ()
+randomSleep =
+    liftIO $ do
+        i :: Int <- randomRIO (0, 1000)
+        threadDelay i
 
 repeatTest :: Int -> TestTree -> TestTree
 repeatTest n =
