@@ -77,6 +77,7 @@ barrier = do
 
 testUpdateReference :: TestTree
 testUpdateReference =
+    repeatTest 100 $
     doModelTest "updateReference" $ do
         obj <- liftIO $ makeMemoryReference "old" $ \_ -> True
         var <- liftIO $ newEmptyMVar
@@ -87,20 +88,24 @@ testUpdateReference =
             lens :: FloatingChangeLens (WholeUpdate String) (WholeUpdate String)
             lens = changeLensToFloating $ fromReadOnlyRejectingChangeLens . testUpdateFunction signal
             recv :: String -> IO () -> ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv name w _ ee _ =
+            recv name w _ ee _ = do
+                randomSleep
                 putMVar var $ do
+                    randomSleep
                     w
                     for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ name <> " update edit: " <> show s
             showAction :: IO ()
             showAction = do
+                randomSleep
                 action <- takeMVar var
                 action
         rc <- viewGetResourceContext
         omr' <-
             viewLiftLifecycle $ do
+                randomSleep
                 om' <- sharePremodel om
-                omr' <- om' rc mempty $ recv "recv1" wait
-                _ <- mapPremodel rc lens (om' rc) mempty $ recv "recv2" (return ())
+                omr' <- om' rc mempty $ recv "recv" wait
+                _ <- mapPremodel rc lens (om' rc) mempty $ recv "recv" (return ())
                 return omr'
         viewRunResource (pmrReference omr') $ \MkAReference {..} ->
             pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
