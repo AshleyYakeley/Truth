@@ -14,7 +14,9 @@ RUN apt-get install -y sudo git curl m4 imagemagick librsvg2-bin moreutils linti
 RUN apt-get install -y \
     gnome-platform-devel \
     libjavascriptcoregtk-6.0-dev \
-    libwebkitgtk-6.0-dev
+    gir1.2-javascriptcoregtk-6.0 \
+    libwebkitgtk-6.0-dev \
+    gir1.2-webkit-6.0
 
 # yq
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
