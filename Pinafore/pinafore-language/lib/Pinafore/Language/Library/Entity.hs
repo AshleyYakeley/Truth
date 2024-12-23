@@ -12,7 +12,6 @@ import Pinafore.Language.Library.Entity.Entity
 import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Numeric
 import Pinafore.Language.Library.Entity.Open
-import Pinafore.Language.Library.Entity.Order
 import Pinafore.Language.Library.Entity.Ordering
 import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.Entity.Text
@@ -29,7 +28,6 @@ entityLibSection =
     , unitEntityLibSection
     , booleanEntityLibSection
     , orderingEntityLibSection
-    , orderEntityLibSection
     , blobEntityLibSection
     , textEntityLibSection
     , numericEntityLibSection

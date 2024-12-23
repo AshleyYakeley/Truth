@@ -97,19 +97,19 @@ library
       Pinafore.Language.Library.Entity.Unit
       Pinafore.Language.Library.Entity.Boolean
       Pinafore.Language.Library.Entity.Ordering
-      Pinafore.Language.Library.Entity.Order
       Pinafore.Language.Library.Entity.Blob
       Pinafore.Language.Library.Entity.Text
       Pinafore.Language.Library.Entity.Numeric
       Pinafore.Language.Library.Entity.Time
       Pinafore.Language.Library.Entity.Open
       Pinafore.Language.Library.Entity
+      Pinafore.Language.Library.Function
+      Pinafore.Language.Library.Comparison
       Pinafore.Language.Library.Maybe
       Pinafore.Language.Library.Product
       Pinafore.Language.Library.Sum
       Pinafore.Language.Library.List
       Pinafore.Language.Library.Map
-      Pinafore.Language.Library.Function
       Pinafore.Language.Library.Result
       Pinafore.Language.Library.Action
       Pinafore.Language.Library.Lifecycle
