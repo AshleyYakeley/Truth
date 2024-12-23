@@ -50,7 +50,7 @@ readTypeOperatorName :: Parser (FullNameRef, Fixity)
 readTypeOperatorName = do
     names <- readThis TokOperator
     let name = tnName names
-    altIf $ allowedTypeOperatorName name
+    guard $ allowedTypeOperatorName name
     return (tokenNamesToFullNameRef names, typeOperatorFixity name)
 
 readInfix :: Parser (FullNameRef, Fixity, SyntaxTypeArgument -> SyntaxTypeArgument -> SyntaxTypeArgument)

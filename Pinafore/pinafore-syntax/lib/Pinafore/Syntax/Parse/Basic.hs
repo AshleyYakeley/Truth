@@ -84,7 +84,7 @@ readExactly :: Eq t => Parser t -> t -> Parser ()
 readExactly p t =
     try $ do
         a <- p
-        altIf $ a == t
+        guard $ a == t
 
 readExactlyThis :: Eq t => Token t -> t -> Parser ()
 readExactlyThis tok t = readExactly (readThis tok) t

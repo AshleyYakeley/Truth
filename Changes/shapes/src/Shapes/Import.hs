@@ -8,7 +8,7 @@ import Control.Applicative as I
 import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
-import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), foldM, forever, unless, void, when)
+import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), foldM, forever, guard, unless, void, when)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
@@ -177,10 +177,6 @@ eitherLeft (Right _) = Nothing
 eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
-
-altIf :: Alternative m => Bool -> m ()
-altIf False = empty
-altIf True = pure ()
 
 ifpure :: Alternative m => Bool -> a -> m a
 ifpure False _ = empty

@@ -39,7 +39,7 @@ bindingMapNamespaceWith sourcens destns ff (MkQBindingMap nm) = let
     matchNS :: forall a. (FullName, a) -> Maybe (FullName, a)
     matchNS (fn, a) = do
         fnr <- namespaceWithinFullNameRef sourcens fn
-        altIf $ ff fnr
+        guard $ ff fnr
         return (namespaceConcatFullName destns fnr, a)
     newEntries = mapMaybe matchNS $ mapToList nm
     in MkQBindingMap $ mapFromList newEntries
