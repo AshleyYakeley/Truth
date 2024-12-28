@@ -25,7 +25,7 @@ library
       Pinafore.Context
       Pinafore.Language.Debug
       Pinafore.Language.Value.Instances
-      Pinafore.Language.Value.Map
+      Pinafore.Language.Value.EntityMap
       Pinafore.Language.Value.Lens
       Pinafore.Language.Value.Prism
       Pinafore.Language.Value.Task
@@ -109,7 +109,7 @@ library
       Pinafore.Language.Library.Product
       Pinafore.Language.Library.Sum
       Pinafore.Language.Library.List
-      Pinafore.Language.Library.Map
+      Pinafore.Language.Library.EntityMap
       Pinafore.Language.Library.Result
       Pinafore.Language.Library.Action
       Pinafore.Language.Library.Lifecycle

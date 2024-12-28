@@ -760,8 +760,10 @@ testEntity =
                           ]
                     ]
               , tDecls
-                    ["subtype Map a <: Entity -> Maybe a = fn m, e => lookup.Map e m", "x = single.Map 34 \"sometext\""] $
-                tGroup "Map" [testExpectSuccess "pass", testExpectSuccess "testeq (Just \"sometext\") $ x 34"]
+                    [ "subtype EntityMap a <: Entity -> Maybe a = fn m, e => lookup.EntityMap e m"
+                    , "x = single.EntityMap 34 \"sometext\""
+                    ] $
+                tGroup "EntityMap" [testExpectSuccess "pass", testExpectSuccess "testeq (Just \"sometext\") $ x 34"]
               , tDecls ["entitytype Q", "subtype Maybe Number <: Q"] $
                 tGroup
                     "non-simple" -- not allowed, per issue #28
