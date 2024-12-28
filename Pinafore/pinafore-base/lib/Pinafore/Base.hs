@@ -4,6 +4,7 @@ module Pinafore.Base
 
 import Pinafore.Base.Action as I
 import Pinafore.Base.Anchor as I
+import Pinafore.Base.Comparison as I
 import Pinafore.Base.Edit as I
 import Pinafore.Base.Entity as I
 import Pinafore.Base.File as I
@@ -22,7 +23,6 @@ import Pinafore.Base.Model.ModelOrder as I
 import Pinafore.Base.Model.ModelProperty as I
 import Pinafore.Base.Model.PredicateProperty as I
 import Pinafore.Base.Number as I
-import Pinafore.Base.Order as I
 import Pinafore.Base.SafeRational as I
 import Pinafore.Base.Showable as I
 import Pinafore.Base.Storable.EntityStorer as I

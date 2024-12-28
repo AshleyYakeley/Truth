@@ -6,7 +6,7 @@ let {
     scaleDrawing: WholeModel (Drawing a) -> WholeModel (Integer *: Integer -> Drawing a) =
         fn rd => ap{
             fn (w,h) =>
-                let {size = min w h;}
+                let {size = lesser w h;}
                 with Drawing
                 translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd
         };

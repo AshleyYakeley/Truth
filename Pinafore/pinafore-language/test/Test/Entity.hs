@@ -661,8 +661,8 @@ testEntity =
                     , subtypeTest False SRSingle "List a" "List a"
                     , tGroup
                           "ModelOrder"
-                          [ subtypeTest False SRSingle "a -> a -> Ordering" "ModelOrder a"
-                          , subtypeTest False SRSingle "Integer -> Integer -> Ordering" "ModelOrder Integer"
+                          [ subtypeTest False SRSingle "Order a" "ModelOrder a"
+                          , subtypeTest False SRSingle "Order Integer" "ModelOrder Integer"
                           ]
                     , tGroup
                           "models"
@@ -1783,12 +1783,12 @@ testEntity =
               ]
         , tGroup
               "text-sort"
-              [ testExpectSuccess "testeq EQ $ order.Text \"a\" \"a\""
-              , testExpectSuccess "testeq EQ $ order.Text \"A\" \"A\""
-              , testExpectSuccess "testeq LT $ order.Text \"a\" \"A\""
-              , testExpectSuccess "testeq LT $ order.Text \"a\" \"b\""
-              , testExpectSuccess "testeq LT $ order.Text \"A\" \"b\""
-              , testExpectSuccess "testeq LT $ order.Text \"a\" \"B\""
+              [ testExpectSuccess "testeq EQ $ compare.Text \"a\" \"a\""
+              , testExpectSuccess "testeq EQ $ compare.Text \"A\" \"A\""
+              , testExpectSuccess "testeq LT $ compare.Text \"a\" \"A\""
+              , testExpectSuccess "testeq LT $ compare.Text \"a\" \"b\""
+              , testExpectSuccess "testeq LT $ compare.Text \"A\" \"b\""
+              , testExpectSuccess "testeq LT $ compare.Text \"a\" \"B\""
               ]
         , tGroup
               "applicative-notation"

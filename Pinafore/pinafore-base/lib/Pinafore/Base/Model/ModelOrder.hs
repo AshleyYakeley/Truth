@@ -1,6 +1,7 @@
 module Pinafore.Base.Model.ModelOrder where
 
 import Changes.Core
+import Pinafore.Base.Comparison
 import Pinafore.Base.Know
 import Pinafore.Base.Model.FunctionAttribute
 import Pinafore.Base.Model.ImmutableWholeModel
@@ -8,7 +9,6 @@ import Pinafore.Base.Model.LensAttribute
 import Pinafore.Base.Model.Model
 import Pinafore.Base.Model.ModelBased
 import Pinafore.Base.Model.ModelProperty
-import Pinafore.Base.Order
 import Shapes
 
 data ModelOrder a update =
@@ -19,12 +19,10 @@ instance EditContraFunctor (ModelOrder a) where
     eaContraMap lens (MkModelOrder fm order) = MkModelOrder (mapStorageFunctionAttributeBase lens fm) order
 
 instance Semigroup (ModelOrder a update) where
-    MkModelOrder fa oa <> MkModelOrder fb ob =
-        MkModelOrder (liftA2 (,) fa fb) $ \(a1, b1) (a2, b2) -> joinOrderings (oa a1 a2) (ob b1 b2)
+    MkModelOrder fa oa <> MkModelOrder fb ob = MkModelOrder (liftA2 (,) fa fb) $ oa <***> ob
 
 instance Monoid (ModelOrder a update) where
-    mempty = MkModelOrder (pure ()) $ compare @()
-    mappend = (<>)
+    mempty = MkModelOrder (pure ()) rUnit
 
 instance CatFunctor (CatDual (->)) (NestedMorphism (->)) ModelOrder where
     cfmap (MkCatDual f) = MkNestedMorphism $ \(MkModelOrder ef o) -> MkModelOrder (ef . (arr $ fmap f)) o
@@ -38,7 +36,7 @@ modelOrderOn pm (MkModelOrder ef o) = MkModelOrder (ef . lensFunctionAttribute p
 type ModelModelOrder a = ModelBased (ModelOrder a)
 
 pureModelModelOrder :: Order a -> ModelModelOrder a
-pureModelModelOrder cmp = pureModelBased $ MkModelOrder id $ knowOrder cmp
+pureModelModelOrder (MkOrder cmp) = pureModelBased $ MkModelOrder id $ MkOrder $ knowCompare cmp
 
 mapModelModelOrder :: (b -> a) -> ModelModelOrder a -> ModelModelOrder b
 mapModelModelOrder f = mapModelBased $ ccontramap1 f
@@ -52,8 +50,6 @@ modelModelOrderOn = combineModelBased modelOrderOn
 modelModelOrderSet :: ModelModelOrder a -> WROWModel (FiniteSet a) -> WROWModel (Know [a])
 modelModelOrderSet ro pset =
     modelBasedModel ro $ \model (MkModelOrder (ofunc :: StorageFunctionAttribute update (Know a) t) oord) -> let
-        cmp :: Order (a, t)
-        cmp (_, t1) (_, t2) = oord t1 t2
         ofuncpair :: StorageFunctionAttribute update a (a, t)
         ofuncpair =
             proc a -> do
@@ -62,19 +58,20 @@ modelModelOrderSet ro pset =
         upairs :: WROWModel (FiniteSet (a, t))
         upairs = applyStorageFunction model (cfmap ofuncpair) pset
         sortpoints :: FiniteSet (a, t) -> [a]
-        sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
+        sortpoints (MkFiniteSet pairs) = fmap fst $ orderSort (contramap snd oord) pairs
         in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 modelModelOrderCompare ::
        forall a. ModelModelOrder a -> ImmutableWholeModel a -> ImmutableWholeModel a -> ImmutableWholeModel Ordering
 modelModelOrderCompare ro fv1 fv2 =
     modelBasedModel ro $ \model (MkModelOrder ef o) ->
-        o <$> (applyImmutableModel model (fmap Known ef) fv1) <*> (applyImmutableModel model (fmap Known ef) fv2)
+        compareOrder o <$> (applyImmutableModel model (fmap Known ef) fv1) <*>
+        (applyImmutableModel model (fmap Known ef) fv2)
 
 modelRefUpdateOrder ::
        ModelModelOrder a
     -> (forall update. Model update -> UpdateOrder (ContextUpdate update (WholeUpdate (Know a))) -> r)
     -> r
 modelRefUpdateOrder ro call =
-    modelBasedModel ro $ \model (MkModelOrder m cmp) ->
-        call model $ mkUpdateOrder cmp $ storageFunctionAttributeContextChangeLens m
+    modelBasedModel ro $ \model (MkModelOrder m o) ->
+        call model $ mkUpdateOrder (compareOrder o) $ storageFunctionAttributeContextChangeLens m

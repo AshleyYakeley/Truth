@@ -82,7 +82,7 @@ let {
         notesOf = !{property @Event @Text !"item.description"} ?store;
 
         order: ModelOrder Event =
-        on.ModelOrder timeOf order.EventTime;
+            on.ModelOrder timeOf order.EventTime;
 
         forDayModel: WholeModel +Date -> WholeModel +(List (EventTime *: Text)) =
             let {
@@ -102,7 +102,7 @@ let {
 
                         pickCurrent: EventTime *: Text -> Boolean =
                         fn (t,_) =>
-                        ge $ order.Date (fetch dateOf.EventTime t) today;
+                        ge $ compare.Date (fetch dateOf.EventTime t) today;
 
                         todayEvent: EventTime *: Text =
                         (MkDate.EventTime today,"Today");

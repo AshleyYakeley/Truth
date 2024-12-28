@@ -112,6 +112,18 @@ instance HasQGroundType '[ CoCCRVariance] EntityMap where
 instance HasQGroundType '[] Showable where
     qGroundType = showableGroundType
 
+-- Equivalence
+instance HasQGroundType '[ ContraCCRVariance] Equivalence where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Equivalence)|]) "Equivalence"
+
+-- Preorder
+instance HasQGroundType '[ ContraCCRVariance] Preorder where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Preorder)|]) "Preorder"
+
+-- Order
+instance HasQGroundType '[ ContraCCRVariance] Order where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Order)|]) "Order"
+
 showableShimWit ::
        forall polarity. Is PolarityType polarity
     => QShimWit polarity Showable

@@ -5,7 +5,7 @@ module Pinafore.Base.Know
     , fromKnow
     , isKnown
     , knowBool
-    , knowOrder
+    , knowCompare
     , maybeToKnow
     , knowToMaybe
     , knowMaybe
@@ -45,14 +45,14 @@ pattern Unknown = MkKnow Nothing
 
 {-# COMPLETE Known, Unknown #-}
 
-knowOrder :: (a -> a -> Ordering) -> Know a -> Know a -> Ordering
-knowOrder _ Unknown Unknown = EQ
-knowOrder _ Unknown (Known _) = LT
-knowOrder _ (Known _) Unknown = GT
-knowOrder cmp (Known a) (Known b) = cmp a b
+knowCompare :: (a -> a -> Ordering) -> Know a -> Know a -> Ordering
+knowCompare _ Unknown Unknown = EQ
+knowCompare _ Unknown (Known _) = LT
+knowCompare _ (Known _) Unknown = GT
+knowCompare cmp (Known a) (Known b) = cmp a b
 
 instance Ord a => Ord (Know a) where
-    compare = knowOrder compare
+    compare = knowCompare compare
 
 instance Traversable Know where
     traverse afb (Known a) = fmap Known $ afb a

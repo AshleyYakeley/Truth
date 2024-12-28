@@ -211,7 +211,7 @@ let {
                 tzref <- newTimeZoneModel.LocalTime now;
                 std_window ap{"Drawing"} $
                     draw.Widget ap{fn (w,h) =>
-                        let {size = min w h}
+                        let {size = lesser w h}
                         fromTime.LocalTime %tzref %now >- fn
                             DateAndTime _ (HourMinuteSecond _ _ s) =>
                                 translate (w / 2, h / 2) $
@@ -266,7 +266,7 @@ let {
             drawing: Integer *: Integer -> Drawing Handler =
                 fn (w,h) =>
                 let {
-                    size = min w h;
+                    size = lesser w h;
                     square: Drawing Handler =
                         fill $ concat.Path [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
                     squares: List ((Integer *: Integer) *: Colour) =

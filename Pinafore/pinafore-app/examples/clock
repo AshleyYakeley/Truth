@@ -4,7 +4,7 @@ with GTK., Widget.GTK., Cairo., Drawing.Cairo., Colour., Number.
 let {
     scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a =
         fn d, (w,h) =>
-        let {size = min w h}
+        let {size = lesser w h}
         translate (w/2,h/2) $ scale (size/2,size/2) d;
 
     circle: Number *: Number -> Number -> Path =

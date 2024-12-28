@@ -17,6 +17,18 @@ import Text.Collate qualified
 utf8Prism :: LangPrism' StrictByteString Text
 utf8Prism = codecToPrism utf8Codec
 
+collatorOrder :: Text.Collate.Collator -> Order Text
+collatorOrder c = MkOrder $ Text.Collate.collate c
+
+langOrder :: Text -> Result Text (Order Text)
+langOrder langcode =
+    case Text.Collate.parseLang langcode of
+        Right lang -> pure $ collatorOrder $ Text.Collate.collatorFor lang
+        Left err -> FailureResult $ pack err
+
+rootOrder :: Order Text
+rootOrder = collatorOrder Text.Collate.rootCollator
+
 textEntityLibSection :: LibraryStuff
 textEntityLibSection =
     headingBDS
@@ -29,11 +41,14 @@ textEntityLibSection =
           mconcat
               [ monoidEntries @Text
               , orderEntries
-                    (Text.Collate.collate Text.Collate.rootCollator)
+                    rootOrder
                     "Order alphabetical first, then lower case before upper, per Unicode normalisation."
               , sequenceEntries @Text
               , [ valBDS "toUpperCase" "" Data.Text.toUpper
                 , valBDS "toLowerCase" "" Data.Text.toLower
+                , valBDS "toTitleCase" "" Data.Text.toTitle
+                , valBDS "langOrder" "Order for BCP 47 language tag" langOrder
+                , valBDS "caselessOrder" "Case-insensitive order" $ contramap Data.Text.toLower rootOrder
                 , valBDS "utf8" "Encode and decode UTF-8 from a `Blob`." utf8Prism
                 ]
               ]

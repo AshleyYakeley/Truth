@@ -44,7 +44,7 @@ blobEntityLibSection =
         , namespaceBDS "Blob" $
           mconcat
               [ monoidEntries @StrictByteString
-              , orderEntries (compare @StrictByteString) ""
+              , orderEntries (ordOrder @StrictByteString) ""
               , sequenceEntries @StrictByteString
               , [ valBDS
                       "asHexText"
