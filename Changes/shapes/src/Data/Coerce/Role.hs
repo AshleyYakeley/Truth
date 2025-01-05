@@ -67,6 +67,9 @@ instance RepresentationalRole NonEmpty where
 instance RepresentationalRole (Map k) where
     representationalCoercion MkCoercion = MkCoercion
 
+instance RepresentationalRole (HashMap k) where
+    representationalCoercion MkCoercion = MkCoercion
+
 instance RepresentationalRole (->) where
     representationalCoercion MkCoercion = MkCoercion
 
@@ -145,5 +148,14 @@ instance forall inner outer. (RepresentationalRole inner, RepresentationalRole o
 instance RepresentationalRole ItemOrEnd where
     representationalCoercion MkCoercion = MkCoercion
 
+instance RepresentationalRole (Const x) where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole Const where
+    representationalCoercion MkCoercion = MkCoercion
+
 class RepresentationalRole f => PhantomRole (f :: kp -> kq) where
     phantomCoercion :: forall (a :: kp) (b :: kp). Coercion (f a) (f b)
+
+instance PhantomRole (Const x) where
+    phantomCoercion = MkCoercion

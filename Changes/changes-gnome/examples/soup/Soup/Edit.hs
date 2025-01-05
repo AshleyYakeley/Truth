@@ -34,11 +34,8 @@ liftSoupLens bmfa = let
     conv (uuid, b) = fmap (fmap $ \a -> (uuid, a)) $ bmfa b
     in liftKeyElementChangeLens conv . sndLiftChangeLens
 
-nameToUUID :: String -> Maybe UUID
-nameToUUID = Data.UUID.fromString
-
-uuidToName :: UUID -> String
-uuidToName = Data.UUID.toString
+nameUUID :: Codec String UUID
+nameUUID = MkCodec Data.UUID.fromString Data.UUID.toString
 
 type ReferenceSoupUpdate = SoupUpdate (ReferenceUpdate ByteStringUpdate)
 
@@ -53,10 +50,10 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAReference readFS push
                         mnames <- readFS $ FSReadDirectory dirpath
                         return $
                             case mnames of
-                                Just names -> mapMaybe nameToUUID $ MkFiniteSet names
+                                Just names -> injectiveFilter nameUUID $ setFromList names
                                 Nothing -> mempty
                     readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectFirst ReadWhole)) = do
-                        mitem <- readFS $ FSReadItem $ dirpath </> uuidToName uuid
+                        mitem <- readFS $ FSReadItem $ dirpath </> encode nameUUID uuid
                         return $
                             case mitem of
                                 Just (FSFileItem _) -> Just uuid
@@ -64,7 +61,7 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAReference readFS push
                     readSoup (KeyReadItem _uuid (MkTupleUpdateReader SelectSecond ReadReferenceResourceContext)) =
                         return $ Just emptyResourceContext
                     readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectSecond ReadReference)) = do
-                        let path = dirpath </> uuidToName uuid
+                        let path = dirpath </> encode nameUUID uuid
                         mitem <- readFS $ FSReadItem path
                         return $
                             case mitem of
@@ -79,9 +76,9 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAReference readFS push
                                 KeyEditItem _uuid (MkTupleUpdateEdit SelectFirst iedit) -> never iedit
                                 KeyEditItem _uuid (MkTupleUpdateEdit SelectSecond iedit) -> never iedit
                                 KeyEditDelete uuid ->
-                                    pushFS $ pure $ FSEditDeleteNonDirectory $ dirpath </> uuidToName uuid
+                                    pushFS $ pure $ FSEditDeleteNonDirectory $ dirpath </> encode nameUUID uuid
                                 KeyEditInsertReplace (uuid, bs) ->
-                                    pushFS $ pure $ FSEditCreateFile (dirpath </> uuidToName uuid) bs
+                                    pushFS $ pure $ FSEditCreateFile (dirpath </> encode nameUUID uuid) bs
                                 KeyEditClear -> do
                                     mnames <- readFS $ FSReadDirectory dirpath
                                     return $

@@ -20,10 +20,10 @@ import Changes.Core.Types.Whole
 
 {- equivalent to:
 data FiniteSetReader subj t where
-    KeyReadKeys :: FiniteSetReader subj (FiniteSet subj)
+    KeyReadKeys :: FiniteSetReader subj (ListSet subj)
     KeyReadItem :: subj -> WholeReader subj t -> FiniteSetReader subj (Maybe t)
 -}
-type FiniteSetReader subj = KeyReader (FiniteSet subj) (WholeReader subj)
+type FiniteSetReader subj = KeyReader (ListSet subj) (WholeReader subj)
 
 {- equivalent to:
 data FiniteSetEdit subj where
@@ -32,7 +32,7 @@ data FiniteSetEdit subj where
     KeyEditInsertReplace :: subj -> FiniteSetEdit subj
     KeyEditClear :: FiniteSetEdit subj
 -}
-type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (ConstWholeEdit subj)
+type FiniteSetEdit subj = KeyEdit (ListSet subj) (ConstWholeEdit subj)
 
 {- equivalent to:
 data FiniteSetUpdate subj where
@@ -41,9 +41,9 @@ data FiniteSetUpdate subj where
     KeyUpdateInsertReplace :: subj -> FiniteSetUpdate subj
     KeyUpdateClear :: FiniteSetUpdate subj
 -}
-type FiniteSetUpdate subj = KeyUpdate (FiniteSet subj) (ConstWholeUpdate subj)
+type FiniteSetUpdate subj = KeyUpdate (ListSet subj) (ConstWholeUpdate subj)
 
-wholeFiniteSetReadFunction :: Eq subj => ReadFunction (WholeReader (FiniteSet subj)) (FiniteSetReader subj)
+wholeFiniteSetReadFunction :: Eq subj => ReadFunction (WholeReader (ListSet subj)) (FiniteSetReader subj)
 wholeFiniteSetReadFunction mr KeyReadKeys = mr ReadWhole
 wholeFiniteSetReadFunction mr (KeyReadItem subj ReadWhole) = do
     fset <- mr ReadWhole
@@ -52,11 +52,8 @@ wholeFiniteSetReadFunction mr (KeyReadItem subj ReadWhole) = do
             then Just subj
             else Nothing
 
-finiteSetChangeLens ::
-       forall subj. Eq subj
-    => subj
-    -> ChangeLens (FiniteSetUpdate subj) (WholeUpdate Bool)
-finiteSetChangeLens subj = let
+finiteSetChangeLens :: forall subj. Equivalence subj -> subj -> ChangeLens (FiniteSetUpdate subj) (WholeUpdate Bool)
+finiteSetChangeLens eqv subj = let
     clRead :: ReadFunction (FiniteSetReader subj) (WholeReader Bool)
     clRead mr ReadWhole = fmap isJust $ mr $ KeyReadItem subj ReadWhole
     clUpdate ::
@@ -66,10 +63,10 @@ finiteSetChangeLens subj = let
         -> m [WholeUpdate Bool]
     clUpdate (KeyUpdateItem _ update) _ = never update
     clUpdate (KeyUpdateDelete key) _
-        | key == subj = return [MkWholeReaderUpdate False]
+        | equivalent eqv key subj = return [MkWholeReaderUpdate False]
     clUpdate (KeyUpdateDelete _) _ = return []
     clUpdate (KeyUpdateInsertReplace key) _
-        | key == subj = return [MkWholeReaderUpdate True]
+        | equivalent eqv key subj = return [MkWholeReaderUpdate True]
     clUpdate (KeyUpdateInsertReplace _) _ = return []
     clUpdate KeyUpdateClear _ = return [MkWholeReaderUpdate False]
     clPutEdit ::
@@ -198,9 +195,8 @@ instance Eq subj => MeetSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) whe
                     else [MkReadOnlyUpdate KeyUpdateClear]
         in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
-mapMaybeFiniteSetChangeLens ::
-       forall a b. (a -> Maybe b) -> (b -> a) -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
-mapMaybeFiniteSetChangeLens amb ba = let
+injectiveMapFiniteSetChangeLens :: forall a b. Codec a b -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
+injectiveMapFiniteSetChangeLens codec@(MkCodec amb ba) = let
     mapFiniteSetEdit ::
            forall m. MonadIO m
         => Readable m (FiniteSetReader a)
@@ -228,8 +224,8 @@ mapMaybeFiniteSetChangeLens amb ba = let
                 return $ KeyEditDelete a
         return $ Just $ mapMaybe mapa $ toList aa
     clRead :: ReadFunction (FiniteSetReader a) (FiniteSetReader b)
-    clRead mra KeyReadKeys = fmap (mapMaybe amb) $ mra KeyReadKeys
-    clRead mra (KeyReadItem b ReadWhole) = fmap (mapMaybe amb) $ mra $ KeyReadItem (ba b) ReadWhole
+    clRead mra KeyReadKeys = fmap (injectiveFilter codec) $ mra KeyReadKeys
+    clRead mra (KeyReadItem b ReadWhole) = fmap (injectiveFilter codec) $ mra $ KeyReadItem (ba b) ReadWhole
     clUpdate ::
            forall m. MonadIO m
         => FiniteSetUpdate a
@@ -252,25 +248,19 @@ mapMaybeFiniteSetChangeLens amb ba = let
 
 collectFiniteSetChangeLens ::
        (b -> a) -> ChangeLens (PairUpdate (ROWUpdate (a -> Maybe b)) (FiniteSetUpdate a)) (FiniteSetUpdate b)
-collectFiniteSetChangeLens ba = bindChangeLens $ \amb -> mapMaybeFiniteSetChangeLens amb ba
+collectFiniteSetChangeLens ba = bindChangeLens $ \amb -> injectiveMapFiniteSetChangeLens $ MkCodec amb ba
 
 filterFiniteSetChangeLens :: forall a. (a -> Bool) -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate a)
-filterFiniteSetChangeLens f =
-    mapMaybeFiniteSetChangeLens
-        (\a ->
-             if f a
-                 then Just a
-                 else Nothing)
-        id
+filterFiniteSetChangeLens f = injectiveMapFiniteSetChangeLens $ ifCodec f
 
 codecFiniteSetChangeLens ::
        forall a b. Eq a
     => Codec a b
     -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
-codecFiniteSetChangeLens (MkCodec amb ba) = let
+codecFiniteSetChangeLens codec@(MkCodec amb ba) = let
     clRead :: ReadFunction (FiniteSetReader a) (FiniteSetReader b)
-    clRead mra KeyReadKeys = fmap (mapMaybe amb) $ mra KeyReadKeys
-    clRead mra (KeyReadItem b ReadWhole) = fmap (mapMaybe amb) $ mra $ KeyReadItem (ba b) ReadWhole
+    clRead mra KeyReadKeys = fmap (injectiveFilter codec) $ mra KeyReadKeys
+    clRead mra (KeyReadItem b ReadWhole) = fmap (injectiveFilter codec) $ mra $ KeyReadItem (ba b) ReadWhole
     clUpdate ::
            forall m. MonadIO m
         => FiniteSetUpdate a
@@ -313,7 +303,7 @@ codecFiniteSetChangeLens (MkCodec amb ba) = let
     in MkChangeLens {..}
 
 bijectionFiniteSetChangeLens :: forall a b. Bijection a b -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
-bijectionFiniteSetChangeLens (MkIsomorphism ab ba) = let
+bijectionFiniteSetChangeLens aba@(MkIsomorphism ab ba) = let
     mapFiniteSetUpdate :: forall p q. (p -> q) -> FiniteSetUpdate p -> FiniteSetUpdate q
     mapFiniteSetUpdate _ (KeyUpdateItem _ update) = never update
     mapFiniteSetUpdate pq (KeyUpdateDelete p) = KeyUpdateDelete $ pq p
@@ -325,7 +315,7 @@ bijectionFiniteSetChangeLens (MkIsomorphism ab ba) = let
     mapFiniteSetEdit pq (KeyEditInsertReplace p) = KeyEditInsertReplace $ pq p
     mapFiniteSetEdit _ KeyEditClear = KeyEditClear
     clRead :: ReadFunction (FiniteSetReader a) (FiniteSetReader b)
-    clRead mra KeyReadKeys = fmap (fmap ab) $ mra KeyReadKeys
+    clRead mra KeyReadKeys = fmap (biIsoMap aba) $ mra KeyReadKeys
     clRead mra (KeyReadItem b ReadWhole) = fmap (fmap ab) $ mra $ KeyReadItem (ba b) ReadWhole
     clUpdate ::
            forall m. MonadIO m
@@ -342,14 +332,13 @@ bijectionFiniteSetChangeLens (MkIsomorphism ab ba) = let
     in MkChangeLens {..}
 
 finiteSetCartesianSumChangeLens ::
-       forall a b. (Eq a, Eq b)
-    => ChangeLens (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (Either a b))
+       forall a b. ChangeLens (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (Either a b))
 finiteSetCartesianSumChangeLens = let
     clRead :: ReadFunction (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetReader (Either a b))
     clRead mr KeyReadKeys = do
         aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
         bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-        return $ fmap Left aa <> fmap Right bb
+        return $ aa <+++> bb
     clRead mr (KeyReadItem (Left a) ReadWhole) = do
         ma' <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
         return $ fmap Left ma'
@@ -401,7 +390,7 @@ finiteSetCartesianProductUpdateFunction = let
     clRead mr KeyReadKeys = do
         aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
         bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-        return $ liftA2 (,) aa bb
+        return $ aa <***> bb
     clRead mr (KeyReadItem (a, b) ReadWhole) =
         unComposeInner $ do
             a' <- MkComposeInner $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
@@ -467,18 +456,26 @@ finiteSetFunctionChangeLens = let
     in MkChangeLens {..}
 
 filterFiniteSetUpdateFunction ::
-       forall a. Eq a
-    => ChangeLens (PairUpdate (FiniteSetUpdate a) (PartialSetUpdate a)) (ReadOnlyUpdate (FiniteSetUpdate a))
+       forall a. ChangeLens (PairUpdate (FiniteSetUpdate a) (PartialSetUpdate a)) (ReadOnlyUpdate (FiniteSetUpdate a))
 filterFiniteSetUpdateFunction = let
-    testItem1 :: forall m. Readable m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a)) -> a -> m (Maybe a)
-    testItem1 mr a = mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
-    testItem2 ::
+    getFSReplaceEdits ::
+           forall m. MonadIO m
+        => Readable m (FiniteSetReader a)
+        -> m [FiniteSetEdit a]
+    getFSReplaceEdits mr = do
+        fs <- mr KeyReadKeys
+        return $ KeyEditClear : fmap KeyEditInsertReplace (toList fs)
+    maybeItem1 :: forall m. Readable m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a)) -> a -> m (Maybe a)
+    maybeItem1 mr a = mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
+    testItem2 :: forall m. Readable m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a)) -> a -> m Bool
+    testItem2 mr a = mr $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
+    maybeItem2 ::
            forall m. MonadIO m
         => Readable m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a))
         -> a
         -> m (Maybe a)
-    testItem2 mr a = do
-        x <- mr $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
+    maybeItem2 mr a = do
+        x <- testItem2 mr a
         return $
             if x
                 then Just a
@@ -488,14 +485,13 @@ filterFiniteSetUpdateFunction = let
         => Readable m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a))
         -> Readable m (FiniteSetReader a)
     clRead mr (KeyReadItem a ReadWhole) = do
-        mu <- testItem1 mr a
+        mu <- maybeItem1 mr a
         case mu of
             Nothing -> return Nothing
-            Just _ -> testItem2 mr a
+            Just _ -> maybeItem2 mr a
     clRead mr KeyReadKeys = do
         aa <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadKeys
-        aa' <- for aa $ testItem2 mr
-        return $ catMaybes aa'
+        ofilterM (testItem2 mr) aa
     clUpdate ::
            forall m. MonadIO m
         => PairUpdate (FiniteSetUpdate a) (PartialSetUpdate a)
@@ -504,19 +500,19 @@ filterFiniteSetUpdateFunction = let
     clUpdate (MkTupleUpdate SelectFirst (KeyUpdateItem _ update)) _mr = never update
     clUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) _mr = return $ pure $ MkReadOnlyUpdate KeyUpdateClear
     clUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace a)) mr = do
-        mu <- testItem2 mr a
+        mu <- maybeItem2 mr a
         return $
             case mu of
                 Nothing -> []
                 Just _ -> [MkReadOnlyUpdate $ KeyUpdateInsertReplace a]
     clUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete a)) mr = do
-        mu <- testItem2 mr a
+        mu <- maybeItem2 mr a
         return $
             case mu of
                 Nothing -> []
                 Just _ -> [MkReadOnlyUpdate $ KeyUpdateDelete a]
     clUpdate (MkTupleUpdate SelectSecond (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeReaderUpdate t)))) mr = do
-        mu <- testItem1 mr a
+        mu <- maybeItem1 mr a
         return $
             pure $
             MkReadOnlyUpdate $
@@ -527,6 +523,6 @@ filterFiniteSetUpdateFunction = let
                         then KeyUpdateInsertReplace a
                         else KeyUpdateDelete a
     clUpdate (MkTupleUpdate SelectSecond (UnknownPartialUpdate _)) mr = do
-        edits <- getReplaceEdits $ firstReadFunction mr
+        edits <- getFSReplaceEdits $ firstReadFunction mr
         return $ fmap (MkReadOnlyUpdate . editUpdate) edits
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}

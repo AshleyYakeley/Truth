@@ -43,10 +43,13 @@ instance TestEquality (PairSelector updateA updateB) where
     testEquality _ _ = Nothing
 
 instance (SubjectReader (UpdateReader updateA), SubjectReader (UpdateReader updateB)) =>
-             SubjectTupleSelector (PairSelector updateA updateB) where
+             SubjectTupleSelectorRead (PairSelector updateA updateB) where
     type TupleSubject (PairSelector updateA updateB) = (UpdateSubject updateA, UpdateSubject updateB)
     tupleReadFromSubject SelectFirst (a, _b) = a
     tupleReadFromSubject SelectSecond (_a, b) = b
+
+instance (SubjectReader (UpdateReader updateA), SubjectReader (UpdateReader updateB)) =>
+             SubjectTupleSelector (PairSelector updateA updateB) where
     tupleWriteToSubject SelectFirst a (_, b) = (a, b)
     tupleWriteToSubject SelectSecond b (a, _) = (a, b)
 

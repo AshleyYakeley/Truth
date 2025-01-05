@@ -13,6 +13,9 @@ instance (TupleUpdateWitness c p, TupleUpdateWitness c q) => TupleUpdateWitness 
     tupleUpdateWitness (RightType sel) = tupleUpdateWitness sel
 
 instance (TestEquality p, TupleReaderWitness SubjectReader p, TestEquality q, TupleReaderWitness SubjectReader q) =>
+             SubjectTupleSelectorRead (EitherType p q)
+
+instance (TestEquality p, TupleReaderWitness SubjectReader p, TestEquality q, TupleReaderWitness SubjectReader q) =>
              SubjectTupleSelector (EitherType p q)
 
 instance (TupleReaderWitness c p, TupleReaderWitness c q) => TupleReaderWitness c (EitherType p q) where

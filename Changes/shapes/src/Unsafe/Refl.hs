@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-redundant-constraints #-}
+
 module Unsafe.Refl
     ( unsafeCoerce
     , module Unsafe.Refl
@@ -38,3 +40,9 @@ unsafeAssignWit _ call = unsafeAssign @k @a @b $ call
 
 unsafeAssignWitT :: forall (a :: Type) (b :: Type) (w :: Type -> Type) r. w b -> (a ~ b => r) -> r
 unsafeAssignWitT = unsafeAssignWit @Type @a @b @w
+
+unsafeDerive1 ::
+       forall k (a :: k) (b :: k) (c :: k -> Constraint). Coercible a b
+    => Dict (c a)
+    -> Dict (c b)
+unsafeDerive1 = unsafeCoerce

@@ -29,7 +29,7 @@ entityEntityLibSection =
               []
         , namespaceBDS "Entity" $
           fmap addNameInRootBDS (eqEntries @Entity) <>
-          [ valBDS "order" "An arbitrary order on `Entity`." $ compare @Entity
+          [ valBDS "order" "An arbitrary order on `Entity`." $ ordOrder @Entity
           , valBDS "anchor" "The anchor of an entity, as text." entityAnchor
           , valBDS "asBlob" "Represent an `Entity` as a `Blob`." blobPrism
           ]

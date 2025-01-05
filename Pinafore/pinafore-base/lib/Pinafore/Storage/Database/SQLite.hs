@@ -151,7 +151,7 @@ sqlitePinaforeLens = let
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
-        return $ MkFiniteSet $ fmap getSingleAllOf row
+        return $ setFromList $ fmap getSingleAllOf row
     clRead mr (QTableReadEntityRefCount v) = do
         (row :: [AllOf ((:~:) RefCount)]) <-
             mr $

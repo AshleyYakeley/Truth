@@ -31,9 +31,11 @@ instance Eq a => TestEquality (FunctionSelector a updateB) where
         | a1 == a2 = Just Refl
     testEquality _ _ = Nothing
 
-instance (Eq a, SubjectReader (UpdateReader update)) => SubjectTupleSelector (FunctionSelector a update) where
+instance SubjectReader (UpdateReader update) => SubjectTupleSelectorRead (FunctionSelector a update) where
     type TupleSubject (FunctionSelector a update) = a -> UpdateSubject update
     tupleReadFromSubject (MkFunctionSelector a) ab = ab a
+
+instance (Eq a, SubjectReader (UpdateReader update)) => SubjectTupleSelector (FunctionSelector a update) where
     tupleWriteToSubject (MkFunctionSelector a) b _ a'
         | a == a' = b
     tupleWriteToSubject _ _ ab a' = ab a'

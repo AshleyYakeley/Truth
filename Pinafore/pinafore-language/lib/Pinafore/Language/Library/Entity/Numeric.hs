@@ -51,7 +51,7 @@ numericEntityLibSection =
           , hasSubtypeRelationBDS @Integer @SafeRational Verify "" $
             functionToShim "integerSafeRational" $ encode integerSafeRational
           , namespaceBDS "Integer" $
-            pickNamesInRootBDS ["min", "max"] (ordEntries @Integer) <>
+            pickNamesInRootBDS ["lesser", "greater"] (ordEntries @Integer) <>
             pickNamesInRootBDS ["succ", "pred"] (enumEntries @Integer) <>
             [ plainFormattingDef @Integer "an integer"
             , addNameInRootBDS $ valBDS "+" "Add." $ (+) @Integer
@@ -88,8 +88,8 @@ numericEntityLibSection =
           , namespaceBDS
                 "Rational"
                 [ plainFormattingDef @SafeRational "a rational"
-                , valBDS "min" "Lesser of two Rationals" $ min @SafeRational
-                , valBDS "max" "Greater of two Rationals" $ max @SafeRational
+                , valBDS "lesser" "Lesser of two Rationals" $ min @SafeRational
+                , valBDS "greater" "Greater of two Rationals" $ max @SafeRational
                 , valBDS "+" "Add." $ (+) @SafeRational
                 , valBDS "-" "Subtract." $ (-) @SafeRational
                 , valBDS "*" "Multiply." $ (*) @SafeRational

@@ -5,11 +5,11 @@ import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
 
 data LangSetModel a =
-    MkLangSetModel (a -> a -> Bool)
+    MkLangSetModel (Equivalence a)
                    (WModel (PartialSetUpdate a))
 
 mkLangSetModel :: Eq a => WModel (PartialSetUpdate a) -> LangSetModel a
-mkLangSetModel sv = MkLangSetModel (==) sv
+mkLangSetModel sv = MkLangSetModel eqEquivalence sv
 
 unLangSetModel :: LangSetModel a -> WModel (PartialSetUpdate a)
 unLangSetModel (MkLangSetModel _ sv) = sv
@@ -17,8 +17,8 @@ unLangSetModel (MkLangSetModel _ sv) = sv
 instance Contravariant LangSetModel where
     contramap :: forall a b. (a -> b) -> LangSetModel b -> LangSetModel a
     contramap ab (MkLangSetModel eqb sv) = let
-        eqa a1 a2 = eqb (ab a1) (ab a2)
-        matchba b a = eqb b (ab a)
+        eqa = contramap ab eqb
+        matchba b a = equivalent eqb b (ab a)
         mapset :: ReaderSet (SetReader b) -> ReaderSet (SetReader a)
         mapset rset (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
             rset $ MkTupleUpdateReader (MkFunctionSelector $ ab a) ReadWhole
@@ -33,6 +33,9 @@ instance HasVariance LangSetModel where
 instance Eq a => IsInvertibleModel (LangSetModel a) where
     invertibleModelLens f (MkLangSetModel eq model) = fmap (MkLangSetModel eq) $ wInvertibleModelLens f model
 
+langSetModelEquivalence :: forall a. LangSetModel a -> Equivalence a
+langSetModelEquivalence (MkLangSetModel eqv _) = eqv
+
 langSetModelToModel :: forall a. LangSetModel a -> LangModel
 langSetModelToModel (MkLangSetModel _ model) = MkLangModel model
 
@@ -40,15 +43,11 @@ langSetModelImmutable :: forall a. LangSetModel a -> LangSetModel a
 langSetModelImmutable (MkLangSetModel eq sv) =
     MkLangSetModel eq $ eaMap (fromReadOnlyRejectingChangeLens . toReadOnlyChangeLens) sv
 
-langSetModelEmpty ::
-       forall a. Eq a
-    => LangSetModel a
-langSetModelEmpty = MkLangSetModel (==) $ eaPureRejecting $ \_ -> False
+langSetModelEmpty :: forall a. LangSetModel a
+langSetModelEmpty = MkLangSetModel mempty $ eaPureRejecting $ \_ -> False
 
-langSetModelFull ::
-       forall a. Eq a
-    => LangSetModel a
-langSetModelFull = MkLangSetModel (==) $ eaPureRejecting $ \_ -> True
+langSetModelFull :: forall a. LangSetModel a
+langSetModelFull = MkLangSetModel mempty $ eaPureRejecting $ \_ -> True
 
 langSetModelComplement :: forall a. LangSetModel a -> LangSetModel a
 langSetModelComplement (MkLangSetModel eq sv) = let
@@ -63,12 +62,11 @@ langSetModelCombine ::
     -> LangSetModel a
     -> LangSetModel a
 langSetModelCombine clens (MkLangSetModel eq1 sv1) (MkLangSetModel eq2 sv2) = let
-    eq12 a b = eq1 a b || eq2 a b -- a bit odd, but the safest thing
     mapset :: ReaderSet (PairUpdateReader (SetUpdate a) (SetUpdate a)) -> ReaderSet (SetReader a)
     mapset rset (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
         (rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) ||
         (rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole)
-    in MkLangSetModel eq12 $ eaMap (liftPartialChangeLens mapset clens . partialPairChangeLens) $ eaPair sv1 sv2
+    in MkLangSetModel (eq1 <> eq2) $ eaMap (liftPartialChangeLens mapset clens . partialPairChangeLens) $ eaPair sv1 sv2
 
 langSetModelIntersect :: forall a. LangSetModel a -> LangSetModel a -> LangSetModel a
 langSetModelIntersect = langSetModelCombine setUpdateIntersection
@@ -84,22 +82,18 @@ langSetModelSymmetricDifference = langSetModelCombine setUpdateSymmetricDifferen
 
 langSetModelCartesianSum :: forall a b. LangSetModel a -> LangSetModel b -> LangSetModel (Either a b)
 langSetModelCartesianSum (MkLangSetModel eqA svA) (MkLangSetModel eqB svB) = let
-    eqAB (Left a1) (Left a2) = eqA a1 a2
-    eqAB (Right b1) (Right b2) = eqB b1 b2
-    eqAB _ _ = False
     mapset :: ReaderSet (PairUpdateReader (SetUpdate a) (SetUpdate b)) -> ReaderSet (SetReader (Either a b))
     mapset rset (MkTupleUpdateReader (MkFunctionSelector eab) ReadWhole) =
         case eab of
             Left a -> rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
             Right b -> rset $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) ReadWhole
-    in MkLangSetModel eqAB $
+    in MkLangSetModel (eqA <+++> eqB) $
        eaMap (liftPartialChangeLens mapset setCartesianSumChangeLens . partialPairChangeLens) $ eaPair svA svB
 
 langSetModelCartesianProduct :: forall a b. LangSetModel a -> LangSetModel b -> LangSetModel (a, b)
-langSetModelCartesianProduct (MkLangSetModel eqA svA) (MkLangSetModel eqB svB) = let
-    eqAB (a1, b1) (a2, b2) = eqA a1 a2 && eqB b1 b2
-    in MkLangSetModel eqAB $
-       eaMap (fromReadOnlyRejectingChangeLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
+langSetModelCartesianProduct (MkLangSetModel eqA svA) (MkLangSetModel eqB svB) =
+    MkLangSetModel (eqA <***> eqB) $
+    eaMap (fromReadOnlyRejectingChangeLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
 
 langSetModelAdd :: forall a. LangSetModel a -> a -> Action ()
 langSetModelAdd (MkLangSetModel _eq sv) a =
@@ -135,7 +129,7 @@ langSetModelMember (MkLangSetModel eq sv) aref = let
             return $
                 case ka of
                     Known a'
-                        | eq a a' -> pure $ MkWholeUpdate $ Known b
+                        | equivalent eq a a' -> pure $ MkWholeUpdate $ Known b
                     _ -> []
         clUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
             ka <- getArg mr
@@ -173,11 +167,17 @@ langSetModelMember (MkLangSetModel eq sv) aref = let
         in MkChangeLens {..}
     in wModelToWholeModel $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
 
-predicateToLangSetModel :: forall a. (a -> Bool) -> LangSetModel (MeetType Entity a)
-predicateToLangSetModel p = MkLangSetModel (==) $ eaMap fromReadOnlyRejectingChangeLens $ eaPure $ \mea -> p $ meet2 mea
+predicateToLangSetModel :: forall a. (a -> Bool) -> LangSetModel a
+predicateToLangSetModel p =
+    MkLangSetModel (contramap p eqEquivalence) $ eaMap fromReadOnlyRejectingChangeLens $ eaPure p
 
-predicateModelToLangSetModel ::
+entityPredicateModelToLangSetModel ::
        forall a. LangWholeModel '( MeetType Entity a -> Bool, a -> Bool) -> LangSetModel (MeetType Entity a)
-predicateModelToLangSetModel model = let
+entityPredicateModelToLangSetModel model = let
     sv = langWholeModelToValue $ coRangeLift (\s ma -> s $ meet2 ma) model
-    in MkLangSetModel (==) $ eaMap (partialConvertChangeLens . unknownValueChangeLens (\_ -> False)) sv
+    in MkLangSetModel eqEquivalence $ eaMap (partialConvertChangeLens . unknownValueChangeLens (\_ -> False)) sv
+
+predicateModelToLangSetModel :: forall a. Equivalence a -> LangWholeModel '( a -> Bool, a -> Bool) -> LangSetModel a
+predicateModelToLangSetModel eqv model = let
+    sv = langWholeModelToValue model
+    in MkLangSetModel eqv $ eaMap (partialSetConvertChangeLens eqv . unknownValueChangeLens (\_ -> False)) sv

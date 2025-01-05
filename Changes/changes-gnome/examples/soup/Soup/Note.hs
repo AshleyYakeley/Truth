@@ -59,6 +59,8 @@ instance TestEquality NoteSel where
     testEquality NoteText NoteText = Just Refl
     testEquality _ _ = Nothing
 
+instance SubjectTupleSelectorRead NoteSel
+
 instance SubjectTupleSelector NoteSel
 
 instance FiniteTupleSelector NoteSel where

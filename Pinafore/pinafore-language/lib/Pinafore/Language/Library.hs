@@ -14,8 +14,10 @@ module Pinafore.Language.Library
 import Import
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Action
+import Pinafore.Language.Library.Comparison
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Entity
+import Pinafore.Language.Library.EntityMap
 import Pinafore.Language.Library.Env
 import Pinafore.Language.Library.Function
 import Pinafore.Language.Library.Interpret
@@ -23,7 +25,6 @@ import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Lifecycle
 import Pinafore.Language.Library.List
 import Pinafore.Language.Library.LoadModule
-import Pinafore.Language.Library.Map
 import Pinafore.Language.Library.Maybe
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.ModelOrder
@@ -43,12 +44,13 @@ pinaforeLibrary =
     MkLibraryModule builtInModuleName $
     mconcat $
     [ entityLibSection
+    , functionLibSection
+    , comparisonLibSection
     , maybeLibSection
     , productLibSection
     , sumLibSection
     , listLibSection
     , mapLibSection
-    , functionLibSection
     , resultLibSection
     , actionLibSection
     , lifecycleLibSection

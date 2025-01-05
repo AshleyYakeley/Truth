@@ -5,10 +5,10 @@ import Language.Expression.TypeSystem
 import Shapes
 
 class FreeTypeVariables t where
-    freeTypeVariables :: t -> FiniteSet SomeTypeVarT
+    freeTypeVariables :: t -> ListSet SomeTypeVarT
 
 instance FreeTypeVariables SomeTypeVarT where
-    freeTypeVariables x = pure x
+    freeTypeVariables x = opoint x
 
 instance FreeTypeVariables (TypeVarT t) where
     freeTypeVariables x = freeTypeVariables $ MkSomeTypeVarT x

@@ -58,6 +58,18 @@ instance Monad m => Category (Codec' m) where
     id = MkCodec return id
     (MkCodec bmc cb) . (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb)
 
+ifCodec :: (a -> Bool) -> Codec a a
+ifCodec f =
+    MkCodec
+        (\a ->
+             if f a
+                 then Just a
+                 else Nothing)
+        id
+
+justCodec :: Codec (Maybe a) a
+justCodec = MkCodec id Just
+
 bijectionCodec :: Applicative m => Bijection a b -> Codec' m a b
 bijectionCodec (MkIsomorphism p q) = MkCodec (pure . p) q
 

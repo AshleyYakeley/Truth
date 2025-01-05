@@ -8,7 +8,7 @@ import Control.Applicative as I
 import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
-import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), foldM, forever, unless, void, when)
+import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), foldM, forever, guard, unless, void, when)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
@@ -75,7 +75,7 @@ import Data.Constraint as I ((:-)(..), Dict(..), withDict)
 -- mono-traversable
 import Data.Containers as I
 import Data.MonoTraversable as I
-import Data.Sequences as I hiding (catMaybes, filter)
+import Data.Sequences as I hiding (catMaybes, filter, filterM)
 
 -- contravariant
 import Data.Functor.Contravariant as I (Contravariant(..))
@@ -178,10 +178,6 @@ eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
 
-altIf :: Alternative m => Bool -> m ()
-altIf False = empty
-altIf True = pure ()
-
 ifpure :: Alternative m => Bool -> a -> m a
 ifpure False _ = empty
 ifpure True x = pure x
@@ -210,11 +206,11 @@ compAll (c:cc) = c . compAll cc
 exec :: Monad m => m (m a) -> m a
 exec mma = mma >>= id
 
-deleteFirstMatching :: (a -> Bool) -> [a] -> [a]
-deleteFirstMatching _ [] = []
-deleteFirstMatching t (a:aa)
+deleteFirst :: (a -> Bool) -> [a] -> [a]
+deleteFirst _ [] = []
+deleteFirst t (a:aa)
     | t a = aa
-deleteFirstMatching t (a:aa) = a : deleteFirstMatching t aa
+deleteFirst t (a:aa) = a : deleteFirst t aa
 
 -- | O(n^2) rather than O(n log n), due to no Ord constraint
 duplicates :: Eq a => [a] -> [a]

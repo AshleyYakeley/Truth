@@ -15,7 +15,7 @@ import Shapes
 type QStorageRead :: Type -> Type
 data QStorageRead t where
     QStorageReadGet :: StoreAdapter t -> Predicate -> t -> QStorageRead Entity
-    QStorageReadLookup :: Predicate -> Entity -> QStorageRead (FiniteSet Entity)
+    QStorageReadLookup :: Predicate -> Entity -> QStorageRead (ListSet Entity)
     QStorageReadEntity :: StoreAdapter t -> Entity -> QStorageRead (Know t)
 
 instance Show (QStorageRead t) where

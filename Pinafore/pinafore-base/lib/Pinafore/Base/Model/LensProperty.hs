@@ -61,22 +61,19 @@ instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensProperty) w
             in MkStorageLensProperty attr' i ibu
 
 slpGetPointPreimage ::
-       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
+       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
 slpGetPointPreimage MkStorageLensProperty {..} b = fmap setFromList $ slpInvGet b
 
 slpGetKnowPointPreimage ::
-       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> Know bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
+       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> Know bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
 slpGetKnowPointPreimage plm (Known b) = slpGetPointPreimage plm b
-slpGetKnowPointPreimage _ Unknown = return mempty
+slpGetKnowPointPreimage _ Unknown = return EmptyListSet
 
 slpGetSetPreimage ::
-       Eq aq
-    => StorageLensProperty ap aq bp bq baseupdate
-    -> FiniteSet bp
-    -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
+       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> ListSet bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
 slpGetSetPreimage plm bs = do
-    as <- for bs $ slpGetPointPreimage plm
-    return $ mconcat $ toList as
+    as <- for (toList bs) $ slpGetPointPreimage plm
+    return $ mconcat as
 
 identityStorageLensProperty :: forall baseupdate x y. StorageLensProperty x y y x baseupdate
 identityStorageLensProperty = let
@@ -143,7 +140,7 @@ pairStorageLensProperty (MkStorageLensProperty attrB invB invbuB) (MkStorageLens
     slpInvGet (b, c) = do
         ba <- invB b
         ca <- invC c
-        return $ unFiniteSet $ intersection (MkFiniteSet ba) (MkFiniteSet ca)
+        return $ toList $ intersection (setFromList @(ListSet _) ba) (setFromList ca)
     slpInvBaseUpdate ::
            baseupdate
         -> ReadM (UpdateReader baseupdate) (Maybe ((bp, cp) -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
@@ -277,7 +274,7 @@ storageLensPropertyInverseChangeLens ::
     -> ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetUpdate a)
 storageLensPropertyInverseChangeLens plm@MkStorageLensProperty {..} = let
     fsetReadFunction ::
-           ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (WholeReader (FiniteSet a))
+           ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (WholeReader (ListSet a))
     fsetReadFunction (mr :: Readable m _) ReadWhole = do
         kb <- mr $ MkTupleUpdateReader SelectContent ReadWhole
         runContextReadM mr $ slpGetKnowPointPreimage plm kb
@@ -359,10 +356,10 @@ storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty {..} = let
             Just brlba -> do
                 bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
                 updatesfs <-
-                    for bs $ \b -> do
+                    for (toList bs) $ \b -> do
                         lba <- runContextReadM mr $ brlba b
                         return $ fmap bpairToFiniteSetUpdate lba
-                return $ mconcat $ toList updatesfs
+                return $ mconcat updatesfs
     clUpdate' (MkTupleUpdate SelectContent (KeyUpdateItem _ update)) _ = never update
     clUpdate' (MkTupleUpdate SelectContent KeyUpdateClear) _ = return [KeyUpdateClear]
     clUpdate' (MkTupleUpdate SelectContent (KeyUpdateInsertReplace _)) _ = return []

@@ -22,7 +22,6 @@ import Pinafore.Base.Model.ModelOrder as I
 import Pinafore.Base.Model.ModelProperty as I
 import Pinafore.Base.Model.PredicateProperty as I
 import Pinafore.Base.Number as I
-import Pinafore.Base.Order as I
 import Pinafore.Base.SafeRational as I
 import Pinafore.Base.Showable as I
 import Pinafore.Base.Storable.EntityStorer as I

@@ -18,7 +18,7 @@ type RefCount = Int
 
 data QTableRead t where
     QTableReadPropertyGet :: Predicate -> Entity -> QTableRead (Maybe Entity)
-    QTableReadPropertyLookup :: Predicate -> Entity -> QTableRead (FiniteSet Entity)
+    QTableReadPropertyLookup :: Predicate -> Entity -> QTableRead (ListSet Entity)
     QTableReadEntityRefCount :: Entity -> QTableRead (Maybe RefCount)
     QTableReadFactGet :: Predicate -> Entity -> QTableRead (Maybe Entity)
     QTableReadLiteralGet :: Entity -> QTableRead (Maybe Literal)
@@ -64,7 +64,7 @@ instance SubjectReader QTableRead where
     subjectToRead MkQTableSubject {..} (QTableReadPropertyGet rp rs) =
         listToMaybe $ [v | (p, s, v) <- ptsPredicates, p == rp && s == rs]
     subjectToRead MkQTableSubject {..} (QTableReadPropertyLookup rp rv) =
-        MkFiniteSet [s | (p, s, v) <- ptsPredicates, p == rp, v == rv]
+        setFromList [s | (p, s, v) <- ptsPredicates, p == rp, v == rv]
     subjectToRead MkQTableSubject {..} (QTableReadEntityRefCount rv) =
         listToMaybe $ [c | (v, c) <- ptsRefCounts, v == rv]
     subjectToRead MkQTableSubject {..} (QTableReadFactGet rp rs) =
@@ -160,7 +160,7 @@ instance InvertibleEdit QTableEdit where
 
 data PropertyCacheKey (cache :: (Type -> Type) -> Type) (t :: Type) (ct :: Type) where
     GetPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey Entity (Maybe t)))
-    LookupPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Entity)))
+    LookupPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey t (ListSet Entity)))
 
 instance TestEquality (PropertyCacheKey cache t) where
     testEquality GetPropertyCacheKey GetPropertyCacheKey = Just Refl

@@ -108,7 +108,7 @@ mediaSpecificText (MkMediaType pt ps pp) f = let
     ee text = MkMedia pmt $ encode utf8Codec text
     dd :: Media -> Maybe Text
     dd (MkMedia mt b) = do
-        altIf $ f mt
+        guard $ f mt
         encoding <- getMediaTextEncoding mt
         encoding b
     in MkCodec dd ee

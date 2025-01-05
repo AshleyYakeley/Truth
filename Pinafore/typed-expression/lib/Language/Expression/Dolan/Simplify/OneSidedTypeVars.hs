@@ -12,7 +12,7 @@ import Shapes
 
 eliminationBisubs ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
-    => (FiniteSet SomeTypeVarT, FiniteSet SomeTypeVarT)
+    => (ListSet SomeTypeVarT, ListSet SomeTypeVarT)
     -> [Bisubstitution ground (DolanShim ground) Identity]
 eliminationBisubs (posvars, negvars) = let
     posbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
@@ -26,7 +26,7 @@ eliminationBisubs (posvars, negvars) = let
 eliminateVars ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => (FiniteSet SomeTypeVarT, FiniteSet SomeTypeVarT)
+    => (ListSet SomeTypeVarT, ListSet SomeTypeVarT)
     -> Endo a
 eliminateVars vars = endoMToEndo $ bisubstitutes @ground (eliminationBisubs vars)
 
@@ -37,8 +37,8 @@ eliminateOneSidedTypeVars ::
 eliminateOneSidedTypeVars =
     Endo $ \expr -> let
         (setFromList -> posvars, setFromList -> negvars) = mappableGetVars @ground expr
-        posonlyvars :: FiniteSet _
+        posonlyvars :: ListSet _
         posonlyvars = difference posvars negvars
-        negonlyvars :: FiniteSet _
+        negonlyvars :: ListSet _
         negonlyvars = difference negvars posvars
         in appEndo (eliminateVars @ground (posonlyvars, negonlyvars)) expr

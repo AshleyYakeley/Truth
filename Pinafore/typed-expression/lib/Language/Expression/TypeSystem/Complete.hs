@@ -220,7 +220,7 @@ tsSingleBinding name bdf madecltype expr =
 
 tsSubsumeExpressionTo ::
        forall ts t. CompleteTypeSystem ts
-    => FiniteSet SomeTypeVarT
+    => ListSet SomeTypeVarT
     -> TSPosWitness ts t
     -> TSSealedExpression ts
     -> TSInner ts (TSOpenExpression ts t)

@@ -75,19 +75,20 @@ applyLangAttributeSet ::
        LangAttribute '( a, TopType) '( BottomType, MeetType Entity b)
     -> LangFiniteSetModel '( BottomType, a)
     -> LangFiniteSetModel '( MeetType Entity b, b)
-applyLangAttributeSet (MkLangAttribute m) (MkLangFiniteSetModel (tr :: Range _ t _) ss) =
+applyLangAttributeSet (MkLangAttribute m) (MkLangFiniteSetModel eqv (tr :: Range _ t _) ss) =
     modelBasedModel m $ \model (pm :: _ update) -> let
-        tbkm :: StorageFunctionAttribute update (Know t) (Know (MeetType Entity b))
-        tbkm = ccontramap1 (fmap $ shimToFunction $ rangeCo tr) $ lensFunctionAttribute pm
-        tbskm :: StorageFunctionAttribute update (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
-        tbskm = cfmap tbkm
-        tbsm :: StorageFunctionAttribute update (FiniteSet t) (FiniteSet (MeetType Entity b))
-        tbsm = ccontramap1 (fmap Known) $ fmap (mapMaybe knowToMaybe) tbskm
-        tsetref :: WROWModel (FiniteSet t)
-        tsetref = eaToReadOnlyWhole ss
-        bsetref :: WROWModel (FiniteSet (MeetType Entity b))
+        tbkm :: StorageFunctionAttribute update t (Know (MeetType Entity b))
+        tbkm = ccontramap1 (Known . shimToFunction (rangeCo tr)) $ lensFunctionAttribute pm
+        tbskm :: StorageFunctionAttribute update (ListSet t) (ListMap t (Know (MeetType Entity b)))
+        tbskm = liftListSetStorageFunctionAttribute tbkm
+        tbsm :: StorageFunctionAttribute update (ListSet t) (ListSet (MeetType Entity b))
+        tbsm = fmap (setFromList . mapMaybe knowToMaybe . toList) tbskm
+        tsetref :: WROWModel (ListSet t)
+        tsetref = giveConstraint eqv $ eaToReadOnlyWhole ss
+        bsetref :: WROWModel (ListSet (MeetType Entity b))
         bsetref = applyStorageFunction model tbsm tsetref
-        in MkLangFiniteSetModel (MkRange id meet2) $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
+        in MkLangFiniteSetModel eqEquivalence (MkRange id meet2) $
+           eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
 
 langLensAttribute :: forall ap aq bp bq. LangLens '( ap, aq) '( bp, bq) -> LangAttribute '( ap, aq) '( bp, bq)
 langLensAttribute (MkLangLens g pb) =

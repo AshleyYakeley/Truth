@@ -12,7 +12,7 @@ data TestContext = MkTestContext
     { putProperty :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
     , readProperty :: forall s v.
                           (Show v, Eq v) => StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
-    , readCount :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> v -> Int -> IO ()
+    , readCount :: forall s v. Eq s => StoreAdapter s -> StoreAdapter v -> Predicate -> v -> Int -> IO ()
     , checkEmpty :: String -> IO ()
     , checkNonEmpty :: String -> IO ()
     }
@@ -60,7 +60,14 @@ testStorageCase name action =
                             runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadEntity vt e
                         assertEqual "typed" (Known v) kv'
                     Unknown -> return ()
-            readCount :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> v -> Int -> IO ()
+            readCount ::
+                   forall s v. Eq s
+                => StoreAdapter s
+                -> StoreAdapter v
+                -> Predicate
+                -> v
+                -> Int
+                -> IO ()
             readCount st vt p v expcount = do
                 fset <-
                     runResource emptyResourceContext entityRef $ \aref ->
@@ -68,12 +75,12 @@ testStorageCase name action =
                 assertEqual "entity count" expcount $ length fset
                 tset <-
                     runResource emptyResourceContext entityRef $ \aref ->
-                        forf fset $ \e -> fmap knowToMaybe $ refRead aref $ QStorageReadEntity st e
+                        listSetForF fset $ \e -> fmap knowToMaybe $ refRead aref $ QStorageReadEntity st e
                 assertEqual "typed count" expcount $ length tset
             testContext = MkTestContext {..}
         action testContext
 
-testAddRemoveProperty :: (Eq v, Show v) => StoreAdapter s -> StoreAdapter v -> s -> v -> TestContext -> IO ()
+testAddRemoveProperty :: (Eq s, Eq v, Show v) => StoreAdapter s -> StoreAdapter v -> s -> v -> TestContext -> IO ()
 testAddRemoveProperty st vt s v MkTestContext {..} = do
     pA <- fmap MkPredicate randomIO
     checkEmpty "0"

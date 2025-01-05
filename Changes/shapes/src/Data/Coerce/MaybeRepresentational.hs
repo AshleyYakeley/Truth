@@ -18,6 +18,9 @@ instance MaybeRepresentational NonEmpty where
 instance MaybeRepresentational (Map k) where
     maybeRepresentational = Just Dict
 
+instance MaybeRepresentational (HashMap k) where
+    maybeRepresentational = Just Dict
+
 instance MaybeRepresentational Map where
     maybeRepresentational = Nothing
 

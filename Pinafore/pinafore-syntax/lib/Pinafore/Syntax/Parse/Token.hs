@@ -58,8 +58,8 @@ tokenNamesToFullNameRef MkTokenNames {..} =
 
 tokenNamesToSingleName :: TokenNames -> Maybe Name
 tokenNamesToSingleName MkTokenNames {..} = do
-    altIf $ not tnAbsolute
-    altIf $ null tnSpace
+    guard $ not tnAbsolute
+    guard $ null tnSpace
     return tnName
 
 tokenNamesToNamespaceRef :: TokenNames -> NamespaceRef
@@ -421,7 +421,7 @@ readTextToken = do
                     readName
             nspace <-
                 for ns $ \(b, nsn) -> do
-                    altIf b
+                    guard b
                     return nsn
             mabs <- optional $ readChar '.'
             let
@@ -461,7 +461,7 @@ readHexAnchor = do
 readLowerCaseName :: Parser Name
 readLowerCaseName = do
     (u, name) <- readName
-    altIf $ not u
+    guard $ not u
     return name
 
 readImplicitName :: Parser (SomeOf Token)
@@ -521,7 +521,7 @@ readOpToken = do
                                     Nothing -> (nsfirst, True)
                         tnSpace <-
                             for ns $ \(b, nsn) -> do
-                                altIf b
+                                guard b
                                 return nsn
                         return $ MkSomeOf TokOperator MkTokenNames {..}
                 _ -> return $ MkSomeOf TokOperator $ fromString name

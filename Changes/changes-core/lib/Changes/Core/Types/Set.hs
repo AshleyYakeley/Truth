@@ -51,10 +51,40 @@ setCartesianSumChangeLens = functionEitherPairChangeLens
 
 type PartialSetUpdate a = PartialUpdate (SetUpdate a)
 
+partialSetConvertChangeLens :: forall a. Equivalence a -> ChangeLens (WholeUpdate (a -> Bool)) (PartialSetUpdate a)
+partialSetConvertChangeLens eqv = let
+    clRead :: ReadFunction (WholeReader (a -> Bool)) (SetReader a)
+    clRead mr (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) = do
+        f <- mr ReadWhole
+        return $ f a
+    clUpdate ::
+           forall m. MonadIO m
+        => WholeUpdate (a -> Bool)
+        -> Readable m (WholeReader (a -> Bool))
+        -> m [PartialSetUpdate a]
+    clUpdate _ _ = return [UnknownPartialUpdate $ \_ -> True]
+    clPutEdits ::
+           forall m. MonadIO m
+        => [SetEdit a]
+        -> Readable m (WholeReader (a -> Bool))
+        -> m (Maybe [WholeEdit (a -> Bool)])
+    clPutEdits edits mr = do
+        let
+            getf :: [SetEdit a] -> (a -> Bool) -> (a -> Bool)
+            getf [] f = f
+            getf (MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit v):ee) f =
+                getf ee $ \a' ->
+                    if equivalent eqv a a'
+                        then v
+                        else f a'
+        oldf <- mr ReadWhole
+        return $ Just $ pure $ MkWholeReaderEdit $ getf edits oldf
+    in MkChangeLens {..}
+
 setCartesianProductLens ::
        forall a b.
-       (a -> a -> Bool)
-    -> (b -> b -> Bool)
+       Equivalence a
+    -> Equivalence b
     -> ChangeLens (PairUpdate (SetUpdate a) (SetUpdate b)) (ReadOnlyUpdate (PartialSetUpdate (a, b)))
 setCartesianProductLens aeq beq = let
     clRead :: ReadFunction (PairUpdateReader (SetUpdate a) (SetUpdate b)) (SetReader (a, b))
@@ -71,12 +101,12 @@ setCartesianProductLens aeq beq = let
         return $
         pure $
         MkReadOnlyUpdate $
-        UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (a', _)) ReadWhole) -> aeq a a'
+        UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (a', _)) ReadWhole) -> equivalent aeq a a'
     clUpdate (MkTupleUpdate SelectSecond (MkTupleUpdate (MkFunctionSelector b) _)) _ =
         return $
         pure $
         MkReadOnlyUpdate $
-        UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (_, b')) ReadWhole) -> beq b b'
+        UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (_, b')) ReadWhole) -> equivalent beq b b'
     clPutEdits ::
            forall m. MonadIO m
         => [ConstEdit (SetReader (a, b))]
@@ -87,8 +117,8 @@ setCartesianProductLens aeq beq = let
 
 setCartesianProductPartialLens ::
        forall a b.
-       (a -> a -> Bool)
-    -> (b -> b -> Bool)
+       Equivalence a
+    -> Equivalence b
     -> ChangeLens (PairUpdate (PartialSetUpdate a) (PartialSetUpdate b)) (ReadOnlyUpdate (PartialSetUpdate (a, b)))
 setCartesianProductPartialLens aeq beq = let
     setmap :: ReaderSet (PairUpdateReader (SetUpdate a) (SetUpdate b)) -> ReaderSet (SetReader (a, b))

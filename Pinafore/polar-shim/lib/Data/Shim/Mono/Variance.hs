@@ -56,6 +56,9 @@ instance HasVariance NonEmpty where
 instance HasVariance (Map k) where
     type VarianceOf (Map k) = 'Covariance
 
+instance HasVariance (HashMap k) where
+    type VarianceOf (HashMap k) = 'Covariance
+
 instance HasVariance ((->) a) where
     type VarianceOf ((->) a) = 'Covariance
 

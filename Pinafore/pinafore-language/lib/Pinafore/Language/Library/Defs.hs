@@ -23,8 +23,6 @@ module Pinafore.Language.Library.Defs
     , pickNamesInRootBDS
     , eqEntries
     , ordEntries
-    , lesser
-    , greater
     , orderEntries
     , enumEntries
     , functorEntries
@@ -337,60 +335,46 @@ recordConsBDS name docDescription docsigs codec = let
                bdDoc = MkDefDoc {..}
                in pureForest $ MkTree MkBindDoc {..} $ MkForest $ listTypeToList dsToDoc docsigs
 
+equivalenceEntries ::
+       forall (a :: Type). (HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
+    => Equivalence a
+    -> [LibraryStuff]
+equivalenceEntries equiv =
+    [headingBDS "Eq" "" [valBDS "==" "Equal." $ equivalent equiv, valBDS "/=" "Not equal." $ notEquivalent equiv]]
+
 eqEntries ::
        forall (a :: Type). (Eq a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
-eqEntries = [headingBDS "Eq" "" [valBDS "==" "Equal." $ (==) @a, valBDS "/=" "Not equal." $ (/=) @a]]
+eqEntries = equivalenceEntries $ eqEquivalence @a
+
+orderEntries ::
+       forall (a :: Type). (HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
+    => Order a
+    -> RawMarkdown
+    -> [LibraryStuff]
+orderEntries order doc =
+    equivalenceEntries (orderEquivalence order) <>
+    [ headingBDS
+          "Order"
+          ""
+          [ valBDS "order" "Order" $ order
+          , valBDS "compare" doc $ compareOrder order
+          , valBDS "<" "Strictly less." $ orderLT order
+          , valBDS "<=" "Less or equal." $ orderLE order
+          , valBDS ">" "Strictly greater." $ orderGT order
+          , valBDS ">=" "Greater or equal." $ orderGE order
+          , valBDS "lesser" "Lesser of two." $ orderLesser order
+          , valBDS "greater" "Greater of two." $ orderGreater order
+          , valBDS "least" "Least of a list." $ orderLeast order
+          , valBDS "greatest" "Greatest of a list." $ orderGreatest order
+          , valBDS "sort" "Sort list" $ orderSort order
+          ]
+    ]
 
 ordEntries ::
        forall (a :: Type). (Ord a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
-ordEntries =
-    eqEntries @a <>
-    [ headingBDS
-          "Order"
-          ""
-          [ valBDS "order" "Order" $ compare @a
-          , valBDS "<" "Strictly less." $ (<) @a
-          , valBDS "<=" "Less or equal." $ (<=) @a
-          , valBDS ">" "Strictly greater." $ (>) @a
-          , valBDS ">=" "Greater or equal." $ (>=) @a
-          , valBDS "min" "Lesser of two" $ min @a
-          , valBDS "max" "Greater of two" $ max @a
-          ]
-    ]
-
-lesser :: (a -> a -> Ordering) -> a -> a -> a
-lesser f a b =
-    case f a b of
-        GT -> b
-        _ -> a
-
-greater :: (a -> a -> Ordering) -> a -> a -> a
-greater f a b =
-    case f a b of
-        GT -> a
-        _ -> b
-
-orderEntries ::
-       forall (a :: Type). (Eq a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
-    => (a -> a -> Ordering)
-    -> RawMarkdown
-    -> [LibraryStuff]
-orderEntries order doc =
-    eqEntries @a <>
-    [ headingBDS
-          "Order"
-          ""
-          [ valBDS "order" doc $ order
-          , valBDS "<" "Strictly less." $ \x y -> order x y == LT
-          , valBDS "<=" "Less or equal." $ \x y -> order x y /= GT
-          , valBDS ">" "Strictly greater." $ \x y -> order x y == GT
-          , valBDS ">=" "Greater or equal." $ \x y -> order x y /= LT
-          , valBDS "min" "Lesser of two" $ lesser order
-          , valBDS "max" "Greater of two" $ greater order
-          ]
-    ]
+ordEntries = orderEntries (ordOrder @a) ""
 
 enumEntries ::
        forall (a :: Type). (Enum a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)

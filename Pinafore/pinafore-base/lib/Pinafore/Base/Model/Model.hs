@@ -33,7 +33,7 @@ applyStorageLens ::
 applyStorageLens basesub pm val = eaMap (storageLensAttributeChangeLens pm) $ contextualisePinaforeModel basesub val
 
 applyInverseStorageLens ::
-       forall baseupdate a bp bq. (Eq a)
+       forall baseupdate a bp bq. Eq a
     => Model baseupdate
     -> StorageLensProperty a a bq bp baseupdate
     -> WModel (BiWholeUpdate (Know bp) (Know bq))

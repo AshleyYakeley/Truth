@@ -48,10 +48,13 @@ instance TestEquality (WithContextSelector updateX updateN) where
     testEquality _ _ = Nothing
 
 instance (SubjectReader (UpdateReader updateX), SubjectReader (UpdateReader updateN)) =>
-             SubjectTupleSelector (WithContextSelector updateX updateN) where
+             SubjectTupleSelectorRead (WithContextSelector updateX updateN) where
     type TupleSubject (WithContextSelector updateX updateN) = WithContext (UpdateSubject updateX) (UpdateSubject updateN)
     tupleReadFromSubject SelectContext (MkWithContext x _n) = x
     tupleReadFromSubject SelectContent (MkWithContext _x n) = n
+
+instance (SubjectReader (UpdateReader updateX), SubjectReader (UpdateReader updateN)) =>
+             SubjectTupleSelector (WithContextSelector updateX updateN) where
     tupleWriteToSubject SelectContext x (MkWithContext _ n) = MkWithContext x n
     tupleWriteToSubject SelectContent n (MkWithContext x _) = MkWithContext x n
 

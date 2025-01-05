@@ -84,7 +84,7 @@ deleteentity :: LangWholeModel '( BottomType, TopType) -> Action ()
 deleteentity model = langWholeModelSet model Unknown
 
 getFiniteSetModelList :: LangModelOrder A -> LangFiniteSetModel '( BottomType, A) -> View (LangListModel '( TopType, A))
-getFiniteSetModelList order (MkLangFiniteSetModel r (val :: WModel (FiniteSetUpdate t))) =
+getFiniteSetModelList order (MkLangFiniteSetModel eqv r (val :: WModel (FiniteSetUpdate t))) =
     modelOrderUpdateOrder order $ \(model :: Model update) uorder -> do
         let
             conv :: t -> A
@@ -99,7 +99,7 @@ getFiniteSetModelList order (MkLangFiniteSetModel r (val :: WModel (FiniteSetUpd
             pkSub :: Model (ContextUpdate update (FiniteSetUpdate t))
             pkSub = contextModels model rows
         colSub :: Model (ContextUpdate update (OrderedListUpdate (ConstWholeUpdate t))) <-
-            viewFloatMapModel (contextOrderedSetLens uo) pkSub
+            viewFloatMapModel (giveConstraint eqv $ contextOrderedSetLens uo) pkSub
         return $
             OrderedLangListModel $
             eaMap (liftOrderedListChangeLens (constWholeChangeLens conv) . tupleChangeLens SelectContent) $
@@ -186,7 +186,7 @@ modelLibSection =
               ]
         , headingBDS
               "SetModel"
-              ""
+              "Think of these as \"mutable setoids\". Each contains an Equivalence."
               [ typeBDS "SetModel" "" (MkSomeGroundType setModelGroundType) []
               , hasSubtypeRelationBDS Verify "" $ functionToShim "SetModel to Model" $ langSetModelToModel @BottomType
               , namespaceBDS
@@ -195,15 +195,18 @@ modelLibSection =
                           "map"
                           "Map a function on a set."
                           (contramap :: (A -> B) -> LangSetModel B -> LangSetModel A)
+                    , valBDS "equivalence" "The equivalence used for this set." $ langSetModelEquivalence @A
                     , valBDS "pure" "Convert a predicate to a set." $ predicateToLangSetModel @A
+                    , valBDS "entityPredicate" "Convert a predicate model to a set." $
+                      entityPredicateModelToLangSetModel @A
                     , valBDS "predicate" "Convert a predicate model to a set." $ predicateModelToLangSetModel @A
                     , valBDS "immut" "Convert a set to immutable." $ langSetModelImmutable @A
                     , addNameInRootBDS $ valBDS "+=" "Add an entity to a set." $ langSetModelAdd @A
                     , addNameInRootBDS $ valBDS "-=" "Remove an entity from a set." $ langSetModelRemove @A
                     , addNameInRootBDS $
                       valBDS "member" "A model of the membership of a value in a set." $ langSetModelMember @A
-                    , valBDS "empty" "The immutable empty set." $ langSetModelEmpty @Entity
-                    , valBDS "full" "The immutable full set." $ langSetModelFull @Entity
+                    , valBDS "empty" "The immutable empty set." $ langSetModelEmpty @TopType
+                    , valBDS "full" "The immutable full set." $ langSetModelFull @TopType
                     , valBDS
                           "not"
                           "Complement of a set. The resulting set can be added to (deleting from the original set) and deleted from (adding to the original set)." $
@@ -283,7 +286,7 @@ modelLibSection =
                       langListModelToFiniteSetModel @A
                     , valBDS "single" "The member of a single-member finite set, or unknown." $
                       langFiniteSetModelSingle @A
-                    , valBDS "count" "Count of members in a finite set." $ langFiniteSetModelFunc @TopType @Int olength
+                    , valBDS "count" "Count of members in a finite set." $ langFiniteSetModelCount @TopType
                     , valBDS
                           "clear"
                           "Remove all entities from a finite set."

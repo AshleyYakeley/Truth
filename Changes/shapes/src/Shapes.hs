@@ -23,9 +23,10 @@ import Data.Coerce.Coercion as I
 import Data.Coerce.Function as I
 import Data.Coerce.MaybeRepresentational as I
 import Data.Coerce.Role as I
+import Data.Comparison as I
 import Data.EndoM as I
 import Data.Filterable as I
-import Data.FiniteSet as I
+import Data.Givable as I
 import Data.HasNewValue as I
 import Data.Hexadecimal as I
 import Data.Injection as I
@@ -34,6 +35,7 @@ import Data.KeyContainer as I
 import Data.KeyedOrder as I
 import Data.KindMorphism as I
 import Data.Lens as I
+import Data.ListSet as I
 import Data.Merge as I
 import Data.MonoApplicative as I
 import Data.PurityFunction as I
@@ -50,3 +52,4 @@ import Data.Text.Markup as I
 import Data.Tree as I
 import Data.Witness.ListVProduct as I
 import Data.Words as I
+import Data.Wrappable as I

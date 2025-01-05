@@ -6,7 +6,7 @@ module Pinafore.Language.Type.Types
     , eitherGroundType
     , resultGroundType
     , pairGroundType
-    , mapGroundType
+    , entityMapGroundType
     , mapEntityConvert
     , showableGroundType
     , maybeEntityConvert
@@ -196,22 +196,23 @@ pairGroundType = let
     showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
     in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) showtype) {qgtProperties = props}
 
-mapStoreAdapter :: StoreAdapter t -> StoreAdapter (LangMap t)
-mapStoreAdapter t = invmap langMapFromList langMapToList $ listStoreAdapter $ pairStoreAdapter plainStoreAdapter t
+mapStoreAdapter :: StoreAdapter t -> StoreAdapter (EntityMap t)
+mapStoreAdapter t = invmap entityMapFromList entityMapToList $ listStoreAdapter $ pairStoreAdapter plainStoreAdapter t
 
-mapGroundType :: QGroundType '[ CoCCRVariance] LangMap
-mapGroundType = let
-    storability :: Storability '[ CoCCRVariance] LangMap
+entityMapGroundType :: QGroundType '[ CoCCRVariance] EntityMap
+entityMapGroundType = let
+    storability :: Storability '[ CoCCRVariance] EntityMap
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
-        stbAdapterExprKnot = pureStorabilityAdapter @LangMap $ \(ConsArguments t NilArguments) -> mapStoreAdapter t
+        stbAdapterExprKnot = pureStorabilityAdapter @EntityMap $ \(ConsArguments t NilArguments) -> mapStoreAdapter t
         in MkStorability {..}
-    props :: GroundProperties '[ CoCCRVariance] LangMap
+    props :: GroundProperties '[ CoCCRVariance] EntityMap
     props = singleGroundProperty storabilityProperty storability
-    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMap)|]) "Map") {qgtProperties = props}
+    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily EntityMap)|]) "EntityMap")
+           {qgtProperties = props}
 
-mapEntityConvert :: LangMap Entity -> Entity
+mapEntityConvert :: EntityMap Entity -> Entity
 mapEntityConvert = storeAdapterConvert $ mapStoreAdapter plainStoreAdapter
 
 showableGroundType :: QGroundType '[] Showable

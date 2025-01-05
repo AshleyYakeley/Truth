@@ -54,14 +54,13 @@ testContextOrderedSetLensCase assigns expected =
             flens = contextOrderedSetLens uo
         rawContextObj :: Reference (WholeEdit [(Char, Int)]) <-
             makeMemoryReference [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
-        rawContentObj :: Reference (WholeEdit (FiniteSet Char)) <-
-            makeMemoryReference (setFromList "ABCDE") $ \_ -> True
+        rawContentObj :: Reference (WholeEdit (ListSet Char)) <- makeMemoryReference (setFromList "ABCDE") $ \_ -> True
         let
             contextObj :: Reference (UpdateEdit UpdateX)
             contextObj = mapReference (convertChangeLens @(WholeUpdate [(Char, Int)]) @UpdateX) rawContextObj
             baseContentObj :: Reference (FiniteSetEdit Char)
             baseContentObj =
-                mapReference (convertChangeLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
+                mapReference (convertChangeLens @(WholeUpdate (ListSet Char)) @(FiniteSetUpdate Char)) rawContentObj
         getUpdates <-
             runLifecycle $ do
                 contextSub <- makeReflectingModel @UpdateX contextObj
