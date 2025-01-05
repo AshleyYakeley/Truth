@@ -1083,30 +1083,30 @@ testQueries =
               , testQuery "let {rf {x: Integer; y: Integer = 2} = x + y} rf {x = 8; y = 12}" $ LRSuccess "20"
               , testQuery "let {rf {x: Integer; y: Integer = 2} = x + y} rf {x = 8}" $ LRSuccess "10"
               , testQuery "let {rf {x: Integer; y: Integer = 2} = x + y} let {x = 6} rf" $ LRSuccess "8"
-              , textTypeTest "let {rf {m: a -> Maybe a} = m 3} rf {m = Just}" "{} -> Maybe. Integer."
+              , textTypeTest "let {rf {m: a -> Maybe a} = m 3} rf {m = Just}" "{} -> Maybe. Natural."
               ]
         , testTree
               "polymorphism"
-              [ textTypeTest "let {x: a -> Maybe a = Just} (x 3,x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
+              [ textTypeTest "let {x: a -> Maybe a = Just} (x 3,x \"text\")" "{} -> Maybe. Natural. *: Maybe. Text."
               , textTypeTest
                     "let {x: a -> Maybe a = Just} imply {?x = x} (?x 3,?x \"text\")"
-                    "{} -> Maybe. Integer. *: Maybe. Text."
-              , textTypeTest "imply {?x = Just} (?x 3,?x \"text\")" "{} -> Maybe. Integer. *: Maybe. Text."
+                    "{} -> Maybe. Natural. *: Maybe. Text."
+              , textTypeTest "imply {?x = Just} (?x 3,?x \"text\")" "{} -> Maybe. Natural. *: Maybe. Text."
               , textTypeTest
                     "imply {?x: a -> Maybe a = Just} (?x 3,?x \"text\")"
-                    "{} -> Maybe. Integer. *: Maybe. Text."
+                    "{} -> Maybe. Natural. *: Maybe. Text."
               , textTypeTest
                     "let {rf {m: a -> Maybe a} = (m 3,m \"text\")} rf {m = Just}"
-                    "{} -> Maybe. Integer. *: Maybe. Text."
+                    "{} -> Maybe. Natural. *: Maybe. Text."
               , textTypeTest
                     "let {datatype T {Mk {m: a -> Maybe a}}; rf = fn Mk.T => (m 3,m \"text\")} rf Mk.T {m = Just}"
-                    "{} -> Maybe. Integer. *: Maybe. Text."
+                    "{} -> Maybe. Natural. *: Maybe. Text."
               , textTypeTest
                     "ap{let {rm = ap{Just}} (%rm 3,%rm \"text\")}"
-                    "{} -> WholeModel. +(Maybe. Integer. *: Maybe. Text.)"
+                    "{} -> WholeModel. +(Maybe. Natural. *: Maybe. Text.)"
               , textTypeTest
                     "ap{let {m = %ap{Just}} (m 3,m \"text\")}" -- since this is sugar for ap, it must be monomorphic
-                    "{} -> WholeModel. +(Maybe. (Integer. | Text.) *: Maybe. (Integer. | Text.))"
+                    "{} -> WholeModel. +(Maybe. (Natural. | Text.) *: Maybe. (Natural. | Text.))"
               , testQuery "let {rf {m: a -> Maybe a} = (m 3,m \"text\")} rf {m = Just}" $
                 LRSuccess "(Just 3,Just \"text\")"
               , testQuery "let {rf {m: a -> Maybe a = Just} = (m 3,m \"text\")} rf {}" $
@@ -1138,7 +1138,7 @@ testShims :: TestTree
 testShims =
     testTree
         "shim"
-        [ testShim "3" "Integer." "(join1 id)"
+        [ testShim "3" "Natural." "(join1 id)"
         , testShim "negate.Integer" "Integer. -> Integer." "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , testShim "negate.Integer 3" "Integer." "(join1 id)"
         , expectFailBecause "ISSUE #63" $ testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
@@ -1146,12 +1146,12 @@ testShims =
         , expectFailBecause "ISSUE #63" $ testShim "fn x => x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , expectFailBecause "ISSUE #63" $ testShim "(fn x => x) 3" "Integer." "(join1 id)"
         , expectFailBecause "ISSUE #63" $
-          testShim "fn x => 4" "Any -> Integer." "(join1 (co (contra id termf) (join1 id)))"
-        , testShim "(fn x => 4) 3" "Integer." "(join1 id)"
+          testShim "fn x => 4" "Any -> Natural." "(join1 (co (contra id termf) (join1 id)))"
+        , testShim "(fn x => 4) 3" "Natural." "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
-              "let {rcount = fn {Nothing => 0; Just y => succ $ rcount y}} rcount"
-              "(rec c, Maybe c) -> Integer."
+              "let {rcount = fn {Nothing => 0; Just y => succ.Natural $ rcount y}} rcount"
+              "(rec c, Maybe c) -> Natural."
               "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim

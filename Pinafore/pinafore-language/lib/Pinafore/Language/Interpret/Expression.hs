@@ -377,7 +377,10 @@ interpretConstructor (SLNumber n) =
     case decode safeRationalNumber n of
         Just r ->
             case decode integerSafeRational r of
-                Just i -> qConst i
+                Just i ->
+                    case decode naturalInteger i of
+                        Just nat -> qConst nat
+                        Nothing -> qConst i
                 Nothing -> qConst r
         Nothing -> qConst n
 interpretConstructor (SLString v) = return $ qConst v

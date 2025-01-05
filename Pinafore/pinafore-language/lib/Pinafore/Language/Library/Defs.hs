@@ -40,6 +40,7 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Shapes.Numeric
 
 type EnA = MeetType Entity A
 
@@ -451,6 +452,12 @@ monoidEntries ::
 monoidEntries =
     semigroupEntries @a <> [headingBDS "Monoid" "" [valBDS "empty" "" $ mempty @a, valBDS "concat" "" $ mconcat @a]]
 
+olengthNat ::
+       forall a. IsSequence a
+    => a
+    -> Natural
+olengthNat = fromIntegral . olength
+
 sequenceEntries ::
        forall (a :: Type). (IsSequence a, Index a ~ Int, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
@@ -458,7 +465,7 @@ sequenceEntries =
     [ headingBDS
           "Sequence"
           ""
-          [ valBDS "length" "The number of elements." $ olength @a
+          [ valBDS "length" "The number of elements." $ olengthNat @a
           , valBDS "section" "`section start len x` is the section of `x` beginning at `start` of length `len`." $ \start len (x :: a) ->
                 take len $ drop start x
           , valBDS "take" "Take the first n elements." (take :: Int -> a -> a)

@@ -182,6 +182,12 @@ integerGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFami
 instance HasQGroundType '[] Integer where
     qGroundType = integerGroundType
 
+naturalGroundType :: QGroundType '[] Natural
+naturalGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Natural)|]) "Natural"
+
+instance HasQGroundType '[] Natural where
+    qGroundType = naturalGroundType
+
 booleanGroundType :: QGroundType '[] Bool
 booleanGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean"
 

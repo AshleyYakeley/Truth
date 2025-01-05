@@ -8,12 +8,16 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Shapes.Numeric
 
 append :: NonEmpty A -> [A] -> NonEmpty A
 append (a :| aa) bb = a :| (aa <> bb)
 
 mconcat1 :: NonEmpty (NonEmpty A) -> NonEmpty A
 mconcat1 (na :| lna) = append na $ concatmap toList lna
+
+lengthNat :: [a] -> Natural
+lengthNat = fromIntegral . length
 
 listLibSection :: LibraryStuff
 listLibSection =
@@ -51,7 +55,7 @@ listLibSection =
                 case l of
                     [] -> fnil
                     (a:aa) -> fcons a aa
-          , addNameInRootBDS $ valBDS "length" "Number of items in a list" (length :: [TopType] -> Int)
+          , addNameInRootBDS $ valBDS "length" "Number of items in a list" (lengthNat :: [TopType] -> Natural)
           , addNameInRootBDS $ valBDS "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
           , addNameInRootBDS $ valBDS "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
           , addNameInRootBDS $ valBDS "maybeMap" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
