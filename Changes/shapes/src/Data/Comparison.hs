@@ -1,6 +1,13 @@
-module Pinafore.Base.Comparison where
+{-# OPTIONS -fno-warn-orphans #-}
 
-import Shapes
+module Data.Comparison where
+
+import Data.Coerce.Coercion
+import Data.Coerce.Role
+import Data.Givable
+import Data.Reflection (Given(..), give)
+import Data.Wrappable
+import Shapes.Import
 
 newtype Equivalence a = MkEquivalence
     { equivalent :: a -> a -> Bool
@@ -14,15 +21,49 @@ eqEquivalence ::
     => Equivalence a
 eqEquivalence = MkEquivalence (==)
 
+nubByEquivalence :: forall a. Equivalence a -> [a] -> [a]
+nubByEquivalence eqv = nubBy $ equivalent eqv
+
 instance RepresentationalRole Equivalence where
     representationalCoercion MkCoercion = MkCoercion
 
 instance Contravariant Equivalence where
     contramap ba (MkEquivalence o) = MkEquivalence $ \p q -> o (ba p) (ba q)
 
+instance Invariant Equivalence where
+    invmap _ qp = contramap qp
+
+instance Summable Equivalence where
+    rVoid = MkEquivalence $ \p -> never p
+    MkEquivalence a <+++> MkEquivalence b = let
+        ab (Left p) (Left q) = a p q
+        ab (Right p) (Right q) = b p q
+        ab _ _ = False
+        in MkEquivalence ab
+
+instance Productable Equivalence where
+    rUnit = MkEquivalence $ \_ _ -> True
+    MkEquivalence oa <***> MkEquivalence ob = MkEquivalence $ \(pa, pb) (qa, qb) -> oa pa qa && ob pb qb
+
+instance Semigroup (Equivalence a) where
+    oa <> ob = contramap (\a -> (a, a)) $ oa <***> ob
+
+instance Monoid (Equivalence a) where
+    mempty = contramap (\_ -> ()) rUnit
+
+instance Given (Equivalence a) => Eq (Wrapper Type a) where
+    (==) = coerce $ equivalent (given :: Equivalence a)
+
+instance Givable Equivalence where
+    type GivableConstraint Equivalence = Eq
+    giveWrapperConstraint eqv call = give eqv call
+
 newtype Preorder a = MkPreorder
     { comparePreorder :: a -> a -> Maybe Ordering
     }
+
+instance Invariant Preorder where
+    invmap _ qp = contramap qp
 
 preorderEquivalence :: forall a. Preorder a -> Equivalence a
 preorderEquivalence (MkPreorder o) = MkEquivalence $ \p q -> o p q == Just EQ
@@ -97,6 +138,15 @@ instance Contravariant Order where
 
 instance Invariant Order where
     invmap _ qp = contramap qp
+
+instance Summable Order where
+    rVoid = MkOrder $ \p -> never p
+    MkOrder a <+++> MkOrder b = let
+        ab (Left p) (Left q) = a p q
+        ab (Right p) (Right q) = b p q
+        ab (Left _) (Right _) = LT
+        ab (Right _) (Left _) = GT
+        in MkOrder ab
 
 instance Productable Order where
     rUnit = MkOrder $ \_ _ -> EQ
@@ -177,3 +227,10 @@ orderGreatest order =
 
 orderSort :: Order a -> [a] -> [a]
 orderSort (MkOrder o) = sortBy o
+
+instance (Given (Equivalence a), Given (Order a)) => Ord (Wrapper Type a) where
+    compare = coerce $ compareOrder (given :: Order a)
+
+instance Givable Order where
+    type GivableConstraint Order = Ord
+    giveWrapperConstraint order call = give (orderEquivalence order) $ give order call

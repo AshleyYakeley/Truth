@@ -69,7 +69,7 @@ inverseApplyLangPropertyModel ::
     -> LangWholeModel '( by, bx)
     -> LangFiniteSetModel '( MeetType Entity a, a)
 inverseApplyLangPropertyModel (MkLangProperty m) model =
-    MkLangFiniteSetModel (MkRange id meet2) $
+    MkLangFiniteSetModel eqEquivalence (MkRange id meet2) $
     applyInverseModelProperty (mapModelBased (cfmap4 (MkCatDual $ meet2 @(->))) m) $ langWholeModelToBiWholeModel model
 
 inverseApplyLangPropertyImmutModel ::
@@ -84,7 +84,7 @@ inverseApplyLangPropertySet ::
        LangProperty '( a, MeetType Entity a) '( bx, by)
     -> LangFiniteSetModel '( by, bx)
     -> LangFiniteSetModel '( MeetType Entity a, a)
-inverseApplyLangPropertySet (MkLangProperty m) (MkLangFiniteSetModel (tra :: Range _ t _) seta) = let
+inverseApplyLangPropertySet (MkLangProperty m) (MkLangFiniteSetModel eqv (tra :: Range _ t _) seta) = let
     byt :: by -> t
     byt = shimToFunction $ rangeContra tra
     tbx :: t -> bx
@@ -92,5 +92,5 @@ inverseApplyLangPropertySet (MkLangProperty m) (MkLangFiniteSetModel (tra :: Ran
     m' :: ModelProperty (MeetType Entity a) (MeetType Entity a) t t
     m' = mapModelBased (cfmap4 (MkCatDual $ meet2 @(->)) . cfmap2 (MkCatDual tbx) . cfmap1 byt) m
     setb :: WModel (FiniteSetUpdate (MeetType Entity a))
-    setb = applyInverseModelPropertySet m' seta
-    in MkLangFiniteSetModel (MkRange id meet2) setb
+    setb = giveConstraint eqv $ applyInverseModelPropertySet m' seta
+    in MkLangFiniteSetModel eqEquivalence (MkRange id meet2) setb

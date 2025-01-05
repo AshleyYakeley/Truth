@@ -21,15 +21,15 @@ comparisonLibSection =
                     ""
                     (qSomeGroundType @_ @Equivalence)
                     [valPatBDS "Mk" "" (MkEquivalence @A) $ PureFunction $ pure $ \(MkEquivalence @A o) -> (o, ())]
-              , namespaceBDS
-                    "Equivalence"
-                    [ valBDS
-                          "map"
-                          "Map an equivalence by a function"
-                          (contramap :: (B -> A) -> Equivalence A -> Equivalence B)
-                    , addNameInRootBDS $ valBDS "eqBy" "Equivalent." $ equivalent @A
-                    , addNameInRootBDS $ valBDS "neBy" "Not equivalent." $ notEquivalent @A
-                    ]
+              , namespaceBDS "Equivalence" $
+                monoidEntries @(Equivalence A) <>
+                [ valBDS
+                      "map"
+                      "Map an equivalence by a function"
+                      (contramap :: (B -> A) -> Equivalence A -> Equivalence B)
+                , addNameInRootBDS $ valBDS "eqBy" "Equivalent." $ equivalent @A
+                , addNameInRootBDS $ valBDS "neBy" "Not equivalent." $ notEquivalent @A
+                ]
               ]
         , headingBDS
               "Preorder"

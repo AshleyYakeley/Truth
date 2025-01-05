@@ -1,5 +1,6 @@
 module Pinafore.Base.Model.FunctionAttribute
     ( StorageFunctionAttribute(..)
+    , liftListSetStorageFunctionAttribute
     , storageFunctionAttributeContextChangeLens
     , mapStorageFunctionAttributeBase
     ) where
@@ -142,6 +143,37 @@ instance ArrowChoice (StorageFunctionAttribute baseupdate) where
                                 mc <- brmc b
                                 return $ fmap Right mc
         in MkStorageFunctionAttribute {..}
+
+liftListSetStorageFunctionAttribute ::
+       forall baseupdate a b.
+       StorageFunctionAttribute baseupdate a b
+    -> StorageFunctionAttribute baseupdate (ListSet a) (ListMap a b)
+liftListSetStorageFunctionAttribute (MkStorageFunctionAttribute f upd) = let
+    sfaRead :: ListSet a -> ReadM (UpdateReader baseupdate) (ListMap a b)
+    sfaRead = listSetToMapM f
+    sfaUpdate ::
+           baseupdate
+        -> ReadM (UpdateReader baseupdate) (Maybe (ListSet a -> ReadM (UpdateReader baseupdate) (Maybe (ListMap a b))))
+    sfaUpdate update = do
+        mf <- upd update
+        return $
+            case mf of
+                Nothing -> Nothing
+                Just brmc ->
+                    Just $ \fa -> do
+                        fmb <-
+                            listSetToMapFor fa $ \a -> do
+                                mb <- brmc a
+                                return $
+                                    case mb of
+                                        Just b -> (True, return b)
+                                        Nothing -> (False, f a)
+                        case any fst $ toList fmb of
+                            False -> return Nothing
+                            True -> do
+                                fb <- for fmb snd
+                                return $ Just fb
+    in MkStorageFunctionAttribute {..}
 
 instance Traversable f => CatFunctor (StorageFunctionAttribute baseupdate) (StorageFunctionAttribute baseupdate) f where
     cfmap :: forall a b. StorageFunctionAttribute baseupdate a b -> StorageFunctionAttribute baseupdate (f a) (f b)

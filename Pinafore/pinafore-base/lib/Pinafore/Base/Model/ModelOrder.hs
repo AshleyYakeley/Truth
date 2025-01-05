@@ -1,7 +1,6 @@
 module Pinafore.Base.Model.ModelOrder where
 
 import Changes.Core
-import Pinafore.Base.Comparison
 import Pinafore.Base.Know
 import Pinafore.Base.Model.FunctionAttribute
 import Pinafore.Base.Model.ImmutableWholeModel
@@ -47,18 +46,13 @@ reverseModelModelOrder = mapModelBased reverseModelOrder
 modelModelOrderOn :: ModelAttribute ap aq bp bq -> ModelModelOrder bq -> ModelModelOrder ap
 modelModelOrderOn = combineModelBased modelOrderOn
 
-modelModelOrderSet :: ModelModelOrder a -> WROWModel (FiniteSet a) -> WROWModel (Know [a])
+modelModelOrderSet :: forall a. ModelModelOrder a -> WROWModel (ListSet a) -> WROWModel (Know [a])
 modelModelOrderSet ro pset =
-    modelBasedModel ro $ \model (MkModelOrder (ofunc :: StorageFunctionAttribute update (Know a) t) oord) -> let
-        ofuncpair :: StorageFunctionAttribute update a (a, t)
-        ofuncpair =
-            proc a -> do
-                kt <- ofunc -< Known a
-                returnA -< (a, kt)
-        upairs :: WROWModel (FiniteSet (a, t))
-        upairs = applyStorageFunction model (cfmap ofuncpair) pset
-        sortpoints :: FiniteSet (a, t) -> [a]
-        sortpoints (MkFiniteSet pairs) = fmap fst $ orderSort (contramap snd oord) pairs
+    modelBasedModel ro $ \model (MkModelOrder (ofunc :: StorageFunctionAttribute update (Know a) t) (oord :: Order t)) -> let
+        upairs :: WROWModel (ListMap a t)
+        upairs = applyStorageFunction model (liftListSetStorageFunctionAttribute $ ofunc . arr Known) pset
+        sortpoints :: ListMap a t -> [a]
+        sortpoints pairs = fmap fst $ orderSort (contramap snd oord) $ listMapToList pairs
         in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 modelModelOrderCompare ::

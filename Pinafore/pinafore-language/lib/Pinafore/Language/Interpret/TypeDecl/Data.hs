@@ -43,7 +43,7 @@ instance HasVarMapping ConstructorType where
 
 type ConstructorCodec t = SomeFor (Codec t) ConstructorType
 
-constructorTypeFreeVariables :: ConstructorFlavour w -> w t -> FiniteSet SomeTypeVarT
+constructorTypeFreeVariables :: ConstructorFlavour w -> w t -> ListSet SomeTypeVarT
 constructorTypeFreeVariables PositionalCF wt = freeTypeVariables wt
 constructorTypeFreeVariables (RecordCF _) _ = mempty
 
@@ -471,7 +471,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                     interpretConstructorTypes (MkSomeFamilialType mainFamType) supertypes
                                 assembleDataType (doubleTypeParameters doubleParams constructorInnerTypes) $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                     let
-                                        freevars :: FiniteSet SomeTypeVarT
+                                        freevars :: ListSet SomeTypeVarT
                                         freevars = concatmap freeTypeVariables $ toList codecs
                                         declaredvars :: [SomeTypeVarT]
                                         declaredvars = tParamsVars tparams

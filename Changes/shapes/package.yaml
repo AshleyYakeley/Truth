@@ -26,6 +26,7 @@ library:
       - text
       - random
       - leb128
+      - reflection
       # test
       - directory
       - filepath
@@ -58,6 +59,9 @@ library:
       - Data.Coerce.Coercion
       - Data.Coerce.Role
       - Data.Coerce.MaybeRepresentational
+      - Data.Wrappable
+      - Data.Givable
+      - Data.Comparison
       - Data.SameItem
       - Data.HasNewValue
       - Data.Streamable
@@ -71,7 +75,7 @@ library:
       - Data.Codec
       - Data.KeyedOrder
       - Data.KeyContainer
-      - Data.FiniteSet
+      - Data.ListSet
       - Data.Merge
       - Data.Tree
       - Data.KindMorphism

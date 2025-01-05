@@ -11,6 +11,8 @@ import Changes.Core.Types.Tuple.Tuple
 instance TupleUpdateWitness c EmptyType where
     tupleUpdateWitness = never
 
+instance SubjectTupleSelectorRead EmptyType
+
 instance SubjectTupleSelector EmptyType
 
 instance TupleReaderWitness c EmptyType where
@@ -40,28 +42,6 @@ emptyTupleLens = let
     clPutEdits [] _ = return $ Just []
     clPutEdits ((MkTupleUpdateEdit sel _):_) _ = never sel
     in MkChangeLens {..}
-
-instance (TupleUpdateWitness c a, TupleUpdateWitness c b) => TupleUpdateWitness c (EitherType a b) where
-    tupleUpdateWitness (LeftType r) = tupleUpdateWitness r
-    tupleUpdateWitness (RightType r) = tupleUpdateWitness r
-
-instance (TestEquality a, TupleReaderWitness SubjectReader a, TestEquality b, TupleReaderWitness SubjectReader b) =>
-             SubjectTupleSelector (EitherType a b)
-
-instance (TupleReaderWitness c a, TupleReaderWitness c b) => TupleReaderWitness c (EitherType a b) where
-    tupleReaderWitness (LeftType r) = tupleReaderWitness r
-    tupleReaderWitness (RightType r) = tupleReaderWitness r
-
-instance (FiniteTupleSelector a, TupleSubject a ~ Tuple a, FiniteTupleSelector b, TupleSubject b ~ Tuple b) =>
-             FiniteTupleSelector (EitherType a b) where
-    tupleConstruct getsel =
-        (\(MkTuple ra) (MkTuple rb) ->
-             MkTuple $ \sel ->
-                 case sel of
-                     LeftType rt -> ra rt
-                     RightType rt -> rb rt) <$>
-        tupleConstruct (getsel . LeftType) <*>
-        tupleConstruct (getsel . RightType)
 
 firstChangeLens :: forall sel update1. ChangeLens (TupleUpdate (ConsType update1 sel)) update1
 firstChangeLens = let

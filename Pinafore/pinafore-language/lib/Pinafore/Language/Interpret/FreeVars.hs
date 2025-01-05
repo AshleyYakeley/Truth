@@ -29,7 +29,7 @@ syntaxPatternBindingVariables pat = let
     in (mapMaybe btGetVar bts, mapMaybe btGetCons bts)
 
 class SyntaxFreeVariables t where
-    syntaxFreeVariables :: t -> FiniteSet FullName
+    syntaxFreeVariables :: t -> ListSet FullName
 
 instance SyntaxFreeVariables t => SyntaxFreeVariables (Maybe t) where
     syntaxFreeVariables Nothing = mempty
@@ -52,11 +52,11 @@ instance SyntaxFreeVariables (Name, SyntaxExpression) where
 
 instance SyntaxFreeVariables SyntaxCase where
     syntaxFreeVariables (MkSyntaxCase pat expr) =
-        difference (syntaxFreeVariables expr) (mapMaybe btGetVar $ syntaxBindingVariables pat)
+        difference (syntaxFreeVariables expr) (listSetMapMaybe btGetVar $ syntaxBindingVariables pat)
 
 instance SyntaxFreeVariables (SyntaxMulticase n) where
     syntaxFreeVariables (MkSyntaxMulticase pats expr) =
-        difference (syntaxFreeVariables expr) (mapMaybe btGetVar $ syntaxBindingVariables pats)
+        difference (syntaxFreeVariables expr) (listSetMapMaybe btGetVar $ syntaxBindingVariables pats)
 
 instance SyntaxFreeVariables (Some SyntaxMulticase) where
     syntaxFreeVariables (MkSome m) = syntaxFreeVariables m
@@ -95,7 +95,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEDecl decl expr) =
         difference
             (syntaxFreeVariables decl <> syntaxFreeVariables expr)
-            (mapMaybe btGetVar $ syntaxBindingVariables decl)
+            (listSetMapMaybe btGetVar $ syntaxBindingVariables decl)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
     syntaxFreeVariables (SESplice _) = mempty
     syntaxFreeVariables (SEQuoteExpression _) = mempty
@@ -120,7 +120,7 @@ instance SyntaxFreeVariables SyntaxDeclaration' where
     syntaxFreeVariables _ = mempty
 
 class SyntaxBindingVariables t where
-    syntaxBindingVariables :: t -> FiniteSet BindingThing
+    syntaxBindingVariables :: t -> ListSet BindingThing
 
 instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = concatmap syntaxBindingVariables tt
@@ -134,7 +134,7 @@ instance SyntaxBindingVariables t => SyntaxBindingVariables (FixedList n t) wher
 instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) where
     syntaxBindingVariables (MkWithSourcePos _ pat) = syntaxBindingVariables pat
 
-constructorBindingVariables :: Namespace -> SyntaxConstructor -> FiniteSet BindingThing
+constructorBindingVariables :: Namespace -> SyntaxConstructor -> ListSet BindingThing
 constructorBindingVariables ns (SLNamedConstructor name _) = singletonSet $ ConsBindingThing ns name
 constructorBindingVariables _ _ = mempty
 

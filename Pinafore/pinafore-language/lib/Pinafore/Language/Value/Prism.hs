@@ -76,11 +76,9 @@ prismToCodec p = let
     in MkCodec {..}
 
 langPrismApplySet ::
-       forall ap aq b.
-       LangPrism '( aq, ap) '( b, MeetType Entity b)
-    -> LangFiniteSetModel '( ap, aq)
-    -> LangFiniteSetModel '( MeetType Entity b, b)
-langPrismApplySet (MkLangPrism dec enc) (MkLangFiniteSetModel (MkRange pt qt :: _ t _) model) = let
-    codec :: Codec t (MeetType Entity b)
-    codec = MkCodec (mToMaybe . dec . shimToFunction qt) (shimToFunction pt . enc . meet2)
-    in MkLangFiniteSetModel (MkRange id meet2) $ eaMap (codecFiniteSetChangeLens codec) model
+       forall ap aq b. LangPrism '( aq, ap) '( b, b) -> LangFiniteSetModel '( ap, aq) -> LangFiniteSetModel '( b, b)
+langPrismApplySet (MkLangPrism dec enc) (MkLangFiniteSetModel eqv (MkRange pt qt :: _ t _) model) = let
+    codec :: Codec t b
+    codec = MkCodec (mToMaybe . dec . shimToFunction qt) (shimToFunction pt . enc)
+    in MkLangFiniteSetModel (contramap (encode codec) eqv) (MkRange id id) $
+       eaMap (giveConstraint eqv $ codecFiniteSetChangeLens codec) model

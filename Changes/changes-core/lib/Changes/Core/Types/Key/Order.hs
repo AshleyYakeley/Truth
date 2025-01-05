@@ -59,9 +59,9 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
         => Readable m (KeyReader cont (UpdateReader update))
         -> m (OrderedList (o, ContainerKey cont, or))
     sclInit mr = do
-        MkFiniteSet kk <- mr KeyReadKeys
+        kk <- mr KeyReadKeys
         pairs <-
-            for kk $ \k -> do
+            for (setToList kk) $ \k -> do
                 ordr <- runFloatInit ordInit $ knownKeyItemReadFunction k mr
                 o <- getO ordr mr k
                 return (o, k, ordr)
@@ -266,9 +266,9 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
         => Readable m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> m (OrderedList (o, ContainerKey cont, or))
     sclInit mr = do
-        MkFiniteSet kk <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
+        kk <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
         pairs <-
-            for kk $ \k -> do
+            for (setToList kk) $ \k -> do
                 ordr <- runFloatInit ordInit $ keyRF k mr
                 o <- getO ordr mr k
                 return (o, k, ordr)

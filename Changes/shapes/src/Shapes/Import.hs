@@ -75,7 +75,7 @@ import Data.Constraint as I ((:-)(..), Dict(..), withDict)
 -- mono-traversable
 import Data.Containers as I
 import Data.MonoTraversable as I
-import Data.Sequences as I hiding (catMaybes, filter)
+import Data.Sequences as I hiding (catMaybes, filter, filterM)
 
 -- contravariant
 import Data.Functor.Contravariant as I (Contravariant(..))
@@ -206,11 +206,11 @@ compAll (c:cc) = c . compAll cc
 exec :: Monad m => m (m a) -> m a
 exec mma = mma >>= id
 
-deleteFirstMatching :: (a -> Bool) -> [a] -> [a]
-deleteFirstMatching _ [] = []
-deleteFirstMatching t (a:aa)
+deleteFirst :: (a -> Bool) -> [a] -> [a]
+deleteFirst _ [] = []
+deleteFirst t (a:aa)
     | t a = aa
-deleteFirstMatching t (a:aa) = a : deleteFirstMatching t aa
+deleteFirst t (a:aa) = a : deleteFirst t aa
 
 -- | O(n^2) rather than O(n log n), due to no Ord constraint
 duplicates :: Eq a => [a] -> [a]

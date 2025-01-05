@@ -217,7 +217,7 @@ keepEliminatingVariables ::
     -> DolanM ground a
 keepEliminatingVariables a = do
     let
-        (setFromList @(FiniteSet SomeTypeVarT) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
+        (setFromList @(ListSet SomeTypeVarT) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
         allvars = toList $ union posvars negvars
     (a', elimflag) <- eliminateVariables @ground allvars a
     if elimflag

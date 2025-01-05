@@ -19,9 +19,11 @@ instance TestEquality wit => TestEquality (DependentSelector wit) where
         Refl <- testEquality a1 a2
         return Refl
 
-instance TestEquality wit => SubjectTupleSelector (DependentSelector wit) where
+instance SubjectTupleSelectorRead (DependentSelector wit) where
     type TupleSubject (DependentSelector wit) = AllOf wit
     tupleReadFromSubject (MkDependentSelector wa) av = unAllOf av wa
+
+instance TestEquality wit => SubjectTupleSelector (DependentSelector wit) where
     tupleWriteToSubject (MkDependentSelector wa) a = setAllOf wa a
 
 instance (TestEquality wit, FiniteWitness wit) => FiniteTupleSelector (DependentSelector wit) where

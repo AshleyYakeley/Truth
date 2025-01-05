@@ -30,7 +30,7 @@ modelOrders = mconcat
 reverseLangModelOrder :: forall a. LangModelOrder a -> LangModelOrder a
 reverseLangModelOrder (MkLangModelOrder o) = MkLangModelOrder $ reverseModelModelOrder o
 
-qOrderSet :: forall a. LangModelOrder a -> WROWModel (FiniteSet a) -> WROWModel (Know [a])
+qOrderSet :: forall a. LangModelOrder a -> WROWModel (ListSet a) -> WROWModel (Know [a])
 qOrderSet (MkLangModelOrder ro) = modelModelOrderSet ro
 
 langModelOrderCompare ::
@@ -39,7 +39,9 @@ langModelOrderCompare (MkLangModelOrder m) = modelModelOrderCompare m
 
 finiteSetGetOrdered ::
        forall a. LangModelOrder a -> LangFiniteSetModel '( BottomType, a) -> LangWholeModel '( TopType, [a])
-finiteSetGetOrdered order set = wROWModelToWholeModel $ qOrderSet order $ langFiniteSetModelFunctionValue set
+finiteSetGetOrdered order set =
+    langFiniteSetModelFunctionValue1 set $ \ta setm ->
+        wROWModelToWholeModel $ eaMapReadOnlyWhole (fmap $ fmap ta) $ qOrderSet (contramap ta order) setm
 
 modelOrderUpdateOrder ::
        LangModelOrder a

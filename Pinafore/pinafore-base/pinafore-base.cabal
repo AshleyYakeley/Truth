@@ -22,7 +22,6 @@ library
       Pinafore.Base.Showable
       Pinafore.Base.SafeRational
       Pinafore.Base.Number
-      Pinafore.Base.Comparison
       Pinafore.Base.Literal.Type
       Pinafore.Base.Literal.Literal
       Pinafore.Base.Literal.Data

@@ -22,7 +22,7 @@ instance (KeyContainer cont, HasKeyReader cont (UpdateReader updateN)) =>
              HasKeyReader cont (ContextUpdateReader updateX updateN) where
     readKey mr = readKey @cont $ tupleReadFunction SelectContent mr
 
-instance Eq t => HasKeyReader (FiniteSet t) (WholeReader t) where
+instance Eq t => HasKeyReader (ListSet t) (WholeReader t) where
     readKey mr = mr ReadWhole
 
 instance ( Eq key
@@ -38,7 +38,7 @@ class HasKeyReader cont (UpdateReader update) => HasKeyUpdate cont update where
 instance HasKeyReader cont r => HasKeyUpdate cont (ConstUpdate r) where
     updatesKey = never
 
-instance Eq t => HasKeyUpdate (FiniteSet t) (WholeUpdate t) where
+instance Eq t => HasKeyUpdate (ListSet t) (WholeUpdate t) where
     updatesKey (MkWholeReaderUpdate a) = Just $ \_ -> return a
 
 instance ( Eq key

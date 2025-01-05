@@ -35,7 +35,7 @@ openEntityLibSection =
                         case mtp of
                             MkSome (tp :: OpenEntityType tid) -> let
                                 pt :: Action (OpenEntity tid)
-                                pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
+                                pt = liftIO $ newKeyContainerItem @(ListSet (OpenEntity tid))
                                 typef = actionShimWit $ openEntityShimWit tp
                                 in constSealedExpression $ MkSomeOf typef pt
               ]

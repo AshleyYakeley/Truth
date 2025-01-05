@@ -28,13 +28,15 @@ instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) w
                 Dict -> show $ f se
         in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
 
-class (TestEquality sel, TupleReaderWitness SubjectReader sel) => SubjectTupleSelector (sel :: Type -> Type) where
+class TupleReaderWitness SubjectReader sel => SubjectTupleSelectorRead (sel :: Type -> Type) where
     type TupleSubject sel :: Type
     type TupleSubject sel = Tuple sel
     tupleReadFromSubject :: forall update. sel update -> TupleSubject sel -> UpdateSubject update
     default tupleReadFromSubject ::
         forall update. (TupleSubject sel ~ Tuple sel) => sel update -> TupleSubject sel -> UpdateSubject update
     tupleReadFromSubject sel (MkTuple tuple) = tuple sel
+
+class (TestEquality sel, SubjectTupleSelectorRead sel) => SubjectTupleSelector (sel :: Type -> Type) where
     tupleWriteToSubject :: forall update. sel update -> UpdateSubject update -> TupleSubject sel -> TupleSubject sel
     default tupleWriteToSubject ::
         forall update.
@@ -69,7 +71,7 @@ instance (AllConstraint Show sel, TupleReaderWitness (AllConstraint Show) sel) =
 tupleReadFunction :: sel update -> ReadFunction (TupleUpdateReader sel) (UpdateReader update)
 tupleReadFunction sel mr rt = mr $ MkTupleUpdateReader sel rt
 
-instance (SubjectTupleSelector sel) => SubjectReader (TupleUpdateReader sel) where
+instance SubjectTupleSelectorRead sel => SubjectReader (TupleUpdateReader sel) where
     type ReaderSubject (TupleUpdateReader sel) = TupleSubject sel
     subjectToRead a (MkTupleUpdateReader sel rd) =
         case tupleReaderWitness @SubjectReader sel of

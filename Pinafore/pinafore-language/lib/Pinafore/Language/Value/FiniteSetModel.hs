@@ -7,10 +7,10 @@ import Pinafore.Language.Value.SetModel
 import Pinafore.Language.Value.WholeModel
 
 data LangFiniteSetModel pq where
-    MkLangFiniteSetModel :: Eq t => QRange t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq
+    MkLangFiniteSetModel :: Equivalence t -> QRange t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetModel pq
 
 instance CatFunctor (CatRange (->)) (->) LangFiniteSetModel where
-    cfmap f (MkLangFiniteSetModel r v) = MkLangFiniteSetModel (cfmap f r) v
+    cfmap f (MkLangFiniteSetModel eqv r v) = MkLangFiniteSetModel eqv (cfmap f r) v
 
 instance MaybeRepresentational LangFiniteSetModel where
     maybeRepresentational = Nothing
@@ -18,8 +18,8 @@ instance MaybeRepresentational LangFiniteSetModel where
 instance HasCCRVariance 'RangeCCRVariance LangFiniteSetModel
 
 instance IsInvertibleModel (LangFiniteSetModel pq) where
-    invertibleModelLens f (MkLangFiniteSetModel tr model) =
-        fmap (MkLangFiniteSetModel tr) $ wInvertibleModelLens f model
+    invertibleModelLens f (MkLangFiniteSetModel eqv tr model) =
+        fmap (MkLangFiniteSetModel eqv tr) $ giveConstraint eqv $ wInvertibleModelLens f model
 
 newMemFiniteSetModel :: forall a. Action (LangFiniteSetModel '( MeetType Entity a, a))
 newMemFiniteSetModel = do
@@ -28,33 +28,33 @@ newMemFiniteSetModel = do
     return $ meetValueLangFiniteSetModel $ MkWModel model
 
 langFiniteSetModelValue :: LangFiniteSetModel '( q, q) -> WModel (FiniteSetUpdate q)
-langFiniteSetModelValue (MkLangFiniteSetModel tr lv) =
+langFiniteSetModelValue (MkLangFiniteSetModel _ tr lv) =
     eaMap (bijectionFiniteSetChangeLens (isoMapCat shimToFunction $ rangeBijection tr)) lv
 
-valueLangFiniteSetModel :: Eq q => WModel (FiniteSetUpdate q) -> LangFiniteSetModel '( q, q)
-valueLangFiniteSetModel lv = MkLangFiniteSetModel identityRange lv
+valueLangFiniteSetModel :: Equivalence q -> WModel (FiniteSetUpdate q) -> LangFiniteSetModel '( q, q)
+valueLangFiniteSetModel eqv lv = MkLangFiniteSetModel eqv identityRange lv
 
 langFiniteSetFilter :: forall ap aq. (aq -> Bool) -> LangFiniteSetModel '( ap, aq) -> LangFiniteSetModel '( ap, aq)
-langFiniteSetFilter f (MkLangFiniteSetModel tr lv) =
-    MkLangFiniteSetModel tr $ eaMap (filterFiniteSetChangeLens $ f . shimToFunction (rangeCo tr)) lv
+langFiniteSetFilter f (MkLangFiniteSetModel eqv tr lv) =
+    MkLangFiniteSetModel eqv tr $ eaMap (filterFiniteSetChangeLens $ f . shimToFunction (rangeCo tr)) lv
 
 langFiniteSetMaybeMap ::
        forall ap aq b. (aq -> Maybe b) -> LangFiniteSetModel '( ap, aq) -> LangFiniteSetModel '( MeetType ap b, b)
-langFiniteSetMaybeMap f (MkLangFiniteSetModel (tr :: _ t _) lv) = let
+langFiniteSetMaybeMap f (MkLangFiniteSetModel eqv (tr :: _ t _) lv) = let
     tr' :: QRange (MeetType t b) '( MeetType ap b, b)
     tr' = MkRange (iMeetPair (rangeContra tr) id) meet2
     amb :: t -> Maybe (MeetType t b)
     amb t = do
         b <- f $ shimToFunction (rangeCo tr) t
         return $ BothMeetType t b
-    in MkLangFiniteSetModel tr' $ eaMap (mapMaybeFiniteSetChangeLens amb meet1) lv
+    in MkLangFiniteSetModel (contramap meet1 eqv) tr' $ eaMap (injectiveMapFiniteSetChangeLens $ MkCodec amb meet1) lv
 
 langFiniteSetCollect ::
        forall ap aq b.
        ImmutableWholeModel (aq -> Maybe b)
     -> LangFiniteSetModel '( ap, aq)
     -> LangFiniteSetModel '( MeetType ap b, b)
-langFiniteSetCollect (MkImmutableWholeModel mf) (MkLangFiniteSetModel (tr :: _ t _) lv) = let
+langFiniteSetCollect (MkImmutableWholeModel mf) (MkLangFiniteSetModel eqv (tr :: _ t _) lv) = let
     tr' :: QRange (MeetType t b) '( MeetType ap b, b)
     tr' = MkRange (iMeetPair (rangeContra tr) id) meet2
     amb :: Know (aq -> Maybe b) -> (t -> Maybe (MeetType t b))
@@ -63,16 +63,16 @@ langFiniteSetCollect (MkImmutableWholeModel mf) (MkLangFiniteSetModel (tr :: _ t
         b <- f $ shimToFunction (rangeCo tr) t
         return $ BothMeetType t b
     mf' = eaMapReadOnlyWhole amb mf
-    in MkLangFiniteSetModel tr' $ eaMap (collectFiniteSetChangeLens meet1) $ eaPair mf' lv
+    in MkLangFiniteSetModel (contramap meet1 eqv) tr' $ eaMap (collectFiniteSetChangeLens meet1) $ eaPair mf' lv
 
 langFiniteSetModelMeetValue ::
        LangFiniteSetModel '( t, MeetType Entity t) -> WModel (FiniteSetUpdate (MeetType Entity t))
-langFiniteSetModelMeetValue (MkLangFiniteSetModel tr lv) =
-    langFiniteSetModelValue $ MkLangFiniteSetModel (contraMapRange meet2 tr) lv
+langFiniteSetModelMeetValue (MkLangFiniteSetModel eqv tr lv) =
+    langFiniteSetModelValue $ MkLangFiniteSetModel eqv (contraMapRange meet2 tr) lv
 
 meetValueLangFiniteSetModel ::
        WModel (FiniteSetUpdate (MeetType Entity t)) -> LangFiniteSetModel '( MeetType Entity t, t)
-meetValueLangFiniteSetModel lv = MkLangFiniteSetModel (coMapRange meet2 identityRange) lv
+meetValueLangFiniteSetModel lv = MkLangFiniteSetModel eqEquivalence (coMapRange meet2 identityRange) lv
 
 langFiniteSetModelMeet ::
        forall t.
@@ -95,24 +95,32 @@ langFiniteSetModelJoin seta setb =
     eaPair (langFiniteSetModelMeetValue seta) (langFiniteSetModelMeetValue setb)
 
 langFiniteSetModelAdd :: LangFiniteSetModel '( p, q) -> p -> Action ()
-langFiniteSetModelAdd (MkLangFiniteSetModel tr set) p =
+langFiniteSetModelAdd (MkLangFiniteSetModel _ tr set) p =
     actionModelPush set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
 
 langFiniteSetModelRemove :: LangFiniteSetModel '( p, q) -> p -> Action ()
-langFiniteSetModelRemove (MkLangFiniteSetModel tr set) p =
+langFiniteSetModelRemove (MkLangFiniteSetModel _ tr set) p =
     actionModelPush set $ pure $ KeyEditDelete $ shimToFunction (rangeContra tr) p
 
 langFiniteSetModelRemoveAll :: LangFiniteSetModel '( BottomType, TopType) -> Action ()
-langFiniteSetModelRemoveAll (MkLangFiniteSetModel _ set) = actionModelPush set $ pure KeyEditClear
+langFiniteSetModelRemoveAll (MkLangFiniteSetModel _ _ set) = actionModelPush set $ pure KeyEditClear
 
-langFiniteSetModelFunctionValue :: LangFiniteSetModel '( t, a) -> WROWModel (FiniteSet a)
-langFiniteSetModelFunctionValue (MkLangFiniteSetModel tr set) =
-    eaMapReadOnlyWhole (fmap $ shimToFunction $ rangeCo tr) $ eaToReadOnlyWhole set
+langFiniteSetModelFunctionValue1 ::
+       forall p q r. LangFiniteSetModel '( p, q) -> (forall t. (t -> q) -> WROWModel (ListSet t) -> r) -> r
+langFiniteSetModelFunctionValue1 (MkLangFiniteSetModel eqv tr set) call =
+    call (shimToFunction $ rangeCo tr) $ giveConstraint eqv $ eaToReadOnlyWhole set
+
+langFiniteSetModelFunctionValue ::
+       forall p q. Eq q
+    => LangFiniteSetModel '( p, q)
+    -> WROWModel (ListSet q)
+langFiniteSetModelFunctionValue (MkLangFiniteSetModel eqv tr set) =
+    eaMapReadOnlyWhole (listSetMap $ shimToFunction $ rangeCo tr) $ giveConstraint eqv $ eaToReadOnlyWhole set
 
 langFiniteSetModelMember :: forall a. LangFiniteSetModel '( a, TopType) -> a -> LangWholeModel '( Bool, Bool)
-langFiniteSetModelMember (MkLangFiniteSetModel tr set) val = let
+langFiniteSetModelMember (MkLangFiniteSetModel eqv tr set) val = let
     tval = shimToFunction (rangeContra tr) val
-    in wModelToWholeModel $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
+    in wModelToWholeModel $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens eqv tval) set
 
 langFiniteSetModelSingle ::
        forall a. LangFiniteSetModel '( BottomType, MeetType Entity a) -> LangWholeModel '( TopType, a)
@@ -120,37 +128,37 @@ langFiniteSetModelSingle set =
     wROWModelToWholeModel $
     eaMapReadOnlyWhole (fmap meet2 . maybeToKnow . getSingle) $ langFiniteSetModelFunctionValue set
 
-langFiniteSetModelFunc ::
-       forall a b. (FiniteSet a -> b) -> LangFiniteSetModel '( BottomType, a) -> LangWholeModel '( TopType, b)
-langFiniteSetModelFunc f set =
-    wROWModelToWholeModel $ eaMapReadOnlyWhole (Known . f) $ langFiniteSetModelFunctionValue set
+langFiniteSetModelCount :: LangFiniteSetModel '( BottomType, a) -> LangWholeModel '( TopType, Int)
+langFiniteSetModelCount (MkLangFiniteSetModel eqv _ set) =
+    wROWModelToWholeModel $ eaMapReadOnlyWhole (Known . olength) $ giveConstraint eqv $ eaToReadOnlyWhole set
 
 langFiniteSetModelCartesianSum ::
        forall ap aq bp bq.
        LangFiniteSetModel '( ap, aq)
     -> LangFiniteSetModel '( bp, bq)
     -> LangFiniteSetModel '( Either ap bp, Either aq bq)
-langFiniteSetModelCartesianSum (MkLangFiniteSetModel tra vala) (MkLangFiniteSetModel trb valb) =
-    MkLangFiniteSetModel (eitherRange tra trb) $ eaMap finiteSetCartesianSumChangeLens $ eaPair vala valb
+langFiniteSetModelCartesianSum (MkLangFiniteSetModel eqva tra vala) (MkLangFiniteSetModel eqvb trb valb) =
+    MkLangFiniteSetModel (eqva <+++> eqvb) (eitherRange tra trb) $
+    eaMap finiteSetCartesianSumChangeLens $ eaPair vala valb
 
 langFiniteSetModelCartesianProduct ::
        forall ap aq bp bq.
        LangFiniteSetModel '( ap, aq)
     -> LangFiniteSetModel '( bp, bq)
     -> LangFiniteSetModel '( (ap, bp), (aq, bq))
-langFiniteSetModelCartesianProduct (MkLangFiniteSetModel tra vala) (MkLangFiniteSetModel trb valb) =
-    MkLangFiniteSetModel (pairRange tra trb) $
+langFiniteSetModelCartesianProduct (MkLangFiniteSetModel eqva tra vala) (MkLangFiniteSetModel eqvb trb valb) =
+    MkLangFiniteSetModel (eqva <***> eqvb) (pairRange tra trb) $
     eaMap (fromReadOnlyRejectingChangeLens . finiteSetCartesianProductUpdateFunction) $ eaPair vala valb
 
 langFiniteSetModelToSetModel :: forall p q. LangFiniteSetModel '( p, q) -> LangSetModel p
-langFiniteSetModelToSetModel (MkLangFiniteSetModel tr sval) =
-    contramap (shimToFunction $ rangeContra tr) $ MkLangSetModel (==) $ eaMap finiteSetFunctionChangeLens sval
+langFiniteSetModelToSetModel (MkLangFiniteSetModel eqv tr sval) =
+    contramap (shimToFunction $ rangeContra tr) $ MkLangSetModel eqv $ eaMap finiteSetFunctionChangeLens sval
 
 langFiniteSetModelSetIntersect ::
        forall p q. LangFiniteSetModel '( p, q) -> LangSetModel q -> LangFiniteSetModel '( p, q)
-langFiniteSetModelSetIntersect (MkLangFiniteSetModel tr fsetval) fsetref = let
+langFiniteSetModelSetIntersect (MkLangFiniteSetModel eqv tr fsetval) fsetref = let
     MkLangSetModel _ setval = contramap (shimToFunction $ rangeCo tr) fsetref
-    in MkLangFiniteSetModel tr $
+    in MkLangFiniteSetModel eqv tr $
        eaMap (fromReadOnlyRejectingChangeLens . filterFiniteSetUpdateFunction) $ eaPair fsetval setval
 
 langFiniteSetModelSetDifference ::
@@ -158,7 +166,7 @@ langFiniteSetModelSetDifference ::
 langFiniteSetModelSetDifference a b = langFiniteSetModelSetIntersect a $ langSetModelComplement b
 
 wholeListFiniteSetChangeLens :: Eq a => ChangeLens (WholeUpdate [a]) (FiniteSetUpdate a)
-wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens coerceIsomorphism
+wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens (MkIsomorphism setFromList toList)
 
 langListModelToFiniteSetModel ::
        forall a. LangWholeModel '( [a], [MeetType Entity a]) -> LangFiniteSetModel '( MeetType Entity a, a)

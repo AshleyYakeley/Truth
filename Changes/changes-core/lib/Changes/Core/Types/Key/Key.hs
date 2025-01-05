@@ -23,7 +23,7 @@ import Changes.Core.Types.Tuple.Tuple
 
 --- reader
 data KeyReader cont reader t where
-    KeyReadKeys :: forall cont reader. KeyReader cont reader (FiniteSet (ContainerKey cont))
+    KeyReadKeys :: forall cont reader. KeyReader cont reader (ListSet (ContainerKey cont))
     KeyReadItem :: forall cont reader t. ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t)
 
 instance forall cont reader t. (Show (ContainerKey cont), AllConstraint Show reader) => Show (KeyReader cont reader t) where
@@ -57,14 +57,14 @@ knownKeyItemReadFunction key mr rt = do
 instance forall cont reader. (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Item cont) =>
              SubjectReader (KeyReader cont reader) where
     type ReaderSubject (KeyReader cont reader) = cont
-    subjectToRead cont KeyReadKeys = MkFiniteSet $ keys cont
+    subjectToRead cont KeyReadKeys = setFromList $ keys cont
     subjectToRead cont (KeyReadItem key rd) = fmap (\e -> subjectToRead e rd) $ lookupItem key cont
 
 instance forall cont reader. (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Item cont) =>
              FullSubjectReader (KeyReader cont reader) where
     readableToSubject mr = do
-        MkFiniteSet allkeys <- mr KeyReadKeys
-        list <- for allkeys $ \key -> readableToSubject $ knownKeyItemReadFunction key mr
+        allkeys <- mr KeyReadKeys
+        list <- for (setToList allkeys) $ \key -> readableToSubject $ knownKeyItemReadFunction key mr
         return $ fromItemList list
 
 --- edit
@@ -82,11 +82,13 @@ instance (Show (ContainerKey cont), Show edit, Show (Item cont)) => Show (KeyEdi
 
 instance Floating (KeyEdit cont edit) (KeyEdit cont edit)
 
-replace :: Eq a => a -> a -> FiniteSet a -> FiniteSet a
-replace _ _ (MkFiniteSet []) = mempty
-replace old new (MkFiniteSet (a:aa))
-    | old == a = MkFiniteSet $ new : aa
-replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace old new $ MkFiniteSet aa)
+replace :: Eq a => a -> a -> ListSet a -> ListSet a
+replace oldkey newkey fs =
+    if oldkey == newkey
+        then fs
+        else if member oldkey fs
+                 then insertSet newkey $ deleteSet oldkey fs
+                 else fs
 
 type instance EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit)
 
@@ -485,8 +487,8 @@ contextKeyChangeLens = let
         -> Readable m (ContextUpdateReader ua (KeyUpdate cont1 ub))
         -> m [KeyUpdate cont2 (ContextUpdate ua ub)]
     clUpdate (MkTupleUpdate SelectContext update) mr = do
-        MkFiniteSet kk <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
-        return $ fmap (\key -> KeyUpdateItem key $ MkTupleUpdate SelectContext update) kk
+        kk <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
+        return $ fmap (\key -> KeyUpdateItem key $ MkTupleUpdate SelectContext update) $ setToList kk
     clUpdate (MkTupleUpdate SelectContent (KeyUpdateItem key update)) _ =
         return [KeyUpdateItem key $ MkTupleUpdate SelectContent update]
     clUpdate (MkTupleUpdate SelectContent (KeyUpdateDelete key)) _ = return [KeyUpdateDelete key]

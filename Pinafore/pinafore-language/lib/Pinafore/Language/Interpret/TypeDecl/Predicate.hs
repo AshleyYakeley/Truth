@@ -34,7 +34,7 @@ makePredicateTypeBox name md storable sparent spredicate =
                 -> QScopeBuilder ()
             register ~(parent, predexpr) = do
                 let
-                    freevars :: FiniteSet SomeTypeVarT
+                    freevars :: ListSet SomeTypeVarT
                     freevars = freeTypeVariables parent
                     declaredvars :: [SomeTypeVarT]
                     declaredvars = mempty -- TBD
