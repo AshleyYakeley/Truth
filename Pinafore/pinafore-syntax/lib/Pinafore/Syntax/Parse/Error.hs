@@ -9,7 +9,6 @@ import Pinafore.Base
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Text
 import Shapes hiding (try)
-import Shapes.Numeric
 import Text.Parsec qualified as P
 import Text.Parsec.Error qualified as P
 

@@ -75,15 +75,15 @@ floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
                     else i
 floatingUpdateRight _ i = i
 
-instance forall seq. IsSequence seq => Floating (StringEdit seq) SequencePoint where
+instance forall seq. IsSequence seq => FloatingOn (StringEdit seq) SequencePoint where
     floatingUpdate = floatingUpdateRight
 
-instance forall seq. IsSequence seq => Floating (StringEdit seq) SequenceRun where
+instance forall seq. IsSequence seq => FloatingOn (StringEdit seq) SequenceRun where
     floatingUpdate edit (MkSequenceRun ostart olen) = let
         oend = ostart + olen
         in startEndRun (floatingUpdateLeft edit ostart) (floatingUpdateRight edit oend)
 
-instance forall seq. IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
+instance forall seq. IsSequence seq => FloatingOn (StringEdit seq) (StringEdit seq) where
     floatingUpdate _ (StringReplaceWhole s) = StringReplaceWhole s
     floatingUpdate edit (StringReplaceSection run s) = StringReplaceSection (floatingUpdate edit run) s
 

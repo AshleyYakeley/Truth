@@ -13,8 +13,8 @@ debugCheckEntity t e = do
     _ <- evaluate $ checkEntity (unpack t) e
     return ()
 
-debugLiteralLength :: Literal -> Int
-debugLiteralLength = olength . unLiteral
+debugLiteralLength :: Literal -> Natural
+debugLiteralLength = olengthNat . unLiteral
 
 debugLiteralIsEmbedded :: Literal -> Bool
 debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
@@ -22,7 +22,7 @@ debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
 compute :: Entity -> Entity
 compute e = MkEntity $ hashToAnchor $ \s -> pure $ s e
 
-longCompute :: Integer -> Entity -> Entity
+longCompute :: Natural -> Entity -> Entity
 longCompute 0 e = e
 longCompute n e = let
     e' = compute e

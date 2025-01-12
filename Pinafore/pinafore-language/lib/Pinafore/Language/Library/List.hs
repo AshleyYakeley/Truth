@@ -8,7 +8,6 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Shapes.Numeric
 
 append :: NonEmpty A -> [A] -> NonEmpty A
 append (a :| aa) bb = a :| (aa <> bb)

@@ -41,16 +41,6 @@ plainFormattingDef ::
     -> LibraryStuff
 plainFormattingDef lname = valBDS "asText" ("Represent " <> plainText lname <> " as text.") $ asTextPrism @t
 
-subtractNat :: Natural -> Natural -> Maybe Natural
-subtractNat a b = do
-    guard $ a >= b
-    return $ a - b
-
-predNat :: Natural -> Maybe Natural
-predNat v = do
-    guard $ v > 0
-    return $ pred v
-
 numericEntityLibSection :: LibraryStuff
 numericEntityLibSection =
     headingBDS

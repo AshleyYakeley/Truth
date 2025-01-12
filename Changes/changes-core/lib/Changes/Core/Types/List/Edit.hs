@@ -14,14 +14,14 @@ data ListEdit edit where
     ListEditInsert :: SequencePoint -> EditSubject edit -> ListEdit edit
     ListEditClear :: ListEdit edit
 
-instance Floating (ListEdit edit) SequencePoint where
+instance FloatingOn (ListEdit edit) SequencePoint where
     floatingUpdate (ListEditDelete p) i
         | p < i = pred i
     floatingUpdate (ListEditInsert p _) i
         | p <= i = succ i
     floatingUpdate _ i = i
 
-instance Floating (ListEdit edit) (ListEdit edit) where
+instance FloatingOn (ListEdit edit) (ListEdit edit) where
     floatingUpdate edit (ListEditItem i e) = ListEditItem (floatingUpdate edit i) e
     floatingUpdate edit (ListEditDelete i) = ListEditDelete (floatingUpdate edit i)
     floatingUpdate edit (ListEditInsert i a) = ListEditInsert (floatingUpdate edit i) a

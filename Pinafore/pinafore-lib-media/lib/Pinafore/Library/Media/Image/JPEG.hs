@@ -38,10 +38,10 @@ instance DecodeMedia JPEGData where
     dmMatchContentType (MkMediaType "image" "jpeg" _) = True
     dmMatchContentType _ = False
 
-jpegEncode :: Integer -> [(Text, Literal)] -> LangImage -> LangJPEGImage
+jpegEncode :: Natural -> [(Text, Literal)] -> LangImage -> LangJPEGImage
 jpegEncode q mdata (MkLangImage image) = let
     dt = (metadataToKeyMap mdata, someConvertImage image)
-    bs = toStrict $ encode (jpegFormat $ fromInteger q) dt
+    bs = toStrict $ encode (jpegFormat $ fromIntegral q) dt
     in MkLangJPEGImage $ bytesToDataLiteral bs
 
 jpegMetadata :: LangJPEGImage -> LangHasMetadata

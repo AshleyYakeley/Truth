@@ -261,15 +261,15 @@ let {
     window_cairoimage: Action Window =
         with Colour, Cairo, Drawing.Cairo, Path.Cairo, Number
         let {
-            dimensions: Integer *: Integer =
+            dimensions: Natural *: Natural =
                 (400,400);
-            drawing: Integer *: Integer -> Drawing Handler =
+            drawing: Natural *: Natural -> Drawing Handler =
                 fn (w,h) =>
                 let {
                     size = lesser w h;
                     square: Drawing Handler =
                         fill $ concat.Path [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
-                    squares: List ((Integer *: Integer) *: Colour) =
+                    squares: List ((Natural *: Natural) *: Colour) =
                         [
                             ((0,0), black),
                             ((1,0), red),

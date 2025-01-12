@@ -190,7 +190,7 @@ uiLayout orientation mitems =
 layoutGrow :: LangLayoutWidget -> LangLayoutWidget
 layoutGrow (MkLangLayoutWidget lopts ui) = MkLangLayoutWidget (lopts {loGrow = True}) ui
 
-uiNotebook :: LangWholeModel '( Int, TopType) -> [(LangWidget, LangWidget)] -> LangWidget
+uiNotebook :: LangWholeModel '( Natural, TopType) -> [(LangWidget, LangWidget)] -> LangWidget
 uiNotebook selref mitems =
     MkLangWidget $ \ec -> do
         items <-
@@ -198,7 +198,7 @@ uiNotebook selref mitems =
                 t <- mt ec
                 b <- mb ec
                 return (t, b)
-        createNotebook (langWholeModelSelectNotify noEditSource selref) items
+        createNotebook (langWholeModelSelectNotify noEditSource $ cfmap (MkCatRange toNaturalForce id) selref) items
 
 uiExec :: Action LangWidget -> LangWidget
 uiExec pui =

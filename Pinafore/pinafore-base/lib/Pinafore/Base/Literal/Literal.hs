@@ -122,13 +122,8 @@ instance AsLiteral SafeRational where
 instance AsLiteral Integer where
     literalCodec = codecMap integerSafeRational literalCodec
 
-integerToNatural :: Integer -> Maybe Natural
-integerToNatural i = do
-    guard $ i >= 0
-    return $ fromInteger i
-
 naturalInteger :: Codec Integer Natural
-naturalInteger = MkCodec integerToNatural toInteger
+naturalInteger = MkCodec toNaturalMaybe toInteger
 
 instance AsLiteral Natural where
     literalCodec = codecMap naturalInteger literalCodec

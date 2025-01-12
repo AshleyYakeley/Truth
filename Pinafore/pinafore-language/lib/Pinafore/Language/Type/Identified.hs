@@ -8,7 +8,6 @@ module Pinafore.Language.Type.Identified
     ) where
 
 import Import
-import Shapes.Numeric
 import Shapes.Unsafe (unsafeGetRefl)
 
 newtype TypeID =

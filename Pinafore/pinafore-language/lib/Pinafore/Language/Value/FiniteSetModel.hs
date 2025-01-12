@@ -128,9 +128,9 @@ langFiniteSetModelSingle set =
     wROWModelToWholeModel $
     eaMapReadOnlyWhole (fmap meet2 . maybeToKnow . getSingle) $ langFiniteSetModelFunctionValue set
 
-langFiniteSetModelCount :: LangFiniteSetModel '( BottomType, a) -> LangWholeModel '( TopType, Int)
+langFiniteSetModelCount :: LangFiniteSetModel '( BottomType, a) -> LangWholeModel '( TopType, Natural)
 langFiniteSetModelCount (MkLangFiniteSetModel eqv _ set) =
-    wROWModelToWholeModel $ eaMapReadOnlyWhole (Known . olength) $ giveConstraint eqv $ eaToReadOnlyWhole set
+    wROWModelToWholeModel $ eaMapReadOnlyWhole (Known . olengthNat) $ giveConstraint eqv $ eaToReadOnlyWhole set
 
 langFiniteSetModelCartesianSum ::
        forall ap aq bp bq.

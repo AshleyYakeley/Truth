@@ -13,7 +13,7 @@ data FullResultOneEdit (f :: Type -> Type) edit where
 
 type instance EditReader (FullResultOneEdit f edit) = OneReader f (EditReader edit)
 
-instance Floating edit edit => Floating (FullResultOneEdit f edit) (FullResultOneEdit f edit) where
+instance FloatingOn edit edit => FloatingOn (FullResultOneEdit f edit) (FullResultOneEdit f edit) where
     floatingUpdate (SuccessFullResultOneEdit e1) (SuccessFullResultOneEdit e2) =
         SuccessFullResultOneEdit $ floatingUpdate e1 e2
     floatingUpdate _ t = t

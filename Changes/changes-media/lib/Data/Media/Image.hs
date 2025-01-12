@@ -14,10 +14,10 @@ import Shapes
 
 blankImage ::
        forall px. Pixel px
-    => (Int, Int)
+    => (Natural, Natural)
     -> px
     -> Image px
-blankImage (w, h) p = generateImage (\_ _ -> p) w h
+blankImage (w, h) p = generateImage (\_ _ -> p) (fromIntegral w) (fromIntegral h)
 
-imageSize :: Image px -> (Int, Int)
-imageSize image = (imageWidth image, imageHeight image)
+imageSize :: Image px -> (Natural, Natural)
+imageSize image = (toNaturalForce $ imageWidth image, toNaturalForce $ imageHeight image)

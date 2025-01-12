@@ -40,7 +40,7 @@ newtype WholeReaderEdit (reader :: Type -> Type) =
 instance forall reader. Show (ReaderSubject reader) => Show (WholeReaderEdit reader) where
     show (MkWholeReaderEdit subj) = "whole " ++ show subj
 
-instance forall reader. Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
+instance forall reader. FloatingOn (WholeReaderEdit reader) (WholeReaderEdit reader)
 
 type instance forall reader. EditReader (WholeReaderEdit reader) = reader
 

@@ -37,7 +37,7 @@ deriving newtype instance forall reader . Empty (ConstEdit reader)
 instance forall reader. Show (ConstEdit reader) where
     show edit = never edit
 
-instance forall reader. Floating (ConstEdit reader) (ConstEdit reader)
+instance forall reader. FloatingOn (ConstEdit reader) (ConstEdit reader)
 
 type instance forall reader. EditReader (ConstEdit reader) = reader
 

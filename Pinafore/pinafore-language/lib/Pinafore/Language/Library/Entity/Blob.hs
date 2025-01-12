@@ -20,11 +20,11 @@ blobGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily 
 instance HasQGroundType '[] StrictByteString where
     qGroundType = blobGroundType
 
-toBlob :: [Integer] -> StrictByteString
-toBlob ii = fromList $ fmap fromInteger ii
+toBlob :: [Natural] -> StrictByteString
+toBlob ii = fromList $ fmap fromIntegral ii
 
-fromBlob :: StrictByteString -> [Integer]
-fromBlob b = fmap toInteger $ otoList b
+fromBlob :: StrictByteString -> [Natural]
+fromBlob b = fmap toNaturalForce $ otoList b
 
 hexTextPrism :: LangPrism' Text StrictByteString
 hexTextPrism = prism (fromLooseHexadecimal . unpack) (pack . toHexadecimal)

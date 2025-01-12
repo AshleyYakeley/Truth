@@ -46,12 +46,15 @@ langListModelToOrdered (FullLangListModel model) =
 langImmutListModel :: forall p q r. LangListModel '( p, q) -> LangListModel '( r, q)
 langImmutListModel model = OrderedLangListModel $ langListModelToOrdered model
 
-langListModelCountModel :: forall p q. LangListModel '( p, q) -> ImmutableWholeModel Int64
+langListModelCountModel :: forall p q. LangListModel '( p, q) -> ImmutableWholeModel Natural
 langListModelCountModel (OrderedLangListModel model) =
-    functionImmutableModel $ eaMap (funcChangeLens coerce . orderedListLengthLens) model
+    functionImmutableModel $ eaMap (funcChangeLens (toNaturalForce . unSequencePoint) . orderedListLengthLens) model
 langListModelCountModel (FullLangListModel model) =
     functionImmutableModel $
-    eaMap (funcChangeLens coerce . liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens) model
+    eaMap
+        (funcChangeLens (toNaturalForce . unSequencePoint) .
+         liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens)
+        model
 
 langListModelRead :: forall p q t. LangListModel '( p, q) -> ReadM (ListReader (WholeReader q)) t -> Action t
 langListModelRead (OrderedLangListModel model) rm = actionModelGet model rm

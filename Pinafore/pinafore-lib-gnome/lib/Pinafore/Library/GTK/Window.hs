@@ -42,16 +42,18 @@ createLangWindow lc uiw = do
 uiWindowClose :: LangWindow -> View ()
 uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) lwClose
 
-openWindow :: LangContext -> (Int32, Int32) -> ImmutableWholeModel Text -> LangWidget -> Action LangWindow
-openWindow lc wsSize title (MkLangWidget widget) =
+openWindow :: LangContext -> (Natural, Natural) -> ImmutableWholeModel Text -> LangWidget -> Action LangWindow
+openWindow lc (w, h) title (MkLangWidget widget) =
     actionLiftView $
-    mfix $ \w ->
+    mfix $ \window ->
         liftIOWithUnlift $ \unlift ->
             unlift $
             createLangWindow lc $ let
+                wsSize :: (Int32, Int32)
+                wsSize = (fromIntegral w, fromIntegral h)
                 wsPosition = WindowPositionCenter
                 wsCloseBoxAction :: GView 'Locked ()
-                wsCloseBoxAction = gvRunUnlocked $ lwClose w
+                wsCloseBoxAction = gvRunUnlocked $ lwClose window
                 wsTitle :: Model (ROWUpdate Text)
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
                 wsContent :: AccelGroup -> GView 'Unlocked Widget

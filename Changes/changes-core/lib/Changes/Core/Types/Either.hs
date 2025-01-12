@@ -48,7 +48,7 @@ partitionEitherEdits pes = let
     toEither (EitherEditRight eb) = Right eb
     in partitionEithers $ fmap toEither pes
 
-instance (Floating ea ea, Floating eb eb) => Floating (EitherEdit ea eb) (EitherEdit ea eb) where
+instance (FloatingOn ea ea, FloatingOn eb eb) => FloatingOn (EitherEdit ea eb) (EitherEdit ea eb) where
     floatingUpdate (EitherEditLeft e1) (EitherEditLeft e2) = EitherEditLeft $ floatingUpdate e1 e2
     floatingUpdate (EitherEditRight e1) (EitherEditRight e2) = EitherEditRight $ floatingUpdate e1 e2
     floatingUpdate _ t = t

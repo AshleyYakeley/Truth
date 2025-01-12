@@ -67,8 +67,8 @@ instance Is PolarityType polarity => HasQType QPolyShim polarity LangAlphaColour
 instance HasQGroundType '[] LangAlphaColour where
     qGroundType = alphaColourGroundType
 
-clamp16 :: Integer -> Word16
-clamp16 x = fromInteger $ min (max 0 x) 65536
+clamp16 :: Natural -> Word16
+clamp16 x = fromIntegral $ min (max 0 x) 65536
 
 w16ToDouble :: Word16 -> Double
 w16ToDouble n = (fromIntegral n) / 65535
@@ -83,10 +83,11 @@ doubleToW16Color :: Color (SRGB 'NonLinear) Double -> Color (SRGB 'NonLinear) Wo
 doubleToW16Color = fmap doubleToW16
 
 pattern MkPerceptualSRGB16 ::
-        Integer -> Integer -> Integer -> LangColour
+        Natural -> Natural -> Natural -> LangColour
 
 pattern MkPerceptualSRGB16 r g b <-
-        ColorSRGB (toInteger -> r) (toInteger -> g) (toInteger -> b)
+        ColorSRGB (toNaturalForce -> r) (toNaturalForce -> g)
+          (toNaturalForce -> b)
   where MkPerceptualSRGB16 r g b
           = ColorSRGB (clamp16 r) (clamp16 g) (clamp16 b)
 
@@ -112,10 +113,10 @@ pattern MkLinearRGBFraction r g b <-
 
 {-# COMPLETE MkLinearRGBFraction #-}
 
-pattern MkAlphaColour16 :: Integer -> LangColour -> LangAlphaColour
+pattern MkAlphaColour16 :: Natural -> LangColour -> LangAlphaColour
 
 pattern MkAlphaColour16 op col <-
-        ((\ acol -> (toInteger $ getAlpha acol, dropAlpha acol)) ->
+        ((\ acol -> (toNaturalForce $ getAlpha acol, dropAlpha acol)) ->
            (op, col))
   where MkAlphaColour16 op col = addAlpha col $ clamp16 op
 

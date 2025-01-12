@@ -31,7 +31,7 @@ data AnyEdit where
         -> edit
         -> AnyEdit
 
-instance Floating AnyEdit AnyEdit where
+instance FloatingOn AnyEdit AnyEdit where
     floatingUpdate (MkAnyEdit info1 edit1) aedit2@(MkAnyEdit info2 edit2) =
         case testEquality info1 info2 of
             Just Refl -> MkAnyEdit info2 $ floatingUpdate edit1 edit2

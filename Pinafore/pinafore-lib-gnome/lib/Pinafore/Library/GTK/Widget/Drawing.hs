@@ -48,13 +48,17 @@ langOnClick action =
 handlerFallThrough :: LangHandler -> LangHandler
 handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> False) $ uie evt
 
-uiDraw :: ImmutableWholeModel ((Int32, Int32) -> LangDrawing LangHandler) -> LangWidget
+uiDraw :: ImmutableWholeModel ((Natural, Natural) -> LangDrawing LangHandler) -> LangWidget
 uiDraw model =
     MkLangWidget $ \ec ->
         createCairo $
         unWModel $
         immutableWholeModelValue mempty $
-        fmap (\d p -> fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $ unLangDrawing (d p)) model
+        fmap
+            (\d (w, h) ->
+                 fmap (\f pp -> runLangHandler ec $ mconcat $ f pp) $
+                 unLangDrawing (d (toNaturalForce w, toNaturalForce h)))
+            model
 
 drawingStuff :: LibraryStuff
 drawingStuff =

@@ -71,7 +71,7 @@ instance SubjectReader QTableRead where
         listToMaybe $ [v | (p, s, v) <- ptsFacts, p == rp && s == rs]
     subjectToRead MkQTableSubject {..} (QTableReadLiteralGet rv) = listToMaybe [l | (v, l) <- ptsLiterals, v == rv]
 
-instance Floating QTableEdit QTableEdit
+instance FloatingOn QTableEdit QTableEdit
 
 type instance EditReader QTableEdit = QTableRead
 

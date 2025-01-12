@@ -12,7 +12,7 @@ newtype OneEdit (f :: Type -> Type) edit =
 instance Show edit => Show (OneEdit f edit) where
     show (MkOneEdit e) = "one " ++ show e
 
-instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
+instance FloatingOn edit edit => FloatingOn (OneEdit f edit) (OneEdit f edit) where
     floatingUpdate (MkOneEdit e1) (MkOneEdit e2) = MkOneEdit $ floatingUpdate e1 e2
 
 type instance EditReader (OneEdit f edit) = OneReader f (EditReader edit)

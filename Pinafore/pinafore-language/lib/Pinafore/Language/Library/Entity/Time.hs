@@ -78,6 +78,25 @@ unixFormattingDef lname =
          " as text, using the given [Unix-like format/parsing](https://hackage.haskell.org/package/time-1.12.2/docs/Data-Time-Format.html) string.") $
     unixAsText @t
 
+pattern TimeOfDayNat :: Natural -> Natural -> Pico -> TimeOfDay
+
+pattern TimeOfDayNat h m s <-
+        TimeOfDay (toNaturalForce -> h) (toNaturalForce -> m) s
+  where TimeOfDayNat h m s
+          = TimeOfDay (fromIntegral h) (fromIntegral m) s
+
+{-# COMPLETE TimeOfDayNat #-}
+
+pattern YearMonthDayNat :: Natural -> Natural -> Natural -> Day
+
+pattern YearMonthDayNat y m d <-
+        YearMonthDay (toNaturalForce -> y) (toNaturalForce -> m)
+          (toNaturalForce -> d)
+  where YearMonthDayNat y m d
+          = YearMonthDay (fromIntegral y) (fromIntegral m) (fromIntegral d)
+
+{-# COMPLETE YearMonthDayNat #-}
+
 timeEntityLibSection :: LibraryStuff
 timeEntityLibSection =
     headingBDS
@@ -147,11 +166,8 @@ timeEntityLibSection =
                 ""
                 (MkSomeGroundType dateGroundType)
                 [ addNameInRootBDS $
-                  valPatBDS "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $
-                  PureFunction $
-                  pure $ \day -> let
-                      (y, m, d) = toGregorian day
-                      in (y, (m, (d, ())))
+                  valPatBDS "YearMonthDay" "Construct a `Date` from year, month, day." YearMonthDayNat $
+                  PureFunction $ pure $ \(YearMonthDayNat y m d) -> (y, (m, (d, ())))
                 , addNameInRootBDS $
                   valPatBDS "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $
                   PureFunction $ pure $ \day -> (toModifiedJulianDay day, ())
@@ -177,8 +193,8 @@ timeEntityLibSection =
                 ""
                 (MkSomeGroundType timeOfDayGroundType)
                 [ addNameInRootBDS $
-                  valPatBDS "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $
-                  PureFunction $ pure $ \TimeOfDay {..} -> (todHour, (todMin, (todSec, ())))
+                  valPatBDS "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDayNat $
+                  PureFunction $ pure $ \(TimeOfDayNat h m s) -> (h, (m, (s, ())))
                 , addNameInRootBDS $
                   valPatBDS
                       "SinceMidnight"

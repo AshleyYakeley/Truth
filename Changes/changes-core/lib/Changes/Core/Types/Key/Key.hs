@@ -80,7 +80,7 @@ instance (Show (ContainerKey cont), Show edit, Show (Item cont)) => Show (KeyEdi
     show (KeyEditInsertReplace element) = "insert " ++ show element
     show KeyEditClear = "clear"
 
-instance Floating (KeyEdit cont edit) (KeyEdit cont edit)
+instance FloatingOn (KeyEdit cont edit) (KeyEdit cont edit)
 
 replace :: Eq a => a -> a -> ListSet a -> ListSet a
 replace oldkey newkey fs =

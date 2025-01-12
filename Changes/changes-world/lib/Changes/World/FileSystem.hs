@@ -66,7 +66,7 @@ data FSEdit
     | FSEditRenameItem FilePath
                        FilePath
 
-instance Floating FSEdit FSEdit
+instance FloatingOn FSEdit FSEdit
 
 type instance EditReader FSEdit = FSReader
 

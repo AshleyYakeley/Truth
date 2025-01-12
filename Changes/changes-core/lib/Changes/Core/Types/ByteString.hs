@@ -32,7 +32,7 @@ data ByteStringEdit
     | ByteStringWrite Int64
                       LazyByteString
 
-instance Floating ByteStringEdit ByteStringEdit
+instance FloatingOn ByteStringEdit ByteStringEdit
 
 type instance EditReader ByteStringEdit = ByteStringReader
 
