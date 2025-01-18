@@ -148,6 +148,8 @@
 > 
 > > doc:Mk.NmB
 > > 
+#### Other
+
 <code>subtype NmA Integer Unit Unit \<: NmB</code>
 
 <code>type </code>**<code>NmRecA\.N</code>**<code> (\-q,\+p) \+r \-s</code>
@@ -171,6 +173,8 @@
 > > doc:Mk.NmRecB
 > > 
 <code>subtype NmRecA Integer Unit Unit \<: NmRecB</code>
+
+### Other
 
 <code>type </code>**<code>NmR\.N</code>**
 
