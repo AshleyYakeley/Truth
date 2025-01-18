@@ -31,6 +31,7 @@ module Pinafore.Language.Library.Defs
     , semigroupEntries
     , monoidEntries
     , sequenceEntries
+    , elementsEntries
     ) where
 
 import Import
@@ -463,5 +464,27 @@ sequenceEntries =
                 takeNat len $ dropNat start x
           , valBDS "take" "Take the first n elements." $ takeNat @a
           , valBDS "drop" "Drop the first n elements." $ dropNat @a
+          ]
+    ]
+
+elementsEntries ::
+       forall (a :: Type).
+       ( IsSequence a
+       , MonoFilterable a
+       , HasQType QPolyShim 'Positive a
+       , HasQType QPolyShim 'Negative a
+       , HasQType QPolyShim 'Positive (Element a)
+       )
+    => [LibraryStuff]
+elementsEntries =
+    sequenceEntries @a <>
+    [ headingBDS
+          "Elements"
+          ""
+          [ valBDS "takeWhile" "Take while the condition holds." $ takeWhile @a
+          , valBDS "dropWhile" "Drop while the condition holds." $ dropWhile @a
+          , valBDS "filter" "Filter for matching elements." $ ofilter @a
+          , valBDS "sort" "Sort by an order." $ \(MkOrder order) -> sortBy @a order
+          , valBDS "index" "Get an element by index." $ \s (n :: Natural) -> index @a s $ fromIntegral n
           ]
     ]

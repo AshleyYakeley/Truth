@@ -18,12 +18,13 @@ actionModelPush model edits = do
         else fail "bad push"
 
 langListModelItem ::
-       forall t. Bool -> Int64 -> WModel (ListUpdate (WholeUpdate t)) -> Lifecycle (WModel (WholeUpdate (Maybe t)))
+       forall t.
+       Bool
+    -> SequencePoint
+    -> WModel (ListUpdate (WholeUpdate t))
+    -> Lifecycle (WModel (WholeUpdate (Maybe t)))
 langListModelItem present i lmodel =
-    eaFloatMap
-        emptyResourceContext
-        (changeLensToFloating (bijectionWholeChangeLens id) . listItemLens present (MkSequencePoint i))
-        lmodel
+    eaFloatMap emptyResourceContext (changeLensToFloating (bijectionWholeChangeLens id) . listItemLens present i) lmodel
 
 testIssue304 :: TestTree
 testIssue304 =

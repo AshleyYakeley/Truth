@@ -65,7 +65,7 @@ numericEntityLibSection =
                   , valBDS "mod" "Modulus, leftover from `div`" $ mod' @Natural
                   , valBDS "gcd" "Greatest common divisor." $ gcd @Natural
                   , valBDS "lcm" "Least common multiple." $ lcm @Natural
-                  , valBDS "^" "Raise to non-negative power." $ (^) @Natural @Natural
+                  , valBDS "^" "Raise to power." $ (^) @Natural @Natural
                   , valBDS "sum" "Sum." $ sum @[] @Natural
                   , valBDS "product" "Product." $ product @[] @Natural
                   , valBDS
@@ -102,7 +102,7 @@ numericEntityLibSection =
                   , addNameInRootBDS $ valBDS "odd" "Is odd?" $ odd @Integer
                   , addNameInRootBDS $ valBDS "gcd" "Greatest common divisor." $ gcd @Integer
                   , addNameInRootBDS $ valBDS "lcm" "Least common multiple." $ lcm @Integer
-                  , addNameInRootBDS $ valBDS "^" "Raise to non-negative power." $ (^) @Integer @Integer
+                  , addNameInRootBDS $ valBDS "^" "Raise to power." ((^) :: Integer -> Natural -> Integer)
                   , addNameInRootBDS $ valBDS "sum" "Sum." $ sum @[] @Integer
                   , addNameInRootBDS $ valBDS "product" "Product." $ product @[] @Integer
                   , addNameInRootBDS $
@@ -142,7 +142,7 @@ numericEntityLibSection =
                       "Divide, truncate towards negative infinity."
                       (div' :: SafeRational -> SafeRational -> Integer)
                 , valBDS "mod" "Modulus, leftover from `div`" $ mod' @SafeRational
-                , valBDS "^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
+                , valBDS "^" "Raise to power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
                 , valBDS "sum" "Sum." $ sum @[] @SafeRational
                 , valBDS "mean" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
                 , valBDS "product" "Product." $ product @[] @SafeRational

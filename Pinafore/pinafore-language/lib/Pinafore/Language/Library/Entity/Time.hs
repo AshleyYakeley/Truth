@@ -87,13 +87,12 @@ pattern TimeOfDayNat h m s <-
 
 {-# COMPLETE TimeOfDayNat #-}
 
-pattern YearMonthDayNat :: Natural -> Natural -> Natural -> Day
+pattern YearMonthDayNat :: Integer -> Natural -> Natural -> Day
 
 pattern YearMonthDayNat y m d <-
-        YearMonthDay (toNaturalForce -> y) (toNaturalForce -> m)
-          (toNaturalForce -> d)
+        YearMonthDay y (toNaturalForce -> m) (toNaturalForce -> d)
   where YearMonthDayNat y m d
-          = YearMonthDay (fromIntegral y) (fromIntegral m) (fromIntegral d)
+          = YearMonthDay y (fromIntegral m) (fromIntegral d)
 
 {-# COMPLETE YearMonthDayNat #-}
 
