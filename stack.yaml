@@ -32,7 +32,7 @@ packages:
 - Pinafore/pinafore-app
 - Pinafore/pinafore-docgen
 
-resolver: lts-23.0
+resolver: lts-23.5
 
 allow-newer: true
 allow-newer-deps:

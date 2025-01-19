@@ -1,5 +1,7 @@
-FROM fpco/stack-build-small:lts-23.0
-RUN echo 2024-12-21 > /container.date
+ARG RESOLVER="lts-23.5"
+
+FROM fpco/stack-build-small:${RESOLVER}
+RUN echo 2025-01-19 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive
@@ -43,7 +45,8 @@ RUN apt-get install -y nodejs
 RUN npm --global install @vscode/vsce
 
 # Stack
-RUN stack setup --resolver lts-23.0
+ARG RESOLVER
+RUN stack setup --resolver ${RESOLVER}
 
 # make sudo work
 RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
