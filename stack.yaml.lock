@@ -40,27 +40,26 @@ packages:
   original:
     hackage: optparse-applicative-0.17.1.0
 - completed:
-    commit: 443776e416f3fc3c2b56cbd5b11beaf022365c9d
-    git: https://github.com/AshleyYakeley/haskell-src-exts.git
-    name: haskell-src-exts
+    hackage: Cabal-syntax-3.12.1.0@sha256:6dbb06fb08ff77520947fb4c1ef281c9cea5b8dc7fd9a41ad62273fa916cf4b2,7407
     pantry-tree:
-      sha256: b316fd6cc4a6ae6dbfbb0dce02a08f253c093b5ea91785a9db85b979571423f5
-      size: 98740
-    version: 1.23.1
+      sha256: 62e4b1bbdf7fe7d5259f45811e6fd0131823a10a8ec8c5eaf25370d444ac263a
+      size: 11051
   original:
-    commit: 443776e416f3fc3c2b56cbd5b11beaf022365c9d
-    git: https://github.com/AshleyYakeley/haskell-src-exts.git
+    hackage: Cabal-syntax-3.12.1.0
 - completed:
-    commit: 39739ea7717249e405ab67c8a579b552e4cec8b9
-    git: https://github.com/AshleyYakeley/hindent.git
-    name: hindent
+    hackage: ghc-lib-parser-9.10.1.20250103@sha256:e6ac09326b6b4c7a0113cc962c2321e86e47f0176a9ec5989641c8a95dbcfa2a,18195
     pantry-tree:
-      sha256: d494b065a194847e1101d1ed2de1e4ef45bd4176b41e753eb17d3b72505e8864
-      size: 2019
-    version: 5.3.1
+      sha256: fb09305e1cf369b7473ee07337cc252958815a46ca11b2a2a6f4c43862636cf8
+      size: 37484
   original:
-    commit: 39739ea7717249e405ab67c8a579b552e4cec8b9
-    git: https://github.com/AshleyYakeley/hindent.git
+    hackage: ghc-lib-parser-9.10.1.20250103
+- completed:
+    hackage: fourmolu-0.17.0.0@sha256:e5fb41791488bef362a755da83a4b9a4681cf9f15148b3aca604e3f5cedbb11a,6998
+    pantry-tree:
+      sha256: 60ef65181930a0ce4cdd63a1ef4dfa8080a4e4455c867da343b3cb6de1a81b9e
+      size: 165530
+  original:
+    hackage: fourmolu-0.17.0.0
 - completed:
     hackage: witness-0.7@sha256:845d0c2ac74785824d035d38e3580fd30964eabdc6103ada08f195de3ad23a24,3520
     pantry-tree:

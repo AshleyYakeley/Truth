@@ -51,10 +51,9 @@ extra-deps:
 - optparse-applicative-0.17.1.0
 
 # format
-- git: https://github.com/AshleyYakeley/haskell-src-exts.git
-  commit: 443776e416f3fc3c2b56cbd5b11beaf022365c9d
-- git: https://github.com/AshleyYakeley/hindent.git
-  commit: 39739ea7717249e405ab67c8a579b552e4cec8b9
+- Cabal-syntax-3.12.1.0
+- ghc-lib-parser-9.10.1.20250103
+- fourmolu-0.17.0.0
 
 # my stuff
 - witness-0.7
