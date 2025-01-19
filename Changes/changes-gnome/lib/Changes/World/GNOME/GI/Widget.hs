@@ -1,7 +1,6 @@
 module Changes.World.GNOME.GI.Widget where
 
 import Data.GI.Base
-import Data.GI.Gtk
 import Data.IORef
 import Shapes
 
