@@ -29,7 +29,7 @@ instance AllConstraint Show QStorageRead where
 data QStorageEdit where
     MkQStorageEdit :: StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> QStorageEdit -- pred subj kval
 
-instance Floating QStorageEdit QStorageEdit
+instance FloatingOn QStorageEdit QStorageEdit
 
 instance ApplicableEdit QStorageEdit where
     applyEdit (MkQStorageEdit est evt ep es (Known ev)) _ (QStorageReadGet rst rp rs)

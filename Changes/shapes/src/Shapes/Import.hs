@@ -38,6 +38,7 @@ import Data.Unique as I
 import Data.Void as I
 import Data.Word as I
 import GHC.Stack as I (HasCallStack)
+import Numeric.Natural as I
 import Prelude as I
     ( Bounded(..)
     , Enum(..)
@@ -378,3 +379,46 @@ liftWithDefer lft call = do
     tmu <- liftIO $ takeMVar var
     tmu
     return a
+
+toNaturalForce :: Integral a => a -> Natural
+toNaturalForce i = fromIntegral i
+
+toNaturalMaybe :: Integral a => a -> Maybe Natural
+toNaturalMaybe i = do
+    guard $ i >= 0
+    return $ toNaturalForce i
+
+subtractNat :: Natural -> Natural -> Maybe Natural
+subtractNat a b = do
+    guard $ a >= b
+    return $ a - b
+
+predNat :: Natural -> Maybe Natural
+predNat v = do
+    guard $ v > 0
+    return $ pred v
+
+olengthNat ::
+       forall a. MonoFoldable a
+    => a
+    -> Natural
+olengthNat = toNaturalForce . olength
+
+takeNat ::
+       forall a. IsSequence a
+    => Natural
+    -> a
+    -> a
+takeNat n = take $ fromIntegral n
+
+dropNat ::
+       forall a. IsSequence a
+    => Natural
+    -> a
+    -> a
+dropNat n = drop $ fromIntegral n
+
+pattern NaturalInteger :: Natural -> Integer
+
+pattern NaturalInteger n <- (toNaturalMaybe -> Just n)
+  where NaturalInteger n = toInteger n

@@ -111,7 +111,8 @@ instance (TupleUpdateWitness IsUpdate sel, TupleUpdateWitness IsEditUpdate sel) 
         case tupleUpdateWitness @IsEditUpdate sel of
             Dict -> MkTupleUpdateEdit sel $ updateEdit update
 
-instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => Floating (TupleUpdateEdit sel) (TupleUpdateEdit sel) where
+instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) =>
+             FloatingOn (TupleUpdateEdit sel) (TupleUpdateEdit sel) where
     floatingUpdate (MkTupleUpdateEdit s1 e1) edit@(MkTupleUpdateEdit s2 e2) =
         case testEquality s1 s2 of
             Just Refl ->

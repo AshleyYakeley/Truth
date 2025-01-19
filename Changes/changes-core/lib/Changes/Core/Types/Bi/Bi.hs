@@ -20,7 +20,7 @@ newtype BiUpdate (pupdate :: Type) (qupdate :: Type) =
 
 type instance UpdateEdit (BiUpdate pupdate qupdate) = BiEdit (UpdateEdit pupdate) (UpdateEdit qupdate)
 
-instance Floating edit edit => Floating (BiEdit edit edit) (BiEdit edit edit) where
+instance FloatingOn edit edit => FloatingOn (BiEdit edit edit) (BiEdit edit edit) where
     floatingUpdate (MkBiEdit edit) (MkBiEdit t) = MkBiEdit $ floatingUpdate edit t
 
 instance ApplicableEdit edit => ApplicableEdit (BiEdit edit edit) where

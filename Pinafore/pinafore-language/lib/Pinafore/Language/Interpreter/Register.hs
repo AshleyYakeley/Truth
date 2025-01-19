@@ -45,7 +45,7 @@ updateBindingInfo fnref f = do
 
 registerLetBindings :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindings bb =
-    registerBindings $ fmap (\(fname, doc, exp) -> (fname, MkQBindingInfo fname doc $ ValueBinding exp)) bb
+    registerBindings $ fmap (\(fname, doc, expr) -> (fname, MkQBindingInfo fname doc $ ValueBinding expr)) bb
 
 registerLetBindingsDocs :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindingsDocs bb = do
@@ -93,9 +93,9 @@ registerGroundType :: forall dv t. FullName -> DefDoc -> QGroundType dv t -> QSc
 registerGroundType name doc t = registerType name doc $ MkSomeGroundType t
 
 registerPatternConstructor :: FullName -> DefDoc -> QExpression -> QPatternConstructor -> QScopeBuilder ()
-registerPatternConstructor name doc exp pc = do
+registerPatternConstructor name doc expr pc = do
     builderLift $ checkNameForRegister name
-    registerBinding name $ MkQBindingInfo name doc $ PatternConstructorBinding exp pc
+    registerBinding name $ MkQBindingInfo name doc $ PatternConstructorBinding expr pc
 
 registerRecordConstructor :: FullName -> DefDoc -> QRecordConstructor -> QScopeBuilder ()
 registerRecordConstructor = registerSelector recordConstructorBindingSelector

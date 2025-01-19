@@ -182,6 +182,12 @@ integerGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFami
 instance HasQGroundType '[] Integer where
     qGroundType = integerGroundType
 
+naturalGroundType :: QGroundType '[] Natural
+naturalGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Natural)|]) "Natural"
+
+instance HasQGroundType '[] Natural where
+    qGroundType = naturalGroundType
+
 booleanGroundType :: QGroundType '[] Bool
 booleanGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean"
 
@@ -238,6 +244,16 @@ instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is Polari
              HasQType pshim polarity Int where
     qType = mapQIsoShimWit (functionToShim "toInteger" toInteger) (functionToShim "fromInteger" fromInteger) qType
 
+-- Int8
+instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
+             HasQType pshim polarity Int8 where
+    qType = mapQIsoShimWit (functionToShim "toInteger" toInteger) (functionToShim "fromInteger" fromInteger) qType
+
+-- Int16
+instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
+             HasQType pshim polarity Int16 where
+    qType = mapQIsoShimWit (functionToShim "toInteger" toInteger) (functionToShim "fromInteger" fromInteger) qType
+
 -- Int32
 instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
              HasQType pshim polarity Int32 where
@@ -247,6 +263,51 @@ instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is Polari
 instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
              HasQType pshim polarity Int64 where
     qType = mapQIsoShimWit (functionToShim "toInteger" toInteger) (functionToShim "fromInteger" fromInteger) qType
+
+-- Word
+instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
+             HasQType pshim polarity Word where
+    qType =
+        mapQIsoShimWit
+            (functionToShim "toNaturalForce" toNaturalForce)
+            (functionToShim "fromIntegral" fromIntegral)
+            qType
+
+-- Word8
+instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
+             HasQType pshim polarity Word8 where
+    qType =
+        mapQIsoShimWit
+            (functionToShim "toNaturalForce" toNaturalForce)
+            (functionToShim "fromIntegral" fromIntegral)
+            qType
+
+-- Word16
+instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
+             HasQType pshim polarity Word16 where
+    qType =
+        mapQIsoShimWit
+            (functionToShim "toNaturalForce" toNaturalForce)
+            (functionToShim "fromIntegral" fromIntegral)
+            qType
+
+-- Word32
+instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
+             HasQType pshim polarity Word32 where
+    qType =
+        mapQIsoShimWit
+            (functionToShim "toNaturalForce" toNaturalForce)
+            (functionToShim "fromIntegral" fromIntegral)
+            qType
+
+-- Word64
+instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
+             HasQType pshim polarity Word64 where
+    qType =
+        mapQIsoShimWit
+            (functionToShim "toNaturalForce" toNaturalForce)
+            (functionToShim "fromIntegral" fromIntegral)
+            qType
 
 -- Rational
 instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
@@ -281,7 +342,11 @@ instance forall (pshim :: PolyShimKind) polarity a. ( FromQIsoShim pshim
 -- SequencePoint
 instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>
              HasQType pshim polarity SequencePoint where
-    qType = mapQIsoShimWit (coerceShim "unSequencePoint") (coerceShim "MkSequencePoint") (qType :: _ Int64)
+    qType =
+        mapQIsoShimWit
+            (functionToShim "unSequencePoint" $ toNaturalForce . unSequencePoint)
+            (functionToShim "MkSequencePoint" $ MkSequencePoint . fromIntegral)
+            (qType :: _ Natural)
 
 -- SequenceRun
 instance forall (pshim :: PolyShimKind) polarity. (FromQIsoShim pshim, Is PolarityType polarity) =>

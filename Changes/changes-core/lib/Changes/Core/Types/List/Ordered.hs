@@ -22,12 +22,12 @@ data OrderedListEdit edit where
     OrderedListEditDelete :: SequencePoint -> OrderedListEdit edit
     OrderedListEditClear :: OrderedListEdit edit
 
-instance Floating (OrderedListEdit edit) SequencePoint where
+instance FloatingOn (OrderedListEdit edit) SequencePoint where
     floatingUpdate (OrderedListEditDelete p) i
         | p < i = pred i
     floatingUpdate _ i = i
 
-instance Floating (OrderedListEdit edit) (OrderedListEdit edit) where
+instance FloatingOn (OrderedListEdit edit) (OrderedListEdit edit) where
     floatingUpdate edit (OrderedListEditItem i e) = OrderedListEditItem (floatingUpdate edit i) e
     floatingUpdate edit (OrderedListEditDelete i) = OrderedListEditDelete (floatingUpdate edit i)
     floatingUpdate _edit OrderedListEditClear = OrderedListEditClear

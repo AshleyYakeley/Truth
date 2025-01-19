@@ -15,7 +15,7 @@ instance (Show ea, Show eb) => Show (SumEdit ea eb) where
     show (SumEditLeft e) = "left " ++ show e
     show (SumEditRight e) = "right " ++ show e
 
-instance (Floating ea ea, Floating eb eb) => Floating (SumEdit ea eb) (SumEdit ea eb) where
+instance (FloatingOn ea ea, FloatingOn eb eb) => FloatingOn (SumEdit ea eb) (SumEdit ea eb) where
     floatingUpdate (SumEditLeft e1) (SumEditLeft e2) = SumEditLeft $ floatingUpdate e1 e2
     floatingUpdate (SumEditRight e1) (SumEditRight e2) = SumEditRight $ floatingUpdate e1 e2
     floatingUpdate _ t = t

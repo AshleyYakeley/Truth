@@ -46,39 +46,77 @@ numericEntityLibSection =
     headingBDS
         "Numeric"
         ""
-        [ headingBDS "Integer" "" $
+        [ headingBDS "Natural" "" $
+          [ typeBDS "Natural" "" (MkSomeGroundType naturalGroundType) []
+          , hasSubtypeRelationBDS @Natural @Integer Verify "" $ functionToShim "naturalToInteger" toInteger
+          , namespaceBDS "Natural" $
+            (ordEntries @Natural) <>
+            [ headingBDS
+                  "Enum"
+                  ""
+                  [valBDS "pred" "Previous value." $ predNat, valBDS "succ" "Next value." $ succ @Natural]
+            , headingBDS
+                  "Arithmetic"
+                  ""
+                  [ plainFormattingDef @Natural "a non-negative integer"
+                  , valBDS "+" "Add." $ (+) @Natural
+                  , valBDS "-" "Subtract." subtractNat
+                  , valBDS "*" "Multiply." $ (*) @Natural
+                  , valBDS "mod" "Modulus, leftover from `div`" $ mod' @Natural
+                  , valBDS "gcd" "Greatest common divisor." $ gcd @Natural
+                  , valBDS "lcm" "Least common multiple." $ lcm @Natural
+                  , valBDS "^" "Raise to power." $ (^) @Natural @Natural
+                  , valBDS "sum" "Sum." $ sum @[] @Natural
+                  , valBDS "product" "Product." $ product @[] @Natural
+                  , valBDS
+                        "range"
+                        "`range a b` is an arithmetic sequence starting from `a`, with all numbers `<= b`. Step is +1." $
+                    range @Natural
+                  , valBDS
+                        "arithList"
+                        "`arithList step a (Just b)` is an arithmetic sequence starting from `a`, with all numbers `<= b`.\n\n\
+                                    \`arithList step a Nothing` is an infinite arithmetic sequence starting from `a`." $
+                    arithList @Natural
+                  ]
+            ]
+          ]
+        , headingBDS "Integer" "" $
           [ typeBDS "Integer" "" (MkSomeGroundType integerGroundType) []
           , hasSubtypeRelationBDS @Integer @SafeRational Verify "" $
             functionToShim "integerSafeRational" $ encode integerSafeRational
           , namespaceBDS "Integer" $
             pickNamesInRootBDS ["lesser", "greater"] (ordEntries @Integer) <>
             pickNamesInRootBDS ["succ", "pred"] (enumEntries @Integer) <>
-            [ plainFormattingDef @Integer "an integer"
-            , addNameInRootBDS $ valBDS "+" "Add." $ (+) @Integer
-            , addNameInRootBDS $ valBDS "-" "Subtract." $ (-) @Integer
-            , addNameInRootBDS $ valBDS "*" "Multiply." $ (*) @Integer
-            , addNameInRootBDS $ valBDS "negate" "Negate." $ negate @Integer
-            , addNameInRootBDS $ valBDS "abs" "Absolute value." $ abs @Integer
-            , addNameInRootBDS $ valBDS "signum" "Sign." $ signum @Integer
-            , addNameInRootBDS $ valBDS "mod" "Modulus, leftover from `div`" $ mod' @Integer
-            , addNameInRootBDS $ valBDS "even" "Is even?" $ even @Integer
-            , addNameInRootBDS $ valBDS "odd" "Is odd?" $ odd @Integer
-            , addNameInRootBDS $ valBDS "gcd" "Greatest common divisor." $ gcd @Integer
-            , addNameInRootBDS $ valBDS "lcm" "Least common multiple." $ lcm @Integer
-            , addNameInRootBDS $ valBDS "^" "Raise to non-negative power." $ (^) @Integer @Integer
-            , addNameInRootBDS $ valBDS "sum" "Sum." $ sum @[] @Integer
-            , addNameInRootBDS $ valBDS "product" "Product." $ product @[] @Integer
-            , addNameInRootBDS $
-              valBDS
-                  "range"
-                  "`range a b` is an arithmetic sequence starting from `a`, with all numbers `<= b`. Step is +1." $
-              range @Integer
-            , addNameInRootBDS $
-              valBDS
-                  "arithList"
-                  "`arithList step a (Just b)` is an arithmetic sequence starting from `a`, with all numbers `<= b` (for positive step) or `>= b` (for negative step).\n\n\
+            [ headingBDS
+                  "Arithmetic"
+                  ""
+                  [ plainFormattingDef @Integer "an integer"
+                  , addNameInRootBDS $ valBDS "+" "Add." $ (+) @Integer
+                  , addNameInRootBDS $ valBDS "-" "Subtract." $ (-) @Integer
+                  , addNameInRootBDS $ valBDS "*" "Multiply." $ (*) @Integer
+                  , addNameInRootBDS $ valBDS "negate" "Negate." $ negate @Integer
+                  , addNameInRootBDS $ valBDS "abs" "Absolute value." $ abs @Integer
+                  , addNameInRootBDS $ valBDS "signum" "Sign." $ signum @Integer
+                  , addNameInRootBDS $ valBDS "mod" "Modulus, leftover from `div`" $ mod' @Integer
+                  , addNameInRootBDS $ valBDS "even" "Is even?" $ even @Integer
+                  , addNameInRootBDS $ valBDS "odd" "Is odd?" $ odd @Integer
+                  , addNameInRootBDS $ valBDS "gcd" "Greatest common divisor." $ gcd @Integer
+                  , addNameInRootBDS $ valBDS "lcm" "Least common multiple." $ lcm @Integer
+                  , addNameInRootBDS $ valBDS "^" "Raise to power." ((^) :: Integer -> Natural -> Integer)
+                  , addNameInRootBDS $ valBDS "sum" "Sum." $ sum @[] @Integer
+                  , addNameInRootBDS $ valBDS "product" "Product." $ product @[] @Integer
+                  , addNameInRootBDS $
+                    valBDS
+                        "range"
+                        "`range a b` is an arithmetic sequence starting from `a`, with all numbers `<= b`. Step is +1." $
+                    range @Integer
+                  , addNameInRootBDS $
+                    valBDS
+                        "arithList"
+                        "`arithList step a (Just b)` is an arithmetic sequence starting from `a`, with all numbers `<= b` (for positive step) or `>= b` (for negative step).\n\n\
                                 \`arithList step a Nothing` is an infinite arithmetic sequence starting from `a`." $
-              arithList @Integer
+                    arithList @Integer
+                  ]
             ]
           ]
         , headingBDS "Rational" "" $
@@ -104,7 +142,7 @@ numericEntityLibSection =
                       "Divide, truncate towards negative infinity."
                       (div' :: SafeRational -> SafeRational -> Integer)
                 , valBDS "mod" "Modulus, leftover from `div`" $ mod' @SafeRational
-                , valBDS "^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
+                , valBDS "^" "Raise to power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
                 , valBDS "sum" "Sum." $ sum @[] @SafeRational
                 , valBDS "mean" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
                 , valBDS "product" "Product." $ product @[] @SafeRational

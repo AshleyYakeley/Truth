@@ -31,6 +31,7 @@ module Pinafore.Language.Library.Defs
     , semigroupEntries
     , monoidEntries
     , sequenceEntries
+    , elementsEntries
     ) where
 
 import Import
@@ -452,16 +453,38 @@ monoidEntries =
     semigroupEntries @a <> [headingBDS "Monoid" "" [valBDS "empty" "" $ mempty @a, valBDS "concat" "" $ mconcat @a]]
 
 sequenceEntries ::
-       forall (a :: Type). (IsSequence a, Index a ~ Int, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
+       forall (a :: Type). (IsSequence a, HasQType QPolyShim 'Positive a, HasQType QPolyShim 'Negative a)
     => [LibraryStuff]
 sequenceEntries =
     [ headingBDS
           "Sequence"
           ""
-          [ valBDS "length" "The number of elements." $ olength @a
+          [ valBDS "length" "The number of elements." $ olengthNat @a
           , valBDS "section" "`section start len x` is the section of `x` beginning at `start` of length `len`." $ \start len (x :: a) ->
-                take len $ drop start x
-          , valBDS "take" "Take the first n elements." (take :: Int -> a -> a)
-          , valBDS "drop" "Drop the first n elements." (drop :: Int -> a -> a)
+                takeNat len $ dropNat start x
+          , valBDS "take" "Take the first n elements." $ takeNat @a
+          , valBDS "drop" "Drop the first n elements." $ dropNat @a
+          ]
+    ]
+
+elementsEntries ::
+       forall (a :: Type).
+       ( IsSequence a
+       , MonoFilterable a
+       , HasQType QPolyShim 'Positive a
+       , HasQType QPolyShim 'Negative a
+       , HasQType QPolyShim 'Positive (Element a)
+       )
+    => [LibraryStuff]
+elementsEntries =
+    sequenceEntries @a <>
+    [ headingBDS
+          "Elements"
+          ""
+          [ valBDS "takeWhile" "Take while the condition holds." $ takeWhile @a
+          , valBDS "dropWhile" "Drop while the condition holds." $ dropWhile @a
+          , valBDS "filter" "Filter for matching elements." $ ofilter @a
+          , valBDS "sort" "Sort by an order." $ \(MkOrder order) -> sortBy @a order
+          , valBDS "index" "Get an element by index." $ \s (n :: Natural) -> index @a s $ fromIntegral n
           ]
     ]

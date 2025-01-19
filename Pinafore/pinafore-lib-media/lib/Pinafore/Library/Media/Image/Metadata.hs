@@ -89,7 +89,7 @@ pairToKey (name, lit) = do
 metadataToKeyMap :: [(Text, Literal)] -> WitnessMapOf ImageDataKey
 metadataToKeyMap pairs = witnessMapOfFromList $ mapMaybe pairToKey pairs
 
-metadataResolution :: LangHasMetadata -> Maybe (Int, Int)
+metadataResolution :: LangHasMetadata -> Maybe (Natural, Natural)
 metadataResolution md = do
     litx <- lookupMetadata "DpiX" md
     dx <- fromLiteral litx

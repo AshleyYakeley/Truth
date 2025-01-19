@@ -7,3 +7,4 @@
 *.prof.html
 benchmarks.json
 result
+result-*

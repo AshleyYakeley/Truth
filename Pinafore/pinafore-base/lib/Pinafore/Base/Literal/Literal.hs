@@ -5,6 +5,7 @@ module Pinafore.Base.Literal.Literal
     , fromLiteral
     , literalToEntity
     , entityToLiteral
+    , naturalInteger
     , AsTypedLiteral(..)
     ) where
 
@@ -120,6 +121,12 @@ instance AsLiteral SafeRational where
 
 instance AsLiteral Integer where
     literalCodec = codecMap integerSafeRational literalCodec
+
+naturalInteger :: Codec Integer Natural
+naturalInteger = MkCodec toNaturalMaybe toInteger
+
+instance AsLiteral Natural where
+    literalCodec = codecMap naturalInteger literalCodec
 
 instance AsLiteral Day
 

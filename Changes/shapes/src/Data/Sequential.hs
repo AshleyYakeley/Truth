@@ -1,7 +1,6 @@
 module Data.Sequential where
 
 import Shapes.Import
-import Shapes.Numeric
 
 class Sequential a where
     szero :: a

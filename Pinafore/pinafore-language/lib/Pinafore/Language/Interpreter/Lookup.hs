@@ -82,8 +82,8 @@ lookupRecord = lookupSelector recordValueBindingSelector
 getBoundValue :: QInterpreterBinding -> Maybe QBoundValue
 getBoundValue =
     \case
-        ValueBinding exp -> Just $ ValueBoundValue exp
-        PatternConstructorBinding exp _ -> Just $ ValueBoundValue exp
+        ValueBinding expr -> Just $ ValueBoundValue expr
+        PatternConstructorBinding expr _ -> Just $ ValueBoundValue expr
         RecordValueBinding rv -> Just $ RecordBoundValue rv
         RecordConstructorBinding rc -> Just $ RecordBoundValue $ recordConstructorToValue rc
         _ -> Nothing

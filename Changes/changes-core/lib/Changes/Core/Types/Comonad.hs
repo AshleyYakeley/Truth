@@ -18,7 +18,7 @@ comonadReadFunction mr rt = mr $ ReadExtract rt
 newtype ComonadEdit (w :: Type -> Type) (edit :: Type) =
     MkComonadEdit edit
 
-instance Floating edit edit => Floating (ComonadEdit w edit) (ComonadEdit w edit) where
+instance FloatingOn edit edit => FloatingOn (ComonadEdit w edit) (ComonadEdit w edit) where
     floatingUpdate (MkComonadEdit e1) (MkComonadEdit e2) = MkComonadEdit $ floatingUpdate e1 e2
 
 type instance EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit)

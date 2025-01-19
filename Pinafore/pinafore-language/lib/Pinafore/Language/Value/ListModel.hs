@@ -46,40 +46,40 @@ langListModelToOrdered (FullLangListModel model) =
 langImmutListModel :: forall p q r. LangListModel '( p, q) -> LangListModel '( r, q)
 langImmutListModel model = OrderedLangListModel $ langListModelToOrdered model
 
-langListModelCountModel :: forall p q. LangListModel '( p, q) -> ImmutableWholeModel Int64
+langListModelCountModel :: forall p q. LangListModel '( p, q) -> ImmutableWholeModel Natural
 langListModelCountModel (OrderedLangListModel model) =
-    functionImmutableModel $ eaMap (funcChangeLens coerce . orderedListLengthLens) model
+    functionImmutableModel $ eaMap (funcChangeLens (toNaturalForce . unSequencePoint) . orderedListLengthLens) model
 langListModelCountModel (FullLangListModel model) =
     functionImmutableModel $
-    eaMap (funcChangeLens coerce . liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens) model
+    eaMap
+        (funcChangeLens (toNaturalForce . unSequencePoint) .
+         liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens)
+        model
 
 langListModelRead :: forall p q t. LangListModel '( p, q) -> ReadM (ListReader (WholeReader q)) t -> Action t
 langListModelRead (OrderedLangListModel model) rm = actionModelGet model rm
 langListModelRead (FullLangListModel model) rm = actionModelGet model rm
 
-langListModelGetCount :: forall p q. LangListModel '( p, q) -> Action Int64
-langListModelGetCount model = fmap unSequencePoint $ langListModelRead model $ readM ListReadLength
+langListModelGetCount :: forall p q. LangListModel '( p, q) -> Action Natural
+langListModelGetCount model = fmap (toNaturalForce . unSequencePoint) $ langListModelRead model $ readM ListReadLength
 
-langListModelGetItem :: forall p q. Int64 -> LangListModel '( p, q) -> Action q
+langListModelGetItem :: forall p q. SequencePoint -> LangListModel '( p, q) -> Action q
 langListModelGetItem i model = do
-    mq <- langListModelRead model $ readM $ ListReadItem (MkSequencePoint i) ReadWhole
+    mq <- langListModelRead model $ readM $ ListReadItem i ReadWhole
     actionKnow $ maybeToKnow mq
 
-langListModelInsert :: forall p q. Int64 -> p -> LangListModel '( p, q) -> Action ()
+langListModelInsert :: forall p q. SequencePoint -> p -> LangListModel '( p, q) -> Action ()
 langListModelInsert _ _ (OrderedLangListModel _) = empty
-langListModelInsert i val (FullLangListModel model) =
-    actionModelPush model $ pure $ MkBiEdit $ ListEditInsert (MkSequencePoint i) val
+langListModelInsert i val (FullLangListModel model) = actionModelPush model $ pure $ MkBiEdit $ ListEditInsert i val
 
-langListModelSet :: forall p q. Int64 -> p -> LangListModel '( p, q) -> Action ()
+langListModelSet :: forall p q. SequencePoint -> p -> LangListModel '( p, q) -> Action ()
 langListModelSet _ _ (OrderedLangListModel _) = empty
 langListModelSet i val (FullLangListModel model) =
-    actionModelPush model $ pure $ MkBiEdit $ ListEditItem (MkSequencePoint i) $ MkWholeReaderEdit val
+    actionModelPush model $ pure $ MkBiEdit $ ListEditItem i $ MkWholeReaderEdit val
 
-langListModelDelete :: forall p q. Int64 -> LangListModel '( p, q) -> Action ()
-langListModelDelete i (OrderedLangListModel model) =
-    actionModelPush model $ pure $ OrderedListEditDelete (MkSequencePoint i)
-langListModelDelete i (FullLangListModel model) =
-    actionModelPush model $ pure $ MkBiEdit $ ListEditDelete (MkSequencePoint i)
+langListModelDelete :: forall p q. SequencePoint -> LangListModel '( p, q) -> Action ()
+langListModelDelete i (OrderedLangListModel model) = actionModelPush model $ pure $ OrderedListEditDelete i
+langListModelDelete i (FullLangListModel model) = actionModelPush model $ pure $ MkBiEdit $ ListEditDelete i
 
 langListModelClear :: forall p q. LangListModel '( p, q) -> Action ()
 langListModelClear (OrderedLangListModel model) = actionModelPush model $ pure OrderedListEditClear
@@ -98,19 +98,18 @@ langListModelToWholeModel (FullLangListModel model) =
 langListModelToWholeModel (OrderedLangListModel model) =
     ImmutableLangWholeModel $ functionImmutableModel $ eaMap convertReadOnlyChangeLens model
 
-langListModelItem :: forall p q. Bool -> Int64 -> LangListModel '( p, q) -> Action (LangWholeModel '( p, q))
+langListModelItem :: forall p q. Bool -> SequencePoint -> LangListModel '( p, q) -> Action (LangWholeModel '( p, q))
 langListModelItem present i (FullLangListModel lmodel) = do
     let
         linearListItemCL :: forall t. LinearFloatingChangeLens _ (ListUpdate (WholeUpdate t)) (WholeUpdate (Know t))
         linearListItemCL =
             composeExpFloatingChangeLens (changeLensToExpFloating $ bijectionWholeChangeLens $ invert knowMaybe) $
-            listItemLinearLens present $ MkSequencePoint i
+            listItemLinearLens present i
     wmodel <-
         actionFloatMap
             (expToFloatingChangeLens $ biLinearFloatingChangeLens (linearListItemCL @p) (linearListItemCL @q))
             lmodel
     return $ MutableLangWholeModel wmodel
 langListModelItem _present i (OrderedLangListModel lmodel) = do
-    let ip = MkSequencePoint i
-    wmodel <- actionFloatMap (changeLensToFloating (funcChangeLens maybeToKnow) . orderedListItemLens ip) lmodel
+    wmodel <- actionFloatMap (changeLensToFloating (funcChangeLens maybeToKnow) . orderedListItemLens i) lmodel
     return $ ImmutableLangWholeModel $ MkImmutableWholeModel wmodel

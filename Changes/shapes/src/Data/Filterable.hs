@@ -4,6 +4,7 @@ import Data.Codec
 import Data.List qualified as List
 import Data.Map qualified as Map
 import Data.Maybe qualified as List
+import Data.Sequences qualified
 import Shapes.Import
 
 class Invariant f => InjectiveFilterable f where
@@ -77,3 +78,11 @@ instance MonoFilterable [a]
 instance MonoFilterable (Maybe a)
 
 instance MonoFilterable (Map k a)
+
+instance MonoFilterable StrictByteString where
+    ofilter = Data.Sequences.filter
+    ofilterM f = liftA fromList . ofilterM f . otoList
+
+instance MonoFilterable Text where
+    ofilter = Data.Sequences.filter
+    ofilterM f = liftA fromList . ofilterM f . otoList
