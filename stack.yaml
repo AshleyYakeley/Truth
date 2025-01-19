@@ -41,17 +41,22 @@ allow-newer-deps:
     - criterion
 
 extra-deps:
+# GTK
 - gi-javascriptcore-4.0.28
 - gi-webkit2-4.0.31
+
+# other
 - blake3-0.3
 - leb128-0.1.0.0
 - optparse-applicative-0.17.1.0
+
+# format
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: 443776e416f3fc3c2b56cbd5b11beaf022365c9d
 - git: https://github.com/AshleyYakeley/hindent.git
   commit: 39739ea7717249e405ab67c8a579b552e4cec8b9
-- git: https://github.com/fpco/ghc-prof-flamegraph.git
-  commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
+
+# my stuff
 - witness-0.7
 - monadology-0.4
 - open-witness-0.7
