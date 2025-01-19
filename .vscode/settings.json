@@ -1,4 +1,16 @@
 {
     "terminal.integrated.shell.linux": "${workspaceFolder}/bin/shell",
-    "svg.preview.background": "transparent"
+    "svg.preview.background": "transparent",
+    "[haskell]": {
+        "editor.indentSize": 4
+    },
+    "[yaml]": {
+        "editor.indentSize": 4
+    },
+    "[json]": {
+        "editor.indentSize": 4
+    },
+    "[pinafore]": {
+        "editor.indentSize": 4
+    }
 }
