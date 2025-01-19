@@ -1,150 +1,150 @@
 {
-  "version": "2.0.0",
-  "presentation": {
-    "echo": true,
-    "reveal": "always",
-    "focus": false,
-    "panel": "shared",
-    "showReuseMessage": false,
-    "clear": true
-  },
-  "tasks": [
-    {
-      "group": "build",
-      "label": "Format",
-      "type": "shell",
-      "command": "cd ${workspaceRoot} && make top-format",
-      "problemMatcher": [
-        {
-          "owner": "hindent",
-          "fileLocation": "relative",
-          "pattern": [
-            {
-              "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "message": 4
-            }
-          ]
-        }
-      ]
+    "version": "2.0.0",
+    "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
     },
-    {
-      "group": "build",
-      "label": "Full Build",
-      "type": "shell",
-      "command": "cd ${workspaceRoot} && make top-full",
-      "problemMatcher": [
+    "tasks": [
         {
-          "owner": "stack",
-          "fileLocation": "absolute",
-          "pattern": [
-            {
-              "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4
-            },
-            {
-              "regexp": "^.*> \\s+(.*)$",
-              "message": 1
-            }
-          ]
+            "group": "build",
+            "label": "Format",
+            "type": "shell",
+            "command": "cd ${workspaceRoot} && make top-format",
+            "problemMatcher": [
+                {
+                    "owner": "hindent",
+                    "fileLocation": "relative",
+                    "pattern": [
+                        {
+                            "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "message": 4
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "owner": "hindent",
-          "fileLocation": "relative",
-          "pattern": [
-            {
-              "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "message": 4
-            }
-          ]
-        }
-      ]
-    },
-    {
-        "group": "build",
-        "label": "Quick Single Build",
-        "type": "shell",
-        "command": "cd ${workspaceRoot} && make top-single-build",
-        "problemMatcher": [
-          {
-            "owner": "stack",
-            "fileLocation": "absolute",
-            "pattern": [
-              {
-                "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
-                "file": 1,
-                "line": 2,
-                "column": 3,
-                "severity": 4
-              },
-              {
-                "regexp": "^.*> \\s+(.*)$",
-                "message": 1
-              }
+            "group": "build",
+            "label": "Full Build",
+            "type": "shell",
+            "command": "cd ${workspaceRoot} && make top-full",
+            "problemMatcher": [
+                {
+                    "owner": "stack",
+                    "fileLocation": "absolute",
+                    "pattern": [
+                        {
+                            "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "severity": 4
+                        },
+                        {
+                            "regexp": "^.*> \\s+(.*)$",
+                            "message": 1
+                        }
+                    ]
+                },
+                {
+                    "owner": "hindent",
+                    "fileLocation": "relative",
+                    "pattern": [
+                        {
+                            "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "message": 4
+                        }
+                    ]
+                }
             ]
-          }
-        ]
-      },
-      {
-        "group": {
-            "kind": "build",
-            "isDefault": true
-          },
-        "label": "Quick Build",
-        "type": "shell",
-        "command": "cd ${workspaceRoot} && make top-build",
-        "problemMatcher": [
-          {
-            "owner": "stack",
-            "fileLocation": "absolute",
-            "pattern": [
-              {
-                "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
-                "file": 1,
-                "line": 2,
-                "column": 3,
-                "severity": 4
-              },
-              {
-                "regexp": "^.*> \\s+(.*)$",
-                "message": 1
-              }
+        },
+        {
+            "group": "build",
+            "label": "Quick Single Build",
+            "type": "shell",
+            "command": "cd ${workspaceRoot} && make top-single-build",
+            "problemMatcher": [
+                {
+                    "owner": "stack",
+                    "fileLocation": "absolute",
+                    "pattern": [
+                        {
+                            "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "severity": 4
+                        },
+                        {
+                            "regexp": "^.*> \\s+(.*)$",
+                            "message": 1
+                        }
+                    ]
+                }
             ]
-          }
-        ]
-      },
+        },
         {
-      "group": "test",
-      "label": "Format & Quick Test",
-      "type": "shell",
-      "command": "cd ${workspaceRoot} && make top-format-test",
-      "problemMatcher": [
-        {
-          "owner": "stack",
-          "fileLocation": "absolute",
-          "pattern": [
-            {
-              "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4
+            "group": {
+                "kind": "build",
+                "isDefault": true
             },
-            {
-              "regexp": "^.*> \\s+(.*)$",
-              "message": 1
-            }
-          ]
+            "label": "Quick Build",
+            "type": "shell",
+            "command": "cd ${workspaceRoot} && make top-build",
+            "problemMatcher": [
+                {
+                    "owner": "stack",
+                    "fileLocation": "absolute",
+                    "pattern": [
+                        {
+                            "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "severity": 4
+                        },
+                        {
+                            "regexp": "^.*> \\s+(.*)$",
+                            "message": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": "test",
+            "label": "Format & Quick Test",
+            "type": "shell",
+            "command": "cd ${workspaceRoot} && make top-format-test",
+            "problemMatcher": [
+                {
+                    "owner": "stack",
+                    "fileLocation": "absolute",
+                    "pattern": [
+                        {
+                            "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "severity": 4
+                        },
+                        {
+                            "regexp": "^.*> \\s+(.*)$",
+                            "message": 1
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

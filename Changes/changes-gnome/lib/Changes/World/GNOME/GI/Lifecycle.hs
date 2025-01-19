@@ -5,7 +5,6 @@ import Changes.World.GNOME.GI.LockState
 import Data.GI.Base
 import Data.GI.Base.Attributes
 import Data.GI.Base.Constructible
-import Data.GI.Gtk
 import GI.GObject
 import Shapes
 

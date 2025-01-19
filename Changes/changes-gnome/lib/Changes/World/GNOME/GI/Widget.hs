@@ -4,7 +4,6 @@ import Changes.World.GNOME.GI.GView
 import Changes.World.GNOME.GI.LockState
 import Changes.World.GNOME.GI.Type
 import Data.GI.Base
-import Data.GI.Gtk
 import Data.IORef
 import Shapes
 

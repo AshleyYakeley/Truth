@@ -1,7 +1,6 @@
 module Changes.World.GNOME.GTK.Widget.TextStyle where
 
 import Data.GI.Base.Attributes
-import Data.GI.Gtk
 import GI.Pango
 import Shapes
 
