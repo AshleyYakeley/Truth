@@ -1,11 +1,11 @@
 # https://fourmolu.github.io/config/
 
 indentation: 4
-column-limit: none  # ?
+column-limit: none
 function-arrows: trailing
 comma-style: leading
-import-export-style: leading  # diff-friendly
-import-grouping: preserve  # ?
+import-export-style: diff-friendly
+import-grouping: by-scope
 indent-wheres: true
 record-brace-space: false
 newlines-between-decls: 1
@@ -20,7 +20,7 @@ sort-derived-classes: false
 sort-deriving-clauses: false
 trailing-section-operators: true
 unicode: never
-respectful: true  # ?
+respectful: false
 fixities: []
 reexports: []
 local-modules: []
