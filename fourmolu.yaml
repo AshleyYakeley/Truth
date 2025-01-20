@@ -11,7 +11,7 @@ record-brace-space: false
 newlines-between-decls: 1
 haddock-style: single-line
 haddock-style-module: single-line
-let-style: newline  # consistent
+let-style: like-do
 in-style: no-space
 single-constraint-parens: never
 single-deriving-parens: never

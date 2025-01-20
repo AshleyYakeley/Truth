@@ -47,6 +47,13 @@ packages:
   original:
     hackage: Cabal-syntax-3.12.1.0
 - completed:
+    hackage: Cabal-3.12.1.0@sha256:08be296ddd941b3f9be4bd125fbb3e6857f5c707b8d10464f6f1d30c91ca3e5f,13551
+    pantry-tree:
+      sha256: a509c8164a9682e2cbd080ef8446164fbe11a9c5c0f88b61f41094a8167e6a04
+      size: 11798
+  original:
+    hackage: Cabal-3.12.1.0
+- completed:
     hackage: ghc-lib-parser-9.10.1.20250103@sha256:e6ac09326b6b4c7a0113cc962c2321e86e47f0176a9ec5989641c8a95dbcfa2a,18195
     pantry-tree:
       sha256: fb09305e1cf369b7473ee07337cc252958815a46ca11b2a2a6f4c43862636cf8
@@ -54,12 +61,16 @@ packages:
   original:
     hackage: ghc-lib-parser-9.10.1.20250103
 - completed:
-    hackage: fourmolu-0.17.0.0@sha256:e5fb41791488bef362a755da83a4b9a4681cf9f15148b3aca604e3f5cedbb11a,6998
+    name: fourmolu
     pantry-tree:
-      sha256: 60ef65181930a0ce4cdd63a1ef4dfa8080a4e4455c867da343b3cb6de1a81b9e
-      size: 165530
+      sha256: 2b0f4b58cf6ce02887ee5434a128bb214f34844a801ebf020b8520d3bb43aefb
+      size: 173082
+    sha256: c220a09294c3150a9d7375c267bf85e3d2872b4b8c71a492b52ed078d84f75fa
+    size: 532749
+    url: https://github.com/AshleyYakeley/fourmolu/archive/Ashley.tar.gz
+    version: 0.17.0.0
   original:
-    hackage: fourmolu-0.17.0.0
+    url: https://github.com/AshleyYakeley/fourmolu/archive/Ashley.tar.gz
 - completed:
     hackage: witness-0.7@sha256:845d0c2ac74785824d035d38e3580fd30964eabdc6103ada08f195de3ad23a24,3520
     pantry-tree:
