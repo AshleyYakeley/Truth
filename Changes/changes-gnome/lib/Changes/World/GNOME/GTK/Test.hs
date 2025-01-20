@@ -1,7 +1,6 @@
 module Changes.World.GNOME.GTK.Test where
 
 import Changes.World.GNOME.GI
-import Changes.World.GNOME.GTK
 import Data.GI.Base.GValue
 import GI.GObject
 import GI.Gtk

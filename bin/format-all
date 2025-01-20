@@ -3,3 +3,6 @@ for p in `yq -r '.packages[]' stack.yaml`
 do
     ${BINPATH}/fourmolu --mode inplace $(find $p -name '*.hs' -not -path '*.stack-work/*' | grep -v -e -- -f fourmolu.ignore) || exit 1
 done
+
+# workaround for https://github.com/fourmolu/fourmolu/issues/456
+${BINPATH}/fourmolu --mode inplace --import-grouping preserve Changes/shapes/src/Shapes/Import.hs
