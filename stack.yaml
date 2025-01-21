@@ -55,7 +55,7 @@ extra-deps:
 - Cabal-3.12.1.0
 - ghc-lib-parser-9.10.1.20250103
 - github: AshleyYakeley/fourmolu
-  commit: Ashley
+  commit: 8f7bfbaebfc7337e3301f87ba602fea65ad12323
 
 # my stuff
 - witness-0.7

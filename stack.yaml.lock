@@ -63,14 +63,14 @@ packages:
 - completed:
     name: fourmolu
     pantry-tree:
-      sha256: 2b0f4b58cf6ce02887ee5434a128bb214f34844a801ebf020b8520d3bb43aefb
+      sha256: f72793c826146302b91b26b8a415884c5d94c7bcfa553d595e2c7230f0e3b684
       size: 173082
-    sha256: c220a09294c3150a9d7375c267bf85e3d2872b4b8c71a492b52ed078d84f75fa
-    size: 532749
-    url: https://github.com/AshleyYakeley/fourmolu/archive/Ashley.tar.gz
+    sha256: 3c9434ba90e423e90f5cfac1093e388829b8fcb1e1181cf6828a21f394781566
+    size: 532038
+    url: https://github.com/AshleyYakeley/fourmolu/archive/8f7bfbaebfc7337e3301f87ba602fea65ad12323.tar.gz
     version: 0.17.0.0
   original:
-    url: https://github.com/AshleyYakeley/fourmolu/archive/Ashley.tar.gz
+    url: https://github.com/AshleyYakeley/fourmolu/archive/8f7bfbaebfc7337e3301f87ba602fea65ad12323.tar.gz
 - completed:
     hackage: witness-0.7@sha256:845d0c2ac74785824d035d38e3580fd30964eabdc6103ada08f195de3ad23a24,3520
     pantry-tree:
