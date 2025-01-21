@@ -2,10 +2,10 @@ module Language.Expression.Common.Open.Error where
 
 import Shapes
 
-data ExpressionError (w :: Type -> Type) =
-    UndefinedBindingsError (NonEmpty (Some w))
+data ExpressionError (w :: Type -> Type)
+    = UndefinedBindingsError (NonEmpty (Some w))
 
-instance (AllConstraint Show w) => Show (ExpressionError w) where
+instance AllConstraint Show w => Show (ExpressionError w) where
     show (UndefinedBindingsError tt) = "undefined: " <> intercalate ", " (fmap show $ toList tt)
 
 data PatternError

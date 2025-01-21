@@ -1,15 +1,17 @@
 module Language.Expression.Common.Open.Expression where
 
+import Shapes
+
 import Language.Expression.Common.Open.Abstract
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Free
-import Shapes
 
 type Expression :: (Type -> Type) -> Type -> Type
 data Expression w a
     = ClosedExpression a
-    | forall t. OpenExpression (w t)
-                               (Expression w (t -> a))
+    | forall t. OpenExpression
+        (w t)
+        (Expression w (t -> a))
 
 instance Functor (Expression w) where
     fmap ab (ClosedExpression a) = ClosedExpression $ ab a
@@ -65,25 +67,28 @@ abstractExpression wa (OpenExpression wt expr) =
     OpenExpression wt $ fmap (\atb t a -> atb a t) $ abstractExpression wa expr
 
 runExpression ::
-       forall m w. Applicative m
-    => (w --> m)
-    -> Expression w --> m
+    forall m w.
+    Applicative m =>
+    (w --> m) ->
+    Expression w --> m
 runExpression _f (ClosedExpression a) = pure a
 runExpression f (OpenExpression wt expr) = runExpression f expr <*> f wt
 
 runExpressionM ::
-       forall m w f a. (Applicative m, Applicative f)
-    => (forall t. w t -> m (f t))
-    -> Expression w a
-    -> m (f a)
+    forall m w f a.
+    (Applicative m, Applicative f) =>
+    (forall t. w t -> m (f t)) ->
+    Expression w a ->
+    m (f a)
 runExpressionM f expr = getCompose $ runExpression (Compose . f) expr
 
 mergeExpressionWitnessesM ::
-       forall m w t a. Monad m
-    => Expression w t
-    -> (forall x. w x -> m (Maybe (Expression w (x, t))))
-    -> Expression w (t -> a)
-    -> m (Expression w a)
+    forall m w t a.
+    Monad m =>
+    Expression w t ->
+    (forall x. w x -> m (Maybe (Expression w (x, t)))) ->
+    Expression w (t -> a) ->
+    m (Expression w a)
 mergeExpressionWitnessesM newExpr matchExpr = let
     runMerge :: forall r. Expression w (t -> r) -> m (Expression w r)
     runMerge (ClosedExpression ta) = return $ fmap ta newExpr
@@ -97,20 +102,22 @@ mergeExpressionWitnessesM newExpr matchExpr = let
     in runMerge
 
 combineExpressionWitnessesM ::
-       forall m w r. Monad m
-    => (forall a b. w a -> w b -> m (Maybe (Expression w (a, b))))
-    -> Expression w r
-    -> m (Expression w r)
+    forall m w r.
+    Monad m =>
+    (forall a b. w a -> w b -> m (Maybe (Expression w (a, b)))) ->
+    Expression w r ->
+    m (Expression w r)
 combineExpressionWitnessesM _ expr@(ClosedExpression _) = return expr
 combineExpressionWitnessesM f (OpenExpression wt expr) = do
     expr1 <- combineExpressionWitnessesM f expr
     mergeExpressionWitnessesM (varExpression wt) (\wx -> f wx wt) expr1
 
 mapExactExpressionM ::
-       forall m w1 w2 a. Applicative m
-    => (forall t. w1 t -> m (w2 t))
-    -> Expression w1 a
-    -> m (Expression w2 a)
+    forall m w1 w2 a.
+    Applicative m =>
+    (forall t. w1 t -> m (w2 t)) ->
+    Expression w1 a ->
+    m (Expression w2 a)
 mapExactExpressionM _ (ClosedExpression a) = pure $ ClosedExpression a
 mapExactExpressionM f (OpenExpression wt expr) = liftA2 OpenExpression (f wt) (mapExactExpressionM f expr)
 
@@ -122,11 +129,12 @@ reverseExpression (ClosedExpression a) = ClosedExpression a
 reverseExpression (OpenExpression w expr) = reverseExpression expr <*> varExpression w
 
 partitionExpressionM ::
-       forall m w1 w2 w3 a r. Monad m
-    => (forall t. w1 t -> m (Either (Expression w2 t) (Expression w3 t)))
-    -> Expression w1 a
-    -> (forall b. Expression w2 (b -> a) -> Expression w3 b -> m r)
-    -> m r
+    forall m w1 w2 w3 a r.
+    Monad m =>
+    (forall t. w1 t -> m (Either (Expression w2 t) (Expression w3 t))) ->
+    Expression w1 a ->
+    (forall b. Expression w2 (b -> a) -> Expression w3 b -> m r) ->
+    m r
 partitionExpressionM _tst (ClosedExpression a) call = call (pure id) (ClosedExpression a)
 partitionExpressionM tst (OpenExpression (wt :: w1 t) expr) call =
     partitionExpressionM tst expr $ \eba eb -> do
@@ -137,25 +145,26 @@ partitionExpressionM tst (OpenExpression (wt :: w1 t) expr) call =
 
 -- True in the first expression, False in the second
 partitionIfExpressionM ::
-       forall m w a r. Monad m
-    => (forall t. w t -> m Bool)
-    -> Expression w a
-    -> (forall b. Expression w (b -> a) -> Expression w b -> m r)
-    -> m r
+    forall m w a r.
+    Monad m =>
+    (forall t. w t -> m Bool) ->
+    Expression w a ->
+    (forall b. Expression w (b -> a) -> Expression w b -> m r) ->
+    m r
 partitionIfExpressionM tst =
     partitionExpressionM $ \wt -> do
         b <- tst wt
-        return $
-            if b
+        return
+            $ if b
                 then Left $ varExpression wt
                 else Right $ varExpression wt
 
 findFirstExpression ::
-       forall w1 w2 a r.
-       (forall t. w1 t -> Maybe (w2 t))
-    -> Expression w1 a
-    -> (forall b. w2 b -> Expression w1 (b -> a) -> r)
-    -> Maybe r
+    forall w1 w2 a r.
+    (forall t. w1 t -> Maybe (w2 t)) ->
+    Expression w1 a ->
+    (forall b. w2 b -> Expression w1 (b -> a) -> r) ->
+    Maybe r
 findFirstExpression _ (ClosedExpression _) _ = Nothing
 findFirstExpression tst (OpenExpression wt expr) call =
     case tst wt of

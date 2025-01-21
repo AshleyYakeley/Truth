@@ -19,13 +19,13 @@ semigroupMerge a b = Just $ a <> b
 
 mergeItemList :: Merge a -> a -> [a] -> (a, [a])
 mergeItemList _m a [] = (a, [])
-mergeItemList m a (i:ii) =
+mergeItemList m a (i : ii) =
     case m a i of
         Just ai -> mergeItemList m ai ii
         Nothing -> fmap ((:) i) $ mergeItemList m a ii
 
 mergeList :: Merge a -> [a] -> [a]
 mergeList _ [] = []
-mergeList m (a:aa) = let
+mergeList m (a : aa) = let
     (a', aa') = mergeItemList m a $ mergeList m aa
     in a' : aa'

@@ -1,11 +1,13 @@
 module Main
     ( main
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GIO.File
 import GI.Gio qualified as GI
 import Shapes
+
+import Changes.World.GNOME.GIO.File
 
 main :: IO ()
 main = do

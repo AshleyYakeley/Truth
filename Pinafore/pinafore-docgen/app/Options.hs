@@ -1,9 +1,10 @@
 module Options
-    ( Options(..)
-    , RunOptions(..)
+    ( Options (..)
+    , RunOptions (..)
     , getOptions
     , optParserInfo
-    ) where
+    )
+where
 
 import Options.Applicative as OA
 import Pinafore.Options
@@ -11,8 +12,9 @@ import Shapes
 
 data Options
     = ShowVersionOption
-    | ModuleDocOption RunOptions
-                      Text
+    | ModuleDocOption
+        RunOptions
+        Text
     deriving stock (Eq, Show)
 
 optIncludes :: Parser [FilePath]

@@ -1,11 +1,13 @@
 module Changes.World.GNOME.GTK.Widget.Label
     ( createLabel
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createLabel :: Model (ROWUpdate Text) -> GView 'Unlocked Widget
 createLabel lmod = do

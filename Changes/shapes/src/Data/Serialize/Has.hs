@@ -1,11 +1,12 @@
 module Data.Serialize.Has where
 
 import Data.ByteString.Builder
+import Data.PrimitiveSerial
+import Data.Time
+
 import Data.Codec
 import Data.Coerce.Coercion
-import Data.PrimitiveSerial
 import Data.Serializer
-import Data.Time
 import Shapes.Import
 import Shapes.Numeric
 
@@ -15,13 +16,15 @@ class HasSerializer a where
     greedySerializer = stoppingSerializer
 
 serializeLazyCodec ::
-       forall a. HasSerializer a
-    => Codec LazyByteString a
+    forall a.
+    HasSerializer a =>
+    Codec LazyByteString a
 serializeLazyCodec = serializerLazyCodec stoppingSerializer
 
 serializeStrictCodec ::
-       forall a. HasSerializer a
-    => Codec StrictByteString a
+    forall a.
+    HasSerializer a =>
+    Codec StrictByteString a
 serializeStrictCodec = serializerStrictCodec stoppingSerializer
 
 instance HasSerializer Void where
@@ -58,7 +61,7 @@ instance HasSerializer Bool where
         decode 0 = Just False
         decode 1 = Just True
         decode _ = Nothing
-        in codecMap MkCodec {..} sItem
+        in codecMap MkCodec{..} sItem
 
 instance HasSerializer Word8 where
     stoppingSerializer = littleEndianSerializer
@@ -130,8 +133,9 @@ instance HasSerializer TimeOfDay where
         tupleToTimeOfDay (h, (m, s)) = TimeOfDay (fromIntegral h) (fromIntegral m) (MkFixed $ toInteger s)
         timeOfDayToTuple :: TimeOfDay -> (Word8, (Word8, Word64))
         timeOfDayToTuple (TimeOfDay h m (MkFixed s)) = (fromIntegral h, (fromIntegral m, fromInteger s))
-        in invmap tupleToTimeOfDay timeOfDayToTuple $
-           sProduct stoppingSerializer $ sProduct stoppingSerializer stoppingSerializer
+        in invmap tupleToTimeOfDay timeOfDayToTuple
+            $ sProduct stoppingSerializer
+            $ sProduct stoppingSerializer stoppingSerializer
 
 instance HasSerializer LocalTime where
     stoppingSerializer = let

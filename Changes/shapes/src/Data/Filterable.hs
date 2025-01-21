@@ -1,10 +1,11 @@
 module Data.Filterable where
 
-import Data.Codec
 import Data.List qualified as List
 import Data.Map qualified as Map
 import Data.Maybe qualified as List
 import Data.Sequences qualified
+
+import Data.Codec
 import Shapes.Import
 
 class Invariant f => InjectiveFilterable f where
@@ -43,10 +44,11 @@ filterM :: (Applicative m, InjectiveFilterable f, Traversable f) => (a -> m Bool
 filterM amt fa =
     forf fa $ \a ->
         fmap
-            (\t ->
-                 if t
-                     then Just a
-                     else Nothing)
+            ( \t ->
+                if t
+                    then Just a
+                    else Nothing
+            )
             (amt a)
 
 forfilt :: (Applicative m, InjectiveFilterable f, Traversable f) => f a -> (a -> m Bool) -> m (f a)
@@ -57,20 +59,22 @@ class MonoFoldable c => MonoFilterable c where
     default ofilter :: (c ~ f a, InjectiveFilterable f, Element c ~ a) => (Element c -> Bool) -> c -> c
     ofilter = filter
     ofilterM ::
-           forall m. Applicative m
-        => (Element c -> m Bool)
-        -> c
-        -> m c
+        forall m.
+        Applicative m =>
+        (Element c -> m Bool) ->
+        c ->
+        m c
     default ofilterM ::
         (Applicative m, c ~ f a, InjectiveFilterable f, Traversable f, Element c ~ a) =>
-                (Element c -> m Bool) -> c -> m c
+        (Element c -> m Bool) -> c -> m c
     ofilterM = filterM
 
 oforfilt ::
-       forall c m. (MonoFilterable c, Applicative m)
-    => c
-    -> (Element c -> m Bool)
-    -> m c
+    forall c m.
+    (MonoFilterable c, Applicative m) =>
+    c ->
+    (Element c -> m Bool) ->
+    m c
 oforfilt fa amt = ofilterM amt fa
 
 instance MonoFilterable [a]

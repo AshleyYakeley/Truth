@@ -4,8 +4,8 @@ import Import
 import Pinafore.Language.Value.Model
 import Pinafore.Language.Value.WholeModel
 
-newtype LangTextModel =
-    MkLangTextModel (WModel (StringUpdate Text))
+newtype LangTextModel
+    = MkLangTextModel (WModel (StringUpdate Text))
 
 instance IsInvertibleModel LangTextModel where
     invertibleModelLens f (MkLangTextModel model) = fmap MkLangTextModel $ wInvertibleModelLens f model
@@ -19,11 +19,11 @@ newMemTextModel = do
 langTextModelToModel :: LangTextModel -> LangModel
 langTextModelToModel (MkLangTextModel model) = MkLangModel model
 
-langWholeModelToTextModel :: LangWholeModel '( Text, Text) -> LangTextModel
+langWholeModelToTextModel :: LangWholeModel '(Text, Text) -> LangTextModel
 langWholeModelToTextModel wref =
     MkLangTextModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) $ langWholeModelToValue wref
 
-langTextModelToWholeModel :: LangTextModel -> LangWholeModel '( Text, Text)
+langTextModelToWholeModel :: LangTextModel -> LangWholeModel '(Text, Text)
 langTextModelToWholeModel (MkLangTextModel model) =
     MutableLangWholeModel $ eaMap (biToKnowWhole . singleBiChangeLens . convertChangeLens) model
 

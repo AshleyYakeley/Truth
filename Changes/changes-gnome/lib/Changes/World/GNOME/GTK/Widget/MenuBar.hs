@@ -1,20 +1,22 @@
 module Changes.World.GNOME.GTK.Widget.MenuBar
-    ( KeyboardModifier(..)
+    ( KeyboardModifier (..)
     , KeyboardKey
-    , MenuAccelerator(..)
-    , MenuEntry(..)
+    , MenuAccelerator (..)
+    , MenuEntry (..)
     , simpleActionMenuEntry
     , MenuBar
     , createMenuBar
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import Data.GI.Base.Signals
 import Data.IORef
 import GI.Gdk
 import GI.Gtk hiding (MenuBar)
 import Shapes
+
+import Changes.World.GNOME.GI
 
 data KeyboardModifier
     = KMShift
@@ -23,18 +25,19 @@ data KeyboardModifier
 
 type KeyboardKey = Char
 
-data MenuAccelerator =
-    MkMenuAccelerator [KeyboardModifier]
-                      KeyboardKey
+data MenuAccelerator
+    = MkMenuAccelerator
+        [KeyboardModifier]
+        KeyboardKey
 
 actionMenuItem ::
-       (IsMenuShell menushell, IsMenuItem menuitem, IsAccelGroup ag)
-    => ag
-    -> menushell
-    -> GView 'Locked menuitem
-    -> Model (ROWUpdate (Text, Maybe MenuAccelerator))
-    -> (menuitem -> GView 'Locked ())
-    -> GView 'Unlocked (menuitem, SignalHandlerId)
+    (IsMenuShell menushell, IsMenuItem menuitem, IsAccelGroup ag) =>
+    ag ->
+    menushell ->
+    GView 'Locked menuitem ->
+    Model (ROWUpdate (Text, Maybe MenuAccelerator)) ->
+    (menuitem -> GView 'Locked ()) ->
+    GView 'Unlocked (menuitem, SignalHandlerId)
 actionMenuItem ag ms mkitem rtext meaction = do
     (item, menuitem, changedSignal) <-
         gvRunLocked $ do
@@ -64,12 +67,15 @@ actionMenuItem ag ms mkitem rtext meaction = do
 
 data MenuEntry
     = SeparatorMenuEntry
-    | ActionMenuEntry (Model (ROWUpdate (Text, Maybe MenuAccelerator)))
-                      (Model (ROWUpdate (Maybe (GView 'Locked ()))))
-    | CheckedMenuEntry (Model (ROWUpdate (Text, Maybe MenuAccelerator)))
-                       (Model (WholeUpdate Bool))
-    | SubMenuEntry Text
-                   [MenuEntry]
+    | ActionMenuEntry
+        (Model (ROWUpdate (Text, Maybe MenuAccelerator)))
+        (Model (ROWUpdate (Maybe (GView 'Locked ()))))
+    | CheckedMenuEntry
+        (Model (ROWUpdate (Text, Maybe MenuAccelerator)))
+        (Model (WholeUpdate Bool))
+    | SubMenuEntry
+        Text
+        [MenuEntry]
 
 type MenuBar = [MenuEntry]
 
@@ -83,7 +89,7 @@ toModifierType KMCtrl = ModifierTypeControlMask
 toModifierType KMAlt = ModifierTypeMod1Mask
 
 accelGroupConnection ::
-       IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> GView 'Locked () -> GView 'Locked ()
+    IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> GView 'Locked () -> GView 'Locked ()
 accelGroupConnection ag key mods flags action = do
     closure <-
         liftIOWithUnlift $ \unlift ->

@@ -1,15 +1,16 @@
 module Language.Expression.Unitype where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Common
 import Language.Expression.TypeSystem
-import Shapes
 
 type Unitype :: (Type -> Type) -> Type -> Type -> Type
 data Unitype m name val
 
-type UnitypeVar (m :: Type -> Type) (name :: Type) (val :: Type) (polarity :: Polarity)
-     = NameWitness name (UniShimWit val polarity)
+type UnitypeVar (m :: Type -> Type) (name :: Type) (val :: Type) (polarity :: Polarity) =
+    NameWitness name (UniShimWit val polarity)
 
 instance (Monad m, Eq name) => TypeSystem (Unitype m name val) where
     type TSOuter (Unitype m name val) = IdentityT m
@@ -21,8 +22,9 @@ instance (Monad m, Eq name) => TypeSystem (Unitype m name val) where
 type UniShimWit val polarity = PolarShimWit (->) ((:~:) val) polarity
 
 unitypeShimWit ::
-       forall polarity (val :: Type). Is PolarityType polarity
-    => UniShimWit val polarity val
+    forall polarity (val :: Type).
+    Is PolarityType polarity =>
+    UniShimWit val polarity val
 unitypeShimWit = mkPolarShimWit Refl
 
 instance (Monad m, Eq name) => RenameTypeSystem (Unitype m name val) where
@@ -67,12 +69,15 @@ class UnitypeValue val where
     applyValue :: val -> val -> val
     abstractValue :: (val -> val) -> val
 
-instance ( Monad m
-         , MonadThrow PatternError m
-         , MonadThrow (ExpressionError (UnitypeVar m name val 'Negative)) m
-         , Ord name
-         , Show name
-         , UnitypeValue val
-         ) => CompleteTypeSystem (Unitype m name val) where
+instance
+    ( Monad m
+    , MonadThrow PatternError m
+    , MonadThrow (ExpressionError (UnitypeVar m name val 'Negative)) m
+    , Ord name
+    , Show name
+    , UnitypeValue val
+    ) =>
+    CompleteTypeSystem (Unitype m name val)
+    where
     tsFunctionPosWitness Refl Refl = mkPosShimWit Refl abstractValue
     tsFunctionNegWitness Refl Refl = mkNegShimWit Refl applyValue

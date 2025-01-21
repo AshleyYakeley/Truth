@@ -1,16 +1,17 @@
 module Shapes.Test.Context
-    ( ContextTestTree(..)
+    ( ContextTestTree (..)
     , runContextTestTree
     , tGroup
     , tModify
     , tContext
-    ) where
+    )
+where
 
 import Shapes
 import Shapes.Test
 
-newtype ContextTestTree c =
-    MkContextTestTree (c -> TestTree)
+newtype ContextTestTree c
+    = MkContextTestTree (c -> TestTree)
 
 runContextTestTree :: c -> ContextTestTree c -> TestTree
 runContextTestTree c (MkContextTestTree test) = test c

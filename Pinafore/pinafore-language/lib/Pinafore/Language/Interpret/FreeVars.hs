@@ -1,7 +1,8 @@
 module Pinafore.Language.Interpret.FreeVars
     ( syntaxExpressionFreeVariables
     , syntaxPatternBindingVariables
-    ) where
+    )
+where
 
 import Import
 
@@ -11,9 +12,10 @@ syntaxExpressionFreeVariables expr = toList $ syntaxFreeVariables expr
 
 data BindingThing
     = VarBindingThing FullName
-    | ConsBindingThing Namespace
-                       FullNameRef
-    deriving stock (Eq)
+    | ConsBindingThing
+        Namespace
+        FullNameRef
+    deriving stock Eq
 
 btGetVar :: BindingThing -> Maybe FullName
 btGetVar (VarBindingThing x) = Just x
@@ -67,8 +69,8 @@ instance SyntaxFreeVariables SyntaxMulticaseList where
 instance SyntaxFreeVariables SyntaxDeclarator where
     syntaxFreeVariables (SDLetSeq sdecls) = syntaxFreeVariables sdecls
     syntaxFreeVariables (SDLetRec sdecls) = syntaxFreeVariables sdecls
-    syntaxFreeVariables SDImport {} = mempty
-    syntaxFreeVariables SDWith {} = mempty
+    syntaxFreeVariables SDImport{} = mempty
+    syntaxFreeVariables SDWith{} = mempty
 
 instance SyntaxFreeVariables SyntaxConstructor where
     syntaxFreeVariables (SLNamedConstructor _ mexprs) = syntaxFreeVariables mexprs
@@ -163,8 +165,8 @@ instance SyntaxBindingVariables SyntaxRecursiveDeclaration' where
 instance SyntaxBindingVariables SyntaxDeclarator where
     syntaxBindingVariables (SDLetSeq sdecls) = syntaxBindingVariables sdecls
     syntaxBindingVariables (SDLetRec sdecls) = syntaxBindingVariables sdecls
-    syntaxBindingVariables SDImport {} = mempty
-    syntaxBindingVariables SDWith {} = mempty
+    syntaxBindingVariables SDImport{} = mempty
+    syntaxBindingVariables SDWith{} = mempty
 
 instance SyntaxBindingVariables SyntaxDeclaration' where
     syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind

@@ -1,12 +1,14 @@
 module Pinafore.Base.SafeRational
-    ( SafeRational(..)
+    ( SafeRational (..)
     , toSafeRational
     , integerSafeRational
-    ) where
+    )
+where
 
-import Pinafore.Base.Showable
 import Shapes
 import Shapes.Numeric
+
+import Pinafore.Base.Showable
 
 -- | A Rational plus a NaN value for x/0
 data SafeRational
@@ -23,8 +25,8 @@ instance ShowText SafeRational where
         n = numerator r
         d = denominator r
         in if d == 1
-               then showText n
-               else showText n <> "/" <> showText d
+            then showText n
+            else showText n <> "/" <> showText d
 
 instance Show SafeRational where
     show v = unpack $ showText v
@@ -39,7 +41,7 @@ instance Read SafeRational where
         many1' p = liftA2 (:) p $ many' p
         assembleDigits :: (Integer, Integer) -> String -> (Integer, Integer)
         assembleDigits it [] = it
-        assembleDigits (i, t) (c:cc) = assembleDigits (i * 10 + toInteger (digitToInt c), t * 10) cc
+        assembleDigits (i, t) (c : cc) = assembleDigits (i * 10 + toInteger (digitToInt c), t * 10) cc
         readDigits :: ReadPrec (Integer, Integer)
         readDigits = do
             s <- many' $ rSatisfy isDigit
@@ -56,8 +58,8 @@ instance Read SafeRational where
                 option' 0 $ do
                     rLiteral '_'
                     (repN, repD) <- readDigits
-                    return $
-                        if repD == 1
+                    return
+                        $ if repD == 1
                             then 0
                             else repN % (fixD * (pred repD))
             return $ (fixN % fixD) + repR
@@ -71,9 +73,9 @@ instance Read SafeRational where
             sign <- (rLiteral '-' >> return negate) <++ return id
             (intPart, _) <- readDigits1
             remaining <- option' (Left 0) $ fmap Left readDecimalPart <++ fmap Right readFractionPart
-            return $
-                sign $
-                case remaining of
+            return
+                $ sign
+                $ case remaining of
                     Left decPart -> toRational intPart + decPart
                     Right d -> intPart % d
         readNaN :: ReadPrec SafeRational

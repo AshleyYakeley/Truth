@@ -1,6 +1,7 @@
 module Language.Expression.Common.Sealed
     ( module I
-    ) where
+    )
+where
 
 import Language.Expression.Common.Sealed.Partial as I
 import Language.Expression.Common.Sealed.Sealed as I

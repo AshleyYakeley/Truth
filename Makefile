@@ -65,15 +65,15 @@ endif
 
 ### Formatting
 
-${BINPATH}/hindent: docker-image
-	stack $(STACKFLAGS) install hindent
+${BINPATH}/fourmolu: docker-image
+	stack $(STACKFLAGS) install fourmolu
 
-.PHONY: hindent
-hindent: ${BINPATH}/hindent
+.PHONY: fourmolu
+fourmolu: ${BINPATH}/fourmolu
 
 .PHONY: format
-format: ${BINPATH}/hindent
-	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/hindent-all
+format: ${BINPATH}/fourmolu
+	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/format-all
 
 
 ### Licensing info

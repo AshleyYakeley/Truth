@@ -1,7 +1,8 @@
 module Pinafore.Language.Interpret.AppNotation
     ( appNotationUnquote
     , appNotationQuote
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -28,7 +29,7 @@ appNotationUnquote mexpr = do
 
 aplist :: QExpression -> [QExpression] -> QInterpreter QExpression
 aplist expr [] = return expr
-aplist expr (arg:args) = do
+aplist expr (arg : args) = do
     aprefExpr <- interpretValue "apply" Nothing
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args

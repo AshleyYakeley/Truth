@@ -1,17 +1,19 @@
 module Changes.World.GNOME.GTK.Window
-    ( WindowSpec(..)
+    ( WindowSpec (..)
     , UIWindow
     , uiWindowHide
     , uiWindowShow
     , uiWindowDebugDescribe
     , createWindow
-    , WindowPosition(..)
-    ) where
+    , WindowPosition (..)
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk as GI
 import Shapes
+
+import Changes.World.GNOME.GI
 
 data WindowSpec = MkWindowSpec
     { wsPosition :: WindowPosition
@@ -28,11 +30,11 @@ data UIWindow = MkUIWindow
     }
 
 createWindow :: WindowSpec -> GView 'Unlocked UIWindow
-createWindow MkWindowSpec {..} = do
+createWindow MkWindowSpec{..} = do
     window <-
-        gvExitOnClosed $
-        gvRunLocked $
-        gvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
+        gvExitOnClosed
+            $ gvRunLocked
+            $ gvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
     gvBindReadOnlyWholeModel wsTitle $ \title -> gvRunLocked $ set window [#title := title]
     ag <-
         gvRunLocked $ do
@@ -54,4 +56,4 @@ createWindow MkWindowSpec {..} = do
             uiWindowDebugDescribe = do
                 w <- toWidget window
                 widgetInfoText w
-        return $ MkUIWindow {..}
+        return $ MkUIWindow{..}

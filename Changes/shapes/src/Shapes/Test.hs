@@ -1,8 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Shapes.Test
-    (
-    -- * General
+    ( -- * General
       TestTree
     , TestName
     , getTestName
@@ -13,27 +12,30 @@ module Shapes.Test
     , pauseTestOnFailure
     , testMain
     , testMainNoSignalHandler
-    , BuildTestTree(..)
+    , BuildTestTree (..)
     , ignoreTestBecause
     , expectFailBecause
     , failTestBecause
     , testTreeOne
     , testMARK
     , testNoMARK
-    -- * Options
+
+      -- * Options
     , localOption
-    , QuickCheckTests(..)
+    , QuickCheckTests (..)
     , mkTimeout
-    -- * Unit
+
+      -- * Unit
     , Assertion
     , assertEqual
     , assertFailure
     , assertThrowsException
     , assertThrowsAnyException
-    -- * QuickCheck
+
+      -- * QuickCheck
     , Testable
     , Property
-    , Arbitrary(..)
+    , Arbitrary (..)
     , oneof
     , getSmall
     , getNonNegative
@@ -41,15 +43,16 @@ module Shapes.Test
     , (===)
     , counterexample
     , ioProperty
-    -- * Golden
+
+      -- * Golden
     , testHandleVsFile
     , testHandleVsFileInDir
     , findByExtension
     , (</>)
-    ) where
+    )
+where
 
 import GHC.IO.Handle
-import Shapes
 import System.Directory
 import System.Exit
 import System.FilePath
@@ -64,6 +67,8 @@ import Test.Tasty.Providers
 import Test.Tasty.Providers.ConsoleFormat
 import Test.Tasty.QuickCheck
 import Test.Tasty.Runners
+
+import Shapes
 
 instance Arbitrary StrictByteString where
     arbitrary = fmap fromList $ arbitrary @[Word8]
@@ -130,16 +135,16 @@ repeatTest n =
                     resultTime = 0
                     resultShortDescription = "OK"
                     resultDetailsPrinter = noResultDetails
-                    in Result {..}
+                    in Result{..}
         go i = do
             r <- test
             case resultOutcome r of
                 Test.Tasty.Runners.Success -> do
                     r' <- go $ succ i
-                    return r' {resultTime = resultTime r + resultTime r'}
+                    return r'{resultTime = resultTime r + resultTime r'}
                 _ ->
                     return
-                        r {resultShortDescription = resultShortDescription r <> " (" <> show i <> "/" <> show n <> ")"}
+                        r{resultShortDescription = resultShortDescription r <> " (" <> show i <> "/" <> show n <> ")"}
         in go 1
 
 -- | time in ms
@@ -156,7 +161,7 @@ pauseTestOnFailure t =
         return r
 
 failTestBecause :: String -> TestTree -> TestTree
-failTestBecause reason = wrapTest $ \_ -> return $ (testFailed "") {resultShortDescription = "FAILS: " <> reason}
+failTestBecause reason = wrapTest $ \_ -> return $ (testFailed ""){resultShortDescription = "FAILS: " <> reason}
 
 class BuildTestTree a where
     testTree :: TestName -> a -> TestTree
@@ -184,24 +189,26 @@ testNoMARK = id
 
 testHandleVsFile :: TestName -> FilePath -> FilePath -> (Handle -> IO ()) -> TestTree
 testHandleVsFile testName refPath outPath call =
-    goldenVsFile testName refPath outPath $
-    withBinaryFile outPath WriteMode $ \h -> do
-        hSetBuffering h NoBuffering
-        call h
+    goldenVsFile testName refPath outPath
+        $ withBinaryFile outPath WriteMode
+        $ \h -> do
+            hSetBuffering h NoBuffering
+            call h
 
 testHandleVsFileInDir :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
 testHandleVsFileInDir dir testName call = let
     refPath = dir </> testName <.> "ref"
     outPath = dir </> testName <.> "out"
     in testHandleVsFile testName refPath outPath $ \hout -> do
-           createDirectoryIfMissing True dir
-           call hout
+        createDirectoryIfMissing True dir
+        call hout
 
 assertThrowsException ::
-       forall ex a. Exception ex
-    => (ex -> Bool)
-    -> IO a
-    -> IO ()
+    forall ex a.
+    Exception ex =>
+    (ex -> Bool) ->
+    IO a ->
+    IO ()
 assertThrowsException checkEx ma = do
     result <- tryExc ma
     case result of

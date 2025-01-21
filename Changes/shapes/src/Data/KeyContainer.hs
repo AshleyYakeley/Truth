@@ -1,7 +1,8 @@
 module Data.KeyContainer where
 
-import Data.HasNewValue
 import Data.List qualified
+
+import Data.HasNewValue
 import Shapes.Import
 
 class (Monoid t, Semigroup t, MonoFoldable t, GrowingAppend t) => ItemContainer t where
@@ -9,9 +10,10 @@ class (Monoid t, Semigroup t, MonoFoldable t, GrowingAppend t) => ItemContainer 
     -- For a map, `Element m = MapValue m`
     -- but `Item m = (ContainerKey m, MapValue m)`
     type Item t :: Type
+
     itemElement :: Item t -> Element t
     type Item t = Element t
-    default itemElement :: (Item t ~ Element t) => Item t -> Element t
+    default itemElement :: Item t ~ Element t => Item t -> Element t
     itemElement e = e
 
 instance ItemContainer [a]
@@ -42,13 +44,13 @@ instance Eq key => KeyContainer [(key, value)] where
     itemKey (key, _) = key
     lookupItem key = Data.List.find (\(k, _) -> k == key)
     insertItem e [] = [e]
-    insertItem e@(k, _) ((k', _):aa)
+    insertItem e@(k, _) ((k', _) : aa)
         | k == k' = e : aa
-    insertItem e (a:aa) = a : (insertItem e aa)
+    insertItem e (a : aa) = a : (insertItem e aa)
     deleteKey _ [] = []
-    deleteKey k ((k', _):aa)
+    deleteKey k ((k', _) : aa)
         | k == k' = aa
-    deleteKey k (a:aa) = a : (deleteKey k aa)
+    deleteKey k (a : aa) = a : (deleteKey k aa)
     fromItemList = id
 
 instance Ord k => KeyContainer (Map k v)

@@ -5,9 +5,11 @@ module Pinafore.Language.Interpret.Expression
     , interpretType
     , interpretImportDeclaration
     , interpretPattern
-    ) where
+    )
+where
 
 import Data.Graph hiding (Forest, Tree)
+
 import Import
 import Pinafore.Language.Convert.Pinafore
 import Pinafore.Language.Debug
@@ -28,31 +30,33 @@ import Pinafore.Language.VarID
 interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordConstructor)
 interpretPatternConstructor (SLNamedConstructor name _) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
-    return $
-    Left $
-    qToPatternConstructor $
-    ImpureFunction $
-    pure $ \v' ->
-        if v == v'
-            then Just ()
-            else Nothing
+    return
+        $ Left
+        $ qToPatternConstructor
+        $ ImpureFunction
+        $ pure
+        $ \v' ->
+            if v == v'
+                then Just ()
+                else Nothing
 interpretPatternConstructor (SLString v) =
-    return $
-    Left $
-    qToPatternConstructor $
-    ImpureFunction $
-    pure $ \v' ->
-        if v == v'
-            then Just ()
-            else Nothing
+    return
+        $ Left
+        $ qToPatternConstructor
+        $ ImpureFunction
+        $ pure
+        $ \v' ->
+            if v == v'
+                then Just ()
+                else Nothing
 interpretPatternConstructor SLUnit = return $ Left $ qToPatternConstructor $ PureFunction $ pure $ \() -> ()
 interpretPatternConstructor SLPair =
     return $ Left $ qToPatternConstructor $ PureFunction $ pure $ \(a :: A, b :: B) -> (a, (b, ()))
 
 recordNameWitnesses ::
-       Namespace
-    -> ListType (QSignature 'Positive) tt
-    -> QScopeBuilder [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
+    Namespace ->
+    ListType (QSignature 'Positive) tt ->
+    QScopeBuilder [SomeFor ((->) (ListVProduct tt)) (NameWitness VarID (QShimWit 'Positive))]
 recordNameWitnesses ns lt =
     listTypeForList (pairListType lt $ listVProductGetters lt) $ \case
         MkPairType (ValueSignature _ name t _) f -> do
@@ -60,14 +64,14 @@ recordNameWitnesses ns lt =
             return $ MkSomeFor (MkNameWitness vid $ mkShimWit t) f
 
 mkRecordPattern ::
-       Namespace -> ListVType (QSignature 'Positive) tt -> QScopeBuilder (QOpenPattern (Maybe (ListVProduct tt)) ())
+    Namespace -> ListVType (QSignature 'Positive) tt -> QScopeBuilder (QOpenPattern (Maybe (ListVProduct tt)) ())
 mkRecordPattern ns ww = do
     sff <- recordNameWitnesses ns $ listVTypeToType ww
     return $ MkPattern sff $ ImpureFunction $ pure $ fmap $ \a -> (a, ())
 
 constructPattern :: Namespace -> Either QPatternConstructor QRecordConstructor -> [QPattern] -> QScopeBuilder QPattern
 constructPattern _ (Left pc) pats = builderLift $ qConstructPattern pc pats
-constructPattern _ (Right _) (_:_) = throw PatternTooManyConsArgsError
+constructPattern _ (Right _) (_ : _) = throw PatternTooManyConsArgsError
 constructPattern ns (Right (MkQRecordConstructor sigs _ tt codec)) [] = do
     pat <- mkRecordPattern ns sigs
     return $ MkSealedPattern (shimWitToDolan tt) $ pat . arr (decode codec)
@@ -86,8 +90,8 @@ interpretPattern' (ConstructorSyntaxPattern ns scons spats) = do
     pats <- for spats interpretPattern
     pat@(MkSealedPattern tw patw) <- constructPattern ns pc pats
     mstw <- builderLift $ getOptGreatestDynamicSupertypeSW tw
-    return $
-        case mstw of
+    return
+        $ case mstw of
             Nothing -> pat
             Just (MkShimWit stw (MkPolarShim (MkComposeShim convexpr))) ->
                 MkSealedPattern (mkShimWit stw) $ patw . impureFuncPattern (fmap shimToFunction convexpr)
@@ -101,8 +105,10 @@ interpretPattern' (TypedSyntaxPattern spat stype) = do
                 let
                     pc :: QPatternConstructor
                     pc =
-                        toPatternConstructor (mkShimWit tn) (ConsListType tpw NilListType) $
-                        PureFunction $ pure $ \a -> (a, ())
+                        toPatternConstructor (mkShimWit tn) (ConsListType tpw NilListType)
+                            $ PureFunction
+                            $ pure
+                            $ \a -> (a, ())
                 qConstructPattern pc [pat]
 interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
     pat <- interpretPattern spat
@@ -118,8 +124,9 @@ interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
                         let
                             pc :: QPatternConstructor
                             pc =
-                                toPatternConstructor (mkShimWit dtn) (ConsListType tpw NilListType) $
-                                ImpureFunction $ fmap (\conv -> fmap (\a -> (a, ())) . shimToFunction conv) dtconvexpr
+                                toPatternConstructor (mkShimWit dtn) (ConsListType tpw NilListType)
+                                    $ ImpureFunction
+                                    $ fmap (\conv -> fmap (\a -> (a, ())) . shimToFunction conv) dtconvexpr
                         qConstructPattern pc [pat]
 interpretPattern' (NamespaceSyntaxPattern spat _) = interpretPattern spat
 interpretPattern' (DebugSyntaxPattern t spat) = do
@@ -160,11 +167,11 @@ data SingleBinding = MkSingleBinding
 
 -- isRecursive flag is to fix issue #199
 buildSingleBinding ::
-       Maybe (FullName, Bool)
-    -> Maybe SyntaxType
-    -> SyntaxExpression
-    -> RawMarkdown
-    -> QScopeBuilder (FullName, SingleBinding)
+    Maybe (FullName, Bool) ->
+    Maybe SyntaxType ->
+    SyntaxExpression ->
+    RawMarkdown ->
+    QScopeBuilder (FullName, SingleBinding)
 buildSingleBinding mname sbType sbBody sbDoc = do
     (sbName, sbVarID) <-
         case mname of
@@ -174,10 +181,10 @@ buildSingleBinding mname sbType sbBody sbDoc = do
                 (_, varID) <- allocateLambdaVar Nothing
                 return (name, varID)
     let sbRefVars = syntaxExpressionFreeVariables sbBody
-    return (sbName, MkSingleBinding {..})
+    return (sbName, MkSingleBinding{..})
 
 typedSyntaxToSingleBindings ::
-       Bool -> SyntaxPattern -> Maybe SyntaxType -> SyntaxExpression -> RawMarkdown -> QScopeBuilder [SingleBinding]
+    Bool -> SyntaxPattern -> Maybe SyntaxType -> SyntaxExpression -> RawMarkdown -> QScopeBuilder [SingleBinding]
 typedSyntaxToSingleBindings isRecursive spat@(MkWithSourcePos spos pat) mstype sbody doc =
     case pat of
         VarSyntaxPattern name -> do
@@ -245,10 +252,12 @@ interpretRecursiveDocDeclarations :: [SyntaxRecursiveDeclaration] -> QScopeBuild
 interpretRecursiveDocDeclarations ddecls = do
     let
         interp ::
-               SyntaxRecursiveDeclaration
-            -> QScopeBuilder ( [(SourcePos, FullName, RawMarkdown, SyntaxRecursiveTypeDeclaration)]
-                             , QScopeBuilder ()
-                             , [SingleBinding])
+            SyntaxRecursiveDeclaration ->
+            QScopeBuilder
+                ( [(SourcePos, FullName, RawMarkdown, SyntaxRecursiveTypeDeclaration)]
+                , QScopeBuilder ()
+                , [SingleBinding]
+                )
         interp (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) =
             case decl of
                 TypeSyntaxDeclaration name defn -> return (pure (spos, name, doc, defn), mempty, mempty)
@@ -287,7 +296,7 @@ allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (ValueSyntaxSignature name sty
                         qdef <- interpretExpression sdef
                         qSubsumeExpressionToOpen qtype qdef
                 return (varid, MkSome $ ValueSignature Nothing name qtype mqdef)
-allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (SupertypeConstructorSyntaxSignature {}))) =
+allocateQRV (MkSyntaxWithDoc _ (MkWithSourcePos _ (SupertypeConstructorSyntaxSignature{}))) =
     builderLift $ throw RecordFunctionSupertype
 
 recordValueAddSig :: VarID -> Some (QSignature 'Positive) -> QRecordValue -> QInterpreter QRecordValue
@@ -334,7 +343,7 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 docItem = valueDocItem name mtype
                 docDescription = doc
             rv <- builderLift $ interpretRecordValueDecl sigs mtype expr
-            registerRecordValue name MkDefDoc {..} rv
+            registerRecordValue name MkDefDoc{..} rv
         DeclaratorSyntaxDeclaration declarator -> do
             sd <- builderLift $ interpretDeclarator declarator
             registerScopeDocs sd
@@ -345,11 +354,12 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             sd <- builderLift $ interpretExpose items
             outputScopeDocs sd
         NamespaceSyntaxDeclaration makeSection nsn decls ->
-            withCurrentNamespaceScope nsn $
-            (if makeSection
-                 then sectionHeading (showText nsn) doc
-                 else id) $
-            for_ decls interpretDeclaration
+            withCurrentNamespaceScope nsn
+                $ ( if makeSection
+                        then sectionHeading (showText nsn) doc
+                        else id
+                  )
+                $ for_ decls interpretDeclaration
         DocSectionSyntaxDeclaration heading decls -> sectionHeading heading doc $ for_ decls interpretDeclaration
         SpliceSyntaxDeclaration sexpr -> do
             sd <-
@@ -359,9 +369,9 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             registerScopeDocs sd
         DebugSyntaxDeclaration nameref -> do
             mfd <- builderLift $ lookupDebugBindingInfo nameref
-            liftIO $
-                debugMessage $
-                case mfd of
+            liftIO
+                $ debugMessage
+                $ case mfd of
                     Just (fn, desc) -> showText nameref <> " = " <> showText fn <> ": " <> pack desc
                     Nothing -> showText nameref <> " not found"
 
@@ -373,16 +383,16 @@ interpretRecordArgList sarglist =
 
 interpretConstructor :: SyntaxConstructor -> QInterpreter QExpression
 interpretConstructor (SLNumber n) =
-    return $
-    case decode safeRationalNumber n of
-        Just r ->
-            case decode integerSafeRational r of
-                Just i ->
-                    case decode naturalInteger i of
-                        Just nat -> qConst nat
-                        Nothing -> qConst i
-                Nothing -> qConst r
-        Nothing -> qConst n
+    return
+        $ case decode safeRationalNumber n of
+            Just r ->
+                case decode integerSafeRational r of
+                    Just i ->
+                        case decode naturalInteger i of
+                            Just nat -> qConst nat
+                            Nothing -> qConst i
+                    Nothing -> qConst r
+            Nothing -> qConst n
 interpretConstructor (SLString v) = return $ qConst v
 interpretConstructor (SLNamedConstructor v mvals) = do
     marglist <- for mvals interpretRecordArgList
@@ -419,10 +429,10 @@ specialCaseVarPatternsINTERNAL :: Bool
 specialCaseVarPatternsINTERNAL = True
 
 interpretMultiPattern ::
-       FixedList n VarID
-    -> FixedList n SyntaxPattern
-    -> QInterpreter QPartialExpression
-    -> QInterpreter QPartialExpression
+    FixedList n VarID ->
+    FixedList n SyntaxPattern ->
+    QInterpreter QPartialExpression ->
+    QInterpreter QPartialExpression
 interpretMultiPattern NilFixedList NilFixedList ma = ma
 interpretMultiPattern (ConsFixedList v vv) (ConsFixedList spat spats) ma =
     interpretSinglePattern v spat $ interpretMultiPattern vv spats ma
@@ -446,8 +456,8 @@ interpretNamespaceWith (MkSyntaxNamespaceWith sourcens mitems destns) = do
             ns = namespaceConcatRef sourcens nsr
             ns' = namespaceConcatRef sourcens nsr'
             in isJust $ namespaceWithinRef ns ns'
-    getNamespaceWithScope sourcens destns $
-        case mitems of
+    getNamespaceWithScope sourcens destns
+        $ case mitems of
             Nothing -> \_ -> True
             Just (b, items) -> \name -> any (matchItem name) items == b
 
@@ -460,7 +470,7 @@ interpretExpose items = do
     curns <- paramAsk currentNamespaceParam
     let (namespaces, names) = concatmap (partitionItem curns) items
     (scope, docs) <- exportScope namespaces names
-    return $ MkQScopeDocs {sdScopes = [scope], sdDocs = MkForest $ fmap pure docs}
+    return $ MkQScopeDocs{sdScopes = [scope], sdDocs = MkForest $ fmap pure docs}
 
 interpretDeclarator :: SyntaxDeclarator -> QInterpreter QScopeDocs
 interpretDeclarator (SDLetSeq sdecls) = runScopeBuilder $ for_ sdecls interpretDeclaration
@@ -568,9 +578,9 @@ checkExprVars :: QExpression -> QInterpreter ()
 checkExprVars (MkSealedExpression _ expr) = do
     let
         getBadVarErrors ::
-               forall t.
-               NameWitness VarID (QShimWit 'Negative) t
-            -> QInterpreter (Maybe (SourcePos, Some (NameWitness VarID (QShimWit 'Negative))))
+            forall t.
+            NameWitness VarID (QShimWit 'Negative) t ->
+            QInterpreter (Maybe (SourcePos, Some (NameWitness VarID (QShimWit 'Negative))))
         getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
             paramWith sourcePosParam spos $ return $ Just $ (spos, MkSome w)
         getBadVarErrors _ = return Nothing
@@ -589,12 +599,12 @@ interpretClosedExpression sexpr = do
     return expr
 
 interpretBinding :: SingleBinding -> QInterpreter QBinding
-interpretBinding MkSingleBinding {..} = do
+interpretBinding MkSingleBinding{..} = do
     let
         bdf fexpr = let
             docItem = valueDocItem sbName $ Just fexpr
             docDescription = sbDoc
-            in MkDefDoc {..}
+            in MkDefDoc{..}
     mtype <- for sbType interpretType
     expr <- interpretClosedExpression sbBody
     return $ qBindExpr sbVarID bdf mtype expr
@@ -605,7 +615,7 @@ interpretDeclarationWith sdecl ma = do
     withScopeDocs sd ma
 
 interpretGeneralSubtypeRelation ::
-       TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> QInterpreter QSubtypeConversionEntry
+    TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> QInterpreter QSubtypeConversionEntry
 interpretGeneralSubtypeRelation trustme sta stb sbody = do
     ata <- interpretType @'Negative sta
     atb <- interpretType @'Positive stb
@@ -618,8 +628,9 @@ interpretGeneralSubtypeRelation trustme sta stb sbody = do
                         funcWit = funcShimWit (mkShimWit ta) (mkShimWit tb)
                     body <- interpretExpression sbody
                     convexpr <- qSubsumeExpressionToOpenWit funcWit body
-                    return $
-                        subtypeConversionEntry trustme Nothing gta gtb $ fmap (functionToShim "user-subtype") convexpr
+                    return
+                        $ subtypeConversionEntry trustme Nothing gta gtb
+                        $ fmap (functionToShim "user-subtype") convexpr
                 _ -> throw $ InterpretTypeNotGroundedError $ exprShow atb
         _ -> throw $ InterpretTypeNotGroundedError $ exprShow ata
 
@@ -639,34 +650,35 @@ interpretIdentitySubtypeRelation sta stb = do
             case getGroundFamily openEntityFamilyWitness gtb of
                 Just (MkOpenEntityFamily _) -> do
                     adapterexpr <- storableGroundTypeAdapter tea NilArguments
-                    return $
-                        case getGroundFamily openEntityFamilyWitness gta of
+                    return
+                        $ case getGroundFamily openEntityFamilyWitness gta of
                             Just (MkOpenEntityFamily _) ->
                                 MkSubtypeConversionEntry Verify gta gtb coerceSubtypeConversion
                             Nothing ->
-                                MkSubtypeConversionEntry TrustMe gta gtb $
-                                singleSubtypeConversion Nothing $
-                                fmap
-                                    (\adapter ->
-                                         coerceShim "open entity" .
-                                         (functionToShim "entityConvert" $ storeAdapterConvert adapter))
-                                    adapterexpr
+                                MkSubtypeConversionEntry TrustMe gta gtb
+                                    $ singleSubtypeConversion Nothing
+                                    $ fmap
+                                        ( \adapter ->
+                                            coerceShim "open entity"
+                                                . (functionToShim "entityConvert" $ storeAdapterConvert adapter)
+                                        )
+                                        adapterexpr
                 Nothing -> throw $ InterpretTypeNotOpenEntityError $ exprShow tb
 
 interpretSubtypeRelation ::
-       TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> RawMarkdown -> QScopeBuilder ()
+    TrustOrVerify -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> RawMarkdown -> QScopeBuilder ()
 interpretSubtypeRelation trustme sta stb mbody docDescription = do
     sce <-
-        builderLift $
-        case mbody of
-            Just body -> interpretGeneralSubtypeRelation trustme sta stb body
-            Nothing -> interpretIdentitySubtypeRelation sta stb
+        builderLift
+            $ case mbody of
+                Just body -> interpretGeneralSubtypeRelation trustme sta stb body
+                Nothing -> interpretIdentitySubtypeRelation sta stb
     registerSubtypeConversion sce
     let
         diSubtype = exprShow sta
         diSupertype = exprShow stb
-        docItem = SubtypeRelationDocItem {..}
-    registerDocs $ pure MkDefDoc {..}
+        docItem = SubtypeRelationDocItem{..}
+    registerDocs $ pure MkDefDoc{..}
 
 interpretScopeDocs :: [SyntaxDeclaration] -> QInterpreter QScopeDocs
 interpretScopeDocs sdecls = runScopeBuilder $ for_ sdecls interpretDeclaration

@@ -3,13 +3,14 @@ module Changes.Core.Model.DeferActionT
     , deferAction
     , runDeferActionT
     , deferActionResourceRunner
-    ) where
+    )
+where
 
 import Changes.Core.Import
 import Changes.Core.Resource
 
-newtype DeferActionT m a =
-    MkDeferActionT (WriterT [IO ()] m a)
+newtype DeferActionT m a
+    = MkDeferActionT (WriterT [IO ()] m a)
 
 deriving newtype instance Functor m => Functor (DeferActionT m)
 
@@ -24,7 +25,7 @@ deriving newtype instance MonadIO m => MonadIO (DeferActionT m)
 deriving newtype instance MonadFix m => MonadFix (DeferActionT m)
 
 deriving newtype instance
-         MonadPlus m => Alternative (DeferActionT m)
+    MonadPlus m => Alternative (DeferActionT m)
 
 deriving newtype instance MonadPlus m => MonadPlus (DeferActionT m)
 
@@ -57,9 +58,10 @@ instance MonadTransUnlift DeferActionT where
             return $ MkWUnlift $ \(MkDeferActionT wma) -> du wma
 
 deferAction ::
-       forall m. Monad m
-    => IO ()
-    -> DeferActionT m ()
+    forall m.
+    Monad m =>
+    IO () ->
+    DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
 runDeferActionT :: Unlift MonadTunnelIO DeferActionT
@@ -69,6 +71,7 @@ runDeferActionT (MkDeferActionT (WriterT wma)) = do
     return a
 
 deferActionResourceRunner ::
-       forall m. MonadIO m
-    => LifecycleT m (ResourceRunner '[ DeferActionT])
+    forall m.
+    MonadIO m =>
+    LifecycleT m (ResourceRunner '[DeferActionT])
 deferActionResourceRunner = liftIO $ newResourceRunner runDeferActionT

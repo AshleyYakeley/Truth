@@ -1,6 +1,7 @@
 module Language.Expression.TypeSystem
     ( module I
-    ) where
+    )
+where
 
 import Language.Expression.TypeSystem.Abstract as I
 import Language.Expression.TypeSystem.Bindings as I

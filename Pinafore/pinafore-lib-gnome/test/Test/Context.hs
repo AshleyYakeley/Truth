@@ -10,7 +10,8 @@ module Test.Context
     , tWith
     , tImport
     , scriptTestCase
-    ) where
+    )
+where
 
 import Shapes
 import Shapes.Test

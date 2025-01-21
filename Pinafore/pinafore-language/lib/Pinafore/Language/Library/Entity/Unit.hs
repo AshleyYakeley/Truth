@@ -1,6 +1,7 @@
 module Pinafore.Language.Library.Entity.Unit
     ( unitEntityLibSection
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Convert.Types

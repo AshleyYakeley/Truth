@@ -1,6 +1,7 @@
 module Language.Expression.Common.Open
     ( module I
-    ) where
+    )
+where
 
 import Language.Expression.Common.Open.Abstract as I
 import Language.Expression.Common.Open.Error as I

@@ -13,24 +13,25 @@ module Data.ListSet
     , listMapKeysToSet
     , listMapToSet
     , listMapToList
-    ) where
+    )
+where
+
+import Data.List qualified as List
 
 import Data.Codec
 import Data.Filterable
 import Data.KeyContainer
-import Data.List qualified as List
 import Shapes.Import hiding (deleteBy)
 
 newtype ListSet a = MkListSet
     { unFiniteSet :: [a]
-    } deriving newtype (Foldable, MonoFoldable, GrowingAppend)
+    }
+    deriving newtype (Foldable, MonoFoldable, GrowingAppend)
 
 pattern EmptyListSet :: ListSet a
-
 pattern EmptyListSet = MkListSet []
 
 pattern SingleListSet :: a -> ListSet a
-
 pattern SingleListSet a = MkListSet [a]
 
 instance Eq a => Semigroup (ListSet a) where
@@ -94,48 +95,52 @@ instance Eq a => KeyContainer (ListSet a) where
     itemKey a = a
     lookupItem key = List.find (\k -> k == key)
     insertItem e (MkListSet []) = MkListSet [e]
-    insertItem e (MkListSet (a:aa))
+    insertItem e (MkListSet (a : aa))
         | e == a = MkListSet $ e : aa
-    insertItem e (MkListSet (a:aa)) = MkListSet $ a : (unFiniteSet $ insertItem e $ MkListSet aa)
+    insertItem e (MkListSet (a : aa)) = MkListSet $ a : (unFiniteSet $ insertItem e $ MkListSet aa)
     deleteKey _ (MkListSet []) = MkListSet []
-    deleteKey k (MkListSet (k':aa))
+    deleteKey k (MkListSet (k' : aa))
         | k == k' = MkListSet $ aa
-    deleteKey k (MkListSet (a:aa)) = MkListSet $ a : (unFiniteSet $ deleteKey k $ MkListSet aa)
+    deleteKey k (MkListSet (a : aa)) = MkListSet $ a : (unFiniteSet $ deleteKey k $ MkListSet aa)
     fromItemList = setFromList
 
 instance (Eq key, Random key) => IONewItemKeyContainer (ListSet key) where
     newKeyContainerItem = randomIO
 
 listSetMap ::
-       forall a b. Eq b
-    => (a -> b)
-    -> ListSet a
-    -> ListSet b
+    forall a b.
+    Eq b =>
+    (a -> b) ->
+    ListSet a ->
+    ListSet b
 listSetMap f = setFromList . fmap f . toList
 
 listSetMapMaybe ::
-       forall a b. Eq b
-    => (a -> Maybe b)
-    -> ListSet a
-    -> ListSet b
+    forall a b.
+    Eq b =>
+    (a -> Maybe b) ->
+    ListSet a ->
+    ListSet b
 listSetMapMaybe f = setFromList . mapMaybe f . toList
 
 listSetFor ::
-       forall m a b. (Applicative m, Eq b)
-    => ListSet a
-    -> (a -> m b)
-    -> m (ListSet b)
+    forall m a b.
+    (Applicative m, Eq b) =>
+    ListSet a ->
+    (a -> m b) ->
+    m (ListSet b)
 listSetFor fs f = fmap setFromList $ for (toList fs) f
 
 listSetForF ::
-       forall m a b. (Applicative m, Eq b)
-    => ListSet a
-    -> (a -> m (Maybe b))
-    -> m (ListSet b)
+    forall m a b.
+    (Applicative m, Eq b) =>
+    ListSet a ->
+    (a -> m (Maybe b)) ->
+    m (ListSet b)
 listSetForF fs f = fmap setFromList $ forf (toList fs) f
 
-newtype ListMap i a =
-    MkListMap [(i, a)]
+newtype ListMap i a
+    = MkListMap [(i, a)]
 
 mapListMap :: (i -> a -> b) -> ListMap i a -> ListMap i b
 mapListMap iab (MkListMap aa) = MkListMap $ fmap (\(i, a) -> (i, iab i a)) aa
@@ -166,10 +171,11 @@ instance Eq i => Monoid (ListMap i a) where
     mempty = MkListMap []
 
 cmpFst ::
-       forall i a b. Eq i
-    => (i, a)
-    -> (i, b)
-    -> Bool
+    forall i a b.
+    Eq i =>
+    (i, a) ->
+    (i, b) ->
+    Bool
 cmpFst (i1, _) (i2, _) = i1 == i2
 
 instance Eq i => SetContainer (ListMap i a) where
@@ -199,9 +205,9 @@ instance Eq i => IsMap (ListMap i a) where
     lookup k (MkListMap iaa) = List.lookup k iaa
     insertMap k v (MkListMap iaa) = let
         doInsert [] = [(k, v)]
-        doInsert ((i, _):aa)
+        doInsert ((i, _) : aa)
             | i == k = (i, v) : aa
-        doInsert (ia:aa) = ia : doInsert aa
+        doInsert (ia : aa) = ia : doInsert aa
         in MkListMap $ doInsert iaa
     deleteMap i (MkListMap iaa) = MkListMap $ deleteFirst (\(i', _) -> i == i') iaa
     singletonMap i a = MkListMap [(i, a)]
@@ -216,17 +222,19 @@ listSetToMap :: forall i a. (i -> a) -> ListSet i -> ListMap i a
 listSetToMap ia (MkListSet ii) = MkListMap $ fmap (\i -> (i, ia i)) ii
 
 listSetToMapM ::
-       forall m i a. Applicative m
-    => (i -> m a)
-    -> ListSet i
-    -> m (ListMap i a)
+    forall m i a.
+    Applicative m =>
+    (i -> m a) ->
+    ListSet i ->
+    m (ListMap i a)
 listSetToMapM ima (MkListSet ii) = fmap MkListMap $ for ii $ \i -> fmap (\a -> (i, a)) $ ima i
 
 listSetToMapFor ::
-       forall m i a. Applicative m
-    => ListSet i
-    -> (i -> m a)
-    -> m (ListMap i a)
+    forall m i a.
+    Applicative m =>
+    ListSet i ->
+    (i -> m a) ->
+    m (ListMap i a)
 listSetToMapFor ls ima = listSetToMapM ima ls
 
 listMapKeysToSet :: forall i a. ListMap i a -> ListSet i

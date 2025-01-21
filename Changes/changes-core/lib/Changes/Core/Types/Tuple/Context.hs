@@ -6,9 +6,10 @@ import Changes.Core.Lens
 import Changes.Core.Read
 import Changes.Core.Types.Tuple.Tuple
 
-data WithContext context content =
-    MkWithContext context
-                  content
+data WithContext context content
+    = MkWithContext
+        context
+        content
 
 instance Functor (WithContext context) where
     fmap ab (MkWithContext context a) = MkWithContext context (ab a)
@@ -47,22 +48,28 @@ instance TestEquality (WithContextSelector updateX updateN) where
     testEquality SelectContent SelectContent = Just Refl
     testEquality _ _ = Nothing
 
-instance (SubjectReader (UpdateReader updateX), SubjectReader (UpdateReader updateN)) =>
-             SubjectTupleSelectorRead (WithContextSelector updateX updateN) where
+instance
+    (SubjectReader (UpdateReader updateX), SubjectReader (UpdateReader updateN)) =>
+    SubjectTupleSelectorRead (WithContextSelector updateX updateN)
+    where
     type TupleSubject (WithContextSelector updateX updateN) = WithContext (UpdateSubject updateX) (UpdateSubject updateN)
     tupleReadFromSubject SelectContext (MkWithContext x _n) = x
     tupleReadFromSubject SelectContent (MkWithContext _x n) = n
 
-instance (SubjectReader (UpdateReader updateX), SubjectReader (UpdateReader updateN)) =>
-             SubjectTupleSelector (WithContextSelector updateX updateN) where
+instance
+    (SubjectReader (UpdateReader updateX), SubjectReader (UpdateReader updateN)) =>
+    SubjectTupleSelector (WithContextSelector updateX updateN)
+    where
     tupleWriteToSubject SelectContext x (MkWithContext _ n) = MkWithContext x n
     tupleWriteToSubject SelectContent n (MkWithContext x _) = MkWithContext x n
 
 instance FiniteTupleSelector (WithContextSelector updateX updateN) where
     tupleConstruct f = MkWithContext <$> f SelectContext <*> f SelectContent
 
-instance (c (UpdateReader updateX), c (UpdateReader updateN)) =>
-             TupleReaderWitness c (WithContextSelector updateX updateN) where
+instance
+    (c (UpdateReader updateX), c (UpdateReader updateN)) =>
+    TupleReaderWitness c (WithContextSelector updateX updateN)
+    where
     tupleReaderWitness SelectContext = Dict
     tupleReaderWitness SelectContent = Dict
 
@@ -75,7 +82,7 @@ instance (c updateX, c updateN) => TupleUpdateWitness c (WithContextSelector upd
     tupleUpdateWitness SelectContent = Dict
 
 instance ListElementWitness (WithContextSelector updateX updateN) where
-    type WitnessTypeList (WithContextSelector updateX updateN) = '[ updateX, updateN]
+    type WitnessTypeList (WithContextSelector updateX updateN) = '[updateX, updateN]
     toListElementWitness SelectContext = FirstElementType
     toListElementWitness SelectContent = RestElementType FirstElementType
     fromListElementWitness FirstElementType = SelectContext
@@ -95,14 +102,14 @@ contentChangeLens :: ChangeLens (ContextUpdate updateX updateN) updateN
 contentChangeLens = tupleChangeLens SelectContent
 
 mapContextEdit ::
-       (UpdateEdit updateA -> UpdateEdit updateB)
-    -> ContextUpdateEdit updateX updateA
-    -> ContextUpdateEdit updateX updateB
+    (UpdateEdit updateA -> UpdateEdit updateB) ->
+    ContextUpdateEdit updateX updateA ->
+    ContextUpdateEdit updateX updateB
 mapContextEdit _ (MkTupleUpdateEdit SelectContext edit) = MkTupleUpdateEdit SelectContext edit
 mapContextEdit f (MkTupleUpdateEdit SelectContent edit) = MkTupleUpdateEdit SelectContent $ f edit
 
 partitionContextEdits ::
-       forall updateX updateN. [ContextUpdateEdit updateX updateN] -> ([UpdateEdit updateX], [UpdateEdit updateN])
+    forall updateX updateN. [ContextUpdateEdit updateX updateN] -> ([UpdateEdit updateX], [UpdateEdit updateN])
 partitionContextEdits pes = let
     toEither :: ContextUpdateEdit updateX updateN -> Either (UpdateEdit updateX) (UpdateEdit updateN)
     toEither (MkTupleUpdateEdit SelectContext ea) = Left ea
@@ -110,22 +117,26 @@ partitionContextEdits pes = let
     in partitionEithers $ fmap toEither pes
 
 contextualiseChangeLens ::
-       forall updateX updateN. ChangeLens updateX updateN -> ChangeLens updateX (ContextUpdate updateX updateN)
+    forall updateX updateN. ChangeLens updateX updateN -> ChangeLens updateX (ContextUpdate updateX updateN)
 contextualiseChangeLens (MkChangeLens g u pe) = let
     g' :: ReadFunction (UpdateReader updateX) (ContextUpdateReader updateX updateN)
     g' mr (MkTupleUpdateReader SelectContext rt) = mr rt
     g' mr (MkTupleUpdateReader SelectContent rt) = g mr rt
-    u' :: forall m. MonadIO m
-       => updateX
-       -> Readable m (UpdateReader updateX)
-       -> m [ContextUpdate updateX updateN]
+    u' ::
+        forall m.
+        MonadIO m =>
+        updateX ->
+        Readable m (UpdateReader updateX) ->
+        m [ContextUpdate updateX updateN]
     u' ea mr = do
         ebs <- u ea mr
         return $ (MkTupleUpdate SelectContext ea) : (fmap (MkTupleUpdate SelectContent) ebs)
-    pe' :: forall m. MonadIO m
-        => [ContextUpdateEdit updateX updateN]
-        -> Readable m (UpdateReader updateX)
-        -> m (Maybe [UpdateEdit updateX])
+    pe' ::
+        forall m.
+        MonadIO m =>
+        [ContextUpdateEdit updateX updateN] ->
+        Readable m (UpdateReader updateX) ->
+        m (Maybe [UpdateEdit updateX])
     pe' edits mr =
         case partitionContextEdits edits of
             (eas, ebs) ->
@@ -135,64 +146,74 @@ contextualiseChangeLens (MkChangeLens g u pe) = let
     in MkChangeLens g' u' pe'
 
 liftContextChangeLens ::
-       forall updateX updateA updateB.
-       ChangeLens updateA updateB
-    -> ChangeLens (ContextUpdate updateX updateA) (ContextUpdate updateX updateB)
+    forall updateX updateA updateB.
+    ChangeLens updateA updateB ->
+    ChangeLens (ContextUpdate updateX updateA) (ContextUpdate updateX updateB)
 liftContextChangeLens (MkChangeLens g u pe) = let
     g' :: ReadFunction (ContextUpdateReader updateX updateA) (ContextUpdateReader updateX updateB)
     g' mr (MkTupleUpdateReader SelectContext rt) = mr $ MkTupleUpdateReader SelectContext rt
     g' mr (MkTupleUpdateReader SelectContent rt) = g (mr . MkTupleUpdateReader SelectContent) rt
-    u' :: forall m. MonadIO m
-       => ContextUpdate updateX updateA
-       -> Readable m (ContextUpdateReader updateX updateA)
-       -> m [ContextUpdate updateX updateB]
+    u' ::
+        forall m.
+        MonadIO m =>
+        ContextUpdate updateX updateA ->
+        Readable m (ContextUpdateReader updateX updateA) ->
+        m [ContextUpdate updateX updateB]
     u' (MkTupleUpdate SelectContext update) _ = return [MkTupleUpdate SelectContext update]
     u' (MkTupleUpdate SelectContent update) mr = do
         updates <- u update (mr . MkTupleUpdateReader SelectContent)
         return $ fmap (MkTupleUpdate SelectContent) updates
-    pe' :: forall m. MonadIO m
-        => [ContextUpdateEdit updateX updateB]
-        -> Readable m (ContextUpdateReader updateX updateA)
-        -> m (Maybe [ContextUpdateEdit updateX updateA])
+    pe' ::
+        forall m.
+        MonadIO m =>
+        [ContextUpdateEdit updateX updateB] ->
+        Readable m (ContextUpdateReader updateX updateA) ->
+        m (Maybe [ContextUpdateEdit updateX updateA])
     pe' edits mr =
         case partitionContextEdits edits of
             (exs, ens) ->
                 unComposeInner $ do
                     es1 <- MkComposeInner $ pe ens (mr . MkTupleUpdateReader SelectContent)
-                    return $
-                        (fmap (MkTupleUpdateEdit SelectContent) es1) ++ (fmap (MkTupleUpdateEdit SelectContext) exs)
+                    return
+                        $ (fmap (MkTupleUpdateEdit SelectContent) es1)
+                        ++ (fmap (MkTupleUpdateEdit SelectContext) exs)
     in MkChangeLens g' u' pe'
 
 liftContentChangeLens ::
-       forall updateA updateB updateN.
-       ChangeLens updateA updateB
-    -> ChangeLens (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
+    forall updateA updateB updateN.
+    ChangeLens updateA updateB ->
+    ChangeLens (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
 liftContentChangeLens (MkChangeLens g u pe) = let
     g' :: ReadFunction (ContextUpdateReader updateA updateN) (ContextUpdateReader updateB updateN)
     g' mr (MkTupleUpdateReader SelectContent rt) = mr $ MkTupleUpdateReader SelectContent rt
     g' mr (MkTupleUpdateReader SelectContext rt) = g (mr . MkTupleUpdateReader SelectContext) rt
-    u' :: forall m. MonadIO m
-       => ContextUpdate updateA updateN
-       -> Readable m (ContextUpdateReader updateA updateN)
-       -> m [ContextUpdate updateB updateN]
+    u' ::
+        forall m.
+        MonadIO m =>
+        ContextUpdate updateA updateN ->
+        Readable m (ContextUpdateReader updateA updateN) ->
+        m [ContextUpdate updateB updateN]
     u' (MkTupleUpdate SelectContent update) _ = return [MkTupleUpdate SelectContent update]
     u' (MkTupleUpdate SelectContext update) mr = do
         updates <- u update (mr . MkTupleUpdateReader SelectContext)
         return $ fmap (MkTupleUpdate SelectContext) updates
-    pe' :: forall m. MonadIO m
-        => [ContextUpdateEdit updateB updateN]
-        -> Readable m (ContextUpdateReader updateA updateN)
-        -> m (Maybe [ContextUpdateEdit updateA updateN])
+    pe' ::
+        forall m.
+        MonadIO m =>
+        [ContextUpdateEdit updateB updateN] ->
+        Readable m (ContextUpdateReader updateA updateN) ->
+        m (Maybe [ContextUpdateEdit updateA updateN])
     pe' edits mr =
         case partitionContextEdits edits of
             (exs, ens) ->
                 unComposeInner $ do
                     es1 <- MkComposeInner $ pe exs (mr . MkTupleUpdateReader SelectContext)
-                    return $
-                        (fmap (MkTupleUpdateEdit SelectContext) es1) ++ (fmap (MkTupleUpdateEdit SelectContent) ens)
+                    return
+                        $ (fmap (MkTupleUpdateEdit SelectContext) es1)
+                        ++ (fmap (MkTupleUpdateEdit SelectContent) ens)
     in MkChangeLens g' u' pe'
 
 carryContextChangeLens ::
-       ChangeLens (ContextUpdate updateX updateA) updateB
-    -> ChangeLens (ContextUpdate updateX updateA) (ContextUpdate updateX updateB)
+    ChangeLens (ContextUpdate updateX updateA) updateB ->
+    ChangeLens (ContextUpdate updateX updateA) (ContextUpdate updateX updateB)
 carryContextChangeLens lens = liftContentChangeLens (tupleChangeLens SelectContext) . contextualiseChangeLens lens

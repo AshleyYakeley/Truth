@@ -1,6 +1,7 @@
 module Pinafore.Language.If
     ( qifthenelse
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Var

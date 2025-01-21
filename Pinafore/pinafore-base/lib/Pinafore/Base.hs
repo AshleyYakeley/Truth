@@ -1,6 +1,7 @@
 module Pinafore.Base
     ( module I
-    ) where
+    )
+where
 
 import Pinafore.Base.Action as I
 import Pinafore.Base.Anchor as I

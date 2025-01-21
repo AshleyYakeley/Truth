@@ -1,8 +1,9 @@
 module Pinafore.Base.File where
 
-import Pinafore.Base.Entity
 import Shapes
 
-newtype FileEntity =
-    MkFileEntity Entity
-    deriving newtype (Eq)
+import Pinafore.Base.Entity
+
+newtype FileEntity
+    = MkFileEntity Entity
+    deriving newtype Eq

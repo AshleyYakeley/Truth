@@ -1,11 +1,12 @@
 module Changes.World.GNOME.GTK.Widget.SpinButton where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes hiding (get)
 import Shapes.Numeric
+
+import Changes.World.GNOME.GI
 
 createSpinButton :: GView 'Locked (SpinButton, Widget)
 createSpinButton = gvNewWidget SpinButton []

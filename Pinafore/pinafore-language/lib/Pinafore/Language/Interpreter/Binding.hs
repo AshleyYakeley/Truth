@@ -1,15 +1,16 @@
 module Pinafore.Language.Interpreter.Binding
-    ( QSignature(..)
-    , QRecordValue(..)
-    , QRecordConstructor(..)
+    ( QSignature (..)
+    , QRecordValue (..)
+    , QRecordConstructor (..)
     , recordConstructorToValue
-    , QInterpreterBinding(..)
-    , QBindingInfo(..)
-    , BindingSelector(..)
+    , QInterpreterBinding (..)
+    , QBindingInfo (..)
+    , BindingSelector (..)
     , typeBindingSelector
     , recordConstructorBindingSelector
     , recordValueBindingSelector
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -17,47 +18,52 @@ import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 
-data QSignature (polarity :: Polarity) (t :: Type) =
-    ValueSignature (Maybe SomeFamilialType)
-                   Name
-                   (QType polarity t)
-                   (Maybe (QOpenExpression t))
+data QSignature (polarity :: Polarity) (t :: Type)
+    = ValueSignature
+        (Maybe SomeFamilialType)
+        Name
+        (QType polarity t)
+        (Maybe (QOpenExpression t))
 
 instance Is PolarityType polarity => Show (QSignature polarity a) where
     show (ValueSignature _ name t mexpr) =
-        show name <>
-        ": " <>
-        show t <>
-        case mexpr of
-            Nothing -> ""
-            Just expr -> " = " <> show expr
+        show name
+            <> ": "
+            <> show t
+            <> case mexpr of
+                Nothing -> ""
+                Just expr -> " = " <> show expr
 
 instance (HasInterpreter, Is PolarityType polarity) => HasVarMapping (QSignature polarity) where
     getVarMapping (ValueSignature _ _ t _) = getVarMapping t
 
-data QRecordValue =
-    forall (tt :: [Type]). MkQRecordValue (ListType (QSignature 'Positive) tt)
-                                          (QFExpression ((->) (ListProduct tt)))
+data QRecordValue
+    = forall (tt :: [Type]). MkQRecordValue
+        (ListType (QSignature 'Positive) tt)
+        (QFExpression ((->) (ListProduct tt)))
 
 instance Show QRecordValue where
     show (MkQRecordValue sigs expr) = "of " <> show sigs <> ": " <> show expr
 
-data QRecordConstructor =
-    forall (t :: Type) (tt :: [Type]). MkQRecordConstructor (ListVType (QSignature 'Positive) tt)
-                                                            (QGroundedShimWit 'Positive t)
-                                                            (QGroundedShimWit 'Negative t)
-                                                            (Codec t (ListVProduct tt))
+data QRecordConstructor
+    = forall (t :: Type) (tt :: [Type]). MkQRecordConstructor
+        (ListVType (QSignature 'Positive) tt)
+        (QGroundedShimWit 'Positive t)
+        (QGroundedShimWit 'Negative t)
+        (Codec t (ListVProduct tt))
 
 recordConstructorToValue :: QRecordConstructor -> QRecordValue
 recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) =
-    MkQRecordValue (listVTypeToType sigs) $
-    constSealedFExpression $ MkSomeFor (shimWitToDolan vtype) (encode codec . listProductToVProduct sigs)
+    MkQRecordValue (listVTypeToType sigs)
+        $ constSealedFExpression
+        $ MkSomeFor (shimWitToDolan vtype) (encode codec . listProductToVProduct sigs)
 
 data QInterpreterBinding
     = ValueBinding QExpression
     | RecordValueBinding QRecordValue
-    | PatternConstructorBinding QExpression
-                                QPatternConstructor
+    | PatternConstructorBinding
+        QExpression
+        QPatternConstructor
     | RecordConstructorBinding QRecordConstructor
     | TypeBinding QSomeGroundType
 
@@ -86,7 +92,7 @@ typeBindingSelector = let
     bsDecode (TypeBinding t) = Just t
     bsDecode _ = Nothing
     bsError = LookupNotTypeError
-    in MkBindingSelector {..}
+    in MkBindingSelector{..}
 
 recordConstructorBindingSelector :: BindingSelector QRecordConstructor
 recordConstructorBindingSelector = let
@@ -94,7 +100,7 @@ recordConstructorBindingSelector = let
     bsDecode (RecordConstructorBinding t) = Just t
     bsDecode _ = Nothing
     bsError = LookupNotRecordConstructorError
-    in MkBindingSelector {..}
+    in MkBindingSelector{..}
 
 recordValueBindingSelector :: BindingSelector QRecordValue
 recordValueBindingSelector = let
@@ -103,4 +109,4 @@ recordValueBindingSelector = let
     bsDecode (RecordConstructorBinding t) = Just $ recordConstructorToValue t
     bsDecode _ = Nothing
     bsError = LookupNotRecordError
-    in MkBindingSelector {..}
+    in MkBindingSelector{..}

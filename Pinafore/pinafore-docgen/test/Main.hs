@@ -1,13 +1,15 @@
 module Main
     ( main
-    ) where
+    )
+where
 
-import Pinafore.DocGen
 import Pinafore.Documentation
 import Pinafore.Options
 import Shapes
 import Shapes.Test
 import System.FilePath
+
+import Pinafore.DocGen
 
 testFile :: ModuleOptions -> FilePath -> TestTree
 testFile mo inpath = let
@@ -29,7 +31,7 @@ main = do
     let
         roIncludeDirs = ["test" </> "golden"]
         roDataDir = Nothing
-    mo <- getModuleOptions MkRunOptions {..}
+    mo <- getModuleOptions MkRunOptions{..}
     let
         testGolden :: TestTree
         testGolden = testTree "golden" $ fmap (testFile mo) inpaths

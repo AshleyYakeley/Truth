@@ -1,14 +1,15 @@
 module Pinafore.Base.Model.ImmutableWholeModel where
 
 import Changes.Core
+import Shapes
+
 import Pinafore.Base.Action
 import Pinafore.Base.Know
 import Pinafore.Base.Model.FunctionAttribute
 import Pinafore.Base.Model.Model
-import Shapes
 
-newtype ImmutableWholeModel a =
-    MkImmutableWholeModel (WROWModel (Know a))
+newtype ImmutableWholeModel a
+    = MkImmutableWholeModel (WROWModel (Know a))
 
 instance Functor ImmutableWholeModel where
     fmap ab (MkImmutableWholeModel sa) = MkImmutableWholeModel $ eaMapReadOnlyWhole (fmap ab) sa
@@ -43,8 +44,8 @@ immutableWholeModelValue :: a -> ImmutableWholeModel a -> WROWModel a
 immutableWholeModelValue def model = eaMapReadOnlyWhole (fromKnow def) $ immutableModelToReadOnlyModel model
 
 applyImmutableModel ::
-       Model baseupdate
-    -> StorageFunctionAttribute baseupdate (Know a) (Know b)
-    -> ImmutableWholeModel a
-    -> ImmutableWholeModel b
+    Model baseupdate ->
+    StorageFunctionAttribute baseupdate (Know a) (Know b) ->
+    ImmutableWholeModel a ->
+    ImmutableWholeModel b
 applyImmutableModel basesub m (MkImmutableWholeModel v) = MkImmutableWholeModel $ applyStorageFunction basesub m v

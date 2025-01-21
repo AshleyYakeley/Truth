@@ -48,9 +48,10 @@ data GenChangeLens lin updateA updateB = MkChangeLens
     { clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     , clUpdate :: forall m. MonadIO m => updateA -> Readable m (UpdateReader updateA) -> m [updateB]
     -- ^ the Readable argument will reflect the new value
-    , clPutEdits :: forall m.
-                        MonadIO m =>
-                                [UpdateEdit updateB] -> Readable m (NL lin (UpdateReader updateA)) -> m (Maybe [UpdateEdit updateA])
+    , clPutEdits ::
+        forall m.
+        MonadIO m =>
+        [UpdateEdit updateB] -> Readable m (NL lin (UpdateReader updateA)) -> m (Maybe [UpdateEdit updateA])
     }
 
 type ChangeLens = GenChangeLens 'NonLinear
@@ -58,15 +59,17 @@ type ChangeLens = GenChangeLens 'NonLinear
 type LinearChangeLens = GenChangeLens 'Linear
 
 readableToLinear ::
-       forall lin rd m. IsLinearity lin
-    => Readable m rd
-    -> Readable m (NL lin rd)
+    forall lin rd m.
+    IsLinearity lin =>
+    Readable m rd ->
+    Readable m (NL lin rd)
 readableToLinear rd t = rd $ linear @lin t
 
 linearToChangeLens ::
-       forall lin updateA updateB. IsLinearity lin
-    => GenChangeLens lin updateA updateB
-    -> ChangeLens updateA updateB
+    forall lin updateA updateB.
+    IsLinearity lin =>
+    GenChangeLens lin updateA updateB ->
+    ChangeLens updateA updateB
 linearToChangeLens (MkChangeLens r u pe) = MkChangeLens r u $ \edits rd -> pe edits $ readableToLinear @lin rd
 
 instance IsLinearity lin => Category (GenChangeLens lin) where
@@ -75,40 +78,48 @@ instance IsLinearity lin => Category (GenChangeLens lin) where
         clRead :: ReadFunction (UpdateReader update) (UpdateReader update)
         clRead mr = mr
         clUpdate ::
-               forall m. MonadIO m
-            => update
-            -> Readable m (UpdateReader update)
-            -> m [update]
+            forall m.
+            MonadIO m =>
+            update ->
+            Readable m (UpdateReader update) ->
+            m [update]
         clUpdate update _ = return [update]
         clPutEdits ::
-               forall m. MonadIO m
-            => [UpdateEdit update]
-            -> Readable m (NL lin (UpdateReader update))
-            -> m (Maybe [UpdateEdit update])
+            forall m.
+            MonadIO m =>
+            [UpdateEdit update] ->
+            Readable m (NL lin (UpdateReader update)) ->
+            m (Maybe [UpdateEdit update])
         clPutEdits edits _ = return $ Just edits
-        in MkChangeLens {..}
-    (.) :: forall updateA updateB updateC.
-           GenChangeLens lin updateB updateC
-        -> GenChangeLens lin updateA updateB
-        -> GenChangeLens lin updateA updateC
+        in MkChangeLens{..}
+    (.) ::
+        forall updateA updateB updateC.
+        GenChangeLens lin updateB updateC ->
+        GenChangeLens lin updateA updateB ->
+        GenChangeLens lin updateA updateC
     (MkChangeLens gBC uBC peBC) . (MkChangeLens gAB uAB peAB) = let
-        gAC :: forall m. MonadIO m
-            => Readable m (UpdateReader updateA)
-            -> Readable m (UpdateReader updateC)
+        gAC ::
+            forall m.
+            MonadIO m =>
+            Readable m (UpdateReader updateA) ->
+            Readable m (UpdateReader updateC)
         gAC mra = gBC $ gAB mra
-        uAC :: forall m. MonadIO m
-            => updateA
-            -> Readable m (UpdateReader updateA)
-            -> m [updateC]
+        uAC ::
+            forall m.
+            MonadIO m =>
+            updateA ->
+            Readable m (UpdateReader updateA) ->
+            m [updateC]
         uAC updA mrA = do
             updBs <- uAB updA mrA
             updCss <- for updBs $ \updB -> uBC updB $ \rt -> id $ gAB mrA rt
             return $ mconcat updCss
         peAC ::
-               forall m. MonadIO m
-            => [UpdateEdit updateC]
-            -> Readable m (NL lin (UpdateReader updateA))
-            -> m (Maybe [UpdateEdit updateA])
+            forall m.
+            MonadIO m =>
+            [UpdateEdit updateC] ->
+            Readable m (NL lin (UpdateReader updateA)) ->
+            m (Maybe [UpdateEdit updateA])
         peAC ec mra =
             unComposeInner $ do
                 ebs <- MkComposeInner $ peBC ec $ nlLiftReadFunction @lin gAB mra
@@ -116,83 +127,88 @@ instance IsLinearity lin => Category (GenChangeLens lin) where
         in MkChangeLens gAC uAC peAC
 
 linearPutEditsFromPutEdit ::
-       forall edita editb m m' rd. (Monad m', MonadIO m)
-    => (editb -> m' (Maybe [edita]))
-    -> [editb]
-    -> Readable m rd
-    -> m' (Maybe [edita])
+    forall edita editb m m' rd.
+    (Monad m', MonadIO m) =>
+    (editb -> m' (Maybe [edita])) ->
+    [editb] ->
+    Readable m rd ->
+    m' (Maybe [edita])
 linearPutEditsFromPutEdit _ [] _ = unComposeInner $ return []
-linearPutEditsFromPutEdit putEdit (e:ee) _ =
+linearPutEditsFromPutEdit putEdit (e : ee) _ =
     unComposeInner $ do
         ea <- MkComposeInner $ putEdit e
         eea <- MkComposeInner $ linearPutEditsFromPutEdit @_ @_ @m putEdit ee nullReadable
         return $ ea ++ eea
 
 clPutEditsFromPutEdit ::
-       forall edita editb m m'. (Monad m', MonadIO m, ApplicableEdit edita)
-    => (editb -> Readable m (EditReader edita) -> m' (Maybe [edita]))
-    -> [editb]
-    -> Readable m (EditReader edita)
-    -> m' (Maybe [edita])
+    forall edita editb m m'.
+    (Monad m', MonadIO m, ApplicableEdit edita) =>
+    (editb -> Readable m (EditReader edita) -> m' (Maybe [edita])) ->
+    [editb] ->
+    Readable m (EditReader edita) ->
+    m' (Maybe [edita])
 clPutEditsFromPutEdit _ [] _ = unComposeInner $ return []
-clPutEditsFromPutEdit clPutEdit (e:ee) mr =
+clPutEditsFromPutEdit clPutEdit (e : ee) mr =
     unComposeInner $ do
         ea <- MkComposeInner $ clPutEdit e mr
         eea <- MkComposeInner $ clPutEditsFromPutEdit clPutEdit ee $ applyEdits ea mr
         return $ ea ++ eea
 
 clPutEditsFromSimplePutEdit ::
-       forall editA editB m. MonadIO m
-    => (editB -> m (Maybe [editA]))
-    -> [editB]
-    -> Readable m (EditReader editA)
-    -> m (Maybe [editA])
+    forall editA editB m.
+    MonadIO m =>
+    (editB -> m (Maybe [editA])) ->
+    [editB] ->
+    Readable m (EditReader editA) ->
+    m (Maybe [editA])
 clPutEditsFromSimplePutEdit putEdit editBs _ =
     unComposeInner $ do
         editAss <- for editBs $ \update -> MkComposeInner $ putEdit update
         return $ mconcat editAss
 
 isoConvertChangeLens ::
-       forall updateA updateB.
-       ( FullEdit (UpdateEdit updateA)
-       , FullSubjectReader (UpdateReader updateB)
-       , FullUpdate updateB
-       , ApplicableEdit (UpdateEdit updateB)
-       )
-    => Bijection (UpdateSubject updateA) (UpdateSubject updateB)
-    -> ChangeLens updateA updateB
-isoConvertChangeLens MkIsomorphism {..} = let
+    forall updateA updateB.
+    ( FullEdit (UpdateEdit updateA)
+    , FullSubjectReader (UpdateReader updateB)
+    , FullUpdate updateB
+    , ApplicableEdit (UpdateEdit updateB)
+    ) =>
+    Bijection (UpdateSubject updateA) (UpdateSubject updateB) ->
+    ChangeLens updateA updateB
+isoConvertChangeLens MkIsomorphism{..} = let
     clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     clRead mr = mSubjectToReadable $ fmap isoForwards $ readableToSubject mr
     clUpdate ::
-           forall m. MonadIO m
-        => updateA
-        -> Readable m (UpdateReader updateA)
-        -> m [updateB]
+        forall m.
+        MonadIO m =>
+        updateA ->
+        Readable m (UpdateReader updateA) ->
+        m [updateB]
     clUpdate _updateA mr = do
         newa <- readableToSubject mr
         getReplaceUpdatesFromSubject $ isoForwards newa
     clPutEdits ::
-           forall m. MonadIO m
-        => [UpdateEdit updateB]
-        -> Readable m (UpdateReader updateA)
-        -> m (Maybe [UpdateEdit updateA])
+        forall m.
+        MonadIO m =>
+        [UpdateEdit updateB] ->
+        Readable m (UpdateReader updateA) ->
+        m (Maybe [UpdateEdit updateA])
     clPutEdits editbs mr = do
         newsubject <-
             readableToSubject $ applyEdits editbs $ mSubjectToReadable $ fmap isoForwards $ readableToSubject mr
         editas <- getReplaceEditsFromSubject $ isoBackwards newsubject
         return $ Just editas
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 convertChangeLens ::
-       forall updateA updateB.
-       ( UpdateSubject updateA ~ UpdateSubject updateB
-       , FullEdit (UpdateEdit updateA)
-       , FullSubjectReader (UpdateReader updateB)
-       , FullUpdate updateB
-       , ApplicableEdit (UpdateEdit updateB)
-       )
-    => ChangeLens updateA updateB
+    forall updateA updateB.
+    ( UpdateSubject updateA ~ UpdateSubject updateB
+    , FullEdit (UpdateEdit updateA)
+    , FullSubjectReader (UpdateReader updateB)
+    , FullUpdate updateB
+    , ApplicableEdit (UpdateEdit updateB)
+    ) =>
+    ChangeLens updateA updateB
 convertChangeLens = isoConvertChangeLens id
 
 class IsChangeLens lens where

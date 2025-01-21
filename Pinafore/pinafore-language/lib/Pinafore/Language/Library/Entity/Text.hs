@@ -1,8 +1,11 @@
 module Pinafore.Language.Library.Entity.Text
     ( textEntityLibSection
-    ) where
+    )
+where
 
 import Data.Text qualified
+import Text.Collate qualified
+
 import Import
 import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Defs
@@ -12,7 +15,6 @@ import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Value
-import Text.Collate qualified
 
 utf8Prism :: LangPrism' StrictByteString Text
 utf8Prism = codecToPrism utf8Codec
@@ -37,19 +39,20 @@ textEntityLibSection =
         [ typeBDS "Text" "" (MkSomeGroundType textGroundType) []
         , literalSubtypeRelationEntry @Text
         , showableSubtypeRelationEntry @Text
-        , namespaceBDS "Text" $
-          mconcat
-              [ monoidEntries @Text
-              , orderEntries
+        , namespaceBDS "Text"
+            $ mconcat
+                [ monoidEntries @Text
+                , orderEntries
                     rootOrder
                     "Order alphabetical first, then lower case before upper, per Unicode normalisation."
-              , sequenceEntries @Text
-              , [ valBDS "toUpperCase" "" Data.Text.toUpper
-                , valBDS "toLowerCase" "" Data.Text.toLower
-                , valBDS "toTitleCase" "" Data.Text.toTitle
-                , valBDS "langOrder" "Order for BCP 47 language tag" langOrder
-                , valBDS "caselessOrder" "Case-insensitive order" $ contramap Data.Text.toLower rootOrder
-                , valBDS "utf8" "Encode and decode UTF-8 from a `Blob`." utf8Prism
+                , sequenceEntries @Text
+                ,
+                    [ valBDS "toUpperCase" "" Data.Text.toUpper
+                    , valBDS "toLowerCase" "" Data.Text.toLower
+                    , valBDS "toTitleCase" "" Data.Text.toTitle
+                    , valBDS "langOrder" "Order for BCP 47 language tag" langOrder
+                    , valBDS "caselessOrder" "Case-insensitive order" $ contramap Data.Text.toLower rootOrder
+                    , valBDS "utf8" "Encode and decode UTF-8 from a `Blob`." utf8Prism
+                    ]
                 ]
-              ]
         ]

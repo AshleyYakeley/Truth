@@ -19,27 +19,31 @@ module Pinafore.Base.Action
     , actionEarlyCloser
     , actionFloatMap
     , actionFloatMapReadOnly
-    ) where
+    )
+where
 
 import Changes.Core
-import Pinafore.Base.Know
 import Shapes
+
+import Pinafore.Base.Know
 
 newtype Action a = MkAction
     { unAction :: ComposeInner Know View a
-    } deriving newtype ( Functor
-                       , Applicative
-                       , Monad
-                       , Alternative
-                       , MonadPlus
-                       , MonadFix
-                       , MonadFail
-                       , MonadIO
-                       , MonadHoistIO
-                       , MonadTunnelIO
-                       , MonadException
-                       , RepresentationalRole
-                       )
+    }
+    deriving newtype
+        ( Functor
+        , Applicative
+        , Monad
+        , Alternative
+        , MonadPlus
+        , MonadFix
+        , MonadFail
+        , MonadIO
+        , MonadHoistIO
+        , MonadTunnelIO
+        , MonadException
+        , RepresentationalRole
+        )
 
 unliftAction :: forall a. Action a -> View (Know a)
 unliftAction = unComposeInner . unAction
@@ -101,31 +105,35 @@ knowAction (MkAction ka) = MkAction $ MkComposeInner $ fmap Known $ unComposeInn
 actionOnClose :: Action () -> Action ()
 actionOnClose closer = do
     MkWRaised unlift <- actionGetCreateViewUnlift
-    actionLiftView $
-        viewOnClose $ do
+    actionLiftView
+        $ viewOnClose
+        $ do
             _ <- unComposeInner $ unlift closer
             return ()
 
 actionEarlyCloser :: Action a -> Action (a, IO ())
 actionEarlyCloser ra = do
     MkWRaised unlift <- actionGetCreateViewUnlift
-    MkAction $
-        MkComposeInner $ do
+    MkAction
+        $ MkComposeInner
+        $ do
             (ka, closer) <- viewGetCloser $ unComposeInner $ unlift ra
             return $ fmap (\a -> (a, closer)) ka
 
 actionFloatMap ::
-       forall f updateA updateB. FloatingEditApplicative f
-    => FloatingChangeLens updateA updateB
-    -> f updateA
-    -> Action (f updateB)
+    forall f updateA updateB.
+    FloatingEditApplicative f =>
+    FloatingChangeLens updateA updateB ->
+    f updateA ->
+    Action (f updateB)
 actionFloatMap flens fa = do
     rc <- actionResourceContext
     actionLiftLifecycle $ eaFloatMap rc flens fa
 
 actionFloatMapReadOnly ::
-       forall f updateA updateB. FloatingEditApplicative f
-    => FloatingChangeLens updateA (ReadOnlyUpdate updateB)
-    -> f (ReadOnlyUpdate updateA)
-    -> Action (f (ReadOnlyUpdate updateB))
+    forall f updateA updateB.
+    FloatingEditApplicative f =>
+    FloatingChangeLens updateA (ReadOnlyUpdate updateB) ->
+    f (ReadOnlyUpdate updateA) ->
+    Action (f (ReadOnlyUpdate updateB))
 actionFloatMapReadOnly flens = actionFloatMap $ liftReadOnlyFloatingChangeLens flens

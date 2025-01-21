@@ -1,8 +1,9 @@
 module Changes.World.GNOME.GI.ViewLock where
 
 import Changes.Core
-import Changes.World.GNOME.GI.LockState
 import Shapes
+
+import Changes.World.GNOME.GI.LockState
 
 viewOpenRunLocked :: CallbackLock -> View --> View
 viewOpenRunLocked lock = hoistIO $ cbRunLocked lock
@@ -29,9 +30,10 @@ viewCloseRunUnlocked lock va = do
     return a
 
 viewRelockOpen ::
-       forall lsa lsb. (Is LockStateType lsa, Is LockStateType lsb)
-    => CallbackLock
-    -> View --> View
+    forall lsa lsb.
+    (Is LockStateType lsa, Is LockStateType lsb) =>
+    CallbackLock ->
+    View --> View
 viewRelockOpen lock =
     case (lockStateType @lsa, lockStateType @lsb) of
         (LockedType, LockedType) -> id
@@ -40,9 +42,10 @@ viewRelockOpen lock =
         (UnlockedType, LockedType) -> viewOpenRunUnlocked lock
 
 viewRelockClose ::
-       forall lsa lsb. (Is LockStateType lsa, Is LockStateType lsb)
-    => CallbackLock
-    -> View --> View
+    forall lsa lsb.
+    (Is LockStateType lsa, Is LockStateType lsb) =>
+    CallbackLock ->
+    View --> View
 viewRelockClose lock =
     case (lockStateType @lsa, lockStateType @lsb) of
         (LockedType, LockedType) -> id

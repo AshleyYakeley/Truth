@@ -2,15 +2,17 @@
 
 module Language.Expression.Common.Pattern.Sealed where
 
+import Shapes
+
 import Language.Expression.Common.Open
 import Language.Expression.Common.Pattern.Func
 import Language.Expression.Common.Pattern.Named
 import Language.Expression.Common.Pattern.Pattern
-import Shapes
 
-data SealedPattern (patwit :: Type -> Type) (expwit :: Type -> Type) (funcwit :: Type -> Type) (a :: Type) =
-    forall t. MkSealedPattern (funcwit t)
-                              (FuncPattern patwit expwit t a)
+data SealedPattern (patwit :: Type -> Type) (expwit :: Type -> Type) (funcwit :: Type -> Type) (a :: Type)
+    = forall t. MkSealedPattern
+        (funcwit t)
+        (FuncPattern patwit expwit t a)
 
 instance (AllConstraint Show patwit, AllConstraint Show funcwit) => Show (SealedPattern patwit expwit funcwit a) where
     show (MkSealedPattern t expr) = show expr <> " => " <> allShow t

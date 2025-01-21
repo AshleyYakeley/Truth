@@ -1,11 +1,13 @@
 module Changes.World.GNOME.GTK.ChooseFile
     ( chooseFile
-    ) where
+    )
+where
 
-import Changes.World.GNOME.GI
 import GI.Gio as GI
 import GI.Gtk as GI
 import Shapes
+
+import Changes.World.GNOME.GI
 
 chooseFile :: FileChooserAction -> (Maybe (Text, Text) -> Bool) -> GView 'Locked (Maybe File)
 chooseFile action test =
@@ -14,8 +16,9 @@ chooseFile action test =
         ffilter <- new FileFilter [] -- don't unref
         fileFilterAddCustom ffilter [FileFilterFlagsMimeType] $ \finfo -> do
             mtype <- getFileFilterInfoMimeType finfo
-            return $
-                test $ do
+            return
+                $ test
+                $ do
                     mediatype <- mtype
                     case splitWhen ((==) '/') mediatype of
                         [t, s] -> return (t, s)

@@ -2,7 +2,8 @@
 
 module Pinafore.Language.Type
     ( module I
-    ) where
+    )
+where
 
 import Pinafore.Language.Type.DynamicSupertype as I
 import Pinafore.Language.Type.Family as I

@@ -1,6 +1,7 @@
 module Changes.Core.Edit
     ( module I
-    ) where
+    )
+where
 
 import Changes.Core.Edit.Cache as I
 import Changes.Core.Edit.Edit as I

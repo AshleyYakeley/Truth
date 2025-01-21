@@ -1,21 +1,23 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Library.GTK.MenuEntry
-    ( LangMenuEntry(..)
+    ( LangMenuEntry (..)
     , LangMenuBar
     , menuEntryStuff
-    ) where
+    )
+where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
 import Pinafore.API
-import Pinafore.Library.GTK.Widget
 import Shapes
 
+import Pinafore.Library.GTK.Widget
+
 -- LangMenuEntry
-newtype LangMenuEntry =
-    MkLangMenuEntry ((View --> IO) -> MenuEntry)
+newtype LangMenuEntry
+    = MkLangMenuEntry ((View --> IO) -> MenuEntry)
 
 menuItemGroundType :: QGroundType '[] LangMenuEntry
 menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuEntry)|]) "MenuEntry.GTK."
@@ -27,13 +29,13 @@ type LangMenuBar = [LangMenuEntry]
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
-interpretAccelerator ('C':'t':'r':'l':'+':s) = do
+interpretAccelerator ('C' : 't' : 'r' : 'l' : '+' : s) = do
     MkMenuAccelerator mods c <- interpretAccelerator s
     return $ MkMenuAccelerator (KMCtrl : mods) c
-interpretAccelerator ('S':'h':'i':'f':'t':'+':s) = do
+interpretAccelerator ('S' : 'h' : 'i' : 'f' : 't' : '+' : s) = do
     MkMenuAccelerator mods c <- interpretAccelerator s
     return $ MkMenuAccelerator (KMShift : mods) c
-interpretAccelerator ('A':'l':'t':'+':s) = do
+interpretAccelerator ('A' : 'l' : 't' : '+' : s) = do
     MkMenuAccelerator mods c <- interpretAccelerator s
     return $ MkMenuAccelerator (KMAlt : mods) c
 interpretAccelerator _ = Nothing
@@ -43,8 +45,9 @@ getLabelAccelModel labelAccel = let
     ff (Known (t, maccelStr)) =
         ( t
         , do
-              accelStr <- maccelStr
-              interpretAccelerator $ unpack accelStr)
+            accelStr <- maccelStr
+            interpretAccelerator $ unpack accelStr
+        )
     ff Unknown = ("", Nothing)
     in unWModel $ eaMapReadOnlyWhole ff $ immutableModelToReadOnlyModel labelAccel
 
@@ -63,7 +66,7 @@ menuSubmenu name entries =
 
 uiMenuBar :: LangMenuBar -> LangWidget
 uiMenuBar lmb =
-    MkLangWidget $ \MkWidgetContext {..} -> createMenuBar wcAccelGroup $ fmap (\(MkLangMenuEntry me) -> me wcUnlift) lmb
+    MkLangWidget $ \MkWidgetContext{..} -> createMenuBar wcAccelGroup $ fmap (\(MkLangMenuEntry me) -> me wcUnlift) lmb
 
 menuEntryStuff :: LibraryStuff
 menuEntryStuff =
@@ -72,11 +75,11 @@ menuEntryStuff =
         ""
         [ typeBDS "MenuEntry" "A item of a menu." (MkSomeGroundType menuItemGroundType) []
         , namespaceBDS
-              "MenuEntry"
-              [ valBDS "separator" "Separator menu item." $ MkLangMenuEntry $ \_ -> SeparatorMenuEntry
-              , valBDS "submenu" "Submenu menu item." menuSubmenu
-              , valBDS "action" "Action menu item. Item will be disabled if the action reference is unknown." menuAction
-              , valBDS "checked" "Checked menu item." menuChecked
-              ]
+            "MenuEntry"
+            [ valBDS "separator" "Separator menu item." $ MkLangMenuEntry $ \_ -> SeparatorMenuEntry
+            , valBDS "submenu" "Submenu menu item." menuSubmenu
+            , valBDS "action" "Action menu item. Item will be disabled if the action reference is unknown." menuAction
+            , valBDS "checked" "Checked menu item." menuChecked
+            ]
         , namespaceBDS "Widget" [valBDS "menuBar" "Menu bar widget" uiMenuBar]
         ]

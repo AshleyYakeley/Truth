@@ -3,7 +3,8 @@
 module Pinafore.Library.GIO
     ( LangFile
     , gioStuff
-    ) where
+    )
+where
 
 import Changes.Core
 import Changes.World.GNOME.GIO.File
@@ -39,18 +40,18 @@ literalConv :: Bijection (Maybe (Text, LazyByteString)) (Maybe Media)
 literalConv =
     MkIsomorphism
         { isoForwards =
-              \mtb -> do
-                  (mediatype, b) <- mtb
-                  case splitWhen ((==) '/') mediatype of
-                      [t, s] -> return $ MkMedia (MkMediaType t s []) $ toStrict b
-                      _ -> Nothing
+            \mtb -> do
+                (mediatype, b) <- mtb
+                case splitWhen ((==) '/') mediatype of
+                    [t, s] -> return $ MkMedia (MkMediaType t s []) $ toStrict b
+                    _ -> Nothing
         , isoBackwards =
-              \ml -> do
-                  MkMedia (MkMediaType t s _) b <- ml
-                  return (t <> "/" <> s, fromStrict b)
+            \ml -> do
+                MkMedia (MkMediaType t s _) b <- ml
+                return (t <> "/" <> s, fromStrict b)
         }
 
-fileMakeRef :: LangFile -> Action (LangWholeModel '( Media, Media))
+fileMakeRef :: LangFile -> Action (LangWholeModel '(Media, Media))
 fileMakeRef f = do
     fref <- liftIO $ giFileReference f
     (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-
@@ -59,20 +60,21 @@ fileMakeRef f = do
 
 gioStuff :: LibraryStuff
 gioStuff =
-    headingBDS "GIO" "GNOME file access." $
-    pure $
-    namespaceBDS
-        "GIO"
-        [ typeBDS
-              "File"
-              "A file."
-              (MkSomeGroundType fileGroundType)
-              [ valPatBDS "URI" "Construct a file from a URI." uriToFile $ PureFunction $ pure $ \f -> (fileToURI f, ())
-              , valPatBDS "Path" "Construct a file from a local path." pathToFile $
-                ImpureFunction $
-                pure $ \f -> do
-                    p <- fileToPath f
-                    return (p, ())
-              ]
-        , namespaceBDS "File" [valBDS "makeRef" "Make a reference from a file." fileMakeRef]
-        ]
+    headingBDS "GIO" "GNOME file access."
+        $ pure
+        $ namespaceBDS
+            "GIO"
+            [ typeBDS
+                "File"
+                "A file."
+                (MkSomeGroundType fileGroundType)
+                [ valPatBDS "URI" "Construct a file from a URI." uriToFile $ PureFunction $ pure $ \f -> (fileToURI f, ())
+                , valPatBDS "Path" "Construct a file from a local path." pathToFile
+                    $ ImpureFunction
+                    $ pure
+                    $ \f -> do
+                        p <- fileToPath f
+                        return (p, ())
+                ]
+            , namespaceBDS "File" [valBDS "makeRef" "Make a reference from a file." fileMakeRef]
+            ]

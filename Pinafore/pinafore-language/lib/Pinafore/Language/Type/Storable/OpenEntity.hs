@@ -1,11 +1,12 @@
 module Pinafore.Language.Type.Storable.OpenEntity
-    ( OpenEntityType(..)
-    , OpenEntity(..)
-    , OpenEntityFamily(..)
+    ( OpenEntityType (..)
+    , OpenEntity (..)
+    , OpenEntityFamily (..)
     , openEntityFamilyWitness
     , openEntityGroundType
     , getOpenEntityType
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -16,9 +17,10 @@ import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Storable.Type
 
 type OpenEntityType :: Nat -> Type
-data OpenEntityType tid =
-    MkOpenEntityType FullName
-                     (TypeIDType tid)
+data OpenEntityType tid
+    = MkOpenEntityType
+        FullName
+        (TypeIDType tid)
 
 instance TestEquality OpenEntityType where
     testEquality (MkOpenEntityType _ t1) (MkOpenEntityType _ t2) = do
@@ -31,7 +33,8 @@ instance ExprShow (OpenEntityType tid) where
 type OpenEntity :: Nat -> Type
 newtype OpenEntity tid = MkOpenEntity
     { unOpenEntity :: Entity
-    } deriving newtype (Eq, Random)
+    }
+    deriving newtype (Eq, Random)
 
 data OpenEntityFamily :: FamilyKind where
     MkOpenEntityFamily :: OpenEntityType tid -> OpenEntityFamily (OpenEntity tid)
@@ -53,7 +56,7 @@ openEntityGroundType oet = let
         stbAdapterExprKnot :: QExprKnot (WithStoreAdapterArgs (OpenEntity tid) StoreAdapter)
         stbAdapterExprKnot =
             pureAppKnot $ MkAllFor $ \NilArguments -> invmap MkOpenEntity unOpenEntity plainStoreAdapter
-        in MkStorability {..}
+        in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
     in singleGroundType' (MkFamilialType openEntityFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet
 

@@ -2,15 +2,17 @@ module Pinafore.Language.Library.LoadModule
     ( directoryLoadModule
     , libraryLoadModule
     , textLoadModule
-    ) where
+    )
+where
+
+import System.Directory (doesFileExist)
+import System.FilePath
 
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.LibraryModule
-import System.Directory (doesFileExist)
-import System.FilePath
 
 loadModuleFromText :: Text -> QInterpreter QModule
 loadModuleFromText text = do
@@ -48,7 +50,7 @@ getLibraryContentsModule :: LibraryStuff -> QInterpreter QModule
 getLibraryContentsModule libmod = do
     let
         bindDocs :: [(ScopeEntry, DefDoc)]
-        bindDocs = mapMaybe (\MkBindDoc {..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryContentsEntries libmod
+        bindDocs = mapMaybe (\MkBindDoc{..} -> fmap (\se -> (se, bdDoc)) bdScopeEntry) $ libraryContentsEntries libmod
         bscope :: QScope
         bscope =
             bindingInfosToScope $ do
@@ -57,7 +59,7 @@ getLibraryContentsModule libmod = do
                     (BindScopeEntry oname xnames biValue) -> do
                         let biOriginalName = namespaceConcatFullName RootNamespace oname
                         biName <- biOriginalName : xnames
-                        return (biName, MkQBindingInfo {..})
+                        return (biName, MkQBindingInfo{..})
                     _ -> []
     dscopes <-
         for bindDocs $ \(se, _) ->
@@ -70,5 +72,5 @@ getLibraryContentsModule libmod = do
 libraryLoadModule :: [LibraryModule] -> LoadModule
 libraryLoadModule lmods = let
     m :: Map ModuleName LibraryStuff
-    m = mapFromList $ fmap (\MkLibraryModule {..} -> (lmName, lmContents)) lmods
+    m = mapFromList $ fmap (\MkLibraryModule{..} -> (lmName, lmContents)) lmods
     in MkLoadModule $ \mname -> for (lookup mname m) getLibraryContentsModule

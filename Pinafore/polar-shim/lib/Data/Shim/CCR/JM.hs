@@ -2,7 +2,10 @@ module Data.Shim.CCR.JM
     ( JMShim
     , showJMShim
     , goodJMShim
-    ) where
+    )
+where
+
+import Shapes
 
 import Data.Shim.CCR.Apply
 import Data.Shim.CCR.Variance
@@ -11,18 +14,17 @@ import Data.Shim.Mono
 import Data.Shim.Polar
 import Data.Shim.Poly
 import Data.Shim.Range
-import Shapes
 
 type JMShim :: PolyShimKind
 data JMShim k a b where
     FuncJMShim :: forall k (a :: k) (b :: k). String -> KindFunction a b -> JMShim k a b
     IdentityJMShim :: forall k (t :: k). JMShim k t t
     CoerceJMShim :: forall k (a :: k) (b :: k). String -> Coercion a b -> JMShim k a b
-    ComposeJMShim
-        :: forall k (a :: k) (b :: k) (c :: k).
-           JMShim k b c
-        -> JMShim k a b
-        -> JMShim k a c -- first arg is never itself a ComposeJMShim
+    ComposeJMShim ::
+        forall k (a :: k) (b :: k) (c :: k).
+        JMShim k b c ->
+        JMShim k a b ->
+        JMShim k a c -- first arg is never itself a ComposeJMShim
     InitFJMShim :: JMShim Type BottomType t
     TermFJMShim :: JMShim Type t TopType
     Join1JMShim :: JMShim Type t a -> JMShim Type t (JoinType a b)
@@ -31,14 +33,14 @@ data JMShim k a b where
     Meet1JMShim :: JMShim Type a t -> JMShim Type (MeetType a b) t
     Meet2JMShim :: JMShim Type b t -> JMShim Type (MeetType a b) t
     MeetFJMShim :: JMShim Type t a -> JMShim Type t b -> JMShim Type t (MeetType a b)
-    ConsJMShim
-        :: forall (v :: CCRVariance) k (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
-           CCRVarianceType v
-        -> CCRVariation v f
-        -> CCRVariation v g
-        -> JMShim (CCRVarianceKind v -> k) f g
-        -> CCRVarianceCategory (JMShim Type) v a b
-        -> JMShim k (f a) (g b)
+    ConsJMShim ::
+        forall (v :: CCRVariance) k (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
+        CCRVarianceType v ->
+        CCRVariation v f ->
+        CCRVariation v g ->
+        JMShim (CCRVarianceKind v -> k) f g ->
+        CCRVarianceCategory (JMShim Type) v a b ->
+        JMShim k (f a) (g b)
     LazyJMShim :: forall k (a :: k) (b :: k). JMShim k a b -> JMShim k a b
 
 goodJMShim :: Int -> JMShim k a b -> Bool
@@ -54,7 +56,7 @@ goodJMShim i (LazyJMShim f) = goodJMShim (pred i) f
 goodJMShim _ _ = True
 
 ccrVarianceCategoryShowJMShim ::
-       forall (sv :: CCRVariance) a b. CCRVarianceType sv -> Int -> CCRVarianceCategory (JMShim Type) sv a b -> String
+    forall (sv :: CCRVariance) a b. CCRVarianceType sv -> Int -> CCRVarianceCategory (JMShim Type) sv a b -> String
 ccrVarianceCategoryShowJMShim CoCCRVarianceType i f = showJMShim i f
 ccrVarianceCategoryShowJMShim ContraCCRVarianceType i (MkCatDual f) = showJMShim i f
 ccrVarianceCategoryShowJMShim RangeCCRVarianceType i (MkCatRange pp qq) =
@@ -94,7 +96,8 @@ instance CoercibleKind k => Category (JMShim k) where
                 Dict -> applyPolyShim pvt ccrvf ccrvg (pf . qf) (pa . qa)
     p . q
         | Just pc <- shimToCoercion p
-        , Just qc <- shimToCoercion q = CoerceJMShim (show p <> " . " <> show q) $ pc . qc
+        , Just qc <- shimToCoercion q =
+            CoerceJMShim (show p <> " . " <> show q) $ pc . qc
     Join1JMShim p . q = Join1JMShim $ p . q
     Join2JMShim p . q = Join2JMShim $ p . q
     p . JoinFJMShim ta tb = joinf (p . ta) (p . tb)
@@ -122,12 +125,18 @@ instance ApplyPolyShim JMShim where
 instance forall k (f :: Type -> k). HasCCRVariance CoCCRVariance f => CatFunctor (JMShim Type) (JMShim k) f where
     cfmap f = applyCoPolyShim ccrVariation ccrVariation IdentityJMShim f
 
-instance forall k (f :: Type -> k). HasCCRVariance ContraCCRVariance f =>
-             CatFunctor (CatDual (JMShim Type)) (JMShim k) f where
+instance
+    forall k (f :: Type -> k).
+    HasCCRVariance ContraCCRVariance f =>
+    CatFunctor (CatDual (JMShim Type)) (JMShim k) f
+    where
     cfmap jmfa = applyPolyShim ContraCCRVarianceType ccrVariation ccrVariation IdentityJMShim jmfa
 
-instance forall k (f :: (Type, Type) -> k). HasCCRVariance 'RangeCCRVariance f =>
-             CatFunctor (CatRange (JMShim Type)) (JMShim k) f where
+instance
+    forall k (f :: (Type, Type) -> k).
+    HasCCRVariance 'RangeCCRVariance f =>
+    CatFunctor (CatRange (JMShim Type)) (JMShim k) f
+    where
     cfmap :: forall a b. CatRange (JMShim Type) a b -> JMShim k (f a) (f b)
     cfmap (MkCatRange IdentityJMShim IdentityJMShim) = IdentityJMShim
     cfmap jmf = applyPolyShim RangeCCRVarianceType ccrVariation ccrVariation IdentityJMShim jmf
@@ -195,12 +204,12 @@ instance CoercibleKind k => RecoverShim (JMShim k) where
     shimToFunction (MeetFJMShim pa pb) = meetf (shimToFunction pa) (shimToFunction pb)
     shimToFunction (ConsJMShim vt _ ccrvg jmf jma) = let
         fromCon ::
-               forall (v :: CCRVariance) (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a' :: CCRVarianceKind v) (b' :: CCRVarianceKind v).
-               CCRVarianceType v
-            -> CCRVariation v g
-            -> JMShim (CCRVarianceKind v -> k) f g
-            -> CCRVarianceCategory (JMShim Type) v a' b'
-            -> KindFunction (f a') (g b')
+            forall (v :: CCRVariance) (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a' :: CCRVarianceKind v) (b' :: CCRVarianceKind v).
+            CCRVarianceType v ->
+            CCRVariation v g ->
+            JMShim (CCRVarianceKind v -> k) f g ->
+            CCRVarianceCategory (JMShim Type) v a' b' ->
+            KindFunction (f a') (g b')
         fromCon CoCCRVarianceType ccrvg' jmf' jma' =
             case shimToFunction jmf' of
                 MkNestedMorphism ff -> ccrvMap ccrvg' (shimToFunction jma') . ff

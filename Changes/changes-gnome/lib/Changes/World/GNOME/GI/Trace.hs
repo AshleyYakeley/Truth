@@ -4,15 +4,17 @@ module Changes.World.GNOME.GI.Trace
     , gvObjectTraceSignal
     , gvObjectTraceAllSignals
     , gvObjectReportAllSignals
-    ) where
+    )
+where
 
 import Changes.Debug
-import Changes.World.GNOME.GI.GView
-import Changes.World.GNOME.GI.LockState
-import Changes.World.GNOME.GI.Type
 import Data.GI.Base
 import GI.GObject
 import Shapes
+
+import Changes.World.GNOME.GI.GView
+import Changes.World.GNOME.GI.LockState
+import Changes.World.GNOME.GI.Type
 
 gvTraceBracket :: String -> GView ls --> GView ls
 gvTraceBracket s = gvHoistView $ traceBracket s
@@ -47,7 +49,7 @@ gvObjectTraceSignal t sigid call = do
     obj <- toObject t
     gvTraceSignal sigid $ \case
         [] -> return ()
-        sval:_ -> do
+        sval : _ -> do
             msobj <- fromGValue sval
             case msobj of
                 Just sobj
@@ -61,8 +63,8 @@ gvObjectTraceAllSignals obj call = do
     for_ sigids $ \sigid -> do
         msigname <- signalName sigid
         case msigname of
-            --Just "event" -> return ()
-            --Just "event-after" -> return ()
+            -- Just "event" -> return ()
+            -- Just "event-after" -> return ()
             Just "motion-notify-event" -> return ()
             Just signame -> gvObjectTraceSignal obj sigid $ call signame
             Nothing -> return ()

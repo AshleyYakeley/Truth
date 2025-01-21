@@ -1,6 +1,9 @@
 module Changes.World.GNOME.GTK
     ( module I
-    ) where
+    )
+where
+
+import GI.Gtk as I (AccelGroup, GError, Widget)
 
 import Changes.World.GNOME.GI as I
 import Changes.World.GNOME.GTK.ChooseFile as I
@@ -33,4 +36,3 @@ import Changes.World.GNOME.GTK.Widget.TextEntry as I
 import Changes.World.GNOME.GTK.Widget.TextStyle as I
 import Changes.World.GNOME.GTK.Widget.WebView as I
 import Changes.World.GNOME.GTK.Window as I
-import GI.Gtk as I (AccelGroup, GError, Widget)

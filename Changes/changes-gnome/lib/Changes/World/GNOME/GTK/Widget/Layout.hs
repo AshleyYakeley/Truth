@@ -1,13 +1,15 @@
 module Changes.World.GNOME.GTK.Widget.Layout
-    ( Orientation(..)
-    , LayoutOptions(..)
+    ( Orientation (..)
+    , LayoutOptions (..)
     , defaultLayoutOptions
     , createLayout
-    ) where
+    )
+where
 
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 data LayoutOptions = MkLayoutOptions
     { loGrow :: Bool
@@ -16,10 +18,10 @@ data LayoutOptions = MkLayoutOptions
 defaultLayoutOptions :: LayoutOptions
 defaultLayoutOptions = let
     loGrow = False
-    in MkLayoutOptions {..}
+    in MkLayoutOptions{..}
 
 packLayout :: MonadIO m => Box -> (LayoutOptions, Widget) -> m ()
-packLayout box (MkLayoutOptions {..}, widget) = #packStart box widget loGrow loGrow 0
+packLayout box (MkLayoutOptions{..}, widget) = #packStart box widget loGrow loGrow 0
 
 createLayout :: Orientation -> [(LayoutOptions, Widget)] -> GView 'Unlocked Widget
 createLayout orientation contents =

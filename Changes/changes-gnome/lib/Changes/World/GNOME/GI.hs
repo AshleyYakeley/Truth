@@ -1,6 +1,7 @@
 module Changes.World.GNOME.GI
     ( module I
-    ) where
+    )
+where
 
 import Changes.World.GNOME.GI.Error as I
 import Changes.World.GNOME.GI.GView as I

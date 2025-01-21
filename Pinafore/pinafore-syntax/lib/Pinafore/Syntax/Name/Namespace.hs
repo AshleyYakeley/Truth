@@ -1,12 +1,13 @@
 module Pinafore.Syntax.Name.Namespace where
 
 import Pinafore.Base
-import Pinafore.Syntax.Name.Name
 import Shapes
 
-newtype Namespace =
-    MkNamespace [Name]
-    deriving newtype (Eq)
+import Pinafore.Syntax.Name.Name
+
+newtype Namespace
+    = MkNamespace [Name]
+    deriving newtype Eq
 
 instance Ord Namespace where
     compare (MkNamespace a) (MkNamespace b) = compare (reverse a) (reverse b)
@@ -33,7 +34,6 @@ instance IsString Namespace where
     fromString s = fromMaybe (error $ "bad Namespace: " <> show s) $ namespaceFromStrings $ splitSeq "." s
 
 pattern RootNamespace :: Namespace
-
 pattern RootNamespace = MkNamespace []
 
 namespaceAppend :: [Name] -> Namespace -> Namespace
@@ -46,11 +46,11 @@ namespaceParent :: Namespace -> Maybe (Namespace, Name)
 namespaceParent (MkNamespace nn) =
     case nn of
         [] -> Nothing
-        n:nr -> Just (MkNamespace nr, n)
+        n : nr -> Just (MkNamespace nr, n)
 
 namespaceAncestry :: Namespace -> NonEmpty Namespace
 namespaceAncestry ns =
-    ns :|
-    case namespaceParent ns of
-        Nothing -> []
-        Just (nn, _) -> toList $ namespaceAncestry nn
+    ns
+        :| case namespaceParent ns of
+            Nothing -> []
+            Just (nn, _) -> toList $ namespaceAncestry nn

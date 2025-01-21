@@ -1,8 +1,0 @@
-#!/bin/bash -e
-for p in `yq -r '.packages[]' stack.yaml`
-do
-    for f in `find $p -name '*.hs' -not -path '*.stack-work/*' | grep -v -e -- -f .hindent.ignore`
-    do
-        ${BINPATH}/hindent $f || exit 1
-    done
-done

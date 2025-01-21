@@ -5,18 +5,21 @@ module Language.Expression.Dolan.Rename
     ( dolanArgumentsVarRename
     , dolanNamespaceRenameArguments
     , renameableVars
-    ) where
+    )
+where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
-import Shapes
 
 pureMapDolanArgumentM ::
-       forall m ft sv polarity. Applicative m
-    => (forall polarity'. Is PolarityType polarity' => EndoM' m (ft polarity'))
-    -> (Is PolarityType polarity => EndoM' m (CCRPolarArgument ft polarity sv))
+    forall m ft sv polarity.
+    Applicative m =>
+    (forall polarity'. Is PolarityType polarity' => EndoM' m (ft polarity')) ->
+    (Is PolarityType polarity => EndoM' m (CCRPolarArgument ft polarity sv))
 pureMapDolanArgumentM f =
     MkEndoM $ \case
         CoCCRPolarArgument q -> fmap CoCCRPolarArgument $ unEndoM f q
@@ -25,9 +28,10 @@ pureMapDolanArgumentM f =
             withInvertPolarity @polarity $ liftA2 RangeCCRPolarArgument (unEndoM f p) (unEndoM f q)
 
 pureMapDolanArgumentsM ::
-       forall m ft dv gt. Applicative m
-    => (forall polarity. Is PolarityType polarity => EndoM' m (ft polarity))
-    -> (forall polarity. Is PolarityType polarity => EndoM' m (CCRPolarArguments dv ft gt polarity))
+    forall m ft dv gt.
+    Applicative m =>
+    (forall polarity. Is PolarityType polarity => EndoM' m (ft polarity)) ->
+    (forall polarity. Is PolarityType polarity => EndoM' m (CCRPolarArguments dv ft gt polarity))
 pureMapDolanArgumentsM f =
     MkEndoM $ \case
         NilCCRArguments -> pure NilCCRArguments
@@ -35,27 +39,33 @@ pureMapDolanArgumentsM f =
             liftA2 ConsCCRArguments (unEndoM (pureMapDolanArgumentM f) arg) (unEndoM (pureMapDolanArgumentsM f) args)
 
 dolanNamespaceRenameArguments ::
-       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
-       (IsDolanGroundType ground, Monad m, Is PolarityType polarity)
-    => EndoM' (VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m)) (CCRPolarArguments dv (DolanType ground) gt polarity)
+    forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
+    (IsDolanGroundType ground, Monad m, Is PolarityType polarity) =>
+    EndoM' (VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m)) (CCRPolarArguments dv (DolanType ground) gt polarity)
 dolanNamespaceRenameArguments = pureMapDolanArgumentsM $ namespaceRenameType @(DolanTypeSystem ground)
 
 dolanArgumentsVarRename ::
-       forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
-       (IsDolanGroundType ground, Monad m, Is PolarityType polarity)
-    => RenameSource m
-    -> EndoM' m (CCRPolarArguments dv (DolanType ground) gt polarity)
+    forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
+    (IsDolanGroundType ground, Monad m, Is PolarityType polarity) =>
+    RenameSource m ->
+    EndoM' m (CCRPolarArguments dv (DolanType ground) gt polarity)
 dolanArgumentsVarRename ev = pureMapDolanArgumentsM $ varRename ev
 
-instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             VarRenameable (DolanGroundedType ground polarity t) where
+instance
+    forall (ground :: GroundTypeKind) polarity t.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    VarRenameable (DolanGroundedType ground polarity t)
+    where
     varRename ev =
         MkEndoM $ \(MkDolanGroundedType gt args) -> do
             args' <- unEndoM (dolanArgumentsVarRename ev) args
             return $ MkDolanGroundedType gt args'
 
-instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             VarRenameable (DolanSingularType ground polarity t) where
+instance
+    forall (ground :: GroundTypeKind) polarity t.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    VarRenameable (DolanSingularType ground polarity t)
+    where
     varRename ev =
         MkEndoM $ \case
             GroundedDolanSingularType t -> do
@@ -69,8 +79,11 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
                 st' <- unEndoM (varRename $ addToRenameSource var var' ev) st
                 return $ RecursiveDolanSingularType var' st'
 
-instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             VarRenameable (DolanType ground polarity t) where
+instance
+    forall (ground :: GroundTypeKind) polarity t.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    VarRenameable (DolanType ground polarity t)
+    where
     varRename ev =
         MkEndoM $ \case
             NilDolanType -> pure NilDolanType

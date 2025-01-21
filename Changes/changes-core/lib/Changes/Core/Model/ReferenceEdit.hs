@@ -1,10 +1,11 @@
 module Changes.Core.Model.ReferenceEdit
-    ( ReferenceReader(..)
+    ( ReferenceReader (..)
     , ReferenceEdit
     , ReferenceUpdate
     , referenceChangeLens
     , referenceLiftChangeLens
-    ) where
+    )
+where
 
 import Changes.Core.Edit
 import Changes.Core.Import
@@ -56,29 +57,31 @@ referenceChangeLens = let
     clUpdate :: forall m. ReferenceUpdate update -> Readable m (ReferenceReader (UpdateEdit update)) -> m [update]
     clUpdate update _ = never update
     clPutEdits ::
-           forall m. MonadIO m
-        => [UpdateEdit update]
-        -> Readable m (EditReader (ReferenceEdit (UpdateEdit update)))
-        -> m (Maybe [ReferenceEdit (UpdateEdit update)])
+        forall m.
+        MonadIO m =>
+        [UpdateEdit update] ->
+        Readable m (EditReader (ReferenceEdit (UpdateEdit update))) ->
+        m (Maybe [ReferenceEdit (UpdateEdit update)])
     clPutEdits edits mr =
         case nonEmpty edits of
             Nothing -> return $ Just []
             Just edits' -> do
                 rc <- mr ReadReferenceResourceContext
                 obj <- mr ReadReference
-                liftIO $
-                    runResource rc obj $ \anobj -> do
+                liftIO
+                    $ runResource rc obj
+                    $ \anobj -> do
                         maction <- refEdit anobj edits'
                         case maction of
                             Just action -> action noEditSource
                             Nothing -> liftIO $ fail "referenceChangeLens: failed"
                 return $ Just []
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 referenceLiftChangeLens ::
-       forall updateA updateB.
-       ChangeLens updateA updateB
-    -> ChangeLens (ReferenceUpdate updateA) (ReferenceUpdate updateB)
+    forall updateA updateB.
+    ChangeLens updateA updateB ->
+    ChangeLens (ReferenceUpdate updateA) (ReferenceUpdate updateB)
 referenceLiftChangeLens lens = let
     clRead :: ReadFunction (ReferenceReader (UpdateEdit updateA)) (ReferenceReader (UpdateEdit updateB))
     clRead mr ReadReferenceResourceContext = mr ReadReferenceResourceContext
@@ -86,16 +89,17 @@ referenceLiftChangeLens lens = let
         reference <- mr ReadReference
         return $ mapReference lens reference
     clUpdate ::
-           forall m.
-           ReferenceUpdate updateA
-        -> Readable m (ReferenceReader (UpdateEdit updateA))
-        -> m [ReferenceUpdate updateB]
+        forall m.
+        ReferenceUpdate updateA ->
+        Readable m (ReferenceReader (UpdateEdit updateA)) ->
+        m [ReferenceUpdate updateB]
     clUpdate update _ = never update
     clPutEdits ::
-           forall m. MonadIO m
-        => [ReferenceEdit (UpdateEdit updateB)]
-        -> Readable m (ReferenceReader (UpdateEdit updateA))
-        -> m (Maybe [ReferenceEdit (UpdateEdit updateA)])
+        forall m.
+        MonadIO m =>
+        [ReferenceEdit (UpdateEdit updateB)] ->
+        Readable m (ReferenceReader (UpdateEdit updateA)) ->
+        m (Maybe [ReferenceEdit (UpdateEdit updateA)])
     clPutEdits [] _ = return $ Just []
-    clPutEdits (edit:_) _ = never edit
-    in MkChangeLens {..}
+    clPutEdits (edit : _) _ = never edit
+    in MkChangeLens{..}

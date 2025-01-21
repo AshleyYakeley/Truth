@@ -2,8 +2,9 @@
 
 module Language.Expression.Common.Open.Named where
 
-import Language.Expression.Common.Open.NameWit
 import Shapes
+
+import Language.Expression.Common.Open.NameWit
 
 type UnitType :: Type -> Type -> Type
 data UnitType a b where
@@ -39,9 +40,8 @@ instance AllConstraint Show a => AllConstraint (AllConstraint Show) (UnitType' a
 type NameWitness name w = NameTypeWitness (UnitType name) (UnitType' w)
 
 pattern MkNameWitness :: name -> w t -> NameWitness name w t
-
 pattern MkNameWitness name wit =
-        MkNameTypeWitness (MkUnitType name) (MkUnitType' wit)
+    MkNameTypeWitness (MkUnitType name) (MkUnitType' wit)
 
 {-# COMPLETE MkNameWitness #-}
 

@@ -8,20 +8,20 @@ module Pinafore.API
     , module Pinafore.Language.Library.LibraryModule
     , module Pinafore.Language.Library.Types
     , module Pinafore.Language.Value
-    , WitKind(..)
-    , FamilialType(..)
-    , SomeGroundType(..)
+    , WitKind (..)
+    , FamilialType (..)
+    , SomeGroundType (..)
     , QPolyShim
     , QPolyIsoShim
     , QShim
     , QIsoShim
-    , StorableGroundType(..)
+    , StorableGroundType (..)
     , FamilyKind
     , SingletonFamily
     , QShimWit
-    , QGroundType(..)
+    , QGroundType (..)
     , GroundProperties
-    , PolyGreatestDynamicSupertype(..)
+    , PolyGreatestDynamicSupertype (..)
     , simplePolyGreatestDynamicSupertype
     , literalSubtypeRelationEntry
     , mkLiteralGroundType
@@ -31,16 +31,20 @@ module Pinafore.API
     , QSingularType
     , QType
     , funcGroundType
-    , HasQType(..)
-    , HasQGroundType(..)
+    , HasQType (..)
+    , HasQGroundType (..)
     , groundQType
-    , TrustOrVerify(..)
-    , Interpret(..)
-    , DecodeLiteral(..)
-    ) where
+    , TrustOrVerify (..)
+    , Interpret (..)
+    , DecodeLiteral (..)
+    )
+where
+
+import Pinafore.Base
+import Pinafore.Syntax.Name
+import Pinafore.Syntax.Text
 
 import Import
-import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Convert
@@ -53,5 +57,3 @@ import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text

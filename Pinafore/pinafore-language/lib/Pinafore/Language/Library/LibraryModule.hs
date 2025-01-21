@@ -1,22 +1,24 @@
 module Pinafore.Language.Library.LibraryModule
-    ( ScopeEntry(..)
-    , BindDoc(..)
+    ( ScopeEntry (..)
+    , BindDoc (..)
     , bindDocNames
     , LibraryStuff
     , singleBindDoc
     , libraryContentsEntries
     , libraryContentsDocumentation
-    , LibraryModule(..)
-    ) where
+    , LibraryModule (..)
+    )
+where
 
 import Import
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
 data ScopeEntry
-    = BindScopeEntry FullNameRef
-                     [FullName]
-                     QInterpreterBinding
+    = BindScopeEntry
+        FullNameRef
+        [FullName]
+        QInterpreterBinding
     | SubtypeScopeEntry QSubtypeConversionEntry
 
 scopeEntryName :: ScopeEntry -> Maybe FullNameRef

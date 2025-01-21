@@ -1,11 +1,13 @@
 module Changes.World.GNOME.GTK.Widget.Notebook
     ( createNotebook
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createNotebook :: SelectNotify Int -> [(Widget, Widget)] -> GView 'Unlocked Widget
 createNotebook notifier pages =

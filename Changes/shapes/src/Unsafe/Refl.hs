@@ -3,17 +3,20 @@
 module Unsafe.Refl
     ( unsafeCoerce
     , module Unsafe.Refl
-    ) where
+    )
+where
+
+import Unsafe.Coerce
 
 import Shapes.Import
-import Unsafe.Coerce
 
 unsafeRefl :: forall k (a :: k) (b :: k). a :~: b
 unsafeRefl = unsafeCoerce $ Refl @a
 
 unsafeGetRefl ::
-       forall k (a :: k) (b :: k) (m :: Type -> Type). Applicative m
-    => m (a :~: b)
+    forall k (a :: k) (b :: k) (m :: Type -> Type).
+    Applicative m =>
+    m (a :~: b)
 unsafeGetRefl = pure $ unsafeRefl @k @a @b
 
 unsafeCheatEquality :: forall k (w :: k -> Type) (a :: k) (b :: k). w a -> w b -> a :~: b
@@ -25,8 +28,9 @@ unsafeAssign call =
         Refl -> call
 
 unsafeId ::
-       forall k (cat :: k -> k -> Type) (a :: k) (b :: k). Category cat
-    => cat a b
+    forall k (cat :: k -> k -> Type) (a :: k) (b :: k).
+    Category cat =>
+    cat a b
 unsafeId = unsafeAssign @k @a @b $ id @cat @a
 
 unsafeHRefl :: forall ka (a :: ka) kb (b :: kb). a :~~: b
@@ -42,7 +46,8 @@ unsafeAssignWitT :: forall (a :: Type) (b :: Type) (w :: Type -> Type) r. w b ->
 unsafeAssignWitT = unsafeAssignWit @Type @a @b @w
 
 unsafeDerive1 ::
-       forall k (a :: k) (b :: k) (c :: k -> Constraint). Coercible a b
-    => Dict (c a)
-    -> Dict (c b)
+    forall k (a :: k) (b :: k) (c :: k -> Constraint).
+    Coercible a b =>
+    Dict (c a) ->
+    Dict (c b)
 unsafeDerive1 = unsafeCoerce

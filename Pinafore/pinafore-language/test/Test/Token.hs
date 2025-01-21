@@ -1,10 +1,12 @@
 module Test.Token
     ( testToken
-    ) where
+    )
+where
 
-import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
+
+import Pinafore.Test.Internal
 
 testTokens :: Text -> Text -> TestTree
 testTokens input expected =
@@ -40,6 +42,6 @@ testToken =
         , testTokens "do.N { x }" "\"do\" infix(.) unames(N) \"{\" lnames(x) \"}\""
         , testTokens "do .N { x }" "\"do\" infix(.) unames(N) \"{\" lnames(x) \"}\""
         , testTokens
-              "let { x : rec a, Maybe a = Nothing } x"
-              "\"let\" \"{\" lnames(x) \":\" \"rec\" lnames(a) \",\" unames(Maybe) lnames(a) \"=\" unames(Nothing) \"}\" lnames(x)"
+            "let { x : rec a, Maybe a = Nothing } x"
+            "\"let\" \"{\" lnames(x) \":\" \"rec\" lnames(a) \",\" unames(Maybe) lnames(a) \"=\" unames(Nothing) \"}\" lnames(x)"
         ]

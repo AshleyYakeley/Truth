@@ -9,8 +9,8 @@ delayUpdateLens mus =
     MkChangeLens
         { clRead = \rd -> rd
         , clUpdate =
-              \update _ -> do
-                  liftIO $ threadDelay mus
-                  return [update]
+            \update _ -> do
+                liftIO $ threadDelay mus
+                return [update]
         , clPutEdits = \edits _ -> return $ Just edits
         }

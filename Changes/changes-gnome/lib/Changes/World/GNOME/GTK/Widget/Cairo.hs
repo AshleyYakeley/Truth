@@ -1,14 +1,14 @@
 module Changes.World.GNOME.GTK.Widget.Cairo
-    ( UIEvents(..)
+    ( UIEvents (..)
     , UIDrawing
     , createCairo
     , onMouseEvent
     , fallThrough
     , onClick
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import Data.IORef
 import GI.Cairo.Render.Connector
 import GI.Gdk as GI
@@ -16,6 +16,8 @@ import GI.Gtk as GI
 import Graphics.Cairo.Functional
 import Shapes
 import Shapes.Numeric
+
+import Changes.World.GNOME.GI
 
 data UIEvents = MkUIEvents
     { unUIEvents :: EventButton -> GView 'Locked Bool

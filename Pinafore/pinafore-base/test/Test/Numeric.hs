@@ -1,11 +1,13 @@
 module Test.Numeric
     ( testNumeric
-    ) where
+    )
+where
 
-import Pinafore.Base
 import Shapes
 import Shapes.Numeric
 import Shapes.Test
+
+import Pinafore.Base
 
 class HasNaN t where
     nan :: t

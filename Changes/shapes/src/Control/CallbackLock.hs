@@ -3,12 +3,13 @@ module Control.CallbackLock
     , newCallbackLock
     , cbRunLocked
     , cbRunUnlocked
-    ) where
+    )
+where
 
 import Shapes.Import
 
-newtype CallbackLock =
-    MkCallbackLock (TVar (Int, Bool))
+newtype CallbackLock
+    = MkCallbackLock (TVar (Int, Bool))
 
 newCallbackLock :: IO CallbackLock
 newCallbackLock = do

@@ -1,5 +1,5 @@
 module Pinafore.Language.VarID
-    ( VarID(..)
+    ( VarID (..)
     , VarIDState
     , varIDName
     , mkLambdaVarID
@@ -7,23 +7,27 @@ module Pinafore.Language.VarID
     , mkAppNotationVarID
     , mkPolymorphicVarID
     , shouldMergeVarID
-    ) where
+    )
+where
 
 import Import
 
-newtype VarIDState =
-    MkVarIDState Int
-    deriving newtype (Sequential)
+newtype VarIDState
+    = MkVarIDState Int
+    deriving newtype Sequential
 
 data VarID
-    = LambdaVarID Int
-                  FullName
-    | PolymorphicVarID Int
-                       FullName
+    = LambdaVarID
+        Int
+        FullName
+    | PolymorphicVarID
+        Int
+        FullName
     | AppNotationVarID Int
     | ImplicitVarID ImplicitName
-    | BadVarID SourcePos
-               FullNameRef
+    | BadVarID
+        SourcePos
+        FullNameRef
 
 -- used fot Eq and Ord
 data VarVal

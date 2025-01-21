@@ -8,14 +8,17 @@ module Data.KeyedOrder
     , olLookupByItem
     , olInsert
     , olDeleteByPos
-    ) where
+    )
+where
 
-import Data.Sequence (Seq, ViewL(..), (<|), viewl)
+import Data.Sequence (Seq, ViewL (..), viewl, (<|))
+
 import Shapes.Import
 
-data OrderedList a =
-    MkOrderedList (a -> a -> Ordering)
-                  (Seq a)
+data OrderedList a
+    = MkOrderedList
+        (a -> a -> Ordering)
+        (Seq a)
 
 instance Foldable OrderedList where
     foldMap am (MkOrderedList _ items) = foldMap am items
@@ -52,10 +55,10 @@ olInsert :: a -> OrderedList a -> (Int, OrderedList a)
 olInsert a ol@(MkOrderedList cmp items) = let
     (found, pos) = olLookupByItem ol a
     in if found
-           then (pos, ol)
-           else let
-                    (before, after) = splitAt pos items
-                    in (pos, MkOrderedList cmp $ before <> (a <| after))
+        then (pos, ol)
+        else let
+            (before, after) = splitAt pos items
+            in (pos, MkOrderedList cmp $ before <> (a <| after))
 
 olDeleteByPos :: Int -> OrderedList a -> OrderedList a
 olDeleteByPos i (MkOrderedList cmp items) =

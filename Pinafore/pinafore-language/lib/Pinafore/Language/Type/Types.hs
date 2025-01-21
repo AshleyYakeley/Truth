@@ -14,7 +14,8 @@ module Pinafore.Language.Type.Types
     , pairEntityConvert
     , eitherEntityConvert
     , resultEntityConvert
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Type.DynamicSupertype
@@ -23,7 +24,7 @@ import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Storable
 import Pinafore.Language.Value
 
-actionGroundType :: QGroundType '[ CoCCRVariance] Action
+actionGroundType :: QGroundType '[CoCCRVariance] Action
 actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Action)|]) "Action"
 
 maybeStoreAdapter :: StoreAdapter t -> StoreAdapter (Maybe t)
@@ -43,16 +44,16 @@ maybeStoreAdapter et = let
 maybeEntityConvert :: Maybe Entity -> Entity
 maybeEntityConvert = storeAdapterConvert $ maybeStoreAdapter plainStoreAdapter
 
-maybeGroundType :: QGroundType '[ CoCCRVariance] Maybe
+maybeGroundType :: QGroundType '[CoCCRVariance] Maybe
 maybeGroundType = let
-    storability :: Storability '[ CoCCRVariance] Maybe
+    storability :: Storability '[CoCCRVariance] Maybe
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapterExprKnot = pureStorabilityAdapter @Maybe $ \(ConsArguments t NilArguments) -> maybeStoreAdapter t
-        in MkStorability {..}
+        in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
-    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe") {qgtProperties = props}
+    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe"){qgtProperties = props}
 
 listStoreAdapters :: StoreAdapter t -> (StoreAdapter [t], StoreAdapter (NonEmpty t))
 listStoreAdapters et = let
@@ -71,7 +72,7 @@ listStoreAdapters et = let
     from (Right (a :| aa)) = a : aa
     to :: [a] -> Either () (NonEmpty a)
     to [] = Left ()
-    to (a:aa) = Right $ a :| aa
+    to (a : aa) = Right $ a :| aa
     in (listAdapter, list1Adapter)
 
 listStoreAdapter :: StoreAdapter t -> StoreAdapter [t]
@@ -83,33 +84,33 @@ list1StoreAdapter = snd . listStoreAdapters
 listEntityConvert :: [Entity] -> Entity
 listEntityConvert = storeAdapterConvert $ listStoreAdapter plainStoreAdapter
 
-listGroundType :: QGroundType '[ CoCCRVariance] []
+listGroundType :: QGroundType '[CoCCRVariance] []
 listGroundType = let
-    storability :: Storability '[ CoCCRVariance] []
+    storability :: Storability '[CoCCRVariance] []
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapterExprKnot = pureStorabilityAdapter @[] $ \(ConsArguments t NilArguments) -> listStoreAdapter t
-        in MkStorability {..}
+        in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
-    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List") {qgtProperties = props}
+    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List"){qgtProperties = props}
 
-list1GroundType :: QGroundType '[ CoCCRVariance] NonEmpty
+list1GroundType :: QGroundType '[CoCCRVariance] NonEmpty
 list1GroundType = let
-    storability :: Storability '[ CoCCRVariance] NonEmpty
+    storability :: Storability '[CoCCRVariance] NonEmpty
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapterExprKnot = pureStorabilityAdapter @NonEmpty $ \(ConsArguments t NilArguments) -> list1StoreAdapter t
-        in MkStorability {..}
+        in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1.List.")
-           { qgtProperties = props
-           , qgtGreatestDynamicSupertype =
-                 MkPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
-                     tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
-                     in MkShimWit tt $ MkPolarShim $ pureComposeShim $ functionToShim "nonEmpty" nonEmpty
-           }
+        { qgtProperties = props
+        , qgtGreatestDynamicSupertype =
+            MkPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
+                tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
+                in MkShimWit tt $ MkPolarShim $ pureComposeShim $ functionToShim "nonEmpty" nonEmpty
+        }
 
 eitherStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Either ta tb)
 eitherStoreAdapter eta etb = let
@@ -126,20 +127,20 @@ eitherStoreAdapter eta etb = let
 eitherEntityConvert :: Either Entity Entity -> Entity
 eitherEntityConvert = storeAdapterConvert $ eitherStoreAdapter plainStoreAdapter plainStoreAdapter
 
-eitherGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] Either
+eitherGroundType :: QGroundType '[CoCCRVariance, CoCCRVariance] Either
 eitherGroundType = let
-    storability :: Storability '[ CoCCRVariance, CoCCRVariance] Either
+    storability :: Storability '[CoCCRVariance, CoCCRVariance] Either
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapterExprKnot =
             pureStorabilityAdapter @Either $ \(ConsArguments ta (ConsArguments tb NilArguments)) ->
                 eitherStoreAdapter ta tb
-        in MkStorability {..}
+        in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
-    showtype :: ListTypeExprShow '[ CoCCRVariance, CoCCRVariance]
+    showtype :: ListTypeExprShow '[CoCCRVariance, CoCCRVariance]
     showtype ta tb = namedTextPrec 4 $ precNamedText 3 ta <> " +: " <> precNamedText 4 tb
-    in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) showtype) {qgtProperties = props}
+    in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) showtype){qgtProperties = props}
 
 resultStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Result ta tb)
 resultStoreAdapter eta etb = let
@@ -156,18 +157,18 @@ resultStoreAdapter eta etb = let
 resultEntityConvert :: Result Entity Entity -> Entity
 resultEntityConvert = storeAdapterConvert $ resultStoreAdapter plainStoreAdapter plainStoreAdapter
 
-resultGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] Result
+resultGroundType :: QGroundType '[CoCCRVariance, CoCCRVariance] Result
 resultGroundType = let
-    storability :: Storability '[ CoCCRVariance, CoCCRVariance] Result
+    storability :: Storability '[CoCCRVariance, CoCCRVariance] Result
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapterExprKnot =
             pureStorabilityAdapter @Result $ \(ConsArguments ta (ConsArguments tb NilArguments)) ->
                 resultStoreAdapter ta tb
-        in MkStorability {..}
+        in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
-    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Result)|]) "Result") {qgtProperties = props}
+    in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Result)|]) "Result"){qgtProperties = props}
 
 pairStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (ta, tb)
 pairStoreAdapter eta etb = let
@@ -182,35 +183,36 @@ pairStoreAdapter eta etb = let
 pairEntityConvert :: (Entity, Entity) -> Entity
 pairEntityConvert = storeAdapterConvert $ pairStoreAdapter plainStoreAdapter plainStoreAdapter
 
-pairGroundType :: QGroundType '[ CoCCRVariance, CoCCRVariance] (,)
+pairGroundType :: QGroundType '[CoCCRVariance, CoCCRVariance] (,)
 pairGroundType = let
-    storability :: Storability '[ CoCCRVariance, CoCCRVariance] (,)
+    storability :: Storability '[CoCCRVariance, CoCCRVariance] (,)
     storability = let
         stbKind = ConsListType Refl $ ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapterExprKnot =
             pureStorabilityAdapter @(,) $ \(ConsArguments ta (ConsArguments tb NilArguments)) -> pairStoreAdapter ta tb
-        in MkStorability {..}
+        in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
-    showtype :: ListTypeExprShow '[ CoCCRVariance, CoCCRVariance]
+    showtype :: ListTypeExprShow '[CoCCRVariance, CoCCRVariance]
     showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
-    in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) showtype) {qgtProperties = props}
+    in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) showtype){qgtProperties = props}
 
 mapStoreAdapter :: StoreAdapter t -> StoreAdapter (EntityMap t)
 mapStoreAdapter t = invmap entityMapFromList entityMapToList $ listStoreAdapter $ pairStoreAdapter plainStoreAdapter t
 
-entityMapGroundType :: QGroundType '[ CoCCRVariance] EntityMap
+entityMapGroundType :: QGroundType '[CoCCRVariance] EntityMap
 entityMapGroundType = let
-    storability :: Storability '[ CoCCRVariance] EntityMap
+    storability :: Storability '[CoCCRVariance] EntityMap
     storability = let
         stbKind = ConsListType Refl NilListType
         stbCovaryMap = covarymap
         stbAdapterExprKnot = pureStorabilityAdapter @EntityMap $ \(ConsArguments t NilArguments) -> mapStoreAdapter t
-        in MkStorability {..}
-    props :: GroundProperties '[ CoCCRVariance] EntityMap
+        in MkStorability{..}
+    props :: GroundProperties '[CoCCRVariance] EntityMap
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily EntityMap)|]) "EntityMap")
-           {qgtProperties = props}
+        { qgtProperties = props
+        }
 
 mapEntityConvert :: EntityMap Entity -> Entity
 mapEntityConvert = storeAdapterConvert $ mapStoreAdapter plainStoreAdapter

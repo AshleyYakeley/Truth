@@ -4,7 +4,8 @@
 module Pinafore.Language.Type.Subtype
     ( funcGroundType
     , module Pinafore.Language.Type.Subtype.Hint
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -14,7 +15,7 @@ import Pinafore.Language.Type.Show
 import Pinafore.Language.Type.Subtype.Hint
 import Pinafore.Language.VarID
 
-funcGroundType :: QGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
+funcGroundType :: QGroundType '[ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
         namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
@@ -25,9 +26,13 @@ instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
     getSubtypeChain = entries_getSubtypeChain
     throwTypeError (InternalTypeError msg) = throw $ InternalError Nothing $ toNamedText msg
     throwTypeError (InternalSafetyError msg err t) =
-        throw $
-        InternalError Nothing $
-        toNamedText msg <> " simplification: " <> showNamedText err <> " recursive type: " <> showNamedText t
+        throw
+            $ InternalError Nothing
+            $ toNamedText msg
+            <> " simplification: "
+            <> showNamedText err
+            <> " recursive type: "
+            <> showNamedText t
     throwTypeError (UninvertibleTypeError t) = throw $ TypeNotInvertibleError $ exprShow t
     throwTypeError (NoGroundConvertTypeError ga gb) =
         throw $ NoGroundTypeConversionError (showGroundType ga) (showGroundType gb)
@@ -36,12 +41,12 @@ instance HasInterpreter => IsDolanSubtypeGroundType QGroundType where
     throwTypeError (ConvertTypeError fta ftb) =
         flipToType fta $ \(ta :: _ pola _) ->
             flipToType ftb $ \(tb :: _ polb _) ->
-                throw $
-                TypeConvertError
-                    (exprShow ta)
-                    (witnessToValue $ polarityType @pola)
-                    (exprShow tb)
-                    (witnessToValue $ polarityType @polb)
+                throw
+                    $ TypeConvertError
+                        (exprShow ta)
+                        (witnessToValue $ polarityType @pola)
+                        (exprShow tb)
+                        (witnessToValue $ polarityType @polb)
     shouldMerge = shouldMergeVarID
 
 instance HasInterpreter => IsDolanSubtypeEntriesGroundType QGroundType where

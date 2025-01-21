@@ -1,39 +1,42 @@
 module Soup.UI
     ( PossibleNoteUpdate
     , soupWindow
-    ) where
+    )
+where
 
 import Changes.Core
 import Changes.World.FileSystem
-import Changes.World.GNOME.GTK
 import Shapes
-import Soup.Edit
-import Soup.Note
 import System.FilePath
 
+import Changes.World.GNOME.GTK
+import Soup.Edit
+import Soup.Note
+
 cellFromResult :: Result Text Text -> (Text, TableCellProps)
-cellFromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+cellFromResult (SuccessResult "") = ("unnamed", plainTableCellProps{tcStyle = plainTextStyle{tsItalic = True}})
 cellFromResult (SuccessResult s) = (s, plainTableCellProps)
-cellFromResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+cellFromResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps{tcStyle = plainTextStyle{tsItalic = True}})
 
 cellPastResult :: Result Text Bool -> (Text, TableCellProps)
 cellPastResult (SuccessResult False) = ("current", plainTableCellProps)
 cellPastResult (SuccessResult True) = ("past", plainTableCellProps)
-cellPastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+cellPastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps{tcStyle = plainTextStyle{tsItalic = True}})
 
 type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 
 soupEditSpec ::
-       Model (SoupUpdate PossibleNoteUpdate)
-    -> SelectNotify (Model (UUIDWidgetUpdate PossibleNoteUpdate))
-    -> (Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Locked ())
-    -> GView 'Unlocked Widget
+    Model (SoupUpdate PossibleNoteUpdate) ->
+    SelectNotify (Model (UUIDWidgetUpdate PossibleNoteUpdate)) ->
+    (Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Locked ()) ->
+    GView 'Unlocked Widget
 soupEditSpec sub selnotify openItem = do
     let
         nameLens :: ChangeLens (UUIDWidgetUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
         nameLens =
-            convertReadOnlyChangeLens .
-            liftFullResultOneChangeLens (tupleChangeLens NoteTitle) . tupleChangeLens SelectSecond
+            convertReadOnlyChangeLens
+                . liftFullResultOneChangeLens (tupleChangeLens NoteTitle)
+                . tupleChangeLens SelectSecond
         cmp :: Result Text Text -> Result Text Text -> Ordering
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
         uo :: UpdateOrder (UUIDWidgetUpdate PossibleNoteUpdate)
@@ -46,15 +49,17 @@ soupEditSpec sub selnotify openItem = do
             readOnlyKeyColumn (constantModel "Name") $ \cellsub -> let
                 valLens :: ChangeLens (UUIDWidgetUpdate PossibleNoteUpdate) (ROWUpdate (Text, TableCellProps))
                 valLens =
-                    funcChangeLens cellFromResult .
-                    liftFullResultOneChangeLens (tupleChangeLens NoteTitle) . tupleChangeLens SelectSecond
+                    funcChangeLens cellFromResult
+                        . liftFullResultOneChangeLens (tupleChangeLens NoteTitle)
+                        . tupleChangeLens SelectSecond
                 in return $ mapModel valLens cellsub {-(updateFunctionToChangeLens (funcChangeLens cellFromResult) . valLens)-}
         pastColumn :: KeyColumn (UUIDWidgetUpdate PossibleNoteUpdate)
         pastColumn =
             readOnlyKeyColumn (constantModel "Past") $ \cellsub -> let
                 valLens =
-                    funcChangeLens cellPastResult .
-                    liftFullResultOneChangeLens (tupleChangeLens NotePast) . tupleChangeLens SelectSecond
+                    funcChangeLens cellPastResult
+                        . liftFullResultOneChangeLens (tupleChangeLens NotePast)
+                        . tupleChangeLens SelectSecond
                 in return $ mapModel valLens cellsub
     (widget, _) <- createListTable [nameColumn, pastColumn] osub openItem selnotify
     return widget
@@ -66,9 +71,10 @@ soupReference dirpath = let
     soupItemInjection :: Injection' (Result Text) LazyByteString (UpdateSubject PossibleNoteUpdate)
     soupItemInjection = codecInjection noteCodec
     paste ::
-           forall m. MonadIO m
-        => UpdateSubject PossibleNoteUpdate
-        -> m (Maybe LazyByteString)
+        forall m.
+        MonadIO m =>
+        UpdateSubject PossibleNoteUpdate ->
+        m (Maybe LazyByteString)
     paste s = return $ mToMaybe $ injBackwards soupItemInjection s
     soupItemLens :: ChangeLens ByteStringUpdate PossibleNoteUpdate
     soupItemLens = convertChangeLens . (wholeChangeLens $ injectionLens soupItemInjection) . convertChangeLens
@@ -95,32 +101,35 @@ soupWindow newWindow dirpath = do
                 NoteText -> ""
         newItem :: GView 'Unlocked ()
         newItem =
-            gvLiftView $
-            viewRunResource smodel $ \samodel -> do
-                key <- liftIO randomIO
-                _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditInsertReplace (key, return blankNote)
-                return ()
+            gvLiftView
+                $ viewRunResource smodel
+                $ \samodel -> do
+                    key <- liftIO randomIO
+                    _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditInsertReplace (key, return blankNote)
+                    return ()
         deleteItem :: Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Unlocked ()
         deleteItem imodel =
-            gvLiftView $
-            viewRunResourceContext imodel $ \unlift iamodel -> do
-                key <- liftIO $ unlift $ aModelRead iamodel $ MkTupleUpdateReader SelectFirst ReadWhole
-                viewRunResource smodel $ \samodel -> do
-                    _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
-                    return ()
+            gvLiftView
+                $ viewRunResourceContext imodel
+                $ \unlift iamodel -> do
+                    key <- liftIO $ unlift $ aModelRead iamodel $ MkTupleUpdateReader SelectFirst ReadWhole
+                    viewRunResource smodel $ \samodel -> do
+                        _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
+                        return ()
         mbar :: GViewState 'Unlocked -> UIWindow -> MenuBar
         mbar cc _ =
             [ SubMenuEntry
-                  "File"
-                  [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $
-                    gvRunUnlocked $ gvCloseState cc
-                  , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
-                  ]
+                "File"
+                [ simpleActionMenuEntry "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W')
+                    $ gvRunUnlocked
+                    $ gvCloseState cc
+                , simpleActionMenuEntry "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
+                ]
             , SubMenuEntry
-                  "Item"
-                  [ simpleActionMenuEntry "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') $ gvRunUnlocked newItem
-                  , simpleActionMenuEntry "Delete" Nothing $ gvRunUnlocked $ withSelection deleteItem
-                  ]
+                "Item"
+                [ simpleActionMenuEntry "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') $ gvRunUnlocked newItem
+                , simpleActionMenuEntry "Delete" Nothing $ gvRunUnlocked $ withSelection deleteItem
+                ]
             ]
         openItem :: Model (UUIDWidgetUpdate PossibleNoteUpdate) -> GView 'Unlocked ()
         openItem imodel = do
@@ -130,8 +139,7 @@ soupWindow newWindow dirpath = do
                 rspec :: Result Text (Model NoteUpdate) -> GView 'Unlocked Widget
                 rspec (SuccessResult s2) = noteEditSpec s2 mempty
                 rspec (FailureResult err) = createLabel $ constantModel err
-            rec
-                ~(subwin, subcloser) <-
+            rec ~(subwin, subcloser) <-
                     gvGetState $ let
                         wsPosition = WindowPositionCenter
                         wsSize = (300, 400)
@@ -143,11 +151,10 @@ soupWindow newWindow dirpath = do
                             uic <- createOneWhole rowmodel rspec
                             createLayout
                                 OrientationVertical
-                                [(defaultLayoutOptions, mb), (defaultLayoutOptions {loGrow = True}, uic)]
-                        in newWindow MkWindowSpec {..}
+                                [(defaultLayoutOptions, mb), (defaultLayoutOptions{loGrow = True}, uic)]
+                        in newWindow MkWindowSpec{..}
             return ()
-    rec
-        let
+    rec let
             wsPosition = WindowPositionCenter
             wsSize = (300, 400)
             wsTitle :: Model (ROWUpdate Text)
@@ -164,9 +171,9 @@ soupWindow newWindow dirpath = do
                 uic <-
                     createLayout
                         OrientationVertical
-                        [(defaultLayoutOptions, button), (defaultLayoutOptions {loGrow = True}, stuff)]
+                        [(defaultLayoutOptions, button), (defaultLayoutOptions{loGrow = True}, stuff)]
                 createLayout
                     OrientationVertical
-                    [(defaultLayoutOptions, mb), (defaultLayoutOptions {loGrow = True}, uic)]
-        (window, closer) <- gvGetState $ newWindow MkWindowSpec {..}
+                    [(defaultLayoutOptions, mb), (defaultLayoutOptions{loGrow = True}, uic)]
+        (window, closer) <- gvGetState $ newWindow MkWindowSpec{..}
     return ()

@@ -4,10 +4,10 @@ import Import
 import Pinafore.Language.Value.Instances ()
 import Pinafore.Language.Value.Task
 
-type InvertibleModelLens t
-     = forall m.
-           Functor m =>
-                   (forall update. Maybe (Dict (InvertibleEdit (UpdateEdit update))) -> Model update -> m (Model update)) -> t -> m t
+type InvertibleModelLens t =
+    forall m.
+    Functor m =>
+    (forall update. Maybe (Dict (InvertibleEdit (UpdateEdit update))) -> Model update -> m (Model update)) -> t -> m t
 
 class IsInvertibleModel t where
     invertibleModelLens :: InvertibleModelLens t
@@ -19,14 +19,16 @@ wUninvertibleModelLens :: forall update. InvertibleModelLens (WModel update)
 wUninvertibleModelLens f (MkWModel model) = fmap MkWModel $ f Nothing model
 
 wInvertibleModelLens ::
-       forall update. InvertibleEdit (UpdateEdit update)
-    => InvertibleModelLens (WModel update)
+    forall update.
+    InvertibleEdit (UpdateEdit update) =>
+    InvertibleModelLens (WModel update)
 wInvertibleModelLens f (MkWModel model) = fmap MkWModel $ f (Just Dict) model
 
 toLangModel ::
-       forall t. IsInvertibleModel t
-    => t
-    -> LangModel
+    forall t.
+    IsInvertibleModel t =>
+    t ->
+    LangModel
 toLangModel m = getConst $ invertibleModelLens (\_ model -> Const $ MkLangModel $ MkWModel model) m
 
 data LangModel where

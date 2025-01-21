@@ -11,29 +11,30 @@ instance Show (PurityType m f) where
     show ImpureType = "impure"
 
 purityIs ::
-       forall (c :: (Type -> Type) -> Constraint) (m :: Type -> Type) (f :: Type -> Type) (r :: Type). (c m, c Identity)
-    => PurityType m f
-    -> (c f => r)
-    -> r
+    forall (c :: (Type -> Type) -> Constraint) (m :: Type -> Type) (f :: Type -> Type) (r :: Type).
+    (c m, c Identity) =>
+    PurityType m f ->
+    (c f => r) ->
+    r
 purityIs PureType r = r
 purityIs ImpureType r = r
 
 purityTypeProduct ::
-       Applicative m
-    => PurityType m fa
-    -> PurityType m fb
-    -> (forall fab. Applicative fab => PurityType m fab -> (fa --> fab) -> (fb --> fab) -> r)
-    -> r
+    Applicative m =>
+    PurityType m fa ->
+    PurityType m fb ->
+    (forall fab. Applicative fab => PurityType m fab -> (fa --> fab) -> (fb --> fab) -> r) ->
+    r
 purityTypeProduct PureType PureType call = call PureType id id
 purityTypeProduct PureType ImpureType call = call ImpureType (pure . runIdentity) id
 purityTypeProduct ImpureType PureType call = call ImpureType id (pure . runIdentity)
 purityTypeProduct ImpureType ImpureType call = call ImpureType id id
 
 purityTypeSum ::
-       PurityType Maybe fa
-    -> PurityType Maybe fb
-    -> (forall fab. Applicative fab => PurityType Maybe fab -> (forall x. fa x -> fb x -> fab x) -> r)
-    -> r
+    PurityType Maybe fa ->
+    PurityType Maybe fb ->
+    (forall fab. Applicative fab => PurityType Maybe fab -> (forall x. fa x -> fb x -> fab x) -> r) ->
+    r
 purityTypeSum PureType _ call = call PureType $ \fax _ -> fax
 purityTypeSum ImpureType PureType call =
     call PureType $ \case
@@ -51,32 +52,35 @@ runPurity ImpureType ma = ma
 runPurityCases :: PurityType Maybe f -> f a -> a
 runPurityCases purity fa = fromMaybe (error "missing case") $ runPurity purity fa
 
-data PurityFunction m e a b =
-    forall f. MkPurityFunction (PurityType m f)
-                               (e (a -> f b))
+data PurityFunction m e a b
+    = forall f. MkPurityFunction
+        (PurityType m f)
+        (e (a -> f b))
 
-pattern PureFunction :: Functor e =>
-        e (a -> b) -> PurityFunction m e a b
-
+pattern PureFunction ::
+    Functor e =>
+    e (a -> b) -> PurityFunction m e a b
 pattern PureFunction ef <-
-        MkPurityFunction PureType (fmap $ (fmap runIdentity) -> ef)
-  where PureFunction ef
-          = MkPurityFunction PureType $ fmap (\ f a -> Identity $ f a) ef
+    MkPurityFunction PureType (fmap $ (fmap runIdentity) -> ef)
+    where
+        PureFunction ef =
+            MkPurityFunction PureType $ fmap (\f a -> Identity $ f a) ef
 
-pattern ImpureFunction :: Functor e =>
-        e (a -> m b) -> PurityFunction m e a b
-
+pattern ImpureFunction ::
+    Functor e =>
+    e (a -> m b) -> PurityFunction m e a b
 pattern ImpureFunction ef <- MkPurityFunction ImpureType ef
-  where ImpureFunction ef = MkPurityFunction ImpureType ef
+    where
+        ImpureFunction ef = MkPurityFunction ImpureType ef
 
 {-# COMPLETE PureFunction, ImpureFunction #-}
 
 matchPurityFunction ::
-       (Applicative m, Applicative e)
-    => (forall f. PurityType m f -> (a1 -> f b1) -> (a2 -> f b2) -> (a12 -> f b12))
-    -> PurityFunction m e a1 b1
-    -> PurityFunction m e a2 b2
-    -> PurityFunction m e a12 b12
+    (Applicative m, Applicative e) =>
+    (forall f. PurityType m f -> (a1 -> f b1) -> (a2 -> f b2) -> (a12 -> f b12)) ->
+    PurityFunction m e a1 b1 ->
+    PurityFunction m e a2 b2 ->
+    PurityFunction m e a12 b12
 matchPurityFunction f (MkPurityFunction purity1 k1) (MkPurityFunction purity2 k2) =
     purityTypeProduct purity1 purity2 $ \purity12 c1 c2 ->
         MkPurityFunction purity12 $ liftA2 (f purity12) (fmap (fmap c1) k1) (fmap (fmap c2) k2)
@@ -99,7 +103,8 @@ instance Applicative e => Alternative (PurityFunction Maybe e t) where
     empty = MkPurityFunction ImpureType $ pure $ pure empty
     MkPurityFunction p1 eamb1 <|> MkPurityFunction p2 eamb2 =
         purityTypeSum p1 p2 $ \p12 conv -> MkPurityFunction p12 $ liftA2 (liftA2 conv) eamb1 eamb2
-            -- Kleisli $ \a -> conv (amb1 a) (amb2 a)
+
+-- Kleisli $ \a -> conv (amb1 a) (amb2 a)
 
 instance (Monad m, Applicative e) => Category (PurityFunction m e) where
     id = arr id

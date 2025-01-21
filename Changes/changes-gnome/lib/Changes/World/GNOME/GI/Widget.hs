@@ -1,11 +1,12 @@
 module Changes.World.GNOME.GI.Widget where
 
-import Changes.World.GNOME.GI.GView
-import Changes.World.GNOME.GI.LockState
-import Changes.World.GNOME.GI.Type
 import Data.GI.Base
 import Data.IORef
 import Shapes
+
+import Changes.World.GNOME.GI.GView
+import Changes.World.GNOME.GI.LockState
+import Changes.World.GNOME.GI.Type
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do
@@ -18,8 +19,8 @@ containerGetAllChildren cont = do
 getWidgetChildren :: Bool -> Widget -> IO (Maybe [Widget])
 getWidgetChildren full w = do
     mcont <- castTo Container w
-    for mcont $
-        if full
+    for mcont
+        $ if full
             then containerGetAllChildren
             else containerGetChildren
 
@@ -29,10 +30,10 @@ widgetInfoText w = do
     vis <- getWidgetVisible w
     let
         hh =
-            tn <>
-            if vis
-                then ""
-                else "{hidden}"
+            tn
+                <> if vis
+                    then ""
+                    else "{hidden}"
     mww <- getWidgetChildren True w
     case mww of
         Nothing -> return hh
@@ -53,8 +54,8 @@ isScrollable :: GObject widget => widget -> IO Bool
 isScrollable widget = do
     mViewport <- castTo Viewport widget
     mTextView <- castTo TextView widget
-    return $
-        case (mViewport, mTextView) of
+    return
+        $ case (mViewport, mTextView) of
             (Nothing, Nothing) -> False
             _ -> True
 

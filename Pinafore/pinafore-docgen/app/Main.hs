@@ -1,13 +1,15 @@
 module Main
     ( main
-    ) where
+    )
+where
 
-import Options
-import Pinafore.DocGen
 import Pinafore.Documentation
 import Pinafore.Options
 import Pinafore.Version
 import Shapes
+
+import Options
+import Pinafore.DocGen
 
 main :: IO ()
 main =

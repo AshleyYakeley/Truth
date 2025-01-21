@@ -1,7 +1,8 @@
 module Changes.Core
     ( module I
     , module Changes.Core
-    ) where
+    )
+where
 
 import Changes.Core.Edit as I
 import Changes.Core.Import

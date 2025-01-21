@@ -4,7 +4,7 @@ module Language.Expression.TypeSystem.TypeVariable
     , UVarT
     , uVarName
     , assignUVarT
-    , TypeVar(..)
+    , TypeVar (..)
     , TypeVarT
     , typeVarName
     , newTypeVar
@@ -12,11 +12,12 @@ module Language.Expression.TypeSystem.TypeVariable
     , assignSameTypeVarT
     , assignTypeVarWit
     , newAssignTypeVar
-    , SomeTypeVarT(..)
+    , SomeTypeVarT (..)
     , someTypeVarTName
     , mkSomeTypeVarT
     , unSomeTypeVarT
-    ) where
+    )
+where
 
 import Shapes
 import Shapes.Unsafe (unsafeRefl)
@@ -42,11 +43,11 @@ assignUVarT :: forall (t :: Type) (name :: Symbol) r. SymbolType name -> (UVarT 
 assignUVarT = assignUVar @Type @t
 
 assignUVarWit ::
-       forall (k :: Type) (t :: k) (name :: Symbol) (w :: k -> Type) r.
-       SymbolType name
-    -> w t
-    -> (UVar k name ~ t => r)
-    -> r
+    forall (k :: Type) (t :: k) (name :: Symbol) (w :: k -> Type) r.
+    SymbolType name ->
+    w t ->
+    (UVar k name ~ t => r) ->
+    r
 assignUVarWit name _ = assignUVar @k @t name
 
 type TypeVar :: forall k. k -> Type
@@ -85,8 +86,8 @@ assignTypeVarWit (MkTypeVar vsym) w call = assignUVarWit vsym w call
 newAssignTypeVar :: forall (k :: Type) (tv :: k). String -> TypeVar tv
 newAssignTypeVar nstr = newUVar nstr $ \vsym -> assignUVar @k @tv vsym $ MkTypeVar vsym
 
-data SomeTypeVarT =
-    forall tv. MkSomeTypeVarT (TypeVarT tv)
+data SomeTypeVarT
+    = forall tv. MkSomeTypeVarT (TypeVarT tv)
 
 someTypeVarTName :: SomeTypeVarT -> String
 someTypeVarTName (MkSomeTypeVarT v) = typeVarName v

@@ -8,15 +8,17 @@ hoistReadable :: forall m1 m2 reader. (m1 --> m2) -> Readable m1 reader -> Reada
 hoistReadable mf mr rt = mf (mr rt)
 
 liftReadable ::
-       forall t m reader. (MonadTrans t, Monad m)
-    => Readable m reader
-    -> Readable (t m) reader
+    forall t m reader.
+    (MonadTrans t, Monad m) =>
+    Readable m reader ->
+    Readable (t m) reader
 liftReadable = hoistReadable lift
 
 stackLiftReadable ::
-       forall tt m reader. (MonadTransStackUnlift tt, Monad m)
-    => Readable m reader
-    -> Readable (ApplyStack tt m) reader
+    forall tt m reader.
+    (MonadTransStackUnlift tt, Monad m) =>
+    Readable m reader ->
+    Readable (ApplyStack tt m) reader
 stackLiftReadable = hoistReadable @m @(ApplyStack tt m) $ stackLift @tt
 
 newtype ReadableW m reader = MkReadableW
@@ -24,8 +26,9 @@ newtype ReadableW m reader = MkReadableW
     }
 
 stateReadable ::
-       forall reader m. Monad m
-    => Readable (StateT (ReadableW m reader) m) reader
+    forall reader m.
+    Monad m =>
+    Readable (StateT (ReadableW m reader) m) reader
 stateReadable rt = do
     MkReadableW mr <- get
     lift $ mr rt

@@ -13,8 +13,8 @@ allowedAlphaNameChar '-' = True
 allowedAlphaNameChar '_' = True
 allowedAlphaNameChar c = isAlphaNum c
 
-newtype Name =
-    MkName Text
+newtype Name
+    = MkName Text
     deriving newtype (Eq, Ord, MonoFoldable)
 
 instance ShowText Name where
@@ -32,10 +32,10 @@ nameFromString s = Just $ MkName $ fromString s
 
 nameIsUpper :: Name -> Bool
 nameIsUpper (MkName n) =
-    oall allowedAlphaNameChar n &&
-    case headMay n of
-        Just c -> isUpper c
-        Nothing -> False
+    oall allowedAlphaNameChar n
+        && case headMay n of
+            Just c -> isUpper c
+            Nothing -> False
 
 upperNameFromString :: String -> Maybe Name
 upperNameFromString s = do

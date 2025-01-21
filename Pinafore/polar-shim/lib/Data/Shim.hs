@@ -1,6 +1,7 @@
 module Data.Shim
     ( module I
-    ) where
+    )
+where
 
 import Data.Shim.CCR as I
 import Data.Shim.Mono as I

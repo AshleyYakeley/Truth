@@ -2,7 +2,8 @@ module Control.AsyncRunner
     ( asyncWaitRunner
     , asyncRunner
     , asyncIORunner
-    ) where
+    )
+where
 
 import Control.Task
 import Shapes.Import
@@ -16,18 +17,19 @@ asyncIORunner _ = do
             mVarRunStateT var $ do
                 oldTask <- get
                 newTask <-
-                    lift $
-                    forkTask $ do
-                        taskWait oldTask
-                        job
+                    lift
+                        $ forkTask
+                        $ do
+                            taskWait oldTask
+                            job
                 put newTask
         utask :: Task IO ()
         utask = ioTask $ mVarRunStateT var get
     lifecycleOnClose $ taskWait utask
     return (pushVal, utask)
 
-newtype SemigroupQueue t =
-    MkSemigroupQueue (MVar (Maybe t))
+newtype SemigroupQueue t
+    = MkSemigroupQueue (MVar (Maybe t))
 
 newSemigroupQueue :: IO (SemigroupQueue t)
 newSemigroupQueue = do
@@ -53,10 +55,11 @@ putSemigroupQueue (MkSemigroupQueue var) t =
                 return True
 
 asyncRunner ::
-       forall t. Semigroup t
-    => Text
-    -> (t -> IO ())
-    -> Lifecycle (t -> IO (), Task IO ())
+    forall t.
+    Semigroup t =>
+    Text ->
+    (t -> IO ()) ->
+    Lifecycle (t -> IO (), Task IO ())
 asyncRunner name doit = do
     sq :: SemigroupQueue t <- liftIO $ newSemigroupQueue
     (ioio, utask) <- asyncIORunner name
@@ -76,11 +79,12 @@ asyncRunner name doit = do
     return (tio, utask)
 
 asyncWaitRunner ::
-       forall t. Semigroup t
-    => Text
-    -> Int
-    -> (t -> IO ())
-    -> Lifecycle (Maybe t -> IO (), Task IO ())
+    forall t.
+    Semigroup t =>
+    Text ->
+    Int ->
+    (t -> IO ()) ->
+    Lifecycle (Maybe t -> IO (), Task IO ())
 asyncWaitRunner name mus doit = do
     sq :: SemigroupQueue t <- liftIO $ newSemigroupQueue
     (ioio, utask) <- asyncIORunner name
@@ -96,8 +100,8 @@ asyncWaitRunner name mus doit = do
             b <- putSemigroupQueue sq t
             if b
                 then ioio $ do
-                         threadDelay mus
-                         action
+                    threadDelay mus
+                    action
                 else return ()
         tio Nothing = ioio action
     return (tio, utask)

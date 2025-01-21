@@ -25,7 +25,8 @@ module Changes.Core.UI.View.View
     , viewFloatMapModel
     , viewBindWholeModel
     , viewBindReadOnlyWholeModel
-    ) where
+    )
+where
 
 import Changes.Core.Import
 import Changes.Core.Lens
@@ -38,20 +39,22 @@ type ViewState = LifeState
 
 newtype View a = MkView
     { unView :: ReaderT ViewContext Lifecycle a
-    } deriving newtype ( Functor
-                       , Applicative
-                       , Monad
-                       , MonadFix
-                       , MonadFail
-                       , MonadIO
-                       , MonadException
-                       , MonadThrow e
-                       , MonadCatch e
-                       , MonadHoistIO
-                       , MonadTunnelIO
-                       , MonadUnliftIO
-                       , RepresentationalRole
-                       )
+    }
+    deriving newtype
+        ( Functor
+        , Applicative
+        , Monad
+        , MonadFix
+        , MonadFail
+        , MonadIO
+        , MonadException
+        , MonadThrow e
+        , MonadCatch e
+        , MonadHoistIO
+        , MonadTunnelIO
+        , MonadUnliftIO
+        , RepresentationalRole
+        )
 
 viewOnCloseIO :: IO () -> View ()
 viewOnCloseIO closer = viewLiftLifecycle $ lifecycleOnClose closer
@@ -90,29 +93,31 @@ viewWithUnliftAsync call =
     liftIOWithUnlift $ \unlift -> unlift $ call $ unlift . viewLocalResourceContext emptyResourceContext
 
 viewRunResource ::
-       forall f r.
-       Resource f
-    -> (forall tt.
-            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO), MonadFail (ApplyStack tt IO)) =>
-                    f tt -> ApplyStack tt IO r)
-    -> View r
+    forall f r.
+    Resource f ->
+    ( forall tt.
+      (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO), MonadFail (ApplyStack tt IO)) =>
+      f tt -> ApplyStack tt IO r
+    ) ->
+    View r
 viewRunResource resource call = do
     rc <- viewGetResourceContext
     liftIO $ runResource rc resource $ \ftt -> call ftt
 
 viewRunResourceLifecycle ::
-       forall f. MapResource f
-    => Resource f
-    -> View (f '[])
+    forall f.
+    MapResource f =>
+    Resource f ->
+    View (f '[])
 viewRunResourceLifecycle resource = do
     rc <- viewGetResourceContext
     viewLiftLifecycle $ runResourceLifecycle rc resource
 
 viewRunResourceContext ::
-       forall f r.
-       Resource f
-    -> (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) => StackUnlift tt -> f tt -> View r)
-    -> View r
+    forall f r.
+    Resource f ->
+    (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt View)) => StackUnlift tt -> f tt -> View r) ->
+    View r
 viewRunResourceContext resource call = do
     rc <- viewGetResourceContext
     runResourceContext rc resource $ \rc' unlift ftt -> viewLocalResourceContext rc' $ call unlift ftt
@@ -124,7 +129,7 @@ viewGetResourceContext :: View ResourceContext
 viewGetResourceContext = MkView $ asks vcResourceContext
 
 viewLocalResourceContext :: ResourceContext -> View --> View
-viewLocalResourceContext rc = viewWithContext (\vc -> vc {vcResourceContext = rc})
+viewLocalResourceContext rc = viewWithContext (\vc -> vc{vcResourceContext = rc})
 
 viewWaitUpdates :: Model update -> View ()
 viewWaitUpdates model = liftIO $ taskWait $ modelUpdatesTask model
@@ -135,51 +140,54 @@ runViewFromContext vc (MkView (ReaderT view)) = liftIOWithUnlift $ \unlift -> un
 runView :: View --> Lifecycle
 runView = let
     vcResourceContext = emptyResourceContext
-    in runViewFromContext MkViewContext {..}
+    in runViewFromContext MkViewContext{..}
 
 viewBindModelUpdates ::
-       forall update a.
-       Model update
-    -> (EditSource -> Bool)
-    -> View a
-    -> (a -> Task IO ())
-    -> (a -> NonEmpty update -> EditContext -> View ())
-    -> View a
+    forall update a.
+    Model update ->
+    (EditSource -> Bool) ->
+    View a ->
+    (a -> Task IO ()) ->
+    (a -> NonEmpty update -> EditContext -> View ()) ->
+    View a
 viewBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- viewLiftLifecycle lifecycleMonitor
     liftIOWithUnlift $ \unlift ->
-        unlift $
-        viewRunResourceContext model $ \stunlift amodel -> do
-            a <- initv
-            viewLiftLifecycle $
-                stunlift $
-                aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
-                    if testesrc editContextSource
-                        then do
-                            alive <- monitor
-                            if alive
-                                then unlift $ viewLocalResourceContext urc $ recv a updates ec
-                                else return ()
-                        else return ()
-            return a
+        unlift
+            $ viewRunResourceContext model
+            $ \stunlift amodel -> do
+                a <- initv
+                viewLiftLifecycle
+                    $ stunlift
+                    $ aModelSubscribe amodel (utask a)
+                    $ \urc updates ec@MkEditContext{..} ->
+                        if testesrc editContextSource
+                            then do
+                                alive <- monitor
+                                if alive
+                                    then unlift $ viewLocalResourceContext urc $ recv a updates ec
+                                    else return ()
+                            else return ()
+                return a
 
 viewBindModel ::
-       forall update a.
-       Model update
-    -> Maybe EditSource
-    -> View a
-    -> (a -> Task IO ())
-    -> (a -> NonEmpty update -> View ())
-    -> View a
+    forall update a.
+    Model update ->
+    Maybe EditSource ->
+    View a ->
+    (a -> Task IO ()) ->
+    (a -> NonEmpty update -> View ()) ->
+    View a
 viewBindModel model mesrc initv utask recv =
     viewBindModelUpdates model (\ec -> mesrc /= Just ec) initv utask $ \a updates _ec -> recv a updates
 
 viewFloatMap ::
-       forall f updateA updateB. (FloatingEditApplicative f)
-    => FloatingChangeLens updateA updateB
-    -> f updateA
-    -> View (f updateB)
+    forall f updateA updateB.
+    FloatingEditApplicative f =>
+    FloatingChangeLens updateA updateB ->
+    f updateA ->
+    View (f updateB)
 viewFloatMap flens fa = do
     rc <- viewGetResourceContext
     viewLiftLifecycle $ eaFloatMap rc flens fa

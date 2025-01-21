@@ -8,8 +8,8 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
 
-data LangType =
-    forall a. MkLangType (QNonpolarType a)
+data LangType
+    = forall a. MkLangType (QNonpolarType a)
 
 instance HasQGroundType '[] LangType where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangType)|]) "Type.Pinafore."
@@ -18,9 +18,10 @@ instance ShowText LangType where
     showText (MkLangType t) = toText $ exprShow t
 
 -- LangOpenType
-data LangOpenType (pq :: (Type, Type)) =
-    forall a. MkLangOpenType (QRange a pq)
-                             (QNonpolarType a)
+data LangOpenType (pq :: (Type, Type))
+    = forall a. MkLangOpenType
+        (QRange a pq)
+        (QNonpolarType a)
 
 instance CatFunctor (CatRange (->)) (->) LangOpenType where
     cfmap f (MkLangOpenType r v) = MkLangOpenType (cfmap f r) v
@@ -36,19 +37,19 @@ instance HasCCRVariance 'RangeCCRVariance LangOpenType
 instance HasQGroundType '[ 'RangeCCRVariance] LangOpenType where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangOpenType)|]) "OpenType.Pinafore."
 
-openLangTypeToType :: forall p q. LangOpenType '( p, q) -> LangType
+openLangTypeToType :: forall p q. LangOpenType '(p, q) -> LangType
 openLangTypeToType (MkLangOpenType _ t) = MkLangType t
 
 mkLangTypeValue :: Some QNonpolarType -> QValue
 mkLangTypeValue (MkSome (tw :: _ t)) = let
-    stype :: QShimWit 'Positive (LangOpenType '( t, t))
+    stype :: QShimWit 'Positive (LangOpenType '(t, t))
     stype = rangeShimWit qGroundType (nonpolarToNegative @QTypeSystem tw) (nonpolarToPositive @QTypeSystem tw)
-    sval :: LangOpenType '( t, t)
+    sval :: LangOpenType '(t, t)
     sval = MkLangOpenType identityRange tw
     in MkSomeOf stype sval
 
 -- QInterpreter
-instance HasQGroundType '[ CoCCRVariance] QInterpreter where
+instance HasQGroundType '[CoCCRVariance] QInterpreter where
     qGroundType =
         stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QInterpreter)|]) "Interpreter.Pinafore."
 

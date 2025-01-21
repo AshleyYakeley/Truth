@@ -1,6 +1,7 @@
 module Pinafore.Language.Library.Entity.Entity
     ( entityEntityLibSection
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Library.Convert ()
@@ -23,14 +24,14 @@ entityEntityLibSection =
         "Entity"
         ""
         [ typeBDS
-              "Entity"
-              "Something that can be identified by a 256-bit anchor."
-              (MkSomeGroundType entityGroundType)
-              []
-        , namespaceBDS "Entity" $
-          fmap addNameInRootBDS (eqEntries @Entity) <>
-          [ valBDS "order" "An arbitrary order on `Entity`." $ ordOrder @Entity
-          , valBDS "anchor" "The anchor of an entity, as text." entityAnchor
-          , valBDS "asBlob" "Represent an `Entity` as a `Blob`." blobPrism
-          ]
+            "Entity"
+            "Something that can be identified by a 256-bit anchor."
+            (MkSomeGroundType entityGroundType)
+            []
+        , namespaceBDS "Entity"
+            $ fmap addNameInRootBDS (eqEntries @Entity)
+            <> [ valBDS "order" "An arbitrary order on `Entity`." $ ordOrder @Entity
+               , valBDS "anchor" "The anchor of an entity, as text." entityAnchor
+               , valBDS "asBlob" "Represent an `Entity` as a `Blob`." blobPrism
+               ]
         ]

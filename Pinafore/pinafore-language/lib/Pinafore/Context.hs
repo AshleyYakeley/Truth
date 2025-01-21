@@ -1,9 +1,10 @@
 module Pinafore.Context where
 
-import Import
 import System.Directory
 import System.Environment
 import System.Environment.XDG.BaseDir
+
+import Import
 
 getPinaforeDir :: IO FilePath
 getPinaforeDir = do

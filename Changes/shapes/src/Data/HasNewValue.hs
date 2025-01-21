@@ -32,7 +32,7 @@ instance HasNewValue [a] where
 instance HasNewValue (Maybe a) where
     newValue = Nothing
 
-instance (HasNewValue a) => HasNewValue (Result err a) where
+instance HasNewValue a => HasNewValue (Result err a) where
     newValue = SuccessResult newValue
 
 instance HasNewValue Text where
@@ -40,9 +40,10 @@ instance HasNewValue Text where
 
 class HasNewValue1 p where
     newValue1 ::
-           forall a r. (HasNewValue a)
-        => ((HasNewValue (p a)) => r)
-        -> r
+        forall a r.
+        HasNewValue a =>
+        (HasNewValue (p a) => r) ->
+        r
 
 instance HasNewValue1 [] where
     newValue1 r = r

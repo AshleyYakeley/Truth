@@ -4,7 +4,8 @@ import Import
 
 newtype EntityMap (v :: Type) = MkEntityMap
     { unEntityMap :: HashMap Entity v
-    } deriving newtype (Functor, Semigroup, Monoid, HasVariance)
+    }
+    deriving newtype (Functor, Semigroup, Monoid, HasVariance)
 
 instance RepresentationalRole EntityMap where
     representationalCoercion MkCoercion = MkCoercion

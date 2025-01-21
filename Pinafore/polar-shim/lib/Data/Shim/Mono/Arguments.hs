@@ -15,11 +15,11 @@ instance TestEquality w => TestEquality (Arguments w f) where
         Just Refl
 
 data MonoType (w :: forall k. k -> Type) (t :: Type) where
-    MkMonoType
-        :: forall (w :: forall k. k -> Type) (k :: Type) (f :: k) (t :: Type).
-           w f
-        -> Arguments (MonoType w) f t
-        -> MonoType w t
+    MkMonoType ::
+        forall (w :: forall k. k -> Type) (k :: Type) (f :: k) (t :: Type).
+        w f ->
+        Arguments (MonoType w) f t ->
+        MonoType w t
 
 instance forall (w :: forall k. k -> Type). TestHetEquality w => TestEquality (MonoType w) where
     testEquality (MkMonoType gt1 args1) (MkMonoType gt2 args2) = do

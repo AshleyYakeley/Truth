@@ -1,16 +1,18 @@
 module Language.Expression.Common.Open.Lifted where
 
+import Shapes
+
 import Language.Expression.Common.Open.Abstract
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Expression
 import Language.Expression.Common.Open.Free
-import Shapes
 
 type LiftedExpression :: (Type -> Type) -> (Type -> Type) -> Type -> Type
 data LiftedExpression f w a
     = ClosedLiftedExpression (f a)
-    | forall t. OpenLiftedExpression (w t)
-                                     (LiftedExpression f w (t -> a))
+    | forall t. OpenLiftedExpression
+        (w t)
+        (LiftedExpression f w (t -> a))
 
 instance Functor f => Functor (LiftedExpression f w) where
     fmap ab (ClosedLiftedExpression a) = ClosedLiftedExpression $ fmap ab a
@@ -45,7 +47,7 @@ instance Functor f => AbstractWitness (LiftedExpression f) where
     abstractWitness = abstractLiftedExpression
 
 abstractLiftedExpression ::
-       (Functor f, TestEquality w) => w a -> LiftedExpression f w b -> LiftedExpression f w (a -> b)
+    (Functor f, TestEquality w) => w a -> LiftedExpression f w b -> LiftedExpression f w (a -> b)
 abstractLiftedExpression _ (ClosedLiftedExpression fa) = ClosedLiftedExpression $ fmap (\a _ -> a) fa
 abstractLiftedExpression wa (OpenLiftedExpression wt expr)
     | Just Refl <- testEquality wa wt = fmap (\aab a -> aab a a) $ abstractLiftedExpression wa expr

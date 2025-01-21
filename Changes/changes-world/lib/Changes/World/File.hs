@@ -1,6 +1,7 @@
 module Changes.World.File
     ( fileReference
-    ) where
+    )
+where
 
 import Changes.Core
 import Shapes
@@ -12,7 +13,7 @@ fileReference :: FilePath -> Reference ByteStringEdit
 fileReference path = let
     iow :: IOWitness (ReaderT Handle)
     iow = hashOpenWitness fileWitness path
-    objRun :: ResourceRunner '[ ReaderT Handle]
+    objRun :: ResourceRunner '[ReaderT Handle]
     objRun =
         mkResourceRunner iow $ \rt -> do
             h <- liftIO $ openBinaryFile path ReadWriteMode
@@ -44,4 +45,4 @@ fileReference path = let
     refEdit = singleAlwaysEdit objOneEdit
     refCommitTask :: Task IO ()
     refCommitTask = mempty
-    in MkResource objRun MkAReference {..}
+    in MkResource objRun MkAReference{..}

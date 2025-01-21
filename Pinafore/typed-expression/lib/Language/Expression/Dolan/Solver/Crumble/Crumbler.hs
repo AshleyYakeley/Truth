@@ -23,32 +23,36 @@ instance forall w m f. (Applicative f, Monad m) => WrappedApplicative (Crumbler 
     whoist f (MkCrumbler rmfa) = MkCrumbler $ hoist f rmfa
 
 crumblerLift ::
-       forall w m f a. (Applicative f, Monad m)
-    => f a
-    -> Crumbler w m f a
+    forall w m f a.
+    (Applicative f, Monad m) =>
+    f a ->
+    Crumbler w m f a
 crumblerLift fa = MkCrumbler $ return $ fmap pure fa
 
 runCrumbler ::
-       forall w m f a. (Applicative f, Monad m)
-    => Crumbler w m f a
-    -> m (f a)
+    forall w m f a.
+    (Applicative f, Monad m) =>
+    Crumbler w m f a ->
+    m (f a)
 runCrumbler (MkCrumbler rma) = fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
 
 addMemo ::
-       forall w m f t a. (Applicative f, Monad m)
-    => w t
-    -> Crumbler w m f a
-    -> Crumbler w m f (t -> a)
+    forall w m f t a.
+    (Applicative f, Monad m) =>
+    w t ->
+    Crumbler w m f a ->
+    Crumbler w m f (t -> a)
 addMemo wt pc =
     MkCrumbler $ withReaderT (\seen' -> ConsListType wt seen') $ fmap (fmap $ \tla l t -> tla (t, l)) $ unCrumbler pc
 
 memoiseBranch ::
-       forall w m f t a. (TestEquality w, Applicative f, Monad m)
-    => (t -> t)
-    -> w t
-    -> Crumbler w m f (t -> a)
-    -> Crumbler w m f (t, a)
-    -> Crumbler w m f a
+    forall w m f t a.
+    (TestEquality w, Applicative f, Monad m) =>
+    (t -> t) ->
+    w t ->
+    Crumbler w m f (t -> a) ->
+    Crumbler w m f (t, a) ->
+    Crumbler w m f a
 memoiseBranch lazify wt call1 call2 =
     MkCrumbler $ do
         seen <- ask

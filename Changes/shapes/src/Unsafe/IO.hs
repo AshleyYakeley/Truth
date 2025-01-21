@@ -2,10 +2,12 @@ module Unsafe.IO
     ( unsafePerformIO
     , unsafeInterleaveIO
     , module Unsafe.IO
-    ) where
+    )
+where
+
+import System.IO.Unsafe
 
 import Shapes.Import
-import System.IO.Unsafe
 
 {-# NOINLINE unsafePerformIOM #-}
 unsafePerformIOM :: Applicative m => IO a -> m a

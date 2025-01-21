@@ -8,7 +8,8 @@ module Changes.World.Media.Type
     , pattern TextMediaType
     , pattern ImageMediaType
     , pattern ApplicationMediaType
-    ) where
+    )
+where
 
 import Shapes
 import Text.ParserCombinators.ReadP qualified as P
@@ -17,14 +18,17 @@ data MediaType = MkMediaType_
     { mtType :: Text
     , mtSubtype :: Text
     , mtParams :: [(Text, Text)]
-    } deriving stock (Eq)
+    }
+    deriving stock Eq
 
 pattern MkMediaType :: Text -> Text -> [(Text, Text)] -> MediaType
-
 pattern MkMediaType t s p <- MkMediaType_ t s p
-  where MkMediaType t s p
-          = MkMediaType_ (toLower t) (toLower s)
-              (fmap (\ (n, v) -> (toLower n, v)) p)
+    where
+        MkMediaType t s p =
+            MkMediaType_
+                (toLower t)
+                (toLower s)
+                (fmap (\(n, v) -> (toLower n, v)) p)
 
 {-# COMPLETE MkMediaType #-}
 
@@ -34,9 +38,11 @@ instance HasSerializer MediaType where
         toMT (t, (s, p)) = MkMediaType_ t s p
         fromMT :: MediaType -> (Text, (Text, [(Text, Text)]))
         fromMT (MkMediaType_ t s p) = (t, (s, p))
-        in invmap toMT fromMT $
-           sProduct stoppingSerializer $
-           sProduct stoppingSerializer $ sCountedList $ sProduct stoppingSerializer stoppingSerializer
+        in invmap toMT fromMT
+            $ sProduct stoppingSerializer
+            $ sProduct stoppingSerializer
+            $ sCountedList
+            $ sProduct stoppingSerializer stoppingSerializer
 
 -- RFC 2045 sec. 5.1
 goodchar :: Char -> Bool
@@ -101,7 +107,7 @@ parseMediaType = do
     return $ MkMediaType (pack tt) (pack st) mp
 
 showMediaType :: MediaType -> Text
-showMediaType MkMediaType_ {..} = mtType <> "/" <> mtSubtype <> concatmap (\(n, v) -> ";" <> n <> "=" <> enc v) mtParams
+showMediaType MkMediaType_{..} = mtType <> "/" <> mtSubtype <> concatmap (\(n, v) -> ";" <> n <> "=" <> enc v) mtParams
 
 textMediaTypeCodec :: Codec Text MediaType
 textMediaTypeCodec = let
@@ -110,7 +116,7 @@ textMediaTypeCodec = let
             [(m, "")] -> return m
             _ -> Nothing
     encode = showMediaType
-    in MkCodec {..}
+    in MkCodec{..}
 
 instance Read MediaType where
     readsPrec _ = P.readP_to_S parseMediaType
@@ -119,15 +125,12 @@ instance Show MediaType where
     show mt = unpack $ showMediaType mt
 
 pattern TextMediaType :: Text
-
 pattern TextMediaType = "text"
 
 pattern ImageMediaType :: Text
-
 pattern ImageMediaType = "image"
 
 pattern ApplicationMediaType :: Text
-
 pattern ApplicationMediaType = "application"
 
 instance HasNewValue MediaType where

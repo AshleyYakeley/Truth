@@ -11,7 +11,8 @@ module Pinafore.Language.Interpreter.Register
     , registerRecordValue
     , registerSubtypeConversion
     , updateGroundType
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -29,7 +30,7 @@ registerScope :: QScope -> QScopeBuilder ()
 registerScope scope = registerScopeDocs $ scopeDocs scope
 
 registerDocs :: Docs -> QScopeBuilder ()
-registerDocs docs = registerScopeDocs $ mempty {sdDocs = docs}
+registerDocs docs = registerScopeDocs $ mempty{sdDocs = docs}
 
 registerBindings :: [(FullName, QBindingInfo)] -> QScopeBuilder ()
 registerBindings bb = registerScope $ bindingInfosToScope bb
@@ -79,7 +80,7 @@ updateSelector bst fnref f =
         newt <- f oldt
         let
             newbind = bsEncode bst newt
-            newbi = oldbi {biValue = newbind}
+            newbi = oldbi{biValue = newbind}
         return newbi
 
 updateGroundType :: FullNameRef -> (forall dv t. QGroundType dv t -> QGroundType dv t) -> QScopeBuilder ()

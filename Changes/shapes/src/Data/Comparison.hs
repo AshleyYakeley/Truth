@@ -2,10 +2,11 @@
 
 module Data.Comparison where
 
+import Data.Reflection (Given (..), give)
+
 import Data.Coerce.Coercion
 import Data.Coerce.Role
 import Data.Givable
-import Data.Reflection (Given(..), give)
 import Data.Wrappable
 import Shapes.Import
 
@@ -17,8 +18,9 @@ notEquivalent :: Equivalence a -> a -> a -> Bool
 notEquivalent equiv p q = not $ equivalent equiv p q
 
 eqEquivalence ::
-       forall a. Eq a
-    => Equivalence a
+    forall a.
+    Eq a =>
+    Equivalence a
 eqEquivalence = MkEquivalence (==)
 
 nubByEquivalence :: forall a. Equivalence a -> [a] -> [a]
@@ -191,8 +193,9 @@ orderGE o p q =
         _ -> False
 
 ordOrder ::
-       forall a. Ord a
-    => Order a
+    forall a.
+    Ord a =>
+    Order a
 ordOrder = MkOrder compare
 
 indiscreteOrder :: forall a. Order a
@@ -217,13 +220,13 @@ orderLeast :: Order a -> NonEmpty a -> a
 orderLeast order =
     \case
         a :| [] -> a
-        a :| (b:c) -> orderLeast order $ (orderLesser order a b) :| c
+        a :| (b : c) -> orderLeast order $ (orderLesser order a b) :| c
 
 orderGreatest :: Order a -> NonEmpty a -> a
 orderGreatest order =
     \case
         a :| [] -> a
-        a :| (b:c) -> orderGreatest order $ (orderGreater order a b) :| c
+        a :| (b : c) -> orderGreatest order $ (orderGreater order a b) :| c
 
 orderSort :: Order a -> [a] -> [a]
 orderSort (MkOrder o) = sortBy o

@@ -13,15 +13,16 @@ instance HasQGroundType '[] Literal where
     qGroundType = literalGroundType
 
 literalStorabilityProp ::
-       forall (t :: Type). AsLiteral t
-    => GroundProperties '[] t
+    forall (t :: Type).
+    AsLiteral t =>
+    GroundProperties '[] t
 literalStorabilityProp =
-    singleGroundProperty storabilityProperty $
-    MkStorability
-        { stbKind = NilListType
-        , stbCovaryMap = covarymap
-        , stbAdapterExprKnot = pureStorabilityAdapter $ \NilArguments -> asLiteralStoreAdapter
-        }
+    singleGroundProperty storabilityProperty
+        $ MkStorability
+            { stbKind = NilListType
+            , stbCovaryMap = covarymap
+            , stbAdapterExprKnot = pureStorabilityAdapter $ \NilArguments -> asLiteralStoreAdapter
+            }
 
 literalGreatestDynamicSupertype :: AsLiteral t => QPolyGreatestDynamicSupertype '[] t
 literalGreatestDynamicSupertype =
@@ -29,10 +30,13 @@ literalGreatestDynamicSupertype =
 
 -- Literal types
 mkLiteralGroundType ::
-       forall (t :: Type). AsLiteral t
-    => IOWitness ('MkWitKind (SingletonFamily t))
-    -> FullName
-    -> QGroundType '[] t
+    forall (t :: Type).
+    AsLiteral t =>
+    IOWitness ('MkWitKind (SingletonFamily t)) ->
+    FullName ->
+    QGroundType '[] t
 mkLiteralGroundType wit name =
     (stdSingleGroundType wit name)
-        {qgtProperties = literalStorabilityProp, qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+        { qgtProperties = literalStorabilityProp
+        , qgtGreatestDynamicSupertype = literalGreatestDynamicSupertype
+        }

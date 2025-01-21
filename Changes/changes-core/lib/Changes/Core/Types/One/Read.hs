@@ -14,8 +14,11 @@ instance forall f reader t. AllConstraint Show reader => Show (OneReader f reade
 instance forall f reader. AllConstraint Show reader => AllConstraint Show (OneReader f reader) where
     allConstraint = Dict
 
-instance forall reader e. (Show e, WitnessConstraint Show reader) =>
-             WitnessConstraint Show (OneReader (Result e) reader) where
+instance
+    forall reader e.
+    (Show e, WitnessConstraint Show reader) =>
+    WitnessConstraint Show (OneReader (Result e) reader)
+    where
     witnessConstraint ReadHasOne = Dict
     witnessConstraint (ReadOne rt) =
         case witnessConstraint @_ @Show rt of
@@ -36,9 +39,10 @@ oneReadFunctionF :: forall f reader. ReadFunctionF f (OneReader f reader) reader
 oneReadFunctionF mr rt = MkComposeInner $ mr $ ReadOne rt
 
 liftOneReadFunction ::
-       forall f ra rb. MonadInner f
-    => ReadFunction ra rb
-    -> ReadFunction (OneReader f ra) (OneReader f rb)
+    forall f ra rb.
+    MonadInner f =>
+    ReadFunction ra rb ->
+    ReadFunction (OneReader f ra) (OneReader f rb)
 liftOneReadFunction _rfrarb mr ReadHasOne = mr ReadHasOne
 liftOneReadFunction rfrarb (mr :: Readable m _) (ReadOne rbt) = unComposeInner $ rfrarb (oneReadFunctionF mr) rbt
 

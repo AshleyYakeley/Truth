@@ -18,13 +18,15 @@ instance Functor (WholeUpdateFunction update) where
     fmap ab (MkWholeUpdateFunction (MkChangeLens g u _)) = let
         g' :: ReadFunction (UpdateReader update) (WholeReader b)
         g' mr ReadWhole = fmap ab $ g mr ReadWhole
-        u' :: forall m. MonadIO m
-           => update
-           -> Readable m (UpdateReader update)
-           -> m [ROWUpdate b]
+        u' ::
+            forall m.
+            MonadIO m =>
+            update ->
+            Readable m (UpdateReader update) ->
+            m [ROWUpdate b]
         u' update mr =
-            fmap (fmap $ \(MkReadOnlyUpdate (MkWholeReaderUpdate a)) -> MkReadOnlyUpdate $ MkWholeReaderUpdate $ ab a) $
-            u update mr
+            fmap (fmap $ \(MkReadOnlyUpdate (MkWholeReaderUpdate a)) -> MkReadOnlyUpdate $ MkWholeReaderUpdate $ ab a)
+                $ u update mr
         in MkWholeUpdateFunction $ MkChangeLens g' u' clPutEditsNone
 
 instance Applicative (WholeUpdateFunction update) where
@@ -32,16 +34,19 @@ instance Applicative (WholeUpdateFunction update) where
     pure a = let
         g' :: ReadFunction (UpdateReader update) (WholeReader a)
         g' _mr ReadWhole = return a
-        u' :: forall m. MonadIO m
-           => update
-           -> Readable m (UpdateReader update)
-           -> m [ROWUpdate a]
+        u' ::
+            forall m.
+            MonadIO m =>
+            update ->
+            Readable m (UpdateReader update) ->
+            m [ROWUpdate a]
         u' _update _mr = return []
         in MkWholeUpdateFunction $ MkChangeLens g' u' clPutEditsNone
     MkWholeUpdateFunction p <*> MkWholeUpdateFunction q =
-        MkWholeUpdateFunction $
-        liftReadOnlyChangeLens (funcChangeLens $ \(ab, a) -> ab a) .
-        readOnlyPairChangeLens . pairCombineChangeLenses p q
+        MkWholeUpdateFunction
+            $ liftReadOnlyChangeLens (funcChangeLens $ \(ab, a) -> ab a)
+            . readOnlyPairChangeLens
+            . pairCombineChangeLenses p q
 
 instance Invariant (WholeUpdateFunction update) where
     invmap ab _ = fmap ab

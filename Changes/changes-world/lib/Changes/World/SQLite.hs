@@ -3,12 +3,12 @@
 module Changes.World.SQLite
     ( module Changes.World.SQLite
     , SQLData
-    , FromField(..)
-    , ToField(..)
-    ) where
+    , FromField (..)
+    , ToField (..)
+    )
+where
 
 import Changes.Core
-import Changes.World.SQLite.Schema qualified as SQLite
 import Database.SQLite.Simple hiding (columnName)
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.Internal
@@ -17,9 +17,12 @@ import Database.SQLite.Simple.ToField
 import Shapes
 import System.Directory
 
-data QueryString =
-    MkQueryString Query
-                  [SQLData]
+import Changes.World.SQLite.Schema qualified as SQLite
+
+data QueryString
+    = MkQueryString
+        Query
+        [SQLData]
 
 instance Semigroup QueryString where
     (MkQueryString qa va) <> (MkQueryString qb vb) = MkQueryString (mappend qa qb) (va <> vb)
@@ -33,7 +36,7 @@ instance IsString QueryString where
 
 groupQueryStringsMap :: [QueryString] -> Map Query (NonEmpty [SQLData])
 groupQueryStringsMap [] = mempty
-groupQueryStringsMap (MkQueryString q d:qss) = let
+groupQueryStringsMap (MkQueryString q d : qss) = let
     m = groupQueryStringsMap qss
     dd =
         case lookup q m of
@@ -123,11 +126,13 @@ instance HasSchema (Expr colsel t) where
     schemaString csch (AndExpr e1 e2) = "(" <> schemaString csch e1 <> " AND " <> schemaString csch e2 <> ")"
     schemaString csch (OrExpr e1 e2) = "(" <> schemaString csch e1 <> " OR " <> schemaString csch e2 <> ")"
 
-class (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
-          IsSQLiteTable colsel
+class
+    (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
+    IsSQLiteTable colsel
 
-instance (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
-             IsSQLiteTable colsel
+instance
+    (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
+    IsSQLiteTable colsel
 
 instance TupleDatabaseType SQLiteDatabase where
     type TupleDatabaseTypeRowWitness SQLiteDatabase = IsSQLiteTable
@@ -163,25 +168,25 @@ instance HasSchema (TupleOrderItem colsel) where
         fromString $ (columnRefName $ finiteGetAllFor csch col) ++ " " ++ show dir
 
 columnRef :: String -> SQLite.ColumnSchema t -> ColumnRefSchema t
-columnRef tableRefName SQLite.MkColumnSchema {..} = let
+columnRef tableRefName SQLite.MkColumnSchema{..} = let
     columnRefName =
         case tableRefName of
             "" -> columnName
             _ -> tableRefName ++ "." ++ columnName
     columnRefType = columnType
-    in MkColumnRefSchema {..}
+    in MkColumnRefSchema{..}
 
 joinTableSchema ::
-       forall tablesel row.
-       FiniteAllFor SQLite.TableSchema tablesel
-    -> TableJoin SQLiteDatabase (TupleTableSel tablesel) row
-    -> State Int ([QueryString], FiniteAllFor ColumnRefSchema (RowColSel row))
+    forall tablesel row.
+    FiniteAllFor SQLite.TableSchema tablesel ->
+    TableJoin SQLiteDatabase (TupleTableSel tablesel) row ->
+    State Int ([QueryString], FiniteAllFor ColumnRefSchema (RowColSel row))
 joinTableSchema schema (SingleTable (MkTupleTableSel tsel)) = do
     i <- get
     put $ succ i
     let
         tableRefName = "t" ++ show i
-        SQLite.MkTableSchema {..} = finiteGetAllFor schema tsel
+        SQLite.MkTableSchema{..} = finiteGetAllFor schema tsel
         tabRefText = fromString $ tableName ++ " AS " ++ tableRefName
         colRefSchema = mapFiniteAllFor (columnRef tableRefName) tableColumns
     return ([tabRefText], colRefSchema)
@@ -194,14 +199,15 @@ sqliteFilePathWitness :: IOWitness (ReaderT Connection)
 sqliteFilePathWitness = $(iowitness [t|ReaderT Connection|])
 
 sqliteReference ::
-       forall tablesel. WitnessConstraint IsSQLiteTable tablesel
-    => FilePath
-    -> SQLite.DatabaseSchema tablesel
-    -> IO (Reference (SQLiteEdit tablesel))
-sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
+    forall tablesel.
+    WitnessConstraint IsSQLiteTable tablesel =>
+    FilePath ->
+    SQLite.DatabaseSchema tablesel ->
+    IO (Reference (SQLiteEdit tablesel))
+sqliteReference path schema@SQLite.MkDatabaseSchema{..} = do
     var <- newMVar ()
     let
-        objRun :: ResourceRunner '[ ReaderT Connection]
+        objRun :: ResourceRunner '[ReaderT Connection]
         objRun =
             mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call ->
                 mVarRunLocked var $ do
@@ -234,38 +240,44 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
                                 " ORDER BY " <> (intercalate "," $ fmap (schemaString rowSchema) ocs)
                     in "SELECT " <> schemaString rowSchema sc <> fromPart <> wherePart rowSchema wc <> orderPart
         tableSchema ::
-               TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row), Dict (IsSQLiteTable (RowColSel row)))
+            TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row), Dict (IsSQLiteTable (RowColSel row)))
         tableSchema (MkTupleTableSel tsel) =
             case witnessConstraint @_ @IsSQLiteTable tsel of
                 Dict -> (finiteGetAllFor databaseTables tsel, Dict)
         rowSchemaString ::
-               WitnessConstraint ToField colsel => FiniteAllFor ColumnRefSchema colsel -> AllOf colsel -> QueryString
-        rowSchemaString MkFiniteAllFor {..} (MkAllOf row) =
-            "(" <>
-            intercalate
-                ","
-                (fmap
-                     (\(MkSome col) ->
-                          case witnessConstraint @_ @ToField col of
-                              Dict -> valQueryString $ row col)
-                     finiteDomain) <>
-            ")"
+            WitnessConstraint ToField colsel => FiniteAllFor ColumnRefSchema colsel -> AllOf colsel -> QueryString
+        rowSchemaString MkFiniteAllFor{..} (MkAllOf row) =
+            "("
+                <> intercalate
+                    ","
+                    ( fmap
+                        ( \(MkSome col) ->
+                            case witnessConstraint @_ @ToField col of
+                                Dict -> valQueryString $ row col
+                        )
+                        finiteDomain
+                    )
+                <> ")"
         assignmentPart :: FiniteAllFor ColumnRefSchema colsel -> TupleUpdateItem SQLiteDatabase colsel -> QueryString
         assignmentPart scsh (MkTupleUpdateItem col expr) =
             (fromString $ columnRefName $ finiteGetAllFor scsh col) <> "=" <> schemaString scsh expr
         sqliteEditQuery :: SQLiteEdit tablesel -> QueryString
-        sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema {..}, Dict)) (MkTupleInsertClause ic)) = let
+        sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema{..}, Dict)) (MkTupleInsertClause ic)) = let
             tableColumnRefs = mapFiniteAllFor (columnRef "") tableColumns
-            in "INSERT OR REPLACE INTO " <>
-               fromString tableName <> " VALUES " <> intercalate "," (fmap (rowSchemaString tableColumnRefs) ic)
-        sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc) = let
+            in "INSERT OR REPLACE INTO "
+                <> fromString tableName
+                <> " VALUES "
+                <> intercalate "," (fmap (rowSchemaString tableColumnRefs) ic)
+        sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema{..}, _)) wc) = let
             tableColumnRefs = mapFiniteAllFor (columnRef "") tableColumns
             in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
-        sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc (MkTupleUpdateClause uis)) = let
+        sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema{..}, _)) wc (MkTupleUpdateClause uis)) = let
             tableColumnRefs = mapFiniteAllFor (columnRef "") tableColumns
-            in "UPDATE " <>
-               fromString tableName <>
-               " SET " <> intercalate "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
+            in "UPDATE "
+                <> fromString tableName
+                <> " SET "
+                <> intercalate "," (fmap (assignmentPart tableColumnRefs) uis)
+                <> wherePart tableColumnRefs wc
         refRead :: Readable (ReaderT Connection IO) (SQLiteReader tablesel)
         refRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
             case sqliteReadQuery r of
@@ -273,7 +285,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
                     conn <- ask
                     lift $ query conn s v
         refEdit ::
-               NonEmpty (SQLiteEdit tablesel) -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
+            NonEmpty (SQLiteEdit tablesel) -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
         refEdit =
             alwaysEdit $ \edits _ -> let
                 queries :: [QueryString]
@@ -281,7 +293,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
                 pairs :: [(Query, NonEmpty [SQLData])]
                 pairs = mapToList $ groupQueryStringsMap queries
                 in for_ pairs $ \(s, vv) -> do
-                       conn <- ask
-                       lift $ executeMany conn s (toList vv)
+                    conn <- ask
+                    lift $ executeMany conn s (toList vv)
         refCommitTask = mempty
-    return $ MkResource objRun MkAReference {..}
+    return $ MkResource objRun MkAReference{..}

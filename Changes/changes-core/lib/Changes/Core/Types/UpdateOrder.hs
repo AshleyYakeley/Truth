@@ -6,9 +6,10 @@ import Changes.Core.Types.EditApplicative
 import Changes.Core.Types.ReadOnly
 import Changes.Core.Types.Whole
 
-data UpdateOrder update =
-    forall o. MkUpdateOrder (o -> o -> Ordering)
-                            (FloatingChangeLens update (ROWUpdate o))
+data UpdateOrder update
+    = forall o. MkUpdateOrder
+        (o -> o -> Ordering)
+        (FloatingChangeLens update (ROWUpdate o))
 
 instance Semigroup (UpdateOrder update) where
     MkUpdateOrder oa lensa <> MkUpdateOrder ob lensb = let
@@ -32,7 +33,7 @@ mapUpdateOrder :: ChangeLens updateB updateA -> UpdateOrder updateA -> UpdateOrd
 mapUpdateOrder lens = mapFloatingUpdateOrder $ changeLensToFloating lens
 
 mapReadOnlyUpdateOrder ::
-       FloatingChangeLens updateB (ReadOnlyUpdate updateA) -> UpdateOrder updateA -> UpdateOrder updateB
+    FloatingChangeLens updateB (ReadOnlyUpdate updateA) -> UpdateOrder updateA -> UpdateOrder updateB
 mapReadOnlyUpdateOrder lens (MkUpdateOrder cmp flens) = MkUpdateOrder cmp $ liftReadOnlyFloatingChangeLens flens . lens
 
 reverseUpdateOrder :: UpdateOrder update -> UpdateOrder update

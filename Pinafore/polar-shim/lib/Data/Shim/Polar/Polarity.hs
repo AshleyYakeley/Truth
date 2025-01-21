@@ -5,7 +5,7 @@ import Shapes
 data Polarity
     = Positive
     | Negative
-    deriving stock (Eq)
+    deriving stock Eq
 
 type PolarityType :: Polarity -> Type
 data PolarityType polarity where
@@ -53,45 +53,50 @@ invertPolarity PositiveType = NegativeType
 invertPolarity NegativeType = PositiveType
 
 polarityType ::
-       forall (polarity :: Polarity). Is PolarityType polarity
-    => PolarityType polarity
+    forall (polarity :: Polarity).
+    Is PolarityType polarity =>
+    PolarityType polarity
 polarityType = representative @_ @_ @polarity
 
 isInvertPolarity ::
-       forall polarity. Is PolarityType polarity
-    => Dict (Is PolarityType (InvertPolarity polarity))
+    forall polarity.
+    Is PolarityType polarity =>
+    Dict (Is PolarityType (InvertPolarity polarity))
 isInvertPolarity =
     case polarityType @polarity of
         PositiveType -> Dict
         NegativeType -> Dict
 
 withInvertPolarity ::
-       forall polarity r. Is PolarityType polarity
-    => (Is PolarityType (InvertPolarity polarity) => r)
-    -> r
+    forall polarity r.
+    Is PolarityType polarity =>
+    (Is PolarityType (InvertPolarity polarity) => r) ->
+    r
 withInvertPolarity v =
     case isInvertPolarity @polarity of
         Dict -> v
 
 isInvertInvertPolarity ::
-       forall polarity. Is PolarityType polarity
-    => InvertPolarity (InvertPolarity polarity) :~: polarity
+    forall polarity.
+    Is PolarityType polarity =>
+    InvertPolarity (InvertPolarity polarity) :~: polarity
 isInvertInvertPolarity =
     case polarityType @polarity of
         PositiveType -> Refl
         NegativeType -> Refl
 
 samePolarityType ::
-       forall (p1 :: Polarity) (p2 :: Polarity).
-       PolarityType p1
-    -> PolarityType p2
-    -> Either (p1 :~: p2) (p1 :~: InvertPolarity p2)
+    forall (p1 :: Polarity) (p2 :: Polarity).
+    PolarityType p1 ->
+    PolarityType p2 ->
+    Either (p1 :~: p2) (p1 :~: InvertPolarity p2)
 samePolarityType PositiveType PositiveType = Left Refl
 samePolarityType PositiveType NegativeType = Right Refl
 samePolarityType NegativeType PositiveType = Right Refl
 samePolarityType NegativeType NegativeType = Left Refl
 
 samePolarity ::
-       forall (p1 :: Polarity) (p2 :: Polarity). (Is PolarityType p1, Is PolarityType p2)
-    => Either (p1 :~: p2) (p1 :~: InvertPolarity p2)
+    forall (p1 :: Polarity) (p2 :: Polarity).
+    (Is PolarityType p1, Is PolarityType p2) =>
+    Either (p1 :~: p2) (p1 :~: InvertPolarity p2)
 samePolarity = samePolarityType (polarityType @p1) (polarityType @p2)

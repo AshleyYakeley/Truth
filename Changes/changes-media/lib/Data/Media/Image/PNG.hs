@@ -1,14 +1,16 @@
 module Data.Media.Image.PNG
-    ( PNGPixelType(..)
+    ( PNGPixelType (..)
     , pngFormat
-    ) where
+    )
+where
 
 import Changes.Core
 import Codec.Picture.Png
 import Codec.Picture.Types
+import Shapes
+
 import Data.Media.Image.Metadata
 import Data.Media.Image.Pixel
-import Shapes
 
 type PNGPixelType :: Type -> Type
 data PNGPixelType px where
@@ -88,4 +90,4 @@ pngFormat = let
     encode (mtd, MkSomeFor pxt image) =
         case witnessConstraint @Type @PngSavable pxt of
             Dict -> encodePngWithMetadata (toMetadatas mtd) image
-    in MkCodec {..}
+    in MkCodec{..}

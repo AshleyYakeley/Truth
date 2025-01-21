@@ -1,21 +1,23 @@
 module Options
-    ( Options(..)
-    , RunOptions(..)
+    ( Options (..)
+    , RunOptions (..)
     , getOptions
     , optParserInfo
-    ) where
+    )
+where
 
 import Options.Applicative as OA
 import Options.Applicative.Builder.Internal as OA
 import Options.Applicative.Types as OA
-import Pinafore.Options
 import Shapes
+
+import Pinafore.Options
 
 remainingParser :: OA.Mod CommandFields a -> Parser (String, [String])
 remainingParser (Mod _ _ modprops) = let
     remainingParserInfo :: ParserInfo [String]
-    remainingParserInfo = (info (many $ strArgument mempty) mempty) {infoPolicy = AllPositionals}
-    matchCmd ('-':_) = Nothing
+    remainingParserInfo = (info (many $ strArgument mempty) mempty){infoPolicy = AllPositionals}
+    matchCmd ('-' : _) = Nothing
     matchCmd s = Just $ fmap ((,) s) remainingParserInfo
     optMain = CmdReader Nothing [] matchCmd
     propVisibility = Visible
@@ -24,15 +26,16 @@ remainingParser (Mod _ _ modprops) = let
     propShowDefault = Nothing
     propDescMod = Nothing
     propShowGlobal = False
-    optProps = modprops OptProperties {..}
-    in OptP OA.Option {..}
+    optProps = modprops OptProperties{..}
+    in OptP OA.Option{..}
 
 data Options
     = ShowVersionOption
     | DumpTableOption (Maybe FilePath)
-    | RunFileOption RunOptions
-                    Bool
-                    (FilePath, [String], [(Text, Text)])
+    | RunFileOption
+        RunOptions
+        Bool
+        (FilePath, [String], [(Text, Text)])
     | RunInteractiveOption RunOptions
     deriving stock (Eq, Show)
 
@@ -56,20 +59,25 @@ assignReader =
     maybeReader $ \s -> let
         (t, d) = span (\c -> c /= '=') s
         in case d of
-               '=':v -> Just (pack t, pack v)
-               _ -> Nothing
+            '=' : v -> Just (pack t, pack v)
+            _ -> Nothing
 
 optImply :: Parser (Text, Text)
 optImply = option assignReader $ long "imply" <> metavar "name=value" <> help "imply `?name = value`"
 
 optParser :: Parser Options
 optParser =
-    (flag' ShowVersionOption $ long "version" <> short 'v') <|>
-    (((flag' RunInteractiveOption $ long "interactive" <> short 'i') <|>
-      ((\nr implies (fp, args) ropts -> RunFileOption ropts nr (fp, args, implies)) <$> optNoRun <*> many optImply <*>
-       optScript)) <*>
-     optRunOptions) <|>
-    ((flag' DumpTableOption $ long "dump-table") <*> optDataPath)
+    (flag' ShowVersionOption $ long "version" <> short 'v')
+        <|> ( ( (flag' RunInteractiveOption $ long "interactive" <> short 'i')
+                    <|> ( (\nr implies (fp, args) ropts -> RunFileOption ropts nr (fp, args, implies))
+                            <$> optNoRun
+                            <*> many optImply
+                            <*> optScript
+                        )
+              )
+                <*> optRunOptions
+            )
+        <|> ((flag' DumpTableOption $ long "dump-table") <*> optDataPath)
 
 optParserInfo :: ParserInfo Options
 optParserInfo = info optParser mempty

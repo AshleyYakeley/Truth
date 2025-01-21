@@ -1,13 +1,15 @@
 module Test.SimpleString
-    ( SimpleString(..)
-    ) where
+    ( SimpleString (..)
+    )
+where
 
-import Prelude
 import Shapes.Test
+import Prelude
 
 newtype SimpleString = MkSimpleString
     { getSimpleString :: String
-    } deriving newtype (Eq)
+    }
+    deriving newtype Eq
 
 instance Show SimpleString where
     show (MkSimpleString s) = show s
@@ -20,7 +22,7 @@ simplifyChar t = ['A', pred t]
 
 simplifyChars :: String -> [String]
 simplifyChars [] = []
-simplifyChars (c:cc) = let
+simplifyChars (c : cc) = let
     rest :: [String]
     rest = fmap ((:) c) $ simplifyChars cc
     changes :: [String]
@@ -30,4 +32,4 @@ simplifyChars (c:cc) = let
 instance Arbitrary SimpleString where
     arbitrary = MkSimpleString . getPrintableString <$> arbitrary
     shrink (MkSimpleString []) = []
-    shrink (MkSimpleString s@(_:cc)) = MkSimpleString <$> (cc : simplifyChars s)
+    shrink (MkSimpleString s@(_ : cc)) = MkSimpleString <$> (cc : simplifyChars s)

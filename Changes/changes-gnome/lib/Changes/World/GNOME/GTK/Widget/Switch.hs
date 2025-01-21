@@ -1,11 +1,13 @@
 module Changes.World.GNOME.GTK.Widget.Switch
     ( createDynamic
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk hiding (get)
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createDynamic :: Model (ROWUpdate (GView 'Unlocked Widget)) -> GView 'Unlocked Widget
 createDynamic model =

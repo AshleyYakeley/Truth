@@ -1,11 +1,12 @@
 module Pinafore.Syntax.Name.ImplicitName where
 
 import Pinafore.Base
-import Pinafore.Syntax.Name.Name
 import Shapes
 
-newtype ImplicitName =
-    MkImplicitName Name
+import Pinafore.Syntax.Name.Name
+
+newtype ImplicitName
+    = MkImplicitName Name
     deriving newtype (Eq, Ord)
 
 instance ShowText ImplicitName where

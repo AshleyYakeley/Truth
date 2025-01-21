@@ -1,6 +1,7 @@
 module Changes.Core.UI
     ( module I
-    ) where
+    )
+where
 
 import Changes.Core.UI.Dynamic as I
 import Changes.Core.UI.Editor as I

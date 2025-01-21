@@ -1,32 +1,35 @@
 module Language.Expression.Dolan.TypeResult where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Shapes
 
 type TypeError :: GroundTypeKind -> Type
 data TypeError ground where
     InternalTypeError :: forall (ground :: GroundTypeKind). Text -> TypeError ground
-    InternalSafetyError
-        :: forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
-        => Text
-        -> RecursiveTypeError
-        -> DolanType ground polarity t
-        -> TypeError ground
-    UninvertibleTypeError
-        :: forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
-        => DolanType ground polarity t
-        -> TypeError ground
-    NoGroundConvertTypeError
-        :: forall (ground :: GroundTypeKind) dva ga dvb gb. ground dva ga -> ground dvb gb -> TypeError ground
-    IncoherentGroundConvertTypeError
-        :: forall (ground :: GroundTypeKind) dva ga dvb gb. ground dva ga -> ground dvb gb -> TypeError ground
-    ConvertTypeError
-        :: forall (ground :: GroundTypeKind) ta tb.
-           FlipType ground 'Positive ta
-        -> FlipType ground 'Negative tb
-        -> TypeError ground
+    InternalSafetyError ::
+        forall (ground :: GroundTypeKind) polarity t.
+        Is PolarityType polarity =>
+        Text ->
+        RecursiveTypeError ->
+        DolanType ground polarity t ->
+        TypeError ground
+    UninvertibleTypeError ::
+        forall (ground :: GroundTypeKind) polarity t.
+        Is PolarityType polarity =>
+        DolanType ground polarity t ->
+        TypeError ground
+    NoGroundConvertTypeError ::
+        forall (ground :: GroundTypeKind) dva ga dvb gb. ground dva ga -> ground dvb gb -> TypeError ground
+    IncoherentGroundConvertTypeError ::
+        forall (ground :: GroundTypeKind) dva ga dvb gb. ground dva ga -> ground dvb gb -> TypeError ground
+    ConvertTypeError ::
+        forall (ground :: GroundTypeKind) ta tb.
+        FlipType ground 'Positive ta ->
+        FlipType ground 'Negative tb ->
+        TypeError ground
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Show (TypeError ground) where
     show (InternalTypeError _) = "INTERNAL"

@@ -1,17 +1,18 @@
 module Pinafore.Library.Media.Image.Metadata
     ( metadataStuff
-    , LangHasMetadata(..)
+    , LangHasMetadata (..)
     , hasMetadataGroundType
     , keyMapToMetadata
     , metadataToKeyMap
-    ) where
+    )
+where
 
 import Data.Media.Image
 import Pinafore.API
 import Shapes
 
-newtype LangHasMetadata =
-    MkLangHasMetadata (Map Text Literal)
+newtype LangHasMetadata
+    = MkLangHasMetadata (Map Text Literal)
 
 hasMetadataGroundType :: QGroundType '[] LangHasMetadata
 hasMetadataGroundType =
@@ -35,12 +36,13 @@ updateMetadata key Nothing (MkLangHasMetadata mp) = MkLangHasMetadata $ deleteMa
 
 textKey :: Text -> LibraryStuff
 textKey name =
-    valPatBDS (UnqualifiedFullNameRef $ MkName name) (plainText $ "Standard metadata key \"" <> name <> "\"") name $
-    ImpureFunction $
-    pure $ \n ->
-        if n == name
-            then Just ()
-            else Nothing
+    valPatBDS (UnqualifiedFullNameRef $ MkName name) (plainText $ "Standard metadata key \"" <> name <> "\"") name
+        $ ImpureFunction
+        $ pure
+        $ \n ->
+            if n == name
+                then Just ()
+                else Nothing
 
 keyName :: ImageDataKey a -> String
 keyName (Data.Media.Image.Unknown s) = s
@@ -99,34 +101,36 @@ metadataResolution md = do
 
 metadataStuff :: LibraryStuff
 metadataStuff =
-    headingBDS "Metadata" "" $
-    pure $
-    namespaceBDS
-        "Metadata"
-        [ typeBDS
-              "HasMetadata"
-              "Something that has metadata."
-              (MkSomeGroundType hasMetadataGroundType)
-              [ valPatBDS "Mk" "Construct metadata out of key-value pairs. Duplicates will be removed." mkHasMetadata $
-                PureFunction $ pure $ \hm -> (getAllMetadata hm, ())
-              ]
-        , valBDS "lookup" "Look up metadata by name." lookupMetadata
-        , valBDS "update" "Update metadata item." updateMetadata
-        , valBDS "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution
-        , headingBDS
-              "Keys"
-              "Constructors for standard metadata keys"
-              [ textKey "Title"
-              , textKey "Description"
-              , textKey "Author"
-              , textKey "Copyright"
-              , textKey "Software"
-              , textKey "Comment"
-              , textKey "Disclaimer"
-              , textKey "Source"
-              , textKey "Warning"
-              , textKey "Gamma"
-              , textKey "DpiX"
-              , textKey "DpiY"
-              ]
-        ]
+    headingBDS "Metadata" ""
+        $ pure
+        $ namespaceBDS
+            "Metadata"
+            [ typeBDS
+                "HasMetadata"
+                "Something that has metadata."
+                (MkSomeGroundType hasMetadataGroundType)
+                [ valPatBDS "Mk" "Construct metadata out of key-value pairs. Duplicates will be removed." mkHasMetadata
+                    $ PureFunction
+                    $ pure
+                    $ \hm -> (getAllMetadata hm, ())
+                ]
+            , valBDS "lookup" "Look up metadata by name." lookupMetadata
+            , valBDS "update" "Update metadata item." updateMetadata
+            , valBDS "resolution" "The resolution of an image (in dots/inch), if available." metadataResolution
+            , headingBDS
+                "Keys"
+                "Constructors for standard metadata keys"
+                [ textKey "Title"
+                , textKey "Description"
+                , textKey "Author"
+                , textKey "Copyright"
+                , textKey "Software"
+                , textKey "Comment"
+                , textKey "Disclaimer"
+                , textKey "Source"
+                , textKey "Warning"
+                , textKey "Gamma"
+                , textKey "DpiX"
+                , textKey "DpiY"
+                ]
+            ]

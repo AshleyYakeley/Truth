@@ -1,13 +1,14 @@
 module Soup.Note where
 
 import Changes.Core
-import Changes.World.GNOME.GTK
 import Changes.World.JSON
 import Data.Aeson qualified as JSON
 import Data.Aeson.Key qualified as JSON
 import Data.Aeson.KeyMap qualified as JSON
 import Data.Aeson.Types qualified as JSON
 import Shapes
+
+import Changes.World.GNOME.GTK
 
 data NoteSel t where
     NoteTitle :: NoteSel (WholeUpdate Text)
@@ -44,14 +45,15 @@ instance (c (WholeUpdate Text), c (WholeUpdate Bool), c (StringUpdate Text)) => 
 
 instance FiniteWitness NoteSel where
     assembleAllFor getw =
-        (\a b c ->
-             MkAllFor $ \case
-                 NoteTitle -> a
-                 NotePast -> b
-                 NoteText -> c) <$>
-        getw NoteTitle <*>
-        getw NotePast <*>
-        getw NoteText
+        ( \a b c ->
+            MkAllFor $ \case
+                NoteTitle -> a
+                NotePast -> b
+                NoteText -> c
+        )
+            <$> getw NoteTitle
+            <*> getw NotePast
+            <*> getw NoteText
 
 instance TestEquality NoteSel where
     testEquality NoteTitle NoteTitle = Just Refl
@@ -65,14 +67,15 @@ instance SubjectTupleSelector NoteSel
 
 instance FiniteTupleSelector NoteSel where
     tupleConstruct getVal =
-        (\title past text ->
-             MkTuple $ \case
-                 NoteTitle -> title
-                 NotePast -> past
-                 NoteText -> text) <$>
-        (getVal NoteTitle) <*>
-        (getVal NotePast) <*>
-        (getVal NoteText)
+        ( \title past text ->
+            MkTuple $ \case
+                NoteTitle -> title
+                NotePast -> past
+                NoteText -> text
+        )
+            <$> (getVal NoteTitle)
+            <*> (getVal NotePast)
+            <*> (getVal NoteText)
 
 instance HasNewValue (Tuple NoteSel) where
     newValue =
@@ -92,19 +95,19 @@ noteEditSpec sub sel = do
         OrientationVertical
         [ (defaultLayoutOptions, titleUI)
         , (defaultLayoutOptions, pastUI)
-        , (defaultLayoutOptions {loGrow = True}, textUI)
+        , (defaultLayoutOptions{loGrow = True}, textUI)
         ]
 
 type Note = Tuple NoteSel
 
 instance JSON.ToJSON Note where
     toJSON (MkTuple sel) =
-        JSON.Object $
-        JSON.fromList
-            [ (fromString "title", JSON.toJSON $ sel NoteTitle)
-            , (fromString "past", JSON.toJSON $ sel NotePast)
-            , (fromString "", JSON.toJSON $ sel NoteText)
-            ]
+        JSON.Object
+            $ JSON.fromList
+                [ (fromString "title", JSON.toJSON $ sel NoteTitle)
+                , (fromString "past", JSON.toJSON $ sel NotePast)
+                , (fromString "", JSON.toJSON $ sel NoteText)
+                ]
 
 parseField :: JSON.FromJSON a => Text -> JSON.Object -> JSON.Parser a
 parseField key obj = do
@@ -117,8 +120,9 @@ instance JSON.FromJSON Note where
         title :: Text <- parseField "title" obj
         past :: Bool <- parseField "past" obj
         text :: Text <- parseField "" obj
-        return $
-            MkTuple $ \sel ->
+        return
+            $ MkTuple
+            $ \sel ->
                 case sel of
                     NoteTitle -> title
                     NotePast -> past

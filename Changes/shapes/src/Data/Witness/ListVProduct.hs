@@ -4,9 +4,9 @@ module Data.Witness.ListVProduct
     ( MapType
     , emptyMapTypeRefl
     , ListVProduct
-    , ListVProductType(..)
+    , ListVProductType (..)
     , listVectorIsEmpty
-    , ListVType(..)
+    , ListVType (..)
     , mapListVType
     , mapListMVProduct
     , endoListVProduct
@@ -22,7 +22,8 @@ module Data.Witness.ListVProduct
     , listVProductHead
     , listVProductTail
     , listVProductGetters
-    ) where
+    )
+where
 
 import Shapes.Import
 import Shapes.Unsafe (unsafeRefl)
@@ -32,8 +33,9 @@ type family MapType (f :: ka -> kb) (aa :: [ka]) :: [kb] where
     MapType f (a ': aa) = f a ': MapType f aa
 
 emptyMapTypeRefl ::
-       forall ka kb (f :: ka -> kb) (tt :: [ka]). MapType f tt ~ '[]
-    => tt :~: '[]
+    forall ka kb (f :: ka -> kb) (tt :: [ka]).
+    MapType f tt ~ '[] =>
+    tt :~: '[]
 emptyMapTypeRefl = unsafeRefl @[ka] @tt @'[]
 
 -- retain a little type-safety
@@ -48,8 +50,8 @@ typicalHeadRefl = unsafeRefl
 typicalTailRefl :: forall (a :: Type) (aa :: [Type]). Typical (a ': aa) :~: Typical aa
 typicalTailRefl = unsafeRefl
 
-newtype ListVProduct (tt :: [Type]) =
-    MkListVProduct (Vector (Typical tt))
+newtype ListVProduct (tt :: [Type])
+    = MkListVProduct (Vector (Typical tt))
 
 listVectorIsEmpty :: forall (tt :: [Type]). ListVProduct tt -> Maybe (tt :~: '[])
 listVectorIsEmpty (MkListVProduct v) =
@@ -79,14 +81,14 @@ instance Singular (ListVProduct '[]) where
     single = MkListVProduct mempty
 
 type ListVType :: (k -> Type) -> ([k] -> Type)
-newtype ListVType w tt =
-    MkListVType (ListVProduct (MapType w tt))
+newtype ListVType w tt
+    = MkListVType (ListVProduct (MapType w tt))
 
 mapListVProduct ::
-       forall (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]).
-       (wa --> wb)
-    -> ListVProduct (MapType wa tt)
-    -> ListVProduct (MapType wb tt)
+    forall (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]).
+    (wa --> wb) ->
+    ListVProduct (MapType wa tt) ->
+    ListVProduct (MapType wb tt)
 mapListVProduct f (MkListVProduct v) =
     case mapTypeTypicalRefl @wa @tt of
         Refl ->
@@ -94,10 +96,11 @@ mapListVProduct f (MkListVProduct v) =
                 Refl -> MkListVProduct $ fmap f v
 
 mapListMVProduct ::
-       forall m (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]). Applicative m
-    => (forall t. wa t -> m (wb t))
-    -> ListVProduct (MapType wa tt)
-    -> m (ListVProduct (MapType wb tt))
+    forall m (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]).
+    Applicative m =>
+    (forall t. wa t -> m (wb t)) ->
+    ListVProduct (MapType wa tt) ->
+    m (ListVProduct (MapType wb tt))
 mapListMVProduct f (MkListVProduct v) =
     case mapTypeTypicalRefl @wa @tt of
         Refl ->
@@ -105,16 +108,16 @@ mapListMVProduct f (MkListVProduct v) =
                 Refl -> fmap MkListVProduct $ traverse f v
 
 mapListVType ::
-       forall (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]).
-       (wa --> wb)
-    -> ListVType wa tt
-    -> ListVType wb tt
+    forall (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]).
+    (wa --> wb) ->
+    ListVType wa tt ->
+    ListVType wb tt
 mapListVType f (MkListVType lv) = MkListVType $ mapListVProduct @wa @wb @tt f lv
 
 type ListVProductType :: (Type -> Type) -> (Type -> Type)
 data ListVProductType w t where
-    MkListVProductType
-        :: forall (w :: Type -> Type) (tt :: [Type]). ListVType w tt -> ListVProductType w (ListVProduct tt)
+    MkListVProductType ::
+        forall (w :: Type -> Type) (tt :: [Type]). ListVType w tt -> ListVProductType w (ListVProduct tt)
 
 endoListVProduct :: forall tt. ListVProduct (MapType Endo tt) -> Endo (ListVProduct tt)
 endoListVProduct (MkListVProduct vf) =
@@ -122,9 +125,10 @@ endoListVProduct (MkListVProduct vf) =
         Refl -> Endo $ \(MkListVProduct va) -> MkListVProduct $ zipWith (\(Endo f) a -> f a) vf va
 
 listVProductSequence ::
-       forall f tt. Applicative f
-    => ListVType f tt
-    -> f (ListVProduct tt)
+    forall f tt.
+    Applicative f =>
+    ListVType f tt ->
+    f (ListVProduct tt)
 listVProductSequence (MkListVType (MkListVProduct v)) =
     case mapTypeTypicalRefl @f @tt of
         Refl -> fmap MkListVProduct $ sequenceA v
@@ -158,20 +162,21 @@ assembleListVType :: forall (w :: Type -> Type). Vector (Some w) -> Some (ListVT
 assembleListVType v =
     case mapTypeTypicalRefl @w @AList of
         Refl ->
-            MkSome $
-            MkListVType @Type @w @AList $
-            MkListVProduct $
-            fmap
-                (\(MkSome (wa :: w a)) ->
-                     case typicalAList @a of
-                         Refl -> wa)
-                v
+            MkSome
+                $ MkListVType @Type @w @AList
+                $ MkListVProduct
+                $ fmap
+                    ( \(MkSome (wa :: w a)) ->
+                        case typicalAList @a of
+                            Refl -> wa
+                    )
+                    v
 
 mkTypicalListType :: forall (w :: Type -> Type) (tt :: [Type]). [w (Typical tt)] -> ListType w tt
 mkTypicalListType [] =
     case listEmptyRefl @tt of
         Refl -> NilListType
-mkTypicalListType (wt:wtt) =
+mkTypicalListType (wt : wtt) =
     case (listConsRefl @tt, typicalRestRefl @tt) of
         (Refl, Refl) -> ConsListType wt $ mkTypicalListType @w @(TTRest tt) wtt
 
@@ -195,17 +200,18 @@ listTypeToVType lt =
         Refl -> MkListVType $ MkListVProduct $ fromList $ listTypeTypical lt
 
 listVTypeFor ::
-       forall m (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]). Applicative m
-    => ListVType wa tt
-    -> (forall t. wa t -> m (wb t))
-    -> m (ListVType wb tt)
+    forall m (wa :: Type -> Type) (wb :: Type -> Type) (tt :: [Type]).
+    Applicative m =>
+    ListVType wa tt ->
+    (forall t. wa t -> m (wb t)) ->
+    m (ListVType wb tt)
 listVTypeFor (MkListVType lv) f = fmap MkListVType $ mapListMVProduct @m @wa @wb @tt f lv
 
 listProductToTypicalList :: forall (tt :: [Type]) a. [a] -> ListProduct tt -> [Typical tt]
 listProductToTypicalList [] =
     case listEmptyRefl @tt of
         Refl -> \() -> []
-listProductToTypicalList (_:aa) =
+listProductToTypicalList (_ : aa) =
     case (listConsRefl @tt, typicalRestRefl @tt) of
         (Refl, Refl) -> \(t, tt) -> t : listProductToTypicalList aa tt
 
@@ -218,7 +224,7 @@ typicalListToListProduct :: forall (tt :: [Type]). [Typical tt] -> ListProduct t
 typicalListToListProduct [] =
     case listEmptyRefl @tt of
         Refl -> ()
-typicalListToListProduct (a:aa) =
+typicalListToListProduct (a : aa) =
     case (listConsRefl @tt, typicalRestRefl @tt) of
         (Refl, Refl) -> (a, typicalListToListProduct aa)
 
@@ -228,7 +234,7 @@ listVProductToProduct (MkListVProduct v) = typicalListToListProduct $ toList v
 getItem :: Int -> ListVProduct tt -> Typical tt
 getItem i (MkListVProduct v) = indexEx v i
 
-getters :: (Typical tt ~ Typical tt') => Int -> ListType w tt -> ListType ((->) (ListVProduct tt')) tt
+getters :: Typical tt ~ Typical tt' => Int -> ListType w tt -> ListType ((->) (ListVProduct tt')) tt
 getters _ NilListType = NilListType
 getters i (ConsListType (_ :: _ a) (tt :: _ aa)) =
     case (typicalHeadRefl @a @aa, typicalTailRefl @a @aa) of

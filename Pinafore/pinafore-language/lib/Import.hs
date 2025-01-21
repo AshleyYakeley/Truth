@@ -1,6 +1,7 @@
 module Import
     ( module I
-    ) where
+    )
+where
 
 import Changes.Core as I
 import Data.Shim as I

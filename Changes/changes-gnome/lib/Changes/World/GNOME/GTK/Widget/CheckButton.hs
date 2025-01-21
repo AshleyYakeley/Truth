@@ -1,13 +1,15 @@
 module Changes.World.GNOME.GTK.Widget.CheckButton
     ( createCheckButton
     , createMaybeCheckButton
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> GView 'Unlocked Widget
 createCheckButton label rmod = do
@@ -37,8 +39,8 @@ createMaybeCheckButton label rmod = do
             getWidgetState = do
                 active <- Gtk.get button #active
                 inconsistent <- Gtk.get button #inconsistent
-                return $
-                    if inconsistent
+                return
+                    $ if inconsistent
                         then Nothing
                         else Just active
             setWidgetState :: Maybe Bool -> GView 'Locked ()

@@ -1,10 +1,10 @@
 module Changes.World.GNOME.GIO.ReferenceStream
     ( ReferenceInputStream
     , byteStringReferenceInputStream
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import Data.ByteString.Unsafe (unsafeUseAsCString)
 import Data.IORef
 import Foreign
@@ -12,6 +12,8 @@ import GI.GLib qualified as GI
 import GI.GObject qualified as GI
 import GI.Gio qualified as GI
 import Shapes
+
+import Changes.World.GNOME.GI
 
 data Private = MkPrivate
     { privReadable :: Readable IO ByteStringReader
@@ -23,17 +25,17 @@ type ReferenceInputStream = GIObject Private
 
 instance IsGIType Private where
     type GIClassParent Private = GI.InputStream
-    type GISupertypes Private = '[ GI.Object, GI.InputStream, GI.Seekable]
+    type GISupertypes Private = '[GI.Object, GI.InputStream, GI.Seekable]
 
 closeFnMethod :: GI.C_InputStreamClassCloseFnFieldCallback
 closeFnMethod pis _ _ =
-    withPrivatePtr pis $ \MkPrivate {..} -> do
+    withPrivatePtr pis $ \MkPrivate{..} -> do
         privClose
         return 0
 
 readFnMethod :: GI.C_InputStreamClassReadFnFieldCallback
 readFnMethod pis p (fromIntegral -> n) _ _ =
-    withPrivatePtr pis $ \MkPrivate {..} -> do
+    withPrivatePtr pis $ \MkPrivate{..} -> do
         offset <- readIORef privOffset
         bs <- privReadable $ ReadByteStringSection offset n
         let
@@ -45,7 +47,7 @@ readFnMethod pis p (fromIntegral -> n) _ _ =
 
 skipMethod :: GI.C_InputStreamClassSkipFieldCallback
 skipMethod pis (fromIntegral -> n) _ _ =
-    withPrivatePtr pis $ \MkPrivate {..} -> do
+    withPrivatePtr pis $ \MkPrivate{..} -> do
         offset <- readIORef privOffset
         len <- privReadable ReadByteStringLength
         let
@@ -56,7 +58,7 @@ skipMethod pis (fromIntegral -> n) _ _ =
 
 seekMethod :: GI.C_SeekableIfaceSeekFieldCallback
 seekMethod ptr offset seekType _ _ =
-    withPrivatePtr ptr $ \MkPrivate {..} -> do
+    withPrivatePtr ptr $ \MkPrivate{..} -> do
         len <- privReadable ReadByteStringLength
         base <-
             case toEnum $ fromEnum seekType of
@@ -70,7 +72,7 @@ seekMethod ptr offset seekType _ _ =
 
 tellMethod :: GI.SeekableIfaceTellFieldCallback
 tellMethod obj = do
-    MkPrivate {..} <- getPrivate obj
+    MkPrivate{..} <- getPrivate obj
     readIORef privOffset
 
 instance GIImplement Private GI.InputStreamClass where
@@ -91,8 +93,8 @@ instance GIImplement Private GI.SeekableIface where
         GI.set iface [#tell GI.:&= tellMethod]
 
 instance IsGIDerived Private where
-    type GIImplementClasses Private = '[ GI.InputStream]
-    type GIImplementInterfaces Private = '[ GI.Seekable]
+    type GIImplementClasses Private = '[GI.InputStream]
+    type GIImplementInterfaces Private = '[GI.Seekable]
     giTypeName = "ReferenceInputStream"
 
 byteStringReferenceInputStream :: Reference ByteStringEdit -> View ReferenceInputStream
@@ -102,4 +104,4 @@ byteStringReferenceInputStream ref = do
         privReadable :: Readable IO ByteStringReader
         privReadable = refRead aref
     privOffset <- liftIO $ newIORef 0
-    liftIO $ createDerivedGIObject $ MkPrivate {..}
+    liftIO $ createDerivedGIObject $ MkPrivate{..}

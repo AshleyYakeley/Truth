@@ -2,12 +2,14 @@ module Changes.World.GNOME.GTK.Widget.CSS
     ( setCSSName
     , setCSSClass
     , bindCSS
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk as GI
 import Shapes
+
+import Changes.World.GNOME.GI
 
 setCSSName :: Text -> Widget -> GView 'Locked ()
 setCSSName name w = #setName w name

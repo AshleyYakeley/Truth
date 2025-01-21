@@ -7,7 +7,8 @@ module Pinafore.Language.Type.GetDynamicSupertype
     , getGroundedShimWitGreatestDynamicSupertype
     , getOptGreatestDynamicSupertype
     , getOptGreatestDynamicSupertypeSW
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Interpreter ()
@@ -34,15 +35,15 @@ getOptGroundedGreatestDynamicSupertype (MkDolanGroundedType gt args) =
 
 getGroundedGreatestDynamicSupertype :: QGroundedType 'Negative t -> QExprGroundedShimWit 'Negative (Maybe t)
 getGroundedGreatestDynamicSupertype gnt =
-    fromMaybe (MkShimWit gnt $ MkPolarShim $ pureComposeShim $ functionToShim "Just" Just) $
-    getOptGroundedGreatestDynamicSupertype gnt
+    fromMaybe (MkShimWit gnt $ MkPolarShim $ pureComposeShim $ functionToShim "Just" Just)
+        $ getOptGroundedGreatestDynamicSupertype gnt
 
 getGroundedShimWitGreatestDynamicSupertype :: QGroundedShimWit 'Negative t -> QExprGroundedShimWit 'Negative (Maybe t)
 getGroundedShimWitGreatestDynamicSupertype (MkShimWit gnt (MkPolarShim conv)) =
     mapShimWit (MkPolarShim $ pureComposeShim $ cfmap conv) $ getGroundedGreatestDynamicSupertype gnt
 
 getOptSingleGreatestDynamicSupertype ::
-       QSingularType 'Negative t -> Interpreter (Maybe (QExprShimWit 'Negative (Maybe t)))
+    QSingularType 'Negative t -> Interpreter (Maybe (QExprShimWit 'Negative (Maybe t)))
 getOptSingleGreatestDynamicSupertype (GroundedDolanSingularType gnt) =
     return $ do
         gnt' <- getOptGroundedGreatestDynamicSupertype gnt
@@ -57,8 +58,8 @@ getOptSingleGreatestDynamicSupertype _ = return Nothing
 getSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Interpreter (QExprShimWit 'Negative (Maybe t))
 getSingleGreatestDynamicSupertype t = do
     mt' <- getOptSingleGreatestDynamicSupertype t
-    return $
-        case mt' of
+    return
+        $ case mt' of
             Just t' -> t'
             Nothing -> mapShimWit (MkPolarShim $ pureComposeShim $ functionToShim "Just" Just) $ typeToDolan t
 

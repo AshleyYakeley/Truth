@@ -1,19 +1,22 @@
 module Pinafore.Library.Media.CommonMark
-    ( CommonMarkText(..)
+    ( CommonMarkText (..)
     , commonMarkStuff
-    ) where
+    )
+where
 
 import Changes.World.Media.Type
 import Commonmark qualified as C
 import Data.Shim
 import Pinafore.API
+import Shapes
+
 import Pinafore.Library.Media.HTML
 import Pinafore.Library.Media.Media
-import Shapes
 
 newtype CommonMarkText = MkCommonMarkText
     { unCommonMarkText :: Text
-    } deriving newtype (Eq, Semigroup, Monoid, AsTypedLiteral)
+    }
+    deriving newtype (Eq, Semigroup, Monoid, AsTypedLiteral)
 
 instance AsLiteral CommonMarkText
 
@@ -30,12 +33,13 @@ asText = MkCodec (Just . MkCommonMarkText) unCommonMarkText
 
 asMedia :: Codec Media CommonMarkText
 asMedia =
-    coerceCodec .
-    mediaSpecificText
-        (MkMediaType TextMediaType "markdown" [("variant", "CommonMark")])
-        (\case
-             MkMediaType TextMediaType "markdown" _ -> True
-             _ -> False)
+    coerceCodec
+        . mediaSpecificText
+            (MkMediaType TextMediaType "markdown" [("variant", "CommonMark")])
+            ( \case
+                MkMediaType TextMediaType "markdown" _ -> True
+                _ -> False
+            )
 
 toHTML :: CommonMarkText -> Result Text HTMLText
 toHTML (MkCommonMarkText t) =
@@ -45,17 +49,17 @@ toHTML (MkCommonMarkText t) =
 
 commonMarkStuff :: LibraryStuff
 commonMarkStuff =
-    headingBDS "CommonMark" "" $
-    [ typeBDS
-          "CommonMarkText"
-          "Text that's intended to be CommonMark (not necessarily valid)."
-          (MkSomeGroundType commonMarkTextGroundType)
-          [valPatBDS "Mk" "" MkCommonMarkText $ PureFunction $ pure $ \(MkCommonMarkText t) -> (t, ())]
-    , hasSubtypeRelationBDS @CommonMarkText @Text Verify "" $ functionToShim "unCommonMarkText" unCommonMarkText
-    , namespaceBDS "CommonMarkText" $
-      monoidEntries @CommonMarkText <>
-      [ valBDS "asText" "" $ codecToPrism asText
-      , valBDS "asMedia" "" $ codecToPrism asMedia
-      , valBDS "toHTML" "render as HTML" toHTML
-      ]
-    ]
+    headingBDS "CommonMark" ""
+        $ [ typeBDS
+                "CommonMarkText"
+                "Text that's intended to be CommonMark (not necessarily valid)."
+                (MkSomeGroundType commonMarkTextGroundType)
+                [valPatBDS "Mk" "" MkCommonMarkText $ PureFunction $ pure $ \(MkCommonMarkText t) -> (t, ())]
+          , hasSubtypeRelationBDS @CommonMarkText @Text Verify "" $ functionToShim "unCommonMarkText" unCommonMarkText
+          , namespaceBDS "CommonMarkText"
+                $ monoidEntries @CommonMarkText
+                <> [ valBDS "asText" "" $ codecToPrism asText
+                   , valBDS "asMedia" "" $ codecToPrism asMedia
+                   , valBDS "toHTML" "render as HTML" toHTML
+                   ]
+          ]

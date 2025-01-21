@@ -1,5 +1,7 @@
 module Changes.Core.Model.MemoryCell where
 
+import Data.IORef
+
 import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Lens
@@ -8,7 +10,6 @@ import Changes.Core.Model.Reference
 import Changes.Core.Read
 import Changes.Core.Resource
 import Changes.Core.Types
-import Data.IORef
 
 type MemoryCellUpdate = DependentUpdate WitnessedIORef
 
@@ -17,7 +18,7 @@ makeMemoryCellReference = do
     iow <- newIOWitness
     var <- newMVar ()
     let
-        objRun :: ResourceRunner '[ StateT ()]
+        objRun :: ResourceRunner '[StateT ()]
         objRun = mvarResourceRunner iow var
         refRead :: Readable (StateT () IO) (UpdateReader MemoryCellUpdate)
         refRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
@@ -26,7 +27,7 @@ makeMemoryCellReference = do
             singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
                 liftIO $ writeIORef (unWitnessed ioref) a
         refCommitTask = mempty
-    return $ MkResource objRun $ MkAReference {..}
+    return $ MkResource objRun $ MkAReference{..}
 
 makeMemoryCellChangeLens :: a -> IO (ChangeLens MemoryCellUpdate (WholeUpdate a))
 makeMemoryCellChangeLens a = do

@@ -1,6 +1,7 @@
 module Pinafore.Language.Library.Debug
     ( debugLibSection
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Debug
@@ -30,13 +31,13 @@ longCompute n e = let
 
 debugLibSection :: LibraryStuff
 debugLibSection =
-    headingBDS "Debug" "Functions for debugging." $
-    pure $
-    namespaceBDS
-        "Debug"
-        [ valBDS "message" "Debug message to std error." debugMessage
-        , valBDS "checkEntity" "debugCheckEntity" debugCheckEntity
-        , valBDS "literalLength" "Byte length of a Literal" debugLiteralLength
-        , valBDS "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
-        , valBDS "longCompute" "`longCompute n x` iterates BLAKE3 `n` times on `x`" longCompute
-        ]
+    headingBDS "Debug" "Functions for debugging."
+        $ pure
+        $ namespaceBDS
+            "Debug"
+            [ valBDS "message" "Debug message to std error." debugMessage
+            , valBDS "checkEntity" "debugCheckEntity" debugCheckEntity
+            , valBDS "literalLength" "Byte length of a Literal" debugLiteralLength
+            , valBDS "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
+            , valBDS "longCompute" "`longCompute n x` iterates BLAKE3 `n` times on `x`" longCompute
+            ]

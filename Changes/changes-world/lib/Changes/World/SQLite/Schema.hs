@@ -47,8 +47,10 @@ data ColumnTypeSchema t where
 instance Show (ColumnTypeSchema t) where
     show ColumnTypeNotNull = fieldTypeName @t ++ " NOT NULL"
     show ColumnTypeMaybeNull = let
-        n :: forall a. (Maybe a ~ t)
-          => String
+        n ::
+            forall a.
+            Maybe a ~ t =>
+            String
         n = fieldTypeName @a
         in n
 
@@ -59,23 +61,25 @@ data ColumnSchema t = MkColumnSchema
     }
 
 instance Show (ColumnSchema t) where
-    show MkColumnSchema {..} = columnName ++ " " ++ show columnType
+    show MkColumnSchema{..} = columnName ++ " " ++ show columnType
 
 instance Show (FiniteAllFor ColumnSchema colsel) where
     show schema = let
         columns = finiteCodomain schema
-        in "(" ++
-           intercalate "," (fmap (\(MkSome isch) -> show isch) $ columns) ++
-           ",PRIMARY KEY (" ++
-           intercalate
-               ","
-               (mapMaybe
-                    (\(MkSome MkColumnSchema {..}) ->
-                         if columnPrimaryKey
-                             then Just columnName
-                             else Nothing)
-                    columns) ++
-           "))"
+        in "("
+            ++ intercalate "," (fmap (\(MkSome isch) -> show isch) $ columns)
+            ++ ",PRIMARY KEY ("
+            ++ intercalate
+                ","
+                ( mapMaybe
+                    ( \(MkSome MkColumnSchema{..}) ->
+                        if columnPrimaryKey
+                            then Just columnName
+                            else Nothing
+                    )
+                    columns
+                )
+            ++ "))"
 
 class ToSchema t where
     toSchema :: t -> [Query]
@@ -92,16 +96,17 @@ data TableSchema (colsel :: Type -> Type) = MkTableSchema
     }
 
 instance ToSchema (TableSchema colsel) where
-    toSchema MkTableSchema {..} = let
+    toSchema MkTableSchema{..} = let
         createTable = fromString $ "CREATE TABLE IF NOT EXISTS " ++ tableName ++ " " ++ show tableColumns
-        showIndex MkIndexSchema {..} =
-            fromString $
-            "CREATE INDEX IF NOT EXISTS " ++
-            indexName ++
-            " ON " ++
-            tableName ++
-            " (" ++
-            intercalate "," (fmap (\(MkSome col) -> columnName $ finiteGetAllFor tableColumns col) indexColumns) ++ ")"
+        showIndex MkIndexSchema{..} =
+            fromString
+                $ "CREATE INDEX IF NOT EXISTS "
+                ++ indexName
+                ++ " ON "
+                ++ tableName
+                ++ " ("
+                ++ intercalate "," (fmap (\(MkSome col) -> columnName $ finiteGetAllFor tableColumns col) indexColumns)
+                ++ ")"
         in createTable : (fmap showIndex tableIndexes)
 
 data DatabaseSchema tablesel = MkDatabaseSchema
@@ -109,7 +114,7 @@ data DatabaseSchema tablesel = MkDatabaseSchema
     }
 
 instance ToSchema (FiniteAllFor TableSchema tablesel) where
-    toSchema MkFiniteAllFor {..} = concatmap (\(MkSome table) -> toSchema $ finiteGetAllFor table) $ finiteDomain
+    toSchema MkFiniteAllFor{..} = concatmap (\(MkSome table) -> toSchema $ finiteGetAllFor table) $ finiteDomain
 
 instance ToSchema (DatabaseSchema databaseTablesel) where
-    toSchema MkDatabaseSchema {..} = toSchema databaseTables
+    toSchema MkDatabaseSchema{..} = toSchema databaseTables

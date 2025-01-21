@@ -2,39 +2,36 @@ module Data.Shim.Polar.JoinMeet where
 
 import Shapes
 
-data TopType =
-    MkTopType
-    deriving stock (Eq)
+data TopType
+    = MkTopType
+    deriving stock Eq
 
 instance Show TopType where
     show MkTopType = "T"
 
-newtype BottomType =
-    MkBottomType Void
+newtype BottomType
+    = MkBottomType Void
     deriving newtype (Eq, Show, Searchable, Countable, Empty)
 
 instance Finite BottomType where
     allValues = []
     assemble _ = pure never
 
-newtype JoinType a b =
-    MkJoinType (Either a b)
+newtype JoinType a b
+    = MkJoinType (Either a b)
 
 pattern LeftJoinType :: a -> JoinType a b
-
 pattern LeftJoinType v = MkJoinType (Left v)
 
 pattern RightJoinType :: b -> JoinType a b
-
 pattern RightJoinType v = MkJoinType (Right v)
 
 {-# COMPLETE LeftJoinType, RightJoinType #-}
 
-newtype MeetType a b =
-    MkMeetType (a, b)
+newtype MeetType a b
+    = MkMeetType (a, b)
 
 pattern BothMeetType :: a -> b -> MeetType a b
-
 pattern BothMeetType a b = MkMeetType (a, b)
 
 {-# COMPLETE BothMeetType #-}

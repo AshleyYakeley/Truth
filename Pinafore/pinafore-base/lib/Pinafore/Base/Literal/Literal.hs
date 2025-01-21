@@ -1,27 +1,30 @@
 module Pinafore.Base.Literal.Literal
-    ( Literal(..)
-    , AsLiteral(..)
+    ( Literal (..)
+    , AsLiteral (..)
     , toLiteral
     , fromLiteral
     , literalToEntity
     , entityToLiteral
     , naturalInteger
-    , AsTypedLiteral(..)
-    ) where
+    , AsTypedLiteral (..)
+    )
+where
 
 import Changes.World.Media.Type
 import Data.Time
+import Shapes
+import Shapes.Numeric
+
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.Literal.Type
 import Pinafore.Base.Number
 import Pinafore.Base.SafeRational
-import Shapes
-import Shapes.Numeric
 
 newtype Literal = MkLiteral
     { unLiteral :: StrictByteString
-    } deriving newtype (Eq, HasSerializer)
+    }
+    deriving newtype (Eq, HasSerializer)
 
 instance Show Literal where
     show (MkLiteral t) = show t
@@ -47,8 +50,9 @@ class AsLiteral t => AsTypedLiteral t where
     literalContentSerializer = greedySerializer
 
 literalSerializer ::
-       forall t. AsTypedLiteral t
-    => Serializer 'KeepsGoing t
+    forall t.
+    AsTypedLiteral t =>
+    Serializer 'KeepsGoing t
 literalSerializer = sProductR (runLiteralType $ literalType @t) literalContentSerializer
 
 entityToLiteral :: Entity -> Maybe Literal

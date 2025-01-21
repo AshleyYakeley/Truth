@@ -12,9 +12,10 @@ data CoerceFunction (a :: k) (b :: k)
     | CoercionCoerceFunction (Coercion a b)
 
 coerceFunctionToFunction ::
-       forall k (a :: k) (b :: k). CoercibleKind k
-    => CoerceFunction a b
-    -> KindFunction a b
+    forall k (a :: k) (b :: k).
+    CoercibleKind k =>
+    CoerceFunction a b ->
+    KindFunction a b
 coerceFunctionToFunction (FuncCoerceFunction f) = f
 coerceFunctionToFunction (CoercionCoerceFunction c) = coercionToFunction c
 

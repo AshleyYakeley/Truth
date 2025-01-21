@@ -1,6 +1,7 @@
 module Pinafore.Language.Interpret.TypeDecl.Predicate
     ( makePredicateTypeBox
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Convert
@@ -18,20 +19,20 @@ gate f (Just t)
 gate _ _ = Nothing
 
 makePredicateTypeBox ::
-       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => FullName
-    -> RawMarkdown
-    -> Bool
-    -> SyntaxType
-    -> SyntaxExpression
-    -> QInterpreter (QFixBox () ())
+    (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression) =>
+    FullName ->
+    RawMarkdown ->
+    Bool ->
+    SyntaxType ->
+    SyntaxExpression ->
+    QInterpreter (QFixBox () ())
 makePredicateTypeBox name md storable sparent spredicate =
     withNewTypeID $ \(tidsym :: TypeIDType tid) -> do
         Refl <- unsafeIdentifyKind @tid @Type tidsym
         let
             register ::
-                   (QNonpolarGroundedType (Identified tid), QOpenExpression (Identified tid -> Bool))
-                -> QScopeBuilder ()
+                (QNonpolarGroundedType (Identified tid), QOpenExpression (Identified tid -> Bool)) ->
+                QScopeBuilder ()
             register ~(parent, predexpr) = do
                 let
                     freevars :: ListSet SomeTypeVarT
@@ -43,8 +44,10 @@ makePredicateTypeBox name md storable sparent spredicate =
                 case nonEmpty unboundvars of
                     Nothing -> return ()
                     Just vv ->
-                        builderLift $
-                        throw $ InterpretTypeDeclUnboundTypeVariablesError name $ fmap someTypeVarToName vv
+                        builderLift
+                            $ throw
+                            $ InterpretTypeDeclUnboundTypeVariablesError name
+                            $ fmap someTypeVarToName vv
                 let
                     parentneg :: QGroundedShimWit 'Negative (Identified tid)
                     parentneg = groundedNonpolarToDolanType parent
@@ -61,13 +64,14 @@ makePredicateTypeBox name md storable sparent spredicate =
                                     stbKind = NilListType
                                     stbCovaryMap = covarymap
                                     stbAdapterExprKnot =
-                                        knotAppRec wit $
-                                        liftA2
-                                            (\prd (Compose adap) ->
-                                                 MkAllFor $ \NilArguments -> gateStoreAdapter prd $ adap NilArguments)
-                                            (liftAppRec predexpr)
-                                            storeadapterexpr
-                                    in MkStorability {..}
+                                        knotAppRec wit
+                                            $ liftA2
+                                                ( \prd (Compose adap) ->
+                                                    MkAllFor $ \NilArguments -> gateStoreAdapter prd $ adap NilArguments
+                                                )
+                                                (liftAppRec predexpr)
+                                                storeadapterexpr
+                                    in MkStorability{..}
                             return $ singleGroundProperty storabilityProperty storability
                         else return mempty
                 let
@@ -75,16 +79,16 @@ makePredicateTypeBox name md storable sparent spredicate =
                     gt =
                         (singleGroundType' (identifiedFamilialType tidsym) props $ exprShowPrec name)
                             { qgtGreatestDynamicSupertype =
-                                  MkPolyGreatestDynamicSupertype $ \NilCCRArguments ->
-                                      case gds of
-                                          MkShimWit dpt (MkPolarShim (MkComposeShim convexpr)) ->
-                                              MkShimWit dpt $
-                                              MkPolarShim $
-                                              MkComposeShim $
-                                              liftA2
-                                                  (\prd conv -> (functionToShim "predicate" $ gate prd) . conv)
-                                                  predexpr
-                                                  convexpr
+                                MkPolyGreatestDynamicSupertype $ \NilCCRArguments ->
+                                    case gds of
+                                        MkShimWit dpt (MkPolarShim (MkComposeShim convexpr)) ->
+                                            MkShimWit dpt
+                                                $ MkPolarShim
+                                                $ MkComposeShim
+                                                $ liftA2
+                                                    (\prd conv -> (functionToShim "predicate" $ gate prd) . conv)
+                                                    predexpr
+                                                    convexpr
                             }
                     gdsname = exprShow gds
                     doc = MkDefDoc (typeDocItem name storable [] (Just gdsname)) md
@@ -93,9 +97,11 @@ makePredicateTypeBox name md storable sparent spredicate =
                 registerGroundType name doc gt
                 registerSubtypeConversion sce
             construct ::
-                   ()
-                -> QScopeBuilder ( (QNonpolarGroundedType (Identified tid), QOpenExpression (Identified tid -> Bool))
-                                 , ())
+                () ->
+                QScopeBuilder
+                    ( (QNonpolarGroundedType (Identified tid), QOpenExpression (Identified tid -> Bool))
+                    , ()
+                    )
             construct () =
                 builderLift $ do
                     smparent <- interpretNonpolarGroundedType sparent

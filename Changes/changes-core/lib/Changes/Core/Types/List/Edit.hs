@@ -1,6 +1,7 @@
 module Changes.Core.Types.List.Edit
-    ( ListEdit(..)
-    ) where
+    ( ListEdit (..)
+    )
+where
 
 import Changes.Core.Edit
 import Changes.Core.Import
@@ -35,8 +36,8 @@ instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => Applicabl
     applyEdit (ListEditItem _ _) mr rd = mr rd
     applyEdit (ListEditDelete p) mr ListReadLength = do
         len <- mr ListReadLength
-        return $
-            if p >= 0 && p < len
+        return
+            $ if p >= 0 && p < len
                 then pred len
                 else len
     applyEdit (ListEditDelete p) mr (ListReadItem i rd)
@@ -44,15 +45,15 @@ instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => Applicabl
     applyEdit (ListEditDelete _) mr (ListReadItem i rd) = mr $ ListReadItem i rd
     applyEdit (ListEditInsert p _) mr ListReadLength = do
         len <- mr ListReadLength
-        return $
-            if p >= 0 && p <= len
+        return
+            $ if p >= 0 && p <= len
                 then succ len
                 else len
     applyEdit (ListEditInsert p a) mr (ListReadItem i rd)
         | p == i = do
             len <- mr ListReadLength
-            return $
-                if p >= 0 && p <= len
+            return
+                $ if p >= 0 && p <= len
                     then Just $ subjectToRead a rd
                     else Nothing
     applyEdit (ListEditInsert p _) mr (ListReadItem i rd)
@@ -60,8 +61,10 @@ instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => Applicabl
     applyEdit (ListEditInsert _ _) mr (ListReadItem i rd) = mr $ ListReadItem i rd
     applyEdit ListEditClear _mr rd = subjectToReadable mempty rd
 
-instance (FullSubjectReader (EditReader edit), SubjectMapEdit edit, ApplicableEdit edit, InvertibleEdit edit) =>
-             InvertibleEdit (ListEdit edit) where
+instance
+    (FullSubjectReader (EditReader edit), SubjectMapEdit edit, ApplicableEdit edit, InvertibleEdit edit) =>
+    InvertibleEdit (ListEdit edit)
+    where
     invertEdit (ListEditItem p edit) mr = do
         minvedits <- unComposeInner $ invertEdit edit $ itemReadFunction p mr
         case minvedits of
@@ -69,8 +72,8 @@ instance (FullSubjectReader (EditReader edit), SubjectMapEdit edit, ApplicableEd
             Nothing -> return []
     invertEdit (ListEditInsert p _) mr = do
         len <- mr ListReadLength
-        return $
-            if p >= 0 && p <= len
+        return
+            $ if p >= 0 && p <= len
                 then [ListEditDelete p]
                 else []
     invertEdit (ListEditDelete p) mr = do
@@ -87,15 +90,15 @@ instance (SubjectReader (EditReader edit), SubjectMapEdit edit) => SubjectMapEdi
                 ListEditItem p edit -> let
                     (before, after) = seqSplitAt p subj
                     in case uncons after of
-                           Just (olditem, rest) -> do
-                               newitem <- mapSubjectEdits [edit] olditem
-                               return $ before `mappend` opoint newitem `mappend` rest
-                           Nothing -> return $ subj
+                        Just (olditem, rest) -> do
+                            newitem <- mapSubjectEdits [edit] olditem
+                            return $ before `mappend` opoint newitem `mappend` rest
+                        Nothing -> return $ subj
                 ListEditDelete p -> let
                     (before, after) = seqSplitAt p subj
                     in case uncons after of
-                           Just (_, rest) -> return $ mappend before rest
-                           Nothing -> return $ subj
+                        Just (_, rest) -> return $ mappend before rest
+                        Nothing -> return $ subj
                 ListEditInsert p item -> let
                     (before, after) = seqSplitAt p subj
                     in return $ before `mappend` opoint item `mappend` after

@@ -1,5 +1,6 @@
 module Changes.Core.Import
     ( module I
-    ) where
+    )
+where
 
 import Shapes as I

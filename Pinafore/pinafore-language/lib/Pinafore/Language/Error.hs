@@ -3,8 +3,9 @@ module Pinafore.Language.Error where
 import Import
 
 data QErrorType
-    = InternalError (Maybe Int)
-                    NamedText
+    = InternalError
+        (Maybe Int)
+        NamedText
     | UnicodeDecodeError NamedText
     | ParserError ParseErrorType
     | PatternErrorError PatternError
@@ -18,18 +19,21 @@ data QErrorType
     | LookupNotConstructorError FullNameRef
     | LookupNotRecordError FullNameRef
     | LookupNotRecordConstructorError FullNameRef
-    | SpecialFormWrongAnnotationsError FullNameRef
-                                       [NamedText]
-                                       [NamedText]
+    | SpecialFormWrongAnnotationsError
+        FullNameRef
+        [NamedText]
+        [NamedText]
     | DeclareBindingDuplicateError FullName
     | DeclareConstructorDuplicateError FullNameRef
     | DeclareDatatypeBadSupertypeError NamedText
-    | DeclareDatatypeConstructorNotSupertypeError FullNameRef
-                                                  NamedText
-                                                  [NamedText]
+    | DeclareDatatypeConstructorNotSupertypeError
+        FullNameRef
+        NamedText
+        [NamedText]
     | DeclareDatatypeNoSupertypeConstructorError NamedText
-    | DeclareDatatypeMultipleSupertypeConstructorsError NamedText
-                                                        [NamedText]
+    | DeclareDatatypeMultipleSupertypeConstructorsError
+        NamedText
+        [NamedText]
     | DeclareDatatypePositionalConstructorWithSupertypeError
     | DeclareDatatypeMissingSupertypeMember Name
     | DeclareDatatypeDuplicateMembers Name
@@ -37,22 +41,27 @@ data QErrorType
     | RecordConstructorMissingName Name
     | RecordConstructorExtraName Name
     | RecordFunctionSupertype
-    | TypeConvertError NamedText
-                       Polarity
-                       NamedText
-                       Polarity
-    | NoGroundTypeConversionError NamedText
-                                  NamedText
-    | IncoherentGroundTypeConversionError NamedText
-                                          NamedText
+    | TypeConvertError
+        NamedText
+        Polarity
+        NamedText
+        Polarity
+    | NoGroundTypeConversionError
+        NamedText
+        NamedText
+    | IncoherentGroundTypeConversionError
+        NamedText
+        NamedText
     | TypeNotInvertibleError NamedText
     | NotationBareUnquoteError
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
-    | InterpretTypeRecursionNotCovariant Name
-                                         NamedText
-    | InterpretTypeRecursionImmediate Name
-                                      NamedText
+    | InterpretTypeRecursionNotCovariant
+        Name
+        NamedText
+    | InterpretTypeRecursionImmediate
+        Name
+        NamedText
     | InterpretTypeNotAmbipolarError NamedText
     | InterpretTypeNotGroundedError NamedText
     | InterpretTypeNotStorableError NamedText
@@ -62,16 +71,20 @@ data QErrorType
     | InterpretTypeOverApplyError NamedText
     | InterpretTypeRangeApplyError NamedText
     | InterpretBindingsDuplicateError (NonEmpty FullName)
-    | InterpretTypeDeclDuplicateTypeVariablesError FullName
-                                                   (NonEmpty Name)
-    | InterpretTypeDeclUnboundTypeVariablesError FullName
-                                                 (NonEmpty Name)
-    | InterpretTypeDeclTypeVariableWrongPolarityError FullName
-                                                      Name
+    | InterpretTypeDeclDuplicateTypeVariablesError
+        FullName
+        (NonEmpty Name)
+    | InterpretTypeDeclUnboundTypeVariablesError
+        FullName
+        (NonEmpty Name)
+    | InterpretTypeDeclTypeVariableWrongPolarityError
+        FullName
+        Name
     | InterpretTypeDeclTypeVariableNotCovariantError FullName
     | InterpretTypeDeclTypeStorableRecord
-    | InterpretSubtypeInconsistent NamedText
-                                   NamedText
+    | InterpretSubtypeInconsistent
+        NamedText
+        NamedText
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
@@ -87,15 +100,15 @@ instance ShowNamedText QErrorType where
     showNamedText (ParserError err) = showNamedText err
     showNamedText (PatternErrorError e) = showNamedText e
     showNamedText (ExpressionUndefinedError nn) =
-        "undefined: " <>
-        intercalate
-            ", "
-            (fmap (\(n, t) -> showNamedText n <> ": " <> toNamedText t) $ nubBy (\x y -> fst x == fst y) $ toList nn)
+        "undefined: "
+            <> intercalate
+                ", "
+                (fmap (\(n, t) -> showNamedText n <> ": " <> toNamedText t) $ nubBy (\x y -> fst x == fst y) $ toList nn)
     showNamedText (ExpressionUnimpliedError nn) =
-        "unimplied: " <>
-        intercalate
-            ", "
-            (fmap (\(n, t) -> showNamedText n <> ": " <> toNamedText t) $ nubBy (\x y -> fst x == fst y) $ toList nn)
+        "unimplied: "
+            <> intercalate
+                ", "
+                (fmap (\(n, t) -> showNamedText n <> ": " <> toNamedText t) $ nubBy (\x y -> fst x == fst y) $ toList nn)
     showNamedText (LookupNamesUndefinedError nn) =
         "undefined names: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
     showNamedText (LookupNotDefinedError n) = "undefined: " <> showNamedText n
@@ -106,8 +119,12 @@ instance ShowNamedText QErrorType where
     showNamedText (LookupNotRecordError n) = "name not record: " <> showNamedText n
     showNamedText (LookupNotRecordConstructorError n) = "name not record constructor: " <> showNamedText n
     showNamedText (SpecialFormWrongAnnotationsError n expected found) =
-        "wrong annotations for special form " <>
-        showNamedText n <> ": expecting " <> intercalate " " expected <> ", found " <> intercalate " " found
+        "wrong annotations for special form "
+            <> showNamedText n
+            <> ": expecting "
+            <> intercalate " " expected
+            <> ", found "
+            <> intercalate " " found
     showNamedText (DeclareBindingDuplicateError n) = "duplicate binding: " <> showNamedText n
     showNamedText (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> showNamedText n
     showNamedText (DeclareDatatypeBadSupertypeError t) = "bad supertype for datatype: " <> t
@@ -151,11 +168,15 @@ instance ShowNamedText QErrorType where
     showNamedText (InterpretBindingsDuplicateError nn) =
         "duplicate bindings: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
     showNamedText (InterpretTypeDeclDuplicateTypeVariablesError n vv) =
-        "duplicate type variables in declaration of " <>
-        showNamedText n <> ": " <> (intercalate ", " $ fmap showNamedText $ toList vv)
+        "duplicate type variables in declaration of "
+            <> showNamedText n
+            <> ": "
+            <> (intercalate ", " $ fmap showNamedText $ toList vv)
     showNamedText (InterpretTypeDeclUnboundTypeVariablesError n vv) =
-        "unbound type variables in declaration of " <>
-        showNamedText n <> ": " <> (intercalate ", " $ fmap showNamedText $ toList vv)
+        "unbound type variables in declaration of "
+            <> showNamedText n
+            <> ": "
+            <> (intercalate ", " $ fmap showNamedText $ toList vv)
     showNamedText (InterpretTypeDeclTypeVariableWrongPolarityError n v) =
         "wrong polarity of type variable " <> showNamedText v <> " in declaration of " <> showNamedText n
     showNamedText (InterpretTypeDeclTypeVariableNotCovariantError n) =
@@ -178,7 +199,8 @@ fromParseResult pr = fromResult $ mapResultFailure (fmap ParserError) pr
 
 newtype InterpretResult a = MkInterpretResult
     { unInterpretResult :: ResultT QError IO a
-    } deriving newtype (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
+    }
+    deriving newtype (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
 
 instance MonadCoroutine InterpretResult where
     coroutineSuspend pqmr =
@@ -197,9 +219,10 @@ runInterpretResult :: MonadIO m => InterpretResult a -> m (Result QError a)
 runInterpretResult (MkInterpretResult ir) = liftIO $ runResultT ir
 
 fromInterpretResult ::
-       forall m a. (MonadThrow QError m, MonadIO m)
-    => InterpretResult a
-    -> m a
+    forall m a.
+    (MonadThrow QError m, MonadIO m) =>
+    InterpretResult a ->
+    m a
 fromInterpretResult ir = do
     result <- runInterpretResult ir
     fromResult result

@@ -1,8 +1,9 @@
 module Data.Shim.CCR.Variance where
 
+import Shapes
+
 import Data.Shim.Mono
 import Data.Shim.Range
-import Shapes
 
 data CCRVariance
     = SimpleCCRVariance Variance
@@ -52,45 +53,49 @@ ccrVarianceCoercibleKind ContraCCRVarianceType = Dict
 ccrVarianceCoercibleKind RangeCCRVarianceType = Dict
 
 type CCRVarianceCategory ::
-       ShimKind Type -> forall (sv :: CCRVariance) -> CCRVarianceKind sv -> CCRVarianceKind sv -> Type
+    ShimKind Type -> forall (sv :: CCRVariance) -> CCRVarianceKind sv -> CCRVarianceKind sv -> Type
 type family CCRVarianceCategory cat sv where
     CCRVarianceCategory cat ('SimpleCCRVariance v) = VarianceCategory cat v
     CCRVarianceCategory cat 'RangeCCRVariance = CatRange cat
 
 ccrVarianceCategory ::
-       forall cat (sv :: CCRVariance). Category cat
-    => CCRVarianceType sv
-    -> Dict (Category (CCRVarianceCategory cat sv))
+    forall cat (sv :: CCRVariance).
+    Category cat =>
+    CCRVarianceType sv ->
+    Dict (Category (CCRVarianceCategory cat sv))
 ccrVarianceCategory CoCCRVarianceType = Dict
 ccrVarianceCategory ContraCCRVarianceType = Dict
 ccrVarianceCategory RangeCCRVarianceType = Dict
 
 ccrVarianceCategoryShow ::
-       forall cat (sv :: CCRVariance) a b. (forall p q. Show (cat p q))
-    => CCRVarianceType sv
-    -> CCRVarianceCategory cat sv a b
-    -> String
+    forall cat (sv :: CCRVariance) a b.
+    (forall p q. Show (cat p q)) =>
+    CCRVarianceType sv ->
+    CCRVarianceCategory cat sv a b ->
+    String
 ccrVarianceCategoryShow CoCCRVarianceType = show
 ccrVarianceCategoryShow ContraCCRVarianceType = show
 ccrVarianceCategoryShow RangeCCRVarianceType = show
 
-type CCRVarianceMap (cat :: forall kc. kc -> kc -> Type) (sv :: CCRVariance) (f :: CCRVarianceKind sv -> k)
-     = forall (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv). CCRVarianceCategory cat sv a b -> cat (f a) (f b)
+type CCRVarianceMap (cat :: forall kc. kc -> kc -> Type) (sv :: CCRVariance) (f :: CCRVarianceKind sv -> k) =
+    forall (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv). CCRVarianceCategory cat sv a b -> cat (f a) (f b)
 
 data CCRVariation (sv :: CCRVariance) (f :: CCRVarianceKind sv -> k) = MkCCRVariation
     { ccrvMaybeRepresentational :: Maybe (Dict (RepresentationalRole f))
-    , ccrvMap :: forall (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
-                         CCRVarianceCategory KindFunction sv a b -> KindFunction (f a) (f b)
+    , ccrvMap ::
+        forall (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
+        CCRVarianceCategory KindFunction sv a b -> KindFunction (f a) (f b)
     }
 
-class (MaybeRepresentational f, Is CCRVarianceType sv, CatFunctor (CCRVarianceCategory KindFunction sv) KindFunction f) =>
-          HasCCRVariance (sv :: CCRVariance) (f :: CCRVarianceKind sv -> k)
-    | f -> sv
-
+class
+    (MaybeRepresentational f, Is CCRVarianceType sv, CatFunctor (CCRVarianceCategory KindFunction sv) KindFunction f) =>
+    HasCCRVariance (sv :: CCRVariance) (f :: CCRVarianceKind sv -> k)
+        | f -> sv
 
 ccrVariation ::
-       forall (sv :: CCRVariance) k (f :: CCRVarianceKind sv -> k). HasCCRVariance sv f
-    => CCRVariation sv f
-ccrVariation = MkCCRVariation {ccrvMaybeRepresentational = maybeRepresentational, ccrvMap = cfmap}
+    forall (sv :: CCRVariance) k (f :: CCRVarianceKind sv -> k).
+    HasCCRVariance sv f =>
+    CCRVariation sv f
+ccrVariation = MkCCRVariation{ccrvMaybeRepresentational = maybeRepresentational, ccrvMap = cfmap}
 
 instance forall v k (f :: Type -> k). (HasVariance f, VarianceOf f ~ v) => HasCCRVariance ('SimpleCCRVariance v) f

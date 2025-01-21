@@ -12,21 +12,23 @@ module Pinafore.Syntax.Parse.Parser
     , try
     , (<?>)
     , runParser
-    ) where
+    )
+where
+
+import Shapes hiding (try)
+import Text.Parsec qualified as P
+import Text.Parsec.Pos (SourcePos, initialPos)
 
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Error
 import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Text
-import Shapes hiding (try)
-import Text.Parsec qualified as P
-import Text.Parsec.Pos (SourcePos, initialPos)
 
 runTokens :: Text -> StateT SourcePos ParseResult [(SourcePos, SomeOf Token)]
 runTokens text = hoist (mapResultFailure $ fmap LexicalErrorType . parseErrorMessage) $ parseTokens text
 
-newtype Parser a =
-    MkParser (ReaderT Namespace (P.ParsecT [(SourcePos, SomeOf Token)] () ParseResult) a)
+newtype Parser a
+    = MkParser (ReaderT Namespace (P.ParsecT [(SourcePos, SomeOf Token)] () ParseResult) a)
     deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFail)
 
 instance MonadThrow ParseErrorType Parser where
@@ -78,9 +80,9 @@ runParser r text = let
         readEnd
         return a
     in do
-           spos <- get
-           toks <- runTokens text
-           ma <- lift $ P.runParserT (runReaderT r' RootNamespace) () (P.sourceName spos) toks
-           case ma of
-               Right a -> return a
-               Left e -> throwExc $ fmap SyntaxErrorType $ parseErrorMessage e
+        spos <- get
+        toks <- runTokens text
+        ma <- lift $ P.runParserT (runReaderT r' RootNamespace) () (P.sourceName spos) toks
+        case ma of
+            Right a -> return a
+            Left e -> throwExc $ fmap SyntaxErrorType $ parseErrorMessage e

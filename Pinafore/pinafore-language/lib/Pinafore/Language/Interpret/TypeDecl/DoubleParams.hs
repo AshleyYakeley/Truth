@@ -1,9 +1,10 @@
 module Pinafore.Language.Interpret.TypeDecl.DoubleParams
     ( RangeVars
-    , DoubleParams(..)
+    , DoubleParams (..)
     , doubleParameterNames
     , doubleTypeParameters
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Interpreter
@@ -47,9 +48,13 @@ instance (forall a. DoubleParams (w a)) => DoubleParams (ListVType (w :: Type ->
 instance (forall a. DoubleParams (w a)) => DoubleParams (SomeFor f w) where
     rangeMapParams vv (MkSomeFor wa fa) = MkSomeFor (rangeMapParams vv wa) fa
 
-instance forall (w :: CCRArgumentKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type). (forall (sv :: CCRVariance) (a :: CCRVarianceKind sv).
-                                                                                                              DoubleParams (w sv a)) =>
-             DoubleParams (CCRArguments w dv gt t) where
+instance
+    forall (w :: CCRArgumentKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type).
+    ( forall (sv :: CCRVariance) (a :: CCRVarianceKind sv).
+      DoubleParams (w sv a)
+    ) =>
+    DoubleParams (CCRArguments w dv gt t)
+    where
     rangeMapParams _ NilCCRArguments = NilCCRArguments
     rangeMapParams vv (ConsCCRArguments arg1 argr) = ConsCCRArguments (rangeMapParams vv arg1) (rangeMapParams vv argr)
 

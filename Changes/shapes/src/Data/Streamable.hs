@@ -1,9 +1,10 @@
 module Data.Streamable where
 
-import Data.Filterable
-import Shapes.Import
 import Text.ParserCombinators.ReadP qualified as ReadP
 import Text.ParserCombinators.ReadPrec qualified as ReadPrec
+
+import Data.Filterable
+import Shapes.Import
 
 class (Riggable f, Monoid (StreamableBasis f)) => Streamable f where
     type StreamableBasis f :: Type
@@ -12,14 +13,16 @@ class (Riggable f, Monoid (StreamableBasis f)) => Streamable f where
     rLiterals :: StreamableBasis f -> f ()
     rLiteral :: Element (StreamableBasis f) -> f ()
     rExact ::
-           forall a. Eq a
-        => a
-        -> f a
-        -> f ()
+        forall a.
+        Eq a =>
+        a ->
+        f a ->
+        f ()
 
 class (MonadPlus m, Streamable m) => Readish m where
     (<++) :: forall a. m a -> m a -> m a
-    --(<++>) :: forall a. m a -> m a -> m a
+
+-- (<++>) :: forall a. m a -> m a -> m a
 
 rSatisfy :: Readish m => (Element (StreamableBasis m) -> Bool) -> m (Element (StreamableBasis m))
 rSatisfy f = do
@@ -45,12 +48,13 @@ instance Streamable ReadPrec where
 
 instance Readish ReadPrec where
     (<++) = (ReadPrec.<++)
-    --(<++>) = (ReadPrec.<++>)
+
+-- (<++>) = (ReadPrec.<++>)
 
 runReadPrec :: ReadPrec a -> String -> Maybe a
 runReadPrec r s = let
     pickdone (a, "") = Just a
     pickdone _ = Nothing
     in case mapMaybe pickdone $ ReadPrec.readPrec_to_S r ReadPrec.minPrec s of
-           [a] -> Just a
-           _ -> Nothing
+        [a] -> Just a
+        _ -> Nothing

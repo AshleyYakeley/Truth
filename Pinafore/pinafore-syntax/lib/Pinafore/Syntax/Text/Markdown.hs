@@ -1,6 +1,6 @@
 module Pinafore.Syntax.Text.Markdown
-    ( PlainText(..)
-    , RawMarkdown(..)
+    ( PlainText (..)
+    , RawMarkdown (..)
     , asRawMarkdown
     , MarkdownText
     , rawMarkdown
@@ -13,10 +13,12 @@ module Pinafore.Syntax.Text.Markdown
     , titleMarkdown
     , indentMarkdown
     , indentMarkdownN
-    ) where
+    )
+where
+
+import Shapes
 
 import Pinafore.Syntax.Text.ToText
-import Shapes
 
 class PlainText t where
     plainText :: Text -> t
@@ -27,8 +29,8 @@ instance PlainText Text where
 instance PlainText String where
     plainText = unpack
 
-newtype RawMarkdown =
-    MkRawMarkdown Text
+newtype RawMarkdown
+    = MkRawMarkdown Text
     deriving newtype (Eq, Semigroup, Monoid, Show, IsString, ToText)
 
 instance PlainText RawMarkdown where
@@ -43,10 +45,11 @@ data MItem
     | CodeMI Text
     | BoldMI MarkdownText
     | ItalicMI MarkdownText
-    | TagMI Text
-            [(Text, Text)]
-            MarkdownText
-    deriving stock (Eq)
+    | TagMI
+        Text
+        [(Text, Text)]
+        MarkdownText
+    deriving stock Eq
 
 instance PlainText MItem where
     plainText = PlainMI
@@ -59,18 +62,19 @@ joinMItems (BoldMI a) (BoldMI b) = Just $ BoldMI $ a <> b
 joinMItems (ItalicMI a) (ItalicMI b) = Just $ ItalicMI $ a <> b
 joinMItems _ _ = Nothing
 
-newtype MarkdownText =
-    MkMarkdownText [MItem]
-    deriving newtype (Eq)
+newtype MarkdownText
+    = MkMarkdownText [MItem]
+    deriving newtype Eq
 
 instance Semigroup MarkdownText where
     MkMarkdownText aa <> MkMarkdownText bb =
-        MkMarkdownText $
-        fromMaybe (aa <> bb) $ do
-            naa <- nonEmpty aa
-            nbb <- nonEmpty bb
-            joined <- joinMItems (last naa) (head nbb)
-            return $ init naa <> [joined] <> tail nbb
+        MkMarkdownText
+            $ fromMaybe (aa <> bb)
+            $ do
+                naa <- nonEmpty aa
+                nbb <- nonEmpty bb
+                joined <- joinMItems (last naa) (head nbb)
+                return $ init naa <> [joined] <> tail nbb
 
 instance Monoid MarkdownText where
     mempty = MkMarkdownText mempty
@@ -101,10 +105,14 @@ instance ToText MItem where
     toText (BoldMI m) = "**" <> toText m <> "**"
     toText (ItalicMI m) = "_" <> toText m <> "_"
     toText (TagMI tagname params m) =
-        "<" <>
-        tagname <>
-        concatmap (\(n, t) -> " " <> n <> "=" <> (pack $ show $ unpack t)) params <>
-        ">" <> toText m <> "</" <> tagname <> ">"
+        "<"
+            <> tagname
+            <> concatmap (\(n, t) -> " " <> n <> "=" <> (pack $ show $ unpack t)) params
+            <> ">"
+            <> toText m
+            <> "</"
+            <> tagname
+            <> ">"
 
 instance ToText MarkdownText where
     toText (MkMarkdownText items) = toText items
@@ -141,9 +149,10 @@ codeMarkdown (MkMarkdownText m) = MkMarkdownText $ fmap codeMI m
 data Block
     = ParagraphBlock MarkdownText
     | IndentBlock Markdown
-    | TitleBlock Int
-                 MarkdownText
-    deriving stock (Eq)
+    | TitleBlock
+        Int
+        MarkdownText
+    deriving stock Eq
 
 block :: Block -> Markdown
 block = MkMarkdown . pure
@@ -151,7 +160,7 @@ block = MkMarkdown . pure
 dropLastNewline :: String -> String
 dropLastNewline "" = ""
 dropLastNewline "\n" = ""
-dropLastNewline (c:cc) = c : dropLastNewline cc
+dropLastNewline (c : cc) = c : dropLastNewline cc
 
 blockToText :: String -> Block -> Text
 blockToText indent (ParagraphBlock t) =
@@ -169,8 +178,8 @@ instance ToText Markdown where
     toText (MkMarkdown items) = toText items
 
 -- | CommonMark
-newtype Markdown =
-    MkMarkdown [Block]
+newtype Markdown
+    = MkMarkdown [Block]
     deriving newtype (Eq, Semigroup, Monoid)
 
 instance PlainText Markdown where

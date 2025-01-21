@@ -1,10 +1,12 @@
 module Main
     ( main
-    ) where
+    )
+where
 
-import Flags
 import Shapes
 import Shapes.Test
+
+import Flags
 import Test.Golden
 import Test.UI
 

@@ -1,12 +1,13 @@
 module Language.Expression.TypeSystem.VarMapping where
 
 import Data.Shim
-import Language.Expression.TypeSystem.TypeVariable
 import Shapes
 
+import Language.Expression.TypeSystem.TypeVariable
+
 type Mapping :: Type -> Type -> Type
-newtype Mapping tv t =
-    MkMapping (Kleisli Endo (tv -> tv) t)
+newtype Mapping tv t
+    = MkMapping (Kleisli Endo (tv -> tv) t)
     deriving newtype (Semigroup, Monoid, Invariant, Summable, Productable)
 
 mkMapping :: ((tv -> tv) -> t -> t) -> Mapping tv t
@@ -93,24 +94,25 @@ instance HasVarMapping w => HasVarMapping (ListProductType w) where
 instance HasVarMapping w => HasVarMapping (ListVProductType w) where
     getVarMapping (MkListVProductType (MkListVType lvt :: _ tt)) =
         MkVarMapping $ \v n ->
-            fmap (MkMapping . Kleisli) $
-            getCompose $
-            fmap (endoListVProduct @tt) $
-            mapListMVProduct
-                @_
-                @w
-                @Endo
-                @tt
-                (\w -> Compose $ fmap (\(MkMapping (Kleisli mm)) -> mm) $ runVarMapping (getVarMapping w) v n)
-                lvt
+            fmap (MkMapping . Kleisli)
+                $ getCompose
+                $ fmap (endoListVProduct @tt)
+                $ mapListMVProduct
+                    @_
+                    @w
+                    @Endo
+                    @tt
+                    (\w -> Compose $ fmap (\(MkMapping (Kleisli mm)) -> mm) $ runVarMapping (getVarMapping w) v n)
+                    lvt
 
 instance HasVarMapping w1 => HasVarMapping (PairType w1 w2) where
     getVarMapping (MkPairType w _) = getVarMapping w
 
-data DependentMapping n t =
-    forall a. MkDependentMapping a
-                                 (a -> t)
-                                 (Mapping n a)
+data DependentMapping n t
+    = forall a. MkDependentMapping
+        a
+        (a -> t)
+        (Mapping n a)
 
 dependentMapping :: (t -> DependentMapping n t) -> Mapping n t
 dependentMapping tdm =
@@ -122,7 +124,9 @@ dependentVarMapping :: TestEquality w => [SomeFor VarMapping w] -> VarMapping (S
 dependentVarMapping vmaps =
     MkVarMapping $ \v n -> do
         mdict <- witnessMapForMapM (\(MkVarMapping gm) -> gm v n) $ witnessMapForFromList vmaps
-        return $
-            dependentMapping $ \(MkSomeOf wit a) ->
-                MkDependentMapping a (MkSomeOf wit) $
-                fromMaybe (error "missing mapping") $ witnessMapForLookup wit mdict
+        return
+            $ dependentMapping
+            $ \(MkSomeOf wit a) ->
+                MkDependentMapping a (MkSomeOf wit)
+                    $ fromMaybe (error "missing mapping")
+                    $ witnessMapForLookup wit mdict

@@ -1,15 +1,17 @@
 module Data.Media.Image.JPEG
-    ( JPEGPixelType(..)
+    ( JPEGPixelType (..)
     , jpegFormat
     , jpegImageTrue8
-    ) where
+    )
+where
 
 import Changes.Core
 import Codec.Picture.Jpg
 import Codec.Picture.Types
+import Shapes
+
 import Data.Media.Image.Metadata
 import Data.Media.Image.Pixel
-import Shapes
 
 type JPEGPixelType :: Type -> Type
 data JPEGPixelType px where
@@ -70,7 +72,7 @@ jpegFormat quality = let
     encode (mtd, MkSomeFor pxt image) =
         case witnessConstraint @Type @JpgEncodable pxt of
             Dict -> encodeDirectJpegAtQualityWithMetadata quality (toMetadatas mtd) image
-    in MkCodec {..}
+    in MkCodec{..}
 
 jpegImageToTrue8 :: JPEGPixelType px -> Image px -> Image PixelRGB8
 jpegImageToTrue8 Y8JPEGPixelType image = promoteImage image
@@ -82,4 +84,4 @@ jpegImageTrue8 :: Applicative m => Codec' m (SomeFor Image JPEGPixelType) (Image
 jpegImageTrue8 = let
     decode (MkSomeFor pxt image) = pure $ jpegImageToTrue8 pxt image
     encode image = MkSomeFor RGB8JPEGPixelType image
-    in MkCodec {..}
+    in MkCodec{..}

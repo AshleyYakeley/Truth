@@ -6,7 +6,7 @@ type CCRTypeParam :: CCRArgumentKind
 data CCRTypeParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
     CoCCRTypeParam :: TypeVarT tv -> CCRTypeParam CoCCRVariance tv
     ContraCCRTypeParam :: TypeVarT tv -> CCRTypeParam ContraCCRVariance tv
-    RangeCCRTypeParam :: TypeVarT tvp -> TypeVarT tvq -> CCRTypeParam 'RangeCCRVariance '( tvp, tvq) -- contra, co
+    RangeCCRTypeParam :: TypeVarT tvp -> TypeVarT tvq -> CCRTypeParam 'RangeCCRVariance '(tvp, tvq) -- contra, co
 
 instance IsCCRArg CCRTypeParam where
     ccrArgumentType (CoCCRTypeParam _) = CoCCRVarianceType
@@ -24,10 +24,10 @@ instance IsCCRArg CCRTypeParam where
         return Refl
 
 assignCCRTypeParam ::
-       forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
-       CCRTypeParam sv t
-    -> (t ~ a => r)
-    -> r
+    forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
+    CCRTypeParam sv t ->
+    (t ~ a => r) ->
+    r
 assignCCRTypeParam (CoCCRTypeParam v) call = assignTypeVarT @a v call
 assignCCRTypeParam (ContraCCRTypeParam v) call = assignTypeVarT @a v call
 assignCCRTypeParam (RangeCCRTypeParam vp vq) call =

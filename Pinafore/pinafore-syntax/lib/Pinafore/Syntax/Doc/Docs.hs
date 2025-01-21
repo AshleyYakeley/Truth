@@ -1,18 +1,20 @@
 module Pinafore.Syntax.Doc.Docs
     ( Docs
     , exposeDocs
-    ) where
+    )
+where
+
+import Shapes
 
 import Pinafore.Syntax.Doc.DefDoc
 import Pinafore.Syntax.Name
-import Shapes
 
 popFilterTree :: (a -> Bool) -> Tree a -> Forest a
 popFilterTree test (MkTree a tt) = let
     tt' = popFilterForest test tt
     in if test a
-           then pureForest $ MkTree a tt'
-           else tt'
+        then pureForest $ MkTree a tt'
+        else tt'
 
 popFilterForest :: (a -> Bool) -> Forest a -> Forest a
 popFilterForest test tt = bindForest tt $ popFilterTree test

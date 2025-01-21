@@ -3,7 +3,8 @@
 module Changes.Debug.Edit
     ( module Changes.Debug
     , module Changes.Debug.Edit
-    ) where
+    )
+where
 
 import Changes.Core.Edit.Edit
 import Changes.Core.Edit.Update

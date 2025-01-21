@@ -2,15 +2,17 @@ module Pinafore.Syntax.Syntax where
 
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 import Shapes
 import Text.Parsec (SourcePos)
 
-data WithSourcePos t =
-    MkWithSourcePos SourcePos
-                    t
-    deriving stock (Eq)
+import Pinafore.Syntax.Name
+import Pinafore.Syntax.Text
+
+data WithSourcePos t
+    = MkWithSourcePos
+        SourcePos
+        t
+    deriving stock Eq
 
 getSourcePos :: WithSourcePos t -> SourcePos
 getSourcePos (MkWithSourcePos spos _) = spos
@@ -18,42 +20,48 @@ getSourcePos (MkWithSourcePos spos _) = spos
 instance ExprShow t => ExprShow (WithSourcePos t) where
     exprShowPrec (MkWithSourcePos _ expr) = exprShowPrec expr
 
-data SyntaxWithDoc t =
-    MkSyntaxWithDoc RawMarkdown
-                    t
-    deriving stock (Eq)
+data SyntaxWithDoc t
+    = MkSyntaxWithDoc
+        RawMarkdown
+        t
+    deriving stock Eq
 
 data SyntaxDataConstructor extra
-    = PlainSyntaxConstructor [SyntaxType]
-                             extra
+    = PlainSyntaxConstructor
+        [SyntaxType]
+        extra
     | RecordSyntaxConstructor [SyntaxSignature]
-    deriving stock (Eq)
+    deriving stock Eq
 
 data SyntaxConstructorOrSubtype extra
-    = ConstructorSyntaxConstructorOrSubtype FullName
-                                            (SyntaxDataConstructor extra)
-    | SubtypeSyntaxConstructorOrSubtype FullName
-                                        [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
-    deriving stock (Eq)
+    = ConstructorSyntaxConstructorOrSubtype
+        FullName
+        (SyntaxDataConstructor extra)
+    | SubtypeSyntaxConstructorOrSubtype
+        FullName
+        [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
+    deriving stock Eq
 
 type SyntaxStorableDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
 
 data SyntaxSignature'
     = SupertypeConstructorSyntaxSignature FullNameRef
-    | ValueSyntaxSignature Name
-                           SyntaxType
-                           (Maybe SyntaxExpression)
-    deriving stock (Eq)
+    | ValueSyntaxSignature
+        Name
+        SyntaxType
+        (Maybe SyntaxExpression)
+    deriving stock Eq
 
 type SyntaxSignature = SyntaxWithDoc (WithSourcePos SyntaxSignature')
 
 data SyntaxTypeParameter
     = PositiveSyntaxTypeParameter Name
     | NegativeSyntaxTypeParameter Name
-    | RangeSyntaxTypeParameter Name
-                               Name -- negative, positive
+    | RangeSyntaxTypeParameter
+        Name
+        Name -- negative, positive
     | DoubleRangeSyntaxTypeParameter Name
-    deriving stock (Eq)
+    deriving stock Eq
 
 instance ExprShow SyntaxTypeParameter where
     exprShowPrec (PositiveSyntaxTypeParameter v) = namedTextPrec 0 $ "+" <> exprShow v
@@ -64,95 +72,105 @@ instance ExprShow SyntaxTypeParameter where
 type SyntaxPlainDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxRecursiveTypeDeclaration
-    = StorableDatatypeSyntaxRecursiveTypeDeclaration [SyntaxTypeParameter]
-                                                     [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
-    | PlainDatatypeSyntaxRecursiveTypeDeclaration [SyntaxTypeParameter]
-                                                  (Maybe SyntaxType)
-                                                  [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
+    = StorableDatatypeSyntaxRecursiveTypeDeclaration
+        [SyntaxTypeParameter]
+        [SyntaxWithDoc SyntaxStorableDatatypeConstructorOrSubtype]
+    | PlainDatatypeSyntaxRecursiveTypeDeclaration
+        [SyntaxTypeParameter]
+        (Maybe SyntaxType)
+        [SyntaxWithDoc SyntaxPlainDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxRecursiveTypeDeclaration
-    deriving stock (Eq)
+    deriving stock Eq
 
-data SyntaxNonrecursiveTypeDeclaration =
-    PredicateSyntaxNonrecursiveTypeDeclaration Bool
-                                               SyntaxType
-                                               SyntaxExpression
-    deriving stock (Eq)
+data SyntaxNonrecursiveTypeDeclaration
+    = PredicateSyntaxNonrecursiveTypeDeclaration
+        Bool
+        SyntaxType
+        SyntaxExpression
+    deriving stock Eq
 
 data SyntaxRecursiveDeclaration'
-    = TypeSyntaxDeclaration FullName
-                            SyntaxRecursiveTypeDeclaration
-    | SubtypeSyntaxDeclaration TrustOrVerify
-                               SyntaxType
-                               SyntaxType
-                               (Maybe SyntaxExpression)
+    = TypeSyntaxDeclaration
+        FullName
+        SyntaxRecursiveTypeDeclaration
+    | SubtypeSyntaxDeclaration
+        TrustOrVerify
+        SyntaxType
+        SyntaxType
+        (Maybe SyntaxExpression)
     | BindingSyntaxDeclaration SyntaxBinding
-    deriving stock (Eq)
+    deriving stock Eq
 
 type SyntaxRecursiveDeclaration = SyntaxWithDoc (WithSourcePos SyntaxRecursiveDeclaration')
 
 data SyntaxNameRefItem
     = NameSyntaxNameRefItem FullNameRef
     | NamespaceSyntaxNameRefItem NamespaceRef
-    deriving stock (Eq)
+    deriving stock Eq
 
 data SyntaxDeclaration'
     = DirectSyntaxDeclaration SyntaxRecursiveDeclaration'
-    | NonrecursiveTypeSyntaxDeclaration FullName
-                                        SyntaxNonrecursiveTypeDeclaration
-    | RecordSyntaxDeclaration FullName
-                              [SyntaxSignature]
-                              (Maybe SyntaxType)
-                              SyntaxExpression
+    | NonrecursiveTypeSyntaxDeclaration
+        FullName
+        SyntaxNonrecursiveTypeDeclaration
+    | RecordSyntaxDeclaration
+        FullName
+        [SyntaxSignature]
+        (Maybe SyntaxType)
+        SyntaxExpression
     | DeclaratorSyntaxDeclaration SyntaxDeclarator
-    | DeclaratorInSyntaxDeclaration SyntaxDeclarator
-                                    SyntaxDeclaration
+    | DeclaratorInSyntaxDeclaration
+        SyntaxDeclarator
+        SyntaxDeclaration
     | ExposeDeclaration [SyntaxNameRefItem]
-    | NamespaceSyntaxDeclaration Bool
-                                 Namespace
-                                 [SyntaxDeclaration]
-    | DocSectionSyntaxDeclaration Text
-                                  [SyntaxDeclaration]
+    | NamespaceSyntaxDeclaration
+        Bool
+        Namespace
+        [SyntaxDeclaration]
+    | DocSectionSyntaxDeclaration
+        Text
+        [SyntaxDeclaration]
     | SpliceSyntaxDeclaration SyntaxExpression
     | DebugSyntaxDeclaration FullNameRef
-    deriving stock (Eq)
+    deriving stock Eq
 
 type SyntaxDeclaration = SyntaxWithDoc (WithSourcePos SyntaxDeclaration')
 
-data SyntaxNamespaceWith =
-    MkSyntaxNamespaceWith Namespace
-                          (Maybe (Bool, [SyntaxNameRefItem]))
-                          Namespace
-    deriving stock (Eq)
+data SyntaxNamespaceWith
+    = MkSyntaxNamespaceWith
+        Namespace
+        (Maybe (Bool, [SyntaxNameRefItem]))
+        Namespace
+    deriving stock Eq
 
 data SyntaxDeclarator
     = SDLetSeq [SyntaxDeclaration]
     | SDLetRec [SyntaxRecursiveDeclaration]
     | SDImport [ModuleName]
     | SDWith [SyntaxNamespaceWith]
-    deriving stock (Eq)
+    deriving stock Eq
 
 data SyntaxVariance
     = CoSyntaxVariance
     | ContraSyntaxVariance
-    deriving stock (Eq)
+    deriving stock Eq
 
 instance ExprShow SyntaxVariance where
     exprShowPrec CoSyntaxVariance = "+"
     exprShowPrec ContraSyntaxVariance = "-"
 
-newtype SyntaxGroundType =
-    ConstSyntaxGroundType FullNameRef
-    deriving stock (Eq)
+newtype SyntaxGroundType
+    = ConstSyntaxGroundType FullNameRef
+    deriving stock Eq
 
-data SyntaxTypeArgument =
-    MkSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
-    deriving stock (Eq)
+data SyntaxTypeArgument
+    = MkSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
+    deriving stock Eq
 
 pattern SimpleSyntaxTypeArgument ::
-        SyntaxType -> SyntaxTypeArgument
-
+    SyntaxType -> SyntaxTypeArgument
 pattern SimpleSyntaxTypeArgument t =
-        MkSyntaxTypeArgument [(Nothing, t)]
+    MkSyntaxTypeArgument [(Nothing, t)]
 
 instance ExprShow SyntaxTypeArgument where
     exprShowPrec (SimpleSyntaxTypeArgument t) = exprShowPrec t
@@ -161,29 +179,34 @@ instance ExprShow SyntaxTypeArgument where
         in namedTextPrec 0 $ "{" <> ointercalate "," (fmap showArg args) <> "}"
 
 data SyntaxType'
-    = SingleSyntaxType SyntaxGroundType
-                       [SyntaxTypeArgument]
+    = SingleSyntaxType
+        SyntaxGroundType
+        [SyntaxTypeArgument]
     | VarSyntaxType Name
-    | OrSyntaxType SyntaxType
-                   SyntaxType
-    | AndSyntaxType SyntaxType
-                    SyntaxType
+    | OrSyntaxType
+        SyntaxType
+        SyntaxType
+    | AndSyntaxType
+        SyntaxType
+        SyntaxType
     | TopSyntaxType
     | BottomSyntaxType
-    | RecursiveSyntaxType Name
-                          SyntaxType
-    deriving stock (Eq)
+    | RecursiveSyntaxType
+        Name
+        SyntaxType
+    deriving stock Eq
 
 data FixAssoc
     = AssocNone
     | AssocLeft
     | AssocRight
-    deriving stock (Eq)
+    deriving stock Eq
 
 data Fixity = MkFixity
     { fixityAssoc :: FixAssoc
     , fixityPrec :: Int
-    } deriving stock (Eq)
+    }
+    deriving stock Eq
 
 typeOperatorFixity :: Name -> Fixity
 typeOperatorFixity "->" = MkFixity AssocRight 0
@@ -202,60 +225,68 @@ instance ExprShow SyntaxType' where
         | nameIsInfix n = let
             MkFixity assc level = typeOperatorFixity n
             prec = 6 - level
-            in namedTextPrec prec $
-               case assc of
-                   AssocRight -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb
-                   AssocLeft -> exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
-                   AssocNone -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
+            in namedTextPrec prec
+                $ case assc of
+                    AssocRight -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb
+                    AssocLeft -> exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
+                    AssocNone -> exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = namedTextPrec 0 $ exprShow n
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
         namedTextPrec 2 $ exprShow n <> concatmap (\arg -> " " <> exprPrecShow 0 arg) args
 
 type SyntaxType = WithSourcePos SyntaxType'
 
-data SyntaxBinding =
-    MkSyntaxBinding SyntaxPattern
-                    SyntaxExpression
-    deriving stock (Eq)
+data SyntaxBinding
+    = MkSyntaxBinding
+        SyntaxPattern
+        SyntaxExpression
+    deriving stock Eq
 
 data SyntaxConstructor
     = SLNumber Number
     | SLString Text
-    | SLNamedConstructor FullNameRef
-                         (Maybe [(Name, SyntaxExpression)])
+    | SLNamedConstructor
+        FullNameRef
+        (Maybe [(Name, SyntaxExpression)])
     | SLPair
     | SLUnit
-    deriving stock (Eq)
+    deriving stock Eq
 
 instance ExprShow SyntaxConstructor where
     exprShowPrec (SLNumber x) = identifierPrecNamedText $ pack $ show x
     exprShowPrec (SLString x) = identifierPrecNamedText x
     exprShowPrec (SLNamedConstructor x mv) =
-        namedTextPrec 7 $
-        exprPrecShow 6 x <>
-        case mv of
-            Nothing -> ""
-            Just vv -> " of " <> intercalate ";" (fmap (\(n, _) -> exprPrecShow 6 n <> "=<expr>") vv) <> " end"
+        namedTextPrec 7
+            $ exprPrecShow 6 x
+            <> case mv of
+                Nothing -> ""
+                Just vv -> " of " <> intercalate ";" (fmap (\(n, _) -> exprPrecShow 6 n <> "=<expr>") vv) <> " end"
     exprShowPrec SLPair = "(,)"
     exprShowPrec SLUnit = "()"
 
 data SyntaxPattern'
     = AnySyntaxPattern
     | VarSyntaxPattern FullName
-    | BothSyntaxPattern SyntaxPattern
-                        SyntaxPattern
-    | ConstructorSyntaxPattern Namespace
-                               SyntaxConstructor
-                               [SyntaxPattern]
-    | TypedSyntaxPattern SyntaxPattern
-                         SyntaxType
-    | DynamicTypedSyntaxPattern SyntaxPattern
-                                SyntaxType
-    | NamespaceSyntaxPattern SyntaxPattern
-                             NamespaceRef
-    | DebugSyntaxPattern Text
-                         SyntaxPattern
-    deriving stock (Eq)
+    | BothSyntaxPattern
+        SyntaxPattern
+        SyntaxPattern
+    | ConstructorSyntaxPattern
+        Namespace
+        SyntaxConstructor
+        [SyntaxPattern]
+    | TypedSyntaxPattern
+        SyntaxPattern
+        SyntaxType
+    | DynamicTypedSyntaxPattern
+        SyntaxPattern
+        SyntaxType
+    | NamespaceSyntaxPattern
+        SyntaxPattern
+        NamespaceRef
+    | DebugSyntaxPattern
+        Text
+        SyntaxPattern
+    deriving stock Eq
 
 instance ExprShow SyntaxPattern' where
     exprShowPrec AnySyntaxPattern = "_"
@@ -270,14 +301,16 @@ instance ExprShow SyntaxPattern' where
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 
-data SyntaxCase =
-    MkSyntaxCase SyntaxPattern
-                 SyntaxExpression
-    deriving stock (Eq)
+data SyntaxCase
+    = MkSyntaxCase
+        SyntaxPattern
+        SyntaxExpression
+    deriving stock Eq
 
-data SyntaxMulticase (n :: PeanoNat) =
-    MkSyntaxMulticase (FixedList n SyntaxPattern)
-                      SyntaxExpression
+data SyntaxMulticase (n :: PeanoNat)
+    = MkSyntaxMulticase
+        (FixedList n SyntaxPattern)
+        SyntaxExpression
 
 syntaxMulticaseLength :: SyntaxMulticase n -> PeanoNatType n
 syntaxMulticaseLength (MkSyntaxMulticase l _) = fixedListLength l
@@ -295,11 +328,12 @@ instance Eq (SyntaxMulticase n) where
 data SyntaxConstant
     = SCIfThenElse
     | SCConstructor SyntaxConstructor
-    deriving stock (Eq)
+    deriving stock Eq
 
-data SyntaxMulticaseList =
-    forall (n :: PeanoNat). MkSyntaxMulticaseList (PeanoNatType n)
-                                                  [SyntaxMulticase n]
+data SyntaxMulticaseList
+    = forall (n :: PeanoNat). MkSyntaxMulticaseList
+        (PeanoNatType n)
+        [SyntaxMulticase n]
 
 instance Eq SyntaxMulticaseList where
     MkSyntaxMulticaseList na aa == MkSyntaxMulticaseList nb bb =
@@ -308,36 +342,42 @@ instance Eq SyntaxMulticaseList where
             return $ aa == bb
 
 data SyntaxExpression'
-    = SESubsume SyntaxExpression
-                SyntaxType
+    = SESubsume
+        SyntaxExpression
+        SyntaxType
     | SEConst SyntaxConstant
-    | SEVar Namespace
-            FullNameRef
-            (Maybe [(Name, SyntaxExpression)])
+    | SEVar
+        Namespace
+        FullNameRef
+        (Maybe [(Name, SyntaxExpression)])
     | SEImplicitVar ImplicitName
-    | SEApply SyntaxExpression
-              SyntaxExpression
+    | SEApply
+        SyntaxExpression
+        SyntaxExpression
     | SEAbstract SyntaxCase
     | SEAbstracts (Some SyntaxMulticase)
     | SEMatch [SyntaxCase]
     | SEMatches SyntaxMulticaseList
     | SEAppQuote SyntaxExpression
     | SEAppUnquote SyntaxExpression
-    | SEImply [(ImplicitName, Maybe SyntaxType, SyntaxExpression)]
-              SyntaxExpression
-    | SEDecl SyntaxDeclarator
-             SyntaxExpression
+    | SEImply
+        [(ImplicitName, Maybe SyntaxType, SyntaxExpression)]
+        SyntaxExpression
+    | SEDecl
+        SyntaxDeclarator
+        SyntaxExpression
     | SEList [SyntaxExpression]
-    -- macro stuff
-    | SESplice SyntaxExpression
+    | -- macro stuff
+      SESplice SyntaxExpression
     | SEQuoteExpression SyntaxExpression
     | SEQuoteScope [SyntaxDeclaration]
     | SEQuoteType SyntaxType
     | SEQuoteAnchor Anchor
-    -- debug
-    | SEDebug Text
-              SyntaxExpression
-    deriving stock (Eq)
+    | -- debug
+      SEDebug
+        Text
+        SyntaxExpression
+    deriving stock Eq
 
 seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc
@@ -350,9 +390,9 @@ seApply spos f a = MkWithSourcePos spos $ SEApply f a
 
 seApplys :: SourcePos -> SyntaxExpression -> [SyntaxExpression] -> SyntaxExpression
 seApplys _ f [] = f
-seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
+seApplys spos f (a : aa) = seApplys spos (seApply spos f a) aa
 
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
-data SyntaxModule =
-    MkSyntaxModule [SyntaxDeclaration]
+data SyntaxModule
+    = MkSyntaxModule [SyntaxDeclaration]

@@ -1,17 +1,19 @@
 module Language.Expression.Common.Pattern.Pattern
-    ( Pattern(..)
+    ( Pattern (..)
     , purePattern
     , patternFreeWitnesses
     , anyPattern
     , varPattern
-    ) where
+    )
+where
 
 import Shapes
 
 type Pattern :: (Type -> Type) -> (Type -> Type -> Type) -> Type -> Type -> Type
-data Pattern w c a b =
-    forall t. MkPattern [SomeFor ((->) t) w]
-                        (c a (t, b))
+data Pattern w c a b
+    = forall t. MkPattern
+        [SomeFor ((->) t) w]
+        (c a (t, b))
 
 instance Functor (c a) => Functor (Pattern w c a) where
     fmap ab (MkPattern ww pf) = MkPattern ww $ fmap (fmap ab) pf

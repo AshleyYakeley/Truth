@@ -1,12 +1,14 @@
 module Changes.World.GNOME.GTK.Widget.WebView
     ( createWebView
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk
 import GI.WebKit2
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createWebView :: Model (ROWUpdate Text) -> GView 'Unlocked Widget
 createWebView lmod = do

@@ -6,12 +6,13 @@ module Data.Recursion.AppRec
     , appKnotResult
     , pureAppKnot
     , knotAppRec
-    ) where
+    )
+where
 
 import Shapes.Import
 
-newtype AppRec f a =
-    MkAppRec (forall t. IOWitness t -> f (t -> a))
+newtype AppRec f a
+    = MkAppRec (forall t. IOWitness t -> f (t -> a))
 
 instance Functor f => Functor (AppRec f) where
     fmap ab (MkAppRec tfta) = MkAppRec $ \t -> fmap (fmap ab) $ tfta t
@@ -40,10 +41,11 @@ pureAppKnot :: Applicative f => a -> AppKnot f a
 pureAppKnot a = liftAppKnot $ pure a
 
 knotAppRec ::
-       forall f a. Applicative f
-    => IOWitness a
-    -> AppRec f a
-    -> AppKnot f a
+    forall f a.
+    Applicative f =>
+    IOWitness a ->
+    AppRec f a ->
+    AppKnot f a
 knotAppRec wit ar@(MkAppRec tfta) = let
     tfta' :: forall t. IOWitness t -> f (t -> a)
     tfta' wit' =

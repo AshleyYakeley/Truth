@@ -1,12 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Type.Storable
-    ( Storability(..)
+    ( Storability (..)
     , pureStorabilityAdapter
     , storabilityProperty
     , entityGroundType
     , getMonoStorableType
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -20,14 +21,15 @@ entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamil
 
 instance CovarySubtype QGroundType StorableGroundType where
     dolanToMonoGroundType ::
-           forall (dv :: CCRVariances) (t :: CCRVariancesKind dv).
-           QGroundType dv t
-        -> Maybe (CovaryType dv, StorableGroundType t)
+        forall (dv :: CCRVariances) (t :: CCRVariancesKind dv).
+        QGroundType dv t ->
+        Maybe (CovaryType dv, StorableGroundType t)
     dolanToMonoGroundType agt = do
         storability <- getGroundProperty storabilityProperty agt
-        return $
-            ( stbKind storability
-            , MkStorableGroundType (qgtFamilyType agt) $ MkSealedStorability (qgtShowType agt) storability)
+        return
+            $ ( stbKind storability
+              , MkStorableGroundType (qgtFamilyType agt) $ MkSealedStorability (qgtShowType agt) storability
+              )
 
 getMonoStorableType :: QNonpolarType t -> QInterpreter (MonoStorableType t)
 getMonoStorableType tm =

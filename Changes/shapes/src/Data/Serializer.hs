@@ -3,8 +3,9 @@ module Data.Serializer where
 import Codec.LEB128
 import Codec.LEB128.Constraints
 import Data.ByteString.Builder
-import Data.Codec
 import Data.PrimitiveSerial
+
+import Data.Codec
 import Shapes.Import
 
 data Stopping
@@ -23,19 +24,21 @@ sUpstop :: Serializer 'Stops a -> Serializer stp a
 sUpstop (MkSerializer s d) = MkSerializer s d
 
 sleb128Serializer ::
-       forall stp a. SLEB128 a
-    => Serializer stp a
+    forall stp a.
+    SLEB128 a =>
+    Serializer stp a
 sleb128Serializer =
-    MkSerializer toSLEB128Builder $
-    MkBSRead $ \bs -> let
-        (ma, bs') = fromSLEB128ByteString bs
-        in fmap (\a -> (bs', a)) ma
+    MkSerializer toSLEB128Builder
+        $ MkBSRead
+        $ \bs -> let
+            (ma, bs') = fromSLEB128ByteString bs
+            in fmap (\a -> (bs', a)) ma
 
 sUnit :: Serializer stp ()
 sUnit = let
     serialize () = mempty
     deserialize = return ()
-    in MkSerializer {..}
+    in MkSerializer{..}
 
 sProduct :: forall stp a b. Serializer 'Stops a -> Serializer stp b -> Serializer stp (a, b)
 sProduct (MkSerializer sa da) (MkSerializer sb db) = let
@@ -57,7 +60,7 @@ sVoid :: Serializer stp Void
 sVoid = let
     serialize n = never n
     deserialize = empty
-    in MkSerializer {..}
+    in MkSerializer{..}
 
 -- | only suitable if the two serializers are disjoint
 sPick :: forall stp a b. Serializer stp a -> Serializer stp b -> Serializer stp (Either a b)
@@ -81,7 +84,7 @@ sOptional (MkSerializer s d) = let
 sList :: Serializer 'Stops a -> Serializer 'KeepsGoing [a]
 sList (MkSerializer s d) = let
     s' [] = mempty
-    s' (x:xs) = s x <> s' xs
+    s' (x : xs) = s x <> s' xs
     d' = liftA2 (:) d d' <|> return []
     in MkSerializer s' d'
 
@@ -99,7 +102,7 @@ sCountedList (MkSerializer s d) = let
 sList1 :: Serializer 'Stops a -> Serializer 'KeepsGoing (NonEmpty a)
 sList1 (MkSerializer s d) = let
     s' [] = mempty
-    s' (x:xs) = s'' (x :| xs)
+    s' (x : xs) = s'' (x :| xs)
     s'' (x :| xs) = s x <> s' xs
     d' = fmap (\(x :| xs) -> x : xs) d'' <|> return []
     d'' = liftA2 (:|) d d'
@@ -112,7 +115,7 @@ sWhole :: Serializer 'KeepsGoing StrictByteString
 sWhole = let
     serialize = byteString
     deserialize = bsReadEverything
-    in MkSerializer {..}
+    in MkSerializer{..}
 
 sLiterals :: StrictByteString -> Serializer stp ()
 sLiterals bs = let
@@ -122,7 +125,7 @@ sLiterals bs = let
         if bs' == bs
             then return ()
             else empty
-    in MkSerializer {..}
+    in MkSerializer{..}
 
 sLiteral :: Word8 -> Serializer stp ()
 sLiteral w = let
@@ -132,13 +135,14 @@ sLiteral w = let
         if w == w'
             then return ()
             else empty
-    in MkSerializer {..}
+    in MkSerializer{..}
 
 sExact ::
-       forall stp a. Eq a
-    => a
-    -> Serializer stp a
-    -> Serializer stp ()
+    forall stp a.
+    Eq a =>
+    a ->
+    Serializer stp a ->
+    Serializer stp ()
 sExact a (MkSerializer s d) = let
     serialize () = s a
     deserialize = do
@@ -146,17 +150,18 @@ sExact a (MkSerializer s d) = let
         if a == a'
             then return ()
             else empty
-    in MkSerializer {..}
+    in MkSerializer{..}
 
 instance CodecMap (Serializer stp) where
-    codecMap MkCodec {..} (MkSerializer s d) =
+    codecMap MkCodec{..} (MkSerializer s d) =
         MkSerializer (s . encode) $ do
             a <- d
             mpure $ decode a
 
 littleEndianSerializer ::
-       forall stp a. FixedNumeric a
-    => Serializer stp a
+    forall stp a.
+    FixedNumeric a =>
+    Serializer stp a
 littleEndianSerializer = MkSerializer (byteString . encodeLittleEndian) decodeLittleEndian
 
 sLiteralBytes :: [Word8] -> Serializer stp ()
@@ -166,7 +171,7 @@ fixedByteStringSerializer :: Int -> Serializer stp StrictByteString
 fixedByteStringSerializer i = let
     serialize = byteString
     deserialize = bsReadN i
-    in MkSerializer {..}
+    in MkSerializer{..}
 
 -- | note length is bytes, not chars
 fixedTextSerializer :: Int -> Serializer stp Text
@@ -176,7 +181,7 @@ serializerLazyCodec :: forall stp a. Serializer stp a -> Codec LazyByteString a
 serializerLazyCodec (MkSerializer s d) = let
     encode a = toLazyByteString $ s a
     decode lbs = runWholeBSRead d $ toStrict lbs
-    in MkCodec {..}
+    in MkCodec{..}
 
 serializerStrictEncode :: forall stp a. Serializer stp a -> a -> StrictByteString
 serializerStrictEncode (MkSerializer s _) a = toStrict $ toLazyByteString $ s a
@@ -188,7 +193,7 @@ serializerStrictCodec :: forall stp a. Serializer stp a -> Codec StrictByteStrin
 serializerStrictCodec sr = let
     encode = serializerStrictEncode sr
     decode = serializerStrictDecode sr
-    in MkCodec {..}
+    in MkCodec{..}
 
 codecSerializer :: Codec StrictByteString a -> Serializer 'KeepsGoing a
 codecSerializer codec = codecMap codec sWhole

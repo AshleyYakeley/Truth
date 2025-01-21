@@ -32,7 +32,7 @@ packages:
 - Pinafore/pinafore-app
 - Pinafore/pinafore-docgen
 
-resolver: lts-23.0
+resolver: lts-23.5
 
 allow-newer: true
 allow-newer-deps:
@@ -41,21 +41,27 @@ allow-newer-deps:
     - criterion
 
 extra-deps:
+# GTK
 - gi-gdk-4.0.9
 - gi-gsk-4.0.8
 - gi-gtk-4.0.9
 - gi-soup-3.0.3
 - gi-javascriptcore-6.0.4
 - gi-webkit-6.0.3
+
+# other
 - blake3-0.3
 - leb128-0.1.0.0
 - optparse-applicative-0.17.1.0
-- git: https://github.com/AshleyYakeley/haskell-src-exts.git
-  commit: 443776e416f3fc3c2b56cbd5b11beaf022365c9d
-- git: https://github.com/AshleyYakeley/hindent.git
-  commit: 39739ea7717249e405ab67c8a579b552e4cec8b9
-- git: https://github.com/fpco/ghc-prof-flamegraph.git
-  commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
+
+# format
+- Cabal-syntax-3.12.1.0
+- Cabal-3.12.1.0
+- ghc-lib-parser-9.10.1.20250103
+- github: AshleyYakeley/fourmolu
+  commit: 8f7bfbaebfc7337e3301f87ba602fea65ad12323
+
+# my stuff
 - witness-0.7
 - monadology-0.4
 - open-witness-0.7

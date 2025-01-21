@@ -1,6 +1,7 @@
 module Pinafore.Language.Convert
     ( module I
-    ) where
+    )
+where
 
 import Pinafore.Language.Convert.HasType as I
 import Pinafore.Language.Convert.Literal as I

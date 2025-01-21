@@ -1,19 +1,20 @@
 module Changes.Core.Types.Tuple.Function
-    ( FunctionSelector(..)
+    ( FunctionSelector (..)
     , FunctionUpdateReader
     , FunctionUpdateEdit
     , FunctionUpdate
     , functionChangeLens
     , constFunctionReadFunction
-    --, functionLiftChangeLens
+    -- , functionLiftChangeLens
     , contramapPartialFunctionChangeLens
-    --, applyFunctionUpdateFunction
-    --, functionEditApply
-    --, applyFunctionChangeLens
-    --, maybeFunctionUpdateFunction
-    --, functionEditMaybe
+    -- , applyFunctionUpdateFunction
+    -- , functionEditApply
+    -- , applyFunctionChangeLens
+    -- , maybeFunctionUpdateFunction
+    -- , functionEditMaybe
     , functionEitherPairChangeLens
-    ) where
+    )
+where
 
 import Changes.Core.Edit
 import Changes.Core.Import
@@ -94,63 +95,68 @@ functionLiftChangeLens (MkFloatingChangeLens finit g u pe) = let
     in MkFloatingChangeLens finit' g' u' pe'
 -}
 functionEitherPairChangeLens ::
-       forall a b update.
-       ChangeLens (PairUpdate (FunctionUpdate a update) (FunctionUpdate b update)) (FunctionUpdate (Either a b) update)
+    forall a b update.
+    ChangeLens (PairUpdate (FunctionUpdate a update) (FunctionUpdate b update)) (FunctionUpdate (Either a b) update)
 functionEitherPairChangeLens = let
     clRead ::
-           ReadFunction (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update)) (FunctionUpdateReader (Either a b) update)
+        ReadFunction (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update)) (FunctionUpdateReader (Either a b) update)
     clRead mr (MkTupleUpdateReader (MkFunctionSelector (Left a)) rt) =
         mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) rt
     clRead mr (MkTupleUpdateReader (MkFunctionSelector (Right b)) rt) =
         mr $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) rt
     clUpdate ::
-           forall m. MonadIO m
-        => PairUpdate (FunctionUpdate a update) (FunctionUpdate b update)
-        -> Readable m (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update))
-        -> m [FunctionUpdate (Either a b) update]
+        forall m.
+        MonadIO m =>
+        PairUpdate (FunctionUpdate a update) (FunctionUpdate b update) ->
+        Readable m (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update)) ->
+        m [FunctionUpdate (Either a b) update]
     clUpdate (MkTupleUpdate SelectFirst (MkTupleUpdate (MkFunctionSelector a) update)) _ =
         return [MkTupleUpdate (MkFunctionSelector $ Left a) update]
     clUpdate (MkTupleUpdate SelectSecond (MkTupleUpdate (MkFunctionSelector b) update)) _ =
         return [MkTupleUpdate (MkFunctionSelector $ Right b) update]
     clPutEdits ::
-           forall m. MonadIO m
-        => [FunctionUpdateEdit (Either a b) update]
-        -> Readable m (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update))
-        -> m (Maybe [PairUpdateEdit (FunctionUpdate a update) (FunctionUpdate b update)])
+        forall m.
+        MonadIO m =>
+        [FunctionUpdateEdit (Either a b) update] ->
+        Readable m (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update)) ->
+        m (Maybe [PairUpdateEdit (FunctionUpdate a update) (FunctionUpdate b update)])
     clPutEdits =
         clPutEditsFromSimplePutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector eab) edit) ->
-            return $
-            Just $
-            pure $
-            case eab of
-                Left a -> MkTupleUpdateEdit SelectFirst $ MkTupleUpdateEdit (MkFunctionSelector a) edit
-                Right b -> MkTupleUpdateEdit SelectSecond $ MkTupleUpdateEdit (MkFunctionSelector b) edit
-    in MkChangeLens {..}
+            return
+                $ Just
+                $ pure
+                $ case eab of
+                    Left a -> MkTupleUpdateEdit SelectFirst $ MkTupleUpdateEdit (MkFunctionSelector a) edit
+                    Right b -> MkTupleUpdateEdit SelectSecond $ MkTupleUpdateEdit (MkFunctionSelector b) edit
+    in MkChangeLens{..}
 
 contramapPartialFunctionChangeLens ::
-       forall update a b.
-       (b -> a)
-    -> (a -> b -> Bool)
-    -> ChangeLens (FunctionUpdate a update) (PartialUpdate (FunctionUpdate b update))
+    forall update a b.
+    (b -> a) ->
+    (a -> b -> Bool) ->
+    ChangeLens (FunctionUpdate a update) (PartialUpdate (FunctionUpdate b update))
 contramapPartialFunctionChangeLens ba matchab = let
     clRead :: ReadFunction (FunctionUpdateReader a update) (FunctionUpdateReader b update)
     clRead mr (MkTupleUpdateReader (MkFunctionSelector b) rt) = mr $ MkTupleUpdateReader (MkFunctionSelector $ ba b) rt
     clUpdate ::
-           forall m. MonadIO m
-        => FunctionUpdate a update
-        -> Readable m (FunctionUpdateReader a update)
-        -> m [PartialUpdate (FunctionUpdate b update)]
+        forall m.
+        MonadIO m =>
+        FunctionUpdate a update ->
+        Readable m (FunctionUpdateReader a update) ->
+        m [PartialUpdate (FunctionUpdate b update)]
     clUpdate (MkTupleUpdate (MkFunctionSelector a) _) _ =
         return [UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector b) _) -> matchab a b]
     clPutEdits ::
-           forall m. MonadIO m
-        => [FunctionUpdateEdit b update]
-        -> Readable m (FunctionUpdateReader a update)
-        -> m (Maybe [FunctionUpdateEdit a update])
+        forall m.
+        MonadIO m =>
+        [FunctionUpdateEdit b update] ->
+        Readable m (FunctionUpdateReader a update) ->
+        m (Maybe [FunctionUpdateEdit a update])
     clPutEdits =
         clPutEditsFromSimplePutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector b) edit) ->
             return $ Just $ [MkTupleUpdateEdit (MkFunctionSelector $ ba b) edit]
-    in MkChangeLens {..}
+    in MkChangeLens{..}
+
 {-
 applyFunctionUpdateFunction ::
        forall a update. (Eq a, IsUpdate update, FullEdit (UpdateEdit update))

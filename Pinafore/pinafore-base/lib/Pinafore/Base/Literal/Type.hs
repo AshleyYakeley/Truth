@@ -17,7 +17,8 @@ module Pinafore.Base.Literal.Type
     , colourLiteralType
     , mediaTypeLiteralType
     , mediaLiteralType
-    ) where
+    )
+where
 
 import Changes.World.Media.Type
 import Shapes

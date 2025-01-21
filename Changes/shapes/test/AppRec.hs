@@ -1,6 +1,7 @@
 module AppRec
     ( testAppRec
-    ) where
+    )
+where
 
 import Shapes
 import Shapes.Test

@@ -2,9 +2,10 @@ module Language.Expression.TypeSystem.SolverExpression where
 
 import Shapes
 
-data SolverExpression typeexpr valexpr a =
-    forall t. MkSolverExpression (typeexpr t)
-                                 (valexpr (t -> a))
+data SolverExpression typeexpr valexpr a
+    = forall t. MkSolverExpression
+        (typeexpr t)
+        (valexpr (t -> a))
 
 instance Functor valexpr => Functor (SolverExpression typeexpr valexpr) where
     fmap ab (MkSolverExpression uu exp) = MkSolverExpression uu $ fmap (fmap ab) exp
@@ -28,8 +29,10 @@ instance (Applicative typeexpr, Applicative valexpr, Monoid a) => Monoid (Solver
 instance (AllConstraint Show typeexpr, AllConstraint Show valexpr) => Show (SolverExpression typeexpr valexpr a) where
     show (MkSolverExpression uu exp) = "{" <> allShow uu <> "; " <> allShow exp <> "}"
 
-instance (AllConstraint Show typeexpr, AllConstraint Show valexpr) =>
-             AllConstraint Show (SolverExpression typeexpr valexpr) where
+instance
+    (AllConstraint Show typeexpr, AllConstraint Show valexpr) =>
+    AllConstraint Show (SolverExpression typeexpr valexpr)
+    where
     allConstraint = Dict
 
 solverExpressionLiftValue :: (Applicative typeexpr, Functor valexpr) => valexpr a -> SolverExpression typeexpr valexpr a

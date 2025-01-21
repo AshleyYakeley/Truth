@@ -1,10 +1,11 @@
 module Data.ReadShow
-    ( ReadShow(..)
+    ( ReadShow (..)
     , readShow
     , digitsReadShow
     , negateReadShow
     , integerReadShow
-    ) where
+    )
+where
 
 import Data.Codec
 import Data.Streamable
@@ -23,7 +24,7 @@ instance Productable ReadShow where
     rUnit = let
         rsShow () = mempty
         rsRead = rUnit
-        in MkReadShow {..}
+        in MkReadShow{..}
     (<***>) :: forall a b. ReadShow a -> ReadShow b -> ReadShow (a, b)
     MkReadShow sa ra <***> MkReadShow sb rb = let
         sab (a, b) = sa a <> sb b
@@ -35,7 +36,7 @@ instance Summable ReadShow where
     rVoid = let
         rsShow n = never n
         rsRead = rVoid
-        in MkReadShow {..}
+        in MkReadShow{..}
     MkReadShow sa ra <+++> MkReadShow sb rb = let
         sab (Left a) = sa a
         sab (Right b) = sb b
@@ -43,10 +44,10 @@ instance Summable ReadShow where
         in MkReadShow sab rab
 
 readShow :: (Read a, Show a) => ReadShow a
-readShow = MkReadShow {rsShow = show, rsRead = readPrec}
+readShow = MkReadShow{rsShow = show, rsRead = readPrec}
 
 instance CodecMap ReadShow where
-    codecMap MkCodec {..} (MkReadShow s r) =
+    codecMap MkCodec{..} (MkReadShow s r) =
         MkReadShow (s . encode) $ do
             a <- r
             mpure $ decode a
@@ -59,12 +60,12 @@ instance Riggable ReadShow where
         in MkReadShow s' r'
     rList (MkReadShow s r) = let
         s' [] = mempty
-        s' (x:xs) = s x <> s' xs
+        s' (x : xs) = s x <> s' xs
         r' = rList r
         in MkReadShow s' r'
     rList1 (MkReadShow s r) = let
         s' [] = mempty
-        s' (x:xs) = s'' (x :| xs)
+        s' (x : xs) = s'' (x :| xs)
         s'' (x :| xs) = s x <> s' xs
         r' = rList1 r
         in MkReadShow s'' r'
@@ -76,15 +77,15 @@ instance Streamable ReadShow where
     rLiterals s = let
         rsShow () = s
         rsRead = rLiterals s
-        in MkReadShow {..}
+        in MkReadShow{..}
     rLiteral c = let
         rsShow () = pure c
         rsRead = rLiteral c
-        in MkReadShow {..}
+        in MkReadShow{..}
     rExact a (MkReadShow s r) = let
         rsShow () = s a
         rsRead = rExact a r
-        in MkReadShow {..}
+        in MkReadShow{..}
 
 digitCodec :: Codec Char Integer
 digitCodec = let
@@ -93,14 +94,14 @@ digitCodec = let
         if isDigit c
             then return $ toInteger $ digitToInt c
             else empty
-    in MkCodec {..}
+    in MkCodec{..}
 
 digitReadShow :: ReadShow Integer
 digitReadShow = codecMap digitCodec rItem
 
 assembleDigits :: Integer -> [Integer] -> Integer
 assembleDigits i [] = i
-assembleDigits i (d:dd) = assembleDigits (i * 10 + d) dd
+assembleDigits i (d : dd) = assembleDigits (i * 10 + d) dd
 
 digitsReadShow :: ReadShow Integer
 digitsReadShow = let
@@ -114,9 +115,10 @@ digitsReadShow = let
     in invmap nonEmptyToInteger integerToNonEmpty $ rList1 digitReadShow
 
 negateReadShow ::
-       forall a. (Ord a, Num a)
-    => ReadShow a
-    -> ReadShow a
+    forall a.
+    (Ord a, Num a) =>
+    ReadShow a ->
+    ReadShow a
 negateReadShow ra = let
     tupleToInteger :: (Maybe (), a) -> a
     tupleToInteger (Nothing, i) = i

@@ -1,17 +1,20 @@
 module Test.Storage
     ( testStorage
-    ) where
+    )
+where
 
 import Changes.Core
-import Pinafore.Base
-import Pinafore.Storage
 import Shapes
 import Shapes.Test
 
+import Pinafore.Base
+import Pinafore.Storage
+
 data TestContext = MkTestContext
     { putProperty :: forall s v. StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
-    , readProperty :: forall s v.
-                          (Show v, Eq v) => StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
+    , readProperty ::
+        forall s v.
+        (Show v, Eq v) => StoreAdapter s -> StoreAdapter v -> Predicate -> s -> Know v -> IO ()
     , readCount :: forall s v. Eq s => StoreAdapter s -> StoreAdapter v -> Predicate -> v -> Int -> IO ()
     , checkEmpty :: String -> IO ()
     , checkNonEmpty :: String -> IO ()
@@ -44,13 +47,14 @@ testStorageCase name action =
                 runResource emptyResourceContext entityRef $ \aref ->
                     pushOrFail "can't push table edit" noEditSource $ refEdit aref $ pure $ MkQStorageEdit st vt p s kv
             readProperty ::
-                   forall s v. (Show v, Eq v)
-                => StoreAdapter s
-                -> StoreAdapter v
-                -> Predicate
-                -> s
-                -> Know v
-                -> IO ()
+                forall s v.
+                (Show v, Eq v) =>
+                StoreAdapter s ->
+                StoreAdapter v ->
+                Predicate ->
+                s ->
+                Know v ->
+                IO ()
             readProperty st vt p s kv = do
                 e <- runResource emptyResourceContext entityRef $ \aref -> refRead aref $ QStorageReadGet st p s
                 case kv of
@@ -61,13 +65,14 @@ testStorageCase name action =
                         assertEqual "typed" (Known v) kv'
                     Unknown -> return ()
             readCount ::
-                   forall s v. Eq s
-                => StoreAdapter s
-                -> StoreAdapter v
-                -> Predicate
-                -> v
-                -> Int
-                -> IO ()
+                forall s v.
+                Eq s =>
+                StoreAdapter s ->
+                StoreAdapter v ->
+                Predicate ->
+                v ->
+                Int ->
+                IO ()
             readCount st vt p v expcount = do
                 fset <-
                     runResource emptyResourceContext entityRef $ \aref ->
@@ -77,11 +82,11 @@ testStorageCase name action =
                     runResource emptyResourceContext entityRef $ \aref ->
                         listSetForF fset $ \e -> fmap knowToMaybe $ refRead aref $ QStorageReadEntity st e
                 assertEqual "typed count" expcount $ length tset
-            testContext = MkTestContext {..}
+            testContext = MkTestContext{..}
         action testContext
 
 testAddRemoveProperty :: (Eq s, Eq v, Show v) => StoreAdapter s -> StoreAdapter v -> s -> v -> TestContext -> IO ()
-testAddRemoveProperty st vt s v MkTestContext {..} = do
+testAddRemoveProperty st vt s v MkTestContext{..} = do
     pA <- fmap MkPredicate randomIO
     checkEmpty "0"
     readCount st vt pA v 0
@@ -127,7 +132,7 @@ listTextAdapter = let
     from (Right (a, (aa, ()))) = a : aa
     to :: [a] -> Either () (a, ([a], ()))
     to [] = Left ()
-    to (a:aa) = Right (a, (aa, ()))
+    to (a : aa) = Right (a, (aa, ()))
     in listAdapter
 
 enumAdapter :: StoreAdapter Bool
@@ -148,34 +153,34 @@ testStorage :: TestTree
 testStorage =
     testTree
         "storage"
-        [ testStorageCase "empty" $ \MkTestContext {..} -> checkEmpty "0"
+        [ testStorageCase "empty" $ \MkTestContext{..} -> checkEmpty "0"
         , testStorageCase "property-plain-plain" $ \tc -> do
-              e1 <- newEntity
-              e2 <- newEntity
-              testAddRemoveProperty plainStoreAdapter plainStoreAdapter e1 e2 tc
+            e1 <- newEntity
+            e2 <- newEntity
+            testAddRemoveProperty plainStoreAdapter plainStoreAdapter e1 e2 tc
         , testStorageCase "property-plain-plain-same" $ \tc -> do
-              e <- newEntity
-              testAddRemoveProperty plainStoreAdapter plainStoreAdapter e e tc
+            e <- newEntity
+            testAddRemoveProperty plainStoreAdapter plainStoreAdapter e e tc
         , testStorageCase "property-plain-text" $ \tc -> do
-              e1 <- newEntity
-              testAddRemoveProperty plainStoreAdapter textAdapter e1 "hello" tc
+            e1 <- newEntity
+            testAddRemoveProperty plainStoreAdapter textAdapter e1 "hello" tc
         , testStorageCase "property-text-plain" $ \tc -> do
-              e2 <- newEntity
-              testAddRemoveProperty textAdapter plainStoreAdapter "hello" e2 tc
+            e2 <- newEntity
+            testAddRemoveProperty textAdapter plainStoreAdapter "hello" e2 tc
         , testStorageCase "property-text-text" $ \tc -> do
-              testAddRemoveProperty textAdapter textAdapter "this" "that" tc
+            testAddRemoveProperty textAdapter textAdapter "this" "that" tc
         , testStorageCase "property-text-text-same" $ \tc -> do
-              testAddRemoveProperty textAdapter textAdapter "this" "this" tc
+            testAddRemoveProperty textAdapter textAdapter "this" "this" tc
         , testStorageCase "property-plain-mtext" $ \tc -> do
-              e1 <- newEntity
-              testAddRemoveProperty plainStoreAdapter maybeTextAdapter e1 (Just "hello") tc
+            e1 <- newEntity
+            testAddRemoveProperty plainStoreAdapter maybeTextAdapter e1 (Just "hello") tc
         , testStorageCase "property-plain-bool1" $ \tc -> do
-              e1 <- newEntity
-              testAddRemoveProperty plainStoreAdapter enumAdapter e1 False tc
+            e1 <- newEntity
+            testAddRemoveProperty plainStoreAdapter enumAdapter e1 False tc
         , testStorageCase "property-plain-bool2" $ \tc -> do
-              e1 <- newEntity
-              testAddRemoveProperty plainStoreAdapter enumAdapter e1 True tc
+            e1 <- newEntity
+            testAddRemoveProperty plainStoreAdapter enumAdapter e1 True tc
         , testStorageCase "property-plain-ltext" $ \tc -> do
-              e1 <- newEntity
-              testAddRemoveProperty plainStoreAdapter listTextAdapter e1 ["abc", "def"] tc
+            e1 <- newEntity
+            testAddRemoveProperty plainStoreAdapter listTextAdapter e1 ["abc", "def"] tc
         ]

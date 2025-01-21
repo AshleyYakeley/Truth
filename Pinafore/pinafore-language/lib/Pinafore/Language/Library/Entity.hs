@@ -2,7 +2,8 @@ module Pinafore.Language.Library.Entity
     ( entityLibSection
     , showableSubtypeRelationEntry
     , literalSubtypeRelationEntry
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Library.Defs
@@ -21,16 +22,16 @@ import Pinafore.Language.Library.LibraryModule
 
 entityLibSection :: LibraryStuff
 entityLibSection =
-    headingBDS "Literals & Entities" "" $
-    [ entityEntityLibSection
-    , literalEntityLibSection
-    , showableEntityLibSection
-    , unitEntityLibSection
-    , booleanEntityLibSection
-    , orderingEntityLibSection
-    , blobEntityLibSection
-    , textEntityLibSection
-    , numericEntityLibSection
-    , timeEntityLibSection
-    , openEntityLibSection
-    ]
+    headingBDS "Literals & Entities" ""
+        $ [ entityEntityLibSection
+          , literalEntityLibSection
+          , showableEntityLibSection
+          , unitEntityLibSection
+          , booleanEntityLibSection
+          , orderingEntityLibSection
+          , blobEntityLibSection
+          , textEntityLibSection
+          , numericEntityLibSection
+          , timeEntityLibSection
+          , openEntityLibSection
+          ]

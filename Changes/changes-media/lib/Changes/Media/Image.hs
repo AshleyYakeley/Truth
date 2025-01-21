@@ -20,10 +20,11 @@ instance FullSubjectReader (ImageRead px) where
 type ImageUpdate :: Type -> Type
 data ImageUpdate edit
     = SomeImageUpdate
-    | RectImageUpdate Int
-                      Int
-                      Int
-                      Int
+    | RectImageUpdate
+        Int
+        Int
+        Int
+        Int
 
 type instance UpdateEdit (ImageUpdate edit) = edit
 

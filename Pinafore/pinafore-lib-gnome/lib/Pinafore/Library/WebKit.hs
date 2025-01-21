@@ -1,13 +1,15 @@
 module Pinafore.Library.WebKit
     ( webKitStuff
-    ) where
+    )
+where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.API
-import Pinafore.Library.GTK.Widget
 import Pinafore.Library.Media
 import Shapes
+
+import Pinafore.Library.GTK.Widget
 
 webViewWidget :: ImmutableWholeModel HTMLText -> LangWidget
 webViewWidget model =

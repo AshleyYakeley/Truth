@@ -1,7 +1,8 @@
 module Language.Expression.Dolan.SubtypeEntry.Knowledge where
 
-import Language.Expression.Dolan.TypeSystem
 import Shapes
+
+import Language.Expression.Dolan.TypeSystem
 
 type family DolanSubtypeHint (ground :: GroundTypeKind) :: Type
 

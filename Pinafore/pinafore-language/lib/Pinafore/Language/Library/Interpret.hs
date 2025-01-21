@@ -1,7 +1,8 @@
 module Pinafore.Language.Library.Interpret
-    ( Interpret(..)
+    ( Interpret (..)
     , interpretLibSection
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Convert.HasType
@@ -28,10 +29,10 @@ instance MaybeRepresentational Interpret where
     maybeRepresentational = Just Dict
 
 -- Interpret
-interpretGroundType :: QGroundType '[ CoCCRVariance] Interpret
+interpretGroundType :: QGroundType '[CoCCRVariance] Interpret
 interpretGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Interpret)|]) "Interpret"
 
-instance HasQGroundType '[ CoCCRVariance] Interpret where
+instance HasQGroundType '[CoCCRVariance] Interpret where
     qGroundType = interpretGroundType
 
 interpretLibSection :: LibraryStuff
@@ -40,10 +41,11 @@ interpretLibSection =
         "Interpretation"
         "This is used as a supertype of various media etc. type to represent \"can be interpreted as\"."
         [ typeBDS
-              "Interpret"
-              ""
-              (MkSomeGroundType interpretGroundType)
-              [valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ pure $ \(MkInterpret @A x) -> (x, ())]
-        , namespaceBDS "Interpret" $
-          functorEntries @Interpret <> [addNameInRootBDS $ valBDS "interpret" "" $ interpret @A]
+            "Interpret"
+            ""
+            (MkSomeGroundType interpretGroundType)
+            [valPatBDS "Mk" "" (MkInterpret @A) $ PureFunction $ pure $ \(MkInterpret @A x) -> (x, ())]
+        , namespaceBDS "Interpret"
+            $ functorEntries @Interpret
+            <> [addNameInRootBDS $ valBDS "interpret" "" $ interpret @A]
         ]

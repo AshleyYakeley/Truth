@@ -17,8 +17,8 @@ type UpdateSubject update = ReaderSubject (UpdateReader update)
 class IsUpdate update => IsEditUpdate update where
     updateEdit :: update -> UpdateEdit update
 
-newtype EditUpdate edit =
-    MkEditUpdate edit
+newtype EditUpdate edit
+    = MkEditUpdate edit
     deriving newtype (Eq, Countable, Searchable)
 
 instance Finite edit => Finite (EditUpdate edit) where
@@ -40,25 +40,29 @@ instance IsEditUpdate (EditUpdate edit) where
 class FullUpdate update where
     -- | Updates do not have to be precise, only comprehensive
     replaceUpdate ::
-           forall m. (MonadIO m)
-        => Readable m (UpdateReader update)
-        -> (update -> m ())
-        -> m ()
+        forall m.
+        MonadIO m =>
+        Readable m (UpdateReader update) ->
+        (update -> m ()) ->
+        m ()
     default replaceUpdate ::
         (IsEditUpdate update, FullEdit (UpdateEdit update)) =>
-                forall m. (MonadIO m) => Readable m (UpdateReader update) -> (update -> m ()) -> m ()
+        forall m.
+        MonadIO m => Readable m (UpdateReader update) -> (update -> m ()) -> m ()
     replaceUpdate rd pushUpdate = replaceEdit rd $ \edit -> pushUpdate $ editUpdate edit
 
 getReplaceUpdates ::
-       forall m update. (FullUpdate update, MonadIO m)
-    => Readable m (UpdateReader update)
-    -> m [update]
+    forall m update.
+    (FullUpdate update, MonadIO m) =>
+    Readable m (UpdateReader update) ->
+    m [update]
 getReplaceUpdates mr = execWriterT $ replaceUpdate (hoistReadable lift mr) $ tell . pure
 
 getReplaceUpdatesFromSubject ::
-       forall m update. (SubjectReader (UpdateReader update), FullUpdate update, MonadIO m)
-    => UpdateSubject update
-    -> m [update]
+    forall m update.
+    (SubjectReader (UpdateReader update), FullUpdate update, MonadIO m) =>
+    UpdateSubject update ->
+    m [update]
 getReplaceUpdatesFromSubject subj = getReplaceUpdates $ subjectToReadable subj
 
 instance FullEdit edit => FullUpdate (EditUpdate edit)

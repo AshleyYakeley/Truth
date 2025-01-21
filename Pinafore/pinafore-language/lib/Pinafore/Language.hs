@@ -1,13 +1,13 @@
 module Pinafore.Language
     ( LibraryStuff
-    , LibraryModule(..)
+    , LibraryModule (..)
     , LoadModule
     , directoryLoadModule
     , textLoadModule
     , libraryLoadModule
-    , QModule(..)
+    , QModule (..)
     , getModule
-    , LibraryContext(..)
+    , LibraryContext (..)
     , mkLibraryContext
     , pinaforeLibrary
     , QError
@@ -23,7 +23,7 @@ module Pinafore.Language
     , parseToValueSubsume
     , interact
     , initialPos
-    , TopType(..)
+    , TopType (..)
     , Var
     , A
     , B
@@ -32,7 +32,8 @@ module Pinafore.Language
     , Y
     , Entity
     , runPinaforeScoped
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Convert

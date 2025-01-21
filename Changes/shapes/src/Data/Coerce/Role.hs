@@ -15,35 +15,38 @@ class RepresentationalRole (f :: kp -> kq) where
     representationalCoercion :: forall (a :: kp) (b :: kp). Coercion a b -> Coercion (f a) (f b)
 
 applyCoercion1 ::
-       forall f g a b. (RepresentationalRole f)
-    => Coercion f g
-    -> Coercion a b
-    -> Coercion (f a) (g b)
+    forall f g a b.
+    RepresentationalRole f =>
+    Coercion f g ->
+    Coercion a b ->
+    Coercion (f a) (g b)
 applyCoercion1 MkCoercion cab =
     case representationalCoercion @_ @_ @f cab of
         MkCoercion -> MkCoercion
 
 applyCoercion2 ::
-       forall f g a b. (RepresentationalRole g)
-    => Coercion f g
-    -> Coercion a b
-    -> Coercion (f a) (g b)
+    forall f g a b.
+    RepresentationalRole g =>
+    Coercion f g ->
+    Coercion a b ->
+    Coercion (f a) (g b)
 applyCoercion2 MkCoercion cab =
     case representationalCoercion @_ @_ @g cab of
         MkCoercion -> MkCoercion
 
 coerceIsomorphism ::
-       forall k (cat :: k -> k -> Type) (a :: k) (b :: k).
-       (Category cat, RepresentationalRole (cat a), RepresentationalRole (cat b), Coercible a b)
-    => Isomorphism cat a b
+    forall k (cat :: k -> k -> Type) (a :: k) (b :: k).
+    (Category cat, RepresentationalRole (cat a), RepresentationalRole (cat b), Coercible a b) =>
+    Isomorphism cat a b
 coerceIsomorphism =
     MkIsomorphism
         (coercionToFunction (representationalCoercion MkCoercion) id)
         (coercionToFunction (representationalCoercion MkCoercion) id)
 
 coerceCodec ::
-       forall m a b. (Applicative m, Coercible a b)
-    => Codec' m a b
+    forall m a b.
+    (Applicative m, Coercible a b) =>
+    Codec' m a b
 coerceCodec = bijectionCodec coerceIsomorphism
 
 instance RepresentationalRole f => CatFunctor Coercion Coercion (f :: kp -> kq) where
@@ -139,8 +142,11 @@ instance RepresentationalRole m => RepresentationalRole (StateT s m) where
 instance forall inner. RepresentationalRole (ComposeInner inner) where
     representationalCoercion MkCoercion = MkCoercion
 
-instance forall inner outer. (RepresentationalRole inner, RepresentationalRole outer) =>
-             RepresentationalRole (ComposeInner inner outer) where
+instance
+    forall inner outer.
+    (RepresentationalRole inner, RepresentationalRole outer) =>
+    RepresentationalRole (ComposeInner inner outer)
+    where
     representationalCoercion cab =
         case representationalCoercion @_ @_ @outer $ representationalCoercion @_ @_ @inner cab of
             MkCoercion -> MkCoercion

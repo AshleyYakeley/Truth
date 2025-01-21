@@ -3,17 +3,19 @@
 module Pinafore.Library.GTK.Window
     ( windowStuff
     , dialogStuff
-    ) where
+    )
+where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
 import GI.Gtk as GI hiding (Action)
 import Pinafore.API
+import Shapes
+
 import Pinafore.Library.GIO
 import Pinafore.Library.GTK.Context
 import Pinafore.Library.GTK.Widget
-import Shapes
 
 -- LangWindow
 data LangWindow = MkLangWindow
@@ -37,52 +39,55 @@ createLangWindow lc uiw = do
     (lwWindow, wclose) <- runGView (lcGTKContext lc) $ gvGetCloser $ createWindow uiw
     let lwContext = lc
     let lwClose = wclose
-    return $ MkLangWindow {..}
+    return $ MkLangWindow{..}
 
 uiWindowClose :: LangWindow -> View ()
-uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) lwClose
+uiWindowClose MkLangWindow{..} = runGView (lcGTKContext lwContext) lwClose
 
 openWindow :: LangContext -> (Natural, Natural) -> ImmutableWholeModel Text -> LangWidget -> Action LangWindow
 openWindow lc (w, h) title (MkLangWidget widget) =
-    actionLiftView $
-    mfix $ \window ->
-        liftIOWithUnlift $ \unlift ->
-            unlift $
-            createLangWindow lc $ let
-                wsSize :: (Int32, Int32)
-                wsSize = (fromIntegral w, fromIntegral h)
-                wsPosition = WindowPositionCenter
-                wsCloseBoxAction :: GView 'Locked ()
-                wsCloseBoxAction = gvRunUnlocked $ lwClose window
-                wsTitle :: Model (ROWUpdate Text)
-                wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
-                wsContent :: AccelGroup -> GView 'Unlocked Widget
-                wsContent ag =
-                    widget
-                        MkWidgetContext
-                            { wcUnlift = unlift
-                            , wcAccelGroup = ag
-                            , wcSelectNotify = mempty
-                            , wcOtherContext = lcOtherContext lc
-                            }
-                in MkWindowSpec {..}
+    actionLiftView
+        $ mfix
+        $ \window ->
+            liftIOWithUnlift $ \unlift ->
+                unlift
+                    $ createLangWindow lc
+                    $ let
+                        wsSize :: (Int32, Int32)
+                        wsSize = (fromIntegral w, fromIntegral h)
+                        wsPosition = WindowPositionCenter
+                        wsCloseBoxAction :: GView 'Locked ()
+                        wsCloseBoxAction = gvRunUnlocked $ lwClose window
+                        wsTitle :: Model (ROWUpdate Text)
+                        wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableModelToReadOnlyModel title
+                        wsContent :: AccelGroup -> GView 'Unlocked Widget
+                        wsContent ag =
+                            widget
+                                MkWidgetContext
+                                    { wcUnlift = unlift
+                                    , wcAccelGroup = ag
+                                    , wcSelectNotify = mempty
+                                    , wcOtherContext = lcOtherContext lc
+                                    }
+                        in MkWindowSpec{..}
 
 exitUI :: LangContext -> View ()
 exitUI lc = runGView (lcGTKContext lc) $ gvExitUI
 
 showWindow :: LangWindow -> View ()
-showWindow MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowShow lwWindow
+showWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowShow lwWindow
 
 hideWindow :: LangWindow -> View ()
-hideWindow MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowHide lwWindow
+hideWindow MkLangWindow{..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowHide lwWindow
 
 run :: forall a. (LangContext -> Action a) -> Action a
 run call =
     actionTunnelView $ \unlift ->
         runGTKView $ \gtkc -> do
             clipboard <- runGView gtkc getClipboard
-            unlift $
-                call $ MkLangContext {lcGTKContext = gtkc, lcOtherContext = MkOtherContext {ocClipboard = clipboard}}
+            unlift
+                $ call
+                $ MkLangContext{lcGTKContext = gtkc, lcOtherContext = MkOtherContext{ocClipboard = clipboard}}
 
 windowStuff :: LibraryStuff
 windowStuff =
@@ -91,17 +96,17 @@ windowStuff =
         ""
         [ typeBDS "Context" "Context for GTK" (MkSomeGroundType contextGroundType) []
         , valBDS
-              "run"
-              "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
-          run @A
+            "run"
+            "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed."
+            $ run @A
         , typeBDS "Window" "A user interface window." (MkSomeGroundType windowGroundType) []
         , namespaceBDS
-              "Window"
-              [ valBDS "open" "Open a new window with this size, title and widget." openWindow
-              , valBDS "close" "Close a window." uiWindowClose
-              , valBDS "show" "Show a window." showWindow
-              , valBDS "hide" "Hide a window." hideWindow
-              ]
+            "Window"
+            [ valBDS "open" "Open a new window with this size, title and widget." openWindow
+            , valBDS "close" "Close a window." uiWindowClose
+            , valBDS "show" "Show a window." showWindow
+            , valBDS "hide" "Hide a window." hideWindow
+            ]
         , valBDS "exit" "Exit the user interface." exitUI
         ]
 

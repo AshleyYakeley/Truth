@@ -11,7 +11,7 @@ applyConstFunction :: ConstFunction a b -> a -> b
 applyConstFunction (ConstConstFunction b) _ = b
 applyConstFunction (FunctionConstFunction ab) a = ab a
 
-applyConstFunctionA :: (Applicative m) => ConstFunction a b -> m a -> m b
+applyConstFunctionA :: Applicative m => ConstFunction a b -> m a -> m b
 applyConstFunctionA (ConstConstFunction b) _ = pure b
 applyConstFunctionA (FunctionConstFunction ab) ma = fmap ab ma
 
@@ -41,17 +41,17 @@ instance Arrow ConstFunction where
     arr = FunctionConstFunction
     first abc = FunctionConstFunction (\(b, d) -> (applyConstFunction abc b, d))
 
-class (Functor f) => FunctorGetPure f where
+class Functor f => FunctorGetPure f where
     getPure :: forall a b. ConstFunction (f a) (b -> f b)
     getPure = FunctionConstFunction (\fa b -> fmap (const b) fa)
 
-applicativeGetPure :: (Applicative f) => ConstFunction (f a) (b -> f b)
+applicativeGetPure :: Applicative f => ConstFunction (f a) (b -> f b)
 applicativeGetPure = ConstConstFunction pure
 
 instance FunctorGetPure ((->) p) where
     getPure = applicativeGetPure
 
-instance (FunctorGetPure f) => CatFunctor ConstFunction ConstFunction f where
+instance FunctorGetPure f => CatFunctor ConstFunction ConstFunction f where
     cfmap (ConstConstFunction b) = fmap (\bfb -> bfb b) getPure
     cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab)
 

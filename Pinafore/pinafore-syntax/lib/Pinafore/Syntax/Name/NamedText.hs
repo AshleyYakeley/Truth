@@ -1,12 +1,13 @@
 module Pinafore.Syntax.Name.NamedText where
 
 import Pinafore.Base
+import Shapes
+
 import Pinafore.Syntax.Name.FullName
 import Pinafore.Syntax.Name.FullNameRef
 import Pinafore.Syntax.Name.Namespace
 import Pinafore.Syntax.Name.NamespaceRef
 import Pinafore.Syntax.Text
-import Shapes
 
 data NamedTextItem
     = FullNameNTI FullName
@@ -16,8 +17,8 @@ instance ToText NamedTextItem where
     toText (FullNameNTI fn) = showText fn
     toText (NamespaceNTI ns) = showText ns
 
-newtype NamedText =
-    MkNamedText ((NamedTextItem -> Text) -> Text)
+newtype NamedText
+    = MkNamedText ((NamedTextItem -> Text) -> Text)
     deriving newtype (Semigroup, Monoid)
 
 instance Eq NamedText where

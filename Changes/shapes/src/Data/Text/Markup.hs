@@ -2,17 +2,19 @@ module Data.Text.Markup where
 
 import Shapes.Import
 
-data Markup a =
-    MkMarkup [(Text, MarkupElement a)]
-             Text
+data Markup a
+    = MkMarkup
+        [(Text, MarkupElement a)]
+        Text
 
-data MarkupElement a =
-    MkMarkupElement a
-                    (Markup a)
+data MarkupElement a
+    = MkMarkupElement
+        a
+        (Markup a)
 
 instance Semigroup (Markup a) where
     MkMarkup aa at <> MkMarkup [] bt = MkMarkup aa (at <> bt)
-    MkMarkup aa at <> MkMarkup ((bbt, bbx):bbr) bt = MkMarkup (aa <> ((at <> bbt, bbx) : bbr)) bt
+    MkMarkup aa at <> MkMarkup ((bbt, bbx) : bbr) bt = MkMarkup (aa <> ((at <> bbt, bbx) : bbr)) bt
 
 instance Monoid (Markup a) where
     mempty = MkMarkup mempty mempty
@@ -30,19 +32,21 @@ markupStrip :: Markup a -> Text
 markupStrip (MkMarkup ee et) = concatmap (\(t, e) -> t <> markupElementStrip e) ee <> et
 
 markupElementSerialise ::
-       forall a b. Monoid b
-    => (a -> b -> b)
-    -> (Char -> b)
-    -> MarkupElement a
-    -> b
+    forall a b.
+    Monoid b =>
+    (a -> b -> b) ->
+    (Char -> b) ->
+    MarkupElement a ->
+    b
 markupElementSerialise abb cb (MkMarkupElement a m) = abb a $ markupSerialise abb cb m
 
 markupSerialise ::
-       forall a b. Monoid b
-    => (a -> b -> b)
-    -> (Char -> b)
-    -> Markup a
-    -> b
+    forall a b.
+    Monoid b =>
+    (a -> b -> b) ->
+    (Char -> b) ->
+    Markup a ->
+    b
 markupSerialise abb cb (MkMarkup ee et) = let
     tb :: Text -> b
     tb t = concatmap cb $ otoList t
@@ -58,10 +62,11 @@ tagMarkup :: a -> Markup a -> Markup a
 tagMarkup a m = elementMarkup $ MkMarkupElement a m
 
 markupMapM ::
-       forall m a b. Monad m
-    => (a -> Markup b -> m (Markup b))
-    -> Markup a
-    -> m (Markup b)
+    forall m a b.
+    Monad m =>
+    (a -> Markup b -> m (Markup b)) ->
+    Markup a ->
+    m (Markup b)
 markupMapM f (MkMarkup ee et) = do
     ee' <-
         for ee $ \(t, MkMarkupElement a e) -> do

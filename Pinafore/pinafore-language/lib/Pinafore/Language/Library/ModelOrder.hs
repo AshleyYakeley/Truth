@@ -2,7 +2,8 @@
 
 module Pinafore.Language.Library.ModelOrder
     ( modelOrderLibSection
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Library.Defs
@@ -19,14 +20,14 @@ modelOrderLibSection =
         ""
         [ typeBDS "ModelOrder" "" (MkSomeGroundType modelOrderGroundType) []
         , hasSubtypeRelationBDS Verify "" $ functionToShim "Order to ModelOrder" $ pureLangModelOrder @A
-        , namespaceBDS "ModelOrder" $
-          monoidEntries @(LangModelOrder A) <>
-          [ valBDS
-                "map"
-                "Map a function on a `ModelOrder`."
-                (contramap :: (B -> A) -> LangModelOrder A -> LangModelOrder B)
-          , valBDS "on" "Order by a `ModelOrder` on a particular property." $ langModelOrderOn @B @A
-          , valBDS "reverse" "Reverse a `ModelOrder`." $ reverseLangModelOrder @A
-          , valBDS "whole" "Order two whole models." $ langModelOrderCompare @A
-          ]
+        , namespaceBDS "ModelOrder"
+            $ monoidEntries @(LangModelOrder A)
+            <> [ valBDS
+                    "map"
+                    "Map a function on a `ModelOrder`."
+                    (contramap :: (B -> A) -> LangModelOrder A -> LangModelOrder B)
+               , valBDS "on" "Order by a `ModelOrder` on a particular property." $ langModelOrderOn @B @A
+               , valBDS "reverse" "Reverse a `ModelOrder`." $ reverseLangModelOrder @A
+               , valBDS "whole" "Order two whole models." $ langModelOrderCompare @A
+               ]
         ]
