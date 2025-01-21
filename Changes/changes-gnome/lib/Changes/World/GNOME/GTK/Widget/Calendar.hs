@@ -1,12 +1,14 @@
 module Changes.World.GNOME.GTK.Widget.Calendar
     ( createCalendar
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import Data.Time
 import GI.Gtk as Gtk
 import Shapes hiding (get)
+
+import Changes.World.GNOME.GI
 
 createCalendar :: Model (WholeUpdate Day) -> GView 'Unlocked Widget
 createCalendar rmod = do

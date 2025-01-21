@@ -2,13 +2,15 @@
 
 module Language.Expression.Common.Sealed.SealedF where
 
-import Language.Expression.Common.Open
-import Language.Expression.Common.Sealed.Sealed
 import Shapes
 
-data SealedFExpression (varw :: Type -> Type) (tw :: Type -> Type) (f :: Type -> Type) =
-    forall t. MkSealedFExpression (tw t)
-                                  (Expression varw (f t))
+import Language.Expression.Common.Open
+import Language.Expression.Common.Sealed.Sealed
+
+data SealedFExpression (varw :: Type -> Type) (tw :: Type -> Type) (f :: Type -> Type)
+    = forall t. MkSealedFExpression
+        (tw t)
+        (Expression varw (f t))
 
 constSealedFExpression :: SomeFor f tw -> SealedFExpression varw tw f
 constSealedFExpression (MkSomeFor twt t) = MkSealedFExpression twt $ pure t
@@ -22,7 +24,7 @@ applySealedFExpression (MkSealedFExpression twt exprar) expra = MkSealedExpressi
 toSealedFExpression :: Applicative f => SealedExpression varw tw -> SealedFExpression varw tw f
 toSealedFExpression (MkSealedExpression twt expr) = MkSealedFExpression twt $ fmap pure expr
 
-evalSealedFExpression :: (MonadThrow (ExpressionError varw) m) => SealedFExpression varw tw f -> m (SomeFor f tw)
+evalSealedFExpression :: MonadThrow (ExpressionError varw) m => SealedFExpression varw tw f -> m (SomeFor f tw)
 evalSealedFExpression (MkSealedFExpression twa expr) = do
     a <- evalExpression expr
     return $ MkSomeFor twa a

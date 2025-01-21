@@ -1,10 +1,11 @@
 module Changes.World.GNOME.GTK.Widget.Range where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk as Gtk
 import Shapes hiding (get)
 import Shapes.Numeric
+
+import Changes.World.GNOME.GI
 
 attachRangeValue :: Range -> Model (WholeUpdate Double) -> GView 'Unlocked ()
 attachRangeValue widget model = do

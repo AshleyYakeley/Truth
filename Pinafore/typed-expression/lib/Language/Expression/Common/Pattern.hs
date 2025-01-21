@@ -1,6 +1,7 @@
 module Language.Expression.Common.Pattern
     ( module I
-    ) where
+    )
+where
 
 import Language.Expression.Common.Pattern.Constructor as I
 import Language.Expression.Common.Pattern.Func as I

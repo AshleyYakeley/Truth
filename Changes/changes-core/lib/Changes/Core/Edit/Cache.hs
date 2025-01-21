@@ -1,13 +1,14 @@
 module Changes.Core.Edit.Cache
-    ( IsCache(..)
+    ( IsCache (..)
     , cacheAdd
     , subcacheModify
     , ListCache
-    , CacheableEdit(..)
+    , CacheableEdit (..)
     , trimWithMap
     , editCacheUpdates
-    , SimpleCacheKey(..)
-    ) where
+    , SimpleCacheKey (..)
+    )
+where
 
 import Changes.Core.Edit.Edit
 import Changes.Core.Import
@@ -23,72 +24,82 @@ cacheAdd :: (IsCache cache, TestEquality k, Applicative m) => k t -> t -> StateT
 cacheAdd k t = cacheModify k $ StateT $ \_ -> pure ((), Just t)
 
 subcacheModify ::
-       (IsCache cache, TestEquality k, Functor m) => k (cache k') -> StateT (cache k') m r -> StateT (cache k) m r
+    (IsCache cache, TestEquality k, Functor m) => k (cache k') -> StateT (cache k') m r -> StateT (cache k) m r
 subcacheModify key st = cacheModify key $ lensStateT (defaultLens cacheEmpty) st
 
 -- | not the best cache
-newtype ListCache k =
-    MkListCache [SomeOf k]
+newtype ListCache k
+    = MkListCache [SomeOf k]
 
 instance IsCache ListCache where
     cacheEmpty = MkListCache []
     cacheLookup key (MkListCache cc) = listToMaybe $ mapMaybe (matchSomeOf key) cc
     cacheTraverse f =
         StateT $ \(MkListCache cc) ->
-            fmap (\newcc -> ((), MkListCache $ catMaybes newcc)) $
-            for cc $ \(MkSomeOf key oldval) -> fmap (fmap $ MkSomeOf key) $ f key oldval
+            fmap (\newcc -> ((), MkListCache $ catMaybes newcc))
+                $ for cc
+                $ \(MkSomeOf key oldval) -> fmap (fmap $ MkSomeOf key) $ f key oldval
     cacheModify key f =
         StateT $ \(MkListCache cc) -> let
             go [] =
                 fmap
-                    (fmap
-                         (\case
-                              Nothing -> MkListCache []
-                              Just val -> MkListCache [MkSomeOf key val])) $
-                runStateT f Nothing
-            go (MkSomeOf key' val:vv)
+                    ( fmap
+                        ( \case
+                            Nothing -> MkListCache []
+                            Just val -> MkListCache [MkSomeOf key val]
+                        )
+                    )
+                    $ runStateT f Nothing
+            go (MkSomeOf key' val : vv)
                 | Just Refl <- testEquality key key' =
                     fmap
-                        (fmap
-                             (\case
-                                  Nothing -> MkListCache vv
-                                  Just newval -> MkListCache $ MkSomeOf key' newval : vv)) $
-                    runStateT f $ Just val
-            go (v:vv) = fmap (fmap (\(MkListCache vv') -> MkListCache $ v : vv')) $ go vv
+                        ( fmap
+                            ( \case
+                                Nothing -> MkListCache vv
+                                Just newval -> MkListCache $ MkSomeOf key' newval : vv
+                            )
+                        )
+                        $ runStateT f
+                        $ Just val
+            go (v : vv) = fmap (fmap (\(MkListCache vv') -> MkListCache $ v : vv')) $ go vv
             in go cc
 
 class CacheableEdit (edit :: Type) where
     trimEdits :: [edit] -> [edit]
     type EditCacheKey (cache :: (Type -> Type) -> Type) edit :: Type -> Type
     editCacheAdd ::
-           forall cache m t. (IsCache cache, Applicative m)
-        => EditReader edit t
-        -> t
-        -> StateT (cache (EditCacheKey cache edit)) m ()
+        forall cache m t.
+        (IsCache cache, Applicative m) =>
+        EditReader edit t ->
+        t ->
+        StateT (cache (EditCacheKey cache edit)) m ()
     editCacheLookup ::
-           forall cache t. IsCache cache
-        => EditReader edit t
-        -> cache (EditCacheKey cache edit)
-        -> Maybe t
+        forall cache t.
+        IsCache cache =>
+        EditReader edit t ->
+        cache (EditCacheKey cache edit) ->
+        Maybe t
     editCacheUpdate ::
-           forall cache. IsCache cache
-        => edit
-        -> StateT (cache (EditCacheKey cache edit)) IO ()
+        forall cache.
+        IsCache cache =>
+        edit ->
+        StateT (cache (EditCacheKey cache edit)) IO ()
+
     -- defaults
     type EditCacheKey _ edit = EditReader edit
     default editCacheAdd ::
         forall cache m t.
-            (IsCache cache, Applicative m, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
-                    EditReader edit t -> t -> StateT (cache (EditCacheKey cache edit)) m ()
+        (IsCache cache, Applicative m, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
+        EditReader edit t -> t -> StateT (cache (EditCacheKey cache edit)) m ()
     editCacheAdd = cacheAdd
     default editCacheLookup ::
         forall cache t.
-            (IsCache cache, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
-                    EditReader edit t -> cache (EditCacheKey cache edit) -> Maybe t
+        (IsCache cache, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
+        EditReader edit t -> cache (EditCacheKey cache edit) -> Maybe t
     editCacheLookup = cacheLookup
     default editCacheUpdate ::
         (IsCache cache, ApplicableEdit edit, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
-                edit -> StateT (cache (EditCacheKey cache edit)) IO ()
+        edit -> StateT (cache (EditCacheKey cache edit)) IO ()
     editCacheUpdate edit =
         cacheTraverse $ \rt val -> let
             tmr :: Readable (ComposeInner Maybe IO) (EditReader edit)
@@ -100,20 +111,21 @@ class CacheableEdit (edit :: Type) where
 
 trimWithMap' :: Ord k => (e -> k) -> [e] -> ([e], Map k ())
 trimWithMap' _ [] = ([], mempty)
-trimWithMap' ek (e:ee) = let
+trimWithMap' ek (e : ee) = let
     (ee', m) = trimWithMap' ek ee
     k = ek e
     in case lookup k m of
-           Nothing -> (e : ee', insertMap k () m)
-           Just () -> (ee', m)
+        Nothing -> (e : ee', insertMap k () m)
+        Just () -> (ee', m)
 
 trimWithMap :: Ord k => (e -> k) -> [e] -> [e]
 trimWithMap ek ee = fst $ trimWithMap' ek ee
 
 editCacheUpdates ::
-       forall edit cache. (CacheableEdit edit, IsCache cache)
-    => NonEmpty edit
-    -> StateT (cache (EditCacheKey cache edit)) IO ()
+    forall edit cache.
+    (CacheableEdit edit, IsCache cache) =>
+    NonEmpty edit ->
+    StateT (cache (EditCacheKey cache edit)) IO ()
 editCacheUpdates ee = for_ ee $ editCacheUpdate
 
 data SimpleCacheKey (a :: Type) (b :: Type) (ct :: Type) where

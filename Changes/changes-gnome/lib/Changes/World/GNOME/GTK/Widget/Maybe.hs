@@ -1,19 +1,22 @@
 module Changes.World.GNOME.GTK.Widget.Maybe
     ( createOneWhole
     , createOneWholeSel
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk hiding (get)
 import Shapes
 
+import Changes.World.GNOME.GI
+
 oneWholeView ::
-       forall f update. MonadInner f
-    => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> GView 'Unlocked Widget)
-    -> SelectNotify (f ())
-    -> GView 'Unlocked Widget
+    forall f update.
+    MonadInner f =>
+    Model (FullResultOneUpdate f update) ->
+    (f (Model update) -> GView 'Unlocked Widget) ->
+    SelectNotify (f ()) ->
+    GView 'Unlocked Widget
 oneWholeView model baseView sn = do
     (box, widget) <- gvRunLocked $ gvNewWidget Box [#orientation := OrientationVertical]
     let
@@ -27,18 +30,20 @@ oneWholeView model baseView sn = do
     return widget
 
 createOneWhole ::
-       forall f update. MonadInner f
-    => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> GView 'Unlocked Widget)
-    -> GView 'Unlocked Widget
+    forall f update.
+    MonadInner f =>
+    Model (FullResultOneUpdate f update) ->
+    (f (Model update) -> GView 'Unlocked Widget) ->
+    GView 'Unlocked Widget
 createOneWhole sub itemspec = oneWholeView sub itemspec mempty
 
 createOneWholeSel ::
-       forall sel f update. MonadInner f
-    => Model (FullResultOneUpdate f update)
-    -> (f (Model update, SelectNotify sel) -> GView 'Unlocked Widget)
-    -> SelectNotify (f sel)
-    -> GView 'Unlocked Widget
+    forall sel f update.
+    MonadInner f =>
+    Model (FullResultOneUpdate f update) ->
+    (f (Model update, SelectNotify sel) -> GView 'Unlocked Widget) ->
+    SelectNotify (f sel) ->
+    GView 'Unlocked Widget
 createOneWholeSel subf specsel snfsel = let
     spec :: f (Model update) -> GView 'Unlocked Widget
     spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub

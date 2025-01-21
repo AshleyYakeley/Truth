@@ -2,11 +2,12 @@
 
 module Data.Media.Image.Metadata
     ( ImageDataKey
-    , Keys(..)
-    , Value(..)
+    , Keys (..)
+    , Value (..)
     , fromMetadatas
     , toMetadatas
-    ) where
+    )
+where
 
 import Codec.Picture.Metadata
 import Control.DeepSeq

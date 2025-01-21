@@ -1,18 +1,22 @@
 module Language.Expression.TypeSystem.TypeSystem where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Common
 import Language.Expression.TypeSystem.SolverExpression
 import Language.Expression.TypeSystem.WitnessMappable
-import Shapes
 
 type ShowTypeSystem ts = (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts), AllConstraint Show (TSPosWitness ts))
 
-class ( Monad (TSOuter ts)
-      , Category (TSShim ts)
-      , Eq (TSVarID ts)
-      -- , ShowTypeSystem ts
-      ) => TypeSystem (ts :: Type) where
+class
+    ( Monad (TSOuter ts)
+    , Category (TSShim ts)
+    , Eq (TSVarID ts)
+    -- , ShowTypeSystem ts
+    ) =>
+    TypeSystem (ts :: Type)
+    where
     type TSOuter ts :: Type -> Type
     type TSNegWitness ts :: Type -> Type
     type TSPosWitness ts :: Type -> Type
@@ -33,17 +37,19 @@ type TSPosShimWit ts = TSShimWit ts 'Positive
 type TSMappable ts = WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts)
 
 tsMapWitnessesM ::
-       forall ts m a. (TSMappable ts a, Applicative m)
-    => EndoM' m (TSPosShimWit ts)
-    -> EndoM' m (TSNegShimWit ts)
-    -> EndoM m a
+    forall ts m a.
+    (TSMappable ts a, Applicative m) =>
+    EndoM' m (TSPosShimWit ts) ->
+    EndoM' m (TSNegShimWit ts) ->
+    EndoM m a
 tsMapWitnessesM = mapWitnessesM
 
 tsMapWitnesses ::
-       forall ts a. TSMappable ts a
-    => Endo' (TSPosShimWit ts)
-    -> Endo' (TSNegShimWit ts)
-    -> Endo a
+    forall ts a.
+    TSMappable ts a =>
+    Endo' (TSPosShimWit ts) ->
+    Endo' (TSNegShimWit ts) ->
+    Endo a
 tsMapWitnesses = mapWitnesses
 
 type TSVarWit ts = NameWitness (TSVarID ts) (TSNegShimWit ts)

@@ -23,14 +23,14 @@ instance HasCCRVariance 'RangeCCRVariance LangLens
 
 instance HasCCRVariance 'RangeCCRVariance (LangLens a)
 
-identityLangLens :: forall x y. LangLens '( x, y) '( y, x)
+identityLangLens :: forall x y. LangLens '(x, y) '(y, x)
 identityLangLens = MkLangLens id $ \_ -> id
 
 composeLangLens ::
-       forall ap aq bx by cp cq.
-       LangLens '( bx, by) '( cp, cq)
-    -> LangLens '( ap, aq) '( by, bx)
-    -> LangLens '( ap, aq) '( cp, cq)
+    forall ap aq bx by cp cq.
+    LangLens '(bx, by) '(cp, cq) ->
+    LangLens '(ap, aq) '(by, bx) ->
+    LangLens '(ap, aq) '(cp, cq)
 composeLangLens (MkLangLens gBC pbBC) (MkLangLens gAB pbAB) =
     MkLangLens (gBC . gAB) $ \a c -> let
         b = gAB a
@@ -38,20 +38,20 @@ composeLangLens (MkLangLens gBC pbBC) (MkLangLens gAB pbAB) =
         in pbAB a b'
 
 pairLangLens ::
-       forall a bp bq cp cq.
-       LangLens '( a, a) '( bp, bq)
-    -> LangLens '( a, a) '( cp, cq)
-    -> LangLens '( a, a) '( (bp, cp), (bq, cq))
+    forall a bp bq cp cq.
+    LangLens '(a, a) '(bp, bq) ->
+    LangLens '(a, a) '(cp, cq) ->
+    LangLens '(a, a) '((bp, cp), (bq, cq))
 pairLangLens (MkLangLens gAB pbAB) (MkLangLens gAC pbAC) =
     MkLangLens (\a -> (gAB a, gAC a)) $ \a (b, c) -> let
         a' = pbAB a b
         in pbAC a' c
 
 eitherLangLens ::
-       forall ap aq bp bq cp cq.
-       LangLens '( ap, aq) '( cp, cq)
-    -> LangLens '( bp, bq) '( cp, cq)
-    -> LangLens '( Either ap bp, Either aq bq) '( cp, cq)
+    forall ap aq bp bq cp cq.
+    LangLens '(ap, aq) '(cp, cq) ->
+    LangLens '(bp, bq) '(cp, cq) ->
+    LangLens '(Either ap bp, Either aq bq) '(cp, cq)
 eitherLangLens (MkLangLens gAC pbAC) (MkLangLens gBC pbBC) =
     MkLangLens (either gAC gBC) $ \case
         Left a -> \c -> Left $ pbAC a c

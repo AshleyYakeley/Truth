@@ -2,7 +2,8 @@ module Pinafore.Language.Interpret.TypeDecl
     ( interpretSequentialTypeDeclaration
     , interpretRecursiveTypeDeclarations
     , interpretNonrecursiveTypeDeclaration
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -26,11 +27,11 @@ getGroundTypes (ConsDolanType t1 tr) = do
     return $ gt1 : gtr
 
 typeDeclarationTypeBox ::
-       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => FullName
-    -> RawMarkdown
-    -> SyntaxRecursiveTypeDeclaration
-    -> QInterpreter (QFixBox () ())
+    (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression) =>
+    FullName ->
+    RawMarkdown ->
+    SyntaxRecursiveTypeDeclaration ->
+    QInterpreter (QFixBox () ())
 typeDeclarationTypeBox name doc OpenEntitySyntaxRecursiveTypeDeclaration = makeOpenEntityTypeBox name doc
 typeDeclarationTypeBox name doc (StorableDatatypeSyntaxRecursiveTypeDeclaration params sconss) =
     makeStorableDataTypeBox name doc params sconss
@@ -43,20 +44,20 @@ typeDeclarationTypeBox name doc (PlainDatatypeSyntaxRecursiveTypeDeclaration par
     makePlainDataTypeBox (fromMaybe [] mstl) name doc params sconss
 
 interpretSequentialTypeDeclaration ::
-       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => FullName
-    -> RawMarkdown
-    -> SyntaxRecursiveTypeDeclaration
-    -> QScopeBuilder ()
+    (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression) =>
+    FullName ->
+    RawMarkdown ->
+    SyntaxRecursiveTypeDeclaration ->
+    QScopeBuilder ()
 interpretSequentialTypeDeclaration name doc tdecl = do
     tbox <- builderLift $ typeDeclarationTypeBox name doc tdecl
     boxSequential tbox ()
     registerDocs $ pureForest $ typeDeclDoc name tdecl doc
 
 interpretRecursiveTypeDeclarations ::
-       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => [(SourcePos, FullName, RawMarkdown, SyntaxRecursiveTypeDeclaration)]
-    -> QScopeBuilder ()
+    (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression) =>
+    [(SourcePos, FullName, RawMarkdown, SyntaxRecursiveTypeDeclaration)] ->
+    QScopeBuilder ()
 interpretRecursiveTypeDeclarations decls = do
     wfs <-
         for decls $ \(spos, name, doc, tdecl) -> do
@@ -66,11 +67,11 @@ interpretRecursiveTypeDeclarations decls = do
     boxRecursiveIO (mconcat wfs) ()
 
 interpretNonrecursiveTypeDeclaration ::
-       (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression)
-    => FullName
-    -> RawMarkdown
-    -> SyntaxNonrecursiveTypeDeclaration
-    -> QScopeBuilder ()
+    (?interpretExpression :: SyntaxExpression -> QInterpreter QExpression) =>
+    FullName ->
+    RawMarkdown ->
+    SyntaxNonrecursiveTypeDeclaration ->
+    QScopeBuilder ()
 interpretNonrecursiveTypeDeclaration name doc (PredicateSyntaxNonrecursiveTypeDeclaration storable st predicate) = do
     tbox <- builderLift $ makePredicateTypeBox name doc storable st predicate
     boxSequential tbox ()

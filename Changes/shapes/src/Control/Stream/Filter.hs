@@ -15,9 +15,10 @@ eoiToMaybe :: ItemOrEnd a -> Maybe a
 eoiToMaybe (Item a) = Just a
 eoiToMaybe End = Nothing
 
-data Filter m a b =
-    forall s. MkFilter s
-                       (ItemOrEnd a -> StateT s m [b])
+data Filter m a b
+    = forall s. MkFilter
+        s
+        (ItemOrEnd a -> StateT s m [b])
 
 instance Monad m => Functor (Filter m a) where
     fmap ab (MkFilter s0 f) = MkFilter s0 $ (fmap $ fmap $ fmap ab) f
@@ -25,10 +26,10 @@ instance Monad m => Functor (Filter m a) where
 instance Monad m => Category (Filter m) where
     id =
         MkFilter () $ \ma ->
-            return $
-            case ma of
-                End -> []
-                Item a -> [a]
+            return
+                $ case ma of
+                    End -> []
+                    Item a -> [a]
     MkFilter s0bc fbc . MkFilter s0ab fab =
         MkFilter (s0ab, s0bc) $ \ma -> do
             bb <- lensStateT fstLens $ fab ma

@@ -41,12 +41,13 @@ type Endo' (w :: k -> Type) = forall t. Endo (w t)
 type EndoM' (m :: Type -> Type) (w :: k -> Type) = forall t. EndoM m (w t)
 
 endoSomeFor ::
-       forall m k (w :: k -> Type) (f :: k -> Type). Functor m
-    => EndoM' m w
-    -> EndoM m (SomeFor f w)
+    forall m k (w :: k -> Type) (f :: k -> Type).
+    Functor m =>
+    EndoM' m w ->
+    EndoM m (SomeFor f w)
 endoSomeFor wtmwt = MkEndoM $ \(MkSomeFor wa fa) -> fmap (\wa' -> MkSomeFor wa' fa) $ unEndoM wtmwt wa
 
-tellEndoM :: (Monoid w) => (a -> w) -> EndoM (Writer w) a
+tellEndoM :: Monoid w => (a -> w) -> EndoM (Writer w) a
 tellEndoM f = MkEndoM $ \a -> tell (f a) >> return a
 
 execEndoMWriter :: EndoM (Writer w) a -> a -> w

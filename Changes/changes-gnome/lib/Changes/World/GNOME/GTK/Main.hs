@@ -1,13 +1,15 @@
 module Changes.World.GNOME.GTK.Main
     ( runGTK
     , runGTKView
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.GLib as GI hiding (String)
 import GI.Gtk as GI
 import Shapes
+
+import Changes.World.GNOME.GI
 
 data RunState
     = RSRun
@@ -57,7 +59,7 @@ runGTK call = do
             viewLiftLifecycle ondone
             ma
     hoistIO (cbRunLocked gtkcLock) $ do
-        a <- hoistIO (cbRunUnlocked gtkcLock) $ call MkGTKContext {..}
+        a <- hoistIO (cbRunUnlocked gtkcLock) $ call MkGTKContext{..}
         liftIO checkdone
         mainLoop gtkcLock runVar
         return a

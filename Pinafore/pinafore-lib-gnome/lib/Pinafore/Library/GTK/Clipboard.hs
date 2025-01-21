@@ -1,12 +1,14 @@
 module Pinafore.Library.GTK.Clipboard
     ( clipboardStuff
-    ) where
+    )
+where
 
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.API
-import Pinafore.Library.GTK.Context
 import Shapes
+
+import Pinafore.Library.GTK.Context
 
 clipBijection :: Bijection (Maybe Clip) (Know Literal)
 clipBijection = let
@@ -17,9 +19,9 @@ clipBijection = let
     isoBackwards (Known l)
         | Just t <- fromLiteral l = Just $ TextClip t
     isoBackwards _ = Nothing
-    in MkIsomorphism {..}
+    in MkIsomorphism{..}
 
-langClipboard :: LangContext -> LangWholeModel '( Literal, Literal)
+langClipboard :: LangContext -> LangWholeModel '(Literal, Literal)
 langClipboard c =
     wModelToWholeModel $ eaMap (bijectionWholeChangeLens clipBijection) $ MkWModel $ ocClipboard $ lcOtherContext c
 

@@ -1,9 +1,10 @@
 module Pinafore.Syntax.Name.NamespaceRef where
 
 import Pinafore.Base
+import Shapes
+
 import Pinafore.Syntax.Name.Name
 import Pinafore.Syntax.Name.Namespace
-import Shapes
 
 data NamespaceRef
     = AbsoluteNamespaceRef Namespace
@@ -11,11 +12,9 @@ data NamespaceRef
     deriving stock (Eq, Ord)
 
 pattern CurrentNamespaceRef :: NamespaceRef
-
 pattern CurrentNamespaceRef = RelativeNamespaceRef []
 
 pattern RootNamespaceRef :: NamespaceRef
-
 pattern RootNamespaceRef = AbsoluteNamespaceRef RootNamespace
 
 namespaceConcatRefM :: Applicative m => m Namespace -> NamespaceRef -> m Namespace
@@ -59,12 +58,12 @@ namespaceRootRelative (MkNamespace nn) = RelativeNamespaceRef nn
 -- | All the ways a 'Namespace' can be split into a 'Namespace' and relative 'NamespaceRef', starting with the longest 'Namespace' and shortest 'NamespaceRef'.
 namespaceSplits :: Namespace -> [(Namespace, NamespaceRef)]
 namespaceSplits (MkNamespace ns) = fmap (\(s1, s2) -> (MkNamespace s1, RelativeNamespaceRef s2)) $ splits ns
-  where
-    splits1 :: forall a. [a] -> [([a], [a])]
-    splits1 [] = []
-    splits1 (a:aa) = fmap (\(s1, s2) -> (s1, a : s2)) $ splits aa
-    splits :: forall a. [a] -> [([a], [a])]
-    splits aa = (aa, []) : splits1 aa
+    where
+        splits1 :: forall a. [a] -> [([a], [a])]
+        splits1 [] = []
+        splits1 (a : aa) = fmap (\(s1, s2) -> (s1, a : s2)) $ splits aa
+        splits :: forall a. [a] -> [([a], [a])]
+        splits aa = (aa, []) : splits1 aa
 
 namespaceWithinRef :: Namespace -> Namespace -> Maybe NamespaceRef
 namespaceWithinRef na nb = fmap RelativeNamespaceRef $ namespaceWithin na nb

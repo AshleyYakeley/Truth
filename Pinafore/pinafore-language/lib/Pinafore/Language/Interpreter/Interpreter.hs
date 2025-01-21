@@ -2,7 +2,7 @@
 
 module Pinafore.Language.Interpreter.Interpreter
     ( QInterpreter
-    , LoadModule(..)
+    , LoadModule (..)
     , nameWitnessErrorType
     , sourcePosParam
     , varIDStateParam
@@ -11,7 +11,7 @@ module Pinafore.Language.Interpreter.Interpreter
     , currentNamespaceParam
     , appNotationVarRef
     , appNotationBindsProd
-    , LibraryContext(..)
+    , LibraryContext (..)
     , runInterpreter
     , getRenderFullName
     , getBindingInfoLookup
@@ -23,7 +23,8 @@ module Pinafore.Language.Interpreter.Interpreter
     , withNewTypeID
     , withSemiIdentifiedType
     , newIdentifiedType
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -70,24 +71,26 @@ emptyInterpretState = let
     isTypeID = szero
     isModules = mempty
     isAppNotationVar = szero
-    in MkInterpretState {..}
+    in MkInterpretState{..}
 
 type InterpretOutput = [(VarID, QExpression)]
 
 type QInterpreter :: Type -> Type
 newtype QInterpreter a = MkQInterpreter
     { unInterpreter :: ReaderT InterpretContext (WriterT InterpretOutput (StateT InterpretState InterpretResult)) a
-    } deriving newtype ( Functor
-                       , Applicative
-                       , Monad
-                       , MonadIO
-                       , MonadFix
-                       , MonadException
-                       , MonadThrow QError
-                       , MonadCatch QError
-                       , MonadHoistIO
-                       , MonadTunnelIO
-                       )
+    }
+    deriving newtype
+        ( Functor
+        , Applicative
+        , Monad
+        , MonadIO
+        , MonadFix
+        , MonadException
+        , MonadThrow QError
+        , MonadCatch QError
+        , MonadHoistIO
+        , MonadTunnelIO
+        )
 
 instance RepresentationalRole QInterpreter where
     representationalCoercion MkCoercion = MkCoercion
@@ -121,17 +124,17 @@ splitNonEmpty (Right b :| r) =
 nameWitnessErrorType :: NonEmpty (Some (NameWitness VarID (QShimWit 'Negative))) -> QErrorType
 nameWitnessErrorType ww = let
     nwToPair ::
-           Some (NameWitness VarID (QShimWit 'Negative)) -> Either (FullNameRef, NamedText) (ImplicitName, NamedText)
+        Some (NameWitness VarID (QShimWit 'Negative)) -> Either (FullNameRef, NamedText) (ImplicitName, NamedText)
     nwToPair (MkSome (MkNameWitness varid (MkShimWit w _))) = let
         tnt = withAllConstraint @Type @ShowNamedText w $ showNamedText w
         in case varIDName varid of
-               Left name -> Left (name, tnt)
-               Right name -> Right (name, tnt)
+            Left name -> Left (name, tnt)
+            Right name -> Right (name, tnt)
     in case splitNonEmpty $ fmap nwToPair ww of
-           Left pp -> ExpressionUndefinedError pp
-           Right pp -> ExpressionUnimpliedError pp
+        Left pp -> ExpressionUndefinedError pp
+        Right pp -> ExpressionUnimpliedError pp
 
-instance (var ~ QVarWit) => MonadThrow (ExpressionError var) QInterpreter where
+instance var ~ QVarWit => MonadThrow (ExpressionError var) QInterpreter where
     throw (UndefinedBindingsError ww) = throw $ nameWitnessErrorType ww
 
 instance Semigroup a => Semigroup (QInterpreter a) where
@@ -153,26 +156,26 @@ contextParam :: Param QInterpreter InterpretContext
 contextParam = MkParam (MkQInterpreter ask) $ \a (MkQInterpreter m) -> MkQInterpreter $ with a m
 
 sourcePosParam :: Param QInterpreter SourcePos
-sourcePosParam = lensMapParam (\bfb a -> fmap (\b -> a {icSourcePos = b}) $ bfb $ icSourcePos a) contextParam
+sourcePosParam = lensMapParam (\bfb a -> fmap (\b -> a{icSourcePos = b}) $ bfb $ icSourcePos a) contextParam
 
 varIDStateParam :: Param QInterpreter VarIDState
-varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bfb $ icVarIDState a) contextParam
+varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a{icVarIDState = b}) $ bfb $ icVarIDState a) contextParam
 
 scopeParam :: Param QInterpreter QScope
-scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) contextParam
+scopeParam = lensMapParam (\bfb a -> fmap (\b -> a{icScope = b}) $ bfb $ icScope a) contextParam
 
 bindingsParam :: Param QInterpreter QBindingMap
-bindingsParam = lensMapParam (\bfb a -> fmap (\b -> a {scopeBindings = b}) $ bfb $ scopeBindings a) scopeParam
+bindingsParam = lensMapParam (\bfb a -> fmap (\b -> a{scopeBindings = b}) $ bfb $ scopeBindings a) scopeParam
 
 currentNamespaceParam :: Param QInterpreter Namespace
 currentNamespaceParam =
-    lensMapParam (\bfb a -> fmap (\b -> a {icCurrentNamespace = b}) $ bfb $ icCurrentNamespace a) contextParam
+    lensMapParam (\bfb a -> fmap (\b -> a{icCurrentNamespace = b}) $ bfb $ icCurrentNamespace a) contextParam
 
 modulePathParam :: Param QInterpreter [ModuleName]
-modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
+modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a{icModulePath = b}) $ bfb $ icModulePath a) contextParam
 
 loadModuleParam :: Param QInterpreter LoadModule
-loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
+loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a{icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
 
 interpretStateRef :: Ref QInterpreter InterpretState
 interpretStateRef = let
@@ -185,31 +188,31 @@ appNotationBindsProd = let
     in MkProd (\a -> MkQInterpreter $ prodTell prod a) (\(MkQInterpreter mr) -> MkQInterpreter $ prodCollect prod mr)
 
 typeIDRef :: Ref QInterpreter TypeID
-typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
+typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a{isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
 
 modulesRef :: Ref QInterpreter (Map ModuleName QModule)
-modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) interpretStateRef
+modulesRef = lensMapRef (\bfb a -> fmap (\b -> a{isModules = b}) $ bfb $ isModules a) interpretStateRef
 
 appNotationVarRef :: Ref QInterpreter VarIDState
 appNotationVarRef =
-    lensMapRef (\bfb a -> fmap (\b -> a {isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
+    lensMapRef (\bfb a -> fmap (\b -> a{isAppNotationVar = b}) $ bfb $ isAppNotationVar a) interpretStateRef
 
 data LibraryContext = MkLibraryContext
     { lcLoadModule :: LoadModule
     }
 
 runInterpreter :: SourcePos -> LibraryContext -> QInterpreter a -> InterpretResult a
-runInterpreter icSourcePos MkLibraryContext {..} qa = let
+runInterpreter icSourcePos MkLibraryContext{..} qa = let
     icVarIDState = szero
     icScope = emptyScope
     icModulePath = []
     icCurrentNamespace = RootNamespace
     icLoadModule = lcLoadModule
-    in evalStateT (evalWriterT $ runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
+    in evalStateT (evalWriterT $ runReaderT (unInterpreter qa) $ MkInterpretContext{..}) emptyInterpretState
 
 firstOf :: [a] -> (a -> Maybe b) -> Maybe b
 firstOf [] _ = Nothing
-firstOf (a:aa) amb =
+firstOf (a : aa) amb =
     case amb a of
         Just b -> Just b
         Nothing -> firstOf aa amb
@@ -234,20 +237,21 @@ getBindingInfoLookup = do
 getNamespaceWithScope :: Namespace -> Namespace -> (FullNameRef -> Bool) -> QInterpreter QScope
 getNamespaceWithScope sourcens destns ff = do
     bmap <- paramAsk bindingsParam
-    return $ emptyScope {scopeBindings = bindingMapNamespaceWith sourcens destns ff bmap}
+    return $ emptyScope{scopeBindings = bindingMapNamespaceWith sourcens destns ff bmap}
 
 exportNames :: [FullNameRef] -> QInterpreter [(FullName, QBindingInfo)]
 exportNames names = do
     bindmap <- getBindingInfoLookup
     let
         (badnamesl, bis) =
-            partitionEithers $
-            fmap
-                (\name ->
-                     case bindmap name of
-                         Just bi -> Right bi
-                         Nothing -> Left name)
-                names
+            partitionEithers
+                $ fmap
+                    ( \name ->
+                        case bindmap name of
+                            Just bi -> Right bi
+                            Nothing -> Left name
+                    )
+                    names
     case nonEmpty badnamesl of
         Just badnames -> throw $ LookupNamesUndefinedError badnames
         Nothing -> return bis
@@ -275,17 +279,18 @@ exportScope nsns names = do
 
 getCycle :: Eq t => t -> [t] -> Maybe (NonEmpty t)
 getCycle _ [] = Nothing
-getCycle mn (n:nn)
+getCycle mn (n : nn)
     | mn == n = Just $ n :| nn
-getCycle mn (_:nn) = getCycle mn nn
+getCycle mn (_ : nn) = getCycle mn nn
 
 loadModuleInScope :: ModuleName -> QInterpreter (Maybe QModule)
 loadModuleInScope mname =
-    paramWith sourcePosParam (initialPos "<unknown>") $
-    paramWith scopeParam emptyScope $
-    paramLocal modulePathParam (\path -> path <> [mname]) $ do
-        loadModule <- paramAsk loadModuleParam
-        runLoadModule loadModule mname
+    paramWith sourcePosParam (initialPos "<unknown>")
+        $ paramWith scopeParam emptyScope
+        $ paramLocal modulePathParam (\path -> path <> [mname])
+        $ do
+            loadModule <- paramAsk loadModuleParam
+            runLoadModule loadModule mname
 
 getModule :: ModuleName -> QInterpreter QModule
 getModule mname = do
@@ -307,7 +312,7 @@ getModule mname = do
 getSubtypeScope :: QSubtypeConversionEntry -> QInterpreter QScope
 getSubtypeScope sce = do
     key <- liftIO newUnique
-    return $ emptyScope {scopeSubtypes = singletonMap key sce}
+    return $ emptyScope{scopeSubtypes = singletonMap key sce}
 
 newTypeID :: QInterpreter (Some TypeIDType)
 newTypeID = do
@@ -321,9 +326,9 @@ withNewTypeID call = do
         MkSome typeID -> call typeID
 
 withSemiIdentifiedType ::
-       forall (dv :: CCRVariances) r.
-       (forall (gt :: CCRVariancesKind dv). FamilialType gt -> QInterpreter r)
-    -> QInterpreter r
+    forall (dv :: CCRVariances) r.
+    (forall (gt :: CCRVariancesKind dv). FamilialType gt -> QInterpreter r) ->
+    QInterpreter r
 withSemiIdentifiedType call =
     withNewTypeID $ \typeID -> do
         Refl <- unsafeIdentifyKind @_ @(CCRVariancesKind dv) typeID

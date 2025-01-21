@@ -1,10 +1,11 @@
 module Changes.World.GNOME.GTK.Widget.TextEntry where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes hiding (get)
+
+import Changes.World.GNOME.GI
 
 attachEntryText :: Entry -> Model (WholeUpdate Text) -> GView 'Unlocked ()
 attachEntryText entry rmod = do
@@ -22,13 +23,14 @@ attachEntryText entry rmod = do
                 setValidState succeeded
         return $ do
             gvBindWholeModel rmod (Just esrc) $ \newtext ->
-                gvRunLocked $
-                withSignalBlocked entry changedSignal $ do
-                    oldtext <- get entry #text
-                    if oldtext == newtext
-                        then return ()
-                        else set entry [#text := newtext]
-                    setValidState True
+                gvRunLocked
+                    $ withSignalBlocked entry changedSignal
+                    $ do
+                        oldtext <- get entry #text
+                        if oldtext == newtext
+                            then return ()
+                            else set entry [#text := newtext]
+                        setValidState True
 
 createEntry :: GView 'Locked (Entry, Widget)
 createEntry = gvNewWidget Entry []

@@ -6,14 +6,16 @@ module Data.Recursion.FixBox
     , boxRecursiveFix
     , boxRecursiveIO
     , boxSequential
-    ) where
+    )
+where
 
 import Control.FixIO
 import Shapes.Import
 
-data FixBox m a b =
-    forall t. MkFixBox (t -> m ())
-                       (a -> m (t, b))
+data FixBox m a b
+    = forall t. MkFixBox
+        (t -> m ())
+        (a -> m (t, b))
 
 instance Functor m => Functor (FixBox m a) where
     fmap pq (MkFixBox f m) = MkFixBox f $ \a -> fmap (\(t, p) -> (t, pq p)) $ m a

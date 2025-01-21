@@ -1,8 +1,8 @@
 module Main
     ( main
-    ) where
+    )
+where
 
-import Paths_pinafore_lib_script qualified
 import Pinafore.Library.GNOME
 import Pinafore.Library.Media
 import Pinafore.Test
@@ -10,13 +10,16 @@ import Shapes
 import Shapes.Test
 import System.Directory
 
+import Paths_pinafore_lib_script qualified
+
 testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $ do
         scriptLibDir <- Paths_pinafore_lib_script.getDataDir
-        runTester defaultTester $
-            testerLoadLibrary (mediaLibrary <> gnomeLibrary) $
-            testerLoad (directoryLoadModule scriptLibDir) $ do
+        runTester defaultTester
+            $ testerLoadLibrary (mediaLibrary <> gnomeLibrary)
+            $ testerLoad (directoryLoadModule scriptLibDir)
+            $ do
                 mm <- testerLiftInterpreter $ runLoadModule (lcLoadModule ?library) $ fromString name
                 case mm of
                     Just _ -> return ()
@@ -40,8 +43,8 @@ getRelFilePaths dir = do
                     return $ fmap (\p -> e </> p) subtree
                 else do
                     isFile <- doesFileExist f
-                    return $
-                        if isFile
+                    return
+                        $ if isFile
                             then [e]
                             else []
     return $ mconcat ff

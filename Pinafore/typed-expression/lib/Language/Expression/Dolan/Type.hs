@@ -2,7 +2,8 @@
 
 module Language.Expression.Dolan.Type
     ( module I
-    ) where
+    )
+where
 
 import Language.Expression.Dolan.Type.Combine as I
 import Language.Expression.Dolan.Type.DolanType as I

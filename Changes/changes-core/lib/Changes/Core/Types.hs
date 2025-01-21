@@ -1,6 +1,7 @@
 module Changes.Core.Types
     ( module I
-    ) where
+    )
+where
 
 import Changes.Core.Types.Bi as I
 import Changes.Core.Types.ByteString as I

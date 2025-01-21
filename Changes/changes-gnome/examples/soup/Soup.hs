@@ -1,6 +1,7 @@
 module Soup
     ( module I
-    ) where
+    )
+where
 
 import Soup.Edit as I
 import Soup.Note as I

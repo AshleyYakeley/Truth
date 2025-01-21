@@ -1,21 +1,22 @@
 module Pinafore.Syntax.Name.FullNameRef where
 
 import Pinafore.Base
+import Shapes
+
 import Pinafore.Syntax.Name.FullName
 import Pinafore.Syntax.Name.Name
 import Pinafore.Syntax.Name.Namespace
 import Pinafore.Syntax.Name.NamespaceRef
-import Shapes
 
 data FullNameRef = MkFullNameRef
     { fnrName :: Name
     , fnrSpace :: NamespaceRef
-    } deriving stock (Eq, Ord)
+    }
+    deriving stock (Eq, Ord)
 
 pattern UnqualifiedFullNameRef :: Name -> FullNameRef
-
 pattern UnqualifiedFullNameRef n =
-        MkFullNameRef n CurrentNamespaceRef
+    MkFullNameRef n CurrentNamespaceRef
 
 fullNameRefToUnqualified :: FullNameRef -> Maybe Name
 fullNameRefToUnqualified (UnqualifiedFullNameRef n) = Just n
@@ -62,10 +63,14 @@ namespaceRelativeFullName na (MkFullName n nb) = MkFullNameRef n $ namespaceRela
 
 relativeNamespace :: [Namespace] -> Namespace -> NamespaceRef
 relativeNamespace basens fn =
-    fromMaybe (namespaceRootRelative fn) $
-    choice $ fmap (\(ns, fref) -> ifpure (elem ns basens) fref) $ namespaceSplits fn
+    fromMaybe (namespaceRootRelative fn)
+        $ choice
+        $ fmap (\(ns, fref) -> ifpure (elem ns basens) fref)
+        $ namespaceSplits fn
 
 relativeFullName :: [Namespace] -> FullName -> FullNameRef
 relativeFullName basens fn =
-    fromMaybe (fullNameRootRelative fn) $
-    choice $ fmap (\(ns, fref) -> ifpure (elem ns basens) fref) $ fullNameSplits fn
+    fromMaybe (fullNameRootRelative fn)
+        $ choice
+        $ fmap (\(ns, fref) -> ifpure (elem ns basens) fref)
+        $ fullNameSplits fn

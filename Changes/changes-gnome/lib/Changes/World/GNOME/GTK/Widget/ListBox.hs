@@ -1,14 +1,16 @@
 module Changes.World.GNOME.GTK.Widget.ListBox
     ( createListBox
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
 
-newtype ListViewState =
-    MkListViewState [GViewState 'Unlocked]
+import Changes.World.GNOME.GI
+
+newtype ListViewState
+    = MkListViewState [GViewState 'Unlocked]
 
 insertListViewState :: Monad m => SequencePoint -> GViewState 'Unlocked -> StateT ListViewState m ()
 insertListViewState i vs = do
@@ -30,10 +32,10 @@ removeAllListViewStates = do
     return s
 
 createListBox ::
-       forall update.
-       (Model update -> GView 'Unlocked Widget)
-    -> Model (OrderedListUpdate update)
-    -> GView 'Unlocked Widget
+    forall update.
+    (Model update -> GView 'Unlocked Widget) ->
+    Model (OrderedListUpdate update) ->
+    GView 'Unlocked Widget
 createListBox mkWidget model = do
     (listBox, widget) <-
         gvRunLocked $ gvNewWidget ListBox [#selectionMode := SelectionModeSingle, #activateOnSingleClick := True]
@@ -43,10 +45,10 @@ createListBox mkWidget model = do
             ((), vs) <-
                 gvGetState $ do
                     imodel <-
-                        gvLiftView $
-                        viewFloatMapModel
-                            (changeLensToFloating (mustExistOneChangeLens "GTK list box") . orderedListItemLens i)
-                            model
+                        gvLiftView
+                            $ viewFloatMapModel
+                                (changeLensToFloating (mustExistOneChangeLens "GTK list box") . orderedListItemLens i)
+                                model
                     iwidget <- mkWidget imodel
                     gvRunLocked $ #insert listBox iwidget (fromIntegral i)
                     return ()
@@ -66,8 +68,9 @@ createListBox mkWidget model = do
                     case mrow of
                         Nothing -> return ()
                         Just row -> do
-                            lift $
-                                gvRunLocked $ do
+                            lift
+                                $ gvRunLocked
+                                $ do
                                     #remove listBox row
                                     #insert listBox row (fromIntegral j)
                             vs <- removeListViewState i
@@ -83,8 +86,9 @@ createListBox mkWidget model = do
                     vs <- lift $ insertWidget i
                     insertListViewState i vs
                 OrderedListUpdateClear -> do
-                    lift $
-                        gvRunLocked $ do
+                    lift
+                        $ gvRunLocked
+                        $ do
                             ws <- #getChildren listBox
                             for_ ws $ #remove listBox
                     vss <- removeAllListViewStates

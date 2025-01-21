@@ -1,13 +1,15 @@
 module Changes.World.GNOME.GIO.File
     ( giFileReference
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.GLib qualified as GI
 import GI.GObject qualified as GI
 import GI.Gio qualified as GI
 import Shapes
+
+import Changes.World.GNOME.GI
 
 noCancellable :: Maybe GI.Cancellable
 noCancellable = Nothing
@@ -56,7 +58,7 @@ giFileReference path = do
     return $ let
         iow :: IOWitness T
         iow = hashOpenWitness fileWitness uri
-        objRun :: ResourceRunner '[ T]
+        objRun :: ResourceRunner '[T]
         objRun =
             mkResourceRunner iow $ \rt -> do
                 oldmh <- openGIFile path
@@ -120,9 +122,9 @@ giFileReference path = do
             setLength h $ fromIntegral $ olength bs
             setMediaType h path mediatype
         refEdit ::
-               NonEmpty (MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate))
-            -> M (Maybe (EditSource -> M ()))
+            NonEmpty (MaybeEdit (PairUpdateEdit (WholeUpdate Text) ByteStringUpdate)) ->
+            M (Maybe (EditSource -> M ()))
         refEdit = singleAlwaysEdit objOneEdit
         refCommitTask :: Task IO ()
         refCommitTask = mempty
-        in MkResource objRun MkAReference {..}
+        in MkResource objRun MkAReference{..}

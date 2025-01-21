@@ -1,10 +1,12 @@
 module Main
     ( main
-    ) where
+    )
+where
 
-import AppRec
 import Data.IORef
 import Data.Time
+
+import AppRec
 import Serializer
 import Shapes
 import Shapes.Test
@@ -48,24 +50,27 @@ testFastClock =
 
 testSlowClock :: TestTree
 testSlowClock =
-    testTree "slow" $
-    runLifecycle $ do
-        _ <- clock (regularClockMachine baseTime (5000 * nominalDay)) $ \_ -> return ()
-        return ()
+    testTree "slow"
+        $ runLifecycle
+        $ do
+            _ <- clock (regularClockMachine baseTime (5000 * nominalDay)) $ \_ -> return ()
+            return ()
 
 testClock :: TestTree
 testClock = testTree "clock" [testFastClock, testSlowClock]
 
 runFix ::
-       forall m. MonadIO m
-    => m ()
+    forall m.
+    MonadIO m =>
+    m ()
 runFix = do
     (_, x) <- mfixIO $ \(~(x, _)) -> return (True, x)
     liftIO $ assertEqual "" True x
 
 runBoxes ::
-       forall m. MonadIO m
-    => m ()
+    forall m.
+    MonadIO m =>
+    m ()
 runBoxes = do
     refA <- liftIO $ newIORef 0
     let

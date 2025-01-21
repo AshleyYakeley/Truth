@@ -42,14 +42,18 @@ instance TestEquality (PairSelector updateA updateB) where
     testEquality SelectSecond SelectSecond = Just Refl
     testEquality _ _ = Nothing
 
-instance (SubjectReader (UpdateReader updateA), SubjectReader (UpdateReader updateB)) =>
-             SubjectTupleSelectorRead (PairSelector updateA updateB) where
+instance
+    (SubjectReader (UpdateReader updateA), SubjectReader (UpdateReader updateB)) =>
+    SubjectTupleSelectorRead (PairSelector updateA updateB)
+    where
     type TupleSubject (PairSelector updateA updateB) = (UpdateSubject updateA, UpdateSubject updateB)
     tupleReadFromSubject SelectFirst (a, _b) = a
     tupleReadFromSubject SelectSecond (_a, b) = b
 
-instance (SubjectReader (UpdateReader updateA), SubjectReader (UpdateReader updateB)) =>
-             SubjectTupleSelector (PairSelector updateA updateB) where
+instance
+    (SubjectReader (UpdateReader updateA), SubjectReader (UpdateReader updateB)) =>
+    SubjectTupleSelector (PairSelector updateA updateB)
+    where
     tupleWriteToSubject SelectFirst a (_, b) = (a, b)
     tupleWriteToSubject SelectSecond b (a, _) = (a, b)
 
@@ -69,7 +73,7 @@ instance (c updateA, c updateB) => TupleUpdateWitness c (PairSelector updateA up
     tupleUpdateWitness SelectSecond = Dict
 
 instance ListElementWitness (PairSelector updateA updateB) where
-    type WitnessTypeList (PairSelector updateA updateB) = '[ updateA, updateB]
+    type WitnessTypeList (PairSelector updateA updateB) = '[updateA, updateB]
     toListElementWitness SelectFirst = FirstElementType
     toListElementWitness SelectSecond = RestElementType FirstElementType
     fromListElementWitness FirstElementType = SelectFirst
@@ -77,7 +81,7 @@ instance ListElementWitness (PairSelector updateA updateB) where
     fromListElementWitness (RestElementType (RestElementType lt)) = never lt
 
 partitionPairEdits ::
-       forall updateA updateB. [PairUpdateEdit updateA updateB] -> ([UpdateEdit updateA], [UpdateEdit updateB])
+    forall updateA updateB. [PairUpdateEdit updateA updateB] -> ([UpdateEdit updateA], [UpdateEdit updateB])
 partitionPairEdits pes = let
     toEither :: PairUpdateEdit updateA updateB -> Either (UpdateEdit updateA) (UpdateEdit updateB)
     toEither (MkTupleUpdateEdit SelectFirst updateA) = Left updateA
@@ -85,9 +89,9 @@ partitionPairEdits pes = let
     in partitionEithers $ fmap toEither pes
 
 pairReadable ::
-       Readable m (UpdateReader updateA)
-    -> Readable m (UpdateReader updateB)
-    -> Readable m (PairUpdateReader updateA updateB)
+    Readable m (UpdateReader updateA) ->
+    Readable m (UpdateReader updateB) ->
+    Readable m (PairUpdateReader updateA updateB)
 pairReadable mra _mrb (MkTupleUpdateReader SelectFirst ra) = mra ra
 pairReadable _mra mrb (MkTupleUpdateReader SelectSecond rb) = mrb rb
 
@@ -98,87 +102,94 @@ sndReadable :: Readable m (PairUpdateReader updateA updateB) -> Readable m (Upda
 sndReadable mr rb = mr $ MkTupleUpdateReader SelectSecond rb
 
 fstLiftChangeLens ::
-       forall updateX updateA updateB.
-       ChangeLens updateA updateB
-    -> ChangeLens (PairUpdate updateA updateX) (PairUpdate updateB updateX)
+    forall updateX updateA updateB.
+    ChangeLens updateA updateB ->
+    ChangeLens (PairUpdate updateA updateX) (PairUpdate updateB updateX)
 fstLiftChangeLens (MkChangeLens g u pe) = let
     clRead :: ReadFunction (PairUpdateReader updateA updateX) (PairUpdateReader updateB updateX)
     clRead mr (MkTupleUpdateReader SelectFirst rt) = g (firstReadFunction mr) rt
     clRead mr (MkTupleUpdateReader SelectSecond rt) = mr (MkTupleUpdateReader SelectSecond rt)
     clUpdate ::
-           forall m. MonadIO m
-        => PairUpdate updateA updateX
-        -> Readable m (PairUpdateReader updateA updateX)
-        -> m [PairUpdate updateB updateX]
+        forall m.
+        MonadIO m =>
+        PairUpdate updateA updateX ->
+        Readable m (PairUpdateReader updateA updateX) ->
+        m [PairUpdate updateB updateX]
     clUpdate (MkTupleUpdate SelectFirst updateA) mr = do
         ebs <- u updateA $ firstReadFunction mr
         return $ fmap (MkTupleUpdate SelectFirst) ebs
     clUpdate (MkTupleUpdate SelectSecond ex) _ = return [MkTupleUpdate SelectSecond ex]
     clPutEdits ::
-           forall m. MonadIO m
-        => [PairUpdateEdit updateB updateX]
-        -> Readable m (PairUpdateReader updateA updateX)
-        -> m (Maybe [PairUpdateEdit updateA updateX])
+        forall m.
+        MonadIO m =>
+        [PairUpdateEdit updateB updateX] ->
+        Readable m (PairUpdateReader updateA updateX) ->
+        m (Maybe [PairUpdateEdit updateA updateX])
     clPutEdits edits mr =
         case partitionPairEdits edits of
             (ebs, exs) ->
                 unComposeInner $ do
                     eas <- MkComposeInner $ pe ebs $ firstReadFunction mr
                     return $ (fmap (MkTupleUpdateEdit SelectFirst) eas) ++ (fmap (MkTupleUpdateEdit SelectSecond) exs)
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 sndLiftChangeLens ::
-       forall updateX updateA updateB.
-       ChangeLens updateA updateB
-    -> ChangeLens (PairUpdate updateX updateA) (PairUpdate updateX updateB)
+    forall updateX updateA updateB.
+    ChangeLens updateA updateB ->
+    ChangeLens (PairUpdate updateX updateA) (PairUpdate updateX updateB)
 sndLiftChangeLens (MkChangeLens g u pe) = let
     clRead :: ReadFunction (PairUpdateReader updateX updateA) (PairUpdateReader updateX updateB)
     clRead mr (MkTupleUpdateReader SelectFirst rt) = mr (MkTupleUpdateReader SelectFirst rt)
     clRead mr (MkTupleUpdateReader SelectSecond rt) = g (secondReadFunction mr) rt
     clUpdate ::
-           forall m. MonadIO m
-        => PairUpdate updateX updateA
-        -> Readable m (PairUpdateReader updateX updateA)
-        -> m [PairUpdate updateX updateB]
+        forall m.
+        MonadIO m =>
+        PairUpdate updateX updateA ->
+        Readable m (PairUpdateReader updateX updateA) ->
+        m [PairUpdate updateX updateB]
     clUpdate (MkTupleUpdate SelectFirst ex) _ = return [MkTupleUpdate SelectFirst ex]
     clUpdate (MkTupleUpdate SelectSecond updateA) mr = do
         ebs <- u updateA $ secondReadFunction mr
         return $ fmap (MkTupleUpdate SelectSecond) ebs
     clPutEdits ::
-           forall m. MonadIO m
-        => [PairUpdateEdit updateX updateB]
-        -> Readable m (PairUpdateReader updateX updateA)
-        -> m (Maybe [PairUpdateEdit updateX updateA])
+        forall m.
+        MonadIO m =>
+        [PairUpdateEdit updateX updateB] ->
+        Readable m (PairUpdateReader updateX updateA) ->
+        m (Maybe [PairUpdateEdit updateX updateA])
     clPutEdits edits mr =
         case partitionPairEdits edits of
             (exs, ebs) ->
                 unComposeInner $ do
                     eas <- MkComposeInner $ pe ebs $ secondReadFunction mr
                     return $ (fmap (MkTupleUpdateEdit SelectFirst) exs) ++ (fmap (MkTupleUpdateEdit SelectSecond) eas)
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 pairCombineChangeLenses ::
-       forall updateA updateB1 updateB2.
-       ChangeLens updateA updateB1
-    -> ChangeLens updateA updateB2
-    -> ChangeLens updateA (PairUpdate updateB1 updateB2)
+    forall updateA updateB1 updateB2.
+    ChangeLens updateA updateB1 ->
+    ChangeLens updateA updateB2 ->
+    ChangeLens updateA (PairUpdate updateB1 updateB2)
 pairCombineChangeLenses (MkChangeLens g1 u1 pe1) (MkChangeLens g2 u2 pe2) = let
     g12 :: ReadFunction (UpdateReader updateA) (PairUpdateReader updateB1 updateB2)
     g12 mr (MkTupleUpdateReader SelectFirst rt) = g1 mr rt
     g12 mr (MkTupleUpdateReader SelectSecond rt) = g2 mr rt
-    u12 :: forall m. MonadIO m
-        => updateA
-        -> Readable m (UpdateReader updateA)
-        -> m [PairUpdate updateB1 updateB2]
+    u12 ::
+        forall m.
+        MonadIO m =>
+        updateA ->
+        Readable m (UpdateReader updateA) ->
+        m [PairUpdate updateB1 updateB2]
     u12 updateA mr = do
         eb1s <- u1 updateA mr
         eb2s <- u2 updateA mr
         return $ fmap (MkTupleUpdate SelectFirst) eb1s ++ fmap (MkTupleUpdate SelectSecond) eb2s
     pe12 ::
-           forall m. MonadIO m
-        => [PairUpdateEdit updateB1 updateB2]
-        -> Readable m (UpdateReader updateA)
-        -> m (Maybe [UpdateEdit updateA])
+        forall m.
+        MonadIO m =>
+        [PairUpdateEdit updateB1 updateB2] ->
+        Readable m (UpdateReader updateA) ->
+        m (Maybe [UpdateEdit updateA])
     pe12 edits mr =
         case partitionPairEdits edits of
             (eb1, eb2) ->
@@ -189,10 +200,10 @@ pairCombineChangeLenses (MkChangeLens g1 u1 pe1) (MkChangeLens g2 u2 pe2) = let
     in MkChangeLens g12 u12 pe12
 
 pairCombineFloatingChangeLenses ::
-       forall updateA updateB1 updateB2.
-       FloatingChangeLens updateA updateB1
-    -> FloatingChangeLens updateA updateB2
-    -> FloatingChangeLens updateA (PairUpdate updateB1 updateB2)
+    forall updateA updateB1 updateB2.
+    FloatingChangeLens updateA updateB1 ->
+    FloatingChangeLens updateA updateB2 ->
+    FloatingChangeLens updateA (PairUpdate updateB1 updateB2)
 pairCombineFloatingChangeLenses (MkFloatingChangeLens (NoFloatInit r1) rlens1) (MkFloatingChangeLens (NoFloatInit r2) rlens2) =
     changeLensToFloating $ pairCombineChangeLenses (rlens1 r1) (rlens2 r2)
 pairCombineFloatingChangeLenses (MkFloatingChangeLens (init1 :: FloatInit (UpdateReader updateA) r1) rlens1) (MkFloatingChangeLens (init2 :: FloatInit (UpdateReader updateA) r2) rlens2) = let
@@ -207,46 +218,50 @@ pairCombineFloatingChangeLenses (MkFloatingChangeLens (init1 :: FloatInit (Updat
     in MkFloatingChangeLens init12 rlens12
 
 partialPairChangeLens ::
-       forall updateA updateB.
-       ChangeLens (PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)) (PartialUpdate (PairUpdate updateA updateB))
+    forall updateA updateB.
+    ChangeLens (PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)) (PartialUpdate (PairUpdate updateA updateB))
 partialPairChangeLens = let
     clRead ::
-           ReadFunction (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB)) (PairUpdateReader updateA updateB)
+        ReadFunction (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB)) (PairUpdateReader updateA updateB)
     clRead mr (MkTupleUpdateReader SelectFirst rt) = mr $ MkTupleUpdateReader SelectFirst rt
     clRead mr (MkTupleUpdateReader SelectSecond rt) = mr $ MkTupleUpdateReader SelectSecond rt
     clUpdate ::
-           forall m. MonadIO m
-        => PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)
-        -> Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
-        -> m [PartialUpdate (PairUpdate updateA updateB)]
+        forall m.
+        MonadIO m =>
+        PairUpdate (PartialUpdate updateA) (PartialUpdate updateB) ->
+        Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB)) ->
+        m [PartialUpdate (PairUpdate updateA updateB)]
     clUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate update)) _ =
         return [KnownPartialUpdate $ MkTupleUpdate SelectFirst update]
     clUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate selset)) _ =
-        return $
-        pure $
-        UnknownPartialUpdate $ \(MkTupleUpdateReader sel rt) ->
-            case sel of
-                SelectFirst -> selset rt
-                SelectSecond -> False
+        return
+            $ pure
+            $ UnknownPartialUpdate
+            $ \(MkTupleUpdateReader sel rt) ->
+                case sel of
+                    SelectFirst -> selset rt
+                    SelectSecond -> False
     clUpdate (MkTupleUpdate SelectSecond (KnownPartialUpdate update)) _ =
         return [KnownPartialUpdate $ MkTupleUpdate SelectSecond update]
     clUpdate (MkTupleUpdate SelectSecond (UnknownPartialUpdate selset)) _ =
-        return $
-        pure $
-        UnknownPartialUpdate $ \(MkTupleUpdateReader sel rt) ->
-            case sel of
-                SelectFirst -> False
-                SelectSecond -> selset rt
+        return
+            $ pure
+            $ UnknownPartialUpdate
+            $ \(MkTupleUpdateReader sel rt) ->
+                case sel of
+                    SelectFirst -> False
+                    SelectSecond -> selset rt
     clPutEdits ::
-           forall m. MonadIO m
-        => [PairUpdateEdit updateA updateB]
-        -> Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
-        -> m (Maybe [PairUpdateEdit (PartialUpdate updateA) (PartialUpdate updateB)])
+        forall m.
+        MonadIO m =>
+        [PairUpdateEdit updateA updateB] ->
+        Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB)) ->
+        m (Maybe [PairUpdateEdit (PartialUpdate updateA) (PartialUpdate updateB)])
     clPutEdits =
         clPutEditsFromSimplePutEdit $ \case
             MkTupleUpdateEdit SelectFirst edit -> return $ Just [MkTupleUpdateEdit SelectFirst edit]
             MkTupleUpdateEdit SelectSecond edit -> return $ Just [MkTupleUpdateEdit SelectSecond edit]
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 pairWholeChangeLens :: forall a b. ChangeLens (PairUpdate (WholeUpdate a) (WholeUpdate b)) (WholeUpdate (a, b))
 pairWholeChangeLens = let
@@ -256,10 +271,11 @@ pairWholeChangeLens = let
         b <- mr $ MkTupleUpdateReader SelectSecond ReadWhole
         return (a, b)
     clUpdate ::
-           forall m. MonadIO m
-        => PairUpdate (WholeUpdate a) (WholeUpdate b)
-        -> Readable m (PairUpdateReader (WholeUpdate a) (WholeUpdate b))
-        -> m [WholeUpdate (a, b)]
+        forall m.
+        MonadIO m =>
+        PairUpdate (WholeUpdate a) (WholeUpdate b) ->
+        Readable m (PairUpdateReader (WholeUpdate a) (WholeUpdate b)) ->
+        m [WholeUpdate (a, b)]
     clUpdate (MkTupleUpdate SelectFirst (MkWholeUpdate a)) mr = do
         b <- mr $ MkTupleUpdateReader SelectSecond ReadWhole
         return [MkWholeUpdate (a, b)]
@@ -267,58 +283,65 @@ pairWholeChangeLens = let
         a <- mr $ MkTupleUpdateReader SelectFirst ReadWhole
         return [MkWholeUpdate (a, b)]
     clPutEdits ::
-           forall m. MonadIO m
-        => [WholeEdit (a, b)]
-        -> Readable m (PairUpdateReader (WholeUpdate a) (WholeUpdate b))
-        -> m (Maybe [PairUpdateEdit (WholeUpdate a) (WholeUpdate b)])
+        forall m.
+        MonadIO m =>
+        [WholeEdit (a, b)] ->
+        Readable m (PairUpdateReader (WholeUpdate a) (WholeUpdate b)) ->
+        m (Maybe [PairUpdateEdit (WholeUpdate a) (WholeUpdate b)])
     clPutEdits =
         clPutEditsFromSimplePutEdit $ \(MkWholeReaderEdit (a, b)) ->
-            return $
-            Just $
-            [MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit a, MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit b]
-    in MkChangeLens {..}
+            return
+                $ Just
+                $ [MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit a, MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit b]
+    in MkChangeLens{..}
 
 readOnlyPairChangeLens ::
-       forall updateA updateB.
-       ChangeLens (PairUpdate (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)) (ReadOnlyUpdate (PairUpdate updateA updateB))
+    forall updateA updateB.
+    ChangeLens (PairUpdate (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)) (ReadOnlyUpdate (PairUpdate updateA updateB))
 readOnlyPairChangeLens = let
     clRead ::
-           ReadFunction (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)) (PairUpdateReader updateA updateB)
+        ReadFunction (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)) (PairUpdateReader updateA updateB)
     clRead mr (MkTupleUpdateReader SelectFirst rt) = mr $ MkTupleUpdateReader SelectFirst rt
     clRead mr (MkTupleUpdateReader SelectSecond rt) = mr $ MkTupleUpdateReader SelectSecond rt
     clUpdate ::
-           forall m. MonadIO m
-        => PairUpdate (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)
-        -> Readable m (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB))
-        -> m [ReadOnlyUpdate (PairUpdate updateA updateB)]
+        forall m.
+        MonadIO m =>
+        PairUpdate (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB) ->
+        Readable m (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)) ->
+        m [ReadOnlyUpdate (PairUpdate updateA updateB)]
     clUpdate (MkTupleUpdate SelectFirst (MkReadOnlyUpdate update)) _ =
         return [MkReadOnlyUpdate $ MkTupleUpdate SelectFirst update]
     clUpdate (MkTupleUpdate SelectSecond (MkReadOnlyUpdate update)) _ =
         return [MkReadOnlyUpdate $ MkTupleUpdate SelectSecond update]
-    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
+    in MkChangeLens{clPutEdits = clPutEditsNone, ..}
 
 bindChangeLens ::
-       forall x updateA updateB. FullUpdate updateB
-    => (x -> ChangeLens updateA updateB)
-    -> ChangeLens (PairUpdate (ROWUpdate x) updateA) updateB
+    forall x updateA updateB.
+    FullUpdate updateB =>
+    (x -> ChangeLens updateA updateB) ->
+    ChangeLens (PairUpdate (ROWUpdate x) updateA) updateB
 bindChangeLens xlens = let
     g :: ReadFunction (PairUpdateReader (ROWUpdate x) updateA) (UpdateReader updateB)
     g mra rb = do
         x <- firstReadFunction mra ReadWhole
         clRead (xlens x) (secondReadFunction mra) rb
-    u :: forall m. MonadIO m
-      => PairUpdate (ROWUpdate x) updateA
-      -> Readable m (PairUpdateReader (ROWUpdate x) updateA)
-      -> m [updateB]
+    u ::
+        forall m.
+        MonadIO m =>
+        PairUpdate (ROWUpdate x) updateA ->
+        Readable m (PairUpdateReader (ROWUpdate x) updateA) ->
+        m [updateB]
     u (MkTupleUpdate SelectFirst (MkReadOnlyUpdate (MkWholeUpdate x))) mra =
         getReplaceUpdates $ clRead (xlens x) (secondReadFunction mra)
     u (MkTupleUpdate SelectSecond updateA) mra = do
         x <- firstReadFunction mra ReadWhole
         clUpdate (xlens x) updateA (secondReadFunction mra)
-    pe :: forall m. MonadIO m
-       => [UpdateEdit updateB]
-       -> Readable m (PairUpdateReader (ROWUpdate x) updateA)
-       -> m (Maybe [PairUpdateEdit (ROWUpdate x) updateA])
+    pe ::
+        forall m.
+        MonadIO m =>
+        [UpdateEdit updateB] ->
+        Readable m (PairUpdateReader (ROWUpdate x) updateA) ->
+        m (Maybe [PairUpdateEdit (ROWUpdate x) updateA])
     pe editsB mra = do
         x <- firstReadFunction mra ReadWhole
         meditsA <- clPutEdits (xlens x) editsB (secondReadFunction mra)

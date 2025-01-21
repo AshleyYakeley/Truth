@@ -7,18 +7,19 @@ import Shapes
 
 data TextStyle = MkTextStyle
     { tsItalic :: Bool
-    } deriving stock (Eq)
+    }
+    deriving stock Eq
 
 plainTextStyle :: TextStyle
 plainTextStyle = let
     tsItalic = False
-    in MkTextStyle {..}
+    in MkTextStyle{..}
 
 textCellAttributes :: Text -> TextStyle -> [AttrOp CellRendererText 'AttrSet]
-textCellAttributes text MkTextStyle {..} =
+textCellAttributes text MkTextStyle{..} =
     [ #text := text
-    , #style :=
-      if tsItalic
-          then StyleItalic
-          else StyleNormal
+    , #style
+        := if tsItalic
+            then StyleItalic
+            else StyleNormal
     ]

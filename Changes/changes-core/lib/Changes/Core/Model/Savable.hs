@@ -1,7 +1,8 @@
 module Changes.Core.Model.Savable
-    ( SaveActions(..)
+    ( SaveActions (..)
     , saveBufferReference
-    ) where
+    )
+where
 
 import Changes.Core.Edit
 import Changes.Core.Import
@@ -18,14 +19,15 @@ data SaveBuffer a = MkSaveBuffer
     , _saveBufferChanged :: Bool
     }
 
-newtype SaveActions =
-    MkSaveActions (IO (Maybe (ResourceContext -> EditSource -> IO Bool, ResourceContext -> EditSource -> IO Bool)))
+newtype SaveActions
+    = MkSaveActions (IO (Maybe (ResourceContext -> EditSource -> IO Bool, ResourceContext -> EditSource -> IO Bool)))
 
 saveBufferReference ::
-       forall update. (IsUpdate update, FullEdit (UpdateEdit update))
-    => ResourceContext
-    -> Reference (WholeEdit (UpdateSubject update))
-    -> Premodel update SaveActions
+    forall update.
+    (IsUpdate update, FullEdit (UpdateEdit update)) =>
+    ResourceContext ->
+    Reference (WholeEdit (UpdateSubject update)) ->
+    Premodel update SaveActions
 saveBufferReference rc objP pmrUpdatesTask update = do
     firstVal <- liftIO $ runResource rc objP $ \anobj -> refRead anobj ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
@@ -39,19 +41,21 @@ saveBufferReference rc objP pmrUpdatesTask update = do
             readC :: Readable (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
             readC = mSubjectToReadable $ fmap saveBuffer get
             pushC ::
-                   NonEmpty (UpdateEdit update)
-                -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) (Maybe (EditSource -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) ()))
+                NonEmpty (UpdateEdit update) ->
+                StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) (Maybe (EditSource -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) ()))
             pushC edits =
-                return $
-                Just $ \esrc -> do
-                    newbuf <-
-                        readableToSubject $
-                        applyEdits (toList edits) $
-                        mSubjectToReadable $ do
-                            MkSaveBuffer oldbuf _ <- get
-                            return oldbuf
-                    put (MkSaveBuffer newbuf True)
-                    lift $ deferAction $ update emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
+                return
+                    $ Just
+                    $ \esrc -> do
+                        newbuf <-
+                            readableToSubject
+                                $ applyEdits (toList edits)
+                                $ mSubjectToReadable
+                                $ do
+                                    MkSaveBuffer oldbuf _ <- get
+                                    return oldbuf
+                        put (MkSaveBuffer newbuf True)
+                        lift $ deferAction $ update emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
             in MkResource rrC $ MkAReference readC pushC mempty
         saveAction :: ResourceContext -> EditSource -> IO Bool
         saveAction urc esrc =
@@ -79,8 +83,8 @@ saveBufferReference rc objP pmrUpdatesTask update = do
         pmrValue =
             MkSaveActions $ do
                 MkSaveBuffer _ changed <- mVarRunStateT sbVar get
-                return $
-                    if changed
+                return
+                    $ if changed
                         then Just (saveAction, revertAction)
                         else Nothing
-    return MkPremodelResult {..}
+    return MkPremodelResult{..}

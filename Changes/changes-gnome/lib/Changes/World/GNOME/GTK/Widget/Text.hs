@@ -2,12 +2,14 @@ module Changes.World.GNOME.GTK.Widget.Text
     ( TextSelection
     , createTextBuffer
     , createTextView
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
@@ -43,15 +45,17 @@ createTextBuffer rmod (MkSelectNotify setsel) = do
             insertSignal <-
                 gvOnSignal buffer #insertText $ \iter text _ -> do
                     p <- getSequencePoint iter
-                    gvLiftIO $
-                        runResource emptyResourceContext rmod $ \asub -> do
+                    gvLiftIO
+                        $ runResource emptyResourceContext rmod
+                        $ \asub -> do
                             _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                             return ()
             deleteSignal <-
                 gvOnSignal buffer #deleteRange $ \iter1 iter2 -> do
                     srun <- getSequenceRun iter1 iter2
-                    gvLiftIO $
-                        runResource emptyResourceContext rmod $ \asub -> do
+                    gvLiftIO
+                        $ runResource emptyResourceContext rmod
+                        $ \asub -> do
                             _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection srun mempty
                             return ()
             let
@@ -79,12 +83,13 @@ createTextBuffer rmod (MkSelectNotify setsel) = do
             gvRunLocked $ blockSignals $ #setText buffer initial (-1)
         recvV :: () -> NonEmpty (StringUpdate Text) -> GView 'Unlocked ()
         recvV () updates =
-            gvRunLocked $
-            blockSignals $
-            for_ updates $ \(MkEditUpdate edit) ->
-                case edit of
-                    StringReplaceWhole text -> #setText buffer text (-1)
-                    StringReplaceSection bounds text -> replaceText buffer bounds text
+            gvRunLocked
+                $ blockSignals
+                $ for_ updates
+                $ \(MkEditUpdate edit) ->
+                    case edit of
+                        StringReplaceWhole text -> #setText buffer text (-1)
+                        StringReplaceSection bounds text -> replaceText buffer bounds text
     gvBindModel rmod (Just esrc) initV mempty recvV
     return buffer
 

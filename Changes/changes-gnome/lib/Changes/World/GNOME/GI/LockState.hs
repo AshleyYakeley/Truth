@@ -31,6 +31,7 @@ instance Is LockStateType 'Unlocked where
     representative = UnlockedType
 
 lockStateType ::
-       forall (ls :: LockState). Is LockStateType ls
-    => LockStateType ls
+    forall (ls :: LockState).
+    Is LockStateType ls =>
+    LockStateType ls
 lockStateType = representative @_ @_ @ls

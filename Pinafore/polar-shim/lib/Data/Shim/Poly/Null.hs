@@ -1,8 +1,9 @@
 module Data.Shim.Poly.Null where
 
+import Shapes
+
 import Data.Shim.Mono
 import Data.Shim.Poly.Shim
-import Shapes
 
 type NullShim :: PolyShimKind
 data NullShim k a b where

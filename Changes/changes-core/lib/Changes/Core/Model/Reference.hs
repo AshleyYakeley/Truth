@@ -22,11 +22,12 @@ referenceCommitTask (MkResource _ anobj) = refCommitTask anobj
 
 instance MapResource (AReference edit) where
     mapResource ::
-           forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
-        => TransListFunction tt1 tt2
-        -> AReference edit tt1
-        -> AReference edit tt2
-    mapResource MkTransListFunction {..} (MkAReference r e ct) = let
+        forall tt1 tt2.
+        (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2) =>
+        TransListFunction tt1 tt2 ->
+        AReference edit tt1 ->
+        AReference edit tt2
+    mapResource MkTransListFunction{..} (MkAReference r e ct) = let
         r' :: Readable (ApplyStack tt2 IO) _
         r' rd = tlfFunction (Proxy @IO) $ r rd
         e' :: _ -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
@@ -45,7 +46,7 @@ noneReference = let
     refEdit :: NonEmpty (ConstEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
     refEdit = never
     refCommitTask = mempty
-    in MkResource nilResourceRunner $ MkAReference {..}
+    in MkResource nilResourceRunner $ MkAReference{..}
 
 mvarReference :: forall a. IOWitness (StateT a) -> MVar a -> (a -> Bool) -> Reference (WholeEdit a)
 mvarReference iow var allowed = let
@@ -54,13 +55,13 @@ mvarReference iow var allowed = let
     refEdit :: NonEmpty (WholeEdit a) -> StateT a IO (Maybe (EditSource -> StateT a IO ()))
     refEdit edits = do
         na <- applyEdits (toList edits) (mSubjectToReadable get) ReadWhole
-        return $
-            if allowed na
+        return
+            $ if allowed na
                 then Just $ \_ -> put na
                 else Nothing
     refCommitTask = mempty
-    anobj :: AReference (WholeEdit a) '[ StateT a]
-    anobj = MkAReference {..}
+    anobj :: AReference (WholeEdit a) '[StateT a]
+    anobj = MkAReference{..}
     in MkResource (mvarResourceRunner iow var) anobj
 
 makeMemoryReference :: forall a. a -> (a -> Bool) -> IO (Reference (WholeEdit a))
@@ -86,11 +87,12 @@ pushOrFail s esrc mmmu = do
         else fail s
 
 mapAReference ::
-       forall tt updateA updateB. MonadTransStackUnlift tt
-    => ChangeLens updateA updateB
-    -> AReference (UpdateEdit updateA) tt
-    -> AReference (UpdateEdit updateB) tt
-mapAReference MkChangeLens {..} (MkAReference refReadA refEditA objCT) =
+    forall tt updateA updateB.
+    MonadTransStackUnlift tt =>
+    ChangeLens updateA updateB ->
+    AReference (UpdateEdit updateA) tt ->
+    AReference (UpdateEdit updateB) tt
+mapAReference MkChangeLens{..} (MkAReference refReadA refEditA objCT) =
     case transStackDict @MonadIO @tt @IO of
         Dict -> let
             refReadB :: Readable (ApplyStack tt IO) (UpdateReader updateB)
@@ -101,7 +103,7 @@ mapAReference MkChangeLens {..} (MkAReference refReadA refEditA objCT) =
                 case meditas of
                     Nothing -> return Nothing
                     Just [] -> return $ Just $ \_ -> return ()
-                    Just (ea:editas) -> do
+                    Just (ea : editas) -> do
                         mmu <- refEditA $ ea :| editas
                         case mmu of
                             Nothing -> return Nothing
@@ -109,19 +111,20 @@ mapAReference MkChangeLens {..} (MkAReference refReadA refEditA objCT) =
             in MkAReference refReadB refEditB objCT
 
 mapReference ::
-       forall updateA updateB.
-       ChangeLens updateA updateB
-    -> Reference (UpdateEdit updateA)
-    -> Reference (UpdateEdit updateB)
+    forall updateA updateB.
+    ChangeLens updateA updateB ->
+    Reference (UpdateEdit updateA) ->
+    Reference (UpdateEdit updateB)
 mapReference plens (MkResource rr anobjA) =
     case resourceRunnerUnliftDict rr of
         Dict -> MkResource rr $ mapAReference plens anobjA
 
 floatMapAReference ::
-       forall tt updateA updateB. MonadTransStackUnlift tt
-    => FloatingChangeLens updateA updateB
-    -> AReference (UpdateEdit updateA) tt
-    -> ApplyStack tt IO (AReference (UpdateEdit updateB) tt)
+    forall tt updateA updateB.
+    MonadTransStackUnlift tt =>
+    FloatingChangeLens updateA updateB ->
+    AReference (UpdateEdit updateA) tt ->
+    ApplyStack tt IO (AReference (UpdateEdit updateB) tt)
 floatMapAReference (MkFloatingChangeLens finit rlens) anobj =
     case transStackDict @MonadIO @tt @IO of
         Dict -> do
@@ -129,19 +132,20 @@ floatMapAReference (MkFloatingChangeLens finit rlens) anobj =
             return $ mapAReference (rlens r) anobj
 
 floatMapReference ::
-       forall updateA updateB.
-       ResourceContext
-    -> FloatingChangeLens updateA updateB
-    -> Reference (UpdateEdit updateA)
-    -> IO (Reference (UpdateEdit updateB))
+    forall updateA updateB.
+    ResourceContext ->
+    FloatingChangeLens updateA updateB ->
+    Reference (UpdateEdit updateA) ->
+    IO (Reference (UpdateEdit updateB))
 floatMapReference rc lens (MkResource rr anobjA) = do
     anobjB <- runResourceRunner rc rr $ floatMapAReference lens anobjA
     return $ MkResource rr anobjB
 
 immutableAReference ::
-       forall tt reader. MonadTransStackUnlift tt
-    => Readable (ApplyStack tt IO) reader
-    -> AReference (ConstEdit reader) tt
+    forall tt reader.
+    MonadTransStackUnlift tt =>
+    Readable (ApplyStack tt IO) reader ->
+    AReference (ConstEdit reader) tt
 immutableAReference mr =
     case transStackDict @Monad @tt @IO of
         Dict -> MkAReference mr (\_ -> return Nothing) mempty
@@ -150,9 +154,10 @@ readConstantReference :: forall reader. Readable IO reader -> Reference (ConstEd
 readConstantReference mr = MkResource nilResourceRunner $ immutableAReference mr
 
 constantReference ::
-       forall reader. SubjectReader reader
-    => ReaderSubject reader
-    -> Reference (ConstEdit reader)
+    forall reader.
+    SubjectReader reader =>
+    ReaderSubject reader ->
+    Reference (ConstEdit reader)
 constantReference subj = readConstantReference $ subjectToReadable subj
 
 alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
@@ -164,8 +169,8 @@ singleAlwaysEdit em = alwaysEdit $ \edits esrc -> for_ edits $ \edit -> em edit 
 testEditAction :: IO Bool -> (EditSource -> IO ()) -> IO (Maybe (EditSource -> IO ()))
 testEditAction test action = do
     ok <- test
-    return $
-        if ok
+    return
+        $ if ok
             then Just action
             else Nothing
 
@@ -176,9 +181,10 @@ singleEdit call edits =
         return $ \esrc -> for_ actions $ \action -> action esrc
 
 convertReference ::
-       forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
-    => Reference edita
-    -> Reference editb
+    forall edita editb.
+    (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb) =>
+    Reference edita ->
+    Reference editb
 convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe refCommitTask)) =
     case resourceRunnerUnliftDict trun of
         Dict ->
@@ -194,21 +200,23 @@ convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe re
                         case nonEmpty eas of
                             Nothing -> return $ Just $ \_ -> return ()
                             Just eaa -> pe eaa
-                    in MkResource trun MkAReference {..}
+                    in MkResource trun MkAReference{..}
 
 copyReference ::
-       forall edit. FullEdit edit
-    => ResourceContext
-    -> EditSource
-    -> Reference edit
-    -> Reference edit
-    -> IO (Task IO ())
+    forall edit.
+    FullEdit edit =>
+    ResourceContext ->
+    EditSource ->
+    Reference edit ->
+    Reference edit ->
+    IO (Task IO ())
 copyReference rc esrc =
     joinResource_ $ \rr (MkAReference readSrc _ _) (MkAReference _ pushDest ctask) ->
         runLifecycle $ do
-            liftIO $
-                runResourceRunner rc rr $
-                replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy reference" esrc $ pushDest $ pure edit
+            liftIO
+                $ runResourceRunner rc rr
+                $ replaceEdit @edit readSrc
+                $ \edit -> pushOrFail "failed to copy reference" esrc $ pushDest $ pure edit
             return ctask
 
 getReferenceSubject :: ResourceContext -> FullSubjectReader (EditReader edit) => Reference edit -> IO (EditSubject edit)

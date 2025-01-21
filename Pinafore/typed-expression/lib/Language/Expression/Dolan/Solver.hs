@@ -1,13 +1,17 @@
 {-# LANGUAGE ApplicativeDo #-}
+
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Solver
     ( subtypeSingularType
     , invertedPolarSubtype
     , CrumbleM
-    ) where
+    )
+where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Solver.CrumbleM
@@ -20,7 +24,6 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
-import Shapes
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = Puzzle ground
@@ -34,8 +37,11 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => U
     unifierPosSubstitute bisubs t = lift $ runTypeResult $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t = lift $ runTypeResult $ bisubstitutesType bisubs t
 
-instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
-             SubsumeTypeSystem (DolanTypeSystem ground) where
+instance
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeGroundType ground =>
+    SubsumeTypeSystem (DolanTypeSystem ground)
+    where
     type Subsumer (DolanTypeSystem ground) = Puzzle ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [SolverBisubstitution ground]
     usubSubsumer ss subsumer = do
@@ -48,9 +54,10 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
 
 -- used for simplification, where all vars are fixed
 checkSameVar ::
-       forall (ground :: GroundTypeKind) wit t. IsDolanSubtypeGroundType ground
-    => wit t
-    -> CrumbleM ground t
+    forall (ground :: GroundTypeKind) wit t.
+    IsDolanSubtypeGroundType ground =>
+    wit t ->
+    CrumbleM ground t
 {-
 checkSameVar (MkAtomicConstraint va polwit (NormalFlipType (ConsDolanType (VarDolanSingularType vb) NilDolanType)) )
     | Just Refl <- testEquality va vb =
@@ -68,17 +75,19 @@ checkSameVar (MkAtomicConstraint va polwit (InvertFlipType (ConsDolanType (VarDo
 checkSameVar _ = throw $ InternalTypeError @ground "expression in type inversion"
 
 evalPuzzleExpression ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => PuzzleExpression ground a
-    -> DolanTypeCheckM ground (Puzzle ground a)
+    forall (ground :: GroundTypeKind) a.
+    IsDolanSubtypeGroundType ground =>
+    PuzzleExpression ground a ->
+    DolanTypeCheckM ground (Puzzle ground a)
 evalPuzzleExpression (MkSolverExpression tt (ClosedExpression v)) = return $ fmap v tt
 evalPuzzleExpression _ = lift $ throwTypeError @ground $ InternalTypeError "expression in type inversion"
 
 puzzleSubsumeSingular ::
-       forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => DolanSingularType ground polarity a
-    -> DolanSingularType ground polarity b
-    -> DolanTypeCheckM ground (Puzzle ground (DolanPolarShim ground polarity a b))
+    forall (ground :: GroundTypeKind) polarity a b.
+    (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
+    DolanSingularType ground polarity a ->
+    DolanSingularType ground polarity b ->
+    DolanTypeCheckM ground (Puzzle ground (DolanPolarShim ground polarity a b))
 puzzleSubsumeSingular ta tb =
     case polarityType @polarity of
         PositiveType -> fmap (fmap MkPolarShim) $ puzzleUnifySingular ta tb
@@ -86,20 +95,22 @@ puzzleSubsumeSingular ta tb =
 
 -- used for simplification, where all vars are fixed
 subtypeSingularType ::
-       forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => DolanSingularType ground polarity a
-    -> DolanSingularType ground polarity b
-    -> CrumbleM ground (DolanPolarShim ground polarity a b)
+    forall (ground :: GroundTypeKind) polarity a b.
+    (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
+    DolanSingularType ground polarity a ->
+    DolanSingularType ground polarity b ->
+    CrumbleM ground (DolanPolarShim ground polarity a b)
 subtypeSingularType ta tb = do
     puzzle <- liftToCrumbleM $ puzzleSubsumeSingular ta tb
     (oexpr, _) <- solvePuzzle puzzle
     runExpression checkSameVar oexpr
 
 invertedPolarSubtype ::
-       forall (ground :: GroundTypeKind) polarity a b. (Is PolarityType polarity, IsDolanSubtypeGroundType ground)
-    => DolanType ground (InvertPolarity polarity) a
-    -> DolanType ground polarity b
-    -> DolanTypeCheckM ground (Puzzle ground (DolanPolarShim ground polarity a b))
+    forall (ground :: GroundTypeKind) polarity a b.
+    (Is PolarityType polarity, IsDolanSubtypeGroundType ground) =>
+    DolanType ground (InvertPolarity polarity) a ->
+    DolanType ground polarity b ->
+    DolanTypeCheckM ground (Puzzle ground (DolanPolarShim ground polarity a b))
 invertedPolarSubtype ta tb = do
     pexpr <-
         case polarityType @polarity of

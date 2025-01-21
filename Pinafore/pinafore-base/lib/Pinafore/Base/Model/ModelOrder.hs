@@ -1,6 +1,8 @@
 module Pinafore.Base.Model.ModelOrder where
 
 import Changes.Core
+import Shapes
+
 import Pinafore.Base.Know
 import Pinafore.Base.Model.FunctionAttribute
 import Pinafore.Base.Model.ImmutableWholeModel
@@ -8,11 +10,11 @@ import Pinafore.Base.Model.LensAttribute
 import Pinafore.Base.Model.Model
 import Pinafore.Base.Model.ModelBased
 import Pinafore.Base.Model.ModelProperty
-import Shapes
 
-data ModelOrder a update =
-    forall t. MkModelOrder (StorageFunctionAttribute update (Know a) t)
-                           (Order t)
+data ModelOrder a update
+    = forall t. MkModelOrder
+        (StorageFunctionAttribute update (Know a) t)
+        (Order t)
 
 instance EditContraFunctor (ModelOrder a) where
     eaContraMap lens (MkModelOrder fm order) = MkModelOrder (mapStorageFunctionAttributeBase lens fm) order
@@ -56,16 +58,17 @@ modelModelOrderSet ro pset =
         in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 modelModelOrderCompare ::
-       forall a. ModelModelOrder a -> ImmutableWholeModel a -> ImmutableWholeModel a -> ImmutableWholeModel Ordering
+    forall a. ModelModelOrder a -> ImmutableWholeModel a -> ImmutableWholeModel a -> ImmutableWholeModel Ordering
 modelModelOrderCompare ro fv1 fv2 =
     modelBasedModel ro $ \model (MkModelOrder ef o) ->
-        compareOrder o <$> (applyImmutableModel model (fmap Known ef) fv1) <*>
-        (applyImmutableModel model (fmap Known ef) fv2)
+        compareOrder o
+            <$> (applyImmutableModel model (fmap Known ef) fv1)
+            <*> (applyImmutableModel model (fmap Known ef) fv2)
 
 modelRefUpdateOrder ::
-       ModelModelOrder a
-    -> (forall update. Model update -> UpdateOrder (ContextUpdate update (WholeUpdate (Know a))) -> r)
-    -> r
+    ModelModelOrder a ->
+    (forall update. Model update -> UpdateOrder (ContextUpdate update (WholeUpdate (Know a))) -> r) ->
+    r
 modelRefUpdateOrder ro call =
     modelBasedModel ro $ \model (MkModelOrder m o) ->
         call model $ mkUpdateOrder (compareOrder o) $ storageFunctionAttributeContextChangeLens m

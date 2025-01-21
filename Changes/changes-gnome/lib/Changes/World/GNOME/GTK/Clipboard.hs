@@ -1,12 +1,13 @@
 module Changes.World.GNOME.GTK.Clipboard where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import GI.GLib as GI ()
 import GI.Gdk as GI
 import GI.GdkPixbuf as GI
 import GI.Gtk as GI
 import Shapes
+
+import Changes.World.GNOME.GI
 
 data Clip
     = TextClip Text
@@ -39,5 +40,5 @@ getClipboard = do
         refCommitTask :: Task IO ()
         refCommitTask = mempty
         ref :: Reference (WholeEdit (Maybe Clip))
-        ref = MkResource nilResourceRunner $ MkAReference {..}
+        ref = MkResource nilResourceRunner $ MkAReference{..}
     gvLiftLifecycle $ makeReflectingModel ref

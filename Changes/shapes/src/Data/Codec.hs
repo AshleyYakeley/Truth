@@ -11,16 +11,18 @@ toBiMapMaybe :: (IsBiMap bm, MonadInner m) => bm m edita editb -> bm Maybe edita
 toBiMapMaybe = mapBiMapM mToMaybe
 
 toBiMapResult ::
-       forall bm m edita editb. (IsBiMap bm, MonadInner m)
-    => bm m edita editb
-    -> bm (Result (Exc m)) edita editb
+    forall bm m edita editb.
+    (IsBiMap bm, MonadInner m) =>
+    bm m edita editb ->
+    bm (Result (Exc m)) edita editb
 toBiMapResult = mapBiMapM retrieveInner
 
 data Codec' m a b = MkCodec
     { decode :: a -> m b
     , encode :: b -> a
     }
-    -- must have decode . encode = Just
+
+-- must have decode . encode = Just
 
 hoistCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
 hoistCodec f (MkCodec d e) = MkCodec (f . d) e
@@ -44,7 +46,7 @@ instance Functor m => Invariant (Codec' m p) where
     invmap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)
 
 instance IsBiMap Codec' where
-    mapBiMapM ff codec = MkCodec {decode = ff . (decode codec), encode = encode codec}
+    mapBiMapM ff codec = MkCodec{decode = ff . (decode codec), encode = encode codec}
 
 instance Alternative m => Summable (Codec' m p) where
     rVoid = MkCodec (\_ -> empty) absurd
@@ -61,10 +63,11 @@ instance Monad m => Category (Codec' m) where
 ifCodec :: (a -> Bool) -> Codec a a
 ifCodec f =
     MkCodec
-        (\a ->
-             if f a
-                 then Just a
-                 else Nothing)
+        ( \a ->
+            if f a
+                then Just a
+                else Nothing
+        )
         id
 
 justCodec :: Codec (Maybe a) a
@@ -77,17 +80,19 @@ codecBijection :: Monad m => Codec' m a b -> Bijection (m a) (m b)
 codecBijection (MkCodec amb ba) = MkIsomorphism (\ma -> ma >>= amb) (fmap ba)
 
 codecSum :: Summable f => Codec a b -> f b -> f a -> f a
-codecSum MkCodec {..} fb fa =
+codecSum MkCodec{..} fb fa =
     invmap
         (either encode id)
-        (\a ->
-             case decode a of
-                 Just b -> Left b
-                 Nothing -> Right a) $
-    fb <+++> fa
+        ( \a ->
+            case decode a of
+                Just b -> Left b
+                Nothing -> Right a
+        )
+        $ fb
+        <+++> fa
 
 instance (Traversable f, Applicative m) => CatFunctor (Codec' m) (Codec' m) f where
-    cfmap codec = MkCodec {decode = traverse (decode codec), encode = fmap (encode codec)}
+    cfmap codec = MkCodec{decode = traverse (decode codec), encode = fmap (encode codec)}
 
 encodeM :: Codec a b -> b -> a
 encodeM = encode

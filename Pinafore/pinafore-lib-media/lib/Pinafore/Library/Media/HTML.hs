@@ -1,17 +1,20 @@
 module Pinafore.Library.Media.HTML
-    ( HTMLText(..)
+    ( HTMLText (..)
     , htmlStuff
-    ) where
+    )
+where
 
 import Changes.World.Media.Type
 import Data.Shim
 import Pinafore.API
-import Pinafore.Library.Media.Media
 import Shapes
+
+import Pinafore.Library.Media.Media
 
 newtype HTMLText = MkHTMLText
     { unHTMLText :: Text
-    } deriving newtype (Eq, Semigroup, Monoid, AsTypedLiteral)
+    }
+    deriving newtype (Eq, Semigroup, Monoid, AsTypedLiteral)
 
 instance AsLiteral HTMLText
 
@@ -27,13 +30,14 @@ asText = MkCodec (Just . MkHTMLText) unHTMLText
 
 asMedia :: Codec Media HTMLText
 asMedia =
-    coerceCodec .
-    mediaSpecificText
-        (MkMediaType ApplicationMediaType "html" [])
-        (\case
-             MkMediaType TextMediaType "html" _ -> True
-             MkMediaType ApplicationMediaType "html" _ -> True
-             _ -> False)
+    coerceCodec
+        . mediaSpecificText
+            (MkMediaType ApplicationMediaType "html" [])
+            ( \case
+                MkMediaType TextMediaType "html" _ -> True
+                MkMediaType ApplicationMediaType "html" _ -> True
+                _ -> False
+            )
 
 escapeChar :: Char -> String
 escapeChar '&' = "&amp;"
@@ -73,19 +77,19 @@ tag e = tagAttrs e []
 
 htmlStuff :: LibraryStuff
 htmlStuff =
-    headingBDS "HTML" "" $
-    [ typeBDS
-          "HTMLText"
-          "Text that's intended to be HTML (not necessarily valid)."
-          (MkSomeGroundType htmlTextGroundType)
-          [valPatBDS "Mk" "" MkHTMLText $ PureFunction $ pure $ \(MkHTMLText t) -> (t, ())]
-    , hasSubtypeRelationBDS @HTMLText @Text Verify "" $ functionToShim "unHTMLText" unHTMLText
-    , namespaceBDS "HTMLText" $
-      monoidEntries @HTMLText <>
-      [ valBDS "plain" "Plain text HTML." plain
-      , valBDS "tag" "Tag HTML to create an element." tag
-      , valBDS "tagAttrs" "Tag HTML with attributes to create an element." tagAttrs
-      , valBDS "asText" "" $ codecToPrism asText
-      , valBDS "asMedia" "" $ codecToPrism asMedia
-      ]
-    ]
+    headingBDS "HTML" ""
+        $ [ typeBDS
+                "HTMLText"
+                "Text that's intended to be HTML (not necessarily valid)."
+                (MkSomeGroundType htmlTextGroundType)
+                [valPatBDS "Mk" "" MkHTMLText $ PureFunction $ pure $ \(MkHTMLText t) -> (t, ())]
+          , hasSubtypeRelationBDS @HTMLText @Text Verify "" $ functionToShim "unHTMLText" unHTMLText
+          , namespaceBDS "HTMLText"
+                $ monoidEntries @HTMLText
+                <> [ valBDS "plain" "Plain text HTML." plain
+                   , valBDS "tag" "Tag HTML to create an element." tag
+                   , valBDS "tagAttrs" "Tag HTML with attributes to create an element." tagAttrs
+                   , valBDS "asText" "" $ codecToPrism asText
+                   , valBDS "asMedia" "" $ codecToPrism asMedia
+                   ]
+          ]

@@ -1,6 +1,7 @@
 module Pinafore.Language.Value
     ( module I
-    ) where
+    )
+where
 
 import Pinafore.Language.Value.Attribute as I
 import Pinafore.Language.Value.EntityMap as I

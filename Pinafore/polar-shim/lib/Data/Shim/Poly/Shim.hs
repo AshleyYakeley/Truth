@@ -1,13 +1,14 @@
 module Data.Shim.Poly.Shim where
 
-import Data.Shim.Mono
 import Shapes
+
+import Data.Shim.Mono
 
 type PolyShimKind = forall k -> ShimKind k
 
 type PolyMorphism :: ShimKind Type -> PolyShimKind
-newtype PolyMorphism shim k a b =
-    MkPolyMorphism (KindMorphism shim a b)
+newtype PolyMorphism shim k a b
+    = MkPolyMorphism (KindMorphism shim a b)
 
 type PolyFunction :: PolyShimKind
 type PolyFunction = PolyMorphism (->)
@@ -27,13 +28,13 @@ type ReduciblePolyShim :: PolyShimKind -> Constraint
 class AllCategory pshim => ReduciblePolyShim pshim where
     type ReducedPolyShim pshim :: PolyShimKind
     reduceShim ::
-           forall a b c d.
-           (ReducedPolyShim pshim Type a b -> ReducedPolyShim pshim Type c d)
-        -> pshim Type a b
-        -> pshim Type c d
+        forall a b c d.
+        (ReducedPolyShim pshim Type a b -> ReducedPolyShim pshim Type c d) ->
+        pshim Type a b ->
+        pshim Type c d
     -- type ReducedPolyShim (pshim :: PolyShimKind) = pshim
     default reduceShim ::
         forall a b c d.
-            (ReducedPolyShim pshim Type ~ pshim Type) =>
-                    (ReducedPolyShim pshim Type a b -> ReducedPolyShim pshim Type c d) -> pshim Type a b -> pshim Type c d
+        ReducedPolyShim pshim Type ~ pshim Type =>
+        (ReducedPolyShim pshim Type a b -> ReducedPolyShim pshim Type c d) -> pshim Type a b -> pshim Type c d
     reduceShim f = f

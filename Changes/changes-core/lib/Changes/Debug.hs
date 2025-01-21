@@ -3,15 +3,19 @@
 module Changes.Debug
     ( module Debug.ThreadTrace
     , module Changes.Debug
-    ) where
+    )
+where
 
-import Changes.Core.Import
 import Debug.ThreadTrace
 
+import Changes.Core.Import
+
 traceUnlift ::
-       forall t m. (TransConstraint MonadIO t, MonadIO m)
-    => String
-    -> t m --> m -> t m --> m
+    forall t m.
+    (TransConstraint MonadIO t, MonadIO m) =>
+    String ->
+    t m --> m ->
+    t m --> m
 traceUnlift prefix mf =
     case hasTransConstraint @MonadIO @t @m of
         Dict -> traceBarrier_ prefix mf

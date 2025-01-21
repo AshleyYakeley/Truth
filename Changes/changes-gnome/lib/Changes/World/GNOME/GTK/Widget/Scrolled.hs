@@ -1,10 +1,12 @@
 module Changes.World.GNOME.GTK.Widget.Scrolled
     ( createScrolled
-    ) where
+    )
+where
 
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createScrolled :: Widget -> GView 'Unlocked Widget
 createScrolled content =

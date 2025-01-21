@@ -1,45 +1,49 @@
 module Pinafore.Documentation
     ( module Pinafore.Syntax.Text
-    , ShowText(..)
+    , ShowText (..)
     , module Pinafore.Syntax.Name
     , module Pinafore.Syntax.Doc
     , module Pinafore.Main
     , getModuleDocs
     , operatorFixity
     , typeOperatorFixity
-    , Fixity(..)
-    , FixAssoc(..)
+    , Fixity (..)
+    , FixAssoc (..)
     , allKeywords
     , allOperatorNames
     , allTypeNames
-    ) where
+    )
+where
+
+import Pinafore.Syntax.Doc
+import Pinafore.Syntax.Name
+import Pinafore.Syntax.Text
 
 import Import
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Main
-import Pinafore.Syntax.Doc
-import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 
 allOperatorNames :: (DocItem -> Bool) -> [Name]
 allOperatorNames test = let
     getDocName :: BindDoc -> Maybe Name
-    getDocName MkBindDoc {bdScopeEntry = Just (BindScopeEntry (MkFullNameRef name _) _ _), bdDoc = dd}
+    getDocName MkBindDoc{bdScopeEntry = Just (BindScopeEntry (MkFullNameRef name _) _ _), bdDoc = dd}
         | test $ docItem dd
-        , nameIsInfix name = Just name
+        , nameIsInfix name =
+            Just name
     getDocName _ = Nothing
-    in sort $
-       nub $
-       mapMaybe getDocName $ do
-           lmod <- pinaforeLibrary
-           libraryContentsEntries $ lmContents lmod
+    in sort
+        $ nub
+        $ mapMaybe getDocName
+        $ do
+            lmod <- pinaforeLibrary
+            libraryContentsEntries $ lmContents lmod
 
 bindDocTypeName :: BindDoc -> [Name]
 bindDocTypeName bd =
     case docItem (bdDoc bd) of
-        TypeDocItem {diNames = n} -> fmap fnrName $ toList n
+        TypeDocItem{diNames = n} -> fmap fnrName $ toList n
         _ -> []
 
 libraryTypeNames :: LibraryModule -> [Name]

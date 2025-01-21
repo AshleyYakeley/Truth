@@ -17,10 +17,11 @@ class TupleDatabaseType dbType => TupleDatabase dbType (tablesel :: (Type -> Typ
     type TupleDatabaseRowWitness dbType (tablesel :: (Type -> Type) -> Type) :: (Type -> Type) -> Constraint
 
 evalTupleExprIdentity ::
-       forall dbType colsel t. TupleDatabaseType dbType
-    => TupleExpr dbType colsel t
-    -> AllOf colsel
-    -> t
+    forall dbType colsel t.
+    TupleDatabaseType dbType =>
+    TupleExpr dbType colsel t ->
+    AllOf colsel ->
+    t
 evalTupleExprIdentity expr tuple = runIdentity $ evalTupleExpr @dbType expr $ allOfToAllFor tuple
 
 type TupleDatabaseReader dbType tablesel = DatabaseReader dbType (TupleTableSel tablesel)
@@ -34,8 +35,8 @@ data TupleUpdateItem dbType colsel where
     MkTupleUpdateItem :: colsel t -> TupleExpr dbType colsel t -> TupleUpdateItem dbType colsel
 
 data TupleUpdateClause dbType row where
-    MkTupleUpdateClause
-        :: TestEquality colsel => [TupleUpdateItem dbType colsel] -> TupleUpdateClause dbType (AllOf colsel)
+    MkTupleUpdateClause ::
+        TestEquality colsel => [TupleUpdateItem dbType colsel] -> TupleUpdateClause dbType (AllOf colsel)
 
 data TupleJoinClause rowa rowb rowc where
     OuterTupleJoinClause :: TupleJoinClause (AllOf colsel1) (AllOf colsel2) (AllOf (EitherType colsel1 colsel2))
@@ -46,15 +47,15 @@ instance TestEquality tablesel => TestEquality (TupleTableSel tablesel) where
         return Refl
 
 data TupleSelectClause dbType tablesel row t where
-    MkTupleSelectClause
-        :: (TupleDatabaseTypeRowWitness dbType colsel', TupleDatabaseRowWitness dbType tablesel colsel')
-        => (forall t. colsel' t -> TupleExpr dbType colsel t)
-        -> TupleSelectClause dbType tablesel (AllOf colsel) (AllOf colsel')
+    MkTupleSelectClause ::
+        (TupleDatabaseTypeRowWitness dbType colsel', TupleDatabaseRowWitness dbType tablesel colsel') =>
+        (forall t. colsel' t -> TupleExpr dbType colsel t) ->
+        TupleSelectClause dbType tablesel (AllOf colsel) (AllOf colsel')
 
 data SortDir
     = SortAsc
     | SortDesc
-    deriving stock (Eq)
+    deriving stock Eq
 
 instance Show SortDir where
     show SortAsc = "ASC"
@@ -76,12 +77,15 @@ instance Monoid (TupleOrderClause (AllOf colsel)) where
 data TupleInsertClause row where
     MkTupleInsertClause :: [AllOf colsel] -> TupleInsertClause (AllOf colsel)
 
-instance ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
-         , WitnessConstraint (TupleDatabaseRowWitness dbType tablesel) tablesel
-         , TupleDatabaseType dbType
-         , TestEquality tablesel
-         , FiniteWitness tablesel
-         ) => Database dbType (TupleTableSel tablesel) where
+instance
+    ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
+    , WitnessConstraint (TupleDatabaseRowWitness dbType tablesel) tablesel
+    , TupleDatabaseType dbType
+    , TestEquality tablesel
+    , FiniteWitness tablesel
+    ) =>
+    Database dbType (TupleTableSel tablesel)
+    where
     tableAssemble getrow = let
         conv :: AllFor (Compose f AllOf) tablesel -> AllFor f (TupleTableSel tablesel)
         conv (MkAllFor tcfa) = MkAllFor $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc
@@ -95,17 +99,18 @@ instance ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
     type UpdateClause dbType (TupleTableSel tablesel) row = TupleUpdateClause dbType row
     updateClause (MkTupleUpdateClause items) = let
         updateItem ::
-               forall colsel. TestEquality colsel
-            => TupleUpdateItem dbType colsel
-            -> AllOf colsel
-            -> AllOf colsel
+            forall colsel.
+            TestEquality colsel =>
+            TupleUpdateItem dbType colsel ->
+            AllOf colsel ->
+            AllOf colsel
         updateItem (MkTupleUpdateItem tsel expr) tuple@(MkAllOf tf) =
             MkAllOf $ \col ->
                 case testEquality col tsel of
                     Just Refl -> evalTupleExprIdentity @dbType expr tuple
                     Nothing -> tf col
         updateItems [] = id
-        updateItems (i:ii) = updateItems ii . updateItem i
+        updateItems (i : ii) = updateItems ii . updateItem i
         in updateItems items
     type OrderClause dbType (TupleTableSel tablesel) row = TupleOrderClause row
     orderClause (MkTupleOrderClause clauses) (MkAllOf tup1) (MkAllOf tup2) = let

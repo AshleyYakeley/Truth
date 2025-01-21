@@ -5,16 +5,18 @@ module Changes.Core.Resource.SingleRunner
     , discardingSingleRunner
     , runSingleRunner
     , runSingleRunnerContext
-    ) where
+    )
+where
 
 import Changes.Core.Import
 
 data SingleRunner (t :: TransKind) where
-    MkSingleRunner
-        :: forall (t :: TransKind). MonadTransUnlift t
-        => IOWitness t
-        -> Unlift MonadUnliftIO t
-        -> SingleRunner t
+    MkSingleRunner ::
+        forall (t :: TransKind).
+        MonadTransUnlift t =>
+        IOWitness t ->
+        Unlift MonadUnliftIO t ->
+        SingleRunner t
 
 instance TestEquality SingleRunner where
     testEquality (MkSingleRunner wa _) (MkSingleRunner wb _) = testEquality wa wb
@@ -23,10 +25,11 @@ instance TestOrder SingleRunner where
     testCompare (MkSingleRunner wa _) (MkSingleRunner wb _) = testCompare wa wb
 
 mkSingleRunner ::
-       forall (t :: TransKind). MonadTransUnlift t
-    => IOWitness t
-    -> Unlift MonadUnliftIO t
-    -> SingleRunner t
+    forall (t :: TransKind).
+    MonadTransUnlift t =>
+    IOWitness t ->
+    Unlift MonadUnliftIO t ->
+    SingleRunner t
 mkSingleRunner = MkSingleRunner
 
 singleRunnerUnliftDict :: SingleRunner t -> Dict (MonadTransUnlift t)
@@ -40,28 +43,29 @@ mkAnySingleRunner wit (MkWUnlift unlift) = MkSingleRunner wit unlift
 
 fetchInSomeList :: TestEquality w => [Some w] -> w t -> Maybe (w t, w t -> [Some w])
 fetchInSomeList [] _ = Nothing
-fetchInSomeList (MkSome it:aa) wt
+fetchInSomeList (MkSome it : aa) wt
     | Just Refl <- testEquality it wt = Just (it, \it' -> MkSome it' : aa)
-fetchInSomeList (a:aa) wt = do
+fetchInSomeList (a : aa) wt = do
     (it, f) <- fetchInSomeList aa wt
     return (it, \it' -> a : f it')
 
 fetchSingleRunner ::
-       forall t.
-       [Some SingleRunner]
-    -> SingleRunner t
-    -> (WUnlift MonadUnliftIO t -> [Some SingleRunner], WUnlift MonadUnliftIO t, Bool)
+    forall t.
+    [Some SingleRunner] ->
+    SingleRunner t ->
+    (WUnlift MonadUnliftIO t -> [Some SingleRunner], WUnlift MonadUnliftIO t, Bool)
 fetchSingleRunner rr sr@(MkSingleRunner swit srun) =
     case fetchInSomeList rr sr of
         Nothing -> (\unlift -> (MkSome $ mkAnySingleRunner swit unlift) : rr, MkWUnlift srun, True)
         Just (MkSingleRunner cwit crun, f) -> (\unlift -> f (mkAnySingleRunner cwit unlift), MkWUnlift crun, False)
 
 runSingleRunner ::
-       forall t m r. MonadUnliftIO m
-    => [Some SingleRunner]
-    -> SingleRunner t
-    -> ((MonadTransUnlift t, MonadUnliftIO (t m)) => t m r)
-    -> m r
+    forall t m r.
+    MonadUnliftIO m =>
+    [Some SingleRunner] ->
+    SingleRunner t ->
+    ((MonadTransUnlift t, MonadUnliftIO (t m)) => t m r) ->
+    m r
 runSingleRunner rr sr call =
     case singleRunnerUnliftDict sr of
         Dict ->
@@ -71,11 +75,12 @@ runSingleRunner rr sr call =
                     in run call
 
 runSingleRunnerContext ::
-       forall t m r. MonadUnliftIO m
-    => [Some SingleRunner]
-    -> SingleRunner t
-    -> ((MonadTransUnlift t, MonadUnliftIO (t m)) => [Some SingleRunner] -> Unlift MonadUnliftIO t -> m r)
-    -> m r
+    forall t m r.
+    MonadUnliftIO m =>
+    [Some SingleRunner] ->
+    SingleRunner t ->
+    ((MonadTransUnlift t, MonadUnliftIO (t m)) => [Some SingleRunner] -> Unlift MonadUnliftIO t -> m r) ->
+    m r
 runSingleRunnerContext rr sr call =
     case singleRunnerUnliftDict sr of
         Dict ->
@@ -83,5 +88,5 @@ runSingleRunnerContext rr sr call =
                 Dict -> let
                     (rr', run, isRunner) = fetchSingleRunner rr sr
                     in case isRunner of
-                           True -> unWUnlift run $ liftWithUnlift $ \unlift -> call (rr' $ MkWUnlift unlift) unlift
-                           False -> call (rr' run) $ unWUnlift run
+                        True -> unWUnlift run $ liftWithUnlift $ \unlift -> call (rr' $ MkWUnlift unlift) unlift
+                        False -> call (rr' run) $ unWUnlift run

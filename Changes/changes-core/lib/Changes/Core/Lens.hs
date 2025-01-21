@@ -1,6 +1,7 @@
 module Changes.Core.Lens
     ( module I
-    ) where
+    )
+where
 
 import Changes.Core.Lens.Delay as I
 import Changes.Core.Lens.Floating as I

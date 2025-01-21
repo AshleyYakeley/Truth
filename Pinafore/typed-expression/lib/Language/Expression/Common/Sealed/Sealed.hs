@@ -2,12 +2,14 @@
 
 module Language.Expression.Common.Sealed.Sealed where
 
-import Language.Expression.Common.Open
 import Shapes
 
-data SealedExpression (varw :: Type -> Type) (tw :: Type -> Type) =
-    forall (t :: Type). MkSealedExpression (tw t)
-                                           (Expression varw t)
+import Language.Expression.Common.Open
+
+data SealedExpression (varw :: Type -> Type) (tw :: Type -> Type)
+    = forall (t :: Type). MkSealedExpression
+        (tw t)
+        (Expression varw t)
 
 type instance Element (SealedExpression _ ((:~:) val)) = val
 

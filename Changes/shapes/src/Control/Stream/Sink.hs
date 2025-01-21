@@ -4,8 +4,8 @@ import Control.Stream.Filter
 import Control.Task
 import Shapes.Import
 
-newtype Sink m a =
-    MkSink (ItemOrEnd a -> m ())
+newtype Sink m a
+    = MkSink (ItemOrEnd a -> m ())
 
 instance Contravariant (Sink m) where
     contramap ab (MkSink f) = MkSink $ \a -> f $ fmap ab a
@@ -29,14 +29,16 @@ sinkWriteLn :: Sink m Text -> Text -> m ()
 sinkWriteLn sink t = sinkWrite sink $ t <> "\n"
 
 filterSink ::
-       forall m a b. MonadIO m
-    => Filter m a b
-    -> Sink m b
-    -> IO (Sink m a)
+    forall m a b.
+    MonadIO m =>
+    Filter m a b ->
+    Sink m b ->
+    IO (Sink m a)
 filterSink (MkFilter s0 f) sink = do
     var <- newMVar s0
-    return $
-        MkSink $ \ma -> do
+    return
+        $ MkSink
+        $ \ma -> do
             bb <- dangerousMVarRunStateT var $ f ma
             for_ bb $ sinkWrite sink
             case ma of

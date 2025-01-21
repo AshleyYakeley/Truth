@@ -1,13 +1,15 @@
 module Data.Store
     ( module Data.Store
     , Key
-    ) where
+    )
+where
 
 import Shapes.Import
 
-data Store a =
-    MkStore Key
-            (IntMap a)
+data Store a
+    = MkStore
+        Key
+        (IntMap a)
 
 instance Functor Store where
     fmap ab (MkStore key mp) = MkStore key $ fmap ab mp
@@ -51,5 +53,5 @@ deleteStoreStateT key = StateT $ \oldstore -> pure ((), deleteStore key oldstore
 traverseStoreStateT :: Applicative m => (Key -> StateT s m ()) -> StateT (Store s) m ()
 traverseStoreStateT f =
     StateT $ \oldstore ->
-        fmap (\newstore -> ((), newstore)) $
-        traverseStore (\key oldstate -> fmap snd $ runStateT (f key) oldstate) oldstore
+        fmap (\newstore -> ((), newstore))
+            $ traverseStore (\key oldstate -> fmap snd $ runStateT (f key) oldstate) oldstore

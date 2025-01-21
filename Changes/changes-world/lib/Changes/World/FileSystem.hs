@@ -1,10 +1,11 @@
 module Changes.World.FileSystem where
 
 import Changes.Core
-import Changes.World.File
 import Shapes
 import System.Directory
 import System.FilePath
+
+import Changes.World.File
 
 -- | an entire file system in memory
 type FileSystem = FileSystemDirectory
@@ -20,7 +21,7 @@ data FileSystemItem
 findInFileSystem :: FileSystem -> FilePath -> Maybe FileSystemItem
 findInFileSystem fs path = let
     finditem item [] = Just item
-    finditem (DirectoryItem dir) (n:names) = do
+    finditem (DirectoryItem dir) (n : names) = do
         item <- lookup n dir
         finditem item names
     finditem _ _ = Nothing
@@ -57,14 +58,17 @@ instance SubjectReader FSReader where
 -}
 data FSEdit
     = FSEditCreateDirectory FilePath
-    | FSEditCreateFile FilePath
-                       LazyByteString
-    | FSEditCreateSymbolicLink FilePath
-                               FilePath
+    | FSEditCreateFile
+        FilePath
+        LazyByteString
+    | FSEditCreateSymbolicLink
+        FilePath
+        FilePath
     | FSEditDeleteNonDirectory FilePath
     | FSEditDeleteEmptyDirectory FilePath
-    | FSEditRenameItem FilePath
-                       FilePath
+    | FSEditRenameItem
+        FilePath
+        FilePath
 
 instance FloatingOn FSEdit FSEdit
 
@@ -131,7 +135,7 @@ fileSystemReference = let
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
     refCommitTask = mempty
-    in MkResource nilResourceRunner MkAReference {..}
+    in MkResource nilResourceRunner MkAReference{..}
 
 subdirCreateWitness :: IOWitness (StateT Bool)
 subdirCreateWitness = $(iowitness [t|StateT Bool|])
@@ -139,7 +143,7 @@ subdirCreateWitness = $(iowitness [t|StateT Bool|])
 subdirectoryReference :: Bool -> FilePath -> Reference FSEdit -> Reference FSEdit
 subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkAReference rd push ctask)) =
     -- runResourceRunnerWith rr $ \_ ->
-    case transStackConcatRefl @'[ StateT Bool] @tt @IO of
+    case transStackConcatRefl @'[StateT Bool] @tt @IO of
         Refl ->
             case resourceRunnerStackUnliftDict @IO rr of
                 Dict -> let
@@ -149,9 +153,11 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkARefer
                         case c of
                             False -> return ()
                             True -> do
-                                lift $
-                                    pushOrFail ("couldn't create directory " <> show dir) noEditSource $
-                                    push $ pure $ FSEditCreateDirectory dir
+                                lift
+                                    $ pushOrFail ("couldn't create directory " <> show dir) noEditSource
+                                    $ push
+                                    $ pure
+                                    $ FSEditCreateDirectory dir
                                 put False
                     insideToOutside :: FilePath -> FilePath
                     insideToOutside path = let
@@ -161,8 +167,8 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkARefer
                     outsideToInside path = let
                         relpath = makeRelative dir $ "/" </> path
                         in if isRelative relpath
-                               then Just relpath
-                               else Nothing
+                            then Just relpath
+                            else Nothing
                     rd' :: Readable (StateT Bool (ApplyStack tt IO)) FSReader
                     rd' (FSReadDirectory path) = do
                         pushFirst
@@ -173,14 +179,14 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkARefer
                     rd' (FSReadSymbolicLink path) = do
                         pushFirst
                         mspath <- lift $ rd $ FSReadSymbolicLink $ insideToOutside path
-                        return $
-                            case mspath of
+                        return
+                            $ case mspath of
                                 Nothing -> Nothing
                                 Just spath ->
-                                    Just $
-                                    case outsideToInside spath of
-                                        Just ipath -> ipath
-                                        Nothing -> ""
+                                    Just
+                                        $ case outsideToInside spath of
+                                            Just ipath -> ipath
+                                            Nothing -> ""
                     mapPath :: FSEdit -> FSEdit
                     mapPath (FSEditCreateDirectory path) = FSEditCreateDirectory $ insideToOutside path
                     mapPath (FSEditCreateFile path bs) = FSEditCreateFile (insideToOutside path) bs
@@ -191,14 +197,15 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkARefer
                     mapPath (FSEditRenameItem path1 path2) =
                         FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
                     push' ::
-                           NonEmpty FSEdit
-                        -> StateT Bool (ApplyStack tt IO) (Maybe (EditSource -> StateT Bool (ApplyStack tt IO) ()))
+                        NonEmpty FSEdit ->
+                        StateT Bool (ApplyStack tt IO) (Maybe (EditSource -> StateT Bool (ApplyStack tt IO) ()))
                     push' edits = do
                         pushFirst
                         maction <- lift $ push $ fmap mapPath edits
                         return $ fmap (fmap lift) maction
                     in MkResource
-                           (combineIndependentResourceRunners
-                                (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
-                                rr) $
-                       MkAReference rd' push' ctask
+                        ( combineIndependentResourceRunners
+                            (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
+                            rr
+                        )
+                        $ MkAReference rd' push' ctask

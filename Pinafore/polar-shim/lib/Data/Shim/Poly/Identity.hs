@@ -1,8 +1,9 @@
 module Data.Shim.Poly.Identity where
 
+import Shapes
+
 import Data.Shim.Mono
 import Data.Shim.Poly.Shim
-import Shapes
 
 type IdentityShim :: PolyShimKind
 data IdentityShim k a b where

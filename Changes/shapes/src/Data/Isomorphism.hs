@@ -10,8 +10,9 @@ data Isomorphism (cat :: k -> k -> Type) (a :: k) (b :: k) = MkIsomorphism
     { isoForwards :: cat a b
     , isoBackwards :: cat b a
     }
-    -- isoForwards . isoBackwards = id
-    -- isoBackwards . isoForwards = id
+
+-- isoForwards . isoBackwards = id
+-- isoBackwards . isoForwards = id
 
 type Bijection = Isomorphism (->)
 
@@ -23,18 +24,20 @@ instance Category cat => Groupoid (Isomorphism cat) where
     invert (MkIsomorphism ab ba) = MkIsomorphism ba ab
 
 instance CatFunctor catp catq f => CatFunctor (Isomorphism catp) (Isomorphism catq) (f :: Type -> Type) where
-    cfmap bi = MkIsomorphism {isoForwards = cfmap (isoForwards bi), isoBackwards = cfmap (isoBackwards bi)}
+    cfmap bi = MkIsomorphism{isoForwards = cfmap (isoForwards bi), isoBackwards = cfmap (isoBackwards bi)}
 
-instance CatFunctor (CatDual catp) catq f =>
-             CatFunctor (CatDual (Isomorphism catp)) (Isomorphism catq) (f :: Type -> Type) where
+instance
+    CatFunctor (CatDual catp) catq f =>
+    CatFunctor (CatDual (Isomorphism catp)) (Isomorphism catq) (f :: Type -> Type)
+    where
     cfmap (MkCatDual bi) =
-        MkIsomorphism {isoForwards = ccontramap (isoForwards bi), isoBackwards = ccontramap (isoBackwards bi)}
+        MkIsomorphism{isoForwards = ccontramap (isoForwards bi), isoBackwards = ccontramap (isoBackwards bi)}
 
 isoMapCat ::
-       forall k (cat1 :: k -> k -> Type) (cat2 :: k -> k -> Type) (p :: k) (q :: k).
-       (forall (a :: k) (b :: k). cat1 a b -> cat2 a b)
-    -> Isomorphism cat1 p q
-    -> Isomorphism cat2 p q
+    forall k (cat1 :: k -> k -> Type) (cat2 :: k -> k -> Type) (p :: k) (q :: k).
+    (forall (a :: k) (b :: k). cat1 a b -> cat2 a b) ->
+    Isomorphism cat1 p q ->
+    Isomorphism cat2 p q
 isoMapCat m (MkIsomorphism f b) = MkIsomorphism (m f) (m b)
 
 biIsoMap :: Invariant f => Bijection a b -> f a -> f b
@@ -57,12 +60,16 @@ strictBytestringBijection = MkIsomorphism toStrict fromStrict
 
 class HasKindMorphism (k :: Type) where
     kindMorphismMapCat ::
-           forall (cat1 :: Type -> Type -> Type) (cat2 :: Type -> Type -> Type). (Category cat1, Category cat2)
-        => (forall p q. cat1 p q -> cat2 p q)
-        -> forall (a :: k) (b :: k). KindMorphism cat1 a b -> KindMorphism cat2 a b
+        forall (cat1 :: Type -> Type -> Type) (cat2 :: Type -> Type -> Type).
+        (Category cat1, Category cat2) =>
+        (forall p q. cat1 p q -> cat2 p q) ->
+        forall (a :: k) (b :: k).
+        KindMorphism cat1 a b -> KindMorphism cat2 a b
     mkKindIsomorphism ::
-           forall (cat :: Type -> Type -> Type). Category cat
-        => forall (a :: k) (b :: k). KindMorphism cat a b -> KindMorphism cat b a -> KindIsomorphism cat a b
+        forall (cat :: Type -> Type -> Type).
+        Category cat =>
+        forall (a :: k) (b :: k).
+        KindMorphism cat a b -> KindMorphism cat b a -> KindIsomorphism cat a b
 
 type KindIsomorphism :: forall {k}. (Type -> Type -> Type) -> k -> k -> Type
 type KindIsomorphism (cat :: Type -> Type -> Type) = KindMorphism (Isomorphism cat)
@@ -77,17 +84,19 @@ instance HasKindMorphism Type where
 instance HasKindMorphism kq => HasKindMorphism (kp -> kq) where
     kindMorphismMapCat ab (MkNestedMorphism a) = MkNestedMorphism $ kindMorphismMapCat ab a
     mkKindIsomorphism ::
-           forall (cat :: Type -> Type -> Type). Category cat
-        => forall (a :: kp -> kq) (b :: kp -> kq).
-                   KindMorphism cat a b -> KindMorphism cat b a -> KindIsomorphism cat a b
+        forall (cat :: Type -> Type -> Type).
+        Category cat =>
+        forall (a :: kp -> kq) (b :: kp -> kq).
+        KindMorphism cat a b -> KindMorphism cat b a -> KindIsomorphism cat a b
     mkKindIsomorphism (MkNestedMorphism ab) (MkNestedMorphism ba) = MkNestedMorphism $ mkKindIsomorphism @_ @cat ab ba
 
 instance (HasKindMorphism kp, HasKindMorphism kq) => HasKindMorphism (kp, kq) where
     kindMorphismMapCat ab (MkPairMorphism pa qa) = MkPairMorphism (kindMorphismMapCat ab pa) (kindMorphismMapCat ab qa)
     mkKindIsomorphism ::
-           forall cat (a :: (kp, kq)) b. Category cat
-        => KindMorphism cat a b
-        -> KindMorphism cat b a
-        -> KindIsomorphism cat a b
+        forall cat (a :: (kp, kq)) b.
+        Category cat =>
+        KindMorphism cat a b ->
+        KindMorphism cat b a ->
+        KindIsomorphism cat a b
     mkKindIsomorphism (MkPairMorphism papb qaqb) (MkPairMorphism pbpa qbqa) =
         MkPairMorphism (mkKindIsomorphism @_ @cat papb pbpa) (mkKindIsomorphism @_ @cat qaqb qbqa)

@@ -1,12 +1,14 @@
 module Pinafore.Syntax.Parse.Infix
-    ( FixityReader(..)
+    ( FixityReader (..)
     , readInfixed
-    ) where
+    )
+where
+
+import Shapes hiding (try)
 
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Parser
 import Pinafore.Syntax.Syntax
-import Shapes hiding (try)
 
 data FixityReader e = MkFixityReader
     { efrReadInfix :: Parser (FullNameRef, Fixity, e -> e -> e)
@@ -15,11 +17,11 @@ data FixityReader e = MkFixityReader
 
 leftApply :: e -> [(e -> e -> e, e)] -> e
 leftApply e1 [] = e1
-leftApply e1 ((f, e2):rest) = leftApply (f e1 e2) rest
+leftApply e1 ((f, e2) : rest) = leftApply (f e1 e2) rest
 
 rightApply :: e -> [(e -> e -> e, e)] -> e
 rightApply e1 [] = e1
-rightApply e1 ((f, e2):rest) = f e1 $ rightApply e2 rest
+rightApply e1 ((f, e2) : rest) = f e1 $ rightApply e2 rest
 
 readInfixedPrec :: Int -> FixityReader e -> Parser e -> Parser e
 readInfixedPrec prec fr pe

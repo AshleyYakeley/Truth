@@ -16,31 +16,31 @@ module Pinafore.Base.Know
     , unknownValueChangeLens
     , biFromKnowWhole
     , biToKnowWhole
-    ) where
+    )
+where
 
 import Changes.Core
 import Shapes
 
-newtype Know a =
-    MkKnow (Maybe a)
-    deriving newtype ( Eq
-                     , Functor
-                     , Foldable
-                     , Applicative
-                     , Alternative
-                     , Monad
-                     , MonadFix
-                     , MonadPlus
-                     , MonadException
-                     , MonadInner
-                     )
+newtype Know a
+    = MkKnow (Maybe a)
+    deriving newtype
+        ( Eq
+        , Functor
+        , Foldable
+        , Applicative
+        , Alternative
+        , Monad
+        , MonadFix
+        , MonadPlus
+        , MonadException
+        , MonadInner
+        )
 
 pattern Known :: a -> Know a
-
 pattern Known a = MkKnow (Just a)
 
 pattern Unknown :: Know a
-
 pattern Unknown = MkKnow Nothing
 
 {-# COMPLETE Known, Unknown #-}
@@ -106,17 +106,19 @@ unknownValueBijection def = let
     isoForwards (Known a) = a
     isoForwards Unknown = def
     isoBackwards = Known
-    in MkIsomorphism {..}
+    in MkIsomorphism{..}
 
 unknownValueChangeLens :: a -> ChangeLens (WholeUpdate (Know a)) (WholeUpdate a)
 unknownValueChangeLens def = toChangeLens $ unknownValueBijection def
 
 biFromKnowWhole ::
-       forall p q. Monoid q
-    => ChangeLens (BiWholeUpdate (Know p) (Know q)) (BiWholeUpdate p q)
+    forall p q.
+    Monoid q =>
+    ChangeLens (BiWholeUpdate (Know p) (Know q)) (BiWholeUpdate p q)
 biFromKnowWhole = mapBiWholeChangeLens Known $ fromKnow mempty
 
 biToKnowWhole ::
-       forall p q. Monoid p
-    => ChangeLens (BiWholeUpdate p q) (BiWholeUpdate (Know p) (Know q))
+    forall p q.
+    Monoid p =>
+    ChangeLens (BiWholeUpdate p q) (BiWholeUpdate (Know p) (Know q))
 biToKnowWhole = mapBiWholeChangeLens (fromKnow mempty) Known

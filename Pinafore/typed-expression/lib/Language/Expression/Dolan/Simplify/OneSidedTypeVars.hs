@@ -1,19 +1,22 @@
 module Language.Expression.Dolan.Simplify.OneSidedTypeVars
     ( eliminateOneSidedTypeVars
-    ) where
+    )
+where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
-import Shapes
 
 eliminationBisubs ::
-       forall (ground :: GroundTypeKind). IsDolanGroundType ground
-    => (ListSet SomeTypeVarT, ListSet SomeTypeVarT)
-    -> [Bisubstitution ground (DolanShim ground) Identity]
+    forall (ground :: GroundTypeKind).
+    IsDolanGroundType ground =>
+    (ListSet SomeTypeVarT, ListSet SomeTypeVarT) ->
+    [Bisubstitution ground (DolanShim ground) Identity]
 eliminationBisubs (posvars, negvars) = let
     posbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
     posbisub (MkSomeTypeVarT var) =
@@ -24,16 +27,16 @@ eliminationBisubs (posvars, negvars) = let
     in (fmap posbisub $ toList posvars) <> (fmap negbisub $ toList negvars)
 
 eliminateVars ::
-       forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => (ListSet SomeTypeVarT, ListSet SomeTypeVarT)
-    -> Endo a
+    forall (ground :: GroundTypeKind) a.
+    (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
+    (ListSet SomeTypeVarT, ListSet SomeTypeVarT) ->
+    Endo a
 eliminateVars vars = endoMToEndo $ bisubstitutes @ground (eliminationBisubs vars)
 
 eliminateOneSidedTypeVars ::
-       forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => Endo a
+    forall (ground :: GroundTypeKind) a.
+    (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
+    Endo a
 eliminateOneSidedTypeVars =
     Endo $ \expr -> let
         (setFromList -> posvars, setFromList -> negvars) = mappableGetVars @ground expr

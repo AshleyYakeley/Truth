@@ -1,9 +1,11 @@
 module Main
     ( main
-    ) where
+    )
+where
 
 import Shapes
 import Shapes.Test
+
 import Test.Entity
 import Test.Interactive
 import Test.Language

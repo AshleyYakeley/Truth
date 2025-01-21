@@ -1,7 +1,8 @@
 module Pinafore.Language.Type.Subtype.Hint
     ( QSubtypeHint
     , mkQSubtypeHint
-    ) where
+    )
+where
 
 import Import
 
@@ -11,7 +12,7 @@ data QSubtypeHint = MkQSubtypeHint
     }
 
 dhCodomain :: QSubtypeHint -> [Name]
-dhCodomain MkQSubtypeHint {..} = fmap dhMap dhDomain
+dhCodomain MkQSubtypeHint{..} = fmap dhMap dhDomain
 
 instance Eq QSubtypeHint where
     hintA == hintB =
@@ -20,16 +21,16 @@ instance Eq QSubtypeHint where
             else error $ "inconsistent data hints: " <> show (dhDomain hintA, dhDomain hintB)
 
 instance Show QSubtypeHint where
-    show MkQSubtypeHint {..} = "{" <> intercalate "," (fmap (\n -> show n <> "->" <> show (dhMap n)) dhDomain) <> "}"
+    show MkQSubtypeHint{..} = "{" <> intercalate "," (fmap (\n -> show n <> "->" <> show (dhMap n)) dhDomain) <> "}"
 
 instance Semigroup QSubtypeHint where
     hintA <> hintB = MkQSubtypeHint (dhDomain hintA) $ dhMap hintB . dhMap hintA
 
 mkFunc :: [(Name, Name)] -> Name -> Name
 mkFunc [] n = error $ "broken subtype hint: " <> show n
-mkFunc ((a, b):_) n
+mkFunc ((a, b) : _) n
     | a == n = b
-mkFunc (_:nn) n = mkFunc nn n
+mkFunc (_ : nn) n = mkFunc nn n
 
 mkQSubtypeHint :: [(Name, Name)] -> QSubtypeHint
 mkQSubtypeHint nn = MkQSubtypeHint (sort $ fmap fst nn) $ mkFunc nn

@@ -1,8 +1,9 @@
 module Options
-    ( Options(..)
+    ( Options (..)
     , getOptions
     , optParserInfo
-    ) where
+    )
+where
 
 import Options.Applicative as OA
 import Shapes

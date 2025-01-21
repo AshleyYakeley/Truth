@@ -18,20 +18,22 @@ module Test.RunScript
     , scriptAsync
     , runScriptTestTree
     , testExpression
-    , ScriptExpectation(..)
+    , ScriptExpectation (..)
     , testScriptExpectation
     , testExpectSuccess
     , testExpectThrow
     , testExpectReject
     , testExpectStop
-    ) where
+    )
+where
 
 import Data.Shim
-import Pinafore.Main
-import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 import Shapes.Test.Context
+
+import Pinafore.Main
+import Pinafore.Test.Internal
 
 data ScriptContext = MkScriptContext
     { scTesterOptions :: TesterOptions
@@ -42,10 +44,10 @@ data ScriptContext = MkScriptContext
 type ScriptTestTree = ContextTestTree ScriptContext
 
 tLoadModule :: LoadModule -> ScriptTestTree -> ScriptTestTree
-tLoadModule fm = tContext $ \sc -> sc {scLoadModule = fm <> scLoadModule sc}
+tLoadModule fm = tContext $ \sc -> sc{scLoadModule = fm <> scLoadModule sc}
 
 tPrefix :: Text -> ScriptTestTree -> ScriptTestTree
-tPrefix t = tContext $ \sc -> sc {scPrefix = scPrefix sc <> t <> "\n"}
+tPrefix t = tContext $ \sc -> sc{scPrefix = scPrefix sc <> t <> "\n"}
 
 tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
 tDecls defs = tPrefix $ pack $ "let {\n" <> intercalate ";\n" defs <> "\n}\n"
@@ -67,25 +69,26 @@ tOpenDefaultStore = tPrefix "?openTestStore >>=.Action fn store =>"
 
 testOpenUHStore :: ScriptTestTree -> ScriptTestTree
 testOpenUHStore =
-    tPrefix "?openTestStore >>=.Action fn dstore =>" .
-    tPrefix "new.UndoHandler >>=.Action fn undoHandler =>" .
-    tPrefix "handleStore.UndoHandler undoHandler dstore >>=.Action fn store =>"
+    tPrefix "?openTestStore >>=.Action fn dstore =>"
+        . tPrefix "new.UndoHandler >>=.Action fn undoHandler =>"
+        . tPrefix "handleStore.UndoHandler undoHandler dstore >>=.Action fn store =>"
 
 tModule :: Text -> Text -> ScriptTestTree -> ScriptTestTree
 tModule name script =
-    tLoadModule $
-    textLoadModule $ \n ->
-        return $
-        if pack (show n) == name
-            then Just script
-            else Nothing
+    tLoadModule
+        $ textLoadModule
+        $ \n ->
+            return
+                $ if pack (show n) == name
+                    then Just script
+                    else Nothing
 
 tParallel :: ScriptTestTree -> ScriptTestTree
 tParallel =
     tContext $ \sc -> let
         topts = scTesterOptions sc
         eopts = tstExecutionOptions topts
-        in sc {scTesterOptions = topts {tstExecutionOptions = eopts {eoProcessorCount = Just AllProcessorCount}}}
+        in sc{scTesterOptions = topts{tstExecutionOptions = eopts{eoProcessorCount = Just AllProcessorCount}}}
 
 tLibrary :: LibraryModule -> ScriptTestTree -> ScriptTestTree
 tLibrary libm = tLoadModule $ libraryLoadModule [libm]
@@ -102,16 +105,17 @@ runScriptTestTree =
         scTesterOptions = defaultTester
         scLoadModule = mempty
         scPrefix = mempty
-        in MkScriptContext {..}
+        in MkScriptContext{..}
 
 testExpression ::
-       forall a. HasQType QPolyShim 'Negative a
-    => Text
-    -> Text
-    -> (Tester a -> Tester ())
-    -> ScriptTestTree
+    forall a.
+    HasQType QPolyShim 'Negative a =>
+    Text ->
+    Text ->
+    (Tester a -> Tester ()) ->
+    ScriptTestTree
 testExpression name script call =
-    MkContextTestTree $ \MkScriptContext {..} ->
+    MkContextTestTree $ \MkScriptContext{..} ->
         testTree (unpack name) $ let
             fullscript = scPrefix <> script
             in runTester scTesterOptions $ testerLoad scLoadModule $ call $ testerInterpret fullscript
@@ -135,10 +139,11 @@ instance Show ScriptExpectation where
     show ScriptExpectSuccess = "success"
 
 testerAssertThrowsException ::
-       forall ex a. Exception ex
-    => (ex -> Bool)
-    -> Tester a
-    -> Tester ()
+    forall ex a.
+    Exception ex =>
+    (ex -> Bool) ->
+    Tester a ->
+    Tester ()
 testerAssertThrowsException checkEx ta = liftIOWithUnlift $ \unlift -> assertThrowsException checkEx $ unlift ta
 
 testScriptExpectation :: Text -> ScriptExpectation -> Text -> ScriptTestTree

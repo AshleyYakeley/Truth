@@ -1,8 +1,9 @@
 module Changes.Core.Types.ByteString
-    ( ByteStringReader(..)
-    , ByteStringEdit(..)
+    ( ByteStringReader (..)
+    , ByteStringEdit (..)
     , ByteStringUpdate
-    ) where
+    )
+where
 
 import Changes.Core.Edit
 import Changes.Core.Import
@@ -14,7 +15,8 @@ data ByteStringReader t where
 
 instance SubjectReader ByteStringReader where
     type ReaderSubject ByteStringReader = LazyByteString
-    -- | Make MutableEdit calls when you've actually got the subject
+
+    -- \| Make MutableEdit calls when you've actually got the subject
     mSubjectToReadable msubj ReadByteStringLength = do
         subj <- msubj
         return $ fromIntegral $ olength subj
@@ -29,8 +31,9 @@ instance FullSubjectReader ByteStringReader where
 
 data ByteStringEdit
     = ByteStringSetLength Int64
-    | ByteStringWrite Int64
-                      LazyByteString
+    | ByteStringWrite
+        Int64
+        LazyByteString
 
 instance FloatingOn ByteStringEdit ByteStringEdit
 
@@ -49,11 +52,12 @@ instance ApplicableEdit ByteStringEdit where
                     zerolen = blocklen - readlen
                 if readlen < 0
                     then return $ replicate blocklen 0
-                    else if zerolen < 0
-                             then mr $ ReadByteStringSection start blocklen
-                             else do
-                                 bs1 <- mr $ ReadByteStringSection start readlen
-                                 return $ mappend bs1 $ replicate zerolen 0
+                    else
+                        if zerolen < 0
+                            then mr $ ReadByteStringSection start blocklen
+                            else do
+                                bs1 <- mr $ ReadByteStringSection start readlen
+                                return $ mappend bs1 $ replicate zerolen 0
     applyEdit (ByteStringWrite w bs) mr ReadByteStringLength = do
         let end = w + fromIntegral (olength bs)
         oldlen <- mr ReadByteStringLength
@@ -112,7 +116,7 @@ instance InvertibleEdit ByteStringEdit where
         return $ lenEdit ++ writeEdit
 
 chunks :: Integral i => i -> i -> [(i, i)]
-chunks csize len = zip [0,csize ..] $ takeWhile ((<) 0) $ fmap (\n -> min csize $ len - (csize * n)) [0 ..]
+chunks csize len = zip [0, csize ..] $ takeWhile ((<) 0) $ fmap (\n -> min csize $ len - (csize * n)) [0 ..]
 
 instance SubjectMapEdit ByteStringEdit
 

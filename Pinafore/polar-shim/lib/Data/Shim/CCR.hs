@@ -1,6 +1,7 @@
 module Data.Shim.CCR
     ( module I
-    ) where
+    )
+where
 
 import Data.Shim.CCR.Apply as I
 import Data.Shim.CCR.Argument as I

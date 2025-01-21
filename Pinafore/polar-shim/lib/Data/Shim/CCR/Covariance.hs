@@ -1,19 +1,20 @@
 module Data.Shim.CCR.Covariance where
 
+import Shapes
+
 import Data.Shim.CCR.Variance
 import Data.Shim.CCR.Variances
 import Data.Shim.Mono
 import Data.Shim.Poly
-import Shapes
 
 type CovaryMap :: forall k. k -> Type
 data CovaryMap f where
     NilCovaryMap :: forall (f :: Type). CovaryMap f
-    ConsCovaryMap
-        :: forall (k :: Type) (f :: Type -> k).
-           CCRVariation CoCCRVariance f
-        -> (forall (a :: Type). CovaryMap (f a))
-        -> CovaryMap f
+    ConsCovaryMap ::
+        forall (k :: Type) (f :: Type -> k).
+        CCRVariation CoCCRVariance f ->
+        (forall (a :: Type). CovaryMap (f a)) ->
+        CovaryMap f
 
 type HasCovaryMap :: forall k. k -> Constraint
 class HasCovaryMap f where
@@ -22,8 +23,11 @@ class HasCovaryMap f where
 instance HasCovaryMap (f :: Type) where
     covarymap = NilCovaryMap
 
-instance forall k (f :: Type -> k). (HasVariance f, VarianceOf f ~ 'Covariance, forall a. HasCovaryMap (f a)) =>
-             HasCovaryMap f where
+instance
+    forall k (f :: Type -> k).
+    (HasVariance f, VarianceOf f ~ 'Covariance, forall a. HasCovaryMap (f a)) =>
+    HasCovaryMap f
+    where
     covarymap = ConsCovaryMap ccrVariation covarymap
 
 type CovaryType = ListType ((:~:) CoCCRVariance)
@@ -42,13 +46,13 @@ ccrVariancesToCovaryType =
         _ -> Nothing
 
 covaryToCCRVariancesMap ::
-       forall (dv :: CCRVariances) (f :: CCRVariancesKind dv). CovaryType dv -> CovaryMap f -> CCRVariancesMap dv f
+    forall (dv :: CCRVariances) (f :: CCRVariancesKind dv). CovaryType dv -> CovaryMap f -> CCRVariancesMap dv f
 covaryToCCRVariancesMap NilListType NilCovaryMap = NilCCRVariancesMap
 covaryToCCRVariancesMap (ConsListType Refl ml) (ConsCovaryMap ccrv vr) =
     ConsCCRVariancesMap ccrv $ covaryToCCRVariancesMap ml vr
 
 ccrVariancesMapToCovary ::
-       forall (dv :: CCRVariances) (f :: CCRVariancesKind dv). CovaryType dv -> CCRVariancesMap dv f -> CovaryMap f
+    forall (dv :: CCRVariances) (f :: CCRVariancesKind dv). CovaryType dv -> CCRVariancesMap dv f -> CovaryMap f
 ccrVariancesMapToCovary NilListType NilCCRVariancesMap = NilCovaryMap
 ccrVariancesMapToCovary (ConsListType Refl ml) (ConsCCRVariancesMap ccrv vr) =
     ConsCovaryMap ccrv $ ccrVariancesMapToCovary ml vr
@@ -60,7 +64,8 @@ covaryCoercibleKind (ConsListType Refl ml) =
         Dict -> Dict
 
 covaryKMCategory ::
-       forall (pmap :: PolyShimKind) dv. CCRVariancesShim pmap
-    => CovaryType dv
-    -> Dict (CoercibleKind (CCRVariancesKind dv), Category (pmap (CCRVariancesKind dv)))
+    forall (pmap :: PolyShimKind) dv.
+    CCRVariancesShim pmap =>
+    CovaryType dv ->
+    Dict (CoercibleKind (CCRVariancesKind dv), Category (pmap (CCRVariancesKind dv)))
 covaryKMCategory lc = ccrVariancesCategory @pmap $ covaryToCCRVariancesType lc

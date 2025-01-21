@@ -6,12 +6,13 @@ module Pinafore.Language.Interpreter.Scope
     , bindingInfoToMap
     , bindingInfosToMap
     , bindingInfosToScope
-    , QScope(..)
+    , QScope (..)
     , emptyScope
     , joinScopes
     , joinAllScopes
-    , QModule(..)
-    ) where
+    , QModule (..)
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -19,8 +20,8 @@ import Pinafore.Language.Interpreter.Binding
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 
-newtype QBindingMap =
-    MkQBindingMap (Map FullName QBindingInfo)
+newtype QBindingMap
+    = MkQBindingMap (Map FullName QBindingInfo)
 
 instance Semigroup QBindingMap where
     MkQBindingMap nsa <> MkQBindingMap nsb = let
@@ -59,7 +60,7 @@ bindingInfosToMap :: [(FullName, QBindingInfo)] -> QBindingMap
 bindingInfosToMap bis = MkQBindingMap $ mapFromList bis
 
 bindingInfosToScope :: [(FullName, QBindingInfo)] -> QScope
-bindingInfosToScope bis = emptyScope {scopeBindings = bindingInfosToMap bis}
+bindingInfosToScope bis = emptyScope{scopeBindings = bindingInfosToMap bis}
 
 data QScope = MkQScope
     { scopeBindings :: QBindingMap
@@ -70,17 +71,17 @@ emptyScope :: QScope
 emptyScope = MkQScope mempty mempty
 
 checkEntryConsistency ::
-       HasInterpreter => QSubtypeConversionEntry -> HashMap Unique QSubtypeConversionEntry -> Interpreter ()
+    HasInterpreter => QSubtypeConversionEntry -> HashMap Unique QSubtypeConversionEntry -> Interpreter ()
 checkEntryConsistency sce entries =
     case checkSubtypeConsistency (toList entries) sce of
         Nothing -> return ()
         Just (gta, gtb) -> throw $ InterpretSubtypeInconsistent (exprShow gta) (exprShow gtb)
 
 addSCEntry ::
-       HasInterpreter
-    => (Unique, QSubtypeConversionEntry)
-    -> HashMap Unique QSubtypeConversionEntry
-    -> Interpreter (HashMap Unique QSubtypeConversionEntry)
+    HasInterpreter =>
+    (Unique, QSubtypeConversionEntry) ->
+    HashMap Unique QSubtypeConversionEntry ->
+    Interpreter (HashMap Unique QSubtypeConversionEntry)
 addSCEntry (key, _) entries
     | member key entries = return entries
 addSCEntry (key, entry) entries = do
@@ -88,12 +89,12 @@ addSCEntry (key, entry) entries = do
     return $ insertMap key entry entries
 
 addSCEntries ::
-       HasInterpreter
-    => [(Unique, QSubtypeConversionEntry)]
-    -> HashMap Unique QSubtypeConversionEntry
-    -> Interpreter (HashMap Unique QSubtypeConversionEntry)
+    HasInterpreter =>
+    [(Unique, QSubtypeConversionEntry)] ->
+    HashMap Unique QSubtypeConversionEntry ->
+    Interpreter (HashMap Unique QSubtypeConversionEntry)
 addSCEntries [] entries = return entries
-addSCEntries (a:aa) entries = do
+addSCEntries (a : aa) entries = do
     entries' <- addSCEntry a entries
     addSCEntries aa entries'
 
@@ -105,19 +106,19 @@ joinScopes old new = do
         bb = scopeBindings old <> scopeBindings new
         newlist = mapToList $ scopeSubtypes new
     st <- addSCEntries newlist $ scopeSubtypes old
-    return MkQScope {scopeBindings = bb, scopeSubtypes = st}
+    return MkQScope{scopeBindings = bb, scopeSubtypes = st}
 
 -- old, new (oldest first)
 joinAllScopesTo :: HasInterpreter => QScope -> [QScope] -> Interpreter QScope
 joinAllScopesTo b [] = return b
-joinAllScopesTo b (s:ss) = do
+joinAllScopesTo b (s : ss) = do
     s' <- joinScopes b s
     joinAllScopesTo s' ss
 
 -- oldest first
 joinAllScopes :: HasInterpreter => [QScope] -> Interpreter QScope
 joinAllScopes [] = return emptyScope
-joinAllScopes (s:ss) = joinAllScopesTo s ss
+joinAllScopes (s : ss) = joinAllScopesTo s ss
 
 data QModule = MkQModule
     { moduleDoc :: Forest DefDoc

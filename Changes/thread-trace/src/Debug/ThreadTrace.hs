@@ -23,12 +23,13 @@ module Debug.ThreadTrace
     , tracePure
     , tracePureM
     , tracePureBracket
-    , TraceThing(..)
+    , TraceThing (..)
     , traceSTM
     , traceBracketSTM
     , traceAtomicallySTM
     , module Debug.ThreadTrace.Lookup
-    ) where
+    )
+where
 
 import Control.Applicative
 import Control.Concurrent
@@ -41,12 +42,13 @@ import Data.Map qualified as Map
 import Data.Maybe
 import Data.Time.Clock.System
 import Data.Word
-import Debug.ThreadTrace.Lookup
 import Debug.Trace (traceIO)
 import GHC.Conc
-import Prelude
 import System.Clock qualified as Clock
 import System.IO.Unsafe
+import Prelude
+
+import Debug.ThreadTrace.Lookup
 
 contextStr :: String -> String -> String
 contextStr "" b = b
@@ -69,7 +71,7 @@ defaultThreadData = let
     tdShowCosts = False
     tdCosts = mempty
     tdState = ""
-    in MkThreadData {..}
+    in MkThreadData{..}
 
 traceThreadData :: MVar (Map.Map ThreadId ThreadData)
 {-# NOINLINE traceThreadData #-}
@@ -79,8 +81,8 @@ threadGetData :: IO ThreadData
 threadGetData = do
     tid <- myThreadId
     tdmap <- readMVar traceThreadData
-    return $
-        case Map.lookup tid tdmap of
+    return
+        $ case Map.lookup tid tdmap of
             Just tdata -> tdata
             Nothing -> defaultThreadData
 
@@ -97,10 +99,10 @@ threadModifyData m = do
             in Map.insert tid newtdata tdmap
 
 traceNameThread :: String -> IO ()
-traceNameThread name = threadModifyData $ \tdata -> tdata {tdName = name}
+traceNameThread name = threadModifyData $ \tdata -> tdata{tdName = name}
 
 traceSetThreadState :: String -> IO ()
-traceSetThreadState s = threadModifyData $ \tdata -> tdata {tdState = s}
+traceSetThreadState s = threadModifyData $ \tdata -> tdata{tdState = s}
 
 traceSaveData :: MonadIO m => m r -> m r
 traceSaveData mr = do
@@ -112,19 +114,19 @@ traceSaveData mr = do
 traceHide :: MonadIO m => m r -> m r
 traceHide mr =
     traceSaveData $ do
-        liftIO $ threadModifyData $ \tdata -> tdata {tdShow = False}
+        liftIO $ threadModifyData $ \tdata -> tdata{tdShow = False}
         mr
 
 traceShow :: MonadIO m => m r -> m r
 traceShow mr =
     traceSaveData $ do
-        liftIO $ threadModifyData $ \tdata -> tdata {tdShow = True}
+        liftIO $ threadModifyData $ \tdata -> tdata{tdShow = True}
         mr
 
 traceHidePrefix :: MonadIO m => m r -> m r
 traceHidePrefix mr =
     traceSaveData $ do
-        liftIO $ threadModifyData $ \tdata -> tdata {tdShowPrefix = False}
+        liftIO $ threadModifyData $ \tdata -> tdata{tdShowPrefix = False}
         mr
 
 traceIOM :: MonadIO m => String -> m ()
@@ -132,47 +134,50 @@ traceIOM msg =
     liftIO $ do
         tdata <- threadGetData
         if tdShow tdata
-            then if tdShowPrefix tdata
-                     then do
-                         MkSystemTime s ns <- getSystemTime
-                         tid <- myThreadId
-                         let
-                             threadtext =
-                                 case show tid of
-                                     'T':'h':'r':'e':'a':'d':'I':'d':' ':t -> '#' : t
-                                     t -> t
-                             nametxt =
-                                 case tdName tdata of
-                                     "" -> ""
-                                     name -> " " ++ name
-                             statetxt =
-                                 case tdState tdata of
-                                     "" -> ""
-                                     stt -> " (" <> stt <> ")"
-                             showMod :: Int -> Word32 -> String
-                             showMod 0 _ = ""
-                             showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
-                         traceIO $
-                             show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> statetxt <> ": " <> msg
-                     else traceIO msg
+            then
+                if tdShowPrefix tdata
+                    then do
+                        MkSystemTime s ns <- getSystemTime
+                        tid <- myThreadId
+                        let
+                            threadtext =
+                                case show tid of
+                                    'T' : 'h' : 'r' : 'e' : 'a' : 'd' : 'I' : 'd' : ' ' : t -> '#' : t
+                                    t -> t
+                            nametxt =
+                                case tdName tdata of
+                                    "" -> ""
+                                    name -> " " ++ name
+                            statetxt =
+                                case tdState tdata of
+                                    "" -> ""
+                                    stt -> " (" <> stt <> ")"
+                            showMod :: Int -> Word32 -> String
+                            showMod 0 _ = ""
+                            showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
+                        traceIO
+                            $ show s <> "." <> showMod 9 ns <> ": " <> threadtext <> nametxt <> statetxt <> ": " <> msg
+                    else traceIO msg
             else return ()
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
-    traceIOM $
-        s ++
-        " [" ++
-        (if null args
-             then ""
-             else " " ++ args)
+    traceIOM
+        $ s
+            ++ " ["
+            ++ ( if null args
+                    then ""
+                    else " " ++ args
+               )
     a <- ma
     let ret = showr a
-    traceIOM $
-        s ++
-        " ]" ++
-        (if null ret
-             then ""
-             else " => " ++ ret)
+    traceIOM
+        $ s
+            ++ " ]"
+            ++ ( if null ret
+                    then ""
+                    else " => " ++ ret
+               )
     return a
 
 traceBracket_ :: MonadIO m => String -> m r -> m r
@@ -209,12 +214,14 @@ traceBracket :: DebugMonadIO m => String -> m r -> m r
 traceBracket s ma = do
     traceIOM $ s ++ " ["
     catchExc
-        (do
-             a <- ma
-             traceIOM $ s ++ " ]"
-             return a) $ \e -> do
-        traceIOM $ s ++ " ! " ++ show e
-        throwExc e
+        ( do
+            a <- ma
+            traceIOM $ s ++ " ]"
+            return a
+        )
+        $ \e -> do
+            traceIOM $ s ++ " ! " ++ show e
+            throwExc e
 
 addCost :: Ord key => key -> Nano -> Map.Map key (Int, Nano) -> Map.Map key (Int, Nano)
 addCost k c m = let
@@ -231,12 +238,12 @@ traceCost key ma = do
                 else id
     w $ do
         (c, a) <- getCost Clock.ProcessCPUTime ma
-        liftIO $ threadModifyData $ \tdata -> tdata {tdCosts = addCost key c (tdCosts tdata)}
+        liftIO $ threadModifyData $ \tdata -> tdata{tdCosts = addCost key c (tdCosts tdata)}
         return a
 
 traceCosts :: MonadIO m => Bool -> m r -> m r
 traceCosts sh ma = do
-    liftIO $ threadModifyData $ \tdata -> tdata {tdShowCosts = sh, tdCosts = mempty}
+    liftIO $ threadModifyData $ \tdata -> tdata{tdShowCosts = sh, tdCosts = mempty}
     (ctotal, a) <- getCost Clock.ProcessCPUTime ma
     tdata <- liftIO $ threadGetData
     let
@@ -244,12 +251,16 @@ traceCosts sh ma = do
         maxw = maximum $ fmap (length . fst) costs
     traceIOM "-- Costs --"
     for_ costs $ \(k, (i, c)) ->
-        traceIOM $
-        k <>
-        replicate (maxw - length k) ' ' <>
-        ": " <>
-        show (realToFrac $ c * 1000 :: Micro) <>
-        "ms (" <> show (realToFrac $ c * 100 / ctotal :: Milli) <> "%, " <> show i <> "x)"
+        traceIOM
+            $ k
+                <> replicate (maxw - length k) ' '
+                <> ": "
+                <> show (realToFrac $ c * 1000 :: Micro)
+                <> "ms ("
+                <> show (realToFrac $ c * 100 / ctotal :: Milli)
+                <> "%, "
+                <> show i
+                <> "x)"
     return a
 
 traceThread :: String -> IO r -> IO r

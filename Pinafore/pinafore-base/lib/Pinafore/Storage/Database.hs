@@ -1,8 +1,9 @@
 module Pinafore.Storage.Database where
 
+import Shapes
+
 import Pinafore.Base
 import Pinafore.Storage.Table
-import Shapes
 
 data TripleTable t where
     TriplePredicate :: TripleTable Predicate
@@ -24,14 +25,15 @@ instance WitnessConstraint Show TripleTable where
 
 instance FiniteWitness TripleTable where
     assembleAllFor getw =
-        (\p s v ->
-             MkAllFor $ \case
-                 TriplePredicate -> p
-                 TripleSubject -> s
-                 TripleValue -> v) <$>
-        getw TriplePredicate <*>
-        getw TripleSubject <*>
-        getw TripleValue
+        ( \p s v ->
+            MkAllFor $ \case
+                TriplePredicate -> p
+                TripleSubject -> s
+                TripleValue -> v
+        )
+            <$> getw TriplePredicate
+            <*> getw TripleSubject
+            <*> getw TripleValue
 
 data RefCountTable t where
     RefCountKey :: RefCountTable Entity
@@ -50,12 +52,13 @@ instance WitnessConstraint Show RefCountTable where
 
 instance FiniteWitness RefCountTable where
     assembleAllFor getw =
-        (\k v ->
-             MkAllFor $ \case
-                 RefCountKey -> k
-                 RefCountValue -> v) <$>
-        getw RefCountKey <*>
-        getw RefCountValue
+        ( \k v ->
+            MkAllFor $ \case
+                RefCountKey -> k
+                RefCountValue -> v
+        )
+            <$> getw RefCountKey
+            <*> getw RefCountValue
 
 data LiteralTable t where
     LiteralKey :: LiteralTable Entity
@@ -74,12 +77,13 @@ instance WitnessConstraint Show LiteralTable where
 
 instance FiniteWitness LiteralTable where
     assembleAllFor getw =
-        (\k v ->
-             MkAllFor $ \case
-                 LiteralKey -> k
-                 LiteralValue -> v) <$>
-        getw LiteralKey <*>
-        getw LiteralValue
+        ( \k v ->
+            MkAllFor $ \case
+                LiteralKey -> k
+                LiteralValue -> v
+        )
+            <$> getw LiteralKey
+            <*> getw LiteralValue
 
 data QSchema colsel where
     QSProperty :: QSchema TripleTable
@@ -105,16 +109,17 @@ instance TestEquality QSchema where
 
 instance FiniteWitness QSchema where
     assembleAllFor getTable =
-        (\ft fr ff fl ->
-             MkAllFor $ \case
-                 QSProperty -> ft
-                 QSModelCount -> fr
-                 QSFact -> ff
-                 QSLiteral -> fl) <$>
-        getTable QSProperty <*>
-        getTable QSModelCount <*>
-        getTable QSFact <*>
-        getTable QSLiteral
+        ( \ft fr ff fl ->
+            MkAllFor $ \case
+                QSProperty -> ft
+                QSModelCount -> fr
+                QSFact -> ff
+                QSLiteral -> fl
+        )
+            <$> getTable QSProperty
+            <*> getTable QSModelCount
+            <*> getTable QSFact
+            <*> getTable QSLiteral
 
 instance WitnessConstraint FiniteWitness QSchema where
     witnessConstraint QSProperty = Dict

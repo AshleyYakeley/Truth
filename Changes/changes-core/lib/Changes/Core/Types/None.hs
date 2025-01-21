@@ -4,8 +4,8 @@ import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Read
 
-newtype NoReader (a :: Type) (t :: Type) =
-    MkNoReader Void
+newtype NoReader (a :: Type) (t :: Type)
+    = MkNoReader Void
     deriving newtype (Eq, Countable, Searchable)
 
 instance TestEquality (NoReader a) where
@@ -25,14 +25,14 @@ instance FullSubjectReader (NoReader ()) where
     readableToSubject _ = return ()
 
 -- | Can't touch this.
-newtype ConstEdit (reader :: Type -> Type) =
-    MkConstEdit Void
+newtype ConstEdit (reader :: Type -> Type)
+    = MkConstEdit Void
     deriving newtype (Eq, Countable, Searchable)
 
 instance forall reader. Finite (ConstEdit reader) where
     allValues = []
 
-deriving newtype instance forall reader . Empty (ConstEdit reader)
+deriving newtype instance forall reader. Empty (ConstEdit reader)
 
 instance forall reader. Show (ConstEdit reader) where
     show edit = never edit
@@ -58,9 +58,10 @@ instance forall reader. TestEquality reader => CacheableEdit (ConstEdit reader) 
 type ConstUpdate reader = EditUpdate (ConstEdit reader)
 
 clPutEditsNone ::
-       forall edita editb m m' rd. (Monad m', Empty editb)
-    => [editb]
-    -> Readable m rd
-    -> m' (Maybe [edita])
+    forall edita editb m m' rd.
+    (Monad m', Empty editb) =>
+    [editb] ->
+    Readable m rd ->
+    m' (Maybe [edita])
 clPutEditsNone [] _ = return $ Just []
-clPutEditsNone (e:_) _ = never e
+clPutEditsNone (e : _) _ = never e

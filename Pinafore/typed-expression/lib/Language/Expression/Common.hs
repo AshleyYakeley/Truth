@@ -1,6 +1,7 @@
 module Language.Expression.Common
     ( module I
-    ) where
+    )
+where
 
 import Language.Expression.Common.Open as I
 import Language.Expression.Common.Pattern as I

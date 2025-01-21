@@ -1,10 +1,12 @@
 module Data.Media.Image.True8
-    ( True8PixelType(..)
-    ) where
+    ( True8PixelType (..)
+    )
+where
 
 import Codec.Picture.Types
-import Data.Media.Image.Pixel
 import Shapes
+
+import Data.Media.Image.Pixel
 
 type True8PixelType :: Type -> Type
 data True8PixelType px where

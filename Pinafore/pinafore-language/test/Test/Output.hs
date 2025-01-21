@@ -1,11 +1,13 @@
 module Test.Output
     ( getTestOutput
-    ) where
+    )
+where
 
-import Pinafore.Test.Internal
 import Shapes hiding ((.))
 import Shapes.Test
 import System.FilePath
+
+import Pinafore.Test.Internal
 
 testFile :: FilePath -> TestTree
 testFile inpath = let
@@ -15,11 +17,12 @@ testFile inpath = let
     modifier =
         case testName of
             _ -> id
-    in modifier $
-       testHandleVsFileInDir dir testName $ \hout ->
-           runTester defaultTester {tstOutput = hout} $ do
-               action <- testerInterpretScriptFile inpath []
-               testerLiftView action
+    in modifier
+        $ testHandleVsFileInDir dir testName
+        $ \hout ->
+            runTester defaultTester{tstOutput = hout} $ do
+                action <- testerInterpretScriptFile inpath []
+                testerLiftView action
 
 getTestOutput :: IO TestTree
 getTestOutput = do

@@ -2,20 +2,23 @@ module Language.Expression.Common.Open.ExpressionBox
     ( ExpressionBox
     , singleExpressionBox
     , runExpressionBox
-    ) where
+    )
+where
+
+import Shapes
 
 import Language.Expression.Common.Open.Abstract
 import Language.Expression.Common.Open.Error
 import Language.Expression.Common.Open.Lifted
-import Shapes
 
 mapSomeFor :: (a -> b) -> SomeFor ((->) b) w -> SomeFor ((->) a) w
 mapSomeFor ab (MkSomeFor wt ft) = MkSomeFor wt $ ft . ab
 
-data ExpressionBox f w m =
-    forall a. MkExpressionBox [SomeFor ((->) a) w]
-                              (LiftedExpression f w a)
-                              (f a -> m)
+data ExpressionBox f w m
+    = forall a. MkExpressionBox
+        [SomeFor ((->) a) w]
+        (LiftedExpression f w a)
+        (f a -> m)
 
 instance (Applicative f, Semigroup m) => Semigroup (ExpressionBox f w m) where
     MkExpressionBox wa expra posta <> MkExpressionBox wb exprb postb =

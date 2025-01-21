@@ -2,11 +2,11 @@
 
 module Language.Expression.Dolan
     ( module I
-    , MPolarityType(..)
-    , MPolarW(..)
-    , MPolarRangeType(..)
+    , MPolarityType (..)
+    , MPolarW (..)
+    , MPolarRangeType (..)
     , isMPolarity
-    , InvertMPolarW(..)
+    , InvertMPolarW (..)
     , invertMPolarity
     , toMPolar
     , toMPolarWM
@@ -15,7 +15,7 @@ module Language.Expression.Dolan
     , forMPolarW
     , fromMPolarSingle
     , GroundTypeKind
-    , TypeError(..)
+    , TypeError (..)
     , DolanPolyShim
     , DolanShim
     , DolanPolyIsoShim
@@ -23,34 +23,37 @@ module Language.Expression.Dolan
     , CCRVariances
     , CCRVariancesKind
     , CCRVariancesType
-    , CCRVariancesMap(..)
+    , CCRVariancesMap (..)
     , lazyCCRVariancesMap
-    , CCRVariancesShim(..)
-    , HasCCRVariances(..)
+    , CCRVariancesShim (..)
+    , HasCCRVariances (..)
     , CovaryType
     , covaryCoercibleKind
-    , CovaryMap(..)
-    , HasCovaryMap(..)
+    , CovaryMap (..)
+    , HasCovaryMap (..)
     , covaryToCCRVariancesType
     , ccrVariancesToCovaryType
     , covaryToCCRVariancesMap
     , ccrVariancesMapToCovary
-    , DolanGroundedType(..)
-    , DolanSingularType(..)
-    , DolanType(..)
+    , DolanGroundedType (..)
+    , DolanSingularType (..)
+    , DolanType (..)
     , unrollRecursiveType
     , unrollTopType
     , unToRangeShimWit
     , unFromRangeShimWit
     , invertType
     , DolanTypeSystem
-    , IsDolanGroundType(..)
-    , IsDolanFunctionGroundType(..)
-    , IsDolanSubtypeGroundType(..)
-    , IsDolanSubtypeEntriesGroundType(..)
-    ) where
+    , IsDolanGroundType (..)
+    , IsDolanFunctionGroundType (..)
+    , IsDolanSubtypeGroundType (..)
+    , IsDolanSubtypeEntriesGroundType (..)
+    )
+where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Common
 import Language.Expression.Dolan.FreeVars as I
 import Language.Expression.Dolan.Invert
@@ -65,10 +68,12 @@ import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
 import Language.Expression.TypeSystem
-import Shapes
 
-instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
-             AbstractTypeSystem (DolanTypeSystem ground) where
+instance
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeGroundType ground =>
+    AbstractTypeSystem (DolanTypeSystem ground)
+    where
     type TSInner (DolanTypeSystem ground) = DolanM ground
     bottomShimWit = MkSome $ mkShimWit NilDolanType
     cleanOpenExpression expr@(ClosedExpression _) = return expr
@@ -76,30 +81,35 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
     cleanOpenExpression expr = do
         let
             combineWits ::
-                   forall a b.
-                   DolanVarWit ground a
-                -> DolanVarWit ground b
-                -> RenamerT (DolanTypeSystem ground) (DolanM ground) (Maybe (Expression (DolanVarWit ground) (a, b)))
+                forall a b.
+                DolanVarWit ground a ->
+                DolanVarWit ground b ->
+                RenamerT (DolanTypeSystem ground) (DolanM ground) (Maybe (Expression (DolanVarWit ground) (a, b)))
             combineWits (MkNameWitness na ta) (MkNameWitness nb tb) =
-                return $
-                if shouldMerge @ground na nb
-                    then Just $ fmap (\(MkMeetType ab) -> ab) $ varExpression $ MkNameWitness na $ joinMeetShimWit ta tb
-                    else Nothing
+                return
+                    $ if shouldMerge @ground na nb
+                        then Just $ fmap (\(MkMeetType ab) -> ab) $ varExpression $ MkNameWitness na $ joinMeetShimWit ta tb
+                        else Nothing
         expr' <- combineExpressionWitnessesM combineWits expr
         return $ reverseExpression expr'
 
 class (Eq (DolanVarID ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
-    functionGroundType :: ground '[ ContraCCRVariance, CoCCRVariance] (->)
+    functionGroundType :: ground '[ContraCCRVariance, CoCCRVariance] (->)
 
-instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
-             CompleteTypeSystem (DolanTypeSystem ground) where
+instance
+    forall (ground :: GroundTypeKind).
+    IsDolanFunctionGroundType ground =>
+    CompleteTypeSystem (DolanTypeSystem ground)
+    where
     tsFunctionPosWitness ta tb =
-        shimWitToDolan $
-        mkPolarShimWit $
-        MkDolanGroundedType functionGroundType $
-        ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
+        shimWitToDolan
+            $ mkPolarShimWit
+            $ MkDolanGroundedType functionGroundType
+            $ ConsCCRArguments (ContraCCRPolarArgument ta)
+            $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
     tsFunctionNegWitness ta tb =
-        shimWitToDolan $
-        mkPolarShimWit $
-        MkDolanGroundedType functionGroundType $
-        ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
+        shimWitToDolan
+            $ mkPolarShimWit
+            $ MkDolanGroundedType functionGroundType
+            $ ConsCCRArguments (ContraCCRPolarArgument ta)
+            $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments

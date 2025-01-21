@@ -3,11 +3,12 @@ module Pinafore.Library.GTK.Widget.Context where
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.API
-import Pinafore.Library.GTK.Context
 import Shapes
 
-data SelectionModel =
-    TextSelectionModel LangTextModel
+import Pinafore.Library.GTK.Context
+
+data SelectionModel
+    = TextSelectionModel LangTextModel
 
 data WidgetContext = MkWidgetContext
     { wcUnlift :: View --> IO

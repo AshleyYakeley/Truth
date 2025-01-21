@@ -1,5 +1,5 @@
 module Pinafore.Base.Anchor
-    ( IsHash(..)
+    ( IsHash (..)
     , Anchor
     , checkAnchor
     , anchorCodec
@@ -7,15 +7,16 @@ module Pinafore.Base.Anchor
     , codeAnchor
     , byteStringToAnchor
     , anchorToByteString
-    ) where
+    )
+where
 
 import BLAKE3 qualified
 import Control.DeepSeq
 import Data.ByteArray (convert)
 import Shapes
 
-newtype Anchor =
-    MkAnchor StrictByteString
+newtype Anchor
+    = MkAnchor StrictByteString
     deriving newtype (Eq, Ord, NFData, Hashable)
 
 class IsHash h where
@@ -37,8 +38,9 @@ checkAnchor s anchor@(MkAnchor bs) =
         else error $ s <> ": broken anchor (" <> show (olength bs) <> ")"
 
 anchorCodec ::
-       forall m. MonadFail m
-    => Codec' m StrictByteString Anchor
+    forall m.
+    MonadFail m =>
+    Codec' m StrictByteString Anchor
 anchorCodec = let
     decode :: StrictByteString -> m Anchor
     decode bs =
@@ -47,13 +49,14 @@ anchorCodec = let
             else fail $ "deserialize: bad anchor (" <> show (olength bs) <> ")"
     encode :: Anchor -> StrictByteString
     encode (checkAnchor "encode" -> MkAnchor bs) = bs
-    in MkCodec {..}
+    in MkCodec{..}
 
 randomN ::
-       forall t g. (Random t, RandomGen g)
-    => Int
-    -> g
-    -> ([t], g)
+    forall t g.
+    (Random t, RandomGen g) =>
+    Int ->
+    g ->
+    ([t], g)
 randomN 0 g = ([], g)
 randomN n g = let
     (a, g') = random g
@@ -90,14 +93,14 @@ byteStringToAnchor bs =
         maxlength = pred anchorSize
         len = olength bs
         in if len <= maxlength
-               then cons (fromIntegral len) bs <> replicate (maxlength - len) 0
-               else case hashToAnchor $ \call -> [call @Text "literal:", call bs] of
-                        MkAnchor bs' -> cons 255 $ drop 1 bs'
+            then cons (fromIntegral len) bs <> replicate (maxlength - len) 0
+            else case hashToAnchor $ \call -> [call @Text "literal:", call bs] of
+                MkAnchor bs' -> cons 255 $ drop 1 bs'
 
 anchorToByteString :: Anchor -> Maybe StrictByteString
 anchorToByteString (MkAnchor bs) = let
     maxlength = pred anchorSize
     len = fromIntegral $ headEx bs
     in if len <= maxlength
-           then Just $ take len $ tailEx bs
-           else Nothing
+        then Just $ take len $ tailEx bs
+        else Nothing

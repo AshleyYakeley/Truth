@@ -1,12 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Library.Media.Media
-    ( Media(..)
-    , DecodeMedia(..)
+    ( Media (..)
+    , DecodeMedia (..)
     , dataLiteralMediaCodec
     , mediaSpecificText
     , mediaEntityLibSection
-    ) where
+    )
+where
 
 import Changes.World.Media.Type
 import Pinafore.API
@@ -15,7 +16,8 @@ import Shapes
 data Media = MkMedia
     { mediaType :: MediaType
     , mediaContent :: StrictByteString
-    } deriving stock (Eq)
+    }
+    deriving stock Eq
 
 instance AsLiteral Media
 
@@ -55,8 +57,9 @@ class DecodeLiteral t => DecodeMedia t where
     dmMatchContentType :: MediaType -> Bool
 
 dataLiteralMediaCodec ::
-       forall t. DecodeMedia t
-    => Codec Media (DataLiteral t)
+    forall t.
+    DecodeMedia t =>
+    Codec Media (DataLiteral t)
 dataLiteralMediaCodec = let
     decode :: Media -> Maybe (DataLiteral t)
     decode (MkMedia mt bs)
@@ -64,7 +67,7 @@ dataLiteralMediaCodec = let
     decode _ = Nothing
     encode :: DataLiteral t -> Media
     encode dl = MkMedia (dmMediaType @t) (dlBytes dl)
-    in MkCodec {..}
+    in MkCodec{..}
 
 mediaBlob :: Codec Media StrictByteString
 mediaBlob = let
@@ -72,7 +75,7 @@ mediaBlob = let
     blobMediaType = MkMediaType ApplicationMediaType "octet-stream" []
     encode = MkMedia blobMediaType
     decode (MkMedia _ bs) = Just bs
-    in MkCodec {..}
+    in MkCodec{..}
 
 decodeUTF8 :: StrictByteString -> Maybe Text
 decodeUTF8 = eitherRight . decodeUtf8'
@@ -98,10 +101,10 @@ getMediaTextEncoding _ = Nothing
 mediaSpecificText :: MediaType -> (MediaType -> Bool) -> Codec Media Text
 mediaSpecificText (MkMediaType pt ps pp) f = let
     pp' =
-        pp <>
-        case pt of
-            TextMediaType -> [("charset", "utf-8")]
-            _ -> []
+        pp
+            <> case pt of
+                TextMediaType -> [("charset", "utf-8")]
+                _ -> []
     pmt :: MediaType
     pmt = MkMediaType pt ps pp'
     ee :: Text -> Media
@@ -122,21 +125,23 @@ mediaEntityLibSection =
         "Media"
         ""
         [ namespaceBDS
-              "Media"
-              [ typeBDS
-                    "Type"
-                    "RFC 6838 media type."
-                    (MkSomeGroundType mediaTypeGroundType)
-                    [ valPatBDS "Mk" "Type, subtype, parameters" MkMediaType $
-                      PureFunction $ pure $ \(MkMediaType t s p) -> (t, (s, (p, ())))
-                    ]
-              , literalSubtypeRelationEntry @MediaType
-              ]
+            "Media"
+            [ typeBDS
+                "Type"
+                "RFC 6838 media type."
+                (MkSomeGroundType mediaTypeGroundType)
+                [ valPatBDS "Mk" "Type, subtype, parameters" MkMediaType
+                    $ PureFunction
+                    $ pure
+                    $ \(MkMediaType t s p) -> (t, (s, (p, ())))
+                ]
+            , literalSubtypeRelationEntry @MediaType
+            ]
         , typeBDS
-              "Media"
-              "A blob and an RFC 6838 media type that interprets it."
-              (MkSomeGroundType mediaGroundType)
-              [valPatBDS "Mk" "Type and Blob" MkMedia $ PureFunction $ pure $ \(MkMedia t b) -> (t, (b, ()))]
+            "Media"
+            "A blob and an RFC 6838 media type that interprets it."
+            (MkSomeGroundType mediaGroundType)
+            [valPatBDS "Mk" "Type and Blob" MkMedia $ PureFunction $ pure $ \(MkMedia t b) -> (t, (b, ()))]
         , literalSubtypeRelationEntry @Media
         , namespaceBDS "Blob" [valBDS "asMedia" "Decodes any media." $ codecToPrism mediaBlob]
         , namespaceBDS "Text" [valBDS "asMedia" "Decodes any text-like media." $ codecToPrism mediaText]

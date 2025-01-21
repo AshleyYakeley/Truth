@@ -1,6 +1,7 @@
 module Pinafore.Language.Interpret.Value
     ( interpretValue
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -53,7 +54,7 @@ interpretRecordValue (MkQRecordValue items rvexpr@(MkSealedFExpression vtype _))
         unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ applySealedFExpression rvexpr resultExpr
 
 interpretValueWithDefault ::
-       FullNameRef -> Maybe [(Name, QExpression)] -> QInterpreter QExpression -> QInterpreter QExpression
+    FullNameRef -> Maybe [(Name, QExpression)] -> QInterpreter QExpression -> QInterpreter QExpression
 interpretValueWithDefault name margmap mdefexpr = do
     mbv <- lookupMaybeValue name
     case (mbv, margmap) of

@@ -1,20 +1,22 @@
 module Pinafore.Syntax.Parse.Token
-    ( Comment(..)
-    , TokenNames(..)
+    ( Comment (..)
+    , TokenNames (..)
     , tokenNamesToFullNameRef
     , tokenNamesToSingleName
     , tokenNamesToNamespaceRef
-    , Token(..)
+    , Token (..)
     , parseTokens
     , allKeywords
-    ) where
+    )
+where
 
 import Pinafore.Base
-import Pinafore.Syntax.Name
 import Shapes hiding (try)
 import Shapes.Numeric
-import Text.Parsec hiding ((<|>), many, optional)
+import Text.Parsec hiding (many, optional, (<|>))
 import Text.Parsec.String
+
+import Pinafore.Syntax.Name
 
 debugSyntaxINTERNAL :: Bool
 debugSyntaxINTERNAL = False
@@ -31,43 +33,47 @@ data TokenNames = MkTokenNames
     { tnAbsolute :: Bool
     , tnName :: Name
     , tnSpace :: [Name] -- always upper
-    } deriving stock (Eq)
+    }
+    deriving stock Eq
 
 instance Show TokenNames where
-    show MkTokenNames {..} =
-        show tnName <>
-        concatmap (\n -> "." <> show n) tnSpace <>
-        if tnAbsolute
-            then "."
-            else ""
+    show MkTokenNames{..} =
+        show tnName
+            <> concatmap (\n -> "." <> show n) tnSpace
+            <> if tnAbsolute
+                then "."
+                else ""
 
 instance IsString TokenNames where
     fromString s = let
         tnAbsolute = False
         tnName = fromString s
         tnSpace = []
-        in MkTokenNames {..}
+        in MkTokenNames{..}
 
 tokenNamesToFullNameRef :: TokenNames -> FullNameRef
-tokenNamesToFullNameRef MkTokenNames {..} =
-    MkFullNameRef tnName $
-    (if tnAbsolute
-         then AbsoluteNamespaceRef . MkNamespace
-         else RelativeNamespaceRef)
-        tnSpace
+tokenNamesToFullNameRef MkTokenNames{..} =
+    MkFullNameRef tnName
+        $ ( if tnAbsolute
+                then AbsoluteNamespaceRef . MkNamespace
+                else RelativeNamespaceRef
+          )
+            tnSpace
 
 tokenNamesToSingleName :: TokenNames -> Maybe Name
-tokenNamesToSingleName MkTokenNames {..} = do
+tokenNamesToSingleName MkTokenNames{..} = do
     guard $ not tnAbsolute
     guard $ null tnSpace
     return tnName
 
 tokenNamesToNamespaceRef :: TokenNames -> NamespaceRef
-tokenNamesToNamespaceRef MkTokenNames {..} =
-    (if tnAbsolute
-         then AbsoluteNamespaceRef . MkNamespace
-         else RelativeNamespaceRef) $
-    [tnName] <> tnSpace
+tokenNamesToNamespaceRef MkTokenNames{..} =
+    ( if tnAbsolute
+        then AbsoluteNamespaceRef . MkNamespace
+        else RelativeNamespaceRef
+    )
+        $ [tnName]
+        <> tnSpace
 
 data Token t where
     TokComment :: Token Comment
@@ -262,10 +268,10 @@ instance Show (Token t) where
 
 instance Show (SomeOf Token) where
     show (MkSomeOf t x) =
-        show t <>
-        case showTokenContents t of
-            Just f -> "(" <> f x <> ")"
-            Nothing -> ""
+        show t
+            <> case showTokenContents t of
+                Just f -> "(" <> f x <> ")"
+                Nothing -> ""
 
 readChar :: Char -> Parser ()
 readChar c = void $ char c
@@ -288,9 +294,9 @@ readBlockComment = let
             readChar '#'
             readChar '}'
     in do
-           blockCommentOpen
-           s <- manyTill blockCommentInterior blockCommentClose
-           return $ BlockComment $ mconcat s
+        blockCommentOpen
+        s <- manyTill blockCommentInterior blockCommentClose
+        return $ BlockComment $ mconcat s
 
 readLineComment :: Parser Comment
 readLineComment = let
@@ -299,10 +305,10 @@ readLineComment = let
     isLineBreak '\r' = True
     isLineBreak _ = False
     in do
-           readChar '#'
-           s <- many (satisfy (\c -> not (isLineBreak c)))
-           void endOfLine
-           return $ LineComment s
+        readChar '#'
+        s <- many (satisfy (\c -> not (isLineBreak c)))
+        void endOfLine
+        return $ LineComment s
 
 readComment :: Parser Comment
 readComment = readBlockComment <|> readLineComment
@@ -324,25 +330,29 @@ readQuotedString = do
     s <- many readQuotedChar
     readChar '"'
     return $ pack s
-  where
-    readQuotedChar :: Parser Char
-    readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
+    where
+        readQuotedChar :: Parser Char
+        readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
 
 readNumber :: Parser (SomeOf Token)
 readNumber =
-    fmap (MkSomeOf TokNumber) $
-    (try $ do
-         void $ string "NaN"
-         return $ InexactNumber $ 0 / 0) <|>
-    (try $ do
-         void $ string "~Infinity"
-         return $ InexactNumber $ 1 / 0) <|>
-    (try $ do
-         void $ string "~-Infinity"
-         return $ InexactNumber $ -1 / 0) <|>
-    (try $ do
-         text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
-         mpure $ readNumberLiteral text)
+    fmap (MkSomeOf TokNumber)
+        $ ( try $ do
+                void $ string "NaN"
+                return $ InexactNumber $ 0 / 0
+          )
+        <|> ( try $ do
+                void $ string "~Infinity"
+                return $ InexactNumber $ 1 / 0
+            )
+        <|> ( try $ do
+                void $ string "~-Infinity"
+                return $ InexactNumber $ -1 / 0
+            )
+        <|> ( try $ do
+                text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
+                mpure $ readNumberLiteral text
+            )
 
 readName :: Parser (Bool, Name)
 readName = do
@@ -383,20 +393,23 @@ checkKeyword _ = Nothing
 keywordClasses :: [(Text, [Token ()])]
 keywordClasses =
     [ ("keyword.control.pinafore", [TokFn, TokAp, TokDo, TokIf, TokThen, TokElse])
-    , ( "keyword.declaration.pinafore"
-      , [ TokType
-        , TokDataType
-        , TokEntityType
-        , TokPredicateType
-        , TokSubtype
-        , TokTrustMe
-        , TokStorable
-        , TokExpose
-        , TokImport
-        , TokNamespace
-        , TokDocSec
-        , TokWith
-        ])
+    ,
+        ( "keyword.declaration.pinafore"
+        ,
+            [ TokType
+            , TokDataType
+            , TokEntityType
+            , TokPredicateType
+            , TokSubtype
+            , TokTrustMe
+            , TokStorable
+            , TokExpose
+            , TokImport
+            , TokNamespace
+            , TokDocSec
+            , TokWith
+            ]
+        )
     , ("keyword.other.pinafore", [TokRec, TokLet, TokImply, TokAs, TokExcept])
     ]
 
@@ -405,8 +418,8 @@ extraKeywords = [("!expression", "keyword.other.pinafore"), ("!scope", "keyword.
 
 allKeywords :: [(Text, Text)]
 allKeywords =
-    (mconcat $ fmap (\(tokclass, toks) -> fmap (\tok -> (fixedTokenName tok, tokclass)) toks) keywordClasses) <>
-    extraKeywords
+    (mconcat $ fmap (\(tokclass, toks) -> fmap (\tok -> (fixedTokenName tok, tokclass)) toks) keywordClasses)
+        <> extraKeywords
 
 readTextToken :: Parser (SomeOf Token)
 readTextToken = do
@@ -415,10 +428,11 @@ readTextToken = do
         Just stok -> return stok
         Nothing -> do
             ns <-
-                many $
-                try $ do
-                    readChar '.'
-                    readName
+                many
+                    $ try
+                    $ do
+                        readChar '.'
+                        readName
             nspace <-
                 for ns $ \(b, nsn) -> do
                     guard b
@@ -429,7 +443,7 @@ readTextToken = do
                     if u
                         then TokNamesUpper
                         else TokNamesLower
-                tns = MkTokenNames {tnAbsolute = isJust mabs, tnSpace = nspace, tnName = name}
+                tns = MkTokenNames{tnAbsolute = isJust mabs, tnSpace = nspace, tnName = name}
             return $ MkSomeOf ttype tns
 
 toHexDigit :: Char -> Maybe Word8
@@ -440,7 +454,7 @@ toHexDigit c =
 
 fromHex :: [Char] -> Maybe [Word8]
 fromHex [] = Just []
-fromHex (chi:clo:cc) = do
+fromHex (chi : clo : cc) = do
     whi <- toHexDigit chi
     wlo <- toHexDigit clo
     ww <- fromHex cc
@@ -474,9 +488,10 @@ readImplicitName =
 readOpToken :: Parser (SomeOf Token)
 readOpToken = do
     name <-
-        many1 $
-        satisfy $ \c ->
-            elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
+        many1
+            $ satisfy
+            $ \c ->
+                elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
         ":" -> return $ MkSomeOf TokTypeJudge ()
         ":?" -> return $ MkSomeOf TokTypeDynamic ()
@@ -485,18 +500,22 @@ readOpToken = do
         "<-" -> return $ MkSomeOf TokBackMap ()
         "%" -> return $ MkSomeOf TokUnquote ()
         "!" ->
-            (do
-                 readChar '{'
-                 return $ MkSomeOf TokSpliceOpenBrace ()) <|>
-            (do
-                 s <- readQuotedString
-                 return $ MkSomeOf TokAnchor $ codeAnchor s) <|>
-            (do
-                 n <- readLowerCaseName
-                 return $ MkSomeOf TokSpecialName n) <|>
-            (try $ do
-                 anchor <- readHexAnchor
-                 return $ MkSomeOf TokAnchor anchor)
+            ( do
+                readChar '{'
+                return $ MkSomeOf TokSpliceOpenBrace ()
+            )
+                <|> ( do
+                        s <- readQuotedString
+                        return $ MkSomeOf TokAnchor $ codeAnchor s
+                    )
+                <|> ( do
+                        n <- readLowerCaseName
+                        return $ MkSomeOf TokSpecialName n
+                    )
+                <|> ( try $ do
+                        anchor <- readHexAnchor
+                        return $ MkSomeOf TokAnchor anchor
+                    )
         "@" -> return $ MkSomeOf TokAt ()
         "|" -> return $ MkSomeOf TokOr ()
         "&" -> return $ MkSomeOf TokAnd ()
@@ -507,11 +526,12 @@ readOpToken = do
                 Just nname
                     | '.' <- last nname -> do
                         nsfirst <-
-                            many $
-                            try $ do
-                                n <- readName
-                                readChar '.'
-                                return n
+                            many
+                                $ try
+                                $ do
+                                    n <- readName
+                                    readChar '.'
+                                    return n
                         mnslast <- optional readName
                         let
                             tnName = MkName $ pack $ init nname
@@ -523,7 +543,7 @@ readOpToken = do
                             for ns $ \(b, nsn) -> do
                                 guard b
                                 return nsn
-                        return $ MkSomeOf TokOperator MkTokenNames {..}
+                        return $ MkSomeOf TokOperator MkTokenNames{..}
                 _ -> return $ MkSomeOf TokOperator $ fromString name
 
 readCharTok :: Char -> Token () -> Parser (SomeOf Token)
@@ -535,18 +555,20 @@ readToken :: Parser ((SourcePos, SomeOf Token))
 readToken = do
     pos <- getPosition
     t <-
-        fmap (MkSomeOf TokComment) readComment <|> readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|>
-        readCharTok '(' TokOpenParen <|>
-        readCharTok ')' TokCloseParen <|>
-        readCharTok '[' TokOpenBracket <|>
-        readCharTok ']' TokCloseBracket <|>
-        readCharTok '{' TokOpenBrace <|>
-        readCharTok '}' TokCloseBrace <|>
-        try readNumber <|>
-        fmap (MkSomeOf TokString) readQuotedString <|>
-        readTextToken <|>
-        readImplicitName <|>
-        readOpToken
+        fmap (MkSomeOf TokComment) readComment
+            <|> readCharTok ';' TokSemicolon
+            <|> readCharTok ',' TokComma
+            <|> readCharTok '(' TokOpenParen
+            <|> readCharTok ')' TokCloseParen
+            <|> readCharTok '[' TokOpenBracket
+            <|> readCharTok ']' TokCloseBracket
+            <|> readCharTok '{' TokOpenBrace
+            <|> readCharTok '}' TokCloseBrace
+            <|> try readNumber
+            <|> fmap (MkSomeOf TokString) readQuotedString
+            <|> readTextToken
+            <|> readImplicitName
+            <|> readOpToken
     readWS
     return (pos, t)
 

@@ -1,11 +1,12 @@
 module Pinafore.Language.Library.File
     ( fileLibEntries
-    ) where
+    )
+where
 
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 
---import Changes.World.File
+-- import Changes.World.File
 {-
 file_import ::
         LangFiniteSetModel '( A, A)
@@ -41,11 +42,11 @@ file_size MkReference {..} = unWRaised objRun $ refRead ReadByteStringLength
 fileLibEntries :: [LibraryStuff]
 fileLibEntries =
     [ headingBDS
-          "File Storage"
-          "NYI"
-                  {-
-                  valBDS "file_import" "Import a file into a set." $ file_import
-              , valBDS "file_size" "The size of a file." file_size
-              -}
-          []
+        "File Storage"
+        "NYI"
+        {-
+            valBDS "file_import" "Import a file into a set." $ file_import
+        , valBDS "file_size" "The size of a file." file_size
+        -}
+        []
     ]

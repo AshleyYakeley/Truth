@@ -1,5 +1,5 @@
 module Pinafore.Base.Model.LensProperty
-    ( StorageLensProperty(..)
+    ( StorageLensProperty (..)
     , identityStorageLensProperty
     , composeStorageLensProperty
     , funcStorageLensProperty
@@ -11,19 +11,33 @@ module Pinafore.Base.Model.LensProperty
     , storageLensAttributeChangeLens
     , storageLensPropertyInverseChangeLens
     , storageLensPropertyInverseChangeLensSet
-    ) where
+    )
+where
 
 import Changes.Core
 import Data.List qualified as List
+import Shapes
+
 import Pinafore.Base.Know
 import Pinafore.Base.Model.LensAttribute
-import Shapes
 
 data StorageLensProperty ap aq bp bq baseupdate = MkStorageLensProperty
     { slpAttribute :: StorageLensAttribute ap aq bp bq baseupdate
     , slpInvGet :: bp -> ReadM (UpdateReader baseupdate) [aq] -- not guaranteed to be unique
-    , slpInvBaseUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (bp -> ReadM (UpdateReader baseupdate) [( Bool
-                                                                                                                       , aq)]))
+    , slpInvBaseUpdate ::
+        baseupdate ->
+        ReadM
+            (UpdateReader baseupdate)
+            ( Maybe
+                ( bp ->
+                  ReadM
+                    (UpdateReader baseupdate)
+                    [ ( Bool
+                      , aq
+                      )
+                    ]
+                )
+            )
     }
 
 instance CatFunctor (->) (NestedMorphism (->)) (StorageLensProperty ap aq bp) where
@@ -34,43 +48,46 @@ instance CatFunctor (->) (NestedMorphism (->)) (StorageLensProperty ap aq bp) wh
 
 instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensProperty ap aq) where
     cfmap f =
-        MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensProperty attr i ibu) -> let
-            attr' = (unNestedMorphism $ unNestedMorphism $ cfmap f) attr
-            i' = (cfmap1 f) i
-            ibu' = (fmap $ fmap $ fmap $ cfmap1 f) ibu
-            in MkStorageLensProperty attr' i' ibu'
+        MkNestedMorphism
+            $ MkNestedMorphism
+            $ \(MkStorageLensProperty attr i ibu) -> let
+                attr' = (unNestedMorphism $ unNestedMorphism $ cfmap f) attr
+                i' = (cfmap1 f) i
+                ibu' = (fmap $ fmap $ fmap $ cfmap1 f) ibu
+                in MkStorageLensProperty attr' i' ibu'
 
 instance CatFunctor (->) (NestedMorphism (->)) (StorageLensProperty ap) where
     cfmap f =
-        MkNestedMorphism $
-        MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensProperty attr i ibu) -> let
-            attr' = (unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ cfmap f) attr
-            i' = (fmap $ fmap $ fmap f) i
-            ibu' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) ibu
-            in MkStorageLensProperty attr' i' ibu'
+        MkNestedMorphism
+            $ MkNestedMorphism
+            $ MkNestedMorphism
+            $ \(MkStorageLensProperty attr i ibu) -> let
+                attr' = (unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ cfmap f) attr
+                i' = (fmap $ fmap $ fmap f) i
+                ibu' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) ibu
+                in MkStorageLensProperty attr' i' ibu'
 
 instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensProperty) where
     cfmap f =
-        MkNestedMorphism $
-        MkNestedMorphism $
-        MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensProperty attr i ibu) -> let
-            attr' = (unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ cfmap f) attr
-            in MkStorageLensProperty attr' i ibu
+        MkNestedMorphism
+            $ MkNestedMorphism
+            $ MkNestedMorphism
+            $ MkNestedMorphism
+            $ \(MkStorageLensProperty attr i ibu) -> let
+                attr' = (unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ cfmap f) attr
+                in MkStorageLensProperty attr' i ibu
 
 slpGetPointPreimage ::
-       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
-slpGetPointPreimage MkStorageLensProperty {..} b = fmap setFromList $ slpInvGet b
+    Eq aq => StorageLensProperty ap aq bp bq baseupdate -> bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
+slpGetPointPreimage MkStorageLensProperty{..} b = fmap setFromList $ slpInvGet b
 
 slpGetKnowPointPreimage ::
-       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> Know bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
+    Eq aq => StorageLensProperty ap aq bp bq baseupdate -> Know bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
 slpGetKnowPointPreimage plm (Known b) = slpGetPointPreimage plm b
 slpGetKnowPointPreimage _ Unknown = return EmptyListSet
 
 slpGetSetPreimage ::
-       Eq aq => StorageLensProperty ap aq bp bq baseupdate -> ListSet bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
+    Eq aq => StorageLensProperty ap aq bp bq baseupdate -> ListSet bp -> ReadM (UpdateReader baseupdate) (ListSet aq)
 slpGetSetPreimage plm bs = do
     as <- for (toList bs) $ slpGetPointPreimage plm
     return $ mconcat as
@@ -80,15 +97,15 @@ identityStorageLensProperty = let
     slpAttribute = identityStorageLensAttribute
     slpInvGet b = return $ pure b
     slpInvBaseUpdate ::
-           baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (y -> ReadM (UpdateReader baseupdate) [(Bool, y)]))
+        baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (y -> ReadM (UpdateReader baseupdate) [(Bool, y)]))
     slpInvBaseUpdate _ = return Nothing
-    in MkStorageLensProperty {..}
+    in MkStorageLensProperty{..}
 
 composeStorageLensProperty ::
-       forall baseupdate ap aq bx by cp cq.
-       StorageLensProperty bx by cp cq baseupdate
-    -> StorageLensProperty ap aq by bx baseupdate
-    -> StorageLensProperty ap aq cp cq baseupdate
+    forall baseupdate ap aq bx by cp cq.
+    StorageLensProperty bx by cp cq baseupdate ->
+    StorageLensProperty ap aq by bx baseupdate ->
+    StorageLensProperty ap aq cp cq baseupdate
 composeStorageLensProperty (MkStorageLensProperty attrBC invBC invbuBC) (MkStorageLensProperty attrAB invAB invbuAB) = let
     slpAttribute = composeStorageLensAttribute attrBC attrAB
     slpInvGet c = do
@@ -96,12 +113,12 @@ composeStorageLensProperty (MkStorageLensProperty attrBC invBC invbuBC) (MkStora
         aaa <- for bb invAB
         return $ mconcat aaa
     slpInvBaseUpdate ::
-           baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (cp -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
+        baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (cp -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
     slpInvBaseUpdate update = do
         mfBC <- invbuBC update
         mfAB <- invbuAB update
-        return $
-            case (mfBC, mfAB) of
+        return
+            $ case (mfBC, mfAB) of
                 (Nothing, Nothing) -> Nothing
                 _ ->
                     Just $ \c -> do
@@ -120,21 +137,22 @@ composeStorageLensProperty (MkStorageLensProperty attrBC invBC invbuBC) (MkStora
                                     Nothing -> return []
                                     Just brlba -> brlba b
                         return $ mconcat aa1 <> mconcat aa2
-    in MkStorageLensProperty {..}
+    in MkStorageLensProperty{..}
 
 partitionBPairs :: forall a. [(Bool, a)] -> ([a], [a]) -- False, True
 partitionBPairs [] = ([], [])
-partitionBPairs ((t, a):aa) = let
+partitionBPairs ((t, a) : aa) = let
     (af, at) = partitionBPairs aa
     in if t
-           then (af, a : at)
-           else (a : af, at)
+        then (af, a : at)
+        else (a : af, at)
 
 pairStorageLensProperty ::
-       forall baseupdate ap aq bp bq cp cq. Eq aq
-    => StorageLensProperty ap aq bp bq baseupdate
-    -> StorageLensProperty ap aq cp cq baseupdate
-    -> StorageLensProperty ap aq (bp, cp) (bq, cq) baseupdate
+    forall baseupdate ap aq bp bq cp cq.
+    Eq aq =>
+    StorageLensProperty ap aq bp bq baseupdate ->
+    StorageLensProperty ap aq cp cq baseupdate ->
+    StorageLensProperty ap aq (bp, cp) (bq, cq) baseupdate
 pairStorageLensProperty (MkStorageLensProperty attrB invB invbuB) (MkStorageLensProperty attrC invC invbuC) = let
     slpAttribute = pairStorageLensAttribute attrB attrC
     slpInvGet (b, c) = do
@@ -142,13 +160,13 @@ pairStorageLensProperty (MkStorageLensProperty attrB invB invbuB) (MkStorageLens
         ca <- invC c
         return $ toList $ intersection (setFromList @(ListSet _) ba) (setFromList ca)
     slpInvBaseUpdate ::
-           baseupdate
-        -> ReadM (UpdateReader baseupdate) (Maybe ((bp, cp) -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
+        baseupdate ->
+        ReadM (UpdateReader baseupdate) (Maybe ((bp, cp) -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
     slpInvBaseUpdate update = do
         mfB <- invbuB update
         mfC <- invbuC update
-        return $
-            case (mfB, mfC) of
+        return
+            $ case (mfB, mfC) of
                 (Nothing, Nothing) -> Nothing
                 _ ->
                     Just $ \(b, c) -> do
@@ -178,13 +196,13 @@ pairStorageLensProperty (MkStorageLensProperty attrB invB invbuB) (MkStorageLens
                                     return $ List.intersect a2t aa1
                         let additions = fmap (\a -> (True, a)) $ a1tt <> a2tt
                         return $ additions <> removals
-    in MkStorageLensProperty {..}
+    in MkStorageLensProperty{..}
 
 eitherStorageLensProperty ::
-       forall baseupdate ap aq bp bq cp cq.
-       StorageLensProperty ap aq cp cq baseupdate
-    -> StorageLensProperty bp bq cp cq baseupdate
-    -> StorageLensProperty (Either ap bp) (Either aq bq) cp cq baseupdate
+    forall baseupdate ap aq bp bq cp cq.
+    StorageLensProperty ap aq cp cq baseupdate ->
+    StorageLensProperty bp bq cp cq baseupdate ->
+    StorageLensProperty (Either ap bp) (Either aq bq) cp cq baseupdate
 eitherStorageLensProperty (MkStorageLensProperty attrA invA invbuA) (MkStorageLensProperty attrB invB invbuB) = let
     slpAttribute = eitherStorageLensAttribute attrA attrB
     slpInvGet c = do
@@ -192,13 +210,13 @@ eitherStorageLensProperty (MkStorageLensProperty attrA invA invbuA) (MkStorageLe
         bb <- invB c
         return $ fmap Left aa <> fmap Right bb
     slpInvBaseUpdate ::
-           baseupdate
-        -> ReadM (UpdateReader baseupdate) (Maybe (cp -> ReadM (UpdateReader baseupdate) [(Bool, Either aq bq)]))
+        baseupdate ->
+        ReadM (UpdateReader baseupdate) (Maybe (cp -> ReadM (UpdateReader baseupdate) [(Bool, Either aq bq)]))
     slpInvBaseUpdate update = do
         mfA <- invbuA update
         mfB <- invbuB update
-        return $
-            case (mfA, mfB) of
+        return
+            $ case (mfA, mfB) of
                 (Nothing, Nothing) -> Nothing
                 _ ->
                     Just $ \c -> do
@@ -211,22 +229,22 @@ eitherStorageLensProperty (MkStorageLensProperty attrA invA invbuA) (MkStorageLe
                                 Nothing -> return []
                                 Just crlbb -> crlbb c
                         return $ fmap (fmap Left) tas <> fmap (fmap Right) tbs
-    in MkStorageLensProperty {..}
+    in MkStorageLensProperty{..}
 
 funcStorageLensProperty ::
-       forall baseupdate ap aq bp bq.
-       (ap -> Know bq)
-    -> (bp -> [aq])
-    -> (Know ap -> Know bp -> Maybe (Know aq))
-    -> StorageLensProperty ap aq bp bq baseupdate
+    forall baseupdate ap aq bp bq.
+    (ap -> Know bq) ->
+    (bp -> [aq]) ->
+    (Know ap -> Know bp -> Maybe (Know aq)) ->
+    StorageLensProperty ap aq bp bq baseupdate
 funcStorageLensProperty ab bsa abma = let
     slpAttribute = funcStorageLensAttribute ab abma
     slpInvGet :: bp -> ReadM (UpdateReader baseupdate) [aq] -- not guaranteed to be unique
     slpInvGet b = return $ bsa b
     slpInvBaseUpdate ::
-           baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (bp -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
+        baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (bp -> ReadM (UpdateReader baseupdate) [(Bool, aq)]))
     slpInvBaseUpdate _ = return Nothing
-    in MkStorageLensProperty {..}
+    in MkStorageLensProperty{..}
 
 nullStorageLensProperty :: forall baseupdate ap aq bp bq. StorageLensProperty ap aq bp bq baseupdate
 nullStorageLensProperty = funcStorageLensProperty (\_ -> Unknown) (\_ -> mempty) (\_ _ -> Nothing)
@@ -236,10 +254,11 @@ bijectionStorageLensProperty (MkIsomorphism ab ba) =
     funcStorageLensProperty (Known . ab) (\b -> opoint $ ba b) (\_ kb -> Just $ fmap ba kb)
 
 runContextReadM ::
-       forall m baseupdate update t. MonadIO m
-    => Readable m (ContextUpdateReader baseupdate update)
-    -> ReadM (UpdateReader baseupdate) t
-    -> m t
+    forall m baseupdate update t.
+    MonadIO m =>
+    Readable m (ContextUpdateReader baseupdate update) ->
+    ReadM (UpdateReader baseupdate) t ->
+    m t
 runContextReadM rd rmt = unReadM rmt $ tupleReadFunction SelectContext rd
 
 bpairToFiniteSetUpdate :: forall a. (Bool, a) -> FiniteSetUpdate a
@@ -247,44 +266,49 @@ bpairToFiniteSetUpdate (False, a) = KeyUpdateDelete a
 bpairToFiniteSetUpdate (True, a) = KeyUpdateInsertReplace a
 
 putEditAB ::
-       forall m baseupdate ap aq bp bq. MonadIO m
-    => StorageLensAttribute ap aq bp bq baseupdate
-    -> ap
-    -> Know bp
-    -> Readable m (UpdateReader baseupdate)
-    -> m (Maybe [UpdateEdit baseupdate])
+    forall m baseupdate ap aq bp bq.
+    MonadIO m =>
+    StorageLensAttribute ap aq bp bq baseupdate ->
+    ap ->
+    Know bp ->
+    Readable m (UpdateReader baseupdate) ->
+    m (Maybe [UpdateEdit baseupdate])
 putEditAB plm a kb mr = do
     medits <-
         storageLensPutEditBA @m plm [MkBiWholeEdit kb] $ \case
             MkTupleUpdateReader SelectContext rt -> mr rt
             MkTupleUpdateReader SelectContent ReadWhole -> return $ Known a
-    return $
-        fmap
-            (\edits ->
-                 mapMaybe
-                     (\case
-                          MkTupleUpdateEdit SelectContext edit -> Just edit
-                          MkTupleUpdateEdit SelectContent _ -> Nothing)
-                     edits)
+    return
+        $ fmap
+            ( \edits ->
+                mapMaybe
+                    ( \case
+                        MkTupleUpdateEdit SelectContext edit -> Just edit
+                        MkTupleUpdateEdit SelectContent _ -> Nothing
+                    )
+                    edits
+            )
             medits
 
 storageLensPropertyInverseChangeLens ::
-       forall baseupdate a bp bq. Eq a
-    => StorageLensProperty a a bq bp baseupdate
-    -> ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetUpdate a)
-storageLensPropertyInverseChangeLens plm@MkStorageLensProperty {..} = let
+    forall baseupdate a bp bq.
+    Eq a =>
+    StorageLensProperty a a bq bp baseupdate ->
+    ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetUpdate a)
+storageLensPropertyInverseChangeLens plm@MkStorageLensProperty{..} = let
     fsetReadFunction ::
-           ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (WholeReader (ListSet a))
+        ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (WholeReader (ListSet a))
     fsetReadFunction (mr :: Readable m _) ReadWhole = do
         kb <- mr $ MkTupleUpdateReader SelectContent ReadWhole
         runContextReadM mr $ slpGetKnowPointPreimage plm kb
     clRead :: ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetReader a)
     clRead mr rt = wholeFiniteSetReadFunction (fsetReadFunction mr) rt
     clUpdate ::
-           forall m. MonadIO m
-        => ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq))
-        -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq)))
-        -> m [FiniteSetUpdate a]
+        forall m.
+        MonadIO m =>
+        ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq)) ->
+        Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) ->
+        m [FiniteSetUpdate a]
     clUpdate (MkTupleUpdate SelectContext pinupdate) mr = do
         mf <- unReadM (slpInvBaseUpdate pinupdate) $ tupleReadFunction SelectContext mr
         case mf of
@@ -301,10 +325,11 @@ storageLensPropertyInverseChangeLens plm@MkStorageLensProperty {..} = let
         aedits <- getReplaceEditsFromSubject aset
         return $ fmap editUpdate aedits
     putEdit ::
-           forall m. MonadIO m
-        => FiniteSetEdit a
-        -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq)))
-        -> m (Maybe [UpdateEdit baseupdate])
+        forall m.
+        MonadIO m =>
+        FiniteSetEdit a ->
+        Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) ->
+        m (Maybe [UpdateEdit baseupdate])
     putEdit (KeyEditItem _ update) _ = never update
     putEdit (KeyEditDelete a) mr = putEditAB slpAttribute a Unknown $ tupleReadFunction SelectContext mr
     putEdit (KeyEditInsertReplace a) mr = do
@@ -316,21 +341,23 @@ storageLensPropertyInverseChangeLens plm@MkStorageLensProperty {..} = let
         lmpedits <- for (toList aa) $ \a -> putEditAB slpAttribute a Unknown $ tupleReadFunction SelectContext mr
         return $ fmap mconcat $ sequenceA lmpedits
     clPutEdits ::
-           forall m. MonadIO m
-        => [FiniteSetEdit a]
-        -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq)))
-        -> m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know bp) (Know bq))])
+        forall m.
+        MonadIO m =>
+        [FiniteSetEdit a] ->
+        Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq))) ->
+        m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know bp) (Know bq))])
     clPutEdits fsedits mr =
         unComposeInner $ do
             baseedits <- for fsedits $ \fsedit -> MkComposeInner $ putEdit fsedit mr
             return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat baseedits
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 storageLensPropertyInverseChangeLensSet ::
-       forall baseupdate a b. (Eq a, Eq b)
-    => StorageLensProperty a a b b baseupdate
-    -> ChangeLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
-storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty {..} = let
+    forall baseupdate a b.
+    (Eq a, Eq b) =>
+    StorageLensProperty a a b b baseupdate ->
+    ChangeLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
+storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty{..} = let
     clRead' :: ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (FiniteSetReader a)
     clRead' (mr :: Readable m _) KeyReadKeys = do
         bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
@@ -345,10 +372,11 @@ storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty {..} = let
                     Nothing -> return Nothing
             Unknown -> return Nothing
     clUpdate' ::
-           forall m. MonadIO m
-        => ContextUpdate baseupdate (FiniteSetUpdate b)
-        -> Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-        -> m [FiniteSetUpdate a]
+        forall m.
+        MonadIO m =>
+        ContextUpdate baseupdate (FiniteSetUpdate b) ->
+        Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b)) ->
+        m [FiniteSetUpdate a]
     clUpdate' (MkTupleUpdate SelectContext pinupdate) mr = do
         mf <- unReadM (slpInvBaseUpdate pinupdate) $ tupleReadFunction SelectContext mr
         case mf of
@@ -367,29 +395,30 @@ storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty {..} = let
         aset <- runContextReadM mr $ slpGetPointPreimage plm b
         return $ fmap KeyUpdateDelete $ toList aset
     applyEdit' ::
-           ContextUpdateEdit baseupdate (FiniteSetUpdate b)
-        -> ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
+        ContextUpdateEdit baseupdate (FiniteSetUpdate b) ->
+        ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
     applyEdit' (MkTupleUpdateEdit SelectContent update) mr (MkTupleUpdateReader SelectContent rt) =
         applyEdit update (mr . MkTupleUpdateReader SelectContent) rt
     applyEdit' _ mr rt = mr rt
     applyEdits' ::
-           [ContextUpdateEdit baseupdate (FiniteSetUpdate b)]
-        -> ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
+        [ContextUpdateEdit baseupdate (FiniteSetUpdate b)] ->
+        ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
     applyEdits' [] mr = mr
-    applyEdits' (e:es) mr = applyEdits' es $ applyEdit' e mr
+    applyEdits' (e : es) mr = applyEdits' es $ applyEdit' e mr
     clPutEdit' ::
-           forall m. MonadIO m
-        => FiniteSetEdit a
-        -> Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-        -> m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
+        forall m.
+        MonadIO m =>
+        FiniteSetEdit a ->
+        Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b)) ->
+        m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
     clPutEdit' (KeyEditItem _ update) _ = never update
     clPutEdit' (KeyEditDelete a) mr = do
         mpedits <- putEditAB slpAttribute a Unknown $ tupleReadFunction SelectContext mr
         return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
     clPutEdit' (KeyEditInsertReplace a) mr = do
         kb <- runContextReadM mr $ slaRead slpAttribute a
-        return $
-            case kb of
+        return
+            $ case kb of
                 Unknown -> Nothing
                 Known b -> Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b]
     clPutEdit' KeyEditClear mr = do
@@ -404,12 +433,13 @@ storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty {..} = let
                     return $ mconcat lpedits
             return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat lpedits
     clPutEdits' ::
-           forall m. MonadIO m
-        => [FiniteSetEdit a]
-        -> Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-        -> m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
+        forall m.
+        MonadIO m =>
+        [FiniteSetEdit a] ->
+        Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b)) ->
+        m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
     clPutEdits' [] _ = unComposeInner $ return []
-    clPutEdits' (e:ee) mr =
+    clPutEdits' (e : ee) mr =
         unComposeInner $ do
             ea <- MkComposeInner $ clPutEdit' @m e mr
             eea <- MkComposeInner $ clPutEdits' ee $ applyEdits' ea mr
@@ -418,11 +448,11 @@ storageLensPropertyInverseChangeLensSet plm@MkStorageLensProperty {..} = let
 
 instance EditContraFunctor (StorageLensProperty ap aq bp bq) where
     eaContraMap ::
-           forall update1 update2.
-           ChangeLens update2 update1
-        -> StorageLensProperty ap aq bp bq update1
-        -> StorageLensProperty ap aq bp bq update2
-    eaContraMap lens@MkChangeLens {..} (MkStorageLensProperty attr1 inv1 invbu1) = let
+        forall update1 update2.
+        ChangeLens update2 update1 ->
+        StorageLensProperty ap aq bp bq update1 ->
+        StorageLensProperty ap aq bp bq update2
+    eaContraMap lens@MkChangeLens{..} (MkStorageLensProperty attr1 inv1 invbu1) = let
         attr2 :: StorageLensAttribute ap aq bp bq update2
         attr2 = eaContraMap lens attr1
         inv2 :: bp -> ReadM (UpdateReader update2) [aq]
@@ -431,8 +461,8 @@ instance EditContraFunctor (StorageLensProperty ap aq bp bq) where
         invbu2 update2 = do
             updates1 <- MkReadM $ clUpdate update2
             mfs <- mapReadM clRead $ for updates1 invbu1
-            return $
-                case catMaybes mfs of
+            return
+                $ case catMaybes mfs of
                     [] -> Nothing
                     fs ->
                         Just $ \b ->

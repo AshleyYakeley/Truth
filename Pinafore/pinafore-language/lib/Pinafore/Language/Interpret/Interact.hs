@@ -1,16 +1,18 @@
 module Pinafore.Language.Interpret.Interact
     ( runInteract
     , showPinaforeModel
-    ) where
+    )
+where
 
-import Control.Exception (Handler(..), catches)
+import Control.Exception (Handler (..), catches)
+import System.IO.Error
+
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
-import System.IO.Error
 
 showPinaforeModel :: QValue -> QInterpreter String
 showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QError) -> return "<?>")
@@ -30,23 +32,27 @@ interactEvalExpression sexpr =
 
 runValue :: Handle -> QValue -> Interact (Action ())
 runValue outh val =
-    interactRunQInterpreter $
-    catchExc (qUnifyValue val) $ \_ -> do
-        s <- showPinaforeModel val
-        return $ liftIO $ hPutStrLn outh s
+    interactRunQInterpreter
+        $ catchExc (qUnifyValue val)
+        $ \_ -> do
+            s <- showPinaforeModel val
+            return $ liftIO $ hPutStrLn outh s
 
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = hoist fromParseResult $ parseInteractiveCommand t
 
 actionWit :: QShimWit 'Negative t -> QShimWit 'Negative (Action t)
 actionWit (MkShimWit t (MkPolarShim conv)) =
-    shimWitToDolan $
-    mapShimWit (MkPolarShim $ cfmap conv) $
-    mkShimWit $ MkDolanGroundedType actionGroundType $ ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments
+    shimWitToDolan
+        $ mapShimWit (MkPolarShim $ cfmap conv)
+        $ mkShimWit
+        $ MkDolanGroundedType actionGroundType
+        $ ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments
 
 simplify' ::
-       forall polarity t. Is PolarityType polarity
-    => EndoM (VarRenamerT QTypeSystem QInterpreter) (QShimWit polarity t)
+    forall polarity t.
+    Is PolarityType polarity =>
+    EndoM (VarRenamerT QTypeSystem QInterpreter) (QShimWit polarity t)
 simplify' =
     case polarityType @polarity of
         PositiveType -> simplify @QTypeSystem
@@ -69,70 +75,71 @@ interactLoop inh outh echo = do
                 else return ()
             liftIOWithUnlift $ \unlift -> do
                 catches
-                    (unlift $ do
-                         p <- interactParse $ pack inputstr
-                         case p of
-                             NullInteractiveCommand -> return ()
-                             LetInteractiveCommand stdecl -> do
-                                 let
-                                     bind :: QInterpreter --> QInterpreter
-                                     bind = interpretDeclarationWith stdecl
-                                 interactRunQInterpreter $ bind $ return () -- check errors
-                                 lift $ readerStateUpdate bind
-                             ExpressionInteractiveCommand sexpr -> do
-                                 val <- interactEvalExpression sexpr
-                                 action <- runValue outh val
-                                 lift $ lift $ runAction action
-                             BindActionInteractiveCommand spat sexpr -> do
-                                 aval <- interactEvalExpression sexpr
-                                 MkSomeFor rwit action <- interactRunQInterpreter $ qUnifyF actionWit aval
-                                 r <- lift $ lift $ unliftActionOrFail action
-                                 let
-                                     rval = MkSomeOf rwit r
-                                     buildScope :: QScopeBuilder ()
-                                     buildScope = do
-                                         pat <- interpretPattern spat
-                                         match <- builderLift $ qExpressionPatternMatch (qConstValue rval) pat
-                                         registerMatchBindings match
-                                     bind :: QInterpreter --> QInterpreter
-                                     bind qia = withScopeBuilder buildScope $ \() -> qia
-                                 interactRunQInterpreter $ bind $ return () -- check errors
-                                 lift $ readerStateUpdate bind
-                             ShowDocInteractiveCommand rname -> do
-                                 bmap <- interactRunQInterpreter $ getBindingInfoLookup
-                                 liftIO $
-                                     case fmap (docDescription . biDocumentation . snd) $ bmap rname of
-                                         Nothing -> hPutStrLn outh $ "! " <> show rname <> " undefined"
-                                         Just "" -> return ()
-                                         Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)
-                             ShowTypeInteractiveCommand showinfo sexpr -> do
-                                 (tt, tshim) <-
-                                     interactRunQInterpreter $ do
-                                         expr <- interpretExpression sexpr
-                                         expr'@(MkSealedExpression (MkShimWit _ shim) _) <- qSimplify expr
-                                         ntt <- getRenderFullName
-                                         return (ntt $ exprShow expr', show shim)
-                                 liftIO $
-                                     hPutStrLn outh $
-                                     ": " <>
-                                     unpack tt <>
-                                     if showinfo
-                                         then " # " <> tshim
-                                         else ""
-                             SimplifyTypeInteractiveCommand polarity stype -> do
-                                 s :: NamedText <-
-                                     case polarity of
-                                         Positive -> do
-                                             MkSome t <- interactRunQInterpreter $ interpretType @'Positive stype
-                                             t' <- interactSimplify (mkShimWit t :: QShimWit 'Positive _)
-                                             return $ exprShow t'
-                                         Negative -> do
-                                             MkSome t <- interactRunQInterpreter $ interpretType @'Negative stype
-                                             t' <- interactSimplify (mkShimWit t :: QShimWit 'Negative _)
-                                             return $ exprShow t'
-                                 ntt <- interactRunQInterpreter getRenderFullName
-                                 liftIO $ hPutStrLn outh $ unpack $ ntt s
-                             ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
+                    ( unlift $ do
+                        p <- interactParse $ pack inputstr
+                        case p of
+                            NullInteractiveCommand -> return ()
+                            LetInteractiveCommand stdecl -> do
+                                let
+                                    bind :: QInterpreter --> QInterpreter
+                                    bind = interpretDeclarationWith stdecl
+                                interactRunQInterpreter $ bind $ return () -- check errors
+                                lift $ readerStateUpdate bind
+                            ExpressionInteractiveCommand sexpr -> do
+                                val <- interactEvalExpression sexpr
+                                action <- runValue outh val
+                                lift $ lift $ runAction action
+                            BindActionInteractiveCommand spat sexpr -> do
+                                aval <- interactEvalExpression sexpr
+                                MkSomeFor rwit action <- interactRunQInterpreter $ qUnifyF actionWit aval
+                                r <- lift $ lift $ unliftActionOrFail action
+                                let
+                                    rval = MkSomeOf rwit r
+                                    buildScope :: QScopeBuilder ()
+                                    buildScope = do
+                                        pat <- interpretPattern spat
+                                        match <- builderLift $ qExpressionPatternMatch (qConstValue rval) pat
+                                        registerMatchBindings match
+                                    bind :: QInterpreter --> QInterpreter
+                                    bind qia = withScopeBuilder buildScope $ \() -> qia
+                                interactRunQInterpreter $ bind $ return () -- check errors
+                                lift $ readerStateUpdate bind
+                            ShowDocInteractiveCommand rname -> do
+                                bmap <- interactRunQInterpreter $ getBindingInfoLookup
+                                liftIO
+                                    $ case fmap (docDescription . biDocumentation . snd) $ bmap rname of
+                                        Nothing -> hPutStrLn outh $ "! " <> show rname <> " undefined"
+                                        Just "" -> return ()
+                                        Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)
+                            ShowTypeInteractiveCommand showinfo sexpr -> do
+                                (tt, tshim) <-
+                                    interactRunQInterpreter $ do
+                                        expr <- interpretExpression sexpr
+                                        expr'@(MkSealedExpression (MkShimWit _ shim) _) <- qSimplify expr
+                                        ntt <- getRenderFullName
+                                        return (ntt $ exprShow expr', show shim)
+                                liftIO
+                                    $ hPutStrLn outh
+                                    $ ": "
+                                    <> unpack tt
+                                    <> if showinfo
+                                        then " # " <> tshim
+                                        else ""
+                            SimplifyTypeInteractiveCommand polarity stype -> do
+                                s :: NamedText <-
+                                    case polarity of
+                                        Positive -> do
+                                            MkSome t <- interactRunQInterpreter $ interpretType @'Positive stype
+                                            t' <- interactSimplify (mkShimWit t :: QShimWit 'Positive _)
+                                            return $ exprShow t'
+                                        Negative -> do
+                                            MkSome t <- interactRunQInterpreter $ interpretType @'Negative stype
+                                            t' <- interactSimplify (mkShimWit t :: QShimWit 'Negative _)
+                                            return $ exprShow t'
+                                ntt <- interactRunQInterpreter getRenderFullName
+                                liftIO $ hPutStrLn outh $ unpack $ ntt s
+                            ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err
+                    )
                     [ Handler $ \(err :: QError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "! error: " <> ioeGetErrorString err
                     ]

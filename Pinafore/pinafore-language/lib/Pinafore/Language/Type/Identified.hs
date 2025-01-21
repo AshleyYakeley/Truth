@@ -5,17 +5,19 @@ module Pinafore.Language.Type.Identified
     , Identified
     , unsafeIdentifyKind
     , unsafeIdentify
-    ) where
+    )
+where
 
-import Import
 import Shapes.Unsafe (unsafeGetRefl)
 
-newtype TypeID =
-    MkTypeID Natural
+import Import
+
+newtype TypeID
+    = MkTypeID Natural
     deriving newtype (Eq, Sequential)
 
-newtype TypeIDType (bn :: Nat) =
-    MkTypeIDType (NaturalType bn)
+newtype TypeIDType (bn :: Nat)
+    = MkTypeIDType (NaturalType bn)
     deriving newtype (TestEquality, TestOrder)
 
 instance WitnessValue TypeIDType where
@@ -30,13 +32,15 @@ type Identified :: forall (tid :: Nat) -> IdentifiedKind tid
 type family Identified tid
 
 unsafeIdentifyKind ::
-       forall (tid :: Nat) (k :: Type) m. Applicative m
-    => TypeIDType tid
-    -> m (IdentifiedKind tid :~: k)
+    forall (tid :: Nat) (k :: Type) m.
+    Applicative m =>
+    TypeIDType tid ->
+    m (IdentifiedKind tid :~: k)
 unsafeIdentifyKind (MkTypeIDType _) = unsafeGetRefl
 
 unsafeIdentify ::
-       forall (tid :: Nat) (t :: IdentifiedKind tid) m. Applicative m
-    => TypeIDType tid
-    -> m (Identified tid :~: t)
+    forall (tid :: Nat) (t :: IdentifiedKind tid) m.
+    Applicative m =>
+    TypeIDType tid ->
+    m (Identified tid :~: t)
 unsafeIdentify (MkTypeIDType _) = unsafeGetRefl

@@ -10,14 +10,14 @@ data GTKError = MkGTKError
     }
 
 instance Show GTKError where
-    show MkGTKError {..} = (unpack gtkerrMessage) <> " (" <> show gtkerrDomain <> ": " <> show gtkerrCode <> ")"
+    show MkGTKError{..} = (unpack gtkerrMessage) <> " (" <> show gtkerrDomain <> ": " <> show gtkerrCode <> ")"
 
 getGTKError :: GError -> IO GTKError
 getGTKError err = do
     gtkerrDomain <- gerrorDomain err
     gtkerrCode <- gerrorCode err
     gtkerrMessage <- gerrorMessage err
-    return MkGTKError {..}
+    return MkGTKError{..}
 
 catchGTKNull :: IO a -> IO (Maybe a)
 catchGTKNull ioa = catch (fmap Just ioa) $ \(_ :: UnexpectedNullPointerReturn) -> return Nothing

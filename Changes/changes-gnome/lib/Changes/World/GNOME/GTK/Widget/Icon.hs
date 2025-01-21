@@ -2,11 +2,13 @@ module Changes.World.GNOME.GTK.Widget.Icon
     ( IconName
     , IconSize
     , createIcon
-    ) where
+    )
+where
 
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 -- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
 type IconName = Text

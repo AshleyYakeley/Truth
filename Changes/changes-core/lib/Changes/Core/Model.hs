@@ -1,6 +1,7 @@
 module Changes.Core.Model
     ( module I
-    ) where
+    )
+where
 
 import Changes.Core.Model.AutoClose as I
 import Changes.Core.Model.Cache as I

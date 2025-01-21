@@ -1,7 +1,8 @@
 module Data.Shim.Mono.General where
 
-import Data.Shim.Polar.JoinMeet
 import Shapes
+
+import Data.Shim.Polar.JoinMeet
 
 type ShimKind k = k -> k -> Type
 
@@ -130,27 +131,29 @@ instance JoinMeetShim (->) where
 
 class (CoercibleKind k, Category shim) => IsoMapShim (shim :: ShimKind k) where
     isoMapShim ::
-           String
-        -> (KindFunction pa pb -> KindFunction qa qb)
-        -> (KindFunction pb pa -> KindFunction qb qa)
-        -> shim pa pb
-        -> shim qa qb
+        String ->
+        (KindFunction pa pb -> KindFunction qa qb) ->
+        (KindFunction pb pa -> KindFunction qb qa) ->
+        shim pa pb ->
+        shim qa qb
     default isoMapShim ::
         RecoverShim shim =>
-                String -> (KindFunction pa pb -> KindFunction qa qb) -> (KindFunction pb pa -> KindFunction qb qa) -> shim pa pb -> shim qa qb
+        String -> (KindFunction pa pb -> KindFunction qa qb) -> (KindFunction pb pa -> KindFunction qb qa) -> shim pa pb -> shim qa qb
     isoMapShim t f _ pp = functionToShim t $ f $ shimToFunction pp
 
 isoFunctionToShim ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). FunctionShim shim
-    => String
-    -> Isomorphism KindFunction a b
-    -> Isomorphism shim a b
+    forall k (shim :: ShimKind k) (a :: k) (b :: k).
+    FunctionShim shim =>
+    String ->
+    Isomorphism KindFunction a b ->
+    Isomorphism shim a b
 isoFunctionToShim s (MkIsomorphism ab ba) = MkIsomorphism (functionToShim s ab) (functionToShim s ba)
 
 isoShimToFunction ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). RecoverShim shim
-    => Isomorphism shim a b
-    -> Isomorphism KindFunction a b
+    forall k (shim :: ShimKind k) (a :: k) (b :: k).
+    RecoverShim shim =>
+    Isomorphism shim a b ->
+    Isomorphism KindFunction a b
 isoShimToFunction (MkIsomorphism ab ba) = MkIsomorphism (shimToFunction ab) (shimToFunction ba)
 
 class IsoMapShim shim => CoerceShim (shim :: ShimKind k) where
@@ -158,9 +161,10 @@ class IsoMapShim shim => CoerceShim (shim :: ShimKind k) where
     shimToCoercion :: shim a b -> Maybe (Coercion a b)
 
 coerceShim ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (CoerceShim shim, Coercible a b)
-    => String
-    -> shim a b
+    forall k (shim :: ShimKind k) (a :: k) (b :: k).
+    (CoerceShim shim, Coercible a b) =>
+    String ->
+    shim a b
 coerceShim t = coercionToShim t MkCoercion
 
 class CoerceShim shim => FunctionShim (shim :: ShimKind k) where

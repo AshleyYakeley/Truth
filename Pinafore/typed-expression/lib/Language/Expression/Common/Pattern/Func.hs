@@ -1,11 +1,12 @@
 module Language.Expression.Common.Pattern.Func where
 
-import Language.Expression.Common.Open
-import Language.Expression.Common.Pattern.Pattern
 import Shapes
 
-type FuncPattern (patwit :: Type -> Type) (expwit :: Type -> Type)
-     = Pattern patwit (PurityFunction Maybe (Expression expwit))
+import Language.Expression.Common.Open
+import Language.Expression.Common.Pattern.Pattern
+
+type FuncPattern (patwit :: Type -> Type) (expwit :: Type -> Type) =
+    Pattern patwit (PurityFunction Maybe (Expression expwit))
 
 pureFuncPattern :: Expression expwit (a -> b) -> FuncPattern patwit expwit a b
 pureFuncPattern expr = purePattern $ PureFunction expr

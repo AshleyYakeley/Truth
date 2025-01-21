@@ -10,18 +10,20 @@ import Pinafore.Language.Var
 import Pinafore.Language.VarID
 
 qToValue ::
-       forall a. HasQType QPolyShim 'Positive a
-    => a
-    -> QValue
+    forall a.
+    HasQType QPolyShim 'Positive a =>
+    a ->
+    QValue
 qToValue = jmToValue
 
 qConstValue :: QValue -> QExpression
 qConstValue = tsConst @QTypeSystem
 
 qConst ::
-       forall a. HasQType QPolyShim 'Positive a
-    => a
-    -> QExpression
+    forall a.
+    HasQType QPolyShim 'Positive a =>
+    a ->
+    QExpression
 qConst a = qConstValue $ qToValue a
 
 qVar :: VarID -> QExpression
@@ -41,18 +43,19 @@ qAbstractExpr = tsAbstract @QTypeSystem
 
 qAbstractsExpr :: [VarID] -> QExpression -> QInterpreter QExpression
 qAbstractsExpr [] e = return e
-qAbstractsExpr (n:nn) e = do
+qAbstractsExpr (n : nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
 qPolyAbstractF ::
-       forall p q. VarID -> QShimWit 'Positive p -> QFExpression ((->) q) -> QInterpreter (QFExpression ((->) (p, q)))
+    forall p q. VarID -> QShimWit 'Positive p -> QFExpression ((->) q) -> QInterpreter (QFExpression ((->) (p, q)))
 qPolyAbstractF = tsPolyAbstractF @QTypeSystem
 
 qSimplify ::
-       forall a. TSMappable QTypeSystem a
-    => a
-    -> QInterpreter a
+    forall a.
+    TSMappable QTypeSystem a =>
+    a ->
+    QInterpreter a
 qSimplify = tsSimplify @QTypeSystem
 
 qVarPattern :: VarID -> QPattern
@@ -65,23 +68,25 @@ qBothPattern :: QPattern -> QPattern -> QInterpreter QPattern
 qBothPattern = tsBothPattern @QTypeSystem
 
 qToPatternConstructor ::
-       forall t lt. (ToListShimWit QShim (QType 'Positive) lt, FromPolarShimWit QShim (QType 'Negative) t)
-    => QPurityFunction t lt
-    -> QPatternConstructor
+    forall t lt.
+    (ToListShimWit QShim (QType 'Positive) lt, FromPolarShimWit QShim (QType 'Negative) t) =>
+    QPurityFunction t lt ->
+    QPatternConstructor
 qToPatternConstructor tml = toPatternConstructor (fromPolarShimWit @Type @QShim @(QType 'Negative)) toListShimWit tml
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> QInterpreter (QPatternConstructor)
 qApplyPatternConstructor = tsApplyPatternConstructor @QTypeSystem
 
 qSealPatternConstructor ::
-       forall m. MonadThrow PatternError m
-    => QPatternConstructor
-    -> m QPattern
+    forall m.
+    MonadThrow PatternError m =>
+    QPatternConstructor ->
+    m QPattern
 qSealPatternConstructor = tsSealPatternConstructor @QTypeSystem
 
 qApplyAllPatternConstructor :: QPatternConstructor -> [QPattern] -> QInterpreter (QPatternConstructor)
 qApplyAllPatternConstructor pc [] = return pc
-qApplyAllPatternConstructor pc (pat:pats) = do
+qApplyAllPatternConstructor pc (pat : pats) = do
     pc' <- qApplyPatternConstructor pc pat
     qApplyAllPatternConstructor pc' pats
 
@@ -109,18 +114,19 @@ qFunctionPosWitness :: forall a b. QShimWit 'Negative a -> QShimWit 'Positive b 
 qFunctionPosWitness = tsFunctionPosShimWit @QTypeSystem
 
 qFunctionPosWitnesses ::
-       ListType (QShimWit 'Negative) a -> QShimWit 'Positive b -> QShimWit 'Positive (ListProduct a -> b)
+    ListType (QShimWit 'Negative) a -> QShimWit 'Positive b -> QShimWit 'Positive (ListProduct a -> b)
 qFunctionPosWitnesses NilListType tb = mapPosShimWit (functionToShim "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
-    mapPosShimWit (functionToShim "poswitness" $ \f a l -> f (a, l)) $
-    qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
+    mapPosShimWit (functionToShim "poswitness" $ \f a l -> f (a, l))
+        $ qFunctionPosWitness ta
+        $ qFunctionPosWitnesses la tb
 
 qApplyExpr :: QExpression -> QExpression -> QInterpreter QExpression
 qApplyExpr exprf expra = tsApply @QTypeSystem exprf expra
 
 qApplyAllExpr :: QExpression -> [QExpression] -> QInterpreter QExpression
 qApplyAllExpr e [] = return e
-qApplyAllExpr e (a:aa) = do
+qApplyAllExpr e (a : aa) = do
     e' <- qApplyExpr e a
     qApplyAllExpr e' aa
 
@@ -132,7 +138,7 @@ qConsList = qConst $ (:|) @A
 
 qSequenceExpr :: [QExpression] -> QInterpreter QExpression
 qSequenceExpr [] = return $ qEmptyList
-qSequenceExpr (e:ee) = do
+qSequenceExpr (e : ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
@@ -155,9 +161,10 @@ qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (DefDoc, QExpre
 qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
 
 qEvalExpr ::
-       forall m. MonadThrow (ExpressionError QVarWit) m
-    => QExpression
-    -> m QValue
+    forall m.
+    MonadThrow (ExpressionError QVarWit) m =>
+    QExpression ->
+    m QValue
 qEvalExpr expr = tsEval @QTypeSystem expr
 
 qEvalExprMaybe :: QExpression -> Maybe QValue
@@ -170,9 +177,10 @@ qUnifyValueTo :: forall t. QShimWit 'Negative t -> QValue -> QInterpreter t
 qUnifyValueTo = tsUnifyValueTo @QTypeSystem
 
 qValue ::
-       forall t. HasQType QPolyShim 'Positive t
-    => t
-    -> QValue
+    forall t.
+    HasQType QPolyShim 'Positive t =>
+    t ->
+    QValue
 qValue v = MkSomeOf toPolarShimWit v
 
 qUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
@@ -187,9 +195,10 @@ qSubsumeExpressionToOpenWit (MkShimWit t iconv) expr = do
     return $ fmap (shimToFunction $ polarPolyIsoNegative iconv) oexpr
 
 qUnifyValue ::
-       forall t. HasQType QPolyShim 'Negative t
-    => QValue
-    -> QInterpreter t
+    forall t.
+    HasQType QPolyShim 'Negative t =>
+    QValue ->
+    QInterpreter t
 qUnifyValue = tsUnifyValue @QTypeSystem
 
 qExactValue :: QType 'Positive t -> QValue -> Maybe t
@@ -202,14 +211,16 @@ qUnifyF = tsUnifyF @QTypeSystem
 
 -- | for debugging
 qUnifyRigidValue ::
-       forall t. HasQType QPolyShim 'Negative t
-    => QValue
-    -> QInterpreter t
+    forall t.
+    HasQType QPolyShim 'Negative t =>
+    QValue ->
+    QInterpreter t
 qUnifyRigidValue = tsUnifyRigidValue @QTypeSystem
 
 -- | for debugging
 qUnifyValueToFree ::
-       forall t. HasQType QPolyShim 'Negative t
-    => QValue
-    -> QInterpreter t
+    forall t.
+    HasQType QPolyShim 'Negative t =>
+    QValue ->
+    QInterpreter t
 qUnifyValueToFree = tsUnifyValueToFree @QTypeSystem

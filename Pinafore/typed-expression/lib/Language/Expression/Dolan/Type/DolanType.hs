@@ -1,56 +1,61 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Type.DolanType
-    ( IsDolanGroundType(..)
-    , SomeGroundType(..)
+    ( IsDolanGroundType (..)
+    , SomeGroundType (..)
     , ShowGroundType
     , DolanShimWit
     , DolanIsoShimWit
-    , DolanType(..)
-    , DolanGroundedType(..)
+    , DolanType (..)
+    , DolanGroundedType (..)
     , DolanGroundedShimWit
     , DolanGroundedIsoShimWit
     , mkDolanGroundedShimWit
-    , DolanSingularType(..)
+    , DolanSingularType (..)
     , DolanVarWit
-    , RecursiveTypeError(..)
+    , RecursiveTypeError (..)
     , safeRecursiveDolanSingularType
     , singularsToAnyType
     , typeToAnySingulars
     , DolanOpenExpression
     , DolanTypeCheckM
-    ) where
+    )
+where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Common
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Shim
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
-import Shapes
 
-class ( FunctionShim (DolanShim ground)
-      , IsDolanPolyShim (DolanPolyShim ground)
-      , Eq (DolanVarID ground)
-      , Ord (DolanVarID ground)
-      , Monad (DolanM ground)
-      , MonadThrow PatternError (DolanM ground)
-      , MonadThrow (ExpressionError (DolanVarWit ground)) (DolanM ground)
-      --, DebugGroundType ground
-      ) => IsDolanGroundType (ground :: GroundTypeKind) where
+class
+    ( FunctionShim (DolanShim ground)
+    , IsDolanPolyShim (DolanPolyShim ground)
+    , Eq (DolanVarID ground)
+    , Ord (DolanVarID ground)
+    , Monad (DolanM ground)
+    , MonadThrow PatternError (DolanM ground)
+    , MonadThrow (ExpressionError (DolanVarWit ground)) (DolanM ground)
+    -- , DebugGroundType ground
+    ) =>
+    IsDolanGroundType (ground :: GroundTypeKind)
+    where
     type DolanVarID ground :: Type
     type DolanM ground :: Type -> Type
     groundTypeVarianceType :: forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). ground dv t -> CCRVariancesType dv
     groundTypeVarianceMap :: forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). ground dv t -> CCRVariancesMap dv t
     groundTypeTestEquality ::
-           forall (dva :: CCRVariances) (ta :: CCRVariancesKind dva) (dvb :: CCRVariances) (tb :: CCRVariancesKind dvb).
-           ground dva ta
-        -> ground dvb tb
-        -> Maybe (dva :~: dvb, ta :~~: tb)
+        forall (dva :: CCRVariances) (ta :: CCRVariancesKind dva) (dvb :: CCRVariances) (tb :: CCRVariancesKind dvb).
+        ground dva ta ->
+        ground dvb tb ->
+        Maybe (dva :~: dvb, ta :~~: tb)
 
 type SomeGroundType :: GroundTypeKind -> Type
-data SomeGroundType ground =
-    forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). MkSomeGroundType (ground dv t)
+data SomeGroundType ground
+    = forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). MkSomeGroundType (ground dv t)
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Eq (SomeGroundType ground) where
     MkSomeGroundType ta == MkSomeGroundType tb = isJust $ groundTypeTestEquality ta tb
@@ -59,32 +64,42 @@ instance forall (ground :: GroundTypeKind). ShowGroundType ground => Show (SomeG
     show (MkSomeGroundType t) = show t
 
 type ShowGroundType :: GroundTypeKind -> Constraint
-class ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
-      , Show (DolanVarID ground)
-      , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
-      , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
-      ) => ShowGroundType ground
+class
+    ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
+    , Show (DolanVarID ground)
+    , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
+    , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
+    ) =>
+    ShowGroundType ground
 
-instance forall (ground :: GroundTypeKind). ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
-         , Show (DolanVarID ground)
-         , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
-         , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
-         ) => ShowGroundType ground
+instance
+    forall (ground :: GroundTypeKind).
+    ( forall dv (gt :: CCRVariancesKind dv). Show (ground dv gt)
+    , Show (DolanVarID ground)
+    , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanSingularType ground polarity)
+    , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
+    ) =>
+    ShowGroundType ground
 
 type DebugGroundType :: GroundTypeKind -> Constraint
-class ( MonadException (DolanM ground)
-      , Show (Exc (DolanM ground))
-      , MonadIO (DolanM ground)
-      , DolanPolyShim ground Type ~ JMShim Type
-      , ShowGroundType ground
-      ) => DebugGroundType ground
+class
+    ( MonadException (DolanM ground)
+    , Show (Exc (DolanM ground))
+    , MonadIO (DolanM ground)
+    , DolanPolyShim ground Type ~ JMShim Type
+    , ShowGroundType ground
+    ) =>
+    DebugGroundType ground
 
-instance forall (ground :: GroundTypeKind). ( MonadException (DolanM ground)
-         , Show (Exc (DolanM ground))
-         , MonadIO (DolanM ground)
-         , DolanPolyShim ground Type ~ JMShim Type
-         , ShowGroundType ground
-         ) => DebugGroundType ground
+instance
+    forall (ground :: GroundTypeKind).
+    ( MonadException (DolanM ground)
+    , Show (Exc (DolanM ground))
+    , MonadIO (DolanM ground)
+    , DolanPolyShim ground Type ~ JMShim Type
+    , ShowGroundType ground
+    ) =>
+    DebugGroundType ground
 
 type DolanVarWit :: GroundTypeKind -> Type -> Type
 type DolanVarWit ground = NameWitness (DolanVarID ground) (DolanShimWit ground 'Negative)
@@ -98,11 +113,11 @@ type DolanIsoShimWit ground polarity = PShimWit (DolanIsoShim ground) (DolanType
 type DolanType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanType ground polarity t where
     NilDolanType :: forall (ground :: GroundTypeKind) polarity. DolanType ground polarity (LimitType polarity)
-    ConsDolanType
-        :: forall (ground :: GroundTypeKind) polarity t1 tr.
-           DolanSingularType ground polarity t1
-        -> DolanType ground polarity tr
-        -> DolanType ground polarity (JoinMeetType polarity t1 tr)
+    ConsDolanType ::
+        forall (ground :: GroundTypeKind) polarity t1 tr.
+        DolanSingularType ground polarity t1 ->
+        DolanType ground polarity tr ->
+        DolanType ground polarity (JoinMeetType polarity t1 tr)
 
 instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanType ground polarity t) where
     freeTypeVariables NilDolanType = mempty
@@ -110,11 +125,11 @@ instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanT
 
 type DolanGroundedType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanGroundedType ground polarity t where
-    MkDolanGroundedType
-        :: forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: CCRVariances) gt t.
-           ground dv gt
-        -> CCRPolarArguments dv (DolanType ground) gt polarity t
-        -> DolanGroundedType ground polarity t
+    MkDolanGroundedType ::
+        forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: CCRVariances) gt t.
+        ground dv gt ->
+        CCRPolarArguments dv (DolanType ground) gt polarity t ->
+        DolanGroundedType ground polarity t
 
 instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanGroundedType ground polarity t) where
     freeTypeVariables (MkDolanGroundedType _ args) = freeTypeVariables args
@@ -126,28 +141,28 @@ type DolanGroundedIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanGroundedIsoShimWit ground polarity = PShimWit (DolanIsoShim ground) (DolanGroundedType ground) polarity
 
 mkDolanGroundedShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (polarity :: Polarity) t.
-       ground dv gt
-    -> CCRPolarArgumentsShimWit pshim dv (DolanType ground) gt polarity t
-    -> PShimWit (pshim Type) (DolanGroundedType ground) polarity t
+    forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (polarity :: Polarity) t.
+    ground dv gt ->
+    CCRPolarArgumentsShimWit pshim dv (DolanType ground) gt polarity t ->
+    PShimWit (pshim Type) (DolanGroundedType ground) polarity t
 mkDolanGroundedShimWit gt (MkShimWit args conv) = MkShimWit (MkDolanGroundedType gt args) conv
 
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVarT') for type variables.
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanSingularType ground polarity t where
-    GroundedDolanSingularType
-        :: forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
-           DolanGroundedType ground polarity t
-        -> DolanSingularType ground polarity t
-    VarDolanSingularType
-        :: forall (ground :: GroundTypeKind) polarity t. TypeVarT t -> DolanSingularType ground polarity t
+    GroundedDolanSingularType ::
+        forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
+        DolanGroundedType ground polarity t ->
+        DolanSingularType ground polarity t
+    VarDolanSingularType ::
+        forall (ground :: GroundTypeKind) polarity t. TypeVarT t -> DolanSingularType ground polarity t
     -- RecursiveDolanSingularType represents equirecursive type using type families,
     -- similar to https://semantic.org/post/forbidden-haskell-types/
-    RecursiveDolanSingularType
-        :: forall (ground :: GroundTypeKind) polarity t.
-           TypeVarT t
-        -> DolanType ground polarity t
-        -> DolanSingularType ground polarity t
+    RecursiveDolanSingularType ::
+        forall (ground :: GroundTypeKind) polarity t.
+        TypeVarT t ->
+        DolanType ground polarity t ->
+        DolanSingularType ground polarity t
 
 instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanSingularType ground polarity t) where
     freeTypeVariables (GroundedDolanSingularType t) = freeTypeVariables t
@@ -163,25 +178,26 @@ instance Show RecursiveTypeError where
     show (ContravariantRecursiveTypeError v) = "contravariant " <> show v
 
 safeRecursiveDolanSingularType ::
-       forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
-    => TypeVarT t
-    -> DolanType ground polarity t
-    -> Result RecursiveTypeError (DolanSingularType ground polarity t)
+    forall (ground :: GroundTypeKind) polarity t.
+    IsDolanGroundType ground =>
+    TypeVarT t ->
+    DolanType ground polarity t ->
+    Result RecursiveTypeError (DolanSingularType ground polarity t)
 safeRecursiveDolanSingularType var tt = do
     let
         checkArgument ::
-               forall sv pol a. Bool -> CCRVarianceType sv -> CCRPolarArgument (DolanType ground) pol sv a -> Maybe ()
+            forall sv pol a. Bool -> CCRVarianceType sv -> CCRPolarArgument (DolanType ground) pol sv a -> Maybe ()
         checkArgument contrv CoCCRVarianceType (CoCCRPolarArgument t) = checkType contrv t
         checkArgument contrv ContraCCRVarianceType (ContraCCRPolarArgument t) = checkType (not contrv) t
         checkArgument contrv RangeCCRVarianceType (RangeCCRPolarArgument p q) = do
             checkType (not contrv) p
             checkType contrv q
         checkArguments ::
-               forall dv gt pol a.
-               Bool
-            -> CCRVariancesType dv
-            -> CCRPolarArguments dv (DolanType ground) gt pol a
-            -> Maybe ()
+            forall dv gt pol a.
+            Bool ->
+            CCRVariancesType dv ->
+            CCRPolarArguments dv (DolanType ground) gt pol a ->
+            Maybe ()
         checkArguments _ NilListType NilCCRArguments = return ()
         checkArguments contrv (ConsListType svt dvt) (ConsCCRArguments arg args) = do
             checkArgument contrv svt arg
@@ -191,7 +207,8 @@ safeRecursiveDolanSingularType var tt = do
         checkSingularType :: forall pol a. Bool -> DolanSingularType ground pol a -> Maybe ()
         checkSingularType contrv (VarDolanSingularType v)
             | contrv
-            , MkSome v == MkSome var = Nothing
+            , MkSome v == MkSome var =
+                Nothing
         checkSingularType _ (VarDolanSingularType _) = return ()
         checkSingularType _ (RecursiveDolanSingularType v _)
             | MkSome v == MkSome var = return ()
@@ -222,30 +239,36 @@ safeRecursiveDolanSingularType var tt = do
     return $ RecursiveDolanSingularType var tt
 
 singularsToAnyType ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity).
-       [Some (DolanSingularType ground polarity)]
-    -> Some (DolanType ground polarity)
+    forall (ground :: GroundTypeKind) (polarity :: Polarity).
+    [Some (DolanSingularType ground polarity)] ->
+    Some (DolanType ground polarity)
 singularsToAnyType [] = MkSome NilDolanType
-singularsToAnyType (MkSome s:ss) =
+singularsToAnyType (MkSome s : ss) =
     case singularsToAnyType ss of
         MkSome t -> MkSome $ ConsDolanType s t
 
 typeToAnySingulars ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
-       DolanType ground polarity t
-    -> [Some (DolanSingularType ground polarity)]
+    forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
+    DolanType ground polarity t ->
+    [Some (DolanSingularType ground polarity)]
 typeToAnySingulars NilDolanType = []
 typeToAnySingulars (ConsDolanType s t) = MkSome s : typeToAnySingulars t
 
-instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityType polarity =>
-             Semigroup (Some (DolanType ground polarity)) where
+instance
+    forall (ground :: GroundTypeKind) (polarity :: Polarity).
+    Is PolarityType polarity =>
+    Semigroup (Some (DolanType ground polarity))
+    where
     MkSome NilDolanType <> tb = tb
     MkSome (ConsDolanType ta tr) <> tb =
         case MkSome tr <> tb of
             MkSome trb -> MkSome $ ConsDolanType ta trb
 
-instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityType polarity =>
-             Monoid (Some (DolanType ground polarity)) where
+instance
+    forall (ground :: GroundTypeKind) (polarity :: Polarity).
+    Is PolarityType polarity =>
+    Monoid (Some (DolanType ground polarity))
+    where
     mappend = (<>)
     mempty = MkSome NilDolanType
 
@@ -263,56 +286,68 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSyst
     type TSVarID (DolanTypeSystem ground) = DolanVarID ground
 
 getCCRArgumentMapping ::
-       forall (ground :: GroundTypeKind) (t :: Type) polarity (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).
-       (IsDolanGroundType ground, Is PolarityType polarity)
-    => CCRVariation sv f
-    -> CCRPolarArgument (DolanType ground) polarity sv a
-    -> CCRPolarArguments dv (DolanType ground) (f a) polarity t
-    -> VarMapping t
+    forall (ground :: GroundTypeKind) (t :: Type) polarity (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    CCRVariation sv f ->
+    CCRPolarArgument (DolanType ground) polarity sv a ->
+    CCRPolarArguments dv (DolanType ground) (f a) polarity t ->
+    VarMapping t
 getCCRArgumentMapping svm (CoCCRPolarArgument t) args =
     mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) $ getVarMapping t
 getCCRArgumentMapping svm (ContraCCRPolarArgument t) args =
-    withInvertPolarity @polarity $
-    mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa)) $ invertVarMapping $ getVarMapping t
+    withInvertPolarity @polarity
+        $ mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa))
+        $ invertVarMapping
+        $ getVarMapping t
 getCCRArgumentMapping svm (RangeCCRPolarArgument tp tq) args =
-    withInvertPolarity @polarity $
-    joinVarMapping
-        (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq))
-        (invertVarMapping $ getVarMapping tp)
-        (getVarMapping tq)
+    withInvertPolarity @polarity
+        $ joinVarMapping
+            (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq))
+            (invertVarMapping $ getVarMapping tp)
+            (getVarMapping tq)
 
 getCCRArgumentsMapping ::
-       forall (ground :: GroundTypeKind) (t :: Type) polarity dv gt.
-       (IsDolanGroundType ground, Is PolarityType polarity)
-    => CCRVariancesMap dv gt
-    -> CCRPolarArguments dv (DolanType ground) gt polarity t
-    -> VarMapping t
+    forall (ground :: GroundTypeKind) (t :: Type) polarity dv gt.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    CCRVariancesMap dv gt ->
+    CCRPolarArguments dv (DolanType ground) gt polarity t ->
+    VarMapping t
 getCCRArgumentsMapping NilCCRVariancesMap NilCCRArguments = mempty
 getCCRArgumentsMapping (ConsCCRVariancesMap ccrv dvm) (ConsCCRArguments arg args) =
     getCCRArgumentMapping ccrv arg args <> getCCRArgumentsMapping dvm args
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             HasVarMapping (DolanGroundedType ground polarity) where
+instance
+    forall (ground :: GroundTypeKind) polarity.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    HasVarMapping (DolanGroundedType ground polarity)
+    where
     getVarMapping (MkDolanGroundedType gt args) = getCCRArgumentsMapping (groundTypeVarianceMap gt) args
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             HasVarMapping (DolanSingularType ground polarity) where
+instance
+    forall (ground :: GroundTypeKind) polarity.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    HasVarMapping (DolanSingularType ground polarity)
+    where
     getVarMapping (VarDolanSingularType var) = varVarMapping var
     getVarMapping (GroundedDolanSingularType t) = getVarMapping t
     getVarMapping (RecursiveDolanSingularType nr t) = let
         vm = getVarMapping t
         in case runVarMapping vm CoVarianceType nr of
-               Just mr ->
-                   MkVarMapping $ \v na -> do
-                       ma <- runVarMapping vm v na
-                       return $
-                           mkMapping $ \vv -> let
-                               tt = runMapping ma vv . runMapping mr tt
-                               in tt
-               Nothing -> vm
+            Just mr ->
+                MkVarMapping $ \v na -> do
+                    ma <- runVarMapping vm v na
+                    return
+                        $ mkMapping
+                        $ \vv -> let
+                            tt = runMapping ma vv . runMapping mr tt
+                            in tt
+            Nothing -> vm
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             HasVarMapping (DolanType ground polarity) where
+instance
+    forall (ground :: GroundTypeKind) polarity.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    HasVarMapping (DolanType ground polarity)
+    where
     getVarMapping NilDolanType = mempty
     getVarMapping (ConsDolanType t tt) =
         case polarityType @polarity of

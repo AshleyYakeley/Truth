@@ -1,15 +1,17 @@
 module Pinafore.Base.Literal.Data
-    ( DecodeLiteral(..)
+    ( DecodeLiteral (..)
     , DataLiteral
     , dlBytes
     , dlData
     , bytesToDataLiteralM
     , bytesToDataLiteral
-    ) where
+    )
+where
+
+import Shapes
 
 import Pinafore.Base.Literal.Literal
 import Pinafore.Base.Literal.Type
-import Shapes
 
 class DecodeLiteral t where
     dmLiteralType :: LiteralType

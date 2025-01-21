@@ -1,13 +1,14 @@
 module Language.Expression.Dolan.Test
     ( recursiveDolanShimWit
-    , Bisubstitution(..)
+    , Bisubstitution (..)
     , mkPolarBisubstitution
     , PShimWitMappable
     , bisubstitute
     , bisubstitutes
     , TypeResult
     , runTypeResult
-    ) where
+    )
+where
 
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Subtype

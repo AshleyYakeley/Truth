@@ -1,18 +1,19 @@
 module Pinafore.DocGen
     ( generateCommonMarkDoc
-    ) where
+    )
+where
 
 import Pinafore.Documentation
 import Shapes
 
 isSubtypeRel :: Tree DefDoc -> Bool
-isSubtypeRel (MkTree (MkDefDoc SubtypeRelationDocItem {} _) _) = True
+isSubtypeRel (MkTree (MkDefDoc SubtypeRelationDocItem{} _) _) = True
 isSubtypeRel _ = False
 
 trimDocL :: Tree DefDoc -> Forest DefDoc
 trimDocL (MkTree n children) =
     case (docItem n, trimDocChildren children) of
-        (HeadingDocItem {}, children'@(MkForest tt))
+        (HeadingDocItem{}, children'@(MkForest tt))
             | all isSubtypeRel tt -> children'
         (_, children') -> pureForest $ MkTree n children'
 
@@ -26,7 +27,7 @@ fors_ :: Monad m => s -> [a] -> (s -> a -> m s) -> m ()
 fors_ olds aa f =
     case aa of
         [] -> return ()
-        a:ar -> do
+        a : ar -> do
             news <- f olds a
             fors_ news ar f
 
@@ -36,7 +37,7 @@ generateCommonMarkDoc outh modopts modname = do
     docs <- getModuleDocs modname
     let
         runDocTree :: Int -> Int -> Bool -> Tree DefDoc -> IO Bool
-        runDocTree hlevel ilevel oldHeading (MkTree MkDefDoc {..} (MkForest children)) = do
+        runDocTree hlevel ilevel oldHeading (MkTree MkDefDoc{..} (MkForest children)) = do
             let
                 putMarkdown :: Markdown -> IO ()
                 putMarkdown m = hPutStr outh $ unpack $ toText m
@@ -47,9 +48,10 @@ generateCommonMarkDoc outh modopts modname = do
                 toMarkdown :: NamedText -> MarkdownText
                 toMarkdown = plainText . runRelativeNamedText [RootNamespace]
                 showMarkdown ::
-                       forall a. ShowNamedText a
-                    => a
-                    -> MarkdownText
+                    forall a.
+                    ShowNamedText a =>
+                    a ->
+                    MarkdownText
                 showMarkdown = toMarkdown . showNamedText
                 trailing :: [NamedText] -> MarkdownText
                 trailing pp = concatmap (\p -> " " <> toMarkdown p) pp
@@ -60,54 +62,56 @@ generateCommonMarkDoc outh modopts modname = do
             let
                 newHeading =
                     case docItem of
-                        HeadingDocItem {} -> True
+                        HeadingDocItem{} -> True
                         _ -> False
             if oldHeading && not newHeading
                 then putIndentMarkdown $ titleMarkdown hlevel "Other"
                 else return ()
             case docItem of
-                ValueDocItem {..} ->
+                ValueDocItem{..} ->
                     putBindDoc $ let
                         name = showNames diNames
                         nameType = name <> " : " <> toMarkdown diType
                         in nameType
-                ValueSignatureDocItem {..} ->
+                ValueSignatureDocItem{..} ->
                     putBindDoc $ let
                         name = boldMarkdown $ showMarkdown diSigName
                         nameType = name <> " : " <> toMarkdown diType
-                        in nameType <>
-                           if diHasDefault
-                               then " [optional]"
-                               else ""
-                SupertypeConstructorSignatureDocItem {..} -> putBindDoc $ boldMarkdown $ showMarkdown diName
-                ValuePatternDocItem {..} ->
+                        in nameType
+                            <> if diHasDefault
+                                then " [optional]"
+                                else ""
+                SupertypeConstructorSignatureDocItem{..} -> putBindDoc $ boldMarkdown $ showMarkdown diName
+                ValuePatternDocItem{..} ->
                     putBindDoc $ let
                         name = showNames diNames
                         nameType = name <> " : " <> toMarkdown diType
                         in nameType
-                SpecialFormDocItem {..} ->
+                SpecialFormDocItem{..} ->
                     putBindDoc $ let
                         name = showNames diNames
                         params = trailing diAnnotations
                         nameType = name <> params <> ": " <> toMarkdown diType
                         in nameType
-                TypeDocItem {..} ->
-                    putIndentMarkdown $
-                    paragraphMarkdown $ let
-                        name = showNames diNames
-                        in (codeMarkdown $
-                            "type " <>
-                            mif diStorable "storable " <>
-                            case (fmap nameIsInfix $ fullNameRefToUnqualified $ head diNames, diParams) of
-                                (Just True, p1:pr) ->
-                                    toMarkdown (showNamedText p1) <> " " <> name <> trailing (fmap showNamedText pr)
-                                _ -> name <> trailing (fmap showNamedText diParams)) <>
-                           case diGDS of
-                               Just gds -> " (from " <> codeMarkdown (toMarkdown gds) <> ")"
-                               Nothing -> mempty
-                SubtypeRelationDocItem {..} ->
+                TypeDocItem{..} ->
+                    putIndentMarkdown
+                        $ paragraphMarkdown
+                        $ let
+                            name = showNames diNames
+                            in ( codeMarkdown
+                                    $ "type "
+                                    <> mif diStorable "storable "
+                                    <> case (fmap nameIsInfix $ fullNameRefToUnqualified $ head diNames, diParams) of
+                                        (Just True, p1 : pr) ->
+                                            toMarkdown (showNamedText p1) <> " " <> name <> trailing (fmap showNamedText pr)
+                                        _ -> name <> trailing (fmap showNamedText diParams)
+                               )
+                                <> case diGDS of
+                                    Just gds -> " (from " <> codeMarkdown (toMarkdown gds) <> ")"
+                                    Nothing -> mempty
+                SubtypeRelationDocItem{..} ->
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype
-                HeadingDocItem {..} -> putIndentMarkdown $ titleMarkdown hlevel diTitle
+                HeadingDocItem{..} -> putIndentMarkdown $ titleMarkdown hlevel diTitle
             if docDescription == ""
                 then return ()
                 else putIndentMarkdown $ indentMarkdown $ paragraphMarkdown $ rawMarkdown docDescription

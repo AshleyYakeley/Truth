@@ -7,11 +7,12 @@ module Pinafore.Language.Interpreter.Lookup
     , lookupBoundType
     , lookupPatternConstructor
     , lookupRecordConstructor
-    , QBoundValue(..)
+    , QBoundValue (..)
     , lookupValue
     , lookupRecord
     , lookupMaybeValue
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error

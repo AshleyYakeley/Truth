@@ -5,8 +5,9 @@ module Pinafore.Storage.File where
 import Changes.Core
 import Changes.World.FileSystem
 import Changes.World.ReferenceStore
-import Pinafore.Base
 import Shapes
+
+import Pinafore.Base
 
 type QFileUpdate = ReferenceStoreUpdate FileEntity ByteStringEdit
 

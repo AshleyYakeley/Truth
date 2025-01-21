@@ -1,14 +1,15 @@
 module Shapes.Import
     ( module I
     , module Shapes.Import
-    ) where
+    )
+where
 
 -- base
 import Control.Applicative as I
 import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
-import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), foldM, forever, guard, unless, void, when)
+import Control.Monad as I (Monad (return, (>>), (>>=)), MonadPlus (..), foldM, forever, guard, unless, void, when)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
@@ -24,13 +25,13 @@ import Data.Functor.Identity as I
 import Data.Functor.Product as I
 import Data.Int as I
 import Data.Kind as I
-import Data.List as I ((++), (\\), iterate, nub, nubBy, zip)
+import Data.List as I (iterate, nub, nubBy, zip, (++), (\\))
 import Data.List qualified
-import Data.List.NonEmpty as I (NonEmpty(..), head, init, last, nonEmpty, tail)
+import Data.List.NonEmpty as I (NonEmpty (..), head, init, last, nonEmpty, tail)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
-import Data.Monoid as I (Monoid(..))
+import Data.Monoid as I (Monoid (..))
 import Data.Ord as I
-import Data.Semigroup as I hiding (Product(..))
+import Data.Semigroup as I hiding (Product (..))
 import Data.String as I hiding (lines, unlines, unwords, words)
 import Data.Traversable as I
 import Data.Tuple as I
@@ -39,17 +40,18 @@ import Data.Void as I
 import Data.Word as I
 import GHC.Stack as I (HasCallStack)
 import Numeric.Natural as I
+import System.IO as I hiding (appendFile, getContents, hGetContents, interact, readFile, writeFile)
+import Text.ParserCombinators.ReadPrec as I (ReadPrec)
+import Text.Read as I (Read (..), readMaybe)
+import Text.Show as I (Show (..))
 import Prelude as I
-    ( Bounded(..)
-    , Enum(..)
+    ( Bounded (..)
+    , Enum (..)
     , Integer
-    , Integral(..)
-    , Num(..)
-    , Real(..)
-    , RealFrac(..)
-    , ($)
-    , (^)
-    , (^^)
+    , Integral (..)
+    , Num (..)
+    , Real (..)
+    , RealFrac (..)
     , const
     , error
     , even
@@ -61,17 +63,16 @@ import Prelude as I
     , seq
     , toInteger
     , undefined
+    , ($)
+    , (^)
+    , (^^)
     )
-import System.IO as I hiding (appendFile, getContents, hGetContents, interact, readFile, writeFile)
-import Text.ParserCombinators.ReadPrec as I (ReadPrec)
-import Text.Read as I (Read(..), readMaybe)
-import Text.Show as I (Show(..))
 
 -- stm
 import Control.Concurrent.STM as I
 
 -- constraints
-import Data.Constraint as I ((:-)(..), Dict(..), withDict)
+import Data.Constraint as I (Dict (..), withDict, (:-) (..))
 
 -- mono-traversable
 import Data.Containers as I
@@ -79,7 +80,7 @@ import Data.MonoTraversable as I
 import Data.Sequences as I hiding (catMaybes, filter, filterM)
 
 -- contravariant
-import Data.Functor.Contravariant as I (Contravariant(..))
+import Data.Functor.Contravariant as I (Contravariant (..))
 
 -- comonad
 import Control.Comonad as I
@@ -120,10 +121,10 @@ import Data.Vector as I (Vector, zipWith, zipWithM)
 
 -- text
 import Data.Text as I (Text)
-import Data.Text.Encoding as I (decodeLatin1, decodeUtf8')
 import Data.Text.Encoding
-import Data.Text.Encoding.Error as I (UnicodeException(..))
+import Data.Text.Encoding as I (decodeLatin1, decodeUtf8')
 import Data.Text.Encoding.Error
+import Data.Text.Encoding.Error as I (UnicodeException (..))
 
 -- time
 import Data.Time as I
@@ -169,7 +170,7 @@ insertMapLazy = Data.Map.Lazy.insert
 lastM :: [t] -> Maybe t
 lastM [] = Nothing
 lastM [t] = Just t
-lastM (_:tt) = lastM tt
+lastM (_ : tt) = lastM tt
 
 eitherLeft :: Either a b -> Maybe a
 eitherLeft (Left x) = Just x
@@ -189,7 +190,7 @@ mpure Nothing = empty
 
 lpure :: Alternative m => [a] -> m a
 lpure [] = empty
-lpure (a:aa) = pure a <|> lpure aa
+lpure (a : aa) = pure a <|> lpure aa
 
 mcatch :: Alternative m => m a -> m (Maybe a)
 mcatch ma = fmap Just ma <|> pure Nothing
@@ -202,34 +203,35 @@ choice = foldr (<|>) empty
 
 compAll :: Category cat => [cat a a] -> cat a a
 compAll [] = id
-compAll (c:cc) = c . compAll cc
+compAll (c : cc) = c . compAll cc
 
 exec :: Monad m => m (m a) -> m a
 exec mma = mma >>= id
 
 deleteFirst :: (a -> Bool) -> [a] -> [a]
 deleteFirst _ [] = []
-deleteFirst t (a:aa)
+deleteFirst t (a : aa)
     | t a = aa
-deleteFirst t (a:aa) = a : deleteFirst t aa
+deleteFirst t (a : aa) = a : deleteFirst t aa
 
 -- | O(n^2) rather than O(n log n), due to no Ord constraint
 duplicates :: Eq a => [a] -> [a]
 duplicates [] = []
-duplicates (a:aa) =
+duplicates (a : aa) =
     if elem a aa
         then a : duplicates (Data.List.filter (/= a) aa)
         else duplicates aa
 
 mFindIndex ::
-       forall m a. Monad m
-    => (a -> m Bool)
-    -> [a]
-    -> m (Maybe Int)
+    forall m a.
+    Monad m =>
+    (a -> m Bool) ->
+    [a] ->
+    m (Maybe Int)
 mFindIndex test = let
     findI :: Int -> [a] -> m (Maybe Int)
     findI _ [] = return Nothing
-    findI i (a:aa) = do
+    findI i (a : aa) = do
         t <- test a
         if t
             then return (Just i)
@@ -238,7 +240,7 @@ mFindIndex test = let
 
 shortOr :: Monad m => [m Bool] -> m Bool
 shortOr [] = return False
-shortOr (mb:mbb) = do
+shortOr (mb : mbb) = do
     b <- mb
     if b
         then return True
@@ -246,7 +248,7 @@ shortOr (mb:mbb) = do
 
 shortAnd :: Monad m => [m Bool] -> m Bool
 shortAnd [] = return True
-shortAnd (mb:mbb) = do
+shortAnd (mb : mbb) = do
     b <- mb
     if b
         then shortAnd mbb
@@ -254,7 +256,7 @@ shortAnd (mb:mbb) = do
 
 shortFirst :: Monad m => [m (Maybe a)] -> m (Maybe a)
 shortFirst [] = return Nothing
-shortFirst (mma:aa) = do
+shortFirst (mma : aa) = do
     ma <- mma
     case ma of
         Just a -> return $ Just a
@@ -279,7 +281,7 @@ isSubsetOf a b = onull $ difference a b
 
 deletesMap :: IsMap map => [ContainerKey map] -> map -> map
 deletesMap [] = id
-deletesMap (k:kk) = deleteMap k . deletesMap kk
+deletesMap (k : kk) = deleteMap k . deletesMap kk
 
 concatmap :: Monoid b => (a -> b) -> [a] -> b
 concatmap f xx = mconcat $ fmap f xx
@@ -295,7 +297,7 @@ intercalate i aa =
 
 startsWith :: Eq a => [a] -> [a] -> Maybe [a]
 startsWith [] s = Just s
-startsWith (p:pp) (q:qq)
+startsWith (p : pp) (q : qq)
     | p == q = startsWith pp qq
 startsWith _ _ = Nothing
 
@@ -308,7 +310,7 @@ replaceListFirst :: Eq a => [a] -> [a] -> [a] -> Maybe [a]
 replaceListFirst needle replacement haystack
     | Just hh <- startsWith needle haystack = Just $ replacement <> hh
 replaceListFirst _ _ [] = Nothing
-replaceListFirst needle replacement (h:hh) = do
+replaceListFirst needle replacement (h : hh) = do
     hh' <- replaceListFirst needle replacement hh
     return $ h : hh'
 
@@ -316,24 +318,27 @@ replaceListAll :: Eq a => [a] -> [a] -> [a] -> [a]
 replaceListAll needle replacement haystack
     | Just hh <- startsWith needle haystack = replacement <> replaceListAll needle replacement hh
 replaceListAll _ _ [] = []
-replaceListAll needle replacement (h:hh) = h : replaceListAll needle replacement hh
+replaceListAll needle replacement (h : hh) = h : replaceListAll needle replacement hh
 
 trimSpace ::
-       forall seq. (IsSequence seq, Element seq ~ Char)
-    => seq
-    -> seq
+    forall seq.
+    (IsSequence seq, Element seq ~ Char) =>
+    seq ->
+    seq
 trimSpace = reverse . dropWhile isSpace . reverse . dropWhile isSpace
 
 lifecycleOnAllDone ::
-       forall m. MonadAskUnliftIO m
-    => m ()
-    -> m (LifecycleT m (), m ())
+    forall m.
+    MonadAskUnliftIO m =>
+    m () ->
+    m (LifecycleT m (), m ())
 lifecycleOnAllDone onzero = do
     var <- liftIO $ newMVar (0 :: Int)
     let
         ondone = do
-            liftIO $
-                mVarRunStateT var $ do
+            liftIO
+                $ mVarRunStateT var
+                $ do
                     olda <- get
                     put $ succ olda
             lifecycleOnClose $ do
@@ -360,19 +365,21 @@ threadSleep :: NominalDiffTime -> IO ()
 threadSleep d = threadDelay $ truncate $ (nominalDiffTimeToSeconds d) * 1E6
 
 liftWithFinal ::
-       forall m1 m2 a. Monad m2
-    => (m1 --> m2)
-    -> m1 (m2 a)
-    -> m2 a
+    forall m1 m2 a.
+    Monad m2 =>
+    (m1 --> m2) ->
+    m1 (m2 a) ->
+    m2 a
 liftWithFinal lft call = do
     ma <- lft call
     ma
 
 liftWithDefer ::
-       forall m1 m2 a. (MonadIO m1, MonadIO m2)
-    => (m1 --> m2)
-    -> ((m2 () -> m1 ()) -> m1 a)
-    -> m2 a
+    forall m1 m2 a.
+    (MonadIO m1, MonadIO m2) =>
+    (m1 --> m2) ->
+    ((m2 () -> m1 ()) -> m1 a) ->
+    m2 a
 liftWithDefer lft call = do
     var <- liftIO $ newMVar (return ())
     a <- lft $ call $ \tmu -> liftIO $ modifyMVar_ var $ \oldval -> return $ oldval >> tmu
@@ -399,26 +406,29 @@ predNat v = do
     return $ pred v
 
 olengthNat ::
-       forall a. MonoFoldable a
-    => a
-    -> Natural
+    forall a.
+    MonoFoldable a =>
+    a ->
+    Natural
 olengthNat = toNaturalForce . olength
 
 takeNat ::
-       forall a. IsSequence a
-    => Natural
-    -> a
-    -> a
+    forall a.
+    IsSequence a =>
+    Natural ->
+    a ->
+    a
 takeNat n = take $ fromIntegral n
 
 dropNat ::
-       forall a. IsSequence a
-    => Natural
-    -> a
-    -> a
+    forall a.
+    IsSequence a =>
+    Natural ->
+    a ->
+    a
 dropNat n = drop $ fromIntegral n
 
 pattern NaturalInteger :: Natural -> Integer
-
 pattern NaturalInteger n <- (toNaturalMaybe -> Just n)
-  where NaturalInteger n = toInteger n
+    where
+        NaturalInteger n = toInteger n

@@ -1,23 +1,26 @@
 module Language.Expression.Dolan.Simplify.SharedTypeVars
     ( mergeSharedTypeVars
-    ) where
+    )
+where
+
+import Shapes
 
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
-import Shapes
 
 findShare ::
-       forall a. Eq a
-    => [[a]]
-    -> Maybe (a, a)
+    forall a.
+    Eq a =>
+    [[a]] ->
+    Maybe (a, a)
 findShare uses = let
     allvars = nub $ mconcat uses
     getpairs :: [a] -> [(a, a)]
     getpairs [] = []
-    getpairs (v:vv) = fmap (\v' -> (v', v)) vv <> getpairs vv
+    getpairs (v : vv) = fmap (\v' -> (v', v)) vv <> getpairs vv
     pairs = getpairs allvars
     gooduse :: (a, a) -> [a] -> Bool
     gooduse (a, b) l = elem a l == elem b l
@@ -26,15 +29,17 @@ findShare uses = let
     in find goodpair pairs
 
 mergeSharedTypeVars ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => PShimWitMappable (DolanShim ground) (DolanType ground) a => Endo a
+    forall (ground :: GroundTypeKind) a.
+    IsDolanGroundType ground =>
+    PShimWitMappable (DolanShim ground) (DolanType ground) a =>
+    Endo a
 mergeSharedTypeVars =
     Endo $ \expr -> let
         (posuses, neguses) = mappableGetVarUses @ground expr
         in case findShare posuses <|> findShare neguses of
-               Just (MkSomeTypeVarT (va :: TypeVarT tva), MkSomeTypeVarT (vb :: TypeVarT tvb)) ->
-                   assignTypeVarT @tva vb $ let
-                       bisub :: Bisubstitution ground (DolanShim ground) Identity
-                       bisub = MkBisubstitution vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
-                       in appEndo (mergeSharedTypeVars @ground <> endoMToEndo (bisubstitutes @ground [bisub])) expr
-               Nothing -> expr
+            Just (MkSomeTypeVarT (va :: TypeVarT tva), MkSomeTypeVarT (vb :: TypeVarT tvb)) ->
+                assignTypeVarT @tva vb $ let
+                    bisub :: Bisubstitution ground (DolanShim ground) Identity
+                    bisub = MkBisubstitution vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
+                    in appEndo (mergeSharedTypeVars @ground <> endoMToEndo (bisubstitutes @ground [bisub])) expr
+            Nothing -> expr

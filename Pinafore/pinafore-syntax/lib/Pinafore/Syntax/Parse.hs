@@ -1,10 +1,10 @@
 module Pinafore.Syntax.Parse
-    ( InteractiveCommand(..)
+    ( InteractiveCommand (..)
     , parseInteractiveCommand
     , SourcePos
     , initialPos
-    , SourceError(..)
-    , ParseErrorType(..)
+    , SourceError (..)
+    , ParseErrorType (..)
     , ParseResult
     , runTokens
     , Parser
@@ -14,7 +14,8 @@ module Pinafore.Syntax.Parse
     , readType
     , operatorFixity
     , allKeywords
-    ) where
+    )
+where
 
 import Pinafore.Syntax.Parse.Error
 import Pinafore.Syntax.Parse.Expression

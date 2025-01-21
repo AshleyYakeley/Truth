@@ -1,5 +1,5 @@
 module Control.Task
-    ( Task(..)
+    ( Task (..)
     , hoistTask
     , taskIsDone
     , execTask
@@ -11,15 +11,16 @@ module Control.Task
     , firstTask
     , parallelFor
     , parallelFor_
-    , Cancelled(..)
+    , Cancelled (..)
     , forkEndlessInLifecycle
-    , StoppableTask(..)
+    , StoppableTask (..)
     , forkStoppableTask
     , foreverStoppableTask
     , followStoppableTask
     , firstStoppableTask
     , raceStoppableTasks
-    ) where
+    )
+where
 
 import Shapes.Import
 
@@ -54,31 +55,33 @@ instance RepresentationalRole m => RepresentationalRole (Task m) where
         MkCoercion -> MkCoercion
 -}
 ioTask ::
-       forall m a. Monad m
-    => m (Task m a)
-    -> Task m a
+    forall m a.
+    Monad m =>
+    m (Task m a) ->
+    Task m a
 ioTask mt =
     MkTask
         { taskWait =
-              do
-                  t <- mt
-                  taskWait t
+            do
+                t <- mt
+                taskWait t
         , taskCheck =
-              do
-                  t <- mt
-                  taskCheck t
+            do
+                t <- mt
+                taskCheck t
         }
 
 mvarTask ::
-       forall m a. MonadIO m
-    => MVar a
-    -> Task m a
+    forall m a.
+    MonadIO m =>
+    MVar a ->
+    Task m a
 mvarTask var = let
     taskWait :: m a
     taskWait = liftIO $ readMVar var
     taskCheck :: m (Maybe a)
     taskCheck = liftIO $ tryReadMVar var
-    in MkTask {..}
+    in MkTask{..}
 
 execTask :: Monad m => Task m (m a) -> Task m a
 execTask (MkTask w c) =
@@ -110,8 +113,8 @@ timeTask t = let
     remaining = do
         c <- getCurrentTime
         let d = diffUTCTime c t
-        return $
-            if d > 0
+        return
+            $ if d > 0
                 then Just d
                 else Nothing
     taskWait :: IO ()
@@ -123,11 +126,11 @@ timeTask t = let
     taskCheck :: IO (Maybe ())
     taskCheck = do
         md <- remaining
-        return $
-            case md of
+        return
+            $ case md of
                 Nothing -> Just ()
                 Just _ -> Nothing
-    in MkTask {..}
+    in MkTask{..}
 
 durationTask :: NominalDiffTime -> IO (Task IO ())
 durationTask d = do
@@ -145,7 +148,7 @@ firstTask tt = do
                 _ <- tryPutMVar var a
                 return ()
         return ()
-    return MkTask {taskWait = liftTunnelIO $ readMVar var, taskCheck = liftTunnelIO $ fmap sequence $ tryReadMVar var}
+    return MkTask{taskWait = liftTunnelIO $ readMVar var, taskCheck = liftTunnelIO $ fmap sequence $ tryReadMVar var}
 
 parallelFor :: (Traversable t, MonadTunnelIO m) => t a -> (a -> m b) -> m (t b)
 parallelFor ta amb = do
@@ -157,9 +160,9 @@ parallelFor_ ta amb = do
     tasks <- for ta $ \a -> forkTask $ amb a
     for_ tasks taskWait
 
-data Cancelled =
-    MkCancelled
-    deriving stock (Show)
+data Cancelled
+    = MkCancelled
+    deriving stock Show
 
 instance Exception Cancelled
 
@@ -189,16 +192,17 @@ instance (Applicative m, Monoid a) => Monoid (StoppableTask m a) where
     mempty = pure mempty
 
 forkStoppableTask ::
-       forall m a. MonadTunnelIO m
-    => ((forall r. m r) -> m a)
-    -> m (StoppableTask m a)
+    forall m a.
+    MonadTunnelIO m =>
+    ((forall r. m r) -> m a) ->
+    m (StoppableTask m a)
 forkStoppableTask ma = do
     var <- liftIO newEmptyMVar
     tid <-
         tunnelForkIO $ \unliftIO -> do
             ra <- tryExc $ unliftIO $ ma $ liftIO $ throw MkCancelled
-            putMVar var $
-                case ra of
+            putMVar var
+                $ case ra of
                     SuccessResult ta -> SuccessResult $ fmap Just ta
                     FailureResult exc
                         | Just MkCancelled <- fromException exc -> SuccessResult $ pure Nothing
@@ -206,12 +210,13 @@ forkStoppableTask ma = do
     let
         stoppableTaskTask = execTask $ fmap (liftTunnelIO . fromResultExc) $ mvarTask var
         stoppableTaskStop = liftIO $ throwTo tid MkCancelled
-    return MkStoppableTask {..}
+    return MkStoppableTask{..}
 
 -- | Create a stoppable task that will run forever (until stopped).
 foreverStoppableTask ::
-       forall m a. MonadIO m
-    => IO (StoppableTask m a)
+    forall m a.
+    MonadIO m =>
+    IO (StoppableTask m a)
 foreverStoppableTask = do
     var <- newEmptyMVar
     let
@@ -223,9 +228,10 @@ foreverStoppableTask = do
 
 -- | Create a StoppableTask that follows a Task. Stopping it will not stop the original Task.
 followStoppableTask ::
-       forall m a. MonadTunnelIO m
-    => Task m a
-    -> m (StoppableTask m a)
+    forall m a.
+    MonadTunnelIO m =>
+    Task m a ->
+    m (StoppableTask m a)
 followStoppableTask task = do
     MkStoppableTask ftask stop <- liftIO foreverStoppableTask
     rtask <- firstTask [fmap Just task, ftask]
@@ -233,9 +239,10 @@ followStoppableTask task = do
 
 -- | Create a StoppableTask for the first StoppableTask to finish. Does not stop the other tasks when done.
 firstStoppableTask ::
-       forall m a. MonadTunnelIO m
-    => [StoppableTask m a]
-    -> m (StoppableTask m a)
+    forall m a.
+    MonadTunnelIO m =>
+    [StoppableTask m a] ->
+    m (StoppableTask m a)
 firstStoppableTask stasks = do
     task <- firstTask $ fmap stoppableTaskTask stasks
     let
@@ -245,9 +252,10 @@ firstStoppableTask stasks = do
 
 -- | Create a StoppableTask for the first StoppableTask to finish. Also forks a task to stop them all when that happens.
 raceStoppableTasks ::
-       forall m a. MonadTunnelIO m
-    => [StoppableTask m a]
-    -> m (StoppableTask m a)
+    forall m a.
+    MonadTunnelIO m =>
+    [StoppableTask m a] ->
+    m (StoppableTask m a)
 raceStoppableTasks stasks = do
     MkStoppableTask ftask stop <- firstStoppableTask stasks
     rtask <-

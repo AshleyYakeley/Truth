@@ -38,10 +38,13 @@ type family VarianceCategory cat v where
     VarianceCategory cat 'Covariance = cat
     VarianceCategory cat 'Contravariance = CatDual cat
 
-class ( MaybeRepresentational f
-      , Is VarianceType (VarianceOf f)
-      , CatFunctor (VarianceCategory KindFunction (VarianceOf f)) KindFunction f
-      ) => HasVariance (f :: Type -> k) where
+class
+    ( MaybeRepresentational f
+    , Is VarianceType (VarianceOf f)
+    , CatFunctor (VarianceCategory KindFunction (VarianceOf f)) KindFunction f
+    ) =>
+    HasVariance (f :: Type -> k)
+    where
     type VarianceOf f :: Variance
 
 instance HasVariance Maybe where

@@ -2,16 +2,17 @@ module Changes.Core.Model.EditContext
     ( EditSource
     , noEditSource
     , newEditSource
-    , EditContext(..)
+    , EditContext (..)
     , editSourceContext
     , noEditContext
-    ) where
+    )
+where
 
 import Changes.Core.Import
 
-newtype EditSource =
-    MkEditSource (Maybe Unique)
-    deriving newtype (Eq)
+newtype EditSource
+    = MkEditSource (Maybe Unique)
+    deriving newtype Eq
 
 noEditSource :: EditSource
 noEditSource = MkEditSource Nothing
@@ -23,10 +24,11 @@ newEditSource = do
 
 newtype EditContext = MkEditContext
     { editContextSource :: EditSource
-    } deriving newtype (Eq)
+    }
+    deriving newtype Eq
 
 editSourceContext :: EditSource -> EditContext
-editSourceContext editContextSource = MkEditContext {..}
+editSourceContext editContextSource = MkEditContext{..}
 
 noEditContext :: EditContext
 noEditContext = editSourceContext noEditSource

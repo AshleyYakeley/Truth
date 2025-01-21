@@ -1,6 +1,7 @@
 module Pinafore.Syntax.Name
     ( module I
-    ) where
+    )
+where
 
 import Pinafore.Syntax.Name.ExprShow as I
 import Pinafore.Syntax.Name.FullName as I

@@ -3,21 +3,23 @@ module Pinafore.Syntax.Doc.SyntaxDoc
     , typeDocItem
     , typeDeclDoc
     , valueDocItem
-    ) where
+    )
+where
+
+import Shapes
 
 import Pinafore.Syntax.Doc.DefDoc
 import Pinafore.Syntax.Doc.Docs
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Syntax
 import Pinafore.Syntax.Text
-import Shapes
 
 funcPNT :: PrecNamedText -> PrecNamedText -> PrecNamedText
 funcPNT ta tb = namedTextPrec 6 $ precNamedText 5 ta <> " -> " <> precNamedText 6 tb
 
 funcPNTList :: [PrecNamedText] -> PrecNamedText -> PrecNamedText
 funcPNTList [] t = t
-funcPNTList (a:aa) t = funcPNT a $ funcPNTList aa t
+funcPNTList (a : aa) t = funcPNT a $ funcPNTList aa t
 
 signatureDocItem :: SyntaxSignature' -> DocItem
 signatureDocItem (ValueSyntaxSignature name stype msdef) = ValueSignatureDocItem name (exprShow stype) (isJust msdef)
@@ -28,9 +30,11 @@ signatureDefDoc (MkSyntaxWithDoc doc (MkWithSourcePos _ sig)) = MkDefDoc (signat
 
 constructorDocItemDocs :: FullName -> FullName -> SyntaxDataConstructor extra -> (DocItem, Docs)
 constructorDocItemDocs tname cname (PlainSyntaxConstructor tt _) =
-    ( ValuePatternDocItem (pure $ fullNameRef cname) $
-      toNamedText $ funcPNTList (fmap exprShowPrec tt) (exprShowPrec tname)
-    , mempty)
+    ( ValuePatternDocItem (pure $ fullNameRef cname)
+        $ toNamedText
+        $ funcPNTList (fmap exprShowPrec tt) (exprShowPrec tname)
+    , mempty
+    )
 constructorDocItemDocs tname cname (RecordSyntaxConstructor sigs) =
     (ValuePatternDocItem (pure $ fullNameRef cname) (exprShow tname), lpure $ fmap signatureDefDoc sigs)
 
@@ -48,7 +52,7 @@ typeDocItem name diStorable tparams mgds = let
     diNames = pure $ fullNameRef name
     diParams = fmap typeParameterDoc tparams
     diGDS = fmap (\gds -> gds <> concatmap (\p -> " " <> exprShow p) tparams) mgds
-    in TypeDocItem {..}
+    in TypeDocItem{..}
 
 typeDeclDoc :: FullName -> SyntaxRecursiveTypeDeclaration -> RawMarkdown -> Tree DefDoc
 typeDeclDoc mtname defn docDescription = let
@@ -69,10 +73,10 @@ typeDeclDoc mtname defn docDescription = let
             PlainDatatypeSyntaxRecursiveTypeDeclaration tparams' _ conss -> (False, tparams', typeConssDoc mtname conss)
             _ -> (False, mempty, mempty)
     docItem = typeDocItem mtname storable tparams Nothing
-    in MkTree MkDefDoc {..} items
+    in MkTree MkDefDoc{..} items
 
 valueDocItem :: ExprShow vtype => FullName -> Maybe vtype -> DocItem
 valueDocItem name stype = let
     diNames = pure $ fullNameRef name
     diType = fromMaybe "" $ fmap exprShow stype
-    in ValueDocItem {..}
+    in ValueDocItem{..}

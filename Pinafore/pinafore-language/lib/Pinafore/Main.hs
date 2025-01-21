@@ -1,10 +1,10 @@
 module Pinafore.Main
     ( processorCountRef
-    , ProcessorCount(..)
-    , ExecutionOptions(..)
+    , ProcessorCount (..)
+    , ExecutionOptions (..)
     , defaultExecutionOptions
-    , RunWithOptions(..)
-    , ModuleOptions(..)
+    , RunWithOptions (..)
+    , ModuleOptions (..)
     , module Pinafore.Context
     , standardLibraryContext
     , pinaforeLibrary
@@ -14,16 +14,18 @@ module Pinafore.Main
     , qInterpretScriptFile
     , qInteractHandles
     , qInteract
-    ) where
+    )
+where
 
 import GHC.Conc
+import Pinafore.Storage
+import System.FilePath
+
 import Import
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Expression
 import Pinafore.Language.Type
-import Pinafore.Storage
-import System.FilePath
 
 class RunWithOptions a where
     runWithOptions :: a -> IO --> IO
@@ -55,13 +57,13 @@ data ExecutionOptions = MkExecutionOptions
     }
 
 instance RunWithOptions ExecutionOptions where
-    runWithOptions MkExecutionOptions {..} = runWithOptions eoProcessorCount
+    runWithOptions MkExecutionOptions{..} = runWithOptions eoProcessorCount
 
 defaultProcessorCountINTERNAL :: Maybe ProcessorCount
 defaultProcessorCountINTERNAL = Nothing
 
 defaultExecutionOptions :: ExecutionOptions
-defaultExecutionOptions = MkExecutionOptions {eoProcessorCount = defaultProcessorCountINTERNAL}
+defaultExecutionOptions = MkExecutionOptions{eoProcessorCount = defaultProcessorCountINTERNAL}
 
 data ModuleOptions = MkModuleOptions
     { moLibraryModules :: [LibraryModule]
@@ -69,7 +71,7 @@ data ModuleOptions = MkModuleOptions
     }
 
 standardLoadModule :: ModuleOptions -> LoadModule
-standardLoadModule MkModuleOptions {..} = let
+standardLoadModule MkModuleOptions{..} = let
     libLoadModule :: LoadModule
     libLoadModule = libraryLoadModule moLibraryModules
     dirLoadModule :: LoadModule
@@ -96,24 +98,28 @@ sqliteQDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 qInterpretTextAtType ::
-       forall t m. (?library :: LibraryContext, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QError m)
-    => FilePath
-    -> Text
-    -> [String]
-    -> [(ImplicitName, QValue)]
-    -> m t
+    forall t m.
+    (?library :: LibraryContext, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QError m) =>
+    FilePath ->
+    Text ->
+    [String] ->
+    [(ImplicitName, QValue)] ->
+    m t
 qInterpretTextAtType puipath puitext args impls = let
     arglist = qToValue @(NonEmpty Text) $ fmap pack $ puipath :| args
-    in fromInterpretResult $
-       runPinaforeScoped puipath $ parseToValueUnify puitext $ (MkImplicitName "arglist", arglist) : impls
+    in fromInterpretResult
+        $ runPinaforeScoped puipath
+        $ parseToValueUnify puitext
+        $ (MkImplicitName "arglist", arglist)
+        : impls
 
 qInterpretScriptText ::
-       (?library :: LibraryContext, MonadIO m, MonadThrow QError m)
-    => FilePath
-    -> Text
-    -> [String]
-    -> [(ImplicitName, QValue)]
-    -> m (View ())
+    (?library :: LibraryContext, MonadIO m, MonadThrow QError m) =>
+    FilePath ->
+    Text ->
+    [String] ->
+    [(ImplicitName, QValue)] ->
+    m (View ())
 qInterpretScriptText puipath puitext args impls = do
     action <- qInterpretTextAtType @(Action TopType) puipath puitext args impls
     return $ runAction $ fmap (\MkTopType -> ()) $ action

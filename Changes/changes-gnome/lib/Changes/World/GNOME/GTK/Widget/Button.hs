@@ -1,12 +1,14 @@
 module Changes.World.GNOME.GTK.Widget.Button
     ( createButton
-    ) where
+    )
+where
 
 import Changes.Core
-import Changes.World.GNOME.GI
 import Data.IORef
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (GView 'Locked ()))) -> GView 'Unlocked Widget
 createButton rlabel raction = do

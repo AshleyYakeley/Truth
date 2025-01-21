@@ -1,6 +1,8 @@
 module Changes.World.GNOME.GTK.Widget.Drag
     (
-    ) where
+    )
+where
+
 {-
 import Shapes
 import GI.Gtk;

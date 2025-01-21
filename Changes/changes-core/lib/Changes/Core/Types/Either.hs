@@ -1,7 +1,8 @@
 module Changes.Core.Types.Either
-    ( EitherReader(..)
-    , EitherEdit(..)
-    ) where
+    ( EitherReader (..)
+    , EitherEdit (..)
+    )
+where
 
 import Changes.Core.Edit
 import Changes.Core.Import

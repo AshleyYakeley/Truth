@@ -1,12 +1,14 @@
 module Changes.World.Media
     ( module Changes.World.Media.Type
     , module Changes.World.Media
-    ) where
+    )
+where
 
 import Changes.Core
+import Shapes
+
 import Changes.World.Anything
 import Changes.World.Media.Type
-import Shapes
 
 type Media = WithContext MediaType StrictByteString
 
@@ -19,8 +21,9 @@ data AnyCodec where
 
 data MediaKnowledge = MkMediaKnowledge
     { findMediaCodecByType :: MediaType -> Maybe AnyCodec
-    , findMediaCodecByWitness :: forall (edit :: Type).
-                                         IOWitness edit -> Maybe (MediaType, Codec StrictByteString (EditSubject edit))
+    , findMediaCodecByWitness ::
+        forall (edit :: Type).
+        IOWitness edit -> Maybe (MediaType, Codec StrictByteString (EditSubject edit))
     }
 
 interpretInjection :: (?mediaKnowledge :: MediaKnowledge) => Injection Media (Maybe Anything)
@@ -39,4 +42,4 @@ interpretInjection = let
                     (t, codec) <- findMediaCodecByWitness ?mediaKnowledge ie
                     return (MkWithContext t (encode codec a))
                 _ -> Nothing
-    in MkInjection {..}
+    in MkInjection{..}

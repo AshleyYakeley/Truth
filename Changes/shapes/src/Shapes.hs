@@ -1,9 +1,7 @@
 module Shapes
     ( module I
-    ) where
-
-import Shapes.Import as I
-import Shapes.Instances ()
+    )
+where
 
 -- shapes
 import Control.Applicative.Wrapped as I
@@ -53,3 +51,5 @@ import Data.Tree as I
 import Data.Witness.ListVProduct as I
 import Data.Words as I
 import Data.Wrappable as I
+import Shapes.Import as I
+import Shapes.Instances ()

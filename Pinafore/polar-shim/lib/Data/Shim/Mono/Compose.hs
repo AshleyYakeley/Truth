@@ -1,7 +1,8 @@
 module Data.Shim.Mono.Compose where
 
-import Data.Shim.Mono.General
 import Shapes
+
+import Data.Shim.Mono.General
 
 type ComposeShim :: (Type -> Type) -> forall k. ShimKind k -> ShimKind k
 newtype ComposeShim m shim a b = MkComposeShim
@@ -11,17 +12,26 @@ newtype ComposeShim m shim a b = MkComposeShim
 pureComposeShim :: Applicative m => shim a b -> ComposeShim m shim a b
 pureComposeShim shim = MkComposeShim $ pure shim
 
-instance forall (m :: Type -> Type) k (shim :: ShimKind k). (Applicative m, Category shim) =>
-             Category (ComposeShim m shim) where
+instance
+    forall (m :: Type -> Type) k (shim :: ShimKind k).
+    (Applicative m, Category shim) =>
+    Category (ComposeShim m shim)
+    where
     id = MkComposeShim $ pure id
     MkComposeShim mp . MkComposeShim mq = MkComposeShim $ liftA2 (.) mp mq
 
-instance forall (m :: Type -> Type) k (shim :: ShimKind k). (Applicative m, Groupoid shim) =>
-             Groupoid (ComposeShim m shim) where
+instance
+    forall (m :: Type -> Type) k (shim :: ShimKind k).
+    (Applicative m, Groupoid shim) =>
+    Groupoid (ComposeShim m shim)
+    where
     invert (MkComposeShim mshim) = MkComposeShim $ fmap invert mshim
 
-instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, JoinMeetIsoShim shim) =>
-             JoinMeetIsoShim (ComposeShim m shim) where
+instance
+    forall (m :: Type -> Type) (shim :: ShimKind Type).
+    (Applicative m, JoinMeetIsoShim shim) =>
+    JoinMeetIsoShim (ComposeShim m shim)
+    where
     iJoinL1 = MkComposeShim $ pure iJoinL1
     iJoinL2 = MkComposeShim $ pure iJoinL2
     iJoinR1 = MkComposeShim $ pure iJoinR1
@@ -41,8 +51,11 @@ instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, Joi
     iMeetSwapR = MkComposeShim $ pure iMeetSwapR
     iMeetSwap4 = MkComposeShim $ pure iMeetSwap4
 
-instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, JoinMeetShim shim) =>
-             JoinMeetShim (ComposeShim m shim) where
+instance
+    forall (m :: Type -> Type) (shim :: ShimKind Type).
+    (Applicative m, JoinMeetShim shim) =>
+    JoinMeetShim (ComposeShim m shim)
+    where
     initf = MkComposeShim $ pure initf
     termf = MkComposeShim $ pure termf
     join1 = MkComposeShim $ pure join1

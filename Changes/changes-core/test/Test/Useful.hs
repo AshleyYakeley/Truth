@@ -7,5 +7,5 @@ goldenTest :: FilePath -> TestName -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest dirName testName call = let
     dir = "test/golden" </> dirName
     in testHandleVsFileInDir dir testName $ \h -> let
-           ?handle = h
-           in call
+        ?handle = h
+        in call

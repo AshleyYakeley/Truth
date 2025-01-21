@@ -30,5 +30,5 @@ mapMaybeSelectNotify f (MkSelectNotify sela) = MkSelectNotify $ \vmb -> sela $ f
 
 makePremodelSelectNotify :: forall sel. Premodel (ROWUpdate (Maybe sel)) (SelectNotify sel)
 makePremodelSelectNotify utask recv =
-    fmap (fmap $ \update -> MkSelectNotify $ \vms -> liftIOWithUnlift $ \unlift -> update $ \_ -> unlift vms) $
-    notifyingPremodel Nothing utask recv
+    fmap (fmap $ \update -> MkSelectNotify $ \vms -> liftIOWithUnlift $ \unlift -> update $ \_ -> unlift vms)
+        $ notifyingPremodel Nothing utask recv

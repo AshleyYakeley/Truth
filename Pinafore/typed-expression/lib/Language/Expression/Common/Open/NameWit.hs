@@ -1,19 +1,21 @@
 module Language.Expression.Common.Open.NameWit where
 
-import Language.Expression.Common.Open.Expression
 import Shapes
 
+import Language.Expression.Common.Open.Expression
+
 type NameTypeWitness :: forall kn kt. (kn -> Type) -> (kn -> kt -> Type) -> kt -> Type
-data NameTypeWitness nw vw t =
-    forall n. MkNameTypeWitness (nw n)
-                                (vw n t)
+data NameTypeWitness nw vw t
+    = forall n. MkNameTypeWitness
+        (nw n)
+        (vw n t)
 
 instance (AllConstraint Show nw, AllConstraint (AllConstraint Show) vw) => Show (NameTypeWitness nw vw t) where
     show (MkNameTypeWitness namewit (typewit :: vw n t)) =
-        allShow namewit <>
-        ": " <>
-        case allConstraint @_ @_ @(AllConstraint Show) @vw @n of
-            Dict -> allShow typewit
+        allShow namewit
+            <> ": "
+            <> case allConstraint @_ @_ @(AllConstraint Show) @vw @n of
+                Dict -> allShow typewit
 
 instance (AllConstraint Show nw, AllConstraint (AllConstraint Show) vw) => AllConstraint Show (NameTypeWitness nw vw) where
     allConstraint = Dict

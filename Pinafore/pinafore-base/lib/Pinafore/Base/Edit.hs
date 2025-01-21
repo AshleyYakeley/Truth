@@ -1,15 +1,17 @@
 module Pinafore.Base.Edit
-    ( QStorageRead(..)
-    , QStorageEdit(..)
-    , QStorageUpdate(..)
-    ) where
+    ( QStorageRead (..)
+    , QStorageEdit (..)
+    , QStorageUpdate (..)
+    )
+where
 
 import Changes.Core
+import Shapes
+
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
 import Pinafore.Base.Storable.EntityStorer
 import Pinafore.Base.Storable.StoreAdapter
-import Shapes
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 type QStorageRead :: Type -> Type
@@ -34,10 +36,12 @@ instance FloatingOn QStorageEdit QStorageEdit
 instance ApplicableEdit QStorageEdit where
     applyEdit (MkQStorageEdit est evt ep es (Known ev)) _ (QStorageReadGet rst rp rs)
         | ep == rp
-        , storeAdapterConvert est es == storeAdapterConvert rst rs = return $ storeAdapterConvert evt ev
+        , storeAdapterConvert est es == storeAdapterConvert rst rs =
+            return $ storeAdapterConvert evt ev
     applyEdit (MkQStorageEdit est _ ep es Unknown) _ (QStorageReadGet rst rp rs)
         | ep == rp
-        , storeAdapterConvert est es == storeAdapterConvert rst rs = newEntity
+        , storeAdapterConvert est es == storeAdapterConvert rst rs =
+            newEntity
     applyEdit (MkQStorageEdit est evt ep es (Known ev)) mr (QStorageReadLookup rp rv)
         | ep == rp
         , storeAdapterConvert evt ev == rv = do
@@ -62,13 +66,18 @@ type instance EditReader QStorageEdit = QStorageRead
 
 instance Show QStorageEdit where
     show (MkQStorageEdit st vt p s kvt) =
-        "set prop " ++
-        show p ++ " of " ++ show (storeAdapterConvert st s) ++ " to " ++ show (fmap (storeAdapterConvert vt) kvt)
+        "set prop "
+            ++ show p
+            ++ " of "
+            ++ show (storeAdapterConvert st s)
+            ++ " to "
+            ++ show (fmap (storeAdapterConvert vt) kvt)
 
-data QStorageUpdate =
-    MkQStorageUpdate Predicate
-                     Entity
-                     (Know Entity)
+data QStorageUpdate
+    = MkQStorageUpdate
+        Predicate
+        Entity
+        (Know Entity)
 
 type instance UpdateEdit QStorageUpdate = QStorageEdit
 

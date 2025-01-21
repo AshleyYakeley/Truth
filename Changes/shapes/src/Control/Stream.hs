@@ -1,6 +1,7 @@
 module Control.Stream
     ( module I
-    ) where
+    )
+where
 
 import Control.Stream.Filter as I
 import Control.Stream.Sink as I

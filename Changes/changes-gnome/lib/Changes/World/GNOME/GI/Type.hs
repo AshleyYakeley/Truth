@@ -22,8 +22,8 @@ getObjectType v = liftIO $ gtypeFromInstance v
 getTypeParent :: MonadIO m => GType -> m (Maybe GType)
 getTypeParent t = do
     p <- typeParent t
-    return $
-        if p == gtypeInvalid
+    return
+        $ if p == gtypeInvalid
             then Nothing
             else Just p
 

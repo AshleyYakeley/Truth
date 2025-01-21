@@ -11,11 +11,12 @@ data AnyTypes where
 
 data AnyReader t where
     ReadAnyTypes :: AnyReader AnyTypes
-    ReadAnyReader
-        :: forall edit t. SubjectReader (EditReader edit)
-        => IOWitness edit
-        -> EditReader edit t
-        -> AnyReader (Maybe t)
+    ReadAnyReader ::
+        forall edit t.
+        SubjectReader (EditReader edit) =>
+        IOWitness edit ->
+        EditReader edit t ->
+        AnyReader (Maybe t)
 
 instance SubjectReader AnyReader where
     type ReaderSubject AnyReader = Anything
@@ -25,11 +26,12 @@ instance SubjectReader AnyReader where
         return (subjectToRead a rd)
 
 data AnyEdit where
-    MkAnyEdit
-        :: forall edit. (ApplicableEdit edit, InvertibleEdit edit, SubjectReader (EditReader edit))
-        => IOWitness edit
-        -> edit
-        -> AnyEdit
+    MkAnyEdit ::
+        forall edit.
+        (ApplicableEdit edit, InvertibleEdit edit, SubjectReader (EditReader edit)) =>
+        IOWitness edit ->
+        edit ->
+        AnyEdit
 
 instance FloatingOn AnyEdit AnyEdit where
     floatingUpdate (MkAnyEdit info1 edit1) aedit2@(MkAnyEdit info2 edit2) =

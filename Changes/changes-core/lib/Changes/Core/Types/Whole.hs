@@ -34,8 +34,8 @@ instance FullSubjectReader (WholeReader a) where
 wholeReadable :: m a -> Readable m (WholeReader a)
 wholeReadable ma ReadWhole = ma
 
-newtype WholeReaderEdit (reader :: Type -> Type) =
-    MkWholeReaderEdit (ReaderSubject reader)
+newtype WholeReaderEdit (reader :: Type -> Type)
+    = MkWholeReaderEdit (ReaderSubject reader)
 
 instance forall reader. Show (ReaderSubject reader) => Show (WholeReaderEdit reader) where
     show (MkWholeReaderEdit subj) = "whole " ++ show subj
@@ -44,17 +44,17 @@ instance forall reader. FloatingOn (WholeReaderEdit reader) (WholeReaderEdit rea
 
 type instance forall reader. EditReader (WholeReaderEdit reader) = reader
 
-instance forall reader. (FullSubjectReader reader) => ApplicableEdit (WholeReaderEdit reader) where
+instance forall reader. FullSubjectReader reader => ApplicableEdit (WholeReaderEdit reader) where
     applyEdit (MkWholeReaderEdit a) _ = subjectToReadable a
 
-instance forall reader. (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
+instance forall reader. FullSubjectReader reader => InvertibleEdit (WholeReaderEdit reader) where
     invertEdit _ mr = do
         a <- readableToSubject mr
         return [MkWholeReaderEdit a]
 
 instance forall reader. FullSubjectReader reader => SubjectMapEdit (WholeReaderEdit reader)
 
-instance forall reader. (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
+instance forall reader. FullSubjectReader reader => FullEdit (WholeReaderEdit reader) where
     replaceEdit mr write = do
         a <- readableToSubject mr
         write $ MkWholeReaderEdit a
@@ -84,11 +84,12 @@ lastReadOnlyWholeUpdate updates = do
     return subj
 
 wholePutEdits ::
-       forall mm m reader edita. Monad mm
-    => (ReaderSubject reader -> Readable m (EditReader edita) -> mm (Maybe [edita]))
-    -> [WholeReaderEdit reader]
-    -> Readable m (EditReader edita)
-    -> mm (Maybe [edita])
+    forall mm m reader edita.
+    Monad mm =>
+    (ReaderSubject reader -> Readable m (EditReader edita) -> mm (Maybe [edita])) ->
+    [WholeReaderEdit reader] ->
+    Readable m (EditReader edita) ->
+    mm (Maybe [edita])
 wholePutEdits pe edits mr =
     case lastWholeEdit edits of
         Nothing -> return $ Just []
@@ -99,17 +100,15 @@ type WholeEdit a = WholeReaderEdit (WholeReader a)
 type WholeReaderUpdate r = EditUpdate (WholeReaderEdit r)
 
 pattern MkWholeReaderUpdate ::
-        ReaderSubject r -> WholeReaderUpdate r
-
+    ReaderSubject r -> WholeReaderUpdate r
 pattern MkWholeReaderUpdate subj =
-        MkEditUpdate (MkWholeReaderEdit subj)
+    MkEditUpdate (MkWholeReaderEdit subj)
 
 {-# COMPLETE MkWholeReaderUpdate #-}
 
 type WholeUpdate a = WholeReaderUpdate (WholeReader a)
 
 pattern MkWholeUpdate :: a -> WholeUpdate a
-
 pattern MkWholeUpdate a = MkWholeReaderUpdate a
 
 {-# COMPLETE MkWholeUpdate #-}
@@ -117,18 +116,20 @@ pattern MkWholeUpdate a = MkWholeReaderUpdate a
 type ROWUpdate a = ReadOnlyUpdate (WholeUpdate a)
 
 changeOnlyUpdateFunction ::
-       forall a. Eq a
-    => FloatingChangeLens (WholeUpdate a) (ROWUpdate a)
+    forall a.
+    Eq a =>
+    FloatingChangeLens (WholeUpdate a) (ROWUpdate a)
 changeOnlyUpdateFunction = let
     sclInit :: forall m. Readable m (WholeReader a) -> m a
     sclInit mr = mr ReadWhole
     sclRead :: ReadFunctionT (StateT a) (WholeReader a) (WholeReader a)
     sclRead _ ReadWhole = get
     sclUpdate ::
-           forall m. MonadIO m
-        => WholeUpdate a
-        -> Readable m (WholeReader a)
-        -> StateT a m [ROWUpdate a]
+        forall m.
+        MonadIO m =>
+        WholeUpdate a ->
+        Readable m (WholeReader a) ->
+        StateT a m [ROWUpdate a]
     sclUpdate (MkWholeUpdate newa) _ = do
         olda <- get
         if olda == newa
@@ -137,39 +138,45 @@ changeOnlyUpdateFunction = let
                 put newa
                 return [MkReadOnlyUpdate $ MkWholeUpdate newa]
     sclPutEdits ::
-           forall m. MonadIO m
-        => [ConstEdit _]
-        -> Readable m NullReader
-        -> StateT a m (Maybe [WholeEdit a])
+        forall m.
+        MonadIO m =>
+        [ConstEdit _] ->
+        Readable m NullReader ->
+        StateT a m (Maybe [WholeEdit a])
     sclPutEdits = clPutEditsNone
-    in makeStateLens @'Linear MkStateChangeLens {..}
+    in makeStateLens @'Linear MkStateChangeLens{..}
 
 liftROWChangeLens ::
-       forall f a b. Traversable f
-    => ChangeLens (WholeUpdate a) (ROWUpdate b)
-    -> ChangeLens (WholeUpdate (f a)) (ROWUpdate (f b))
+    forall f a b.
+    Traversable f =>
+    ChangeLens (WholeUpdate a) (ROWUpdate b) ->
+    ChangeLens (WholeUpdate (f a)) (ROWUpdate (f b))
 liftROWChangeLens (MkChangeLens r u _pe) = let
     fr :: ReadFunction (WholeReader (f a)) (WholeReader (f b))
     fr mr ReadWhole = do
         fa <- mr ReadWhole
         for fa $ \a -> r (\ReadWhole -> return a) ReadWhole
-    fu :: forall m. MonadIO m
-       => WholeUpdate (f a)
-       -> Readable m (WholeReader (f a))
-       -> m [ROWUpdate (f b)]
+    fu ::
+        forall m.
+        MonadIO m =>
+        WholeUpdate (f a) ->
+        Readable m (WholeReader (f a)) ->
+        m [ROWUpdate (f b)]
     fu (MkWholeUpdate fa) _mr = do
         fmb <-
             for fa $ \a -> do
                 ubs <- u (MkWholeUpdate a) (\ReadWhole -> return a)
                 return $ lastReadOnlyWholeUpdate ubs
-        return $
-            case sequenceA fmb of
+        return
+            $ case sequenceA fmb of
                 Just fb -> pure $ MkReadOnlyUpdate $ MkWholeUpdate fb
                 Nothing -> []
-    fpe :: forall m. MonadIO m
-        => [ConstEdit _]
-        -> Readable m (WholeReader (f a))
-        -> m (Maybe [WholeEdit (f a)])
+    fpe ::
+        forall m.
+        MonadIO m =>
+        [ConstEdit _] ->
+        Readable m (WholeReader (f a)) ->
+        m (Maybe [WholeEdit (f a)])
     fpe = clPutEditsNone
     in MkChangeLens fr fu fpe
 
@@ -180,59 +187,65 @@ ioWholeChangeLens ioget ioput = let
         a <- mr ReadWhole
         liftIO $ ioget a
     clUpdate ::
-           forall m. MonadIO m
-        => WholeUpdate a
-        -> Readable m (WholeReader a)
-        -> m [WholeUpdate b]
+        forall m.
+        MonadIO m =>
+        WholeUpdate a ->
+        Readable m (WholeReader a) ->
+        m [WholeUpdate b]
     clUpdate (MkWholeUpdate a) _ = do
         b <- liftIO $ ioget a
         return [MkWholeUpdate b]
     clPutEdits ::
-           forall m. MonadIO m
-        => [WholeEdit b]
-        -> Readable m (WholeReader a)
-        -> m (Maybe [WholeEdit a])
+        forall m.
+        MonadIO m =>
+        [WholeEdit b] ->
+        Readable m (WholeReader a) ->
+        m (Maybe [WholeEdit a])
     clPutEdits =
         clPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr -> do
             olda <- mr ReadWhole
             mnewa <- liftIO $ ioput b olda
             return $ fmap (\newa -> [MkWholeReaderEdit newa]) mnewa
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 wholeChangeLens ::
-       forall mf a b. (MonadInner mf)
-    => Lens' mf a b
-    -> ChangeLens (WholeUpdate a) (WholeUpdate b)
+    forall mf a b.
+    MonadInner mf =>
+    Lens' mf a b ->
+    ChangeLens (WholeUpdate a) (WholeUpdate b)
 wholeChangeLens lens =
     ioWholeChangeLens (\a -> return $ lensGet lens a) (\b olda -> return $ mToMaybe $ lensPutback lens b olda)
 
 bijectionWholeChangeLens ::
-       forall lin updateA b. (FullEdit (UpdateEdit updateA))
-    => Bijection (UpdateSubject updateA) b
-    -> GenChangeLens lin updateA (WholeUpdate b)
-bijectionWholeChangeLens MkIsomorphism {..} = let
+    forall lin updateA b.
+    FullEdit (UpdateEdit updateA) =>
+    Bijection (UpdateSubject updateA) b ->
+    GenChangeLens lin updateA (WholeUpdate b)
+bijectionWholeChangeLens MkIsomorphism{..} = let
     clRead :: ReadFunction (UpdateReader updateA) (WholeReader b)
     clRead mr ReadWhole = do
         a <- readableToSubject mr
         return $ isoForwards a
     clUpdate ::
-           forall m. MonadIO m
-        => updateA
-        -> Readable m (UpdateReader updateA)
-        -> m [WholeUpdate b]
+        forall m.
+        MonadIO m =>
+        updateA ->
+        Readable m (UpdateReader updateA) ->
+        m [WholeUpdate b]
     clUpdate _ mr = do
         a <- readableToSubject mr
         return [MkWholeUpdate $ isoForwards a]
     clPutEdits ::
-           forall m. MonadIO m
-        => [WholeEdit b]
-        -> Readable m _
-        -> m (Maybe [UpdateEdit updateA])
+        forall m.
+        MonadIO m =>
+        [WholeEdit b] ->
+        Readable m _ ->
+        m (Maybe [UpdateEdit updateA])
     clPutEdits =
         linearPutEditsFromPutEdit $ \(MkWholeReaderEdit b) -> do
             editas <- getReplaceEditsFromSubject $ isoBackwards b
             return $ Just editas
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 instance MonadInner m => IsChangeLens (Lens' m a b) where
     type LensDomain (Lens' m a b) = WholeUpdate a

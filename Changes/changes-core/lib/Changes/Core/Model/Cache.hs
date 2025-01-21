@@ -8,11 +8,12 @@ import Changes.Core.Read
 import Changes.Core.Resource
 
 cacheReference ::
-       forall edit. CacheableEdit edit
-    => ResourceContext
-    -> Int
-    -> Reference edit
-    -> Lifecycle (ResourceContext -> Reference edit)
+    forall edit.
+    CacheableEdit edit =>
+    ResourceContext ->
+    Int ->
+    Reference edit ->
+    Lifecycle (ResourceContext -> Reference edit)
 cacheReference rc mus obj = do
     (runAction, asyncTask) <-
         asyncWaitRunner "cache" mus $ \editsnl ->
@@ -33,9 +34,10 @@ cacheReference rc mus obj = do
                     editCacheAdd @edit rt t
                     return t
         refEdit edits =
-            return $
-            Just $ \_ -> do
-                editCacheUpdates edits
-                liftIO $ runAction $ Just edits
+            return
+                $ Just
+                $ \_ -> do
+                    editCacheUpdates edits
+                    liftIO $ runAction $ Just edits
         refCommitTask = asyncTask <> referenceCommitTask obj
-        in MkResource objRun MkAReference {..}
+        in MkResource objRun MkAReference{..}

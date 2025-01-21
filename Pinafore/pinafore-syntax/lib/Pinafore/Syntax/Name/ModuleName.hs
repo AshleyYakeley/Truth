@@ -3,8 +3,8 @@ module Pinafore.Syntax.Name.ModuleName where
 import Pinafore.Base
 import Shapes
 
-newtype ModuleName =
-    MkModuleName Text
+newtype ModuleName
+    = MkModuleName Text
     deriving newtype (Eq, Ord)
 
 instance ShowText ModuleName where

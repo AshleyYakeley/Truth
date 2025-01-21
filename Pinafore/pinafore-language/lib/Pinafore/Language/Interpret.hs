@@ -9,7 +9,8 @@ module Pinafore.Language.Interpret
     , runPinaforeScoped
     , runInteract
     , showPinaforeModel
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Convert
@@ -36,9 +37,10 @@ parseModule =
         return $ interpretModule smod
 
 parseType ::
-       forall polarity. Is PolarityType polarity
-    => Text
-    -> QInterpreter (Some (QType polarity))
+    forall polarity.
+    Is PolarityType polarity =>
+    Text ->
+    QInterpreter (Some (QType polarity))
 parseType text = do
     st <- parseScopedReaderWhole (fmap return readType) text
     interpretType st
@@ -51,10 +53,11 @@ parseToValue text args = do
     qEvalExpr expr'
 
 parseToValueUnify ::
-       forall t. (HasQType QPolyShim 'Negative t)
-    => Text
-    -> [(ImplicitName, QValue)]
-    -> QInterpreter t
+    forall t.
+    HasQType QPolyShim 'Negative t =>
+    Text ->
+    [(ImplicitName, QValue)] ->
+    QInterpreter t
 parseToValueUnify text args = do
     val <- parseToValue text args
     qUnifyValue val

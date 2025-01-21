@@ -1,11 +1,12 @@
 module Pinafore.Base.Entity where
 
 import Control.DeepSeq
-import Pinafore.Base.Anchor
 import Shapes
 
-newtype Entity =
-    MkEntity Anchor
+import Pinafore.Base.Anchor
+
+newtype Entity
+    = MkEntity Anchor
     deriving newtype (Eq, Ord, Random, HasSerializer, NFData, Hashable)
 
 instance Show Entity where

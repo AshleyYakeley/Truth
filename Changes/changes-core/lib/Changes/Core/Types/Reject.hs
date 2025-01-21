@@ -12,16 +12,18 @@ fromReadOnlyRejectingChangeLens = let
     clRead :: ReadFunction (UpdateReader update) (UpdateReader update)
     clRead mr = mr
     clUpdate ::
-           forall m. MonadIO m
-        => ReadOnlyUpdate update
-        -> Readable m (UpdateReader update)
-        -> m [update]
+        forall m.
+        MonadIO m =>
+        ReadOnlyUpdate update ->
+        Readable m (UpdateReader update) ->
+        m [update]
     clUpdate (MkReadOnlyUpdate update) _ = return [update]
     clPutEdits ::
-           forall m. MonadIO m
-        => [UpdateEdit update]
-        -> Readable m (UpdateReader update)
-        -> m (Maybe [ConstEdit (UpdateReader update)])
+        forall m.
+        MonadIO m =>
+        [UpdateEdit update] ->
+        Readable m (UpdateReader update) ->
+        m (Maybe [ConstEdit (UpdateReader update)])
     clPutEdits [] _ = return $ Just [] -- must allow empty update-lists so that composition works correctly
-    clPutEdits (_:_) _ = return Nothing
-    in MkChangeLens {..}
+    clPutEdits (_ : _) _ = return Nothing
+    in MkChangeLens{..}

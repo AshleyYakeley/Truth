@@ -2,10 +2,12 @@ module Language.Expression.TypeSystem.Rename.VarRenamerT
     ( VarRenamerT
     , runVarRenamerT
     , finalVarRenamerT
-    ) where
+    )
+where
+
+import Shapes
 
 import Language.Expression.TypeSystem.Rename.VarNamespaceT
-import Shapes
 
 {-
 The renamer renames variables in types.
@@ -39,8 +41,8 @@ data RenamerState = MkRenamerState
     , rsIndex :: Int
     }
 
-newtype VarRenamerT (ts :: Type) m a =
-    MkVarRenamerT (ReaderT [String] (StateT RenamerState m) a)
+newtype VarRenamerT (ts :: Type) m a
+    = MkVarRenamerT (ReaderT [String] (StateT RenamerState m) a)
     deriving newtype (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadException)
 
 instance MonadTrans (VarRenamerT ts) where
@@ -62,7 +64,7 @@ runVarRenamerT :: Monad m => [String] -> [String] -> VarRenamerT ts m --> m
 runVarRenamerT rigidFixedNames freeFixedNames (MkVarRenamerT rsma) = let
     rsRigidNames = rigidFixedNames
     rsIndex = 0
-    in evalStateT (runReaderT rsma $ rigidFixedNames <> freeFixedNames) $ MkRenamerState {..}
+    in evalStateT (runReaderT rsma $ rigidFixedNames <> freeFixedNames) $ MkRenamerState{..}
 
 varName :: Int -> String
 varName i
@@ -79,14 +81,14 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
         let
             i = rsIndex state
             name = debugTagVar $ varName i
-        MkVarRenamerT $ lift $ put $ state {rsIndex = succ i}
+        MkVarRenamerT $ lift $ put $ state{rsIndex = succ i}
         fixedNames <- MkVarRenamerT ask
         if elem name fixedNames
             then renamerGenerate @(VarRenamerT ts m) rgd
             else do
                 case rgd of
                     FreeName -> return ()
-                    RigidName -> MkVarRenamerT $ lift $ modify $ \st -> st {rsRigidNames = name : rsRigidNames st}
+                    RigidName -> MkVarRenamerT $ lift $ modify $ \st -> st{rsRigidNames = name : rsRigidNames st}
                 return name
     renamerGetNameRigidity :: VarRenamerT ts m (String -> NameRigidity)
     renamerGetNameRigidity = do
@@ -98,9 +100,10 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
 
 finalVarRenamerT :: Monad m => VarRenamerT ts m --> VarRenamerT ts m
 finalVarRenamerT (MkVarRenamerT rsma) =
-    MkVarRenamerT $
-    hoist
-        (\sma -> do
-             rs <- get
-             lift $ evalStateT sma rs {rsIndex = 0})
-        rsma
+    MkVarRenamerT
+        $ hoist
+            ( \sma -> do
+                rs <- get
+                lift $ evalStateT sma rs{rsIndex = 0}
+            )
+            rsma

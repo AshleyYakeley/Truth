@@ -2,23 +2,25 @@
 
 module Pinafore.Library.Media.Image.JPEG
     ( jpegStuff
-    ) where
+    )
+where
 
 import Changes.World.Media
 import Data.Media.Image
 import Data.Shim
 import Pinafore.API
+import Shapes
+
 import Pinafore.Library.Media.Image.Image
 import Pinafore.Library.Media.Image.Metadata
 import Pinafore.Library.Media.Media
-import Shapes
 
 type JPEGData = (WitnessMapOf ImageDataKey, SomeFor Image JPEGPixelType)
 
 -- LangJPEGImage
-newtype LangJPEGImage =
-    MkLangJPEGImage (DataLiteral JPEGData)
-    deriving newtype (Eq)
+newtype LangJPEGImage
+    = MkLangJPEGImage (DataLiteral JPEGData)
+    deriving newtype Eq
 
 instance AsLiteral LangJPEGImage where
     literalCodec = coerceCodec . literalCodec @(DataLiteral JPEGData)
@@ -56,14 +58,18 @@ jpegStuff =
         "JPEG"
         ""
         [ typeBDS "JPEG" "An image in JPEG format." (MkSomeGroundType jpegImageGroundType) []
-        , hasSubtypeRelationBDS @LangJPEGImage @(Interpret LangImage) Verify "" $
-          functionToShim "jpegImage" $ MkInterpret . jpegImage
+        , hasSubtypeRelationBDS @LangJPEGImage @(Interpret LangImage) Verify ""
+            $ functionToShim "jpegImage"
+            $ MkInterpret
+            . jpegImage
         , literalSubtypeRelationEntry @LangJPEGImage
         , hasSubtypeRelationBDS @LangJPEGImage @LangHasMetadata Verify "" $ functionToShim "jpegMetadata" jpegMetadata
         , namespaceBDS
-              "JPEG"
-              [ valBDS "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
-              , valBDS "jpegMedia" "" $
-                codecToPrism $ coerceCodec @_ @(DataLiteral JPEGData) @LangJPEGImage . dataLiteralMediaCodec
-              ]
+            "JPEG"
+            [ valBDS "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
+            , valBDS "jpegMedia" ""
+                $ codecToPrism
+                $ coerceCodec @_ @(DataLiteral JPEGData) @LangJPEGImage
+                . dataLiteralMediaCodec
+            ]
         ]

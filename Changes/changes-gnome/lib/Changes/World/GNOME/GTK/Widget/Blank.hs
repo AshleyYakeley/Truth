@@ -1,10 +1,12 @@
 module Changes.World.GNOME.GTK.Widget.Blank
     ( createBlank
-    ) where
+    )
+where
 
-import Changes.World.GNOME.GI
 import GI.Gtk
 import Shapes
+
+import Changes.World.GNOME.GI
 
 createBlank :: GView 'Unlocked Widget
 createBlank =

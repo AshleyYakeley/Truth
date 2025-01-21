@@ -5,13 +5,13 @@ import Data.GI.Base.Overloading qualified as GI
 import GI.GLib qualified as GI
 import Shapes
 
-newtype GIObject (t :: Type) =
-    MkGIObject (GI.ManagedPtr (GIObject t))
+newtype GIObject (t :: Type)
+    = MkGIObject (GI.ManagedPtr (GIObject t))
 
 instance GI.ManagedPtrNewtype (GIObject t) where
     toManagedPtr (MkGIObject mptr) = mptr
 
-class (GI.GObject (GIClassParent t)) => IsGIType (t :: Type) where
+class GI.GObject (GIClassParent t) => IsGIType (t :: Type) where
     type GIClassParent t :: Type
     type GISupertypes t :: [Type]
     giGetGType :: IO GI.GType

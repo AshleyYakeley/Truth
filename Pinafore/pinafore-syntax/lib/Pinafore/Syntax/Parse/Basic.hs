@@ -30,14 +30,16 @@ module Pinafore.Syntax.Parse.Basic
     , readBraced
     , readWithDoc
     , chainModify
-    ) where
+    )
+where
+
+import Shapes hiding (try)
 
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Parser
 import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Syntax
 import Pinafore.Syntax.Text
-import Shapes hiding (try)
 
 readAskNamespace :: Parser Namespace
 readAskNamespace = paramAsk namespaceParam
@@ -53,24 +55,24 @@ readWithNamespaceName name = readWithNamespaceRef $ RelativeNamespaceRef [name]
 
 lineMarkdown :: [Comment] -> Maybe RawMarkdown
 lineMarkdown [] = Just ""
-lineMarkdown (LineComment ('|':s):cc) = do
+lineMarkdown (LineComment ('|' : s) : cc) = do
     ss <- lineMarkdown cc
     return $ (fromString $ trimSpace s) <> "\n" <> ss
 lineMarkdown _ = Nothing
 
 getMarkdown :: [Comment] -> Maybe RawMarkdown
 getMarkdown [] = Nothing
-getMarkdown [BlockComment ('|':s)] = Just $ fromString $ trimSpace s
-getMarkdown (LineComment ('|':s):cc) = do
+getMarkdown [BlockComment ('|' : s)] = Just $ fromString $ trimSpace s
+getMarkdown (LineComment ('|' : s) : cc) = do
     ss <- lineMarkdown cc
     return $ (fromString $ trimSpace s) <> "\n" <> ss
-getMarkdown (_:cc) = getMarkdown cc
+getMarkdown (_ : cc) = getMarkdown cc
 
 readDocComment :: Parser RawMarkdown
 readDocComment = do
     comments <- readComments
-    return $
-        case getMarkdown comments of
+    return
+        $ case getMarkdown comments of
             Just md -> md
             Nothing -> ""
 

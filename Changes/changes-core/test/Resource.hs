@@ -1,14 +1,16 @@
 module Resource
     ( testResource
-    ) where
+    )
+where
 
-import Changes.Core
 import Shapes
 import Shapes.Test
+
+import Changes.Core
 import Test.Useful
 
-data AThing (tt :: [TransKind]) =
-    MkAThing (ApplyStack tt IO ())
+data AThing (tt :: [TransKind])
+    = MkAThing (ApplyStack tt IO ())
 
 instance MapResource AThing where
     mapResource f (MkAThing mu) = MkAThing $ tlfFunction f (Proxy @IO) mu
@@ -21,7 +23,7 @@ joinThings =
         case transStackDict @Monad @tt @IO of
             Dict -> MkAThing $ m1 >> m2
 
-stateResourceRunnerTrace :: (?handle :: Handle) => String -> s -> IO (ResourceRunner '[ StateT s])
+stateResourceRunnerTrace :: (?handle :: Handle) => String -> s -> IO (ResourceRunner '[StateT s])
 stateResourceRunnerTrace name s = do
     var <- newMVar s
     newResourceRunner $ \ma -> do
@@ -38,9 +40,10 @@ stateResourceRunnerTrace name s = do
 simpleThing :: (?handle :: Handle) => String -> IO Thing
 simpleThing name = do
     rr <- stateResourceRunnerTrace name (0 :: Int)
-    return $
-        MkResource rr $
-        MkAThing $ do
+    return
+        $ MkResource rr
+        $ MkAThing
+        $ do
             i <- get
             lift $ hPutStrLn ?handle $ name <> ": " <> show (succ i)
             put $ succ i

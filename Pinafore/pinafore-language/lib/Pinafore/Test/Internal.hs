@@ -11,16 +11,16 @@ module Pinafore.Test.Internal
     , mkLambdaVarID
     , szero
     , UVar
-    , Var(..)
-    , QGroundType(..)
-    , StorableGroundType(..)
+    , Var (..)
+    , QGroundType (..)
+    , StorableGroundType (..)
     , QValue
     , QOpenExpression
     , QExpression
     , QSingularShimWit
-    , QBindingInfo(..)
-    , SomeGroundType(..)
-    , QInterpreterBinding(..)
+    , QBindingInfo (..)
+    , SomeGroundType (..)
+    , QInterpreterBinding (..)
     , QInterpreter
     , toJMShimWit
     , allocateLambdaVar
@@ -33,14 +33,18 @@ module Pinafore.Test.Internal
     , QSubtypeHint
     , QSubtypeConversionEntry
     , registerSubtypeConversion
-    , SomeValue(..)
+    , SomeValue (..)
     , showExpressionType
     , parseExpressionToType
     , bindsLibrary
     , showPinaforeModel
     , qInterpretScriptText
     , qInteractHandles
-    ) where
+    )
+where
+
+import Pinafore.Storage
+import Pinafore.Syntax
 
 import Import
 import Pinafore.API
@@ -51,8 +55,6 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Pinafore.Main
-import Pinafore.Storage
-import Pinafore.Syntax
 import Pinafore.Test
 
 showVars :: QOpenExpression t -> [Text]
@@ -64,14 +66,15 @@ showExpressionType (MkSealedExpression (MkShimWit t _) expr) =
 
 parseExpressionToType :: Text -> (Text -> IO ()) -> IO ()
 parseExpressionToType text checkType =
-    runTester defaultTester $
-    testerLiftInterpreter $ do
-        expr <- parseTopExpression text
-        expr' <- runRenamer @QTypeSystem [] [] $ unEndoM (finalRenameMappable @QTypeSystem) expr
-        liftIO $ checkType $ showExpressionType expr'
+    runTester defaultTester
+        $ testerLiftInterpreter
+        $ do
+            expr <- parseTopExpression text
+            expr' <- runRenamer @QTypeSystem [] [] $ unEndoM (finalRenameMappable @QTypeSystem) expr
+            liftIO $ checkType $ showExpressionType expr'
 
-data SomeValue =
-    forall t. HasQType QPolyShim 'Positive t => MkSomeValue t
+data SomeValue
+    = forall t. HasQType QPolyShim 'Positive t => MkSomeValue t
 
 bindsLibrary :: ModuleName -> [(FullName, SomeValue)] -> LibraryModule
 bindsLibrary mname binds =

@@ -21,7 +21,7 @@ instance Applicative (Editing update) where
         editingUpdate _ _ = return ()
         editingTask = mempty
         editingDo _ = return a
-        in MkEditing {..}
+        in MkEditing{..}
     (MkEditing eu1 et1 ed1) <*> (MkEditing eu2 et2 ed2) = let
         editingUpdate :: NonEmpty update -> EditContext -> View ()
         editingUpdate edits ec = do
@@ -32,11 +32,11 @@ instance Applicative (Editing update) where
             ab <- ed1 utask
             a <- ed2 utask
             return $ ab a
-        in MkEditing {..}
+        in MkEditing{..}
 
 type Editor :: Type -> Type -> Type
-newtype Editor update r =
-    MkEditor (Reference (UpdateEdit update) -> View (Editing update r))
+newtype Editor update r
+    = MkEditor (Reference (UpdateEdit update) -> View (Editing update r))
 
 instance Functor (Editor update) where
     fmap ab (MkEditor ed) = MkEditor $ fmap (fmap (fmap ab)) ed
@@ -73,7 +73,7 @@ mapEditor l (MkEditor editor) =
         return $ MkEditing euA et ed
 
 floatingMapEditor ::
-       forall updateA updateB r. FloatingChangeLens updateA updateB -> Editor updateB r -> Editor updateA r
+    forall updateA updateB r. FloatingChangeLens updateA updateB -> Editor updateB r -> Editor updateA r
 floatingMapEditor (MkFloatingChangeLens (NoFloatInit r) rlens) editorB = mapEditor (rlens r) editorB
 floatingMapEditor (MkFloatingChangeLens (ReadFloatInit finit) rlens) editorB =
     MkEditor $ \refA -> do

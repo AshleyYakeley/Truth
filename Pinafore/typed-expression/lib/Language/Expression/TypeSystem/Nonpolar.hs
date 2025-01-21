@@ -1,8 +1,9 @@
 module Language.Expression.TypeSystem.Nonpolar where
 
 import Data.Shim
-import Language.Expression.TypeSystem.TypeSystem
 import Shapes
+
+import Language.Expression.TypeSystem.TypeSystem
 
 class TypeSystem ts => NonpolarTypeSystem (ts :: Type) where
     type TSNonpolarWitness ts :: Type -> Type

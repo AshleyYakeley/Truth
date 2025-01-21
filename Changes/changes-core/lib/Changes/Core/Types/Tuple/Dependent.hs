@@ -1,8 +1,9 @@
 module Changes.Core.Types.Tuple.Dependent
-    ( DependentSelector(..)
+    ( DependentSelector (..)
     , DependentUpdate
     , dependentChangeLens
-    ) where
+    )
+where
 
 import Changes.Core.Edit
 import Changes.Core.Import

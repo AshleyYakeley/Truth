@@ -4,7 +4,8 @@ module Changes.Debug.Subscriber
     ( module Changes.Debug
     , module Changes.Debug.Edit
     , module Changes.Debug.Reference
-    ) where
+    )
+where
 
 import Changes.Core.Import
 import Changes.Core.Model.Model
@@ -19,8 +20,8 @@ instance TraceThing (Model edit) where
             Dict ->
                 case resourceRunnerStackUnliftDict @Lifecycle rr of
                     Dict ->
-                        MkResource rr $
-                        MkAModel
-                            (traceAReference prefix blankEditShower anobj)
-                            (\task call -> traceBracket_ (contextStr prefix "update") $ sub task call)
-                            utask
+                        MkResource rr
+                            $ MkAModel
+                                (traceAReference prefix blankEditShower anobj)
+                                (\task call -> traceBracket_ (contextStr prefix "update") $ sub task call)
+                                utask

@@ -12,20 +12,31 @@ instance Wrappable Type where
     wrapperCoercion = MkCoercion
 
 instance Wrappable (ka -> Type) where
-    newtype Wrapper (ka -> Type) (f :: ka -> Type)
-          (a :: ka) = MkWrapper1 (f a)
+    newtype
+        Wrapper
+            (ka -> Type)
+            (f :: ka -> Type)
+            (a :: ka)
+        = MkWrapper1 (f a)
     wrapperCoercion = MkCoercion
 
 instance Wrappable (ka -> kb -> Type) where
-    newtype Wrapper (ka -> kb -> Type) (f :: ka -> kb -> Type)
-          (a :: ka)
-          (b :: kb) = MkWrapper2 (f a b)
+    newtype
+        Wrapper
+            (ka -> kb -> Type)
+            (f :: ka -> kb -> Type)
+            (a :: ka)
+            (b :: kb)
+        = MkWrapper2 (f a b)
     wrapperCoercion = MkCoercion
 
 instance Wrappable (ka -> kb -> kc -> Type) where
-    newtype Wrapper (ka -> kb -> kc -> Type)
-          (f :: ka -> kb -> kc -> Type)
-          (a :: ka)
-          (b :: kb)
-          (c :: kc) = MkWrapper3 (f a b c)
+    newtype
+        Wrapper
+            (ka -> kb -> kc -> Type)
+            (f :: ka -> kb -> kc -> Type)
+            (a :: ka)
+            (b :: kb)
+            (c :: kc)
+        = MkWrapper3 (f a b c)
     wrapperCoercion = MkCoercion

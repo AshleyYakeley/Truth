@@ -1,6 +1,10 @@
 module Pinafore.Language.Library.Env
     ( envLibSection
-    ) where
+    )
+where
+
+import System.Environment (lookupEnv)
+import System.Environment.Blank
 
 import Import
 import Pinafore.Language.Convert
@@ -11,8 +15,6 @@ import Pinafore.Language.Library.Storage ()
 import Pinafore.Language.Library.Stream
 import Pinafore.Language.Type
 import Pinafore.Language.VarID
-import System.Environment (lookupEnv)
-import System.Environment.Blank
 
 getVar :: Text -> IO (Maybe Text)
 getVar n = fmap (fmap pack) $ lookupEnv $ unpack n
@@ -54,18 +56,18 @@ argumentsExpr = MkSealedExpression qType $ OpenExpression argListImplicitVar $ C
 
 envLibSection :: LibraryStuff
 envLibSection =
-    headingBDS "Env" "The environment in which the script was invoked." $
-    pure $
-    namespaceBDS
-        "Env"
-        [ valExprBDS "scriptName" "The name of the script." scriptNameExpr
-        , valExprBDS "arguments" "Arguments passed to the script." argumentsExpr
-        , valBDS "getVariables" "Environment variables." getVariables
-        , valBDS "getVariable" "Get environment variable." getVar
-        , valBDS "setVariable" "Set (or unset) environment variable. Note this is not thread-safe." setVar
-        , valBDS "stdin" "Standard input source." langStdIn
-        , valBDS "stdout" "Standard output sink." langStdOut
-        , valBDS "stderr" "Standard error/diagnostics sink." langStdErr
-        , valBDS "outputLn" "Output text and a newline to standard output. Same as `writeLn stdout`." $
-          langSinkWriteLn langStdOut
-        ]
+    headingBDS "Env" "The environment in which the script was invoked."
+        $ pure
+        $ namespaceBDS
+            "Env"
+            [ valExprBDS "scriptName" "The name of the script." scriptNameExpr
+            , valExprBDS "arguments" "Arguments passed to the script." argumentsExpr
+            , valBDS "getVariables" "Environment variables." getVariables
+            , valBDS "getVariable" "Get environment variable." getVar
+            , valBDS "setVariable" "Set (or unset) environment variable. Note this is not thread-safe." setVar
+            , valBDS "stdin" "Standard input source." langStdIn
+            , valBDS "stdout" "Standard output sink." langStdOut
+            , valBDS "stderr" "Standard error/diagnostics sink." langStdErr
+            , valBDS "outputLn" "Output text and a newline to standard output. Same as `writeLn stdout`."
+                $ langSinkWriteLn langStdOut
+            ]

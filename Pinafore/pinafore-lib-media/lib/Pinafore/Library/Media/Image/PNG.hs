@@ -2,23 +2,25 @@
 
 module Pinafore.Library.Media.Image.PNG
     ( pngStuff
-    ) where
+    )
+where
 
 import Changes.World.Media
 import Data.Media.Image
 import Data.Shim
 import Pinafore.API
+import Shapes
+
 import Pinafore.Library.Media.Image.Image
 import Pinafore.Library.Media.Image.Metadata
 import Pinafore.Library.Media.Media
-import Shapes
 
 type PNGData = (WitnessMapOf ImageDataKey, SomeFor Image PNGPixelType)
 
 -- LangPNGImage
-newtype LangPNGImage =
-    MkLangPNGImage (DataLiteral PNGData)
-    deriving newtype (Eq)
+newtype LangPNGImage
+    = MkLangPNGImage (DataLiteral PNGData)
+    deriving newtype Eq
 
 instance AsLiteral LangPNGImage where
     literalCodec = coerceCodec . literalCodec @(DataLiteral PNGData)
@@ -56,14 +58,18 @@ pngStuff =
         "PNG"
         ""
         [ typeBDS "PNG" "An image in PNG format." (MkSomeGroundType pngImageGroundType) []
-        , hasSubtypeRelationBDS @LangPNGImage @(Interpret LangImage) Verify "" $
-          functionToShim "pngImage" $ MkInterpret . pngImage
+        , hasSubtypeRelationBDS @LangPNGImage @(Interpret LangImage) Verify ""
+            $ functionToShim "pngImage"
+            $ MkInterpret
+            . pngImage
         , literalSubtypeRelationEntry @LangPNGImage
         , hasSubtypeRelationBDS @LangPNGImage @LangHasMetadata Verify "" $ functionToShim "pngMetadata" pngMetadata
         , namespaceBDS
-              "PNG"
-              [ valBDS "encode" "Encode an image as PNG, with given metadata." pngEncode
-              , valBDS "pngMedia" "" $
-                codecToPrism $ coerceCodec @_ @(DataLiteral PNGData) @LangPNGImage . dataLiteralMediaCodec
-              ]
+            "PNG"
+            [ valBDS "encode" "Encode an image as PNG, with given metadata." pngEncode
+            , valBDS "pngMedia" ""
+                $ codecToPrism
+                $ coerceCodec @_ @(DataLiteral PNGData) @LangPNGImage
+                . dataLiteralMediaCodec
+            ]
         ]

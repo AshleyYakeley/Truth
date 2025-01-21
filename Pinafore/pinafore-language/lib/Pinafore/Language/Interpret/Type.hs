@@ -2,7 +2,8 @@ module Pinafore.Language.Interpret.Type
     ( interpretType
     , interpretNonpolarType
     , interpretNonpolarGroundedType
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -14,9 +15,10 @@ type PinaforeTypeM = MPolarW QType
 type PinaforeRangeType3 = MPolarRangeType QType
 
 interpretType ::
-       forall polarity. Is PolarityType polarity
-    => SyntaxType
-    -> QInterpreter (Some (QType polarity))
+    forall polarity.
+    Is PolarityType polarity =>
+    SyntaxType ->
+    QInterpreter (Some (QType polarity))
 interpretType st = do
     mpol <- isMPolarity @polarity $ interpretTypeM @('Just polarity) st
     case mpol of
@@ -43,15 +45,17 @@ interpretNonpolarGroundedType st = do
         _ -> throw $ InterpretTypeNotGroundedError $ exprShow t
 
 interpretTypeM ::
-       forall mpolarity. Is MPolarityType mpolarity
-    => SyntaxType
-    -> QInterpreter (PinaforeTypeM mpolarity)
+    forall mpolarity.
+    Is MPolarityType mpolarity =>
+    SyntaxType ->
+    QInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM (MkWithSourcePos spos t) = paramWith sourcePosParam spos $ interpretTypeM' t
 
 interpretTypeM' ::
-       forall mpolarity. Is MPolarityType mpolarity
-    => SyntaxType'
-    -> QInterpreter (PinaforeTypeM mpolarity)
+    forall mpolarity.
+    Is MPolarityType mpolarity =>
+    SyntaxType' ->
+    QInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM' BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
@@ -92,43 +96,49 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
     mt <- interpretTypeM st
     nameToTypeVarT name $ \var ->
         mapMPolarWM
-            (\(MkSome t) ->
-                 assignTypeVarWit var t $
-                 case safeRecursiveDolanSingularType var t of
-                     SuccessResult rt -> return $ MkSome $ singleDolanType rt
-                     FailureResult (ImmediateRecursiveTypeError _) ->
-                         throw $ InterpretTypeRecursionImmediate name $ exprShow t
-                     FailureResult (ContravariantRecursiveTypeError _) ->
-                         throw $ InterpretTypeRecursionNotCovariant name $ exprShow t)
+            ( \(MkSome t) ->
+                assignTypeVarWit var t
+                    $ case safeRecursiveDolanSingularType var t of
+                        SuccessResult rt -> return $ MkSome $ singleDolanType rt
+                        FailureResult (ImmediateRecursiveTypeError _) ->
+                            throw $ InterpretTypeRecursionImmediate name $ exprShow t
+                        FailureResult (ContravariantRecursiveTypeError _) ->
+                            throw $ InterpretTypeRecursionNotCovariant name $ exprShow t
+            )
             mt
 
 interpretTypeRangeFromType ::
-       forall mpolarity. Is MPolarityType mpolarity
-    => SyntaxType
-    -> QInterpreter (PinaforeRangeType3 mpolarity)
+    forall mpolarity.
+    Is MPolarityType mpolarity =>
+    SyntaxType ->
+    QInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeFromType st = do
     t <- interpretTypeM @'Nothing st
     let
-        ff :: forall polarity. Is PolarityType polarity
-           => PinaforeTypeM 'Nothing
-           -> Some (RangeType QType polarity)
+        ff ::
+            forall polarity.
+            Is PolarityType polarity =>
+            PinaforeTypeM 'Nothing ->
+            Some (RangeType QType polarity)
         ff (BothMPolarW atw) =
             case (withInvertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
                 (MkSome tp, MkSome tq) -> MkSome $ MkRangeType tp tq
     return $ toMPolar $ ff t
 
 interpretTypeArgument ::
-       forall mpolarity. Is MPolarityType mpolarity
-    => SyntaxTypeArgument
-    -> QInterpreter (PinaforeRangeType3 mpolarity)
+    forall mpolarity.
+    Is MPolarityType mpolarity =>
+    SyntaxTypeArgument ->
+    QInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeArgument (MkSyntaxTypeArgument ss) = do
     tt <- for ss interpretTypeRangeItem
     return $ mconcat tt
 
 interpretTypeRangeItem ::
-       forall mpolarity. Is MPolarityType mpolarity
-    => (Maybe SyntaxVariance, SyntaxType)
-    -> QInterpreter (PinaforeRangeType3 mpolarity)
+    forall mpolarity.
+    Is MPolarityType mpolarity =>
+    (Maybe SyntaxVariance, SyntaxType) ->
+    QInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
     return $ toMPolar (\(MkSome tq) -> MkSome $ MkRangeType NilDolanType tq) atq
@@ -144,24 +154,25 @@ data PinaforeGroundTypeM where
     MkPinaforeGroundTypeM :: Some (QGroundType dv) -> PinaforeGroundTypeM
 
 interpretArgs ::
-       forall polarity dv (gt :: CCRVariancesKind dv). Is PolarityType polarity
-    => SyntaxGroundType
-    -> CCRVariancesType dv
-    -> [SyntaxTypeArgument]
-    -> QInterpreter (Some (CCRPolarArguments dv QType gt polarity))
+    forall polarity dv (gt :: CCRVariancesKind dv).
+    Is PolarityType polarity =>
+    SyntaxGroundType ->
+    CCRVariancesType dv ->
+    [SyntaxTypeArgument] ->
+    QInterpreter (Some (CCRPolarArguments dv QType gt polarity))
 interpretArgs _ NilListType [] = return $ MkSome NilCCRArguments
-interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
+interpretArgs sgt NilListType (_ : _) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
-interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) = do
+interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument st : stt) = do
     at <- isMPolarity @polarity $ interpretTypeM st
     case fromMPolarSingle at of
         MkSome t -> do
             aargs <- interpretArgs sgt dv stt
             case aargs of
                 MkSome args -> return $ MkSome $ ConsCCRArguments (CoCCRPolarArgument t) args
-interpretArgs sgt (ConsListType CoCCRVarianceType _) (MkSyntaxTypeArgument _:_) =
+interpretArgs sgt (ConsListType CoCCRVarianceType _) (MkSyntaxTypeArgument _ : _) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
-interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
+interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgument st : stt) =
     withInvertPolarity @polarity $ do
         at <- isMPolarity @(InvertPolarity polarity) $ interpretTypeM st
         case fromMPolarSingle at of
@@ -169,9 +180,9 @@ interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgum
                 aargs <- interpretArgs sgt dv stt
                 case aargs of
                     MkSome args -> return $ MkSome $ ConsCCRArguments (ContraCCRPolarArgument t) args
-interpretArgs sgt (ConsListType ContraCCRVarianceType _) (MkSyntaxTypeArgument _:_) =
+interpretArgs sgt (ConsListType ContraCCRVarianceType _) (MkSyntaxTypeArgument _ : _) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
-interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
+interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st : stt) = do
     at <- isMPolarity @polarity $ interpretTypeArgument @('Just polarity) st
     case fromMPolarSingle at of
         MkSome (MkRangeType tp tq) -> do

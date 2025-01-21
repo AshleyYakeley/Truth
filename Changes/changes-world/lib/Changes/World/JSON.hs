@@ -14,7 +14,7 @@ propertyLens (JSON.fromText -> key) = let
     lensGet = JSON.lookup key
     lensPutback Nothing hm = Identity $ JSON.delete key hm
     lensPutback (Just value) hm = Identity $ JSON.insert key value hm
-    in MkLens {..}
+    in MkLens{..}
 
 jsonValueCodec :: (JSON.FromJSON a, JSON.ToJSON a) => ReasonCodec JSON.Value a
 jsonValueCodec = let

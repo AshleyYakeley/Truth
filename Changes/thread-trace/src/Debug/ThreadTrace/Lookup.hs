@@ -2,7 +2,8 @@ module Debug.ThreadTrace.Lookup
     ( lookupMVar
     , lookupTVar
     , lookupIOWitness
-    ) where
+    )
+where
 
 import Control.Concurrent
 import Control.Monad.IO.Class
@@ -10,25 +11,25 @@ import Data.Kind
 import Data.Type.OpenWitness
 import GHC.Conc
 import GHC.Exts (Any)
-import Prelude
 import System.IO.Unsafe
 import Unsafe.Coerce
+import Prelude
 
 type MVarDict a = MVar [a]
 
 findItem :: Eq a => a -> [a] -> ([a], Int)
 findItem k [] = ([k], 0)
-findItem k aa@(a:_)
+findItem k aa@(a : _)
     | k == a = (aa, 0)
-findItem k (a:ar) =
+findItem k (a : ar) =
     case findItem k ar of
         (ar', i) -> (a : ar', succ i)
 
 mVarDictLookup :: Eq a => MVarDict a -> a -> IO Int
 mVarDictLookup mvar k = modifyMVar mvar $ \old -> return $ findItem k old
 
-newtype Same (f :: k -> Type) =
-    MkSame (f Any)
+newtype Same (f :: k -> Type)
+    = MkSame (f Any)
 
 instance Eq (f Any) => Eq (Same f) where
     MkSame a == MkSame b = a == b
@@ -59,9 +60,10 @@ lookupIOWitnessVar :: MVarDict (Same IOWitness)
 lookupIOWitnessVar = unsafePerformIO $ newMVar mempty
 
 lookupIOWitness ::
-       forall a m. MonadIO m
-    => IOWitness a
-    -> m String
+    forall a m.
+    MonadIO m =>
+    IOWitness a ->
+    m String
 lookupIOWitness x = do
     i <- liftIO $ mVarDictLookup lookupIOWitnessVar $ toSame x
     return $ "IOWitness-" <> show i

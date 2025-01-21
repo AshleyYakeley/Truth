@@ -1,9 +1,12 @@
 module Pinafore.Syntax.Parse.Interactive
-    ( InteractiveCommand(..)
+    ( InteractiveCommand (..)
     , parseInteractiveCommand
-    ) where
+    )
+where
 
 import Data.Shim
+import Shapes hiding (try)
+
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Parse.Basic
 import Pinafore.Syntax.Parse.Error
@@ -12,19 +15,21 @@ import Pinafore.Syntax.Parse.Parser
 import Pinafore.Syntax.Parse.Token
 import Pinafore.Syntax.Parse.Type
 import Pinafore.Syntax.Syntax
-import Shapes hiding (try)
 
 data InteractiveCommand
     = NullInteractiveCommand
     | LetInteractiveCommand SyntaxDeclaration
     | ExpressionInteractiveCommand SyntaxExpression
-    | BindActionInteractiveCommand SyntaxPattern
-                                   SyntaxExpression
+    | BindActionInteractiveCommand
+        SyntaxPattern
+        SyntaxExpression
     | ShowDocInteractiveCommand FullNameRef
-    | ShowTypeInteractiveCommand Bool
-                                 SyntaxExpression
-    | SimplifyTypeInteractiveCommand Polarity
-                                     SyntaxType
+    | ShowTypeInteractiveCommand
+        Bool
+        SyntaxExpression
+    | SimplifyTypeInteractiveCommand
+        Polarity
+        SyntaxType
     | ErrorInteractiveCommand Text
 
 showDocInteractiveCommand :: Parser InteractiveCommand
@@ -62,18 +67,20 @@ readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive
 
 readInteractiveCommand :: Parser InteractiveCommand
 readInteractiveCommand =
-    (do
-         readThis TokTypeJudge
-         cmd <- (readLName >>= \(MkName cmd) -> return cmd) <|> (readThis TokType >> return "type")
-         readSpecialCommand cmd) <|>
-    (try $ readEnd >> return NullInteractiveCommand) <|>
-    (do
-         dl <- readDoLine
-         return $
-             case dl of
-                 ExpressionDoLine sexpr -> ExpressionInteractiveCommand sexpr
-                 BindDoLine spat sexpr -> BindActionInteractiveCommand spat sexpr
-                 DeclarationDoLine sdecl -> LetInteractiveCommand sdecl)
+    ( do
+        readThis TokTypeJudge
+        cmd <- (readLName >>= \(MkName cmd) -> return cmd) <|> (readThis TokType >> return "type")
+        readSpecialCommand cmd
+    )
+        <|> (try $ readEnd >> return NullInteractiveCommand)
+        <|> ( do
+                dl <- readDoLine
+                return
+                    $ case dl of
+                        ExpressionDoLine sexpr -> ExpressionInteractiveCommand sexpr
+                        BindDoLine spat sexpr -> BindActionInteractiveCommand spat sexpr
+                        DeclarationDoLine sdecl -> LetInteractiveCommand sdecl
+            )
 
 parseInteractiveCommand :: Text -> StateT SourcePos ParseResult InteractiveCommand
 parseInteractiveCommand = runParser readInteractiveCommand

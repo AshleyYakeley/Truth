@@ -14,8 +14,8 @@ instance (ShowText a, ShowText b) => ShowText (Result a b) where
     showText (FailureResult a) = "Failure " <> showText a
     showText (SuccessResult b) = "Success " <> showText b
 
-newtype Showable =
-    MkShowable Text
+newtype Showable
+    = MkShowable Text
 
 instance ShowText Showable where
     showText (MkShowable t) = t

@@ -1,6 +1,7 @@
 module Pinafore.Syntax
     ( module I
-    ) where
+    )
+where
 
 import Pinafore.Syntax.Doc as I
 import Pinafore.Syntax.Name as I

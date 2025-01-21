@@ -1,6 +1,6 @@
 module Language.Expression.TypeSystem.Rename.VarNamespaceT
-    ( NameRigidity(..)
-    , RenamerMonad(..)
+    ( NameRigidity (..)
+    , RenamerMonad (..)
     , renamerGenerateFree
     , renamerGenerateFreeTypeVarT
     , renamerGenerateAssign
@@ -9,47 +9,52 @@ module Language.Expression.TypeSystem.Rename.VarNamespaceT
     , runVarNamespaceT
     , varNamespaceTRename
     , varNamespaceRenameSource
-    ) where
+    )
+where
+
+import Shapes
 
 import Language.Expression.TypeSystem.Rename.RenameTypeSystem
 import Language.Expression.TypeSystem.Rename.Rigidity
 import Language.Expression.TypeSystem.Rename.VarRenameable
 import Language.Expression.TypeSystem.TypeVariable
-import Shapes
 
 class Monad m => RenamerMonad m where
     renamerGenerate :: NameRigidity -> m String
     renamerGetNameRigidity :: m (String -> NameRigidity)
 
 renamerGenerateFree ::
-       forall m. RenamerMonad m
-    => m String
+    forall m.
+    RenamerMonad m =>
+    m String
 renamerGenerateFree = renamerGenerate FreeName
 
 renamerGenerateFreeTypeVarT ::
-       forall m. RenamerMonad m
-    => m SomeTypeVarT
+    forall m.
+    RenamerMonad m =>
+    m SomeTypeVarT
 renamerGenerateFreeTypeVarT = do
     newname <- renamerGenerateFree
     return $ newTypeVar newname MkSomeTypeVarT
 
 renamerGenerateAssign ::
-       forall m tv. RenamerMonad m
-    => m (TypeVarT tv)
+    forall m tv.
+    RenamerMonad m =>
+    m (TypeVarT tv)
 renamerGenerateAssign = do
     newname <- renamerGenerateFree
     return $ newAssignTypeVar newname
 
 fixedRenameSource :: RenamerMonad m => RenameSource m
-fixedRenameSource = MkRenameSource {rsNewVar = MkEndoM $ \_ -> renamerGenerateAssign, rsRenameVar = mempty}
+fixedRenameSource = MkRenameSource{rsNewVar = MkEndoM $ \_ -> renamerGenerateAssign, rsRenameVar = mempty}
 
 data VNContext = MkVNContext
     { vncFixedNames :: [String]
     , vncRigidity :: NameRigidity
     }
 
-newtype VarNamespaceT (ts :: Type) m a =
-    MkVarNamespaceT (ReaderT VNContext (StateT [(String, String)] m) a)
+newtype VarNamespaceT (ts :: Type) m a
+    = MkVarNamespaceT (ReaderT VNContext (StateT [(String, String)] m) a)
     deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFail)
 
 instance MonadTrans (VarNamespaceT ts) where
@@ -82,12 +87,13 @@ varNamespaceTRename oldname = do
     if elem oldname fixedNames
         then return oldname
         else case lookup oldname pairs of
-                 Just newname -> return newname
-                 Nothing -> varNamespaceTAddName oldname
+            Just newname -> return newname
+            Nothing -> varNamespaceTAddName oldname
 
 varNamespaceRenameSource ::
-       forall ts m. RenamerMonad (RenamerT ts m)
-    => RenameSource (VarNamespaceT ts (RenamerT ts m))
+    forall ts m.
+    RenamerMonad (RenamerT ts m) =>
+    RenameSource (VarNamespaceT ts (RenamerT ts m))
 varNamespaceRenameSource = let
     rsNewVar :: EndoM' (VarNamespaceT ts (RenamerT ts m)) TypeVarT
     rsNewVar =
@@ -99,4 +105,4 @@ varNamespaceRenameSource = let
         MkEndoM $ \(MkTypeVar oldvar) -> do
             newname <- varNamespaceTRename $ uVarName oldvar
             return $ newAssignTypeVar newname
-    in MkRenameSource {..}
+    in MkRenameSource{..}

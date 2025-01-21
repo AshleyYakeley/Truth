@@ -1,6 +1,7 @@
 module Data.Shim.Poly
     ( module I
-    ) where
+    )
+where
 
 import Data.Shim.Poly.Compose as I
 import Data.Shim.Poly.Dual as I

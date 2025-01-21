@@ -2,12 +2,13 @@
 
 module Changes.World.GNOME.GI.Implement.Derived where
 
-import Changes.World.GNOME.GI.Implement.Object
 import Data.GI.Base.GObject qualified as GI
 import Foreign
 import GI.GLib qualified as GI
 import GI.Gio qualified as GI
 import Shapes
+
+import Changes.World.GNOME.GI.Implement.Object
 
 type family GIInterface (a :: Type) :: Type
 
@@ -15,9 +16,10 @@ class GI.ManagedPtrNewtype intf => GIImplement (t :: Type) (intf :: Type) where
     giImplement :: intf -> IO ()
 
 data ImplementWit t a where
-    MkImplementWit
-        :: forall t a. (GI.TypedObject a, GIImplement t (GIInterface a))
-        => ImplementWit t a
+    MkImplementWit ::
+        forall t a.
+        (GI.TypedObject a, GIImplement t (GIInterface a)) =>
+        ImplementWit t a
 
 instance Representative (ImplementWit t) where
     getRepWitness MkImplementWit = Dict
@@ -38,27 +40,32 @@ getInterfaceImplementation MkImplementWit = let
     intfFinal = Nothing
     in (intfGetType, intfInit, intfFinal)
 
-class ( IsGIType t
-      , Is (ListType (ImplementWit t)) (GIImplementClasses t)
-      , Is (ListType (ImplementWit t)) (GIImplementInterfaces t)
-      ) => IsGIDerived (t :: Type) where
+class
+    ( IsGIType t
+    , Is (ListType (ImplementWit t)) (GIImplementClasses t)
+    , Is (ListType (ImplementWit t)) (GIImplementInterfaces t)
+    ) =>
+    IsGIDerived (t :: Type)
+    where
     type GIImplementClasses t :: [Type]
     type GIImplementInterfaces t :: [Type]
     giTypeName :: Text
 
 getPrivate ::
-       forall parent t. (GI.GObject parent, IsGIDerived t)
-    => parent
-    -> IO t
+    forall parent t.
+    (GI.GObject parent, IsGIDerived t) =>
+    parent ->
+    IO t
 getPrivate pobj = do
     Just obj <- GI.castTo MkGIObject pobj
     GI.gobjectGetPrivateData obj
 
 withPrivatePtr ::
-       forall parent t r. (GI.GObject parent, IsGIDerived t)
-    => Ptr parent
-    -> (t -> IO r)
-    -> IO r
+    forall parent t r.
+    (GI.GObject parent, IsGIDerived t) =>
+    Ptr parent ->
+    (t -> IO r) ->
+    IO r
 withPrivatePtr ptr call =
     GI.withTransient ptr $ \pobj -> do
         private <- getPrivate pobj

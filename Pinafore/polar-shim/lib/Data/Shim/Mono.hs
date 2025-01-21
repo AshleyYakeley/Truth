@@ -1,6 +1,7 @@
 module Data.Shim.Mono
     ( module I
-    ) where
+    )
+where
 
 import Data.Shim.Mono.Arguments as I
 import Data.Shim.Mono.Compose as I

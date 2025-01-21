@@ -1,14 +1,16 @@
 {-# LANGUAGE ApplicativeDo #-}
+
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Common.Pattern.Named where
 
-import Language.Expression.Common.Open
-import Language.Expression.Common.Pattern.Pattern
 import Shapes
 
+import Language.Expression.Common.Open
+import Language.Expression.Common.Pattern.Pattern
+
 type NameTypePattern ::
-       forall kn. (kn -> Type) -> (kn -> Type -> Type) -> (Type -> Type -> Type) -> Type -> Type -> Type
+    forall kn. (kn -> Type) -> (kn -> Type -> Type) -> (Type -> Type -> Type) -> Type -> Type -> Type
 type NameTypePattern nw vw = Pattern (NameTypeWitness nw vw)
 
 varNameTypePattern :: Arrow c => nw n -> vw n t -> NameTypePattern nw vw c t ()

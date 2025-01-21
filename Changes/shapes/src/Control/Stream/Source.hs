@@ -1,11 +1,12 @@
 module Control.Stream.Source where
 
+import Data.ByteString
+import System.IO.Error
+
 import Control.Stream.Filter
 import Control.Stream.Sink
-import Data.ByteString
 import Data.Lens
 import Shapes.Import
-import System.IO.Error
 
 data Source m a = MkSource
     { sourceHasData :: m Bool
@@ -21,12 +22,13 @@ nullSource = MkSource (return True) (return End)
 listSource :: [a] -> IO (Source IO a)
 listSource aa = do
     var <- newMVar aa
-    return $
-        MkSource (return True) $ do
+    return
+        $ MkSource (return True)
+        $ do
             old <- takeMVar var
             case old of
                 [] -> return End
-                (a:ar) -> do
+                (a : ar) -> do
                     putMVar var ar
                     return $ Item a
 
@@ -39,7 +41,7 @@ mvarSource var = let
     sourceTake = takeMVar var
     sourceHasData :: IO Bool
     sourceHasData = fmap isJust $ tryReadMVar var
-    in MkSource {..}
+    in MkSource{..}
 
 sourceTakeAvailable :: Monad m => Source m a -> m (Maybe (ItemOrEnd a))
 sourceTakeAvailable source = do
@@ -59,18 +61,19 @@ sourceTakeAllAvailable source = do
             return (a : aa, isend)
 
 filterSource ::
-       forall m a b. MonadIO m
-    => Filter m a b
-    -> Source m a
-    -> IO (Source m b)
+    forall m a b.
+    MonadIO m =>
+    Filter m a b ->
+    Source m a ->
+    IO (Source m b)
 filterSource (MkFilter (s0 :: s) f) source = do
     var <- newMVar (s0, [])
     let
         runStep :: ItemOrEnd a -> StateT s m [ItemOrEnd b]
         runStep ea = do
             bb <- f ea
-            return $
-                case ea of
+            return
+                $ case ea of
                     Item _ -> fmap Item bb
                     End -> fmap Item bb <> [End]
         stepAvailable :: [ItemOrEnd b] -> StateT s m [ItemOrEnd b]
@@ -88,16 +91,16 @@ filterSource (MkFilter (s0 :: s) f) source = do
                 oldbb <- lensStateT sndLens $ get
                 newbb <- lensStateT fstLens $ stepAvailable oldbb
                 lensStateT sndLens $ put newbb
-                return $
-                    case newbb of
-                        _:_ -> True
+                return
+                    $ case newbb of
+                        _ : _ -> True
                         [] -> False
         stepTake :: [ItemOrEnd b] -> StateT s m (NonEmpty (ItemOrEnd b))
         stepTake [] = do
             ea <- lift $ sourceTake source
             newbb <- runStep ea
             stepTake newbb
-        stepTake (b:bb) = return $ b :| bb
+        stepTake (b : bb) = return $ b :| bb
         stake :: m (ItemOrEnd b)
         stake =
             dangerousMVarRunStateT var $ do
@@ -136,19 +139,19 @@ createPipe = do
             sourceHasData =
                 atomically $ do
                     aa <- readTVar bufferVar
-                    return $
-                        case aa of
+                    return
+                        $ case aa of
                             [] -> False
-                            _:_ -> True
+                            _ : _ -> True
             sourceTake =
                 atomically $ do
                     aa <- readTVar bufferVar
                     case aa of
                         [] -> mzero
-                        a:ar -> do
+                        a : ar -> do
                             writeTVar bufferVar ar
                             return a
-            in MkSource {..}
+            in MkSource{..}
     return (sink, source)
 
 handleSource :: Handle -> Source IO StrictByteString
@@ -165,7 +168,7 @@ handleSource h = let
             else do
                 d <- hGetSome h 1000000
                 return $ Item d
-    in MkSource {..}
+    in MkSource{..}
 
 stdinTextSource :: Source IO Text
 stdinTextSource = fmap decodeUtf8Lenient $ handleSource stdin

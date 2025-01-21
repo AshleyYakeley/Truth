@@ -1,8 +1,9 @@
 module Pinafore.Syntax.Name.NamespaceConcat where
 
+import Shapes
+
 import Pinafore.Syntax.Name.FullNameRef
 import Pinafore.Syntax.Name.NamespaceRef
-import Shapes
 
 class NamespaceConcat t where
     namespaceConcat :: NamespaceRef -> t -> t

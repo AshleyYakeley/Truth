@@ -1,18 +1,21 @@
 module Test.ReadType
     ( testReadTypes
-    ) where
+    )
+where
 
 import Data.Shim
-import Pinafore.Test.Internal
 import Shapes
 import Shapes.Test
 
+import Pinafore.Test.Internal
+
 testReadType :: Text -> TestTree
 testReadType text =
-    testTree @Assertion (unpack text) $
-    runTester defaultTester $ do
-        _ <- testerLiftInterpreter $ parseType @'Positive text
-        return ()
+    testTree @Assertion (unpack text)
+        $ runTester defaultTester
+        $ do
+            _ <- testerLiftInterpreter $ parseType @'Positive text
+            return ()
 
 testReadTypes :: TestTree
 testReadTypes =
@@ -84,6 +87,6 @@ testReadTypes =
         , testReadType "FiniteSetModel (+a,b,-Entity)"
         , testReadType "WholeModel. + Text. -> a -> Action. a"
         , testTree
-              "recursive"
-              [testReadType "rec a, Maybe a", testReadType "(rec a, Maybe a) -> b", testReadType "rec a, rec b, a *: b"]
+            "recursive"
+            [testReadType "rec a, Maybe a", testReadType "(rec a, Maybe a) -> b", testReadType "rec a, rec b, a *: b"]
         ]

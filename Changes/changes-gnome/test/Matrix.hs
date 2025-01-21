@@ -1,6 +1,7 @@
 module Matrix
     ( matrixTest
-    ) where
+    )
+where
 
 import GI.Cairo.Render.Matrix qualified as RM
 import Shapes

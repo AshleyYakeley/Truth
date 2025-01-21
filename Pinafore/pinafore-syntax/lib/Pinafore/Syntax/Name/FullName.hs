@@ -1,17 +1,18 @@
 module Pinafore.Syntax.Name.FullName where
 
 import Pinafore.Base
+import Shapes
+
 import Pinafore.Syntax.Name.Name
 import Pinafore.Syntax.Name.Namespace
-import Shapes
 
 data FullName = MkFullName
     { fnName :: Name
     , fnSpace :: Namespace
-    } deriving stock (Eq, Ord)
+    }
+    deriving stock (Eq, Ord)
 
 pattern RootFullName :: Name -> FullName
-
 pattern RootFullName n = MkFullName n RootNamespace
 
 -- | The companion namespace of N is a namespace with the same name as N.
@@ -33,14 +34,15 @@ instance Show FullName where
 
 instance IsString FullName where
     fromString s =
-        fromMaybe (error $ "bad FullName: " <> show s) $
-        fmap RootFullName (infixNameFromString s) <|> do
-            nt <- nonEmpty $ splitSeq "." s
-            case nt of
-                "" :| "":nss -> do
-                    nspace <- namespaceFromStrings nss
-                    return $ MkFullName "." nspace
-                _ -> do
-                    name <- nameFromString $ head nt
-                    nspace <- namespaceFromStrings $ tail nt
-                    return $ MkFullName name nspace
+        fromMaybe (error $ "bad FullName: " <> show s)
+            $ fmap RootFullName (infixNameFromString s)
+            <|> do
+                nt <- nonEmpty $ splitSeq "." s
+                case nt of
+                    "" :| "" : nss -> do
+                        nspace <- namespaceFromStrings nss
+                        return $ MkFullName "." nspace
+                    _ -> do
+                        name <- nameFromString $ head nt
+                        nspace <- namespaceFromStrings $ tail nt
+                        return $ MkFullName name nspace

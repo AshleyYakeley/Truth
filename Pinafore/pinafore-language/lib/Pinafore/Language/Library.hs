@@ -1,7 +1,7 @@
 module Pinafore.Language.Library
-    ( DefDoc(..)
+    ( DefDoc (..)
     , LibraryStuff
-    , LibraryModule(..)
+    , LibraryModule (..)
     , pinaforeLibrary
     , LoadModule
     , directoryLoadModule
@@ -9,7 +9,8 @@ module Pinafore.Language.Library
     , libraryLoadModule
     , mkLibraryContext
     , nameIsInfix
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Interpreter
@@ -40,34 +41,34 @@ import Pinafore.Language.Library.Undo
 
 pinaforeLibrary :: [LibraryModule]
 pinaforeLibrary =
-    pure $
-    MkLibraryModule builtInModuleName $
-    mconcat $
-    [ entityLibSection
-    , functionLibSection
-    , comparisonLibSection
-    , maybeLibSection
-    , productLibSection
-    , sumLibSection
-    , listLibSection
-    , mapLibSection
-    , resultLibSection
-    , actionLibSection
-    , lifecycleLibSection
-    , interpretLibSection
-    , modelLibSection
-    , opticsLibSection
-    , modelOrderLibSection
-    , taskLibSection
-    , streamLibSection
-    , storageLibSection
-    , undoLibSection
-    , envLibSection
-    , pinaforeLibSection
-    , debugLibSection
-    ]
+    pure
+        $ MkLibraryModule builtInModuleName
+        $ mconcat
+        $ [ entityLibSection
+          , functionLibSection
+          , comparisonLibSection
+          , maybeLibSection
+          , productLibSection
+          , sumLibSection
+          , listLibSection
+          , mapLibSection
+          , resultLibSection
+          , actionLibSection
+          , lifecycleLibSection
+          , interpretLibSection
+          , modelLibSection
+          , opticsLibSection
+          , modelOrderLibSection
+          , taskLibSection
+          , streamLibSection
+          , storageLibSection
+          , undoLibSection
+          , envLibSection
+          , pinaforeLibSection
+          , debugLibSection
+          ]
 
 mkLibraryContext :: LoadModule -> LibraryContext
 mkLibraryContext lm = let
     lcLoadModule = lm
-    in MkLibraryContext {..}
+    in MkLibraryContext{..}

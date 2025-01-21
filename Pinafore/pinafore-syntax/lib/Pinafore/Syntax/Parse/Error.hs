@@ -1,26 +1,34 @@
 module Pinafore.Syntax.Parse.Error
-    ( SourceError(..)
+    ( SourceError (..)
     , parseErrorMessage
-    , ParseErrorType(..)
+    , ParseErrorType (..)
     , ParseResult
-    ) where
+    )
+where
 
 import Pinafore.Base
-import Pinafore.Syntax.Name
-import Pinafore.Syntax.Text
 import Shapes hiding (try)
 import Text.Parsec qualified as P
 import Text.Parsec.Error qualified as P
 
+import Pinafore.Syntax.Name
+import Pinafore.Syntax.Text
+
 showSourceError :: P.SourcePos -> Text -> Text
 showSourceError spos s =
-    toText (P.sourceName spos) <>
-    ":" <> toText (show (P.sourceLine spos)) <> ":" <> toText (show (P.sourceColumn spos)) <> ": " <> s
+    toText (P.sourceName spos)
+        <> ":"
+        <> toText (show (P.sourceLine spos))
+        <> ":"
+        <> toText (show (P.sourceColumn spos))
+        <> ": "
+        <> s
 
-data SourceError a =
-    MkSourceError P.SourcePos
-                  (NamedText -> Text)
-                  a
+data SourceError a
+    = MkSourceError
+        P.SourcePos
+        (NamedText -> Text)
+        a
 
 instance Functor SourceError where
     fmap ab (MkSourceError spos ntt a) = MkSourceError spos ntt $ ab a
@@ -35,21 +43,23 @@ data ParseErrorType
     = LexicalErrorType [P.Message]
     | SyntaxErrorType [P.Message]
     | DeclareDatatypeStorableSupertypeError FullName
-    | MatchesDifferentCount Natural
-                            Natural
+    | MatchesDifferentCount
+        Natural
+        Natural
 
 getMessagesNamedText :: [P.Message] -> NamedText
 getMessagesNamedText msgs = let
     getMsgs :: (P.Message -> Maybe String) -> [Text]
     getMsgs getm =
-        nub $
-        mapMaybe
-            (\msg -> do
-                 s <- getm msg
-                 if s == ""
-                     then Nothing
-                     else return $ toText s)
-            msgs
+        nub
+            $ mapMaybe
+                ( \msg -> do
+                    s <- getm msg
+                    if s == ""
+                        then Nothing
+                        else return $ toText s
+                )
+                msgs
     msgsSysUnExpect =
         getMsgs $ \case
             P.SysUnExpect s -> Just s
@@ -82,7 +92,9 @@ instance ShowNamedText ParseErrorType where
     showNamedText (SyntaxErrorType msgs) = "syntax: " <> getMessagesNamedText msgs
     showNamedText (DeclareDatatypeStorableSupertypeError n) = "datatype storable has supertypes: " <> showNamedText n
     showNamedText (MatchesDifferentCount expected found) =
-        "different number of patterns in match, expected " <>
-        showNamedText expected <> ", found " <> showNamedText found
+        "different number of patterns in match, expected "
+            <> showNamedText expected
+            <> ", found "
+            <> showNamedText found
 
 type ParseResult = Result (SourceError ParseErrorType)

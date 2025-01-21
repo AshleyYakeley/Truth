@@ -1,5 +1,5 @@
 module Pinafore.Base.Model.LensAttribute
-    ( StorageLensAttribute(..)
+    ( StorageLensAttribute (..)
     , slaRead
     , identityStorageLensAttribute
     , composeStorageLensAttribute
@@ -9,12 +9,14 @@ module Pinafore.Base.Model.LensAttribute
     , lensFunctionAttribute
     , storageLensPutEditBA
     , storageLensAttributeChangeLens
-    ) where
+    )
+where
 
 import Changes.Core
+import Shapes
+
 import Pinafore.Base.Know
 import Pinafore.Base.Model.FunctionAttribute
-import Shapes
 
 data StorageLensAttribute ap aq bp bq baseupdate = MkStorageLensAttribute
     { slaFunction :: StorageFunctionAttribute baseupdate ap (Know bq)
@@ -29,44 +31,47 @@ instance CatFunctor (->) (NestedMorphism (->)) (StorageLensAttribute ap aq bp) w
 
 instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensAttribute ap aq) where
     cfmap f =
-        MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensAttribute fa p) -> let
-            p' = (fmap $ cfmap1 $ endocfmap f) p
-            in MkStorageLensAttribute fa p'
+        MkNestedMorphism
+            $ MkNestedMorphism
+            $ \(MkStorageLensAttribute fa p) -> let
+                p' = (fmap $ cfmap1 $ endocfmap f) p
+                in MkStorageLensAttribute fa p'
 
 instance CatFunctor (->) (NestedMorphism (->)) (StorageLensAttribute ap) where
     cfmap f =
-        MkNestedMorphism $
-        MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensAttribute fa p) -> let
-            p' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) p
-            in MkStorageLensAttribute fa p'
+        MkNestedMorphism
+            $ MkNestedMorphism
+            $ MkNestedMorphism
+            $ \(MkStorageLensAttribute fa p) -> let
+                p' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) p
+                in MkStorageLensAttribute fa p'
 
 instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (StorageLensAttribute) where
     cfmap f =
-        MkNestedMorphism $
-        MkNestedMorphism $
-        MkNestedMorphism $
-        MkNestedMorphism $ \(MkStorageLensAttribute fa p) -> let
-            fa' = cfmap1 f fa
-            p' = (cfmap1 $ endocfmap f) p
-            in MkStorageLensAttribute fa' p'
+        MkNestedMorphism
+            $ MkNestedMorphism
+            $ MkNestedMorphism
+            $ MkNestedMorphism
+            $ \(MkStorageLensAttribute fa p) -> let
+                fa' = cfmap1 f fa
+                p' = (cfmap1 $ endocfmap f) p
+                in MkStorageLensAttribute fa' p'
 
 instance EditContraFunctor (StorageLensAttribute ap aq bp bq) where
     eaContraMap ::
-           forall update1 update2.
-           ChangeLens update2 update1
-        -> StorageLensAttribute ap aq bp bq update1
-        -> StorageLensAttribute ap aq bp bq update2
-    eaContraMap MkChangeLens {..} (MkStorageLensAttribute (MkStorageFunctionAttribute get1 bu1) put1) = let
+        forall update1 update2.
+        ChangeLens update2 update1 ->
+        StorageLensAttribute ap aq bp bq update1 ->
+        StorageLensAttribute ap aq bp bq update2
+    eaContraMap MkChangeLens{..} (MkStorageLensAttribute (MkStorageFunctionAttribute get1 bu1) put1) = let
         get2 :: ap -> ReadM (UpdateReader update2) (Know bq)
         get2 a = mapReadM clRead $ get1 a
         bu2 :: update2 -> ReadM (UpdateReader update2) (Maybe (ap -> ReadM (UpdateReader update2) (Maybe (Know bq))))
         bu2 update2 = do
             updates1 <- MkReadM $ clUpdate update2
             mfs <- mapReadM clRead $ for updates1 bu1
-            return $
-                case catMaybes mfs of
+            return
+                $ case catMaybes mfs of
                     [] -> Nothing
                     fs ->
                         Just $ \a ->
@@ -92,13 +97,13 @@ identityStorageLensAttribute :: forall baseupdate x y. StorageLensAttribute x y 
 identityStorageLensAttribute = let
     slaFunction = arr Known
     slaPut _ kb = return $ Just ([], Just kb)
-    in MkStorageLensAttribute {..}
+    in MkStorageLensAttribute{..}
 
 composeStorageLensAttribute ::
-       forall baseupdate ap aq bx by cp cq.
-       StorageLensAttribute bx by cp cq baseupdate
-    -> StorageLensAttribute ap aq by bx baseupdate
-    -> StorageLensAttribute ap aq cp cq baseupdate
+    forall baseupdate ap aq bx by cp cq.
+    StorageLensAttribute bx by cp cq baseupdate ->
+    StorageLensAttribute ap aq by bx baseupdate ->
+    StorageLensAttribute ap aq cp cq baseupdate
 composeStorageLensAttribute (MkStorageLensAttribute funcBC putBC) ab@(MkStorageLensAttribute funcAB putAB) = let
     slaFunction =
         proc a -> do
@@ -115,13 +120,13 @@ composeStorageLensAttribute (MkStorageLensAttribute funcBC putBC) ab@(MkStorageL
                 Just knewB -> do
                     (edits2, mknewA) <- MkComposeInner $ putAB koldA knewB
                     return (edits1 <> edits2, mknewA)
-    in MkStorageLensAttribute {..}
+    in MkStorageLensAttribute{..}
 
 pairStorageLensAttribute ::
-       forall baseupdate ap aq bp bq cp cq.
-       StorageLensAttribute ap aq bp bq baseupdate
-    -> StorageLensAttribute ap aq cp cq baseupdate
-    -> StorageLensAttribute ap aq (bp, cp) (bq, cq) baseupdate
+    forall baseupdate ap aq bp bq cp cq.
+    StorageLensAttribute ap aq bp bq baseupdate ->
+    StorageLensAttribute ap aq cp cq baseupdate ->
+    StorageLensAttribute ap aq (bp, cp) (bq, cq) baseupdate
 pairStorageLensAttribute (MkStorageLensAttribute funcB putB) (MkStorageLensAttribute funcC putC) = let
     slaFunction = liftA2 (liftA2 (,)) funcB funcC
     slaPut _ Unknown = return Nothing -- can't delete
@@ -130,19 +135,18 @@ pairStorageLensAttribute (MkStorageLensAttribute funcB putB) (MkStorageLensAttri
             (updb, bmka) <- MkComposeInner $ putB ka $ Known b
             (updc, cmka) <- MkComposeInner $ putC ka $ Known c
             return (updb <> updc, bmka <|> cmka)
-    in MkStorageLensAttribute {..}
+    in MkStorageLensAttribute{..}
 
 eitherStorageLensAttribute ::
-       forall baseupdate ap aq bp bq cp cq.
-       StorageLensAttribute ap aq cp cq baseupdate
-    -> StorageLensAttribute bp bq cp cq baseupdate
-    -> StorageLensAttribute (Either ap bp) (Either aq bq) cp cq baseupdate
+    forall baseupdate ap aq bp bq cp cq.
+    StorageLensAttribute ap aq cp cq baseupdate ->
+    StorageLensAttribute bp bq cp cq baseupdate ->
+    StorageLensAttribute (Either ap bp) (Either aq bq) cp cq baseupdate
 eitherStorageLensAttribute (MkStorageLensAttribute funcA putA) (MkStorageLensAttribute funcB putB) = let
     slaFunction =
-        proc eab ->
-            case eab of
-                Left a -> funcA -< a
-                Right b -> funcB -< b
+        proc eab -> case eab of
+            Left a -> funcA -< a
+            Right b -> funcB -< b
     slaPut (Known (Left a)) kc =
         unComposeInner $ do
             (bu, mka) <- MkComposeInner $ putA (Known a) kc
@@ -152,13 +156,13 @@ eitherStorageLensAttribute (MkStorageLensAttribute funcA putA) (MkStorageLensAtt
             (bu, mkb) <- MkComposeInner $ putB (Known b) kc
             return $ (bu, fmap (fmap Right) mkb)
     slaPut Unknown _ = return Nothing
-    in MkStorageLensAttribute {..}
+    in MkStorageLensAttribute{..}
 
 funcStorageLensAttribute ::
-       forall baseupdate ap aq bp bq.
-       (ap -> Know bq)
-    -> (Know ap -> Know bp -> Maybe (Know aq))
-    -> StorageLensAttribute ap aq bp bq baseupdate
+    forall baseupdate ap aq bp bq.
+    (ap -> Know bq) ->
+    (Know ap -> Know bp -> Maybe (Know aq)) ->
+    StorageLensAttribute ap aq bp bq baseupdate
 funcStorageLensAttribute ab bma = let
     slaFunction = arr ab
     slaPut :: Know ap -> Know bp -> ReadM (UpdateReader baseupdate) (Maybe ([UpdateEdit baseupdate], Maybe (Know aq)))
@@ -166,31 +170,32 @@ funcStorageLensAttribute ab bma = let
         return $ do
             ka' <- bma ka kb
             return ([], Just ka')
-    in MkStorageLensAttribute {..}
+    in MkStorageLensAttribute{..}
 
 lensFunctionAttribute ::
-       forall baseupdate ap aq bp bq.
-       StorageLensAttribute ap aq bp bq baseupdate
-    -> StorageFunctionAttribute baseupdate (Know ap) (Know bq)
+    forall baseupdate ap aq bp bq.
+    StorageLensAttribute ap aq bp bq baseupdate ->
+    StorageFunctionAttribute baseupdate (Know ap) (Know bq)
 lensFunctionAttribute plm =
-    proc ka ->
-        case ka of
-            Known a -> slaFunction plm -< a
-            Unknown -> returnA -< Unknown
+    proc ka -> case ka of
+        Known a -> slaFunction plm -< a
+        Unknown -> returnA -< Unknown
 
 runContextReadM ::
-       forall m baseupdate update t. MonadIO m
-    => Readable m (ContextUpdateReader baseupdate update)
-    -> ReadM (UpdateReader baseupdate) t
-    -> m t
+    forall m baseupdate update t.
+    MonadIO m =>
+    Readable m (ContextUpdateReader baseupdate update) ->
+    ReadM (UpdateReader baseupdate) t ->
+    m t
 runContextReadM rd rmt = unReadM rmt $ tupleReadFunction SelectContext rd
 
 storageLensPutEditBA ::
-       forall m baseupdate ap aq bp bq. MonadIO m
-    => StorageLensAttribute ap aq bp bq baseupdate
-    -> [BiWholeEdit (Know bp) (Know bq)]
-    -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap)))
-    -> m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))])
+    forall m baseupdate ap aq bp bq.
+    MonadIO m =>
+    StorageLensAttribute ap aq bp bq baseupdate ->
+    [BiWholeEdit (Know bp) (Know bq)] ->
+    Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap))) ->
+    m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))])
 storageLensPutEditBA plm editsB mr =
     case lastM editsB of
         Nothing -> return $ Just []
@@ -199,32 +204,33 @@ storageLensPutEditBA plm editsB mr =
             medits <- runContextReadM mr $ slaPut plm ka kb
             let
                 convertEdits ::
-                       forall .
-                       ([UpdateEdit baseupdate], Maybe (Know aq))
-                    -> [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))]
+                    forall.
+                    ([UpdateEdit baseupdate], Maybe (Know aq)) ->
+                    [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))]
                 convertEdits (pinedits, mka) =
-                    fmap (MkTupleUpdateEdit SelectContext) pinedits <>
-                    case mka of
-                        Nothing -> []
-                        Just knewa -> [MkTupleUpdateEdit SelectContent $ MkBiWholeEdit knewa]
+                    fmap (MkTupleUpdateEdit SelectContext) pinedits
+                        <> case mka of
+                            Nothing -> []
+                            Just knewa -> [MkTupleUpdateEdit SelectContent $ MkBiWholeEdit knewa]
             return $ fmap convertEdits medits
 
 storageLensAttributeChangeLens ::
-       forall baseupdate ap aq bp bq.
-       StorageLensAttribute ap aq bp bq baseupdate
-    -> ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know aq) (Know ap))) (BiWholeUpdate (Know bp) (Know bq))
+    forall baseupdate ap aq bp bq.
+    StorageLensAttribute ap aq bp bq baseupdate ->
+    ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know aq) (Know ap))) (BiWholeUpdate (Know bp) (Know bq))
 storageLensAttributeChangeLens plm = let
     clRead ::
-           forall .
-           ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap))) (WholeReader (Know bq))
+        forall.
+        ReadFunction (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap))) (WholeReader (Know bq))
     clRead mr ReadWhole = do
         ka <- mr $ MkTupleUpdateReader SelectContent ReadWhole
         runContextReadM mr $ slaKRead plm ka
     clUpdate ::
-           forall m. MonadIO m
-        => ContextUpdate baseupdate (BiWholeUpdate (Know aq) (Know ap))
-        -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap)))
-        -> m [BiWholeUpdate (Know bp) (Know bq)]
+        forall m.
+        MonadIO m =>
+        ContextUpdate baseupdate (BiWholeUpdate (Know aq) (Know ap)) ->
+        Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap))) ->
+        m [BiWholeUpdate (Know bp) (Know bq)]
     clUpdate (MkTupleUpdate SelectContext pinupdate) mr = do
         mf <- runContextReadM mr $ sfaUpdate (slaFunction plm) pinupdate
         case mf of
@@ -242,9 +248,10 @@ storageLensAttributeChangeLens plm = let
         kb <- runContextReadM mr $ slaKRead plm ka
         return $ pure $ MkBiWholeUpdate kb
     clPutEdits ::
-           forall m. MonadIO m
-        => [BiWholeEdit (Know bp) (Know bq)]
-        -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap)))
-        -> m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))])
+        forall m.
+        MonadIO m =>
+        [BiWholeEdit (Know bp) (Know bq)] ->
+        Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap))) ->
+        m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))])
     clPutEdits = storageLensPutEditBA plm
-    in MkChangeLens {..}
+    in MkChangeLens{..}

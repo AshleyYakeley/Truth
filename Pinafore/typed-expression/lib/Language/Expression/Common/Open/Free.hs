@@ -8,6 +8,6 @@ class HasFreeWitnesses (f :: (kt -> Type) -> ka -> Type) where
     isClosed expr =
         case freeWitnesses (\_ -> ()) expr of
             [] -> True
-            _:_ -> False
+            _ : _ -> False
     freeWitnessCount :: f w a -> Int
     freeWitnessCount expr = length $ freeWitnesses (\_ -> ()) expr

@@ -1,8 +1,9 @@
 module Graphics.Cairo.Image
-    ( R.Format(..)
+    ( R.Format (..)
     , renderToByteString
     , renderToImage
-    ) where
+    )
+where
 
 import Codec.Picture.Types
 import Data.Vector.Storable.ByteString
@@ -19,12 +20,13 @@ renderToByteString fmt (w, h) r =
         R.surfaceFinish surface
         return image
 
-data PixelCairoARGB32 =
-    MkPixelCairoARGB32 !Pixel8
-                       !Pixel8
-                       !Pixel8
-                       !Pixel8
-    deriving stock (Eq)
+data PixelCairoARGB32
+    = MkPixelCairoARGB32
+        !Pixel8
+        !Pixel8
+        !Pixel8
+        !Pixel8
+    deriving stock Eq
 
 instance Pixel PixelCairoARGB32 where
     type PixelBaseComponent PixelCairoARGB32 = Word8
@@ -46,8 +48,8 @@ unmultiply a c = let
     ac :: Int
     ac = div (fromEnum c * 0xFF) (fromEnum a)
     in if ac >= 0xFF
-           then 0xFF
-           else toEnum ac
+        then 0xFF
+        else toEnum ac
 
 spp :: PixelCairoARGB32 -> PixelRGBA8
 spp (MkPixelCairoARGB32 b g r 0xFF) = PixelRGBA8 r g b 0xFF

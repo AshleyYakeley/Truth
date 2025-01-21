@@ -1,6 +1,7 @@
 module Pinafore.Language.Interpret.TypeDecl.OpenEntity
     ( makeOpenEntityTypeBox
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Interpreter

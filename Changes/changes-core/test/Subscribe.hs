@@ -3,33 +3,40 @@
 
 module Subscribe
     ( testSubscribe
-    ) where
+    )
+where
 
-import Changes.Core
 import Shapes
 import Shapes.Test
+
+import Changes.Core
 import Test.Useful
 
 debugLens ::
-       forall updateA updateB. (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
-    => String
-    -> ChangeLens updateA updateB
-    -> ChangeLens updateA updateB
+    forall updateA updateB.
+    (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle) =>
+    String ->
+    ChangeLens updateA updateB ->
+    ChangeLens updateA updateB
 debugLens name (MkChangeLens g u pe) = let
-    u' :: forall m. MonadIO m
-       => updateA
-       -> Readable m (UpdateReader updateA)
-       -> m [updateB]
+    u' ::
+        forall m.
+        MonadIO m =>
+        updateA ->
+        Readable m (UpdateReader updateA) ->
+        m [updateB]
     u' ua mr = do
         -- these are asynchronous, so commented out
-        --liftIO $ hPutStrLn ?handle $ name ++ ": +update: " ++ show ua
+        -- liftIO $ hPutStrLn ?handle $ name ++ ": +update: " ++ show ua
         ubs <- u ua mr
-        --liftIO $ hPutStrLn ?handle $ name ++ ": -update: " ++ show ubs
+        -- liftIO $ hPutStrLn ?handle $ name ++ ": -update: " ++ show ubs
         return ubs
-    pe' :: forall m. MonadIO m
-        => [UpdateEdit updateB]
-        -> Readable m (UpdateReader updateA)
-        -> m (Maybe [UpdateEdit updateA])
+    pe' ::
+        forall m.
+        MonadIO m =>
+        [UpdateEdit updateB] ->
+        Readable m (UpdateReader updateA) ->
+        m (Maybe [UpdateEdit updateA])
     pe' ebs mr = do
         liftIO $ hPutStrLn ?handle $ name ++ ": +put: " ++ show ebs
         meas <- pe ebs mr
@@ -38,34 +45,37 @@ debugLens name (MkChangeLens g u pe) = let
     in MkChangeLens g u' pe'
 
 debugFloatingLens ::
-       forall updateA updateB. (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
-    => String
-    -> FloatingChangeLens updateA updateB
-    -> FloatingChangeLens updateA updateB
+    forall updateA updateB.
+    (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle) =>
+    String ->
+    FloatingChangeLens updateA updateB ->
+    FloatingChangeLens updateA updateB
 debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
 doModelTest :: TestName -> ((?handle :: Handle) => View ()) -> TestTree
 doModelTest name call = goldenTest "." name $ runLifecycle $ runView call
 
 testUpdateFunction ::
-       forall a. (?handle :: Handle, Show a)
-    => IO ()
-    -> ChangeLens (WholeUpdate a) (ROWUpdate a)
+    forall a.
+    (?handle :: Handle, Show a) =>
+    IO () ->
+    ChangeLens (WholeUpdate a) (ROWUpdate a)
 testUpdateFunction signal = let
     clRead :: ReadFunction (WholeReader a) (WholeReader a)
     clRead mr = mr
     clUpdate ::
-           forall m. MonadIO m
-        => WholeUpdate a
-        -> Readable m (WholeReader a)
-        -> m [ROWUpdate a]
+        forall m.
+        MonadIO m =>
+        WholeUpdate a ->
+        Readable m (WholeReader a) ->
+        m [ROWUpdate a]
     clUpdate (MkWholeReaderUpdate s) mr = do
         s' <- mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
         liftIO signal
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate s]
-    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
+    in MkChangeLens{clPutEdits = clPutEditsNone, ..}
 
 barrier :: IO (IO (), IO ())
 barrier = do
@@ -77,41 +87,42 @@ barrier = do
 
 testUpdateReference :: TestTree
 testUpdateReference =
-    repeatTest 100 $
-    doModelTest "updateReference" $ do
-        obj <- liftIO $ makeMemoryReference "old" $ \_ -> True
-        var <- liftIO $ newEmptyMVar
-        (signal, wait) <- liftIO $ barrier
-        let
-            om :: Premodel (WholeUpdate String) ()
-            om = reflectingPremodel obj
-            lens :: FloatingChangeLens (WholeUpdate String) (WholeUpdate String)
-            lens = changeLensToFloating $ fromReadOnlyRejectingChangeLens . testUpdateFunction signal
-            recv :: String -> IO () -> ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv name w _ ee _ = do
-                randomSleep
-                putMVar var $ do
+    repeatTest 100
+        $ doModelTest "updateReference"
+        $ do
+            obj <- liftIO $ makeMemoryReference "old" $ \_ -> True
+            var <- liftIO $ newEmptyMVar
+            (signal, wait) <- liftIO $ barrier
+            let
+                om :: Premodel (WholeUpdate String) ()
+                om = reflectingPremodel obj
+                lens :: FloatingChangeLens (WholeUpdate String) (WholeUpdate String)
+                lens = changeLensToFloating $ fromReadOnlyRejectingChangeLens . testUpdateFunction signal
+                recv :: String -> IO () -> ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
+                recv name w _ ee _ = do
                     randomSleep
-                    w
-                    for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ name <> " update edit: " <> show s
-            showAction :: IO ()
-            showAction = do
-                randomSleep
-                action <- takeMVar var
-                action
-        rc <- viewGetResourceContext
-        omr' <-
-            viewLiftLifecycle $ do
-                randomSleep
-                om' <- sharePremodel om
-                omr' <- om' rc mempty $ recv "recv" wait
-                _ <- mapPremodel rc lens (om' rc) mempty $ recv "recv" (return ())
-                return omr'
-        viewRunResource (pmrReference omr') $ \MkAReference {..} ->
-            pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
-        liftIO showAction
-        liftIO showAction
-        liftIO $ taskWait $ pmrUpdatesTask omr'
+                    putMVar var $ do
+                        randomSleep
+                        w
+                        for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ name <> " update edit: " <> show s
+                showAction :: IO ()
+                showAction = do
+                    randomSleep
+                    action <- takeMVar var
+                    action
+            rc <- viewGetResourceContext
+            omr' <-
+                viewLiftLifecycle $ do
+                    randomSleep
+                    om' <- sharePremodel om
+                    omr' <- om' rc mempty $ recv "recv" wait
+                    _ <- mapPremodel rc lens (om' rc) mempty $ recv "recv" (return ())
+                    return omr'
+            viewRunResource (pmrReference omr') $ \MkAReference{..} ->
+                pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
+            liftIO showAction
+            liftIO showAction
+            liftIO $ taskWait $ pmrUpdatesTask omr'
 
 outputLn :: (?handle :: Handle, MonadIO m) => String -> m ()
 outputLn s = liftIO $ hPutStrLn ?handle s
@@ -132,18 +143,19 @@ subscribeShowUpdates name model = do
             Just update -> fail $ name <> ": update left over: " <> show update
     viewBindModel model Nothing (return ()) mempty $ \() updates ->
         for_ updates $ \update -> liftIO $ writeChan chan $ Just update
-    return $
-        liftIO $ do
+    return
+        $ liftIO
+        $ do
             mupdate <- readChan chan
             case mupdate of
                 Just update -> outputNameLn name $ "receive " ++ show update
                 Nothing -> fail "premature end of updates"
 
 showModelSubject ::
-       (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle)
-    => String
-    -> Model update
-    -> View ()
+    (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle) =>
+    String ->
+    Model update ->
+    View ()
 showModelSubject name model = do
     liftIO $ taskWait $ modelUpdatesTask model
     viewRunResource model $ \asub -> do
@@ -151,11 +163,11 @@ showModelSubject name model = do
         outputNameLn name $ "get " ++ show val
 
 modelPushEdits ::
-       (Show (UpdateEdit update), ?handle :: Handle)
-    => String
-    -> Model update
-    -> [NonEmpty (UpdateEdit update)]
-    -> View ()
+    (Show (UpdateEdit update), ?handle :: Handle) =>
+    String ->
+    Model update ->
+    [NonEmpty (UpdateEdit update)] ->
+    View ()
 modelPushEdits name model editss =
     viewRunResource model $ \asub ->
         for_ editss $ \edits -> do
@@ -168,11 +180,11 @@ modelPushEdits name model editss =
                     outputNameLn name $ "push succeeded"
 
 modelDontPushEdits ::
-       (Show (UpdateEdit update), ?handle :: Handle)
-    => String
-    -> Model update
-    -> [NonEmpty (UpdateEdit update)]
-    -> View ()
+    (Show (UpdateEdit update), ?handle :: Handle) =>
+    String ->
+    Model update ->
+    [NonEmpty (UpdateEdit update)] ->
+    View ()
 modelDontPushEdits name model editss =
     viewRunResource model $ \asub ->
         for_ editss $ \edits -> do
@@ -183,9 +195,10 @@ modelDontPushEdits name model editss =
                 Just _action -> outputNameLn name "push ignored"
 
 testSubscription ::
-       forall update. (?handle :: Handle, IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update))
-    => UpdateSubject update
-    -> View (Model update, View (), NonEmpty (UpdateEdit update) -> View ())
+    forall update.
+    (?handle :: Handle, IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update)) =>
+    UpdateSubject update ->
+    View (Model update, View (), NonEmpty (UpdateEdit update) -> View ())
 testSubscription initial = do
     iow <- liftIO $ newIOWitness
     var <- liftIO $ newMVar initial
@@ -199,10 +212,11 @@ testSubscription initial = do
         showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
         showExpected =
             \edits ->
-                liftIO $
-                withMVar var $ \s -> do
-                    news <- readableToSubject $ applyEdits (toList edits) $ subjectToReadable s
-                    hPutStrLn ?handle $ "expected: " ++ show news
+                liftIO
+                    $ withMVar var
+                    $ \s -> do
+                        news <- readableToSubject $ applyEdits (toList edits) $ subjectToReadable s
+                        hPutStrLn ?handle $ "expected: " ++ show news
     return (model, showVar, showExpected)
 
 testPair :: TestTree
@@ -213,14 +227,14 @@ testPair =
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
         mainShow
-        mainShowExpected $
-            (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True) :|
-            [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
+        mainShowExpected
+            $ (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True)
+            :| [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
         modelPushEdits
             "main"
             mainModel
-            [ (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True) :|
-              [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
+            [ (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True)
+                :| [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
             ]
         mainShowUpdate
         mainShowUpdate

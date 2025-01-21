@@ -1,10 +1,12 @@
 module Lens
     ( testLens
-    ) where
+    )
+where
 
-import Changes.Core
 import Shapes
 import Shapes.Test
+
+import Changes.Core
 
 collectModelUpdates :: ResourceContext -> Model update -> Lifecycle (IO [update])
 collectModelUpdates rc sub = do
@@ -29,7 +31,7 @@ type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (Whol
 
 updToString :: OrderedListUpdate (ConstWholeUpdate Char) -> String
 updToString (OrderedListUpdateItem a b []) = "move " <> show a <> " -> " <> show b
-updToString (OrderedListUpdateItem _ _ (update:_)) = never update
+updToString (OrderedListUpdateItem _ _ (update : _)) = never update
 updToString (OrderedListUpdateDelete a) = "del " <> show a
 updToString (OrderedListUpdateInsert a c) = "ins " <> show a <> " " <> show c
 updToString OrderedListUpdateClear = "clear"
@@ -44,13 +46,14 @@ testContextOrderedSetLensCase assigns expected =
             rc = emptyResourceContext
             uo :: UpdateOrder (ContextUpdate UpdateX (ConstWholeUpdate Char))
             uo =
-                mkUpdateOrder (compare @Int) $
-                funcChangeLens $ \(MkWithContext lm c) ->
-                    case lookupItem c lm of
-                        Just (_, i) -> i
-                        Nothing -> 0
+                mkUpdateOrder (compare @Int)
+                    $ funcChangeLens
+                    $ \(MkWithContext lm c) ->
+                        case lookupItem c lm of
+                            Just (_, i) -> i
+                            Nothing -> 0
             flens ::
-                   FloatingChangeLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate (ConstWholeUpdate Char)))
+                FloatingChangeLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate (ConstWholeUpdate Char)))
             flens = contextOrderedSetLens uo
         rawContextObj :: Reference (WholeEdit [(Char, Int)]) <-
             makeMemoryReference [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
@@ -73,9 +76,12 @@ testContextOrderedSetLensCase assigns expected =
                 let
                     pushOneEdit :: (Char, Int) -> Lifecycle ()
                     pushOneEdit (c, i) =
-                        liftIO $
-                        modelPushEdits rc contextSub $
-                        pure $ KeyEditItem c $ MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit i
+                        liftIO
+                            $ modelPushEdits rc contextSub
+                            $ pure
+                            $ KeyEditItem c
+                            $ MkTupleUpdateEdit SelectSecond
+                            $ MkWholeReaderEdit i
                 for_ assigns pushOneEdit
                 return getUpdates
         let

@@ -1,20 +1,23 @@
 module Control.Clock
-    ( ClockMachine(..)
+    ( ClockMachine (..)
     , listClockMachine
     , regularClockMachine
     , utcDayClockMachine
     , localDayClockMachine
     , clock
-    ) where
+    )
+where
+
+import Data.Time.Clock
 
 import Control.Task
-import Data.Time.Clock
 import Shapes.Import
 import Shapes.Numeric
 
-data ClockMachine a =
-    forall s. MkClockMachine (IO (a, s))
-                             (s -> IO (Maybe (s, (UTCTime, a))))
+data ClockMachine a
+    = forall s. MkClockMachine
+        (IO (a, s))
+        (s -> IO (Maybe (s, (UTCTime, a))))
 
 instance Functor ClockMachine where
     fmap ab (MkClockMachine ias f) =
@@ -24,7 +27,7 @@ listClockMachine :: IO (a, [(UTCTime, a)]) -> ClockMachine a
 listClockMachine getInitial =
     MkClockMachine getInitial $ \case
         [] -> return Nothing
-        ta:tt -> return $ Just (tt, ta)
+        ta : tt -> return $ Just (tt, ta)
 
 regularClockMachine :: UTCTime -> NominalDiffTime -> ClockMachine UTCTime
 regularClockMachine utcBase ndtInterval =
@@ -86,8 +89,8 @@ clock (MkClockMachine (getInitial :: IO (a, s)) f) call = do
                     utcCurrent <- getCurrentTime
                     let ndtRemaining = diffUTCTime t utcCurrent
                     putMVar var () -- must allow var even if not sleeping
-                    threadSleep $
-                        if ndtRemaining > 0
+                    threadSleep
+                        $ if ndtRemaining > 0
                             then ndtRemaining
                             else 0
                     takeMVar var

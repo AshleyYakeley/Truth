@@ -13,7 +13,8 @@ module Pinafore.Language.Interpreter.ScopeBuilder
     , allocateLambdaVar
     , allocatePolymorphicVar
     , withCurrentNamespaceScope
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Error
@@ -25,19 +26,20 @@ import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
 
-newtype QScopeBuilder a =
-    MkQScopeBuilder (WriterT QScopeDocs (WithT QInterpreter) a)
-    deriving newtype ( Functor
-                     , Applicative
-                     , Monad
-                     , MonadIO
-                     , MonadException
-                     , MonadThrow QError
-                     , MonadCatch QError
-                     , MonadThrow PatternError
-                     , MonadThrow QErrorType
-                     , MonadHoistIO
-                     )
+newtype QScopeBuilder a
+    = MkQScopeBuilder (WriterT QScopeDocs (WithT QInterpreter) a)
+    deriving newtype
+        ( Functor
+        , Applicative
+        , Monad
+        , MonadIO
+        , MonadException
+        , MonadThrow QError
+        , MonadCatch QError
+        , MonadThrow PatternError
+        , MonadThrow QErrorType
+        , MonadHoistIO
+        )
 
 instance Semigroup a => Semigroup (QScopeBuilder a) where
     (<>) = liftA2 (<>)
@@ -59,7 +61,7 @@ builderScopeDocsProd =
         (\(MkQScopeBuilder mr) -> MkQScopeBuilder $ prodCollect writerProd mr)
 
 builderDocsProd :: Prod QScopeBuilder Docs
-builderDocsProd = lensMapProd (\bfb a -> fmap (\b -> a {sdDocs = b}) $ bfb $ sdDocs a) builderScopeDocsProd
+builderDocsProd = lensMapProd (\bfb a -> fmap (\b -> a{sdDocs = b}) $ bfb $ sdDocs a) builderScopeDocsProd
 
 type QFixBox = FixBox QScopeBuilder
 
@@ -91,7 +93,7 @@ allocateVar mkvar = do
         biOriginalName = name
         biDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
         biValue = ValueBinding $ tsVar @QTypeSystem vid
-        insertScope = MkQScope (bindingInfoToMap (name, MkQBindingInfo {..})) mempty
+        insertScope = MkQScope (bindingInfoToMap (name, MkQBindingInfo{..})) mempty
     refModifyM scopeRef $ \oldScope -> builderLift $ joinScopes oldScope insertScope
     return (name, vid)
 

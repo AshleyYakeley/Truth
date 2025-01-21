@@ -1,20 +1,21 @@
 module Language.Expression.Dolan.Solver.AtomicConstraint where
 
 import Data.Shim
+import Shapes
+
 import Language.Expression.Common
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
-import Shapes
 
 type AtomicConstraint :: GroundTypeKind -> Type -> Type
 data AtomicConstraint ground t where
-    MkAtomicConstraint
-        :: forall (ground :: GroundTypeKind) polarity tv t.
-           TypeVarT tv
-        -> PolarityType polarity
-        -> FlipType ground polarity t
-        -> AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
+    MkAtomicConstraint ::
+        forall (ground :: GroundTypeKind) polarity tv t.
+        TypeVarT tv ->
+        PolarityType polarity ->
+        FlipType ground polarity t ->
+        AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
 
 instance forall (ground :: GroundTypeKind) t. ShowGroundType ground => Show (AtomicConstraint ground t) where
     show (MkAtomicConstraint var PositiveType (NormalFlipType wt)) = show var <> " :> " <> allShow wt <> " [+]"
@@ -26,16 +27,18 @@ instance forall (ground :: GroundTypeKind). ShowGroundType ground => AllConstrai
     allConstraint = Dict
 
 mkAtomicConstraint ::
-       forall (ground :: GroundTypeKind) polarity tv t. Is PolarityType polarity
-    => TypeVarT tv
-    -> FlipType ground polarity t
-    -> AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
+    forall (ground :: GroundTypeKind) polarity tv t.
+    Is PolarityType polarity =>
+    TypeVarT tv ->
+    FlipType ground polarity t ->
+    AtomicConstraint ground (PolarShimType (DolanShim ground) polarity t tv)
 mkAtomicConstraint var ft = MkAtomicConstraint var representative ft
 
 isPureAtomicConstraint ::
-       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => AtomicConstraint ground a
-    -> Maybe a
+    forall (ground :: GroundTypeKind) a.
+    IsDolanGroundType ground =>
+    AtomicConstraint ground a ->
+    Maybe a
 isPureAtomicConstraint (MkAtomicConstraint depvar pol (NormalFlipType tw)) =
     withRepresentative pol $ do
         MkShimWit t (MkPolarShim conv) <- dolanToMaybeTypeShim tw
@@ -53,15 +56,16 @@ type AtomicPuzzleExpression :: GroundTypeKind -> Type -> Type
 type AtomicPuzzleExpression ground = TSOpenSolverExpression (DolanTypeSystem ground) (AtomicPuzzle ground)
 
 joinAtomicConstraints ::
-       forall (ground :: GroundTypeKind) a b. IsDolanGroundType ground
-    => AtomicConstraint ground a
-    -> AtomicConstraint ground b
-    -> Maybe (AtomicPuzzle ground (a, b))
+    forall (ground :: GroundTypeKind) a b.
+    IsDolanGroundType ground =>
+    AtomicConstraint ground a ->
+    AtomicConstraint ground b ->
+    Maybe (AtomicPuzzle ground (a, b))
 joinAtomicConstraints (MkAtomicConstraint va pa (NormalFlipType ta)) (MkAtomicConstraint vb pb (NormalFlipType tb)) = do
     Refl <- testEquality va vb
     Refl <- testEquality pa pb
-    Just $
-        case pa of
+    Just
+        $ case pa of
             PositiveType ->
                 case joinMeetType ta tb of
                     MkShimWit tab (MkPolarShim conv) -> let

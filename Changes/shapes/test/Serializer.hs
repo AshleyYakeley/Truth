@@ -1,6 +1,7 @@
 module Serializer
     ( testSerializer
-    ) where
+    )
+where
 
 import Shapes
 import Shapes.Test
@@ -12,9 +13,10 @@ checkSerializer s value = let
     in found == Just value
 
 test ::
-       forall a. (HasSerializer a, Eq a, Show a, Arbitrary a)
-    => String
-    -> TestTree
+    forall a.
+    (HasSerializer a, Eq a, Show a, Arbitrary a) =>
+    String ->
+    TestTree
 test name =
     testTree
         name

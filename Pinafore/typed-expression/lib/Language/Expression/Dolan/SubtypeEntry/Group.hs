@@ -1,8 +1,9 @@
 module Language.Expression.Dolan.SubtypeEntry.Group where
 
+import Shapes
+
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Shapes
 
 type SubtypeGroup :: GroundTypeKind -> GroundTypeKind
 data SubtypeGroup ground dv gt = MkSubtypeGroup
@@ -11,10 +12,11 @@ data SubtypeGroup ground dv gt = MkSubtypeGroup
     }
 
 subtypeGroupTestEquality ::
-       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanGroundType ground
-    => SubtypeGroup ground dva gta
-    -> SubtypeGroup ground dvb gtb
-    -> Maybe (dva :~: dvb, gta :~~: gtb)
+    forall (ground :: GroundTypeKind) dva gta dvb gtb.
+    IsDolanGroundType ground =>
+    SubtypeGroup ground dva gta ->
+    SubtypeGroup ground dvb gtb ->
+    Maybe (dva :~: dvb, gta :~~: gtb)
 subtypeGroupTestEquality ta tb = groundTypeTestEquality (sgWitness ta) (sgWitness tb)
 
 type SomeSubtypeGroup :: GroundTypeKind -> Type
@@ -28,14 +30,16 @@ instance forall (ground :: GroundTypeKind) dv gt. ShowGroundType ground => Show 
     show (MkSubtypeGroup t _) = show t
 
 testEqualitySubtypeGroupTest ::
-       forall (ground :: GroundTypeKind) dv gt. IsDolanGroundType ground
-    => ground dv gt
-    -> ground dv gt
-    -> Bool
+    forall (ground :: GroundTypeKind) dv gt.
+    IsDolanGroundType ground =>
+    ground dv gt ->
+    ground dv gt ->
+    Bool
 testEqualitySubtypeGroupTest ta tb = isJust $ groundTypeTestEquality ta tb
 
 singletonSubtypeGroup ::
-       forall (ground :: GroundTypeKind) dv gt. IsDolanGroundType ground
-    => ground dv gt
-    -> SubtypeGroup ground dv gt
+    forall (ground :: GroundTypeKind) dv gt.
+    IsDolanGroundType ground =>
+    ground dv gt ->
+    SubtypeGroup ground dv gt
 singletonSubtypeGroup gt = MkSubtypeGroup gt testEqualitySubtypeGroupTest

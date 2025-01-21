@@ -1,10 +1,10 @@
 module Graphics.Cairo.Functional
-    (
-    -- * Drawing
+    ( -- * Drawing
       CairoError
     , Drawing
     , drawingRender
-    -- * Clicks
+
+      -- * Clicks
     , PixelPoint
     , pixelToAbstract
     , abstractToPixel
@@ -12,11 +12,13 @@ module Graphics.Cairo.Functional
     , drawingPoint
     , ifPoint
     , ifInRect
-    -- * Co-ordinate Transformation
+
+      -- * Co-ordinate Transformation
     , translate
     , rotate
     , scale
-    -- * Painting
+
+      -- * Painting
     , paint
     , paintWithAlpha
     , sourceRGB
@@ -50,12 +52,14 @@ module Graphics.Cairo.Functional
     , operatorHslSaturation
     , operatorHslColor
     , operatorHslLuminosity
-    -- * Paths
+
+      -- * Paths
     , Path
     , stroke
     , fill
     , clip
-    -- ** Construction
+
+      -- ** Construction
     , closePath
     , moveTo
     , lineTo
@@ -66,7 +70,8 @@ module Graphics.Cairo.Functional
     , rectangle
     , arc
     , arcNegative
-    -- ** Properties
+
+      -- ** Properties
     , lineWidth
     , lineJoinMitre
     , lineJoinRound
@@ -77,26 +82,30 @@ module Graphics.Cairo.Functional
     , dash
     , fillRuleWinding
     , fillRuleEvenOdd
-    -- * Text
+
+      -- * Text
     , textPath
-    , R.FontSlant(..)
-    , R.FontWeight(..)
+    , R.FontSlant (..)
+    , R.FontWeight (..)
     , fontFace
     , fontSize
-    -- * Patterns
+
+      -- * Patterns
     , Pattern
     , patternSource
     , patternMask
     , rgbPattern
     , rgbaPattern
-    , PatternColorStop(..)
+    , PatternColorStop (..)
     , linearPattern
     , radialPattern
-    -- ** From Drawings
+
+      -- ** From Drawings
     , colorDrawingPattern
     , alphaDrawingPattern
     , colorAlphaDrawingPattern
-    ) where
+    )
+where
 
 import GI.Cairo.Render qualified as R
 import GI.Cairo.Render.Matrix qualified as RM
@@ -106,8 +115,8 @@ import Shapes.Numeric
 --
 -- Drawing
 --
-newtype CairoError =
-    MkCairoError R.Status
+newtype CairoError
+    = MkCairoError R.Status
 
 instance Show CairoError where
     show (MkCairoError s) = "Cairo: " <> show s
@@ -165,30 +174,33 @@ drawingPoint :: Drawing a -> a
 drawingPoint drawing = drawingItem drawing RM.identity
 
 renderDrawing :: Monoid a => R.Render () -> Drawing a
-renderDrawing r = mempty {drawingRender = checkStatus r}
+renderDrawing r = mempty{drawingRender = checkStatus r}
 
 dcontext :: R.Render () -> Drawing a -> Drawing a
 dcontext change (MkDrawing render mp) = MkDrawing (rcontext $ checkStatus change >> render) mp
 
 ifPoint ::
-       forall a. Monoid a
-    => ((Double, Double) -> Bool)
-    -> Drawing (PixelPoint -> a)
-    -> Drawing (PixelPoint -> a)
+    forall a.
+    Monoid a =>
+    ((Double, Double) -> Bool) ->
+    Drawing (PixelPoint -> a) ->
+    Drawing (PixelPoint -> a)
 ifPoint test drawing =
     liftA2
-        (\t a p ->
-             if t p
-                 then a p
-                 else mempty)
+        ( \t a p ->
+            if t p
+                then a p
+                else mempty
+        )
         (pointDrawing test)
         drawing
 
 ifInRect ::
-       forall a. Monoid a
-    => ((Double, Double), (Double, Double))
-    -> Drawing (PixelPoint -> a)
-    -> Drawing (PixelPoint -> a)
+    forall a.
+    Monoid a =>
+    ((Double, Double), (Double, Double)) ->
+    Drawing (PixelPoint -> a) ->
+    Drawing (PixelPoint -> a)
 ifInRect ((x0, y0), (w, h)) = ifPoint $ \(x, y) -> (x >= x0) && (x < x0 + w) && (y >= y0) && (y < y0 + h)
 
 --
@@ -223,14 +235,16 @@ scale (sx, sy) (MkDrawing render mp) = let
 -- Painting
 --
 paint ::
-       forall a. Monoid a
-    => Drawing a
+    forall a.
+    Monoid a =>
+    Drawing a
 paint = renderDrawing $ R.paint
 
 paintWithAlpha ::
-       forall a. Monoid a
-    => Double
-    -> Drawing a
+    forall a.
+    Monoid a =>
+    Double ->
+    Drawing a
 paintWithAlpha a = renderDrawing $ R.paintWithAlpha a
 
 sourceRGB :: (Double, Double, Double) -> Drawing --> Drawing
@@ -345,18 +359,20 @@ pathRender pp = do
     unPath pp
 
 stroke ::
-       forall a. Monoid a
-    => Path
-    -> Drawing a
+    forall a.
+    Monoid a =>
+    Path ->
+    Drawing a
 stroke pp =
     renderDrawing $ do
         pathRender pp
         R.stroke
 
 fill ::
-       forall a. Monoid a
-    => Path
-    -> Drawing a
+    forall a.
+    Monoid a =>
+    Path ->
+    Drawing a
 fill pp =
     renderDrawing $ do
         pathRender pp
@@ -449,17 +465,18 @@ fontSize s = dcontext $ R.setFontSize s
 --
 -- Patterns
 --
-newtype Pattern =
-    MkPattern (forall a. (R.Pattern -> R.Render a) -> R.Render a)
+newtype Pattern
+    = MkPattern (forall a. (R.Pattern -> R.Render a) -> R.Render a)
 
 patternSource :: Pattern -> Drawing a -> Drawing a
 patternSource (MkPattern wpat) (MkDrawing render mp) =
     MkDrawing (wpat $ \pat -> rcontext $ checkStatus (R.setSource pat) >> render) mp
 
 patternMask ::
-       forall a. Monoid a
-    => Pattern
-    -> Drawing a
+    forall a.
+    Monoid a =>
+    Pattern ->
+    Drawing a
 patternMask (MkPattern wpat) = renderDrawing $ wpat $ \pat -> checkStatus $ R.mask pat
 
 rgbPattern :: (Double, Double, Double) -> Pattern
@@ -468,9 +485,10 @@ rgbPattern (r, g, b) = MkPattern $ R.withRGBPattern r g b
 rgbaPattern :: ((Double, Double, Double), Double) -> Pattern
 rgbaPattern ((r, g, b), a) = MkPattern $ R.withRGBAPattern r g b a
 
-data PatternColorStop =
-    MkPatternColorStop Double
-                       ((Double, Double, Double), Maybe Double)
+data PatternColorStop
+    = MkPatternColorStop
+        Double
+        ((Double, Double, Double), Maybe Double)
 
 linearPattern :: [PatternColorStop] -> (Double, Double) -> (Double, Double) -> Pattern
 linearPattern cstops (x0, y0) (x1, y1) =

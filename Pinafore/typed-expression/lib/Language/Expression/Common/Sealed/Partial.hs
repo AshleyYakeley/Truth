@@ -2,8 +2,9 @@
 
 module Language.Expression.Common.Sealed.Partial where
 
-import Language.Expression.Common.Sealed.Sealed
 import Shapes
+
+import Language.Expression.Common.Sealed.Sealed
 
 data PartialWit (w :: Type -> Type) (t :: Type) where
     MkPartialWit :: forall w f t. PurityType Maybe f -> w t -> PartialWit w (f t)

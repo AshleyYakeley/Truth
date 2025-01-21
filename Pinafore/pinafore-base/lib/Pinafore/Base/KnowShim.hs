@@ -1,7 +1,8 @@
 module Pinafore.Base.KnowShim where
 
-import Pinafore.Base.Know
 import Shapes
+
+import Pinafore.Base.Know
 
 type KnowShim :: (Type -> Type) -> Type -> Type
 data KnowShim w t where

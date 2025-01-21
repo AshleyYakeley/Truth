@@ -2,7 +2,8 @@
 
 module Pinafore.Language.Library.Entity.Blob
     ( blobEntityLibSection
-    ) where
+    )
+where
 
 import Import
 import Pinafore.Language.Convert
@@ -35,21 +36,22 @@ blobEntityLibSection =
         "Blob"
         "A sequence of bytes."
         [ typeBDS
-              "Blob"
-              ""
-              (MkSomeGroundType blobGroundType)
-              [valPatBDS "Mk" "As a list of bytes." toBlob $ PureFunction $ pure $ \b -> (fromBlob b, ())]
+            "Blob"
+            ""
+            (MkSomeGroundType blobGroundType)
+            [valPatBDS "Mk" "As a list of bytes." toBlob $ PureFunction $ pure $ \b -> (fromBlob b, ())]
         , literalSubtypeRelationEntry @StrictByteString
         , showableSubtypeRelationEntry @StrictByteString
-        , namespaceBDS "Blob" $
-          mconcat
-              [ monoidEntries @StrictByteString
-              , orderEntries (ordOrder @StrictByteString) ""
-              , sequenceEntries @StrictByteString
-              , [ valBDS
-                      "asHexText"
-                      "Represent a `Blob` as hexadecimal `Text`. Encodes as upper-case, decodes case insensitively and ignores spaces and punctuation, but fails on non-hex letters."
-                      hexTextPrism
+        , namespaceBDS "Blob"
+            $ mconcat
+                [ monoidEntries @StrictByteString
+                , orderEntries (ordOrder @StrictByteString) ""
+                , sequenceEntries @StrictByteString
+                ,
+                    [ valBDS
+                        "asHexText"
+                        "Represent a `Blob` as hexadecimal `Text`. Encodes as upper-case, decodes case insensitively and ignores spaces and punctuation, but fails on non-hex letters."
+                        hexTextPrism
+                    ]
                 ]
-              ]
         ]

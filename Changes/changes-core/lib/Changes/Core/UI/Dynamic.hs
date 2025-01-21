@@ -2,7 +2,8 @@ module Changes.Core.UI.Dynamic
     ( replaceDynamicView
     , viewDynamic
     , viewInnerWholeView
-    ) where
+    )
+where
 
 import Changes.Core.Import
 import Changes.Core.Model
@@ -20,13 +21,13 @@ replaceDynamicView getNewDVS tovsCV = do
     put newdvs
 
 viewDynamic ::
-       forall dvs update a.
-       Model update
-    -> View (dvs, a)
-    -> (dvs -> IO ViewState)
-    -> Task IO ()
-    -> (a -> [update] -> StateT dvs View ())
-    -> View a
+    forall dvs update a.
+    Model update ->
+    View (dvs, a) ->
+    (dvs -> IO ViewState) ->
+    Task IO () ->
+    (a -> [update] -> StateT dvs View ()) ->
+    View a
 viewDynamic model initCV tovsCV taskCV recvCV = do
     let
         initBind :: View (MVar dvs, a)
@@ -44,16 +45,18 @@ viewDynamic model initCV tovsCV taskCV recvCV = do
     mVarRunStateT stateVar $ recvCV a []
     return a
 
-data OneWholeViews f =
-    MkOneWholeViews (f ())
-                    ViewState
+data OneWholeViews f
+    = MkOneWholeViews
+        (f ())
+        ViewState
 
 viewInnerWholeView ::
-       forall f update. MonadInner f
-    => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> View ())
-    -> SelectNotify (f ())
-    -> View ()
+    forall f update.
+    MonadInner f =>
+    Model (FullResultOneUpdate f update) ->
+    (f (Model update) -> View ()) ->
+    SelectNotify (f ()) ->
+    View ()
 viewInnerWholeView model baseView (MkSelectNotify notifyChange) = let
     readInner :: View (f ())
     readInner = viewRunResource model $ \asub -> aModelRead asub ReadHasOne

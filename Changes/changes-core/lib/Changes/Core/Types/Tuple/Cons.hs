@@ -29,58 +29,64 @@ emptyTupleLens = let
     clRead :: ReadFunction (UpdateReader updateA) (TupleUpdateReader EmptyType)
     clRead _ (MkTupleUpdateReader sel _) = never sel
     clUpdate ::
-           forall m. MonadIO m
-        => updateA
-        -> Readable m (UpdateReader updateA)
-        -> m [TupleUpdate EmptyType]
+        forall m.
+        MonadIO m =>
+        updateA ->
+        Readable m (UpdateReader updateA) ->
+        m [TupleUpdate EmptyType]
     clUpdate _ _ = return []
     clPutEdits ::
-           forall m. MonadIO m
-        => [TupleUpdateEdit EmptyType]
-        -> Readable m (UpdateReader updateA)
-        -> m (Maybe [UpdateEdit updateA])
+        forall m.
+        MonadIO m =>
+        [TupleUpdateEdit EmptyType] ->
+        Readable m (UpdateReader updateA) ->
+        m (Maybe [UpdateEdit updateA])
     clPutEdits [] _ = return $ Just []
-    clPutEdits ((MkTupleUpdateEdit sel _):_) _ = never sel
-    in MkChangeLens {..}
+    clPutEdits ((MkTupleUpdateEdit sel _) : _) _ = never sel
+    in MkChangeLens{..}
 
 firstChangeLens :: forall sel update1. ChangeLens (TupleUpdate (ConsType update1 sel)) update1
 firstChangeLens = let
     clRead :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (UpdateReader update1)
     clRead mr rt = mr $ MkTupleUpdateReader (LeftType Refl) rt
     clUpdate ::
-           forall m. MonadIO m
-        => TupleUpdate (ConsType update1 sel)
-        -> Readable m (TupleUpdateReader (ConsType update1 sel))
-        -> m [update1]
+        forall m.
+        MonadIO m =>
+        TupleUpdate (ConsType update1 sel) ->
+        Readable m (TupleUpdateReader (ConsType update1 sel)) ->
+        m [update1]
     clUpdate (MkTupleUpdate (LeftType Refl) update) _ = return [update]
     clUpdate (MkTupleUpdate (RightType _) _) _ = return []
     clPutEdits ::
-           forall m. MonadIO m
-        => [UpdateEdit update1]
-        -> Readable m (TupleUpdateReader (ConsType update1 sel))
-        -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
+        forall m.
+        MonadIO m =>
+        [UpdateEdit update1] ->
+        Readable m (TupleUpdateReader (ConsType update1 sel)) ->
+        m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     clPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit (LeftType Refl)) edits
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 restChangeLens :: forall sel update1. ChangeLens (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
 restChangeLens = let
     clRead :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (TupleUpdateReader sel)
     clRead mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (RightType sel) rt
     clUpdate ::
-           forall m. MonadIO m
-        => TupleUpdate (ConsType update1 sel)
-        -> Readable m (TupleUpdateReader (ConsType update1 sel))
-        -> m [TupleUpdate sel]
+        forall m.
+        MonadIO m =>
+        TupleUpdate (ConsType update1 sel) ->
+        Readable m (TupleUpdateReader (ConsType update1 sel)) ->
+        m [TupleUpdate sel]
     clUpdate (MkTupleUpdate (LeftType Refl) _) _ = return []
     clUpdate (MkTupleUpdate (RightType sel) edit) _ = return [MkTupleUpdate sel edit]
     clPutEdits ::
-           forall m. MonadIO m
-        => [TupleUpdateEdit sel]
-        -> Readable m (TupleUpdateReader (ConsType update1 sel))
-        -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
+        forall m.
+        MonadIO m =>
+        [TupleUpdateEdit sel] ->
+        Readable m (TupleUpdateReader (ConsType update1 sel)) ->
+        m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     clPutEdits edits _ =
         return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (RightType sel) edit) edits
-    in MkChangeLens {..}
+    in MkChangeLens{..}
 
 consTuple :: UpdateSubject a -> Tuple r -> Tuple (ConsType a r)
 consTuple a (MkTuple tup) =
