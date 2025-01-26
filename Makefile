@@ -88,6 +88,16 @@ out/licensing: out
 licensing: out/licensing
 
 
+### Haddock
+
+.PHONY: haddock
+haddock:
+	mkdir -p stackpath
+	ln -s $(shell stack $(STACKFLAGS) path --snapshot-doc-root) stackpath/snapshot-doc-root
+	ln -s $(shell stack $(STACKFLAGS) path --local-doc-root) stackpath/local-doc-root
+	stack $(STACKFLAGS) haddock
+
+
 ### Executables
 
 ${BINPATH}/pinafore ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
