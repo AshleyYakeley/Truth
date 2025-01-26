@@ -5,7 +5,6 @@ module Pinafore.Library.Media.Image.JPEG
     )
 where
 
-import Changes.World.Media
 import Data.Media.Image
 import Data.Shim
 import Pinafore.API
