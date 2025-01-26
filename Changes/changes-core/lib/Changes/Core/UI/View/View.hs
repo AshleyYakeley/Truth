@@ -7,6 +7,7 @@ module Changes.Core.UI.View.View
     , viewGetCloser
     , viewLiftLifecycle
     , viewLiftLifecycleWithUnlift
+    , viewAskUnliftLifecycle
     , viewHoistLifecycle
     , viewSubLifecycle
     , viewGetViewState
@@ -78,6 +79,11 @@ viewAddViewState vs = viewLiftLifecycle $ addLifeState vs
 
 viewLiftLifecycle :: Lifecycle --> View
 viewLiftLifecycle la = MkView $ lift la
+
+viewAskUnliftLifecycle :: View (WRaised View Lifecycle)
+viewAskUnliftLifecycle = MkView $ do
+    MkWUnlift unlift <- askUnlift
+    return $ MkWRaised $ unlift . unView
 
 viewLiftLifecycleWithUnlift :: ((View --> Lifecycle) -> Lifecycle a) -> View a
 viewLiftLifecycleWithUnlift call = MkView $ liftWithUnlift $ \unlift -> call $ unlift . unView
