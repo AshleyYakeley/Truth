@@ -126,6 +126,16 @@ hoogle: docker-image
 	stack --docker-env DISPLAY $(STACKFLAGS) hoogle --server
 
 
+### Haddock
+
+.PHONY: haddock
+haddock:
+	mkdir -p stackpath
+	ln -s $(shell stack $(STACKFLAGS) path --snapshot-doc-root) stackpath/snapshot-doc-root
+	ln -s $(shell stack $(STACKFLAGS) path --local-doc-root) stackpath/local-doc-root
+	stack $(STACKFLAGS) haddock
+
+
 ### Executables
 
 ${BINPATH}/pinafore1 ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
