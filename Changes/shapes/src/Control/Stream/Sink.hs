@@ -47,18 +47,18 @@ filterSink (MkFilter s0 f) sink = do
 
 gatherSink :: forall a. IO (Sink IO a, IO [a], Task IO [a])
 gatherSink = do
-    resultVar <- newEmptyMVar
+    (putval, task) <- mkTask
     bufferVar <- newMVar []
     let
         sink =
             MkSink $ \case
                 End -> do
                     aa <- takeMVar bufferVar
-                    putMVar resultVar aa
+                    putval aa
                 Item a -> do
                     aa <- takeMVar bufferVar
                     putMVar bufferVar $ aa <> [a]
-    return (sink, readMVar bufferVar, mvarTask resultVar)
+    return (sink, readMVar bufferVar, task)
 
 handleSink :: Handle -> Sink IO StrictByteString
 handleSink h =
