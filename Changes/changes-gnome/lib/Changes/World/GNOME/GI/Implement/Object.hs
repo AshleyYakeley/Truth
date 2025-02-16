@@ -1,9 +1,7 @@
 module Changes.World.GNOME.GI.Implement.Object where
 
-import Data.GI.Base.GObject qualified as GI
-import Data.GI.Base.Overloading qualified as GI
-import GI.GLib qualified as GI
-import Shapes
+import Import
+import Import.GI qualified as GI
 
 newtype GIObject (t :: Type)
     = MkGIObject (GI.ManagedPtr (GIObject t))

@@ -20,7 +20,7 @@ showPoint t =
         return True
 
 withShowPoint :: String -> UIDrawing -> UIDrawing
-withShowPoint s d = mappend (fallThrough $ showPoint s) d
+withShowPoint s d = mappend (inputFallThrough $ showPoint s) d
 
 drawing :: TimeZone -> UTCTime -> (Int32, Int32) -> UIDrawing
 drawing tz t (fromIntegral -> w, fromIntegral -> h) = let
@@ -56,7 +56,6 @@ main = do
                             gvGetState
                                 $ createWindow
                                 $ let
-                                    wsPosition = WindowPositionCenter
                                     wsSize = (600, 600)
                                     wsCloseBoxAction :: GView 'Locked ()
                                     wsCloseBoxAction = gvRunUnlocked $ gvCloseState closer

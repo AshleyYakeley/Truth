@@ -1,6 +1,6 @@
 module Changes.World.GNOME.GI.LockState where
 
-import Shapes
+import Import
 
 data LockState
     = Locked

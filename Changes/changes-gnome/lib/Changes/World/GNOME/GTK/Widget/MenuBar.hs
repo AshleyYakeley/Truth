@@ -9,14 +9,12 @@ module Changes.World.GNOME.GTK.Widget.MenuBar
     )
 where
 
-import Changes.Core
-import Data.GI.Base.Signals
+-- import Data.GI.Base.Signals
 import Data.IORef
-import GI.Gdk
-import GI.Gtk hiding (MenuBar)
-import Shapes
 
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data KeyboardModifier
     = KMShift
@@ -31,13 +29,13 @@ data MenuAccelerator
         KeyboardKey
 
 actionMenuItem ::
-    (IsMenuShell menushell, IsMenuItem menuitem, IsAccelGroup ag) =>
+    (GI.IsMenuShell menushell, GI.IsMenuItem menuitem, GI.IsAccelGroup ag) =>
     ag ->
     menushell ->
     GView 'Locked menuitem ->
     Model (ROWUpdate (Text, Maybe MenuAccelerator)) ->
     (menuitem -> GView 'Locked ()) ->
-    GView 'Unlocked (menuitem, SignalHandlerId)
+    GView 'Unlocked (menuitem, GI.SignalHandlerId)
 actionMenuItem ag ms mkitem rtext meaction = do
     (item, menuitem, changedSignal) <-
         gvRunLocked $ do
@@ -59,7 +57,7 @@ actionMenuItem ag ms mkitem rtext meaction = do
                             let
                                 keyw :: Word32
                                 keyw = fromIntegral $ ord key
-                                gmods :: [ModifierType]
+                                gmods :: [GI.ModifierType]
                                 gmods = fmap toModifierType mods
                             liftIO $ accelLabelSetAccel l keyw gmods
                             accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ meaction item
@@ -83,13 +81,13 @@ simpleActionMenuEntry :: Text -> Maybe MenuAccelerator -> GView 'Locked () -> Me
 simpleActionMenuEntry label maccel action =
     ActionMenuEntry (constantModel (label, maccel)) (constantModel $ Just action)
 
-toModifierType :: KeyboardModifier -> ModifierType
+toModifierType :: KeyboardModifier -> GI.ModifierType
 toModifierType KMShift = ModifierTypeShiftMask
 toModifierType KMCtrl = ModifierTypeControlMask
 toModifierType KMAlt = ModifierTypeMod1Mask
 
 accelGroupConnection ::
-    IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> GView 'Locked () -> GView 'Locked ()
+    GI.IsAccelGroup ag => ag -> Word32 -> [GI.ModifierType] -> [GI.AccelFlags] -> GView 'Locked () -> GView 'Locked ()
 accelGroupConnection ag key mods flags action = do
     closure <-
         liftIOWithUnlift $ \unlift ->
@@ -101,7 +99,7 @@ accelGroupConnection ag key mods flags action = do
         _ <- gvLiftIO $ accelGroupDisconnect ag $ Just closure
         return ()
 
-attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> GView 'Unlocked ()
+attachMenuEntry :: (GI.IsMenuShell menushell, GI.IsAccelGroup ag) => ag -> menushell -> MenuEntry -> GView 'Unlocked ()
 attachMenuEntry ag ms (ActionMenuEntry rtext raction) = do
     aref <- gvLiftIONoUI $ newIORef Nothing
     let
@@ -138,10 +136,10 @@ attachMenuEntry _ ms SeparatorMenuEntry =
         item <- gvNew SeparatorMenuItem []
         menuShellAppend ms item
 
-attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> GView 'Unlocked ()
+attachMenuEntries :: (GI.IsMenuShell menushell, GI.IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> GView 'Unlocked ()
 attachMenuEntries ag menu mm = for_ mm $ attachMenuEntry ag menu
 
-createMenuBar :: IsAccelGroup ag => ag -> MenuBar -> GView 'Unlocked Widget
+createMenuBar :: GI.IsAccelGroup ag => ag -> MenuBar -> GView 'Unlocked GI.Widget
 createMenuBar ag menu = do
     (mbar, widget) <-
         gvRunLocked $ do

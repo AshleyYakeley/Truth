@@ -14,11 +14,11 @@ module Changes.World.GNOME.GTK.Widget.DynamicStore
     )
 where
 
-import Data.GI.Gtk hiding (get)
 import Data.IORef
-import Shapes
 
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 data DynamicStoreEntry t = MkDynamicStoreEntry
     { dynamicStoreEntryKey :: Unique

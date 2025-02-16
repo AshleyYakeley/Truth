@@ -1,85 +1,81 @@
 module Changes.World.GNOME.GTK.Widget.Cairo
-    ( UIEvents (..)
-    , UIDrawing
+    ( InputType (..)
+    , InputActions
+    , inputAction
+    , inputFallThrough
     , createCairo
-    , onMouseEvent
-    , fallThrough
-    , onClick
     )
 where
 
-import Changes.Core
 import Data.IORef
-import GI.Cairo.Render.Connector
-import GI.Gdk as GI
-import GI.Gtk as GI
 import Graphics.Cairo.Functional
-import Shapes
-import Shapes.Numeric
 
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
+import GI.Cairo.Render.Connector qualified as GI
 
-data UIEvents = MkUIEvents
-    { unUIEvents :: EventButton -> GView 'Locked Bool
-    }
 
-instance Semigroup UIEvents where
-    MkUIEvents evta <> MkUIEvents evtb =
-        MkUIEvents $ \et -> do
-            sa <- evta et
-            if sa
-                then return True
-                else evtb et
 
-instance Monoid UIEvents where
-    mempty = MkUIEvents $ \_ -> return False
 
-type UIDrawing = Drawing (PixelPoint -> UIEvents)
+data InputType loc evt where
+    ClickInputType :: InputType loc (Int32,[GI.ModifierType],loc)
 
-eventsfallThrough :: UIEvents -> UIEvents
-eventsfallThrough (MkUIEvents uie) = MkUIEvents $ \evt -> fmap (\_ -> False) $ uie evt
+instance TestEquality (InputType loc) where
+    testEquality ClickInputType ClickInputType = Just Refl
 
-onMouseEvent :: ((Double, Double) -> EventButton -> GView 'Locked Bool) -> UIDrawing
-onMouseEvent f = pointDrawing $ \p -> MkUIEvents $ f p
+newtype InputActions loc = MkInputActions (forall evt. InputType loc evt -> Maybe (evt -> GView 'Locked Bool))
 
-fallThrough :: UIDrawing -> UIDrawing
-fallThrough = fmap $ fmap eventsfallThrough
+instance Semigroup (InputActions loc) where
+    MkInputActions evta <> MkInputActions evtb =
+        MkInputActions $ \et -> case (evta et,evtb et) of
+            (Nothing,Nothing) -> Nothing
+            (fa,fb) -> Just $ \d -> do
+                sa <- fromMaybe (\_ -> return False) fa d
+                if sa
+                    then return True
+                    else fromMaybe (\_ -> return False) fb d
 
-onClick :: GView 'Locked () -> UIDrawing
-onClick action =
-    onMouseEvent $ \_ event -> do
-        click <- GI.get event #type
-        case click of
-            EventTypeButtonPress -> do
-                action
-                return True
-            _ -> return False
+instance Monoid (InputActions loc) where
+    mempty = MkInputActions $ \_ -> Nothing
 
-createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> GView 'Unlocked Widget
-createCairo model = do
-    drawingRef :: IORef ((Int32, Int32) -> UIDrawing) <- gvLiftIONoUI $ newIORef $ \_ -> mempty
+inputAction :: forall loc evt. InputType loc evt -> (evt -> GView 'Locked ()) -> InputActions loc
+inputAction gtype action = MkInputActions $ \gt -> do
+    Refl <- testEquality gt gtype
+    return $ \evt -> do
+        action evt
+        return True
+
+inputFallThrough :: InputActions loc -> InputActions loc
+inputFallThrough (MkInputActions ga) = MkInputActions $ (fmap $ fmap $ fmap $ fmap $ \_ -> False) ga
+
+createCairo :: forall a. Model (ROWUpdate ((Int32, Int32) -> Drawing (PixelPoint -> a))) -> InputActions a -> GView 'Unlocked GI.Widget
+createCairo model (MkInputActions inputActions) = do
+    drawingRef :: IORef ((Int32, Int32) -> Drawing (PixelPoint -> a)) <- gvLiftIONoUI $ newIORef $ \_ -> pure $ \_ -> error "createCairo: unset"
     gvRunLockedThen $ do
-        (drawingArea, widget) <- gvNewWidget DrawingArea []
+        (drawingArea, widget) <- gvNewWidget GI.DrawingArea []
         let
-            getDrawing :: IO UIDrawing
+            getDrawing :: IO (Drawing (PixelPoint -> a))
             getDrawing = do
                 pdrawing <- readIORef drawingRef
                 w <- #getAllocatedWidth drawingArea
                 h <- #getAllocatedHeight drawingArea
                 return $ pdrawing (w, h)
-        _ <-
-            gvOnSignal drawingArea #draw $ \context ->
-                liftIO $ do
-                    drawing <- getDrawing
-                    renderWithContext (drawingRender drawing) context
-                    return True
-        widgetAddEvents drawingArea [EventMaskButtonPressMask]
-        _ <-
-            gvOnSignal drawingArea #buttonPressEvent $ \event -> do
-                drawing <- liftIO getDrawing
-                h <- GI.get event #x
-                v <- GI.get event #y
-                unUIEvents (drawingPoint drawing (h, v)) event
+        GI.drawingAreaSetDrawFunc drawingArea $ Just $ \_ context _ _ -> do
+            drawing <- getDrawing
+            GI.renderWithContext (drawingRender drawing) context
+        for_ (inputActions ClickInputType) $ \action -> do
+            evc <- gvNew GI.GestureClick []
+            #addController widget evc
+            _ <-
+                gvOnSignal evc #released $ \nPress h v -> do
+                    mevent <- #getCurrentEvent evc
+                    for_ mevent $ \event -> do
+                        drawing <- liftIO getDrawing
+                        modifiers <- #getModifierState event
+                        _ <- action (nPress,modifiers,drawingPoint drawing (h, v))
+                        return ()
+            return ()
         return $ do
             gvBindReadOnlyWholeModel model $ \pdrawing ->
                 gvLiftIONoUI $ do

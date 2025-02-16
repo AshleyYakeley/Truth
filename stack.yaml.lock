@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: haskell-gi-base-0.26.8@sha256:968e2bd48e6f1b9379713ddfda9e664bfbd050157cf937ceaf52b0e0536fcf8a,2448
+    pantry-tree:
+      sha256: df1933e58bd5e0b28cb4be5eb4e80105fe09eedb59645d08e567e8de4d9e065c
+      size: 1941
+  original:
+    hackage: haskell-gi-base-0.26.8
+- completed:
     hackage: gi-gdk-4.0.9@sha256:4196fd5d91a5a3297b2a52debe067409d5001edfec7ed7adb7a44b99a5372893,9585
     pantry-tree:
       sha256: a6c2b884d8e646f1c15bf8f9c30c4fdd3691f451de984f55bd5234d6e00ef268

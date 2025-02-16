@@ -1,15 +1,12 @@
 module Changes.World.GNOME.GTK.Test where
 
-import Data.GI.Base.GValue
-import GI.GObject
-import GI.Gtk
-import Shapes hiding (get)
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-getAllWidgets :: Widget -> GView 'Locked [Widget]
+getAllWidgets :: GI.Widget -> GView 'Locked [GI.Widget]
 getAllWidgets w = do
-    mcont <- liftIO $ castTo Container w
+    mcont <- liftIO $ GI.castTo Container w
     case mcont of
         Nothing -> return [w]
         Just cont -> do
@@ -19,25 +16,25 @@ getAllWidgets w = do
 
 gobjectEmitClicked ::
     forall t.
-    GObject t =>
+    GI.GObject t =>
     t ->
     GView 'Locked ()
 gobjectEmitClicked obj = do
-    gtype <- liftIO $ glibType @t
-    (_, signalId, detail) <- signalParseName "clicked" gtype False
+    gtype <- liftIO $ GI.glibType @t
+    (_, signalId, detail) <- GI.signalParseName "clicked" gtype False
     liftIO
-        $ withManagedPtr obj
+        $ GI.withManagedPtr obj
         $ \entryPtr -> do
-            gvalObj <- buildGValue gtype set_object entryPtr
-            _ <- signalEmitv [gvalObj] signalId detail
+            gvalObj <- GI.buildGValue gtype GI.set_object entryPtr
+            _ <- GI.signalEmitv [gvalObj] signalId detail
             return ()
 
-getWindows :: GView 'Locked [Window]
+getWindows :: GView 'Locked [GI.Window]
 getWindows = do
-    ww <- windowListToplevels
-    forf ww $ \w -> liftIO $ castTo Window w
+    ww <- GI.windowListToplevels
+    forf ww $ \w -> liftIO $ GI.castTo Window w
 
-getVisibleWindows :: GView 'Locked [Window]
+getVisibleWindows :: GView 'Locked [GI.Window]
 getVisibleWindows = do
     ww <- getWindows
     forf ww $ \w -> do
@@ -52,9 +49,9 @@ clickOnlyWindowButton = do
     ww <- getVisibleWindows
     case ww of
         [w] -> do
-            w' <- toWidget w
+            w' <- GI.toWidget w
             cc <- getAllWidgets w'
-            bb <- forf cc $ \c -> liftIO $ castTo Button c
+            bb <- forf cc $ \c -> liftIO $ GI.castTo Button c
             case bb of
                 [b] -> gobjectEmitClicked b
                 _ -> fail $ show (length bb) <> " Buttons"

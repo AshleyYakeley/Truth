@@ -42,6 +42,7 @@ allow-newer-deps:
 
 extra-deps:
 # GTK
+- haskell-gi-base-0.26.8
 - gi-gdk-4.0.9
 - gi-gsk-4.0.8
 - gi-gtk-4.0.9

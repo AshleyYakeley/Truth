@@ -3,42 +3,40 @@ module Changes.World.GNOME.GTK.Widget.ListBox
     )
 where
 
-import Changes.Core
-import GI.Gtk
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
 newtype ListViewState
     = MkListViewState [GViewState 'Unlocked]
 
 insertListViewState :: Monad m => SequencePoint -> GViewState 'Unlocked -> StateT ListViewState m ()
 insertListViewState i vs = do
-    MkListViewState s <- Shapes.get
+    MkListViewState s <- get
     let (l, r) = splitAt (fromIntegral i) s
     put $ MkListViewState $ l <> (vs : r)
 
 removeListViewState :: Monad m => SequencePoint -> StateT ListViewState m (GViewState 'Unlocked)
 removeListViewState i = do
-    MkListViewState s <- Shapes.get
+    MkListViewState s <- get
     let (l, r) = splitAt (fromIntegral i) s
     put $ MkListViewState $ l <> drop 1 r
     return $ fromJust $ listToMaybe r
 
 removeAllListViewStates :: Monad m => StateT ListViewState m [GViewState 'Unlocked]
 removeAllListViewStates = do
-    MkListViewState s <- Shapes.get
+    MkListViewState s <- get
     put $ MkListViewState []
     return s
 
 createListBox ::
     forall update.
-    (Model update -> GView 'Unlocked Widget) ->
+    (Model update -> GView 'Unlocked GI.Widget) ->
     Model (OrderedListUpdate update) ->
-    GView 'Unlocked Widget
+    GView 'Unlocked GI.Widget
 createListBox mkWidget model = do
     (listBox, widget) <-
-        gvRunLocked $ gvNewWidget ListBox [#selectionMode := SelectionModeSingle, #activateOnSingleClick := True]
+        gvRunLocked $ gvNewWidget GI.ListBox [#selectionMode GI.:= GI.SelectionModeSingle, #activateOnSingleClick GI.:= True]
     let
         insertWidget :: SequencePoint -> GView 'Unlocked (GViewState 'Unlocked)
         insertWidget i = do

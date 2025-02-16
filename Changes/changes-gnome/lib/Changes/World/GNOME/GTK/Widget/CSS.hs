@@ -5,29 +5,27 @@ module Changes.World.GNOME.GTK.Widget.CSS
     )
 where
 
-import Changes.Core
-import GI.Gtk as GI
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-setCSSName :: Text -> Widget -> GView 'Locked ()
+setCSSName :: Text -> GI.Widget -> GView 'Locked ()
 setCSSName name w = #setName w name
 
-setCSSClass :: Text -> Widget -> GView 'Locked ()
+setCSSClass :: Text -> GI.Widget -> GView 'Locked ()
 setCSSClass cssclass w = do
     sc <- #getStyleContext w
     #addClass sc cssclass
 
-bindCSS :: Bool -> Word32 -> Model (ROWUpdate Text) -> Widget -> GView 'Unlocked ()
+bindCSS :: Bool -> Word32 -> Model (ROWUpdate Text) -> GI.Widget -> GView 'Unlocked ()
 bindCSS tree priority cssmod widget = do
     provider <-
         gvRunLocked $ do
-            provider <- gvNew CssProvider []
+            provider <- gvNew GI.CssProvider []
             widgets <-
                 case tree of
                     False -> return [widget]
-                    True -> liftIO $ widgetGetTree False widget
+                    True -> liftIO $ getWidgetChildren widget
             for_ widgets $ \w -> do
                 sc <- #getStyleContext w
                 #addProvider sc provider priority

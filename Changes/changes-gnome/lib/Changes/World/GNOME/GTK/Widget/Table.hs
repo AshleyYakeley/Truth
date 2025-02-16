@@ -7,14 +7,11 @@ module Changes.World.GNOME.GTK.Widget.Table
     )
 where
 
-import Changes.Core
-import Data.GI.Base.Attributes hiding (get)
-import Data.GI.Gtk hiding (get)
-import Shapes
-
 import Changes.World.GNOME.GI
 import Changes.World.GNOME.GTK.Widget.DynamicStore
 import Changes.World.GNOME.GTK.Widget.TextStyle
+import Import
+import Import.GI qualified as GI
 
 data TableCellProps = MkTableCellProps
     { tcStyle :: TextStyle
@@ -220,7 +217,7 @@ tableContainerView
                         getSelection = do
                             mentry <- getSelectedEntry
                             return $ fmap (entryModel . snd) mentry
-                    MkWRaised unliftToView <- gvGetUnliftToView
+                    MkWRaised unliftToView <- gvAskUnliftView
                     getSelSig' <-
                         gvOnSignal tselection' #changed
                             $ gvRunUnlocked

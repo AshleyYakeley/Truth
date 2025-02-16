@@ -141,7 +141,6 @@ soupWindow newWindow dirpath = do
                 rspec (FailureResult err) = createLabel $ constantModel err
             rec ~(subwin, subcloser) <-
                     gvGetState $ let
-                        wsPosition = WindowPositionCenter
                         wsSize = (300, 400)
                         wsCloseBoxAction = gvRunUnlocked $ gvCloseState subcloser
                         wsTitle = constantModel "item"
@@ -155,7 +154,6 @@ soupWindow newWindow dirpath = do
                         in newWindow MkWindowSpec{..}
             return ()
     rec let
-            wsPosition = WindowPositionCenter
             wsSize = (300, 400)
             wsTitle :: Model (ROWUpdate Text)
             wsTitle = constantModel $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath

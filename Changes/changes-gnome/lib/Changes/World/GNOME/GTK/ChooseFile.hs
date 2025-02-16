@@ -3,33 +3,31 @@ module Changes.World.GNOME.GTK.ChooseFile
     )
 where
 
-import GI.Gio as GI
-import GI.Gtk as GI
-import Shapes
-
 import Changes.World.GNOME.GI
+import Import
+import Import.GI qualified as GI
 
-chooseFile :: FileChooserAction -> (Maybe (Text, Text) -> Bool) -> GView 'Locked (Maybe File)
-chooseFile action test =
+chooseFile :: GI.FileChooserAction -> Maybe [(Text,Maybe Text)] -> GView 'Locked (StoppableTask (GView 'Unlocked) GI.File)
+chooseFile action mMimeTypes =
     gvSubLifecycle $ do
-        dialog <- gvNew FileChooserNative [#action := action]
-        ffilter <- new FileFilter [] -- don't unref
-        fileFilterAddCustom ffilter [FileFilterFlagsMimeType] $ \finfo -> do
-            mtype <- getFileFilterInfoMimeType finfo
-            return
-                $ test
-                $ do
-                    mediatype <- mtype
-                    case splitWhen ((==) '/') mediatype of
-                        [t, s] -> return (t, s)
-                        _ -> Nothing
-        fileChooserAddFilter dialog ffilter
-        res <- #run dialog
-        mpath <-
+        dialog <- gvNew GI.FileChooserDialog [#action GI.:= action]
+        for_ mMimeTypes $ \mimeTypes -> do
+            ffilter <- GI.new GI.FileFilter [] -- don't unref
+            for_ mimeTypes $ \(tt,mst) -> GI.fileFilterAddMimeType ffilter $ tt <> "/" <> (fromMaybe "*" mst)
+            GI.fileChooserAddFilter dialog ffilter
+        (reportTask,stoppableTaskTask) <- gvLiftIONoUI $ gvMkTask @(Maybe GI.File)
+        _ <- gvOnSignal dialog #response $ \res ->
             case toEnum $ fromIntegral res of
-                ResponseTypeAccept -> do
-                    f <- fileChooserGetFile dialog
-                    gvAcquire f
-                    return $ Just f
-                _ -> return Nothing
-        return mpath
+                GI.ResponseTypeAccept -> do
+                    mf <- GI.fileChooserGetFile dialog
+                    for_ mf gvAcquire
+                    gvLiftIONoUI $ reportTask mf
+                _ -> gvLiftIONoUI $ reportTask Nothing
+        _ <- gvOnSignal dialog #close $
+            gvLiftIONoUI $ reportTask Nothing
+        let
+            stoppableTaskStop :: GView 'Unlocked ()
+            stoppableTaskStop = do
+                gvRunLocked $ GI.windowClose dialog
+                gvLiftIONoUI $ reportTask Nothing
+        return  MkStoppableTask {..}

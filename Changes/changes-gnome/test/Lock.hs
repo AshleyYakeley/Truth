@@ -25,7 +25,6 @@ lockTest name setup action =
 
 blankWindowSpec :: WindowSpec
 blankWindowSpec = let
-    wsPosition = WindowPositionCenter
     wsSize = (300, 400)
     wsCloseBoxAction = return ()
     wsTitle = constantModel "Test"
