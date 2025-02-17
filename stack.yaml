@@ -74,30 +74,6 @@ notify-if-nix-on-path: false
 
 nix:
     enable: false
-    path:
-    # https://github.com/NixOS/nixpkgs/tags
-    - nixpkgs=https://github.com/nixos/nixpkgs/tarball/23.05
-    packages:
-    - zlib
-    - pkg-config
-    - gobject-introspection
-    - cairo
-    - gdk-pixbuf
-    - harfbuzz
-    - atkmm
-    - libthai
-    - libdatrie
-    - libxkbcommon
-    - libepoxy
-    - pango
-    - pcre
-    - pcre2
-    - xorg.libXdmcp
-    - xorg.libXtst
-    - util-linux
-    - libselinux
-    - libsepol
-    - gtk3
 
 ghc-options:
     "$locals": -Werror
