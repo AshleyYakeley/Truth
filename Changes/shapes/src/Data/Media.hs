@@ -1,4 +1,4 @@
-module Changes.World.Media.Type
+module Data.Media
     ( MediaType
     , pattern MkMediaType
     , mtType
@@ -8,11 +8,17 @@ module Changes.World.Media.Type
     , pattern TextMediaType
     , pattern ImageMediaType
     , pattern ApplicationMediaType
+    , Media (..)
     )
 where
 
-import Shapes
 import Text.ParserCombinators.ReadP qualified as P
+
+import Data.Codec
+import Data.HasNewValue
+import Data.Serialize.Has
+import Data.Serializer
+import Shapes.Import
 
 data MediaType = MkMediaType_
     { mtType :: Text
@@ -135,3 +141,23 @@ pattern ApplicationMediaType = "application"
 
 instance HasNewValue MediaType where
     newValue = MkMediaType_ ApplicationMediaType "octet-stream" []
+
+data Media = MkMedia
+    { mediaType :: MediaType
+    , mediaContent :: StrictByteString
+    }
+    deriving stock Eq
+
+instance HasSerializer Media where
+    greedySerializer = let
+        toMedia :: (MediaType, StrictByteString) -> Media
+        toMedia (t, b) = MkMedia t b
+        fromMedia :: Media -> (MediaType, StrictByteString)
+        fromMedia (MkMedia t b) = (t, b)
+        in invmap toMedia fromMedia $ sProduct stoppingSerializer greedySerializer
+    stoppingSerializer = let
+        toMedia :: (MediaType, StrictByteString) -> Media
+        toMedia (t, b) = MkMedia t b
+        fromMedia :: Media -> (MediaType, StrictByteString)
+        fromMedia (MkMedia t b) = (t, b)
+        in invmap toMedia fromMedia $ sProduct stoppingSerializer stoppingSerializer

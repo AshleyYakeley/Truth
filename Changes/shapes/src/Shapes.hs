@@ -34,6 +34,7 @@ import Data.KeyedOrder as I
 import Data.KindMorphism as I
 import Data.Lens as I
 import Data.ListSet as I
+import Data.Media as I
 import Data.Merge as I
 import Data.MonoApplicative as I
 import Data.PurityFunction as I

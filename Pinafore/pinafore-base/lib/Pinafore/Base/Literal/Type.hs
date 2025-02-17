@@ -20,7 +20,6 @@ module Pinafore.Base.Literal.Type
     )
 where
 
-import Changes.World.Media.Type
 import Shapes
 
 newtype LiteralType = MkLiteralType

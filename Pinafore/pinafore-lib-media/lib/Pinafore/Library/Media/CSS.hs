@@ -4,7 +4,6 @@ module Pinafore.Library.Media.CSS
     )
 where
 
-import Changes.World.Media.Type
 import Data.Shim
 import Pinafore.API
 import Shapes

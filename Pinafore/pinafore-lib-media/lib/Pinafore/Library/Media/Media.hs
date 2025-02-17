@@ -9,34 +9,13 @@ module Pinafore.Library.Media.Media
     )
 where
 
-import Changes.World.Media.Type
 import Pinafore.API
 import Shapes
-
-data Media = MkMedia
-    { mediaType :: MediaType
-    , mediaContent :: StrictByteString
-    }
-    deriving stock Eq
 
 instance AsLiteral Media
 
 instance AsTypedLiteral Media where
     literalType = mediaLiteralType
-
-instance HasSerializer Media where
-    greedySerializer = let
-        toMedia :: (MediaType, StrictByteString) -> Media
-        toMedia (t, b) = MkMedia t b
-        fromMedia :: Media -> (MediaType, StrictByteString)
-        fromMedia (MkMedia t b) = (t, b)
-        in invmap toMedia fromMedia $ sProduct stoppingSerializer greedySerializer
-    stoppingSerializer = let
-        toMedia :: (MediaType, StrictByteString) -> Media
-        toMedia (t, b) = MkMedia t b
-        fromMedia :: Media -> (MediaType, StrictByteString)
-        fromMedia (MkMedia t b) = (t, b)
-        in invmap toMedia fromMedia $ sProduct stoppingSerializer stoppingSerializer
 
 -- MediaType
 mediaTypeGroundType :: QGroundType '[] MediaType

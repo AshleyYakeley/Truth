@@ -85,6 +85,7 @@ library:
       - Data.Serialize.Has
       - Data.ReadShow
       - Data.Witness.ListVProduct
+      - Data.Media
       - Data.Text.Markup
       - Control.Category.Dual
       - Control.Category.Lifted

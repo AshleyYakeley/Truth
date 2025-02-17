@@ -10,7 +10,6 @@ module Pinafore.Base.Literal.Literal
     )
 where
 
-import Changes.World.Media.Type
 import Data.Time
 import Shapes
 import Shapes.Numeric
