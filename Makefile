@@ -53,6 +53,8 @@ else
 BINPATH := $(shell stack $(STACKFLAGS) path --local-bin)
 endif
 
+NIXFLAGS := --option substituters 'https://cache.iog.io https://cache.nixos.org/'
+
 ### Docker image
 
 .PHONY: docker-image
@@ -209,12 +211,12 @@ deb: out/$(PACKAGEFULLNAME).deb
 # Use this on a Nix system
 # broken, see https://github.com/NixOS/nix/issues/9347
 nix-fmt:
-	nix fmt
+	nix $(NIXFLAGS) fmt
 
 # Use this on a Nix system
 nix-flake: out
-	nix flake check .?submodules=1
-	nix build .?submodules=1#vscode-extension
+	nix $(NIXFLAGS) flake check .?submodules=1
+	nix $(NIXFLAGS) build .?submodules=1#vscode-extension
 
 nix/docker/flake.nix: flake.nix
 	cp $< $@
