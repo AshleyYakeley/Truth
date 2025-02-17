@@ -30,6 +30,8 @@ RUN chmod +x /usr/local/bin/yq
 RUN apt-get install -y python3-pip python3-venv
 RUN pip3 install --upgrade pip
 RUN pip3 install sphinx myst-parser sphinx_rtd_theme Pygments scour build
+
+# workdir
 RUN mkdir /extra
 WORKDIR /extra
 
