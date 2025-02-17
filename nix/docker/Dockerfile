@@ -1,5 +1,5 @@
 # Image version should match nix version in input.nixpkgs.follows
-FROM nixos/nix:2.18.1
+FROM nixos/nix:2.24.12
 
 # set up nix
 COPY nix.conf /etc/nix/nix.conf

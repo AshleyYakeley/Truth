@@ -1,7 +1,7 @@
-ARG RESOLVER="lts-23.5"
+ARG RESOLVER="lts-23.8"
 
 FROM fpco/stack-build-small:${RESOLVER}
-RUN echo 2025-01-19 > /container.date
+RUN echo 2025-02-17 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive

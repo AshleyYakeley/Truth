@@ -94,7 +94,7 @@ packages:
     hackage: open-witness-0.7
 snapshots:
 - completed:
-    sha256: 2d580e973dc1a5ff70cd2bb1248613f835829b38eed5db5dafc3615a22cb1bcd
-    size: 679292
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/5.yaml
-  original: lts-23.5
+    sha256: ecb944087cba3b8e85ff75d279bbb878615127e44d1b0485c511834c56ee6929
+    size: 680789
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/8.yaml
+  original: lts-23.8

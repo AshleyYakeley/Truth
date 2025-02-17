@@ -4,7 +4,7 @@
     {
       nixpkgs =
         {
-          follows = "haskellNix/nixpkgs-2405";
+          follows = "haskellNix/nixpkgs-2411";
         };
 
       flake-utils =
@@ -50,20 +50,27 @@
                     modules =
                       [
                         {
-                          # no X11 server available during testing
-                          packages."changes-gnome" =
+                          packages =
                             {
-                              configureFlags = [ "-f" "-trace" "-f" "-test-X11" ];
-                            };
-                          packages."pinafore-lib-gnome" =
-                            {
-                              configureFlags = [ "-f" "-test-X11" ];
-                            };
-                          packages."pinafore-app" =
-                            {
-                              configureFlags = [ "-f" "-gitversion" ];
-                              dontStrip = false;
-                              dontPatchELF = false;
+                              "gi-soup" =
+                                {
+                                  components.library.libs = [ pkgs.libsoup ];
+                                };
+                              "changes-gnome" =
+                                {
+                                  # no X11 server available during testing
+                                  configureFlags = [ "-f" "-trace" "-f" "-test-X11" ];
+                                };
+                              "pinafore-lib-gnome" =
+                                {
+                                  configureFlags = [ "-f" "-test-X11" ];
+                                };
+                              "pinafore-app" =
+                                {
+                                  configureFlags = [ "-f" "-gitversion" ];
+                                  dontStrip = false;
+                                  dontPatchELF = false;
+                                };
                             };
                         }
                       ];
