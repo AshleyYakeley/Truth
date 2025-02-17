@@ -6,6 +6,7 @@ module Control.Task
     , ioTask
     , forkTask
     , mvarTask
+    , mkTask
     , timeTask
     , durationTask
     , firstTask
@@ -83,6 +84,16 @@ mvarTask var = let
     taskCheck = liftIO $ tryReadMVar var
     in MkTask{..}
 
+mkIOTask :: forall m a. MonadIO m => m (a -> IO (), Task m a)
+mkIOTask = do
+    var <- liftIO newEmptyMVar
+    return (\a -> tryPutMVar var a >> return (), mvarTask var)
+
+mkTask :: forall m a. MonadIO m => m (a -> m (), Task m a)
+mkTask = do
+    (putval, task) <- mkIOTask
+    return (\a -> liftIO $ putval a, task)
+
 execTask :: Monad m => Task m (m a) -> Task m a
 execTask (MkTask w c) =
     MkTask (w >>= id) $ do
@@ -100,12 +111,12 @@ liftTunnelIO iomr = tunnelIO $ \_ -> iomr
 
 forkTask :: MonadTunnelIO m => m a -> m (Task m a)
 forkTask ma = do
-    var <- liftIO newEmptyMVar
+    (putval, task) <- mkIOTask
     _ <-
         tunnelForkIO $ \unliftIO -> do
             ra <- tryExc $ unliftIO ma
-            putMVar var ra
-    return $ execTask $ fmap (liftTunnelIO . fromResultExc) $ mvarTask var
+            putval ra
+    return $ execTask $ fmap (liftTunnelIO . fromResultExc) task
 
 timeTask :: UTCTime -> Task IO ()
 timeTask t = let
@@ -197,18 +208,18 @@ forkStoppableTask ::
     ((forall r. m r) -> m a) ->
     m (StoppableTask m a)
 forkStoppableTask ma = do
-    var <- liftIO newEmptyMVar
+    (putval, task) <- mkIOTask
     tid <-
         tunnelForkIO $ \unliftIO -> do
             ra <- tryExc $ unliftIO $ ma $ liftIO $ throw MkCancelled
-            putMVar var
+            putval
                 $ case ra of
                     SuccessResult ta -> SuccessResult $ fmap Just ta
                     FailureResult exc
                         | Just MkCancelled <- fromException exc -> SuccessResult $ pure Nothing
                     FailureResult exc -> FailureResult exc
     let
-        stoppableTaskTask = execTask $ fmap (liftTunnelIO . fromResultExc) $ mvarTask var
+        stoppableTaskTask = execTask $ fmap (liftTunnelIO . fromResultExc) task
         stoppableTaskStop = liftIO $ throwTo tid MkCancelled
     return MkStoppableTask{..}
 
