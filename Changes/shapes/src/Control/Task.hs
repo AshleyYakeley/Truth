@@ -87,7 +87,7 @@ mvarTask var = let
 mkIOTask :: forall m a. MonadIO m => m (a -> IO (), Task m a)
 mkIOTask = do
     var <- liftIO newEmptyMVar
-    return (\a -> putMVar var a, mvarTask var)
+    return (\a -> tryPutMVar var a >> return (), mvarTask var)
 
 mkTask :: forall m a. MonadIO m => m (a -> m (), Task m a)
 mkTask = do

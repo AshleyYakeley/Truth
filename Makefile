@@ -93,8 +93,8 @@ licensing: out/licensing
 .PHONY: haddock
 haddock:
 	mkdir -p stackpath
-	ln -s $(shell stack $(STACKFLAGS) path --snapshot-doc-root) stackpath/snapshot-doc-root
-	ln -s $(shell stack $(STACKFLAGS) path --local-doc-root) stackpath/local-doc-root
+	ln -sf $(shell stack $(STACKFLAGS) path --snapshot-doc-root) stackpath/snapshot-doc-root
+	ln -sf $(shell stack $(STACKFLAGS) path --local-doc-root) stackpath/local-doc-root
 	stack $(STACKFLAGS) haddock
 
 
