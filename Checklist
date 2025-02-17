@@ -31,10 +31,10 @@ Before release:
 
     flake.nix
 
-7. Update Dockerfile source image version to nix version from flake inputs.nixpkgs.follows
+7. Update Nix Dockerfile source image version to nix version from flake inputs.nixpkgs.follows
 
     https://search.nixos.org/packages
-    docker/Dockerfile
+    nix/docker/Dockerfile
 
 8. Use latest stack
 
