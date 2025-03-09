@@ -370,7 +370,7 @@ data SyntaxExpression'
     | -- macro stuff
       SESplice SyntaxExpression
     | SEQuoteExpression SyntaxExpression
-    | SEQuoteScope [SyntaxDeclaration]
+    | SEQuoteDeclarations [SyntaxDeclaration]
     | SEQuoteType SyntaxType
     | SEQuoteAnchor Anchor
     | -- debug

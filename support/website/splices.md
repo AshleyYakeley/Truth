@@ -14,14 +14,14 @@ You can think of them as "code literals", just as `"this"` is a text literal.
 
 * Given a type `T`, `@T` has type `OpenType T` (note subtype relation `OpenType () <: Type`).
 * Given an expression `e`, `!expression {e}` has type `Interpreter Expression`.
-* Given bindings `b`, `!scope {b}` has type `Interpreter Scope`.
+* Given bindings `b`, `!decl {b}` has type `Interpreter Declarations`.
 
 ## Splices
 
 Splices are how you can use macros.
 
 * Given `expr: Interpreter Expression`, `!{expr}` in expression context is an expression.
-* Given `expr: Interpreter Scope`, `!{expr}` in scope context is bindings.
+* Given `expr: Interpreter Declarations`, `!{expr}` in declaration context is bindings.
 * Given `expr: Interpreter Type`, `!{expr}` in type context is a type.
 
 For example:

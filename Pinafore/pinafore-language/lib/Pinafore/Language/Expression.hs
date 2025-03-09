@@ -36,6 +36,11 @@ qRunTypeResult = \case
                         (exprShow tb)
                         (witnessToValue $ polarityType @polb)
 
+qGetRunTypeM :: QInterpreter (WRaised QTypeM QTypeResult)
+qGetRunTypeM = do
+    entries <- getSubtypeConversions
+    return $ MkWRaised $ runDolanTypeMEntries entries
+
 qRunTypeM :: QTypeM --> QInterpreter
 qRunTypeM ma = do
     entries <- getSubtypeConversions

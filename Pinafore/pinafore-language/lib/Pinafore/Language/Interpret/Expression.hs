@@ -274,10 +274,10 @@ interpretRecursiveDocDeclarations ddecls = do
     subtypeSB
     interpretRecursiveLetBindings bindingDecls
 
-interpretImportDeclaration :: ModuleName -> QInterpreter QScopeDocs
+interpretImportDeclaration :: ModuleName -> QInterpreter QDeclarations
 interpretImportDeclaration modname = do
     newmod <- getModule modname
-    return $ MkQScopeDocs [moduleScope newmod] $ moduleDoc newmod
+    return $ MkQDeclarations [moduleScope newmod] $ moduleDoc newmod
 
 sectionHeading :: Text -> RawMarkdown -> QScopeBuilder --> QScopeBuilder
 sectionHeading heading doc =
@@ -346,13 +346,13 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
             registerRecordValue name MkDefDoc{..} rv
         DeclaratorSyntaxDeclaration declarator -> do
             sd <- builderLift $ interpretDeclarator declarator
-            registerScopeDocs sd
+            registerDeclarations sd
         DeclaratorInSyntaxDeclaration declarator declaration -> do
             sd <- builderLift $ interpretDeclaratorWith declarator $ runScopeBuilder $ interpretDeclaration declaration
-            registerScopeDocs sd
+            registerDeclarations sd
         ExposeDeclaration items -> do
             sd <- builderLift $ interpretExpose items
-            outputScopeDocs sd
+            outputDeclarations sd
         NamespaceSyntaxDeclaration makeSection nsn decls ->
             withCurrentNamespaceScope nsn
                 $ ( if makeSection
@@ -366,7 +366,7 @@ interpretDeclaration (MkSyntaxWithDoc doc (MkWithSourcePos spos decl)) = do
                 builderLift $ do
                     expr <- interpretExpression sexpr
                     spliceDecls expr
-            registerScopeDocs sd
+            registerDeclarations sd
         DebugSyntaxDeclaration nameref -> do
             mfd <- builderLift $ lookupDebugBindingInfo nameref
             liftIO
@@ -465,19 +465,19 @@ partitionItem :: Namespace -> SyntaxNameRefItem -> ([Namespace], [FullNameRef])
 partitionItem _ (NameSyntaxNameRefItem n) = ([], [n])
 partitionItem curns (NamespaceSyntaxNameRefItem n) = ([namespaceConcatRef curns n], [])
 
-interpretExpose :: [SyntaxNameRefItem] -> QInterpreter QScopeDocs
+interpretExpose :: [SyntaxNameRefItem] -> QInterpreter QDeclarations
 interpretExpose items = do
     curns <- paramAsk currentNamespaceParam
     let (namespaces, names) = concatmap (partitionItem curns) items
     (scope, docs) <- exportScope namespaces names
-    return $ MkQScopeDocs{sdScopes = [scope], sdDocs = MkForest $ fmap pure docs}
+    return $ MkQDeclarations{declsScopes = [scope], declsDocs = MkForest $ fmap pure docs}
 
-interpretDeclarator :: SyntaxDeclarator -> QInterpreter QScopeDocs
+interpretDeclarator :: SyntaxDeclarator -> QInterpreter QDeclarations
 interpretDeclarator (SDLetSeq sdecls) = runScopeBuilder $ for_ sdecls interpretDeclaration
 interpretDeclarator (SDLetRec sdecls) = runScopeBuilder $ interpretRecursiveDocDeclarations sdecls
 interpretDeclarator (SDWith swns) = do
     scopes <- for swns interpretNamespaceWith
-    return $ MkQScopeDocs scopes mempty
+    return $ MkQDeclarations scopes mempty
 interpretDeclarator (SDImport simps) = do
     scopedocs <- for simps $ \modname -> interpretImportDeclaration modname
     return $ mconcat scopedocs
@@ -485,7 +485,7 @@ interpretDeclarator (SDImport simps) = do
 interpretDeclaratorWith :: SyntaxDeclarator -> QInterpreter --> QInterpreter
 interpretDeclaratorWith declarator ma = do
     sd <- interpretDeclarator declarator
-    withScopeDocs sd ma
+    withDeclarations sd ma
 
 interpretExpression' :: SyntaxExpression' -> QInterpreter QExpression
 interpretExpression' (SESubsume sexpr stype) = do
@@ -556,7 +556,7 @@ interpretExpression' (SESplice sexpr) = do
     expr <- interpretExpression sexpr
     spliceExpression expr
 interpretExpression' (SEQuoteExpression sexpr) = return $ qConst $ fmap MkLangExpression $ interpretExpression sexpr
-interpretExpression' (SEQuoteScope sdecls) = return $ qConst $ interpretScopeDocs sdecls
+interpretExpression' (SEQuoteDeclarations sdecls) = return $ qConst $ interpretDeclarations sdecls
 interpretExpression' (SEQuoteType stype) = do
     t <- interpretNonpolarType stype
     return $ qConstValue $ mkLangTypeValue t
@@ -568,10 +568,10 @@ spliceExpression spliceexpr = do
     mexpr <- qUnifyValue @(QInterpreter LangExpression) val
     fmap unLangExpression mexpr
 
-spliceDecls :: QExpression -> QInterpreter QScopeDocs
+spliceDecls :: QExpression -> QInterpreter QDeclarations
 spliceDecls spliceexpr = do
     val <- qEvalExpr spliceexpr
-    msd <- qUnifyValue @(QInterpreter QScopeDocs) val
+    msd <- qUnifyValue @(QInterpreter QDeclarations) val
     msd
 
 checkExprVars :: QExpression -> QInterpreter ()
@@ -612,7 +612,7 @@ interpretBinding MkSingleBinding{..} = do
 interpretDeclarationWith :: SyntaxDeclaration -> QInterpreter --> QInterpreter
 interpretDeclarationWith sdecl ma = do
     sd <- runScopeBuilder $ interpretDeclaration sdecl
-    withScopeDocs sd ma
+    withDeclarations sd ma
 
 interpretGeneralSubtypeRelation ::
     TrustOrVerify -> SyntaxType -> SyntaxType -> SyntaxExpression -> QInterpreter QSubtypeConversionEntry
@@ -680,10 +680,10 @@ interpretSubtypeRelation trustme sta stb mbody docDescription = do
         docItem = SubtypeRelationDocItem{..}
     registerDocs $ pure MkDefDoc{..}
 
-interpretScopeDocs :: [SyntaxDeclaration] -> QInterpreter QScopeDocs
-interpretScopeDocs sdecls = runScopeBuilder $ for_ sdecls interpretDeclaration
+interpretDeclarations :: [SyntaxDeclaration] -> QInterpreter QDeclarations
+interpretDeclarations sdecls = runScopeBuilder $ for_ sdecls interpretDeclaration
 
 interpretModule :: SyntaxModule -> QInterpreter QModule
 interpretModule (MkSyntaxModule sdecls) = do
-    sdocs <- interpretScopeDocs sdecls
-    scopeDocsModule sdocs
+    sdocs <- interpretDeclarations sdecls
+    declarationsModule sdocs

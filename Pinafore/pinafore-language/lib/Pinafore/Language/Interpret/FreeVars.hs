@@ -101,7 +101,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
     syntaxFreeVariables (SESplice _) = mempty
     syntaxFreeVariables (SEQuoteExpression _) = mempty
-    syntaxFreeVariables (SEQuoteScope _) = mempty
+    syntaxFreeVariables (SEQuoteDeclarations _) = mempty
     syntaxFreeVariables (SEQuoteType _) = mempty
     syntaxFreeVariables (SEQuoteAnchor _) = mempty
     syntaxFreeVariables (SEDebug _ expr) = syntaxFreeVariables expr

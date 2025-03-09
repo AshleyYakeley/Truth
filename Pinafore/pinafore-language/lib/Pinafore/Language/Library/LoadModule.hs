@@ -17,7 +17,7 @@ import Pinafore.Language.Library.LibraryModule
 loadModuleFromText :: Text -> QInterpreter QModule
 loadModuleFromText text = do
     sd <- interpretImportDeclaration builtInModuleName
-    withScopeDocs sd $ parseModule text
+    withDeclarations sd $ parseModule text
 
 loadModuleFromByteString :: LazyByteString -> QInterpreter QModule
 loadModuleFromByteString bs =

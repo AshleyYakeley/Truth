@@ -17,20 +17,20 @@ where
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter.Binding
+import Pinafore.Language.Interpreter.Declarations
 import Pinafore.Language.Interpreter.Interpreter
 import Pinafore.Language.Interpreter.Lookup
 import Pinafore.Language.Interpreter.Scope
 import Pinafore.Language.Interpreter.ScopeBuilder
-import Pinafore.Language.Interpreter.ScopeDocs
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
 
 registerScope :: QScope -> QScopeBuilder ()
-registerScope scope = registerScopeDocs $ scopeDocs scope
+registerScope scope = registerDeclarations $ declarations scope
 
 registerDocs :: Docs -> QScopeBuilder ()
-registerDocs docs = registerScopeDocs $ mempty{sdDocs = docs}
+registerDocs docs = registerDeclarations $ mempty{declsDocs = docs}
 
 registerBindings :: [(FullName, QBindingInfo)] -> QScopeBuilder ()
 registerBindings bb = registerScope $ bindingInfosToScope bb

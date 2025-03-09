@@ -71,4 +71,4 @@ runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a ->
 runPinaforeScoped sourcename ma =
     runInterpreter (initialPos sourcename) ?library $ do
         sd <- interpretImportDeclaration builtInModuleName
-        withScopeDocs sd ma
+        withDeclarations sd ma

@@ -24,13 +24,23 @@ newtype QContext
 instance HasQGroundType '[] QContext where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QContext)|]) "Context.Pinafore."
 
+getContext :: QInterpreter QContext
+getContext = do
+    lm <- paramAsk loadModuleParam
+    return $ MkQContext $ MkLibraryContext lm
+
 thisContext :: QInterpreter LangExpression
 thisContext = do
-    lm <- paramAsk loadModuleParam
-    let
-        sval :: QContext
-        sval = MkQContext $ MkLibraryContext lm
-    return $ MkLangExpression $ constSealedExpression $ MkSomeOf qType sval
+    sval <- getContext
+    return $ MkLangExpression $ qConst sval
+
+getScope :: QInterpreter QScope
+getScope = paramAsk scopeParam
+
+thisScope :: QInterpreter LangExpression
+thisScope = do
+    sval <- getScope
+    return $ MkLangExpression $ qConst sval
 
 langRunInterpreter :: QContext -> QInterpreter A -> Action (Result Text A)
 langRunInterpreter (MkQContext lc) ia = let
@@ -47,6 +57,11 @@ langTypeNegative (MkLangOpenType r t) = mapShimWit (MkPolarShim $ rangeCo r) $ n
 
 langUnifyOpenTypes :: LangOpenType '(A, TopType) -> LangOpenType '(BottomType, B) -> QInterpreter (A -> B)
 langUnifyOpenTypes ta tb = fmap shimToFunction $ qUnifyRigid (langTypePositive ta) (langTypeNegative tb)
+
+{-
+langUnifyOpenTypes :: QScope -> LangOpenType '(A, TopType) -> LangOpenType '(BottomType, B) -> QTypeResult (A -> B)
+langUnifyOpenTypes (MkQContext lc (MkWRaised runTypeM)) ta tb = fmap shimToFunction $ runTypeM $ tsUnifyRigid @QTypeSystem (langTypePositive ta) (langTypeNegative tb)
+-}
 
 -- LangValue
 newtype LangValue = MkLangValue
@@ -75,20 +90,20 @@ interpretToValue src = do
 langUnifyValue :: LangOpenType '(BottomType, A) -> LangValue -> QInterpreter A
 langUnifyValue t (MkLangValue v) = qUnifyValueTo (langTypeNegative t) v
 
-langWithScope :: QScopeDocs -> QInterpreter A -> QInterpreter A
-langWithScope sdocs = withScopeDocs sdocs
+langWithScope :: QDeclarations -> QInterpreter A -> QInterpreter A
+langWithScope sdocs = withDeclarations sdocs
 
-bindScope :: Text -> LangValue -> QScopeDocs
+bindScope :: Text -> LangValue -> QDeclarations
 bindScope name (MkLangValue val@(MkSomeFor t _)) = let
     fname = fromString $ unpack name
     doc :: DefDoc
     doc = MkDefDoc{docItem = ValueDocItem (pure $ fullNameRef fname) $ exprShow t, docDescription = ""}
-    in scopeDocs $ bindingInfosToScope $ pure $ (fname, MkQBindingInfo fname doc $ ValueBinding $ qConstValue val)
+    in declarations $ bindingInfosToScope $ pure $ (fname, MkQBindingInfo fname doc $ ValueBinding $ qConstValue val)
 
-interpretModuleFromSource :: Text -> QInterpreter QScopeDocs
+interpretModuleFromSource :: Text -> QInterpreter QDeclarations
 interpretModuleFromSource src = do
     m <- parseModule src
-    return $ moduleScopeDocs m
+    return $ moduleDeclarations m
 
 pinaforeLibSection :: LibraryStuff
 pinaforeLibSection =
@@ -104,40 +119,42 @@ pinaforeLibSection =
                     "The context used for running `Interpreter`."
                     (qSomeGroundType @_ @QContext)
                     [ let
-                        defaultloadModule :: Text -> QInterpreter (Maybe QScopeDocs)
+                        defaultloadModule :: Text -> QInterpreter (Maybe QDeclarations)
                         defaultloadModule _ = return Nothing
-                        rtype :: ListType QDocSignature '[Text -> QInterpreter (Maybe QScopeDocs)]
+                        rtype :: ListType QDocSignature '[Text -> QInterpreter (Maybe QDeclarations)]
                         rtype =
                             ConsListType
-                                ( ValueDocSignature @(Text -> QInterpreter (Maybe QScopeDocs)) "loadModule" "" qType
+                                ( ValueDocSignature @(Text -> QInterpreter (Maybe QDeclarations)) "loadModule" "" qType
                                     $ Just
                                     $ pure defaultloadModule
                                 )
                                 NilListType
-                        qContextLoadModule :: QContext -> Text -> QInterpreter (Maybe QScopeDocs)
+                        qContextLoadModule :: QContext -> Text -> QInterpreter (Maybe QDeclarations)
                         qContextLoadModule (MkQContext lc) name = do
                             mqm <- runLoadModule (lcLoadModule lc) $ MkModuleName name
-                            return $ fmap moduleScopeDocs mqm
-                        toLoadModule :: (Text -> QInterpreter (Maybe QScopeDocs)) -> LoadModule
+                            return $ fmap moduleDeclarations mqm
+                        toLoadModule :: (Text -> QInterpreter (Maybe QDeclarations)) -> LoadModule
                         toLoadModule lm =
                             MkLoadModule $ \(MkModuleName name) -> do
                                 msdocs <- lm name
-                                for msdocs scopeDocsModule
-                        fromQContext :: QContext -> Maybe (ListVProduct '[Text -> QInterpreter (Maybe QScopeDocs)])
+                                for msdocs declarationsModule
+                        fromQContext :: QContext -> Maybe (ListVProduct '[Text -> QInterpreter (Maybe QDeclarations)])
                         fromQContext qc =
                             Just $ listProductToVProduct (listTypeToVType rtype) (qContextLoadModule qc, ())
-                        toQContext :: ListVProduct '[Text -> QInterpreter (Maybe QScopeDocs)] -> QContext
+                        toQContext :: ListVProduct '[Text -> QInterpreter (Maybe QDeclarations)] -> QContext
                         toQContext lvp = let
                             (lm, ()) = listVProductToProduct lvp
                             lcLoadModule = toLoadModule lm
                             in MkQContext $ MkLibraryContext{..}
-                        codec :: Codec QContext (ListVProduct '[Text -> QInterpreter (Maybe QScopeDocs)])
+                        codec :: Codec QContext (ListVProduct '[Text -> QInterpreter (Maybe QDeclarations)])
                         codec = MkCodec fromQContext toQContext
                         in recordConsBDS "Mk" "" rtype codec
                     ]
                 , namespaceBDS
                     "Context"
-                    [valBDS "this" "`!{this}: Context.Pinafore`  \nThe context at this point in source." thisContext]
+                    [ valBDS "get" "`The context for running the interpreter." getContext
+                    , valBDS "this" "`!{this}: Context.Pinafore`  \nThe context at this point in source." thisContext
+                    ]
                 ]
             , headingBDS
                 "Interpreter"
@@ -148,6 +165,16 @@ pinaforeLibSection =
                     (qSomeGroundType @_ @QInterpreter)
                     []
                 , namespaceBDS "Interpreter" $ monadEntries @Interpreter <> [valBDS "run" "" langRunInterpreter]
+                ]
+            , headingBDS
+                "Scope"
+                ""
+                [ typeBDS "Scope" "" (qSomeGroundType @_ @QScope) []
+                , namespaceBDS
+                    "Scope"
+                    [ valBDS "get" "`The current scope." getScope
+                    , valBDS "this" "`!{this}: Scope.Pinafore`  \nThe scope at this point in source." thisScope
+                    ]
                 ]
             , headingBDS
                 "Anchor"
@@ -204,11 +231,11 @@ pinaforeLibSection =
                     ]
                 ]
             , headingBDS
-                "Scope"
+                "Declarations"
                 ""
-                [ typeBDS "Scope" "" (qSomeGroundType @_ @QScopeDocs) []
-                , namespaceBDS "Scope"
-                    $ monoidEntries @QScopeDocs
+                [ typeBDS "Declarations" "" (qSomeGroundType @_ @QDeclarations) []
+                , namespaceBDS "Declarations"
+                    $ monoidEntries @QDeclarations
                     <> [ valBDS "interpret" "Interpret a Pinafore module (list of declarations)." interpretModuleFromSource
                        , valBDS "apply" "Interpret within a given scope." langWithScope
                        , valBDS "bind" "Let-bind a name to a value." bindScope

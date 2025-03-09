@@ -4,10 +4,10 @@ module Pinafore.Language.Interpreter.ScopeBuilder
     , withScopeBuilder
     , runScopeBuilder
     , scopeRef
-    , builderScopeDocsProd
+    , builderDeclarationsProd
     , builderDocsProd
-    , registerScopeDocs
-    , outputScopeDocs
+    , registerDeclarations
+    , outputDeclarations
     , QFixBox
     , scopeSetSourcePos
     , allocateLambdaVar
@@ -19,15 +19,15 @@ where
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter.Binding
+import Pinafore.Language.Interpreter.Declarations
 import Pinafore.Language.Interpreter.Interpreter
 import Pinafore.Language.Interpreter.Scope
-import Pinafore.Language.Interpreter.ScopeDocs
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.VarID
 
 newtype QScopeBuilder a
-    = MkQScopeBuilder (WriterT QScopeDocs (WithT QInterpreter) a)
+    = MkQScopeBuilder (WriterT QDeclarations (WithT QInterpreter) a)
     deriving newtype
         ( Functor
         , Applicative
@@ -51,17 +51,17 @@ instance Monoid a => Monoid (QScopeBuilder a) where
 withScopeBuilder :: QScopeBuilder a -> (a -> QInterpreter b) -> QInterpreter b
 withScopeBuilder (MkQScopeBuilder wsb) aib = unWithT (runWriterT wsb) $ \(a, _) -> aib a
 
-runScopeBuilder :: QScopeBuilder () -> QInterpreter QScopeDocs
+runScopeBuilder :: QScopeBuilder () -> QInterpreter QDeclarations
 runScopeBuilder (MkQScopeBuilder wsb) = unWithT (runWriterT wsb) $ \((), sd) -> return sd
 
-builderScopeDocsProd :: Prod QScopeBuilder QScopeDocs
-builderScopeDocsProd =
+builderDeclarationsProd :: Prod QScopeBuilder QDeclarations
+builderDeclarationsProd =
     MkProd
         (\a -> MkQScopeBuilder $ prodTell writerProd a)
         (\(MkQScopeBuilder mr) -> MkQScopeBuilder $ prodCollect writerProd mr)
 
 builderDocsProd :: Prod QScopeBuilder Docs
-builderDocsProd = lensMapProd (\bfb a -> fmap (\b -> a{sdDocs = b}) $ bfb $ sdDocs a) builderScopeDocsProd
+builderDocsProd = lensMapProd (\bfb a -> fmap (\b -> a{declsDocs = b}) $ bfb $ declsDocs a) builderDeclarationsProd
 
 type QFixBox = FixBox QScopeBuilder
 
@@ -106,10 +106,10 @@ allocatePolymorphicVar name = allocateVar $ \vs -> (mkPolymorphicVarID vs name, 
 withCurrentNamespaceScope :: Namespace -> QScopeBuilder a -> QScopeBuilder a
 withCurrentNamespaceScope ns ma = paramWith (refParam currentNamespaceRef) ns ma
 
-outputScopeDocs :: QScopeDocs -> QScopeBuilder ()
-outputScopeDocs sd = prodTell builderScopeDocsProd sd
+outputDeclarations :: QDeclarations -> QScopeBuilder ()
+outputDeclarations sd = prodTell builderDeclarationsProd sd
 
-registerScopeDocs :: QScopeDocs -> QScopeBuilder ()
-registerScopeDocs sd = do
-    refModifyM scopeRef $ \oldScope -> builderLift $ joinAllScopes $ oldScope : sdScopes sd
-    outputScopeDocs sd
+registerDeclarations :: QDeclarations -> QScopeBuilder ()
+registerDeclarations sd = do
+    refModifyM scopeRef $ \oldScope -> builderLift $ joinAllScopes $ oldScope : declsScopes sd
+    outputDeclarations sd
