@@ -34,7 +34,7 @@ instance Is PolarityType polarity => Show (QSignature polarity a) where
                 Nothing -> ""
                 Just expr -> " = " <> show expr
 
-instance (HasInterpreter, Is PolarityType polarity) => HasVarMapping (QSignature polarity) where
+instance Is PolarityType polarity => HasVarMapping (QSignature polarity) where
     getVarMapping (ValueSignature _ _ t _) = getVarMapping t
 
 data QRecordValue

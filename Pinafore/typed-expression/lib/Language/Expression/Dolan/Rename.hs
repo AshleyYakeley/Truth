@@ -3,7 +3,7 @@
 
 module Language.Expression.Dolan.Rename
     ( dolanArgumentsVarRename
-    , dolanNamespaceRenameArguments
+    , pureMapDolanArgumentsM
     , renameableVars
     )
 where
@@ -37,12 +37,6 @@ pureMapDolanArgumentsM f =
         NilCCRArguments -> pure NilCCRArguments
         ConsCCRArguments arg args ->
             liftA2 ConsCCRArguments (unEndoM (pureMapDolanArgumentM f) arg) (unEndoM (pureMapDolanArgumentsM f) args)
-
-dolanNamespaceRenameArguments ::
-    forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
-    (IsDolanGroundType ground, Monad m, Is PolarityType polarity) =>
-    EndoM' (VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m)) (CCRPolarArguments dv (DolanType ground) gt polarity)
-dolanNamespaceRenameArguments = pureMapDolanArgumentsM $ namespaceRenameType @(DolanTypeSystem ground)
 
 dolanArgumentsVarRename ::
     forall (ground :: GroundTypeKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) polarity m.
@@ -91,14 +85,3 @@ instance
                 ta' <- unEndoM (varRename ev) ta
                 tb' <- unEndoM (varRename ev) tb
                 return $ ConsDolanType ta' tb'
-
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
-    type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
-    type RenamerNamespaceT (DolanTypeSystem ground) = VarNamespaceT (DolanTypeSystem ground)
-    namespaceRenameSource = varNamespaceRenameSource
-    renameNewFreeVar = do
-        n <- renamerGenerateFree
-        newTypeVar n $ \v -> return $ MkNewVar (varDolanShimWit v) (varDolanShimWit v)
-    namespace fn rgd = runVarNamespaceT fn rgd
-    runRenamer = runVarRenamerT
-    finalRenamer = finalVarRenamerT

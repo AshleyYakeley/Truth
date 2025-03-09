@@ -18,6 +18,7 @@ import Language.Expression.Dolan.Simplify.Safety
 import Language.Expression.Dolan.Simplify.SharedTypeVars
 import Language.Expression.Dolan.Simplify.UnusedRecursion
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
@@ -88,7 +89,7 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 dolanSimplifyTypes ::
     forall (ground :: GroundTypeKind) a.
     (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
-    EndoM (DolanTypeCheckM ground) a
+    EndoM (DolanRenameTypeM ground) a
 dolanSimplifyTypes =
     case simplifierSettingsINTERNAL of
         MkSimplifierSettings{..} ->

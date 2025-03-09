@@ -134,9 +134,6 @@ nameWitnessErrorType ww = let
         Left pp -> ExpressionUndefinedError pp
         Right pp -> ExpressionUnimpliedError pp
 
-instance var ~ QVarWit => MonadThrow (ExpressionError var) QInterpreter where
-    throw (UndefinedBindingsError ww) = throw $ nameWitnessErrorType ww
-
 instance Semigroup a => Semigroup (QInterpreter a) where
     (<>) = liftA2 (<>)
 

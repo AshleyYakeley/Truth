@@ -17,7 +17,7 @@ import Language.Expression.TypeSystem
 
 invertPositiveGrounded ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
     DolanGroundedType ground 'Negative a ->
     Maybe (PShimWit (pshim Type) (DolanType ground) 'Positive a)
 invertPositiveGrounded (MkDolanGroundedType gt args) = do
@@ -26,7 +26,7 @@ invertPositiveGrounded (MkDolanGroundedType gt args) = do
 
 invertPositiveSingular ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
     DolanSingularType ground 'Negative a ->
     Maybe (PShimWit (pshim Type) (DolanType ground) 'Positive a)
 invertPositiveSingular (VarDolanSingularType v) =
@@ -40,7 +40,7 @@ invertPositiveSingular (RecursiveDolanSingularType var t) = do
 
 invertPositiveType ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
     DolanType ground 'Negative a ->
     Maybe (PShimWit (pshim Type) (DolanType ground) 'Positive a)
 invertPositiveType (ConsDolanType t NilDolanType) = do
@@ -50,7 +50,7 @@ invertPositiveType _ = Nothing
 
 invertNegativeGrounded ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
     DolanGroundedType ground 'Positive a ->
     Maybe (PShimWit (pshim Type) (DolanType ground) 'Negative a)
 invertNegativeGrounded (MkDolanGroundedType gt args) = do
@@ -59,7 +59,7 @@ invertNegativeGrounded (MkDolanGroundedType gt args) = do
 
 invertNegativeSingular ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
     DolanSingularType ground 'Positive a ->
     Maybe (PShimWit (pshim Type) (DolanType ground) 'Negative a)
 invertNegativeSingular (VarDolanSingularType v) =
@@ -73,7 +73,7 @@ invertNegativeSingular (RecursiveDolanSingularType var t) = do
 
 invertNegativeType ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, ?rigidity :: String -> NameRigidity) =>
     DolanType ground 'Positive a ->
     Maybe (PShimWit (pshim Type) (DolanType ground) 'Negative a)
 invertNegativeType (ConsDolanType t NilDolanType) = do
@@ -83,7 +83,7 @@ invertNegativeType _ = Nothing
 
 invertPolarType ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity a.
-    ( IsDolanSubtypeGroundType ground
+    ( IsDolanGroundType ground
     , SubstitutablePolyShim pshim
     , Is PolarityType polarity
     , ?rigidity :: String -> NameRigidity
@@ -97,7 +97,7 @@ invertPolarType =
 
 invertTypeMaybe ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
     (String -> NameRigidity) ->
     DolanType ground (InvertPolarity polarity) a ->
     Maybe (PShimWit (pshim Type) (DolanType ground) polarity a)
@@ -107,7 +107,7 @@ invertTypeMaybe rigidity = let
 
 invertTypeM ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity a.
-    (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
+    (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
     (String -> NameRigidity) ->
     DolanType ground (InvertPolarity polarity) a ->
     TypeResult ground (PShimWit (pshim Type) (DolanType ground) polarity a)
@@ -120,5 +120,5 @@ invertType ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity a.
     (IsDolanSubtypeGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
     DolanType ground (InvertPolarity polarity) a ->
-    DolanM ground (PShimWit (pshim Type) (DolanType ground) polarity a)
-invertType t = runTypeResult $ invertTypeM (\_ -> RigidName) t
+    TypeResult ground (PShimWit (pshim Type) (DolanType ground) polarity a)
+invertType = invertTypeM (\_ -> RigidName)

@@ -421,7 +421,7 @@ pickMember (ValueSignature _ nb tb _) tt =
         $ pairListType tt
         $ listVProductGetters tt of
         Just (MkSomeFor ta f) -> do
-            convexpr <- tsSubsume @QTypeSystem (mkShimWit ta) tb
+            convexpr <- qSubsume (mkShimWit ta) tb
             return $ fmap (\conv -> shimToFunction conv . f) convexpr
         Nothing -> throw $ DeclareDatatypeMissingSupertypeMember nb
 

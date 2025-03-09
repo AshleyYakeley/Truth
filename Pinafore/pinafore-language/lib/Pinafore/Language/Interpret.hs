@@ -65,7 +65,7 @@ parseToValueUnify text args = do
 parseToValueSubsume :: forall t. QType 'Positive t -> Text -> QInterpreter t
 parseToValueSubsume t text = do
     val <- parseToValue text []
-    tsSubsumeValue @QTypeSystem t val
+    qSubsumeValue t val
 
 runPinaforeScoped :: (?library :: LibraryContext) => String -> QInterpreter a -> InterpretResult a
 runPinaforeScoped sourcename ma =

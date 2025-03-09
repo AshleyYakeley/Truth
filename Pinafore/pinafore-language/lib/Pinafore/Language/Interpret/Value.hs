@@ -42,14 +42,15 @@ interpretRecordValue (MkQRecordValue items rvexpr@(MkSealedFExpression vtype _))
                             case mdefexpr of
                                 Just defexpr -> return defexpr
                                 Nothing -> throw $ RecordConstructorMissingName iname
-    runRenamer @QTypeSystem [] freeFixedNames $ do
-        sexpr <-
-            listTypeFor items $ \case
-                ValueSignature _ iname itype mdefault -> do
-                    iexpr <- lift $ getName (fmap (MkSealedExpression (mkShimWit itype)) mdefault) iname
-                    itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
-                    iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
-                    subsumerExpressionTo @QTypeSystem itype' iexpr'
+    sexprs <- listTypeFor items $ \case
+        ValueSignature _ iname itype mdefault -> do
+            iexpr <- getName (fmap (MkSealedExpression (mkShimWit itype)) mdefault) iname
+            pure $ Compose $ do
+                itype' <- unEndoM (renameType @QTypeSystem freeFixedNames RigidName) itype
+                iexpr' <- renameMappable @QTypeSystem [] FreeName iexpr
+                subsumerExpressionTo @QTypeSystem itype' iexpr'
+    qRunTypeM $ runRenamer @QTypeSystem [] freeFixedNames $ do
+        sexpr <- listTypeFor sexprs getCompose
         (resultExpr, ssubs) <- solveSubsumerExpression @QTypeSystem $ listProductSequence sexpr
         unEndoM (subsumerSubstitute @QTypeSystem ssubs) $ applySealedFExpression rvexpr resultExpr
 

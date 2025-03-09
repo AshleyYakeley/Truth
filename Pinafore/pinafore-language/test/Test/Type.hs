@@ -14,19 +14,19 @@ import Pinafore.Test.Internal
 
 type TS = QTypeSystem
 
-exprTypeTest :: String -> Maybe Text -> QInterpreter QExpression -> TestTree
+exprTypeTest :: String -> Maybe Text -> QTypeM QExpression -> TestTree
 exprTypeTest name expected mexpr =
     testTree name
         $ runTester defaultTester
         $ do
-            result <- tryExc $ testerLiftInterpreter mexpr
+            result <- tryExc $ testerLiftInterpreter $ qRunTypeM mexpr
             liftIO
                 $ assertEqual "" expected
                 $ do
                     expr <- resultToMaybe result
                     return $ showExpressionType expr
 
-apExpr :: QExpression -> QExpression -> QInterpreter QExpression
+apExpr :: QExpression -> QExpression -> QTypeM QExpression
 apExpr = tsApply @TS
 
 idExpr :: QExpression
@@ -78,7 +78,7 @@ listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [Tr
 listBoolNumFuncExpr :: QExpression
 listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: QExpression -> QExpression -> QInterpreter QExpression
+joinExpr :: QExpression -> QExpression -> QTypeM QExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
@@ -116,11 +116,13 @@ simplifyTypeTest text e =
                     mt <- parseType @'Positive text
                     case mt of
                         MkSome t ->
-                            runRenamer @TS [] [] $ do
-                                t' <- unEndoM (renameType @TS [] FreeName) t
-                                runSimplify @QExpression
-                                    $ MkSealedExpression (mkPolarShimWit t')
-                                    $ ClosedExpression undefined
+                            qRunTypeM
+                                $ runRenamer @TS [] []
+                                $ do
+                                    t' <- unEndoM (renameType @TS [] FreeName) t
+                                    runSimplify @QExpression
+                                        $ MkSealedExpression (mkPolarShimWit t')
+                                        $ ClosedExpression undefined
             liftIO
                 $ case simpexpr of
                     MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ exprShowShow t'

@@ -43,24 +43,17 @@ parseSomeType text = do
     case st of
         MkSome t -> return $ MkSomeType t
 
+parseTypeBoth :: Text -> QInterpreter (SomeType 'Negative, SomeType 'Positive)
+parseTypeBoth text = do
+    tn <- parseSomeType text
+    tp <- parseSomeType text
+    return (tn, tp)
+
 type SolverTester us = WriterT (TSOpenSolverExpression QTypeSystem us ()) (TSOuter QTypeSystem)
 
 type UnifierTester = SolverTester (Unifier QTypeSystem)
 
 type SubsumerTester = SolverTester (Subsumer QTypeSystem)
-
-stParseType ::
-    forall us polarity.
-    (Applicative us, Is PolarityType polarity) =>
-    Text ->
-    SolverTester us (SomeType polarity)
-stParseType text = lift $ lift $ parseSomeType @polarity text
-
-stParseTypeBoth :: Applicative us => Text -> SolverTester us (SomeType 'Negative, SomeType 'Positive)
-stParseTypeBoth text = do
-    tn <- stParseType text
-    tp <- stParseType text
-    return (tn, tp)
 
 stRename ::
     forall us a.
@@ -87,19 +80,33 @@ stSubsume (MkSomeType tinf) (MkSomeType tdecl) = do
 
 runUnifierTester :: TSMappable QTypeSystem a => UnifierTester a -> QInterpreter a
 runUnifierTester ma =
-    runRenamer @QTypeSystem [] [] $ do
-        (a, MkSolverExpression ut _) <- runWriterT ma
-        (_, usubs) <- solveUnifier @QTypeSystem ut
-        unEndoM (unifierSubstituteSimplifyFinalRename @QTypeSystem usubs) a
+    qRunTypeM
+        $ runRenamer @QTypeSystem [] []
+        $ do
+            (a, MkSolverExpression ut _) <- runWriterT ma
+            (_, usubs) <- solveUnifier @QTypeSystem ut
+            unEndoM (unifierSubstituteSimplifyFinalRename @QTypeSystem usubs) a
 
 runSubsumerTester :: TSMappable QTypeSystem a => [String] -> SubsumerTester a -> QInterpreter a
 runSubsumerTester names sta =
-    runRenamer @QTypeSystem names [] $ do
-        (a, se) <- runWriterT sta
-        (_expr, ssubs) <- solveSubsumerExpression @QTypeSystem se
-        unEndoM
-            (mconcat [subsumerSubstitute @QTypeSystem ssubs, simplify @QTypeSystem, finalRenameMappable @QTypeSystem])
-            a
+    qRunTypeM
+        $ runRenamer @QTypeSystem names []
+        $ do
+            (a, se) <- runWriterT sta
+            (_expr, ssubs) <- solveSubsumerExpression @QTypeSystem se
+            unEndoM
+                (mconcat [subsumerSubstitute @QTypeSystem ssubs, simplify @QTypeSystem, finalRenameMappable @QTypeSystem])
+                a
+
+typeTest :: String -> Text -> QInterpreter (SomeType 'Positive) -> TestTree
+typeTest name expectedtext ma =
+    testTree name
+        $ runTester defaultTester
+        $ testerLiftInterpreter
+        $ do
+            expectedtype <- parseSomeType @'Positive expectedtext
+            found <- ma
+            liftIO $ assertEqual "" expectedtype found
 
 testSolver :: TestTree
 testSolver =
@@ -119,10 +126,9 @@ testSolver =
                     )
                     $ runTester defaultTester
                     $ testerLiftInterpreter
-                    $ runUnifierTester
                     $ do
-                        MkSomeType ta <- stParseType @_ @'Positive sta
-                        MkSomeType tb <- stParseType @_ @'Positive stb
+                        MkSomeType ta <- parseSomeType @'Positive sta
+                        MkSomeType tb <- parseSomeType @'Positive stb
                         liftIO
                             $ case testEquality ta tb of
                                 Just Refl ->
@@ -149,11 +155,10 @@ testSolver =
                 testTree (unpack origtext)
                     $ runTester defaultTester
                     $ testerLiftInterpreter
-                    $ runUnifierTester
                     $ do
-                        expectedtype <- stParseType @_ @'Positive expectedtext
-                        origtype <- stParseType @_ @'Positive origtext
-                        foundtype <- stRename [] FreeName origtype
+                        expectedtype <- parseSomeType @'Positive expectedtext
+                        origtype <- parseSomeType @'Positive origtext
+                        foundtype <- runUnifierTester $ stRename [] FreeName origtype
                         liftIO $ assertEqual "" expectedtype foundtype
             in [renameTest "x -> x" "a -> a", renameTest "rec y, Maybe y" "rec a, Maybe a"]
         , testTree "simplifier" $ let
@@ -164,7 +169,8 @@ testSolver =
                     $ testerLiftInterpreter
                     $ do
                         expectedtype <- parseSomeType @'Positive expectedtext
-                        simplifiedType <- runUnifierTester $ stParseType @_ @'Positive origtext
+                        origtype <- parseSomeType @'Positive origtext
+                        simplifiedType <- runUnifierTester $ pure origtype
                         liftIO $ assertEqual "" expectedtype simplifiedType
             in [ simplifyTest "x -> x" "a -> a"
                , simplifyTest "rec y, Maybe y" "rec a, Maybe a"
@@ -174,26 +180,17 @@ testSolver =
                , simplifyTest "Maybe Unit | (rec ra, Maybe ra)" "Maybe. (Unit. | (rec a, Maybe. a))"
                ]
         , testTree "unifier" $ let
-            unifierTest :: String -> Text -> UnifierTester (SomeType 'Positive) -> TestTree
-            unifierTest name expectedtext uta =
-                testTree name
-                    $ runTester defaultTester
-                    $ testerLiftInterpreter
-                    $ do
-                        expectedtype <- parseSomeType @'Positive expectedtext
-                        found <- runUnifierTester uta
-                        liftIO $ assertEqual "" expectedtype found
             subtypeTest :: String -> Text -> Text -> TestTree
             subtypeTest name stp stn =
                 testTree name
                     $ runTester defaultTester
                     $ testerLiftInterpreter
-                    $ runUnifierTester
                     $ do
-                        tpos <- stParseType stp
-                        tneg <- stParseType stn
-                        (tpos', tneg') <- stRename [] FreeName (tpos, tneg)
-                        stUnify tpos' tneg'
+                        tpos <- parseSomeType stp
+                        tneg <- parseSomeType stn
+                        runUnifierTester $ do
+                            (tpos', tneg') <- stRename [] FreeName (tpos, tneg)
+                            stUnify tpos' tneg'
             scriptTest :: String -> Text -> Text -> TestTree
             scriptTest name text r =
                 testTree name
@@ -205,14 +202,15 @@ testSolver =
             applyTest name ftext xtext extext =
                 testTree
                     name
-                    [ unifierTest "unifier" extext $ do
-                        ftype <- stParseType ftext
-                        gtype <- stParseType $ xtext <> " -> r"
-                        rtype <- stParseType "r"
-                        ftype' <- stRename [] FreeName ftype
-                        (gtype', rtype') <- stRename [] FreeName (gtype, rtype)
-                        stUnify ftype' gtype'
-                        return rtype'
+                    [ typeTest "unifier" extext $ do
+                        ftype <- parseSomeType ftext
+                        gtype <- parseSomeType $ xtext <> " -> r"
+                        rtype <- parseSomeType "r"
+                        runUnifierTester $ do
+                            ftype' <- stRename [] FreeName ftype
+                            (gtype', rtype') <- stRename [] FreeName (gtype, rtype)
+                            stUnify ftype' gtype'
+                            return rtype'
                     , scriptTest
                         "script"
                         ("let {f: " <> ftext <> " = error \"f\"; x: " <> xtext <> " = error \"x\"} f x")
@@ -220,19 +218,21 @@ testSolver =
                     ]
             in [ testTree
                     "simple"
-                    [ unifierTest "a" "Unit" $ do
-                        tu <- stParseType "Unit"
-                        ta <- stParseTypeBoth "a"
-                        (tan, tap) <- stRename [] FreeName ta
-                        stUnify tu tan
-                        return tap
-                    , unifierTest "a -> a" "Unit" $ do
-                        ta <- stParseType "a"
-                        tua <- stParseType "a -> Unit"
-                        tbb <- stParseType "b -> b"
-                        (ta', (tua', tbb')) <- stRename [] FreeName (ta, (tua, tbb))
-                        stUnify tua' tbb'
-                        return ta'
+                    [ typeTest "a" "Unit" $ do
+                        tu <- parseSomeType "Unit"
+                        ta <- parseTypeBoth "a"
+                        runUnifierTester $ do
+                            (tan, tap) <- stRename [] FreeName ta
+                            stUnify tu tan
+                            return tap
+                    , typeTest "a -> a" "Unit" $ do
+                        ta <- parseSomeType "a"
+                        tua <- parseSomeType "a -> Unit"
+                        tbb <- parseSomeType "b -> b"
+                        runUnifierTester $ do
+                            (ta', (tua', tbb')) <- stRename [] FreeName (ta, (tua, tbb))
+                            stUnify tua' tbb'
+                            return ta'
                     ]
                , testTree
                     "apply"
@@ -245,25 +245,28 @@ testSolver =
                     ]
                , testTree
                     "issue-206"
-                    [ unifierTest "rec-0" "rec a, Maybe a" $ do
-                        ta <- stParseTypeBoth "a"
-                        tma <- stParseTypeBoth "Maybe a"
-                        ((tan, tap), (_tman, tmap)) <- stRename [] FreeName (ta, tma)
-                        stUnify tmap tan
-                        return tap
-                    , unifierTest "rec-1" "None" $ do
-                        ta <- stParseTypeBoth "a"
-                        tma <- stParseTypeBoth "Maybe a"
-                        ((_tan, tap), (tman, _tmap)) <- stRename [] FreeName (ta, tma)
-                        stUnify tap tman
-                        return tap
-                    , unifierTest "rec-2" "rec a, Maybe a" $ do
-                        ta <- stParseTypeBoth "a"
-                        tma <- stParseTypeBoth "Maybe a"
-                        ((tan, tap), (tman, tmap)) <- stRename [] FreeName (ta, tma)
-                        stUnify tmap tan
-                        stUnify tap tman
-                        return tap
+                    [ typeTest "rec-0" "rec a, Maybe a" $ do
+                        ta <- parseTypeBoth "a"
+                        tma <- parseTypeBoth "Maybe a"
+                        runUnifierTester $ do
+                            ((tan, tap), (_tman, tmap)) <- stRename [] FreeName (ta, tma)
+                            stUnify tmap tan
+                            return tap
+                    , typeTest "rec-1" "None" $ do
+                        ta <- parseTypeBoth "a"
+                        tma <- parseTypeBoth "Maybe a"
+                        runUnifierTester $ do
+                            ((_tan, tap), (tman, _tmap)) <- stRename [] FreeName (ta, tma)
+                            stUnify tap tman
+                            return tap
+                    , typeTest "rec-2" "rec a, Maybe a" $ do
+                        ta <- parseTypeBoth "a"
+                        tma <- parseTypeBoth "Maybe a"
+                        runUnifierTester $ do
+                            ((tan, tap), (tman, tmap)) <- stRename [] FreeName (ta, tma)
+                            stUnify tmap tan
+                            stUnify tap tman
+                            return tap
                     , applyTest
                         "issue-206-1"
                         "(t -> t) -> t"
@@ -287,15 +290,16 @@ testSolver =
                         "concrete"
                         "rec r, Maybe r"
                         "rec d, (rec f, (rec h, (rec i, Maybe (rec d, (rec f, (rec h, i & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d"
-                    , unifierTest "free" "rec a, Maybe. a" $ do
-                        tb <- stParseType "b"
-                        tpos <- stParseType "rec r, b | Maybe r"
+                    , typeTest "free" "rec a, Maybe. a" $ do
+                        tb <- parseSomeType "b"
+                        tpos <- parseSomeType "rec r, b | Maybe r"
                         tneg <-
-                            stParseType
+                            parseSomeType
                                 "rec d, (rec f, (rec h, (rec i, b & Maybe (rec d, (rec f, (rec h, i & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, (rec f, h & Maybe (rec d, f & Maybe d)) & Maybe d)) & Maybe (rec d, f & Maybe d)) & Maybe d"
-                        (tb', (tpos', tneg')) <- stRename [] FreeName (tb, (tpos, tneg))
-                        stUnify tpos' tneg'
-                        return tb'
+                        runUnifierTester $ do
+                            (tb', (tpos', tneg')) <- stRename [] FreeName (tb, (tpos, tneg))
+                            stUnify tpos' tneg'
+                            return tb'
                     ]
                ]
         , testTree "recursive" $ let
@@ -306,10 +310,10 @@ testSolver =
                     $ testerLiftInterpreter
                     $ do
                         expectedtype <- parseSomeType @'Positive expected
+                        tp <- parseSomeType @'Negative textp
+                        tq <- parseSomeType @'Positive textq
                         found <-
                             runUnifierTester $ do
-                                tp <- stParseType @_ @'Negative textp
-                                tq <- stParseType @_ @'Positive textq
                                 (tp', tq') <- stRename [] FreeName (tp, tq)
                                 stUnify tq' tp'
                                 return tq'
@@ -328,17 +332,15 @@ testSolver =
                     ]
                ]
         , testTree "subsumer" $ let
-            subsumerTest :: String -> [String] -> SubsumerTester () -> TestTree
-            subsumerTest name names stu =
-                testTree name $ runTester defaultTester $ testerLiftInterpreter $ runSubsumerTester names stu
             subsumeTest :: String -> Text -> Text -> [String] -> TestTree
             subsumeTest name sinf sdecl sdeclfreevars =
-                subsumerTest name sdeclfreevars $ do
-                    tinf <- stParseType sinf
-                    tinf' <- stRename [] FreeName tinf
-                    tdecl <- stParseType sdecl
-                    tdecl' <- stRename sdeclfreevars RigidName tdecl
-                    stSubsume tinf' tdecl'
+                testTree name $ runTester defaultTester $ testerLiftInterpreter $ do
+                    tinf <- parseSomeType sinf
+                    tdecl <- parseSomeType sdecl
+                    runSubsumerTester sdeclfreevars $ do
+                        tinf' <- stRename [] FreeName tinf
+                        tdecl' <- stRename sdeclfreevars RigidName tdecl
+                        stSubsume tinf' tdecl'
             in [ subsumeTest "novars" "a -> a" "Integer -> Integer" []
                , subsumeTest "var-none" "None" "b" ["b"]
                , subsumeTest "var-free" "a" "b" ["b"]

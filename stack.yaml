@@ -8,7 +8,7 @@ packages:
 #- external/witness
 #- external/open-witness
 #- external/type-rig
-#- external/monadology
+- external/monadology
 #- external/primitive-serial
 
 # Changes
@@ -59,7 +59,6 @@ extra-deps:
 
 # my stuff
 - witness-0.7
-- monadology-0.4
 - open-witness-0.7
 
 flags:

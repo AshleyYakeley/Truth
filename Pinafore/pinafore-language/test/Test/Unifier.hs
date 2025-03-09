@@ -18,7 +18,7 @@ type PinaforeBisubstitution = Bisubstitution QGroundType QShim (TypeResult QGrou
 pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> QInterpreter QValue
 pinaforeBisubstitutes bisubs val = do
     liftIO $ traceIO $ "bisubstitute: before: " <> showValType val
-    val' <- runTypeResult @QGroundType $ unEndoM (bisubstitutes @QGroundType bisubs) val
+    val' <- qRunTypeResult $ unEndoM (bisubstitutes @QGroundType bisubs) val
     liftIO $ traceIO $ "bisubstitute: after: " <> showValType val'
     return val'
 

@@ -3,7 +3,7 @@ module Language.Expression.Dolan.SubtypeEntry.Conversion where
 import Data.Shim
 import Shapes
 
-import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.SubtypeEntry.Knowledge
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem

@@ -60,7 +60,7 @@ testSimple =
                         withScopeBuilder (registerSubtypeConversion (subtypeEntry simpleConversionExpression)) $ \() -> do
                             qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                     resultOpenExpression <- qUnifyExpressionToOpen tShimWit tExpression
-                    evalExpression resultOpenExpression
+                    qRunTypeResult $ evalExpression resultOpenExpression
             liftIO $ assertEqual "" 12 i
 
 constIntegerExpression :: Integer -> QExpression
@@ -80,7 +80,7 @@ testDependentLet =
                                 qSubsumeExpr (shimWitToSome tShimWit) unitExpression
                         resultExpression <- qLetExpr varid (constIntegerExpression 17) tExpression
                         resultOpenExpression <- qUnifyExpressionToOpen tShimWit resultExpression
-                        evalExpression resultOpenExpression
+                        qRunTypeResult $ evalExpression resultOpenExpression
             liftIO $ assertEqual "" 17 i
 
 testDependentFunction :: TestTree
@@ -98,7 +98,7 @@ testDependentFunction =
                         funcExpression <- qAbstractExpr varid tExpression
                         resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
                         resultOpenExpression <- qUnifyExpressionToOpen tShimWit resultExpression
-                        evalExpression resultOpenExpression
+                        qRunTypeResult $ evalExpression resultOpenExpression
             liftIO $ assertEqual "" 91 i
 
 newtype T1 a
@@ -147,7 +147,7 @@ testPolyDependentFunction =
                         funcExpression <- qAbstractExpr varid tExpression
                         resultExpression <- qApplyExpr funcExpression (constIntegerExpression 91)
                         resultOpenExpression <- qUnifyExpressionToOpen t1ShimWit resultExpression
-                        evalExpression resultOpenExpression
+                        qRunTypeResult $ evalExpression resultOpenExpression
             liftIO $ assertEqual "" 91 i
 
 registerT1Stuff :: QScopeBuilder ()

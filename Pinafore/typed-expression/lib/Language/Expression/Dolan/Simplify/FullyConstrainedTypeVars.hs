@@ -14,6 +14,7 @@ import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Solve
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
@@ -151,7 +152,7 @@ invertedSubtype ::
     IsDolanSubtypeGroundType ground =>
     DolanType ground 'Negative a ->
     DolanType ground 'Positive b ->
-    Compose (DolanTypeCheckM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
+    Compose (DolanRenameTypeM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
 invertedSubtype ta tb = fmap unPolarShim $ Compose $ invertedPolarSubtype ta tb
 
 invertedCombinedSubtype1 ::
@@ -159,7 +160,7 @@ invertedCombinedSubtype1 ::
     IsDolanSubtypeGroundType ground =>
     DolanType ground 'Negative a ->
     InvertedType ground 'Negative b ->
-    Compose (DolanTypeCheckM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
+    Compose (DolanRenameTypeM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
 invertedCombinedSubtype1 _ NilInvertedType = pure termf
 invertedCombinedSubtype1 ta (ConsInvertedType t1 tr) =
     liftA2 meetf (invertedSubtype ta t1) (invertedCombinedSubtype1 ta tr)
@@ -169,7 +170,7 @@ invertedCombinedSubtype ::
     IsDolanSubtypeGroundType ground =>
     InvertedType ground 'Positive a ->
     InvertedType ground 'Negative b ->
-    Compose (DolanTypeCheckM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
+    Compose (DolanRenameTypeM ground) (Unifier (DolanTypeSystem ground)) (DolanShim ground a b)
 invertedCombinedSubtype NilInvertedType _ = pure initf
 invertedCombinedSubtype (ConsInvertedType t1 tr) tb =
     liftA2 joinf (invertedCombinedSubtype1 t1 tb) (invertedCombinedSubtype tr tb)
@@ -179,7 +180,7 @@ testInvertedSubtype ::
     IsDolanSubtypeGroundType ground =>
     InvertedType ground 'Positive a ->
     InvertedType ground 'Negative b ->
-    DolanM ground (Maybe (DolanShim ground a b))
+    DolanTypeM ground (Maybe (DolanShim ground a b))
 testInvertedSubtype negtype postype = do
     mexpr <-
         runRenamer @(DolanTypeSystem ground) [] [] $ do
@@ -194,7 +195,7 @@ reduceUsageSolution ::
     IsDolanSubtypeGroundType ground =>
     TypeVarT tv ->
     UsageSolution ground tv t ->
-    DolanM ground (Maybe t)
+    DolanTypeM ground (Maybe t)
 reduceUsageSolution var (MkUsageSolution (n :: _ a) p f) = do
     mconv <- testInvertedSubtype n p
     return $ fmap (\conv -> assignTypeVarT @a var $ f id conv) mconv
@@ -204,7 +205,7 @@ eliminateVariable ::
     (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
     SomeTypeVarT ->
     a ->
-    DolanM ground (a, Bool)
+    DolanTypeM ground (a, Bool)
 eliminateVariable (MkSomeTypeVarT var) a = do
     ma' <-
         reduceUsageSolution var
@@ -219,7 +220,7 @@ eliminateVariables ::
     (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
     [SomeTypeVarT] ->
     a ->
-    DolanM ground (a, Bool)
+    DolanTypeM ground (a, Bool)
 eliminateVariables [] t = return (t, False)
 eliminateVariables (v : vv) t = do
     (t1, elimflag1) <- eliminateVariable @ground v t
@@ -231,7 +232,7 @@ keepEliminatingVariables ::
     forall (ground :: GroundTypeKind) a.
     (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
     a ->
-    DolanM ground a
+    DolanTypeM ground a
 keepEliminatingVariables a = do
     let
         (setFromList @(ListSet SomeTypeVarT) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
@@ -244,5 +245,5 @@ keepEliminatingVariables a = do
 fullyConstrainedTypeVars ::
     forall (ground :: GroundTypeKind) a.
     (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
-    EndoM (DolanTypeCheckM ground) a
+    EndoM (DolanRenameTypeM ground) a
 fullyConstrainedTypeVars = liftEndoM $ MkEndoM $ keepEliminatingVariables @ground

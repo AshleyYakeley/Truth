@@ -42,14 +42,20 @@ data RenamerState = MkRenamerState
     }
 
 newtype VarRenamerT (ts :: Type) m a
-    = MkVarRenamerT (ReaderT [String] (StateT RenamerState m) a)
-    deriving newtype (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadException)
-
-instance MonadTrans (VarRenamerT ts) where
-    lift ma = MkVarRenamerT $ lift $ lift ma
-
-instance MonadTransHoist (VarRenamerT ts) where
-    hoist mm (MkVarRenamerT ma) = MkVarRenamerT $ hoist (hoist mm) ma
+    = MkVarRenamerT (ComposeT (ReaderT [String]) (StateT RenamerState) m a)
+    deriving newtype
+        ( Functor
+        , Applicative
+        , Alternative
+        , Monad
+        , MonadIO
+        , MonadPlus
+        , MonadFail
+        , MonadTrans
+        , MonadException
+        , MonadTransHoist
+        , MonadTransTunnel
+        )
 
 instance TransConstraint Monad (VarRenamerT ts) where
     hasTransConstraint = Dict
@@ -61,7 +67,7 @@ instance TransConstraint MonadFail (VarRenamerT ts) where
     hasTransConstraint = Dict
 
 runVarRenamerT :: Monad m => [String] -> [String] -> VarRenamerT ts m --> m
-runVarRenamerT rigidFixedNames freeFixedNames (MkVarRenamerT rsma) = let
+runVarRenamerT rigidFixedNames freeFixedNames (MkVarRenamerT (MkComposeT rsma)) = let
     rsRigidNames = rigidFixedNames
     rsIndex = 0
     in evalStateT (runReaderT rsma $ rigidFixedNames <> freeFixedNames) $ MkRenamerState{..}
@@ -77,30 +83,31 @@ debugTagVar n = n
 instance Monad m => RenamerMonad (VarRenamerT ts m) where
     renamerGenerate :: NameRigidity -> VarRenamerT ts m String
     renamerGenerate rgd = do
-        state <- MkVarRenamerT $ lift get
+        state <- MkVarRenamerT $ MkComposeT $ lift get
         let
             i = rsIndex state
             name = debugTagVar $ varName i
-        MkVarRenamerT $ lift $ put $ state{rsIndex = succ i}
-        fixedNames <- MkVarRenamerT ask
+        MkVarRenamerT $ MkComposeT $ lift $ put $ state{rsIndex = succ i}
+        fixedNames <- MkVarRenamerT $ MkComposeT ask
         if elem name fixedNames
             then renamerGenerate @(VarRenamerT ts m) rgd
             else do
                 case rgd of
                     FreeName -> return ()
-                    RigidName -> MkVarRenamerT $ lift $ modify $ \st -> st{rsRigidNames = name : rsRigidNames st}
+                    RigidName -> MkVarRenamerT $ MkComposeT $ lift $ modify $ \st -> st{rsRigidNames = name : rsRigidNames st}
                 return name
     renamerGetNameRigidity :: VarRenamerT ts m (String -> NameRigidity)
     renamerGetNameRigidity = do
-        state <- MkVarRenamerT $ lift get
+        state <- MkVarRenamerT $ MkComposeT $ lift get
         return $ \name ->
             if elem name $ rsRigidNames state
                 then RigidName
                 else FreeName
 
 finalVarRenamerT :: Monad m => VarRenamerT ts m --> VarRenamerT ts m
-finalVarRenamerT (MkVarRenamerT rsma) =
+finalVarRenamerT (MkVarRenamerT (MkComposeT rsma)) =
     MkVarRenamerT
+        $ MkComposeT
         $ hoist
             ( \sma -> do
                 rs <- get

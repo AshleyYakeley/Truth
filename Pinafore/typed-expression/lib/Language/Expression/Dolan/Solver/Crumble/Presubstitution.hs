@@ -12,6 +12,7 @@ import Shapes
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Solver.WholeConstraint
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -83,7 +84,7 @@ assignPresubstitution ::
     TypeVarT v ->
     MixedType ground 'Positive a ->
     MixedType ground 'Negative b ->
-    DolanTypeCheckM
+    DolanRenameTypeM
         ground
         ( Presubstitution ground
         , DolanShim ground a b -> (DolanShim ground a v, DolanShim ground v b)
@@ -146,7 +147,7 @@ preBisubstitution ::
     forall (ground :: GroundTypeKind).
     IsDolanGroundType ground =>
     Presubstitution ground ->
-    DolanTypeCheckM ground (SolverBisubstitution ground)
+    DolanRenameTypeM ground (SolverBisubstitution ground)
 preBisubstitution (cleanPresubstitution -> MkPresubstitution (oldvar :: _ oldtv) (newvar :: _ newtv) msta mstb) = do
     mftwa :: (_ -> TypeResult ground (DolanShimWit ground 'Negative oldtv)) -> TypeResult ground (DolanShimWit ground 'Positive oldtv) <-
         case msta of
@@ -215,7 +216,7 @@ presubstitute ::
     IsDolanGroundType ground =>
     Presubstitution ground ->
     Presubstitution ground ->
-    DolanTypeCheckM ground (Presubstitution ground)
+    DolanRenameTypeM ground (Presubstitution ground)
 presubstitute ps pst = do
     bisub <- preBisubstitution ps
     return $ substBisub bisub pst

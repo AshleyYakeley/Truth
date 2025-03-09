@@ -52,14 +52,14 @@ actionWit (MkShimWit t (MkPolarShim conv)) =
 simplify' ::
     forall polarity t.
     Is PolarityType polarity =>
-    EndoM (VarRenamerT QTypeSystem QInterpreter) (QShimWit polarity t)
+    EndoM QRenameTypeM (QShimWit polarity t)
 simplify' =
     case polarityType @polarity of
         PositiveType -> simplify @QTypeSystem
         NegativeType -> simplify @QTypeSystem
 
 interactSimplify :: Is PolarityType polarity => QShimWit polarity t -> Interact (QShimWit polarity t)
-interactSimplify t = interactRunQInterpreter $ runRenamer @QTypeSystem [] [] $ unEndoM simplify' t
+interactSimplify t = interactRunQInterpreter $ qRunTypeM $ runRenamer @QTypeSystem [] [] $ unEndoM simplify' t
 
 interactLoop :: Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do

@@ -20,6 +20,7 @@ import Language.Expression.Dolan.Solver.Solve
 import Language.Expression.Dolan.Solver.Substitute
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -33,9 +34,9 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => U
     unifyPosWitnesses ta tb =
         return $ uuLiftPosShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
     unifyPosNegWitnesses ta tb = fmap MkComposeShim $ puzzleExpressionUnify ta tb
-    solveUnifier puzzle = runCrumbleM $ solvePuzzle puzzle
-    unifierPosSubstitute bisubs t = lift $ runTypeResult $ bisubstitutesType bisubs t
-    unifierNegSubstitute bisubs t = lift $ runTypeResult $ bisubstitutesType bisubs t
+    solveUnifier puzzle = liftCrumbleM $ solvePuzzle puzzle
+    unifierPosSubstitute bisubs t = lift $ liftTypeResult $ bisubstitutesType bisubs t
+    unifierNegSubstitute bisubs t = lift $ liftTypeResult $ bisubstitutesType bisubs t
 
 instance
     forall (ground :: GroundTypeKind).
@@ -45,17 +46,16 @@ instance
     type Subsumer (DolanTypeSystem ground) = Puzzle ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [SolverBisubstitution ground]
     usubSubsumer ss subsumer = do
-        subsumer' <- runCrumbleM $ applyBisubsToPuzzle ss subsumer
+        subsumer' <- liftCrumbleM $ applyBisubsToPuzzle ss subsumer
         return $ solverExpressionLiftType subsumer'
-    solveSubsumer puzzle = runCrumbleM $ solvePuzzle puzzle
-    subsumerPosSubstitute subs t = lift $ runTypeResult $ bisubstitutesType subs t
-    subsumerNegSubstitute subs t = lift $ runTypeResult $ bisubstitutesType subs t
+    solveSubsumer puzzle = liftCrumbleM $ solvePuzzle puzzle
+    subsumerPosSubstitute subs t = lift $ liftTypeResult $ bisubstitutesType subs t
+    subsumerNegSubstitute subs t = lift $ liftTypeResult $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = puzzleExpressionUnify tinf tdecl
 
 -- used for simplification, where all vars are fixed
 checkSameVar ::
     forall (ground :: GroundTypeKind) wit t.
-    IsDolanSubtypeGroundType ground =>
     wit t ->
     CrumbleM ground t
 {-
@@ -72,22 +72,21 @@ checkSameVar (MkAtomicConstraint va polwit (InvertFlipType (ConsDolanType (VarDo
             PositiveType -> iMeetL1
             NegativeType -> iJoinR1
 -}
-checkSameVar _ = throw $ InternalTypeError @ground "expression in type inversion"
+checkSameVar _ = throwExc $ InternalTypeError @ground "expression in type inversion"
 
 evalPuzzleExpression ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
     PuzzleExpression ground a ->
-    DolanTypeCheckM ground (Puzzle ground a)
+    DolanRenameTypeM ground (Puzzle ground a)
 evalPuzzleExpression (MkSolverExpression tt (ClosedExpression v)) = return $ fmap v tt
-evalPuzzleExpression _ = lift $ throwTypeError @ground $ InternalTypeError "expression in type inversion"
+evalPuzzleExpression _ = throwExc $ InternalTypeError "expression in type inversion"
 
 puzzleSubsumeSingular ::
     forall (ground :: GroundTypeKind) polarity a b.
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity a ->
     DolanSingularType ground polarity b ->
-    DolanTypeCheckM ground (Puzzle ground (DolanPolarShim ground polarity a b))
+    DolanRenameTypeM ground (Puzzle ground (DolanPolarShim ground polarity a b))
 puzzleSubsumeSingular ta tb =
     case polarityType @polarity of
         PositiveType -> fmap (fmap MkPolarShim) $ puzzleUnifySingular ta tb
@@ -110,7 +109,7 @@ invertedPolarSubtype ::
     (Is PolarityType polarity, IsDolanSubtypeGroundType ground) =>
     DolanType ground (InvertPolarity polarity) a ->
     DolanType ground polarity b ->
-    DolanTypeCheckM ground (Puzzle ground (DolanPolarShim ground polarity a b))
+    DolanRenameTypeM ground (Puzzle ground (DolanPolarShim ground polarity a b))
 invertedPolarSubtype ta tb = do
     pexpr <-
         case polarityType @polarity of

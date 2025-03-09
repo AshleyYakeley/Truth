@@ -17,6 +17,7 @@ import Shapes.Unsafe
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Shim
+import Language.Expression.Dolan.SubtypeChain ()
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem

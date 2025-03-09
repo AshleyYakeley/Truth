@@ -7,7 +7,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Simplify.Solve
 import Language.Expression.Dolan.Solver.AtomicConstraint
 import Language.Expression.Dolan.Solver.WholeConstraint
-import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -68,9 +68,9 @@ simplifyWholeConstraintINTERNAL = False
 
 wholeConstraintPuzzle ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     WholeConstraint ground a ->
-    DolanTypeCheckM ground (Puzzle ground a)
+    DolanRenameTypeM ground (Puzzle ground a)
 wholeConstraintPuzzle (MkWholeConstraint (NormalFlipType ta) (NormalFlipType tb))
     | simplifyWholeConstraintINTERNAL = do
         MkShimWit ta' (MkPolarShim conva) <- solveSimplify ta
@@ -95,18 +95,18 @@ atomicPuzzle var ft = atomicConstraintPuzzle $ mkAtomicConstraint var ft
 
 flipUnifyPuzzle ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     FlipType ground 'Positive a ->
     FlipType ground 'Negative b ->
-    DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (Puzzle ground (DolanShim ground a b))
 flipUnifyPuzzle fta ftb = wholeConstraintPuzzle $ MkWholeConstraint fta ftb
 
 puzzleUnify ::
     forall (ground :: GroundTypeKind) pola polb a b.
-    (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb) =>
+    (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb) =>
     DolanType ground pola a ->
     DolanType ground polb b ->
-    DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (Puzzle ground (DolanShim ground a b))
 puzzleUnify ta tb = let
     fta =
         case polarityType @pola of
@@ -130,18 +130,18 @@ puzzleExpression = solverExpressionLiftType
 
 puzzleExpressionUnify ::
     forall (ground :: GroundTypeKind) pola polb a b.
-    (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb) =>
+    (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb) =>
     DolanType ground pola a ->
     DolanType ground polb b ->
-    DolanTypeCheckM ground (PuzzleExpression ground (DolanShim ground a b))
+    DolanRenameTypeM ground (PuzzleExpression ground (DolanShim ground a b))
 puzzleExpressionUnify ta tb = fmap puzzleExpression $ puzzleUnify ta tb
 
 puzzleUnifySingular ::
     forall (ground :: GroundTypeKind) pola polb a b.
-    (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb) =>
+    (IsDolanGroundType ground, Is PolarityType pola, Is PolarityType polb) =>
     DolanSingularType ground pola a ->
     DolanSingularType ground polb b ->
-    DolanTypeCheckM ground (Puzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (Puzzle ground (DolanShim ground a b))
 puzzleUnifySingular ta tb =
     fmap (fmap (\conv -> iJoinMeetL1 @_ @polb . conv . iJoinMeetR1 @_ @pola))
         $ puzzleUnify (singleDolanType ta) (singleDolanType tb)

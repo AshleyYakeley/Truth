@@ -4,7 +4,7 @@ import Data.Shim
 import Shapes
 
 import Language.Expression.Dolan.Solver.Safety
-import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -12,18 +12,18 @@ import Language.Expression.TypeSystem
 
 checkSafetyInType ::
     forall (ground :: GroundTypeKind) polarity t.
-    (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
     Text ->
     DolanType ground polarity t ->
-    DolanTypeCheckM ground (DolanShimWit ground polarity t)
+    DolanRenameTypeM ground (DolanShimWit ground polarity t)
 checkSafetyInType msg t = do
     case checkSafety t of
         SuccessResult () -> return $ mkShimWit t
-        FailureResult err -> lift $ throwTypeError @ground $ InternalSafetyError msg err t
+        FailureResult err -> throwExc $ InternalSafetyTypeError msg err t
 
 checkSafetyMappable ::
     forall (ground :: GroundTypeKind) a.
-    (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
+    (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
     Text ->
-    EndoM (DolanTypeCheckM ground) a
+    EndoM (DolanRenameTypeM ground) a
 checkSafetyMappable msg = mapPShimWitsM (checkSafetyInType msg) (checkSafetyInType msg)

@@ -10,6 +10,7 @@ import Shapes
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.FreeVars
 import Language.Expression.Dolan.Rename ()
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
@@ -214,14 +215,14 @@ automatonGroundedType ::
     forall (ground :: GroundTypeKind) polarity t.
     IsDolanGroundType ground =>
     Is PolarityType polarity =>
-    [Equation ground] -> [Equation ground] -> DolanGroundedType ground polarity t -> DolanTypeCheckM ground (DolanShimWit ground polarity t)
+    [Equation ground] -> [Equation ground] -> DolanGroundedType ground polarity t -> DolanRenameTypeM ground (DolanShimWit ground polarity t)
 automatonGroundedType eqns memos gt = fmap shimWitToDolan $ mapDolanGroundedTypeM (automatonType eqns memos) gt
 
 automatonSingularType ::
     forall (ground :: GroundTypeKind) polarity t.
     IsDolanGroundType ground =>
     Is PolarityType polarity =>
-    [Equation ground] -> [Equation ground] -> DolanSingularType ground polarity t -> DolanTypeCheckM ground (DolanShimWit ground polarity t)
+    [Equation ground] -> [Equation ground] -> DolanSingularType ground polarity t -> DolanRenameTypeM ground (DolanShimWit ground polarity t)
 automatonSingularType eqns memos (GroundedDolanSingularType gt) = automatonGroundedType eqns memos gt
 automatonSingularType _ _ t = return $ typeToDolan t
 
@@ -229,7 +230,7 @@ automatonEachSingularType ::
     forall (ground :: GroundTypeKind) polarity t.
     IsDolanGroundType ground =>
     Is PolarityType polarity =>
-    [Equation ground] -> [Equation ground] -> DolanType ground polarity t -> DolanTypeCheckM ground (DolanShimWit ground polarity t)
+    [Equation ground] -> [Equation ground] -> DolanType ground polarity t -> DolanRenameTypeM ground (DolanShimWit ground polarity t)
 automatonEachSingularType _ _ NilDolanType = return nilDolanShimWit
 automatonEachSingularType eqns memos (ConsDolanType t1 tr) = do
     t1' <- automatonSingularType eqns memos t1
@@ -240,7 +241,7 @@ automatonType ::
     forall (ground :: GroundTypeKind) polarity t.
     IsDolanGroundType ground =>
     Is PolarityType polarity =>
-    [Equation ground] -> [Equation ground] -> DolanType ground polarity t -> DolanTypeCheckM ground (DolanShimWit ground polarity t)
+    [Equation ground] -> [Equation ground] -> DolanType ground polarity t -> DolanRenameTypeM ground (DolanShimWit ground polarity t)
 automatonType _ memos t0
     | Just var <- lookupMemo memos t0 = return $ varDolanShimWit var
 automatonType eqns memos t0 = do
@@ -265,7 +266,7 @@ automateRecursionInType ::
     forall (ground :: GroundTypeKind) polarity t.
     (IsDolanGroundType ground, Is PolarityType polarity) =>
     DolanType ground polarity t ->
-    DolanTypeCheckM ground (DolanShimWit ground polarity t)
+    DolanRenameTypeM ground (DolanShimWit ground polarity t)
 automateRecursionInType t
     | hasRecursion t = do
         t' <- unEndoM (varRename fixedRenameSource) t
@@ -276,5 +277,5 @@ automateRecursionInType t = return $ mkShimWit t
 automateRecursion ::
     forall (ground :: GroundTypeKind) a.
     (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
-    EndoM (DolanTypeCheckM ground) a
+    EndoM (DolanRenameTypeM ground) a
 automateRecursion = mapPShimWitsM automateRecursionInType automateRecursionInType

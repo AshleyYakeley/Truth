@@ -64,8 +64,6 @@ class
     , MonadException Interpreter
     , Show (Exc Interpreter)
     , MonadIO Interpreter
-    , MonadThrow PatternError Interpreter
-    , MonadThrow (ExpressionError QVarWit) Interpreter
     , MonadThrow QErrorType Interpreter
     , MonadThrow QError Interpreter
     , MonadCatch QError Interpreter
@@ -76,13 +74,13 @@ class
     getSubtypeConversions :: Interpreter [QSubtypeConversionEntry]
     mkErrorMessage :: Interpreter (QErrorType -> QError)
 
-instance HasInterpreter => ExprShow (QGroundType dv gt) where
+instance ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType
 
-instance HasInterpreter => AllConstraint ExprShow (QGroundType '[]) where
+instance AllConstraint ExprShow (QGroundType '[]) where
     allConstraint = Dict
 
-instance HasInterpreter => Show (QGroundType dv gt) where
+instance Show (QGroundType dv gt) where
     show t = unpack $ toText $ showGroundType t
 
 type QPolyGreatestDynamicSupertype :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type
@@ -187,6 +185,12 @@ type QIsoShimWit polarity = DolanIsoShimWit QGroundType polarity
 type QArgumentsShimWit :: forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Polarity -> Type -> Type
 type QArgumentsShimWit dv gt polarity = CCRPolarArgumentsShimWit QPolyShim dv QType gt polarity
 
+type QTypeResult = TypeResult QGroundType
+
+type QTypeM = DolanTypeM QGroundType
+
+type QRenameTypeM = DolanRenameTypeM QGroundType
+
 type QValue = TSValue QTypeSystem
 
 type QVarWit = TSVarWit QTypeSystem
@@ -217,9 +221,8 @@ type QSubtypeConversionEntry = SubtypeConversionEntry QGroundType
 
 type QPurityFunction (t :: Type) (lt :: [Type]) = PurityFunction Maybe QOpenExpression t (ListProduct lt)
 
-instance HasInterpreter => IsDolanGroundType QGroundType where
+instance IsDolanGroundType QGroundType where
     type DolanVarID QGroundType = VarID
-    type DolanM QGroundType = Interpreter
     groundTypeVarianceMap ::
         forall (dv :: CCRVariances) (f :: CCRVariancesKind dv). QGroundType dv f -> CCRVariancesMap dv f
     groundTypeVarianceMap = qgtVarianceMap
@@ -231,7 +234,7 @@ instance HasInterpreter => IsDolanGroundType QGroundType where
         HRefl <- testHetEquality (qgtFamilyType ta) (qgtFamilyType tb)
         Just (Refl, HRefl)
 
-instance HasInterpreter => ExprShow (SomeGroundType QGroundType) where
+instance ExprShow (SomeGroundType QGroundType) where
     exprShowPrec (MkSomeGroundType t) = exprShowPrec t
 
 showPrecVariance ::

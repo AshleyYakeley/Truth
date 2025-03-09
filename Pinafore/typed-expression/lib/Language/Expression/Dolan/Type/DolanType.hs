@@ -18,7 +18,7 @@ module Language.Expression.Dolan.Type.DolanType
     , singularsToAnyType
     , typeToAnySingulars
     , DolanOpenExpression
-    , DolanTypeCheckM
+    , DolanRenamerT
     )
 where
 
@@ -36,15 +36,11 @@ class
     , IsDolanPolyShim (DolanPolyShim ground)
     , Eq (DolanVarID ground)
     , Ord (DolanVarID ground)
-    , Monad (DolanM ground)
-    , MonadThrow PatternError (DolanM ground)
-    , MonadThrow (ExpressionError (DolanVarWit ground)) (DolanM ground)
     -- , DebugGroundType ground
     ) =>
     IsDolanGroundType (ground :: GroundTypeKind)
     where
     type DolanVarID ground :: Type
-    type DolanM ground :: Type -> Type
     groundTypeVarianceType :: forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). ground dv t -> CCRVariancesType dv
     groundTypeVarianceMap :: forall (dv :: CCRVariances) (t :: CCRVariancesKind dv). ground dv t -> CCRVariancesMap dv t
     groundTypeTestEquality ::
@@ -80,26 +76,6 @@ instance
     , forall polarity. Is PolarityType polarity => AllConstraint Show (DolanType ground polarity)
     ) =>
     ShowGroundType ground
-
-type DebugGroundType :: GroundTypeKind -> Constraint
-class
-    ( MonadException (DolanM ground)
-    , Show (Exc (DolanM ground))
-    , MonadIO (DolanM ground)
-    , DolanPolyShim ground Type ~ JMShim Type
-    , ShowGroundType ground
-    ) =>
-    DebugGroundType ground
-
-instance
-    forall (ground :: GroundTypeKind).
-    ( MonadException (DolanM ground)
-    , Show (Exc (DolanM ground))
-    , MonadIO (DolanM ground)
-    , DolanPolyShim ground Type ~ JMShim Type
-    , ShowGroundType ground
-    ) =>
-    DebugGroundType ground
 
 type DolanVarWit :: GroundTypeKind -> Type -> Type
 type DolanVarWit ground = NameWitness (DolanVarID ground) (DolanShimWit ground 'Negative)
@@ -275,15 +251,8 @@ instance
 type DolanOpenExpression :: GroundTypeKind -> Type -> Type
 type DolanOpenExpression ground = TSOpenExpression (DolanTypeSystem ground)
 
-type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
-type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)
-
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSystem (DolanTypeSystem ground) where
-    type TSOuter (DolanTypeSystem ground) = DolanTypeCheckM ground
-    type TSNegWitness (DolanTypeSystem ground) = DolanType ground 'Negative
-    type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive
-    type TSShim (DolanTypeSystem ground) = DolanShim ground
-    type TSVarID (DolanTypeSystem ground) = DolanVarID ground
+type DolanRenamerT :: GroundTypeKind -> (Type -> Type) -> (Type -> Type)
+type DolanRenamerT ground = VarRenamerT (DolanTypeSystem ground)
 
 getCCRArgumentMapping ::
     forall (ground :: GroundTypeKind) (t :: Type) polarity (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).

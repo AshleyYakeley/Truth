@@ -22,6 +22,8 @@ module Pinafore.Test.Internal
     , SomeGroundType (..)
     , QInterpreterBinding (..)
     , QInterpreter
+    , QRenameTypeM
+    , QTypeM
     , toJMShimWit
     , allocateLambdaVar
     , QScopeBuilder

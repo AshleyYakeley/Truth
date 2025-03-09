@@ -79,13 +79,6 @@ packages:
   original:
     hackage: witness-0.7
 - completed:
-    hackage: monadology-0.4@sha256:a5e2fbb86c8bd643ec1a28c1d211545801d7a5da31568fc3cfff2f79bdb50590,5351
-    pantry-tree:
-      sha256: e01052d6cedfcfda5da4e63d373722cd6bff6f014c5ae09c839f9fcee1c22aac
-      size: 4297
-  original:
-    hackage: monadology-0.4
-- completed:
     hackage: open-witness-0.7@sha256:5eb33f9ec31d170b972811cc904398eae8188a9153d7c0d529345056987ad722,3704
     pantry-tree:
       sha256: c96d854bde89a1cbdd79735110ed4868ef8e5fc8fbf01d63744daf8ef73f3911

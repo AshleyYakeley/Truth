@@ -65,6 +65,7 @@ library:
       - Language.Expression.Dolan.Type.InvertedType
       - Language.Expression.Dolan.Type.MixedType
       - Language.Expression.Dolan.Type
+      - Language.Expression.Dolan.SubtypeChain
       - Language.Expression.Dolan.Subtype
       - Language.Expression.Dolan.SubtypeEntry.Knowledge
       - Language.Expression.Dolan.SubtypeEntry.Group

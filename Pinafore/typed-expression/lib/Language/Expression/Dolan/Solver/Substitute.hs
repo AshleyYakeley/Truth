@@ -21,6 +21,7 @@ import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -45,7 +46,7 @@ getAtomicConstraint ::
     forall (ground :: GroundTypeKind) a.
     IsDolanSubtypeGroundType ground =>
     AtomicConstraint ground a ->
-    DolanTypeCheckM ground (a, Substitution ground)
+    DolanRenameTypeM ground (a, Substitution ground)
 getAtomicConstraint (MkAtomicConstraint oldvar (pol :: _ polarity) (fptw :: _ pt)) =
     withRepresentative pol $ do
         MkSomeTypeVarT (newvar :: TypeVarT newtv) <- renamerGenerateFreeTypeVarT

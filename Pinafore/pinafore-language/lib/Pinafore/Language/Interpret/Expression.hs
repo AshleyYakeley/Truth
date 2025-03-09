@@ -101,7 +101,7 @@ interpretPattern' (TypedSyntaxPattern spat stype) = do
         mtn <- interpretType @'Negative stype
         case mtn of
             MkSome tn -> do
-                tpw <- invertType tn
+                tpw <- qRunTypeResult $ invertType tn
                 let
                     pc :: QPatternConstructor
                     pc =
@@ -120,7 +120,7 @@ interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
                 case mdtn of
                     Nothing -> return pat
                     Just (MkShimWit dtn (MkPolarShim (MkComposeShim dtconvexpr))) -> do
-                        tpw <- invertType tn
+                        tpw <- qRunTypeResult $ invertType tn
                         let
                             pc :: QPatternConstructor
                             pc =

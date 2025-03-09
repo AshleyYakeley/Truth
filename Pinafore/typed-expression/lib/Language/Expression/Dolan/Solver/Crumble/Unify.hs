@@ -18,7 +18,7 @@ import Language.Expression.Dolan.Solver.Crumble.Type
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Solver.Puzzle
 import Language.Expression.Dolan.Solver.WholeConstraint
-import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -50,7 +50,7 @@ data UnifyPiece (ground :: GroundTypeKind) t where
 
 unifyAtomic ::
     forall (ground :: GroundTypeKind) v a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     TypeVarT v ->
     MixedShimWit ground 'Positive a ->
     MixedShimWit ground 'Negative b ->
@@ -63,10 +63,10 @@ simplifyWholeUnifyPieceINTERNAL = True
 
 unifyFlipTypes ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     FlipType ground 'Positive a ->
     FlipType ground 'Negative b ->
-    DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (UnifyPuzzle ground (DolanShim ground a b))
 unifyFlipTypes (NormalFlipType ta) (NormalFlipType tb)
     | simplifyWholeUnifyPieceINTERNAL = do
         MkShimWit ta' (MkPolarShim conva) <- solveSimplify ta
@@ -80,18 +80,18 @@ unifyFlipTypes ta tb = return $ varExpression $ WholeUnifyPiece $ MkWholeConstra
 
 unifyDolanTypes ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     DolanType ground 'Positive a ->
     DolanType ground 'Negative b ->
-    DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (UnifyPuzzle ground (DolanShim ground a b))
 unifyDolanTypes ta tb = unifyFlipTypes (NormalFlipType ta) (NormalFlipType tb)
 
 unifyDolanInvType ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     DolanType ground 'Positive a ->
     InvertedType ground 'Negative b ->
-    DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (UnifyPuzzle ground (DolanShim ground a b))
 unifyDolanInvType _ NilInvertedType = return $ pure termf
 unifyDolanInvType t (ConsInvertedType t1 tr) = do
     p1 <- unifyFlipTypes (NormalFlipType t) (InvertFlipType t1)
@@ -100,10 +100,10 @@ unifyDolanInvType t (ConsInvertedType t1 tr) = do
 
 unifyInvDolanType ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     InvertedType ground 'Positive a ->
     DolanType ground 'Negative b ->
-    DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (UnifyPuzzle ground (DolanShim ground a b))
 unifyInvDolanType NilInvertedType _ = return $ pure initf
 unifyInvDolanType (ConsInvertedType t1 tr) t = do
     p1 <- unifyFlipTypes (InvertFlipType t1) (NormalFlipType t)
@@ -112,10 +112,10 @@ unifyInvDolanType (ConsInvertedType t1 tr) t = do
 
 unifyInvInvType ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     InvertedType ground 'Positive a ->
     DolanType ground 'Positive b ->
-    DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (UnifyPuzzle ground (DolanShim ground a b))
 unifyInvInvType NilInvertedType _ = return $ pure initf
 unifyInvInvType (ConsInvertedType t1 tr) t = do
     p1 <- unifyFlipTypes (InvertFlipType t1) (InvertFlipType t)
@@ -124,10 +124,10 @@ unifyInvInvType (ConsInvertedType t1 tr) t = do
 
 unifyInvInvTypes ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     InvertedType ground 'Positive a ->
     InvertedType ground 'Negative b ->
-    DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (UnifyPuzzle ground (DolanShim ground a b))
 unifyInvInvTypes _ NilInvertedType = return $ pure termf
 unifyInvInvTypes it (ConsInvertedType t1 tr) = do
     p1 <- unifyInvInvType it t1
@@ -136,10 +136,10 @@ unifyInvInvTypes it (ConsInvertedType t1 tr) = do
 
 unifyMixedTypes ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     MixedType ground 'Positive a ->
     MixedType ground 'Negative b ->
-    DolanTypeCheckM ground (UnifyPuzzle ground (DolanShim ground a b))
+    DolanRenameTypeM ground (UnifyPuzzle ground (DolanShim ground a b))
 unifyMixedTypes (MkMixedType nta ita) (MkMixedType ntb itb) = do
     pnn <- unifyDolanTypes nta ntb
     pni <- unifyDolanInvType nta itb
@@ -178,7 +178,7 @@ type UnifyCrumbler (ground :: GroundTypeKind) =
 
 pieceToUnify ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     Piece ground a ->
     CrumbleM ground (UnifyPuzzle ground a)
 pieceToUnify (WholePiece (MkWholeConstraint fta ftb)) = liftToCrumbleM $ unifyFlipTypes fta ftb
@@ -189,7 +189,7 @@ pieceToUnify (AtomicPiece (MkAtomicConstraint var NegativeType ft)) =
 
 solveWholeConstraint ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     WholeConstraint ground a ->
     CrumbleM ground (NonEmpty (UnifyPuzzleExpression ground a))
 solveWholeConstraint wc = do
@@ -200,9 +200,9 @@ solveWholeConstraint wc = do
 
 mergeAtomicPuzzle ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     UnifyPuzzle ground a ->
-    DolanTypeCheckM ground (UnifyPuzzle ground a)
+    DolanRenameTypeM ground (UnifyPuzzle ground a)
 mergeAtomicPuzzle =
     combineExpressionWitnessesM $ \wa wb ->
         case (wa, wb) of
@@ -254,9 +254,9 @@ mergeAtomicPuzzle =
 
 atomicToVariablePuzzle ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     UnifyPuzzle ground a ->
-    DolanTypeCheckM ground (UnifyPuzzle ground a)
+    DolanRenameTypeM ground (UnifyPuzzle ground a)
 atomicToVariablePuzzle =
     runExpressionM $ \case
         AtomicUnifyPiece var tp tq -> do
@@ -285,7 +285,7 @@ firstSuccess (a0 :| (a1 : aa)) amb = catch (amb a0) (\(_ :: e) -> firstSuccess @
 
 processWholeConstraint ::
     forall (ground :: GroundTypeKind) a b.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     WholeConstraint ground a ->
     UnifyPuzzle ground (a -> b) ->
     UnifyCrumbler ground b
@@ -309,7 +309,7 @@ processWholeConstraint wconstr@MkWholeConstraint{} puzzlerest =
 
 processPuzzle ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     UnifyPuzzle ground a ->
     UnifyCrumbler ground a
 processPuzzle (ClosedExpression a) = pure a
@@ -331,7 +331,7 @@ constraintToPresub ::
     forall (ground :: GroundTypeKind) t.
     IsDolanGroundType ground =>
     UnifyVariableConstraint ground t ->
-    WriterT [Presubstitution ground] (DolanTypeCheckM ground) t
+    WriterT [Presubstitution ground] (DolanRenameTypeM ground) t
 constraintToPresub (MkUnifyVariableConstraint var ta tb) = do
     (presub, t) <- lift $ assignPresubstitution var ta tb
     tell [presub]
@@ -341,7 +341,7 @@ applyEachEvery ::
     forall (ground :: GroundTypeKind).
     IsDolanGroundType ground =>
     [Presubstitution ground] ->
-    DolanTypeCheckM ground [Presubstitution ground]
+    DolanRenameTypeM ground [Presubstitution ground]
 applyEachEvery [] = return []
 applyEachEvery (x : pp) = do
     pp1 <- applyEachEvery pp
@@ -353,7 +353,7 @@ solveVPuzzle ::
     forall (ground :: GroundTypeKind) t.
     IsDolanGroundType ground =>
     VarPuzzle ground t ->
-    DolanTypeCheckM ground (t, [SolverBisubstitution ground])
+    DolanRenameTypeM ground (t, [SolverBisubstitution ground])
 solveVPuzzle (ClosedExpression a) = return (a, [])
 solveVPuzzle vpuzzle = do
     (t, presubs) <- runWriterT $ runExpression constraintToPresub vpuzzle
@@ -363,7 +363,7 @@ solveVPuzzle vpuzzle = do
 
 solveUnifyPuzzle ::
     forall (ground :: GroundTypeKind) a.
-    IsDolanSubtypeGroundType ground =>
+    IsDolanGroundType ground =>
     UnifyPuzzle ground a ->
     CrumbleM ground (DolanOpenExpression ground a, [SolverBisubstitution ground])
 solveUnifyPuzzle (ClosedExpression a) = return (pure a, [])

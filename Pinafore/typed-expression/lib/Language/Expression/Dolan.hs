@@ -44,6 +44,9 @@ module Language.Expression.Dolan
     , unFromRangeShimWit
     , invertType
     , DolanTypeSystem
+    , TypeResult
+    , DolanTypeM
+    , DolanRenameTypeM
     , IsDolanGroundType (..)
     , IsDolanFunctionGroundType (..)
     , IsDolanSubtypeGroundType (..)
@@ -62,6 +65,7 @@ import Language.Expression.Dolan.Nonpolar as I
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
 import Language.Expression.Dolan.Subtype as I
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.SubtypeEntry as I
 import Language.Expression.Dolan.Type as I
 import Language.Expression.Dolan.TypeResult
@@ -74,7 +78,7 @@ instance
     IsDolanSubtypeGroundType ground =>
     AbstractTypeSystem (DolanTypeSystem ground)
     where
-    type TSInner (DolanTypeSystem ground) = DolanM ground
+    type TSInner (DolanTypeSystem ground) = DolanTypeM ground
     bottomShimWit = MkSome $ mkShimWit NilDolanType
     cleanOpenExpression expr@(ClosedExpression _) = return expr
     cleanOpenExpression expr@(OpenExpression _ (ClosedExpression _)) = return expr
@@ -84,7 +88,7 @@ instance
                 forall a b.
                 DolanVarWit ground a ->
                 DolanVarWit ground b ->
-                RenamerT (DolanTypeSystem ground) (DolanM ground) (Maybe (Expression (DolanVarWit ground) (a, b)))
+                RenamerT (DolanTypeSystem ground) (DolanTypeM ground) (Maybe (Expression (DolanVarWit ground) (a, b)))
             combineWits (MkNameWitness na ta) (MkNameWitness nb tb) =
                 return
                     $ if shouldMerge @ground na nb

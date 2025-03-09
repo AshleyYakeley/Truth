@@ -12,7 +12,7 @@ module Language.Expression.Dolan.SubtypeEntry
     , subtypeConversionEntry
     , neutralSubtypeConversionEntry
     , IsDolanSubtypeEntriesGroundType (..)
-    , entries_getSubtypeChain
+    , runDolanTypeMEntries
     , testEqualitySubtypeGroupTest
     , SubtypeGroup (..)
     , singletonSubtypeGroup
@@ -24,9 +24,9 @@ import Data.Shim
 import Shapes
 
 import Language.Expression.Dolan.Nonpolar
-import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Solver.Crumble.Type
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.SubtypeEntry.Conversion
 import Language.Expression.Dolan.SubtypeEntry.Group
 import Language.Expression.Dolan.SubtypeEntry.Knowledge
@@ -286,7 +286,6 @@ class
     getSubtypeGroup ::
         forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv). ground dv gt -> SubtypeGroup ground dv gt
     getSubtypeGroup = singletonSubtypeGroup
-    subtypeConversionEntries :: DolanM ground [SubtypeConversionEntry ground]
 
 subtypeConversionAsGeneralAs ::
     forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
@@ -295,7 +294,7 @@ subtypeConversionAsGeneralAs ::
     ground dvb gtb ->
     SubtypeConversion ground dva gta dvb gtb ->
     SubtypeConversion ground dva gta dvb gtb ->
-    DolanM ground Bool
+    DolanTypeM ground Bool
 subtypeConversionAsGeneralAs _ _ (GeneralSubtypeConversion _ NilSubtypeChain) _ = return True
 subtypeConversionAsGeneralAs _ _ _ (GeneralSubtypeConversion _ NilSubtypeChain) = return False
 subtypeConversionAsGeneralAs _ _ CoerceSubtypeConversion _ = return True
@@ -316,19 +315,24 @@ subtypeConversionAsGeneralAs ga gb (GeneralSubtypeConversion _ (ConsSubtypeChain
                         ]
 
 entries_getSubtypeChain ::
-    forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).
+    forall (ground :: GroundTypeKind).
     IsDolanSubtypeEntriesGroundType ground =>
-    ground dva gta ->
-    ground dvb gtb ->
-    DolanM ground (TypeResult ground (SubtypeChain ground dva gta dvb gtb))
-entries_getSubtypeChain ga gb = do
-    entries <- subtypeConversionEntries
-    let conversions = getChains entries ga gb
-    bestConversions <- bestM (subtypeConversionAsGeneralAs ga gb) conversions
-    case bestConversions of
-        [sconv] -> return $ return $ subtypeConversionChain sconv
-        [] -> return $ throw $ NoGroundConvertTypeError ga gb
-        _ -> return $ throw $ IncoherentGroundConvertTypeError ga gb
+    [SubtypeConversionEntry ground] -> GetSubtypeChain ground
+entries_getSubtypeChain entries = let
+    gsc = MkGetSubtypeChain $ \ga gb -> runDolanTypeM gsc $ do
+        let conversions = getChains entries ga gb
+        bestConversions <- bestM (subtypeConversionAsGeneralAs ga gb) conversions
+        case bestConversions of
+            [sconv] -> return $ subtypeConversionChain sconv
+            [] -> throw $ NoGroundConvertTypeError ga gb
+            _ -> throw $ IncoherentGroundConvertTypeError ga gb
+    in gsc
+
+runDolanTypeMEntries ::
+    forall (ground :: GroundTypeKind).
+    IsDolanSubtypeEntriesGroundType ground =>
+    [SubtypeConversionEntry ground] -> DolanTypeM ground --> TypeResult ground
+runDolanTypeMEntries entries = runDolanTypeM $ entries_getSubtypeChain entries
 
 type SubtypeConversionPair :: GroundTypeKind -> Type
 data SubtypeConversionPair ground

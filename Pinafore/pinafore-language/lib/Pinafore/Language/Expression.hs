@@ -4,10 +4,42 @@ module Pinafore.Language.Expression where
 
 import Import
 import Pinafore.Language.Convert
+import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
+
+qRunTypeResult :: QTypeResult --> QInterpreter
+qRunTypeResult = \case
+    SuccessResult a -> return a
+    FailureResult err -> throw $ case err of
+        PatternTypeError paterr -> PatternErrorError paterr
+        ExpressionTypeError (UndefinedBindingsError ww) -> nameWitnessErrorType ww
+        InternalTypeError msg -> InternalError Nothing $ toNamedText msg
+        InternalSafetyTypeError msg rterr t ->
+            InternalError Nothing
+                $ toNamedText msg
+                <> " simplification: "
+                <> showNamedText rterr
+                <> " recursive type: "
+                <> showNamedText t
+        UninvertibleTypeError t -> TypeNotInvertibleError $ exprShow t
+        NoGroundConvertTypeError ga gb -> NoGroundTypeConversionError (showGroundType ga) (showGroundType gb)
+        IncoherentGroundConvertTypeError ga gb -> IncoherentGroundTypeConversionError (showGroundType ga) (showGroundType gb)
+        ConvertTypeError fta ftb ->
+            flipToType fta $ \(ta :: _ pola _) ->
+                flipToType ftb $ \(tb :: _ polb _) ->
+                    TypeConvertError
+                        (exprShow ta)
+                        (witnessToValue $ polarityType @pola)
+                        (exprShow tb)
+                        (witnessToValue $ polarityType @polb)
+
+qRunTypeM :: QTypeM --> QInterpreter
+qRunTypeM ma = do
+    entries <- getSubtypeConversions
+    qRunTypeResult $ runDolanTypeMEntries entries ma
 
 qToValue ::
     forall a.
@@ -30,7 +62,7 @@ qVar :: VarID -> QExpression
 qVar name = tsVar @QTypeSystem name
 
 qSubstitute :: (VarID -> Maybe QExpression) -> QExpression -> QInterpreter QExpression
-qSubstitute = tsSubstitute @QTypeSystem
+qSubstitute f expr = qRunTypeM $ tsSubstitute @QTypeSystem f expr
 
 qImply :: [(ImplicitName, QExpression)] -> QExpression -> QInterpreter QExpression
 qImply substs expr = let
@@ -39,7 +71,7 @@ qImply substs expr = let
     in qSubstitute substf expr
 
 qAbstractExpr :: VarID -> QExpression -> QInterpreter QExpression
-qAbstractExpr = tsAbstract @QTypeSystem
+qAbstractExpr var expr = qRunTypeM $ tsAbstract @QTypeSystem var expr
 
 qAbstractsExpr :: [VarID] -> QExpression -> QInterpreter QExpression
 qAbstractsExpr [] e = return e
@@ -49,14 +81,14 @@ qAbstractsExpr (n : nn) e = do
 
 qPolyAbstractF ::
     forall p q. VarID -> QShimWit 'Positive p -> QFExpression ((->) q) -> QInterpreter (QFExpression ((->) (p, q)))
-qPolyAbstractF = tsPolyAbstractF @QTypeSystem
+qPolyAbstractF var tw expr = qRunTypeM $ tsPolyAbstractF @QTypeSystem var tw expr
 
 qSimplify ::
     forall a.
     TSMappable QTypeSystem a =>
     a ->
     QInterpreter a
-qSimplify = tsSimplify @QTypeSystem
+qSimplify val = qRunTypeM $ tsSimplify @QTypeSystem val
 
 qVarPattern :: VarID -> QPattern
 qVarPattern = tsVarPattern @QTypeSystem
@@ -65,7 +97,7 @@ qAnyPattern :: QPattern
 qAnyPattern = tsAnyPattern @QTypeSystem
 
 qBothPattern :: QPattern -> QPattern -> QInterpreter QPattern
-qBothPattern = tsBothPattern @QTypeSystem
+qBothPattern pat1 pat2 = qRunTypeM $ tsBothPattern @QTypeSystem pat1 pat2
 
 qToPatternConstructor ::
     forall t lt.
@@ -75,7 +107,7 @@ qToPatternConstructor ::
 qToPatternConstructor tml = toPatternConstructor (fromPolarShimWit @Type @QShim @(QType 'Negative)) toListShimWit tml
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> QInterpreter (QPatternConstructor)
-qApplyPatternConstructor = tsApplyPatternConstructor @QTypeSystem
+qApplyPatternConstructor qcons pat = qRunTypeM $ tsApplyPatternConstructor @QTypeSystem qcons pat
 
 qSealPatternConstructor ::
     forall m.
@@ -96,16 +128,16 @@ qConstructPattern pc pats = do
     qSealPatternConstructor pc'
 
 qPartialExpressionSumList :: [QPartialExpression] -> QInterpreter QPartialExpression
-qPartialExpressionSumList = tsPartialExpressionSumList @QTypeSystem
+qPartialExpressionSumList exprs = qRunTypeM $ tsPartialExpressionSumList @QTypeSystem exprs
 
 qLambdaPatternMatch :: VarID -> QPattern -> QMatch
 qLambdaPatternMatch = tsLambdaPatternMatch @QTypeSystem
 
 qExpressionPatternMatch :: QExpression -> QPattern -> QInterpreter QMatch
-qExpressionPatternMatch = tsExpressionPatternMatch @QTypeSystem
+qExpressionPatternMatch expr pat = qRunTypeM $ tsExpressionPatternMatch @QTypeSystem expr pat
 
 qMatchGate :: QMatch -> QPartialExpression -> QInterpreter QPartialExpression
-qMatchGate = tsMatchGate @QTypeSystem
+qMatchGate match expr = qRunTypeM $ tsMatchGate @QTypeSystem match expr
 
 qMatchBindings :: QMatch -> [(VarID, QExpression)]
 qMatchBindings = tsMatchBindings @QTypeSystem
@@ -122,7 +154,7 @@ qFunctionPosWitnesses (ConsListType ta la) tb =
         $ qFunctionPosWitnesses la tb
 
 qApplyExpr :: QExpression -> QExpression -> QInterpreter QExpression
-qApplyExpr exprf expra = tsApply @QTypeSystem exprf expra
+qApplyExpr exprf expra = qRunTypeM $ tsApply @QTypeSystem exprf expra
 
 qApplyAllExpr :: QExpression -> [QExpression] -> QInterpreter QExpression
 qApplyAllExpr e [] = return e
@@ -145,36 +177,37 @@ qSequenceExpr (e : ee) = do
 qBindExpr :: VarID -> (QExpression -> DefDoc) -> Maybe (Some (QType 'Positive)) -> QExpression -> QBinding
 qBindExpr = tsSingleBinding @QTypeSystem
 
+qSubsume :: QShimWit 'Positive inf -> QType 'Positive decl -> QInterpreter (QOpenExpression (QShim inf decl))
+qSubsume winf tdecl = qRunTypeM $ tsSubsume @QTypeSystem winf tdecl
+
 qSubsumeExpr :: Some (QType 'Positive) -> QExpression -> QInterpreter QExpression
-qSubsumeExpr = tsSubsumeExpression @QTypeSystem
+qSubsumeExpr tw expr = qRunTypeM $ tsSubsumeExpression @QTypeSystem tw expr
 
 qSubsumeFExpr :: Functor f => Some (QType 'Positive) -> QFExpression f -> QInterpreter (QFExpression f)
-qSubsumeFExpr = tsSubsumeFExpression @QTypeSystem
+qSubsumeFExpr tw expr = qRunTypeM $ tsSubsumeFExpression @QTypeSystem tw expr
 
 qLetExpr :: VarID -> QExpression -> QExpression -> QInterpreter QExpression
-qLetExpr name exp body = tsLet @QTypeSystem name exp body
+qLetExpr name exp body = qRunTypeM $ tsLet @QTypeSystem name exp body
 
 qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> QInterpreter (Map VarID (DefDoc, QExpression))
-qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @QTypeSystem
+qUncheckedBindingsRecursiveLetExpr binds = qRunTypeM $ tsUncheckedRecursiveLet @QTypeSystem binds
 
 qBindingSequentialLetExpr :: QBinding -> QInterpreter (Map VarID (DefDoc, QExpression))
-qBindingSequentialLetExpr = tsSequentialLet @QTypeSystem
+qBindingSequentialLetExpr bind = qRunTypeM $ tsSequentialLet @QTypeSystem bind
 
 qEvalExpr ::
-    forall m.
-    MonadThrow (ExpressionError QVarWit) m =>
     QExpression ->
-    m QValue
-qEvalExpr expr = tsEval @QTypeSystem expr
+    QInterpreter QValue
+qEvalExpr expr = qRunTypeResult $ tsEval @QTypeSystem expr
 
 qEvalExprMaybe :: QExpression -> Maybe QValue
 qEvalExprMaybe expr = tsEvalMaybe @QTypeSystem expr
 
 qUnifyRigid :: forall a b. QShimWit 'Positive a -> QShimWit 'Negative b -> QInterpreter (QShim a b)
-qUnifyRigid = tsUnifyRigid @QTypeSystem
+qUnifyRigid tw vw = qRunTypeM $ tsUnifyRigid @QTypeSystem tw vw
 
 qUnifyValueTo :: forall t. QShimWit 'Negative t -> QValue -> QInterpreter t
-qUnifyValueTo = tsUnifyValueTo @QTypeSystem
+qUnifyValueTo vw val = qRunTypeM $ tsUnifyValueTo @QTypeSystem vw val
 
 qValue ::
     forall t.
@@ -184,10 +217,13 @@ qValue ::
 qValue v = MkSomeOf toPolarShimWit v
 
 qUnifyExpressionToOpen :: forall t. QShimWit 'Negative t -> QExpression -> QInterpreter (QOpenExpression t)
-qUnifyExpressionToOpen = tsUnifyExpressionTo @QTypeSystem
+qUnifyExpressionToOpen tw expr = qRunTypeM $ tsUnifyExpressionTo @QTypeSystem tw expr
+
+qSubsumeValue :: forall t. QType 'Positive t -> QValue -> QInterpreter t
+qSubsumeValue tw val = qRunTypeM $ tsSubsumeValue @QTypeSystem tw val
 
 qSubsumeExpressionToOpen :: forall t. QType 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
-qSubsumeExpressionToOpen = tsSubsumeExpressionTo @QTypeSystem mempty
+qSubsumeExpressionToOpen tw expr = qRunTypeM $ tsSubsumeExpressionTo @QTypeSystem mempty tw expr
 
 qSubsumeExpressionToOpenWit :: forall t. QIsoShimWit 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
 qSubsumeExpressionToOpenWit (MkShimWit t iconv) expr = do
@@ -199,7 +235,7 @@ qUnifyValue ::
     HasQType QPolyShim 'Negative t =>
     QValue ->
     QInterpreter t
-qUnifyValue = tsUnifyValue @QTypeSystem
+qUnifyValue val = qRunTypeM $ tsUnifyValue @QTypeSystem val
 
 qExactValue :: QType 'Positive t -> QValue -> Maybe t
 qExactValue wt (MkSomeOf (MkShimWit wt' (MkPolarShim conv)) v) = do
@@ -207,7 +243,7 @@ qExactValue wt (MkSomeOf (MkShimWit wt' (MkPolarShim conv)) v) = do
     return $ shimToFunction conv v
 
 qUnifyF :: forall f. (forall t. QShimWit 'Negative t -> QShimWit 'Negative (f t)) -> QValue -> QInterpreter (QValueF f)
-qUnifyF = tsUnifyF @QTypeSystem
+qUnifyF f val = qRunTypeM $ tsUnifyF @QTypeSystem f val
 
 -- | for debugging
 qUnifyRigidValue ::
@@ -215,7 +251,7 @@ qUnifyRigidValue ::
     HasQType QPolyShim 'Negative t =>
     QValue ->
     QInterpreter t
-qUnifyRigidValue = tsUnifyRigidValue @QTypeSystem
+qUnifyRigidValue val = qRunTypeM $ tsUnifyRigidValue @QTypeSystem val
 
 -- | for debugging
 qUnifyValueToFree ::
@@ -223,4 +259,4 @@ qUnifyValueToFree ::
     HasQType QPolyShim 'Negative t =>
     QValue ->
     QInterpreter t
-qUnifyValueToFree = tsUnifyValueToFree @QTypeSystem
+qUnifyValueToFree val = qRunTypeM $ tsUnifyValueToFree @QTypeSystem val

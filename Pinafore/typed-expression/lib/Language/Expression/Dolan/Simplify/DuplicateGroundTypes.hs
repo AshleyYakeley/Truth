@@ -10,6 +10,7 @@ import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Solver.CrumbleM
 import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.SubtypeChain
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
@@ -19,7 +20,7 @@ mergeInSingularType ::
     forall (ground :: GroundTypeKind) polarity t.
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity t ->
-    DolanTypeCheckM ground (DolanSingularShimWit ground polarity t)
+    DolanRenameTypeM ground (DolanSingularShimWit ground polarity t)
 mergeInSingularType = mapDolanSingularTypeM mergeInType
 
 mergeTypeType ::
@@ -72,7 +73,7 @@ mergeSingularType ::
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity t1 ->
     DolanType ground polarity tr ->
-    DolanTypeCheckM ground (DolanShimWit ground polarity (JoinMeetType polarity t1 tr))
+    DolanRenameTypeM ground (DolanShimWit ground polarity (JoinMeetType polarity t1 tr))
 mergeSingularType ts NilDolanType = return $ mkPolarShimWit $ ConsDolanType ts NilDolanType
 mergeSingularType ts (ConsDolanType t1 tr) = do
     mts1 <- runCrumbleMCheck $ mergeSingularSingularType ts t1
@@ -88,7 +89,7 @@ mergeInType ::
     forall (ground :: GroundTypeKind) polarity t.
     (IsDolanSubtypeGroundType ground, Is PolarityType polarity) =>
     DolanType ground polarity t ->
-    DolanTypeCheckM ground (DolanShimWit ground polarity t)
+    DolanRenameTypeM ground (DolanShimWit ground polarity t)
 mergeInType NilDolanType = return nilDolanShimWit
 mergeInType (ConsDolanType t1 tr) = do
     MkShimWit t1' conv1 <- mergeInSingularType t1
@@ -99,5 +100,5 @@ mergeInType (ConsDolanType t1 tr) = do
 mergeDuplicateGroundTypes ::
     forall (ground :: GroundTypeKind) a.
     (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a) =>
-    EndoM (DolanTypeCheckM ground) a
+    EndoM (DolanRenameTypeM ground) a
 mergeDuplicateGroundTypes = mapPShimWitsM mergeInType mergeInType
