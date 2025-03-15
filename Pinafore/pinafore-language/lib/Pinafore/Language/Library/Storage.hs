@@ -200,19 +200,14 @@ storageLibSection =
                     "openLocal"
                     "Open a `Store` from a directory. Will be closed at the end of the lifecycle."
                     ( ConsListType
-                        ( ValueDocSignature
+                        ( mkValueDocSignature
                             @(Maybe Text)
                             "path"
                             "Path to directory, or `Nothing` to use the data directory."
-                            qType
-                            $ Just
-                            $ pure Nothing
+                            $ Just Nothing
                         )
                         $ ConsListType
-                            ( ValueDocSignature @Bool "cache" "Whether to cache commits (default: `True`)." qType
-                                $ Just
-                                $ pure True
-                            )
+                            (mkValueDocSignature @Bool "cache" "Whether to cache commits (default: `True`)." $ Just True)
                             NilListType
                     )
                     openLocalStore

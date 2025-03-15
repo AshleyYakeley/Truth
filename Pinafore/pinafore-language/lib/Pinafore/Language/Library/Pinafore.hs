@@ -191,9 +191,8 @@ pinaforeLibSection =
                         rtype :: ListType QDocSignature '[Text -> QInterpreter (Maybe QDeclarations)]
                         rtype =
                             ConsListType
-                                ( ValueDocSignature @(Text -> QInterpreter (Maybe QDeclarations)) "loadModule" "" qType
-                                    $ Just
-                                    $ pure defaultloadModule
+                                ( mkValueDocSignature @(Text -> QInterpreter (Maybe QDeclarations)) "loadModule" ""
+                                    $ Just defaultloadModule
                                 )
                                 NilListType
                         qContextLoadModule :: QContext -> Text -> QInterpreter (Maybe QDeclarations)
