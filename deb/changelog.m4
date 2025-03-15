@@ -36,6 +36,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add Equivalence/Preorder/Order types and functions
     - media
       . add Media type and functions
+      . add URI type and functions
       . add HTMLText type and functions
       . add CSSText type and functions
       . add CommonMarkText type and functions

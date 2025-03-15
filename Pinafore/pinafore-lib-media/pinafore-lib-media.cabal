@@ -18,6 +18,7 @@ library
       Pinafore.Library.Media
   other-modules:
       Pinafore.Library.Media.Media
+      Pinafore.Library.Media.URI
       Pinafore.Library.Media.HTML
       Pinafore.Library.Media.CSS
       Pinafore.Library.Media.CommonMark
@@ -63,6 +64,7 @@ library
     , changes-media
     , changes-world
     , commonmark
+    , network-uri
     , pinafore-language
     , polar-shim
     , shapes

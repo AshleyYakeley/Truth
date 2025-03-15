@@ -11,6 +11,7 @@ library:
       - shapes
       - commonmark
       - Color
+      - network-uri
       - cairo-functional
       - changes-world
       - changes-media
@@ -20,6 +21,7 @@ library:
       - Pinafore.Library.Media
     other-modules:
       - Pinafore.Library.Media.Media
+      - Pinafore.Library.Media.URI
       - Pinafore.Library.Media.HTML
       - Pinafore.Library.Media.CSS
       - Pinafore.Library.Media.CommonMark
