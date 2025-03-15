@@ -34,10 +34,10 @@ newtype QScopeBuilder a
         , Monad
         , MonadIO
         , MonadException
-        , MonadThrow QError
-        , MonadCatch QError
+        , MonadThrow QLocatedError
+        , MonadCatch QLocatedError
         , MonadThrow PatternError
-        , MonadThrow QErrorType
+        , MonadThrow QError
         , MonadHoistIO
         )
 
@@ -90,10 +90,10 @@ allocateVar mkvar = do
     vs <- refSucc varIDStateRef
     let
         (vid, name) = mkvar vs
-        biOriginalName = name
-        biDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
-        biValue = ValueBinding $ tsVar @QTypeSystem vid
-        insertScope = MkQScope (bindingInfoToMap (name, MkQBindingInfo{..})) mempty
+        siOriginalName = name
+        siDocumentation = MkDefDoc (ValueDocItem (pure $ fullNameRef name) "") "variable"
+        siItem = ValueItem $ tsVar @QTypeSystem vid
+        insertScope = MkQScope (bindingInfoToMap (name, MkQScopeItem{..})) mempty
     refModifyM scopeRef $ \oldScope -> builderLift $ joinScopes oldScope insertScope
     return (name, vid)
 

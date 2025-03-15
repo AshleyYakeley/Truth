@@ -99,7 +99,7 @@ sqliteQDumpTable dirpath = do
 
 qInterpretTextAtType ::
     forall t m.
-    (?library :: LibraryContext, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QError m) =>
+    (?library :: LibraryContext, HasQType QPolyShim 'Negative t, MonadIO m, MonadThrow QLocatedError m) =>
     FilePath ->
     Text ->
     [String] ->
@@ -114,7 +114,7 @@ qInterpretTextAtType puipath puitext args impls = let
         : impls
 
 qInterpretScriptText ::
-    (?library :: LibraryContext, MonadIO m, MonadThrow QError m) =>
+    (?library :: LibraryContext, MonadIO m, MonadThrow QLocatedError m) =>
     FilePath ->
     Text ->
     [String] ->

@@ -3,6 +3,7 @@ module Pinafore.Language.Interpret.Expression
     , interpretModule
     , interpretDeclarationWith
     , interpretType
+    , interpretNonpolarType
     , interpretImportDeclaration
     , interpretPattern
     )

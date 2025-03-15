@@ -20,6 +20,7 @@ library:
       - thread-trace
       - polar-shim
       - typed-expression
+      - parsec
       - changes-core
       - changes-world
       - pinafore-base

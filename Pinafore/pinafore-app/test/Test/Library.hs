@@ -29,9 +29,9 @@ testLibrary =
                         $ runLoadModule (lcLoadModule ?library) modname
                 pmodule <- maybeToM (show modname <> ": not found") mmod
                 for_ (moduleScopeEntries pmodule) $ \(_, binfo) -> do
-                    let oname = biOriginalName binfo
-                    case biValue binfo of
-                        TypeBinding (MkSomeGroundType gt) -> let
+                    let oname = siOriginalName binfo
+                    case siItem binfo of
+                        TypeItem (MkSomeGroundType gt) -> let
                             expected = show oname
                             satname = show gt
                             names = filter ((/=) "_") $ words satname

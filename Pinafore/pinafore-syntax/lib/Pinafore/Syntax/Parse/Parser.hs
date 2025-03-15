@@ -34,7 +34,7 @@ newtype Parser a
 instance MonadThrow ParseErrorType Parser where
     throw err = do
         spos <- getPosition
-        MkParser $ lift $ lift $ throwExc $ MkSourceError spos toText err
+        MkParser $ lift $ lift $ throwExc $ MkLocated spos toText err
 
 namespaceParam :: Param Parser Namespace
 namespaceParam = MkParam (MkParser ask) $ \a (MkParser m) -> MkParser $ with a m

@@ -32,17 +32,21 @@ instance ShowText FullName where
 instance Show FullName where
     show = unpack . showText
 
+fullNameFromStringMaybe :: String -> Maybe FullName
+fullNameFromStringMaybe s =
+    fmap RootFullName (infixNameFromString s)
+        <|> do
+            nt <- nonEmpty $ splitSeq "." s
+            case nt of
+                "" :| "" : nss -> do
+                    nspace <- namespaceFromStrings nss
+                    return $ MkFullName "." nspace
+                _ -> do
+                    name <- nameFromString $ head nt
+                    nspace <- namespaceFromStrings $ tail nt
+                    return $ MkFullName name nspace
+
 instance IsString FullName where
     fromString s =
         fromMaybe (error $ "bad FullName: " <> show s)
-            $ fmap RootFullName (infixNameFromString s)
-            <|> do
-                nt <- nonEmpty $ splitSeq "." s
-                case nt of
-                    "" :| "" : nss -> do
-                        nspace <- namespaceFromStrings nss
-                        return $ MkFullName "." nspace
-                    _ -> do
-                        name <- nameFromString $ head nt
-                        nspace <- namespaceFromStrings $ tail nt
-                        return $ MkFullName name nspace
+            $ fullNameFromStringMaybe s

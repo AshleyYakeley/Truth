@@ -127,7 +127,7 @@ testScriptCatchStop :: Text -> Text -> (Tester (Action ()) -> Tester ()) -> Scri
 testScriptCatchStop name script = testScript name $ "onStop.Action. (" <> script <> ") (fail.Action. \"stopped\")"
 
 data ScriptExpectation
-    = ScriptExpectRejection (QError -> Bool)
+    = ScriptExpectRejection (QLocatedError -> Bool)
     | ScriptExpectRuntimeException (IOException -> Bool)
     | ScriptExpectStop
     | ScriptExpectSuccess

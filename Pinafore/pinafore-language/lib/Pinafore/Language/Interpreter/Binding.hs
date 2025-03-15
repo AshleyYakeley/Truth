@@ -3,12 +3,12 @@ module Pinafore.Language.Interpreter.Binding
     , QRecordValue (..)
     , QRecordConstructor (..)
     , recordConstructorToValue
-    , QInterpreterBinding (..)
-    , QBindingInfo (..)
-    , BindingSelector (..)
-    , typeBindingSelector
-    , recordConstructorBindingSelector
-    , recordValueBindingSelector
+    , QItem (..)
+    , QScopeItem (..)
+    , ItemSelector (..)
+    , typeItemSelector
+    , recordConstructorItemSelector
+    , recordValueItemSelector
     )
 where
 
@@ -58,55 +58,55 @@ recordConstructorToValue (MkQRecordConstructor sigs vtype _ codec) =
         $ constSealedFExpression
         $ MkSomeFor (shimWitToDolan vtype) (encode codec . listProductToVProduct sigs)
 
-data QInterpreterBinding
-    = ValueBinding QExpression
-    | RecordValueBinding QRecordValue
-    | PatternConstructorBinding
+data QItem
+    = ValueItem QExpression
+    | RecordValueItem QRecordValue
+    | PatternConstructorItem
         QExpression
         QPatternConstructor
-    | RecordConstructorBinding QRecordConstructor
-    | TypeBinding QSomeGroundType
+    | RecordConstructorItem QRecordConstructor
+    | TypeItem QSomeGroundType
 
-instance HasInterpreter => Show QInterpreterBinding where
-    show (ValueBinding e) = "val: " <> show e
-    show (RecordValueBinding _) = "recordval"
-    show (PatternConstructorBinding e _) = "cons: " <> show e
-    show (RecordConstructorBinding _) = "recordcons"
-    show (TypeBinding t) = "type: " <> exprShowShow t
+instance HasInterpreter => Show QItem where
+    show (ValueItem e) = "val: " <> show e
+    show (RecordValueItem _) = "recordval"
+    show (PatternConstructorItem e _) = "cons: " <> show e
+    show (RecordConstructorItem _) = "recordcons"
+    show (TypeItem t) = "type: " <> exprShowShow t
 
-data QBindingInfo = MkQBindingInfo
-    { biOriginalName :: FullName
-    , biDocumentation :: DefDoc
-    , biValue :: QInterpreterBinding
+data QScopeItem = MkQScopeItem
+    { siOriginalName :: FullName
+    , siDocumentation :: DefDoc
+    , siItem :: QItem
     }
 
-data BindingSelector t = MkBindingSelector
-    { bsEncode :: t -> QInterpreterBinding
-    , bsDecode :: QInterpreterBinding -> Maybe t
-    , bsError :: FullNameRef -> QErrorType
+data ItemSelector t = MkItemSelector
+    { isEncode :: t -> QItem
+    , isDecode :: QItem -> Maybe t
+    , isError :: FullNameRef -> QError
     }
 
-typeBindingSelector :: BindingSelector QSomeGroundType
-typeBindingSelector = let
-    bsEncode = TypeBinding
-    bsDecode (TypeBinding t) = Just t
-    bsDecode _ = Nothing
-    bsError = LookupNotTypeError
-    in MkBindingSelector{..}
+typeItemSelector :: ItemSelector QSomeGroundType
+typeItemSelector = let
+    isEncode = TypeItem
+    isDecode (TypeItem t) = Just t
+    isDecode _ = Nothing
+    isError = LookupNotTypeError
+    in MkItemSelector{..}
 
-recordConstructorBindingSelector :: BindingSelector QRecordConstructor
-recordConstructorBindingSelector = let
-    bsEncode = RecordConstructorBinding
-    bsDecode (RecordConstructorBinding t) = Just t
-    bsDecode _ = Nothing
-    bsError = LookupNotRecordConstructorError
-    in MkBindingSelector{..}
+recordConstructorItemSelector :: ItemSelector QRecordConstructor
+recordConstructorItemSelector = let
+    isEncode = RecordConstructorItem
+    isDecode (RecordConstructorItem t) = Just t
+    isDecode _ = Nothing
+    isError = LookupNotRecordConstructorError
+    in MkItemSelector{..}
 
-recordValueBindingSelector :: BindingSelector QRecordValue
-recordValueBindingSelector = let
-    bsEncode = RecordValueBinding
-    bsDecode (RecordValueBinding t) = Just t
-    bsDecode (RecordConstructorBinding t) = Just $ recordConstructorToValue t
-    bsDecode _ = Nothing
-    bsError = LookupNotRecordError
-    in MkBindingSelector{..}
+recordValueItemSelector :: ItemSelector QRecordValue
+recordValueItemSelector = let
+    isEncode = RecordValueItem
+    isDecode (RecordValueItem t) = Just t
+    isDecode (RecordConstructorItem t) = Just $ recordConstructorToValue t
+    isDecode _ = Nothing
+    isError = LookupNotRecordError
+    in MkItemSelector{..}

@@ -64,15 +64,15 @@ class
     , MonadException Interpreter
     , Show (Exc Interpreter)
     , MonadIO Interpreter
-    , MonadThrow QErrorType Interpreter
     , MonadThrow QError Interpreter
-    , MonadCatch QError Interpreter
+    , MonadThrow QLocatedError Interpreter
+    , MonadCatch QLocatedError Interpreter
     ) =>
     HasInterpreter
     where
     type Interpreter :: Type -> Type
     getSubtypeConversions :: Interpreter [QSubtypeConversionEntry]
-    mkErrorMessage :: Interpreter (QErrorType -> QError)
+    mkErrorMessage :: Interpreter (QError -> QLocatedError)
 
 instance ExprShow (QGroundType dv gt) where
     exprShowPrec = exprShowPrecGroundType

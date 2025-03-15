@@ -36,7 +36,7 @@ import Pinafore.Language.Library.Stream
 import Pinafore.Language.Type
 import Pinafore.Main
 
-moduleScopeEntries :: QModule -> [(FullName, QBindingInfo)]
+moduleScopeEntries :: QModule -> [(FullName, QScopeItem)]
 moduleScopeEntries qmod = bindingMapEntries $ scopeBindings $ moduleScope qmod
 
 checkUpdateEditor ::

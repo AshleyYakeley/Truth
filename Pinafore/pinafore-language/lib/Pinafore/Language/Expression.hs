@@ -10,31 +10,34 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Language.VarID
 
+qTypeError :: TypeError QGroundType -> QError
+qTypeError = \case
+    PatternTypeError paterr -> PatternErrorError paterr
+    ExpressionTypeError (UndefinedBindingsError ww) -> nameWitnessErrorType ww
+    InternalTypeError msg -> InternalError Nothing $ toNamedText msg
+    InternalSafetyTypeError msg rterr t ->
+        InternalError Nothing
+            $ toNamedText msg
+            <> " simplification: "
+            <> showNamedText rterr
+            <> " recursive type: "
+            <> showNamedText t
+    UninvertibleTypeError t -> TypeNotInvertibleError $ exprShow t
+    NoGroundConvertTypeError ga gb -> NoGroundTypeConversionError (showGroundType ga) (showGroundType gb)
+    IncoherentGroundConvertTypeError ga gb -> IncoherentGroundTypeConversionError (showGroundType ga) (showGroundType gb)
+    ConvertTypeError fta ftb ->
+        flipToType fta $ \(ta :: _ pola _) ->
+            flipToType ftb $ \(tb :: _ polb _) ->
+                TypeConvertError
+                    (exprShow ta)
+                    (witnessToValue $ polarityType @pola)
+                    (exprShow tb)
+                    (witnessToValue $ polarityType @polb)
+
 qRunTypeResult :: QTypeResult --> QInterpreter
 qRunTypeResult = \case
     SuccessResult a -> return a
-    FailureResult err -> throw $ case err of
-        PatternTypeError paterr -> PatternErrorError paterr
-        ExpressionTypeError (UndefinedBindingsError ww) -> nameWitnessErrorType ww
-        InternalTypeError msg -> InternalError Nothing $ toNamedText msg
-        InternalSafetyTypeError msg rterr t ->
-            InternalError Nothing
-                $ toNamedText msg
-                <> " simplification: "
-                <> showNamedText rterr
-                <> " recursive type: "
-                <> showNamedText t
-        UninvertibleTypeError t -> TypeNotInvertibleError $ exprShow t
-        NoGroundConvertTypeError ga gb -> NoGroundTypeConversionError (showGroundType ga) (showGroundType gb)
-        IncoherentGroundConvertTypeError ga gb -> IncoherentGroundTypeConversionError (showGroundType ga) (showGroundType gb)
-        ConvertTypeError fta ftb ->
-            flipToType fta $ \(ta :: _ pola _) ->
-                flipToType ftb $ \(tb :: _ polb _) ->
-                    TypeConvertError
-                        (exprShow ta)
-                        (witnessToValue $ polarityType @pola)
-                        (exprShow tb)
-                        (witnessToValue $ polarityType @polb)
+    FailureResult err -> throw $ qTypeError err
 
 qGetRunTypeM :: QInterpreter (WRaised QTypeM QTypeResult)
 qGetRunTypeM = do

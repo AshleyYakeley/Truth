@@ -2,6 +2,7 @@ module Pinafore.Language.Interpret
     ( parseTopExpression
     , parseModule
     , parseType
+    , parseNonpolarType
     , parseToValue
     , parseToValueUnify
     , parseToValueSubsume
@@ -44,6 +45,13 @@ parseType ::
 parseType text = do
     st <- parseScopedReaderWhole (fmap return readType) text
     interpretType st
+
+parseNonpolarType ::
+    Text ->
+    QInterpreter (Some QNonpolarType)
+parseNonpolarType text = do
+    st <- parseScopedReaderWhole (fmap return readType) text
+    interpretNonpolarType st
 
 parseToValue :: Text -> [(ImplicitName, QValue)] -> QInterpreter QValue
 parseToValue text args = do

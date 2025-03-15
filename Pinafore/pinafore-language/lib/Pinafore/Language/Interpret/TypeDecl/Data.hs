@@ -346,7 +346,7 @@ interpretSignature tid supertypes (MkSyntaxWithDoc _ (MkWithSourcePos _ ssig)) =
 matchSigName :: SomeSignature -> SomeSignature -> Bool
 matchSigName (MkSome (ValueSignature _ na _ _)) (MkSome (ValueSignature _ nb _ _)) = na == nb
 
-checkDuplicates :: (Name -> QErrorType) -> [Name] -> QInterpreter ()
+checkDuplicates :: (Name -> QError) -> [Name] -> QInterpreter ()
 checkDuplicates _ [] = return ()
 checkDuplicates f (a : aa) =
     if elem a aa

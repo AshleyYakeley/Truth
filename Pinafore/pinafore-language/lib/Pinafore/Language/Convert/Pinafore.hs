@@ -4,6 +4,7 @@ module Pinafore.Language.Convert.Pinafore where
 
 import Import
 import Pinafore.Language.Convert.HasType
+import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
@@ -69,6 +70,25 @@ instance HasQGroundType '[] QDeclarations where
 -- QScope
 instance HasQGroundType '[] QScope where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QScope)|]) "Scope.Pinafore."
+
+-- QError
+instance HasQGroundType '[] QError where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QError)|]) "Error.Pinafore."
+
+-- Located
+instance HasVariance Located where
+    type VarianceOf Located = 'Covariance
+
+instance HasQGroundType '[CoCCRVariance] Located where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Located)|]) "Located."
+
+-- QItem
+instance HasQGroundType '[] QItem where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QItem)|]) "Item.Pinafore."
+
+-- QScopeItem
+instance HasQGroundType '[] QScopeItem where
+    qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily QScopeItem)|]) "ScopeItem.Pinafore."
 
 -- Anchor
 instance HasQGroundType '[] Anchor where

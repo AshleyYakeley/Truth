@@ -2,7 +2,7 @@ module Pinafore.Language.Error where
 
 import Import
 
-data QErrorType
+data QError
     = InternalError
         (Maybe Int)
         NamedText
@@ -88,7 +88,7 @@ data QErrorType
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
-instance ShowNamedText QErrorType where
+instance ShowNamedText QError where
     showNamedText (InternalError mn nt) =
         bindNamedText nt $ \t ->
             case (mn, t) of
@@ -187,18 +187,18 @@ instance ShowNamedText QErrorType where
     showNamedText (ModuleNotFoundError mname) = "can't find module " <> showNamedText mname
     showNamedText (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap showNamedText $ toList nn)
 
-type QError = SourceError QErrorType
+type QLocatedError = Located QError
 
-instance Show QError where
+instance Show QLocatedError where
     show = unpack . showText
 
-instance Exception QError
+instance Exception QLocatedError
 
-fromParseResult :: MonadThrow QError m => ParseResult --> m
+fromParseResult :: MonadThrow QLocatedError m => ParseResult --> m
 fromParseResult pr = fromResult $ mapResultFailure (fmap ParserError) pr
 
 newtype InterpretResult a = MkInterpretResult
-    { unInterpretResult :: ResultT QError IO a
+    { unInterpretResult :: ResultT QLocatedError IO a
     }
     deriving newtype (Functor, Applicative, Monad, MonadException, MonadIO, MonadFix, MonadHoistIO, MonadTunnelIO)
 
@@ -206,21 +206,21 @@ instance MonadCoroutine InterpretResult where
     coroutineSuspend pqmr =
         hoist MkInterpretResult $ coroutineSuspend $ \pmq -> unInterpretResult $ pqmr $ \p -> MkInterpretResult $ pmq p
 
-instance MonadThrow QError InterpretResult where
+instance MonadThrow QLocatedError InterpretResult where
     throw e = throwExc $ Left e
 
-instance MonadCatch QError InterpretResult where
+instance MonadCatch QLocatedError InterpretResult where
     catch ma ema =
         catchSomeExc ma $ \case
             Left e -> fmap Just $ ema e
             Right _ -> return Nothing
 
-runInterpretResult :: MonadIO m => InterpretResult a -> m (Result QError a)
+runInterpretResult :: MonadIO m => InterpretResult a -> m (Result QLocatedError a)
 runInterpretResult (MkInterpretResult ir) = liftIO $ runResultT ir
 
 fromInterpretResult ::
     forall m a.
-    (MonadThrow QError m, MonadIO m) =>
+    (MonadThrow QLocatedError m, MonadIO m) =>
     InterpretResult a ->
     m a
 fromInterpretResult ir = do

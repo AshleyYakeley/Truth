@@ -54,12 +54,12 @@ getLibraryContentsModule libmod = do
         bscope :: QScope
         bscope =
             bindingInfosToScope $ do
-                (se, biDocumentation) <- bindDocs
+                (se, siDocumentation) <- bindDocs
                 case se of
-                    (BindScopeEntry oname xnames biValue) -> do
-                        let biOriginalName = namespaceConcatFullName RootNamespace oname
-                        biName <- biOriginalName : xnames
-                        return (biName, MkQBindingInfo{..})
+                    (BindScopeEntry oname xnames siItem) -> do
+                        let siOriginalName = namespaceConcatFullName RootNamespace oname
+                        biName <- siOriginalName : xnames
+                        return (biName, MkQScopeItem{..})
                     _ -> []
     dscopes <-
         for bindDocs $ \(se, _) ->

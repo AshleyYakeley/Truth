@@ -32,13 +32,13 @@ registerScope scope = registerDeclarations $ declarations scope
 registerDocs :: Docs -> QScopeBuilder ()
 registerDocs docs = registerDeclarations $ mempty{declsDocs = docs}
 
-registerBindings :: [(FullName, QBindingInfo)] -> QScopeBuilder ()
+registerBindings :: [(FullName, QScopeItem)] -> QScopeBuilder ()
 registerBindings bb = registerScope $ bindingInfosToScope bb
 
-registerBinding :: FullName -> QBindingInfo -> QScopeBuilder ()
+registerBinding :: FullName -> QScopeItem -> QScopeBuilder ()
 registerBinding name db = registerBindings $ singletonMap name db
 
-updateBindingInfo :: FullNameRef -> (QBindingInfo -> QScopeBuilder QBindingInfo) -> QScopeBuilder ()
+updateBindingInfo :: FullNameRef -> (QScopeItem -> QScopeBuilder QScopeItem) -> QScopeBuilder ()
 updateBindingInfo fnref f = do
     (fname, oldbi) <- builderLift $ lookupBindingInfo fnref
     newbi <- f oldbi
@@ -46,7 +46,7 @@ updateBindingInfo fnref f = do
 
 registerLetBindings :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindings bb =
-    registerBindings $ fmap (\(fname, doc, expr) -> (fname, MkQBindingInfo fname doc $ ValueBinding expr)) bb
+    registerBindings $ fmap (\(fname, doc, expr) -> (fname, MkQScopeItem fname doc $ ValueItem expr)) bb
 
 registerLetBindingsDocs :: [(FullName, DefDoc, QExpression)] -> QScopeBuilder ()
 registerLetBindingsDocs bb = do
@@ -64,31 +64,31 @@ registerMatchBindings match = do
             (v, _) -> builderLift $ throw $ InternalError Nothing $ "bad match var: " <> showNamedText v
     registerLetBindings bb
 
-registerSelector :: BindingSelector t -> FullName -> DefDoc -> t -> QScopeBuilder ()
+registerSelector :: ItemSelector t -> FullName -> DefDoc -> t -> QScopeBuilder ()
 registerSelector bst name doc t = do
     builderLift $ checkNameForRegister name
-    registerBinding name $ MkQBindingInfo name doc $ bsEncode bst t
+    registerBinding name $ MkQScopeItem name doc $ isEncode bst t
 
-updateSelector :: BindingSelector t -> FullNameRef -> (t -> QScopeBuilder t) -> QScopeBuilder ()
+updateSelector :: ItemSelector t -> FullNameRef -> (t -> QScopeBuilder t) -> QScopeBuilder ()
 updateSelector bst fnref f =
     updateBindingInfo fnref $ \oldbi -> do
-        let oldbind = biValue oldbi
+        let oldbind = siItem oldbi
         oldt <-
-            case bsDecode bst oldbind of
+            case isDecode bst oldbind of
                 Just t -> return t
-                Nothing -> throw $ bsError bst fnref
+                Nothing -> throw $ isError bst fnref
         newt <- f oldt
         let
-            newbind = bsEncode bst newt
-            newbi = oldbi{biValue = newbind}
+            newbind = isEncode bst newt
+            newbi = oldbi{siItem = newbind}
         return newbi
 
 updateGroundType :: FullNameRef -> (forall dv t. QGroundType dv t -> QGroundType dv t) -> QScopeBuilder ()
 updateGroundType fnref f =
-    updateSelector typeBindingSelector fnref $ \(MkSomeGroundType t) -> return $ MkSomeGroundType $ f t
+    updateSelector typeItemSelector fnref $ \(MkSomeGroundType t) -> return $ MkSomeGroundType $ f t
 
 registerType :: FullName -> DefDoc -> QSomeGroundType -> QScopeBuilder ()
-registerType = registerSelector typeBindingSelector
+registerType = registerSelector typeItemSelector
 
 registerGroundType :: forall dv t. FullName -> DefDoc -> QGroundType dv t -> QScopeBuilder ()
 registerGroundType name doc t = registerType name doc $ MkSomeGroundType t
@@ -96,13 +96,13 @@ registerGroundType name doc t = registerType name doc $ MkSomeGroundType t
 registerPatternConstructor :: FullName -> DefDoc -> QExpression -> QPatternConstructor -> QScopeBuilder ()
 registerPatternConstructor name doc expr pc = do
     builderLift $ checkNameForRegister name
-    registerBinding name $ MkQBindingInfo name doc $ PatternConstructorBinding expr pc
+    registerBinding name $ MkQScopeItem name doc $ PatternConstructorItem expr pc
 
 registerRecordConstructor :: FullName -> DefDoc -> QRecordConstructor -> QScopeBuilder ()
-registerRecordConstructor = registerSelector recordConstructorBindingSelector
+registerRecordConstructor = registerSelector recordConstructorItemSelector
 
 registerRecordValue :: FullName -> DefDoc -> QRecordValue -> QScopeBuilder ()
-registerRecordValue = registerSelector recordValueBindingSelector
+registerRecordValue = registerSelector recordValueItemSelector
 
 registerSubtypeConversion :: QSubtypeConversionEntry -> QScopeBuilder ()
 registerSubtypeConversion sce = do

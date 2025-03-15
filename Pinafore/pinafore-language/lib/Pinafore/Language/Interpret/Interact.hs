@@ -15,7 +15,7 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
 showPinaforeModel :: QValue -> QInterpreter String
-showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QError) -> return "<?>")
+showPinaforeModel val = catch (fmap show $ qUnifyValue @Showable val) (\(_ :: QLocatedError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT QInterpreter View)
 
@@ -107,7 +107,7 @@ interactLoop inh outh echo = do
                             ShowDocInteractiveCommand rname -> do
                                 bmap <- interactRunQInterpreter $ getBindingInfoLookup
                                 liftIO
-                                    $ case fmap (docDescription . biDocumentation . snd) $ bmap rname of
+                                    $ case fmap (docDescription . siDocumentation . snd) $ bmap rname of
                                         Nothing -> hPutStrLn outh $ "! " <> show rname <> " undefined"
                                         Just "" -> return ()
                                         Just doc -> hPutStrLn outh $ "#| " <> unpack (toText doc)
@@ -140,7 +140,7 @@ interactLoop inh outh echo = do
                                 liftIO $ hPutStrLn outh $ unpack $ ntt s
                             ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err
                     )
-                    [ Handler $ \(err :: QError) -> hPutStrLn outh $ show err
+                    [ Handler $ \(err :: QLocatedError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "! error: " <> ioeGetErrorString err
                     ]
             interactLoop inh outh echo

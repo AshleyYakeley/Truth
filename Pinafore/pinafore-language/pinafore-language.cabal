@@ -163,6 +163,7 @@ library
     , containers
     , directory
     , filepath
+    , parsec
     , pinafore-base
     , pinafore-syntax
     , polar-shim

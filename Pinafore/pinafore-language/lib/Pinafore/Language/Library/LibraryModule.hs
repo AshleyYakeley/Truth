@@ -18,7 +18,7 @@ data ScopeEntry
     = BindScopeEntry
         FullNameRef
         [FullName]
-        QInterpreterBinding
+        QItem
     | SubtypeScopeEntry QSubtypeConversionEntry
 
 scopeEntryName :: ScopeEntry -> Maybe FullNameRef

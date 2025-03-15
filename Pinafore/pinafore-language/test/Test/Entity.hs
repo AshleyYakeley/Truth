@@ -1780,13 +1780,13 @@ testEntity =
                     "do {r <- newMem.WholeModel; asText.Date !$ r := \"2015-08-12\"; testrefeq ap{YearMonthDay 2015 08 12} r;}"
                 ]
             , tDecls
-                [ "runresult = fn ar, arg => ar >- fn {Failure err => fail err; Success f => f arg}"
+                [ "runresult = fn ar, arg => ar >- fn {Failure err => fail $ show err; Success f => f arg}"
                 , "testaction = fn expected, action => do {found <- action; testeq expected found}"
                 , "testFailure = fn action => do {found <- action; found >- fn {Failure _ => pass; Success _ => fail \"not Failure\"}}"
                 ]
                 $ tWith ["Pinafore"]
                 $ tDecls
-                    [ "evaluate = fn t, text => run.Interpreter !{this.Context} $ do.Interpreter { v <- interpret.Value text; unify.Value t v }"
+                    [ "evaluate = fn t, text => map.Action (mapFailure.Result show) $ run.Interpreter !{this.Context} $ do.Interpreter { v <- interpret.Value text; unify.Value t v }"
                     ]
                 $ tGroup
                     "evaluate"

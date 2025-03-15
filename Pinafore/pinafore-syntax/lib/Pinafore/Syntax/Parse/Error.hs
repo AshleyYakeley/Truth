@@ -1,5 +1,6 @@
 module Pinafore.Syntax.Parse.Error
-    ( SourceError (..)
+    ( Located (..)
+    , showLocated
     , parseErrorMessage
     , ParseErrorType (..)
     , ParseResult
@@ -14,8 +15,8 @@ import Text.Parsec.Error qualified as P
 import Pinafore.Syntax.Name
 import Pinafore.Syntax.Text
 
-showSourceError :: P.SourcePos -> Text -> Text
-showSourceError spos s =
+showLocated :: P.SourcePos -> Text -> Text
+showLocated spos s =
     toText (P.sourceName spos)
         <> ":"
         <> toText (show (P.sourceLine spos))
@@ -24,20 +25,26 @@ showSourceError spos s =
         <> ": "
         <> s
 
-data SourceError a
-    = MkSourceError
+data Located a
+    = MkLocated
         P.SourcePos
         (NamedText -> Text)
         a
 
-instance Functor SourceError where
-    fmap ab (MkSourceError spos ntt a) = MkSourceError spos ntt $ ab a
+instance Functor Located where
+    fmap ab (MkLocated spos ntt a) = MkLocated spos ntt $ ab a
 
-instance ShowNamedText a => ShowText (SourceError a) where
-    showText (MkSourceError spos ntt err) = showSourceError spos $ ntt $ showNamedText err
+instance ShowNamedText a => ShowText (Located a) where
+    showText (MkLocated spos ntt err) = showLocated spos $ ntt $ showNamedText err
 
-parseErrorMessage :: P.ParseError -> SourceError [P.Message]
-parseErrorMessage err = MkSourceError (P.errorPos err) toText (P.errorMessages err)
+instance RepresentationalRole Located where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance MaybeRepresentational Located where
+    maybeRepresentational = Just Dict
+
+parseErrorMessage :: P.ParseError -> Located [P.Message]
+parseErrorMessage err = MkLocated (P.errorPos err) toText (P.errorMessages err)
 
 data ParseErrorType
     = LexicalErrorType [P.Message]
@@ -97,4 +104,4 @@ instance ShowNamedText ParseErrorType where
             <> ", found "
             <> showNamedText found
 
-type ParseResult = Result (SourceError ParseErrorType)
+type ParseResult = Result (Located ParseErrorType)

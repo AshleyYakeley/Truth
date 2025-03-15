@@ -3,7 +3,8 @@ module Pinafore.Syntax.Parse
     , parseInteractiveCommand
     , SourcePos
     , initialPos
-    , SourceError (..)
+    , Located (..)
+    , showLocated
     , ParseErrorType (..)
     , ParseResult
     , runTokens

@@ -21,7 +21,7 @@ import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 
 newtype QBindingMap
-    = MkQBindingMap (Map FullName QBindingInfo)
+    = MkQBindingMap (Map FullName QScopeItem)
 
 instance Semigroup QBindingMap where
     MkQBindingMap nsa <> MkQBindingMap nsb = let
@@ -33,7 +33,7 @@ instance Monoid QBindingMap where
 
 instance HasInterpreter => Show QBindingMap where
     show (MkQBindingMap m) =
-        "{" <> intercalate "," (fmap (\(n, b) -> show n <> "=" <> show (biValue b)) $ mapToList m) <> "}"
+        "{" <> intercalate "," (fmap (\(n, b) -> show n <> "=" <> show (siItem b)) $ mapToList m) <> "}"
 
 bindingMapNamespaceWith :: Namespace -> Namespace -> (FullNameRef -> Bool) -> QBindingMap -> QBindingMap
 bindingMapNamespaceWith sourcens destns ff (MkQBindingMap nm) = let
@@ -45,21 +45,21 @@ bindingMapNamespaceWith sourcens destns ff (MkQBindingMap nm) = let
     newEntries = mapMaybe matchNS $ mapToList nm
     in MkQBindingMap $ mapFromList newEntries
 
-bindingMapLookupInfo :: QBindingMap -> FullName -> Maybe (FullName, QBindingInfo)
+bindingMapLookupInfo :: QBindingMap -> FullName -> Maybe (FullName, QScopeItem)
 bindingMapLookupInfo (MkQBindingMap nspace) name = do
     bi <- lookup name nspace
     return (name, bi)
 
-bindingMapEntries :: QBindingMap -> [(FullName, QBindingInfo)]
+bindingMapEntries :: QBindingMap -> [(FullName, QScopeItem)]
 bindingMapEntries (MkQBindingMap nspace) = mapToList nspace
 
-bindingInfoToMap :: (FullName, QBindingInfo) -> QBindingMap
+bindingInfoToMap :: (FullName, QScopeItem) -> QBindingMap
 bindingInfoToMap (fname, bi) = MkQBindingMap $ singletonMap fname bi
 
-bindingInfosToMap :: [(FullName, QBindingInfo)] -> QBindingMap
+bindingInfosToMap :: [(FullName, QScopeItem)] -> QBindingMap
 bindingInfosToMap bis = MkQBindingMap $ mapFromList bis
 
-bindingInfosToScope :: [(FullName, QBindingInfo)] -> QScope
+bindingInfosToScope :: [(FullName, QScopeItem)] -> QScope
 bindingInfosToScope bis = emptyScope{scopeBindings = bindingInfosToMap bis}
 
 data QScope = MkQScope

@@ -86,8 +86,8 @@ newtype QInterpreter a = MkQInterpreter
         , MonadIO
         , MonadFix
         , MonadException
-        , MonadThrow QError
-        , MonadCatch QError
+        , MonadThrow QLocatedError
+        , MonadCatch QLocatedError
         , MonadHoistIO
         , MonadTunnelIO
         )
@@ -105,7 +105,7 @@ instance MonadCoroutine QInterpreter where
     coroutineSuspend pqmr =
         hoist MkQInterpreter $ coroutineSuspend $ \pmq -> unInterpreter $ pqmr $ \p -> MkQInterpreter $ pmq p
 
-instance MonadThrow QErrorType QInterpreter where
+instance MonadThrow QError QInterpreter where
     throw err = do
         em <- mkErrorMessage
         throw $ em err
@@ -121,7 +121,7 @@ splitNonEmpty (Right b :| r) =
         Just na -> Left na
         Nothing -> Right $ b :| rights r
 
-nameWitnessErrorType :: NonEmpty (Some (NameWitness VarID (QShimWit 'Negative))) -> QErrorType
+nameWitnessErrorType :: NonEmpty (Some (NameWitness VarID (QShimWit 'Negative))) -> QError
 nameWitnessErrorType ww = let
     nwToPair ::
         Some (NameWitness VarID (QShimWit 'Negative)) -> Either (FullNameRef, NamedText) (ImplicitName, NamedText)
@@ -146,7 +146,7 @@ instance HasInterpreter where
     mkErrorMessage = do
         spos <- paramAsk sourcePosParam
         ntt <- getRenderFullName
-        return $ MkSourceError spos ntt
+        return $ MkLocated spos ntt
     getSubtypeConversions = fmap (toList . scopeSubtypes) $ paramAsk scopeParam
 
 contextParam :: Param QInterpreter InterpretContext
@@ -225,7 +225,7 @@ getRenderFullName = do
     curns <- paramAsk currentNamespaceParam
     return $ runRelativeNamedText $ toList $ namespaceAncestry curns
 
-getBindingInfoLookup :: QInterpreter (FullNameRef -> Maybe (FullName, QBindingInfo))
+getBindingInfoLookup :: QInterpreter (FullNameRef -> Maybe (FullName, QScopeItem))
 getBindingInfoLookup = do
     nspace <- paramAsk bindingsParam
     nsp <- namespacePriority
@@ -236,7 +236,7 @@ getNamespaceWithScope sourcens destns ff = do
     bmap <- paramAsk bindingsParam
     return $ emptyScope{scopeBindings = bindingMapNamespaceWith sourcens destns ff bmap}
 
-exportNames :: [FullNameRef] -> QInterpreter [(FullName, QBindingInfo)]
+exportNames :: [FullNameRef] -> QInterpreter [(FullName, QScopeItem)]
 exportNames names = do
     bindmap <- getBindingInfoLookup
     let
@@ -253,11 +253,11 @@ exportNames names = do
         Just badnames -> throw $ LookupNamesUndefinedError badnames
         Nothing -> return bis
 
-exportNamespace :: [Namespace] -> QInterpreter [(FullName, QBindingInfo)]
+exportNamespace :: [Namespace] -> QInterpreter [(FullName, QScopeItem)]
 exportNamespace cnss = do
     bmap <- paramAsk bindingsParam
     let
-        toBI :: (FullName, QBindingInfo) -> Bool
+        toBI :: (FullName, QScopeItem) -> Bool
         toBI (MkFullName _ ns, _) = isJust $ choice $ fmap (\cns -> namespaceWithin cns ns) cnss
     return $ filter toBI $ bindingMapEntries bmap
 
@@ -267,11 +267,11 @@ exportScope nsns names = do
     nsbindss <- exportNamespace nsns
     nbinds <- exportNames names
     let
-        binds :: [(FullName, QBindingInfo)]
+        binds :: [(FullName, QScopeItem)]
         binds = nsbindss <> nbinds
     let
         scope = MkQScope (bindingInfosToMap binds) subtypes
-        docs = fmap (biDocumentation . snd) binds
+        docs = fmap (siDocumentation . snd) binds
     return (scope, docs)
 
 getCycle :: Eq t => t -> [t] -> Maybe (NonEmpty t)

@@ -18,9 +18,9 @@ module Pinafore.Test.Internal
     , QOpenExpression
     , QExpression
     , QSingularShimWit
-    , QBindingInfo (..)
+    , QScopeItem (..)
     , SomeGroundType (..)
-    , QInterpreterBinding (..)
+    , QItem (..)
     , QInterpreter
     , QRenameTypeM
     , QTypeM

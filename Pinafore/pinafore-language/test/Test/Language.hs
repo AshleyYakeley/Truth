@@ -1152,7 +1152,7 @@ testQueries =
             [ textTypeTest "!expression {f x}" "{} -> Interpreter.Pinafore. Expression.Pinafore."
             , testQuery "let {expr = !expression {3}} !{expr}" $ LRSuccess "3"
             , testQuery "let {expr = !expression {x}} let {x = 5} !{expr}" $ LRSuccess "5"
-            , testQuery "let {expr = !expression {x}; sc = !decl{x = 17}} let {!{sc}} !{expr}" $ LRSuccess "17"
+            , testQuery "let {expr = !expression {x}; sc = !declarations{x = 17}} let {!{sc}} !{expr}" $ LRSuccess "17"
             ]
         ]
 

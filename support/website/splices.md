@@ -14,7 +14,7 @@ You can think of them as "code literals", just as `"this"` is a text literal.
 
 * Given a type `T`, `@T` has type `OpenType T` (note subtype relation `OpenType () <: Type`).
 * Given an expression `e`, `!expression {e}` has type `Interpreter Expression`.
-* Given bindings `b`, `!decl {b}` has type `Interpreter Declarations`.
+* Given declarations `d`, `!declarations {d}` has type `Interpreter Declarations`.
 
 ## Splices
 

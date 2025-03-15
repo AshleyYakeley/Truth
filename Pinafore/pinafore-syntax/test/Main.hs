@@ -21,7 +21,7 @@ testParseFail t errtest =
     testTree (unpack t)
         $ case evalStateT (runParser readExpression t) (initialPos "<test>") of
             SuccessResult _ -> fail "accepted bad text"
-            FailureResult (MkSourceError _ _ err)
+            FailureResult (MkLocated _ _ err)
                 | errtest err -> return () :: IO ()
             FailureResult err -> fail $ unpack $ showText err
 

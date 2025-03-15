@@ -121,7 +121,7 @@ namespaceBDS name tree = namespaceConcat name $ mconcat tree
 
 valExprBDS :: FullNameRef -> RawMarkdown -> QExpression -> LibraryStuff
 valExprBDS name docDescription expr@(MkSealedExpression qt _) = let
-    bdScopeEntry = pure $ BindScopeEntry name [] $ ValueBinding expr
+    bdScopeEntry = pure $ BindScopeEntry name [] $ ValueItem expr
     diNames = pure name
     diType = qPositiveShimWitDescription qt
     docItem = ValueDocItem{..}
@@ -196,7 +196,7 @@ getGDSName gt (MkSome params) =
 
 typeBDS :: FullNameRef -> RawMarkdown -> QSomeGroundType -> [LibraryStuff] -> LibraryStuff
 typeBDS name docDescription t@(MkSomeGroundType gt) bdChildren = let
-    bdScopeEntry = pure $ BindScopeEntry name [] $ TypeBinding t
+    bdScopeEntry = pure $ BindScopeEntry name [] $ TypeItem t
     diNames = pure name
     (diParams, params) = evalState (getTypeParameters $ qgtVarianceType gt) nameSupply
     diStorable = isJust $ getGroundProperty storabilityProperty gt
@@ -251,7 +251,7 @@ valPatBDS ::
     QPurityFunction v lt ->
     LibraryStuff
 valPatBDS name docDescription val pat = let
-    bdScopeEntry = pure $ BindScopeEntry name [] $ PatternConstructorBinding (qConst val) $ qToPatternConstructor pat
+    bdScopeEntry = pure $ BindScopeEntry name [] $ PatternConstructorItem (qConst val) $ qToPatternConstructor pat
     diNames = pure name
     diType = qPositiveTypeDescription @t
     docItem = ValuePatternDocItem{..}
@@ -315,7 +315,7 @@ recordValueBDS name docDescription docsigs f = let
                     $ MkSomeFor (shimWitToDolan posType)
                     $ f
                     . shimToFunction (polarPolyIsoNegative argconv)
-            bdScopeEntry = pure $ BindScopeEntry name [] $ RecordValueBinding qrv
+            bdScopeEntry = pure $ BindScopeEntry name [] $ RecordValueItem qrv
             bdDoc = MkDefDoc{..}
             in pureForest $ MkTree MkBindDoc{..} $ MkForest $ listTypeToList dsToDoc docsigs
 
@@ -348,7 +348,7 @@ recordConsBDS name docDescription docsigs codec = let
                         (listProductToVProduct (listTypeToVType docsigs) . shimToFunction qp . listVProductToProduct)
             qrc :: QRecordConstructor
             qrc = MkQRecordConstructor (listTypeToVType sigs) posType negType $ argCodec . codec
-            bdScopeEntry = pure $ BindScopeEntry name [] $ RecordConstructorBinding qrc
+            bdScopeEntry = pure $ BindScopeEntry name [] $ RecordConstructorItem qrc
             bdDoc = MkDefDoc{..}
             in pureForest $ MkTree MkBindDoc{..} $ MkForest $ listTypeToList dsToDoc docsigs
 
