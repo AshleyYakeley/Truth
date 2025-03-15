@@ -40,9 +40,12 @@ asMedia =
                 _ -> False
             )
 
-toHTML :: CommonMarkText -> Result Text HTMLText
+parseErrorToLS :: C.ParseError -> Located Showable
+parseErrorToLS err = fmap (MkShowable . toText . getMessagesNamedText) $ parseErrorMessage err
+
+toHTML :: CommonMarkText -> Result (Located Showable) HTMLText
 toHTML (MkCommonMarkText t) =
-    mapResultFailure showText $ do
+    mapResultFailure parseErrorToLS $ do
         html :: C.Html () <- eitherToResult $ C.commonmark "" t
         return $ MkHTMLText $ toStrict $ C.renderHtml html
 

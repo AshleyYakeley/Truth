@@ -2,6 +2,7 @@ module Pinafore.Syntax.Parse.Error
     ( Located (..)
     , showLocated
     , parseErrorMessage
+    , getMessagesNamedText
     , ParseErrorType (..)
     , ParseResult
     )

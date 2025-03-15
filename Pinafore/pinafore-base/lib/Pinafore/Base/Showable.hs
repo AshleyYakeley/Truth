@@ -15,7 +15,7 @@ instance (ShowText a, ShowText b) => ShowText (Result a b) where
     showText (SuccessResult b) = "Success " <> showText b
 
 newtype Showable
-    = MkShowable Text
+    = MkShowable {unShowable :: Text}
 
 instance ShowText Showable where
     showText (MkShowable t) = t

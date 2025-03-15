@@ -5,6 +5,8 @@ module Pinafore.Syntax.Parse
     , initialPos
     , Located (..)
     , showLocated
+    , parseErrorMessage
+    , getMessagesNamedText
     , ParseErrorType (..)
     , ParseResult
     , runTokens

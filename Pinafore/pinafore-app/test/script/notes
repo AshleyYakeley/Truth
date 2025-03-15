@@ -58,8 +58,8 @@ let {
                 content !$ ap{note};
             textModel: TextModel =
                 fromWhole.TextModel $ asText.CommonMarkText !$ noteContent;
-            htmlErr: Text -> HTMLText =
-                fn t => with HTMLText tag "em" $ plain "error: " <> plain t;
+            htmlErr: Showable -> HTMLText =
+                fn err => with HTMLText tag "em" $ plain "error: " <> plain (show err);
             htmlRef: WholeModel +HTMLText =
                 ap{from.Result htmlErr id $ toHTML.CommonMarkText %noteContent};
         } Mk.Pane {

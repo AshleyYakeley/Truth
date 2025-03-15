@@ -8,6 +8,9 @@ module Pinafore.API
     , module Pinafore.Language.Library.LibraryModule
     , module Pinafore.Language.Library.Types
     , module Pinafore.Language.Value
+    , Located (..)
+    , parseErrorMessage
+    , getMessagesNamedText
     , WitKind (..)
     , FamilialType (..)
     , SomeGroundType (..)
@@ -42,6 +45,7 @@ where
 
 import Pinafore.Base
 import Pinafore.Syntax.Name
+import Pinafore.Syntax.Parse
 import Pinafore.Syntax.Text
 
 import Import
