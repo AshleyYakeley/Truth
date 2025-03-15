@@ -61,10 +61,14 @@ langTypePositive (MkLangOpenType r t) = mapShimWit (MkPolarShim $ rangeContra r)
 langTypeNegative :: LangOpenType '(p, q) -> QShimWit 'Negative q
 langTypeNegative (MkLangOpenType r t) = mapShimWit (MkPolarShim $ rangeCo r) $ nonpolarToNegative @QTypeSystem t
 
+runQTypeM :: QScope -> QTypeM --> Result QError
+runQTypeM scope ma = mapResultFailure qTypeError $ runDolanTypeMEntries (toList $ scopeSubtypes scope) ma
+
 langUnifyOpenTypes :: QScope -> LangOpenType '(A, TopType) -> LangOpenType '(BottomType, B) -> Result QError (A -> B)
-langUnifyOpenTypes scope ta tb = case runDolanTypeMEntries (toList $ scopeSubtypes scope) $ tsUnifyRigid @QTypeSystem (langTypePositive ta) (langTypeNegative tb) of
-    SuccessResult ab -> SuccessResult $ shimToFunction ab
-    FailureResult err -> FailureResult $ qTypeError err
+langUnifyOpenTypes scope ta tb =
+    fmap shimToFunction
+        $ runQTypeM scope
+        $ tsUnifyRigid @QTypeSystem (langTypePositive ta) (langTypeNegative tb)
 
 -- LangValue
 newtype LangValue = MkLangValue QValue
@@ -106,8 +110,8 @@ interpretToType src = do
     case st of
         MkSome t -> return $ MkLangType t
 
-langUnifyValue :: LangOpenType '(BottomType, A) -> LangValue -> QInterpreter A
-langUnifyValue t (MkLangValue v) = qUnifyValueTo (langTypeNegative t) v
+langUnifyValue :: QScope -> LangOpenType '(BottomType, A) -> LangValue -> Result QError A
+langUnifyValue scope t (MkLangValue v) = runQTypeM scope $ tsUnifyValueTo @QTypeSystem (langTypeNegative t) v
 
 langWithScope :: QDeclarations -> QInterpreter A -> QInterpreter A
 langWithScope sdocs = withDeclarations sdocs

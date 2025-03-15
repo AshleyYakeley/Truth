@@ -1786,7 +1786,7 @@ testEntity =
                 ]
                 $ tWith ["Pinafore"]
                 $ tDecls
-                    [ "evaluate = fn t, text => map.Action (mapFailure.Result show) $ run.Interpreter !{this.Context} $ do.Interpreter { v <- interpret.Value text; unify.Value t v }"
+                    [ "evaluate = fn t, text => map.Action (mapFailure.Result show) $ run.Interpreter !{this.Context} $ do.Interpreter { v <- interpret.Value text; unify.Value !{this.Scope} t v }"
                     ]
                 $ tGroup
                     "evaluate"
