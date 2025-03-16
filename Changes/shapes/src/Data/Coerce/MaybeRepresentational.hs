@@ -50,3 +50,6 @@ instance MaybeRepresentational Result where
 
 instance MaybeRepresentational Vector where
     maybeRepresentational = Just Dict
+
+instance MaybeRepresentational IO where
+    maybeRepresentational = Just Dict

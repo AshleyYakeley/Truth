@@ -88,3 +88,6 @@ instance HasVariance Result where
 
 instance HasVariance Vector where
     type VarianceOf Vector = 'Covariance
+
+instance HasVariance IO where
+    type VarianceOf IO = 'Covariance
