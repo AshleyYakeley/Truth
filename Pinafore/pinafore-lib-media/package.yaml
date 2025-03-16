@@ -10,6 +10,7 @@ library:
     dependencies:
       - shapes
       - commonmark
+      - commonmark-extensions
       - Color
       - network-uri
       - cairo-functional

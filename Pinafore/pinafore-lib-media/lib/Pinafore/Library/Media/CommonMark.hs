@@ -5,6 +5,7 @@ module Pinafore.Library.Media.CommonMark
 where
 
 import Commonmark qualified as C
+import Commonmark.Extensions qualified as C
 import Data.Shim
 import Pinafore.API
 import Shapes
@@ -46,7 +47,36 @@ parseErrorToLS err = fmap (MkShowable . toText . getMessagesNamedText) $ parseEr
 toHTML :: CommonMarkText -> Result (Located Showable) HTMLText
 toHTML (MkCommonMarkText t) =
     mapResultFailure parseErrorToLS $ do
-        html :: C.Html () <- eitherToResult $ C.commonmark "" t
+        let
+            -- https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions
+            customSyntax :: C.SyntaxSpec Identity (C.Html ()) (C.Html ())
+            customSyntax =
+                mconcat
+                    [ mif False C.hardLineBreaksSpec
+                    , mif True C.smartPunctuationSpec
+                    , mif True C.strikethroughSpec
+                    , mif True C.superscriptSpec
+                    , mif True C.subscriptSpec
+                    , mif True C.mathSpec
+                    , mif True C.emojiSpec
+                    , mif False C.autolinkSpec
+                    , mif True C.pipeTableSpec
+                    , mif True C.footnoteSpec
+                    , mif True C.definitionListSpec
+                    , mif True C.fancyListSpec
+                    , mif False C.taskListSpec
+                    , mif True C.attributesSpec
+                    , mif True C.rawAttributeSpec
+                    , mif True C.bracketedSpanSpec
+                    , mif True C.fencedDivSpec
+                    , mif True C.autoIdentifiersSpec
+                    , mif False C.autoIdentifiersAsciiSpec
+                    , mif True C.implicitHeadingReferencesSpec
+                    , mif False $ C.wikilinksSpec C.TitleBeforePipe
+                    , mif True C.alertSpec
+                    , mif False C.rebaseRelativePathsSpec
+                    ]
+        html :: C.Html () <- eitherToResult $ runIdentity $ C.commonmarkWith customSyntax "" t
         return $ MkHTMLText $ toStrict $ C.renderHtml html
 
 commonMarkStuff :: LibraryStuff

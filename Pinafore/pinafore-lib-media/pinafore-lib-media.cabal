@@ -64,6 +64,7 @@ library
     , changes-media
     , changes-world
     , commonmark
+    , commonmark-extensions
     , network-uri
     , pinafore-language
     , polar-shim
