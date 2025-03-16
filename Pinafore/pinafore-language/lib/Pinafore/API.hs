@@ -23,6 +23,8 @@ module Pinafore.API
     , SingletonFamily
     , QShimWit
     , QGroundType (..)
+    , QSomeGroundType
+    , qSomeGroundType
     , GroundProperties
     , PolyGreatestDynamicSupertype (..)
     , simplePolyGreatestDynamicSupertype
