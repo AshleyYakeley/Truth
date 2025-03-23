@@ -22,15 +22,15 @@ webViewType =
         (mkValueDocSignature "uriSchemes" "" $ Just [])
         NilListType
 
-wvOptions :: (View --> IO) -> ListProduct WebViewOptionsSig -> WebViewOptions
-wvOptions unliftIO (uriSchemes, ()) =
+wvOptions :: ListProduct WebViewOptionsSig -> WebViewOptions
+wvOptions (uriSchemes, ()) =
     defaultWebViewOptions
-        { wvoURISchemes = (fmap $ fmap $ fmap $ fmap $ fmap knowToMaybe . unliftIO . unliftAction) uriSchemes
+        { wvoURISchemes = (fmap $ fmap $ fmap $ fmap $ fmap knowToMaybe . gvRunUnlocked . gvLiftView . unliftAction) uriSchemes
         }
 
 webViewVal :: ListProduct WebViewOptionsSig -> ImmutableWholeModel HTMLText -> LangWidget
 webViewVal opts model =
-    MkLangWidget $ \wc -> createWebView (wvOptions (wcUnlift wc) opts) $ unWModel $ immutableWholeModelValue mempty $ fmap unHTMLText model
+    MkLangWidget $ \_ -> createWebView (wvOptions opts) $ unWModel $ immutableWholeModelValue mempty $ fmap unHTMLText model
 
 webKitStuff :: LibraryStuff
 webKitStuff =
