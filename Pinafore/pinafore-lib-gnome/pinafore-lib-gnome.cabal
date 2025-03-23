@@ -70,6 +70,7 @@ library
     , gi-gdk
     , gi-gio
     , gi-gtk
+    , network-uri
     , pinafore-language
     , pinafore-lib-media
     , polar-shim

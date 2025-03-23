@@ -1,13 +1,21 @@
 #!/usr/bin/pinafore
 import "media", "gnome"
 with GTK.
+let {
+    getSch: Text -> URI -> Action Media =
+        fn {
+            "GET", uri => pure $ encode asMedia.Text uri;
+            _, _ => fail "unrecognised verb";
+        }
+}
 do {
     r <- newMem.WholeModel;
+    r := "<a href=\"sch:pqr\">link</a>";
     run $
         fn gtk =>
         open.Window gtk (400,600) ap{"WebKit"} $
         notebook.Widget unknown.WholeModel [
             (label.Widget ap{"HTML Text"},scrolled.Widget $ textView.Widget $ fromWhole.TextModel r),
-            (label.Widget ap{"Rendered"},webView.WebKit ap{Mk.HTMLText %r})
+            (label.Widget ap{"Rendered"},webView.WebKit {uriSchemes = [("sch",getSch)];} ap{Mk.HTMLText %r})
         ];
 }

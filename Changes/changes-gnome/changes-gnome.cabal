@@ -123,6 +123,7 @@ library
     , gi-pango
     , gi-webkit2
     , haskell-gi-base
+    , network-uri
     , shapes
     , thread-trace
     , time

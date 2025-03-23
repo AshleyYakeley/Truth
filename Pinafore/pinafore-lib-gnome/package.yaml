@@ -16,7 +16,7 @@ library:
     dependencies:
       - shapes
       - time
-      - polar-shim
+      - network-uri
       - gi-gio
       - gi-gdk
       - gi-gtk
@@ -25,6 +25,7 @@ library:
       - changes-world
       - changes-media
       - changes-gnome
+      - polar-shim
       - pinafore-language
       - pinafore-lib-media
     exposed-modules:
