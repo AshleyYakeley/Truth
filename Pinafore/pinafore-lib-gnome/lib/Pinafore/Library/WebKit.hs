@@ -14,7 +14,7 @@ import Shapes
 import Pinafore.Library.GTK.Widget
 
 type WebViewOptionsSig :: [Type]
-type WebViewOptionsSig = '[[(Text, Text -> URI -> Action Media)]]
+type WebViewOptionsSig = '[[(Text, Text -> URI -> Action (Maybe Media))]]
 
 webViewType :: ListType QDocSignature WebViewOptionsSig
 webViewType =
@@ -25,7 +25,7 @@ webViewType =
 wvOptions :: ListProduct WebViewOptionsSig -> WebViewOptions
 wvOptions (uriSchemes, ()) =
     defaultWebViewOptions
-        { wvoURISchemes = (fmap $ fmap $ fmap $ fmap $ fmap knowToMaybe . gvRunUnlocked . gvLiftView . unliftAction) uriSchemes
+        { wvoURISchemes = (fmap $ fmap $ fmap $ fmap $ fmap (fromMaybe Nothing . knowToMaybe) . gvRunUnlocked . gvLiftView . unliftAction) uriSchemes
         }
 
 webViewVal :: ListProduct WebViewOptionsSig -> ImmutableWholeModel HTMLText -> LangWidget

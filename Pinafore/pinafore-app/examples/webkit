@@ -6,11 +6,11 @@ fn gtk =>
 let {
     openEmptyWindow: Action Window =
         open.Window gtk (200,200) ap{"Empty"} blank.Widget;
-    getSch: Text -> URI -> Action Media =
+    getSch: Text -> URI -> Action (Maybe Media) =
         fn {
             "GET", uri => do {
                     openEmptyWindow;
-                    pure $ encode asMedia.Text uri;
+                    pure $ Just $ encode asMedia.Text uri;
                 };
             _, _ => fail "unrecognised verb";
         }
