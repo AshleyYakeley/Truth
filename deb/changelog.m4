@@ -13,6 +13,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Library
     - rename libraries to remove "pinafore-"
     - built-in
+      . add Void type and functions
       . add Blob type and functions
       . add asBlob.Entity
       . add utf8.Text

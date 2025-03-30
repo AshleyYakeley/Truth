@@ -94,6 +94,7 @@ library
       Pinafore.Language.Library.Entity.Entity
       Pinafore.Language.Library.Entity.Literal
       Pinafore.Language.Library.Entity.Showable
+      Pinafore.Language.Library.Entity.Void
       Pinafore.Language.Library.Entity.Unit
       Pinafore.Language.Library.Entity.Boolean
       Pinafore.Language.Library.Entity.Ordering

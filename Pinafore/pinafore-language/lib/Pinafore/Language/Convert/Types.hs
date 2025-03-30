@@ -163,6 +163,12 @@ instance HasQType QPolyShim 'Negative a => HasQType QPolyShim 'Negative (Immutab
 instance HasQType QPolyShim 'Positive a => HasQType QPolyShim 'Positive (ImmutableWholeModel a) where
     qType = mapPosShimWit (functionToShim "immutableToWholeModel" immutableToWholeModel) qType
 
+voidGroundType :: QGroundType '[] Void
+voidGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily Void)|]) "Void"
+
+instance HasQGroundType '[] Void where
+    qGroundType = voidGroundType
+
 unitGroundType :: QGroundType '[] ()
 unitGroundType = mkLiteralGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit"
 

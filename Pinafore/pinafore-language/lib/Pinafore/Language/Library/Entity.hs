@@ -18,6 +18,7 @@ import Pinafore.Language.Library.Entity.Showable
 import Pinafore.Language.Library.Entity.Text
 import Pinafore.Language.Library.Entity.Time
 import Pinafore.Language.Library.Entity.Unit
+import Pinafore.Language.Library.Entity.Void
 import Pinafore.Language.Library.LibraryModule
 
 entityLibSection :: LibraryStuff
@@ -26,6 +27,7 @@ entityLibSection =
         $ [ entityEntityLibSection
           , literalEntityLibSection
           , showableEntityLibSection
+          , voidEntityLibSection
           , unitEntityLibSection
           , booleanEntityLibSection
           , orderingEntityLibSection

@@ -15,7 +15,7 @@ unitEntityLibSection =
     headingBDS
         "Unit"
         ""
-        [ typeBDS "Unit" "" (MkSomeGroundType unitGroundType) []
+        [ typeBDS "Unit" "A type with one value, `()`." (MkSomeGroundType unitGroundType) []
         , literalSubtypeRelationEntry @()
         , showableSubtypeRelationEntry @()
         , namespaceBDS "Unit" $ monoidEntries @() <> eqEntries @()
