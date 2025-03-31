@@ -16,6 +16,7 @@ build-type:     Simple
 library
   exposed-modules:
       Data.Words
+      Data.Char8
       Data.Sequential
       Data.Hexadecimal
       Control.Category.Groupoid

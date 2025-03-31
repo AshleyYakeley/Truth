@@ -16,6 +16,7 @@ import Control.Stream as I
 import Control.Task as I
 import Data.CatEndo as I
 import Data.CatFunctor as I
+import Data.Char8 as I
 import Data.Codec as I
 import Data.Coerce.Coercion as I
 import Data.Coerce.Function as I

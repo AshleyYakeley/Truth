@@ -9,6 +9,7 @@ library:
     source-dirs: lib
     dependencies:
       - shapes
+      - base64
       - commonmark
       - commonmark-extensions
       - Color

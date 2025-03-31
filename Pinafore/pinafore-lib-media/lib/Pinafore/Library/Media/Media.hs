@@ -1,8 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Library.Media.Media
-    ( Media (..)
-    , DecodeMedia (..)
+    ( DecodeMedia (..)
     , dataLiteralMediaCodec
     , mediaSpecificText
     , mediaEntityLibSection
