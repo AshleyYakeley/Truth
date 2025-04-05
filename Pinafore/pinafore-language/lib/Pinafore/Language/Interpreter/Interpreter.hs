@@ -23,6 +23,7 @@ module Pinafore.Language.Interpreter.Interpreter
     , withNewTypeID
     , withSemiIdentifiedType
     , newIdentifiedType
+    , getMissingCaseError
     )
 where
 
@@ -337,3 +338,8 @@ newIdentifiedType =
         Refl <- unsafeIdentifyKind @_ @(CCRVariancesKind dv) typeID
         Refl <- unsafeIdentify @_ @gt typeID
         return $ identifiedFamilialType typeID
+
+getMissingCaseError :: QInterpreter String
+getMissingCaseError = do
+    spos <- paramAsk sourcePosParam
+    return $ unpack $ showLocated spos "missing case"

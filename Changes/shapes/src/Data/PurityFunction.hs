@@ -49,8 +49,8 @@ runPurity :: Applicative m => PurityType m f -> f a -> m a
 runPurity PureType (Identity a) = pure a
 runPurity ImpureType ma = ma
 
-runPurityCases :: PurityType Maybe f -> f a -> a
-runPurityCases purity fa = fromMaybe (error "missing case") $ runPurity purity fa
+runPurityCases :: String -> PurityType Maybe f -> f a -> a
+runPurityCases err purity fa = fromMaybe (error err) $ runPurity purity fa
 
 data PurityFunction m e a b
     = forall f. MkPurityFunction

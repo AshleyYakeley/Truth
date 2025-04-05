@@ -1,0 +1,64 @@
+#!/usr/bin/env -S pinafore
+import "media"
+let {
+    writeEntry: Text -> Showable -> Action Unit =
+        fn name, val => writeLn.Sink stdout.Env $ name <>.Text ": " <>.Text (show val);
+
+    testURI: Text -> Action Unit =
+        fn text => do {
+            writeEntry "original" text;
+            result <- text >- fn {
+                Data.URI =>
+                    media >- fn Mk.Media mediaType _ =>
+                        do {
+                            writeLn.Sink stdout.Env "data URI";
+                            writeEntry "base64" base64;
+                            writeEntry "type" mediaType;
+                            for_ (toList.Maybe $ decode asMedia.Text media) $ writeEntry "as text";
+                            for_ (toList.Maybe $ decode asMedia.PNG.Image media) $ fn image =>
+                                writeEntry "as image, size" (size.Image $ interpret image);
+                            writeEntry "fragment" fragment;
+                            pure Data.URI;
+                        };
+                uri :? URI => uri >- fn Mk.URI => do {
+                    writeLn.Sink stdout.Env "non-data URI";
+                    for_ (toList.Maybe scheme) $ writeEntry "scheme";
+                    for_ (toList.Maybe authority) $ fn Mk.Authority.URI => do {
+                        for_ (toList.Maybe userinfo) $ writeEntry "userinfo";
+                        writeEntry "host" host;
+                        for_ (toList.Maybe port) $ writeEntry "port";
+                    };
+                    writeEntry "path" path;
+                    for_ (toList.Maybe query) $ writeEntry "query";
+                    for_ (toList.Maybe fragment) $ writeEntry "fragment";
+                    writeLn.Sink stdout.Env $ if isAbsolute.URI uri then "absolute" else "relative";
+                    pure Mk.URI;
+                };
+                _ => do {
+                    writeLn.Sink stdout.Env "not URI";
+                    pure ()
+                };
+            };
+            writeEntry "result" result;
+            writeEntry "same" $ result == text;
+            writeLn.Sink stdout.Env "";
+        };
+
+    uris: List Text =
+        [ "https://pinafore.info"
+        , "https://pinafore.info/"
+        , "http://ashley@pinafore.info/"
+        , "http://ashley:hunter2@pinafore.info/"
+        , "http://ashley:hunter2@pinafore.info:80/invocation/"
+        , "http://ashley:hunter2@pinafore.info:80/invocation?query#fragment"
+        , "data:,A%20brief%20note"
+        , "data:text/plain,Hello%20World"
+        , "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
+        , "foo://example.com:8042/over/there?name=ferret#nose"
+        , "urn:example:animal:ferret:nose"
+        , "g?y"
+        ];
+} do {
+    for_ uris testURI;
+    writeLn.Sink stdout.Env "Done.";
+}

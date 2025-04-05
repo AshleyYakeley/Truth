@@ -22,7 +22,17 @@ class (Riggable f, Monoid (StreamableBasis f)) => Streamable f where
 class (MonadPlus m, Streamable m) => Readish m where
     (<++) :: forall a. m a -> m a -> m a
 
--- (<++>) :: forall a. m a -> m a -> m a
+rMaybe :: forall m a. Readish m => m a -> m (Maybe a)
+rMaybe p = fmap Just p <++ pure Nothing
+
+rMany :: forall m a. Readish m => m a -> m [a]
+rMany p = rSome p <++ pure []
+
+rMany1 :: forall m a. Readish m => m a -> m (NonEmpty a)
+rMany1 p = liftA2 (:|) p $ rMany p
+
+rSome :: forall m a. Readish m => m a -> m [a]
+rSome p = fmap toList $ rMany1 p
 
 rSatisfy :: Readish m => (Element (StreamableBasis m) -> Bool) -> m (Element (StreamableBasis m))
 rSatisfy f = do
@@ -48,8 +58,6 @@ instance Streamable ReadPrec where
 
 instance Readish ReadPrec where
     (<++) = (ReadPrec.<++)
-
--- (<++>) = (ReadPrec.<++>)
 
 runReadPrec :: ReadPrec a -> String -> Maybe a
 runReadPrec r s = let

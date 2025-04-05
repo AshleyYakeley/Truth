@@ -66,7 +66,7 @@ pngStuff =
         , namespaceBDS
             "PNG"
             [ valBDS "encode" "Encode an image as PNG, with given metadata." pngEncode
-            , valBDS "pngMedia" ""
+            , valBDS "asMedia" ""
                 $ codecToPrism
                 $ coerceCodec @_ @(DataLiteral PNGData) @LangPNGImage
                 . dataLiteralMediaCodec

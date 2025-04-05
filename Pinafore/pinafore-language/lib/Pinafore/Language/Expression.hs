@@ -147,7 +147,7 @@ qExpressionPatternMatch expr pat = qRunTypeM $ tsExpressionPatternMatch @QTypeSy
 qMatchGate :: QMatch -> QPartialExpression -> QInterpreter QPartialExpression
 qMatchGate match expr = qRunTypeM $ tsMatchGate @QTypeSystem match expr
 
-qMatchBindings :: QMatch -> [(VarID, QExpression)]
+qMatchBindings :: String -> QMatch -> [(VarID, QExpression)]
 qMatchBindings = tsMatchBindings @QTypeSystem
 
 qFunctionPosWitness :: forall a b. QShimWit 'Negative a -> QShimWit 'Positive b -> QShimWit 'Positive (a -> b)

@@ -34,3 +34,19 @@ library:
       - Pinafore.Library.Media.Image.JPEG
       - Pinafore.Library.Media.Image
       - Pinafore.Library.Media.Cairo
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - shapes
+          - filepath
+          - thread-trace
+          - changes-core
+          - changes-gnome
+          - pinafore-language
+          - pinafore-lib-media
+        main: Main.hs
+        other-modules:
+          - Test.Golden
+        ghc-options: -threaded

@@ -9,15 +9,15 @@ module Data.Media
     , pattern ImageMediaType
     , pattern ApplicationMediaType
     , Media (..)
+    , showMediaType
     )
 where
-
-import Text.ParserCombinators.ReadP qualified as P
 
 import Data.Codec
 import Data.HasNewValue
 import Data.Serialize.Has
 import Data.Serializer
+import Data.Streamable
 import Shapes.Import
 
 data MediaType = MkMediaType_
@@ -66,40 +66,39 @@ enc s =
         then s
         else pack $ show s
 
-parseThis :: String -> P.ReadP ()
+parseThis :: String -> ReadPrec ()
 parseThis s = do
-    _ <- P.string s
-    P.skipSpaces
-    return ()
+    rLiterals s
+    rSkipSpaces
 
-parseToken :: P.ReadP String
+parseToken :: ReadPrec String
 parseToken = do
-    s <- P.munch1 goodchar
-    P.skipSpaces
+    s <- rSome $ rSatisfy goodchar
+    rSkipSpaces
     return s
 
-parseQSC :: P.ReadP Char
+parseQSC :: ReadPrec Char
 parseQSC = do
-    c <- P.get
+    c <- rItem
     case c of
         '"' -> mzero
-        '\\' -> P.get
+        '\\' -> rItem
         _ -> return c
 
-parseQS :: P.ReadP String
+parseQS :: ReadPrec String
 parseQS = do
-    _ <- P.char '"'
+    _ <- rLiteral '"'
     s <- many parseQSC
-    _ <- P.char '"'
+    _ <- rLiteral '"'
     return s
 
-parseValue :: P.ReadP String
+parseValue :: ReadPrec String
 parseValue = parseQS <|> parseToken
 
 -- RFC 2045 sec. 5.1
-parseMediaType :: P.ReadP MediaType
+parseMediaType :: ReadPrec MediaType
 parseMediaType = do
-    P.skipSpaces
+    rSkipSpaces
     tt <- parseToken
     parseThis "/"
     st <- parseToken
@@ -117,15 +116,12 @@ showMediaType MkMediaType_{..} = mtType <> "/" <> mtSubtype <> concatmap (\(n, v
 
 textMediaTypeCodec :: Codec Text MediaType
 textMediaTypeCodec = let
-    decode t =
-        case P.readP_to_S parseMediaType $ unpack t of
-            [(m, "")] -> return m
-            _ -> Nothing
+    decode t = runReadPrec parseMediaType $ unpack t
     encode = showMediaType
     in MkCodec{..}
 
 instance Read MediaType where
-    readsPrec _ = P.readP_to_S parseMediaType
+    readPrec = parseMediaType
 
 instance Show MediaType where
     show mt = unpack $ showMediaType mt

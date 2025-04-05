@@ -1,0 +1,118 @@
+original: "https://pinafore.info"
+non-data URI
+scheme: "https"
+host: "pinafore.info"
+path: ""
+absolute
+result: "https://pinafore.info"
+same: True
+
+original: "https://pinafore.info/"
+non-data URI
+scheme: "https"
+host: "pinafore.info"
+path: "/"
+absolute
+result: "https://pinafore.info/"
+same: True
+
+original: "http://ashley@pinafore.info/"
+non-data URI
+scheme: "http"
+userinfo: "ashley"
+host: "pinafore.info"
+path: "/"
+absolute
+result: "http://ashley@pinafore.info/"
+same: True
+
+original: "http://ashley:hunter2@pinafore.info/"
+non-data URI
+scheme: "http"
+userinfo: "ashley:hunter2"
+host: "pinafore.info"
+path: "/"
+absolute
+result: "http://ashley:hunter2@pinafore.info/"
+same: True
+
+original: "http://ashley:hunter2@pinafore.info:80/invocation/"
+non-data URI
+scheme: "http"
+userinfo: "ashley:hunter2"
+host: "pinafore.info"
+port: 80
+path: "/invocation/"
+absolute
+result: "http://ashley:hunter2@pinafore.info:80/invocation/"
+same: True
+
+original: "http://ashley:hunter2@pinafore.info:80/invocation?query#fragment"
+non-data URI
+scheme: "http"
+userinfo: "ashley:hunter2"
+host: "pinafore.info"
+port: 80
+path: "/invocation"
+query: "query"
+fragment: "fragment"
+absolute
+result: "http://ashley:hunter2@pinafore.info:80/invocation?query#fragment"
+same: True
+
+original: "data:,A%20brief%20note"
+data URI
+base64: False
+type: text/plain;charset=US-ASCII
+as text: "A brief note"
+fragment: ""
+result: "data:,A%20brief%20note"
+same: True
+
+original: "data:text/plain,Hello%20World"
+data URI
+base64: False
+type: text/plain
+as text: "Hello World"
+fragment: ""
+result: "data:text/plain,Hello%20World"
+same: True
+
+original: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
+data URI
+base64: True
+type: image/png
+as image, size: (5,5)
+fragment: ""
+result: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
+same: True
+
+original: "foo://example.com:8042/over/there?name=ferret#nose"
+non-data URI
+scheme: "foo"
+host: "example.com"
+port: 8042
+path: "/over/there"
+query: "name=ferret"
+fragment: "nose"
+absolute
+result: "foo://example.com:8042/over/there?name=ferret#nose"
+same: True
+
+original: "urn:example:animal:ferret:nose"
+non-data URI
+scheme: "urn"
+path: "example:animal:ferret:nose"
+absolute
+result: "urn:example:animal:ferret:nose"
+same: True
+
+original: "g?y"
+non-data URI
+path: "g"
+query: "y"
+relative
+result: "g?y"
+same: True
+
+Done.

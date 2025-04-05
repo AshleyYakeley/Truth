@@ -10,7 +10,7 @@ let rec {
             };
             ref <- makeRef.File.GIO file;
             media <- get ref;
-            jpeg <- orStop $ decode jpegMedia.JPEG.Image media;
+            jpeg <- orStop $ decode asMedia.JPEG.Image media;
             path = file >- fn {
                 Path.File.GIO path => path;
                 _ => "unknown";

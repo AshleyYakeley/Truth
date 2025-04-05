@@ -36,5 +36,9 @@ maybeLibSection =
         , hasSubtypeRelationBDS @(Maybe Entity) @Entity Verify ""
             $ functionToShim "maybeEntityConvert" maybeEntityConvert
         , hasSubtypeRelationBDS @(Maybe Showable) @Showable Verify "" $ functionToShim "show" textShowable
-        , namespaceBDS "Maybe" $ monadEntries @Maybe <> [valBDS "from" "" (fromMaybe :: A -> Maybe A -> A)]
+        , namespaceBDS "Maybe"
+            $ monadEntries @Maybe
+            <> [ valBDS "from" "" (fromMaybe :: A -> Maybe A -> A)
+               , valBDS "toList" "" (toList :: Maybe A -> [A])
+               ]
         ]

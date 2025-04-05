@@ -66,7 +66,7 @@ jpegStuff =
         , namespaceBDS
             "JPEG"
             [ valBDS "encode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
-            , valBDS "jpegMedia" ""
+            , valBDS "asMedia" ""
                 $ codecToPrism
                 $ coerceCodec @_ @(DataLiteral JPEGData) @LangJPEGImage
                 . dataLiteralMediaCodec

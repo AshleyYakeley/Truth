@@ -506,11 +506,13 @@ interpretExpression' (SEAbstract (MkSyntaxCase (MkWithSourcePos _ (VarSyntaxPatt
 interpretExpression' (SEAbstract match) =
     withAllocateNewVar Nothing $ \varid -> do
         pexpr <- interpretCase varid match
-        qAbstractExpr varid $ partialToSealedExpression pexpr
+        err <- getMissingCaseError
+        qAbstractExpr varid $ partialToSealedExpression err pexpr
 interpretExpression' (SEAbstracts (MkSome multimatch@(MkSyntaxMulticase spats _))) =
     withScopeBuilder (for spats $ \_ -> fmap snd $ allocateLambdaVar Nothing) $ \varids -> do
         pexpr <- interpretMulticase varids multimatch
-        multiAbstractExpr varids $ partialToSealedExpression pexpr
+        err <- getMissingCaseError
+        multiAbstractExpr varids $ partialToSealedExpression err pexpr
 interpretExpression' (SEDecl declarator sbody) = interpretDeclaratorWith declarator $ interpretExpression sbody
 interpretExpression' (SEImply binds sbody) = do
     bexpr <- interpretExpression sbody
@@ -529,12 +531,14 @@ interpretExpression' (SEMatch scases) =
     withAllocateNewVar Nothing $ \varid -> do
         pexprs <- for scases $ interpretCase varid
         pexpr <- qPartialExpressionSumList pexprs
-        qAbstractExpr varid $ partialToSealedExpression pexpr
+        err <- getMissingCaseError
+        qAbstractExpr varid $ partialToSealedExpression err pexpr
 interpretExpression' (SEMatches (MkSyntaxMulticaseList nn scases)) =
     withScopeBuilder (fixedListGenerate nn $ fmap snd $ allocateLambdaVar Nothing) $ \varids -> do
         pexprs <- for scases $ interpretMulticase varids
         pexpr <- qPartialExpressionSumList pexprs
-        multiAbstractExpr varids $ partialToSealedExpression pexpr
+        err <- getMissingCaseError
+        multiAbstractExpr varids $ partialToSealedExpression err pexpr
 interpretExpression' (SEApply sf sarg) = do
     f <- interpretExpression sf
     arg <- interpretExpression sarg

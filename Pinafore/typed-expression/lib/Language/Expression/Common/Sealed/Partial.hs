@@ -15,9 +15,9 @@ sealedToPartialExpression :: SealedExpression varw tw -> SealedPartialExpression
 sealedToPartialExpression (MkSealedExpression twt expr) =
     MkSealedExpression (MkPartialWit PureType twt) $ fmap Identity expr
 
-partialToSealedExpression :: SealedPartialExpression varw tw -> SealedExpression varw tw
-partialToSealedExpression (MkSealedExpression (MkPartialWit purity twt) expr) =
-    MkSealedExpression twt $ fmap (runPurityCases purity) expr
+partialToSealedExpression :: String -> SealedPartialExpression varw tw -> SealedExpression varw tw
+partialToSealedExpression err (MkSealedExpression (MkPartialWit purity twt) expr) =
+    MkSealedExpression twt $ fmap (runPurityCases err purity) expr
 
 neverSealedPartialExpression :: tw a -> SealedPartialExpression varw tw
 neverSealedPartialExpression twt = MkSealedExpression (MkPartialWit ImpureType twt) $ pure Nothing

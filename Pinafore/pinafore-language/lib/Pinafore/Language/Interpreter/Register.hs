@@ -58,8 +58,9 @@ registerLetBinding name doc expr = registerLetBindings $ pure (name, doc, expr)
 
 registerMatchBindings :: QMatch -> QScopeBuilder ()
 registerMatchBindings match = do
+    err <- builderLift getMissingCaseError
     bb <-
-        for (tsMatchBindings @QTypeSystem match) $ \case
+        for (tsMatchBindings @QTypeSystem err match) $ \case
             (LambdaVarID _ vn, expr) -> return (vn, MkDefDoc (ValueDocItem (pure $ fullNameRef vn) "") "lambda", expr)
             (v, _) -> builderLift $ throw $ InternalError Nothing $ "bad match var: " <> showNamedText v
     registerLetBindings bb

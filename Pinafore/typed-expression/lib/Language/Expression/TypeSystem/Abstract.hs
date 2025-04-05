@@ -420,14 +420,14 @@ tsMatchGate rawmatch rawexpr =
                     $ MkSealedExpression (MkPartialWit purity etype)
                     $ liftA2 (\pf et -> (pconv $ pf ()) >> econv et) pfexpr expr
 
-tsMatchBindings :: forall ts. TSMatch ts -> [(TSVarID ts, TSSealedExpression ts)]
-tsMatchBindings (MkPattern ww (MkPurityFunction purity pfexpr)) =
+tsMatchBindings :: forall ts. String -> TSMatch ts -> [(TSVarID ts, TSSealedExpression ts)]
+tsMatchBindings err (MkPattern ww (MkPurityFunction purity pfexpr)) =
     purityIs @Functor purity $ let
         mkBinding ::
             SomeFor ((->) _) (NameWitness (TSVarID ts) (TSPosShimWit ts)) -> (TSVarID ts, TSSealedExpression ts)
         mkBinding (MkSomeFor (MkNameWitness wvar wtype) f) =
             ( wvar
-            , partialToSealedExpression
+            , partialToSealedExpression err
                 $ MkSealedExpression (MkPartialWit purity wtype)
                 $ fmap (\pf -> fmap (\(tt, ()) -> f tt) $ pf ()) pfexpr
             )
