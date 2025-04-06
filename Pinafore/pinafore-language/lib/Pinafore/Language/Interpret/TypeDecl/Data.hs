@@ -384,10 +384,9 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                               , decltype -> TypeData dv maintype
                                               )
                                             )
-                                    mainConstruct () = do
+                                    mainConstruct () = builderLift $ do
                                         constructorInnerTypes <-
-                                            builderLift
-                                                $ for constructorFixedList
+                                            for constructorFixedList
                                                 $ interpretConstructorTypes (MkSomeFamilialType mainFamType) supertypes
                                         assembleDataType (doubleTypeParameters doubleParams constructorInnerTypes) $ \codecs (vmap :: VarMapping structtype) pickn -> do
                                             let
@@ -400,23 +399,20 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                             case nonEmpty $ duplicates declaredvars of
                                                 Nothing -> return ()
                                                 Just vv ->
-                                                    builderLift
-                                                        $ throw
+                                                    throw
                                                         $ InterpretTypeDeclDuplicateTypeVariablesError mainTypeName
                                                         $ fmap someTypeVarToName vv
                                             case nonEmpty unboundvars of
                                                 Nothing -> return ()
                                                 Just vv ->
-                                                    builderLift
-                                                        $ throw
+                                                    throw
                                                         $ InterpretTypeDeclUnboundTypeVariablesError mainTypeName
                                                         $ fmap someTypeVarToName vv
                                             Refl <- unsafeGetRefl @Type @structtype @decltype
                                             dvm :: CCRVariancesMap dv maintype <-
-                                                builderLift $ getCCRVariancesMap @dv mainTypeName tparams vmap
+                                                getCCRVariancesMap @dv mainTypeName tparams vmap
                                             x <-
-                                                builderLift
-                                                    $ mkx dvm
+                                                mkx dvm
                                                     $ toList
                                                     $ liftA2 (,) codecs
                                                     $ fmap ctExtra constructorFixedList
@@ -432,8 +428,8 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                     mainBox = mkFixBox mainRegister mainConstruct
                                     mainTypeBox :: QFixBox x (QGroundType dv maintype)
                                     mainTypeBox =
-                                        mkConstructFixBox $ \x -> do
-                                            gtft <- builderLift $ mkgt x
+                                        mkConstructFixBox $ \x -> builderLift $ do
+                                            gtft <- mkgt x
                                             return $ fst $ unGroundTypeFromTypeID gtft mainTypeName mainFamType
                                     getGroundType ::
                                         QGroundType dv maintype ->
@@ -574,16 +570,15 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                                 getConstypeConvert ::
                                                     forall t.
                                                     ConstructorType t ->
-                                                    QScopeBuilder ((Name, Name), QOpenExpression (t -> supertype))
+                                                    QInterpreter ((Name, Name), QOpenExpression (t -> supertype))
                                                 getConstypeConvert (MkConstructorType _ PositionalCF _) =
-                                                    builderLift $ throw DeclareDatatypePositionalConstructorWithSupertypeError
+                                                    throw DeclareDatatypePositionalConstructorWithSupertypeError
                                                 getConstypeConvert (MkConstructorType consname (RecordCF rcds) sigs) = let
                                                     rcd = unsafeIndex rcds i
                                                     in case rcdRecordConstructor rcd of
                                                         MkQRecordConstructor stmembers (MkShimWit (MkDolanGroundedType sgt NilCCRArguments) (MkPolarShim sgtconv)) _ stcodec
                                                             | Just Refl <- testEquality supergroundtype sgt -> do
-                                                                memberconvexpr <-
-                                                                    builderLift $ getMatchMemberConvert sigs stmembers
+                                                                memberconvexpr <- getMatchMemberConvert sigs stmembers
                                                                 let
                                                                     convexpr =
                                                                         fmap
@@ -597,14 +592,14 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                                         _ -> error $ "broken supertype in datatype: " <> show mainTypeName
                                                 getCodecConvert ::
                                                     ConstructorCodec decltype ->
-                                                    QScopeBuilder
+                                                    QInterpreter
                                                         ( (Name, Name)
                                                         , QOpenExpression (decltype -> Maybe supertype)
                                                         )
                                                 getCodecConvert (MkSomeFor constype codec) = do
                                                     (chint, convexpr) <- getConstypeConvert constype
                                                     return $ (chint, fmap (\conv -> fmap conv . decode codec) convexpr)
-                                            hintcconvexprs <- for (toList codecs) getCodecConvert
+                                            hintcconvexprs <- builderLift $ for (toList codecs) getCodecConvert
                                             let
                                                 hint :: QSubtypeHint
                                                 hint = mkQSubtypeHint $ fmap fst hintcconvexprs
