@@ -190,6 +190,8 @@ All declarations, including type declarations, are local to a `let` block.
 
 <declaration> ::=
     <direct-declaration> |
+    "type" <type-const> <plain-datatype-parameters> "=" <type> |
+    "type" "storable" <type-const> <storable-datatype-parameters> "=" <type> |
     "predicatetype" <optional("storable")> <type-const> "<:" <type> "=" <expression> |
     <record-binding> |
     "namespace" <optional("docsec")> uname <braced(<declaration>)> |

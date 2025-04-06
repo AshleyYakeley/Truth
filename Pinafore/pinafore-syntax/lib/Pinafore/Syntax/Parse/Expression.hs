@@ -27,6 +27,18 @@ readOpenEntityTypeDeclaration = do
     name <- readTypeNewName
     return $ TypeSyntaxDeclaration name OpenEntitySyntaxRecursiveTypeDeclaration
 
+readSynonymTypeDeclaration :: Parser SyntaxDeclaration'
+readSynonymTypeDeclaration = do
+    readThis TokType
+    storable <- optional $ readThis TokStorable
+    name <- readTypeNewName
+    parameters <- many readTypeParameter
+    readThis TokAssign
+    st <- readType
+    return
+        $ NonrecursiveTypeSyntaxDeclaration name
+        $ SynonymSyntaxNonrecursiveTypeDeclaration (isJust storable) parameters st
+
 readPredicateTypeDeclaration :: Parser SyntaxDeclaration'
 readPredicateTypeDeclaration = do
     readThis TokPredicateType
@@ -273,6 +285,7 @@ readDeclaration =
             , readDeclaratorDeclaration
             , readRecordDeclaration
             , fmap DirectSyntaxDeclaration readDirectDeclaration
+            , readSynonymTypeDeclaration
             , readPredicateTypeDeclaration
             , readNamespaceDecl
             , readDocSectionDecl
