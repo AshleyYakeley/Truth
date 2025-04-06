@@ -41,7 +41,7 @@ interpretNonpolarGroundedType :: SyntaxType -> QInterpreter (Some QNonpolarGroun
 interpretNonpolarGroundedType st = do
     t <- interpretNonpolarType st
     case t of
-        MkSome (GroundedNonpolarType gnt) -> return $ MkSome gnt
+        MkSome (ToGroundedNonpolarType gnt) -> return $ MkSome gnt
         _ -> throw $ InterpretTypeNotGroundedError $ exprShow t
 
 interpretTypeM ::

@@ -37,7 +37,7 @@ mkURITypes =
 
 stripFirst :: Char -> String -> String
 stripFirst _ "" = ""
-stripFirst x (c:cc) | x == c = cc
+stripFirst x (c : cc) | x == c = cc
 stripFirst _ cc = cc
 
 stripLast :: Char -> String -> String
@@ -69,8 +69,8 @@ mkURICodec = let
         mURIQuery = decodeModify (stripFirst '?') uriQuery
         mURIFragment = decodeModify (stripFirst '#') uriFragment
         in listProductToVProduct
-                (listTypeToVType mkURITypes)
-                (mURIScheme, (uriAuthority, (pack uriPath, (mURIQuery, (mURIFragment, ())))))
+            (listTypeToVType mkURITypes)
+            (mURIScheme, (uriAuthority, (pack uriPath, (mURIQuery, (mURIFragment, ())))))
     in MkCodec{..}
 
 -- URIAuth

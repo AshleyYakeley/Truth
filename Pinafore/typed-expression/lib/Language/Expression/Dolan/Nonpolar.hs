@@ -7,6 +7,7 @@ module Language.Expression.Dolan.Nonpolar
     , NonpolarArguments
     , NonpolarShimWit
     , groundedNonpolarToDolanType
+    , pattern ToGroundedNonpolarType
     )
 where
 
@@ -110,6 +111,19 @@ instance forall (ground :: GroundTypeKind) t. FreeTypeVariables (NonpolarType gr
     freeTypeVariables (GroundedNonpolarType t) = freeTypeVariables t
     freeTypeVariables (RecursiveNonpolarType v t) = difference (freeTypeVariables t) (freeTypeVariables v)
 
+mapNonpolarArgument ::
+    forall (ground :: GroundTypeKind) sv t.
+    (NonpolarType ground --> NonpolarType ground) -> NonpolarArgument ground sv t -> NonpolarArgument ground sv t
+mapNonpolarArgument f (CoNonpolarArgument t) = CoNonpolarArgument $ f t
+mapNonpolarArgument f (ContraNonpolarArgument t) = ContraNonpolarArgument $ f t
+mapNonpolarArgument f (RangeNonpolarArgument tp tq) = RangeNonpolarArgument (f tp) (f tq)
+
+mapNonpolarArguments ::
+    forall (ground :: GroundTypeKind) dv gt t.
+    (NonpolarType ground --> NonpolarType ground) -> NonpolarArguments ground dv gt t -> NonpolarArguments ground dv gt t
+mapNonpolarArguments _ NilCCRArguments = NilCCRArguments
+mapNonpolarArguments f (ConsCCRArguments arg args) = ConsCCRArguments (mapNonpolarArgument f arg) (mapNonpolarArguments f args)
+
 nonpolarToDolanArg ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity sv t.
     (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
@@ -152,6 +166,39 @@ nonpolarToDolanType ::
 nonpolarToDolanType (VarNonpolarType n) = shimWitToDolan $ mkShimWit $ VarDolanSingularType n
 nonpolarToDolanType (GroundedNonpolarType t) = shimWitToDolan $ groundedNonpolarToDolanType t
 nonpolarToDolanType (RecursiveNonpolarType v t) = shimWitToDolan $ recursiveDolanShimWit v $ nonpolarToDolanType t
+
+class SubstituteNonpolar (tf :: GroundTypeKind -> Type -> Type) where
+    substituteNonpolar ::
+        forall (ground :: GroundTypeKind) t v.
+        TypeVarT v -> NonpolarType ground v -> tf ground t -> tf ground t
+
+instance SubstituteNonpolar NonpolarGroundedType where
+    substituteNonpolar var st (MkNonpolarGroundedType gt args) = MkNonpolarGroundedType gt $ mapNonpolarArguments (substituteNonpolar var st) args
+
+instance SubstituteNonpolar NonpolarType where
+    substituteNonpolar var st (GroundedNonpolarType gt) = GroundedNonpolarType $ substituteNonpolar var st gt
+    substituteNonpolar var st t@(RecursiveNonpolarType v pt) = case testEquality v var of
+        Just Refl -> t
+        Nothing -> RecursiveNonpolarType v $ substituteNonpolar var st pt
+    substituteNonpolar var st t@(VarNonpolarType n) = case testEquality n var of
+        Just Refl -> st
+        Nothing -> t
+
+nonpolarToNonpolarGroundedType ::
+    forall (ground :: GroundTypeKind) t.
+    NonpolarType ground t ->
+    Maybe (NonpolarGroundedType ground t)
+nonpolarToNonpolarGroundedType (GroundedNonpolarType gt) = Just gt
+nonpolarToNonpolarGroundedType (VarNonpolarType _) = Nothing
+nonpolarToNonpolarGroundedType (RecursiveNonpolarType var t) = do
+    gt <- nonpolarToNonpolarGroundedType t
+    return $ substituteNonpolar var (GroundedNonpolarType gt) gt
+
+pattern ToGroundedNonpolarType ::
+    forall (ground :: GroundTypeKind) t.
+    NonpolarGroundedType ground t ->
+    NonpolarType ground t
+pattern ToGroundedNonpolarType gt <- (nonpolarToNonpolarGroundedType -> Just gt)
 
 dolanArgToNonpolar ::
     forall (ground :: GroundTypeKind) polarity sv t.

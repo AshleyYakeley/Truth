@@ -61,6 +61,6 @@ openEntityGroundType oet = let
     in singleGroundType' (MkFamilialType openEntityFamilyWitness $ MkOpenEntityFamily oet) props $ exprShowPrec oet
 
 getOpenEntityType :: QNonpolarType a -> QInterpreter (Some OpenEntityType)
-getOpenEntityType (GroundedNonpolarType (MkNonpolarGroundedType gt NilCCRArguments))
+getOpenEntityType (ToGroundedNonpolarType (MkNonpolarGroundedType gt NilCCRArguments))
     | Just (MkOpenEntityFamily oet) <- getGroundFamily openEntityFamilyWitness gt = return $ MkSome oet
 getOpenEntityType tm = throw $ InterpretTypeNotOpenEntityError $ exprShow tm

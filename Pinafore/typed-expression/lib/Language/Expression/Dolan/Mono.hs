@@ -41,5 +41,5 @@ nonpolarToMonoType ::
     CovarySubtype ground conc =>
     NonpolarType ground a ->
     Maybe (MonoType conc a)
-nonpolarToMonoType (GroundedNonpolarType t) = nonpolarGroundedToMonoType t
+nonpolarToMonoType (ToGroundedNonpolarType t) = nonpolarGroundedToMonoType t
 nonpolarToMonoType _ = Nothing

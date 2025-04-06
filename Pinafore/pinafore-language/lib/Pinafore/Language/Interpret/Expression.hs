@@ -640,7 +640,7 @@ interpretGeneralSubtypeRelation trustme sta stb sbody = do
         _ -> throw $ InterpretTypeNotGroundedError $ exprShow ata
 
 nonpolarSimpleOpenEntityType :: QNonpolarType t -> QInterpreter (QGroundType '[] t, StorableGroundType t)
-nonpolarSimpleOpenEntityType (GroundedNonpolarType (MkNonpolarGroundedType t NilCCRArguments))
+nonpolarSimpleOpenEntityType (ToGroundedNonpolarType (MkNonpolarGroundedType t NilCCRArguments))
     | Just (NilListType, et) <- dolanToMonoGroundType t = return (t, et)
 nonpolarSimpleOpenEntityType t = throw $ InterpretTypeNotSimpleEntityError $ exprShow t
 
