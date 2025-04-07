@@ -808,12 +808,39 @@ testEntity =
                     , testExpectSuccess "let {f : Maybe Number -> Entity = fn x => x} pass"
                     , testExpectSuccess "let {f : Maybe (a & Number) -> Entity *: Maybe a = fn x => (x,x)} pass"
                     ]
+                , tGroup
+                    "synonym"
+                    [ tDecls ["type I = Integer"]
+                        $ tGroup
+                            "simple"
+                            [ testExpectSuccess "pass"
+                            , testExpectSuccess "testeq (3: Integer) (3: I)"
+                            , testExpectSuccess "testeq 7 (7: I : Integer : I : Integer)"
+                            ]
+                    , tDecls ["type M +a = Maybe a"]
+                        $ tGroup
+                            "param"
+                            [ testExpectSuccess "pass"
+                            , testExpectSuccess "testeq (Just 51: M Integer) (Just 51: Maybe Integer)"
+                            , testExpectSuccess "testeq ((Just 17: M Integer): M Rational) (Just 17: Maybe Integer)"
+                            , testExpectSuccess "testeq ((Just 84: M Integer): M Rational) (Just 84: Maybe Rational)"
+                            ]
+                    , tDecls ["type ML +a = Maybe (List a)"]
+                        $ tGroup
+                            "nested"
+                            [ testExpectSuccess "pass"
+                            , testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: Maybe (List Integer))"
+                            , testExpectSuccess "testeq ((Just [92]: ML Integer): ML Rational) (Just [92]: Maybe (List Integer))"
+                            , testExpectSuccess "testeq ((Just [61]: ML Integer): ML Rational) (Just [61]: Maybe (List Rational))"
+                            ]
+                    ]
                 , tDecls
                     [ "testIsJust = fn {Just _ => pass; Nothing => fail \"Nothing\"}"
                     , "testIsNothing = fn {Nothing => pass; Just _ => fail \"Just\"}"
                     ]
-                    $ tGroup "predicate"
-                    $ [ tDecls ["predicatetype Even <: Integer = fn i => mod i 2 == 0"]
+                    $ tGroup
+                        "predicate"
+                        [ tDecls ["predicatetype Even <: Integer = fn i => mod i 2 == 0"]
                             $ tGroup
                                 "Even"
                                 [ testExpectSuccess "pass"
@@ -822,7 +849,7 @@ testEntity =
                                 , testExpectSuccess "testrefeq ap{Just 4} ap{!{check @Even} 4}"
                                 , testExpectSuccess "testrefeq ap{Nothing} ap{!{check @Even} 5}"
                                 ]
-                      , tDecls ["predicatetype F <: Integer -> Integer = fn f => f 3 == 4"]
+                        , tDecls ["predicatetype F <: Integer -> Integer = fn f => f 3 == 4"]
                             $ tGroup
                                 "Integer -> Integer"
                                 [ testExpectSuccess "pass"
@@ -831,8 +858,8 @@ testEntity =
                                 , testExpectSuccess
                                     "testrefeq ap{Just 6} ap{map.Maybe (fn f => f 5) $ !{check @F} $ fn x => x + 1}"
                                 ]
-                      , testExpectReject "let {predicatetype F <: a -> a = fn f => True} pass"
-                      , tGroup
+                        , testExpectReject "let {predicatetype F <: a -> a = fn f => True} pass"
+                        , tGroup
                             "unroll"
                             [ testExpectSuccess
                                 "let {predicatetype AtLeastThree <: Maybe (rec a, Maybe a) = fn {Just (Just (Just _)) => True; _ => False;}} pass"
@@ -844,7 +871,7 @@ testEntity =
                                 "let {predicatetype AtLeastThree <: rec a, rec b, a +: b = fn {Left (Left (Left _)) => True; _ => False;}} pass"
                             , testExpectReject "let {predicatetype Degenerate <: rec a, a = fn _ => True} pass"
                             ]
-                      , tGroup
+                        , tGroup
                             "storable"
                             [ testExpectSuccess "let {predicatetype F <: Integer -> Integer = fn _ => True} pass"
                             , testExpectReject "let {predicatetype storable F <: Integer -> Integer = fn _ => True} pass"
@@ -864,7 +891,7 @@ testEntity =
                                     , testExpectSuccess "do {cellInteger := 17; testrefisunknown cellEven}"
                                     ]
                             ]
-                      ]
+                        ]
                 ]
             , tGroup
                 "greatest-dynamic-supertype"
