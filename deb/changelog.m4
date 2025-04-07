@@ -6,6 +6,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - add documentation sections in declarations
     - add record functions
     - allow double type parameters in datatype declarations
+    - add type synonyms
     - add predicate types
     - remove dynamic entity types
     - rename opentype keyword to entitytype

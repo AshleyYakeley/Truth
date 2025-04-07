@@ -6,6 +6,7 @@ module Pinafore.Language.Interpret.TypeDecl.Parameter
     , AnyCCRTypeParams (..)
     , getAnyCCRTypeParams
     , tParamToPolarArgument
+    , tParamToNonpolarArgument
     , getCCRVariancesMap
     )
 where
@@ -123,6 +124,14 @@ tParamToPolarArgument (RangeCCRTypeParam varp varq) =
                ) of
             (MkShimWit argp convp, MkShimWit argq convq) ->
                 MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarShim convp) convq
+
+tParamToNonpolarArgument ::
+    forall sv (t :: CCRVarianceKind sv).
+    CCRTypeParam sv t ->
+    NonpolarArgument QGroundType sv t
+tParamToNonpolarArgument (CoCCRTypeParam var) = CoNonpolarArgument $ VarNonpolarType var
+tParamToNonpolarArgument (ContraCCRTypeParam var) = ContraNonpolarArgument $ VarNonpolarType var
+tParamToNonpolarArgument (RangeCCRTypeParam varp varq) = RangeNonpolarArgument (VarNonpolarType varp) (VarNonpolarType varq)
 
 paramsUnEndo ::
     forall (t :: Type) (dv :: CCRVariances) (f :: CCRVariancesKind dv).

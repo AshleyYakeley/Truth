@@ -56,6 +56,8 @@ makeSynonymTypeBox name md storable sparams sparent =
                                                 }
                                         gdsname = exprShow name
                                         doc = MkDefDoc (typeDocItem name storable [] (Just gdsname)) md
+                                        declGroundedType :: QNonpolarGroundedType decltype
+                                        declGroundedType = MkNonpolarGroundedType gt $ mapSameCCRArguments tParamToNonpolarArgument tparams
                                     registerGroundType name doc gt
-
--- registerSubtypeConversion $ neutralSubtypeConversionEntry (MkNonpolarGroundedType gt NilCCRArguments) parent
+                                    registerSubtypeConversion $ neutralSubtypeConversionEntry declGroundedType parent
+                                    registerSubtypeConversion $ neutralSubtypeConversionEntry parent declGroundedType
