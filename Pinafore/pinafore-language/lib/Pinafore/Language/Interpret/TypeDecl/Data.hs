@@ -10,7 +10,7 @@ module Pinafore.Language.Interpret.TypeDecl.Data
     )
 where
 
-import Shapes.Unsafe (unsafeGetRefl, unsafeRefl)
+import Shapes.Unsafe (unsafeCoercion)
 
 import Import
 import Pinafore.Language.Error
@@ -388,10 +388,10 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                         constructorInnerTypes <-
                                             for constructorFixedList
                                                 $ interpretConstructorTypes (MkSomeFamilialType mainFamType) supertypes
-                                        assembleDataType (doubleTypeParameters doubleParams constructorInnerTypes) $ \codecs (vmap :: VarMapping structtype) pickn -> do
+                                        assembleDataType (doubleTypeParameters doubleParams constructorInnerTypes) $ \structCodecs (vmap :: VarMapping structtype) pickn -> do
                                             let
                                                 freevars :: ListSet SomeTypeVarT
-                                                freevars = concatmap freeTypeVariables $ toList codecs
+                                                freevars = concatmap freeTypeVariables $ toList structCodecs
                                                 declaredvars :: [SomeTypeVarT]
                                                 declaredvars = tParamsVars tparams
                                                 unboundvars :: [SomeTypeVarT]
@@ -408,15 +408,18 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                                     throw
                                                         $ InterpretTypeDeclUnboundTypeVariablesError mainTypeName
                                                         $ fmap someTypeVarToName vv
-                                            Refl <- unsafeGetRefl @Type @structtype @decltype
+                                            MkCoercion <- pure $ unsafeCoercion @Type @structtype @decltype
+                                            let
+                                                declCodecs :: FixedList _ (ConstructorCodec decltype)
+                                                declCodecs = coerce structCodecs
                                             dvm :: CCRVariancesMap dv maintype <-
-                                                getCCRVariancesMap @dv mainTypeName tparams vmap
+                                                getCCRVariancesMap @dv mainTypeName tparams $ coerce vmap
                                             x <-
                                                 mkx dvm
                                                     $ toList
-                                                    $ liftA2 (,) codecs
+                                                    $ liftA2 (,) declCodecs
                                                     $ fmap ctExtra constructorFixedList
-                                            return $ (x, (x, dvm, codecs, \t -> ctOuterType $ pickn t constructorFixedList))
+                                            return $ (x, (x, dvm, declCodecs, \t -> ctOuterType $ pickn (coerce t) constructorFixedList))
                                     mainBox ::
                                         QFixBox
                                             ()
@@ -444,14 +447,14 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                         gds :: QPolyGreatestDynamicSupertype dv maintype
                                         gds =
                                             MkPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
-                                                case unsafeRefl @Type @decltype @argstype of
-                                                    Refl ->
+                                                case unsafeCoercion @Type @decltype @argstype of
+                                                    MkCoercion ->
                                                         MkShimWit (MkDolanGroundedType mainGroundType args)
                                                             $ MkPolarShim
                                                             $ pureComposeShim
                                                             $ functionToShim "supertype"
                                                             $ \t ->
-                                                                if elem (tdID $ picktype t) $ tdSubtypes tdata
+                                                                if elem (tdID $ picktype $ coerce t) $ tdSubtypes tdata
                                                                     then Just t
                                                                     else Nothing
                                         in baseGroundType

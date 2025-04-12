@@ -4,9 +4,13 @@ module Unsafe.Type
     )
 where
 
+import Data.Coerce.Coercion
 import Data.Isomorphism
 import Shapes.Import
 import Unsafe.Refl
+
+unsafeCoercion :: forall k (a :: k) (b :: k). Coercion a b
+unsafeCoercion = unsafeCoerce $ MkCoercion @k @a @a
 
 unsafeIsomorphism ::
     forall k (cat :: k -> k -> Type) (a :: k) (b :: k).

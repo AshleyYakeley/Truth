@@ -825,11 +825,28 @@ testEntity =
                             , testExpectSuccess "testeq ((Just 17: M Integer): M Rational) (Just 17: Maybe Integer)"
                             , testExpectSuccess "testeq ((Just 84: M Integer): M Rational) (Just 84: Maybe Rational)"
                             ]
-                    , tDecls ["type ML +a = Maybe (List a)"]
+                    , tDecls
+                        [ "type ML +a = Maybe (List a)"
+                        , "fa: Maybe (List a) -> ML a = fn x => x"
+                        , "ga: ML a -> Maybe (List a) = fn x => x"
+                        , "fga = fn x => fa (ga x)"
+                        , "gfa = fn x => ga (fa x)"
+                        , "fi: Maybe (List Integer) -> ML Integer = fn x => x"
+                        , "gi: ML Integer -> Maybe (List Integer) = fn x => x"
+                        , "fgi = fn x => fi (gi x)"
+                        , "gfi = fn x => gi (fi x)"
+                        ]
                         $ tGroup
                             "nested"
                             [ testExpectSuccess "pass"
+                            , testExpectSuccess "testeq (Just [12]: Maybe (List Integer)) (Just [12]: Maybe (List Integer))"
+                            , testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: ML Integer)"
+                            , testExpectSuccess "testeq (Just [55]) (gfa (Just [55]))"
+                            , testExpectSuccess "testeq (Just [57]) (gfi (Just [57]))"
+                            , testExpectSuccess "(Just [74]: ML Integer) >- fn {Nothing => fail \"Nothing\"; Just a => testeq [74] a;}"
                             , testExpectSuccess "testeq (Just [12]: ML Integer) (Just [12]: Maybe (List Integer))"
+                            , testExpectSuccess "testeq ((Just [12]: ML Integer): Maybe (List Integer)) (Just [12]: Maybe (List Integer))"
+                            , testExpectSuccess "testeq (((Just [12]: Maybe (List Integer)): ML Integer): Maybe (List Integer)) (Just [12]: Maybe (List Integer))"
                             , testExpectSuccess "testeq ((Just [92]: ML Integer): ML Rational) (Just [92]: Maybe (List Integer))"
                             , testExpectSuccess "testeq ((Just [61]: ML Integer): ML Rational) (Just [61]: Maybe (List Rational))"
                             ]

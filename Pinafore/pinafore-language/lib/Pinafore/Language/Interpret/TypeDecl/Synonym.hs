@@ -3,7 +3,7 @@ module Pinafore.Language.Interpret.TypeDecl.Synonym
     )
 where
 
-import Shapes.Unsafe (unsafeGetRefl)
+import Shapes.Unsafe (unsafeCoercion)
 
 import Import
 import Pinafore.Language.Interpret.Type
@@ -40,8 +40,8 @@ makeSynonymTypeBox name md storable sparams sparent =
                                         if storable
                                             then return mempty
                                             else return mempty
-                                    Refl <- unsafeGetRefl @Type @structtype @decltype
-                                    varianceMap <- builderLift $ getCCRVariancesMap name tparams $ getVarMapping parent
+                                    MkCoercion <- pure $ unsafeCoercion @Type @structtype @decltype
+                                    varianceMap <- builderLift $ getCCRVariancesMap name tparams $ coerce $ getVarMapping parent
                                     let
                                         gt :: QGroundType dv maintype
                                         gt =

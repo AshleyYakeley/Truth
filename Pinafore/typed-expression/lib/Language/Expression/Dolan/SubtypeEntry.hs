@@ -103,13 +103,13 @@ subtypeConversionEntry ::
 subtypeConversionEntry trustme hint = subtypeConversionEntry_ trustme $ maybe UnknownSK HintSK hint
 
 neutralSubtypeConversionEntry ::
-    forall (ground :: GroundTypeKind) t.
-    IsDolanSubtypeGroundType ground =>
-    NonpolarGroundedType ground t ->
-    NonpolarGroundedType ground t ->
+    forall (ground :: GroundTypeKind) (a :: Type) (b :: Type).
+    (IsDolanSubtypeGroundType ground, Coercible a b) =>
+    NonpolarGroundedType ground a ->
+    NonpolarGroundedType ground b ->
     SubtypeConversionEntry ground
 neutralSubtypeConversionEntry ta tb =
-    subtypeConversionEntry_ Verify NeutralSK (groundedNonpolarToDolanType ta) (groundedNonpolarToDolanType tb) (pure id)
+    subtypeConversionEntry_ Verify NeutralSK (groundedNonpolarToDolanType ta) (groundedNonpolarToDolanType tb) (pure $ coerceShim "subtype")
 
 matchSubtypeGroup ::
     forall (ground :: GroundTypeKind) dva gta dvb gtb.
