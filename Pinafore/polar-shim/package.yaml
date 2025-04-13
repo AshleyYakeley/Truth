@@ -51,3 +51,13 @@ library:
       - Data.Shim.CCR.Argument
       - Data.Shim.CCR.Arguments
       - Data.Shim.CCR
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.16
+          - shapes
+          - polar-shim
+        main: Main.hs
+        ghc-options: -threaded
