@@ -44,9 +44,9 @@ catRangeMap (MkCatRange pp qq) (MkRange pt tq) = MkRange (pt . pp) (qq . tq)
 liftCatRangeParts :: Functor f => CatRange (->) '( pa, qa) '( pb, qb) -> CatRange (->) '( f pa, f qa) '( f pb, f qb)
 liftCatRangeParts (MkCatRange pp qq) = MkCatRange (cfmap pp) (cfmap qq)
 -}
-instance forall k (f :: (Type, Type) -> k). CatFunctor (CatRange (NullShim Type)) (NullShim k) f where
-    cfmap :: forall a b. CatRange (NullShim Type) a b -> NullShim k (f a) (f b)
-    cfmap (MkCatRange MkNullShim MkNullShim) = MkNullShim
+instance forall k (f :: (Type, Type) -> k). CatFunctor (CatRange (NullPolyShim Type)) (NullPolyShim k) f where
+    cfmap :: forall a b. CatRange (NullPolyShim Type) a b -> NullPolyShim k (f a) (f b)
+    cfmap (MkCatRange MkNullPolyShim MkNullPolyShim) = MkNullPolyShim
 
 rangeToEnhanced :: FunctionShim shim => CatRange (->) a b -> CatRange shim a b
 rangeToEnhanced (MkCatRange p q) = MkCatRange (functionToShim "range-map" p) (functionToShim "range-map" q)

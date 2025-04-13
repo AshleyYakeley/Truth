@@ -5,76 +5,76 @@ import Shapes
 import Data.Shim.Mono
 import Data.Shim.Poly.Shim
 
-type PolyMapT :: (forall k. ShimKind k -> ShimKind k) -> PolyShimKind -> PolyShimKind
-newtype PolyMapT f pshim k a b = MkPolyMapT
-    { unPolyMapT :: f (pshim k) a b
+type MapPolyT :: (forall k. ShimKind k -> ShimKind k) -> PolyShimKind -> PolyShimKind
+newtype MapPolyT f pshim k a b = MkMapPolyT
+    { unMapPolyT :: f (pshim k) a b
     }
 
 instance
     forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) (k :: Type).
     Category (f (pshim k)) =>
-    Category (PolyMapT f pshim k)
+    Category (MapPolyT f pshim k)
     where
-    id = MkPolyMapT id
-    MkPolyMapT p . MkPolyMapT q = MkPolyMapT $ p . q
+    id = MkMapPolyT id
+    MkMapPolyT p . MkMapPolyT q = MkMapPolyT $ p . q
 
 instance
     forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) (k :: Type).
     Groupoid (f (pshim k)) =>
-    Groupoid (PolyMapT f pshim k)
+    Groupoid (MapPolyT f pshim k)
     where
-    invert (MkPolyMapT p) = MkPolyMapT $ invert p
+    invert (MkMapPolyT p) = MkMapPolyT $ invert p
 
 instance
     forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind).
     JoinMeetIsoShim (f (pshim Type)) =>
-    JoinMeetIsoShim (PolyMapT f pshim Type)
+    JoinMeetIsoShim (MapPolyT f pshim Type)
     where
-    iJoinL1 = MkPolyMapT iJoinL1
-    iJoinL2 = MkPolyMapT iJoinL2
-    iJoinR1 = MkPolyMapT iJoinR1
-    iJoinR2 = MkPolyMapT iJoinR2
-    iJoinPair (MkPolyMapT aconv) (MkPolyMapT bconv) = MkPolyMapT $ iJoinPair aconv bconv
-    iJoinSwap = MkPolyMapT iJoinSwap
-    iJoinSwapL = MkPolyMapT iJoinSwapL
-    iJoinSwapR = MkPolyMapT iJoinSwapR
-    iJoinSwap4 = MkPolyMapT iJoinSwap4
-    iMeetL1 = MkPolyMapT iMeetL1
-    iMeetL2 = MkPolyMapT iMeetL2
-    iMeetR1 = MkPolyMapT iMeetR1
-    iMeetR2 = MkPolyMapT iMeetR2
-    iMeetPair (MkPolyMapT aconv) (MkPolyMapT bconv) = MkPolyMapT $ iMeetPair aconv bconv
-    iMeetSwap = MkPolyMapT iMeetSwap
-    iMeetSwapL = MkPolyMapT iMeetSwapL
-    iMeetSwapR = MkPolyMapT iMeetSwapR
-    iMeetSwap4 = MkPolyMapT iMeetSwap4
+    iJoinL1 = MkMapPolyT iJoinL1
+    iJoinL2 = MkMapPolyT iJoinL2
+    iJoinR1 = MkMapPolyT iJoinR1
+    iJoinR2 = MkMapPolyT iJoinR2
+    iJoinPair (MkMapPolyT aconv) (MkMapPolyT bconv) = MkMapPolyT $ iJoinPair aconv bconv
+    iJoinSwap = MkMapPolyT iJoinSwap
+    iJoinSwapL = MkMapPolyT iJoinSwapL
+    iJoinSwapR = MkMapPolyT iJoinSwapR
+    iJoinSwap4 = MkMapPolyT iJoinSwap4
+    iMeetL1 = MkMapPolyT iMeetL1
+    iMeetL2 = MkMapPolyT iMeetL2
+    iMeetR1 = MkMapPolyT iMeetR1
+    iMeetR2 = MkMapPolyT iMeetR2
+    iMeetPair (MkMapPolyT aconv) (MkMapPolyT bconv) = MkMapPolyT $ iMeetPair aconv bconv
+    iMeetSwap = MkMapPolyT iMeetSwap
+    iMeetSwapL = MkMapPolyT iMeetSwapL
+    iMeetSwapR = MkMapPolyT iMeetSwapR
+    iMeetSwap4 = MkMapPolyT iMeetSwap4
 
 instance
     forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind).
     JoinMeetShim (f (pshim Type)) =>
-    JoinMeetShim (PolyMapT f pshim Type)
+    JoinMeetShim (MapPolyT f pshim Type)
     where
-    initf = MkPolyMapT initf
-    termf = MkPolyMapT termf
-    join1 = MkPolyMapT join1
-    join2 = MkPolyMapT join2
-    joinf ar br = MkPolyMapT $ joinf (unPolyMapT ar) (unPolyMapT br)
-    meet1 = MkPolyMapT meet1
-    meet2 = MkPolyMapT meet2
-    meetf ra rb = MkPolyMapT $ meetf (unPolyMapT ra) (unPolyMapT rb)
+    initf = MkMapPolyT initf
+    termf = MkMapPolyT termf
+    join1 = MkMapPolyT join1
+    join2 = MkMapPolyT join2
+    joinf ar br = MkMapPolyT $ joinf (unMapPolyT ar) (unMapPolyT br)
+    meet1 = MkMapPolyT meet1
+    meet2 = MkMapPolyT meet2
+    meetf ra rb = MkMapPolyT $ meetf (unMapPolyT ra) (unMapPolyT rb)
 
 instance
     forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind).
     LazyCategory (f (pshim Type)) =>
-    LazyCategory (PolyMapT f pshim Type)
+    LazyCategory (MapPolyT f pshim Type)
     where
-    iLazy (MkPolyMapT ab) = MkPolyMapT $ iLazy ab
+    iLazy (MkMapPolyT ab) = MkMapPolyT $ iLazy ab
 
 instance
     forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind).
     CartesianShim (f (pshim Type)) =>
-    CartesianShim (PolyMapT f pshim Type)
+    CartesianShim (MapPolyT f pshim Type)
     where
-    funcShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ funcShim ab pq
-    pairShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ pairShim ab pq
-    eitherShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ eitherShim ab pq
+    funcShim (MkMapPolyT ab) (MkMapPolyT pq) = MkMapPolyT $ funcShim ab pq
+    pairShim (MkMapPolyT ab) (MkMapPolyT pq) = MkMapPolyT $ pairShim ab pq
+    eitherShim (MkMapPolyT ab) (MkMapPolyT pq) = MkMapPolyT $ eitherShim ab pq

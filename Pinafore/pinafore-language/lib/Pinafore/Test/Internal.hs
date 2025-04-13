@@ -24,7 +24,7 @@ module Pinafore.Test.Internal
     , QInterpreter
     , QRenameTypeM
     , QTypeM
-    , toJMShimWit
+    , toJMPolyShimWit
     , allocateLambdaVar
     , QScopeBuilder
     , withScopeBuilder

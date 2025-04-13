@@ -77,7 +77,7 @@ mapSameCCRArguments f (ConsCCRArguments st dt) = ConsCCRArguments (f st) $ mapSa
 
 mapCCRArgumentsFM ::
     forall m (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) t.
-    (Monad m, CCRVariancesShim pshim, IsCCRArg wa, IsCCRArg wb) =>
+    (Monad m, CCRVariancesPolyShim pshim, IsCCRArg wa, IsCCRArg wb) =>
     (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> m (CCRShimWit (pshim Type) wb sv' t')) ->
     CCRVariancesMap dv gta ->
     CCRVariancesMap dv gtb ->
@@ -93,7 +93,7 @@ mapCCRArgumentsFM f (ConsCCRVariancesMap ccrva dvma) (ConsCCRVariancesMap ccrvb 
 
 mapPolarCCRArgumentsFM ::
     forall m (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) t.
-    (Monad m, CCRVariancesShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
+    (Monad m, CCRVariancesPolyShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
     (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> m (CCRArgumentShimWit (pshim Type) wb polarity sv' t')) ->
     CCRVariancesMap dv gta ->
     CCRVariancesMap dv gtb ->
@@ -122,7 +122,7 @@ mapPolarCCRArgumentsFM f (ConsCCRVariancesMap ccrva dvma) (ConsCCRVariancesMap c
 
 mapPolarCCRArgumentsF ::
     forall (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) t.
-    (CCRVariancesShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
+    (CCRVariancesPolyShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
     (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> CCRArgumentShimWit (pshim Type) wb polarity sv' t') ->
     CCRVariancesMap dv gta ->
     CCRVariancesMap dv gtb ->
@@ -134,7 +134,7 @@ mapPolarCCRArgumentsF f dvma dvmb args conv =
 
 mapPolarCCRArgumentsM ::
     forall m (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gt :: CCRVariancesKind dv) t.
-    (Monad m, CCRVariancesShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
+    (Monad m, CCRVariancesPolyShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
     (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> m (CCRArgumentShimWit (pshim Type) wb polarity sv' t')) ->
     CCRVariancesMap dv gt ->
     CCRArguments wa dv gt t ->
@@ -146,7 +146,7 @@ mapPolarCCRArgumentsM f dvm args = let
 
 mapPolarCCRArguments ::
     forall (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gt :: CCRVariancesKind dv) t.
-    (CCRVariancesShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
+    (CCRVariancesPolyShim pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb) =>
     (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> CCRArgumentShimWit (pshim Type) wb polarity sv' t') ->
     CCRVariancesMap dv gt ->
     CCRArguments wa dv gt t ->
@@ -194,7 +194,7 @@ nilCCRPolarArgumentsShimWit = mkShimWit NilCCRArguments
 
 consCCRPolarArgumentsShimWit ::
     forall (pshim :: PolyShimKind) ft sv dv gt a t polarity.
-    (Is PolarityType polarity, CCRVariancesShim pshim, TestEquality (ft 'Positive), TestEquality (ft 'Negative)) =>
+    (Is PolarityType polarity, CCRVariancesPolyShim pshim, TestEquality (ft 'Positive), TestEquality (ft 'Negative)) =>
     CCRVariancesMap (sv ': dv) gt ->
     CCRPolarArgumentShimWit (pshim Type) ft polarity sv a ->
     CCRPolarArgumentsShimWit pshim dv ft (gt a) polarity t ->
@@ -227,7 +227,7 @@ forDolanArguments call (ConsCCRArguments arg args) =
 mapDolanArgumentsFM ::
     forall m (pshim :: PolyShimKind) fta ftb dv polarity (gt :: CCRVariancesKind dv) (gt' :: CCRVariancesKind dv) t.
     ( Monad m
-    , CCRVariancesShim pshim
+    , CCRVariancesPolyShim pshim
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
     , TestEquality (fta 'Negative)
@@ -244,7 +244,7 @@ mapDolanArgumentsFM f = mapPolarCCRArgumentsFM $ mapCCRPolarArgumentShimWit f
 
 mapDolanArgumentsF ::
     forall (pshim :: PolyShimKind) ft dv polarity (gt :: CCRVariancesKind dv) (gt' :: CCRVariancesKind dv) t.
-    (CCRVariancesShim pshim, Is PolarityType polarity, TestEquality (ft 'Positive), TestEquality (ft 'Negative)) =>
+    (CCRVariancesPolyShim pshim, Is PolarityType polarity, TestEquality (ft 'Positive), TestEquality (ft 'Negative)) =>
     CCRVariancesMap dv gt ->
     CCRVariancesMap dv gt' ->
     CCRPolarArguments dv ft gt polarity t ->
@@ -255,7 +255,7 @@ mapDolanArgumentsF dvma dvmb args f = runIdentity $ mapDolanArgumentsFM (pure . 
 mapDolanArgumentsM ::
     forall m (pshim :: PolyShimKind) fta ftb dv polarity gt t.
     ( Monad m
-    , CCRVariancesShim pshim
+    , CCRVariancesPolyShim pshim
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
     , TestEquality (fta 'Negative)
@@ -273,7 +273,7 @@ mapDolanArgumentsM f dvm args = let
 
 mapDolanArguments ::
     forall (pshim :: PolyShimKind) fta ftb dv polarity gt t.
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
     , TestEquality (fta 'Negative)
@@ -289,7 +289,7 @@ mapDolanArguments f dvm args = runIdentity $ mapDolanArgumentsM (\t -> return $ 
 mapInvertArgsTypeF ::
     forall m (pshim :: PolyShimKind) fta ftb dv polarity (gt :: CCRVariancesKind dv) (gt' :: CCRVariancesKind dv) t.
     ( Monad m
-    , CCRVariancesShim pshim
+    , CCRVariancesPolyShim pshim
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
     , TestEquality (fta 'Negative)
@@ -310,7 +310,7 @@ mapInvertArgsTypeF f dvma dvmb args conv =
 mapInvertDolanArgumentsM ::
     forall m (pshim :: PolyShimKind) fta ftb dv polarity gt t.
     ( Monad m
-    , CCRVariancesShim pshim
+    , CCRVariancesPolyShim pshim
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
     , TestEquality (fta 'Negative)
@@ -331,7 +331,7 @@ mapInvertDolanArgumentsM f dvm args = let
 mergeArgsTypeF ::
     forall (m :: Type -> Type) (pshim :: PolyShimKind) (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) (ftab :: Polarity -> Type -> Type) (dv :: CCRVariances) (polarity :: Polarity) (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) (gtab :: CCRVariancesKind dv) (ta :: Type) (tb :: Type).
     ( Monad m
-    , CCRVariancesShim pshim
+    , CCRVariancesPolyShim pshim
     , JoinMeetShim (pshim Type)
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
@@ -382,7 +382,7 @@ mergeArgsTypeF f (ConsListType svt dvt) (ConsCCRVariancesMap ccrva dvma) (ConsCC
 mergeDolanArgumentsM ::
     forall m (pshim :: PolyShimKind) fta ftb ftab dv polarity gt ta tb.
     ( Monad m
-    , CCRVariancesShim pshim
+    , CCRVariancesPolyShim pshim
     , JoinMeetShim (pshim Type)
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
@@ -405,7 +405,7 @@ mergeDolanArgumentsM f dvm argsa argsb = let
 
 mergeDolanArguments ::
     forall (pshim :: PolyShimKind) fta ftb ftab dv polarity gt ta tb.
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , JoinMeetShim (pshim Type)
     , Is PolarityType polarity
     , TestEquality (fta 'Positive)
@@ -425,7 +425,7 @@ mergeDolanArguments f dvm argsa argsb = runIdentity $ mergeDolanArgumentsM (\a b
 
 ccrArgumentsToShimArgumentsM' ::
     forall m (pshim :: PolyShimKind) (wa :: Polarity -> CCRArgumentKind) wb dv polarity (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) t.
-    (Monad m, CCRVariancesShim pshim, Is PolarityType polarity) =>
+    (Monad m, CCRVariancesPolyShim pshim, Is PolarityType polarity) =>
     (forall (t' :: Type). wa polarity CoCCRVariance t' -> m (PolarShimWit (pshim Type) wb polarity t')) ->
     CovaryType dv ->
     CCRVariancesMap dv gta ->
@@ -444,7 +444,7 @@ ccrArgumentsToShimArgumentsM' f (ConsListType Refl lc) (ConsCCRVariancesMap ccrv
 
 ccrArgumentsToShimArgumentsM ::
     forall m (pshim :: PolyShimKind) (wa :: Polarity -> CCRArgumentKind) wb dv polarity f t.
-    (Monad m, CCRVariancesShim pshim, Is PolarityType polarity) =>
+    (Monad m, CCRVariancesPolyShim pshim, Is PolarityType polarity) =>
     (forall t'. wa polarity CoCCRVariance t' -> m (PolarShimWit (pshim Type) wb polarity t')) ->
     CovaryType dv ->
     CovaryMap f ->
@@ -470,7 +470,7 @@ ccrArgumentsToArgumentsM f (ConsListType Refl lc) (ConsCCRArguments sta dta) =
 
 dolanArgumentsToArgumentsM ::
     forall m (pshim :: PolyShimKind) wa wb dv polarity f t.
-    (Monad m, CCRVariancesShim pshim, Is PolarityType polarity) =>
+    (Monad m, CCRVariancesPolyShim pshim, Is PolarityType polarity) =>
     (forall t'. wa polarity t' -> m (PolarShimWit (pshim Type) wb polarity t')) ->
     CovaryType dv ->
     CovaryMap f ->
@@ -480,7 +480,7 @@ dolanArgumentsToArgumentsM f = ccrArgumentsToShimArgumentsM $ \(CoCCRPolarArgume
 
 dolanArgumentsToArguments ::
     forall (pshim :: PolyShimKind) wa wb dv polarity f t.
-    (CCRVariancesShim pshim, Is PolarityType polarity) =>
+    (CCRVariancesPolyShim pshim, Is PolarityType polarity) =>
     (forall t'. wa polarity t' -> PolarShimWit (pshim Type) wb polarity t') ->
     CovaryType dv ->
     CovaryMap f ->
@@ -491,7 +491,7 @@ dolanArgumentsToArguments f lc covary args =
 
 argumentsToDolanArgumentsM' ::
     forall m (pshim :: PolyShimKind) wa wb dv polarity (fa :: CCRVariancesKind dv) (fb :: CCRVariancesKind dv) t.
-    (Monad m, CCRVariancesShim pshim, Is PolarityType polarity) =>
+    (Monad m, CCRVariancesPolyShim pshim, Is PolarityType polarity) =>
     (forall t'. wa t' -> m (PShimWit (pshim Type) wb polarity t')) ->
     CovaryType dv ->
     CovaryMap fa ->
@@ -510,7 +510,7 @@ argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap ccrva mma) (
 
 argumentsToDolanArgumentsM ::
     forall m (pshim :: PolyShimKind) wa wb dv polarity f t.
-    (Monad m, CCRVariancesShim pshim, Is PolarityType polarity) =>
+    (Monad m, CCRVariancesPolyShim pshim, Is PolarityType polarity) =>
     (forall t'. wa t' -> m (PShimWit (pshim Type) wb polarity t')) ->
     CovaryType dv ->
     CovaryMap f ->
@@ -529,7 +529,7 @@ argumentsToDolanArgumentsM f ct cm args =
 
 argumentsToDolanArguments ::
     forall (pshim :: PolyShimKind) wa wb dv polarity f t.
-    (CCRVariancesShim pshim, Is PolarityType polarity) =>
+    (CCRVariancesPolyShim pshim, Is PolarityType polarity) =>
     (forall t'. wa t' -> PShimWit (pshim Type) wb polarity t') ->
     CovaryType dv ->
     CovaryMap f ->

@@ -9,143 +9,143 @@ import Data.Shim.Polar
 import Data.Shim.Poly.Map
 import Data.Shim.Poly.Shim
 
-type PolyIso :: PolyShimKind -> PolyShimKind
-type PolyIso = PolyMapT Isomorphism
+type IsoPolyT :: PolyShimKind -> PolyShimKind
+type IsoPolyT = MapPolyT Isomorphism
 
-polarPolyIso ::
+polarIsoPolyT ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     (Is PolarityType polarity, Category (pshim k)) =>
-    PolarShim (PolyIso pshim k) polarity a b ->
+    PolarShim (IsoPolyT pshim k) polarity a b ->
     Isomorphism (pshim k) a b
-polarPolyIso (MkPolarShim iab) =
+polarIsoPolyT (MkPolarShim iab) =
     case polarityType @polarity of
-        PositiveType -> unPolyMapT iab
-        NegativeType -> invert $ unPolyMapT iab
+        PositiveType -> unMapPolyT iab
+        NegativeType -> invert $ unMapPolyT iab
 
 isoPolarPoly ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     (Is PolarityType polarity, Category (pshim k)) =>
     Isomorphism (pshim k) a b ->
-    PolarShim (PolyIso pshim k) polarity a b
+    PolarShim (IsoPolyT pshim k) polarity a b
 isoPolarPoly iab =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> MkPolyMapT iab
-            NegativeType -> MkPolyMapT $ invert iab
+            PositiveType -> MkMapPolyT iab
+            NegativeType -> MkMapPolyT $ invert iab
 
-polarPolyIsoForwards ::
+polarIsoPolyTForwards ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     Is PolarityType polarity =>
-    PolarShim (PolyIso pshim k) polarity a b ->
+    PolarShim (IsoPolyT pshim k) polarity a b ->
     PolarShim (pshim k) polarity a b
-polarPolyIsoForwards (MkPolarShim iab) =
+polarIsoPolyTForwards (MkPolarShim iab) =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> isoForwards $ unPolyMapT iab
-            NegativeType -> isoForwards $ unPolyMapT iab
+            PositiveType -> isoForwards $ unMapPolyT iab
+            NegativeType -> isoForwards $ unMapPolyT iab
 
-polarPolyIsoBackwards ::
+polarIsoPolyTBackwards ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     Is PolarityType polarity =>
-    PolarShim (PolyIso pshim k) polarity a b ->
+    PolarShim (IsoPolyT pshim k) polarity a b ->
     PolarShim (pshim k) polarity b a
-polarPolyIsoBackwards (MkPolarShim iab) =
+polarIsoPolyTBackwards (MkPolarShim iab) =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> isoBackwards $ unPolyMapT iab
-            NegativeType -> isoBackwards $ unPolyMapT iab
+            PositiveType -> isoBackwards $ unMapPolyT iab
+            NegativeType -> isoBackwards $ unMapPolyT iab
 
-polarPolyIsoPositive ::
+polarIsoPolyTPositive ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     Is PolarityType polarity =>
-    PolarShim (PolyIso pshim k) polarity a b ->
+    PolarShim (IsoPolyT pshim k) polarity a b ->
     pshim k a b
-polarPolyIsoPositive (MkPolarShim iab) =
+polarIsoPolyTPositive (MkPolarShim iab) =
     case polarityType @polarity of
-        PositiveType -> isoForwards $ unPolyMapT iab
-        NegativeType -> isoBackwards $ unPolyMapT iab
+        PositiveType -> isoForwards $ unMapPolyT iab
+        NegativeType -> isoBackwards $ unMapPolyT iab
 
-polarPolyIsoNegative ::
+polarIsoPolyTNegative ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     Is PolarityType polarity =>
-    PolarShim (PolyIso pshim k) polarity a b ->
+    PolarShim (IsoPolyT pshim k) polarity a b ->
     pshim k b a
-polarPolyIsoNegative (MkPolarShim iab) =
+polarIsoPolyTNegative (MkPolarShim iab) =
     case polarityType @polarity of
-        PositiveType -> isoBackwards $ unPolyMapT iab
-        NegativeType -> isoForwards $ unPolyMapT iab
+        PositiveType -> isoBackwards $ unMapPolyT iab
+        NegativeType -> isoForwards $ unMapPolyT iab
 
-mkPolyIsoShim ::
+mkIsoPolyShim ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     Is PolarityType polarity =>
     pshim k a b ->
     pshim k b a ->
-    PolarShim (PolyIso pshim k) polarity a b
-mkPolyIsoShim pab pba =
+    PolarShim (IsoPolyT pshim k) polarity a b
+mkIsoPolyShim pab pba =
     case polarityType @polarity of
-        PositiveType -> MkPolarShim $ MkPolyMapT $ MkIsomorphism pab pba
-        NegativeType -> MkPolarShim $ MkPolyMapT $ MkIsomorphism pba pab
+        PositiveType -> MkPolarShim $ MkMapPolyT $ MkIsomorphism pab pba
+        NegativeType -> MkPolarShim $ MkMapPolyT $ MkIsomorphism pba pab
 
-polarPolyIsoPolar1 ::
+polarIsoPolyTPolar1 ::
     forall (pshim :: PolyShimKind) polarity (a :: Type).
     (JoinMeetIsoShim (pshim Type), Is PolarityType polarity) =>
-    PolarShim (PolyIso pshim Type) polarity (JoinMeetType polarity a (LimitType polarity)) a
-polarPolyIsoPolar1 =
+    PolarShim (IsoPolyT pshim Type) polarity (JoinMeetType polarity a (LimitType polarity)) a
+polarIsoPolyTPolar1 =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> MkPolyMapT iJoinL1
-            NegativeType -> MkPolyMapT iMeetR1
+            PositiveType -> MkMapPolyT iJoinL1
+            NegativeType -> MkMapPolyT iMeetR1
 
-polyIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyIso pshim k a b -> pshim k a b
-polyIsoForwards iab = isoForwards $ unPolyMapT iab
+polyIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). IsoPolyT pshim k a b -> pshim k a b
+polyIsoForwards iab = isoForwards $ unMapPolyT iab
 
 polyIsoPolar ::
     forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k).
     Is PolarityType polarity =>
-    PolyIso pshim k a b ->
+    IsoPolyT pshim k a b ->
     PolarShim (pshim k) polarity a b
 polyIsoPolar iab =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> isoForwards $ unPolyMapT iab
-            NegativeType -> isoBackwards $ unPolyMapT iab
+            PositiveType -> isoForwards $ unMapPolyT iab
+            NegativeType -> isoBackwards $ unMapPolyT iab
 
 instance
     forall (pshim :: PolyShimKind) cat.
     CatFunctor (pshim Type) (pshim (Type -> Type)) cat =>
-    CatFunctor (PolyIso pshim Type) (PolyIso pshim (Type -> Type)) cat
+    CatFunctor (IsoPolyT pshim Type) (IsoPolyT pshim (Type -> Type)) cat
     where
-    cfmap (MkPolyMapT (MkIsomorphism ab ba)) = MkPolyMapT $ MkIsomorphism (cfmap ab) (cfmap ba)
+    cfmap (MkMapPolyT (MkIsomorphism ab ba)) = MkMapPolyT $ MkIsomorphism (cfmap ab) (cfmap ba)
 
 instance
     forall (pshim :: PolyShimKind) cat.
     CatFunctor (CatDual (pshim Type)) (pshim (Type -> Type)) cat =>
-    CatFunctor (CatDual (PolyIso pshim Type)) (PolyIso pshim (Type -> Type)) cat
+    CatFunctor (CatDual (IsoPolyT pshim Type)) (IsoPolyT pshim (Type -> Type)) cat
     where
-    cfmap (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =
-        MkPolyMapT $ MkIsomorphism (cfmap $ MkCatDual ab) (cfmap $ MkCatDual ba)
+    cfmap (MkCatDual (MkMapPolyT (MkIsomorphism ab ba))) =
+        MkMapPolyT $ MkIsomorphism (cfmap $ MkCatDual ab) (cfmap $ MkCatDual ba)
 
 instance
     forall (pshim :: PolyShimKind) k.
     (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
-    IsoMapShim (PolyIso pshim k)
+    IsoMapShim (IsoPolyT pshim k)
     where
     isoMapShim ::
         String ->
         (KindFunction pa pb -> KindFunction qa qb) ->
         (KindFunction pb pa -> KindFunction qb qa) ->
-        PolyIso pshim k pa pb ->
-        PolyIso pshim k qa qb
-    isoMapShim t f1 f2 (MkPolyMapT (MkIsomorphism ab ba)) =
-        MkPolyMapT $ MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)
+        IsoPolyT pshim k pa pb ->
+        IsoPolyT pshim k qa qb
+    isoMapShim t f1 f2 (MkMapPolyT (MkIsomorphism ab ba)) =
+        MkMapPolyT $ MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)
 
 instance
     forall (pshim :: PolyShimKind) k.
     (CoercibleKind k, CoerceShim (pshim k), Category (pshim k)) =>
-    CoerceShim (PolyIso pshim k)
+    CoerceShim (IsoPolyT pshim k)
     where
-    coercionToShim n c = MkPolyMapT $ MkIsomorphism (coercionToShim n c) (coercionToShim n $ invert c)
-    shimToCoercion (MkPolyMapT (MkIsomorphism ab ba)) = shimToCoercion ab <|> fmap invert (shimToCoercion ba)
+    coercionToShim n c = MkMapPolyT $ MkIsomorphism (coercionToShim n c) (coercionToShim n $ invert c)
+    shimToCoercion (MkMapPolyT (MkIsomorphism ab ba)) = shimToCoercion ab <|> fmap invert (shimToCoercion ba)
 
-instance forall (pshim :: PolyShimKind). AllCategory pshim => ReduciblePolyShim (PolyIso pshim) where
-    type ReducedPolyShim (PolyIso pshim) = PolyIso pshim
+instance forall (pshim :: PolyShimKind). AllCategory pshim => ReduciblePolyShim (IsoPolyT pshim) where
+    type ReducedPolyShim (IsoPolyT pshim) = IsoPolyT pshim

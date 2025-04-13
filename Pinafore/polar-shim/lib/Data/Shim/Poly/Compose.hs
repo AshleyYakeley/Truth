@@ -9,62 +9,62 @@ import Data.Shim.Polar
 import Data.Shim.Poly.Map
 import Data.Shim.Poly.Shim
 
-type PolyComposeShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
-type PolyComposeShim m = PolyMapT (ComposeShim m)
+type ComposePolyT :: (Type -> Type) -> PolyShimKind -> PolyShimKind
+type ComposePolyT m = MapPolyT (ComposeShim m)
 
-unPolyComposeShim ::
+unComposePolyT ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) k (a :: k) (b :: k).
-    PolyComposeShim m pshim k a b ->
+    ComposePolyT m pshim k a b ->
     m (pshim k a b)
-unPolyComposeShim tm = unComposeShim $ unPolyMapT tm
+unComposePolyT tm = unComposeShim $ unMapPolyT tm
 
-mkPolyComposeShim ::
+mkComposePolyT ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) k (a :: k) (b :: k).
     m (pshim k a b) ->
-    PolyComposeShim m pshim k a b
-mkPolyComposeShim ms = MkPolyMapT $ MkComposeShim ms
+    ComposePolyT m pshim k a b
+mkComposePolyT ms = MkMapPolyT $ MkComposeShim ms
 
-purePolyComposeShim ::
+pureComposePolyT ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) k (a :: k) (b :: k).
     Applicative m =>
     pshim k a b ->
-    PolyComposeShim m pshim k a b
-purePolyComposeShim ps = mkPolyComposeShim $ pure ps
+    ComposePolyT m pshim k a b
+pureComposePolyT ps = mkComposePolyT $ pure ps
 
-purePolyComposeShimWit ::
+pureComposePolyTWit ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) polarity k (w :: k -> Type) (t :: k).
     (Applicative m, Is PolarityType polarity) =>
     PolarShimWit (pshim k) w polarity t ->
-    PolarShimWit (PolyComposeShim m pshim k) w polarity t
-purePolyComposeShimWit (MkShimWit wt (MkPolarShim conv)) =
+    PolarShimWit (ComposePolyT m pshim k) w polarity t
+pureComposePolyTWit (MkShimWit wt (MkPolarShim conv)) =
     MkShimWit wt
         $ MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> purePolyComposeShim conv
-            NegativeType -> purePolyComposeShim conv
+            PositiveType -> pureComposePolyT conv
+            NegativeType -> pureComposePolyT conv
 
-polarUnPolyComposeShim ::
+polarUnComposePolyT ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) k polarity (a :: k) (b :: k).
     (Is PolarityType polarity, Functor m) =>
-    PolarShim (PolyComposeShim m pshim k) polarity a b ->
+    PolarShim (ComposePolyT m pshim k) polarity a b ->
     m (PolarShim (pshim k) polarity a b)
-polarUnPolyComposeShim (MkPolarShim mab) =
+polarUnComposePolyT (MkPolarShim mab) =
     case polarityType @polarity of
-        PositiveType -> fmap MkPolarShim $ unPolyComposeShim mab
-        NegativeType -> fmap MkPolarShim $ unPolyComposeShim mab
+        PositiveType -> fmap MkPolarShim $ unComposePolyT mab
+        NegativeType -> fmap MkPolarShim $ unComposePolyT mab
 
-polarMkPolyComposeShim ::
+polarMkComposePolyT ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) k polarity (a :: k) (b :: k).
     (Is PolarityType polarity, Functor m) =>
     m (PolarShim (pshim k) polarity a b) ->
-    PolarShim (PolyComposeShim m pshim k) polarity a b
-polarMkPolyComposeShim mab =
+    PolarShim (ComposePolyT m pshim k) polarity a b
+polarMkComposePolyT mab =
     case polarityType @polarity of
-        PositiveType -> MkPolarShim $ mkPolyComposeShim $ fmap unPolarShim mab
-        NegativeType -> MkPolarShim $ mkPolyComposeShim $ fmap unPolarShim mab
+        PositiveType -> MkPolarShim $ mkComposePolyT $ fmap unPolarShim mab
+        NegativeType -> MkPolarShim $ mkComposePolyT $ fmap unPolarShim mab
 
 type PolyFuncShim :: Type -> PolyShimKind -> PolyShimKind
-type PolyFuncShim t = PolyComposeShim ((->) t)
+type PolyFuncShim t = ComposePolyT ((->) t)
 
 applyPolarPolyFuncShim ::
     forall k (pshim :: PolyShimKind) (t :: Type) polarity (a :: k) (b :: k).
@@ -75,8 +75,8 @@ applyPolarPolyFuncShim ::
 applyPolarPolyFuncShim (MkPolarShim tm) t =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> unPolyComposeShim tm t
-            NegativeType -> unPolyComposeShim tm t
+            PositiveType -> unComposePolyT tm t
+            NegativeType -> unComposePolyT tm t
 
 mkPolarPolyFuncShim ::
     forall k (pshim :: PolyShimKind) (t :: Type) polarity (a :: k) (b :: k).
@@ -86,26 +86,26 @@ mkPolarPolyFuncShim ::
 mkPolarPolyFuncShim f =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> mkPolyComposeShim $ \t -> unPolarShim $ f t
-            NegativeType -> mkPolyComposeShim $ \t -> unPolarShim $ f t
+            PositiveType -> mkComposePolyT $ \t -> unPolarShim $ f t
+            NegativeType -> mkComposePolyT $ \t -> unPolarShim $ f t
 
 instance
     forall (pshim :: PolyShimKind) m.
     (IsoMapShim (pshim Type), Applicative m) =>
-    IsoMapShim (PolyComposeShim m pshim Type)
+    IsoMapShim (ComposePolyT m pshim Type)
     where
     isoMapShim ::
         String ->
         (KindFunction pa pb -> KindFunction qa qb) ->
         (KindFunction pb pa -> KindFunction qb qa) ->
-        PolyComposeShim m pshim Type pa pb ->
-        PolyComposeShim m pshim Type qa qb
-    isoMapShim t f1 f2 (MkPolyMapT (MkComposeShim mab)) = MkPolyMapT $ MkComposeShim $ fmap (isoMapShim t f1 f2) mab
+        ComposePolyT m pshim Type pa pb ->
+        ComposePolyT m pshim Type qa qb
+    isoMapShim t f1 f2 (MkMapPolyT (MkComposeShim mab)) = MkMapPolyT $ MkComposeShim $ fmap (isoMapShim t f1 f2) mab
 
 instance
     forall (pshim :: PolyShimKind) m.
     (ReduciblePolyShim pshim, Applicative m) =>
-    ReduciblePolyShim (PolyComposeShim m pshim)
+    ReduciblePolyShim (ComposePolyT m pshim)
     where
-    type ReducedPolyShim (PolyComposeShim m pshim) = ReducedPolyShim pshim
-    reduceShim f (MkPolyMapT (MkComposeShim conv)) = MkPolyMapT $ MkComposeShim $ fmap (reduceShim f) conv
+    type ReducedPolyShim (ComposePolyT m pshim) = ReducedPolyShim pshim
+    reduceShim f (MkMapPolyT (MkComposeShim conv)) = MkMapPolyT $ MkComposeShim $ fmap (reduceShim f) conv

@@ -4,7 +4,7 @@ import Data.Shim
 import Shapes
 
 class
-    (JoinMeetIsoShim (pshim Type), IsoMapShim (pshim Type), CCRVariancesShim pshim, ReduciblePolyShim pshim) =>
+    (JoinMeetIsoShim (pshim Type), IsoMapShim (pshim Type), CCRVariancesPolyShim pshim, ReduciblePolyShim pshim) =>
     SubstitutablePolyShim (pshim :: PolyShimKind)
     where
     reducedSubstitutablePolyShim ::
@@ -14,13 +14,13 @@ class
             , ReducedPolyShim (ReducedPolyShim pshim) Type ~ ReducedPolyShim pshim Type
             )
 
-instance SubstitutablePolyShim NullShim where
+instance SubstitutablePolyShim NullPolyShim where
     reducedSubstitutablePolyShim = Dict
 
 instance
     forall m (pshim :: PolyShimKind).
     (Applicative m, SubstitutablePolyShim pshim) =>
-    SubstitutablePolyShim (PolyComposeShim m pshim)
+    SubstitutablePolyShim (ComposePolyT m pshim)
     where
     reducedSubstitutablePolyShim =
         case reducedSubstitutablePolyShim @pshim of
@@ -29,7 +29,7 @@ instance
 instance
     forall (pshim :: PolyShimKind).
     (SubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
-    SubstitutablePolyShim (PolyDual pshim)
+    SubstitutablePolyShim (DualPolyT pshim)
     where
     reducedSubstitutablePolyShim =
         case reducedSubstitutablePolyShim @pshim of
@@ -38,13 +38,13 @@ instance
 instance
     forall (pshim :: PolyShimKind).
     (SubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
-    SubstitutablePolyShim (PolyIso pshim)
+    SubstitutablePolyShim (IsoPolyT pshim)
     where
     reducedSubstitutablePolyShim =
         case reducedSubstitutablePolyShim @pshim of
             Dict -> Dict
 
-instance SubstitutablePolyShim JMShim where
+instance SubstitutablePolyShim JMPolyShim where
     reducedSubstitutablePolyShim = Dict
 
 class (SubstitutablePolyShim pshim, Groupoid (pshim Type)) => SubstitutableIsoPolyShim (pshim :: PolyShimKind) where
@@ -58,7 +58,7 @@ class (SubstitutablePolyShim pshim, Groupoid (pshim Type)) => SubstitutableIsoPo
 instance
     forall m (pshim :: PolyShimKind).
     (Applicative m, SubstitutableIsoPolyShim pshim) =>
-    SubstitutableIsoPolyShim (PolyComposeShim m pshim)
+    SubstitutableIsoPolyShim (ComposePolyT m pshim)
     where
     reducedSubstitutableIsoPolyShim =
         case reducedSubstitutableIsoPolyShim @pshim of
@@ -67,7 +67,7 @@ instance
 instance
     forall (pshim :: PolyShimKind).
     (SubstitutableIsoPolyShim pshim, LazyCategory (pshim Type)) =>
-    SubstitutableIsoPolyShim (PolyDual pshim)
+    SubstitutableIsoPolyShim (DualPolyT pshim)
     where
     reducedSubstitutableIsoPolyShim =
         case reducedSubstitutableIsoPolyShim @pshim of
@@ -76,7 +76,7 @@ instance
 instance
     forall (pshim :: PolyShimKind).
     (SubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
-    SubstitutableIsoPolyShim (PolyIso pshim)
+    SubstitutableIsoPolyShim (IsoPolyT pshim)
     where
     reducedSubstitutableIsoPolyShim =
         case reducedSubstitutablePolyShim @pshim of

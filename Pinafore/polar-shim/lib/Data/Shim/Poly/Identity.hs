@@ -5,21 +5,21 @@ import Shapes
 import Data.Shim.Mono
 import Data.Shim.Poly.Shim
 
-type IdentityShim :: PolyShimKind
-data IdentityShim k a b where
-    MkIdentityShim :: forall k (a :: k). IdentityShim k a a
+type IdentityPolyShim :: PolyShimKind
+data IdentityPolyShim k a b where
+    MkIdentityPolyShim :: forall k (a :: k). IdentityPolyShim k a a
 
-instance Category (IdentityShim k) where
-    id = MkIdentityShim
-    MkIdentityShim . MkIdentityShim = MkIdentityShim
+instance Category (IdentityPolyShim k) where
+    id = MkIdentityPolyShim
+    MkIdentityPolyShim . MkIdentityPolyShim = MkIdentityPolyShim
 
-instance Groupoid (IdentityShim k) where
-    invert MkIdentityShim = MkIdentityShim
+instance Groupoid (IdentityPolyShim k) where
+    invert MkIdentityPolyShim = MkIdentityPolyShim
 
-instance CartesianShim (IdentityShim Type) where
-    funcShim MkIdentityShim MkIdentityShim = MkIdentityShim
-    pairShim MkIdentityShim MkIdentityShim = MkIdentityShim
-    eitherShim MkIdentityShim MkIdentityShim = MkIdentityShim
+instance CartesianShim (IdentityPolyShim Type) where
+    funcShim MkIdentityPolyShim MkIdentityPolyShim = MkIdentityPolyShim
+    pairShim MkIdentityPolyShim MkIdentityPolyShim = MkIdentityPolyShim
+    eitherShim MkIdentityPolyShim MkIdentityPolyShim = MkIdentityPolyShim
 
-instance ReduciblePolyShim IdentityShim where
-    type ReducedPolyShim IdentityShim = IdentityShim
+instance ReduciblePolyShim IdentityPolyShim where
+    type ReducedPolyShim IdentityPolyShim = IdentityPolyShim

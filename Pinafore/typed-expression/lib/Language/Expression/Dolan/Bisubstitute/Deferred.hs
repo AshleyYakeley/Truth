@@ -81,12 +81,12 @@ recDeferBisubstituteType var mpos mneg wt = let
         PShimWit (pshim Type) (DolanType ground) 'Positive newtypepos ->
         PShimWit (DeferredShim pshim oldtv newtypepos newtypeneg) (DolanType ground) 'Positive oldtv
     mapPositive (MkShimWit t (MkPolarShim conv)) =
-        MkShimWit t $ MkPolarShim $ MkPolyMapT $ MkComposeShim $ \(MkPolarShim convp, _) -> conv . convp
+        MkShimWit t $ MkPolarShim $ MkMapPolyT $ MkComposeShim $ \(MkPolarShim convp, _) -> conv . convp
     mapNegative ::
         PShimWit (pshim Type) (DolanType ground) 'Negative newtypeneg ->
         PShimWit (DeferredShim pshim oldtv newtypepos newtypeneg) (DolanType ground) 'Negative oldtv
     mapNegative (MkShimWit t (MkPolarShim conv)) =
-        MkShimWit t $ MkPolarShim $ MkPolyMapT $ MkComposeShim $ \(_, MkPolarShim convn) -> convn . conv
+        MkShimWit t $ MkPolarShim $ MkMapPolyT $ MkComposeShim $ \(_, MkPolarShim convn) -> convn . conv
     in recBisubstituteType (MkBisubstitution var (fmap mapPositive mpos) (fmap mapNegative mneg)) wt
 
 deferBisubstituteType ::
@@ -118,10 +118,10 @@ funcBisubstituteType var tpos tneg wt call =
                 case polarityType @polarity of
                     PositiveType ->
                         MkPolarShim
-                            $ (unComposeShim $ unPolyMapT $ unPolarShim conv) (MkPolarShim conva, MkPolarShim convb)
+                            $ (unComposeShim $ unMapPolyT $ unPolarShim conv) (MkPolarShim conva, MkPolarShim convb)
                     NegativeType ->
                         MkPolarShim
-                            $ (unComposeShim $ unPolyMapT $ unPolarShim conv) (MkPolarShim conva, MkPolarShim convb)
+                            $ (unComposeShim $ unMapPolyT $ unPolarShim conv) (MkPolarShim conva, MkPolarShim convb)
 
 reducePolarShim ::
     forall (pshim :: PolyShimKind) polarity a b c d.

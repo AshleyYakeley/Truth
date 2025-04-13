@@ -21,7 +21,7 @@ instance Is PolarityType polarity => Show (SomeType polarity) where
 
 instance
     Is PolarityType polarity =>
-    WitnessMappable (PShimWit (JMShim Type) QType 'Positive) (PShimWit (JMShim Type) QType 'Negative) (SomeType polarity)
+    WitnessMappable (PShimWit (JMPolyShim Type) QType 'Positive) (PShimWit (JMPolyShim Type) QType 'Negative) (SomeType polarity)
     where
     mapWitnessesM mapPos mapNeg =
         case polarityType @polarity of

@@ -12,17 +12,17 @@ import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 
-class (CCRVariancesShim pshim, JoinMeetIsoShim (pshim Type)) => FromQIsoShim (pshim :: PolyShimKind) where
+class (CCRVariancesPolyShim pshim, JoinMeetIsoShim (pshim Type)) => FromQIsoShim (pshim :: PolyShimKind) where
     fromQShims :: forall a b. QShim a b -> QShim b a -> pshim Type a b
 
-instance FromQIsoShim QPolyIsoShim where
-    fromQShims ab ba = MkPolyMapT $ MkIsomorphism ab ba
+instance FromQIsoShim QIsoPolyShim where
+    fromQShims ab ba = MkMapPolyT $ MkIsomorphism ab ba
 
 instance FromQIsoShim QPolyShim where
     fromQShims ab _ = ab
 
-instance FromQIsoShim (PolyMapT CatDual QPolyShim) where
-    fromQShims _ ba = MkPolyMapT $ MkCatDual ba
+instance FromQIsoShim (MapPolyT CatDual QPolyShim) where
+    fromQShims _ ba = MkMapPolyT $ MkCatDual ba
 
 fromQShimsPolar ::
     forall (pshim :: PolyShimKind) polarity a b.
@@ -45,15 +45,15 @@ mapQIsoShimWit ::
 mapQIsoShimWit ab ba = mapShimWit $ fromQShimsPolar ab ba
 
 -- top, bottom, join, meet
-instance forall (pshim :: PolyShimKind). CCRVariancesShim pshim => HasQType pshim 'Positive BottomType where
+instance forall (pshim :: PolyShimKind). CCRVariancesPolyShim pshim => HasQType pshim 'Positive BottomType where
     qType = nilDolanShimWit
 
-instance forall (pshim :: PolyShimKind). CCRVariancesShim pshim => HasQType pshim 'Negative TopType where
+instance forall (pshim :: PolyShimKind). CCRVariancesPolyShim pshim => HasQType pshim 'Negative TopType where
     qType = nilDolanShimWit
 
 instance
     forall (pshim :: PolyShimKind) a b.
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , JoinMeetIsoShim (pshim Type)
     , HasQType pshim 'Positive a
     , HasQType pshim 'Positive b
@@ -64,7 +64,7 @@ instance
 
 instance
     forall (pshim :: PolyShimKind) a b.
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , JoinMeetIsoShim (pshim Type)
     , HasQType pshim 'Negative a
     , HasQType pshim 'Negative b
@@ -76,7 +76,7 @@ instance
 -- Var Type
 instance
     forall (pshim :: PolyShimKind) polarity name.
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , JoinMeetIsoShim (pshim Type)
     , CoerceShim (pshim Type)
     , Is PolarityType polarity

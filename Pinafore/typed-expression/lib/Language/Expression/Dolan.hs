@@ -18,14 +18,14 @@ module Language.Expression.Dolan
     , TypeError (..)
     , DolanPolyShim
     , DolanShim
-    , DolanPolyIsoShim
+    , DolanIsoPolyShim
     , invertTypeM
     , CCRVariances
     , CCRVariancesKind
     , CCRVariancesType
     , CCRVariancesMap (..)
     , lazyCCRVariancesMap
-    , CCRVariancesShim (..)
+    , CCRVariancesPolyShim (..)
     , HasCCRVariances (..)
     , CovaryType
     , covaryCoercibleKind

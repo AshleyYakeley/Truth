@@ -15,7 +15,7 @@ module Pinafore.API
     , FamilialType (..)
     , SomeGroundType (..)
     , QPolyShim
-    , QPolyIsoShim
+    , QIsoPolyShim
     , QShim
     , QIsoShim
     , StorableGroundType (..)

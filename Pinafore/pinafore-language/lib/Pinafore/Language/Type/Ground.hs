@@ -144,16 +144,16 @@ type instance TSBindingData QTypeSystem = DefDoc
 type instance DolanPolyShim QGroundType = QPolyShim
 
 type QPolyShim :: PolyShimKind
-type QPolyShim = JMShim
+type QPolyShim = JMPolyShim
 
 type QShim :: ShimKind Type
 type QShim = QPolyShim Type
 
-type QPolyIsoShim :: PolyShimKind
-type QPolyIsoShim = PolyIso QPolyShim
+type QIsoPolyShim :: PolyShimKind
+type QIsoPolyShim = IsoPolyT QPolyShim
 
 type QIsoShim :: ShimKind Type
-type QIsoShim = QPolyIsoShim Type
+type QIsoShim = QIsoPolyShim Type
 
 type QSomeGroundType :: Type
 type QSomeGroundType = SomeGroundType QGroundType

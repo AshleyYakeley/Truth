@@ -14,31 +14,31 @@ type family CCRVariancesKind (dv :: CCRVariances) :: Type where
 
 type CCRVariancesType = ListType CCRVarianceType
 
-class ApplyPolyShim pshim => CCRVariancesShim (pshim :: PolyShimKind) where
+class ApplyPolyShim pshim => CCRVariancesPolyShim (pshim :: PolyShimKind) where
     ccrVariancesCategory ::
         forall dv.
         CCRVariancesType dv ->
         Dict (CoercibleKind (CCRVariancesKind dv), Category (pshim (CCRVariancesKind dv)))
 
-instance CCRVariancesShim NullShim where
+instance CCRVariancesPolyShim NullPolyShim where
     ccrVariancesCategory NilListType = Dict
     ccrVariancesCategory (ConsListType _ lt) =
-        case ccrVariancesCategory @NullShim lt of
+        case ccrVariancesCategory @NullPolyShim lt of
             Dict -> Dict
 
-instance CCRVariancesShim IdentityShim where
+instance CCRVariancesPolyShim IdentityPolyShim where
     ccrVariancesCategory NilListType = Dict
     ccrVariancesCategory (ConsListType _ lt) =
-        case ccrVariancesCategory @IdentityShim lt of
+        case ccrVariancesCategory @IdentityPolyShim lt of
             Dict -> Dict
 
-instance forall (pshim :: PolyShimKind). CCRVariancesShim pshim => CCRVariancesShim (PolyDual pshim) where
+instance forall (pshim :: PolyShimKind). CCRVariancesPolyShim pshim => CCRVariancesPolyShim (DualPolyT pshim) where
     ccrVariancesCategory NilListType = Dict
     ccrVariancesCategory (ConsListType _ lt) =
         case ccrVariancesCategory @pshim lt of
             Dict -> Dict
 
-instance forall (pshim :: PolyShimKind). CCRVariancesShim pshim => CCRVariancesShim (PolyIso pshim) where
+instance forall (pshim :: PolyShimKind). CCRVariancesPolyShim pshim => CCRVariancesPolyShim (IsoPolyT pshim) where
     ccrVariancesCategory NilListType = Dict
     ccrVariancesCategory (ConsListType _ lt) =
         case ccrVariancesCategory @pshim lt of
@@ -46,8 +46,8 @@ instance forall (pshim :: PolyShimKind). CCRVariancesShim pshim => CCRVariancesS
 
 instance
     forall (pshim :: PolyShimKind) m.
-    (CCRVariancesShim pshim, Applicative m) =>
-    CCRVariancesShim (PolyComposeShim m pshim)
+    (CCRVariancesPolyShim pshim, Applicative m) =>
+    CCRVariancesPolyShim (ComposePolyT m pshim)
     where
     ccrVariancesCategory NilListType = Dict
     ccrVariancesCategory (ConsListType _ lt) =

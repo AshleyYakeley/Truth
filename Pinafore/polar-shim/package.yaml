@@ -42,8 +42,8 @@ library:
       - Data.Shim.Range.CatRange
       - Data.Shim.Range
       - Data.Shim.CCR.PolarVariance
-      - Data.Shim.CCR.JM
-      - Data.Shim.CCR.JMShimWit
+      - Data.Shim.CCR.JMPolyShim
+      - Data.Shim.CCR.JMPolyShimWit
       - Data.Shim.CCR.Variance
       - Data.Shim.CCR.Covariance
       - Data.Shim.CCR.Variances

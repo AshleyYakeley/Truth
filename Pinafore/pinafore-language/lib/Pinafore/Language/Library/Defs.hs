@@ -267,7 +267,7 @@ data QDocSignature (t :: Type)
 
 mkValueDocSignature ::
     forall t.
-    HasQType QPolyIsoShim 'Positive t =>
+    HasQType QIsoPolyShim 'Positive t =>
     Name ->
     RawMarkdown ->
     Maybe t ->
@@ -287,7 +287,7 @@ mapListProductShimWit (ConsListType (MkShimWit w1 conv1) ss) =
 
 docSignatureToSignature :: QDocSignature --> PShimWit QIsoShim QSignature 'Positive
 docSignatureToSignature (ValueDocSignature n _ (MkShimWit t iconv) p) =
-    MkShimWit (ValueSignature Nothing n t $ fmap (fmap $ shimToFunction $ polarPolyIsoPositive iconv) p) iconv
+    MkShimWit (ValueSignature Nothing n t $ fmap (fmap $ shimToFunction $ polarIsoPolyTPositive iconv) p) iconv
 
 recordValueBDS ::
     forall (params :: [Type]) (t :: Type).
@@ -314,7 +314,7 @@ recordValueBDS name docDescription docsigs f = let
                     $ constSealedFExpression
                     $ MkSomeFor (shimWitToDolan posType)
                     $ f
-                    . shimToFunction (polarPolyIsoNegative argconv)
+                    . shimToFunction (polarIsoPolyTNegative argconv)
             bdScopeEntry = pure $ BindScopeEntry name [] $ RecordValueItem qrv
             bdDoc = MkDefDoc{..}
             in pureForest $ MkTree MkBindDoc{..} $ MkForest $ listTypeToList dsToDoc docsigs
@@ -340,7 +340,7 @@ recordConsBDS name docDescription docsigs codec = let
     docItem = ValuePatternDocItem{..}
     in case mapListProductShimWit $ mapListType docSignatureToSignature docsigs of
         MkShimWit (MkListProductType sigs) argconv -> let
-            MkIsomorphism pq qp = polarPolyIso argconv
+            MkIsomorphism pq qp = polarIsoPolyT argconv
             argCodec =
                 bijectionCodec
                     $ MkIsomorphism

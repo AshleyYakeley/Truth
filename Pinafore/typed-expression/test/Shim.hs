@@ -106,11 +106,11 @@ checkEndless r n t =
 
 testEndless1 :: TestTree
 testEndless1 =
-    testTree "endless1" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless1 @(JMShim Type) r
+    testTree "endless1" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless1 @(JMPolyShim Type) r
 
 testEndless2 :: TestTree
 testEndless2 =
-    testTree "endless2" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless2 @(JMShim Type) r
+    testTree "endless2" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless2 @(JMPolyShim Type) r
 
 testShim :: TestTree
 testShim = testTree "shim" [testRec, testEndless1, testEndless2]

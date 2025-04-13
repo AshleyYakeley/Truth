@@ -7,7 +7,7 @@ import Import
 import Pinafore.Language.Type
 
 type HasQType :: PolyShimKind -> Polarity -> Type -> Constraint
-class (CCRVariancesShim pshim, Is PolarityType polarity) => HasQType pshim polarity t where
+class (CCRVariancesPolyShim pshim, Is PolarityType polarity) => HasQType pshim polarity t where
     qType :: PShimWit (pshim Type) QType polarity t
 
 groundQType :: (Is PolarityType polarity, HasQGroundType '[] t) => QShimWit polarity t
@@ -16,7 +16,7 @@ groundQType = shimWitToDolan $ mkShimWit $ MkDolanGroundedType qGroundType NilCC
 instance
     {-# OVERLAPPABLE #-}
     forall (pshim :: PolyShimKind) polarity t.
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , JoinMeetIsoShim (pshim Type)
     , Is PolarityType polarity
     , HasQGroundedType pshim polarity t
@@ -129,7 +129,7 @@ instance
 
 instance
     forall (pshim :: PolyShimKind) dv k (f :: Type -> k) polarity (a :: Type).
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , HasVariance f
     , k ~ CCRVariancesKind dv
     , CoercibleKind (CCRVariancesKind dv)
@@ -173,7 +173,7 @@ instance
 
 instance
     forall (pshim :: PolyShimKind) dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)).
-    ( CCRVariancesShim pshim
+    ( CCRVariancesPolyShim pshim
     , HasCCRVariance 'RangeCCRVariance f
     , CoercibleKind (CCRVariancesKind dv)
     , HetConstraint (HasCCRVariances dv) (f a)

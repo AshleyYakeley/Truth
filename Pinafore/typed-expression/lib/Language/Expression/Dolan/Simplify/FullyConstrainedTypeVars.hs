@@ -34,7 +34,7 @@ instance forall (ground :: GroundTypeKind) tv. ShowGroundType ground => AllConst
     allConstraint = Dict
 
 type ExpressionPolyShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
-type ExpressionPolyShim w = PolyComposeShim (Expression w)
+type ExpressionPolyShim w = ComposePolyT (Expression w)
 
 type ExpressionShimWit ::
     (GroundTypeKind -> Polarity -> Type -> Type) -> GroundTypeKind -> Polarity -> Type -> Type -> Type
@@ -66,9 +66,9 @@ buildUsageThis n t =
         Just (MkTVarUsage (MkShimWit tw convw) convr) ->
             MkShimWit tw
                 $ polarF
-                    (polarMkPolyComposeShim $ varExpression $ MkUsageWitness representative tw)
-                    (polarMkPolyComposeShim $ pure convw)
-                . (polarMkPolyComposeShim $ pure convr)
+                    (polarMkComposePolyT $ varExpression $ MkUsageWitness representative tw)
+                    (polarMkComposePolyT $ pure convw)
+                . (polarMkComposePolyT $ pure convr)
         Nothing -> mkPolarShimWit t
 
 buildUsageSingular ::
@@ -145,7 +145,7 @@ getUsageSolution ::
     UsageSolution ground tv (DolanShimWit ground polarity a)
 getUsageSolution var t =
     case buildUsage var t of
-        MkShimWit t' expr -> fmap (MkShimWit t') $ solveUsageExpression @ground $ polarUnPolyComposeShim expr
+        MkShimWit t' expr -> fmap (MkShimWit t') $ solveUsageExpression @ground $ polarUnComposePolyT expr
 
 invertedSubtype ::
     forall (ground :: GroundTypeKind) a b.

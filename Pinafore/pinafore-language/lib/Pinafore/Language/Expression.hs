@@ -236,7 +236,7 @@ qSubsumeExpressionToOpen tw expr = qRunTypeM $ tsSubsumeExpressionTo @QTypeSyste
 qSubsumeExpressionToOpenWit :: forall t. QIsoShimWit 'Positive t -> QExpression -> QInterpreter (QOpenExpression t)
 qSubsumeExpressionToOpenWit (MkShimWit t iconv) expr = do
     oexpr <- qSubsumeExpressionToOpen t expr
-    return $ fmap (shimToFunction $ polarPolyIsoNegative iconv) oexpr
+    return $ fmap (shimToFunction $ polarIsoPolyTNegative iconv) oexpr
 
 qUnifyValue ::
     forall t.

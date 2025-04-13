@@ -5,56 +5,56 @@ import Shapes
 import Data.Shim.Mono
 import Data.Shim.Poly.Shim
 
-type NullShim :: PolyShimKind
-data NullShim k a b where
-    MkNullShim :: forall k (a :: k) (b :: k). NullShim k a b
+type NullPolyShim :: PolyShimKind
+data NullPolyShim k a b where
+    MkNullPolyShim :: forall k (a :: k) (b :: k). NullPolyShim k a b
 
-instance Show (NullShim k a b) where
-    show MkNullShim = "null"
+instance Show (NullPolyShim k a b) where
+    show MkNullPolyShim = "null"
 
-instance Category (NullShim k) where
-    id = MkNullShim
-    MkNullShim . MkNullShim = MkNullShim
+instance Category (NullPolyShim k) where
+    id = MkNullPolyShim
+    MkNullPolyShim . MkNullPolyShim = MkNullPolyShim
 
-instance Groupoid (NullShim k) where
-    invert MkNullShim = MkNullShim
+instance Groupoid (NullPolyShim k) where
+    invert MkNullPolyShim = MkNullPolyShim
 
-instance forall k (f :: Type -> k). CatFunctor (NullShim Type) (NullShim k) f where
-    cfmap MkNullShim = MkNullShim
+instance forall k (f :: Type -> k). CatFunctor (NullPolyShim Type) (NullPolyShim k) f where
+    cfmap MkNullPolyShim = MkNullPolyShim
 
-instance forall k (f :: Type -> k). CatFunctor (CatDual (NullShim Type)) (NullShim k) f where
-    cfmap (MkCatDual MkNullShim) = MkNullShim
+instance forall k (f :: Type -> k). CatFunctor (CatDual (NullPolyShim Type)) (NullPolyShim k) f where
+    cfmap (MkCatDual MkNullPolyShim) = MkNullPolyShim
 
-instance JoinMeetIsoShim (NullShim Type)
+instance JoinMeetIsoShim (NullPolyShim Type)
 
-instance JoinMeetShim (NullShim Type) where
-    initf = MkNullShim
-    termf = MkNullShim
-    join1 = MkNullShim
-    join2 = MkNullShim
-    joinf MkNullShim MkNullShim = MkNullShim
-    meet1 = MkNullShim
-    meet2 = MkNullShim
-    meetf MkNullShim MkNullShim = MkNullShim
+instance JoinMeetShim (NullPolyShim Type) where
+    initf = MkNullPolyShim
+    termf = MkNullPolyShim
+    join1 = MkNullPolyShim
+    join2 = MkNullPolyShim
+    joinf MkNullPolyShim MkNullPolyShim = MkNullPolyShim
+    meet1 = MkNullPolyShim
+    meet2 = MkNullPolyShim
+    meetf MkNullPolyShim MkNullPolyShim = MkNullPolyShim
 
-instance CoercibleKind k => IsoMapShim (NullShim k) where
-    isoMapShim _ _ _ MkNullShim = MkNullShim
+instance CoercibleKind k => IsoMapShim (NullPolyShim k) where
+    isoMapShim _ _ _ MkNullPolyShim = MkNullPolyShim
 
-instance CoercibleKind k => CoerceShim (NullShim k) where
-    coercionToShim _ _ = MkNullShim
-    shimToCoercion MkNullShim = Nothing
+instance CoercibleKind k => CoerceShim (NullPolyShim k) where
+    coercionToShim _ _ = MkNullPolyShim
+    shimToCoercion MkNullPolyShim = Nothing
 
-instance CoercibleKind k => FunctionShim (NullShim k) where
-    functionToShim _ _ = MkNullShim
+instance CoercibleKind k => FunctionShim (NullPolyShim k) where
+    functionToShim _ _ = MkNullPolyShim
 
-instance LazyCategory (NullShim Type) where
-    iLazy _ = MkNullShim
+instance LazyCategory (NullPolyShim Type) where
+    iLazy _ = MkNullPolyShim
 
-instance CartesianShim (NullShim Type) where
-    funcShim MkNullShim MkNullShim = MkNullShim
-    pairShim MkNullShim MkNullShim = MkNullShim
-    eitherShim MkNullShim MkNullShim = MkNullShim
-    shimExtractFunction MkNullShim call = call MkNullShim MkNullShim
+instance CartesianShim (NullPolyShim Type) where
+    funcShim MkNullPolyShim MkNullPolyShim = MkNullPolyShim
+    pairShim MkNullPolyShim MkNullPolyShim = MkNullPolyShim
+    eitherShim MkNullPolyShim MkNullPolyShim = MkNullPolyShim
+    shimExtractFunction MkNullPolyShim call = call MkNullPolyShim MkNullPolyShim
 
-instance ReduciblePolyShim NullShim where
-    type ReducedPolyShim NullShim = NullShim
+instance ReduciblePolyShim NullPolyShim where
+    type ReducedPolyShim NullPolyShim = NullPolyShim

@@ -108,8 +108,8 @@ crumbleTTWit ::
     DolanIsoShimWit ground polb tb ->
     TypeCrumbler ground (DolanShim ground ta tb)
 crumbleTTWit (MkShimWit ta iconva) (MkShimWit tb iconvb) = let
-    conva = polarPolyIsoPositive iconva
-    convb = polarPolyIsoNegative iconvb
+    conva = polarIsoPolyTPositive iconva
+    convb = polarIsoPolyTNegative iconvb
     in fmap (\conv -> convb . conv . conva) $ crumbleTT ta tb
 
 crumbleAtomicLE ::

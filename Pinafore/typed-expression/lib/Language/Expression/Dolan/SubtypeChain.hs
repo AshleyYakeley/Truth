@@ -155,7 +155,7 @@ type DebugGroundType :: GroundTypeKind -> Constraint
 class
     ( Show (Exc (DolanTypeM ground))
     , MonadIO (DolanTypeM ground)
-    , DolanPolyShim ground Type ~ JMShim Type
+    , DolanPolyShim ground Type ~ JMPolyShim Type
     , ShowGroundType ground
     ) =>
     DebugGroundType ground
@@ -164,7 +164,7 @@ instance
     forall (ground :: GroundTypeKind).
     ( Show (Exc (DolanTypeM ground))
     , MonadIO (DolanTypeM ground)
-    , DolanPolyShim ground Type ~ JMShim Type
+    , DolanPolyShim ground Type ~ JMPolyShim Type
     , ShowGroundType ground
     ) =>
     DebugGroundType ground

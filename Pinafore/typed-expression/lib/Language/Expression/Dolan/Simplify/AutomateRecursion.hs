@@ -145,7 +145,7 @@ substEqnsSingular ::
     DolanShimWit ground polarity t
 substEqnsSingular eqns (VarDolanSingularType var)
     | Just t <- lookupEquation eqns var = substEqns eqns t
-substEqnsSingular _ (RecursiveDolanSingularType var t) = switchShimWit polarPolyIsoForwards $ unrollRecursiveType var t
+substEqnsSingular _ (RecursiveDolanSingularType var t) = switchShimWit polarIsoPolyTForwards $ unrollRecursiveType var t
 substEqnsSingular _ st = typeToDolan st
 
 substEqns ::

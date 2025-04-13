@@ -30,39 +30,39 @@ apExpr :: QExpression -> QExpression -> QTypeM QExpression
 apExpr = tsApply @TS
 
 idExpr :: QExpression
-idExpr = typeFConstExpression toJMShimWit $ \(v :: X) -> v
+idExpr = typeFConstExpression toJMPolyShimWit $ \(v :: X) -> v
 
 nbFuncExpr :: QExpression
-nbFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: Number) -> False
+nbFuncExpr = typeFConstExpression toJMPolyShimWit $ \(_ :: Number) -> False
 
 numExpr :: QExpression
-numExpr = typeFConstExpression toJMShimWit $ (3 :: Number)
+numExpr = typeFConstExpression toJMPolyShimWit $ (3 :: Number)
 
 boolExpr :: QExpression
-boolExpr = typeFConstExpression toJMShimWit False
+boolExpr = typeFConstExpression toJMPolyShimWit False
 
 varExpr :: QExpression
 varExpr = tsVar @TS $ fst $ mkLambdaVarID szero $ Just "v"
 
 ifelseExpr :: QExpression
 ifelseExpr =
-    typeFConstExpression toJMShimWit $ \test (tb :: A) (eb :: A) ->
+    typeFConstExpression toJMPolyShimWit $ \test (tb :: A) (eb :: A) ->
         if test
             then tb
             else eb
 
 list1Expr :: QExpression
-list1Expr = typeFConstExpression toJMShimWit $ \(a :: A) -> [a]
+list1Expr = typeFConstExpression toJMPolyShimWit $ \(a :: A) -> [a]
 
 sndExpr :: QExpression
-sndExpr = typeFConstExpression toJMShimWit $ \(MkTopType, a :: A) -> a
+sndExpr = typeFConstExpression toJMPolyShimWit $ \(MkTopType, a :: A) -> a
 
 twiceExpr :: QExpression
-twiceExpr = typeFConstExpression toJMShimWit $ \(a :: A) -> (a, a)
+twiceExpr = typeFConstExpression toJMPolyShimWit $ \(a :: A) -> (a, a)
 
 thingExpr :: QExpression
 thingExpr =
-    typeFConstExpression toJMShimWit $ \(a :: A, b :: B) ->
+    typeFConstExpression toJMPolyShimWit $ \(a :: A, b :: B) ->
         ( a
         , if False
             then MkJoinType $ Left a
@@ -70,13 +70,13 @@ thingExpr =
         )
 
 dotExpr :: QExpression
-dotExpr = typeFConstExpression toJMShimWit $ \(f :: B -> C) (g :: A -> B) -> f . g
+dotExpr = typeFConstExpression toJMPolyShimWit $ \(f :: B -> C) (g :: A -> B) -> f . g
 
 listNumBoolFuncExpr :: QExpression
-listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [True]
+listNumBoolFuncExpr = typeFConstExpression toJMPolyShimWit $ \(_ :: [Number]) -> [True]
 
 listBoolNumFuncExpr :: QExpression
-listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
+listBoolNumFuncExpr = typeFConstExpression toJMPolyShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
 joinExpr :: QExpression -> QExpression -> QTypeM QExpression
 joinExpr exp1 exp2 = do
@@ -203,31 +203,31 @@ testType =
             , exprTypeTest "simplify duplicate" (return "{} -> Number.")
                 $ runRenamer @TS [] []
                 $ runSimplify
-                $ typeFConstExpression toJMShimWit (MkJoinType (Right 3) :: JoinType Number Number)
+                $ typeFConstExpression toJMPolyShimWit (MkJoinType (Right 3) :: JoinType Number Number)
             , exprTypeTest "simplify duplicate list" (return "{} -> List. Number.")
                 $ runRenamer @TS [] []
                 $ runSimplify
-                $ typeFConstExpression toJMShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
+                $ typeFConstExpression toJMPolyShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
             , exprTypeTest "simplify duplicate pair" (return "{} -> Number. *: Number.")
                 $ runRenamer @TS [] []
                 $ runSimplify
                 $ typeFConstExpression
-                    toJMShimWit
+                    toJMPolyShimWit
                     (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
             , exprTypeTest "simplify duplicate in pair" (return "{} -> Number. *: Number.")
                 $ runRenamer @TS [] []
                 $ runSimplify
-                $ typeFConstExpression toJMShimWit ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
+                $ typeFConstExpression toJMPolyShimWit ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
             , exprTypeTest "simplify duplicate in pair" (return "{} -> Number. *: Number.")
                 $ runRenamer @TS [] []
                 $ runSimplify
                 $ typeFConstExpression
-                    toJMShimWit
+                    toJMPolyShimWit
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
             , exprTypeTest "simplify duplicate in list" (return "{} -> List. Number.")
                 $ runRenamer @TS [] []
                 $ runSimplify
-                $ typeFConstExpression toJMShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
+                $ typeFConstExpression toJMPolyShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
             ]
         , testTree
             "read"

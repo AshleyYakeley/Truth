@@ -49,42 +49,42 @@ applyRangePolyShim ::
     pshim k (f '(a1, a2)) (g '(b1, b2))
 applyRangePolyShim ccrvf ccrvg fg ba1 ab2 = applyPolyShim RangeCCRVarianceType ccrvf ccrvg fg (MkCatRange ba1 ab2)
 
-instance ApplyPolyShim NullShim where
-    applyPolyShim CoCCRVarianceType _ _ MkNullShim MkNullShim = MkNullShim
-    applyPolyShim ContraCCRVarianceType _ _ MkNullShim (MkCatDual MkNullShim) = MkNullShim
-    applyPolyShim RangeCCRVarianceType _ _ MkNullShim (MkCatRange MkNullShim MkNullShim) = MkNullShim
+instance ApplyPolyShim NullPolyShim where
+    applyPolyShim CoCCRVarianceType _ _ MkNullPolyShim MkNullPolyShim = MkNullPolyShim
+    applyPolyShim ContraCCRVarianceType _ _ MkNullPolyShim (MkCatDual MkNullPolyShim) = MkNullPolyShim
+    applyPolyShim RangeCCRVarianceType _ _ MkNullPolyShim (MkCatRange MkNullPolyShim MkNullPolyShim) = MkNullPolyShim
 
-instance ApplyPolyShim IdentityShim where
-    applyPolyShim CoCCRVarianceType _ _ MkIdentityShim MkIdentityShim = MkIdentityShim
-    applyPolyShim ContraCCRVarianceType _ _ MkIdentityShim (MkCatDual MkIdentityShim) = MkIdentityShim
-    applyPolyShim RangeCCRVarianceType _ _ MkIdentityShim (MkCatRange MkIdentityShim MkIdentityShim) = MkIdentityShim
+instance ApplyPolyShim IdentityPolyShim where
+    applyPolyShim CoCCRVarianceType _ _ MkIdentityPolyShim MkIdentityPolyShim = MkIdentityPolyShim
+    applyPolyShim ContraCCRVarianceType _ _ MkIdentityPolyShim (MkCatDual MkIdentityPolyShim) = MkIdentityPolyShim
+    applyPolyShim RangeCCRVarianceType _ _ MkIdentityPolyShim (MkCatRange MkIdentityPolyShim MkIdentityPolyShim) = MkIdentityPolyShim
 
-instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyDual pshim) where
-    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkCatDual fba)) (MkPolyMapT (MkCatDual xba)) =
-        MkPolyMapT $ MkCatDual $ applyCoPolyShim ccrvg ccrvf fba xba
-    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkCatDual fba)) (MkCatDual (MkPolyMapT (MkCatDual xba))) =
-        MkPolyMapT $ MkCatDual $ applyContraPolyShim ccrvg ccrvf fba xba
-    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkCatDual fba)) (MkCatRange (MkPolyMapT (MkCatDual xba1)) (MkPolyMapT (MkCatDual xba2))) =
-        MkPolyMapT $ MkCatDual $ applyRangePolyShim ccrvg ccrvf fba xba1 xba2
+instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (DualPolyT pshim) where
+    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkCatDual fba)) (MkMapPolyT (MkCatDual xba)) =
+        MkMapPolyT $ MkCatDual $ applyCoPolyShim ccrvg ccrvf fba xba
+    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkCatDual fba)) (MkCatDual (MkMapPolyT (MkCatDual xba))) =
+        MkMapPolyT $ MkCatDual $ applyContraPolyShim ccrvg ccrvf fba xba
+    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkCatDual fba)) (MkCatRange (MkMapPolyT (MkCatDual xba1)) (MkMapPolyT (MkCatDual xba2))) =
+        MkMapPolyT $ MkCatDual $ applyRangePolyShim ccrvg ccrvf fba xba1 xba2
 
-instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyIso pshim) where
-    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
-        MkPolyMapT $ MkIsomorphism (applyCoPolyShim ccrvf ccrvg fab xab) (applyCoPolyShim ccrvg ccrvf fba xba)
-    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
-        MkPolyMapT $ MkIsomorphism (applyContraPolyShim ccrvf ccrvg fab xab) (applyContraPolyShim ccrvg ccrvf fba xba)
-    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
-        MkPolyMapT
+instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (IsoPolyT pshim) where
+    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkIsomorphism fab fba)) (MkMapPolyT (MkIsomorphism xab xba)) =
+        MkMapPolyT $ MkIsomorphism (applyCoPolyShim ccrvf ccrvg fab xab) (applyCoPolyShim ccrvg ccrvf fba xba)
+    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkIsomorphism fab fba)) (MkCatDual (MkMapPolyT (MkIsomorphism xab xba))) =
+        MkMapPolyT $ MkIsomorphism (applyContraPolyShim ccrvf ccrvg fab xab) (applyContraPolyShim ccrvg ccrvf fba xba)
+    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkIsomorphism fab fba)) (MkCatRange (MkMapPolyT (MkIsomorphism xab1 xba1)) (MkMapPolyT (MkIsomorphism xab2 xba2))) =
+        MkMapPolyT
             $ MkIsomorphism (applyRangePolyShim ccrvf ccrvg fab xab1 xab2) (applyRangePolyShim ccrvg ccrvf fba xba1 xba2)
 
 instance
     forall (pshim :: PolyShimKind) m.
     (ApplyPolyShim pshim, Applicative m) =>
-    ApplyPolyShim (PolyComposeShim m pshim)
+    ApplyPolyShim (ComposePolyT m pshim)
     where
-    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkComposeShim mfab)) (MkPolyMapT (MkComposeShim mxab)) =
-        MkPolyMapT $ MkComposeShim (liftA2 (applyCoPolyShim ccrvf ccrvg) mfab mxab)
-    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkComposeShim mfab)) (MkCatDual (MkPolyMapT (MkComposeShim mxab))) =
-        MkPolyMapT $ MkComposeShim ((\fab xab -> applyContraPolyShim ccrvf ccrvg fab xab) <$> mfab <*> mxab)
-    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkComposeShim mfab)) (MkCatRange (MkPolyMapT (MkComposeShim mxab1)) (MkPolyMapT (MkComposeShim mxab2))) =
-        MkPolyMapT
+    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkComposeShim mfab)) (MkMapPolyT (MkComposeShim mxab)) =
+        MkMapPolyT $ MkComposeShim (liftA2 (applyCoPolyShim ccrvf ccrvg) mfab mxab)
+    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkComposeShim mfab)) (MkCatDual (MkMapPolyT (MkComposeShim mxab))) =
+        MkMapPolyT $ MkComposeShim ((\fab xab -> applyContraPolyShim ccrvf ccrvg fab xab) <$> mfab <*> mxab)
+    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkMapPolyT (MkComposeShim mfab)) (MkCatRange (MkMapPolyT (MkComposeShim mxab1)) (MkMapPolyT (MkComposeShim mxab2))) =
+        MkMapPolyT
             $ MkComposeShim ((\fab xab1 xab2 -> applyRangePolyShim ccrvf ccrvg fab xab1 xab2) <$> mfab <*> mxab1 <*> mxab2)

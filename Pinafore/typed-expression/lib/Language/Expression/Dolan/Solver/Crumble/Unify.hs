@@ -222,8 +222,8 @@ mergeAtomicPuzzle =
                                     $ AtomicUnifyPiece vara tpab tqab
             (VariableUnifyPiece (MkUnifyVariableConstraint vara tpa tqa), VariableUnifyPiece (MkUnifyVariableConstraint varb tpb tqb))
                 | Just Refl <- testEquality vara varb -> let
-                    twpab = joinMeetMixedType @ground @(DolanPolyIsoShim ground) tpa tpb
-                    twqab = joinMeetMixedType @ground @(DolanPolyIsoShim ground) tqa tqb
+                    twpab = joinMeetMixedType @ground @(DolanIsoPolyShim ground) tpa tpb
+                    twqab = joinMeetMixedType @ground @(DolanIsoPolyShim ground) tqa tqb
                     in case (twpab, twqab) of
                         (MkShimWit tpab convp, MkShimWit tqab convq) -> do
                             let vc = varExpression $ VariableUnifyPiece $ MkUnifyVariableConstraint vara tpab tqab
@@ -235,12 +235,12 @@ mergeAtomicPuzzle =
                                 $ Just
                                 $ ( \cvc cpaqa cpaqb cpbqa cpbqb -> let
                                         cpq =
-                                            polarPolyIsoPositive convq
+                                            polarIsoPolyTPositive convq
                                                 . meetf (joinf cpaqa cpbqa) (joinf cpaqb cpbqb)
-                                                . polarPolyIsoNegative convp
+                                                . polarIsoPolyTNegative convp
                                         (cp, cq) = cvc cpq
-                                        convpp = cp . polarPolyIsoPositive convp
-                                        convqq = polarPolyIsoNegative convq . cq
+                                        convpp = cp . polarIsoPolyTPositive convp
+                                        convqq = polarIsoPolyTNegative convq . cq
                                         in ( \_ -> (convpp . join1, meet1 . convqq)
                                            , \_ -> (convpp . join2, meet2 . convqq)
                                            )

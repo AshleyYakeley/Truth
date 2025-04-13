@@ -65,7 +65,7 @@ covaryCoercibleKind (ConsListType Refl ml) =
 
 covaryKMCategory ::
     forall (pmap :: PolyShimKind) dv.
-    CCRVariancesShim pmap =>
+    CCRVariancesPolyShim pmap =>
     CovaryType dv ->
     Dict (CoercibleKind (CCRVariancesKind dv), Category (pmap (CCRVariancesKind dv)))
 covaryKMCategory lc = ccrVariancesCategory @pmap $ covaryToCCRVariancesType lc

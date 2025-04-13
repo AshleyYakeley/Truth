@@ -52,7 +52,7 @@ getOptSingleGreatestDynamicSupertype (RecursiveDolanSingularType var t) =
     case unrollRecursiveType var t of
         MkShimWit t' iconv -> do
             t'' <- getGreatestDynamicSupertype t'
-            return $ Just $ mapShimWit (MkPolarShim $ pureComposeShim $ cfmap $ polarPolyIsoNegative iconv) t''
+            return $ Just $ mapShimWit (MkPolarShim $ pureComposeShim $ cfmap $ polarIsoPolyTNegative iconv) t''
 getOptSingleGreatestDynamicSupertype _ = return Nothing
 
 getSingleGreatestDynamicSupertype :: QSingularType 'Negative t -> Interpreter (QExprShimWit 'Negative (Maybe t))
