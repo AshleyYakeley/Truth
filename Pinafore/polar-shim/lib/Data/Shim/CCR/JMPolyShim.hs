@@ -64,9 +64,9 @@ ccrVarianceCategoryShowJMPolyShim RangeCCRVarianceType i (MkCatRange pp qq) =
 
 showJMPolyShim :: Int -> JMPolyShim k a b -> String
 showJMPolyShim 0 _ = "..."
-showJMPolyShim _ (FuncJMPolyShim t _) = "[func " <> t <> "]"
+showJMPolyShim _ (FuncJMPolyShim t _) = "[" <> t <> "]"
 showJMPolyShim _ IdentityJMPolyShim = "id"
-showJMPolyShim _ (CoerceJMPolyShim _) = "[coerce]"
+showJMPolyShim _ (CoerceJMPolyShim _) = "coerce"
 showJMPolyShim i (ComposeJMPolyShim s1 s2) = "(compose " <> showJMPolyShim i s1 <> " " <> showJMPolyShim i s2 <> ")"
 showJMPolyShim _ InitFJMPolyShim = "initf"
 showJMPolyShim _ TermFJMPolyShim = "termf"

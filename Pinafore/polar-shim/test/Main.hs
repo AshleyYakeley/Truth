@@ -19,13 +19,13 @@ testJMPolyShim =
     testTree
         "JMPolyShim"
         [ showTest "id" $ id @(JMPolyShim Type)
-        , showTest "[func A.B]" $ func "A" . func "B"
-        , showTest "[func A]" $ func "A" . id
+        , showTest "[A.B]" $ func "A" . func "B"
+        , showTest "[A]" $ func "A" . id
         , showTest "initf" $ termf . initf
-        , showTest "(joinf [func A] [func B])" $ joinf (func "A") (func "B")
-        , showTest "[func A]" $ joinf (func "A") (func "B") . join1
-        , expectFailBecause "ISSUE #337" $ showTest "[func A]" $ func "A" . coercionToShim id
-        , expectFailBecause "ISSUE #337" $ showTest "[func A]" $ coercionToShim id . func "A"
+        , showTest "(joinf [A] [B])" $ joinf (func "A") (func "B")
+        , showTest "[A]" $ joinf (func "A") (func "B") . join1
+        , expectFailBecause "ISSUE #337" $ showTest "[A]" $ func "A" . coercionToShim id
+        , expectFailBecause "ISSUE #337" $ showTest "[A]" $ coercionToShim id . func "A"
         ]
 
 tests :: TestTree
