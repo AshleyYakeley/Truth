@@ -15,6 +15,158 @@ import Data.Shim.Polar
 import Data.Shim.Poly
 import Data.Shim.Range
 
+class ShowDepth t where
+    showDepth :: Int -> t -> String
+    goodDepth :: Int -> t -> Bool
+
+type JMShim :: ShimKind Type
+data JMShim a b where
+    FuncJMShim :: forall a b. String -> (a -> b) -> JMShim a b
+    IdentityJMShim :: forall t. JMShim t t
+    CoerceJMShim :: forall a b. String -> Coercion a b -> JMShim a b
+    ComposeJMShim ::
+        forall a b c.
+        JMShim b c ->
+        JMShim a b ->
+        JMShim a c -- first arg is never itself a ComposeJMShim
+    InitFJMShim :: JMShim BottomType t
+    TermFJMShim :: JMShim t TopType
+    Join1JMShim :: JMShim t a -> JMShim t (JoinType a b)
+    Join2JMShim :: JMShim t b -> JMShim t (JoinType a b)
+    JoinFJMShim :: JMShim a t -> JMShim b t -> JMShim (JoinType a b) t
+    Meet1JMShim :: JMShim a t -> JMShim (MeetType a b) t
+    Meet2JMShim :: JMShim b t -> JMShim (MeetType a b) t
+    MeetFJMShim :: JMShim t a -> JMShim t b -> JMShim t (MeetType a b)
+    LazyJMShim :: forall a b. JMShim a b -> JMShim a b
+
+instance Category JMShim where
+    id = IdentityJMShim
+    (.) :: forall a b c. JMShim b c -> JMShim a b -> JMShim a c
+    p . IdentityJMShim = p
+    IdentityJMShim . q = q
+    _ . InitFJMShim = initf
+    TermFJMShim . _ = termf
+    p . q
+        | Just pc <- shimToCoercion p
+        , Just qc <- shimToCoercion q =
+            CoerceJMShim (show p <> " . " <> show q) $ pc . qc
+    Join1JMShim p . q = Join1JMShim $ p . q
+    Join2JMShim p . q = Join2JMShim $ p . q
+    p . JoinFJMShim ta tb = joinf (p . ta) (p . tb)
+    JoinFJMShim ap _ . Join1JMShim qa = ap . qa
+    JoinFJMShim _ bp . Join2JMShim qb = bp . qb
+    p . Meet1JMShim q = Meet1JMShim $ p . q
+    p . Meet2JMShim q = Meet2JMShim $ p . q
+    MeetFJMShim ta tb . q = meetf (ta . q) (tb . q)
+    Meet1JMShim aq . MeetFJMShim pa _ = aq . pa
+    Meet2JMShim bq . MeetFJMShim _ pb = bq . pb
+    FuncJMShim tp p . FuncJMShim tq q = FuncJMShim (tp <> "." <> tq) $ p . q
+    f . ComposeJMShim p q = (f . p) . q
+    ComposeJMShim p q . f =
+        case q . f of
+            qf@(ComposeJMShim _ _) -> ComposeJMShim p qf
+            qf -> p . qf
+    p . q = ComposeJMShim p q
+
+instance JoinMeetIsoShim JMShim
+
+instance JoinMeetShim JMShim where
+    initf = InitFJMShim
+    termf = TermFJMShim
+    join1 = Join1JMShim id
+    join2 = Join2JMShim id
+    joinf (Join1JMShim IdentityJMShim) (Join2JMShim IdentityJMShim) = IdentityJMShim
+    joinf a b = JoinFJMShim a b
+    meet1 = Meet1JMShim id
+    meet2 = Meet2JMShim id
+    meetf (Meet1JMShim IdentityJMShim) (Meet2JMShim IdentityJMShim) = IdentityJMShim
+    meetf a b = MeetFJMShim a b
+
+instance IsoMapShim JMShim
+
+instance CoerceShim JMShim where
+    coercionToShim = CoerceJMShim
+    shimToCoercion IdentityJMShim = Just id
+    shimToCoercion (CoerceJMShim _ c) = Just c
+    shimToCoercion _ = Nothing
+
+instance ShowDepth (JMShim a b) where
+    showDepth 0 _ = "..."
+    showDepth _ (FuncJMShim t _) = "[func " <> t <> "]"
+    showDepth _ IdentityJMShim = "id"
+    showDepth _ (CoerceJMShim t _) = "[coerce " <> t <> "]"
+    showDepth i (ComposeJMShim s1 s2) = "(compose " <> showDepth i s1 <> " " <> showDepth i s2 <> ")"
+    showDepth _ InitFJMShim = "initf"
+    showDepth _ TermFJMShim = "termf"
+    showDepth i (Join1JMShim s) = "(join1 " <> showDepth i s <> ")"
+    showDepth i (Join2JMShim s) = "(join2 " <> showDepth i s <> ")"
+    showDepth i (JoinFJMShim s1 s2) = "(joinf " <> showDepth i s1 <> " " <> showDepth i s2 <> ")"
+    showDepth i (Meet1JMShim s) = "(meet1 " <> showDepth i s <> ")"
+    showDepth i (Meet2JMShim s) = "(meet2 " <> showDepth i s <> ")"
+    showDepth i (MeetFJMShim s1 s2) = "(meetf " <> showDepth i s1 <> " " <> showDepth i s2 <> ")"
+    showDepth i (LazyJMShim f) = "(lazy " <> showDepth (pred i) f <> ")"
+    goodDepth 0 _ = False
+    goodDepth i (ComposeJMShim s1 s2) = goodDepth i s1 && goodDepth i s2
+    goodDepth i (Join1JMShim s) = goodDepth i s
+    goodDepth i (Join2JMShim s) = goodDepth i s
+    goodDepth i (JoinFJMShim s1 s2) = goodDepth i s1 && goodDepth i s2
+    goodDepth i (Meet1JMShim s) = goodDepth i s
+    goodDepth i (Meet2JMShim s) = goodDepth i s
+    goodDepth i (MeetFJMShim s1 s2) = goodDepth i s1 && goodDepth i s2
+    goodDepth i (LazyJMShim f) = goodDepth (pred i) f
+    goodDepth _ _ = True
+
+
+instance Show (JMShim a b) where
+    show = showDepth 1
+
+instance FunctionShim JMShim where
+    functionToShim = FuncJMShim
+
+instance RecoverShim JMShim where
+    shimToFunction :: forall a b. JMShim a b -> a -> b
+    shimToFunction f
+        | Just c <- shimToCoercion f = coercionToFunction c
+    shimToFunction (FuncJMShim _ f) = f
+    shimToFunction IdentityJMShim = id
+    shimToFunction (ComposeJMShim a b) = shimToFunction a . shimToFunction b
+    shimToFunction (CoerceJMShim _ c) = coercionToFunction c
+    shimToFunction InitFJMShim = initf
+    shimToFunction TermFJMShim = termf
+    shimToFunction (Join1JMShim ta) = join1 . shimToFunction ta
+    shimToFunction (Join2JMShim tb) = join2 . shimToFunction tb
+    shimToFunction (JoinFJMShim ap bp) = joinf (shimToFunction ap) (shimToFunction bp)
+    shimToFunction (Meet1JMShim ta) = shimToFunction ta . meet1
+    shimToFunction (Meet2JMShim tb) = shimToFunction tb . meet2
+    shimToFunction (MeetFJMShim pa pb) = meetf (shimToFunction pa) (shimToFunction pb)
+    shimToFunction (LazyJMShim f) = shimToFunction f
+
+instance LazyCategory JMShim where
+    iLazy = LazyJMShim
+
+
+
+type GenPolyShim :: ShimKind Type -> PolyShimKind
+data GenPolyShim shim k a b where
+    BaseGenPolyShim :: forall (shim :: ShimKind Type) (a :: Type) (b :: Type).
+        shim a b -> GenPolyShim shim Type a b
+    ConsGenPolyShim ::
+        forall (shim :: ShimKind Type)
+         (v :: CCRVariance) k (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
+        CCRVarianceType v ->
+        CCRVariation v f ->
+        CCRVariation v g ->
+        GenPolyShim shim (CCRVarianceKind v -> k) f g ->
+        CCRVarianceCategory shim v a b ->
+        GenPolyShim shim k (f a) (g b)
+
+
+
+
+
+
+
+
 type JMPolyShim :: PolyShimKind
 data JMPolyShim k a b where
     FuncJMPolyShim :: forall k (a :: k) (b :: k). String -> KindFunction a b -> JMPolyShim k a b
