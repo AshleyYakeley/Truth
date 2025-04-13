@@ -41,7 +41,7 @@ instance CoercibleKind k => IsoMapShim (NullPolyShim k) where
     isoMapShim _ _ _ MkNullPolyShim = MkNullPolyShim
 
 instance CoercibleKind k => CoerceShim (NullPolyShim k) where
-    coercionToShim _ _ = MkNullPolyShim
+    coercionToShim _ = MkNullPolyShim
     shimToCoercion MkNullPolyShim = Nothing
 
 instance CoercibleKind k => FunctionShim (NullPolyShim k) where

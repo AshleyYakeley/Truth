@@ -19,7 +19,7 @@ type JMPolyShim :: PolyShimKind
 data JMPolyShim k a b where
     FuncJMPolyShim :: forall k (a :: k) (b :: k). String -> KindFunction a b -> JMPolyShim k a b
     IdentityJMPolyShim :: forall k (t :: k). JMPolyShim k t t
-    CoerceJMPolyShim :: forall k (a :: k) (b :: k). String -> Coercion a b -> JMPolyShim k a b
+    CoerceJMPolyShim :: forall k (a :: k) (b :: k). Coercion a b -> JMPolyShim k a b
     ComposeJMPolyShim ::
         forall k (a :: k) (b :: k) (c :: k).
         JMPolyShim k b c ->
@@ -66,7 +66,7 @@ showJMPolyShim :: Int -> JMPolyShim k a b -> String
 showJMPolyShim 0 _ = "..."
 showJMPolyShim _ (FuncJMPolyShim t _) = "[func " <> t <> "]"
 showJMPolyShim _ IdentityJMPolyShim = "id"
-showJMPolyShim _ (CoerceJMPolyShim t _) = "[coerce " <> t <> "]"
+showJMPolyShim _ (CoerceJMPolyShim _) = "[coerce]"
 showJMPolyShim i (ComposeJMPolyShim s1 s2) = "(compose " <> showJMPolyShim i s1 <> " " <> showJMPolyShim i s2 <> ")"
 showJMPolyShim _ InitFJMPolyShim = "initf"
 showJMPolyShim _ TermFJMPolyShim = "termf"
@@ -97,7 +97,7 @@ instance CoercibleKind k => Category (JMPolyShim k) where
     p . q
         | Just pc <- shimToCoercion p
         , Just qc <- shimToCoercion q =
-            CoerceJMPolyShim (show p <> " . " <> show q) $ pc . qc
+            CoerceJMPolyShim $ pc . qc
     Join1JMPolyShim p . q = Join1JMPolyShim $ p . q
     Join2JMPolyShim p . q = Join2JMPolyShim $ p . q
     p . JoinFJMPolyShim ta tb = joinf (p . ta) (p . tb)
@@ -160,7 +160,7 @@ instance CoercibleKind k => IsoMapShim (JMPolyShim k)
 instance CoercibleKind k => CoerceShim (JMPolyShim k) where
     coercionToShim = CoerceJMPolyShim
     shimToCoercion IdentityJMPolyShim = Just id
-    shimToCoercion (CoerceJMPolyShim _ c) = Just c
+    shimToCoercion (CoerceJMPolyShim c) = Just c
     shimToCoercion (ConsJMPolyShim CoCCRVarianceType ccrvf _ f a)
         | Just Dict <- ccrvMaybeRepresentational ccrvf = do
             cf <- shimToCoercion f
@@ -193,7 +193,7 @@ instance CoercibleKind k => RecoverShim (JMPolyShim k) where
     shimToFunction (FuncJMPolyShim _ f) = f
     shimToFunction IdentityJMPolyShim = id
     shimToFunction (ComposeJMPolyShim a b) = shimToFunction a . shimToFunction b
-    shimToFunction (CoerceJMPolyShim _ c) = coercionToFunction c
+    shimToFunction (CoerceJMPolyShim c) = coercionToFunction c
     shimToFunction InitFJMPolyShim = initf
     shimToFunction TermFJMPolyShim = termf
     shimToFunction (Join1JMPolyShim ta) = join1 . shimToFunction ta

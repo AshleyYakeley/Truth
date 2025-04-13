@@ -109,7 +109,7 @@ neutralSubtypeConversionEntry ::
     NonpolarGroundedType ground b ->
     SubtypeConversionEntry ground
 neutralSubtypeConversionEntry ta tb =
-    subtypeConversionEntry_ Verify NeutralSK (groundedNonpolarToDolanType ta) (groundedNonpolarToDolanType tb) (pure $ coerceShim "subtype")
+    subtypeConversionEntry_ Verify NeutralSK (groundedNonpolarToDolanType ta) (groundedNonpolarToDolanType tb) (pure coerceShim)
 
 matchSubtypeGroup ::
     forall (ground :: GroundTypeKind) dva gta dvb gtb.

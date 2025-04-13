@@ -30,7 +30,7 @@ subtypeConversionChain ::
     SubtypeChain ground dva gta dvb gtb
 subtypeConversionChain (GeneralSubtypeConversion _ chain) = chain
 subtypeConversionChain CoerceSubtypeConversion =
-    linkSubtypeChain NilCCRVariancesMap NilCCRArguments NilCCRArguments $ pure $ coercionToShim "subtype" MkCoercion
+    linkSubtypeChain NilCCRVariancesMap NilCCRArguments NilCCRArguments $ pure $ coercionToShim MkCoercion
 
 subtypeConversionKnowledge ::
     forall (ground :: GroundTypeKind) (dva :: CCRVariances) (gta :: CCRVariancesKind dva) (dvb :: CCRVariances) (gtb :: CCRVariancesKind dvb).

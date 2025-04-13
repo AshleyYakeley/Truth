@@ -664,7 +664,7 @@ interpretIdentitySubtypeRelation sta stb = do
                                     $ singleSubtypeConversion Nothing
                                     $ fmap
                                         ( \adapter ->
-                                            coerceShim "open entity"
+                                            coerceShim
                                                 . (functionToShim "entityConvert" $ storeAdapterConvert adapter)
                                         )
                                         adapterexpr

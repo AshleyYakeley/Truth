@@ -88,8 +88,8 @@ instance
         shimWitToDolan
             $ MkShimWit (VarDolanSingularType $ MkTypeVar $ MkSymbolType @name)
             $ case polarityType @polarity of
-                PositiveType -> MkPolarShim $ coerceShim "var"
-                NegativeType -> MkPolarShim $ coerceShim "var"
+                PositiveType -> MkPolarShim coerceShim
+                NegativeType -> MkPolarShim coerceShim
 
 -- (,)
 instance HasQGroundType '[CoCCRVariance, CoCCRVariance] (,) where

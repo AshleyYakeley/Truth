@@ -43,7 +43,7 @@ instance
     (CoercibleKind k, CoerceShim (pshim k), Category (pshim k)) =>
     CoerceShim (DualPolyT pshim k)
     where
-    coercionToShim n c = MkMapPolyT $ MkCatDual $ coercionToShim n $ invert c
+    coercionToShim c = MkMapPolyT $ MkCatDual $ coercionToShim $ invert c
     shimToCoercion (MkMapPolyT (MkCatDual ba)) = fmap invert $ shimToCoercion ba
 
 instance forall (pshim :: PolyShimKind). AllCategory pshim => ReduciblePolyShim (DualPolyT pshim) where

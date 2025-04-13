@@ -144,7 +144,7 @@ instance
     (CoercibleKind k, CoerceShim (pshim k), Category (pshim k)) =>
     CoerceShim (IsoPolyT pshim k)
     where
-    coercionToShim n c = MkMapPolyT $ MkIsomorphism (coercionToShim n c) (coercionToShim n $ invert c)
+    coercionToShim c = MkMapPolyT $ MkIsomorphism (coercionToShim c) (coercionToShim $ invert c)
     shimToCoercion (MkMapPolyT (MkIsomorphism ab ba)) = shimToCoercion ab <|> fmap invert (shimToCoercion ba)
 
 instance forall (pshim :: PolyShimKind). AllCategory pshim => ReduciblePolyShim (IsoPolyT pshim) where

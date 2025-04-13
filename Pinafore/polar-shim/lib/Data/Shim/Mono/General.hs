@@ -157,15 +157,14 @@ isoShimToFunction ::
 isoShimToFunction (MkIsomorphism ab ba) = MkIsomorphism (shimToFunction ab) (shimToFunction ba)
 
 class IsoMapShim shim => CoerceShim (shim :: ShimKind k) where
-    coercionToShim :: String -> Coercion a b -> shim a b
+    coercionToShim :: Coercion a b -> shim a b
     shimToCoercion :: shim a b -> Maybe (Coercion a b)
 
 coerceShim ::
     forall k (shim :: ShimKind k) (a :: k) (b :: k).
     (CoerceShim shim, Coercible a b) =>
-    String ->
     shim a b
-coerceShim t = coercionToShim t MkCoercion
+coerceShim = coercionToShim MkCoercion
 
 class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
     functionToShim :: String -> KindFunction a b -> shim a b
@@ -173,7 +172,7 @@ class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
 instance IsoMapShim (->)
 
 instance CoerceShim (->) where
-    coercionToShim _ MkCoercion = coerce
+    coercionToShim MkCoercion = coerce
     shimToCoercion _ = Nothing
 
 instance FunctionShim (->) where

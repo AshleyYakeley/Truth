@@ -33,7 +33,7 @@ neutralShimToShim ::
     NeutralPolyShim k a b ->
     shim a b
 neutralShimToShim IdentityNeutralPolyShim = id
-neutralShimToShim CoerceNeutralPolyShim = coercionToShim "neutral" MkCoercion
+neutralShimToShim CoerceNeutralPolyShim = coercionToShim MkCoercion
 
 instance CartesianShim (NeutralPolyShim Type) where
     funcShim IdentityNeutralPolyShim IdentityNeutralPolyShim = IdentityNeutralPolyShim
