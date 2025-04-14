@@ -14,6 +14,15 @@ showTest expected shim = testTree expected $ assertEqual "shim" expected $ show 
 func :: forall k a b. CoercibleKind k => String -> JMPolyShim k a b
 func name = functionToShim name $ error name
 
+{-
+
+join1 :: a -> JoinType a b
+joinf :: (a -> r) -> (b -> r) -> (JoinType a b -> r)
+
+joinf (func "A") (func "B") :: JoinType a b -> r
+
+-}
+
 testJMPolyShim :: TestTree
 testJMPolyShim =
     testTree
@@ -24,8 +33,12 @@ testJMPolyShim =
         , showTest "initf" $ termf . initf
         , showTest "(joinf [A] [B])" $ joinf (func "A") (func "B")
         , showTest "[A]" $ joinf (func "A") (func "B") . join1
-        , expectFailBecause "ISSUE #337" $ showTest "[A]" $ func "A" . coercionToShim id
-        , expectFailBecause "ISSUE #337" $ showTest "[A]" $ coercionToShim id . func "A"
+        , showTest "[A]" $ func "A" . coercionToShim id
+        , showTest "[A]" $ coercionToShim id . func "A"
+        , showTest "[A.C]" $ joinf (func "A") (func "B") . (join1 . func "C")
+        , showTest "[A.C]" $ (joinf (func "A") (func "B") . join1) . func "C"
+        , expectFailBecause "ISSUE #337" $ showTest "[A]" $ joinf (func "A") (func "B") . (coercionToShim id . join1)
+        , expectFailBecause "ISSUE #337" $ showTest "[A]" $ (joinf (func "A") (func "B") . coercionToShim id) . join1
         ]
 
 tests :: TestTree

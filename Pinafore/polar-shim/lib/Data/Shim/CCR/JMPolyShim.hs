@@ -109,6 +109,10 @@ instance CoercibleKind k => Category (JMPolyShim k) where
     Meet1JMPolyShim aq . MeetFJMPolyShim pa _ = aq . pa
     Meet2JMPolyShim bq . MeetFJMPolyShim _ pb = bq . pb
     FuncJMPolyShim tp p . FuncJMPolyShim tq q = FuncJMPolyShim (tp <> "." <> tq) $ p . q
+    FuncJMPolyShim t p . q
+        | Just qc <- shimToCoercion q = FuncJMPolyShim t $ p . coercionToFunction qc
+    p . FuncJMPolyShim t q
+        | Just pc <- shimToCoercion p = FuncJMPolyShim t $ coercionToFunction pc . q
     f . ComposeJMPolyShim p q = (f . p) . q
     ComposeJMPolyShim p q . f =
         case q . f of
