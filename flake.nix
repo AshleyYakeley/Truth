@@ -165,6 +165,10 @@
               vscode-extension = vsceFilePackage;
             };
           formatter = pkgs.nixpkgs-fmt;
+          devShells.default = pkgs.mkShell
+            {
+              buildInputs = with pkgs; [ gnumake docker xorg.xhost stack ];
+            };
         }
       );
 
