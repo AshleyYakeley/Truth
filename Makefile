@@ -215,8 +215,8 @@ nix-fmt:
 
 # Use this on a Nix system
 nix-flake: out
-	nix $(NIXFLAGS) flake check .?submodules=1
-	nix $(NIXFLAGS) build .?submodules=1#vscode-extension
+	nix $(NIXFLAGS) flake check .
+	nix $(NIXFLAGS) build .#vscode-extension
 
 nix/docker/flake.nix: flake.nix
 	cp $< $@

@@ -8,7 +8,7 @@ COPY nix.conf /etc/nix/nix.conf
 RUN mkdir -p /setup
 COPY flake.nix flake.lock stack.yaml stack.yaml.lock /setup/
 WORKDIR "/setup"
-RUN nix build .?submodules=1#devShell.x86_64-linux.ghc
+RUN nix build .#devShell.x86_64-linux.ghc
 
 # set up session and workspace to run in
 RUN nix-env -iA nixpkgs.utillinux nixpkgs.gnumake

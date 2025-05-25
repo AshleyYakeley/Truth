@@ -2,6 +2,7 @@
   description = "Pinafore";
   inputs =
     {
+      self.submodules = true;
       nixpkgs =
         {
           follows = "haskellNix/nixpkgs-2411";
