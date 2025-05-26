@@ -66,11 +66,11 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 -- This is usually switched off since automateRecursion does this.
 --
 -- mergeDuplicateGroundTypes: merge duplicate ground types in join/meet (on each type)
--- e.g. "[a]|[b]" => "[a|b]"
+-- e.g. "List a | List b" => "List (a | b)"
 --
 -- eliminateOneSidedTypeVars: eliminate one-sided type vars (on whole expression)
 -- Type vars are one-sided if they appear only in positive position, or only in negative position.
--- e.g. "a -> [b]" => "Any -> [None]"
+-- e.g. "a -> List b" => "Any -> List None"
 -- This is usually switched off since fullyConstrainedTypeVars does this.
 --
 -- fullyConstrainedTypeVars: eliminate fully-constrained vars (on whole expression)
@@ -79,7 +79,7 @@ simplifierSettingsINTERNAL = defaultSimplifierSettings
 --
 -- mergeSharedTypeVars: merge shared type vars (on whole expression)
 -- Two type variables are shared, if they always appear together (join/meet) in the positive positions, or in the negative positions.
--- e.g. "a -> b -> a|b" => "a -> a -> a|a"
+-- e.g. "a -> b -> (a|b)" => "a -> a -> (a|a)"
 --
 -- mergeDuplicateTypeVars: merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"

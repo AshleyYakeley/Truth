@@ -124,7 +124,8 @@ rawMarkdown :: RawMarkdown -> MarkdownText
 rawMarkdown = mItem . RawMI
 
 instance PlainText MarkdownText where
-    plainText = mItem . plainText
+    plainText "" = mempty
+    plainText t = mItem $ plainText t
 
 tagMarkdown :: Text -> [(Text, Text)] -> MarkdownText -> MarkdownText
 tagMarkdown tagname params m = mItem $ TagMI tagname params m
