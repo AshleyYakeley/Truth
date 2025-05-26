@@ -2,6 +2,7 @@
   description = "Pinafore";
   inputs =
     {
+      self.submodules = true;
       nixpkgs =
         {
           follows = "haskellNix/nixpkgs-2411";
@@ -164,6 +165,10 @@
               vscode-extension = vsceFilePackage;
             };
           formatter = pkgs.nixpkgs-fmt;
+          devShells.default = pkgs.mkShell
+            {
+              buildInputs = with pkgs; [ gnumake docker xorg.xhost stack ];
+            };
         }
       );
 

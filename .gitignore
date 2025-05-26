@@ -9,3 +9,4 @@ benchmarks.json
 result
 result-*
 /stackpath/
+.direnv
