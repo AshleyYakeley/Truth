@@ -4,6 +4,7 @@ module Pinafore.Language.Interpret.TypeDecl.Storage
     , paramsToCovParams
     , nonpolarToStoreAdapter
     , nonpolarGroundedToStoreAdapter
+    , assignWithStoreAdapterArgs
     )
 where
 
@@ -77,3 +78,20 @@ nonpolarToStoreAdapter ::
 nonpolarToStoreAdapter params (VarNonpolarType var) = fmap (pure . Compose) $ lookupVar params var
 nonpolarToStoreAdapter params (GroundedNonpolarType t) = nonpolarGroundedToStoreAdapter params t
 nonpolarToStoreAdapter _ t@(RecursiveNonpolarType{}) = throw $ InterpretTypeNotStorableError $ exprShow t
+
+assignArgumentParams ::
+    forall (f :: Type -> Type) dv (gt :: CCRVariancesKind dv) (t :: Type) (ta :: Type).
+    CovParams dv gt t ->
+    Arguments f gt ta ->
+    t :~: ta
+assignArgumentParams NilCCRArguments NilArguments = Refl
+assignArgumentParams (ConsCCRArguments (MkCovParam var) args) (ConsArguments arg args') =
+    assignTypeVarWit var arg
+        $ case assignArgumentParams args args' of
+            Refl -> Refl
+
+assignWithStoreAdapterArgs ::
+    forall dv (gt :: CCRVariancesKind dv) (f :: Type -> Type) (t :: Type).
+    CovParams dv gt t -> (Arguments StoreAdapter gt t -> f t) -> WithStoreAdapterArgs gt f
+assignWithStoreAdapterArgs params f = MkAllFor $ \args -> case assignArgumentParams params args of
+    Refl -> f args

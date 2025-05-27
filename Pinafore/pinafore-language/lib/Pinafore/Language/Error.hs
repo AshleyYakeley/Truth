@@ -180,7 +180,7 @@ instance ShowNamedText QError where
     showNamedText (InterpretTypeDeclTypeVariableWrongPolarityError n v) =
         "wrong polarity of type variable " <> showNamedText v <> " in declaration of " <> showNamedText n
     showNamedText (InterpretTypeDeclTypeVariableNotCovariantError n) =
-        "type variable is not covariant in declaration of storable datatype " <> showNamedText n
+        "type variable is not covariant in declaration of storable type " <> showNamedText n
     showNamedText InterpretTypeDeclTypeStorableRecord = "record constructor not allowed in storable datatype"
     showNamedText (InterpretSubtypeInconsistent ta tb) =
         "subtype relation is inconsistent with existing subtype relation " <> ta <> " <: " <> tb

@@ -6,8 +6,10 @@ where
 import Shapes.Unsafe (unsafeCoercion)
 
 import Import
+import Pinafore.Language.Error
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl.Parameter
+import Pinafore.Language.Interpret.TypeDecl.Storage
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
@@ -18,6 +20,19 @@ withSemiIdentifiedType' ::
 withSemiIdentifiedType' call = do
     mr <- builderLift $ withSemiIdentifiedType @dv $ \ft -> return $ call ft
     mr
+
+assignNonpolarGroundedToStoreAdapter ::
+    forall dv (gt :: CCRVariancesKind dv) (decltype :: Type) (structtype :: Type).
+    Coercible decltype structtype =>
+    CovParams dv gt decltype ->
+    QNonpolarGroundedType structtype ->
+    QInterpreter (QExprRec (WithStoreAdapterArgs gt StoreAdapter))
+assignNonpolarGroundedToStoreAdapter params t = do
+    expr <- nonpolarGroundedToStoreAdapter params t
+    let
+        toWSAA :: Compose ((->) (Arguments StoreAdapter gt decltype)) StoreAdapter structtype -> WithStoreAdapterArgs gt StoreAdapter
+        toWSAA (Compose f) = assignWithStoreAdapterArgs params $ \args -> invmap coerce coerce $ f args
+    return $ fmap toWSAA expr
 
 makeEquivalentTypeBox ::
     FullName ->
@@ -31,17 +46,36 @@ makeEquivalentTypeBox name md storable sparams sparent =
         (_, MkAnyCCRTypeParams (gtparams :: GenCCRTypeParams dv)) ->
             withSemiIdentifiedType' @dv $ \(mainFamType :: _ maintype) ->
                 case gtparams @maintype of
-                    MkSome (tparams :: CCRTypeParams dv maintype decltype) ->
-                        withRepresentative (ccrArgumentsType tparams) $ do
+                    MkSome (tparams :: CCRTypeParams dv maintype decltype) -> let
+                        dvt = ccrArgumentsType tparams
+                        in withRepresentative dvt $ do
                             smparent <- builderLift $ interpretNonpolarGroundedType sparent
                             case smparent of
                                 MkSome (parent :: _ structtype) -> do
-                                    props :: GroundProperties dv maintype <-
-                                        if storable
-                                            then return mempty
-                                            else return mempty
                                     MkCoercion <- pure $ unsafeCoercion @Type @structtype @decltype
                                     varianceMap <- builderLift $ getCCRVariancesMap name tparams $ coerce $ getVarMapping parent
+                                    props :: GroundProperties dv maintype <-
+                                        if storable
+                                            then do
+                                                cvt <-
+                                                    case ccrVariancesToCovaryType dvt of
+                                                        Just cvt -> return cvt
+                                                        Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError name
+                                                let
+                                                    cparams :: CovParams dv maintype decltype
+                                                    cparams = paramsToCovParams cvt tparams
+                                                storeadapterexpr :: QExprRec (WithStoreAdapterArgs maintype StoreAdapter) <-
+                                                    builderLift $ assignNonpolarGroundedToStoreAdapter cparams parent
+                                                wit <- liftIO newIOWitness
+                                                let
+                                                    storability :: Storability dv maintype
+                                                    storability = let
+                                                        stbKind = cvt
+                                                        stbCovaryMap = ccrVariancesMapToCovary cvt varianceMap
+                                                        stbAdapterExprKnot = knotAppRec wit storeadapterexpr
+                                                        in MkStorability{..}
+                                                return $ singleGroundProperty storabilityProperty storability
+                                            else return mempty
                                     let
                                         gt :: QGroundType dv maintype
                                         gt =

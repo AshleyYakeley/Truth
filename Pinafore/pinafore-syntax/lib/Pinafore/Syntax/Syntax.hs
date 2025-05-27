@@ -83,7 +83,7 @@ data SyntaxRecursiveTypeDeclaration
     deriving stock Eq
 
 data SyntaxNonrecursiveTypeDeclaration
-    = SynonymSyntaxNonrecursiveTypeDeclaration
+    = EquivalentSyntaxNonrecursiveTypeDeclaration
         Bool
         [SyntaxTypeParameter]
         SyntaxType

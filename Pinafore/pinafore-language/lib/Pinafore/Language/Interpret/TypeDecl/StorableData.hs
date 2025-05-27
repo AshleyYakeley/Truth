@@ -11,17 +11,6 @@ import Pinafore.Language.Interpret.TypeDecl.Storage
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
-assignArgumentParams ::
-    forall (f :: Type -> Type) dv (gt :: CCRVariancesKind dv) (decltype :: Type) (ta :: Type).
-    CovParams dv gt decltype ->
-    Arguments f gt ta ->
-    decltype :~: ta
-assignArgumentParams NilCCRArguments NilArguments = Refl
-assignArgumentParams (ConsCCRArguments (MkCovParam var) args) (ConsArguments arg args') =
-    assignTypeVarWit var arg
-        $ case assignArgumentParams args args' of
-            Refl -> Refl
-
 data Thing (x :: Type) (decltype :: Type) (ta :: Type)
     = MkThing
         x
@@ -35,11 +24,7 @@ makeConstructorAdapter params pts = do
     etsexpr <- getCompose $ mapMListType (Compose . nonpolarToStoreAdapter params) pts
     return
         $ fmap
-            ( \ets ->
-                MkAllFor $ \args ->
-                    case assignArgumentParams params args of
-                        Refl -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl
-            )
+            (\ets -> assignWithStoreAdapterArgs params $ \args -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl)
             etsexpr
 
 makeTypeAdapter ::

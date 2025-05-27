@@ -73,7 +73,7 @@ interpretNonrecursiveTypeDeclaration ::
     RawMarkdown ->
     SyntaxNonrecursiveTypeDeclaration ->
     QScopeBuilder ()
-interpretNonrecursiveTypeDeclaration name doc (SynonymSyntaxNonrecursiveTypeDeclaration storable tparams st) =
+interpretNonrecursiveTypeDeclaration name doc (EquivalentSyntaxNonrecursiveTypeDeclaration storable tparams st) =
     makeEquivalentTypeBox name doc storable tparams st
 interpretNonrecursiveTypeDeclaration name doc (PredicateSyntaxNonrecursiveTypeDeclaration storable st predicate) = do
     tbox <- builderLift $ makePredicateTypeBox name doc storable st predicate
