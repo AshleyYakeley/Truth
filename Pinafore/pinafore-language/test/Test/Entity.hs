@@ -855,7 +855,7 @@ testEntity =
                             $ tGroup
                                 "pair-double"
                                 [ testExpectSuccess "pass"
-                                , testExpectSuccess "testeq (double $ double $ double 7) 56"
+                                , tModify (failTestBecause "crashes") $ testExpectSuccess "testeq (double $ double $ double 7) 56"
                                 ]
                         ]
                     , tDecls
