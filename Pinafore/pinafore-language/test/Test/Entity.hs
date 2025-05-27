@@ -817,14 +817,47 @@ testEntity =
                             , testExpectSuccess "testeq (3: Integer) (3: I)"
                             , testExpectSuccess "testeq 7 (7: I : Integer : I : Integer)"
                             ]
-                    , tDecls ["type M +a = Maybe a"]
-                        $ tGroup
-                            "param"
-                            [ testExpectSuccess "pass"
-                            , testExpectSuccess "testeq (Just 51: M Integer) (Just 51: Maybe Integer)"
-                            , testExpectSuccess "testeq ((Just 17: M Integer): M Rational) (Just 17: Maybe Integer)"
-                            , testExpectSuccess "testeq ((Just 84: M Integer): M Rational) (Just 84: Maybe Rational)"
+                    , tGroup
+                        "param"
+                        [ tDecls
+                            [ "type M +a = Maybe a"
                             ]
+                            $ tGroup
+                                "covariant"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq (Just 51: M Integer) (Just 51: Maybe Integer)"
+                                , testExpectSuccess "testeq ((Just 17: M Integer): M Rational) (Just 17: Maybe Integer)"
+                                , testExpectSuccess "testeq ((Just 84: M Integer): M Rational) (Just 84: Maybe Rational)"
+                                ]
+                        , tDecls
+                            [ "type Endo (-p,+q) = p -> q"
+                            , "double : Endo Integer = fn x => x +.Integer x"
+                            ]
+                            $ tGroup
+                                "pair-separate"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq (double $ double $ double 7) 56"
+                                ]
+                        , tDecls
+                            [ "datatype Endo a {Mk (a -> a)}"
+                            , "unEndo = fn Mk.Endo x => x"
+                            , "double : Endo Integer = Mk.Endo $ fn x => x +.Integer x"
+                            ]
+                            $ tGroup
+                                "datatype-pair-double"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq (unEndo double $ unEndo double $ unEndo double 7) 56"
+                                ]
+                        , tDecls
+                            [ "type Endo a = a -> a"
+                            , "double : Endo Integer = fn x => x +.Integer x"
+                            ]
+                            $ tGroup
+                                "pair-double"
+                                [ testExpectSuccess "pass"
+                                , testExpectSuccess "testeq (double $ double $ double 7) 56"
+                                ]
+                        ]
                     , tDecls
                         [ "type ML +a = Maybe (List a)"
                         , "fa: Maybe (List a) -> ML a = fn x => x"
