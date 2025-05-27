@@ -425,6 +425,7 @@ If there is a loop of subtype relations, it will simply make those types equival
 
 Type equivalents:
 * declared with `type` or `type storable`
+* definition must be a grounded type
 * equivalent (subtype and supertype) to its definition
 * actually a new type (not a synonym as such)
 * `D(T) = T`, doesn't take the GDS of its definition

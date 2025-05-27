@@ -817,6 +817,20 @@ testEntity =
                             , testExpectSuccess "testeq (3: Integer) (3: I)"
                             , testExpectSuccess "testeq 7 (7: I : Integer : I : Integer)"
                             ]
+                    , tOpenDefaultStore
+                        $ tWith ["Store"]
+                        $ tDecls
+                            [ "type storable Point = Number *: Number"
+                            , "type storable PM +a = a *: Maybe a"
+                            , "cellPoint = !{cell @Point !\"cPoint\"} store"
+                            , "cellT = !{cell @(PM Text) !\"cT\"} store"
+                            ]
+                        $ tGroup
+                            "storable"
+                            [ testExpectSuccess "pass"
+                            , testExpectSuccess "do {cellPoint := (3.5,4); testrefeq ap{(3.5,4)} cellPoint}"
+                            , testExpectSuccess "do {cellT := (\"P\",Just \"Q\"); testrefeq ap{(\"P\",Just \"Q\")} cellT}"
+                            ]
                     , tGroup
                         "param"
                         [ tDecls
