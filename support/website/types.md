@@ -421,6 +421,21 @@ So `entitytype Integer <: Q` is allowed, but `entitytype Maybe Integer <: Q` is 
 Subtypes relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.
 
+## Type Equivalents
+
+Type equivalents:
+* declared with `type` or `type storable`
+* equivalent (subtype and supertype) to its definition
+* actually a new type (not a synonym as such)
+* `D(T) = T`, doesn't take the GDS of its definition
+* can be declared storable, provided its definition is storable
+* can have parameters, in the same way as datatypes
+
+```pinafore decl
+type Endo a = a -> a;
+type storable Point = Number *: Number;
+```
+
 ## Predicate Types
 
 A predicate type `T` is a "subset" of an existing type `P`, consisting of those values that satisfy some predicate `f: P -> Boolean`.
