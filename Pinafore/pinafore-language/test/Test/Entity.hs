@@ -809,7 +809,7 @@ testEntity =
                     , testExpectSuccess "let {f : Maybe (a & Number) -> Entity *: Maybe a = fn x => (x,x)} pass"
                     ]
                 , tGroup
-                    "synonym"
+                    "equivalent"
                     [ tDecls ["type I = Integer"]
                         $ tGroup
                             "simple"

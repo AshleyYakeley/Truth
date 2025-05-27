@@ -80,7 +80,7 @@ library
       Pinafore.Language.Interpret.TypeDecl.Storage
       Pinafore.Language.Interpret.TypeDecl.StorableData
       Pinafore.Language.Interpret.TypeDecl.OpenEntity
-      Pinafore.Language.Interpret.TypeDecl.Synonym
+      Pinafore.Language.Interpret.TypeDecl.Equivalent
       Pinafore.Language.Interpret.TypeDecl.Predicate
       Pinafore.Language.Interpret.TypeDecl
       Pinafore.Language.Interpret.Expression

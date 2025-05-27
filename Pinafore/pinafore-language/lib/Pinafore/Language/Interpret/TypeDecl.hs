@@ -9,10 +9,10 @@ import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl.Data
+import Pinafore.Language.Interpret.TypeDecl.Equivalent
 import Pinafore.Language.Interpret.TypeDecl.OpenEntity
 import Pinafore.Language.Interpret.TypeDecl.Predicate
 import Pinafore.Language.Interpret.TypeDecl.StorableData
-import Pinafore.Language.Interpret.TypeDecl.Synonym
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 
@@ -74,7 +74,7 @@ interpretNonrecursiveTypeDeclaration ::
     SyntaxNonrecursiveTypeDeclaration ->
     QScopeBuilder ()
 interpretNonrecursiveTypeDeclaration name doc (SynonymSyntaxNonrecursiveTypeDeclaration storable tparams st) =
-    makeSynonymTypeBox name doc storable tparams st
+    makeEquivalentTypeBox name doc storable tparams st
 interpretNonrecursiveTypeDeclaration name doc (PredicateSyntaxNonrecursiveTypeDeclaration storable st predicate) = do
     tbox <- builderLift $ makePredicateTypeBox name doc storable st predicate
     boxSequential tbox ()

@@ -1,5 +1,5 @@
-module Pinafore.Language.Interpret.TypeDecl.Synonym
-    ( makeSynonymTypeBox
+module Pinafore.Language.Interpret.TypeDecl.Equivalent
+    ( makeEquivalentTypeBox
     )
 where
 
@@ -19,14 +19,14 @@ withSemiIdentifiedType' call = do
     mr <- builderLift $ withSemiIdentifiedType @dv $ \ft -> return $ call ft
     mr
 
-makeSynonymTypeBox ::
+makeEquivalentTypeBox ::
     FullName ->
     RawMarkdown ->
     Bool ->
     [SyntaxTypeParameter] ->
     SyntaxType ->
     QScopeBuilder ()
-makeSynonymTypeBox name md storable sparams sparent =
+makeEquivalentTypeBox name md storable sparams sparent =
     case getAnyCCRTypeParams sparams of
         (_, MkAnyCCRTypeParams (gtparams :: GenCCRTypeParams dv)) ->
             withSemiIdentifiedType' @dv $ \(mainFamType :: _ maintype) ->
