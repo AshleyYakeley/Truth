@@ -105,7 +105,7 @@ generateCommonMarkDoc outh modopts modname = do
                                         (Just True, p1 : pr) ->
                                             toMarkdown (showNamedText p1) <> " " <> name <> trailing (fmap showNamedText pr)
                                         _ -> name <> trailing (fmap showNamedText diParams)
-                                    <> case diSynonym of
+                                    <> case diEquivalentDefn of
                                         Nothing -> ""
                                         Just syn -> " = " <> toMarkdown syn
                                )

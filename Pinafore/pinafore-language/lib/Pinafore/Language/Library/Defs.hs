@@ -201,7 +201,7 @@ typeBDS name docDescription t@(MkSomeGroundType gt) bdChildren = let
     (diParams, params) = evalState (getTypeParameters $ qgtVarianceType gt) nameSupply
     diStorable = isJust $ getGroundProperty storabilityProperty gt
     diGDS = getGDSName gt params
-    diSynonym = Nothing
+    diEquivalentDefn = Nothing
     docItem = TypeDocItem{..}
     bdDoc = MkDefDoc{..}
     in singleBindDoc MkBindDoc{..} $ namespaceConcat (RelativeNamespaceRef [fnrName name]) bdChildren

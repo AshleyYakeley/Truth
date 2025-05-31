@@ -52,7 +52,7 @@ typeDocItem name diStorable tparams mgds = let
     diNames = pure $ fullNameRef name
     diParams = fmap typeParameterDoc tparams
     diGDS = fmap (\gds -> gds <> concatmap (\p -> " " <> exprShow p) tparams) mgds
-    diSynonym = Nothing
+    diEquivalentDefn = Nothing
     in TypeDocItem{..}
 
 typeDeclDoc :: FullName -> SyntaxRecursiveTypeDeclaration -> RawMarkdown -> Tree DefDoc

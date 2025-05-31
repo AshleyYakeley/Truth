@@ -56,7 +56,7 @@ data DocItem
         , diStorable :: Bool
         , diParams :: [DocTypeParameter]
         , diGDS :: Maybe NamedText
-        , diSynonym :: Maybe NamedText
+        , diEquivalentDefn :: Maybe NamedText
         }
     | SubtypeRelationDocItem
         { diSubtype :: NamedText
