@@ -50,6 +50,30 @@ data CCRArguments w dv gt t where
         CCRArguments w dv (gt a) t ->
         CCRArguments w (sv ': dv) gt t
 
+instance
+    forall (w :: CCRArgumentKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type).
+    (IsCCRArg w, AllConstraint Show (w CoCCRVariance), AllConstraint Show (w ContraCCRVariance), AllConstraint Show (w 'RangeCCRVariance)) =>
+    Show (CCRArguments w dv gt t)
+    where
+    show = let
+        showArg :: forall (sv :: CCRVariance) (a :: CCRVarianceKind sv). w sv a -> String
+        showArg arg = case ccrArgumentType arg of
+            CoCCRVarianceType -> allShow arg
+            ContraCCRVarianceType -> allShow arg
+            RangeCCRVarianceType -> allShow arg
+
+        showArgs :: forall (dv' :: CCRVariances) (gt' :: CCRVariancesKind dv'). CCRArguments w dv' gt' t -> [String]
+        showArgs NilCCRArguments = []
+        showArgs (ConsCCRArguments arg args) = showArg arg : showArgs args
+        in \args -> "{" <> intercalate "," (showArgs args) <> "}"
+
+instance
+    forall (w :: CCRArgumentKind) (dv :: CCRVariances) (gt :: CCRVariancesKind dv).
+    (IsCCRArg w, AllConstraint Show (w CoCCRVariance), AllConstraint Show (w ContraCCRVariance), AllConstraint Show (w 'RangeCCRVariance)) =>
+    AllConstraint Show (CCRArguments w dv gt)
+    where
+    allConstraint = Dict
+
 ccrArgumentsType ::
     forall (w :: CCRArgumentKind) dv gt t.
     IsCCRArg w =>

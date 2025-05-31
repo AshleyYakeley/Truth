@@ -38,6 +38,21 @@ instance IsCCRArg CCRTypeParam where
         Refl <- testEquality q1 q2
         return Refl
 
+instance Show (CCRTypeParam sv t) where
+    show = \case
+        CoCCRTypeParam q -> "+" <> show q
+        ContraCCRTypeParam p -> "-" <> show p
+        RangeCCRTypeParam p q -> "(-" <> show p <> ",+" <> show q <> ")"
+
+instance AllConstraint Show (CCRTypeParam CoCCRVariance) where
+    allConstraint = Dict
+
+instance AllConstraint Show (CCRTypeParam ContraCCRVariance) where
+    allConstraint = Dict
+
+instance AllConstraint Show (CCRTypeParam 'RangeCCRVariance) where
+    allConstraint = Dict
+
 assignCCRTypeParam ::
     forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
     CCRTypeParam sv t ->

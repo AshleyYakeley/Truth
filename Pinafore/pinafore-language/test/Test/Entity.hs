@@ -853,6 +853,13 @@ testEntity =
                                 , testExpectSuccess "testeq (double $ double $ double 7) 56"
                                 ]
                         , tDecls
+                            [ "type Endo (-p,+q) = q -> p"
+                            ]
+                            $ tGroup
+                                "inverted"
+                                [ testExpectReject "pass"
+                                ]
+                        , tDecls
                             [ "datatype Endo a {Mk (a -> a)}"
                             , "unEndo = fn Mk.Endo x => x"
                             , "double : Endo Integer = Mk.Endo $ fn x => x +.Integer x"
@@ -869,7 +876,7 @@ testEntity =
                             $ tGroup
                                 "pair-double"
                                 [ testExpectSuccess "pass"
-                                , tModify (failTestBecause "crashes") $ testExpectSuccess "testeq (double $ double $ double 7) 56"
+                                , testExpectSuccess "testeq (double $ double $ double 7) 56"
                                 ]
                         ]
                     , tDecls

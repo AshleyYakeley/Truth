@@ -8,6 +8,7 @@ import Shapes.Unsafe (unsafeCoercion)
 import Import
 import Pinafore.Language.Error
 import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Interpret.TypeDecl.DoubleParams
 import Pinafore.Language.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Interpret.TypeDecl.Storage
 import Pinafore.Language.Interpreter
@@ -43,14 +44,14 @@ makeEquivalentTypeBox ::
     QScopeBuilder ()
 makeEquivalentTypeBox name md storable sparams sparent =
     case getAnyCCRTypeParams sparams of
-        (_, MkAnyCCRTypeParams (gtparams :: GenCCRTypeParams dv)) ->
+        (doubleParams, MkAnyCCRTypeParams (gtparams :: GenCCRTypeParams dv)) ->
             withSemiIdentifiedType' @dv $ \(mainFamType :: _ maintype) ->
                 case gtparams @maintype of
                     MkSome (tparams :: CCRTypeParams dv maintype decltype) -> let
                         dvt = ccrArgumentsType tparams
                         in withRepresentative dvt $ do
                             smparent <- builderLift $ interpretNonpolarGroundedType sparent
-                            case smparent of
+                            case doubleTypeParameters doubleParams smparent of
                                 MkSome (parent :: _ structtype) -> do
                                     MkCoercion <- pure $ unsafeCoercion @Type @structtype @decltype
                                     varianceMap <- builderLift $ getCCRVariancesMap name tparams $ coerce $ getVarMapping parent
