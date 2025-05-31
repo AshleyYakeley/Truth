@@ -70,6 +70,7 @@ docker:
     image: "local-build"
 
 notify-if-nix-on-path: false
+recommend-stack-upgrade: false
 
 nix:
     enable: false
