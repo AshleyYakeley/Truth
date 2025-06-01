@@ -15,7 +15,7 @@ testFile :: ModuleOptions -> FilePath -> TestTree
 testFile mo inpath = let
     dir = takeDirectory inpath
     modName = takeBaseName inpath
-    in testHandleVsFileInDir dir modName $ \outh -> do generateCommonMarkDoc outh mo $ MkModuleName $ pack modName
+    in testHandleVsFileInDir dir modName $ \outh -> generateCommonMarkDoc outh mo $ MkModuleName $ pack modName
 
 getTestPaths :: IO [FilePath]
 getTestPaths = do

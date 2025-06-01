@@ -96,6 +96,7 @@ makePredicateTypeBox name md storable sparent spredicate =
                     sce = neutralSubtypeConversionEntry (MkNonpolarGroundedType gt NilCCRArguments) parent
                 registerGroundType name doc gt
                 registerSubtypeConversion sce
+                registerDocs $ pure doc
             construct ::
                 () ->
                 QScopeBuilder

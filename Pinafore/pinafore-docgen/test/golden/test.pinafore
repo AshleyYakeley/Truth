@@ -14,6 +14,21 @@ datatype B {
 
 subtype A Integer Unit Unit <: B = fn _ => Mk.B 17;
 
+#| doc:Eqv
+type Eqv a = a -> Maybe a;
+
+#| doc:EqvS
+type storable EqvS +a +b = a *: List b;
+
+#| doc:Pred
+predicatetype Pred <: Integer -> Boolean = fn f => f 3;
+
+#| doc:PredS
+predicatetype storable PredS <: Maybe Integer = fn x => x == Just 3;
+
+#| doc:Ent
+entitytype Ent;
+
 let rec {
     #| doc:RecA
     datatype RecA (+p,-q) +r -s {

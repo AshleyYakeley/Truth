@@ -1,5 +1,5 @@
 module Pinafore.Language.Interpret.TypeDecl.Equivalent
-    ( makeEquivalentTypeBox
+    ( makeEquivalentType
     )
 where
 
@@ -35,14 +35,14 @@ assignNonpolarGroundedToStoreAdapter params t = do
         toWSAA (Compose f) = assignWithStoreAdapterArgs params $ \args -> invmap coerce coerce $ f args
     return $ fmap toWSAA expr
 
-makeEquivalentTypeBox ::
+makeEquivalentType ::
     FullName ->
     RawMarkdown ->
     Bool ->
     [SyntaxTypeParameter] ->
     SyntaxType ->
     QScopeBuilder ()
-makeEquivalentTypeBox name md storable sparams sparent =
+makeEquivalentType name md storable sparams sparent =
     case getAnyCCRTypeParams sparams of
         (doubleParams, MkAnyCCRTypeParams (gtparams :: GenCCRTypeParams dv)) ->
             withSemiIdentifiedType' @dv $ \(mainFamType :: _ maintype) ->
@@ -89,10 +89,11 @@ makeEquivalentTypeBox name md storable sparams sparent =
                                                 , qgtProperties = props
                                                 , qgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
                                                 }
-                                        gdsname = exprShow name
-                                        doc = MkDefDoc (typeDocItem name storable [] (Just gdsname)) md
+                                        parentText = exprShow parent
+                                        doc = MkDefDoc (typeEquivalentDocItem name storable sparams parentText) md
                                         declGroundedType :: QNonpolarGroundedType decltype
                                         declGroundedType = MkNonpolarGroundedType gt $ mapSameCCRArguments tParamToNonpolarArgument tparams
                                     registerGroundType name doc gt
                                     registerSubtypeConversion $ neutralSubtypeConversionEntry declGroundedType parent
                                     registerSubtypeConversion $ neutralSubtypeConversionEntry parent declGroundedType
+                                    registerDocs $ pure doc

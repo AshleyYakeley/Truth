@@ -22,6 +22,26 @@
 > > 
 <code>subtype A Integer Unit Unit \<: B</code>
 
+<code>type </code>**<code>Eqv</code>**<code> a = a\- \-\> Maybe a\+</code>
+
+> doc:Eqv
+> 
+<code>type storable </code>**<code>EqvS</code>**<code> \+a \+b = a \*: List b</code>
+
+> doc:EqvS
+> 
+<code>type </code>**<code>Pred</code>** (from <code>Integer \-\> Boolean</code>)
+
+> doc:Pred
+> 
+<code>type storable </code>**<code>PredS</code>** (from <code>Maybe Integer</code>)
+
+> doc:PredS
+> 
+<code>type </code>**<code>Ent</code>**
+
+> doc:Ent
+> 
 <code>type </code>**<code>RecA</code>**<code> (\-q,\+p) \+r \-s</code>
 
 > doc:RecA

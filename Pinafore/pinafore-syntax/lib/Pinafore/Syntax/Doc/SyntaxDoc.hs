@@ -1,6 +1,7 @@
 module Pinafore.Syntax.Doc.SyntaxDoc
     ( constructorDocItem
     , typeDocItem
+    , typeEquivalentDocItem
     , typeDeclDoc
     , valueDocItem
     )
@@ -53,6 +54,14 @@ typeDocItem name diStorable tparams mgds = let
     diParams = fmap typeParameterDoc tparams
     diGDS = fmap (\gds -> gds <> concatmap (\p -> " " <> exprShow p) tparams) mgds
     diEquivalentDefn = Nothing
+    in TypeDocItem{..}
+
+typeEquivalentDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> NamedText -> DocItem
+typeEquivalentDocItem name diStorable tparams defn = let
+    diNames = pure $ fullNameRef name
+    diParams = fmap typeParameterDoc tparams
+    diGDS = Nothing
+    diEquivalentDefn = Just defn
     in TypeDocItem{..}
 
 typeDeclDoc :: FullName -> SyntaxRecursiveTypeDeclaration -> RawMarkdown -> Tree DefDoc
