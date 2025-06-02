@@ -10,6 +10,7 @@ import Pinafore.Language.Type.Family as I
 import Pinafore.Language.Type.GetDynamicSupertype as I
 import Pinafore.Language.Type.Ground as I
 import Pinafore.Language.Type.Identified as I
+import Pinafore.Language.Type.Sequence as I
 import Pinafore.Language.Type.Show as I
 import Pinafore.Language.Type.Storable as I
 import Pinafore.Language.Type.Storable.OpenEntity as I
