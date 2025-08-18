@@ -8,11 +8,11 @@ module Pinafore.Language.Library.Result
 where
 
 import Import
+import Pinafore.Language.Convert.Var
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 
 resultFrom :: (E -> B) -> (A -> B) -> Result E A -> B
 resultFrom eb _ (FailureResult e) = eb e

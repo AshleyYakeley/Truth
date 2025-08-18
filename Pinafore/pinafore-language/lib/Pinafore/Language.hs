@@ -41,7 +41,6 @@ import Pinafore.Language.Error
 import Pinafore.Language.Interpret
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library
-import Pinafore.Language.Var
 
 interact :: (?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 interact inh outh echo = do

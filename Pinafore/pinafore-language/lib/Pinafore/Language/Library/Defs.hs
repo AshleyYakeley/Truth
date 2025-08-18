@@ -41,7 +41,6 @@ import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 
 type EnA = MeetType Entity A
 

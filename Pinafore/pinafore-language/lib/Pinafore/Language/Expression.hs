@@ -7,7 +7,6 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 import Pinafore.Language.VarID
 
 qTypeError :: TypeError QGroundType -> QError

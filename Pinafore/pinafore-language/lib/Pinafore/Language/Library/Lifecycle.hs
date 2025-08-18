@@ -4,10 +4,10 @@ module Pinafore.Language.Library.Lifecycle
 where
 
 import Import
+import Pinafore.Language.Convert.Var
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
-import Pinafore.Language.Var
 
 lifecycleLibSection :: LibraryStuff
 lifecycleLibSection =

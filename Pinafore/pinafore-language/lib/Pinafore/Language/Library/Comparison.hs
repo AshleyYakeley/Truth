@@ -5,9 +5,9 @@ where
 
 import Import
 import Pinafore.Language.Convert.HasType
+import Pinafore.Language.Convert.Var
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
-import Pinafore.Language.Var
 
 comparisonLibSection :: LibraryStuff
 comparisonLibSection =

@@ -10,7 +10,6 @@ import Pinafore.Language.Convert.HasType
 import Pinafore.Language.Convert.Literal
 import Pinafore.Language.Type
 import Pinafore.Language.Value
-import Pinafore.Language.Var
 
 class (CCRVariancesShim pshim, JoinMeetIsoShim (pshim Type)) => FromQIsoShim (pshim :: PolyShimKind) where
     fromQShims :: forall a b. QShim a b -> QShim b a -> pshim Type a b
@@ -72,24 +71,6 @@ instance
     HasQType pshim 'Negative (MeetType a b)
     where
     qType = joinMeetShimWit qType qType
-
--- Var Type
-instance
-    forall (pshim :: PolyShimKind) polarity name.
-    ( CCRVariancesShim pshim
-    , JoinMeetIsoShim (pshim Type)
-    , CoerceShim (pshim Type)
-    , Is PolarityType polarity
-    , KnownSymbol name
-    ) =>
-    HasQType pshim polarity (Var name)
-    where
-    qType =
-        shimWitToDolan
-            $ MkShimWit (VarDolanSingularType $ MkTypeVar $ MkSymbolType @name)
-            $ case polarityType @polarity of
-                PositiveType -> MkPolarShim $ coerceShim "var"
-                NegativeType -> MkPolarShim $ coerceShim "var"
 
 -- (,)
 instance HasQGroundType '[CoCCRVariance, CoCCRVariance] (,) where

@@ -6,12 +6,12 @@ module Pinafore.Language.Library.ModelOrder
 where
 
 import Import
+import Pinafore.Language.Convert.Var
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model
 import Pinafore.Language.Library.Optics ()
 import Pinafore.Language.Value
-import Pinafore.Language.Var
 
 modelOrderLibSection :: LibraryStuff
 modelOrderLibSection =

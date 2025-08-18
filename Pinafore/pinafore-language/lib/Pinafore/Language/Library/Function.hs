@@ -5,12 +5,12 @@ where
 
 import Import
 import Pinafore.Language.Convert.Pinafore
+import Pinafore.Language.Convert.Var
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 
 revap :: A -> (A -> B) -> B
 revap x f = f x

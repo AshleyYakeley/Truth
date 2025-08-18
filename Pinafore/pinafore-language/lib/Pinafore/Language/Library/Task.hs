@@ -15,7 +15,6 @@ import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
 import Pinafore.Language.Value
-import Pinafore.Language.Var
 
 taskGroundType :: QGroundType '[CoCCRVariance] LangTask
 taskGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangTask)|]) "Task"

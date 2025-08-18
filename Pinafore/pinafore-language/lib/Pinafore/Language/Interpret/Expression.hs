@@ -13,6 +13,7 @@ import Data.Graph hiding (Forest, Tree)
 
 import Import
 import Pinafore.Language.Convert.Pinafore
+import Pinafore.Language.Convert.Var
 import Pinafore.Language.Debug
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
@@ -25,7 +26,6 @@ import Pinafore.Language.Interpret.Value
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 import Pinafore.Language.VarID
 
 interpretPatternConstructor :: SyntaxConstructor -> QInterpreter (Either QPatternConstructor QRecordConstructor)

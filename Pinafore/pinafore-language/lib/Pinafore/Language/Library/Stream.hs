@@ -14,7 +14,6 @@ import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 
 -- ItemOrEnd
 instance MaybeRepresentational ItemOrEnd where
