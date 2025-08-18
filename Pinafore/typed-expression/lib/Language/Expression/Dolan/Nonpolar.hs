@@ -3,9 +3,9 @@
 module Language.Expression.Dolan.Nonpolar
     ( NonpolarGroundedType (..)
     , NonpolarType (..)
-    , NonpolarArgument (..)
-    , NonpolarArguments
-    , NonpolarShimWit
+    , NonpolarTypeArgument
+    , NonpolarTypeArguments
+    , NonpolarTypeShimWit
     , groundedNonpolarToDolanType
     , pattern ToGroundedNonpolarType
     )
@@ -28,7 +28,7 @@ data NonpolarGroundedType ground t where
     MkNonpolarGroundedType ::
         forall (ground :: GroundTypeKind) dv (gt :: CCRVariancesKind dv) (t :: Type).
         ground dv gt ->
-        NonpolarArguments ground dv gt t ->
+        NonpolarTypeArguments ground dv gt t ->
         NonpolarGroundedType ground t
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEquality (NonpolarGroundedType ground) where
@@ -58,47 +58,23 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEqua
         return Refl
     testEquality _ _ = Nothing
 
-type NonpolarArgument :: GroundTypeKind -> CCRArgumentKind
-data NonpolarArgument ground sv t where
-    CoNonpolarArgument ::
-        forall (ground :: GroundTypeKind) t. NonpolarType ground t -> NonpolarArgument ground CoCCRVariance t
-    ContraNonpolarArgument ::
-        forall (ground :: GroundTypeKind) t. NonpolarType ground t -> NonpolarArgument ground ContraCCRVariance t
-    RangeNonpolarArgument ::
-        forall (ground :: GroundTypeKind) p q.
-        NonpolarType ground p ->
-        NonpolarType ground q ->
-        NonpolarArgument ground 'RangeCCRVariance '(p, q)
+type NonpolarTypeArgument :: GroundTypeKind -> CCRArgumentKind
+type NonpolarTypeArgument ground = NonpolarArgument (NonpolarType ground)
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => IsCCRArg (NonpolarArgument ground) where
-    ccrArgumentType (CoNonpolarArgument _) = CoCCRVarianceType
-    ccrArgumentType (ContraNonpolarArgument _) = ContraCCRVarianceType
-    ccrArgumentType (RangeNonpolarArgument _ _) = RangeCCRVarianceType
-    ccrArgumentTestEquality (CoNonpolarArgument a) (CoNonpolarArgument b) = do
-        Refl <- testEquality a b
-        return Refl
-    ccrArgumentTestEquality (ContraNonpolarArgument a) (ContraNonpolarArgument b) = do
-        Refl <- testEquality a b
-        return Refl
-    ccrArgumentTestEquality (RangeNonpolarArgument ap aq) (RangeNonpolarArgument bp bq) = do
-        Refl <- testEquality ap bp
-        Refl <- testEquality aq bq
-        return Refl
-
-type NonpolarShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type NonpolarShimWit ground polarity = PolarShimWit (DolanShim ground) (NonpolarType ground) polarity
+type NonpolarTypeShimWit :: GroundTypeKind -> Polarity -> Type -> Type
+type NonpolarTypeShimWit ground polarity = PolarShimWit (DolanShim ground) (NonpolarType ground) polarity
 
 type NonpolarGroundedShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type NonpolarGroundedShimWit ground polarity = PolarShimWit (DolanShim ground) (NonpolarGroundedType ground) polarity
 
-type NonpolarArgumentShimWit :: GroundTypeKind -> Polarity -> CCRArgumentKind
-type NonpolarArgumentShimWit ground polarity sv =
-    CCRArgumentShimWit (DolanShim ground) (NonpolarArgument ground) polarity sv
+type NonpolarTypeArgumentShimWit :: GroundTypeKind -> Polarity -> CCRArgumentKind
+type NonpolarTypeArgumentShimWit ground polarity sv =
+    CCRArgumentShimWit (DolanShim ground) (NonpolarTypeArgument ground) polarity sv
 
-type NonpolarArguments :: GroundTypeKind -> forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type -> Type
-type NonpolarArguments ground = CCRArguments (NonpolarArgument ground)
+type NonpolarTypeArguments :: GroundTypeKind -> forall (dv :: CCRVariances) -> CCRVariancesKind dv -> Type -> Type
+type NonpolarTypeArguments ground = NonpolarArguments (NonpolarType ground)
 
-instance forall (ground :: GroundTypeKind) sv t. FreeTypeVariables (NonpolarArgument ground sv t) where
+instance forall (ground :: GroundTypeKind) sv t. FreeTypeVariables (NonpolarTypeArgument ground sv t) where
     freeTypeVariables (CoNonpolarArgument arg) = freeTypeVariables arg
     freeTypeVariables (ContraNonpolarArgument arg) = freeTypeVariables arg
     freeTypeVariables (RangeNonpolarArgument argp argq) = freeTypeVariables argp <> freeTypeVariables argq
@@ -111,23 +87,10 @@ instance forall (ground :: GroundTypeKind) t. FreeTypeVariables (NonpolarType gr
     freeTypeVariables (GroundedNonpolarType t) = freeTypeVariables t
     freeTypeVariables (RecursiveNonpolarType v t) = difference (freeTypeVariables t) (freeTypeVariables v)
 
-mapNonpolarArgument ::
-    forall (ground :: GroundTypeKind) sv t.
-    (NonpolarType ground --> NonpolarType ground) -> NonpolarArgument ground sv t -> NonpolarArgument ground sv t
-mapNonpolarArgument f (CoNonpolarArgument t) = CoNonpolarArgument $ f t
-mapNonpolarArgument f (ContraNonpolarArgument t) = ContraNonpolarArgument $ f t
-mapNonpolarArgument f (RangeNonpolarArgument tp tq) = RangeNonpolarArgument (f tp) (f tq)
-
-mapNonpolarArguments ::
-    forall (ground :: GroundTypeKind) dv gt t.
-    (NonpolarType ground --> NonpolarType ground) -> NonpolarArguments ground dv gt t -> NonpolarArguments ground dv gt t
-mapNonpolarArguments _ NilCCRArguments = NilCCRArguments
-mapNonpolarArguments f (ConsCCRArguments arg args) = ConsCCRArguments (mapNonpolarArgument f arg) (mapNonpolarArguments f args)
-
 nonpolarToDolanArg ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity sv t.
     (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
-    NonpolarArgument ground sv t ->
+    NonpolarTypeArgument ground sv t ->
     CCRArgumentShimWit (pshim Type) (CCRPolarArgument (DolanType ground) polarity) polarity sv t
 nonpolarToDolanArg (CoNonpolarArgument t) =
     case nonpolarToDolanType t of
@@ -146,7 +109,7 @@ nonpolarToDolanArguments ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity dv gt t.
     (IsDolanGroundType ground, SubstitutablePolyShim pshim, Is PolarityType polarity) =>
     CCRVariancesMap dv gt ->
-    NonpolarArguments ground dv gt t ->
+    NonpolarTypeArguments ground dv gt t ->
     CCRPolarArgumentsShimWit pshim dv (DolanType ground) gt polarity t
 nonpolarToDolanArguments = mapPolarCCRArguments @pshim (nonpolarToDolanArg @ground @pshim @polarity)
 
@@ -204,7 +167,7 @@ dolanArgToNonpolar ::
     forall (ground :: GroundTypeKind) polarity sv t.
     (IsDolanGroundType ground, Is PolarityType polarity) =>
     CCRPolarArgument (DolanType ground) polarity sv t ->
-    Maybe (NonpolarArgumentShimWit ground polarity sv t)
+    Maybe (NonpolarTypeArgumentShimWit ground polarity sv t)
 dolanArgToNonpolar (CoCCRPolarArgument t) = do
     MkShimWit arg conv <- dolanTypeToNonpolar t
     return $ MkShimWit (CoNonpolarArgument arg) conv
@@ -231,8 +194,8 @@ getArgumentMapping ::
     forall (ground :: GroundTypeKind) (t :: Type) (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).
     IsDolanGroundType ground =>
     CCRVariation sv f ->
-    NonpolarArgument ground sv a ->
-    NonpolarArguments ground dv (f a) t ->
+    NonpolarTypeArgument ground sv a ->
+    NonpolarTypeArguments ground dv (f a) t ->
     VarMapping t
 getArgumentMapping svm (CoNonpolarArgument t) args =
     mapVarMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) $ getVarMapping t
@@ -248,7 +211,7 @@ getArgumentsMapping ::
     forall (ground :: GroundTypeKind) (t :: Type) dv gt.
     IsDolanGroundType ground =>
     CCRVariancesMap dv gt ->
-    NonpolarArguments ground dv gt t ->
+    NonpolarTypeArguments ground dv gt t ->
     VarMapping t
 getArgumentsMapping NilCCRVariancesMap NilCCRArguments = mempty
 getArgumentsMapping (ConsCCRVariancesMap ccrv dvm) (ConsCCRArguments arg args) =
@@ -352,7 +315,7 @@ dolanSingularTypeToNonpolar ::
     forall (ground :: GroundTypeKind) polarity t.
     (IsDolanGroundType ground, Is PolarityType polarity) =>
     DolanSingularType ground polarity t ->
-    Maybe (NonpolarShimWit ground polarity t)
+    Maybe (NonpolarTypeShimWit ground polarity t)
 dolanSingularTypeToNonpolar (VarDolanSingularType n) = return $ mkShimWit $ VarNonpolarType n
 dolanSingularTypeToNonpolar (GroundedDolanSingularType t) =
     fmap (chainShimWit $ \gnt -> mkShimWit $ GroundedNonpolarType gnt) $ dolanGroundedTypeToNonpolar t
@@ -364,7 +327,7 @@ dolanTypeToNonpolar ::
     forall (ground :: GroundTypeKind) polarity t.
     (IsDolanGroundType ground, Is PolarityType polarity) =>
     DolanType ground polarity t ->
-    Maybe (NonpolarShimWit ground polarity t)
+    Maybe (NonpolarTypeShimWit ground polarity t)
 dolanTypeToNonpolar t = do
     MkShimWit st conv <- dolanToMaybeType t
     st' <- dolanSingularTypeToNonpolar st

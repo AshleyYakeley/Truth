@@ -143,7 +143,7 @@ tParamToPolarArgument (RangeCCRTypeParam varp varq) =
 tParamToNonpolarArgument ::
     forall sv (t :: CCRVarianceKind sv).
     CCRTypeParam sv t ->
-    NonpolarArgument QGroundType sv t
+    NonpolarTypeArgument QGroundType sv t
 tParamToNonpolarArgument (CoCCRTypeParam var) = CoNonpolarArgument $ VarNonpolarType var
 tParamToNonpolarArgument (ContraCCRTypeParam var) = ContraNonpolarArgument $ VarNonpolarType var
 tParamToNonpolarArgument (RangeCCRTypeParam varp varq) = RangeNonpolarArgument (VarNonpolarType varp) (VarNonpolarType varq)

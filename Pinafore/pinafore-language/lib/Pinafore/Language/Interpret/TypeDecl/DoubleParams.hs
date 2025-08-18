@@ -82,7 +82,7 @@ instance DoubleParams (QType polarity t) where
     rangeMapParams _ NilDolanType = NilDolanType
     rangeMapParams vv (ConsDolanType t1 tr) = ConsDolanType (rangeMapParams vv t1) (rangeMapParams vv tr)
 
-instance DoubleParams (NonpolarArgument QGroundType sv a) where
+instance DoubleParams (NonpolarTypeArgument QGroundType sv a) where
     rangeMapParams vv (CoNonpolarArgument q) = CoNonpolarArgument $ rangeMapParams vv q
     rangeMapParams vv (ContraNonpolarArgument p) = ContraNonpolarArgument $ rangeMapParams (fmap swapRangeVars vv) p
     rangeMapParams vv (RangeNonpolarArgument p q) =

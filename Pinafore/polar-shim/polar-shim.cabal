@@ -54,6 +54,7 @@ library
       Data.Shim.CCR.Apply
       Data.Shim.CCR.Argument
       Data.Shim.CCR.Arguments
+      Data.Shim.CCR.Nonpolar
       Data.Shim.CCR
   hs-source-dirs:
       lib
