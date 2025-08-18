@@ -42,12 +42,14 @@ instance CoercibleKind k => IsoMapShim (NullShim k) where
 
 instance CoercibleKind k => CoerceShim (NullShim k) where
     coercionToShim _ _ = MkNullShim
+
+instance CoercibleKind k => ToCoerceShim (NullShim k) where
     shimToCoercion MkNullShim = Nothing
 
 instance CoercibleKind k => FunctionShim (NullShim k) where
     functionToShim _ _ = MkNullShim
 
-instance LazyCategory (NullShim Type) where
+instance LazyShim (NullShim Type) where
     iLazy _ = MkNullShim
 
 instance CartesianShim (NullShim Type) where

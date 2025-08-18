@@ -106,6 +106,8 @@ instance JoinMeetIsoShim shim => JoinMeetIsoShim (Isomorphism shim) where
     iMeetSwapR = MkIsomorphism iMeetSwapR iMeetSwapL
     iMeetSwap4 = MkIsomorphism iMeetSwap4 iMeetSwap4
 
+---
+
 class JoinMeetIsoShim shim => JoinMeetShim (shim :: ShimKind Type) where
     initf :: shim BottomType a
     termf :: shim a TopType
@@ -129,6 +131,8 @@ instance JoinMeetShim (->) where
     meet2 (BothMeetType _ v) = v
     meetf f1 f2 v = BothMeetType (f1 v) (f2 v)
 
+---
+
 class (CoercibleKind k, Category shim) => IsoMapShim (shim :: ShimKind k) where
     isoMapShim ::
         String ->
@@ -137,7 +141,7 @@ class (CoercibleKind k, Category shim) => IsoMapShim (shim :: ShimKind k) where
         shim pa pb ->
         shim qa qb
     default isoMapShim ::
-        RecoverShim shim =>
+        (FunctionShim shim, ToFunctionShim shim) =>
         String -> (KindFunction pa pb -> KindFunction qa qb) -> (KindFunction pb pa -> KindFunction qb qa) -> shim pa pb -> shim qa qb
     isoMapShim t f _ pp = functionToShim t $ f $ shimToFunction pp
 
@@ -151,14 +155,27 @@ isoFunctionToShim s (MkIsomorphism ab ba) = MkIsomorphism (functionToShim s ab) 
 
 isoShimToFunction ::
     forall k (shim :: ShimKind k) (a :: k) (b :: k).
-    RecoverShim shim =>
+    ToFunctionShim shim =>
     Isomorphism shim a b ->
     Isomorphism KindFunction a b
 isoShimToFunction (MkIsomorphism ab ba) = MkIsomorphism (shimToFunction ab) (shimToFunction ba)
 
+instance IsoMapShim (->)
+
+instance
+    IsoMapShim shim =>
+    IsoMapShim (CatDual shim)
+    where
+    isoMapShim t f1 f2 (MkCatDual ba) = MkCatDual $ isoMapShim t f2 f1 ba
+
+instance IsoMapShim shim => IsoMapShim (Isomorphism shim) where
+    isoMapShim t f1 f2 (MkIsomorphism ab ba) =
+        MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)
+
+---
+
 class IsoMapShim shim => CoerceShim (shim :: ShimKind k) where
     coercionToShim :: String -> Coercion a b -> shim a b
-    shimToCoercion :: shim a b -> Maybe (Coercion a b)
 
 coerceShim ::
     forall k (shim :: ShimKind k) (a :: k) (b :: k).
@@ -167,23 +184,61 @@ coerceShim ::
     shim a b
 coerceShim t = coercionToShim t MkCoercion
 
-class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
-    functionToShim :: String -> KindFunction a b -> shim a b
-
-instance IsoMapShim (->)
-
 instance CoerceShim (->) where
     coercionToShim _ MkCoercion = coerce
+
+instance
+    CoerceShim shim =>
+    CoerceShim (CatDual shim)
+    where
+    coercionToShim n c = MkCatDual $ coercionToShim n $ invert c
+
+instance
+    CoerceShim shim =>
+    CoerceShim (Isomorphism shim)
+    where
+    coercionToShim n c = MkIsomorphism (coercionToShim n c) (coercionToShim n $ invert c)
+
+---
+
+class IsoMapShim shim => ToCoerceShim (shim :: ShimKind k) where
+    shimToCoercion :: shim a b -> Maybe (Coercion a b)
+
+instance ToCoerceShim (->) where
     shimToCoercion _ = Nothing
+
+instance
+    ToCoerceShim shim =>
+    ToCoerceShim (CatDual shim)
+    where
+    shimToCoercion (MkCatDual ba) = fmap invert $ shimToCoercion ba
+
+instance
+    ToCoerceShim shim =>
+    ToCoerceShim (Isomorphism shim)
+    where
+    shimToCoercion (MkIsomorphism ab ba) = shimToCoercion ab <|> fmap invert (shimToCoercion ba)
+
+---
+
+class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
+    functionToShim :: String -> KindFunction a b -> shim a b
 
 instance FunctionShim (->) where
     functionToShim _ = id
 
-class FunctionShim shim => RecoverShim (shim :: ShimKind k) where
+---
+
+class ToCoerceShim shim => ToFunctionShim (shim :: ShimKind k) where
     shimToFunction :: shim a b -> KindFunction a b
 
-instance RecoverShim (->) where
+instance ToFunctionShim (->) where
     shimToFunction = id
+
+instance ToFunctionShim shim => ToFunctionShim (Isomorphism shim) where
+    shimToFunction (MkIsomorphism ab _) = shimToFunction ab
+
+---
 
 class Category shim => CartesianShim (shim :: ShimKind Type) where
     funcShim :: forall a b p q. shim a b -> shim p q -> shim (b -> p) (a -> q)
@@ -213,16 +268,18 @@ instance CartesianShim shim => CartesianShim (Isomorphism shim) where
     pairShim (MkIsomorphism ab ba) (MkIsomorphism pq qp) = MkIsomorphism (pairShim ab pq) (pairShim ba qp)
     eitherShim (MkIsomorphism ab ba) (MkIsomorphism pq qp) = MkIsomorphism (eitherShim ab pq) (eitherShim ba qp)
 
-type LazyCategory :: ShimKind Type -> Constraint
-class JoinMeetIsoShim shim => LazyCategory shim where
+---
+
+type LazyShim :: ShimKind Type -> Constraint
+class JoinMeetIsoShim shim => LazyShim shim where
     iLazy :: forall a b. shim a b -> shim a b
-    default iLazy :: forall a b. RecoverShim shim => shim a b -> shim a b
+    default iLazy :: forall a b. (FunctionShim shim, ToFunctionShim shim) => shim a b -> shim a b
     iLazy sab = functionToShim "recursive" $ shimToFunction sab
 
-instance LazyCategory (->)
+instance LazyShim (->)
 
-instance LazyCategory shim => LazyCategory (CatDual shim) where
+instance LazyShim shim => LazyShim (CatDual shim) where
     iLazy ~(MkCatDual ba) = MkCatDual $ iLazy ba
 
-instance LazyCategory shim => LazyCategory (Isomorphism shim) where
+instance LazyShim shim => LazyShim (Isomorphism shim) where
     iLazy ~(MkIsomorphism ab ba) = MkIsomorphism (iLazy ab) (iLazy ba)

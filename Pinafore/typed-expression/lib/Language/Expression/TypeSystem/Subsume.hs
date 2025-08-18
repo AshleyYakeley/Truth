@@ -27,7 +27,7 @@ import Language.Expression.TypeSystem.Unify
 
 type OpenSubsumerExpression ts = TSOpenSolverExpression ts (Subsumer ts)
 
-class (UnifyTypeSystem ts, Applicative (Subsumer ts), RecoverShim (TSShim ts)) => SubsumeTypeSystem ts where
+class (UnifyTypeSystem ts, Applicative (Subsumer ts), ToFunctionShim (TSShim ts)) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
     usubSubsumer :: forall a. UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (OpenSubsumerExpression ts a)

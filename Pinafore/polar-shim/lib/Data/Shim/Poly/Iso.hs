@@ -125,27 +125,5 @@ instance
     cfmap (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =
         MkPolyMapT $ MkIsomorphism (cfmap $ MkCatDual ab) (cfmap $ MkCatDual ba)
 
-instance
-    forall (pshim :: PolyShimKind) k.
-    (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
-    IsoMapShim (PolyIso pshim k)
-    where
-    isoMapShim ::
-        String ->
-        (KindFunction pa pb -> KindFunction qa qb) ->
-        (KindFunction pb pa -> KindFunction qb qa) ->
-        PolyIso pshim k pa pb ->
-        PolyIso pshim k qa qb
-    isoMapShim t f1 f2 (MkPolyMapT (MkIsomorphism ab ba)) =
-        MkPolyMapT $ MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)
-
-instance
-    forall (pshim :: PolyShimKind) k.
-    (CoercibleKind k, CoerceShim (pshim k), Category (pshim k)) =>
-    CoerceShim (PolyIso pshim k)
-    where
-    coercionToShim n c = MkPolyMapT $ MkIsomorphism (coercionToShim n c) (coercionToShim n $ invert c)
-    shimToCoercion (MkPolyMapT (MkIsomorphism ab ba)) = shimToCoercion ab <|> fmap invert (shimToCoercion ba)
-
 instance forall (pshim :: PolyShimKind). AllCategory pshim => ReduciblePolyShim (PolyIso pshim) where
     type ReducedPolyShim (PolyIso pshim) = PolyIso pshim

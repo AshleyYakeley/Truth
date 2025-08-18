@@ -10,7 +10,7 @@ class
     reducedSubstitutablePolyShim ::
         Dict
             ( SubstitutablePolyShim (ReducedPolyShim pshim)
-            , LazyCategory (ReducedPolyShim pshim Type)
+            , LazyShim (ReducedPolyShim pshim Type)
             , ReducedPolyShim (ReducedPolyShim pshim) Type ~ ReducedPolyShim pshim Type
             )
 
@@ -28,7 +28,7 @@ instance
 
 instance
     forall (pshim :: PolyShimKind).
-    (SubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
+    (SubstitutablePolyShim pshim, LazyShim (pshim Type)) =>
     SubstitutablePolyShim (PolyDual pshim)
     where
     reducedSubstitutablePolyShim =
@@ -37,7 +37,7 @@ instance
 
 instance
     forall (pshim :: PolyShimKind).
-    (SubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
+    (SubstitutablePolyShim pshim, LazyShim (pshim Type)) =>
     SubstitutablePolyShim (PolyIso pshim)
     where
     reducedSubstitutablePolyShim =
@@ -51,7 +51,7 @@ class (SubstitutablePolyShim pshim, Groupoid (pshim Type)) => SubstitutableIsoPo
     reducedSubstitutableIsoPolyShim ::
         Dict
             ( SubstitutableIsoPolyShim (ReducedPolyShim pshim)
-            , LazyCategory (ReducedPolyShim pshim Type)
+            , LazyShim (ReducedPolyShim pshim Type)
             , Groupoid (ReducedPolyShim pshim Type)
             )
 
@@ -66,7 +66,7 @@ instance
 
 instance
     forall (pshim :: PolyShimKind).
-    (SubstitutableIsoPolyShim pshim, LazyCategory (pshim Type)) =>
+    (SubstitutableIsoPolyShim pshim, LazyShim (pshim Type)) =>
     SubstitutableIsoPolyShim (PolyDual pshim)
     where
     reducedSubstitutableIsoPolyShim =
@@ -75,7 +75,7 @@ instance
 
 instance
     forall (pshim :: PolyShimKind).
-    (SubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
+    (SubstitutablePolyShim pshim, LazyShim (pshim Type)) =>
     SubstitutableIsoPolyShim (PolyIso pshim)
     where
     reducedSubstitutableIsoPolyShim =
@@ -86,7 +86,7 @@ type IsDolanPolyShim :: PolyShimKind -> Constraint
 type IsDolanPolyShim pshim =
     ( SubstitutablePolyShim pshim
     , JoinMeetShim (pshim Type)
-    , LazyCategory (pshim Type)
+    , LazyShim (pshim Type)
     , CartesianShim (pshim Type)
-    , RecoverShim (pshim Type)
+    , ToFunctionShim (pshim Type)
     )

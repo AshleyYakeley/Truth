@@ -65,8 +65,8 @@ instance
 
 instance
     forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind).
-    LazyCategory (f (pshim Type)) =>
-    LazyCategory (PolyMapT f pshim Type)
+    LazyShim (f (pshim Type)) =>
+    LazyShim (PolyMapT f pshim Type)
     where
     iLazy (MkPolyMapT ab) = MkPolyMapT $ iLazy ab
 
@@ -78,3 +78,37 @@ instance
     funcShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ funcShim ab pq
     pairShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ pairShim ab pq
     eitherShim (MkPolyMapT ab) (MkPolyMapT pq) = MkPolyMapT $ eitherShim ab pq
+
+instance
+    forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) k.
+    (CoercibleKind k, IsoMapShim (f (pshim k))) => IsoMapShim (PolyMapT f pshim k)
+    where
+    isoMapShim n ab ba (MkPolyMapT fconv) = MkPolyMapT $ isoMapShim n ab ba fconv
+
+instance
+    forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) k.
+    (CoercibleKind k, CoerceShim (f (pshim k))) =>
+    CoerceShim (PolyMapT f pshim k)
+    where
+    coercionToShim n c = MkPolyMapT $ coercionToShim n c
+
+instance
+    forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) k.
+    (CoercibleKind k, ToCoerceShim (f (pshim k))) =>
+    ToCoerceShim (PolyMapT f pshim k)
+    where
+    shimToCoercion (MkPolyMapT fconv) = shimToCoercion fconv
+
+instance
+    forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) k.
+    (CoercibleKind k, FunctionShim (f (pshim k))) =>
+    FunctionShim (PolyMapT f pshim k)
+    where
+    functionToShim n f = MkPolyMapT $ functionToShim n f
+
+instance
+    forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) k.
+    (CoercibleKind k, ToFunctionShim (f (pshim k))) =>
+    ToFunctionShim (PolyMapT f pshim k)
+    where
+    shimToFunction (MkPolyMapT fconv) = shimToFunction fconv

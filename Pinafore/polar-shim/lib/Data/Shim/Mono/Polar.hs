@@ -116,7 +116,7 @@ reshimPolarShim f =
 
 lazyPolarShim ::
     forall (shim :: ShimKind Type) polarity a b.
-    (LazyCategory shim, Is PolarityType polarity) =>
+    (LazyShim shim, Is PolarityType polarity) =>
     PolarShim shim polarity a b ->
     PolarShim shim polarity a b
 lazyPolarShim (MkPolarShim ab) =

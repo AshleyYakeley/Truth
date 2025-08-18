@@ -159,6 +159,8 @@ instance CoercibleKind k => IsoMapShim (JMShim k)
 
 instance CoercibleKind k => CoerceShim (JMShim k) where
     coercionToShim = CoerceJMShim
+
+instance CoercibleKind k => ToCoerceShim (JMShim k) where
     shimToCoercion IdentityJMShim = Just id
     shimToCoercion (CoerceJMShim _ c) = Just c
     shimToCoercion (ConsJMShim CoCCRVarianceType ccrvf _ f a)
@@ -186,7 +188,7 @@ instance CoercibleKind k => CoerceShim (JMShim k) where
 instance CoercibleKind k => FunctionShim (JMShim k) where
     functionToShim = FuncJMShim
 
-instance CoercibleKind k => RecoverShim (JMShim k) where
+instance CoercibleKind k => ToFunctionShim (JMShim k) where
     shimToFunction :: forall (a :: k) (b :: k). JMShim k a b -> KindFunction a b
     shimToFunction f
         | Just c <- shimToCoercion f = coercionToFunction c
@@ -222,7 +224,7 @@ instance CoercibleKind k => RecoverShim (JMShim k) where
         in fromCon vt ccrvg jmf jma
     shimToFunction (LazyJMShim f) = shimToFunction f
 
-instance LazyCategory (JMShim Type) where
+instance LazyShim (JMShim Type) where
     iLazy = LazyJMShim
 
 instance CartesianShim (JMShim Type) where

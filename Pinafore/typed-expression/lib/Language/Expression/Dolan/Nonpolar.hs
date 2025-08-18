@@ -325,7 +325,7 @@ remapWit va vb = withEqualVar va vb id
 
 recursiveNonpolarShimWit ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv.
-    (IsDolanGroundType ground, RecoverShim (pshim Type), Is PolarityType polarity) =>
+    (IsDolanGroundType ground, FunctionShim (pshim Type), ToFunctionShim (pshim Type), Is PolarityType polarity) =>
     TypeVarT tv ->
     PolarShimWit (pshim Type) (NonpolarType ground) polarity tv ->
     PolarShimWit (pshim Type) (NonpolarType ground) polarity tv

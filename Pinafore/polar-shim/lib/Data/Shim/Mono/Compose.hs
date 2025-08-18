@@ -65,5 +65,14 @@ instance
     meet2 = MkComposeShim $ pure meet2
     meetf (MkComposeShim maconv) (MkComposeShim mbconv) = MkComposeShim $ liftA2 meetf maconv mbconv
 
-instance forall (shim :: ShimKind Type) m. (LazyCategory shim, Applicative m) => LazyCategory (ComposeShim m shim) where
+instance forall (shim :: ShimKind Type) m. (LazyShim shim, Applicative m) => LazyShim (ComposeShim m shim) where
     iLazy (MkComposeShim ab) = MkComposeShim $ fmap iLazy ab
+
+instance forall k (shim :: ShimKind k) m. (Applicative m, IsoMapShim shim) => IsoMapShim (ComposeShim m shim) where
+    isoMapShim t f1 f2 (MkComposeShim mab) = MkComposeShim $ fmap (isoMapShim t f1 f2) mab
+
+instance forall k (shim :: ShimKind k) m. (Applicative m, CoerceShim shim) => CoerceShim (ComposeShim m shim) where
+    coercionToShim n conv = MkComposeShim $ pure $ coercionToShim n conv
+
+instance forall k (shim :: ShimKind k) m. (Applicative m, FunctionShim shim) => FunctionShim (ComposeShim m shim) where
+    functionToShim n conv = MkComposeShim $ pure $ functionToShim n conv

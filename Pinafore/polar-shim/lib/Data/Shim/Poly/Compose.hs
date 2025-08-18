@@ -91,19 +91,6 @@ mkPolarPolyFuncShim f =
 
 instance
     forall (pshim :: PolyShimKind) m.
-    (IsoMapShim (pshim Type), Applicative m) =>
-    IsoMapShim (PolyComposeShim m pshim Type)
-    where
-    isoMapShim ::
-        String ->
-        (KindFunction pa pb -> KindFunction qa qb) ->
-        (KindFunction pb pa -> KindFunction qb qa) ->
-        PolyComposeShim m pshim Type pa pb ->
-        PolyComposeShim m pshim Type qa qb
-    isoMapShim t f1 f2 (MkPolyMapT (MkComposeShim mab)) = MkPolyMapT $ MkComposeShim $ fmap (isoMapShim t f1 f2) mab
-
-instance
-    forall (pshim :: PolyShimKind) m.
     (ReduciblePolyShim pshim, Applicative m) =>
     ReduciblePolyShim (PolyComposeShim m pshim)
     where

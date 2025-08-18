@@ -46,7 +46,7 @@ class
     , MonadThrow PatternError (TSInner ts)
     , Ord (TSVarID ts)
     , TSOuter ts ~ RenamerT ts (TSInner ts)
-    , RecoverShim (TSShim ts)
+    , ToFunctionShim (TSShim ts)
     ) =>
     AbstractTypeSystem ts
     where

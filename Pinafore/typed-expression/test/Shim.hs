@@ -71,28 +71,28 @@ justJM r = convT2 r . functionToShim "J" Just
 
 endless1 ::
     forall (shim :: ShimKind Type).
-    (LazyCategory shim, FunctionShim shim) =>
+    (LazyShim shim, FunctionShim shim) =>
     REC ->
     shim T T
 endless1 r = justJM r . iLazy (endless1 r)
 
 endless2 ::
     forall (shim :: ShimKind Type).
-    (LazyCategory shim, FunctionShim shim) =>
+    (LazyShim shim, FunctionShim shim) =>
     REC ->
     shim T T
 endless2 r = iLazy (endless1 @shim r) . justJM r
 
 applyEndless1 ::
     forall (shim :: ShimKind Type).
-    (LazyCategory shim, RecoverShim shim) =>
+    (LazyShim shim, FunctionShim shim, ToFunctionShim shim) =>
     REC ->
     T
 applyEndless1 r = shimToFunction (endless1 @shim r) $ nothingRec r
 
 applyEndless2 ::
     forall (shim :: ShimKind Type).
-    (LazyCategory shim, RecoverShim shim) =>
+    (LazyShim shim, FunctionShim shim, ToFunctionShim shim) =>
     REC ->
     T
 applyEndless2 r = shimToFunction (endless2 @shim r) $ nothingRec r

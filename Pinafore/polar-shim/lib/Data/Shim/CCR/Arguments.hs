@@ -2,6 +2,7 @@ module Data.Shim.CCR.Arguments
     ( CCRArguments (..)
     , ccrArgumentsEndo
     , ccrArgumentsType
+    , matchCCRArguments
     , mapSameCCRArguments
     , mapCCRArgumentsFM
     , mapPolarCCRArgumentsM
@@ -90,6 +91,14 @@ ccrArgumentsEndo ::
     t
 ccrArgumentsEndo NilCCRArguments ff = ff
 ccrArgumentsEndo (ConsCCRArguments _ args) (MkNestedMorphism ff) = ccrArgumentsEndo args ff
+
+matchCCRArguments ::
+    forall (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) (dv :: CCRVariances) (gta :: CCRVariancesKind dv) (gtb :: CCRVariancesKind dv) (t :: Type).
+    CCRArguments wa dv gta t -> CCRArguments wb dv gtb t -> gta :~: gtb
+matchCCRArguments NilCCRArguments NilCCRArguments = Refl
+matchCCRArguments (ConsCCRArguments _ argsa) (ConsCCRArguments _ argsb) =
+    case matchCCRArguments argsa argsb of
+        Refl -> Refl
 
 mapSameCCRArguments ::
     forall (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv (gt :: CCRVariancesKind dv) t.

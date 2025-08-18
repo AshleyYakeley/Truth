@@ -142,7 +142,7 @@ recursiveBisubstitute ::
     forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity tv a.
     ( IsDolanGroundType ground
     , SubstitutablePolyShim pshim
-    , LazyCategory (pshim Type)
+    , LazyShim (pshim Type)
     , ReducedPolyShim pshim Type ~ pshim Type
     , Is PolarityType polarity
     ) =>
