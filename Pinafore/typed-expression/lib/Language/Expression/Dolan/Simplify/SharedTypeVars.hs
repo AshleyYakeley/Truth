@@ -39,7 +39,7 @@ mergeSharedTypeVars =
         in case findShare posuses <|> findShare neguses of
             Just (MkSomeTypeVarT (va :: TypeVarT tva), MkSomeTypeVarT (vb :: TypeVarT tvb)) ->
                 assignTypeVarT @tva vb $ let
-                    bisub :: Bisubstitution ground (DolanShim ground) Identity
+                    bisub :: Bisubstitution (DolanType ground) (DolanShim ground) Identity
                     bisub = MkBisubstitution vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
                     in appEndo (mergeSharedTypeVars @ground <> endoMToEndo (bisubstitutes @ground [bisub])) expr
             Nothing -> expr

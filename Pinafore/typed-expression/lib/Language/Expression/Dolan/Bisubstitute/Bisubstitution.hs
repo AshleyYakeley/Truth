@@ -3,25 +3,22 @@ module Language.Expression.Dolan.Bisubstitute.Bisubstitution where
 import Data.Shim
 import Shapes
 
-import Language.Expression.Dolan.Rename ()
-import Language.Expression.Dolan.Type
-import Language.Expression.Dolan.TypeSystem
 import Language.Expression.TypeSystem
 
-type Bisubstitution :: GroundTypeKind -> ShimKind Type -> (Type -> Type) -> Type
-data Bisubstitution ground shim m
+type Bisubstitution :: (Polarity -> Type -> Type) -> ShimKind Type -> (Type -> Type) -> Type
+data Bisubstitution w shim m
     = forall tv. MkBisubstitution
         (TypeVarT tv)
-        (m (PShimWit shim (DolanType ground) 'Positive tv))
-        (m (PShimWit shim (DolanType ground) 'Negative tv))
+        (m (PShimWit shim w 'Positive tv))
+        (m (PShimWit shim w 'Negative tv))
 
 instance
-    forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m.
+    forall (w :: Polarity -> Type -> Type) (shim :: ShimKind Type) m.
     ( MonadInner m
-    , AllConstraint Show (DolanType ground 'Positive)
-    , AllConstraint Show (DolanType ground 'Negative)
+    , AllConstraint Show (w 'Positive)
+    , AllConstraint Show (w 'Negative)
     ) =>
-    Show (Bisubstitution ground shim m)
+    Show (Bisubstitution w shim m)
     where
     show (MkBisubstitution var mtpos mtneg) = let
         svar = show var
@@ -36,9 +33,9 @@ instance
         in "{" <> svar <> "+ => " <> spos <> "; " <> svar <> "- => " <> sneg <> "}"
 
 instance
-    forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m.
-    (IsDolanGroundType ground, Traversable m) =>
-    VarRenameable (Bisubstitution ground shim m)
+    forall (w :: Polarity -> Type -> Type) (shim :: ShimKind Type) m.
+    (forall t. VarRenameable (w 'Positive t), forall t. VarRenameable (w 'Negative t), Traversable m) =>
+    VarRenameable (Bisubstitution w shim m)
     where
     varRename ev =
         MkEndoM $ \(MkBisubstitution var mpos mneg) -> do

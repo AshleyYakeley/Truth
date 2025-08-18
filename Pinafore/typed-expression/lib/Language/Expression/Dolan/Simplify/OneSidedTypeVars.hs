@@ -16,12 +16,12 @@ eliminationBisubs ::
     forall (ground :: GroundTypeKind).
     IsDolanGroundType ground =>
     (ListSet SomeTypeVarT, ListSet SomeTypeVarT) ->
-    [Bisubstitution ground (DolanShim ground) Identity]
+    [Bisubstitution (DolanType ground) (DolanShim ground) Identity]
 eliminationBisubs (posvars, negvars) = let
-    posbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
+    posbisub :: SomeTypeVarT -> Bisubstitution (DolanType ground) (DolanShim ground) Identity
     posbisub (MkSomeTypeVarT var) =
         assignTypeVarT @BottomType var $ MkBisubstitution var (return nilDolanShimWit) (return $ varDolanShimWit var)
-    negbisub :: SomeTypeVarT -> Bisubstitution ground (DolanShim ground) Identity
+    negbisub :: SomeTypeVarT -> Bisubstitution (DolanType ground) (DolanShim ground) Identity
     negbisub (MkSomeTypeVarT var) =
         assignTypeVarT @TopType var $ MkBisubstitution var (return $ varDolanShimWit var) (return nilDolanShimWit)
     in (fmap posbisub $ toList posvars) <> (fmap negbisub $ toList negvars)

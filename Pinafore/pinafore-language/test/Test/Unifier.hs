@@ -13,7 +13,7 @@ import Shapes
 import Pinafore.Test.Internal
 import Test.RunScript
 
-type PinaforeBisubstitution = Bisubstitution QGroundType QShim (TypeResult QGroundType)
+type PinaforeBisubstitution = Bisubstitution QType QShim (TypeResult QGroundType)
 
 pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> QInterpreter QValue
 pinaforeBisubstitutes bisubs val = do

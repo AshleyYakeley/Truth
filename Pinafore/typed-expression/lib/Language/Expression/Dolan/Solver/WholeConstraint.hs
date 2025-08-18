@@ -9,7 +9,7 @@ import Language.Expression.Dolan.TypeResult
 import Language.Expression.Dolan.TypeSystem
 
 type SolverBisubstitution :: GroundTypeKind -> Type
-type SolverBisubstitution ground = Bisubstitution ground (DolanShim ground) (TypeResult ground)
+type SolverBisubstitution ground = Bisubstitution (DolanType ground) (DolanShim ground) (TypeResult ground)
 
 type WholeConstraint :: GroundTypeKind -> Type -> Type
 data WholeConstraint ground t where
