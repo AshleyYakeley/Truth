@@ -6,6 +6,7 @@ import Data.Time
 
 import Data.Codec
 import Data.Coerce.Coercion
+import Data.Filterable
 import Data.Serializer
 import Shapes.Import
 import Shapes.Numeric
@@ -61,7 +62,7 @@ instance HasSerializer Bool where
         decode 0 = Just False
         decode 1 = Just True
         decode _ = Nothing
-        in codecMap MkCodec{..} sItem
+        in injectiveFilter MkCodec{..} sItem
 
 instance HasSerializer Word8 where
     stoppingSerializer = littleEndianSerializer
@@ -105,7 +106,7 @@ instance HasSerializer Rational where
         in invmap tupleToRational rationalToTuple $ sProduct stoppingSerializer stoppingSerializer
 
 instance HasSerializer Ordering where
-    stoppingSerializer = codecMap readShowCodec $ invmap unpack pack $ fixedTextSerializer 2
+    stoppingSerializer = injectiveFilter readShowCodec $ invmap unpack pack $ fixedTextSerializer 2
 
 instance HasSerializer Text where
     greedySerializer = invmap decodeUtf8 encodeUtf8 $ greedySerializer @StrictByteString

@@ -17,6 +17,12 @@ class Invariant f => InjectiveFilterable f where
     filter :: (a -> Bool) -> f a -> f a
     filter test = injectiveFilter $ ifCodec test
 
+instance InjectiveFilterable (Codec p) where
+    injectiveFilter = (.)
+
+injectiveFilter' :: (InjectiveFilterable f, MonadInner m) => Codec' m a b -> f a -> f b
+injectiveFilter' codec = injectiveFilter $ toCodec codec
+
 class (Functor f, InjectiveFilterable f) => Filterable f where
     mapMaybe :: (a -> Maybe b) -> f a -> f b
 

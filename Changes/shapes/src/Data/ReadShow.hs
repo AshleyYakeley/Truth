@@ -8,6 +8,7 @@ module Data.ReadShow
 where
 
 import Data.Codec
+import Data.Filterable
 import Data.Streamable
 import Shapes.Import
 
@@ -46,8 +47,8 @@ instance Summable ReadShow where
 readShow :: (Read a, Show a) => ReadShow a
 readShow = MkReadShow{rsShow = show, rsRead = readPrec}
 
-instance CodecMap ReadShow where
-    codecMap MkCodec{..} (MkReadShow s r) =
+instance InjectiveFilterable ReadShow where
+    injectiveFilter MkCodec{..} (MkReadShow s r) =
         MkReadShow (s . encode) $ do
             a <- r
             mpure $ decode a
@@ -97,7 +98,7 @@ digitCodec = let
     in MkCodec{..}
 
 digitReadShow :: ReadShow Integer
-digitReadShow = codecMap digitCodec rItem
+digitReadShow = injectiveFilter digitCodec rItem
 
 assembleDigits :: Integer -> [Integer] -> Integer
 assembleDigits i [] = i

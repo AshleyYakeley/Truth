@@ -79,7 +79,7 @@ instance AsLiteral Text
 
 instance AsTypedLiteral Text where
     literalType = textLiteralType
-    literalContentSerializer = codecMap' utf8Codec sWhole
+    literalContentSerializer = injectiveFilter' utf8Codec sWhole
 
 instance AsLiteral String where
     literalCodec = bijectionCodec unpackBijection . literalCodec @Text
@@ -120,16 +120,16 @@ instance AsTypedLiteral Double where
     literalType = doubleLiteralType
 
 instance AsLiteral SafeRational where
-    literalCodec = codecMap safeRationalNumber literalCodec
+    literalCodec = injectiveFilter safeRationalNumber literalCodec
 
 instance AsLiteral Integer where
-    literalCodec = codecMap integerSafeRational literalCodec
+    literalCodec = injectiveFilter integerSafeRational literalCodec
 
 naturalInteger :: Codec Integer Natural
 naturalInteger = MkCodec toNaturalMaybe toInteger
 
 instance AsLiteral Natural where
-    literalCodec = codecMap naturalInteger literalCodec
+    literalCodec = injectiveFilter naturalInteger literalCodec
 
 instance AsLiteral Day
 

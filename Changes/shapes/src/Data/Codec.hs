@@ -100,18 +100,5 @@ encodeM = encode
 readShowCodec :: (Read a, Show a) => Codec String a
 readShowCodec = MkCodec readMaybe show
 
-class CodecMap f where
-    codecMap :: forall a b. Codec a b -> f a -> f b
-    default codecMap :: MonadPlus f => forall a b. Codec a b -> f a -> f b
-    codecMap codec fa = do
-        a <- fa
-        mpure $ decode codec a
-
-instance CodecMap (Codec p) where
-    codecMap = (.)
-
-codecMap' :: (CodecMap f, MonadInner m) => Codec' m a b -> f a -> f b
-codecMap' codec = codecMap $ toCodec codec
-
 utf8Codec :: Codec' (Result UnicodeException) StrictByteString Text
 utf8Codec = MkCodec (eitherToResult . decodeUtf8') encodeUtf8

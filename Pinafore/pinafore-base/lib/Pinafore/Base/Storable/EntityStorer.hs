@@ -3,7 +3,6 @@ module Pinafore.Base.Storable.EntityStorer
     , FieldStorer (..)
     , ConstructorStorer (..)
     , EntityStorer (..)
-    , gateEntityStorer
     , StorerMode (..)
     , entityStorerToEntity
     )
@@ -117,5 +116,7 @@ instance Summable (EntityStorer 'MultipleMode) where
     rVoid = mempty
     esa <+++> esb = fmap Left esa <> fmap Right esb
 
-gateEntityStorer :: (t -> Bool) -> EntityStorer 'MultipleMode t -> EntityStorer 'MultipleMode t
-gateEntityStorer prd (MkEntityStorer kss) = MkEntityStorer $ fmap (gateKnowShim prd) kss
+instance InjectiveFilterable (EntityStorer 'MultipleMode)
+
+instance Filterable (EntityStorer 'MultipleMode) where
+    mapMaybe amb (MkEntityStorer kss) = MkEntityStorer $ fmap (mapMaybe amb) kss

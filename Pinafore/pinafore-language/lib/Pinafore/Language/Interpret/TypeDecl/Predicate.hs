@@ -67,7 +67,7 @@ makePredicateTypeBox name md storable sparent spredicate =
                                         knotAppRec wit
                                             $ liftA2
                                                 ( \prd (Compose adap) ->
-                                                    MkAllFor $ \NilArguments -> gateStoreAdapter prd $ adap NilArguments
+                                                    MkAllFor $ \NilArguments -> filter prd $ adap NilArguments
                                                 )
                                                 (liftAppRec predexpr)
                                                 storeadapterexpr

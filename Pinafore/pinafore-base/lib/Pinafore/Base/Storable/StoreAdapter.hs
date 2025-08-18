@@ -1,6 +1,5 @@
 module Pinafore.Base.Storable.StoreAdapter
     ( StoreAdapter (..)
-    , gateStoreAdapter
     , nullStoreAdapter
     , storeAdapterConvert
     , plainStoreAdapter
@@ -33,12 +32,13 @@ storeAdapterConvert ea t =
     case storeAdapterToDefinition ea t of
         MkSomeOf def dt -> entityStorerToEntity def dt
 
-gateStoreAdapter :: (t -> Bool) -> StoreAdapter t -> StoreAdapter t
-gateStoreAdapter prd (MkStoreAdapter defs todef) = MkStoreAdapter (gateEntityStorer prd defs) todef
-
 instance Invariant StoreAdapter where
     invmap ab ba (MkStoreAdapter defs todef) =
         MkStoreAdapter{storeAdapterDefinitions = fmap ab defs, storeAdapterToDefinition = \b -> todef $ ba b}
+
+instance InjectiveFilterable StoreAdapter where
+    injectiveFilter codec (MkStoreAdapter defs todef) =
+        MkStoreAdapter{storeAdapterDefinitions = mapMaybe (decode codec) defs, storeAdapterToDefinition = \b -> todef $ encode codec b}
 
 instance Summable StoreAdapter where
     rVoid = MkStoreAdapter{storeAdapterDefinitions = rVoid, storeAdapterToDefinition = never}

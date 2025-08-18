@@ -14,11 +14,16 @@ instance Functor (KnowShim w) where
 instance (forall dt. Show (w dt)) => Show (KnowShim w t) where
     show (MkKnowShim wdt _) = show wdt
 
+instance Invariant (KnowShim w) where
+    invmap ab _ = fmap ab
+
+instance InjectiveFilterable (KnowShim w)
+
+instance Filterable (KnowShim w) where
+    mapMaybe amb (MkKnowShim def f) = MkKnowShim def $ \dt -> mapMaybe amb (f dt)
+
 simpleKnowShim :: w t -> KnowShim w t
 simpleKnowShim wt = MkKnowShim wt Known
 
 convertKnowShim :: (forall dt. w1 dt -> w2 dt) -> KnowShim w1 t -> KnowShim w2 t
 convertKnowShim f (MkKnowShim wt conv) = MkKnowShim (f wt) conv
-
-gateKnowShim :: (t -> Bool) -> KnowShim w t -> KnowShim w t
-gateKnowShim prd (MkKnowShim def f) = MkKnowShim def $ \dt -> gateKnow prd (f dt)

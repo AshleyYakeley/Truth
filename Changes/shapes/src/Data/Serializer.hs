@@ -6,6 +6,7 @@ import Data.ByteString.Builder
 import Data.PrimitiveSerial
 
 import Data.Codec
+import Data.Filterable
 import Shapes.Import
 
 data Stopping
@@ -152,8 +153,8 @@ sExact a (MkSerializer s d) = let
             else empty
     in MkSerializer{..}
 
-instance CodecMap (Serializer stp) where
-    codecMap MkCodec{..} (MkSerializer s d) =
+instance InjectiveFilterable (Serializer stp) where
+    injectiveFilter MkCodec{..} (MkSerializer s d) =
         MkSerializer (s . encode) $ do
             a <- d
             mpure $ decode a
@@ -175,7 +176,7 @@ fixedByteStringSerializer i = let
 
 -- | note length is bytes, not chars
 fixedTextSerializer :: Int -> Serializer stp Text
-fixedTextSerializer i = codecMap' utf8Codec $ fixedByteStringSerializer i
+fixedTextSerializer i = injectiveFilter' utf8Codec $ fixedByteStringSerializer i
 
 serializerLazyCodec :: forall stp a. Serializer stp a -> Codec LazyByteString a
 serializerLazyCodec (MkSerializer s d) = let
@@ -196,4 +197,4 @@ serializerStrictCodec sr = let
     in MkCodec{..}
 
 codecSerializer :: Codec StrictByteString a -> Serializer 'KeepsGoing a
-codecSerializer codec = codecMap codec sWhole
+codecSerializer codec = injectiveFilter codec sWhole
