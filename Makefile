@@ -64,6 +64,8 @@ else
 	docker build -t local-build docker
 endif
 
+docker-exec: docker-image
+	$(STACKEXEC) -- bash
 
 ### Formatting
 
@@ -84,10 +86,13 @@ out:
 	mkdir -p $@
 
 out/licensing: out
-	stack ls dependencies --license | awk '{t=$$1;$$1=$$2;$$2=t;print}' | sort > $@
+	stack ls dependencies text --license | awk '{t=$$1;$$1=$$2;$$2=t;print}' | sort > $@
 
-.PHONY: licensing
-licensing: out/licensing
+out/dependencies: out
+	stack ls dependencies json > $@
+
+.PHONY: dep-info
+dep-info: out/licensing out/dependencies
 
 
 ### Haddock
@@ -379,7 +384,7 @@ testimages: docker-image \
 ### Full build, clean
 
 .PHONY: full
-full: testimages format deb nix-docker-flake deps licensing check-snippets docs pyg-lexer vsc-extension
+full: testimages format deb nix-docker-flake deps dep-info check-snippets docs pyg-lexer vsc-extension
 
 .PHONY: clean
 clean:
