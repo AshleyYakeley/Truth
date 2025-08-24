@@ -74,8 +74,8 @@ class HasKindMorphism (k :: Type) where
 type KindIsomorphism :: forall {k}. (Type -> Type -> Type) -> k -> k -> Type
 type KindIsomorphism (cat :: Type -> Type -> Type) = KindMorphism (Isomorphism cat)
 
-type KindBijection :: forall {k}. k -> k -> Type
-type KindBijection = KindMorphism Bijection
+type KindBijection :: forall k. k -> k -> Type
+type KindBijection @k = KindMorphism Bijection :: k -> k -> Type
 
 instance HasKindMorphism Type where
     kindMorphismMapCat ab = ab

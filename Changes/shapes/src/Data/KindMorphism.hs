@@ -7,8 +7,8 @@ type family KindMorphism (cat :: Type -> Type -> Type) :: k -> k -> Type
 
 type instance KindMorphism cat = cat
 
-type KindFunction :: forall {k}. k -> k -> Type
-type KindFunction = KindMorphism (->)
+type KindFunction :: forall k. k -> k -> Type
+type KindFunction @k = KindMorphism (->) :: k -> k -> Type
 
 newtype NestedMorphism (cat :: Type -> Type -> Type) (a :: kp -> kq) (b :: kp -> kq) = MkNestedMorphism
     { unNestedMorphism :: forall (p :: kp). KindMorphism cat (a p) (b p)
