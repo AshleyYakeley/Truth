@@ -7,6 +7,16 @@ import Pinafore.Syntax.Name.NamedText
 newtype PrecNamedText
     = MkPrecNamedText ((NamedTextItem -> Text) -> (Text, Int))
 
+instance Semigroup PrecNamedText where
+    MkPrecNamedText ftta <> MkPrecNamedText fttb = MkPrecNamedText $ \ft ->
+        let
+            (ta, pa) = ftta ft
+            (tb, pb) = fttb ft
+            in (ta <> tb, max pa pb)
+
+instance Monoid PrecNamedText where
+    mempty = MkPrecNamedText $ \_ -> (mempty, 0)
+
 namedTextPrec :: Int -> NamedText -> PrecNamedText
 namedTextPrec c (MkNamedText ftt) = MkPrecNamedText $ \ft -> (ftt ft, c)
 

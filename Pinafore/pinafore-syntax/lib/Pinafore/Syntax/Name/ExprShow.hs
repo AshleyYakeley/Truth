@@ -75,3 +75,9 @@ instance
     ExprShow (SealedNamedExpression name vw tw)
     where
     exprShowPrec (MkSealedExpression twt expr) = namedTextPrec 3 $ exprShow expr <> exprShow twt
+
+instance (forall t. ExprShow (w t)) => ExprShow (NonpolarArgument w sv a) where
+    exprShowPrec = \case
+        CoNonpolarArgument wt -> "+" <> exprShowPrec wt
+        ContraNonpolarArgument wt -> "-" <> exprShowPrec wt
+        RangeNonpolarArgument wp wq -> "(-" <> exprShowPrec wp <> "," <> exprShowPrec wq <> ")"
