@@ -112,6 +112,13 @@ haddock:
 	stack $(STACKFLAGS) haddock
 
 
+### Watch-Building for development
+
+.PHONY: watch-build
+watch-build: out docker-image
+	stack --docker-env DISPLAY $(STACKFLAGS) build --file-watch --fast
+
+
 ### Executables
 
 ${BINPATH}/pinafore ${BINPATH}/pinadata ${BINPATH}/pinadoc &: out docker-image
@@ -433,6 +440,9 @@ update-locks: docker-image
 
 top-format:
 	make format
+
+top-watch-build:
+	make watch-build
 
 top-build:
 	make exe
