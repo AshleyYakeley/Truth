@@ -41,13 +41,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -55,7 +52,6 @@ library
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -76,7 +72,7 @@ library
     , shapes
     , time
     , xdg-basedir
-  default-language: GHC2021
+  default-language: GHC2024
   if flag(gitversion)
     cpp-options: -DFLAG_GITVERSION
     build-depends:
@@ -91,13 +87,10 @@ executable pinadata
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -105,7 +98,6 @@ executable pinadata
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -121,7 +113,7 @@ executable pinadata
     , pinafore-app
     , pinafore-language
     , shapes
-  default-language: GHC2021
+  default-language: GHC2024
 
 executable pinafore
   main-is: Main.hs
@@ -133,13 +125,10 @@ executable pinafore
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -147,7 +136,6 @@ executable pinafore
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -164,7 +152,7 @@ executable pinafore
     , pinafore-language
     , shapes
     , thread-trace
-  default-language: GHC2021
+  default-language: GHC2024
 
 test-suite app
   type: exitcode-stdio-1.0
@@ -176,13 +164,10 @@ test-suite app
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -190,7 +175,6 @@ test-suite app
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -204,7 +188,7 @@ test-suite app
       optparse-applicative
     , pinafore-app
     , shapes
-  default-language: GHC2021
+  default-language: GHC2024
 
 test-suite test
   type: exitcode-stdio-1.0
@@ -218,13 +202,10 @@ test-suite test
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -232,7 +213,6 @@ test-suite test
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -249,7 +229,7 @@ test-suite test
     , pinafore-language
     , pinafore-lib-script
     , shapes
-  default-language: GHC2021
+  default-language: GHC2024
 
 benchmark benchmark
   type: exitcode-stdio-1.0
@@ -263,13 +243,10 @@ benchmark benchmark
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -277,7 +254,6 @@ benchmark benchmark
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -295,4 +271,4 @@ benchmark benchmark
     , pinafore-language
     , pinafore-lib-script
     , shapes
-  default-language: GHC2021
+  default-language: GHC2024

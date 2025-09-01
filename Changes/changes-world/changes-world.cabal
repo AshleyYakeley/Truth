@@ -32,13 +32,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -46,7 +43,6 @@ library
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -66,4 +62,4 @@ library
     , sqlite-simple
     , thread-trace
     , time
-  default-language: GHC2021
+  default-language: GHC2024

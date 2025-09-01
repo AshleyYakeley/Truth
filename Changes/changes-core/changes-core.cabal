@@ -117,13 +117,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -131,7 +128,6 @@ library
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -145,7 +141,7 @@ library
       base >=4.16
     , shapes
     , thread-trace
-  default-language: GHC2021
+  default-language: GHC2024
 
 test-suite test
   type: exitcode-stdio-1.0
@@ -162,13 +158,10 @@ test-suite test
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -176,7 +169,6 @@ test-suite test
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -191,4 +183,4 @@ test-suite test
     , changes-core
     , shapes
     , thread-trace
-  default-language: GHC2021
+  default-language: GHC2024

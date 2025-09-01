@@ -53,6 +53,14 @@
                         {
                           packages =
                             {
+                              "unix" =
+                                {
+                                  configureFlags = [ "-f" "os-string" ];
+                                };
+                              "directory" =
+                                {
+                                  configureFlags = [ "-f" "os-string" ];
+                                };
                               "gi-soup" =
                                 {
                                   components.library.libs = [ pkgs.libsoup ];
@@ -165,10 +173,14 @@
               vscode-extension = vsceFilePackage;
             };
           formatter = pkgs.nixpkgs-fmt;
-          devShells.default = pkgs.mkShell
-            {
-              buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
-            };
+          devShells =
+          {
+            default = pkgs.mkShell
+              {
+                buildInputs = with pkgs; [ bashInteractive gnumake docker xorg.xhost stack ];
+              };
+            haskell-nix = flake.devShells.default;
+          };
         }
       );
 

@@ -32,16 +32,25 @@ packages:
 - Pinafore/pinafore-app
 - Pinafore/pinafore-docgen
 
-resolver: lts-23.8
+resolver: lts-24.6
 
 allow-newer: true
 allow-newer-deps:
     - leb128
     - optparse-applicative
     - criterion
+    - fourmolu
 
 extra-deps:
 # GTK
+- haskell-gi-0.26.14
+- haskell-gi-base-0.26.8
+- gi-glib-2.0.30
+- gi-gio-2.0.35
+- gi-gdk-3.0.29
+- gi-gtk-3.0.43
+- gi-gtk-hs-0.3.17
+- gi-soup-2.4.29
 - gi-javascriptcore-4.0.28
 - gi-webkit2-4.0.31
 
@@ -53,7 +62,7 @@ extra-deps:
 # format
 - Cabal-syntax-3.12.1.0
 - Cabal-3.12.1.0
-- ghc-lib-parser-9.10.1.20250103
+- ghc-lib-parser-9.10.2.20250515
 - github: AshleyYakeley/fourmolu
   commit: 8f7bfbaebfc7337e3301f87ba602fea65ad12323
 

@@ -5,6 +5,62 @@
 
 packages:
 - completed:
+    hackage: haskell-gi-0.26.14@sha256:209f73e90c3627663cda73a02c16dd8b56770d4ff7a094c090bb2d7cc9bd8c27,5151
+    pantry-tree:
+      sha256: 32456cc58685e325cd88d8950007177b856d0ebe3e57e0d3eb5c19c0ba744d5d
+      size: 4202
+  original:
+    hackage: haskell-gi-0.26.14
+- completed:
+    hackage: haskell-gi-base-0.26.8@sha256:968e2bd48e6f1b9379713ddfda9e664bfbd050157cf937ceaf52b0e0536fcf8a,2448
+    pantry-tree:
+      sha256: df1933e58bd5e0b28cb4be5eb4e80105fe09eedb59645d08e567e8de4d9e065c
+      size: 1941
+  original:
+    hackage: haskell-gi-base-0.26.8
+- completed:
+    hackage: gi-glib-2.0.30@sha256:ac73c972e0c814e74a0b135e8567e1364dbcf60f77e6f020eac9f054eaaebe54,10726
+    pantry-tree:
+      sha256: 8f0c2eaaa93a4aabc18c4e30be3993947514aa6c868db1c99c5e8f1f84207365
+      size: 360
+  original:
+    hackage: gi-glib-2.0.30
+- completed:
+    hackage: gi-gio-2.0.35@sha256:3b4c55db06533622a6aa3ef3251cdf1e3c0b61eb97bd282ec39ad3e34b0c3be8,22663
+    pantry-tree:
+      sha256: f97c092f60db9ca323ba7d6936518bc93df5a0dc374eef53f8ade78fa4fc8a83
+      size: 359
+  original:
+    hackage: gi-gio-2.0.35
+- completed:
+    hackage: gi-gdk-3.0.29@sha256:7b0f571750f11d4869e87130224dc6fe365df8efeebdd5afeb7a5b4ec213b288,8995
+    pantry-tree:
+      sha256: 023c1fc6546026a96ea9ddc6eb53291a9e3d5fd8124e4cade428969b6a6fbeaf
+      size: 356
+  original:
+    hackage: gi-gdk-3.0.29
+- completed:
+    hackage: gi-gtk-3.0.43@sha256:2e33d82be6bfe3ac25f7562bac54c7d27a7968404037dc860bac1969c6b1a39c,40306
+    pantry-tree:
+      sha256: 50efdf1693a92838a91f267d4a1280a93bc7467dc5b72b5fbad5b0f8a85d0ae1
+      size: 359
+  original:
+    hackage: gi-gtk-3.0.43
+- completed:
+    hackage: gi-gtk-hs-0.3.17@sha256:f29311138878ba1a1b13480e01b1a6192eef905b573a620e7a7f1e523d7b25a3,2037
+    pantry-tree:
+      sha256: b6b91710957e49c7efac9bcd91578a10415e9f67789370e568f1bc8ebe49b859
+      size: 1137
+  original:
+    hackage: gi-gtk-hs-0.3.17
+- completed:
+    hackage: gi-soup-2.4.29@sha256:09b6138147fb16ac36dd144aaddf6d4a08d77d32ad2ab7e5c90edf7d8459a785,8949
+    pantry-tree:
+      sha256: 24822aed1b1bdf91aed3c810a6a01b480ad0b85aa62e67d6bce064d60d88c73b
+      size: 359
+  original:
+    hackage: gi-soup-2.4.29
+- completed:
     hackage: gi-javascriptcore-4.0.28@sha256:0d880fbd9a8acd31f8dfc4cacff97b59eb3af88c26136800a9050b5b68721653,4020
     pantry-tree:
       sha256: 38abefc291e7c5c50854e8b8f6e5e8cd8b3071ed9477f2516e62fb93d8197af2
@@ -54,12 +110,12 @@ packages:
   original:
     hackage: Cabal-3.12.1.0
 - completed:
-    hackage: ghc-lib-parser-9.10.1.20250103@sha256:e6ac09326b6b4c7a0113cc962c2321e86e47f0176a9ec5989641c8a95dbcfa2a,18195
+    hackage: ghc-lib-parser-9.10.2.20250515@sha256:3d91a6eb7f59cd134294759759d0ab56e793111e0f97e4697609737be260d047,17593
     pantry-tree:
-      sha256: fb09305e1cf369b7473ee07337cc252958815a46ca11b2a2a6f4c43862636cf8
-      size: 37484
+      sha256: 2036f4c5bbe88faf92a5f3cd1eba649db35c8d4f5895e5d5592fa5fa36d97402
+      size: 37485
   original:
-    hackage: ghc-lib-parser-9.10.1.20250103
+    hackage: ghc-lib-parser-9.10.2.20250515
 - completed:
     name: fourmolu
     pantry-tree:
@@ -87,7 +143,7 @@ packages:
     hackage: open-witness-0.7
 snapshots:
 - completed:
-    sha256: ecb944087cba3b8e85ff75d279bbb878615127e44d1b0485c511834c56ee6929
-    size: 680789
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/8.yaml
-  original: lts-23.8
+    sha256: 473840099b95facf73ec72dcafe53a2487bfadeceb03a981a19e16469503a342
+    size: 726266
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/6.yaml
+  original: lts-24.6

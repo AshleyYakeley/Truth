@@ -12,9 +12,22 @@ import Shapes.Test
 import Changes.Core
 import Test.Useful
 
+orderedLines :: MonadIO m => (?outputLn :: String -> IO ()) => ((?outputLn :: String -> IO ()) => m a) -> m a
+orderedLines ma = do
+    buffer <- liftIO $ newMVar []
+    a <- let
+        ?outputLn = \s -> modifyMVar_ buffer $ \r -> return $ r <> [s]
+        in ma
+    liftIO $ do
+        ?outputLn "ordered {"
+        unorderedLines <- takeMVar buffer
+        for_ (sort unorderedLines) ?outputLn
+        ?outputLn "ordered }"
+    return a
+
 debugLens ::
     forall updateA updateB.
-    (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle) =>
+    (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?outputLn :: String -> IO ()) =>
     String ->
     ChangeLens updateA updateB ->
     ChangeLens updateA updateB
@@ -27,9 +40,9 @@ debugLens name (MkChangeLens g u pe) = let
         m [updateB]
     u' ua mr = do
         -- these are asynchronous, so commented out
-        -- liftIO $ hPutStrLn ?handle $ name ++ ": +update: " ++ show ua
+        -- liftIO $ ?outputLn $ name ++ ": +update: " ++ show ua
         ubs <- u ua mr
-        -- liftIO $ hPutStrLn ?handle $ name ++ ": -update: " ++ show ubs
+        -- liftIO $ ?outputLn $ name ++ ": -update: " ++ show ubs
         return ubs
     pe' ::
         forall m.
@@ -38,26 +51,28 @@ debugLens name (MkChangeLens g u pe) = let
         Readable m (UpdateReader updateA) ->
         m (Maybe [UpdateEdit updateA])
     pe' ebs mr = do
-        liftIO $ hPutStrLn ?handle $ name ++ ": +put: " ++ show ebs
+        liftIO $ ?outputLn $ name ++ ": +put: " ++ show ebs
         meas <- pe ebs mr
-        liftIO $ hPutStrLn ?handle $ name ++ ": -put: " ++ show meas
+        liftIO $ ?outputLn $ name ++ ": -put: " ++ show meas
         return meas
     in MkChangeLens g u' pe'
 
 debugFloatingLens ::
     forall updateA updateB.
-    (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle) =>
+    (Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?outputLn :: String -> IO ()) =>
     String ->
     FloatingChangeLens updateA updateB ->
     FloatingChangeLens updateA updateB
 debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
-doModelTest :: TestName -> ((?handle :: Handle) => View ()) -> TestTree
-doModelTest name call = goldenTest "." name $ runLifecycle $ runView call
+doModelTest :: TestName -> ((?outputLn :: String -> IO ()) => View ()) -> TestTree
+doModelTest name call = goldenTest "." name $ runLifecycle $ let
+    ?outputLn = hPutStrLn ?handle
+    in runView call
 
 testUpdateFunction ::
     forall a.
-    (?handle :: Handle, Show a) =>
+    (?outputLn :: String -> IO (), Show a) =>
     IO () ->
     ChangeLens (WholeUpdate a) (ROWUpdate a)
 testUpdateFunction signal = let
@@ -71,8 +86,8 @@ testUpdateFunction signal = let
         m [ROWUpdate a]
     clUpdate (MkWholeReaderUpdate s) mr = do
         s' <- mr ReadWhole
-        liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
-        liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
+        liftIO $ ?outputLn $ "lens update edit: " <> show s
+        liftIO $ ?outputLn $ "lens update MR: " <> show s'
         liftIO signal
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate s]
     in MkChangeLens{clPutEdits = clPutEditsNone, ..}
@@ -104,7 +119,7 @@ testUpdateReference =
                     putMVar var $ do
                         randomSleep
                         w
-                        for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ name <> " update edit: " <> show s
+                        for_ ee $ \(MkWholeReaderUpdate s) -> ?outputLn $ name <> " update edit: " <> show s
                 showAction :: IO ()
                 showAction = do
                     randomSleep
@@ -124,14 +139,14 @@ testUpdateReference =
             liftIO showAction
             liftIO $ taskWait $ pmrUpdatesTask omr'
 
-outputLn :: (?handle :: Handle, MonadIO m) => String -> m ()
-outputLn s = liftIO $ hPutStrLn ?handle s
+outputLn :: (?outputLn :: String -> IO (), MonadIO m) => String -> m ()
+outputLn s = liftIO $ ?outputLn s
 
-outputNameLn :: (?handle :: Handle, MonadIO m) => String -> String -> m ()
+outputNameLn :: (?outputLn :: String -> IO (), MonadIO m) => String -> String -> m ()
 outputNameLn name s = outputLn $ name ++ ": " ++ s
 
-subscribeShowUpdates :: (Show update, ?handle :: Handle) => String -> Model update -> View (View ())
-subscribeShowUpdates name model = do
+subscribeShowUpdatesF :: Show update => String -> Model update -> View ((String -> IO ()) -> View ())
+subscribeShowUpdatesF name model = do
     chan <- liftIO newChan
     viewOnCloseIO $ do
         threadDelay 1000 -- 1ms to allow for updates to finish
@@ -144,15 +159,22 @@ subscribeShowUpdates name model = do
     viewBindModel model Nothing (return ()) mempty $ \() updates ->
         for_ updates $ \update -> liftIO $ writeChan chan $ Just update
     return
-        $ liftIO
-        $ do
-            mupdate <- readChan chan
-            case mupdate of
-                Just update -> outputNameLn name $ "receive " ++ show update
-                Nothing -> fail "premature end of updates"
+        $ \ol ->
+            let
+                ?outputLn = ol
+                in liftIO $ do
+                    mupdate <- readChan chan
+                    case mupdate of
+                        Just update -> outputNameLn name $ "receive " ++ show update
+                        Nothing -> fail "premature end of updates"
+
+subscribeShowUpdates :: (Show update, ?outputLn :: String -> IO ()) => String -> Model update -> View (View ())
+subscribeShowUpdates name model = do
+    su <- subscribeShowUpdatesF name model
+    return $ su ?outputLn
 
 showModelSubject ::
-    (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle) =>
+    (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?outputLn :: String -> IO ()) =>
     String ->
     Model update ->
     View ()
@@ -163,7 +185,7 @@ showModelSubject name model = do
         outputNameLn name $ "get " ++ show val
 
 modelPushEdits ::
-    (Show (UpdateEdit update), ?handle :: Handle) =>
+    (Show (UpdateEdit update), ?outputLn :: String -> IO ()) =>
     String ->
     Model update ->
     [NonEmpty (UpdateEdit update)] ->
@@ -180,7 +202,7 @@ modelPushEdits name model editss =
                     outputNameLn name $ "push succeeded"
 
 modelDontPushEdits ::
-    (Show (UpdateEdit update), ?handle :: Handle) =>
+    (Show (UpdateEdit update), ?outputLn :: String -> IO ()) =>
     String ->
     Model update ->
     [NonEmpty (UpdateEdit update)] ->
@@ -196,7 +218,7 @@ modelDontPushEdits name model editss =
 
 testSubscription ::
     forall update.
-    (?handle :: Handle, IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update)) =>
+    (?outputLn :: String -> IO (), IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update)) =>
     UpdateSubject update ->
     View (Model update, View (), NonEmpty (UpdateEdit update) -> View ())
 testSubscription initial = do
@@ -209,14 +231,14 @@ testSubscription initial = do
         editObj = convertReference varObj
     model <- viewLiftLifecycle $ makeReflectingModel editObj
     let
-        showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
+        showVar = liftIO $ withMVar var $ \s -> ?outputLn $ "var: " ++ show s
         showExpected =
             \edits ->
                 liftIO
                     $ withMVar var
                     $ \s -> do
                         news <- readableToSubject $ applyEdits (toList edits) $ subjectToReadable s
-                        hPutStrLn ?handle $ "expected: " ++ show news
+                        ?outputLn $ "expected: " ++ show news
     return (model, showVar, showExpected)
 
 testPair :: TestTree
@@ -520,7 +542,12 @@ testPairedSharedString1 =
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         let pairSub = pairModels sectModel sectModel
         showModelSubject "pair" pairSub
-        pairShowUpdate <- subscribeShowUpdates "pair" pairSub
+        pairShowUpdate <- subscribeShowUpdatesF "pair" pairSub
+        let
+            pairShowUpdates =
+                orderedLines $ do
+                    pairShowUpdate ?outputLn
+                    pairShowUpdate ?outputLn
         mainShow
         modelPushEdits
             "pair"
@@ -528,8 +555,7 @@ testPairedSharedString1 =
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
         mainShowUpdate
         sectShowUpdate
-        pairShowUpdate
-        pairShowUpdate
+        pairShowUpdates
         mainShow
         modelPushEdits
             "pair"
@@ -537,8 +563,7 @@ testPairedSharedString1 =
             [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]
         mainShowUpdate
         sectShowUpdate
-        pairShowUpdate
-        pairShowUpdate
+        pairShowUpdates
         mainShow
 
 testPairedSharedString2 :: TestTree
@@ -552,25 +577,27 @@ testPairedSharedString2 =
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         let pairSub = pairModels sectModel sectModel
         showModelSubject "pair" pairSub
-        pairShowUpdate <- subscribeShowUpdates "pair" pairSub
+        pairShowUpdate <- subscribeShowUpdatesF "pair" pairSub
+        let
+            pairShowUpdates =
+                orderedLines $ do
+                    pairShowUpdate ?outputLn
+                    pairShowUpdate ?outputLn
         mainShow
         modelPushEdits "main" mainModel [pure $ StringReplaceSection (startEndRun 1 1) "P"]
         mainShowUpdate
         sectShowUpdate
-        pairShowUpdate
-        pairShowUpdate
+        pairShowUpdates
         mainShow
         modelPushEdits "main" mainModel [pure $ StringReplaceSection (startEndRun 2 2) "Q"]
         mainShowUpdate
         sectShowUpdate
-        pairShowUpdate
-        pairShowUpdate
+        pairShowUpdates
         mainShow
         modelPushEdits "sect" sectModel [pure $ StringReplaceSection (startEndRun 1 1) "x"]
         mainShowUpdate
         sectShowUpdate
-        pairShowUpdate
-        pairShowUpdate
+        pairShowUpdates
         mainShow
         modelPushEdits
             "pair"
@@ -578,8 +605,7 @@ testPairedSharedString2 =
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 3 3) "y"]
         mainShowUpdate
         sectShowUpdate
-        pairShowUpdate
-        pairShowUpdate
+        pairShowUpdates
         mainShow
 
 testSubscribe :: TestTree

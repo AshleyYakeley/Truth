@@ -10,17 +10,14 @@
     maintainer: <ashley@semantic.org>
 
 - &language
-    language: GHC2021
+    language: GHC2024
     default-extensions:
       - AllowAmbiguousTypes
       - Arrows
-      - DataKinds
       - DefaultSignatures
-      - DerivingStrategies
       - FunctionalDependencies
       - ImplicitParams
       - NoImplicitPrelude
-      - LambdaCase
       - OverloadedLabels
       - OverloadedStrings
       - PartialTypeSignatures
@@ -28,7 +25,6 @@
       - QuantifiedConstraints
       - RecordWildCards
       - RecursiveDo
-      - RoleAnnotations
       - NoStarIsType
       - TemplateHaskell
       - TypeAbstractions

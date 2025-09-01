@@ -1,7 +1,8 @@
-ARG RESOLVER="lts-23.8"
+ARG RESOLVER="lts-24.6"
 
-FROM fpco/stack-build-small:${RESOLVER}
-RUN echo 2025-08-23 > /container.date
+FROM ubuntu:jammy
+# FROM fpco/stack-build-small:${RESOLVER}
+RUN echo 2025-08-29 > /container.date
 
 # Debian upgrade
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,14 +14,24 @@ RUN apt autoremove --purge -y
 RUN mkdir /extra
 WORKDIR /extra
 
+# entrypoint & cmd
+RUN apt-get install -y pid1
+ENTRYPOINT ["/usr/bin/pid1"]
+CMD ["bash"]
+
 # basics
 RUN apt-get install -y sudo curl
 
+# environment
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
 # make sudo work
 RUN echo "root ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-RUN echo "stack ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # stack
+RUN curl -sSL https://get.haskellstack.org/ | sh
 ARG RESOLVER
 RUN stack setup --resolver ${RESOLVER}
 

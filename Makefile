@@ -92,10 +92,10 @@ format: ${BINPATH}/fourmolu
 out:
 	mkdir -p $@
 
-out/licensing: out
+out/licensing: out stack.yaml
 	stack ls dependencies text --license | awk '{t=$$1;$$1=$$2;$$2=t;print}' | sort > $@
 
-out/dependencies: out
+out/dependencies: out stack.yaml
 	stack ls dependencies json > $@
 
 .PHONY: dep-info
@@ -123,7 +123,7 @@ ifeq ($(haddock),1)
 endif
 endif
 	xhost +si:localuser:$${USER}
-	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
+	stack --docker-env DISPLAY $(STACKFLAGS) install --ghc-options="-j" --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
 	strip --remove-section=.comment ${BINPATH}/pinafore
 	strip --remove-section=.comment ${BINPATH}/pinadoc
 ifeq ($(nodocker),1)

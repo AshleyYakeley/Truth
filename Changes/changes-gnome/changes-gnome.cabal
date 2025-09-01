@@ -82,13 +82,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -96,7 +93,6 @@ library
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -128,7 +124,7 @@ library
     , thread-trace
     , time
     , vector
-  default-language: GHC2021
+  default-language: GHC2024
   if flag(trace)
     exposed-modules:
         Changes.World.GNOME.GI.Trace
@@ -144,13 +140,10 @@ executable changes-cairo
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -158,7 +151,6 @@ executable changes-cairo
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -177,7 +169,7 @@ executable changes-cairo
     , gi-gtk
     , shapes
     , time
-  default-language: GHC2021
+  default-language: GHC2024
   if !flag(build-examples)
     buildable: False
 
@@ -192,13 +184,10 @@ executable changes-gio
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -206,7 +195,6 @@ executable changes-gio
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -222,7 +210,7 @@ executable changes-gio
     , changes-gnome
     , gi-gio
     , shapes
-  default-language: GHC2021
+  default-language: GHC2024
   if !flag(build-examples)
     buildable: False
 
@@ -237,13 +225,10 @@ executable changes-showImages
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -251,7 +236,6 @@ executable changes-showImages
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -269,7 +253,7 @@ executable changes-showImages
     , directory
     , filepath
     , shapes
-  default-language: GHC2021
+  default-language: GHC2024
   if !flag(build-examples)
     buildable: False
 
@@ -285,13 +269,10 @@ executable changes-soup
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -299,7 +280,6 @@ executable changes-soup
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -318,7 +298,7 @@ executable changes-soup
     , optparse-applicative
     , shapes
     , uuid
-  default-language: GHC2021
+  default-language: GHC2024
   if !flag(build-examples)
     buildable: False
 
@@ -333,13 +313,10 @@ executable changes-text
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -347,7 +324,6 @@ executable changes-text
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -366,7 +342,7 @@ executable changes-text
     , optparse-applicative
     , shapes
     , thread-trace
-  default-language: GHC2021
+  default-language: GHC2024
   if !flag(build-examples)
     buildable: False
 
@@ -383,13 +359,10 @@ test-suite test
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -397,7 +370,6 @@ test-suite test
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -416,6 +388,6 @@ test-suite test
     , gi-glib
     , shapes
     , thread-trace
-  default-language: GHC2021
+  default-language: GHC2024
   if flag(test-X11)
     cpp-options: -DTEST_X11

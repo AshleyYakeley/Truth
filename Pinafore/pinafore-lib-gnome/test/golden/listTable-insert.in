@@ -26,6 +26,6 @@ let {
     close.Window w;
     outputLn.Env "Thread End";
   };
-  sleep $ Seconds 0.2;
+  sleep $ Seconds 0.1;
   outputLn.Env "Main End";
 }

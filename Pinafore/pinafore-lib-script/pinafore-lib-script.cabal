@@ -29,13 +29,10 @@ library
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -43,7 +40,6 @@ library
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -55,7 +51,7 @@ library
   ghc-options: -Weverything -Wno-missing-import-lists -Wno-missing-export-lists -Wno-unsafe -Wno-missing-safe-haskell-mode -Wno-missing-kind-signatures -Wno-partial-type-signatures -Wno-missing-role-annotations -Wno-monomorphism-restriction -Wno-missing-local-signatures -Wno-partial-fields -Wno-all-missed-specialisations -Wno-missed-specialisations -Wno-unused-packages
   build-depends:
       base >=4.16
-  default-language: GHC2021
+  default-language: GHC2024
 
 test-suite test
   type: exitcode-stdio-1.0
@@ -69,13 +65,10 @@ test-suite test
   default-extensions:
       AllowAmbiguousTypes
       Arrows
-      DataKinds
       DefaultSignatures
-      DerivingStrategies
       FunctionalDependencies
       ImplicitParams
       NoImplicitPrelude
-      LambdaCase
       OverloadedLabels
       OverloadedStrings
       PartialTypeSignatures
@@ -83,7 +76,6 @@ test-suite test
       QuantifiedConstraints
       RecordWildCards
       RecursiveDo
-      RoleAnnotations
       NoStarIsType
       TemplateHaskell
       TypeAbstractions
@@ -101,4 +93,4 @@ test-suite test
     , pinafore-lib-media
     , pinafore-lib-script
     , shapes
-  default-language: GHC2021
+  default-language: GHC2024
