@@ -28,6 +28,13 @@ applyCoPolyShim ::
     pshim k (f a) (g b)
 applyCoPolyShim ccrvf ccrvg fg ab = applyPolyShim CoCCRVarianceType ccrvf ccrvg fg ab
 
+liftCoPolyShim ::
+    forall (pshim :: PolyShimKind) k (f :: Type -> k) (a :: Type) (b :: Type).
+    (ApplyPolyShim pshim, CoercibleKind k, HasVariance f, VarianceOf f ~ 'Covariance) =>
+    pshim Type a b ->
+    pshim k (f a) (f b)
+liftCoPolyShim = applyCoPolyShim ccrVariation ccrVariation id
+
 applyContraPolyShim ::
     forall (pshim :: PolyShimKind) k (f :: Type -> k) (g :: Type -> k) (a :: Type) (b :: Type).
     ApplyPolyShim pshim =>
@@ -37,6 +44,13 @@ applyContraPolyShim ::
     pshim Type b a ->
     pshim k (f a) (g b)
 applyContraPolyShim ccrvf ccrvg fg ba = applyPolyShim ContraCCRVarianceType ccrvf ccrvg fg (MkCatDual ba)
+
+liftContraPolyShim ::
+    forall (pshim :: PolyShimKind) k (f :: Type -> k) (a :: Type) (b :: Type).
+    (ApplyPolyShim pshim, CoercibleKind k, HasVariance f, VarianceOf f ~ 'Contravariance) =>
+    pshim Type b a ->
+    pshim k (f a) (f b)
+liftContraPolyShim = applyContraPolyShim ccrVariation ccrVariation id
 
 applyRangePolyShim ::
     forall (pshim :: PolyShimKind) k (f :: (Type, Type) -> k) (g :: (Type, Type) -> k) (a1 :: Type) (a2 :: Type) (b1 :: Type) (b2 :: Type).
@@ -48,6 +62,14 @@ applyRangePolyShim ::
     pshim Type a2 b2 ->
     pshim k (f '(a1, a2)) (g '(b1, b2))
 applyRangePolyShim ccrvf ccrvg fg ba1 ab2 = applyPolyShim RangeCCRVarianceType ccrvf ccrvg fg (MkCatRange ba1 ab2)
+
+liftRangePolyShim ::
+    forall (pshim :: PolyShimKind) k (f :: (Type, Type) -> k) (a1 :: Type) (a2 :: Type) (b1 :: Type) (b2 :: Type).
+    (ApplyPolyShim pshim, CoercibleKind k, HasCCRVariance 'RangeCCRVariance f) =>
+    pshim Type b1 a1 ->
+    pshim Type a2 b2 ->
+    pshim k (f '(a1, a2)) (f '(b1, b2))
+liftRangePolyShim = applyRangePolyShim ccrVariation ccrVariation id
 
 instance ApplyPolyShim NullShim where
     applyPolyShim CoCCRVarianceType _ _ MkNullShim MkNullShim = MkNullShim

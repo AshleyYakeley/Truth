@@ -18,18 +18,20 @@ unPolyComposeShim ::
     m (pshim k a b)
 unPolyComposeShim tm = unComposeShim $ unPolyMapT tm
 
-mkPolyComposeShim ::
+pattern MkPolyComposeShim ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) k (a :: k) (b :: k).
     m (pshim k a b) ->
     PolyComposeShim m pshim k a b
-mkPolyComposeShim ms = MkPolyMapT $ MkComposeShim ms
+pattern MkPolyComposeShim ms = MkPolyMapT (MkComposeShim ms)
+
+{-# COMPLETE MkPolyComposeShim #-}
 
 purePolyComposeShim ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) k (a :: k) (b :: k).
     Applicative m =>
     pshim k a b ->
     PolyComposeShim m pshim k a b
-purePolyComposeShim ps = mkPolyComposeShim $ pure ps
+purePolyComposeShim ps = MkPolyComposeShim $ pure ps
 
 purePolyComposeShimWit ::
     forall (pshim :: PolyShimKind) (m :: Type -> Type) polarity k (w :: k -> Type) (t :: k).
@@ -60,8 +62,8 @@ polarMkPolyComposeShim ::
     PolarShim (PolyComposeShim m pshim k) polarity a b
 polarMkPolyComposeShim mab =
     case polarityType @polarity of
-        PositiveType -> MkPolarShim $ mkPolyComposeShim $ fmap unPolarShim mab
-        NegativeType -> MkPolarShim $ mkPolyComposeShim $ fmap unPolarShim mab
+        PositiveType -> MkPolarShim $ MkPolyComposeShim $ fmap unPolarShim mab
+        NegativeType -> MkPolarShim $ MkPolyComposeShim $ fmap unPolarShim mab
 
 type PolyFuncShim :: Type -> PolyShimKind -> PolyShimKind
 type PolyFuncShim t = PolyComposeShim ((->) t)
@@ -86,8 +88,8 @@ mkPolarPolyFuncShim ::
 mkPolarPolyFuncShim f =
     MkPolarShim
         $ case polarityType @polarity of
-            PositiveType -> mkPolyComposeShim $ \t -> unPolarShim $ f t
-            NegativeType -> mkPolyComposeShim $ \t -> unPolarShim $ f t
+            PositiveType -> MkPolyComposeShim $ \t -> unPolarShim $ f t
+            NegativeType -> MkPolyComposeShim $ \t -> unPolarShim $ f t
 
 instance
     forall (pshim :: PolyShimKind) m.
@@ -95,4 +97,4 @@ instance
     ReduciblePolyShim (PolyComposeShim m pshim)
     where
     type ReducedPolyShim (PolyComposeShim m pshim) = ReducedPolyShim pshim
-    reduceShim f (MkPolyMapT (MkComposeShim conv)) = MkPolyMapT $ MkComposeShim $ fmap (reduceShim f) conv
+    reduceShim f (MkPolyComposeShim conv) = MkPolyComposeShim $ fmap (reduceShim f) conv
