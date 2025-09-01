@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,10 +8,16 @@ dynamic = ["version"]
 description="Pygments lexer for Pinafore"
 authors=[{name="Ashley Yakeley",email="ashley@semantic.org"}]
 dependencies=["Pygments>=2.0.1"]
-license = {text = "GPL-2"}
+license = "GPL-2.0-only"
 
 [project.urls]
 Homepage = "https://github.com/AshleyYakeley/Truth"
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }
+
+[tool.setuptools.packages.find]
+include = ["pinafore_lexer*"]
 
 [tool.setuptools.package-data]
 pinafore_lexer = ["syntax-data.json"]

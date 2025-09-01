@@ -64,7 +64,7 @@ else
 	docker build -t local-build docker
 endif
 
-docker-exec: docker-image
+docker-shell: docker-image
 	$(STACKEXEC) -- bash
 
 ### Formatting
@@ -78,6 +78,13 @@ fourmolu: ${BINPATH}/fourmolu
 .PHONY: format
 format: ${BINPATH}/fourmolu
 	env BINPATH=${BINPATH} stack --docker-env BINPATH $(STACKFLAGS) exec -- bin/format-all
+
+
+### Python
+
+.build/python: docker-image
+	$(STACKEXEC) -- python3 -m venv $@
+	$(STACKEXEC) -- $@/bin/pip install -U setuptools wheel build sphinx myst-parser sphinx-rtd-theme pygments scour
 
 
 ### Licensing info
@@ -268,7 +275,8 @@ out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz: \
  support/pygments-lexer/pyproject.toml \
  support/pygments-lexer/pinafore_lexer/__init__.py \
  support/pygments-lexer/pinafore_lexer/syntax-data.json
-	$(STACKEXEC) -- env PYGLEXERVERSION="$(PYGLEXERVERSION)" python3 -m build -o out/support/ support/pygments-lexer/
+	echo $(PYGLEXERVERSION) > support/pygments-lexer/VERSION
+	$(STACKEXEC) -- .build/python/bin/python3 -m build -o out/support/ support/pygments-lexer/
 
 .PHONY: pyg-lexer
 pyg-lexer: out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
@@ -315,20 +323,21 @@ support/website/generated/img/favicon.png: support/branding/logo.svg
 
 .PHONY: docs
 docs: \
+ docker-image \
+ .build/python \
  support/website/generated/img/logo.png \
  support/website/generated/img/favicon.ico \
  $(foreach f,$(LIBMODULEDOCS),support/website/library/$f.md) \
  support/website/generated/infix.md \
  support/website/generated/type-infix.md \
  support/website/generated/img/information.png \
- out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz \
- docker-image
+ out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 	mkdir -p support/website/generated/examples
 	cp Pinafore/pinafore-app/examples/* support/website/generated/examples/
-	$(STACKEXEC) -- pip3 install --user out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
+	$(STACKEXEC) -- .build/python/bin/pip install out/support/pinafore_lexer-$(PYGLEXERVERSION).tar.gz
 	rm -rf out/support/website
 	mkdir -p out/support/website
-	$(STACKEXEC) -- sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
+	$(STACKEXEC) -- .build/python/bin/sphinx-build -D release="$(PINAFOREVERSION)" -D myst_substitutions.PINAFOREVERSION="$(PINAFOREVERSION)" -W --keep-going -b dirhtml support/website out/support/website/dirhtml
 
 .PHONY: check-snippets
 check-snippets: ${BINPATH}/pinafore
