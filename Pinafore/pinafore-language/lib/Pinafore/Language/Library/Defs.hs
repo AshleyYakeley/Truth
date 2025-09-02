@@ -187,19 +187,19 @@ getTypeParameters (ConsListType t tt) = do
 nameSupply :: [Name]
 nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
-getGDSName :: QGroundType dv t -> Some (CCRPolarArguments dv QType t 'Negative) -> Maybe NamedText
-getGDSName gt (MkSome params) =
+getGDSName :: QGroundType dv t -> Maybe ([NamedText], NamedText)
+getGDSName gt =
     case qgtGreatestDynamicSupertype gt of
         NullPolyGreatestDynamicSupertype -> Nothing
-        MkPolyGreatestDynamicSupertype f -> Just $ exprShow $ f params
+        MkPolyGreatestDynamicSupertype args f -> Just $ (ccrArgumentsToList exprShow args, exprShow f)
 
 typeBDS :: FullNameRef -> RawMarkdown -> QSomeGroundType -> [LibraryStuff] -> LibraryStuff
 typeBDS name docDescription t@(MkSomeGroundType gt) bdChildren = let
     bdScopeEntry = pure $ BindScopeEntry name [] $ TypeItem t
     diNames = pure name
-    (diParams, params) = evalState (getTypeParameters $ qgtVarianceType gt) nameSupply
+    (diParams, _params) = evalState (getTypeParameters $ qgtVarianceType gt) nameSupply
     diStorable = isJust $ getGroundProperty storabilityProperty gt
-    diGDS = getGDSName gt params
+    diGDS = getGDSName gt
     diEquivalentDefn = Nothing
     docItem = TypeDocItem{..}
     bdDoc = MkDefDoc{..}

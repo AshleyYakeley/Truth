@@ -92,7 +92,7 @@ makeEquivalentType name md storable sparams sparent =
                                         parentText = exprShow parent
                                         doc = MkDefDoc (typeEquivalentDocItem name storable sparams parentText) md
                                         declGroundedType :: QNonpolarGroundedType decltype
-                                        declGroundedType = MkNonpolarGroundedType gt $ mapSameCCRArguments tParamToNonpolarArgument tparams
+                                        declGroundedType = MkNonpolarGroundedType gt $ tParamsToNonpolarArguments tparams
                                     registerGroundType name doc gt
                                     registerSubtypeConversion $ neutralSubtypeConversionEntry declGroundedType parent
                                     registerSubtypeConversion $ neutralSubtypeConversionEntry parent declGroundedType

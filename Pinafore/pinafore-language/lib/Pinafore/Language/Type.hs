@@ -5,7 +5,6 @@ module Pinafore.Language.Type
     )
 where
 
-import Pinafore.Language.Type.DynamicSupertype as I
 import Pinafore.Language.Type.Family as I
 import Pinafore.Language.Type.GetDynamicSupertype as I
 import Pinafore.Language.Type.Ground as I

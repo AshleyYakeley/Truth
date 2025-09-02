@@ -107,6 +107,7 @@ library:
       - Language.Expression.Dolan.Solver
       - Language.Expression.Dolan.Nonpolar
       - Language.Expression.Dolan.Mono
+      - Language.Expression.Dolan.DynamicSupertype
 
 tests:
     test:

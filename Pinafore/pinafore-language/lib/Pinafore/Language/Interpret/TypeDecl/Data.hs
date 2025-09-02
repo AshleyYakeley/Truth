@@ -436,27 +436,28 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                             return $ fst $ unGroundTypeFromTypeID gtft mainTypeName mainFamType
                                     getGroundType ::
                                         QGroundType dv maintype ->
+                                        CCRVariancesMap dv maintype ->
                                         (decltype -> TypeData dv maintype) ->
                                         GroundTypeFromTypeID dv maintype y ->
                                         TypeData dv maintype ->
                                         QGroundType dv maintype
-                                    getGroundType mainGroundType picktype (MkGroundTypeFromTypeID gttid) (tdata :: _ subtid) = let
+                                    getGroundType mainGroundType dvm picktype (MkGroundTypeFromTypeID gttid) (tdata :: _ subtid) = let
                                         typeID = tdID tdata
                                         baseGroundType :: QGroundType dv maintype
                                         (baseGroundType, _) = gttid (tdName tdata) typeID
+                                        gdsType :: QExprGroundedShimWit 'Negative decltype
+                                        gdsType = mkDolanGroundedShimWit mainGroundType $ tParamsToPolarArguments dvm tparams
+                                        gdsConv = MkPolarShim
+                                            $ purePolyComposeShim
+                                            $ functionToShim "supertype"
+                                            $ \t ->
+                                                if elem (tdID $ picktype $ coerce t) $ tdSubtypes tdata
+                                                    then Just t
+                                                    else Nothing
                                         gds :: QPolyGreatestDynamicSupertype dv maintype
                                         gds =
-                                            MkPolyGreatestDynamicSupertype $ \(args :: _ argstype) ->
-                                                case unsafeCoercion @Type @decltype @argstype of
-                                                    MkCoercion ->
-                                                        MkShimWit (MkDolanGroundedType mainGroundType args)
-                                                            $ MkPolarShim
-                                                            $ pureComposeShim
-                                                            $ functionToShim "supertype"
-                                                            $ \t ->
-                                                                if elem (tdID $ picktype $ coerce t) $ tdSubtypes tdata
-                                                                    then Just t
-                                                                    else Nothing
+                                            MkPolyGreatestDynamicSupertype (tParamsToNonpolarVarArguments tparams)
+                                                $ mapShimWit gdsConv gdsType
                                         in baseGroundType
                                             { qgtGreatestDynamicSupertype =
                                                 if tdID tdata == mainFamType
@@ -474,14 +475,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                             QGroundedShimWit polarity decltype
                                         groundedDeclType =
                                             mkDolanGroundedShimWit groundType
-                                                $ mapPolarCCRArguments
-                                                    @QPolyShim
-                                                    @CCRTypeParam
-                                                    @(CCRPolarArgument QType polarity)
-                                                    @dv
-                                                    @polarity
-                                                    @maintype
-                                                    tParamToPolarArgument
+                                                $ tParamsToPolarArguments
                                                     dvm
                                                     tparams
                                         in (groundedDeclType @'Positive, groundedDeclType @'Negative)
@@ -498,7 +492,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                         gttid <- builderLift $ mkgt x
                                         let
                                             groundType :: QGroundType dv maintype
-                                            groundType = getGroundType mainGroundType picktype gttid $ ctOuterType constructor
+                                            groundType = getGroundType mainGroundType dvm picktype gttid $ ctOuterType constructor
                                             (declpos, declneg) = declTypes groundType dvm
                                             ctfullname = ctName constructor
                                             ctfpos :: QShimWit 'Positive decltype
@@ -537,17 +531,17 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                     constructorBox constructor = mkConstructFixBox $ registerConstructor constructor
                                     subtypeRegister ::
                                         TypeData dv maintype ->
-                                        (QGroundType dv maintype, decltype -> TypeData dv maintype, x) ->
+                                        (QGroundType dv maintype, decltype -> TypeData dv maintype, x, CCRVariancesMap dv maintype) ->
                                         QScopeBuilder ()
-                                    subtypeRegister tdata (~(mainGroundType, picktype, x)) = do
+                                    subtypeRegister tdata (~(mainGroundType, picktype, x, dvm)) = do
                                         gttid <- builderLift $ mkgt x
                                         let
                                             subGroundType :: QGroundType dv maintype
-                                            subGroundType = getGroundType mainGroundType picktype gttid tdata
+                                            subGroundType = getGroundType mainGroundType dvm picktype gttid tdata
                                         registerGroundType (tdName tdata) (tdDoc tdata) subGroundType
                                         for_ (tdSupertype tdata) $ \supertdata -> let
                                             superGroundType :: QGroundType dv maintype
-                                            superGroundType = getGroundType mainGroundType picktype gttid supertdata
+                                            superGroundType = getGroundType mainGroundType dvm picktype gttid supertdata
                                             in registerSubtypeConversion
                                                 $ MkSubtypeConversionEntry
                                                     Verify
@@ -556,7 +550,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                                     identitySubtypeConversion
                                     subtypeBox ::
                                         TypeData dv maintype ->
-                                        QFixBox (QGroundType dv maintype, decltype -> TypeData dv maintype, x) ()
+                                        QFixBox (QGroundType dv maintype, decltype -> TypeData dv maintype, x, CCRVariancesMap dv maintype) ()
                                     subtypeBox tdata = mkRegisterFixBox $ subtypeRegister tdata
                                     supertypeBox ::
                                         forall.
@@ -624,7 +618,7 @@ makeBox gmaker supertypes tinfo syntaxConstructorList doubleParams gtparams =
                                         $ proc () -> do
                                             (x, dvm, codecs, picktype) <- mainBox -< ()
                                             mainGroundType <- mainTypeBox -< x
-                                            concatmap subtypeBox subtypeDatas -< (mainGroundType, picktype, x)
+                                            concatmap subtypeBox subtypeDatas -< (mainGroundType, picktype, x, dvm)
                                             for_ (zip [0 ..] supertypes) supertypeBox -< (mainGroundType, dvm, codecs)
                                             fixedListArrowSequence_ (fmap constructorBox constructorFixedList)
                                                 -<

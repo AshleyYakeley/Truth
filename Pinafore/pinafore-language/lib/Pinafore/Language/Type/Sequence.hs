@@ -12,7 +12,6 @@ module Pinafore.Language.Type.Sequence
 where
 
 import Import
-import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Storable
@@ -85,6 +84,9 @@ listGroundType = let
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List"){qgtProperties = props}
 
+va :: TypeVarT (UVarT "a")
+va = MkTypeVar $ MkSymbolType @"a"
+
 list1GroundType :: QGroundType '[CoCCRVariance] NonEmpty
 list1GroundType = let
     storability :: Storability '[CoCCRVariance] NonEmpty
@@ -97,9 +99,15 @@ list1GroundType = let
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1.List.")
         { qgtProperties = props
         , qgtGreatestDynamicSupertype =
-            MkPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
-                tt = MkDolanGroundedType listGroundType $ ConsCCRArguments ta NilCCRArguments
-                in MkShimWit tt $ MkPolarShim $ pureComposeShim $ functionToShim "nonEmpty" nonEmpty
+            MkPolyGreatestDynamicSupertype (ConsCCRArguments (CoNonpolarArgument va) NilCCRArguments) $ let
+                tt =
+                    MkDolanGroundedType listGroundType
+                        $ ConsCCRArguments (CoCCRPolarArgument $ singleDolanType $ VarDolanSingularType va) NilCCRArguments
+                in MkShimWit tt
+                    $ MkPolarShim
+                    $ purePolyComposeShim
+                    $ functionToShim "nonEmpty" nonEmpty
+                    . liftCoPolyShim iMeetL1
         }
 
 pairStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (ta, tb)

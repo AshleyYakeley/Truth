@@ -107,30 +107,31 @@ opticsLibSection =
                         let
                             tn = nonpolarToNegative @QTypeSystem npt
                             tp = nonpolarToPositive @QTypeSystem npt
-                        (MkShimWit (dtn :: _ dt) (MkPolarShim (MkComposeShim convexpr))) <-
-                            getGreatestDynamicSupertypeSW tn
-                        let
-                            vtype :: QShimWit 'Positive (LangPrism '(MeetType A dt, A) '(A, t))
-                            vtype =
-                                shimWitToDolan
-                                    $ mkDolanGroundedShimWit qGroundType
-                                    $ consCCRPolarArgumentsShimWit
-                                        (qgtVarianceMap qGroundType)
-                                        (rangeCCRArgument (joinMeetShimWit qType (mkShimWit dtn)) qType)
-                                    $ consCCRPolarArgumentsShimWit
-                                        (nextCCRVariancesMap $ qgtVarianceMap qGroundType)
-                                        (rangeCCRArgument qType tp)
-                                    $ nilCCRPolarArgumentsShimWit
-                            toVal :: QShim dt (Maybe t) -> LangPrism '(MeetType A dt, A) '(A, t)
-                            toVal conv =
-                                MkLangPrism
-                                    ( \(MkMeetType (a, dt)) ->
-                                        case shimToFunction conv dt of
-                                            Just t -> Right t
-                                            Nothing -> Left a
-                                    )
-                                    id
-                        return $ MkLangExpression $ MkSealedExpression vtype $ fmap toVal convexpr
+                        gdssw <- getGreatestDynamicSupertypeSW tn
+                        return $ case gdssw of
+                            (MkShimWit (dtn :: _ dt) (MkPolarShim (MkPolyComposeShim convexpr))) ->
+                                let
+                                    vtype :: QShimWit 'Positive (LangPrism '(MeetType A dt, A) '(A, t))
+                                    vtype =
+                                        shimWitToDolan
+                                            $ mkDolanGroundedShimWit qGroundType
+                                            $ consCCRPolarArgumentsShimWit
+                                                (qgtVarianceMap qGroundType)
+                                                (rangeCCRArgument (joinMeetShimWit qType (mkShimWit dtn)) qType)
+                                            $ consCCRPolarArgumentsShimWit
+                                                (nextCCRVariancesMap $ qgtVarianceMap qGroundType)
+                                                (rangeCCRArgument qType tp)
+                                            $ nilCCRPolarArgumentsShimWit
+                                    toVal :: QShim dt (Maybe t) -> LangPrism '(MeetType A dt, A) '(A, t)
+                                    toVal conv =
+                                        MkLangPrism
+                                            ( \(MkMeetType (a, dt)) ->
+                                                case shimToFunction conv dt of
+                                                    Just t -> Right t
+                                                    Nothing -> Left a
+                                            )
+                                            id
+                                    in MkLangExpression $ MkSealedExpression vtype $ fmap toVal convexpr
                 ]
             ]
         , headingBDS

@@ -20,28 +20,32 @@ langCheck (MkLangType npt) = do
     let
         tn = nonpolarToNegative @QTypeSystem npt
         tp = nonpolarToPositive @QTypeSystem npt
-    MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
-    let
-        stype = funcShimWit (mkShimWit dtw) $ maybeShimWit tp
-        sexpr = fmap shimToFunction expr
-    return $ MkLangExpression $ MkSealedExpression stype sexpr
+    gdssw <- getGreatestDynamicSupertypeSW tn
+    return $ case gdssw of
+        MkShimWit dtw (MkPolarShim (MkPolyComposeShim expr)) ->
+            let
+                stype = funcShimWit (mkShimWit dtw) $ maybeShimWit tp
+                sexpr = fmap shimToFunction expr
+                in MkLangExpression $ MkSealedExpression stype sexpr
 
 langCoerce :: LangType -> QInterpreter LangExpression
 langCoerce (MkLangType npt) = do
     let
         tn = nonpolarToNegative @QTypeSystem npt
         tp = nonpolarToPositive @QTypeSystem npt
-    MkShimWit dtw (MkPolarShim (MkComposeShim expr)) <- getGreatestDynamicSupertypeSW tn
-    let
-        fromJustOrError :: forall t. Maybe t -> t
-        fromJustOrError =
-            \case
-                Just t -> t
-                Nothing ->
-                    error $ unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
-        stype = funcShimWit (mkShimWit dtw) tp
-        sexpr = fmap (\conv t -> fromJustOrError $ shimToFunction conv t) expr
-    return $ MkLangExpression $ MkSealedExpression stype sexpr
+    gdssw <- getGreatestDynamicSupertypeSW tn
+    return $ case gdssw of
+        MkShimWit dtw (MkPolarShim (MkPolyComposeShim expr)) ->
+            let
+                fromJustOrError :: forall t. Maybe t -> t
+                fromJustOrError =
+                    \case
+                        Just t -> t
+                        Nothing ->
+                            error $ unpack $ toText $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
+                stype = funcShimWit (mkShimWit dtw) tp
+                sexpr = fmap (\conv t -> fromJustOrError $ shimToFunction conv t) expr
+                in MkLangExpression $ MkSealedExpression stype sexpr
 
 functionLibSection :: LibraryStuff
 functionLibSection =

@@ -94,7 +94,7 @@ interpretPattern' (ConstructorSyntaxPattern ns scons spats) = do
     return
         $ case mstw of
             Nothing -> pat
-            Just (MkShimWit stw (MkPolarShim (MkComposeShim convexpr))) ->
+            Just (MkShimWit stw (MkPolarShim (MkPolyComposeShim convexpr))) ->
                 MkSealedPattern (mkShimWit stw) $ patw . impureFuncPattern (fmap shimToFunction convexpr)
 interpretPattern' (TypedSyntaxPattern spat stype) = do
     pat <- interpretPattern spat
@@ -120,7 +120,7 @@ interpretPattern' (DynamicTypedSyntaxPattern spat stype) = do
                 mdtn <- getOptGreatestDynamicSupertype tn
                 case mdtn of
                     Nothing -> return pat
-                    Just (MkShimWit dtn (MkPolarShim (MkComposeShim dtconvexpr))) -> do
+                    Just (MkShimWit dtn (MkPolarShim (MkPolyComposeShim dtconvexpr))) -> do
                         tpw <- qRunTypeResult $ invertType tn
                         let
                             pc :: QPatternConstructor

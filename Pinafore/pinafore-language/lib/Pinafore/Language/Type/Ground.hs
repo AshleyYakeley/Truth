@@ -2,7 +2,6 @@ module Pinafore.Language.Type.Ground where
 
 import Import
 import Pinafore.Language.Error
-import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Show
 import Pinafore.Language.VarID

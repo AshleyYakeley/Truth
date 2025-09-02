@@ -55,7 +55,7 @@ data DocItem
         { diNames :: NonEmpty FullNameRef
         , diStorable :: Bool
         , diParams :: [DocTypeParameter]
-        , diGDS :: Maybe NamedText
+        , diGDS :: Maybe ([NamedText], NamedText)
         , diEquivalentDefn :: Maybe NamedText
         }
     | SubtypeRelationDocItem
@@ -77,7 +77,7 @@ instance Show DocItem where
             <> mif st "storable "
             <> show n
             <> concatmap (\p -> " " <> show p) pp
-            <> (maybe mempty (\gds -> " (from " <> unpack (toText gds) <> ")") mgds)
+            <> (maybe mempty (\(vars, gds) -> " (" <> unpack (toText vars) <> " from " <> unpack (toText gds) <> ")") mgds)
             <> (maybe mempty (\syn -> " = " <> unpack (toText syn)) msyn)
     show (SubtypeRelationDocItem a b) = "subtype " <> unpack (toText a) <> " <: " <> unpack (toText b)
 

@@ -110,7 +110,7 @@ generateCommonMarkDoc outh modopts modname = do
                                         Just syn -> " = " <> toMarkdown syn
                                )
                                 <> case diGDS of
-                                    Just gds -> " (from " <> codeMarkdown (toMarkdown gds) <> ")"
+                                    Just (_, gds) -> " (from " <> codeMarkdown (toMarkdown gds) <> ")"
                                     Nothing -> mempty
                 SubtypeRelationDocItem{..} ->
                     putBindDoc $ "subtype " <> toMarkdown diSubtype <> " <: " <> toMarkdown diSupertype

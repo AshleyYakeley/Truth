@@ -68,7 +68,6 @@ library
       Pinafore.Language.Type.Storable.Type
       Pinafore.Language.Type.Storable.OpenEntity
       Pinafore.Language.Type.Storable
-      Pinafore.Language.Type.DynamicSupertype
       Pinafore.Language.Type
       Pinafore.Language.Interpret.FreeVars
       Pinafore.Language.Interpret.Value

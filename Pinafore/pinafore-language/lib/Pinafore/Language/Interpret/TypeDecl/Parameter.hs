@@ -5,8 +5,9 @@ module Pinafore.Language.Interpret.TypeDecl.Parameter
     , GenCCRTypeParams
     , AnyCCRTypeParams (..)
     , getAnyCCRTypeParams
-    , tParamToPolarArgument
-    , tParamToNonpolarArgument
+    , tParamsToPolarArguments
+    , tParamsToNonpolarArguments
+    , tParamsToNonpolarVarArguments
     , getCCRVariancesMap
     )
 where
@@ -121,10 +122,10 @@ getAnyCCRTypeParams (sp : spp) =
             (nn2, MkAnyCCRTypeParams f) -> (nn1 <> nn2, MkAnyCCRTypeParams $ consAnyCCRArguments p f)
 
 tParamToPolarArgument ::
-    forall sv (t :: CCRVarianceKind sv) polarity.
-    Is PolarityType polarity =>
+    forall (shim :: ShimKind Type) sv (t :: CCRVarianceKind sv) polarity.
+    (JoinMeetIsoShim shim, Is PolarityType polarity) =>
     CCRTypeParam sv t ->
-    CCRPolarArgumentShimWit QShim QType polarity sv t
+    CCRPolarArgumentShimWit shim QType polarity sv t
 tParamToPolarArgument (CoCCRTypeParam var) =
     case shimWitToDolan $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv
@@ -140,6 +141,14 @@ tParamToPolarArgument (RangeCCRTypeParam varp varq) =
             (MkShimWit argp convp, MkShimWit argq convq) ->
                 MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarShim convp) convq
 
+tParamsToPolarArguments ::
+    forall (pshim :: PolyShimKind) (dv :: CCRVariances) polarity (gt :: CCRVariancesKind dv) (t :: Type).
+    (CCRVariancesShim pshim, JoinMeetIsoShim (pshim Type), Is PolarityType polarity) =>
+    CCRVariancesMap dv gt ->
+    CCRTypeParams dv gt t ->
+    CCRPolarArgumentsShimWit pshim dv QType gt polarity t
+tParamsToPolarArguments = mapPolarCCRArguments @pshim $ tParamToPolarArgument @(pshim Type)
+
 tParamToNonpolarArgument ::
     forall sv (t :: CCRVarianceKind sv).
     CCRTypeParam sv t ->
@@ -147,6 +156,26 @@ tParamToNonpolarArgument ::
 tParamToNonpolarArgument (CoCCRTypeParam var) = CoNonpolarArgument $ VarNonpolarType var
 tParamToNonpolarArgument (ContraCCRTypeParam var) = ContraNonpolarArgument $ VarNonpolarType var
 tParamToNonpolarArgument (RangeCCRTypeParam varp varq) = RangeNonpolarArgument (VarNonpolarType varp) (VarNonpolarType varq)
+
+tParamsToNonpolarArguments ::
+    forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type).
+    CCRTypeParams dv gt t ->
+    NonpolarTypeArguments QGroundType dv gt t
+tParamsToNonpolarArguments = mapSameCCRArguments tParamToNonpolarArgument
+
+tParamToNonpolarVarArgument ::
+    forall sv (t :: CCRVarianceKind sv).
+    CCRTypeParam sv t ->
+    NonpolarArgument TypeVarT sv t
+tParamToNonpolarVarArgument (CoCCRTypeParam var) = CoNonpolarArgument var
+tParamToNonpolarVarArgument (ContraCCRTypeParam var) = ContraNonpolarArgument var
+tParamToNonpolarVarArgument (RangeCCRTypeParam varp varq) = RangeNonpolarArgument varp varq
+
+tParamsToNonpolarVarArguments ::
+    forall (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type).
+    CCRTypeParams dv gt t ->
+    NonpolarArguments TypeVarT dv gt t
+tParamsToNonpolarVarArguments = mapSameCCRArguments tParamToNonpolarVarArgument
 
 paramsUnEndo ::
     forall (t :: Type) (dv :: CCRVariances) (f :: CCRVariancesKind dv).

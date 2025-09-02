@@ -52,7 +52,11 @@ typeDocItem :: FullName -> Bool -> [SyntaxTypeParameter] -> Maybe NamedText -> D
 typeDocItem name diStorable tparams mgds = let
     diNames = pure $ fullNameRef name
     diParams = fmap typeParameterDoc tparams
-    diGDS = fmap (\gds -> gds <> concatmap (\p -> " " <> exprShow p) tparams) mgds
+    diGDS = do
+        gds <- mgds
+        let
+            paramsText = fmap exprShow tparams
+        pure $ (paramsText, gds <> concatmap (\p -> " " <> p) paramsText)
     diEquivalentDefn = Nothing
     in TypeDocItem{..}
 

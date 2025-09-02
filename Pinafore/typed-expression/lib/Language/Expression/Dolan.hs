@@ -58,6 +58,7 @@ import Data.Shim
 import Shapes
 
 import Language.Expression.Common
+import Language.Expression.Dolan.DynamicSupertype as I
 import Language.Expression.Dolan.FreeVars as I
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Mono as I
