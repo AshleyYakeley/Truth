@@ -6,6 +6,8 @@ module Language.Expression.TypeSystem.TypeVariable
     , assignUVarT
     , TypeVar (..)
     , TypeVarT
+    , mkTypeVar
+    , mkTypeVarT
     , typeVarName
     , newTypeVar
     , assignTypeVarT
@@ -56,6 +58,12 @@ data TypeVar tv where
 
 type TypeVarT :: Type -> Type
 type TypeVarT = TypeVar
+
+mkTypeVar :: forall k (name :: Symbol). KnownSymbol name => TypeVar (UVar k name)
+mkTypeVar = MkTypeVar $ MkSymbolType @name
+
+mkTypeVarT :: forall (name :: Symbol). KnownSymbol name => TypeVarT (UVarT name)
+mkTypeVarT = mkTypeVar @Type @name
 
 instance Show (TypeVar tv) where
     show (MkTypeVar t) = show t

@@ -11,7 +11,6 @@ module Pinafore.Test.Internal
     , mkLambdaVarID
     , szero
     , UVar
-    , Var (..)
     , QGroundType (..)
     , StorableGroundType (..)
     , QValue

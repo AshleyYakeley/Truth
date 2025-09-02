@@ -66,12 +66,3 @@ type AY = Var "ay"
 type BY = Var "by"
 
 type CY = Var "cy"
-
-{-
-mkTypeVar :: forall k (name :: Symbol). KnownSymbol name => TypeVar (UVar k name)
-mkTypeVar = MkTypeVar $ MkSymbolType @name
-
-mkVar :: forall (name :: Symbol). KnownSymbol name => TypeVarT (Var name)
-mkVar = MkTypeVar foo
-
--}
