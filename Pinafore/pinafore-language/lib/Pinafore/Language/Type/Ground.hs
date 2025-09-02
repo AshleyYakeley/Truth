@@ -163,6 +163,9 @@ type QSingularType = DolanSingularType QGroundType
 type QSingularShimWit :: Polarity -> Type -> Type
 type QSingularShimWit polarity = DolanSingularShimWit QGroundType polarity
 
+type QPartialGroundedType :: forall (dv :: CCRVariances) -> Polarity -> CCRVariancesKind dv -> Type
+type QPartialGroundedType = DolanPartialGroundedType QGroundType
+
 type QGroundedType :: Polarity -> Type -> Type
 type QGroundedType = DolanGroundedType QGroundType
 

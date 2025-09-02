@@ -35,9 +35,6 @@ module Language.Expression.Dolan
     , ccrVariancesToCovaryType
     , covaryToCCRVariancesMap
     , ccrVariancesMapToCovary
-    , DolanGroundedType (..)
-    , DolanSingularType (..)
-    , DolanType (..)
     , unrollRecursiveType
     , unrollTopType
     , unToRangeShimWit

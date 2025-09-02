@@ -11,6 +11,10 @@ module Language.Expression.Dolan.Type.DolanType
     , DolanGroundedShimWit
     , DolanGroundedIsoShimWit
     , mkDolanGroundedShimWit
+    , DolanPartialGroundedType (..)
+    , partialVarianceMap
+    , partialVariation
+    , partialToGroundedType
     , DolanSingularType (..)
     , DolanVarWit
     , RecursiveTypeError (..)
@@ -98,6 +102,40 @@ data DolanType ground polarity t where
 instance forall (ground :: GroundTypeKind) polarity t. FreeTypeVariables (DolanType ground polarity t) where
     freeTypeVariables NilDolanType = mempty
     freeTypeVariables (ConsDolanType t1 tr) = freeTypeVariables t1 <> freeTypeVariables tr
+
+data DolanPartialGroundedType :: GroundTypeKind -> forall (dv :: CCRVariances) -> Polarity -> CCRVariancesKind dv -> Type where
+    GroundDolanPartialGroundedType ::
+        forall (ground :: GroundTypeKind) polarity dv (t :: CCRVariancesKind dv).
+        ground dv t -> DolanPartialGroundedType ground dv polarity t
+    ApplyDolanPartialGroundedType ::
+        forall (ground :: GroundTypeKind) polarity dv sv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).
+        DolanPartialGroundedType ground (sv ': dv) polarity f ->
+        CCRPolarArgument (DolanType ground) polarity sv a ->
+        DolanPartialGroundedType ground dv polarity (f a)
+
+partialVarianceMap ::
+    forall (ground :: GroundTypeKind) polarity (dv :: CCRVariances) (t :: CCRVariancesKind dv).
+    IsDolanGroundType ground =>
+    DolanPartialGroundedType ground dv polarity t -> CCRVariancesMap dv t
+partialVarianceMap (GroundDolanPartialGroundedType gt) = groundTypeVarianceMap gt
+partialVarianceMap (ApplyDolanPartialGroundedType pgt _) = case partialVarianceMap pgt of
+    ConsCCRVariancesMap _ dvm -> dvm
+
+partialVariation ::
+    forall (ground :: GroundTypeKind) polarity (sv :: CCRVariance) (dv :: CCRVariances) (t :: CCRVarianceKind sv -> CCRVariancesKind dv).
+    IsDolanGroundType ground =>
+    DolanPartialGroundedType ground (sv ': dv) polarity t -> CCRVariation sv t
+partialVariation pgt = case partialVarianceMap pgt of
+    ConsCCRVariancesMap ccrv _ -> ccrv
+
+partialToGroundedType ::
+    forall (ground :: GroundTypeKind) polarity (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type).
+    DolanPartialGroundedType ground dv polarity gt ->
+    CCRPolarArguments dv (DolanType ground) gt polarity t ->
+    DolanGroundedType ground polarity t
+partialToGroundedType (GroundDolanPartialGroundedType gt) args = MkDolanGroundedType gt args
+partialToGroundedType (ApplyDolanPartialGroundedType pgt arg) args =
+    partialToGroundedType pgt $ ConsCCRArguments arg args
 
 type DolanGroundedType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanGroundedType ground polarity t where
