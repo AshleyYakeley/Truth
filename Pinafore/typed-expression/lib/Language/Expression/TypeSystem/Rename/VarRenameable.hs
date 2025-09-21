@@ -41,10 +41,10 @@ renameableVars =
         $ MkRenameSource{rsNewVar = mempty, rsRenameVar = MkEndoM $ \v -> tell [typeVarName v] >> return v}
 
 instance (forall t'. VarRenameable (w t')) => VarRenameable (PolarShimWit shim w polarity t) where
-    varRename ev = endoShimWit $ varRename ev
+    varRename rs = endoShimWit $ varRename rs
 
 instance VarRenameable (TypeVarT t) where
-    varRename ev = rsRenameVar ev
+    varRename rs = rsRenameVar rs
 
 instance VarRenameable (a :~: b) where
     varRename _ = mempty

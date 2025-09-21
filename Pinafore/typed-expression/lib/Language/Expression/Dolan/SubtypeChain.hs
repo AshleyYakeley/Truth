@@ -140,7 +140,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTy
     namespaceRenameSource = varNamespaceRenameSource
     renameNewFreeVar = do
         n <- renamerGenerateFree
-        newTypeVar n $ \v -> return $ MkNewVar (varDolanShimWit v) (varDolanShimWit v)
+        newTypeVar n $ \v -> return $ MkNewVar n (varDolanShimWit v) (varDolanShimWit v)
     namespace fn rgd = runVarNamespaceT fn rgd
     runRenamer = runVarRenamerT
     finalRenamer = finalVarRenamerT

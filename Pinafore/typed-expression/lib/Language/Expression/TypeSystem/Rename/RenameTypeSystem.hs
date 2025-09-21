@@ -7,6 +7,7 @@ module Language.Expression.TypeSystem.Rename.RenameTypeSystem
     , finalRenameMappable
     , NewVar (..)
     , namespaceRenameType
+    , renameUnusedName
     )
 where
 
@@ -20,6 +21,7 @@ import Language.Expression.TypeSystem.WitnessMappable
 
 data NewVar ts
     = forall t. MkNewVar
+        String
         (TSNegShimWit ts t)
         (TSPosShimWit ts t)
 
@@ -69,6 +71,15 @@ namespaceRenameType =
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
                 Dict -> varRename $ namespaceRenameSource @ts
+
+renameUnusedName ::
+    forall ts a.
+    (RenameTypeSystem ts, VarRenameable a) =>
+    a -> String
+renameUnusedName a = runIdentity $ runRenamer @ts [] [] $ do
+    _ <- namespace @ts [] FreeName $ unEndoM (namespaceRenameType @ts @Identity @a) a
+    MkNewVar n _ _ <- renameNewFreeVar @ts
+    return n
 
 finalRenameMappable ::
     forall ts m a.

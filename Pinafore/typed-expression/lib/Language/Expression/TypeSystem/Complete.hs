@@ -136,7 +136,7 @@ tsUnifyF ::
 tsUnifyF mapwit (MkSomeOf witp val) =
     runRenamer @ts [] [] $ do
         witp' <- renameMappableSimple @ts witp
-        MkNewVar varn varp <- renameNewFreeVar @ts
+        MkNewVar _ varn varp <- renameNewFreeVar @ts
         uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts witp') (uuLiftNegShimWit @ts (mapwit varn))
         unifierSolve @ts uconv $ \convexpr -> do
             conv <- lift $ evalExpression convexpr
@@ -214,7 +214,7 @@ tsVar name =
         $ runRenamer @ts [] []
         $ withTransConstraintTM @Monad
         $ do
-            MkNewVar vwt twt <- renameNewFreeVar @ts
+            MkNewVar _ vwt twt <- renameNewFreeVar @ts
             return $ varSealedExpression name vwt twt
 
 tsConst :: forall ts. TSValue ts -> TSSealedExpression ts
@@ -308,7 +308,7 @@ tsVarPattern name =
         $ runRenamer @ts [] []
         $ withTransConstraintTM @Monad
         $ do
-            MkNewVar vwt twt <- renameNewFreeVar @ts
+            MkNewVar _ vwt twt <- renameNewFreeVar @ts
             return $ varNamedSealedPattern name vwt twt
 
 tsAnyPattern ::
@@ -320,7 +320,7 @@ tsAnyPattern =
         $ runRenamer @ts [] []
         $ withTransConstraintTM @Monad
         $ do
-            MkNewVar twt _ <- renameNewFreeVar @ts
+            MkNewVar _ twt _ <- renameNewFreeVar @ts
             return $ anySealedPattern twt
 
 tsBothPattern ::

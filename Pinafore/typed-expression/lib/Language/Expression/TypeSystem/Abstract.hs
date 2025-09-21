@@ -131,7 +131,7 @@ abstractResult ::
     TSOpenExpression ts a ->
     TSOuter ts (AbstractResult ts a)
 abstractResult name expr = do
-    MkNewVar vwt0 _ <- renameNewFreeVar @ts
+    MkNewVar _ vwt0 _ <- renameNewFreeVar @ts
     abstractNamedExpressionUnifier @ts name vwt0 expr $ \(MkShimWit vwt (MkPolarShim (MkComposeShim uconv))) expr' ->
         return
             $ MkAbstractResult vwt
@@ -250,7 +250,7 @@ applySealedExpression appw sexprf sexpra =
         $ do
             MkSealedExpression tf exprf <- renameMappableSimple @ts sexprf
             MkSealedExpression ta expra <- renameMappableSimple @ts sexpra
-            MkNewVar vx tx <- renameNewFreeVar @ts
+            MkNewVar _ vx tx <- renameNewFreeVar @ts
             let vax = appw ta vx
             uconv <- unifyPosNegShimWit @ts (uuLiftPosShimWit @ts tf) (uuLiftNegShimWit @ts vax)
             unifierSolve @ts uconv $ \convexpr -> let
