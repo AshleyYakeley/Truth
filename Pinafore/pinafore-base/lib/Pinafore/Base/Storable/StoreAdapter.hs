@@ -1,5 +1,7 @@
 module Pinafore.Base.Storable.StoreAdapter
-    ( StoreAdapter (..)
+    ( StoreAdapter
+    , storeAdapterDefinitions
+    , storeAdapterToDefinition
     , nullStoreAdapter
     , storeAdapterConvert
     , plainStoreAdapter
@@ -19,8 +21,8 @@ import Pinafore.Base.Literal.Literal
 import Pinafore.Base.Storable.EntityStorer
 
 data StoreAdapter t = MkStoreAdapter
-    { storeAdapterDefinitions :: EntityStorer 'MultipleMode t
-    , storeAdapterToDefinition :: t -> SomeOf (EntityStorer 'SingleMode)
+    { storeAdapterDefinitions :: MultipleEntityStorer t
+    , storeAdapterToDefinition :: t -> SomeOf SingleEntityStorer
     }
 
 nullStoreAdapter :: StoreAdapter t
@@ -45,7 +47,7 @@ instance Summable StoreAdapter where
     (<+++>) :: forall a b. StoreAdapter a -> StoreAdapter b -> StoreAdapter (Either a b)
     MkStoreAdapter defsa todefa <+++> MkStoreAdapter defsb todefb = let
         defsab = defsa <+++> defsb
-        todefab :: Either a b -> SomeOf (EntityStorer 'SingleMode)
+        todefab :: Either a b -> SomeOf SingleEntityStorer
         todefab (Left a) = todefa a
         todefab (Right b) = todefb b
         in MkStoreAdapter defsab todefab
@@ -54,28 +56,28 @@ unitStoreAdapter :: Entity -> StoreAdapter ()
 unitStoreAdapter entity =
     MkStoreAdapter
         { storeAdapterDefinitions =
-            MkEntityStorer
+            MkMultipleEntityStorer
                 $ pure
                 $ MkKnowShim PlainConstructorStorer
                 $ \e ->
                     if entity == e
                         then Known ()
                         else Unknown
-        , storeAdapterToDefinition = \() -> MkSomeOf (MkEntityStorer PlainConstructorStorer) entity
+        , storeAdapterToDefinition = \() -> MkSomeOf (MkSingleEntityStorer PlainConstructorStorer) entity
         }
 
 plainStoreAdapter :: StoreAdapter Entity
 plainStoreAdapter = let
-    storeAdapterDefinitions = MkEntityStorer $ pure $ simpleKnowShim PlainConstructorStorer
-    storeAdapterToDefinition e = MkSomeOf (MkEntityStorer PlainConstructorStorer) e
+    storeAdapterDefinitions = MkMultipleEntityStorer $ pure $ simpleKnowShim PlainConstructorStorer
+    storeAdapterToDefinition e = MkSomeOf (MkSingleEntityStorer PlainConstructorStorer) e
     in MkStoreAdapter{..}
 
 literalStoreAdapter :: forall t. Codec Literal t -> StoreAdapter t
 literalStoreAdapter codec = let
-    storeAdapterDefinitions :: EntityStorer 'MultipleMode t
-    storeAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim LiteralConstructorStorer $ maybeToKnow . decode codec
-    storeAdapterToDefinition :: t -> SomeOf (EntityStorer 'SingleMode)
-    storeAdapterToDefinition t = MkSomeOf (MkEntityStorer LiteralConstructorStorer) $ encode codec t
+    storeAdapterDefinitions :: MultipleEntityStorer t
+    storeAdapterDefinitions = MkMultipleEntityStorer $ pure $ MkKnowShim LiteralConstructorStorer $ maybeToKnow . decode codec
+    storeAdapterToDefinition :: t -> SomeOf SingleEntityStorer
+    storeAdapterToDefinition t = MkSomeOf (MkSingleEntityStorer LiteralConstructorStorer) $ encode codec t
     in MkStoreAdapter{..}
 
 asLiteralStoreAdapter ::
@@ -97,6 +99,7 @@ constructorDefinitions ::
 constructorDefinitions _anchor _n _i NilListType = simpleKnowShim $ MkListProductType NilListType
 constructorDefinitions anchor n i (ConsListType ea lt) = let
     predicate = hashedPredicate anchor n i
+    fact1 :: FieldStorer 'MultipleMode _
     fact1 = MkFieldStorer predicate $ storeAdapterDefinitions ea
     in case constructorDefinitions anchor n (succ i) lt of
         MkKnowShim (MkListProductType factr) convr ->
@@ -116,6 +119,7 @@ constructorToDefinition anchor n i (ConsListType ea lt) (a, l) = let
     predicate = hashedPredicate anchor n i
     in case storeAdapterToDefinition ea a of
         MkSomeOf tt1 v1 -> let
+            fact1 :: FieldStorer 'SingleMode _
             fact1 = MkFieldStorer predicate tt1
             in case constructorToDefinition anchor n (succ i) lt l of
                 MkSomeOf (MkListProductType factr) vr ->
@@ -125,14 +129,14 @@ constructorStoreAdapter :: forall lt. Anchor -> ListType StoreAdapter lt -> Stor
 constructorStoreAdapter anchor NilListType = unitStoreAdapter $ MkEntity anchor
 constructorStoreAdapter anchor lt = let
     n = listTypeLength lt
-    storeAdapterDefinitions :: EntityStorer 'MultipleMode (ListProduct lt)
+    storeAdapterDefinitions :: MultipleEntityStorer (ListProduct lt)
     storeAdapterDefinitions =
-        MkEntityStorer
+        MkMultipleEntityStorer
             $ pure
             $ convertKnowShim (\(MkListProductType flt) -> ConstructorConstructorStorer anchor flt)
             $ constructorDefinitions anchor n 0 lt
-    storeAdapterToDefinition :: ListProduct lt -> SomeOf (EntityStorer 'SingleMode)
+    storeAdapterToDefinition :: ListProduct lt -> SomeOf SingleEntityStorer
     storeAdapterToDefinition l =
         case constructorToDefinition anchor n 0 lt l of
-            MkSomeOf (MkListProductType lft) v -> MkSomeOf (MkEntityStorer $ ConstructorConstructorStorer anchor lft) v
+            MkSomeOf (MkListProductType lft) v -> MkSomeOf (MkSingleEntityStorer $ ConstructorConstructorStorer anchor lft) v
     in MkStoreAdapter{..}

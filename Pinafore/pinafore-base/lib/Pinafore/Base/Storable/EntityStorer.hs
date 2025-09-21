@@ -2,7 +2,8 @@ module Pinafore.Base.Storable.EntityStorer
     ( Predicate (..)
     , FieldStorer (..)
     , ConstructorStorer (..)
-    , EntityStorer (..)
+    , MultipleEntityStorer (..)
+    , SingleEntityStorer (..)
     , StorerMode (..)
     , entityStorerToEntity
     )
@@ -82,41 +83,46 @@ constructorStorerToEntity (ConstructorConstructorStorer anchor facts) hl =
         hashList call (ConsListType (MkFieldStorer _ def) lt) (a, l) =
             call (entityStorerToEntity def a) : hashList call lt l
 
-type EntityStorer' :: StorerMode -> Type -> Type
-type family EntityStorer' mode t where
-    EntityStorer' 'SingleMode t = ConstructorStorer 'SingleMode t
-    EntityStorer' 'MultipleMode t = [KnowShim (ConstructorStorer 'MultipleMode) t]
-
 type EntityStorer :: StorerMode -> Type -> Type
-newtype EntityStorer mode t
-    = MkEntityStorer (EntityStorer' mode t)
+type family EntityStorer mode where
+    EntityStorer 'SingleMode = SingleEntityStorer
+    EntityStorer 'MultipleMode = MultipleEntityStorer
 
-instance TestEquality (EntityStorer 'SingleMode) where
-    testEquality (MkEntityStorer fca) (MkEntityStorer fcb) = testEquality fca fcb
+newtype SingleEntityStorer t = MkSingleEntityStorer (ConstructorStorer 'SingleMode t)
 
-instance WitnessConstraint Show (EntityStorer 'SingleMode) where
-    witnessConstraint (MkEntityStorer fc) = witnessConstraint fc
+instance TestEquality SingleEntityStorer where
+    testEquality (MkSingleEntityStorer fca) (MkSingleEntityStorer fcb) = testEquality fca fcb
 
-entityStorerToEntity :: forall t. EntityStorer 'SingleMode t -> t -> Entity
-entityStorerToEntity (MkEntityStorer fc) = constructorStorerToEntity fc
+instance WitnessConstraint Show SingleEntityStorer where
+    witnessConstraint (MkSingleEntityStorer fc) = witnessConstraint fc
 
-instance Functor (EntityStorer 'MultipleMode) where
-    fmap ab (MkEntityStorer kss) = MkEntityStorer $ fmap (fmap ab) kss
+entityStorerToEntity :: forall t. SingleEntityStorer t -> t -> Entity
+entityStorerToEntity (MkSingleEntityStorer fc) = constructorStorerToEntity fc
 
-instance Semigroup (EntityStorer 'MultipleMode t) where
-    MkEntityStorer kssa <> MkEntityStorer kssb = MkEntityStorer $ kssa <> kssb
+type role MultipleEntityStorer representational
 
-instance Monoid (EntityStorer 'MultipleMode t) where
-    mempty = MkEntityStorer mempty
+newtype MultipleEntityStorer t = MkMultipleEntityStorer [KnowShim (ConstructorStorer 'MultipleMode) t]
 
-instance Invariant (EntityStorer 'MultipleMode) where
+instance Functor MultipleEntityStorer where
+    fmap ab (MkMultipleEntityStorer kss) = MkMultipleEntityStorer $ fmap (fmap ab) kss
+
+instance Semigroup (MultipleEntityStorer t) where
+    MkMultipleEntityStorer kssa <> MkMultipleEntityStorer kssb = MkMultipleEntityStorer $ kssa <> kssb
+
+instance Monoid (MultipleEntityStorer t) where
+    mempty = MkMultipleEntityStorer mempty
+
+instance Invariant MultipleEntityStorer where
     invmap ab _ = fmap ab
 
-instance Summable (EntityStorer 'MultipleMode) where
+instance Summable MultipleEntityStorer where
     rVoid = mempty
     esa <+++> esb = fmap Left esa <> fmap Right esb
 
-instance InjectiveFilterable (EntityStorer 'MultipleMode)
+instance InjectiveFilterable MultipleEntityStorer
 
-instance Filterable (EntityStorer 'MultipleMode) where
-    mapMaybe amb (MkEntityStorer kss) = MkEntityStorer $ fmap (mapMaybe amb) kss
+instance Filterable MultipleEntityStorer where
+    mapMaybe amb (MkMultipleEntityStorer kss) = MkMultipleEntityStorer $ fmap (mapMaybe amb) kss
+
+instance RepresentationalRole MultipleEntityStorer where
+    representationalCoercion MkCoercion = MkCoercion
