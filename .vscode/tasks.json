@@ -125,26 +125,7 @@
             "group": "build",
             "label": "Watch-Build",
             "type": "shell",
-            "command": "cd ${workspaceRoot} && make watch-build",
-            "problemMatcher": [
-                {
-                    "owner": "stack",
-                    "fileLocation": "absolute",
-                    "pattern": [
-                        {
-                            "regexp": "^.*> (.*):(\\d+):(\\d+):\\s+(warning|error):",
-                            "file": 1,
-                            "line": 2,
-                            "column": 3,
-                            "severity": 4
-                        },
-                        {
-                            "regexp": "^.*> \\s+(.*)$",
-                            "message": 1
-                        }
-                    ]
-                }
-            ]
+            "command": "cd ${workspaceRoot} && make watch-build"
         },
         {
             "group": "test",
