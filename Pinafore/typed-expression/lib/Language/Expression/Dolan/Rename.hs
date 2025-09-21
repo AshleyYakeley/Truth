@@ -46,6 +46,18 @@ dolanArgumentsVarRename ::
 dolanArgumentsVarRename ev = pureMapDolanArgumentsM $ varRename ev
 
 instance
+    forall (ground :: GroundTypeKind) polarity dv t.
+    (IsDolanGroundType ground, Is PolarityType polarity) =>
+    VarRenameable (DolanPartialGroundedType ground dv polarity t)
+    where
+    varRename rs = MkEndoM $ \case
+        GroundDolanPartialGroundedType gt -> return $ GroundDolanPartialGroundedType gt
+        ApplyDolanPartialGroundedType pgt arg -> do
+            pgt' <- unEndoM (varRename rs) pgt
+            arg' <- unEndoM (pureMapDolanArgumentM $ varRename rs) arg
+            return $ ApplyDolanPartialGroundedType pgt' arg'
+
+instance
     forall (ground :: GroundTypeKind) polarity t.
     (IsDolanGroundType ground, Is PolarityType polarity) =>
     VarRenameable (DolanGroundedType ground polarity t)

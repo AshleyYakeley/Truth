@@ -73,6 +73,16 @@ typeToDolanNegative wt =
 instance
     forall (ground :: GroundTypeKind) polarity.
     Is PolarityType polarity =>
+    DolanTypeSub ground polarity (DolanPartialGroundedType ground '[] polarity)
+    where
+    typeToDolan pgt = typeToDolan $ partialToGroundedType pgt NilCCRArguments
+    dolanToMaybeType t = do
+        gt <- dolanToMaybeType t
+        pure $ chainShimWit (mkShimWit . groundedToPartialType) gt
+
+instance
+    forall (ground :: GroundTypeKind) polarity.
+    Is PolarityType polarity =>
     DolanTypeSub ground polarity (DolanGroundedType ground polarity)
     where
     typeToDolan t = typeToDolan $ GroundedDolanSingularType t

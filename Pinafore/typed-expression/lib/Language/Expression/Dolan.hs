@@ -35,6 +35,7 @@ module Language.Expression.Dolan
     , ccrVariancesToCovaryType
     , covaryToCCRVariancesMap
     , ccrVariancesMapToCovary
+    , recursiveDolanShimWit
     , unrollRecursiveType
     , unrollTopType
     , unToRangeShimWit
@@ -55,12 +56,14 @@ import Data.Shim
 import Shapes
 
 import Language.Expression.Common
+import Language.Expression.Dolan.Bisubstitute.Deferred
 import Language.Expression.Dolan.DynamicSupertype as I
 import Language.Expression.Dolan.FreeVars as I
 import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Mono as I
 import Language.Expression.Dolan.Nonpolar as I
 import Language.Expression.Dolan.Rename ()
+import Language.Expression.Dolan.Shim as I
 import Language.Expression.Dolan.Simplify ()
 import Language.Expression.Dolan.Subtype as I
 import Language.Expression.Dolan.SubtypeChain

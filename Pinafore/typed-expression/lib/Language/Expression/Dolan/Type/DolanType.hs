@@ -15,6 +15,9 @@ module Language.Expression.Dolan.Type.DolanType
     , partialVarianceMap
     , partialVariation
     , partialToGroundedType
+    , applyAllPartialGroundedType
+    , groundedToPartialType
+    , applyDolanPartialGroundedShimWit
     , DolanSingularType (..)
     , DolanVarWit
     , RecursiveTypeError (..)
@@ -136,6 +139,30 @@ partialToGroundedType ::
 partialToGroundedType (GroundDolanPartialGroundedType gt) args = MkDolanGroundedType gt args
 partialToGroundedType (ApplyDolanPartialGroundedType pgt arg) args =
     partialToGroundedType pgt $ ConsCCRArguments arg args
+
+applyAllPartialGroundedType ::
+    forall (ground :: GroundTypeKind) polarity (dv :: CCRVariances) (gt :: CCRVariancesKind dv) (t :: Type).
+    DolanPartialGroundedType ground dv polarity gt ->
+    CCRPolarArguments dv (DolanType ground) gt polarity t ->
+    DolanPartialGroundedType ground '[] polarity t
+applyAllPartialGroundedType pgt NilCCRArguments = pgt
+applyAllPartialGroundedType pgt (ConsCCRArguments arg args) = applyAllPartialGroundedType (ApplyDolanPartialGroundedType pgt arg) args
+
+groundedToPartialType ::
+    forall (ground :: GroundTypeKind) polarity (t :: Type).
+    DolanGroundedType ground polarity t ->
+    DolanPartialGroundedType ground '[] polarity t
+groundedToPartialType (MkDolanGroundedType gt args) = applyAllPartialGroundedType (GroundDolanPartialGroundedType gt) args
+
+applyDolanPartialGroundedShimWit ::
+    forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity (dv :: CCRVariances) sv (f :: CCRVarianceKind sv -> CCRVariancesKind dv) (a :: CCRVarianceKind sv).
+    (IsDolanGroundType ground, ApplyPolyShim pshim, Is PolarityType polarity, HasCCRVariance sv f) =>
+    PShimWit (pshim (CCRVariancesKind (sv ': dv))) (DolanPartialGroundedType ground (sv ': dv)) polarity f ->
+    CCRPolarArgumentShimWit (pshim Type) (DolanType ground) polarity sv a ->
+    PShimWit (pshim (CCRVariancesKind dv)) (DolanPartialGroundedType ground dv) polarity (f a)
+applyDolanPartialGroundedShimWit (MkShimWit tf convf) (MkShimWit ta conva) =
+    MkShimWit (ApplyDolanPartialGroundedType tf ta)
+        $ polarShimTypeApply @pshim @polarity @sv @(CCRVariancesKind dv) representative ccrVariation (partialVariation tf) convf conva
 
 type DolanGroundedType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanGroundedType ground polarity t where
