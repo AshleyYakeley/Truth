@@ -12,6 +12,9 @@ import Unsafe.Refl
 unsafeCoercion :: forall k (a :: k) (b :: k). Coercion a b
 unsafeCoercion = unsafeCoerce $ MkCoercion @k @a @a
 
+semisafeCoercion :: forall k (a :: k) (b :: k). Coercion a b -> Coercion a b
+semisafeCoercion _ = unsafeCoercion @k @a @b
+
 unsafeIsomorphism ::
     forall k (cat :: k -> k -> Type) (a :: k) (b :: k).
     Category cat =>

@@ -12,8 +12,7 @@ where
 import Data.Graph hiding (Forest, Tree)
 
 import Import
-import Pinafore.Language.Convert.Pinafore
-import Pinafore.Language.Convert.Var
+import Pinafore.Language.Convert
 import Pinafore.Language.Debug
 import Pinafore.Language.Error
 import Pinafore.Language.Expression

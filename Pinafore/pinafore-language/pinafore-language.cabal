@@ -57,7 +57,10 @@ library
       Pinafore.Language.Interpreter.Register
       Pinafore.Language.Interpreter
       Pinafore.Language.Convert.Var
+      Pinafore.Language.Convert.FromQIsoShim
       Pinafore.Language.Convert.HasType
+      Pinafore.Language.Convert.JoinMeet
+      Pinafore.Language.Convert.Recursive
       Pinafore.Language.Convert.Literal
       Pinafore.Language.Convert.Types
       Pinafore.Language.Convert.Pinafore

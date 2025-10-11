@@ -6,71 +6,12 @@ import Data.Time
 import Shapes.Numeric
 
 import Import
+import Pinafore.Language.Convert.FromQIsoShim
 import Pinafore.Language.Convert.HasType
+import Pinafore.Language.Convert.JoinMeet ()
 import Pinafore.Language.Convert.Literal
 import Pinafore.Language.Type
 import Pinafore.Language.Value
-
-class (CCRVariancesShim pshim, JoinMeetIsoShim (pshim Type)) => FromQIsoShim (pshim :: PolyShimKind) where
-    fromQShims :: forall a b. QShim a b -> QShim b a -> pshim Type a b
-
-instance FromQIsoShim QPolyIsoShim where
-    fromQShims ab ba = MkPolyMapT $ MkIsomorphism ab ba
-
-instance FromQIsoShim QPolyShim where
-    fromQShims ab _ = ab
-
-instance FromQIsoShim (PolyMapT CatDual QPolyShim) where
-    fromQShims _ ba = MkPolyMapT $ MkCatDual ba
-
-fromQShimsPolar ::
-    forall (pshim :: PolyShimKind) polarity a b.
-    (FromQIsoShim pshim, Is PolarityType polarity) =>
-    QShim a b ->
-    QShim b a ->
-    PolarShim (pshim Type) polarity a b
-fromQShimsPolar ab ba =
-    case polarityType @polarity of
-        PositiveType -> MkPolarShim $ fromQShims ab ba
-        NegativeType -> MkPolarShim $ fromQShims ba ab
-
-mapQIsoShimWit ::
-    forall (pshim :: PolyShimKind) polarity a b.
-    (FromQIsoShim pshim, Is PolarityType polarity) =>
-    QShim a b ->
-    QShim b a ->
-    PShimWit (pshim Type) QType polarity b ->
-    PShimWit (pshim Type) QType polarity a
-mapQIsoShimWit ab ba = mapShimWit $ fromQShimsPolar ab ba
-
--- top, bottom, join, meet
-instance forall (pshim :: PolyShimKind). CCRVariancesShim pshim => HasQType pshim 'Positive BottomType where
-    qType = nilDolanShimWit
-
-instance forall (pshim :: PolyShimKind). CCRVariancesShim pshim => HasQType pshim 'Negative TopType where
-    qType = nilDolanShimWit
-
-instance
-    forall (pshim :: PolyShimKind) a b.
-    ( CCRVariancesShim pshim
-    , JoinMeetIsoShim (pshim Type)
-    , HasQType pshim 'Positive a
-    , HasQType pshim 'Positive b
-    ) =>
-    HasQType pshim 'Positive (JoinType a b)
-    where
-    qType = joinMeetShimWit qType qType
-
-instance
-    forall (pshim :: PolyShimKind) a b.
-    ( CCRVariancesShim pshim
-    , JoinMeetIsoShim (pshim Type)
-    , HasQType pshim 'Negative a
-    , HasQType pshim 'Negative b
-    ) =>
-    HasQType pshim 'Negative (MeetType a b)
-    where
-    qType = joinMeetShimWit qType qType
 
 -- (,)
 instance HasQGroundType '[CoCCRVariance, CoCCRVariance] (,) where

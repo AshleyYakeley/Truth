@@ -6,7 +6,7 @@ module Pinafore.Language.Library.ModelOrder
 where
 
 import Import
-import Pinafore.Language.Convert.Var
+import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 import Pinafore.Language.Library.Model

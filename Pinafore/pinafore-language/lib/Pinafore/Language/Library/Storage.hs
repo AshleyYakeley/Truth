@@ -11,7 +11,6 @@ import System.FilePath
 import Import
 import Pinafore.Context
 import Pinafore.Language.Convert
-import Pinafore.Language.Convert.Types
 import Pinafore.Language.Expression
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs

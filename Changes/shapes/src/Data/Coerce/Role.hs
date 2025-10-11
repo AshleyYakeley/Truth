@@ -15,23 +15,23 @@ class RepresentationalRole (f :: kp -> kq) where
     representationalCoercion :: forall (a :: kp) (b :: kp). Coercion a b -> Coercion (f a) (f b)
 
 applyCoercion1 ::
-    forall f g a b.
+    forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
     RepresentationalRole f =>
     Coercion f g ->
     Coercion a b ->
     Coercion (f a) (g b)
 applyCoercion1 MkCoercion cab =
-    case representationalCoercion @_ @_ @f cab of
+    case representationalCoercion @kp @kq @f cab of
         MkCoercion -> MkCoercion
 
 applyCoercion2 ::
-    forall f g a b.
+    forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
     RepresentationalRole g =>
     Coercion f g ->
     Coercion a b ->
     Coercion (f a) (g b)
 applyCoercion2 MkCoercion cab =
-    case representationalCoercion @_ @_ @g cab of
+    case representationalCoercion @kp @kq @g cab of
         MkCoercion -> MkCoercion
 
 coerceIsomorphism ::
@@ -48,6 +48,12 @@ coerceCodec ::
     (Applicative m, Coercible a b) =>
     Codec' m a b
 coerceCodec = bijectionCodec coerceIsomorphism
+
+representationalCoercion2 ::
+    forall kp1 kp2 kq (f :: kp1 -> kp2 -> kq) (a1 :: kp1) (b1 :: kp1) (a2 :: kp2) (b2 :: kp2).
+    (RepresentationalRole f, RepresentationalRole (f a1)) =>
+    Coercion a1 b1 -> Coercion a2 b2 -> Coercion (f a1 a2) (f b1 b2)
+representationalCoercion2 c1 c2 = applyCoercion1 (representationalCoercion c1) c2
 
 instance RepresentationalRole f => CatFunctor Coercion Coercion (f :: kp -> kq) where
     cfmap = representationalCoercion

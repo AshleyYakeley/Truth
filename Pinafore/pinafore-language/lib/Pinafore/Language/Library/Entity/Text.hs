@@ -7,7 +7,7 @@ import Data.Text qualified
 import Text.Collate qualified
 
 import Import
-import Pinafore.Language.Convert.Types
+import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Blob ()
 import Pinafore.Language.Library.Entity.Literal

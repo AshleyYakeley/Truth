@@ -4,8 +4,7 @@ module Pinafore.Language.Library.Comparison
 where
 
 import Import
-import Pinafore.Language.Convert.HasType
-import Pinafore.Language.Convert.Var
+import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
 

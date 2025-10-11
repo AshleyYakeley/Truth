@@ -10,7 +10,6 @@ import Shapes.Numeric
 
 import Import
 import Pinafore.Language.Convert
-import Pinafore.Language.Convert.Types
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Numeric

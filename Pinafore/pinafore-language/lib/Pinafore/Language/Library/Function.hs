@@ -4,8 +4,7 @@ module Pinafore.Language.Library.Function
 where
 
 import Import
-import Pinafore.Language.Convert.Pinafore
-import Pinafore.Language.Convert.Var
+import Pinafore.Language.Convert
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule

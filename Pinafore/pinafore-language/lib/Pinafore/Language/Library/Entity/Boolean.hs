@@ -4,7 +4,7 @@ module Pinafore.Language.Library.Entity.Boolean
 where
 
 import Import
-import Pinafore.Language.Convert.Types
+import Pinafore.Language.Convert
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Entity.Literal
 import Pinafore.Language.Library.Entity.Showable

@@ -4,7 +4,7 @@ module Pinafore.Language.If
 where
 
 import Import
-import Pinafore.Language.Convert.Var
+import Pinafore.Language.Convert
 
 qifthenelse :: Bool -> A -> A -> A
 qifthenelse True v _ = v
