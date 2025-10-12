@@ -1,4 +1,5 @@
-module Pinafore.Language.Type.Types
+{-# OPTIONS -fno-warn-orphans #-}
+module Pinafore.Language.Convert.Basic
     ( actionGroundType
     , eitherGroundType
     , resultGroundType
@@ -11,14 +12,17 @@ module Pinafore.Language.Type.Types
 where
 
 import Import
-import Pinafore.Language.Type.Family
-import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Sequence
-import Pinafore.Language.Type.Storable
+import Pinafore.Language.Convert.HasType
+import Pinafore.Language.Convert.Sequence
+import Pinafore.Language.Type
 import Pinafore.Language.Value
 
 actionGroundType :: QGroundType '[CoCCRVariance] Action
 actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Action)|]) "Action"
+
+-- Action
+instance HasQGroundType '[CoCCRVariance] Action where
+    qGroundType = actionGroundType
 
 eitherStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Either ta tb)
 eitherStoreAdapter eta etb = let
@@ -50,6 +54,10 @@ eitherGroundType = let
     showtype ta tb = namedTextPrec 4 $ precNamedText 3 ta <> " +: " <> precNamedText 4 tb
     in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) showtype){qgtProperties = props}
 
+-- Either
+instance HasQGroundType '[CoCCRVariance, CoCCRVariance] Either where
+    qGroundType = eitherGroundType
+
 resultStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (Result ta tb)
 resultStoreAdapter eta etb = let
     from :: (a, ()) -> a
@@ -78,6 +86,10 @@ resultGroundType = let
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Result)|]) "Result"){qgtProperties = props}
 
+-- Result
+instance HasQGroundType '[CoCCRVariance, CoCCRVariance] Result where
+    qGroundType = resultGroundType
+
 mapStoreAdapter :: StoreAdapter t -> StoreAdapter (EntityMap t)
 mapStoreAdapter t = invmap entityMapFromList entityMapToList $ listStoreAdapter $ pairStoreAdapter plainStoreAdapter t
 
@@ -95,8 +107,16 @@ entityMapGroundType = let
         { qgtProperties = props
         }
 
+-- EntityMap
+instance HasQGroundType '[CoCCRVariance] EntityMap where
+    qGroundType = entityMapGroundType
+
 mapEntityConvert :: EntityMap Entity -> Entity
 mapEntityConvert = storeAdapterConvert $ mapStoreAdapter plainStoreAdapter
 
 showableGroundType :: QGroundType '[] Showable
 showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"
+
+-- Showable
+instance HasQGroundType '[] Showable where
+    qGroundType = showableGroundType

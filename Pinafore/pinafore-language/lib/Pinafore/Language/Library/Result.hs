@@ -12,7 +12,6 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Library.Convert ()
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.LibraryModule
-import Pinafore.Language.Type
 
 resultFrom :: (E -> B) -> (A -> B) -> Result E A -> B
 resultFrom eb _ (FailureResult e) = eb e

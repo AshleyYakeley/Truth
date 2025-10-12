@@ -6,7 +6,6 @@ import Import
 import Pinafore.Language.Convert.HasType
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Library.Types
 import Pinafore.Language.Type
 
 data LangType

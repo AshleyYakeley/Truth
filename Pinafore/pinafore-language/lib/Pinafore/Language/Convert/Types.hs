@@ -10,44 +10,13 @@ import Pinafore.Language.Convert.FromQIsoShim
 import Pinafore.Language.Convert.HasType
 import Pinafore.Language.Convert.JoinMeet ()
 import Pinafore.Language.Convert.Literal
+import Pinafore.Language.Convert.Sequence ()
 import Pinafore.Language.Type
 import Pinafore.Language.Value
-
--- (,)
-instance HasQGroundType '[CoCCRVariance, CoCCRVariance] (,) where
-    qGroundType = pairGroundType
-
--- Either
-instance HasQGroundType '[CoCCRVariance, CoCCRVariance] Either where
-    qGroundType = eitherGroundType
-
--- Result
-instance HasQGroundType '[CoCCRVariance, CoCCRVariance] Result where
-    qGroundType = resultGroundType
 
 -- (->)
 instance HasQGroundType '[ContraCCRVariance, CoCCRVariance] (->) where
     qGroundType = funcGroundType
-
--- Maybe
-instance HasQGroundType '[CoCCRVariance] Maybe where
-    qGroundType = maybeGroundType
-
--- []
-instance HasQGroundType '[CoCCRVariance] [] where
-    qGroundType = listGroundType
-
--- NonEmpty
-instance HasQGroundType '[CoCCRVariance] NonEmpty where
-    qGroundType = list1GroundType
-
--- EntityMap
-instance HasQGroundType '[CoCCRVariance] EntityMap where
-    qGroundType = entityMapGroundType
-
--- Showable
-instance HasQGroundType '[] Showable where
-    qGroundType = showableGroundType
 
 -- Equivalence
 instance HasQGroundType '[ContraCCRVariance] Equivalence where
@@ -60,16 +29,6 @@ instance HasQGroundType '[ContraCCRVariance] Preorder where
 -- Order
 instance HasQGroundType '[ContraCCRVariance] Order where
     qGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Order)|]) "Order"
-
-showableShimWit ::
-    forall polarity.
-    Is PolarityType polarity =>
-    QShimWit polarity Showable
-showableShimWit = typeToDolan $ MkDolanGroundedType showableGroundType NilCCRArguments
-
--- Action
-instance HasQGroundType '[CoCCRVariance] Action where
-    qGroundType = actionGroundType
 
 -- LangWholeModel
 wholeModelGroundType :: QGroundType '[ 'RangeCCRVariance] LangWholeModel

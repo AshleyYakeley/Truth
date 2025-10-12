@@ -4,6 +4,7 @@ module Pinafore.Language.Expression where
 
 import Import
 import Pinafore.Language.Convert
+import Pinafore.Language.Convert.Types ()
 import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type

@@ -8,6 +8,7 @@ import Control.Exception (Handler (..), catches)
 import System.IO.Error
 
 import Import
+import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Expression

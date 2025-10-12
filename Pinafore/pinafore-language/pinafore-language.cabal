@@ -40,12 +40,6 @@ library
       Pinafore.Language.Value.ModelOrder
       Pinafore.Language.Value
       Pinafore.Language.If
-      Pinafore.Language.Type.Family
-      Pinafore.Language.Type.Show
-      Pinafore.Language.Type.Ground
-      Pinafore.Language.Type.Sequence
-      Pinafore.Language.Type.Types
-      Pinafore.Language.Type.Identified
       Pinafore.Language.Error
       Pinafore.Language.VarID
       Pinafore.Language.Interpreter.Binding
@@ -56,15 +50,10 @@ library
       Pinafore.Language.Interpreter.ScopeBuilder
       Pinafore.Language.Interpreter.Register
       Pinafore.Language.Interpreter
-      Pinafore.Language.Convert.Var
-      Pinafore.Language.Convert.FromQIsoShim
-      Pinafore.Language.Convert.HasType
-      Pinafore.Language.Convert.JoinMeet
-      Pinafore.Language.Convert.Recursive
-      Pinafore.Language.Convert.Literal
-      Pinafore.Language.Convert.Types
-      Pinafore.Language.Convert.Pinafore
-      Pinafore.Language.Convert
+      Pinafore.Language.Type.Family
+      Pinafore.Language.Type.Show
+      Pinafore.Language.Type.Ground
+      Pinafore.Language.Type.Identified
       Pinafore.Language.Type.GetDynamicSupertype
       Pinafore.Language.Type.Subtype.Hint
       Pinafore.Language.Type.Subtype
@@ -72,6 +61,17 @@ library
       Pinafore.Language.Type.Storable.OpenEntity
       Pinafore.Language.Type.Storable
       Pinafore.Language.Type
+      Pinafore.Language.Convert.Var
+      Pinafore.Language.Convert.FromQIsoShim
+      Pinafore.Language.Convert.HasType
+      Pinafore.Language.Convert.JoinMeet
+      Pinafore.Language.Convert.Recursive
+      Pinafore.Language.Convert.Literal
+      Pinafore.Language.Convert.Basic
+      Pinafore.Language.Convert.Sequence
+      Pinafore.Language.Convert.Types
+      Pinafore.Language.Convert.Pinafore
+      Pinafore.Language.Convert
       Pinafore.Language.Interpret.FreeVars
       Pinafore.Language.Interpret.Value
       Pinafore.Language.Interpret.AppNotation

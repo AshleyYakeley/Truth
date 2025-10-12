@@ -1,4 +1,5 @@
-module Pinafore.Language.Type.Sequence
+{-# OPTIONS -fno-warn-orphans #-}
+module Pinafore.Language.Convert.Sequence
     ( maybeGroundType
     , listGroundType
     , listStoreAdapter
@@ -12,9 +13,8 @@ module Pinafore.Language.Type.Sequence
 where
 
 import Import
-import Pinafore.Language.Type.Family
-import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Storable
+import Pinafore.Language.Convert.HasType
+import Pinafore.Language.Type
 
 maybeStoreAdapter :: StoreAdapter t -> StoreAdapter (Maybe t)
 maybeStoreAdapter et = let
@@ -43,6 +43,10 @@ maybeGroundType = let
         in MkStorability{..}
     props = singleGroundProperty storabilityProperty storability
     in (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe"){qgtProperties = props}
+
+-- Maybe
+instance HasQGroundType '[CoCCRVariance] Maybe where
+    qGroundType = maybeGroundType
 
 listStoreAdapters :: StoreAdapter t -> (StoreAdapter [t], StoreAdapter (NonEmpty t))
 listStoreAdapters et = let
@@ -87,6 +91,10 @@ listGroundType = let
 va :: TypeVarT (UVarT "a")
 va = MkTypeVar $ MkSymbolType @"a"
 
+-- []
+instance HasQGroundType '[CoCCRVariance] [] where
+    qGroundType = listGroundType
+
 list1GroundType :: QGroundType '[CoCCRVariance] NonEmpty
 list1GroundType = let
     storability :: Storability '[CoCCRVariance] NonEmpty
@@ -109,6 +117,10 @@ list1GroundType = let
                     $ functionToShim "nonEmpty" nonEmpty
                     . liftCoPolyShim iMeetL1
         }
+
+-- NonEmpty
+instance HasQGroundType '[CoCCRVariance] NonEmpty where
+    qGroundType = list1GroundType
 
 pairStoreAdapter :: StoreAdapter ta -> StoreAdapter tb -> StoreAdapter (ta, tb)
 pairStoreAdapter eta etb = let
@@ -136,3 +148,7 @@ pairGroundType = let
     showtype :: ListTypeExprShow '[CoCCRVariance, CoCCRVariance]
     showtype ta tb = namedTextPrec 3 $ precNamedText 2 ta <> " *: " <> precNamedText 3 tb
     in (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) showtype){qgtProperties = props}
+
+-- (,)
+instance HasQGroundType '[CoCCRVariance, CoCCRVariance] (,) where
+    qGroundType = pairGroundType
