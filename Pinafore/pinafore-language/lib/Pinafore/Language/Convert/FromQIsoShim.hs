@@ -3,7 +3,7 @@ module Pinafore.Language.Convert.FromQIsoShim where
 import Language.Expression.Dolan
 
 import Import
-import Pinafore.Language.Type
+import Pinafore.Language.Type.Ground
 
 class (CCRVariancesShim pshim, JoinMeetIsoShim (pshim Type)) => FromQIsoShim (pshim :: PolyShimKind) where
     fromQShims :: forall a b. QShim a b -> QShim b a -> pshim Type a b
