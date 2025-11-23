@@ -15,7 +15,6 @@ productLibSection =
         "Type Product"
         ""
         [ typeBDS_ @_ @(,) "*:" "" []
-        , hasSubtypeRelationBDS @(Showable, Showable) @Showable Verify "" $ functionToShim "show" textShowable
         , namespaceBDS
             "Product"
             [ addNameInRootBDS

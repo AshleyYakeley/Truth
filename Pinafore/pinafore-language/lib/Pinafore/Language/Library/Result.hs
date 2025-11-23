@@ -56,6 +56,6 @@ resultLibSection =
                , valBDS "toSum" "" (resultToEither :: Result E A -> Either E A)
                , valBDS "fromMaybe" "" (resultFromMaybe :: E -> Maybe A -> Result E A)
                , valBDS "toMaybe" "" (resultToMaybe :: Result E A -> _ A)
-               , valBDS "toAction" "" (resultToM . mapResultFailure (unpack . unShowable) :: Result Showable A -> Action A)
+               , valBDS "toAction" "" (resultToM . mapResultFailure (unpack . showText) :: Result Showable A -> Action A)
                ]
         ]

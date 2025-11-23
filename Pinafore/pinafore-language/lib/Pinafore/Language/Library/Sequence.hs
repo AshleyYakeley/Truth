@@ -15,6 +15,11 @@ append (a :| aa) bb = a :| (aa <> bb)
 mconcat1 :: NonEmpty (NonEmpty A) -> NonEmpty A
 mconcat1 (na :| lna) = append na $ concatmap toList lna
 
+linkShowable :: Link Showable Showable -> Showable
+linkShowable NilLink = ListShowable []
+linkShowable (ConsLink sa (ListShowable sb)) = ListShowable $ sa : sb
+linkShowable (ConsLink sa (PlainShowable tb)) = PlainShowable $ showText sa <> "::" <> tb
+
 sequenceLibSection :: LibraryStuff
 sequenceLibSection =
     headingBDS
@@ -25,8 +30,8 @@ sequenceLibSection =
             "A pair, or nil."
             []
         , hasSubtypeRelationBDS @(Link Entity Entity) @Entity Verify "" $ functionToShim "linkEntityConvert" linkEntityConvert
-        , --        , hasSubtypeRelationBDS @(Link Showable Showable) @Showable Verify "" $ functionToShim "show" textShowable
-          hasSubtypeRelationBDS @() @(Link BottomType BottomType) Verify "" $ functionToShim "" $ \() -> NilLink
+        , hasSubtypeRelationBDS @(Link Showable Showable) @Showable Verify "" $ functionToShim "show" linkShowable
+        , hasSubtypeRelationBDS @() @(Link BottomType BottomType) Verify "" $ functionToShim "" $ \() -> NilLink
         , hasSubtypeRelationBDS @(A, B) @(Link A B) Verify "" $ functionToShim "" $ \(a, b) -> ConsLink a b
         , typeBDS_ @_ @LangList
             "List"

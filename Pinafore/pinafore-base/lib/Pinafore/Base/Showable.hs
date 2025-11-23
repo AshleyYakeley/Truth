@@ -14,14 +14,16 @@ instance (ShowText a, ShowText b) => ShowText (Result a b) where
     showText (FailureResult a) = "Failure " <> showText a
     showText (SuccessResult b) = "Success " <> showText b
 
-newtype Showable
-    = MkShowable {unShowable :: Text}
+data Showable
+    = PlainShowable Text
+    | ListShowable [Showable]
 
 instance ShowText Showable where
-    showText (MkShowable t) = t
+    showText (PlainShowable t) = t
+    showText (ListShowable ls) = "[" <> intercalate "," (fmap showText ls) <> "]"
 
 instance Show Showable where
     show v = unpack $ showText v
 
 textShowable :: ShowText t => t -> Showable
-textShowable v = MkShowable $ showText v
+textShowable v = PlainShowable $ showText v

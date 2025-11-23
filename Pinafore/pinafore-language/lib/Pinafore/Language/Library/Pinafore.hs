@@ -173,7 +173,7 @@ pinaforeLibSection =
                 Verify
                 ""
                 $ functionToShim "locatedShow"
-                $ \(MkLocated spos _ (MkShowable s)) -> MkShowable $ showLocated spos s
+                $ \(MkLocated spos _ s) -> PlainShowable $ showLocated spos $ showText s
             ]
         , namespaceBDS
             "Pinafore"
@@ -298,7 +298,7 @@ pinaforeLibSection =
                 "Error"
                 ""
                 [ typeBDS "Error" "" (qSomeGroundType @_ @QError) []
-                , hasSubtypeRelationBDS @QError @Showable Verify "" $ functionToShim "show" $ MkShowable . toText . showNamedText
+                , hasSubtypeRelationBDS @QError @Showable Verify "" $ functionToShim "show" $ PlainShowable . toText . showNamedText
                 ]
             , headingBDS
                 "Expression"

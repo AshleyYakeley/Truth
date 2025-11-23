@@ -26,7 +26,7 @@ langOrder :: Text -> Result Showable (Order Text)
 langOrder langcode =
     case Text.Collate.parseLang langcode of
         Right lang -> pure $ collatorOrder $ Text.Collate.collatorFor lang
-        Left err -> FailureResult $ MkShowable $ pack err
+        Left err -> FailureResult $ PlainShowable $ pack err
 
 rootOrder :: Order Text
 rootOrder = collatorOrder Text.Collate.rootCollator
